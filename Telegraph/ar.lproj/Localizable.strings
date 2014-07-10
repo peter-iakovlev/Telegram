@@ -29,13 +29,18 @@
 "CHAT_DELETE_MEMBER" = "%1$@ قام بإخراج %3$@ من المجموعة %2$@";
 "CHAT_LEFT" = "%1$@ غادر المجموعة %2$@";
 "CHAT_RETURNED" = "%1$@ عاد إلى المجموعة %2$@";
+"PHOTO_PUBLISHED" = "%1$@ published a photo to the group %2$@";
 
 "CONTACT_JOINED" = "%1$@ قام بالتسجيل في تيليجرام!";
+"CONTACT_REQUESTED" = "%1$@ requested your contact information";
+"CONTACT_ACCEPTED" = "%1$@ accepted your contact request";
 "CONTACT_ACTIVATED" = "%1$@ ساعدك في تفعيل حسابك!";
 "CONTACT_PHOTO" = "%1$@ قام بإضافة صورة شخصية";
 
 "AUTH_UNKNOWN" = "تم تسجيل الدخول لحسابك من جهاز جديد%1$@";
 "AUTH_REGION" = "تم تسجيل الدخول لحسابك من جهاز جديد %1$@, الموقع: %2$@";
+
+"GEOCHAT_CHECKIN" = "%1$@ checked in at %2$@";
 
 // Common
 "Common.OK" = "موافق";
@@ -55,6 +60,8 @@
 "Common.ChoosePhoto" = "اختر صورة";
 "Common.ChooseVideo" = "اختر مقطع مرئي";
 "Common.of" = "من";
+"Common.Search" = "بحث";
+"Common.More" = "أكثر...";
 
 // State
 "State.connecting" = "جاري الإتصال";
@@ -158,6 +165,9 @@
 "Login.CallRequestState1" = "تيليجرام سيتصل بك خلال %d:%.2d";
 "Login.CallRequestState2" = "جاري طلب اتصال من تيليجرام...";
 "Login.CallRequestState3" = "تيليجرام اتصل برقمك";
+"Login.EmailNotConfiguredError" = "Please set up an email account.";
+"Login.EmailCodeSubject" = "%@, no code";
+"Login.EmailCodeBody" = "My phone number is:\n%@\nI can't get an activation code for Telegram.";
 "Login.UnknownError" = "حدث خطأ. يرجى المحاولة لاحقًا";
 "Login.InvalidCodeError" = "لقد قمت بإدخال رمز غير صحيح، حاول مرة أخرى.";
 "Login.NetworkError" = "يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.";
@@ -201,6 +211,9 @@
 "DialogList.TabTitle" = "الرسائل";
 "DialogList.Title" = "الرسائل";
 "DialogList.SearchLabel" = "بحث";
+"DialogList.SelectContact" = "اختر جهة اتصال";
+"DialogList.SelectContacts" = "اختر جهات اتصال";
+"DialogList.Create" = "إنشاء";
 "DialogList.NoMessagesTitle" = "لا توجد محادثات بعد";
 "DialogList.NoMessagesText" = "إبدأ المراسلة بالضغط على أيقونة القلم في أعلى الشاشة على اليمين أو اذهب لقائمة جهات الاتصال.";
 "DialogList.SingleTypingSuffix" = "%@ يكتب";
@@ -221,12 +234,17 @@
 "Compose.NewMessage" = "رسالة جديدة";
 "Compose.NewGroup" = "مجموعة جديدة";
 "Compose.NewEncryptedChat" = "محادثة سرية جديدة";
+"Compose.NewBroadcast" = "قائمة رسائل جماعية";
+"Compose.Recipients" = "المستقبلون";
 "Compose.Create" = "إنشاء";
 
 // Contacts
 "Contacts.TabTitle" = "جهات الاتصال";
 "Contacts.Title" = "جهات الاتصال";
 "Contacts.Invite" = "قم بدعوة";
+"Contacts.contact" = "جهة اتصال";
+"Contacts.contacts" = "جهة اتصال";
+"Contacts.contactsvar" = "جهة اتصال";
 "Contacts.InvitationText" = "مرحبا! هيا نستخدم تيليجرام http://telegram.org/dl";
 "Contacts.FailedToSendInvitesMessage" = "حدث خطأ.";
 "Contacts.AccessDeniedError" = "تيليجرام لا يستطيع الدخول لجهات الاتصال الخاصة بك";
@@ -236,6 +254,25 @@
 "Contacts.InviteToTelegram" = "قم بدعوة صديق لتيليجرام";
 "Contacts.InviteFriends" = "قم بدعوة صديق";
 "Contacts.SelectAll" = "اختر الكل";
+
+"Contacts.Discover" = "Find Friends";
+
+// Requests
+"Requests.TabTitle" = "الطلبات";
+"Requests.Title" = "الطلبات";
+
+// Places
+"Places.TabTitle" = "الأماكن";
+"Places.Title" = "الأماكن";
+
+// Places.Recents
+"Places.Recents.Title" = "Recent Places";
+
+// Create Place
+"CreatePlace.Title" = "Create Place";
+"CreatePlace.GenericError" = "حدث خطأ";
+"CreatePlace.NamePlaceholder" = "Name";
+"CreatePlace.AddressPlaceholder" = "Address";
 
 // Conversation
 "Conversation.InputTextPlaceholder" = "الرسالة";
@@ -248,14 +285,20 @@
 "Conversation.MessageDialogDelete" = "حذف";
 "Conversation.LinkDialogOpen" = "فتح الرابط";
 "Conversation.LinkDialogCopy" = "نسخ";
+"Conversation.EditDelete" = "احذف";
+"Conversation.EditForward" = "أعد التوجيه";
 "Conversation.ForwardToPrefix" = "تحويل لـ ";
 "Conversation.ForwardTitle" = "تحويل";
+"Conversation.ForwardChats" = "المحادثات";
+"Conversation.ForwardContacts" = "جهات الاتصال";
 "Conversation.StatusKickedFromGroup" = "تم إخراجك من المجموعة";
 "Conversation.StatusLeftGroup" = "قمت بمغادرة المجموعة";
 "Conversation.StatusTyping" = "جاري الكتابة";
+"Conversation.BroadcastTitle" = "رسالة جماعية";
 "Conversation.Call" = "اتصل";
 "Conversation.Mute" = "كتم الصوت";
 "Conversation.Unmute" = "إزالة كتم الصوت";
+"Conversation.Edit" = "تعديل";
 "Conversation.Info" = "معلومات";
 "Conversation.Block" = "حظر";
 "Conversation.Unblock" = "إلغاء الحظر";
@@ -263,6 +306,10 @@
 "Conversation.Location" = "الموقع";
 "Conversation.Document" = "مستند";
 "Conversation.Contact" = "جهة اتصال";
+"Conversation.BlockUser" = "حظر المستخدم";
+"Conversation.UnblockUser" = "إلغاء حظر المستخدم";
+"Conversation.DeleteGroup" = "حذف المجموعة";
+"Conversation.DeleteChat" = "Delete this Chat";
 "Conversation.ClearAllConfirmation" = "مسح الدردشة";
 "Conversation.SearchImages" = "ابحث عن صور";
 "Conversation.UnsupportedMedia" = "نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة view:\nhttp://telegram.org/update";
@@ -288,12 +335,20 @@
 "Conversation.StatusMembers_3_10" = "%@ أعضاء";
 "Conversation.StatusMembers_any" = "%@ عضو";
 
+"Conversation.StatusRecipients_1" = "مستقبل";
+"Conversation.StatusRecipients_2" = "مستقبلان";
+"Conversation.StatusRecipients_3_10" = "%@ مستقبلون";
+"Conversation.StatusRecipients_any" = "%@ مستقبل";
+
 "Conversation.StatusOnline_1" = "١ متصل";
 "Conversation.StatusOnline_2" = "٢ متصلان";
 "Conversation.StatusOnline_3_10" = "%@ متصلين";
 "Conversation.StatusOnline_any" = "%@ متصل";
 
 "Conversation.UnreadMessages" = "رسائل غير مقروءة";
+"Conversation.InfoGroup" = "Group";
+"Conversation.InfoPrivate" = "Contact";
+"Conversation.InfoBroadcastList" = "List";
 
 // Notification
 "Notification.RenamedChat" = "%@ قام بإعادة تسمية المجموعة";
@@ -306,26 +361,20 @@
 "Notification.LeftChat" = "%@ غادر المجموعة";
 "Notification.Kicked" = "%@ قام بإخراج %@ من المجموعة";
 "Notification.CreatedChat" = "%@ قام بإنشاء مجموعة";
+"Notification.CreatedBroadcastList" = "لقد قمت بإنشاء قائمة رسائل جماعية";
 "Notification.CreatedChatWithTitle" = "%@ قام بإنشاء المجموعة \"%@\"";
 "Notification.Joined" = "%@ انضم لتيليجرام";
 "Notification.ChangedGroupName" = "%@ قام بتغيير اسم المجموعة لـ \"%@\"";
-
-"Notification.NewAuthDetected" = "%1$@,\
-تم تسجيل الدخول لحسابك من جهاز جديد يوم %2$@, %3$@ الساعة %4$@\
-\
-الجهاز: %5$@\
-المكان: %6$@\
-\
-إذا لم تسجل الدخول، بإمكانك الذهاب إلى إعدادات – إعدادات المحادثة – سجل الخروج من كافة الأجهزة الأخرى.
-\
-شكرًا،\
-فريق تيليجرام";
-
+"Notification.CreatedGeoChat" = "%@ created place";
+"Notification.CreatedGeoChatWithTitle" = "%@ created place \"%@\"";
+"Notification.GeochatUserCheckedIn" = "%@ checked in";
+"Notification.NewAuthDetected" = "%1$@,تم تسجيل الدخول لحسابك من جهاز جديد يوم %2$@, %3$@ الساعة %4$@الجهاز: %5$@المكان: %6$@إذا لم تسجل الدخول، بإمكانك الذهاب إلى إعدادات – إعدادات المحادثة – سجل الخروج من كافة الأجهزة الأخرى.\nشكرًا،فريق تيليجرام";
 "Notification.EncryptedChatRequested" = "تم طلب محادثة سرية";
 "Notification.EncryptedChatAccepted" = "تم قبول المحادثة السرية";
 "Notification.MessageLifetimeChanged" = "%1$@ قام بتعيين عداد التدمير الذاتي إلى %2$@";
 "Notification.MessageLifetimeChangedOutgoing" = "لقد قمت بتعيين عداد التدمير الذاتي إلى %1$@";
 "Notification.MessageLifetimeRemoved" = "%1$@ قام بإيقاف عداد التدمير الذاتي";
+"Notification.MessageLifetimeRemovedOutgoing" = "You disabled the self-destruct timer";
 "Notification.MessageLifetime2s" = "ثانيتان";
 "Notification.MessageLifetime5s" = "٥ ثوانٍ";
 "Notification.MessageLifetime1m" = "دقيقة";
@@ -348,14 +397,20 @@
 "ConversationProfile.UserLeftChatError" = "المعذرة, %@ قرر مغادرة المجموعة, لا يمكنك دعوته مرة أخرى للمجموعة.";
 "ConversationProfile.UnknownAddMemberError" = "حدث خطأ غير متوقع. لقد تم إخبار فريق العمل وسيعملون على إصلاحه قريبًا. نعتذر.";
 "ConversationProfile.UsersTooMuchError" = "المعذرة, هذه المجموعة ممتلئة. لا تستطيع إضافة أعضاء جدد.";
+
 "ConversationProfile.LeaveDeleteAndExit" = "خروج وحذف";
+
+"Conversation.DownloadPhoto" = "Download Photo";
 "Conversation.ViewPhoto" = "اعرض الصورة";
-"Conversation.ViewFile" = "View File";
-"Conversation.Play" = "Play";
 "Conversation.PlayVideo" = "اعرض المقطع المرئي";
+"Conversation.Play" = "Play";
+"Conversation.Stop" = "Stop";
+"Conversation.ViewFile" = "View File";
 "Conversation.Download" = "تنزيل";
 "Conversation.DownloadMegabytes" = "تنزيل %.1fMb";
 "Conversation.DownloadKilobytes" = "تنزيل %dKb";
+"Conversation.Megabytes" = "%.1fMb";
+"Conversation.Kilobytes" = "%dKb";
 "Conversation.DownloadProgressMegabytes" = "%1$.1fMb / %2$.1fMb";
 "Conversation.DownloadProgressKilobytes" = "%1$dKb / %2$dKb";
 "Conversation.ViewLocation" = "اعرض الموقع";
@@ -369,14 +424,17 @@
 "Conversation.View" = "عرض";
 "Conversation.Download" = "تنزيل";
 "Conversation.SlideToCancel" = "Slide to cancel";
+"Conversation.ApplyLocalization" = "Apply Localization";
+"Conversation.OpenFile" = "Open File";
+"Conversation.MicrophoneAccessDisabled" = "Telegram needs access to your microphone for voice messages. Please go to Settings — Privacy — Microphone and set Telegram to ON.";
 
 // Media Picker
 "MediaPicker.Send" = "أرسل";
 "MediaPicker.Choose" = "اختر";
 "SearchImages.SearchImages" = "ابحث عن صور";
 "SearchImages.Title" = "ألبوم";
-"SearchImages.NoImagesFound" = "المعذرة، لم يتم العثور على صور.";
 "MediaPicker.CameraRoll" = "البوم الصور";
+"SearchImages.NoImagesFound" = "المعذرة، لم يتم العثور على صور.";
 "MediaPicker.AccessDeniedError" = "تيليجرام لا يستطيع الدخول للألبوم الخاص بك";
 "MediaPicker.AccessDeniedHelp" = "الرجاء الذهاب إلى إعدادات الـ %@ — الخصوصية — الصور.\nثم قم بتفعيل تيليجرام.";
 "SearchImages.Downloading#Kb" = "جاري تنزيل %d Kb";
@@ -388,14 +446,12 @@
 "SearchImages.RetryDownload" = "إعادة التنزيل";
 
 // User Profile
-"Profile.ShareContactButton" = "قم بمشاركة جهة الاتصال";
-"Profile.ShareContactPrefix" = "أرسل جهة الاتصال لـ ";
 "Profile.ImageUploadError" = "حدث خطأ. الرجاء المحاولة في وقت لاحق.";
-"Profile.CreateNewContact" = "إنشاء جهة اتصال جديدة";
-"Profile.AddToExisting" = "إضافة إلى جهة اتصال موجودة";
 "Profile.PhonebookAccessDisabled" = "لجعل هذه الخاصية تعمل, الرجاء الذهاب إلى إعدادات الآيفون — الخصوصية— جهات الاتصال ثم قم بتفعيل تيليجرام.";
 "Profile.CreateEncryptedChatError" = "حدث خطأ.";
 "Profile.CreateEncryptedChatOutdatedError" = "لا يمكن إنشاء محادثة سرية مع %@.\n%@ يستخدم إصدار قديم من تيليجرام ولا بد أن يقوم بالتحديث أولًا.";
+"Profile.CreateNewContact" = "إنشاء جهة اتصال جديدة";
+"Profile.AddToExisting" = "إضافة إلى جهة اتصال موجودة";
 "Profile.EncryptionKey" = "مفتاح التشفير";
 "Profile.MessageLifetime" = "عداد التدمير الذاتي";
 "Profile.MessageLifetimeForever" = "إيقاف";
@@ -405,6 +461,8 @@
 "Profile.MessageLifetime1h" = "ساعة";
 "Profile.MessageLifetime1d" = "يوم";
 "Profile.MessageLifetime1w" = "أسبوع";
+"Profile.ShareContactButton" = "قم بمشاركة جهة الاتصال";
+"Profile.ShareContactPrefix" = "أرسل جهة الاتصال لـ ";
 
 // User Info
 "UserInfo.Title" = "معلومات";
@@ -437,6 +495,7 @@
 // Group Info
 "GroupInfo.Title" = "معلومات المجموعة";
 "GroupInfo.GroupNamePlaceholder" = "اسم المجموعة";
+"GroupInfo.BroadcastListNamePlaceholder" = "List Name";
 "GroupInfo.SetGroupPhoto" = "تعيين صورة للمجموعة";
 "GroupInfo.SetGroupPhotoStop" = "إيقاف";
 "GroupInfo.SetGroupPhotoDelete" = "حذف الصورة";
@@ -447,9 +506,9 @@
 "GroupInfo.DeleteAndExit" = "خروج وحذف";
 "GroupInfo.DeleteAndExitConfirmation" = "لن تستطيع الدخول لهذه المجموعة مرة أخرى.";
 "GroupInfo.ParticipantCount_1" = "عضو واحد";
-"GroupInfo.ParticipantCount_2" = "عضوان"; //two
-"GroupInfo.ParticipantCount_3_10" = "%@ أعضاء"; //three to ten
-"GroupInfo.ParticipantCount_any" = "%@ عضو"; //more than ten
+"GroupInfo.ParticipantCount_2" = "عضوان";
+"GroupInfo.ParticipantCount_3_10" = "%@ أعضاء";
+"GroupInfo.ParticipantCount_any" = "%@ عضو";
 "GroupInfo.AddParticipant" = "إضافة عضو...";
 "GroupInfo.AddParticipantTitle" = "جهات الاتصال";
 "GroupInfo.AddParticipantConfirmation" = "إضافة %@ للمجموعة؟";
@@ -509,6 +568,10 @@
 "Settings.BlockedUsers" = "جهات الاتصال المحظورة";
 "Settings.ChatBackground" = "خلفية الدردشة";
 "Settings.Support" = "اسأل سؤالًا";
+"Settings.FAQ" = "الأسئلة الشائعة عن تيليجرام";
+"Settings.FAQ_URL" = "https://telegram.org/faq/ar";
+"Settings.FAQ_Intro" = "Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.Please take a look at the Telegram FAQ: it has important troubleshooting tips and answers to most questions.";
+"Settings.FAQ_Button" = "FAQ";
 "Settings.SaveIncomingPhotos" = "احفظ الصور الواردة";
 "Settings.SaveIncomingPhotosHelp" = "قم بحفظ الصور الواردة في ألبوم الكاميرا";
 "Settings.LogoutError" = "حدث خطأ. الرجاء المحاولة في وقت لاحق.";
@@ -554,9 +617,14 @@
 "ChatSettings.ClearOtherSessionsHelp" = "قم بتسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز";
 "ChatSettings.ClearOtherSessionsConfirmation" = "هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟";
 "ChatSettings.ClearOtherSessionsFailed" = "حدث خطأ.";
+"ChatSettings.Language" = "اللغة";
+"ChatSettings.RevertLanguage" = "Revert Language";
 
 // Blocked Users
 "BlockedUsers.Title" = "جهات الاتصال المحظورة";
+"BlockedUsers.SelectUserTitle" = "Block User";
+"BlockedUsers.AlreadyBlocked" = "This user is already blocked";
+"BlockedUsers.BlockUser" = "Block User";
 "BlockedUsers.BlockPrefix" = "حظر ";
 "BlockedUsers.BlockTitle" = "حظر";
 "BlockedUsers.LeavePrefix" = "مغادرة ";
@@ -573,3 +641,24 @@
 // Update
 "Update.Update" = "تحديث";
 
+// Service
+"Service.LocalizationDownloadError" = "Couldn't download localization file. Please check your internet connection and try again.";
+"Service.ApplyLocalization" = "Apply Localization?";
+"Service.ApplyLocalizationWithWarnings" = "%@\n\nApply Localization?";
+
+"Notification.SecretChatMessageScreenshot" = "Screenshot!";
+"Notification.SecretChatScreenshot" = "Screenshot taken!";
+
+// Broadcast Lists
+"DialogList.Broadcast" = "رسالة جماعية";
+"BroadcastLists.Title" = "قوائم الرسائل الجماعية";
+"BroadcastLists.NoListsYet" = "No Lists Yet";
+"BroadcastLists.NoListsText" = "يمكنك إرسال رسائل لعدة مستخدمين مرة واحدة بشكل سهل من خلال قوائم الرسائل الجماعية.";
+
+// Broadcast List
+"BroadcastListInfo.Title" = "قائمة رسائل جماعية";
+"BroadcastListInfo.AddRecipient" = "إضافة مستقبل";
+
+// Video
+"VideoPreview.OptionSD" = "Normal Size (%@)";
+"VideoPreview.OptionHD" = "High Definition (%@)";

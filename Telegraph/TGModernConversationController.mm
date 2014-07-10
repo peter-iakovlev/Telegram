@@ -1788,7 +1788,6 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                 {
                     TGDocumentMediaAttachment *documentAttachment = (TGDocumentMediaAttachment *)attachment;
                     
-#ifdef DEBUG
                     if ([documentAttachment.fileName isEqualToString:@"Localizable.strings"])
                     {
                         [[[TGActionSheet alloc] initWithTitle:nil actions:@[
@@ -1962,7 +1961,6 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                         
                         break;
                     }
-#endif
                     
                     TGDocumentController *documentController = [[TGDocumentController alloc] initWithURL:[_companion fileUrlForDocumentMedia:documentAttachment]];
                     
