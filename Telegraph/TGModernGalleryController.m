@@ -16,6 +16,8 @@
 #import "TGModernGalleryScrollView.h"
 #import "TGModernGalleryItemView.h"
 
+#import "TGModernGalleryModel.h"
+
 #define TGModernGalleryItemPadding 20.0f
 
 @interface TGModernGalleryController () <UIScrollViewDelegate, TGModernGalleryScrollViewDelegate, TGModernGalleryItemViewDelegate>
@@ -60,6 +62,30 @@
     }
     
     [self dismiss];
+}
+
+- (void)setModel:(TGModernGalleryModel *)model
+{
+    if (_model != model)
+    {
+        _model = model;
+        
+        __weak TGModernGalleryController *weakSelf = self;
+        _model.itemsUpdated = ^(id<TGModernGalleryItem> item)
+        {
+            __strong TGModernGalleryController *strongSelf = weakSelf;
+            [strongSelf reloadDataAtItem:item];
+        };
+        
+        _model.focusOnItem = ^(id<TGModernGalleryItem> item)
+        {
+            __strong TGModernGalleryController *strongSelf = weakSelf;
+            NSUInteger index = [strongSelf.model.items indexOfObject:item];
+            [strongSelf setCurrentItemIndex:index == NSNotFound ? 0 : index];
+        };
+        
+        [self reloadDataAtItem:nil];
+    }
 }
 
 - (void)itemViewIsReadyForScheduledDismiss:(TGModernGalleryItemView *)__unused itemView
@@ -174,20 +200,27 @@
 
 #pragma mark -
 
+- (void)setCurrentItemIndex:(NSUInteger)currentItemIndex
+{
+    _scrollView.bounds = CGRectMake(_scrollView.bounds.size.width * currentItemIndex, 0.0f, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+    
+    [self scrollViewBoundsChanged:_scrollView.bounds];
+}
+
 - (NSUInteger)currentItemIndex
 {
-    return _items.count == 0 ? 0 : (NSUInteger)[self currentItemFuzzyIndex];
+    return _model.items.count == 0 ? 0 : (NSUInteger)[self currentItemFuzzyIndex];
 }
 
 - (CGFloat)currentItemFuzzyIndex
 {
-    if (_items.count == 0)
+    if (_model.items.count == 0)
         return 0.0f;
     
     return CGFloor((_scrollView.bounds.origin.x + _scrollView.bounds.size.width / 2.0f) / _scrollView.bounds.size.width);
 }
 
-- (void)reloadData
+- (void)reloadDataAtItem:(id<TGModernGalleryItem>)item
 {
     if (_visibleItemViews.count != 0)
     {
@@ -199,7 +232,8 @@
         [_visibleItemViews removeAllObjects];
     }
     
-    [self scrollViewBoundsChanged:_scrollView.bounds];
+    NSUInteger index = (item == nil || _model.items == nil) ? NSNotFound : [_model.items indexOfObject:item];
+    [self setCurrentItemIndex:index == NSNotFound ? 0 : index];
 }
 
 - (void)scrollViewWillBeginDecelerating:(UIScrollView *)__unused scrollView
@@ -214,15 +248,15 @@
     if (bounds.origin.x > 0.0f)
         leftmostVisibleItemIndex = (NSUInteger)floor((bounds.origin.x + 1.0f) / itemWidth);
     
-    NSUInteger rightmostVisibleItemIndex = _items.count - 1;
-    if (bounds.origin.x + bounds.size.width < _items.count * itemWidth)
+    NSUInteger rightmostVisibleItemIndex = _model.items.count - 1;
+    if (bounds.origin.x + bounds.size.width < _model.items.count * itemWidth)
     {
         rightmostVisibleItemIndex = (NSUInteger)floorf((bounds.origin.x + bounds.size.width - 1.0f) / itemWidth);
     }
     
-    if (leftmostVisibleItemIndex <= rightmostVisibleItemIndex && _items.count != 0)
+    if (leftmostVisibleItemIndex <= rightmostVisibleItemIndex && _model.items.count != 0)
     {
-        CGSize contentSize = CGSizeMake(_items.count * itemWidth, bounds.size.height);
+        CGSize contentSize = CGSizeMake(_model.items.count * itemWidth, bounds.size.height);
         if (!CGSizeEqualToSize(_scrollView.contentSize, contentSize))
             _scrollView.contentSize = contentSize;
         
@@ -266,7 +300,7 @@
             
             if (!itemHasVisibleView)
             {
-                id<TGModernGalleryItem> item = _items[i];
+                id<TGModernGalleryItem> item = _model.items[i];
                 TGModernGalleryItemView *itemView = [self dequeueViewForItem:item];
                 if (itemView != nil)
                 {

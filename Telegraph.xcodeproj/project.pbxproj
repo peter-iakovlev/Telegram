@@ -815,6 +815,9 @@
 		D08696B61943A8B300770FE7 /* pad-builtin-wallpaper-2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = D08696B01943A8B300770FE7 /* pad-builtin-wallpaper-2.jpg */; };
 		D08696B71943A8B300770FE7 /* pad-builtin-wallpaper-1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = D08696B11943A8B300770FE7 /* pad-builtin-wallpaper-1.jpg */; };
 		D08696B81943A8B300770FE7 /* pad-builtin-wallpaper-0.jpg in Resources */ = {isa = PBXBuildFile; fileRef = D08696B21943A8B300770FE7 /* pad-builtin-wallpaper-0.jpg */; };
+		D0876FD7196F348D005740CE /* TGModernGalleryModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D0876FD6196F348D005740CE /* TGModernGalleryModel.m */; };
+		D0876FE6196F4C33005740CE /* TGGenericPeerMediaGalleryModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D0876FE5196F4C33005740CE /* TGGenericPeerMediaGalleryModel.m */; };
+		D0876FE919702474005740CE /* TGModernGalleryZoomableScrollView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0876FE819702474005740CE /* TGModernGalleryZoomableScrollView.m */; };
 		D08805B1156E8F3600311537 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D08805B0156E8F3600311537 /* UIKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		D08805B3156E8F3600311537 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D08805B2156E8F3600311537 /* Foundation.framework */; settings = {ATTRIBUTES = (Required, ); }; };
 		D08805B5156E8F3600311537 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D08805B4156E8F3600311537 /* CoreGraphics.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
@@ -2359,6 +2362,12 @@
 		D08696B01943A8B300770FE7 /* pad-builtin-wallpaper-2.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "pad-builtin-wallpaper-2.jpg"; sourceTree = "<group>"; };
 		D08696B11943A8B300770FE7 /* pad-builtin-wallpaper-1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "pad-builtin-wallpaper-1.jpg"; sourceTree = "<group>"; };
 		D08696B21943A8B300770FE7 /* pad-builtin-wallpaper-0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "pad-builtin-wallpaper-0.jpg"; sourceTree = "<group>"; };
+		D0876FD5196F348D005740CE /* TGModernGalleryModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryModel.h; sourceTree = "<group>"; };
+		D0876FD6196F348D005740CE /* TGModernGalleryModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryModel.m; sourceTree = "<group>"; };
+		D0876FE4196F4C33005740CE /* TGGenericPeerMediaGalleryModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGGenericPeerMediaGalleryModel.h; sourceTree = "<group>"; };
+		D0876FE5196F4C33005740CE /* TGGenericPeerMediaGalleryModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGenericPeerMediaGalleryModel.m; sourceTree = "<group>"; };
+		D0876FE719702474005740CE /* TGModernGalleryZoomableScrollView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryZoomableScrollView.h; sourceTree = "<group>"; };
+		D0876FE819702474005740CE /* TGModernGalleryZoomableScrollView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryZoomableScrollView.m; sourceTree = "<group>"; };
 		D08805AC156E8F3600311537 /* Telegram HD.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Telegram HD.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D08805B0156E8F3600311537 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		D08805B2156E8F3600311537 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -3829,6 +3838,8 @@
 		939ECA32188EAFCE004ABAB7 /* Modern Gallery */ = {
 			isa = PBXGroup;
 			children = (
+				D0876FD5196F348D005740CE /* TGModernGalleryModel.h */,
+				D0876FD6196F348D005740CE /* TGModernGalleryModel.m */,
 				939ECA36188EB047004ABAB7 /* TGModernGalleryItem.h */,
 				939ECA33188EAFEB004ABAB7 /* TGModernGalleryController.h */,
 				939ECA34188EAFEB004ABAB7 /* TGModernGalleryController.m */,
@@ -3878,6 +3889,8 @@
 			children = (
 				939ECA57188EDEA4004ABAB7 /* TGModernGalleryZoomableItemView.h */,
 				939ECA58188EDEA4004ABAB7 /* TGModernGalleryZoomableItemView.m */,
+				D0876FE719702474005740CE /* TGModernGalleryZoomableScrollView.h */,
+				D0876FE819702474005740CE /* TGModernGalleryZoomableScrollView.m */,
 			);
 			name = Zoomable;
 			sourceTree = "<group>";
@@ -4010,6 +4023,7 @@
 			isa = PBXGroup;
 			children = (
 				93C23083183CFEEC0071CB58 /* Overlay Controller */,
+				D0876FE1196F4BED005740CE /* Modern Gallery Models */,
 				939ECA32188EAFCE004ABAB7 /* Modern Gallery */,
 				93C2307F183CF97C0071CB58 /* Map */,
 				933AA49C186095BA000AA848 /* Document */,
@@ -5277,6 +5291,31 @@
 				D060391E1918E24B00EF850D /* TGMessageImageViewTimestampClockFrameLayer.m */,
 			);
 			name = Timestamp;
+			sourceTree = "<group>";
+		};
+		D0876FE1196F4BED005740CE /* Modern Gallery Models */ = {
+			isa = PBXGroup;
+			children = (
+				D0876FE2196F4BFA005740CE /* Peer Media */,
+			);
+			name = "Modern Gallery Models";
+			sourceTree = "<group>";
+		};
+		D0876FE2196F4BFA005740CE /* Peer Media */ = {
+			isa = PBXGroup;
+			children = (
+				D0876FE3196F4C16005740CE /* Generic */,
+			);
+			name = "Peer Media";
+			sourceTree = "<group>";
+		};
+		D0876FE3196F4C16005740CE /* Generic */ = {
+			isa = PBXGroup;
+			children = (
+				D0876FE4196F4C33005740CE /* TGGenericPeerMediaGalleryModel.h */,
+				D0876FE5196F4C33005740CE /* TGGenericPeerMediaGalleryModel.m */,
+			);
+			name = Generic;
 			sourceTree = "<group>";
 		};
 		D08805A1156E8F3600311537 = {
@@ -6815,6 +6854,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D0876FE6196F4C33005740CE /* TGGenericPeerMediaGalleryModel.m in Sources */,
 				D08805BD156E8F3600311537 /* main.m in Sources */,
 				D044CB6C192969850001C986 /* TGLocationThumbnailDataSource.m in Sources */,
 				D08805C1156E8F3600311537 /* TGAppDelegate.mm in Sources */,
@@ -6863,6 +6903,7 @@
 				93ED9F181863D17700E22F84 /* TGRemoteWallpaperInfo.m in Sources */,
 				D0603928191A505000EF850D /* TGMediaPreviewTask.m in Sources */,
 				D00372C91953857600776BCF /* TGBroadcastListsController.mm in Sources */,
+				D0876FE919702474005740CE /* TGModernGalleryZoomableScrollView.m in Sources */,
 				934134671853360D00480294 /* TGEditableCollectionItemView.m in Sources */,
 				D066E98818C625F700509410 /* wav_io.c in Sources */,
 				93C43B2518A0546400165AE1 /* TGAudioRecorder.m in Sources */,
@@ -7244,6 +7285,7 @@
 				D044CB69192825430001C986 /* TGWeakReference.m in Sources */,
 				930CBDF218BAADD40068116F /* TGModernConversationAudioPlayerContext.m in Sources */,
 				938431C918560693000CD961 /* TGCustomImageWallpaperInfo.m in Sources */,
+				D0876FD7196F348D005740CE /* TGModernGalleryModel.m in Sources */,
 				D0549E0E192580C3002952ED /* PSLMDBKeyValueReader.m in Sources */,
 				932E0116184CE61C0001D109 /* TGModernConversationPrivateTitlePanel.m in Sources */,
 				93CF3B4E181DC863003D8DE1 /* TGTextMessageModernViewModel.m in Sources */,

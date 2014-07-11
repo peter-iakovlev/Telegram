@@ -9,6 +9,7 @@
 #import "TGMessageImageViewTimestampView.h"
 
 #import "TGFont.h"
+#import "TGImageUtils.h"
 #import "TGStaticBackdropAreaData.h"
 #import "TGAnimationBlockDelegate.h"
 
@@ -262,26 +263,27 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
         }
     }
     
-    CGFloat previousLuminance = _backdropArea.luminance;
+    CGFloat previousLuminance = 0.0f;//_backdropArea.luminance;
+    CGFloat currentLuminance = 0.0f;//backdropArea.luminance;
     
     if (_backdropArea != backdropArea)
     {
         _backdropArea = backdropArea;
         
-        if (ABS(_backdropArea.luminance - previousLuminance) > FLT_EPSILON)
+        if (ABS(currentLuminance - previousLuminance) > FLT_EPSILON)
         {
             if (_clockFrameLayer != nil)
             {
-                _clockFrameLayer.contents = (__bridge id)clockFrameImage(_backdropArea.luminance);
-                _clockMinLayer.contents = (__bridge id)clockMinImage(_backdropArea.luminance);
-                _clockHourLayer.contents = (__bridge id)clockHourImage(_backdropArea.luminance);
+                _clockFrameLayer.contents = (__bridge id)clockFrameImage(currentLuminance);
+                _clockMinLayer.contents = (__bridge id)clockMinImage(currentLuminance);
+                _clockHourLayer.contents = (__bridge id)clockHourImage(currentLuminance);
             }
             
             if (_chechmarkFirstLayer != nil)
-                _chechmarkFirstLayer.contents = (__bridge id)checkmarkFirstImage(_backdropArea.luminance);
+                _chechmarkFirstLayer.contents = (__bridge id)checkmarkFirstImage(currentLuminance);
             
             if (_chechmarkSecondLayer != nil)
-                _chechmarkSecondLayer.contents = (__bridge id)checkmarkSecondImage(_backdropArea.luminance);
+                _chechmarkSecondLayer.contents = (__bridge id)checkmarkSecondImage(currentLuminance);
         }
         
         [self setNeedsDisplay];
@@ -562,7 +564,7 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     CGContextSetFillColorWithColor(context, color.CGColor);
     CGContextFillRect(context, backgroundRect);
     
-    CGFloat luminance = 0.0f;///_backdropArea.luminance;
+    CGFloat luminance = 0.0f;//_backdropArea.luminance;
     
     CGContextSetBlendMode(context, kCGBlendModeNormal);
     
@@ -571,7 +573,7 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     CGContextSetFillColorWithColor(context, textColor.CGColor);
     CGContextSetStrokeColorWithColor(context, textColor.CGColor);
     
-    [_timestampString drawAtPoint:CGPointMake(backgroundRect.origin.x + 6.0f, backgroundRect.origin.y + 2.0f) withFont:[self timestampFont]];
+    [_timestampString drawAtPoint:CGPointMake(backgroundRect.origin.x + 6.0f - TGRetinaPixel, backgroundRect.origin.y + 2.0f) withFont:[self timestampFont]];
     
     if (_displayCheckmarks)
     {

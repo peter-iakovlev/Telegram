@@ -81,6 +81,8 @@
 
 #import "TGAlertView.h"
 
+#import "TGModernGalleryModel.h"
+
 #import <pthread.h>
 
 #import <objc/runtime.h>
@@ -506,7 +508,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
             if ([overlayControllerWindow.rootViewController isKindOfClass:[TGModernGalleryController class]])
             {
                 TGModernGalleryController *galleryController = (TGModernGalleryController *)overlayControllerWindow.rootViewController;
-                for (id item in galleryController.items)
+                for (id item in galleryController.model.items)
                 {
                     int32_t secretMessageId = 0;
                     if ([item isKindOfClass:[TGModernGallerySecretImageItem class]])

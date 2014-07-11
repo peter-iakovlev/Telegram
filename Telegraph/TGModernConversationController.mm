@@ -38,6 +38,7 @@
 #import "TGModernGalleryController.h"
 #import "TGModernGallerySecretImageItem.h"
 #import "TGModernGallerySecretVideoItem.h"
+#import "TGGenericPeerMediaGalleryModel.h"
 
 #import "TGMapViewController.h"
 #import "TGImagePickerController.h"
@@ -629,7 +630,7 @@ typedef enum {
 - (BOOL)shouldAutorotate
 {
     bool tracking = _collectionView.isTracking;
-    return !tracking && [super shouldAutorotate];
+    return !tracking && [super shouldAutorotate] && _currentAudioRecorder == nil;
 }
 
 - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
@@ -690,6 +691,9 @@ typedef enum {
         _currentAudioRecorder.delegate = nil;
         [_currentAudioRecorder cancel];
         _currentAudioRecorder = nil;
+        
+        if ([self shouldAutorotate])
+            [TGViewController attemptAutorotation];
     }
 }
 
@@ -2008,8 +2012,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         if (mediaItem == nil || CGRectIsEmpty(contentFrame))
             return;
         
-#if TG_MODERN_SECRET_MEDIA
-        if (mediaMessageItem->_message.messageLifetime != 0)
+#if true
+        /*if (mediaMessageItem->_message.messageLifetime != 0)
         {
             bool initiatedCountdown = false;
             
@@ -2040,6 +2044,16 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                 [_companion _setMessageFlags:mediaMessageItem->_message.mid flags:TGSecretMessageFlagViewed];
                 [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
             }
+            
+            return;
+        }
+        else*/
+        {
+            TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+            modernGallery.model = [[TGGenericPeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId atMessageId:mediaMessageItem->_message.mid];
+            
+            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+            controllerWindow.hidden = false;
             
             return;
         }
@@ -3236,6 +3250,9 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         _currentAudioRecorder = nil;
         
         [_inputTextPanel audioRecordingFinished];
+        
+        if ([self shouldAutorotate])
+            [TGViewController attemptAutorotation];
     }
 }
 

@@ -8,9 +8,11 @@
 
 #import "TGOverlayController.h"
 
+@class TGModernGalleryModel;
+
 @interface TGModernGalleryController : TGOverlayController
 
-@property (nonatomic, strong) NSArray *items;
+@property (nonatomic, strong) TGModernGalleryModel *model;
 
 - (void)dismissWhenReady;
 

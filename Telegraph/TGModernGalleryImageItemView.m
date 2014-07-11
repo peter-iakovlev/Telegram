@@ -13,6 +13,8 @@
 #import "TGImageInfo.h"
 #import "TGRemoteImageView.h"
 
+#import "TGModernGalleryZoomableScrollView.h"
+
 @interface TGModernGalleryImageItemView ()
 
 @end
@@ -45,7 +47,8 @@
         [_imageView loadImage:nil];
     else
         [_imageView loadImage:uri filter:@"maybeScale" placeholder:nil];
-    _imageView.frame = CGRectMake(0.0f, 0.0f, _imageSize.width, _imageSize.height);
+    
+    [self reset];
 }
 
 - (CGSize)contentSize

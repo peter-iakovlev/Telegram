@@ -385,7 +385,7 @@
             if ([window.rootViewController isKindOfClass:[TGModernGalleryController class]])
             {
                 TGModernGalleryController *galleryController = (TGModernGalleryController *)window.rootViewController;
-                for (id item in galleryController.items)
+                /*for (id item in galleryController.items)
                 {
                     int32_t itemMessageId = 0;
                     if ([item isKindOfClass:[TGModernGallerySecretImageItem class]])
@@ -399,7 +399,7 @@
                         
                         break;
                     }
-                }
+                }*/
             }
         }
     }];

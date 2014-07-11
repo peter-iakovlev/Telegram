@@ -8,6 +8,8 @@
 
 #import "TGModernGalleryZoomableItemView.h"
 
+#import "TGModernGalleryZoomableScrollView.h"
+
 @interface TGModernGalleryZoomableItemView () <UIScrollViewDelegate>
 
 @end
@@ -19,11 +21,25 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        _scrollView = [[UIScrollView alloc] initWithFrame:self.bounds];
+        _scrollView = [[TGModernGalleryZoomableScrollView alloc] initWithFrame:self.bounds];
         _scrollView.delegate = self;
         _scrollView.showsHorizontalScrollIndicator = false;
         _scrollView.showsVerticalScrollIndicator = false;
         [self addSubview:_scrollView];
+        
+        __weak TGModernGalleryZoomableItemView *weakSelf = self;
+        
+        _scrollView.singleTapped = ^
+        {
+            __strong TGModernGalleryZoomableItemView *strongSelf = weakSelf;
+            TGLog(@"single tap");
+        };
+        
+        _scrollView.doubleTapped = ^
+        {
+            __strong TGModernGalleryZoomableItemView *strongSelf = weakSelf;
+            TGLog(@"double tap");
+        };
     }
     return self;
 }
@@ -35,10 +51,6 @@
 
 - (void)prepareForReuse
 {
-    _scrollView.contentSize = CGSizeZero;
-    _scrollView.zoomScale = 1.0f;
-    _scrollView.minimumZoomScale = 1.0f;
-    _scrollView.maximumZoomScale = 1.0f;
 }
 
 - (CGSize)contentSize
@@ -77,18 +89,36 @@
     CGSize contentSize = [self contentSize];
     if (!CGSizeEqualToSize(_scrollView.contentSize, contentSize) || !CGSizeEqualToSize(frame.size, _scrollView.frame.size))
     {
+        _scrollView.minimumZoomScale = 1.0f;
+        _scrollView.maximumZoomScale = 1.0f;
+        _scrollView.zoomScale = 1.0f;
         _scrollView.frame = CGRectMake(0, 0, frame.size.width, frame.size.height);
         _scrollView.contentSize = contentSize;
-        [self adjustZoom];
+        [self contentView].frame = CGRectMake(0.0f, 0.0f, contentSize.width, contentSize.height);
         
+        [self adjustZoom];
         _scrollView.zoomScale = _scrollView.minimumZoomScale;
     }
+}
+
+- (void)reset
+{
+    CGSize contentSize = [self contentSize];
+    
+    _scrollView.minimumZoomScale = 1.0f;
+    _scrollView.maximumZoomScale = 1.0f;
+    _scrollView.zoomScale = 1.0f;
+    _scrollView.contentSize = contentSize;
+    [self contentView].frame = CGRectMake(0.0f, 0.0f, contentSize.width, contentSize.height);
+    
+    [self adjustZoom];
+    _scrollView.zoomScale = _scrollView.minimumZoomScale;
 }
 
 - (void)adjustZoom
 {
     CGSize contentSize = [self contentSize];
-    CGSize boundsSize = _scrollView.bounds.size;
+    CGSize boundsSize = _scrollView.frame.size;
     if (contentSize.width < FLT_EPSILON || contentSize.height < FLT_EPSILON || boundsSize.width < FLT_EPSILON || boundsSize.height < FLT_EPSILON)
         return;
     

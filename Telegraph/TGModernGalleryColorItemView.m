@@ -10,6 +10,8 @@
 
 #import "TGModernGalleryColorItem.h"
 
+#import "TGModernGalleryZoomableScrollView.h"
+
 @interface TGModernGalleryColorItemView ()
 {
     UILabel *_label;
