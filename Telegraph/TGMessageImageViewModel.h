@@ -10,6 +10,8 @@
 
 @interface TGMessageImageViewModel : TGModernViewModel
 
+@property (nonatomic) bool mediaVisible;
+
 @property (nonatomic, strong) NSString *uri;
 
 @property (nonatomic) int overlayType;

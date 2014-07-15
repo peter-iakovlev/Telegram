@@ -89,7 +89,7 @@ extern TGAppDelegate *TGAppDelegateInstance;
 
 - (void)presentMainController;
 
-- (void)presentLoginController:(bool)clearControllerStates showWelcomeScreen:(bool)showWelcomeScreen phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash profileFirstName:(NSString *)profileFirstName profileLastName:(NSString *)profileLastName;
+- (void)presentLoginController:(bool)clearControllerStates showWelcomeScreen:(bool)showWelcomeScreen phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram profileFirstName:(NSString *)profileFirstName profileLastName:(NSString *)profileLastName;
 - (void)presentContentController:(UIViewController *)controller;
 - (void)dismissContentController;
 
@@ -98,7 +98,7 @@ extern TGAppDelegate *TGAppDelegateInstance;
 
 - (NSDictionary *)loadLoginState;
 - (void)resetLoginState;
-- (void)saveLoginStateWithDate:(int)date phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash firstName:(NSString *)firstName lastName:(NSString *)lastName photo:(NSData *)photo;
+- (void)saveLoginStateWithDate:(int)date phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram firstName:(NSString *)firstName lastName:(NSString *)lastName photo:(NSData *)photo;
 
 - (NSArray *)classicAlertSoundTitles;
 - (NSArray *)modernAlertSoundTitles;

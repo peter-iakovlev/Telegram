@@ -146,7 +146,11 @@ TGTelegraph *telegraph = nil;
     if (_loginNavigationController == nil)
     {
         UIViewController *rootController = nil;
-        if (true)
+        bool useAnimated = true;
+#if TARGET_IPHONE_SIMULATOR
+        useAnimated = false;
+#endif
+        if (useAnimated)
         {
             rootController = [[RMIntroViewController alloc] init];
         }
@@ -405,7 +409,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                 if (!TGTelegraphInstance.clientIsActivated)
                 {
                     TGLog(@"===== User is not activated, presenting welcome screen");
-                    [self presentLoginController:false showWelcomeScreen:true phoneNumber:nil phoneCode:nil phoneCodeHash:nil profileFirstName:nil profileLastName:nil];
+                    [self presentLoginController:false showWelcomeScreen:true phoneNumber:nil phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false profileFirstName:nil profileLastName:nil];
                 }
                 else if (launchOptions[UIApplicationLaunchOptionsURLKey] != nil)
                 {
@@ -434,7 +438,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                         [self resetLoginState];
                     }
                     
-                    [self presentLoginController:false showWelcomeScreen:false phoneNumber:stateDict[@"phoneNumber"] phoneCode:stateDict[@"phoneCode"] phoneCodeHash:stateDict[@"phoneCodeHash"] profileFirstName:stateDict[@"firstName"] profileLastName:stateDict[@"lastName"]];
+                    [self presentLoginController:false showWelcomeScreen:false phoneNumber:stateDict[@"phoneNumber"] phoneCode:stateDict[@"phoneCode"] phoneCodeHash:stateDict[@"phoneCodeHash"] codeSentToTelegram:[stateDict[@"codeSentToTelegram"] boolValue] profileFirstName:stateDict[@"firstName"] profileLastName:stateDict[@"lastName"]];
                 });
                 
                 [[TGDatabase instance] dropDatabase];
@@ -760,13 +764,13 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [_callingWebView loadRequest:[NSURLRequest requestWithURL:realUrl]];
 }
 
-- (void)presentLoginController:(bool)clearControllerStates showWelcomeScreen:(bool)showWelcomeScreen phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash profileFirstName:(NSString *)profileFirstName profileLastName:(NSString *)profileLastName
+- (void)presentLoginController:(bool)clearControllerStates showWelcomeScreen:(bool)showWelcomeScreen phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram profileFirstName:(NSString *)profileFirstName profileLastName:(NSString *)profileLastName
 {
     if (![[NSThread currentThread] isMainThread])
     {
         dispatch_async(dispatch_get_main_queue(), ^
         {
-            [self presentLoginController:clearControllerStates showWelcomeScreen:showWelcomeScreen phoneNumber:phoneNumber phoneCode:phoneCode phoneCodeHash:phoneCodeHash profileFirstName:profileFirstName profileLastName:profileLastName];
+            [self presentLoginController:clearControllerStates showWelcomeScreen:showWelcomeScreen phoneNumber:phoneNumber phoneCode:phoneCode phoneCodeHash:phoneCodeHash codeSentToTelegram:codeSentToTelegram profileFirstName:profileFirstName profileLastName:profileLastName];
         });
         
         return;
@@ -804,7 +808,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                 }
                 else if (phoneCodeHash.length != 0)
                 {
-                    TGLoginCodeController *codeController = [[TGLoginCodeController alloc] initWithShowKeyboard:true phoneNumber:cleanPhone phoneCodeHash:phoneCodeHash phoneTimeout:60.0];
+                    TGLoginCodeController *codeController = [[TGLoginCodeController alloc] initWithShowKeyboard:true phoneNumber:cleanPhone phoneCodeHash:phoneCodeHash phoneTimeout:60.0 messageSentToTelegram:codeSentToTelegram];
                     [viewControllers addObject:codeController];
                 }
             }
@@ -1027,6 +1031,11 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                 dict[@"photo"] = photo;
         }
         
+        if (version >= 1)
+        {
+            dict[@"codeSentToTelegram"] = @([is readInt32] != 0);
+        }
+        
         [is close];
     }
     
@@ -1039,12 +1048,12 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [[NSFileManager defaultManager] removeItemAtPath:[documentsDirectory stringByAppendingPathComponent:@"state.data"] error:nil];
 }
 
-- (void)saveLoginStateWithDate:(int)date phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash firstName:(NSString *)firstName lastName:(NSString *)lastName photo:(NSData *)photo
+- (void)saveLoginStateWithDate:(int)date phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram firstName:(NSString *)firstName lastName:(NSString *)lastName photo:(NSData *)photo
 {
     NSOutputStream *os = [[NSOutputStream alloc] initToMemory];
     [os open];
     
-    uint8_t version = 0;
+    uint8_t version = 1;
     [os write:&version maxLength:1];
     
     [os writeInt32:date];
@@ -1055,6 +1064,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [os writeString:firstName];
     [os writeString:lastName];
     [os writeBytes:photo];
+    [os writeInt32:codeSentToTelegram ? 1 : 0];
     
     [os close];
     

@@ -875,7 +875,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             [[UIApplication sharedApplication] setApplicationIconBadgeNumber:0];
             [[UIApplication sharedApplication] cancelAllLocalNotifications];
             
-            [TGAppDelegateInstance presentLoginController:true showWelcomeScreen:false phoneNumber:nil phoneCode:nil phoneCodeHash:nil profileFirstName:nil profileLastName:nil];
+            [TGAppDelegateInstance presentLoginController:true showWelcomeScreen:false phoneNumber:nil phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false profileFirstName:nil profileLastName:nil];
         });
     }];
 }
@@ -1949,7 +1949,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 {
     TLRPCauth_sendCode$auth_sendCode *sendCode = [[TLRPCauth_sendCode$auth_sendCode alloc] init];
     sendCode.phone_number = phoneNumber;
-    sendCode.sms_type = 1;
+    sendCode.sms_type = 5;
     sendCode.api_id = [_apiId intValue];
     sendCode.api_hash = _apiHash;
     
@@ -1982,6 +1982,42 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
                 }
             }
 
+            [requestBuilder sendCodeRequestFailed:errorCode];
+        }
+    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors];
+}
+
+- (NSObject *)doSendConfirmationSms:(NSString *)phoneNumber phoneHash:(NSString *)phoneHash requestBuilder:(TGSendCodeRequestBuilder *)requestBuilder
+{
+    TLRPCauth_sendSms$auth_sendSms *sendSms = [[TLRPCauth_sendSms$auth_sendSms alloc] init];
+    sendSms.phone_number = phoneNumber;
+    sendSms.phone_code_hash = phoneHash;
+    
+    return [[TGTelegramNetworking instance] performRpc:sendSms completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    {
+        if (error == nil)
+        {
+            [requestBuilder sendSmsRequestSuccess:((NSNumber *)response).boolValue];
+        }
+        else
+        {
+            TGSendCodeError errorCode = TGSendCodeErrorUnknown;
+            
+            NSString *errorType = [self extractErrorType:error];
+            if ([errorType isEqualToString:@"PHONE_NUMBER_INVALID"])
+                errorCode = TGSendCodeErrorInvalidPhone;
+            else if ([errorType hasPrefix:@"FLOOD_WAIT"])
+                errorCode = TGSendCodeErrorFloodWait;
+            else
+            {
+                NSInteger datacenterId = 0;
+                if ([self isMigrateToDatacenterError:errorType datacenterId:&datacenterId] && datacenterId != 0)
+                {
+                    [requestBuilder sendCodeRedirect:datacenterId];
+                    return;
+                }
+            }
+            
             [requestBuilder sendCodeRequestFailed:errorCode];
         }
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors];

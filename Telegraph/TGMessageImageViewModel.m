@@ -25,7 +25,7 @@
 
 - (Class)viewClass
 {
-    return [TGMessageImageView class];
+    return [TGMessageImageViewContainer class];
 }
 
 - (instancetype)initWithUri:(NSString *)uri
@@ -33,10 +33,17 @@
     self = [super init];
     if (self != nil)
     {
+        _mediaVisible = true;
+        
         _uri = uri;
         [self _updateViewStateIdentifier];
     }
     return self;
+}
+
+- (instancetype)init
+{
+    return [self initWithUri:nil];
 }
 
 - (void)_updateViewStateIdentifier
@@ -49,19 +56,28 @@
     [super bindViewToContainer:container viewStorage:viewStorage];
     
     if (!TGStringCompare(self.viewStateIdentifier, self.boundView.viewStateIdentifier))
-        [((TGMessageImageView *)self.boundView) loadUri:_uri withOptions:nil];
+        [((TGMessageImageViewContainer *)self.boundView).imageView loadUri:_uri withOptions:nil];
 
-    [((TGMessageImageView *)self.boundView) setProgress:_progress animated:false];
-    [((TGMessageImageView *)self.boundView) setOverlayType:_overlayType animated:false];
-    [((TGMessageImageView *)self.boundView) setTimestampHidden:_timestampHidden];
-    [((TGMessageImageView *)self.boundView) setTimestampString:_timestampString displayCheckmarks:_displayCheckmarks checkmarkValue:_checkmarkValue animated:false];
-    [((TGMessageImageView *)self.boundView) setDisplayTimestampProgress:_displayTimestampProgress];
-    [((TGMessageImageView *)self.boundView) setAdditionalDataString:_additionalDataString];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setProgress:_progress animated:false];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setOverlayType:_overlayType animated:false];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampHidden:_timestampHidden];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampString:_timestampString displayCheckmarks:_displayCheckmarks checkmarkValue:_checkmarkValue animated:false];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setDisplayTimestampProgress:_displayTimestampProgress];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setAdditionalDataString:_additionalDataString];
+    
+    ((TGMessageImageViewContainer *)self.boundView).imageView.alpha = _mediaVisible ? 1.0f : 0.0f;
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
 {
     [super unbindView:viewStorage];
+}
+
+- (void)setMediaVisible:(bool)mediaVisible
+{
+    _mediaVisible = mediaVisible;
+    
+    ((TGMessageImageViewContainer *)self.boundView).imageView.alpha = _mediaVisible ? 1.0f : 0.0f;
 }
 
 - (void)setUri:(NSString *)uri
@@ -71,7 +87,7 @@
         _uri = uri;
         [self _updateViewStateIdentifier];
         
-        [((TGMessageImageView *)self.boundView) loadUri:_uri withOptions:@{
+        [((TGMessageImageViewContainer *)self.boundView).imageView loadUri:_uri withOptions:@{
             TGImageViewOptionKeepCurrentImageAsPlaceholder: @true,
             TGImageViewOptionSynchronous: @false
         }];
@@ -84,7 +100,7 @@
     {
         _progress = progress;
         
-        [((TGMessageImageView *)self.boundView) setProgress:_progress animated:animated];
+        [((TGMessageImageViewContainer *)self.boundView).imageView setProgress:_progress animated:animated];
     }
 }
 
@@ -99,7 +115,7 @@
     {
         _overlayType = overlayType;
         
-        [((TGMessageImageView *)self.boundView) setOverlayType:_overlayType animated:animated];
+        [((TGMessageImageViewContainer *)self.boundView).imageView setOverlayType:_overlayType animated:animated];
     }
 }
 
@@ -109,26 +125,26 @@
     _displayCheckmarks = displayCheckmarks;
     _checkmarkValue = checkmarkValue;
     
-    [((TGMessageImageView *)self.boundView) setTimestampString:_timestampString displayCheckmarks:_displayCheckmarks checkmarkValue:_checkmarkValue animated:animated];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampString:_timestampString displayCheckmarks:_displayCheckmarks checkmarkValue:_checkmarkValue animated:animated];
 }
 
 - (void)setDisplayTimestampProgress:(bool)displayTimestampProgress
 {
     _displayTimestampProgress = displayTimestampProgress;
     
-    [((TGMessageImageView *)self.boundView) setDisplayTimestampProgress:_displayTimestampProgress];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setDisplayTimestampProgress:_displayTimestampProgress];
 }
 
 - (void)setAdditionalDataString:(NSString *)additionalDataString
 {
     _additionalDataString = additionalDataString;
     
-    [((TGMessageImageView *)self.boundView) setAdditionalDataString:_additionalDataString];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setAdditionalDataString:_additionalDataString];
 }
 
 - (void)reloadImage:(bool)synchronous
 {
-    [((TGMessageImageView *)self.boundView) loadUri:_uri withOptions:@{
+    [((TGMessageImageViewContainer *)self.boundView).imageView loadUri:_uri withOptions:@{
         TGImageViewOptionKeepCurrentImageAsPlaceholder: @true,
         TGImageViewOptionSynchronous: @(synchronous)
     }];

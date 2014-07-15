@@ -674,7 +674,7 @@
         imageViewController.currentStatusBarStyle = UIStatusBarStyleDefault;
         imageViewController.view.hidden = true;
         
-        [imageViewController.watcherHandle requestAction:@"hideImage" options:@{@"hide": @(true), @"messageId":  @0}];
+        [imageViewController.watcherHandle requestAction:@"hideImage" options:@{@"hide": @(true), @"messageId": @0, @"sender": imageViewController}];
         
         [imageViewController dismissViewControllerAnimated:true completion:^
         {

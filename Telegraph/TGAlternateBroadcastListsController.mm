@@ -32,6 +32,8 @@
     UIBarButtonItem *_createButtonItem;
     
     TGCreateGroupController *_createGroupController;
+    
+    
 }
 
 @end
@@ -58,6 +60,14 @@
         [_createButtonItem setEnabled:false];
         
         [ActionStageInstance() watchForPath:@"/tg/broadcastConversations" watcher:self];
+        
+        NSData *data = [TGDatabaseInstance() customProperty:@"maxBroadcastReceivers"];
+        if (data.length >= 4)
+        {
+            int32_t maxBroadcastReceivers = 0;
+            [data getBytes:&maxBroadcastReceivers length:4];
+            self.usersSelectedLimit = MAX(100, maxBroadcastReceivers);
+        }
     }
     return self;
 }
@@ -575,6 +585,7 @@
                 {
                     [self setUsersSelected:[self selectedContactsList] selected:nil callback:true];
                     [self.tableView setContentOffset:CGPointMake(0.0f, -self.tableView.contentInset.top)];
+                    self.navigationItem.rightBarButtonItem.enabled = false;
                 });
             });
         }];

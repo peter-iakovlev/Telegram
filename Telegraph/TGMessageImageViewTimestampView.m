@@ -262,26 +262,27 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
         }
     }
     
-    CGFloat previousLuminance = _backdropArea.luminance;
+    CGFloat previousLuminance = 0.0f;//_backdropArea.luminance;
+    CGFloat luminance = 0.0f;//backdropArea.luminance;
     
     if (_backdropArea != backdropArea)
     {
         _backdropArea = backdropArea;
         
-        if (ABS(_backdropArea.luminance - previousLuminance) > FLT_EPSILON)
+        if (ABS(luminance - previousLuminance) > FLT_EPSILON)
         {
             if (_clockFrameLayer != nil)
             {
-                _clockFrameLayer.contents = (__bridge id)clockFrameImage(_backdropArea.luminance);
-                _clockMinLayer.contents = (__bridge id)clockMinImage(_backdropArea.luminance);
-                _clockHourLayer.contents = (__bridge id)clockHourImage(_backdropArea.luminance);
+                _clockFrameLayer.contents = (__bridge id)clockFrameImage(luminance);
+                _clockMinLayer.contents = (__bridge id)clockMinImage(luminance);
+                _clockHourLayer.contents = (__bridge id)clockHourImage(luminance);
             }
             
             if (_chechmarkFirstLayer != nil)
-                _chechmarkFirstLayer.contents = (__bridge id)checkmarkFirstImage(_backdropArea.luminance);
+                _chechmarkFirstLayer.contents = (__bridge id)checkmarkFirstImage(luminance);
             
             if (_chechmarkSecondLayer != nil)
-                _chechmarkSecondLayer.contents = (__bridge id)checkmarkSecondImage(_backdropArea.luminance);
+                _chechmarkSecondLayer.contents = (__bridge id)checkmarkSecondImage(luminance);
         }
         
         [self setNeedsDisplay];

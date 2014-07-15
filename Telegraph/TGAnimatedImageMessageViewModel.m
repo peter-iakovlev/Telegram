@@ -194,7 +194,7 @@
 
 - (void)animationFrameReady:(UIImage *)frameImage
 {
-    [(TGMessageImageView *)[self.imageModel boundView] loadUri:@"embedded-image://" withOptions:@{TGImageViewOptionEmbeddedImage: frameImage}];
+    [((TGMessageImageViewContainer *)[self.imageModel boundView]).imageView loadUri:@"embedded-image://" withOptions:@{TGImageViewOptionEmbeddedImage: frameImage}];
 }
 
 - (int)defaultOverlayActionType

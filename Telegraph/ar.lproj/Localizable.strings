@@ -161,6 +161,9 @@
 // Login
 "Login.PhoneAndCountryHelp" = "يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول.";
 "Login.CodeHelp" = "تم إرسال رسالة قصيرة تحتوي على رمز التفعيل الخاص بك للرقم %@";
+"Login.CodeSentInternal" = "يرجى إدخال الرمز الذي استقبلته للتو على تطبيق **تيليجرام** السابق الخاص بك";
+"Login.HaveNotReceivedCodeInternal" = "Haven't received the code?";
+"Login.CodeSentSms" = "We have sent you an SMS with the code";
 "Login.Code" = "الرمز";
 "Login.CallRequestState1" = "تيليجرام سيتصل بك خلال %d:%.2d";
 "Login.CallRequestState2" = "جاري طلب اتصال من تيليجرام...";
@@ -660,5 +663,5 @@
 "BroadcastListInfo.AddRecipient" = "إضافة مستقبل";
 
 // Video
-"VideoPreview.OptionSD" = "Normal Size (%@)";
-"VideoPreview.OptionHD" = "High Definition (%@)";
+"VideoPreview.OptionSD" = "الحجم الطبيعي (%@)";
+"VideoPreview.OptionHD" = "عالي الدقة (%@)";

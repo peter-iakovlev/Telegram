@@ -212,7 +212,7 @@
     
     [_imageModel bindViewToContainer:container viewStorage:viewStorage];
     [_imageModel boundView].frame = CGRectOffset([_imageModel boundView].frame, itemPosition.x, itemPosition.y);
-    ((TGMessageImageView *)[_imageModel boundView]).delegate = self;
+    (((TGMessageImageViewContainer *)[_imageModel boundView])).imageView.delegate = self;
     
     [_iconModel bindViewToContainer:container viewStorage:viewStorage];
     [_iconModel boundView].frame = CGRectOffset([_iconModel boundView].frame, itemPosition.x, itemPosition.y);
@@ -223,16 +223,16 @@
 {
     [super bindViewToContainer:container viewStorage:viewStorage];
     
-    ((TGMessageImageView *)[_imageModel boundView]).delegate = self;
+    (((TGMessageImageViewContainer *)[_imageModel boundView])).imageView.delegate = self;
     ((TGDocumentMessageIconView *)[_iconModel boundView]).delegate = self;
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
 {
     UIView *imageView = [_imageModel boundView];
-    ((TGMessageImageView *)imageView).delegate = nil;
+    ((TGMessageImageViewContainer *)imageView).imageView.delegate = nil;
     
-    UIView *iconView = [_imageModel boundView];
+    UIView *iconView = [_iconModel boundView];
     ((TGDocumentMessageIconView *)iconView).delegate = nil;
     
     [super unbindView:viewStorage];
@@ -277,7 +277,7 @@
 
 - (void)messageImageViewActionButtonPressed:(TGMessageImageView *)messageImageView withAction:(TGMessageImageViewActionType)action
 {
-    if (messageImageView == [_imageModel boundView] || messageImageView == [_iconModel boundView])
+    if (messageImageView == ((TGMessageImageViewContainer *)[_imageModel boundView]).imageView || messageImageView == [_iconModel boundView])
     {
         if (action == TGMessageImageViewActionCancelDownload)
             [self cancelMediaDownload];

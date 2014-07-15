@@ -161,6 +161,9 @@
 // Login
 "Login.PhoneAndCountryHelp" = "Please confirm your country code and enter your phone number.";
 "Login.CodeHelp" = "We have sent you an SMS with a code to the number\n%@";
+"Login.CodeSentInternal" = "Please enter the code you've just received in your previous **Telegram** app";
+"Login.HaveNotReceivedCodeInternal" = "Haven't received the code?";
+"Login.CodeSentSms" = "We have sent you an SMS with the code";
 "Login.Code" = "Code";
 "Login.CallRequestState1" = "Telegram will call you in %d:%.2d";
 "Login.CallRequestState2" = "Requesting a call from Telegram...";

@@ -31,7 +31,7 @@
     _currentQuery = [options objectForKey:@"query"];
     _offset = [[options objectForKey:@"offset"] intValue];
     
-    NSString *authKey = TGEncodeText(@"rdO,D9[52JGcfJtRtEkr:1sjoJoFLbOKfx,z:DCByeN", -1);
+    NSString *authKey = @"dKYt6BjhkmFnJABZI/nWs++mx7owYEKZLcdA3DTOO1s";
     NSData *authData = [[[NSString alloc] initWithFormat:@"%@:%@", authKey, authKey] dataUsingEncoding:NSUTF8StringEncoding];
     
     _currentArguments = [[NSString alloc] initWithFormat:@"$skip=%d&$top=%d", [[options objectForKey:@"offset"] intValue], [TGViewController isWidescreen] ? 56 : 48];
