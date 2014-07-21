@@ -1,5 +1,7 @@
 #import "TGModernGalleryModel.h"
 
+@protocol TGModernGalleryItem;
+
 @interface TGGenericPeerMediaGalleryModel : TGModernGalleryModel
 
 @property (nonatomic, readonly) int64_t peerId;

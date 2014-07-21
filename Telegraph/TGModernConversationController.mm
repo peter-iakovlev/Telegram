@@ -77,6 +77,8 @@
 
 #import "TGVideoConverter.h"
 
+#import "TGGenericPeerGalleryItem.h"
+
 #if TARGET_IPHONE_SIMULATOR
 NSInteger TGModernConversationControllerUnloadHistoryLimit = 500;
 NSInteger TGModernConversationControllerUnloadHistoryThreshold = 200;
@@ -2051,6 +2053,80 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         {
             TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
             modernGallery.model = [[TGGenericPeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId atMessageId:mediaMessageItem->_message.mid];
+            
+            __weak TGModernConversationController *weakSelf = self;
+            
+            modernGallery.itemFocused = ^(id<TGModernGalleryItem> item)
+            {
+                __strong TGModernConversationController *strongSelf = weakSelf;
+                if (strongSelf != nil && [item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+                {
+                    id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
+                    int32_t messageId = [concreteItem messageId];
+                    strongSelf.companion.mediaHiddenMessageId = messageId;
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
+                    }
+                }
+            };
+            
+            modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item)
+            {
+                __strong TGModernConversationController *strongSelf = weakSelf;
+                if (strongSelf != nil && [item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+                {
+                    id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
+                    int32_t messageId = [concreteItem messageId];
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        TGMessageModernConversationItem *cellItem = [cell boundItem];
+                        if (cellItem->_message.mid == messageId)
+                        {
+                            return [cellItem referenceViewForImageTransition];
+                        }
+                    }
+                }
+                
+                return nil;
+            };
+            
+            modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
+            {
+                __strong TGModernConversationController *strongSelf = weakSelf;
+                if (strongSelf != nil && [item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+                {
+                    id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
+                    int32_t messageId = [concreteItem messageId];
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        TGMessageModernConversationItem *cellItem = [cell boundItem];
+                        if (cellItem->_message.mid == messageId)
+                        {
+                            return [cellItem referenceViewForImageTransition];
+                        }
+                    }
+                }
+                
+                return nil;
+            };
+            
+            modernGallery.completedTransitionOut = ^
+            {
+                __strong TGModernConversationController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    strongSelf.companion.mediaHiddenMessageId = 0;
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
+                    }
+                }
+            };
             
             TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
             controllerWindow.hidden = false;

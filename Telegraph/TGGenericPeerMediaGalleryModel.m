@@ -6,8 +6,10 @@
 
 #import "TGDatabase.h"
 
-#import "TGModernGalleryImageItem.h"
-#import "TGModernGalleryVideoItem.h"
+#import "TGGenericPeerMediaGalleryImageItem.h"
+#import "TGGenericPeerMediaGalleryVideoItem.h"
+
+#import "TGGenericPeerMediaGalleryDefaultFooterView.h"
 
 @interface TGGenericPeerMediaGalleryModel ()
 {
@@ -36,7 +38,7 @@
 
 - (void)_loadItemsAtMessageId:(int32_t)atMessageId
 {
-    [_queue dispatch:^
+    //[_queue dispatch:^
     {
         if (_modelItems == nil)
         {
@@ -54,8 +56,11 @@
                     if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
                     {
                         TGImageMediaAttachment *imageMedia = attachment;
-                        TGModernGalleryImageItem *imageItem = [[TGModernGalleryImageItem alloc] initWithImageInfo:imageMedia.imageInfo];
-                        [updatedModelItems addObject:imageItem];
+                        TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageInfo:imageMedia.imageInfo];
+                        imageItem.author = [TGDatabaseInstance() loadUser:(int32_t)message.fromUid];
+                        imageItem.date = message.date;
+                        imageItem.messageId = message.mid;
+                        [updatedModelItems insertObject:imageItem atIndex:0];
                         
                         if (atMessageId == message.mid)
                             focusItem = imageItem;
@@ -63,8 +68,11 @@
                     else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
                     {
                         TGVideoMediaAttachment *videoMedia = attachment;
-                        TGModernGalleryVideoItem *videoItem = [[TGModernGalleryVideoItem alloc] initWithVideoMedia:videoMedia];
-                        [updatedModelItems addObject:videoItem];
+                        TGGenericPeerMediaGalleryVideoItem *videoItem = [[TGGenericPeerMediaGalleryVideoItem alloc] initWithVideoMedia:videoMedia];
+                        videoItem.author = [TGDatabaseInstance() loadUser:(int32_t)message.fromUid];
+                        videoItem.date = message.date;
+                        videoItem.messageId = message.mid;
+                        [updatedModelItems insertObject:videoItem atIndex:0];
                         
                         if (atMessageId == message.mid)
                             focusItem = videoItem;
@@ -76,7 +84,12 @@
             
             [self _replaceItems:_modelItems focusingOnItem:focusItem];
         }
-    }];
+    }//];
+}
+
+- (Class<TGModernGalleryDefaultFooterView>)defaultFooterViewClass
+{
+    return [TGGenericPeerMediaGalleryDefaultFooterView class];
 }
 
 @end

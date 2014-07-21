@@ -15,8 +15,9 @@
     {
         TGDoubleTapGestureRecognizer *recognizer = [[TGDoubleTapGestureRecognizer alloc] initWithTarget:self action:@selector(doubleTapGesture:)];
         recognizer.consumeSingleTap = true;
-
         [self addGestureRecognizer:recognizer];
+        
+        _normalZoomScale = 1.0f;
     }
     return self;
 }
@@ -25,8 +26,16 @@
 {
     if (recognizer.state == UIGestureRecognizerStateRecognized)
     {
-        if (_doubleTapped)
-            _doubleTapped();
+        if (recognizer.doubleTapped)
+        {
+            if (_doubleTapped)
+                _doubleTapped();
+        }
+        else
+        {
+            if (_singleTapped)
+                _singleTapped();
+        }
     }
 }
 

@@ -9,10 +9,16 @@
 #import "TGOverlayController.h"
 
 @class TGModernGalleryModel;
+@protocol TGModernGalleryItem;
 
 @interface TGModernGalleryController : TGOverlayController
 
 @property (nonatomic, strong) TGModernGalleryModel *model;
+
+@property (nonatomic, copy) void (^itemFocused)(id<TGModernGalleryItem>);
+@property (nonatomic, copy) UIView *(^beginTransitionIn)(id<TGModernGalleryItem>);
+@property (nonatomic, copy) UIView *(^beginTransitionOut)(id<TGModernGalleryItem>);
+@property (nonatomic, copy) void (^completedTransitionOut)();
 
 - (void)dismissWhenReady;
 

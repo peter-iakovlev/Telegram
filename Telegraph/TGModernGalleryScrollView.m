@@ -25,6 +25,7 @@
         self.showsHorizontalScrollIndicator = false;
         self.showsVerticalScrollIndicator = false;
         self.pagingEnabled = true;
+        self.clipsToBounds = false;
     }
     return self;
 }

@@ -16,10 +16,23 @@
 #import "TGModernGalleryZoomableScrollView.h"
 
 @interface TGModernGalleryImageItemView ()
+{
+}
 
 @end
 
 @implementation TGModernGalleryImageItemView
+
+- (UIImage *)shadowImage
+{
+    static UIImage *image = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        
+    });
+    return image;
+}
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -28,6 +41,10 @@
     {
         _imageView = [[TGRemoteImageView alloc] init];
         [self.scrollView addSubview:_imageView];
+        
+        //_imageView.layer.shadowColor = [UIColor blackColor].CGColor;
+        //_imageView.layer.shadowOpacity = 0.7f;
+        //_imageView.layer.shadowRadius = 20.0f;
     }
     return self;
 }
@@ -37,16 +54,25 @@
     [_imageView loadImage:nil];
 }
 
-- (void)setItem:(TGModernGalleryImageItem *)item
+- (void)setItem:(TGModernGalleryImageItem *)item synchronously:(bool)synchronously
 {
-    [super setItem:item];
+    [super setItem:item synchronously:synchronously];
     
     _imageSize = CGSizeZero;
     NSString *uri = [item.imageInfo closestImageUrlWithSize:CGSizeMake(1000.0f, 1000.0f) resultingSize:&_imageSize];
     if (uri == nil)
         [_imageView loadImage:nil];
     else
-        [_imageView loadImage:uri filter:@"maybeScale" placeholder:nil];
+    {
+        UIImage *loadedImage = nil;
+        if (synchronously)
+            loadedImage = [[TGRemoteImageView sharedCache] cachedImage:uri availability:TGCacheDisk];
+        
+        if (loadedImage != nil)
+            [_imageView loadImage:loadedImage];
+        else
+            [_imageView loadImage:uri filter:@"maybeScale" placeholder:nil];
+    }
     
     [self reset];
 }
@@ -57,6 +83,11 @@
 }
 
 - (UIView *)contentView
+{
+    return _imageView;
+}
+
+- (UIView *)transitionView
 {
     return _imageView;
 }

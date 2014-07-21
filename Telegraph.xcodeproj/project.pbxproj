@@ -745,6 +745,15 @@
 		D046965E18A3D63A009764B2 /* TGContentBubbleViewModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D046965D18A3D63A009764B2 /* TGContentBubbleViewModel.m */; };
 		D046966818A409F0009764B2 /* TGModernGalleryVideoItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D046966718A409F0009764B2 /* TGModernGalleryVideoItem.m */; };
 		D046966B18A40A22009764B2 /* TGModernGalleryVideoItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D046966A18A40A22009764B2 /* TGModernGalleryVideoItemView.m */; };
+		D0498FC6197729670080A679 /* TGModernGalleryInterfaceView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0498FC5197729670080A679 /* TGModernGalleryInterfaceView.m */; };
+		D0498FC9197828580080A679 /* TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.m in Sources */ = {isa = PBXBuildFile; fileRef = D0498FC8197828580080A679 /* TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.m */; };
+		D0498FCC19784D480080A679 /* TGModernGalleryVideoScrubbingInterfaceView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0498FCB19784D480080A679 /* TGModernGalleryVideoScrubbingInterfaceView.m */; };
+		D0498FCF197857CD0080A679 /* TGModernGalleryRotationGestureRecognizer.m in Sources */ = {isa = PBXBuildFile; fileRef = D0498FCE197857CD0080A679 /* TGModernGalleryRotationGestureRecognizer.m */; };
+		D0498FD219787C1B0080A679 /* TGModernGalleryVideoFooterView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0498FD119787C1B0080A679 /* TGModernGalleryVideoFooterView.m */; };
+		D0498FD8197888170080A679 /* TGGenericPeerMediaGalleryDefaultFooterView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0498FD7197888170080A679 /* TGGenericPeerMediaGalleryDefaultFooterView.m */; };
+		D0498FDC1978885A0080A679 /* TGGenericPeerMediaGalleryImageItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D0498FDB1978885A0080A679 /* TGGenericPeerMediaGalleryImageItem.m */; };
+		D0498FDF197888940080A679 /* TGGenericPeerMediaGalleryVideoItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D0498FDE197888940080A679 /* TGGenericPeerMediaGalleryVideoItem.m */; };
+		D0498FE31979541A0080A679 /* TGModernGalleryVideoView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0498FE21979541A0080A679 /* TGModernGalleryVideoView.m */; };
 		D04AC5DA1912BF2C00DAFDA8 /* TGMemoryImageCache.m in Sources */ = {isa = PBXBuildFile; fileRef = D04AC5D91912BF2C00DAFDA8 /* TGMemoryImageCache.m */; };
 		D05017E818AE397F0052B7D1 /* TGNetworkWorker.m in Sources */ = {isa = PBXBuildFile; fileRef = D05017E718AE397F0052B7D1 /* TGNetworkWorker.m */; };
 		D052F0B6157543FE00D51E59 /* TGSchema.m in Sources */ = {isa = PBXBuildFile; fileRef = D052F0B5157543FE00D51E59 /* TGSchema.m */; };
@@ -2231,6 +2240,26 @@
 		D046966718A409F0009764B2 /* TGModernGalleryVideoItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryVideoItem.m; sourceTree = "<group>"; };
 		D046966918A40A22009764B2 /* TGModernGalleryVideoItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryVideoItemView.h; sourceTree = "<group>"; };
 		D046966A18A40A22009764B2 /* TGModernGalleryVideoItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryVideoItemView.m; sourceTree = "<group>"; };
+		D0498FC4197729670080A679 /* TGModernGalleryInterfaceView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryInterfaceView.h; sourceTree = "<group>"; };
+		D0498FC5197729670080A679 /* TGModernGalleryInterfaceView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryInterfaceView.m; sourceTree = "<group>"; };
+		D0498FC7197828580080A679 /* TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.h; sourceTree = "<group>"; };
+		D0498FC8197828580080A679 /* TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.m; sourceTree = "<group>"; };
+		D0498FCA19784D480080A679 /* TGModernGalleryVideoScrubbingInterfaceView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryVideoScrubbingInterfaceView.h; sourceTree = "<group>"; };
+		D0498FCB19784D480080A679 /* TGModernGalleryVideoScrubbingInterfaceView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryVideoScrubbingInterfaceView.m; sourceTree = "<group>"; };
+		D0498FCD197857CD0080A679 /* TGModernGalleryRotationGestureRecognizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryRotationGestureRecognizer.h; sourceTree = "<group>"; };
+		D0498FCE197857CD0080A679 /* TGModernGalleryRotationGestureRecognizer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryRotationGestureRecognizer.m; sourceTree = "<group>"; };
+		D0498FD019787C1B0080A679 /* TGModernGalleryVideoFooterView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryVideoFooterView.h; sourceTree = "<group>"; };
+		D0498FD119787C1B0080A679 /* TGModernGalleryVideoFooterView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryVideoFooterView.m; sourceTree = "<group>"; };
+		D0498FD3197886AE0080A679 /* TGModernGalleryDefaultFooterView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryDefaultFooterView.h; sourceTree = "<group>"; };
+		D0498FD6197888170080A679 /* TGGenericPeerMediaGalleryDefaultFooterView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGGenericPeerMediaGalleryDefaultFooterView.h; sourceTree = "<group>"; };
+		D0498FD7197888170080A679 /* TGGenericPeerMediaGalleryDefaultFooterView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGenericPeerMediaGalleryDefaultFooterView.m; sourceTree = "<group>"; };
+		D0498FDA1978885A0080A679 /* TGGenericPeerMediaGalleryImageItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGGenericPeerMediaGalleryImageItem.h; sourceTree = "<group>"; };
+		D0498FDB1978885A0080A679 /* TGGenericPeerMediaGalleryImageItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGenericPeerMediaGalleryImageItem.m; sourceTree = "<group>"; };
+		D0498FDD197888940080A679 /* TGGenericPeerMediaGalleryVideoItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGGenericPeerMediaGalleryVideoItem.h; sourceTree = "<group>"; };
+		D0498FDE197888940080A679 /* TGGenericPeerMediaGalleryVideoItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGenericPeerMediaGalleryVideoItem.m; sourceTree = "<group>"; };
+		D0498FE0197889ED0080A679 /* TGGenericPeerGalleryItem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TGGenericPeerGalleryItem.h; sourceTree = "<group>"; };
+		D0498FE11979541A0080A679 /* TGModernGalleryVideoView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryVideoView.h; sourceTree = "<group>"; };
+		D0498FE21979541A0080A679 /* TGModernGalleryVideoView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryVideoView.m; sourceTree = "<group>"; };
 		D04AC5D81912BF2C00DAFDA8 /* TGMemoryImageCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGMemoryImageCache.h; sourceTree = "<group>"; };
 		D04AC5D91912BF2C00DAFDA8 /* TGMemoryImageCache.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGMemoryImageCache.m; sourceTree = "<group>"; };
 		D05017E618AE397F0052B7D1 /* TGNetworkWorker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGNetworkWorker.h; sourceTree = "<group>"; };
@@ -3845,10 +3874,13 @@
 				939ECA34188EAFEB004ABAB7 /* TGModernGalleryController.m */,
 				939ECA49188ECE66004ABAB7 /* TGModernGalleryView.h */,
 				939ECA4A188ECE66004ABAB7 /* TGModernGalleryView.m */,
+				D0498FC4197729670080A679 /* TGModernGalleryInterfaceView.h */,
+				D0498FC5197729670080A679 /* TGModernGalleryInterfaceView.m */,
 				939ECA4C188ED0B7004ABAB7 /* TGModernGalleryScrollView.h */,
 				939ECA4D188ED0B7004ABAB7 /* TGModernGalleryScrollView.m */,
 				939ECA40188EB8D1004ABAB7 /* TGModernGalleryItemView.h */,
 				939ECA41188EB8D1004ABAB7 /* TGModernGalleryItemView.m */,
+				D0498FD3197886AE0080A679 /* TGModernGalleryDefaultFooterView.h */,
 				939ECA56188EDE7F004ABAB7 /* Zoomable */,
 				9306CF9B188FEF5100067241 /* Color */,
 				939ECA4F188EDAB2004ABAB7 /* Image */,
@@ -3891,6 +3923,8 @@
 				939ECA58188EDEA4004ABAB7 /* TGModernGalleryZoomableItemView.m */,
 				D0876FE719702474005740CE /* TGModernGalleryZoomableScrollView.h */,
 				D0876FE819702474005740CE /* TGModernGalleryZoomableScrollView.m */,
+				D0498FC7197828580080A679 /* TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.h */,
+				D0498FC8197828580080A679 /* TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.m */,
 			);
 			name = Zoomable;
 			sourceTree = "<group>";
@@ -4719,8 +4753,28 @@
 				D046966718A409F0009764B2 /* TGModernGalleryVideoItem.m */,
 				D046966918A40A22009764B2 /* TGModernGalleryVideoItemView.h */,
 				D046966A18A40A22009764B2 /* TGModernGalleryVideoItemView.m */,
+				D0498FCA19784D480080A679 /* TGModernGalleryVideoScrubbingInterfaceView.h */,
+				D0498FCB19784D480080A679 /* TGModernGalleryVideoScrubbingInterfaceView.m */,
+				D0498FD019787C1B0080A679 /* TGModernGalleryVideoFooterView.h */,
+				D0498FD119787C1B0080A679 /* TGModernGalleryVideoFooterView.m */,
+				D0498FCD197857CD0080A679 /* TGModernGalleryRotationGestureRecognizer.h */,
+				D0498FCE197857CD0080A679 /* TGModernGalleryRotationGestureRecognizer.m */,
+				D0498FE11979541A0080A679 /* TGModernGalleryVideoView.h */,
+				D0498FE21979541A0080A679 /* TGModernGalleryVideoView.m */,
 			);
 			name = Video;
+			sourceTree = "<group>";
+		};
+		D0498FD9197888400080A679 /* Items */ = {
+			isa = PBXGroup;
+			children = (
+				D0498FE0197889ED0080A679 /* TGGenericPeerGalleryItem.h */,
+				D0498FDA1978885A0080A679 /* TGGenericPeerMediaGalleryImageItem.h */,
+				D0498FDB1978885A0080A679 /* TGGenericPeerMediaGalleryImageItem.m */,
+				D0498FDD197888940080A679 /* TGGenericPeerMediaGalleryVideoItem.h */,
+				D0498FDE197888940080A679 /* TGGenericPeerMediaGalleryVideoItem.m */,
+			);
+			name = Items;
 			sourceTree = "<group>";
 		};
 		D04AC5D11912BF1A00DAFDA8 /* Cache */ = {
@@ -5312,8 +5366,11 @@
 		D0876FE3196F4C16005740CE /* Generic */ = {
 			isa = PBXGroup;
 			children = (
+				D0498FD9197888400080A679 /* Items */,
 				D0876FE4196F4C33005740CE /* TGGenericPeerMediaGalleryModel.h */,
 				D0876FE5196F4C33005740CE /* TGGenericPeerMediaGalleryModel.m */,
+				D0498FD6197888170080A679 /* TGGenericPeerMediaGalleryDefaultFooterView.h */,
+				D0498FD7197888170080A679 /* TGGenericPeerMediaGalleryDefaultFooterView.m */,
 			);
 			name = Generic;
 			sourceTree = "<group>";
@@ -6930,6 +6987,7 @@
 				9386E89B185CCB0600930205 /* TGUserInfoVariantCollectionItemView.m in Sources */,
 				D0808688190F036F00EE6998 /* TGMessageImageViewTimestampView.m in Sources */,
 				D05556271944E2F4008B69A6 /* TGDocumentMessageIconView.m in Sources */,
+				D0498FDF197888940080A679 /* TGGenericPeerMediaGalleryVideoItem.m in Sources */,
 				D026205E18A8E95200A41CC8 /* TGUpdateMessageService.m in Sources */,
 				932A566F15B05AAE006A138E /* TGConversationActivityRequestBuilder.m in Sources */,
 				936DE1B41850F1B900D90029 /* TGVariantCollectionItemView.m in Sources */,
@@ -6961,7 +7019,9 @@
 				938AF7D015ECF03C00F25DDA /* TGConversationChangeTitleRequestActor.m in Sources */,
 				930808DE185A759F00E62B42 /* TGUserInfoPhoneCollectionItem.m in Sources */,
 				D01526D9190054AB00656312 /* TGWorkerTask.m in Sources */,
+				D0498FC6197729670080A679 /* TGModernGalleryInterfaceView.m in Sources */,
 				D046965218A12124009764B2 /* TGAudioDownloadActor.m in Sources */,
+				D0498FDC1978885A0080A679 /* TGGenericPeerMediaGalleryImageItem.m in Sources */,
 				D09EE2C8193794F100980617 /* TGColorWallpaperInfo.m in Sources */,
 				9308D82C184541F400FC395E /* TGPreparedLocalVideoMessage.m in Sources */,
 				D046964318A01640009764B2 /* TGModernConversationInputMicButton.m in Sources */,
@@ -6977,6 +7037,7 @@
 				934280D4184900A1004F1C2A /* TGModernCheckButtonView.m in Sources */,
 				93B77683184DF19F00C81651 /* TGModernConversationGroupTitlePanel.m in Sources */,
 				D0F057FE15EFC16900005C73 /* TGConversationCreateChatRequestActor.m in Sources */,
+				D0498FD8197888170080A679 /* TGGenericPeerMediaGalleryDefaultFooterView.m in Sources */,
 				9344707615F137660015AC4C /* TGConversationAddMemberRequestActor.m in Sources */,
 				93992D8118296E7D00F29746 /* TGMessageViewModel.m in Sources */,
 				9344707915F138EA0015AC4C /* TGConversationDeleteMemberRequestActor.m in Sources */,
@@ -6988,6 +7049,7 @@
 				93AB29841612F20600BC45EF /* TGImageDownloadActor.m in Sources */,
 				D0A3F312195D98EE009E0ACD /* TGBroadcastListInfoController.m in Sources */,
 				932E00F1184BAAAD0001D109 /* TGPreparedContactMessage.m in Sources */,
+				D0498FE31979541A0080A679 /* TGModernGalleryVideoView.m in Sources */,
 				D044CBA1192A241C0001C986 /* PSKeyValueCoder.m in Sources */,
 				D0549DF5192575DF002952ED /* PSLMDBKeyValueStore.m in Sources */,
 				9308090C185B71A900E62B42 /* TGUserInfoAddPhoneCollectionItemView.m in Sources */,
@@ -7074,6 +7136,7 @@
 				9341B0281851F5D100D1195B /* TGTextSizeController.m in Sources */,
 				D0549E1A192626C6002952ED /* ATActorSystem.m in Sources */,
 				D066E9A018C6A88B00509410 /* stream.c in Sources */,
+				D0498FCF197857CD0080A679 /* TGModernGalleryRotationGestureRecognizer.m in Sources */,
 				930384301811A4EE00CAC996 /* TGCollectionMenuController.m in Sources */,
 				93877EC41659736D001FD42E /* TGActionMenuItemCell.m in Sources */,
 				D044CBA5192A2A580001C986 /* PSKeyValueDecoder.m in Sources */,
@@ -7087,6 +7150,7 @@
 				936DE1971850C62200D90029 /* TGSwitchCollectionItem.m in Sources */,
 				93E05B34165CEE9F004E31C5 /* TGPhotoGridController.mm in Sources */,
 				93E05B38165CF0FE004E31C5 /* TGPhotoGridCell.m in Sources */,
+				D0498FC9197828580080A679 /* TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.m in Sources */,
 				93D1D7691846439B00947655 /* TGPreparedRemoteVideoMessage.m in Sources */,
 				D02CD02E19490FA5007700A2 /* TGWallpaperItemsBackgroundDecorationView.m in Sources */,
 				932E00EE184B8CC40001D109 /* TGPreparedForwardedMessage.m in Sources */,
@@ -7241,6 +7305,7 @@
 				D00372B519533D7F00776BCF /* TGMediaFoldersController.m in Sources */,
 				936DE1A91850E3A300D90029 /* TGHeaderCollectionItem.m in Sources */,
 				93D9DC04182C54C200945B30 /* TGNotificationMessageViewModel.m in Sources */,
+				D0498FCC19784D480080A679 /* TGModernGalleryVideoScrubbingInterfaceView.m in Sources */,
 				9341348B18551A1B00480294 /* TGBuiltinWallpaperInfo.m in Sources */,
 				9341B0251851F1A400D1195B /* TGChatSettingsController.m in Sources */,
 				D046966818A409F0009764B2 /* TGModernGalleryVideoItem.m in Sources */,
@@ -7250,6 +7315,7 @@
 				93CF3B57181DD179003D8DE1 /* TGModernLabelViewModel.m in Sources */,
 				93CF3B8518203AF9003D8DE1 /* TGModernFlatteningViewModel.m in Sources */,
 				D044CB7619296B9F0001C986 /* TGDatabaseUpgrade.m in Sources */,
+				D0498FD219787C1B0080A679 /* TGModernGalleryVideoFooterView.m in Sources */,
 				939ECA52188EDAF2004ABAB7 /* TGModernGallerySecretImageItemView.m in Sources */,
 				93038410181151EF00CAC996 /* TGAccountSettingsController.m in Sources */,
 				93316A4C184E2ACD005EBBEF /* TGModernConversationActionInputPanel.m in Sources */,

@@ -8,17 +8,9 @@
 
 #import "TGModernGalleryItemView.h"
 
-@implementation TGModernGalleryItemView
+#import "TGModernGalleryDefaultFooterView.h"
 
-- (instancetype)initWithItem:(id<TGModernGalleryItem>)item
-{
-    self = [super init];
-    if (self != nil)
-    {
-        _item = item;
-    }
-    return self;
-}
+@implementation TGModernGalleryItemView
 
 - (void)prepareForRecycle
 {
@@ -26,16 +18,6 @@
 
 - (void)prepareForReuse
 {
-}
-
-- (bool)wantsHeader
-{
-    return true;
-}
-
-- (bool)wantsFooter
-{
-    return true;
 }
 
 - (UIView *)headerView
@@ -48,9 +30,25 @@
     return nil;
 }
 
+- (UIView *)transitionView
+{
+    return nil;
+}
+
 - (bool)dismissControllerNowOrSchedule
 {
     return true;
+}
+
+- (void)setItem:(id<TGModernGalleryItem>)item
+{
+    [self setItem:item synchronously:false];
+}
+
+- (void)setItem:(id<TGModernGalleryItem>)item synchronously:(bool)__unused synchronously
+{
+    _item = item;
+    [self.defaultFooterView setItem:_item];
 }
 
 @end

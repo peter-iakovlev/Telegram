@@ -7,6 +7,7 @@
     TGDispatchOnMainThread(^
     {
         _items = items;
+        _focusItem = item;
         
         if (_itemsUpdated)
             _itemsUpdated(item);
@@ -17,9 +18,16 @@
 {
     TGDispatchOnMainThread(^
     {
+        _focusItem = item;
+        
         if (_focusOnItem)
             _focusOnItem(item);
     });
+}
+
+- (Class<TGModernGalleryDefaultFooterView>)defaultFooterViewClass
+{
+    return nil;
 }
 
 @end

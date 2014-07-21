@@ -11,10 +11,12 @@
 #import "TGModernGalleryItem.h"
 
 @class TGModernGalleryItemView;
+@protocol TGModernGalleryDefaultFooterView;
 
 @protocol TGModernGalleryItemViewDelegate <NSObject>
 
 - (void)itemViewIsReadyForScheduledDismiss:(TGModernGalleryItemView *)itemView;
+- (void)itemViewDidRequestInterfaceShowHide:(TGModernGalleryItemView *)itemView;
 
 @end
 
@@ -24,14 +26,17 @@
 
 @property (nonatomic) NSUInteger index;
 @property (nonatomic, strong) id<TGModernGalleryItem> item;
+@property (nonatomic, strong) UIView<TGModernGalleryDefaultFooterView> *defaultFooterView;
+
+- (void)setItem:(id<TGModernGalleryItem>)item synchronously:(bool)synchronously;
 
 - (void)prepareForRecycle;
 - (void)prepareForReuse;
 
-- (bool)wantsHeader;
-- (bool)wantsFooter;
 - (UIView *)headerView;
 - (UIView *)footerView;
+
+- (UIView *)transitionView;
 
 - (bool)dismissControllerNowOrSchedule;
 
