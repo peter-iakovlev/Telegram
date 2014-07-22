@@ -1,0 +1,5 @@
+/* Localized versions of Info.plist keys */
+
+"CFBundleDisplayName" = "Telegram";
+
+"NSContactsUsageDescription" = "Telegram archivia i tuoi contatti cifrandoli sul cloud per poterti permettere di collegarti ai tuoi amici da tutti i tuoi dispositivi.";

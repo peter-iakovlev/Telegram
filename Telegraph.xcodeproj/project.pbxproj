@@ -964,6 +964,8 @@
 		D0D443A71951B84600CF2A7E /* telegram_logo_still@2x~ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = D0D443A61951B84600CF2A7E /* telegram_logo_still@2x~ipad.png */; };
 		D0D443B619525AA800CF2A7E /* TGVideoPreviewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0D443B519525AA800CF2A7E /* TGVideoPreviewController.m */; };
 		D0D443B8195315D500CF2A7E /* Icon-76@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0D443B7195315D500CF2A7E /* Icon-76@2x.png */; };
+		D0D670D6197EA36C0031B041 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0D670D2197EA36C0031B041 /* InfoPlist.strings */; };
+		D0D670D7197EA36C0031B041 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0D670D4197EA36C0031B041 /* Localizable.strings */; };
 		D0DA76AF193BDD9E00157F4B /* TGFileThumbnailDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D0DA76AE193BDD9E00157F4B /* TGFileThumbnailDataSource.m */; };
 		D0DAA481197495A80036E709 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = D0DAA480197495A80036E709 /* Icon-72.png */; };
 		D0DAA483197495EA0036E709 /* Icon-72@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0DAA482197495EA0036E709 /* Icon-72@2x.png */; };
@@ -2571,6 +2573,8 @@
 		D0D443B419525AA800CF2A7E /* TGVideoPreviewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGVideoPreviewController.h; sourceTree = "<group>"; };
 		D0D443B519525AA800CF2A7E /* TGVideoPreviewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGVideoPreviewController.m; sourceTree = "<group>"; };
 		D0D443B7195315D500CF2A7E /* Icon-76@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-76@2x.png"; sourceTree = "<group>"; };
+		D0D670D3197EA36C0031B041 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = InfoPlist.strings; sourceTree = "<group>"; };
+		D0D670D5197EA36C0031B041 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = Localizable.strings; sourceTree = "<group>"; };
 		D0DA76AD193BDD9E00157F4B /* TGFileThumbnailDataSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGFileThumbnailDataSource.h; sourceTree = "<group>"; };
 		D0DA76AE193BDD9E00157F4B /* TGFileThumbnailDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGFileThumbnailDataSource.m; sourceTree = "<group>"; };
 		D0DAA480197495A80036E709 /* Icon-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-72.png"; sourceTree = "<group>"; };
@@ -3331,6 +3335,7 @@
 		9351565D18686E9D00621293 /* Localization */ = {
 			isa = PBXGroup;
 			children = (
+				D0D670D1197EA36C0031B041 /* it.lproj */,
 				D0C9254D1949ED1A00E629CA /* pt.lproj */,
 				D035EBB6194868B700EEEC17 /* nl.lproj */,
 				D07FD9DD18CBA6CA009B649E /* de.lproj */,
@@ -6125,6 +6130,15 @@
 			name = "Media List";
 			sourceTree = "<group>";
 		};
+		D0D670D1197EA36C0031B041 /* it.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				D0D670D2197EA36C0031B041 /* InfoPlist.strings */,
+				D0D670D4197EA36C0031B041 /* Localizable.strings */,
+			);
+			path = it.lproj;
+			sourceTree = "<group>";
+		};
 		D0E49ACB156FE9C400655FFE /* Contacts */ = {
 			isa = PBXGroup;
 			children = (
@@ -6211,6 +6225,7 @@
 				nl,
 				"pt-BR",
 				pt,
+				it,
 			);
 			mainGroup = D08805A1156E8F3600311537;
 			productRefGroup = D08805AD156E8F3600311537 /* Products */;
@@ -6368,6 +6383,7 @@
 				D0EC6CAD15E4618100E7E687 /* DialogListGroupChatIcon@2x.png in Resources */,
 				930808BA18592DAA00E62B42 /* ModernContactListCreateGroupIcon@2x.png in Resources */,
 				93992D8E182A706C00F29746 /* ModernBubbleOutgoingPartial@2x.png in Resources */,
+				D0D670D7197EA36C0031B041 /* Localizable.strings in Resources */,
 				934134BC18551FF500480294 /* builtin-wallpaper-2-thumbnail.jpg in Resources */,
 				D0A516C8193FD7E9000B8984 /* iPad-Landscape.png in Resources */,
 				930808B71859253D00E62B42 /* ModernContactListCreateSecretChatIcon@2x.png in Resources */,
@@ -6467,6 +6483,7 @@
 				936219DB186460F600C52870 /* 100.m4a in Resources */,
 				93064DFC1832A2970024C05A /* ModernTypingDot1@2x.png in Resources */,
 				93064E021833C5EA0024C05A /* NavigationBackButton@2x.png in Resources */,
+				D0D670D6197EA36C0031B041 /* InfoPlist.strings in Resources */,
 				9386E8AE185DEBF800930205 /* ModernAuthPhoneBackground@2x.png in Resources */,
 				93269DFB185E922500FBC69F /* ModernBubbleOutgoingFullHighlighted@2x.png in Resources */,
 				D0A516CC193FD848000B8984 /* DetailLogoBlank@2x.png in Resources */,
@@ -7426,6 +7443,22 @@
 			isa = PBXVariantGroup;
 			children = (
 				D0C925571949EDED00E629CA /* pt */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		D0D670D2197EA36C0031B041 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D0D670D3197EA36C0031B041 /* it */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		D0D670D4197EA36C0031B041 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D0D670D5197EA36C0031B041 /* it */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
