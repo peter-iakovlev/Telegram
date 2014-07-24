@@ -15,4 +15,7 @@
 - (void)setTitle:(NSString *)title;
 - (void)setTitleAlpha:(CGFloat)titleAlpha;
 
+- (void)animateTransitionInWithDuration:(NSTimeInterval)dutation;
+- (void)animateTransitionOutWithDuration:(NSTimeInterval)dutation;
+
 @end

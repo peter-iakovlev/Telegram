@@ -80,8 +80,7 @@ static const CGFloat swipeVelocityThreshold = 700.0f;
     if (!CGRectEqualToRect(_scrollView.frame, scrollViewFrame))
     {
         NSInteger currentItemIndex = (NSInteger)(CGFloor((_scrollView.bounds.origin.x + _scrollView.bounds.size.width / 2.0f) / _scrollView.bounds.size.width));
-        _scrollView.frame = scrollViewFrame;
-        _scrollView.bounds = CGRectMake(currentItemIndex * scrollViewFrame.size.width, 0.0f, scrollViewFrame.size.width, scrollViewFrame.size.height);
+        [_scrollView setFrameAndBoundsInTransaction:scrollViewFrame bounds:CGRectMake(currentItemIndex * scrollViewFrame.size.width, 0.0f, scrollViewFrame.size.width, scrollViewFrame.size.height)];
     }
 }
 

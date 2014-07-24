@@ -182,6 +182,8 @@
 {
     [super loadView];
     
+    self.view.frame = (CGRect){self.view.frame.origin, [self referenceViewSizeForOrientation:self.interfaceOrientation]};
+    
     _reusableItemViewsByIdentifier = [[NSMutableDictionary alloc] init];
     _visibleItemViews = [[NSMutableArray alloc] init];
     
@@ -223,6 +225,7 @@
             {
                 [strongSelf animateTransitionOutFromView:transitionOutFromView toView:transitionOutToView];
                 [strongSelf->_view transitionOutWithDuration:0.2];
+                [strongSelf->_view.interfaceView animateTransitionOutWithDuration:0.2];
             }
             else
             {
@@ -274,15 +277,122 @@
     return [self findScrollView:view.superview];
 }
 
+- (UIView *)topSuperviewOfView:(UIView *)view
+{
+    if (view.superview == nil)
+        return view;
+    
+    return [self topSuperviewOfView:view.superview];
+}
+
+- (UIView *)findCommonSuperviewOfView:(UIView *)view andView:(UIView *)andView
+{
+    UIView *leftSuperview = [self topSuperviewOfView:view];
+    UIView *rightSuperview = [self topSuperviewOfView:andView];
+    
+    if (leftSuperview != rightSuperview)
+        return nil;
+    
+    return leftSuperview;
+}
+
+- (UIView *)subviewOfView:(UIView *)view containingView:(UIView *)containingView
+{
+    if (view == containingView)
+        return view;
+    
+    for (UIView *subview in view.subviews)
+    {
+        if ([self subviewOfView:subview containingView:containingView] != nil)
+            return subview;
+    }
+    
+    return nil;
+}
+
+- (CGRect)convertFrameOfView:(UIView *)view toView:(UIView *)toView outTransform:(CGAffineTransform *)outTransform
+{
+    if (view == toView)
+        return view.bounds;
+    
+    UIView *commonSuperview = [self findCommonSuperviewOfView:view andView:toView];
+    if (commonSuperview == nil)
+    {
+        CGRect frame = view.bounds;
+        UIView *currentView = view;
+        CGAffineTransform transform = view.transform;
+        while (currentView != nil)
+        {
+            //frame.origin.x += currentView.frame.origin.x - currentView.bounds.origin.x;
+            //frame.origin.y += currentView.frame.origin.y - currentView.bounds.origin.y;
+            transform = CGAffineTransformConcat(transform, currentView.transform);
+            transform = CGAffineTransformTranslate(transform, currentView.frame.origin.x - currentView.bounds.origin.x, currentView.frame.origin.y - currentView.bounds.origin.y);
+            currentView = currentView.superview;
+        }
+        
+        //frame = CGRectApplyAffineTransform(frame, transform);
+        
+        UIView *subview = [self topSuperviewOfView:toView];
+        while (subview != nil && subview != toView)
+        {
+            //frame.origin.x -= subview.frame.origin.x - subview.bounds.origin.x;
+            //frame.origin.y -= subview.frame.origin.y - subview.bounds.origin.y;
+            
+            transform = CGAffineTransformTranslate(transform, subview.frame.origin.x - subview.bounds.origin.x, subview.frame.origin.y - subview.bounds.origin.y);
+            
+            subview = [self subviewOfView:subview containingView:toView];
+        }
+        
+        if (outTransform != NULL)
+            *outTransform = transform;
+        
+        return frame;
+    }
+    
+    return view.frame;
+}
+
+static CGFloat transformRotation(CGAffineTransform transform)
+{
+    return (CGFloat)atan2(transform.b, transform.a);
+}
+
+static CGPoint transformTranslation(CGAffineTransform transform)
+{
+    return CGPointMake(transform.tx, transform.ty);
+}
+
+- (void)animateLayer:(CALayer *)layer transformFrom:(CGAffineTransform)fromTransform to:(CGAffineTransform)toTransform
+{
+    POPSpringAnimation *rotationAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerRotation];
+    rotationAnimation.fromValue = @(transformRotation(fromTransform));
+    rotationAnimation.toValue = @(transformRotation(toTransform));
+    rotationAnimation.springSpeed = 20;
+    rotationAnimation.springBounciness = 8;
+    [layer pop_addAnimation:rotationAnimation forKey:@"layerTransitionRotation"];
+    
+    POPSpringAnimation *translationAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerTranslationXY];
+    translationAnimation.fromValue = [NSValue valueWithCGPoint:transformTranslation(fromTransform)];
+    translationAnimation.toValue = [NSValue valueWithCGPoint:transformTranslation(toTransform)];
+    translationAnimation.springSpeed = 20;
+    translationAnimation.springBounciness = 8;
+    [layer pop_addAnimation:translationAnimation forKey:@"layerTransitionTranslation"];
+}
+
 - (void)animateTransitionInFromView:(UIView *)fromView toView:(UIView *)toView
 {
     UIView *fromScrollView = [self findScrollView:fromView];
     UIView *fromContainerView = fromScrollView.superview;
     
-    CGRect fromFrame = [toView.superview convertRect:[fromView convertRect:fromView.bounds toView:nil] fromView:nil];
+    //CGRect fromFrame = [toView.superview convertRect:[fromView convertRect:fromView.bounds toView:nil] fromView:nil];
+    CGAffineTransform fromTransform = CGAffineTransformIdentity;
+    CGRect fromFrame = [self convertFrameOfView:fromView toView:toView.superview outTransform:&fromTransform];
     
     CGRect fromContainerFromFrame = [fromContainerView convertRect:fromView.bounds fromView:fromView];
+    //CGRect fromContainerFromFrame = [self convertFrameOfView:fromView toView:fromContainerView];
+    
     CGRect fromContainerFrame = [fromContainerView convertRect:[toView.superview convertRect:toView.frame toView:nil] fromView:nil];
+    //CGRect fromContainerFrame = [self convertFrameOfView:toView toView:fromContainerView];
     
     UIView *fromViewContainerCopy = [fromView snapshotViewAfterScreenUpdates:false];
     fromViewContainerCopy.frame = fromContainerFromFrame;
@@ -293,7 +403,9 @@
     toViewAnimation.toValue = [NSValue valueWithCGRect:toView.frame];
     toViewAnimation.springSpeed = 20;
     toViewAnimation.springBounciness = 8;
-    [toView pop_addAnimation:toViewAnimation forKey:@"transitionInSpring"];
+    //[toView pop_addAnimation:toViewAnimation forKey:@"transitionInSpring"];
+    
+    [self animateLayer:toView.layer transformFrom:fromTransform to:toView.transform];
     
     POPSpringAnimation *fromContainerViewAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPViewFrame];
     fromContainerViewAnimation.fromValue = [NSValue valueWithCGRect:fromViewContainerCopy.frame];
@@ -315,6 +427,13 @@
     toViewAlphaAnimation.duration = 0.15;
     toViewAlphaAnimation.fromValue = @(0.0);
     toViewAlphaAnimation.toValue = @(1.0);
+    __weak TGModernGalleryController *weakSelf = self;
+    self.view.userInteractionEnabled = false;
+    toViewAlphaAnimation.completionBlock = ^(__unused POPAnimation *animation, __unused BOOL finished)
+    {
+        __strong TGModernGalleryController *strongSelf = weakSelf;
+        strongSelf.view.userInteractionEnabled = true;
+    };
     [toView pop_addAnimation:toViewAlphaAnimation forKey:@"transitionInAlpha"];
 }
 

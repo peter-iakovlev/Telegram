@@ -21,6 +21,8 @@
 #import "TGModernGalleryVideoScrubbingInterfaceView.h"
 #import "TGModernGalleryRotationGestureRecognizer.h"
 #import "TGModernGalleryVideoFooterView.h"
+#import "TGModernGalleryVideoView.h"
+#import "TGModernGalleryVideoContentView.h"
 
 #import "TGDoubleTapGestureRecognizer.h"
 
@@ -32,9 +34,10 @@
 @interface TGModernGalleryVideoItemView () <TGDoubleTapGestureRecognizerDelegate>
 {
     UIView *_containerView;
-    UIView *_contentView;
+    TGModernGalleryVideoContentView *_contentView;
     UIView *_playerView;
-    AVPlayerLayer *_playerLayer;
+    TGModernGalleryVideoView *_videoView;
+    
     CGFloat _playerLayerRotation;
     NSUInteger _currentLoopCount;
     
@@ -57,19 +60,54 @@
 
 @implementation TGModernGalleryVideoItemView
 
+- (UIImage *)playButtonImage
+{
+    static UIImage *image = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        const CGFloat diameter = 50.0f;
+        
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        
+        const CGFloat width = 20.0f;
+        const CGFloat height = width + 4.0f;
+        const CGFloat offset = 3.0f;
+        
+        CGContextSetBlendMode(context, kCGBlendModeCopy);
+        
+        CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 1.0f).CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+        
+        CGContextBeginPath(context);
+        CGContextMoveToPoint(context, offset + CGFloor((diameter - width) / 2.0f), CGFloor((diameter - height) / 2.0f));
+        CGContextAddLineToPoint(context, offset + CGFloor((diameter - width) / 2.0f) + width, CGFloor(diameter / 2.0f));
+        CGContextAddLineToPoint(context, offset + CGFloor((diameter - width) / 2.0f), CGFloor((diameter + height) / 2.0f));
+        CGContextClosePath(context);
+        CGContextSetFillColorWithColor(context, UIColorRGBA(0x727272, 1.0f).CGColor);
+        CGContextFillPath(context);
+        
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    });
+    return image;
+}
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        _containerView = [[UIView alloc] initWithFrame:(CGRect){CGPointZero, frame.size}];
+        _containerView = [[TGModernGalleryVideoContentView alloc] initWithFrame:(CGRect){CGPointZero, frame.size}];
         [self addSubview:_containerView];
         
         TGDoubleTapGestureRecognizer *recognizer = [[TGDoubleTapGestureRecognizer alloc] initWithTarget:self action:@selector(doubleTapGesture:)];
         recognizer.consumeSingleTap = true;
-        [_contentView addGestureRecognizer:recognizer];
+        recognizer.avoidControls = true;
+        [self addGestureRecognizer:recognizer];
         
-        _contentView = [[UIView alloc] init];
+        _contentView = [[TGModernGalleryVideoContentView alloc] init];
         [_containerView addSubview:_contentView];
         
         _imageView = [[TGRemoteImageView alloc] init];
@@ -78,15 +116,16 @@
         [_contentView addSubview:_imageView];
         
         _playerView = [[UIView alloc] init];
+        _playerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [_contentView addSubview:_playerView];
         
         _playButton = [[UIButton alloc] init];
-        [_playButton setImage:[UIImage imageNamed:@"PlayButtonBig.png"] forState:UIControlStateNormal];
+        [_playButton setImage:[self playButtonImage] forState:UIControlStateNormal];
         [_playButton sizeToFit];
         
-        _playButton.frame = (CGRect){{CGFloor((frame.size.width - _playButton.frame.size.width) / 2.0f), CGFloor((frame.size.width - _playButton.frame.size.height) / 2.0f)}, _playButton.frame.size};
-        _playButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
         [_playButton addTarget:self action:@selector(playPressed) forControlEvents:UIControlEventTouchUpInside];
+        
+        _contentView.button = _playButton;
         [_contentView addSubview:_playButton];
         
         _scrubbingInterfaceView = [[TGModernGalleryVideoScrubbingInterfaceView alloc] init];
@@ -105,7 +144,8 @@
         };
         
         TGModernGalleryRotationGestureRecognizer *rotationRecognizer = [[TGModernGalleryRotationGestureRecognizer alloc] initWithTarget:self action:@selector(rotationGesture:)];
-        [_contentView addGestureRecognizer:rotationRecognizer];
+        rotationRecognizer.cancelsTouchesInView = false;
+        [self addGestureRecognizer:rotationRecognizer];
     }
     return self;
 }
@@ -129,18 +169,18 @@
     _currentLoopCount = 0;
     
     [_imageView cancelLoading];
-    _imageView.hidden = false;
     
     [_videoFlickerTimer invalidate];
     _videoFlickerTimer = nil;
     
-    _playerLayer.opacity = 1.0f;
+    _videoView.alpha = 1.0f;
     
     [_positionTimer invalidate];
     _positionTimer = nil;
     
     _playerLayerRotation = 0.0f;
-    _containerView.transform = CGAffineTransformMakeRotation(0.0f);
+    _containerView.transform = CGAffineTransformIdentity;
+    _playButton.transform = CGAffineTransformIdentity;
     
     self.isPlaying = false;
     
@@ -158,10 +198,10 @@
         _player = nil;
     }
     
-    if (_playerLayer != nil)
+    if (_videoView != nil)
     {
-        [_playerLayer removeFromSuperlayer];
-        _playerLayer = nil;
+        [_videoView removeFromSuperview];
+        _videoView = nil;
     }
     
     _videoDimenstions = CGSizeZero;
@@ -245,22 +285,24 @@
             
             _didPlayToEndObserver = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(playerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:[_player currentItem]];
             
-            _playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player];
-            _playerLayer.videoGravity = AVLayerVideoGravityResize;
-            [_playerView.layer addSublayer:_playerLayer];
+            _videoView = [[TGModernGalleryVideoView alloc] initWithFrame:_playerView.bounds playerLayer:[AVPlayerLayer playerLayerWithPlayer:_player]];
+            _videoView.frame = _playerView.bounds;
+            _videoView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            _videoView.playerLayer.videoGravity = AVLayerVideoGravityResize;
+            _videoView.playerLayer.opaque = false;
+            _videoView.playerLayer.backgroundColor = nil;
+            [_playerView addSubview:_videoView];
             
-            _playerLayer.opacity = 0.0f;
+            _videoView.alpha = 0.0f;
             _videoFlickerTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(videoFlickerTimerEvent) interval:0.1 repeat:false];
             
             self.isPlaying = true;
             [_player play];
             
             _positionTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(positionTimerEvent) interval:0.25 repeat:true];
+            [self positionTimerEvent];
             
-            [CATransaction begin];
-            [CATransaction setDisableActions:true];
             [self layoutSubviews];
-            [CATransaction commit];
             
             [self defaultFooterView].hidden = true;
             [self footerView].hidden = false;
@@ -272,6 +314,7 @@
         [_player play];
         
         _positionTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(positionTimerEvent) interval:0.25 repeat:true];
+        [self positionTimerEvent];
     }
 }
 
@@ -335,25 +378,20 @@
         CGRect playerFrame = CGRectMake(CGFloor((self.bounds.size.width - fittedSize.width) / 2.0f), CGFloor((self.bounds.size.height - fittedSize.height) / 2.0f), fittedSize.width, fittedSize.height);
         CGRect playerBounds = (CGRect){CGPointZero, playerFrame.size};
         
-        if (![_contentView pop_animationForKey:@"transitionInSpring"] && ![_contentView pop_animationForKey:@"transitionOutSpring"] && !CGRectEqualToRect(_contentView.frame, playerFrame))
+        //if (![_contentView pop_animationForKey:@"transitionInSpring"] && ![_contentView pop_animationForKey:@"transitionOutSpring"] && !CGRectEqualToRect(_contentView.frame, playerFrame))
         {
             _contentView.frame = playerFrame;
         }
         
-        if (!CGRectEqualToRect(_playerView.frame, playerBounds))
+        if (!CGRectEqualToRect(_imageView.frame, playerBounds))
         {
             _playerView.frame = playerBounds;
-            [CATransaction begin];
-            [CATransaction setAnimationDuration:0.3];
-            [CATransaction setAnimationTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut]];
-            _playerLayer.frame = (CGRect){CGPointZero, playerBounds.size};
-            [CATransaction commit];
-            
+            _videoView.frame = (CGRect){CGPointZero, playerBounds.size};
             _imageView.frame = playerBounds;
         }
     }
     
-    _playButton.frame = (CGRect){{CGFloor((_contentView.frame.size.width - _playButton.frame.size.width) / 2.0f), CGFloor((_contentView.frame.size.height - _playButton.frame.size.height) / 2.0f)}, _playButton.frame.size};
+    //_playButton.frame = (CGRect){{CGFloor((self.frame.size.width - _playButton.frame.size.width) / 2.0f), CGFloor((self.frame.size.height - _playButton.frame.size.height) / 2.0f)}, _playButton.frame.size};
 }
 
 - (UIView *)headerView
@@ -366,32 +404,47 @@
     return _footerView;
 }
 
+- (CGFloat)normalizeAngle:(CGFloat)angle
+{
+    return angle;
+    
+    /*CGFloat n = (int)(angle / (CGFloat)M_2_PI);
+    if (angle < 0)
+        angle += n * M_2_PI;
+    else
+        angle -= n * M_2_PI;
+    return angle;*/
+}
+
 - (void)rotationGesture:(UIRotationGestureRecognizer *)recognizer
 {
     if (recognizer.state == UIGestureRecognizerStateChanged)
     {
-        _containerView.transform = CGAffineTransformMakeRotation(_playerLayerRotation + [recognizer rotation]);
+        _containerView.transform = CGAffineTransformMakeRotation([self normalizeAngle:_playerLayerRotation + [recognizer rotation]]);
+        _playButton.transform = CGAffineTransformMakeRotation(-[self normalizeAngle:_playerLayerRotation + [recognizer rotation]]);
     }
     else if (recognizer.state == UIGestureRecognizerStateRecognized)
     {
-        CGFloat tempAngle = _playerLayerRotation + [recognizer rotation];
+        CGFloat tempAngle = [self normalizeAngle:_playerLayerRotation + [recognizer rotation]];
         CGFloat angle = CGFloor(tempAngle / (CGFloat)M_2_PI) * (CGFloat)M_2_PI;
         
         _playerLayerRotation = CGFloor((angle + (CGFloat)M_PI_4) / (CGFloat)M_PI_2) * (CGFloat)M_PI_2;
         
-        [UIView animateWithDuration:0.3 animations:^
+        [UIView animateWithDuration:0.3 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
         {
             _containerView.transform = CGAffineTransformMakeRotation(_playerLayerRotation);
+            _playButton.transform = CGAffineTransformMakeRotation(-_playerLayerRotation);
             [self layoutSubviews];
-        }];
+        } completion:nil];
     }
     else if (recognizer.state == UIGestureRecognizerStateFailed)
     {
-        [UIView animateWithDuration:0.3 animations:^
+        [UIView animateWithDuration:0.3 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
         {
             _containerView.transform = CGAffineTransformMakeRotation(_playerLayerRotation);
+            _playButton.transform = CGAffineTransformMakeRotation(-_playerLayerRotation);
             [self layoutSubviews];
-        }];
+        } completion:nil];
     }
 }
 
@@ -408,7 +461,7 @@
     [_videoFlickerTimer invalidate];
     _videoFlickerTimer = nil;
     
-    _playerLayer.opacity = 1.0f;
+    _videoView.alpha = 1.0f;
 }
 
 - (void)positionTimerEvent
@@ -418,7 +471,11 @@
 
 - (void)updatePosition:(bool)animated forceZero:(bool)forceZero
 {
-    [_scrubbingInterfaceView setDuration:_duration currentTime:forceZero ? 0.0 : CMTimeGetSeconds(_player.currentItem.currentTime) isPlaying:_isPlaying animated:animated];
+    NSTimeInterval duration = _duration;
+    NSTimeInterval actualDuration = CMTimeGetSeconds(_player.currentItem.duration);
+    if (actualDuration > 0.1f)
+        duration = actualDuration;
+    [_scrubbingInterfaceView setDuration:duration currentTime:forceZero ? 0.0 : CMTimeGetSeconds(_player.currentItem.currentTime) isPlaying:_isPlaying animated:animated];
 }
 
 - (void)doubleTapGesture:(TGDoubleTapGestureRecognizer *)recognizer

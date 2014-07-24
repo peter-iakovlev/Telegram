@@ -18,4 +18,6 @@
 
 @property (nonatomic, weak) id<TGModernGalleryScrollViewDelegate> scrollDelegate;
 
+- (void)setFrameAndBoundsInTransaction:(CGRect)frame bounds:(CGRect)bounds;
+
 @end

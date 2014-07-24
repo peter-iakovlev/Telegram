@@ -918,6 +918,7 @@
 		D0C7FDCB15D301A5001A998A /* TGActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C7FDCA15D301A5001A998A /* TGActor.m */; };
 		D0C7FDCE15D303D2001A998A /* TGTimelineRemoveItemsRequestActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C7FDCD15D303D2001A998A /* TGTimelineRemoveItemsRequestActor.m */; };
 		D0C7FDD115D3159A001A998A /* TGTimelineAssignProfilePhotoActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C7FDD015D31599001A998A /* TGTimelineAssignProfilePhotoActor.m */; };
+		D0C9157E1980092200824042 /* TGModernGalleryVideoContentView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C9157D1980092200824042 /* TGModernGalleryVideoContentView.m */; };
 		D0C92536194915C800E629CA /* SearchBarIconLight.png in Resources */ = {isa = PBXBuildFile; fileRef = D0C92533194915C800E629CA /* SearchBarIconLight.png */; };
 		D0C92537194915C800E629CA /* ModernMessageCheckmark2.png in Resources */ = {isa = PBXBuildFile; fileRef = D0C92534194915C800E629CA /* ModernMessageCheckmark2.png */; };
 		D0C92538194915C800E629CA /* ModernMessageCheckmark1.png in Resources */ = {isa = PBXBuildFile; fileRef = D0C92535194915C800E629CA /* ModernMessageCheckmark1.png */; };
@@ -2526,6 +2527,8 @@
 		D0C7FDCD15D303D2001A998A /* TGTimelineRemoveItemsRequestActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGTimelineRemoveItemsRequestActor.m; sourceTree = "<group>"; };
 		D0C7FDCF15D31598001A998A /* TGTimelineAssignProfilePhotoActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTimelineAssignProfilePhotoActor.h; sourceTree = "<group>"; };
 		D0C7FDD015D31599001A998A /* TGTimelineAssignProfilePhotoActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGTimelineAssignProfilePhotoActor.m; sourceTree = "<group>"; };
+		D0C9157C1980092200824042 /* TGModernGalleryVideoContentView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryVideoContentView.h; sourceTree = "<group>"; };
+		D0C9157D1980092200824042 /* TGModernGalleryVideoContentView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryVideoContentView.m; sourceTree = "<group>"; };
 		D0C92533194915C800E629CA /* SearchBarIconLight.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = SearchBarIconLight.png; path = Resources/SearchBarIconLight.png; sourceTree = "<group>"; };
 		D0C92534194915C800E629CA /* ModernMessageCheckmark2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ModernMessageCheckmark2.png; path = Resources/ModernMessageCheckmark2.png; sourceTree = "<group>"; };
 		D0C92535194915C800E629CA /* ModernMessageCheckmark1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ModernMessageCheckmark1.png; path = Resources/ModernMessageCheckmark1.png; sourceTree = "<group>"; };
@@ -4761,6 +4764,8 @@
 				D0498FCE197857CD0080A679 /* TGModernGalleryRotationGestureRecognizer.m */,
 				D0498FE11979541A0080A679 /* TGModernGalleryVideoView.h */,
 				D0498FE21979541A0080A679 /* TGModernGalleryVideoView.m */,
+				D0C9157C1980092200824042 /* TGModernGalleryVideoContentView.h */,
+				D0C9157D1980092200824042 /* TGModernGalleryVideoContentView.m */,
 			);
 			name = Video;
 			sourceTree = "<group>";
@@ -7064,6 +7069,7 @@
 				D066E98318C6258E00509410 /* bitwise.c in Sources */,
 				D044CB88192A11F00001C986 /* TGUserStore.m in Sources */,
 				93F3A0F618212E2B0005EB98 /* TGModernDateViewModel.m in Sources */,
+				D0C9157E1980092200824042 /* TGModernGalleryVideoContentView.m in Sources */,
 				937CFD6E17AE8E9500E28C5B /* TGSynchronizePreferencesActor.m in Sources */,
 				D03A24BC194A45FB0061027C /* TGModernMediaPickerController.m in Sources */,
 				93A60BF718E99A450037A43D /* TGAnimatedImagePlayer.m in Sources */,

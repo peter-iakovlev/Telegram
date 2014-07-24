@@ -29,7 +29,7 @@
         if (recognizer.doubleTapped)
         {
             if (_doubleTapped)
-                _doubleTapped();
+                _doubleTapped([recognizer locationInView:self]);
         }
         else
         {

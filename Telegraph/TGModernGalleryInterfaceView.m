@@ -200,6 +200,24 @@
     _titleLabel.alpha = titleAlpha;
 }
 
+- (void)animateTransitionInWithDuration:(NSTimeInterval)dutation
+{
+    [UIView animateWithDuration:dutation animations:^
+    {
+        //_navigationBarView.frame = CGRectOffset(_navigationBarView.frame, 0.0f, -_navigationBarView.frame.size.height);
+        //_toolbarView.frame = CGRectOffset(_toolbarView.frame, 0.0f, _toolbarView.frame.size.height);
+    }];
+}
+
+- (void)animateTransitionOutWithDuration:(NSTimeInterval)dutation
+{
+    [UIView animateWithDuration:dutation animations:^
+    {
+        //_navigationBarView.frame = CGRectOffset(_navigationBarView.frame, 0.0f, -_navigationBarView.frame.size.height);
+        //_toolbarView.frame = CGRectOffset(_toolbarView.frame, 0.0f, _toolbarView.frame.size.height);
+    }];
+}
+
 - (void)closeButtonPressed
 {
     if (_closePressed)

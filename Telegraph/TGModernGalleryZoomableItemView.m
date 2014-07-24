@@ -39,10 +39,10 @@
             [strongSelf singleTap];
         };
         
-        _scrollView.doubleTapped = ^
+        _scrollView.doubleTapped = ^(CGPoint point)
         {
             __strong TGModernGalleryZoomableItemView *strongSelf = weakSelf;
-            [strongSelf doubleTap];
+            [strongSelf doubleTap:point];
         };
     }
     return self;
@@ -139,6 +139,7 @@
     CGFloat scaleHeight = boundsSize.height / contentSize.height;
     CGFloat minScale = MIN(scaleWidth, scaleHeight);
     CGFloat maxScale = MAX(scaleWidth, scaleHeight);
+    maxScale = MAX(maxScale, minScale * 3.0f);
     
     if (ABS(maxScale - minScale) < 0.01f)
         maxScale = minScale;
@@ -174,8 +175,29 @@
         [delegate itemViewDidRequestInterfaceShowHide:self];
 }
 
-- (void)doubleTap
+- (void)doubleTap:(CGPoint)point
 {
+    [TGHacks setAnimationDurationFactor:0.6f];
+    if (_scrollView.zoomScale <= _scrollView.normalZoomScale + FLT_EPSILON)
+    {
+        CGPoint pointInView = [_scrollView convertPoint:point toView:[self contentView]];
+        
+        CGFloat newZoomScale = _scrollView.maximumZoomScale;
+        
+        CGSize scrollViewSize = _scrollView.bounds.size;
+        
+        CGFloat w = scrollViewSize.width / newZoomScale;
+        CGFloat h = scrollViewSize.height / newZoomScale;
+        CGFloat x = pointInView.x - (w / 2.0f);
+        CGFloat y = pointInView.y - (h / 2.0f);
+        
+        CGRect rectToZoomTo = CGRectMake(x, y, w, h);
+        
+        [_scrollView zoomToRect:rectToZoomTo animated:true];
+    }
+    else
+        [_scrollView setZoomScale:_scrollView.normalZoomScale animated:true];
+    [TGHacks setAnimationDurationFactor:1.0f];
 }
 
 @end

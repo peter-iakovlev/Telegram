@@ -10,7 +10,7 @@
 
 @interface TGModernGalleryScrollView ()
 {
-    
+    bool _suspendBoundsUpdates;
 }
 
 @end
@@ -33,6 +33,20 @@
 - (void)setBounds:(CGRect)bounds
 {
     [super setBounds:bounds];
+    
+    if (!_suspendBoundsUpdates)
+    {
+        id<TGModernGalleryScrollViewDelegate> scrollDelegate = _scrollDelegate;
+        [scrollDelegate scrollViewBoundsChanged:bounds];
+    }
+}
+
+- (void)setFrameAndBoundsInTransaction:(CGRect)frame bounds:(CGRect)bounds
+{
+    _suspendBoundsUpdates = true;
+    self.frame = frame;
+    self.bounds = bounds;
+    _suspendBoundsUpdates = false;
     
     id<TGModernGalleryScrollViewDelegate> scrollDelegate = _scrollDelegate;
     [scrollDelegate scrollViewBoundsChanged:bounds];

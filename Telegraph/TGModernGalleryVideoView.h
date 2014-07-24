@@ -6,4 +6,6 @@
 
 - (AVPlayerLayer *)playerLayer;
 
+- (instancetype)initWithFrame:(CGRect)frame playerLayer:(AVPlayerLayer *)playerLayer;
+
 @end
