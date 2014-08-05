@@ -465,7 +465,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
         else
             appId = @"af86b54bbc799bd3e6d570ae30035037";
 #else
-        appId = @"29ccea2dd3c31bedd50f224dd14c5112";
+        appId = @"af8bed54bcf6227c821901dbd47a2510";
 #endif
         
         TGLog(@"starting with %@", appId);
