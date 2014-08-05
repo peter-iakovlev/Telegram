@@ -30,6 +30,8 @@
 
 #include "TGAppDelegate.h"
 
+#import "TGTelegramNetworking.h"
+
 @interface UIScrollView (CurrentPage)
 - (int)currentPage;
 - (void)setPage:(NSInteger)page;
@@ -67,6 +69,8 @@
     
     UIImageView *_stillLogoView;
     bool _displayedStillLogo;
+    
+    UIButton *_switchToDebugButton;
 }
 
 @end
@@ -104,7 +108,6 @@
             __strong RMIntroViewController *strongSelf = weakSelf;
             [strongSelf startTimer];
         }];
-        
     }
     return self;
 }
@@ -132,10 +135,34 @@
 {
     [super loadView];
     
+#if defined(DEBUG) || defined(INTERNAL_RELEASE)
+    [self.view addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(switchToDebugPressed:)]];
+#endif
+    
     //NSLog(@"loadView Orientation>%@", [self convertOrientationToString:self.interfaceOrientation]);
     //NSLog(@"loadView Width>%f", self.window.bounds.size.width);
 }
 
+- (void)switchToDebugPressed:(UILongPressGestureRecognizer *)recognizer
+{
+    if (recognizer.state == UIGestureRecognizerStateRecognized)
+    {
+        if (_switchToDebugButton == nil)
+        {
+            _switchToDebugButton = [[UIButton alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - 45.0f, self.view.frame.size.width, 45.0f)];
+            _switchToDebugButton.backgroundColor = [UIColor grayColor];
+            [_switchToDebugButton setTitle:!TGAppDelegateInstance.useDifferentBackend ? @"Switch to production" : @"Switch to debug" forState:UIControlStateNormal];
+            [_switchToDebugButton addTarget:self action:@selector(reallySwitchToDebugPressed) forControlEvents:UIControlEventTouchUpInside];
+            [self.view removeGestureRecognizer:recognizer];
+            [self.view addSubview:_switchToDebugButton];
+        }
+    }
+}
+
+- (void)reallySwitchToDebugPressed
+{
+    [[TGTelegramNetworking instance] switchBackends];
+}
 
 static bool is4inch = YES;
 

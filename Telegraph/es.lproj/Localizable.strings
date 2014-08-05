@@ -161,6 +161,9 @@
 // Login
 "Login.PhoneAndCountryHelp" = "Por favor, confirma tu prefijo internacional e introduce tu número de teléfono.";
 "Login.CodeHelp" = "Te hemos enviado un SMS con un código de activación al número\n%@";
+"Login.CodeSentInternal" = "Por favor, ingresa el código que acabas de recibir en tu aplicación **Telegram**";
+"Login.HaveNotReceivedCodeInternal" = "¿No has recibido el código?";
+"Login.CodeSentSms" = "Te hemos enviado un SMS con el código";
 "Login.Code" = "Código";
 "Login.CallRequestState1" = "Telegram te llamará en %d:%.2d";
 "Login.CallRequestState2" = "Solicitando una llamada a Telegram...";
@@ -230,11 +233,12 @@
 "DialogList.Messages" = "Mensajes";
 
 // Compose
-"Compose.TokenListPlaceholder" = "¿Con quién te gustaría chatear?";
+"Compose.TokenListPlaceholder" = "¿A quién te gustaría enviarle un mensaje?";
 "Compose.NewMessage" = "Nuevo mensaje";
 "Compose.NewGroup" = "Nuevo grupo";
 "Compose.NewEncryptedChat" = "Nuevo chat secreto";
 "Compose.NewBroadcast" = "Lista de difusión";
+"Compose.NewBroadcastButton" = "Nueva difusión";
 "Compose.Recipients" = "Destinatarios";
 "Compose.Create" = "Crear";
 

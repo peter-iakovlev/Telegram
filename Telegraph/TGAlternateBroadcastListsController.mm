@@ -24,7 +24,7 @@
 #import "TGAppDelegate.h"
 #import "TGTabletMainViewController.h"
 
-@interface TGAlternateBroadcastListsController () <ASWatcher>
+@interface TGAlternateBroadcastListsController () <ASWatcher, TGNavigationControllerItem>
 {
     NSArray *_list;
     NSMutableArray *_backingList;
@@ -32,6 +32,8 @@
     UIBarButtonItem *_createButtonItem;
     
     TGCreateGroupController *_createGroupController;
+    
+    bool _removeAfterHiding;
 }
 
 @end
@@ -58,6 +60,14 @@
         [_createButtonItem setEnabled:false];
         
         [ActionStageInstance() watchForPath:@"/tg/broadcastConversations" watcher:self];
+        
+        NSData *data = [TGDatabaseInstance() customProperty:@"maxBroadcastReceivers"];
+        if (data.length >= 4)
+        {
+            int32_t maxBroadcastReceivers = 0;
+            [data getBytes:&maxBroadcastReceivers length:4];
+            self.usersSelectedLimit = MAX(100, maxBroadcastReceivers);
+        }
     }
     return self;
 }
@@ -399,8 +409,15 @@
     cell.messageText = dialogListData[@"userNames"];*/
 }
 
+- (bool)shouldBeRemovedFromNavigationAfterHiding
+{
+    return _removeAfterHiding;
+}
+
 - (void)didSelectRowInFirstSection:(NSInteger)row
 {
+    _removeAfterHiding = true;
+    
     TGConversation *conversation = _list[row];
     
     TGBroadcastModernConversationCompanion *broadcastCompanion = [[TGBroadcastModernConversationCompanion alloc] initWithConversationId:conversation.conversationId conversation:conversation];
@@ -417,7 +434,13 @@
             [self.navigationController pushViewController:conversationController animated:true];
     }
     else
-        [self.navigationController pushViewController:conversationController animated:true];
+    {
+        NSArray *viewControllers = self.navigationController.viewControllers;
+        if (viewControllers.count > 1)
+            [self.navigationController setViewControllers:@[viewControllers[0], conversationController] animated:true];
+        else
+            [self.navigationController pushViewController:conversationController animated:true];
+    }
 }
 
 - (bool)shouldDisplaySectionIndices
@@ -563,6 +586,7 @@
                 for (UIViewController *controller in self.navigationController.viewControllers)
                 {
                     [viewControllers addObject:controller];
+                    break;
                     
                     if (controller == self)
                         break;
@@ -575,6 +599,7 @@
                 {
                     [self setUsersSelected:[self selectedContactsList] selected:nil callback:true];
                     [self.tableView setContentOffset:CGPointMake(0.0f, -self.tableView.contentInset.top)];
+                    self.navigationItem.rightBarButtonItem.enabled = false;
                 });
             });
         }];

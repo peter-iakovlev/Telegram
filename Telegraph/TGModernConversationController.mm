@@ -3069,8 +3069,9 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
 {
     TGLegacyCameraController *legacyCameraController = [[TGLegacyCameraController alloc] init];
     legacyCameraController.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+    legacyCameraController.mediaTypes = [[NSArray alloc] initWithObjects:(__bridge NSString *)kUTTypeImage, (__bridge NSString *)kUTTypeMovie, nil];
     
-    legacyCameraController.storeCapturedAssets = [_companion controllerShouldStoreCapturedAssets];
+    legacyCameraController.storeCapturedAssets = false;
     legacyCameraController.completionDelegate = self;
     legacyCameraController.isInDocumentMode = true;
     
@@ -3981,7 +3982,12 @@ static UIView *_findBackArrow(UIView *view)
     }
     else if ([action isEqualToString:@"hideImage"])
     {
-        if ([options[@"hide"] boolValue])
+        bool ignoreHide = false;
+        id sender = options[@"sender"];
+        if ([sender isKindOfClass:[TGImageViewController class]])
+            ignoreHide = ((TGImageViewController *)sender).isDisappearing;
+        
+        if ([options[@"hide"] boolValue] && !ignoreHide)
         {
             int32_t messageId = [[options objectForKey:@"messageId"] int32Value];
             _companion.mediaHiddenMessageId = messageId;

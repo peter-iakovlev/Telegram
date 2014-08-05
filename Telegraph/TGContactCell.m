@@ -440,6 +440,8 @@ static UIImage *contactCellCheckedImage()
     
     CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
     CGFloat separatorInset = _selectionEnabled ? (_hideAvatar ? 49 : 98) : (TGIsPad() ? 74.0f : 65.0f);
+    if (TGIsPad() && _selectionEnabled)
+        separatorInset += 21.0f;
     _separatorLayer.frame = CGRectMake(separatorInset, self.frame.size.height - separatorHeight, self.frame.size.width - separatorInset, separatorHeight);
     
     CGRect frame = self.selectedBackgroundView.frame;

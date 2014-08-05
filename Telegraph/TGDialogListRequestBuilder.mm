@@ -60,7 +60,9 @@
                 [TGDatabaseInstance() customProperty:@"dialogListLoaded" completion:^(NSData *value)
                 {
                     if (value.length != 0)
+                    {
                         [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphListNode alloc] initWithItems:result]];
+                    }
                     else
                     {
                         int offset = [TGDatabaseInstance() loadConversationListRemoteOffset];
@@ -130,6 +132,28 @@
                     if (message != nil)
                         [messagesByConversation setObject:message forKey:[[NSNumber alloc] initWithLongLong:conversation.conversationId]];
                 }
+                
+                if ([dialog.notify_settings isKindOfClass:[TLPeerNotifySettings$peerNotifySettings class]])
+                {
+                    TLPeerNotifySettings$peerNotifySettings *concreteSettings = (TLPeerNotifySettings$peerNotifySettings *)dialog.notify_settings;
+                    
+                    int peerSoundId = 0;
+                    int peerMuteUntil = 0;
+                    bool peerPreviewText = true;
+                    
+                    peerMuteUntil = concreteSettings.mute_until;
+                    
+                    if (concreteSettings.sound.length == 0)
+                        peerSoundId = 0;
+                    else if ([concreteSettings.sound isEqualToString:@"default"])
+                        peerSoundId = 1;
+                    else
+                        peerSoundId = [concreteSettings.sound intValue];
+                    
+                    peerPreviewText = concreteSettings.show_previews;
+                    
+                    [TGDatabaseInstance() storePeerNotificationSettings:conversation.conversationId soundId:peerSoundId muteUntil:peerMuteUntil previewText:peerPreviewText photoNotificationsEnabled:false writeToActionQueue:false completion:nil];
+                }
             }
         }
         else if ([dialog.peer isKindOfClass:[TLPeer$peerChat class]])
@@ -150,6 +174,28 @@
                     
                     if (message != nil)
                         [messagesByConversation setObject:message forKey:[[NSNumber alloc] initWithLongLong:conversation.conversationId]];
+                }
+                
+                if ([dialog.notify_settings isKindOfClass:[TLPeerNotifySettings$peerNotifySettings class]])
+                {
+                    TLPeerNotifySettings$peerNotifySettings *concreteSettings = (TLPeerNotifySettings$peerNotifySettings *)dialog.notify_settings;
+                    
+                    int peerSoundId = 0;
+                    int peerMuteUntil = 0;
+                    bool peerPreviewText = true;
+                    
+                    peerMuteUntil = concreteSettings.mute_until;
+                    
+                    if (concreteSettings.sound.length == 0)
+                        peerSoundId = 0;
+                    else if ([concreteSettings.sound isEqualToString:@"default"])
+                        peerSoundId = 1;
+                    else
+                        peerSoundId = [concreteSettings.sound intValue];
+                    
+                    peerPreviewText = concreteSettings.show_previews;
+                    
+                    [TGDatabaseInstance() storePeerNotificationSettings:conversation.conversationId soundId:peerSoundId muteUntil:peerMuteUntil previewText:peerPreviewText photoNotificationsEnabled:false writeToActionQueue:false completion:nil];
                 }
             }
         }

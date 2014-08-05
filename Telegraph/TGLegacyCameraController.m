@@ -210,180 +210,60 @@
     }
     else if ([mediaType isEqualToString:(__bridge NSString *)kUTTypeMovie])
     {
-        _progressWindow = [[TGProgressWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-        [_progressWindow show:true];
-        
-        NSURL *mediaUrl = [info objectForKey:UIImagePickerControllerMediaURL];
-        
-        NSString *assetHash = nil;
-        if (_storeCapturedAssets && [referenceUrl absoluteString].length != 0)
+        id<TGLegacyCameraControllerDelegate> delegate = _completionDelegate;
+        if ([delegate conformsToProtocol:@protocol(TGImagePickerControllerDelegate)])
         {
-            assetHash = [[NSString alloc] initWithFormat:@"%@", [referenceUrl absoluteString]];
-            TGLog(@"Video hash: %@", assetHash);
-        }
-        
-        /*if ([referenceUrl absoluteString].length != 0)
-        {
-            NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:[referenceUrl path] error:nil];
-            int64_t size = [[attributes objectForKey:NSFileSize] intValue];
-            
-            if (size != 0)
+            if (_isInDocumentMode)
             {
-                NSInputStream *is = [[NSInputStream alloc] initWithFileAtPath:referenceUrl.path];
-                [is open];
-                if ([is streamStatus] == NSStreamStatusOpen)
+                NSURL *referenceUrl = info[UIImagePickerControllerReferenceURL];
+                if (referenceUrl != nil)
                 {
-                    const int64_t batchSize = 200 * 1024;
+                    self.view.userInteractionEnabled = false;
                     
-                    CC_MD5_CTX md5;
-                    CC_MD5_Init(&md5);
-                    uint8_t *buf = (uint8_t *)malloc(batchSize);
-                    bool useForHash = true;
-                    for (int64_t offset = 0; offset < size; offset += batchSize)
-                    {
-                        int length = [is read:buf maxLength:((NSUInteger)MIN(batchSize, size - offset))];
-                        if (useForHash || length < batchSize)
-                            CC_MD5_Update(&md5, buf, length);
-                        
-                        useForHash = !useForHash;
-                    }
-                    free(buf);
-                    
-                    [is close];
-                    
-                    unsigned char md5Buffer[16];
-                    CC_MD5_Final(md5Buffer, &md5);
-                    assetHash = [[NSString alloc] initWithFormat:@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", md5Buffer[0], md5Buffer[1], md5Buffer[2], md5Buffer[3], md5Buffer[4], md5Buffer[5], md5Buffer[6], md5Buffer[7], md5Buffer[8], md5Buffer[9], md5Buffer[10], md5Buffer[11], md5Buffer[12], md5Buffer[13], md5Buffer[14], md5Buffer[15]];
-                    
-                    TGLog(@"Video hash: %@", assetHash);
+                    id libraryToken = [TGImagePickerController preloadLibrary];
+                    [TGImagePickerController loadAssetWithUrl:referenceUrl completion:^(ALAsset *asset)
+                     {
+                         if (asset != nil)
+                         {
+                             int64_t randomId = 0;
+                             arc4random_buf(&randomId, sizeof(randomId));
+                             NSString *tempFileName = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%" PRIx64 ".bin", randomId]];
+                             NSOutputStream *os = [[NSOutputStream alloc] initToFileAtPath:tempFileName append:false];
+                             [os open];
+                             
+                             ALAssetRepresentation *representation = asset.defaultRepresentation;
+                             long long size = representation.size;
+                             
+                             uint8_t buf[128 * 1024];
+                             for (long long offset = 0; offset < size; offset += 128 * 1024)
+                             {
+                                 long long batchSize = MIN(128 * 1024, size - offset);
+                                 NSUInteger readBytes = [representation getBytes:buf fromOffset:offset length:(NSUInteger)batchSize error:nil];
+                                 [os write:buf maxLength:readBytes];
+                             }
+                             
+                             [os close];
+                             
+                             NSString *mimeType = (__bridge_transfer NSString*)UTTypeCopyPreferredTagWithClass((__bridge CFStringRef)[representation UTI], kUTTagClassMIMEType);
+                             
+                             TGDispatchOnMainThread(^
+                                                    {
+                                                        [delegate legacyCameraControllerCompletedWithDocument:[NSURL fileURLWithPath:tempFileName] fileName:[representation filename] mimeType:mimeType];
+                                                    });
+                         }
+                         else
+                         {
+                             TGDispatchOnMainThread(^
+                                                    {
+                                                        self.view.userInteractionEnabled = true;
+                                                    });
+                         }
+                         
+                         [libraryToken class];
+                     }];
                 }
             }
-        }*/
-        
-        bool deleteFile = true;
-        
-        if (picker.sourceType == UIImagePickerControllerSourceTypeCamera && _storeCapturedAssets)
-        {
-            UISaveVideoAtPathToSavedPhotosAlbum(mediaUrl.path, [self class], @selector(video:didFinishSavingWithError:contextInfo:), NULL);
-            deleteFile = false;
         }
-        
-        NSString *videosPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0] stringByAppendingPathComponent:@"video"];
-        NSFileManager *fileManager = [NSFileManager defaultManager];
-        NSError *error = nil;
-        [fileManager createDirectoryAtPath:videosPath withIntermediateDirectories:true attributes:nil error:&error];
-        
-        NSString *tmpPath = NSTemporaryDirectory();
-        
-        int64_t fileId = 0;
-        arc4random_buf(&fileId, sizeof(fileId));
-        NSString *videoMp4FilePath = [tmpPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%" PRId64 ".mp4", fileId]];
-        
-        [ActionStageInstance() dispatchOnStageQueue:^
-        {
-            NSDictionary *existingData = [TGImageDownloadActor serverMediaDataForAssetUrl:assetHash];
-            if (existingData != nil)
-            {
-                TGDispatchOnMainThread(^
-                {
-                    [_progressWindow dismiss:true];
-                    _progressWindow = nil;
-                    
-                    id<TGLegacyCameraControllerDelegate> delegate = _completionDelegate;
-                    [delegate legacyCameraControllerCompletedWithExistingMedia:existingData[@"videoAttachment"]];
-                });
-            }
-            else
-            {
-                AVAsset *avAsset = [[AVURLAsset alloc] initWithURL:mediaUrl options:nil];
-                
-                AVAssetExportSession *exportSession = [[AVAssetExportSession alloc] initWithAsset:avAsset presetName:AVAssetExportPresetPassthrough];
-                
-                exportSession.outputURL = [NSURL fileURLWithPath:videoMp4FilePath];
-                exportSession.outputFileType = AVFileTypeMPEG4;
-                
-                [exportSession exportAsynchronouslyWithCompletionHandler:^
-                {
-                    bool endProcessing = false;
-                    bool success = false;
-                    
-                    switch ([exportSession status])
-                    {
-                        case AVAssetExportSessionStatusFailed:
-                            NSLog(@"Export failed: %@", [[exportSession error] localizedDescription]);
-                            endProcessing = true;
-                            break;
-                        case AVAssetExportSessionStatusCancelled:
-                            endProcessing = true;
-                            NSLog(@"Export canceled");
-                            break;
-                        case AVAssetExportSessionStatusCompleted:
-                        {
-                            TGLog(@"Export mp4 completed");
-                            endProcessing = true;
-                            success = true;
-                            
-                            break;
-                        }
-                        default:
-                            break;
-                    }
-                    
-                    if (endProcessing)
-                    {
-                        if (deleteFile)
-                            [fileManager removeItemAtURL:mediaUrl error:nil];
-                        
-                        if (success)
-                        {
-                            AVAsset *mp4Asset = [AVAsset assetWithURL:[NSURL fileURLWithPath:videoMp4FilePath]];
-                            
-                            AVAssetImageGenerator *imageGenerator = [[AVAssetImageGenerator alloc] initWithAsset:mp4Asset];
-                            imageGenerator.maximumSize = CGSizeMake(800, 800);
-                            imageGenerator.appliesPreferredTrackTransform = true;
-                            NSError *imageError = nil;
-                            CGImageRef imageRef = [imageGenerator copyCGImageAtTime:CMTimeMake(0, mp4Asset.duration.timescale) actualTime:NULL error:&imageError];
-                            UIImage *previewImage = [[UIImage alloc] initWithCGImage:imageRef];
-                            if (imageRef != NULL)
-                                CGImageRelease(imageRef);
-                            
-                            if (error == nil && [[mp4Asset tracksWithMediaType:AVMediaTypeVideo] count] > 0)
-                            {
-                                AVAssetTrack *track = [[mp4Asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
-                                
-                                CGSize trackNaturalSize = track.naturalSize;
-                                CGSize naturalSize = CGRectApplyAffineTransform(CGRectMake(0, 0, trackNaturalSize.width, trackNaturalSize.height), track.preferredTransform).size;
-                                
-                                NSTimeInterval duration = CMTimeGetSeconds(mp4Asset.duration);
-                                
-                                NSDictionary *finalFileAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:videoMp4FilePath error:nil];
-                                int32_t fileSize = (int32_t)[[finalFileAttributes objectForKey:NSFileSize] intValue];
-                                
-                                TGDispatchOnMainThread(^
-                                {
-                                    [_progressWindow dismiss:true];
-                                    _progressWindow = nil;
-                                    
-                                    id<TGLegacyCameraControllerDelegate> delegate = _completionDelegate;
-                                    [delegate legacyCameraControllerCapturedVideoWithTempFilePath:videoMp4FilePath fileSize:fileSize previewImage:previewImage duration:duration dimensions:naturalSize assetUrl:assetHash];
-                                });
-                            }
-                        }
-                        else
-                        {
-                            TGDispatchOnMainThread(^
-                            {
-                                [_progressWindow dismiss:true];
-                                _progressWindow = nil;
-                                
-                                id<TGLegacyCameraControllerDelegate> delegate = _completionDelegate;
-                                [delegate legacyCameraControllerCompletedWithNoResult];
-                            });
-                        }
-                    }
-                }];
-            }
-        }];
     }
 }
 

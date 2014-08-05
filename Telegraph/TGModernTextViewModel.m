@@ -100,7 +100,7 @@
 {
     if (_layoutData == nil || ABS(containerSize.width - _cachedLayoutContainerWidth) > FLT_EPSILON)
     {
-        _layoutData = [TGReusableLabel calculateLayout:_text additionalAttributes:_additionalAttributes textCheckingResults:_textCheckingResults font:_font textColor:_textColor frame:CGRectZero orMaxWidth:containerSize.width flags:_layoutFlags textAlignment:(UITextAlignment)_alignment outIsRTL:&_isRTL];
+        _layoutData = [TGReusableLabel calculateLayout:_text additionalAttributes:_additionalAttributes textCheckingResults:_textCheckingResults font:_font textColor:_textColor frame:CGRectZero orMaxWidth:containerSize.width flags:_layoutFlags textAlignment:(UITextAlignment)_alignment outIsRTL:&_isRTL additionalTrailingWidth:_additionalTrailingWidth];
         _cachedLayoutContainerWidth = containerSize.width;
     }
     

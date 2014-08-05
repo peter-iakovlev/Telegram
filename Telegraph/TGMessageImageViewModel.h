@@ -10,11 +10,14 @@
 
 @interface TGMessageImageViewModel : TGModernViewModel
 
+@property (nonatomic) bool mediaVisible;
+
 @property (nonatomic, strong) NSString *uri;
 
 @property (nonatomic) int overlayType;
 @property (nonatomic) float progress;
 @property (nonatomic) bool timestampHidden;
+@property (nonatomic) bool isBroadcast;
 
 - (instancetype)initWithUri:(NSString *)uri;
 

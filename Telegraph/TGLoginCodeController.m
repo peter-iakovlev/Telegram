@@ -34,6 +34,8 @@
 
 #import "TGTimerTarget.h"
 
+#import "TGModernButton.h"
+
 #import <MessageUI/MessageUI.h>
 
 @interface TGLoginCodeController () <UITextFieldDelegate, UIAlertViewDelegate, MFMailComposeViewControllerDelegate, UINavigationControllerDelegate>
@@ -62,6 +64,8 @@
 @property (nonatomic, strong) UILabel *requestingCallLabel;
 @property (nonatomic, strong) UILabel *callSentLabel;
 
+@property (nonatomic, strong) TGModernButton *didNotReceiveCodeButton;
+
 @property (nonatomic) bool inProgress;
 @property (nonatomic) int currentActionIndex;
 
@@ -74,11 +78,13 @@
 
 @property (nonatomic, strong) TGProgressWindow *progressWindow;
 
+@property (nonatomic) bool messageSentToTelegram;
+
 @end
 
 @implementation TGLoginCodeController
 
-- (id)initWithShowKeyboard:(bool)__unused showKeyboard phoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash phoneTimeout:(NSTimeInterval)phoneTimeout
+- (id)initWithShowKeyboard:(bool)__unused showKeyboard phoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash phoneTimeout:(NSTimeInterval)phoneTimeout messageSentToTelegram:(bool)messageSentToTelegram
 {
     self = [super initWithNibName:nil bundle:nil];
     if (self)
@@ -88,6 +94,7 @@
         _phoneNumber = phoneNumber;
         _phoneCodeHash = phoneCodeHash;
         _phoneTimeout = phoneTimeout;
+        _messageSentToTelegram = messageSentToTelegram;
         
         self.style = TGViewControllerStyleBlack;
         
@@ -116,6 +123,54 @@
     return true;
 }
 
+- (void)makeLabelWithFormattedText:(UILabel *)textLabel text:(NSString *)text
+{
+    NSMutableArray *boldRanges = [[NSMutableArray alloc] init];
+    
+    NSMutableString *cleanText = [[NSMutableString alloc] initWithString:text];
+    while (true)
+    {
+        NSRange startRange = [cleanText rangeOfString:@"**"];
+        if (startRange.location == NSNotFound)
+            break;
+        
+        [cleanText deleteCharactersInRange:startRange];
+        
+        NSRange endRange = [cleanText rangeOfString:@"**"];
+        if (endRange.location == NSNotFound)
+            break;
+        
+        [cleanText deleteCharactersInRange:endRange];
+        
+        [boldRanges addObject:[NSValue valueWithRange:NSMakeRange(startRange.location, endRange.location - startRange.location)]];
+    }
+    
+    if ([textLabel respondsToSelector:@selector(setAttributedText:)])
+    {
+        NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
+        style.lineSpacing = 1;
+        style.lineBreakMode = NSLineBreakByWordWrapping;
+        style.alignment = NSTextAlignmentCenter;
+        
+        NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:cleanText attributes:@{
+                                                                                                                               NSFontAttributeName: textLabel.font,
+                                                                                                                               NSForegroundColorAttributeName: textLabel.textColor
+                                                                                                                               }];
+        
+        [attributedString addAttributes:@{NSParagraphStyleAttributeName: style} range:NSMakeRange(0, attributedString.length)];
+        
+        NSDictionary *boldAttributes = @{NSFontAttributeName: TGMediumSystemFontOfSize(17.0f)};
+        for (NSValue *nRange in boldRanges)
+        {
+            [attributedString addAttributes:boldAttributes range:[nRange rangeValue]];
+        }
+        
+        textLabel.attributedText = attributedString;
+    }
+    else
+        textLabel.text = cleanText;
+}
+
 - (void)loadView
 {
     [super loadView];
@@ -135,46 +190,22 @@
     _titleLabel = [[UILabel alloc] init];
     _titleLabel.backgroundColor = [UIColor clearColor];
     _titleLabel.textColor = [UIColor blackColor];
-    _titleLabel.font = TGIsPad() ? TGUltralightSystemFontOfSize(48.0f) : TGLightSystemFontOfSize(30.0f);
-    _titleLabel.text = TGLocalized(@"Login.CodeTitle");
+    _titleLabel.font = TGIsPad() ? TGUltralightSystemFontOfSize(48.0f) : TGSystemFontOfSize(21.0f);
+    _titleLabel.text = [TGPhoneUtils formatPhone:_phoneNumber forceInternational:true];
     [_titleLabel sizeToFit];
     _titleLabel.frame = CGRectMake(CGFloor((screenSize.width - _titleLabel.frame.size.width) / 2), [TGViewController isWidescreen] ? 71.0f : 48.0f, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
     [self.view addSubview:_titleLabel];
     
     _noticeLabel = [[UILabel alloc] init];
-    _noticeLabel.font = TGSystemFontOfSize(17);
-    _noticeLabel.textColor = UIColorRGB(0x999999);
+    _noticeLabel.font = TGSystemFontOfSize(16);
+    _noticeLabel.textColor = [UIColor blackColor];
     _noticeLabel.textAlignment = NSTextAlignmentCenter;
     _noticeLabel.contentMode = UIViewContentModeCenter;
     _noticeLabel.numberOfLines = 0;
-    
-    NSString *textFormat = TGLocalized(@"Login.CodeHelp");
-    NSString *phoneFormatted = [TGPhoneUtils formatPhone:_phoneNumber forceInternational:true];
-    if (TGIsArabic())
-    {
-        phoneFormatted = [[NSString alloc] initWithFormat:@"%s%@%s", TGIsArabic() ? "" : "+", [TGStringUtils stringWithLocalizedNumberCharacters:[TGPhoneUtils cleanPhone:_phoneNumber]], TGIsArabic() ? "+" : ""];
-    }
-    
-    NSString *baseText = [[NSString alloc] initWithFormat:textFormat, phoneFormatted];
-    NSRange phoneRange = [textFormat rangeOfString:@"%@"];
-    if (phoneRange.location != NSNotFound)
-        phoneRange.length = phoneFormatted.length;
+    [self makeLabelWithFormattedText:_noticeLabel text:_messageSentToTelegram ? TGLocalized(@"Login.CodeSentInternal") : TGLocalized(@"Login.CodeSentSms")];
+   
     _noticeLabel.backgroundColor = [UIColor clearColor];
     [self.view addSubview:_noticeLabel];
-    
-    if ([_noticeLabel respondsToSelector:@selector(setAttributedText:)] && phoneRange.location != NSNotFound)
-    {
-        UIColor *foregroundColor = [UIColor blackColor];
-        
-        NSDictionary *attrs = @{NSFontAttributeName: _noticeLabel.font, NSForegroundColorAttributeName: _noticeLabel.textColor};
-        NSDictionary *subAttrs = [NSDictionary dictionaryWithObjectsAndKeys:foregroundColor, NSForegroundColorAttributeName, nil];
-        
-        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:baseText attributes:attrs];
-        [attributedText setAttributes:subAttrs range:phoneRange];
-        [_noticeLabel setAttributedText:attributedText];
-    }
-    else
-        _noticeLabel.text = baseText;
     
     CGSize noticeSize = [_noticeLabel sizeThatFits:CGSizeMake(300, screenSize.height)];
     CGRect noticeFrame = CGRectMake(0, 0, noticeSize.width, noticeSize.height);
@@ -229,6 +260,8 @@
     _callSentLabel.backgroundColor = [UIColor clearColor];
     _callSentLabel.alpha = 0.0f;
     
+    _timeoutLabel.hidden = _messageSentToTelegram;
+    
     NSString *codeTextFormat = TGLocalized(@"Login.CallRequestState3");
     NSRange linkRange = NSMakeRange(NSNotFound, 0);
     
@@ -264,11 +297,18 @@
         [_callSentLabel addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(callSentTapGesture:)]];
         _callSentLabel.userInteractionEnabled = true;
     }
-    else
-        [_callSentLabel setText:baseText];
     
     [_callSentLabel sizeToFit];
     [self.view addSubview:_callSentLabel];
+    
+    _didNotReceiveCodeButton = [[TGModernButton alloc] init];
+    [_didNotReceiveCodeButton setTitleColor:TGAccentColor()];
+    [_didNotReceiveCodeButton setTitle:TGLocalized(@"Login.HaveNotReceivedCodeInternal") forState:UIControlStateNormal];
+    [_didNotReceiveCodeButton setContentEdgeInsets:UIEdgeInsetsMake(10, 10, 10, 10)];
+    _didNotReceiveCodeButton.titleLabel.font = TGSystemFontOfSize(16.0f);
+    [self.view addSubview:_didNotReceiveCodeButton];
+    [_didNotReceiveCodeButton addTarget:self action:@selector(didNotReceiveCodeButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+    _didNotReceiveCodeButton.hidden = !_messageSentToTelegram;
     
     CGFloat labelAnchor = _separatorView.frame.origin.y + ([TGViewController isWidescreen] ? 160 : 134);
     
@@ -343,7 +383,7 @@
 
 - (void)viewWillAppear:(BOOL)animated
 {
-    if (_countdownTimer == nil && !_alreadyCountedDown)
+    if (_countdownTimer == nil && !_alreadyCountedDown && !_messageSentToTelegram)
     {
         _countdownStart = CFAbsoluteTimeGetCurrent();
         _countdownTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(updateCountdown) interval:1.0 repeat:false];
@@ -461,7 +501,7 @@
     else
     {
         topOffset = [TGViewController isWidescreen] ? 131.0f : 90.0f;
-        titleLabelOffset = [TGViewController isWidescreen] ? 71.0f : 48.0f;
+        titleLabelOffset = ([TGViewController isWidescreen] ? 71.0f : 48.0f) + 9.0f;
         noticeLabelOffset = [TGViewController isWidescreen] ? 274.0f : 214.0f;
         countryButtonOffset = [TGViewController isWidescreen] ? 131.0f : 90.0f;
     }
@@ -479,11 +519,14 @@
     
     _codeField.frame = CGRectMake(sideInset, _fieldSeparatorView.frame.origin.y - 56.0f, screenSize.width - sideInset * 2.0f, 56.0f);
     
-    CGFloat labelAnchor = _separatorView.frame.origin.y + ([TGViewController isWidescreen] ? 160 : 134);
+    CGFloat labelAnchor = _separatorView.frame.origin.y + ([TGViewController isWidescreen] ? 160 : 134) - 44;
     
     _timeoutLabel.frame = CGRectMake((int)((screenSize.width - _timeoutLabel.frame.size.width) / 2), labelAnchor, _timeoutLabel.frame.size.width, _timeoutLabel.frame.size.height);
     _requestingCallLabel.frame = CGRectMake((int)((screenSize.width - _requestingCallLabel.frame.size.width) / 2), labelAnchor, _requestingCallLabel.frame.size.width, _requestingCallLabel.frame.size.height);
     _callSentLabel.frame = CGRectMake((int)((screenSize.width - _callSentLabel.frame.size.width) / 2), labelAnchor, _callSentLabel.frame.size.width, _callSentLabel.frame.size.height);
+    
+    [_didNotReceiveCodeButton sizeToFit];
+    _didNotReceiveCodeButton.frame = CGRectMake(CGFloor((screenSize.width - _didNotReceiveCodeButton.frame.size.width) / 2.0f), CGRectGetMaxY(_noticeLabel.frame) + 2.0f, _didNotReceiveCodeButton.frame.size.width, _didNotReceiveCodeButton.frame.size.height);
 }
 
 - (void)setInProgress:(bool)inProgress
@@ -705,7 +748,7 @@
                 if (resultCode == TGSignInResultNotRegistered)
                 {
                     int stateDate = [[TGAppDelegateInstance loadLoginState][@"date"] intValue];
-                    [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:_phoneCode phoneCodeHash:_phoneCodeHash firstName:nil lastName:nil photo:nil];
+                    [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:_phoneCode phoneCodeHash:_phoneCodeHash codeSentToTelegram:false firstName:nil lastName:nil photo:nil];
                     
                     errorText = nil;
                     [self pushControllerRemovingSelf:[[TGLoginProfileController alloc] initWithShowKeyboard:_codeField.isFirstResponder phoneNumber:_phoneNumber phoneCodeHash:_phoneCodeHash phoneCode:_phoneCode]];
@@ -736,31 +779,62 @@
     {
         dispatch_async(dispatch_get_main_queue(), ^
         {
-            if (resultCode == ASStatusSuccess)
+            [self setInProgress:false];
+            
+            if (_messageSentToTelegram)
             {
-                [UIView animateWithDuration:0.2 animations:^
+                if (resultCode == ASStatusSuccess)
                 {
-                    _requestingCallLabel.alpha = 0.0f;
-                }];
-                
-                [UIView animateWithDuration:0.2 delay:0.1 options:0 animations:^
+                    int stateDate = [[TGAppDelegateInstance loadLoginState][@"date"] intValue];
+                    [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:_phoneCodeHash codeSentToTelegram:false firstName:nil lastName:nil photo:nil];
+                    
+                    TGLoginCodeController *controller = [[TGLoginCodeController alloc] initWithShowKeyboard:(_codeField.isFirstResponder) phoneNumber:_phoneNumber phoneCodeHash:_phoneCodeHash phoneTimeout:_phoneTimeout messageSentToTelegram:false];
+                    
+                    [self.navigationController pushViewController:controller animated:true];
+                }
+                else
                 {
-                    _callSentLabel.alpha = 1.0f;
-                } completion:nil];
+                    NSString *errorText = TGLocalized(@"Login.NetworkError");
+                    
+                    if (resultCode == TGSendCodeErrorInvalidPhone)
+                        errorText = TGLocalized(@"Login.InvalidPhoneError");
+                    else if (resultCode == TGSendCodeErrorFloodWait)
+                        errorText = TGLocalized(@"Login.CodeFloodError");
+                    else if (resultCode == TGSendCodeErrorNetwork)
+                        errorText = TGLocalized(@"Login.NetworkError");
+                    
+                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                    [alertView show];
+                }
             }
             else
             {
-                NSString *errorText = TGLocalized(@"Login.NetworkError");
-                
-                if (resultCode == TGSendCodeErrorInvalidPhone)
-                    errorText = TGLocalized(@"Login.InvalidPhoneError");
-                else if (resultCode == TGSendCodeErrorFloodWait)
-                    errorText = TGLocalized(@"Login.CodeFloodError");
-                else if (resultCode == TGSendCodeErrorNetwork)
-                    errorText = TGLocalized(@"Login.NetworkError");
-                
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
-                [alertView show];
+                if (resultCode == ASStatusSuccess)
+                {
+                    [UIView animateWithDuration:0.2 animations:^
+                    {
+                        _requestingCallLabel.alpha = 0.0f;
+                    }];
+                    
+                    [UIView animateWithDuration:0.2 delay:0.1 options:0 animations:^
+                    {
+                        _callSentLabel.alpha = 1.0f;
+                    } completion:nil];
+                }
+                else
+                {
+                    NSString *errorText = TGLocalized(@"Login.NetworkError");
+                    
+                    if (resultCode == TGSendCodeErrorInvalidPhone)
+                        errorText = TGLocalized(@"Login.InvalidPhoneError");
+                    else if (resultCode == TGSendCodeErrorFloodWait)
+                        errorText = TGLocalized(@"Login.CodeFloodError");
+                    else if (resultCode == TGSendCodeErrorNetwork)
+                        errorText = TGLocalized(@"Login.NetworkError");
+                    
+                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                    [alertView show];
+                }
             }
         });
     }
@@ -769,6 +843,14 @@
 - (void)alertView:(UIAlertView *)__unused alertView clickedButtonAtIndex:(NSInteger)__unused buttonIndex
 {
     [self.navigationController popViewControllerAnimated:true];
+}
+
+- (void)didNotReceiveCodeButtonPressed
+{
+    [self setInProgress:true];
+    
+    static int actionId = 0;
+    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/service/auth/sendCode/(sms%d)", actionId++] options:[[NSDictionary alloc] initWithObjectsAndKeys:_phoneNumber, @"phoneNumber", _phoneCodeHash, @"phoneHash", [[NSNumber alloc] initWithBool:true], @"requestSms", nil] watcher:self];
 }
 
 @end

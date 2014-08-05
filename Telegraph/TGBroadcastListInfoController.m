@@ -222,7 +222,7 @@
             if (((TGGroupInfoUserCollectionItem *)item).user.uid == user.uid)
             {
                 NSIndexPath *indexPath = [self indexPathForItem:item];
-                if (indexPath != nil)
+                if (indexPath != nil && [UIDevice currentDevice].userInterfaceIdiom != UIUserInterfaceIdiomPad)
                     [self.collectionView selectItemAtIndexPath:indexPath animated:false scrollPosition:UICollectionViewScrollPositionTop];
                 
                 break;
@@ -518,13 +518,6 @@
             TGTelegraphUserInfoController *userInfoController = [[TGTelegraphUserInfoController alloc] initWithUid:uid];
             [self.navigationController pushViewController:userInfoController animated:true];
         }
-    }
-    else if ([action isEqualToString:@"editedTitleChanged"])
-    {
-        NSString *title = options[@"title"];
-        
-        if (_editing)
-            self.navigationItem.rightBarButtonItem.enabled = title.length != 0;
     }
 }
 

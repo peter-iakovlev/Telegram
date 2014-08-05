@@ -123,6 +123,7 @@
         
         [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)message.date] displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) animated:false];
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
+        [_imageModel setIsBroadcast:message.isBroadcast];
         
         /*int daytimeVariant = 0;
         NSString *dateText = [TGDateUtils stringForShortTime:(int)message.date daytimeVariant:&daytimeVariant];
@@ -359,7 +360,7 @@
 
 - (void)updateMediaVisibility
 {
-    _imageModel.alpha = [_context isMediaVisibleInMessage:_mid] ? 1.0f : 0.0f;   
+    _imageModel.mediaVisible = [_context isMediaVisibleInMessage:_mid];
 }
 
 - (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage
@@ -509,7 +510,7 @@
     
     [_imageModel bindViewToContainer:container viewStorage:viewStorage];
     [_imageModel boundView].frame = CGRectOffset([_imageModel boundView].frame, itemPosition.x, itemPosition.y);
-    ((TGMessageImageView *)[_imageModel boundView]).delegate = self;
+    ((TGMessageImageViewContainer *)[_imageModel boundView]).imageView.delegate = self;
 }
 
 - (CGRect)effectiveContentFrame
@@ -524,7 +525,7 @@
 
 - (UIImage *)effectiveContentImage
 {
-    return [(TGModernRemoteImageView *)[_imageModel boundView] currentImage];
+    return [((TGMessageImageViewContainer *)[_imageModel boundView]).imageView currentImage];
 }
 
 - (UIView *)referenceViewForImageTransition
@@ -552,9 +553,9 @@
         [[_unsentButtonModel boundView] addGestureRecognizer:_unsentButtonTapRecognizer];
     }
     
-    _imageModel.alpha = [_context isMediaVisibleInMessage:_mid] ? 1.0f : 0.0f;
+    _imageModel.mediaVisible = [_context isMediaVisibleInMessage:_mid];
     
-    ((TGMessageImageView *)[_imageModel boundView]).delegate = self;
+    ((TGMessageImageViewContainer *)[_imageModel boundView]).imageView.delegate = self;
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
@@ -566,7 +567,7 @@
     _boundDoubleTapRecognizer.delegate = nil;
     _boundDoubleTapRecognizer = nil;
     
-    ((TGMessageImageView *)imageView).delegate = self;
+    ((TGMessageImageViewContainer *)imageView).imageView.delegate = self;
     
     if (_temporaryHighlightView != nil)
     {
@@ -614,7 +615,7 @@
 
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
 {
-    UIView *imageView = [_imageModel boundView];
+    UIView *imageView = ((TGMessageImageViewContainer *)[_imageModel boundView]).imageView;
     if (imageView != nil)
     {
         UIView *hitTestResult = [imageView hitTest:[gestureRecognizer locationInView:imageView] withEvent:nil];
@@ -637,7 +638,7 @@
 
 - (void)messageImageViewActionButtonPressed:(TGMessageImageView *)messageImageView withAction:(TGMessageImageViewActionType)action
 {
-    if (messageImageView == [_imageModel boundView])
+    if (messageImageView == ((TGMessageImageViewContainer *)[_imageModel boundView]).imageView)
     {
         if (action == TGMessageImageViewActionCancelDownload)
             [self cancelMediaDownload];

@@ -74,6 +74,14 @@
 #else
         self.usersSelectedLimit = 199;
 #endif
+        
+        NSData *data = [TGDatabaseInstance() customProperty:@"maxChatParticipants"];
+        if (data.length >= 4)
+        {
+            int32_t maxChatParticipants = 0;
+            [data getBytes:&maxChatParticipants length:4];
+            self.usersSelectedLimit = MAX(99, maxChatParticipants - 1);
+        }
     }
     return self;
 }

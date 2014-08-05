@@ -27,6 +27,10 @@ typedef enum {
 - (void)sendCodeRequestFailed:(TGSendCodeError)errorCode;
 - (void)sendCodeRedirect:(NSInteger)datacenterId;
 
+- (void)sendSmsRequestSuccess:(bool)success;
+- (void)sendSmsRequestFailed:(TGSendCodeError)errorCode;
+- (void)sendSmsRedirect:(NSInteger)datacenterId;
+
 - (void)sendCallRequestSuccess;
 - (void)sendCallRequestFailed;
 - (void)sendCallRedirect:(NSInteger)datacenterId;

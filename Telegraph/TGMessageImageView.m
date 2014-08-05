@@ -18,7 +18,7 @@
 
 static const CGFloat circleDiameter = 50.0f;
 
-static const CGFloat timestampWidth = 84.0f;
+static const CGFloat timestampWidth = 100.0f;
 static const CGFloat timestampHeight = 18.0f;
 static const CGFloat timestampRightPadding = 6.0f;
 static const CGFloat timestampBottomPadding = 6.0f;
@@ -28,13 +28,18 @@ static const CGFloat additionalDataHeight = 18.0f;
 static const CGFloat additionalDataLeftPadding = 6.0f;
 static const CGFloat additionalDataTopPadding = 6.0f;
 
+@interface TGMessageImageViewContainer ()
+{
+    TGMessageImageViewTimestampView *_timestampView;
+}
+
+@end
+
 @interface TGMessageImageView ()
 {
     TGModernButton *_buttonView;
     UIImageView *_actionCircleImageView;
     TGMessageImageViewOverlayView *_overlayView;
-    
-    TGMessageImageViewTimestampView *_timestampView;
     
     TGMessageImageAdditionalDataView *_additionalDataView;
     TGStaticBackdropAreaData *_additionalDataBackdropArea;
@@ -42,6 +47,8 @@ static const CGFloat additionalDataTopPadding = 6.0f;
 
 @property (nonatomic, strong) NSString *viewIdentifier;
 @property (nonatomic, strong) NSString *viewStateIdentifier;
+
+@property (nonatomic, strong) TGMessageImageViewTimestampView *timestampView;
 
 @end
 
@@ -93,10 +100,6 @@ static const CGFloat additionalDataTopPadding = 6.0f;
         });
         
         _buttonView.highlightImage = highlightImage;
-        
-        _timestampView = [[TGMessageImageViewTimestampView alloc] initWithFrame:CGRectMake(frame.size.width - timestampWidth - timestampRightPadding, frame.size.height - timestampHeight - timestampBottomPadding, timestampWidth, timestampHeight)];
-        _timestampView.userInteractionEnabled = false;
-        [self addSubview:_timestampView];
     }
     return self;
 }
@@ -289,6 +292,11 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     [_timestampView setDisplayProgress:displayTimestampProgress];
 }
 
+- (void)setIsBroadcast:(bool)isBroadcast
+{
+    [_timestampView setIsBroadcast:isBroadcast];
+}
+
 - (void)actionButtonPressed
 {
     TGMessageImageViewActionType action = TGMessageImageViewActionDownload;
@@ -317,6 +325,59 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     id<TGMessageImageViewDelegate> delegate = _delegate;
     if ([delegate respondsToSelector:@selector(messageImageViewActionButtonPressed:withAction:)])
         [delegate messageImageViewActionButtonPressed:self withAction:action];
+}
+
+@end
+
+@implementation TGMessageImageViewContainer
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self != nil)
+    {
+        _imageView = [[TGMessageImageView alloc] initWithFrame:(CGRect){CGPointZero, frame.size}];
+        _imageView.userInteractionEnabled = true;
+        [self addSubview:_imageView];
+        
+        _timestampView = [[TGMessageImageViewTimestampView alloc] initWithFrame:CGRectMake(frame.size.width - timestampWidth - timestampRightPadding, frame.size.height - timestampHeight - timestampBottomPadding, timestampWidth, timestampHeight)];
+        _timestampView.userInteractionEnabled = false;
+        [self addSubview:_timestampView];
+        _imageView.timestampView = _timestampView;
+    }
+    return self;
+}
+
+- (void)setFrame:(CGRect)frame
+{
+    [super setFrame:frame];
+    
+    _imageView.frame = (CGRect){CGPointZero, frame.size};
+}
+
+- (void)setViewIdentifier:(NSString *)viewIdentifier
+{
+    [_imageView setViewIdentifier:viewIdentifier];
+}
+
+- (NSString *)viewIdentifier
+{
+    return [_imageView viewIdentifier];
+}
+
+- (void)setViewStateIdentifier:(NSString *)viewStateIdentifier
+{
+    [_imageView setViewStateIdentifier:viewStateIdentifier];
+}
+
+- (NSString *)viewStateIdentifier
+{
+    return _imageView.viewStateIdentifier;
+}
+
+- (void)willBecomeRecycled
+{
+    [_imageView willBecomeRecycled];
 }
 
 @end

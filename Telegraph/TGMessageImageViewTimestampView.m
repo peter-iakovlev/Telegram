@@ -103,6 +103,17 @@ static UIImage *checkmarkSecondImageWithColor(UIColor *color)
     return image;
 }
 
+static UIImage *broadcasIconImage()
+{
+    static UIImage *image = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        image = [UIImage imageNamed:@"ModernMessageBroadcastIconWhite.png"];
+    });
+    return image;
+}
+
 static CGImageRef clockFrameImage(CGFloat luminance)
 {
     static CGImageRef lightImage = NULL;
@@ -212,6 +223,8 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     CALayer *_clockFrameLayer;
     CALayer *_clockMinLayer;
     CALayer *_clockHourLayer;
+    
+    bool _isBroadcast;
 }
 
 @end
@@ -344,6 +357,16 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     }
 }
 
+- (void)setIsBroadcast:(bool)isBroadcast
+{
+    if (_isBroadcast != isBroadcast)
+    {
+        _isBroadcast = isBroadcast;
+        
+        [self setNeedsDisplay];
+    }
+}
+
 - (NSMutableArray *)_layerQueue
 {
     static NSMutableArray *array = nil;
@@ -391,22 +414,24 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
 
 - (void)_addProgress
 {
+    CGFloat luminance = 0.0f;//_backdropArea.luminance;
+    
     [CATransaction begin];
     [CATransaction setDisableActions:true];
     _clockFrameLayer = [self _dequeueLayer];
-    _clockFrameLayer.contents = (__bridge id)clockFrameImage(_backdropArea.luminance);
+    _clockFrameLayer.contents = (__bridge id)clockFrameImage(luminance);
     _clockFrameLayer.anchorPoint = CGPointMake(0.5f, 0.5f);
     _clockFrameLayer.bounds = CGRectMake(0.0f, 0.0f, 11.0f, 11.0f);
     _clockFrameLayer.position = CGPointMake(self.bounds.size.width - 17.5f + 11.0f / 2.0f, 3.5f + 11.0f / 2.0f);
     
     _clockMinLayer = [self _dequeueLayer];
-    _clockMinLayer.contents = (__bridge id)clockMinImage(_backdropArea.luminance);
+    _clockMinLayer.contents = (__bridge id)clockMinImage(luminance);
     _clockMinLayer.anchorPoint = CGPointMake(0.5f, 4.0f / 5.0f);
     _clockMinLayer.bounds = CGRectMake(0.0f, 0.0f, 2.0f, 5.0f);
     _clockMinLayer.position = CGPointMake(self.bounds.size.width - 17.5f + 11.0f / 2.0f, 3.5f + 11.0f / 2.0f);
     
     _clockHourLayer = [self _dequeueLayer];
-    _clockHourLayer.contents = (__bridge id)clockHourImage(_backdropArea.luminance);
+    _clockHourLayer.contents = (__bridge id)clockHourImage(luminance);
     _clockHourLayer.anchorPoint = CGPointMake(1.0f / 4.0f, 0.5f);
     _clockHourLayer.bounds = CGRectMake(0.0f, 0.0f, 4.0f, 2.0f);
     _clockHourLayer.position = CGPointMake(self.bounds.size.width - 17.5f + 11.0f / 2.0f, 3.5f + 11.0f / 2.0f);
@@ -447,8 +472,9 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     [CATransaction begin];
     [CATransaction setDisableActions:true];
     
+    CGFloat luminance = 0.0f;//_backdropArea.luminance
     _chechmarkFirstLayer = [self _dequeueLayer];
-    _chechmarkFirstLayer.contents = (__bridge id)checkmarkFirstImage(_backdropArea.luminance);
+    _chechmarkFirstLayer.contents = (__bridge id)checkmarkFirstImage(luminance);
     _chechmarkFirstLayer.anchorPoint = CGPointMake(0.5f, 0.5f);
     _chechmarkFirstLayer.bounds = CGRectMake(0.0f, 0.0f, 12.0f, 9.0f);
     _chechmarkFirstLayer.position = CGPointMake(self.bounds.size.width - 15.0f, 8.5f);
@@ -464,8 +490,10 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     [CATransaction begin];
     [CATransaction setDisableActions:true];
     
+    CGFloat luminance = 0.0f;//_backdropArea.luminance
+    
     _chechmarkSecondLayer = [self _dequeueLayer];
-    _chechmarkSecondLayer.contents = (__bridge id)checkmarkSecondImage(_backdropArea.luminance);
+    _chechmarkSecondLayer.contents = (__bridge id)checkmarkSecondImage(luminance);
     _chechmarkSecondLayer.anchorPoint = CGPointMake(0.5f, 0.5f);
     _chechmarkSecondLayer.bounds = CGRectMake(0.0f, 0.0f, 12.0f, 9.0f);
     _chechmarkSecondLayer.position = CGPointMake(self.bounds.size.width - 11.0f, 8.5f);
@@ -519,12 +547,20 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     return _timestampStringSize;
 }
 
+- (CGFloat)broadcastIconWidth
+{
+    return 17.0f;
+}
+
 - (CGSize)timestampSize
 {
     CGSize size = [self timestampStringSize];
     if (_displayCheckmarks)
         size.width += 18.0f;
     size.width += 12.0f;
+    
+    if (_isBroadcast)
+        size.width += [self broadcastIconWidth];
     
     return size;
 }

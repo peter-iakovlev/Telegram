@@ -12,6 +12,17 @@
 
 #import "TGTelegraph.h"
 
+#import <MTProtoKit/MTRequest.h>
+#import "TGTelegramNetworking.h"
+
+@interface TGUpdateConfigActor ()
+{
+    bool _inviteReceived;
+    bool _configReceived;
+}
+
+@end
+
 @implementation TGUpdateConfigActor
 
 + (NSString *)genericPath
@@ -21,11 +32,33 @@
 
 - (void)execute:(NSDictionary *)__unused options
 {
-    self.cancelToken = [TGTelegraphInstance doRequestInviteText:self];
+    [self addCancelToken:[TGTelegraphInstance doRequestInviteText:self]];
+    
+    MTRequest *request = [[MTRequest alloc] init];
+    
+    request.body = [[TLRPChelp_getConfig$help_getConfig alloc] init];
+    
+    __weak TGUpdateConfigActor *weakSelf = self;
+    [request setCompleted:^(TLConfig *result, __unused NSTimeInterval timestamp, id error)
+    {
+        [ActionStageInstance() dispatchOnStageQueue:^
+        {
+            __strong TGUpdateConfigActor *strongSelf = weakSelf;
+            if (error == nil)
+                [strongSelf configRequestSuccess:result];
+            else
+                [strongSelf configRequestFailed];
+        }];
+    }];
+    
+    [self addCancelToken:request.internalId];
+    [[TGTelegramNetworking instance] addRequest:request];
 }
 
 - (void)inviteTextRequestSuccess:(TLhelp_InviteText *)inviteText
 {
+    _inviteReceived = true;
+    
     TGDispatchOnMainThread(^
     {
         if (inviteText.message.length != 0)
@@ -35,12 +68,37 @@
         }
     });
     
-    [ActionStageInstance() actionCompleted:self.path result:nil];
+    if (_inviteReceived && _configReceived)
+        [ActionStageInstance() actionCompleted:self.path result:nil];
 }
 
 - (void)inviteTextRequestFailed
 {
-    [ActionStageInstance() actionFailed:self.path reason:-1];
+    _inviteReceived = true;
+    
+    if (_inviteReceived && _configReceived)
+        [ActionStageInstance() actionFailed:self.path reason:-1];
+}
+
+- (void)configRequestSuccess:(TLConfig *)config
+{
+    _configReceived = true;
+    
+    int32_t maxChatParticipants = MAX(100, config.chat_size_max);
+    int32_t maxBroadcastReceivers = MAX(100, config.broadcast_size_max);
+    [TGDatabaseInstance() setCustomProperty:@"maxChatParticipants" value:[NSData dataWithBytes:&maxChatParticipants length:4]];
+    [TGDatabaseInstance() setCustomProperty:@"maxBroadcastReceivers" value:[NSData dataWithBytes:&maxBroadcastReceivers length:4]];
+    
+    if (_inviteReceived && _configReceived)
+        [ActionStageInstance() actionCompleted:self.path result:nil];
+}
+
+- (void)configRequestFailed
+{
+    _configReceived = true;
+    
+    if (_inviteReceived && _configReceived)
+        [ActionStageInstance() actionFailed:self.path reason:-1];
 }
 
 @end

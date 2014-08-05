@@ -68,6 +68,8 @@ static CTFontRef textFontForSize(CGFloat size)
         _textModel.textCheckingResults = message.textCheckingResults;
         _textModel.textColor = [assetsSource messageTextColor];
         _textModel.layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks | TGReusableLabelLayoutDateSpacing | (_incoming ? 0 : TGReusableLabelLayoutExtendedDateSpacing);
+        if (message.isBroadcast)
+            _textModel.additionalTrailingWidth += 10.0f;
         [_contentModel addSubmodel:_textModel];
     }
     return self;

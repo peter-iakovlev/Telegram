@@ -22,6 +22,8 @@
 
 #import "TL/TLMetaScheme.h"
 
+#import "TGDatabase.h"
+
 @interface TGDatacenterWatchdogActor ()
 {
     MTTimer *_startupTimer;
@@ -155,12 +157,12 @@
     [requestService addRequest:request];
 }
 
-- (void)processConfig:(TLConfig *)config fromDatacenterId:(NSInteger)datacenterId
+- (void)processConfig:(TLConfig *)config fromDatacenterId:(NSInteger)__unused datacenterId
 {
     MTContext *context = [[TGTelegramNetworking instance] context];
     
     [context performBatchUpdates:^
-    {
+    {        
         NSMutableDictionary *addressListByDatacenterId = [[NSMutableDictionary alloc] init];
         
         for (TLDcOption *dcOption in config.dc_options)

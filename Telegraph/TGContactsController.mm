@@ -1521,7 +1521,12 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
         else if (user.uid == INT_MAX - 1)
             mode = TGFlatActionCellModeCreateEncrypted;
         else if (user.uid == INT_MAX - 2)
-            mode = TGFlatActionCellModeBroadcasts;
+        {
+            if (_contactsMode & TGContactsModeCreateGroupOption)
+                mode = TGFlatActionCellModeCreateBroadcast;
+            else
+                mode = TGFlatActionCellModeBroadcasts;
+        }
         else
             mode = TGFlatActionCellModeCreateGroup;
 

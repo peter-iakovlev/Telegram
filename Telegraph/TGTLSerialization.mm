@@ -126,9 +126,9 @@
         
         return [[NSString alloc] initWithFormat:@"%@ (%" PRId64 "/%" PRId32 ") for (%@)", NSStringFromClass([messageBody class]), messageId, messageSeqNo, idsString];
     }
-    else if ([messageBody isKindOfClass:[TLInvokeWithLayer12 class]])
+    else if ([messageBody isKindOfClass:[TLInvokeWithLayer15 class]])
     {
-        id subBody = ((TLInvokeWithLayer12 *)messageBody).query;
+        id subBody = ((TLInvokeWithLayer15 *)messageBody).query;
         if ([subBody isKindOfClass:[TLInitConnection class]])
             return [[NSString alloc] initWithFormat:@"%@ (I, L, %" PRId64 "/%" PRId32 ")", NSStringFromClass([((TLInitConnection *)subBody).query class]), messageId, messageSeqNo];
         else

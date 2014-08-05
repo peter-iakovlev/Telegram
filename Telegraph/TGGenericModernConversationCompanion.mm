@@ -1051,7 +1051,7 @@ typedef enum {
         CGSize thumbnailSize = TGFitSize(originalSize, CGSizeMake(90, 90));
         
         UIImage *fullImage = TGScaleImageToPixelSize(image, imageSize);
-        NSData *imageData = UIImageJPEGRepresentation(fullImage, 0.87f);
+        NSData *imageData = UIImageJPEGRepresentation(fullImage, 0.8f);
         
         UIImage *previewImage = TGScaleImageToPixelSize(fullImage, TGFitSize(originalSize, [TGGenericModernConversationCompanion preferredInlineThumbnailSize]));
         NSData *thumbnailData = UIImageJPEGRepresentation(previewImage, 0.9f);

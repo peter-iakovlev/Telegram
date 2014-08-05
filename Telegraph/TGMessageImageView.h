@@ -33,6 +33,12 @@ typedef enum {
 
 @end
 
+@interface TGMessageImageViewContainer : UIView <TGModernView>
+
+@property (nonatomic, strong) TGMessageImageView *imageView;
+
+@end
+
 @interface TGMessageImageView : TGImageView <TGModernView>
 
 @property (nonatomic, weak) id<TGMessageImageViewDelegate> delegate;
@@ -40,11 +46,14 @@ typedef enum {
 @property (nonatomic) int overlayType;
 @property (nonatomic) float progress;
 
+- (UIImage *)currentImage;
+
 - (void)setOverlayType:(int)overlayType animated:(bool)animated;
 - (void)setProgress:(float)progress animated:(bool)animated;
 - (void)setTimestampHidden:(bool)timestampHidden;
 - (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue animated:(bool)animated;
 - (void)setAdditionalDataString:(NSString *)additionalDataString;
 - (void)setDisplayTimestampProgress:(bool)displayTimestampProgress;
+- (void)setIsBroadcast:(bool)isBroadcast;
 
 @end

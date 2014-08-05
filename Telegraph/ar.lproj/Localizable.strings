@@ -161,6 +161,9 @@
 // Login
 "Login.PhoneAndCountryHelp" = "يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول.";
 "Login.CodeHelp" = "تم إرسال رسالة قصيرة تحتوي على رمز التفعيل الخاص بك للرقم %@";
+"Login.CodeSentInternal" = "يرجى إدخال الرمز الذي استقبلته للتو على تطبيق **تيليجرام** السابق الخاص بك";
+"Login.HaveNotReceivedCodeInternal" = "Haven't received the code?";
+"Login.CodeSentSms" = "We have sent you an SMS with the code";
 "Login.Code" = "الرمز";
 "Login.CallRequestState1" = "تيليجرام سيتصل بك خلال %d:%.2d";
 "Login.CallRequestState2" = "جاري طلب اتصال من تيليجرام...";
@@ -235,6 +238,7 @@
 "Compose.NewGroup" = "مجموعة جديدة";
 "Compose.NewEncryptedChat" = "محادثة سرية جديدة";
 "Compose.NewBroadcast" = "قائمة رسائل جماعية";
+"Compose.NewBroadcastButton" = "رسالة جماعية جديدة";
 "Compose.Recipients" = "المستقبلون";
 "Compose.Create" = "إنشاء";
 
@@ -439,7 +443,7 @@
 "MediaPicker.AccessDeniedHelp" = "الرجاء الذهاب إلى إعدادات الـ %@ — الخصوصية — الصور.\nثم قم بتفعيل تيليجرام.";
 "SearchImages.Downloading#Kb" = "جاري تنزيل %d Kb";
 "SearchImages.Downloading#Mb" = "جاري تنزيل %d Mb";
-"SearchImages.ImageNofM" = "صورة %1$@ من @2$@";
+"SearchImages.ImageNofM" = "صورة %1$@ من %2$@";
 "SearchImages.DownloadCancelled" = "تم إلغاء التنزيل";
 "SearchImages.ErrorDownloadingImage" = "خطأ في تنزيل الصورة";
 "SearchImages.SkipImage" = "تخطى الصورة";
@@ -660,5 +664,5 @@
 "BroadcastListInfo.AddRecipient" = "إضافة مستقبل";
 
 // Video
-"VideoPreview.OptionSD" = "Normal Size (%@)";
-"VideoPreview.OptionHD" = "High Definition (%@)";
+"VideoPreview.OptionSD" = "الحجم الطبيعي (%@)";
+"VideoPreview.OptionHD" = "عالي الدقة (%@)";

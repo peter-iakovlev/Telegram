@@ -17,5 +17,6 @@
 - (void)setBackdropArea:(TGStaticBackdropAreaData *)backdropArea transitionDuration:(NSTimeInterval)transitionDuration;
 - (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue animated:(bool)animated;
 - (void)setDisplayProgress:(bool)displayProgress;
+- (void)setIsBroadcast:(bool)setIsBroadcast;
 
 @end

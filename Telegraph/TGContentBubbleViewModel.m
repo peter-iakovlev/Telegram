@@ -33,6 +33,8 @@
 {
     UITapGestureRecognizer *_unsentButtonTapRecognizer;
     TGDoubleTapGestureRecognizer *_boundDoubleTapRecognizer;
+    
+    TGModernImageViewModel *_broadcastIconModel;
 }
 
 @end
@@ -87,6 +89,13 @@
         NSString *dateText = [TGDateUtils stringForShortTime:(int)message.date daytimeVariant:&daytimeVariant];
         _dateModel = [[TGModernDateViewModel alloc] initWithText:dateText textColor:_incoming ? incomingDateColor : outgoingDateColor daytimeVariant:daytimeVariant];
         [_contentModel addSubmodel:_dateModel];
+        
+        if (message.isBroadcast)
+        {
+            _broadcastIconModel = [[TGModernImageViewModel alloc] initWithImage:[UIImage imageNamed:@"ModernMessageBroadcastIcon.png"]];
+            [_broadcastIconModel sizeToFit];
+            [_contentModel addSubmodel:_broadcastIconModel];
+        }
         
         if (!_incoming)
         {
@@ -669,6 +678,11 @@
     [self layoutContentForHeaderHeight:headerSize.height];
     
     _dateModel.frame = CGRectMake(_contentModel.frame.size.width - (_incoming ? (3 + TGRetinaPixel) : 20.0f) - _dateModel.frame.size.width, _contentModel.frame.size.height - 18.0f - (TGIsLocaleArabic() ? 1.0f : 0.0f), _dateModel.frame.size.width, _dateModel.frame.size.height);
+    
+    if (_broadcastIconModel != nil)
+    {
+        _broadcastIconModel.frame = (CGRect){{_dateModel.frame.origin.x - 5.0f - _broadcastIconModel.frame.size.width, _dateModel.frame.origin.y + 3.0f + TGRetinaPixel}, _broadcastIconModel.frame.size};
+    }
     
     if (_progressModel != nil)
         _progressModel.frame = CGRectMake(containerSize.width - 28 - layoutConstants->rightInset - unsentOffset, _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);

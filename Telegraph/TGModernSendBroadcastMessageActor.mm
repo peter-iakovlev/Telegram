@@ -354,6 +354,7 @@
                 TGMessage *parsedMessage = [[TGMessage alloc] initWithTelegraphMessageDesc:message];
                 if (parsedMessage.mid != 0 && parsedMessage.cid != 0)
                 {
+                    parsedMessage.isBroadcast = true;
                     [parsedMessages addObject:parsedMessage];
                 }
             }
@@ -372,7 +373,7 @@
             [TGUserDataRequestBuilder executeUserDataUpdate:statedMessages.users];
             
             static int actionId = 0;
-            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(sendBroadcast%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", parsedMessages, @"messages", nil]];
+            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(sendBroadcast%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", parsedMessages, @"messages", @true, @"doNotModifyDates", nil]];
             
             if (self.preparedMessage.randomId != 0)
                 [TGDatabaseInstance() removeTempIds:@[@(self.preparedMessage.randomId)]];

@@ -977,7 +977,12 @@
 		D0D443A71951B84600CF2A7E /* telegram_logo_still@2x~ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = D0D443A61951B84600CF2A7E /* telegram_logo_still@2x~ipad.png */; };
 		D0D443B619525AA800CF2A7E /* TGVideoPreviewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0D443B519525AA800CF2A7E /* TGVideoPreviewController.m */; };
 		D0D443B8195315D500CF2A7E /* Icon-76@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0D443B7195315D500CF2A7E /* Icon-76@2x.png */; };
+		D0D670D6197EA36C0031B041 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0D670D2197EA36C0031B041 /* InfoPlist.strings */; };
+		D0D670D7197EA36C0031B041 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0D670D4197EA36C0031B041 /* Localizable.strings */; };
 		D0DA76AF193BDD9E00157F4B /* TGFileThumbnailDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D0DA76AE193BDD9E00157F4B /* TGFileThumbnailDataSource.m */; };
+		D0DAA481197495A80036E709 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = D0DAA480197495A80036E709 /* Icon-72.png */; };
+		D0DAA483197495EA0036E709 /* Icon-72@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0DAA482197495EA0036E709 /* Icon-72@2x.png */; };
+		D0DAA485197496240036E709 /* Icon-76.png in Resources */ = {isa = PBXBuildFile; fileRef = D0DAA484197496240036E709 /* Icon-76.png */; };
 		D0DB965B18DC85030013B9DC /* TGDownloadLocalizationActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D0DB965A18DC85030013B9DC /* TGDownloadLocalizationActor.m */; };
 		D0E2ABD718AFAB65008EDB82 /* libMtProtoKit_Legacy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0E2ABD618AFAB65008EDB82 /* libMtProtoKit_Legacy.a */; };
 		D0E3C61719633E2E00B133E0 /* TGAlternateBroadcastListsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0E3C61619633E2E00B133E0 /* TGAlternateBroadcastListsController.mm */; };
@@ -2609,8 +2614,13 @@
 		D0D443B419525AA800CF2A7E /* TGVideoPreviewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGVideoPreviewController.h; sourceTree = "<group>"; };
 		D0D443B519525AA800CF2A7E /* TGVideoPreviewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGVideoPreviewController.m; sourceTree = "<group>"; };
 		D0D443B7195315D500CF2A7E /* Icon-76@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-76@2x.png"; sourceTree = "<group>"; };
+		D0D670D3197EA36C0031B041 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = InfoPlist.strings; sourceTree = "<group>"; };
+		D0D670D5197EA36C0031B041 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = Localizable.strings; sourceTree = "<group>"; };
 		D0DA76AD193BDD9E00157F4B /* TGFileThumbnailDataSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGFileThumbnailDataSource.h; sourceTree = "<group>"; };
 		D0DA76AE193BDD9E00157F4B /* TGFileThumbnailDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGFileThumbnailDataSource.m; sourceTree = "<group>"; };
+		D0DAA480197495A80036E709 /* Icon-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-72.png"; sourceTree = "<group>"; };
+		D0DAA482197495EA0036E709 /* Icon-72@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-72@2x.png"; sourceTree = "<group>"; };
+		D0DAA484197496240036E709 /* Icon-76.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-76.png"; sourceTree = "<group>"; };
 		D0DB965918DC85030013B9DC /* TGDownloadLocalizationActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGDownloadLocalizationActor.h; sourceTree = "<group>"; };
 		D0DB965A18DC85030013B9DC /* TGDownloadLocalizationActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGDownloadLocalizationActor.m; sourceTree = "<group>"; };
 		D0E2ABD618AFAB65008EDB82 /* libMtProtoKit_Legacy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libMtProtoKit_Legacy.a; path = "../MtProtoKit/build/Debug-iphoneos/libMtProtoKit_Legacy.a"; sourceTree = "<group>"; };
@@ -3366,6 +3376,7 @@
 		9351565D18686E9D00621293 /* Localization */ = {
 			isa = PBXGroup;
 			children = (
+				D0D670D1197EA36C0031B041 /* it.lproj */,
 				D0C9254D1949ED1A00E629CA /* pt.lproj */,
 				D035EBB6194868B700EEEC17 /* nl.lproj */,
 				D07FD9DD18CBA6CA009B649E /* de.lproj */,
@@ -5383,6 +5394,9 @@
 		D08805A1156E8F3600311537 = {
 			isa = PBXGroup;
 			children = (
+				D0DAA484197496240036E709 /* Icon-76.png */,
+				D0DAA482197495EA0036E709 /* Icon-72@2x.png */,
+				D0DAA480197495A80036E709 /* Icon-72.png */,
 				D0D443B7195315D500CF2A7E /* Icon-76@2x.png */,
 				D0A516C6193FD7E9000B8984 /* iPad-Landscape.png */,
 				D0A516C7193FD7E9000B8984 /* iPad-Portrait.png */,
@@ -5658,6 +5672,19 @@
 		D0880632156EAEA300311537 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D0C915AE1982997A00824042 /* ModernMessageBroadcastIconWhite@2x.png */,
+				D0C915AF1982997A00824042 /* ModernMessageBroadcastIconWhite.png */,
+				D0C915B01982997A00824042 /* builtin-wallpapers */,
+				D0C915C11982997A00824042 /* Placeholders */,
+				D0C915FA1982997A00824042 /* ProgressIndicatorLarge */,
+				D0C916141982997B00824042 /* ProgressIndicatorWhite */,
+				D0C9162D1982997B00824042 /* Menu */,
+				D0C9163B1982997B00824042 /* ProgressIndicator */,
+				D0C916541982997B00824042 /* Fonts */,
+				D0C916571982997B00824042 /* notifications */,
+				D0C9166E1982997B00824042 /* Indices */,
+				D0C9158D1982512400824042 /* ModernMessageBroadcastIcon.png */,
+				D0C9158E1982512400824042 /* ModernMessageBroadcastIcon@2x.png */,
 				D0AAD1F91964B6F30022B101 /* BroadcastLargeAvatarIcon@2x.png */,
 				D0AAD1FA1964B6F30022B101 /* BroadcastLargeAvatarIcon.png */,
 				D0E3C61B196361E400B133E0 /* BroadcastAvatarIcon.png */,
@@ -6055,6 +6082,260 @@
 			path = "thirdparty/Video Encoder";
 			sourceTree = SOURCE_ROOT;
 		};
+		D0C915B01982997A00824042 /* builtin-wallpapers */ = {
+			isa = PBXGroup;
+			children = (
+				D0C915B11982997A00824042 /* builtin-wallpaper-0-thumbnail.jpg */,
+				D0C915B21982997A00824042 /* builtin-wallpaper-0.jpg */,
+				D0C915B31982997A00824042 /* builtin-wallpaper-1-thumbnail.jpg */,
+				D0C915B41982997A00824042 /* builtin-wallpaper-1.jpg */,
+				D0C915B51982997A00824042 /* builtin-wallpaper-2-thumbnail.jpg */,
+				D0C915B61982997A00824042 /* builtin-wallpaper-2.jpg */,
+				D0C915B71982997A00824042 /* builtin-wallpaper-3-thumbnail.jpg */,
+				D0C915B81982997A00824042 /* builtin-wallpaper-3.jpg */,
+				D0C915B91982997A00824042 /* builtin-wallpaper-4-thumbnail.jpg */,
+				D0C915BA1982997A00824042 /* builtin-wallpaper-4.jpg */,
+				D0C915BB1982997A00824042 /* pad-builtin-wallpaper-0-thumbnail.jpg */,
+				D0C915BC1982997A00824042 /* pad-builtin-wallpaper-0.jpg */,
+				D0C915BD1982997A00824042 /* pad-builtin-wallpaper-1-thumbnail.jpg */,
+				D0C915BE1982997A00824042 /* pad-builtin-wallpaper-1.jpg */,
+				D0C915BF1982997A00824042 /* pad-builtin-wallpaper-2-thumbnail.jpg */,
+				D0C915C01982997A00824042 /* pad-builtin-wallpaper-2.jpg */,
+			);
+			name = "builtin-wallpapers";
+			path = "Resources/builtin-wallpapers";
+			sourceTree = "<group>";
+		};
+		D0C915C11982997A00824042 /* Placeholders */ = {
+			isa = PBXGroup;
+			children = (
+				D0C915C21982997A00824042 /* ConversationAvatar1@2x.png */,
+				D0C915C31982997A00824042 /* ConversationAvatar2@2x.png */,
+				D0C915C41982997A00824042 /* ConversationAvatar3@2x.png */,
+				D0C915C51982997A00824042 /* ConversationAvatar4@2x.png */,
+				D0C915C61982997A00824042 /* ConversationAvatar5@2x.png */,
+				D0C915C71982997A00824042 /* ConversationAvatar6@2x.png */,
+				D0C915C81982997A00824042 /* ConversationAvatar7@2x.png */,
+				D0C915C91982997A00824042 /* ConversationAvatar8@2x.png */,
+				D0C915CA1982997A00824042 /* DialogListAvatar1@2x.png */,
+				D0C915CB1982997A00824042 /* DialogListAvatar2@2x.png */,
+				D0C915CC1982997A00824042 /* DialogListAvatar3@2x.png */,
+				D0C915CD1982997A00824042 /* DialogListAvatar4@2x.png */,
+				D0C915CE1982997A00824042 /* DialogListAvatar5@2x.png */,
+				D0C915CF1982997A00824042 /* DialogListAvatar6@2x.png */,
+				D0C915D01982997A00824042 /* DialogListAvatar7@2x.png */,
+				D0C915D11982997A00824042 /* DialogListAvatar8@2x.png */,
+				D0C915D21982997A00824042 /* DialogListAvatarSystem@2x.png */,
+				D0C915D31982997A00824042 /* DialogListGroupAvatar1@2x.png */,
+				D0C915D41982997A00824042 /* DialogListGroupAvatar2@2x.png */,
+				D0C915D51982997A00824042 /* DialogListGroupAvatar3@2x.png */,
+				D0C915D61982997A00824042 /* DialogListGroupAvatar4@2x.png */,
+				D0C915D71982997A00824042 /* DialogListGroupAvatarSmall1@2x.png */,
+				D0C915D81982997A00824042 /* DialogListGroupAvatarSmall2@2x.png */,
+				D0C915D91982997A00824042 /* DialogListGroupAvatarSmall3@2x.png */,
+				D0C915DA1982997A00824042 /* DialogListGroupAvatarSmall4@2x.png */,
+				D0C915DB1982997A00824042 /* ProfileAvatar1@2x.png */,
+				D0C915DC1982997A00824042 /* ProfileAvatar2@2x.png */,
+				D0C915DD1982997A00824042 /* ProfileAvatar3@2x.png */,
+				D0C915DE1982997A00824042 /* ProfileAvatar4@2x.png */,
+				D0C915DF1982997A00824042 /* ProfileAvatar5@2x.png */,
+				D0C915E01982997A00824042 /* ProfileAvatar6@2x.png */,
+				D0C915E11982997A00824042 /* ProfileAvatar7@2x.png */,
+				D0C915E21982997A00824042 /* ProfileAvatar8@2x.png */,
+				D0C915E31982997A00824042 /* ProfileAvatarSystem@2x.png */,
+				D0C915E41982997A00824042 /* SmallAvatar1@2x.png */,
+				D0C915E51982997A00824042 /* SmallAvatar2@2x.png */,
+				D0C915E61982997A00824042 /* SmallAvatar3@2x.png */,
+				D0C915E71982997A00824042 /* SmallAvatar4@2x.png */,
+				D0C915E81982997A00824042 /* SmallAvatar5@2x.png */,
+				D0C915E91982997A00824042 /* SmallAvatar6@2x.png */,
+				D0C915EA1982997A00824042 /* SmallAvatar7@2x.png */,
+				D0C915EB1982997A00824042 /* SmallAvatar8@2x.png */,
+				D0C915EC1982997A00824042 /* SmallAvatarSystem@2x.png */,
+				D0C915ED1982997A00824042 /* TitleAvatar1@2x.png */,
+				D0C915EE1982997A00824042 /* TitleAvatar2@2x.png */,
+				D0C915EF1982997A00824042 /* TitleAvatar3@2x.png */,
+				D0C915F01982997A00824042 /* TitleAvatar4@2x.png */,
+				D0C915F11982997A00824042 /* TitleAvatar5@2x.png */,
+				D0C915F21982997A00824042 /* TitleAvatar6@2x.png */,
+				D0C915F31982997A00824042 /* TitleAvatar7@2x.png */,
+				D0C915F41982997A00824042 /* TitleAvatar8@2x.png */,
+				D0C915F51982997A00824042 /* TitleAvatarGroup1@2x.png */,
+				D0C915F61982997A00824042 /* TitleAvatarGroup2@2x.png */,
+				D0C915F71982997A00824042 /* TitleAvatarGroup3@2x.png */,
+				D0C915F81982997A00824042 /* TitleAvatarGroup4@2x.png */,
+				D0C915F91982997A00824042 /* TitleAvatarSystem@2x.png */,
+			);
+			name = Placeholders;
+			path = Resources/Placeholders;
+			sourceTree = "<group>";
+		};
+		D0C915FA1982997A00824042 /* ProgressIndicatorLarge */ = {
+			isa = PBXGroup;
+			children = (
+				D0C915FB1982997A00824042 /* navbar_big_progress_0@2x.png */,
+				D0C915FC1982997A00824042 /* navbar_big_progress_10@2x.png */,
+				D0C915FD1982997A00824042 /* navbar_big_progress_11@2x.png */,
+				D0C915FE1982997A00824042 /* navbar_big_progress_12@2x.png */,
+				D0C915FF1982997A00824042 /* navbar_big_progress_13@2x.png */,
+				D0C916001982997A00824042 /* navbar_big_progress_14@2x.png */,
+				D0C916011982997A00824042 /* navbar_big_progress_15@2x.png */,
+				D0C916021982997A00824042 /* navbar_big_progress_16@2x.png */,
+				D0C916031982997A00824042 /* navbar_big_progress_17@2x.png */,
+				D0C916041982997A00824042 /* navbar_big_progress_18@2x.png */,
+				D0C916051982997A00824042 /* navbar_big_progress_19@2x.png */,
+				D0C916061982997A00824042 /* navbar_big_progress_1@2x.png */,
+				D0C916071982997A00824042 /* navbar_big_progress_20@2x.png */,
+				D0C916081982997A00824042 /* navbar_big_progress_21@2x.png */,
+				D0C916091982997A00824042 /* navbar_big_progress_22@2x.png */,
+				D0C9160A1982997A00824042 /* navbar_big_progress_23@2x.png */,
+				D0C9160B1982997A00824042 /* navbar_big_progress_24@2x.png */,
+				D0C9160C1982997A00824042 /* navbar_big_progress_2@2x.png */,
+				D0C9160D1982997A00824042 /* navbar_big_progress_3@2x.png */,
+				D0C9160E1982997A00824042 /* navbar_big_progress_4@2x.png */,
+				D0C9160F1982997A00824042 /* navbar_big_progress_5@2x.png */,
+				D0C916101982997B00824042 /* navbar_big_progress_6@2x.png */,
+				D0C916111982997B00824042 /* navbar_big_progress_7@2x.png */,
+				D0C916121982997B00824042 /* navbar_big_progress_8@2x.png */,
+				D0C916131982997B00824042 /* navbar_big_progress_9@2x.png */,
+			);
+			name = ProgressIndicatorLarge;
+			path = Resources/ProgressIndicatorLarge;
+			sourceTree = "<group>";
+		};
+		D0C916141982997B00824042 /* ProgressIndicatorWhite */ = {
+			isa = PBXGroup;
+			children = (
+				D0C916151982997B00824042 /* RProgress10@2x.png */,
+				D0C916161982997B00824042 /* RProgress11@2x.png */,
+				D0C916171982997B00824042 /* RProgress12@2x.png */,
+				D0C916181982997B00824042 /* RProgress13@2x.png */,
+				D0C916191982997B00824042 /* RProgress14@2x.png */,
+				D0C9161A1982997B00824042 /* RProgress15@2x.png */,
+				D0C9161B1982997B00824042 /* RProgress16@2x.png */,
+				D0C9161C1982997B00824042 /* RProgress17@2x.png */,
+				D0C9161D1982997B00824042 /* RProgress18@2x.png */,
+				D0C9161E1982997B00824042 /* RProgress19@2x.png */,
+				D0C9161F1982997B00824042 /* RProgress1@2x.png */,
+				D0C916201982997B00824042 /* RProgress20@2x.png */,
+				D0C916211982997B00824042 /* RProgress21@2x.png */,
+				D0C916221982997B00824042 /* RProgress22@2x.png */,
+				D0C916231982997B00824042 /* RProgress23@2x.png */,
+				D0C916241982997B00824042 /* RProgress24@2x.png */,
+				D0C916251982997B00824042 /* RProgress2@2x.png */,
+				D0C916261982997B00824042 /* RProgress3@2x.png */,
+				D0C916271982997B00824042 /* RProgress4@2x.png */,
+				D0C916281982997B00824042 /* RProgress5@2x.png */,
+				D0C916291982997B00824042 /* RProgress6@2x.png */,
+				D0C9162A1982997B00824042 /* RProgress7@2x.png */,
+				D0C9162B1982997B00824042 /* RProgress8@2x.png */,
+				D0C9162C1982997B00824042 /* RProgress9@2x.png */,
+			);
+			name = ProgressIndicatorWhite;
+			path = Resources/ProgressIndicatorWhite;
+			sourceTree = "<group>";
+		};
+		D0C9162D1982997B00824042 /* Menu */ = {
+			isa = PBXGroup;
+			children = (
+				D0C9162E1982997B00824042 /* MenuArrowBottom@2x.png */,
+				D0C9162F1982997B00824042 /* MenuArrowBottom_Highlighted@2x.png */,
+				D0C916301982997B00824042 /* MenuArrowTop@2x.png */,
+				D0C916311982997B00824042 /* MenuArrowTop_Highlighted@2x.png */,
+				D0C916321982997B00824042 /* MenuButtonCenter@2x.png */,
+				D0C916331982997B00824042 /* MenuButtonCenter_Highlighted@2x.png */,
+				D0C916341982997B00824042 /* MenuButtonLeft@2x.png */,
+				D0C916351982997B00824042 /* MenuButtonLeft_Highlighted@2x.png */,
+				D0C916361982997B00824042 /* MenuButtonRight@2x.png */,
+				D0C916371982997B00824042 /* MenuButtonRight_Highlighted@2x.png */,
+				D0C916381982997B00824042 /* MenuButtonSeparator@2x.png */,
+				D0C916391982997B00824042 /* MenuButtonSeparatorLeft@2x.png */,
+				D0C9163A1982997B00824042 /* MenuButtonSeparatorRight@2x.png */,
+			);
+			name = Menu;
+			path = Resources/Menu;
+			sourceTree = "<group>";
+		};
+		D0C9163B1982997B00824042 /* ProgressIndicator */ = {
+			isa = PBXGroup;
+			children = (
+				D0C9163C1982997B00824042 /* grayProgress10@2x.png */,
+				D0C9163D1982997B00824042 /* grayProgress11@2x.png */,
+				D0C9163E1982997B00824042 /* grayProgress12@2x.png */,
+				D0C9163F1982997B00824042 /* grayProgress13@2x.png */,
+				D0C916401982997B00824042 /* grayProgress14@2x.png */,
+				D0C916411982997B00824042 /* grayProgress15@2x.png */,
+				D0C916421982997B00824042 /* grayProgress16@2x.png */,
+				D0C916431982997B00824042 /* grayProgress17@2x.png */,
+				D0C916441982997B00824042 /* grayProgress18@2x.png */,
+				D0C916451982997B00824042 /* grayProgress19@2x.png */,
+				D0C916461982997B00824042 /* grayProgress1@2x.png */,
+				D0C916471982997B00824042 /* grayProgress20@2x.png */,
+				D0C916481982997B00824042 /* grayProgress21@2x.png */,
+				D0C916491982997B00824042 /* grayProgress22@2x.png */,
+				D0C9164A1982997B00824042 /* grayProgress23@2x.png */,
+				D0C9164B1982997B00824042 /* grayProgress24@2x.png */,
+				D0C9164C1982997B00824042 /* grayProgress2@2x.png */,
+				D0C9164D1982997B00824042 /* grayProgress3@2x.png */,
+				D0C9164E1982997B00824042 /* grayProgress4@2x.png */,
+				D0C9164F1982997B00824042 /* grayProgress5@2x.png */,
+				D0C916501982997B00824042 /* grayProgress6@2x.png */,
+				D0C916511982997B00824042 /* grayProgress7@2x.png */,
+				D0C916521982997B00824042 /* grayProgress8@2x.png */,
+				D0C916531982997B00824042 /* grayProgress9@2x.png */,
+			);
+			name = ProgressIndicator;
+			path = Resources/ProgressIndicator;
+			sourceTree = "<group>";
+		};
+		D0C916541982997B00824042 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				D0C916551982997B00824042 /* MyriadPro-Bold.otf */,
+				D0C916561982997B00824042 /* MyriadPro-Regular.otf */,
+			);
+			name = Fonts;
+			path = Resources/Fonts;
+			sourceTree = "<group>";
+		};
+		D0C916571982997B00824042 /* notifications */ = {
+			isa = PBXGroup;
+			children = (
+				D0C916581982997B00824042 /* 0.m4a */,
+				D0C916591982997B00824042 /* 1.m4a */,
+				D0C9165A1982997B00824042 /* 100.m4a */,
+				D0C9165B1982997B00824042 /* 101.m4a */,
+				D0C9165C1982997B00824042 /* 102.m4a */,
+				D0C9165D1982997B00824042 /* 103.m4a */,
+				D0C9165E1982997B00824042 /* 104.m4a */,
+				D0C9165F1982997B00824042 /* 105.m4a */,
+				D0C916601982997B00824042 /* 106.m4a */,
+				D0C916611982997B00824042 /* 107.m4a */,
+				D0C916621982997B00824042 /* 108.m4a */,
+				D0C916631982997B00824042 /* 109.m4a */,
+				D0C916641982997B00824042 /* 110.m4a */,
+				D0C916651982997B00824042 /* 111.m4a */,
+				D0C916661982997B00824042 /* 2.m4a */,
+				D0C916671982997B00824042 /* 3.m4a */,
+				D0C916681982997B00824042 /* 4.m4a */,
+				D0C916691982997B00824042 /* 5.m4a */,
+				D0C9166A1982997B00824042 /* 6.m4a */,
+				D0C9166B1982997B00824042 /* 7.m4a */,
+				D0C9166C1982997B00824042 /* 8.m4a */,
+				D0C9166D1982997B00824042 /* 9.m4a */,
+			);
+			name = notifications;
+			path = Resources/notifications;
+			sourceTree = "<group>";
+		};
+		D0C9166E1982997B00824042 /* Indices */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Indices;
+			path = Resources/Indices;
+			sourceTree = "<group>";
+		};
 		D0C9254D1949ED1A00E629CA /* pt.lproj */ = {
 			isa = PBXGroup;
 			children = (
@@ -6217,6 +6498,15 @@
 			name = "Media List";
 			sourceTree = "<group>";
 		};
+		D0D670D1197EA36C0031B041 /* it.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				D0D670D2197EA36C0031B041 /* InfoPlist.strings */,
+				D0D670D4197EA36C0031B041 /* Localizable.strings */,
+			);
+			path = it.lproj;
+			sourceTree = "<group>";
+		};
 		D0E49ACB156FE9C400655FFE /* Contacts */ = {
 			isa = PBXGroup;
 			children = (
@@ -6288,6 +6578,11 @@
 			attributes = {
 				CLASSPREFIX = TG;
 				LastUpgradeCheck = 0460;
+				TargetAttributes = {
+					D08805AB156E8F3600311537 = {
+						DevelopmentTeam = 6N38VWS5BX;
+					};
+				};
 			};
 			buildConfigurationList = D08805A6156E8F3600311537 /* Build configuration list for PBXProject "Telegraph" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -6436,31 +6731,44 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D0C9168E1982997B00824042 /* DialogListAvatar6@2x.png in Resources */,
 				D0BAF3E6193E8AC400A0093F /* TabIconContacts.png in Resources */,
+				D0C917151982997B00824042 /* 102.m4a in Resources */,
 				D08805BB156E8F3600311537 /* InfoPlist.strings in Resources */,
 				D0880639156EB11800311537 /* Localizable.strings in Resources */,
+				D0C917181982997B00824042 /* 105.m4a in Resources */,
+				D0C916FE1982997B00824042 /* grayProgress17@2x.png in Resources */,
+				D0C916D11982997B00824042 /* navbar_big_progress_9@2x.png in Resources */,
 				D0C925CC194A024000E629CA /* start_arrow@2x.png in Resources */,
 				D0052CB3159513F2009482C4 /* SearchBarBackground@2x.png in Resources */,
 				D0BD441818B78DF90036FB8B /* ModernMessageAudioCancel_Outgoing@2x.png in Resources */,
 				93C52F6B18621C2E008229A7 /* ModernMessageDocumentGenericIcon@2x.png in Resources */,
 				D09A218815C9CF5100023542 /* Icon@2x.png in Resources */,
+				D0C916D91982997B00824042 /* RProgress17@2x.png in Resources */,
 				9303849318133F8F00CAC996 /* SearchBarBackground_Active@2x.png in Resources */,
 				D0BD442218BCD0C70036FB8B /* begin_record.caf in Resources */,
 				D00C7196193F3FD40005349C /* ModernBubbleOutgoingPartialHighlightedPad@2x.png in Resources */,
 				D0A516CD193FD848000B8984 /* DetailLogoBlank.png in Resources */,
+				D0C917251982997B00824042 /* 8.m4a in Resources */,
 				934134721853A12200480294 /* ModernMenuDeleteIcon@2x.png in Resources */,
 				D08696B51943A8B300770FE7 /* pad-builtin-wallpaper-2-thumbnail.jpg in Resources */,
 				93D1D76B18467F6D00947655 /* SearchBarScopeDivider@2x.png in Resources */,
 				934280BF1847F326004F1C2A /* DeleteWhiteIcon@2x.png in Resources */,
 				9341B01318511FE000D1195B /* ModernListsDisclosureIndicator@2x.png in Resources */,
+				D0C916F81982997B00824042 /* grayProgress11@2x.png in Resources */,
 				D0D4439F1951B53000CF2A7E /* telegram_logo_still@2x.png in Resources */,
 				93064E041833C5EA0024C05A /* NavigationBackButtonLandscape_Highlighted@2x.png in Resources */,
 				930F9BAD1891447800D3D7C1 /* ModernMessageSecretPhotoOverlayIcon@2x.png in Resources */,
+				D0C9169A1982997B00824042 /* ProfileAvatar1@2x.png in Resources */,
 				9386E8B3185E30EA00930205 /* ModernContactSelectionChecked@2x.png in Resources */,
+				D0C916D31982997B00824042 /* RProgress11@2x.png in Resources */,
 				9362C05A15DE95060060CFE8 /* SearchBarIcon@2x.png in Resources */,
 				D0EC6CAD15E4618100E7E687 /* DialogListGroupChatIcon@2x.png in Resources */,
+				D0C916CB1982997B00824042 /* navbar_big_progress_3@2x.png in Resources */,
+				D0C917191982997B00824042 /* 106.m4a in Resources */,
 				930808BA18592DAA00E62B42 /* ModernContactListCreateGroupIcon@2x.png in Resources */,
 				93992D8E182A706C00F29746 /* ModernBubbleOutgoingPartial@2x.png in Resources */,
+				D0D670D7197EA36C0031B041 /* Localizable.strings in Resources */,
 				934134BC18551FF500480294 /* builtin-wallpaper-2-thumbnail.jpg in Resources */,
 				D0A516C8193FD7E9000B8984 /* iPad-Landscape.png in Resources */,
 				930808B71859253D00E62B42 /* ModernContactListCreateSecretChatIcon@2x.png in Resources */,
@@ -6472,25 +6780,39 @@
 				D0BAF3E5193E8AC400A0093F /* TabIconContacts_Highlighted.png in Resources */,
 				937CFD7D17AED51A00E28C5B /* ProfileAvatarSystem@2x.png in Resources */,
 				D0C925C9194A024000E629CA /* private_dot@2x.png in Resources */,
+				D0C916821982997B00824042 /* ConversationAvatar2@2x.png in Resources */,
 				935B6E261628540C00A2E265 /* SearchInputField@2x.png in Resources */,
 				936DE1901850AE2A00D90029 /* ModernSegmentedControlHighlighted@2x.png in Resources */,
 				D0BAF3F6193E8AC400A0093F /* ModernContactSelectionChecked.png in Resources */,
+				D0C9169D1982997B00824042 /* ProfileAvatar4@2x.png in Resources */,
+				D0C916A61982997B00824042 /* SmallAvatar4@2x.png in Resources */,
 				93C23077183C38EE0071CB58 /* ModernMessageImageDateBackground@2x.png in Resources */,
+				D0C916D51982997B00824042 /* RProgress13@2x.png in Resources */,
+				D0C916EC1982997B00824042 /* MenuArrowTop@2x.png in Resources */,
 				939851C3162F8C56009DBCA5 /* TGNavigationController.xib in Resources */,
 				934D0A971632543E0090BCD0 /* LinkFull@2x.png in Resources */,
 				934D0A9C1632D3B50090BCD0 /* LinkCornerTB@2x.png in Resources */,
 				934D0A9D1632D3B50090BCD0 /* LinkCornerBT@2x.png in Resources */,
 				934D0A9E1632D3B50090BCD0 /* LinkCornerRL@2x.png in Resources */,
 				934D0A9F1632D3B50090BCD0 /* LinkCornerLR@2x.png in Resources */,
+				D0C9169E1982997B00824042 /* ProfileAvatar5@2x.png in Resources */,
+				D0C916941982997B00824042 /* DialogListGroupAvatar3@2x.png in Resources */,
+				D0C916B21982997B00824042 /* TitleAvatar7@2x.png in Resources */,
 				936DE18E1850AE0800D90029 /* ModernSegmentedControlSelected@2x.png in Resources */,
+				D0C916F61982997B00824042 /* MenuButtonSeparatorRight@2x.png in Resources */,
 				93C2307D183CEF270071CB58 /* ModernMessageCheckmarkMedia1@2x.png in Resources */,
 				931668EB164BD14B0082AE8E /* Default@2x.png in Resources */,
 				934D715A17AD906D0099858D /* 8.m4a in Resources */,
 				93269E00185E99B800FBC69F /* ModernImageBubbleHighlight@2x.png in Resources */,
 				930808CB185A295900E62B42 /* ModernNavigationComposeButtonIcon@2x.png in Resources */,
+				D0C9167B1982997B00824042 /* pad-builtin-wallpaper-0-thumbnail.jpg in Resources */,
+				D0C9169B1982997B00824042 /* ProfileAvatar2@2x.png in Resources */,
 				934D715917AD906D0099858D /* 9.m4a in Resources */,
+				D0C916B41982997B00824042 /* TitleAvatarGroup1@2x.png in Resources */,
 				933AA4EE1861348D000AA848 /* ModernTourButtonRightArrow@2x.png in Resources */,
+				D0C916881982997B00824042 /* ConversationAvatar8@2x.png in Resources */,
 				D0C925C3194A024000E629CA /* powerful_infinity@2x.png in Resources */,
+				D0C916E11982997B00824042 /* RProgress24@2x.png in Resources */,
 				934134BE18551FF500480294 /* builtin-wallpaper-3-thumbnail.jpg in Resources */,
 				93E05B3A165D4BCE004E31C5 /* FlatImagePlaceholder@2x.png in Resources */,
 				93BC0BB2165FE05800CF4B6B /* grayProgress10@2x.png in Resources */,
@@ -6498,6 +6820,8 @@
 				93BC0BB4165FE05800CF4B6B /* grayProgress12@2x.png in Resources */,
 				D0BAF3E9193E8AC400A0093F /* TabIconSettings_Highlighted.png in Resources */,
 				93BC0BB5165FE05800CF4B6B /* grayProgress13@2x.png in Resources */,
+				D0C916DB1982997B00824042 /* RProgress19@2x.png in Resources */,
+				D0C916761982997B00824042 /* builtin-wallpaper-2.jpg in Resources */,
 				93BC0BB6165FE05800CF4B6B /* grayProgress14@2x.png in Resources */,
 				93BC0BB7165FE05800CF4B6B /* grayProgress15@2x.png in Resources */,
 				932E00E3184AA1100001D109 /* ModernConversationActionDelete_Disabled@2x.png in Resources */,
@@ -6505,23 +6829,34 @@
 				934280BB1847F31C004F1C2A /* ActionsWhiteIcon@2x.png in Resources */,
 				93BC0BB8165FE05800CF4B6B /* grayProgress16@2x.png in Resources */,
 				936219E1186460F600C52870 /* 103.m4a in Resources */,
+				D0C9167F1982997B00824042 /* pad-builtin-wallpaper-2-thumbnail.jpg in Resources */,
+				D0C916FD1982997B00824042 /* grayProgress16@2x.png in Resources */,
+				D0C916AD1982997B00824042 /* TitleAvatar2@2x.png in Resources */,
 				93BC0BB9165FE05800CF4B6B /* grayProgress17@2x.png in Resources */,
 				93BC0BBA165FE05800CF4B6B /* grayProgress18@2x.png in Resources */,
 				D0C925C2194A024000E629CA /* powerful_bg@2x.jpg in Resources */,
+				D0C916B01982997B00824042 /* TitleAvatar5@2x.png in Resources */,
 				93BC0BBB165FE05800CF4B6B /* grayProgress19@2x.png in Resources */,
 				93BC0BBC165FE05800CF4B6B /* grayProgress1@2x.png in Resources */,
+				D0C916A31982997B00824042 /* SmallAvatar1@2x.png in Resources */,
 				D09EE2E2193A95ED00980617 /* iPad-Landscape@2x.png in Resources */,
 				93BC0BBD165FE05800CF4B6B /* grayProgress20@2x.png in Resources */,
+				D0C916E91982997B00824042 /* RProgress9@2x.png in Resources */,
 				D0C925C8194A024000E629CA /* private_button@2x.png in Resources */,
 				93BC0BBE165FE05800CF4B6B /* grayProgress21@2x.png in Resources */,
 				D00C71B2193F482E0005349C /* ModernBubbleIncomingPartialHighlightedPad.png in Resources */,
+				D0C916961982997B00824042 /* DialogListGroupAvatarSmall1@2x.png in Resources */,
+				D0C916A21982997B00824042 /* ProfileAvatarSystem@2x.png in Resources */,
 				93064E011833C5EA0024C05A /* NavigationBackButton_Highlighted@2x.png in Resources */,
 				93BC0BBF165FE05800CF4B6B /* grayProgress22@2x.png in Resources */,
 				93BC0BC0165FE05800CF4B6B /* grayProgress23@2x.png in Resources */,
+				D0C916F31982997B00824042 /* MenuButtonRight_Highlighted@2x.png in Resources */,
 				93BC0BC1165FE05800CF4B6B /* grayProgress24@2x.png in Resources */,
+				D0C9171F1982997B00824042 /* 2.m4a in Resources */,
 				93BC0BC2165FE05800CF4B6B /* grayProgress2@2x.png in Resources */,
 				D086968D1943698900770FE7 /* ModernAuthCountryButton@2x~ipad.png in Resources */,
 				D09EE2E1193A95ED00980617 /* iPad-Portrait@2x.png in Resources */,
+				D0C916BD1982997B00824042 /* navbar_big_progress_13@2x.png in Resources */,
 				93BC0BC3165FE05800CF4B6B /* grayProgress3@2x.png in Resources */,
 				9386E8AB185DE9CC00930205 /* ModernAuthCountryButtonHighlighted@2x.png in Resources */,
 				93BC0BC4165FE05800CF4B6B /* grayProgress4@2x.png in Resources */,
@@ -6533,39 +6868,67 @@
 				93BC0BC7165FE05800CF4B6B /* grayProgress7@2x.png in Resources */,
 				D0270191196193E1008AB6F4 /* ModernMediaItemVideoIcon@2x.png in Resources */,
 				D020B76018B509C50026DB24 /* ModernConversationMicButton@2x.png in Resources */,
+				D0C916AE1982997B00824042 /* TitleAvatar3@2x.png in Resources */,
 				D0C925CD194A024000E629CA /* start_arrow_ipad.png in Resources */,
+				D0C917121982997B00824042 /* 1.m4a in Resources */,
 				D09EE2BD193484D200980617 /* ModernBubbleOutgoingPartialPad@2x.png in Resources */,
+				D0C917231982997B00824042 /* 6.m4a in Resources */,
+				D0C916871982997B00824042 /* ConversationAvatar7@2x.png in Resources */,
 				93BC0BC8165FE05800CF4B6B /* grayProgress8@2x.png in Resources */,
 				D020B75C18B4F6740026DB24 /* ModernConversationSecretAccessoryTimer@2x.png in Resources */,
+				D0C916DF1982997B00824042 /* RProgress22@2x.png in Resources */,
+				D0C916A81982997B00824042 /* SmallAvatar6@2x.png in Resources */,
 				936219DE186460F600C52870 /* 106.m4a in Resources */,
+				D0C916A11982997B00824042 /* ProfileAvatar8@2x.png in Resources */,
 				93BC0BC9165FE05800CF4B6B /* grayProgress9@2x.png in Resources */,
+				D0C916CF1982997B00824042 /* navbar_big_progress_7@2x.png in Resources */,
 				934134BD18551FF500480294 /* builtin-wallpaper-2.jpg in Resources */,
+				D0C916861982997B00824042 /* ConversationAvatar6@2x.png in Resources */,
+				D0C916D61982997B00824042 /* RProgress14@2x.png in Resources */,
 				932A9E8C1663E26B00FEF7FE /* BannerClose@2x.png in Resources */,
 				930808C11859FECF00E62B42 /* ModernWallpaperSelectedIndicator@2x.png in Resources */,
+				D0C916B31982997B00824042 /* TitleAvatar8@2x.png in Resources */,
 				D0AAD1FC1964B6F30022B101 /* BroadcastLargeAvatarIcon.png in Resources */,
 				9352995017A13D6F006D58FE /* ProgressLoupeFrame@2x.png in Resources */,
 				D0C92538194915C800E629CA /* ModernMessageCheckmark1.png in Resources */,
+				D0C9168B1982997B00824042 /* DialogListAvatar3@2x.png in Resources */,
 				936219E5186466E800C52870 /* 2.m4a in Resources */,
+				D0C916AB1982997B00824042 /* SmallAvatarSystem@2x.png in Resources */,
 				D0E3C61E196361E400B133E0 /* BroadcastAvatarIcon@2x.png in Resources */,
 				9340FDC1166A96E0001CFB01 /* ClockMin@2x.png in Resources */,
 				934280C71847F39B004F1C2A /* SearchImagesButtonTop_Highlighted@2x.png in Resources */,
+				D0C916EB1982997B00824042 /* MenuArrowBottom_Highlighted@2x.png in Resources */,
+				D0C916F11982997B00824042 /* MenuButtonLeft_Highlighted@2x.png in Resources */,
 				9303849118133F8F00CAC996 /* SearchBarClearIcon@2x.png in Resources */,
+				D0C917101982997B00824042 /* MyriadPro-Regular.otf in Resources */,
 				D0C925C7194A024000E629CA /* private_bg@2x.jpg in Resources */,
+				D0C916921982997B00824042 /* DialogListGroupAvatar1@2x.png in Resources */,
+				D0C917081982997B00824042 /* grayProgress3@2x.png in Resources */,
 				9340FDC2166A96E0001CFB01 /* ClockHour@2x.png in Resources */,
 				9340FDC3166A96E0001CFB01 /* ClockFrame@2x.png in Resources */,
 				D0BAF3F4193E8AC400A0093F /* ModernMessageSelectionUnchecked.png in Resources */,
 				934D715317AD8FB50099858D /* 7.m4a in Resources */,
 				93992D6E182922DD00F29746 /* ModernMessageCheckmark1@2x.png in Resources */,
 				D0BAF3F0193E8AC400A0093F /* ModernContactListInviteFriendsIcon.png in Resources */,
+				D0C916E41982997B00824042 /* RProgress4@2x.png in Resources */,
 				936219DB186460F600C52870 /* 100.m4a in Resources */,
+				D0C916FB1982997B00824042 /* grayProgress14@2x.png in Resources */,
+				D0C9169C1982997B00824042 /* ProfileAvatar3@2x.png in Resources */,
 				93064DFC1832A2970024C05A /* ModernTypingDot1@2x.png in Resources */,
 				93064E021833C5EA0024C05A /* NavigationBackButton@2x.png in Resources */,
+				D0D670D6197EA36C0031B041 /* InfoPlist.strings in Resources */,
 				9386E8AE185DEBF800930205 /* ModernAuthPhoneBackground@2x.png in Resources */,
+				D0C916C71982997B00824042 /* navbar_big_progress_22@2x.png in Resources */,
 				93269DFB185E922500FBC69F /* ModernBubbleOutgoingFullHighlighted@2x.png in Resources */,
+				D0C916FF1982997B00824042 /* grayProgress18@2x.png in Resources */,
 				D0A516CC193FD848000B8984 /* DetailLogoBlank@2x.png in Resources */,
 				D086969B1943762100770FE7 /* ModernAuthCountryButtonHighlighted@2x~ipad.png in Resources */,
 				93C2308B183D1D5F0071CB58 /* ModernMessageUnsentButton@2x.png in Resources */,
+				D0C917241982997B00824042 /* 7.m4a in Resources */,
+				D0C916721982997B00824042 /* builtin-wallpaper-0.jpg in Resources */,
 				D08696B81943A8B300770FE7 /* pad-builtin-wallpaper-0.jpg in Resources */,
+				D0C917211982997B00824042 /* 4.m4a in Resources */,
+				D0C916B61982997B00824042 /* TitleAvatarGroup3@2x.png in Resources */,
 				D0C925B9194A024000E629CA /* ic_cam_button@2x.png in Resources */,
 				93C23079183CD59F0071CB58 /* ModernMessageVideoIcon@2x.png in Resources */,
 				934134B218551FF500480294 /* builtin-wallpaper-1-thumbnail.jpg in Resources */,
@@ -6575,12 +6938,15 @@
 				934280C11847F347004F1C2A /* NothingFoundIcon@2x.png in Resources */,
 				D09EE2BE193484D200980617 /* ModernBubbleOutgoingFullPad@2x.png in Resources */,
 				934134BF18551FF500480294 /* builtin-wallpaper-3.jpg in Resources */,
+				D0C917001982997B00824042 /* grayProgress19@2x.png in Resources */,
 				936DE1921850AE7400D90029 /* ModernSegmentedControlDivider@2x.png in Resources */,
 				D0BAF3F8193E8AC400A0093F /* ModernConversationActionDelete_Disabled.png in Resources */,
+				D0C9170A1982997B00824042 /* grayProgress5@2x.png in Resources */,
 				9344D0811694697F005BCCD0 /* HockeySDKResources.bundle in Resources */,
 				9322F816178EE92D00099F0B /* CellHighlighted96@2x.png in Resources */,
 				93AD039C16A1CCEC005D4575 /* navbar_big_progress_0@2x.png in Resources */,
 				93AD039D16A1CCEC005D4575 /* navbar_big_progress_10@2x.png in Resources */,
+				D0C916801982997B00824042 /* pad-builtin-wallpaper-2.jpg in Resources */,
 				93AD039E16A1CCEC005D4575 /* navbar_big_progress_11@2x.png in Resources */,
 				D0A516C9193FD7E9000B8984 /* iPad-Portrait.png in Resources */,
 				93AD039F16A1CCEC005D4575 /* navbar_big_progress_12@2x.png in Resources */,
@@ -6596,13 +6962,19 @@
 				93AD03A516A1CCEC005D4575 /* navbar_big_progress_18@2x.png in Resources */,
 				D0C925BF194A024000E629CA /* ic_videocam@2x.png in Resources */,
 				93AD03A616A1CCEC005D4575 /* navbar_big_progress_19@2x.png in Resources */,
+				D0C916751982997B00824042 /* builtin-wallpaper-2-thumbnail.jpg in Resources */,
+				D0C916D71982997B00824042 /* RProgress15@2x.png in Resources */,
 				93AD03A716A1CCEC005D4575 /* navbar_big_progress_1@2x.png in Resources */,
+				D0C9170E1982997B00824042 /* grayProgress9@2x.png in Resources */,
 				93AD03A816A1CCEC005D4575 /* navbar_big_progress_20@2x.png in Resources */,
 				93AD03A916A1CCEC005D4575 /* navbar_big_progress_21@2x.png in Resources */,
+				D0C916EF1982997B00824042 /* MenuButtonCenter_Highlighted@2x.png in Resources */,
 				9303849218133F8F00CAC996 /* SearchInputField_Active@2x.png in Resources */,
 				93AD03AA16A1CCEC005D4575 /* navbar_big_progress_22@2x.png in Resources */,
+				D0C9169F1982997B00824042 /* ProfileAvatar6@2x.png in Resources */,
 				93AD03AB16A1CCEC005D4575 /* navbar_big_progress_23@2x.png in Resources */,
 				93AD03AC16A1CCEC005D4575 /* navbar_big_progress_24@2x.png in Resources */,
+				D0C916B81982997B00824042 /* TitleAvatarSystem@2x.png in Resources */,
 				93AD03AD16A1CCEC005D4575 /* navbar_big_progress_2@2x.png in Resources */,
 				93ED9EF918634CD700E22F84 /* ModernConversationEmptyListLogo@2x.png in Resources */,
 				93AD03AE16A1CCEC005D4575 /* navbar_big_progress_3@2x.png in Resources */,
@@ -6611,9 +6983,15 @@
 				93AD03B116A1CCEC005D4575 /* navbar_big_progress_6@2x.png in Resources */,
 				93AD03B216A1CCEC005D4575 /* navbar_big_progress_7@2x.png in Resources */,
 				D0C925581949EDED00E629CA /* InfoPlist.strings in Resources */,
+				D0C9167C1982997B00824042 /* pad-builtin-wallpaper-0.jpg in Resources */,
 				93AD03B316A1CCEC005D4575 /* navbar_big_progress_8@2x.png in Resources */,
 				D0C925BB194A024000E629CA /* ic_pencil@2x.png in Resources */,
+				D0C916B71982997B00824042 /* TitleAvatarGroup4@2x.png in Resources */,
 				934D715617AD8FB50099858D /* 5.m4a in Resources */,
+				D0C916F21982997B00824042 /* MenuButtonRight@2x.png in Resources */,
+				D0C916F51982997B00824042 /* MenuButtonSeparatorLeft@2x.png in Resources */,
+				D0C9170C1982997B00824042 /* grayProgress7@2x.png in Resources */,
+				D0C916C51982997B00824042 /* navbar_big_progress_20@2x.png in Resources */,
 				93AD03B416A1CCEC005D4575 /* navbar_big_progress_9@2x.png in Resources */,
 				936DE1851850890300D90029 /* ModernConversationListIconRead@2x.png in Resources */,
 				D00C71AF193F482E0005349C /* ModernBubbleOutgoingFullHighlightedPad.png in Resources */,
@@ -6629,12 +7007,14 @@
 				D0BAF3F2193E8AC400A0093F /* ModernContactListCreateSecretChatIcon.png in Resources */,
 				930808CD185A309200E62B42 /* ModernConversationListBadgeUnsent@2x.png in Resources */,
 				933AA4EA18611ED2000AA848 /* ModernPhotoCropField@2x.png in Resources */,
+				D0C916A01982997B00824042 /* ProfileAvatar7@2x.png in Resources */,
 				93064E031833C5EA0024C05A /* NavigationBackButtonLandscape@2x.png in Resources */,
 				934134B318551FF500480294 /* builtin-wallpaper-1.jpg in Resources */,
 				D0BAF3F3193E8AC400A0093F /* ModernWallpaperSelectedIndicator.png in Resources */,
 				9352994E17A13D6F006D58FE /* ProgressLoupeMinute@2x.png in Resources */,
 				D0BAF3F1193E8AC400A0093F /* ModernContactListCreateGroupIcon.png in Resources */,
 				93AD55E118630CA40043B212 /* ImageDownloadCancel_Highlighted@2x.png in Resources */,
+				D0C9170D1982997B00824042 /* grayProgress8@2x.png in Resources */,
 				930808B81859253D00E62B42 /* ModernContactListInviteFriendsIcon@2x.png in Resources */,
 				D0C92536194915C800E629CA /* SearchBarIconLight.png in Resources */,
 				93316A53184E5175005EBBEF /* ModernConversationUnreadSeparator@2x.png in Resources */,
@@ -6647,21 +7027,36 @@
 				D0C925BE194A024000E629CA /* ic_smile_eye@2x.png in Resources */,
 				93C2307C183CEF270071CB58 /* ModernMessageCheckmarkMedia2@2x.png in Resources */,
 				936DE1861850890300D90029 /* ModernConversationListIconDelivered@2x.png in Resources */,
+				D0C916F71982997B00824042 /* grayProgress10@2x.png in Resources */,
 				936219E3186460F600C52870 /* 101.m4a in Resources */,
 				93080911185B771200E62B42 /* ModernMenuAddIcon@2x.png in Resources */,
 				9386E8AC185DE9CC00930205 /* ModernAuthCountryButton@2x.png in Resources */,
 				D0BAF3E8193E8AC400A0093F /* TabIconMessages.png in Resources */,
 				93F3A0FE1821B6B60005EB98 /* ModernConversationAttach@2x.png in Resources */,
+				D0C916BB1982997B00824042 /* navbar_big_progress_11@2x.png in Resources */,
 				936219DF186460F600C52870 /* 105.m4a in Resources */,
+				D0C916791982997B00824042 /* builtin-wallpaper-4-thumbnail.jpg in Resources */,
+				D0C916E21982997B00824042 /* RProgress2@2x.png in Resources */,
 				93A109A017034DA600FE4F89 /* ImagePickerThumbnalSelect@2x.png in Resources */,
 				936219DD186460F600C52870 /* 107.m4a in Resources */,
+				D0C916C31982997B00824042 /* navbar_big_progress_19@2x.png in Resources */,
 				93A109A117034DA600FE4F89 /* ImagePickerThumbnalSelect_Checked@2x.png in Resources */,
+				D0C916CC1982997B00824042 /* navbar_big_progress_4@2x.png in Resources */,
+				D0C916BE1982997B00824042 /* navbar_big_progress_14@2x.png in Resources */,
+				D0C916E71982997B00824042 /* RProgress7@2x.png in Resources */,
+				D0C916F01982997B00824042 /* MenuButtonLeft@2x.png in Resources */,
 				932E00E4184AA1100001D109 /* ModernConversationActionDelete@2x.png in Resources */,
+				D0C916DA1982997B00824042 /* RProgress18@2x.png in Resources */,
+				D0C9158F1982512400824042 /* ModernMessageBroadcastIcon.png in Resources */,
+				D0DAA481197495A80036E709 /* Icon-72.png in Resources */,
 				933AA4C7186101A5000AA848 /* SearchBarIconLight@2x.png in Resources */,
 				93A109BC1704E6F000FE4F89 /* ImagePickerSelect_Checked@2x.png in Resources */,
 				93A109BD1704E6F000FE4F89 /* ImagePickerSelect@2x.png in Resources */,
 				934280DB18490569004F1C2A /* ModernMessageSelectionChecked@2x.png in Resources */,
+				D0C917091982997B00824042 /* grayProgress4@2x.png in Resources */,
 				93E2496717B51A980056F285 /* MyriadPro-Regular.otf in Resources */,
+				D0C917011982997B00824042 /* grayProgress1@2x.png in Resources */,
+				D0C916A51982997B00824042 /* SmallAvatar3@2x.png in Resources */,
 				936219E2186460F600C52870 /* 102.m4a in Resources */,
 				93F430DC171589AD0094A8DC /* ProfilePhotoPlaceholder@2x.png in Resources */,
 				93F430E61715A7B50094A8DC /* ConversationAvatar1@2x.png in Resources */,
@@ -6672,13 +7067,22 @@
 				D09EE2C0193484D200980617 /* ModernBubbleIncomingFullPad@2x.png in Resources */,
 				93F430EA1715A7B50094A8DC /* ConversationAvatar5@2x.png in Resources */,
 				932E00FC184BFACE0001D109 /* ModernMessageContactAdd_Incoming@2x.png in Resources */,
+				D0C9171D1982997B00824042 /* 110.m4a in Resources */,
 				93ED9EFE1863616B00E22F84 /* ModernConversationEmptyListLockIcon@2x.png in Resources */,
+				D0C916DC1982997B00824042 /* RProgress1@2x.png in Resources */,
 				D0D443B8195315D500CF2A7E /* Icon-76@2x.png in Resources */,
 				93F430EB1715A7B50094A8DC /* ConversationAvatar6@2x.png in Resources */,
 				93F430EC1715A7B50094A8DC /* ConversationAvatar7@2x.png in Resources */,
+				D0C916C61982997B00824042 /* navbar_big_progress_21@2x.png in Resources */,
 				93F430ED1715A7B50094A8DC /* ConversationAvatar8@2x.png in Resources */,
+				D0C916BA1982997B00824042 /* navbar_big_progress_10@2x.png in Resources */,
+				D0C916991982997B00824042 /* DialogListGroupAvatarSmall4@2x.png in Resources */,
+				D0C916701982997B00824042 /* ModernMessageBroadcastIconWhite.png in Resources */,
+				D0C916D21982997B00824042 /* RProgress10@2x.png in Resources */,
 				D00C7198193F3FD40005349C /* ModernBubbleIncomingPartialHighlightedPad@2x.png in Resources */,
 				D0BAF3E7193E8AC400A0093F /* TabIconMessages_Highlighted.png in Resources */,
+				D0C916841982997B00824042 /* ConversationAvatar4@2x.png in Resources */,
+				D0C916AA1982997B00824042 /* SmallAvatar8@2x.png in Resources */,
 				93F430F61715AA4E0094A8DC /* DialogListAvatar1@2x.png in Resources */,
 				D0C925B7194A024000E629CA /* ic_bubble_dot@2x.png in Resources */,
 				93F430F71715AA4E0094A8DC /* DialogListAvatar2@2x.png in Resources */,
@@ -6686,55 +7090,84 @@
 				93F430F91715AA4E0094A8DC /* DialogListAvatar4@2x.png in Resources */,
 				D00C71B4193F482E0005349C /* ModernBubbleIncomingPartialPad.png in Resources */,
 				D0C925BD194A024000E629CA /* ic_smile@2x.png in Resources */,
+				D0C917021982997B00824042 /* grayProgress20@2x.png in Resources */,
 				93F430FA1715AA4E0094A8DC /* DialogListAvatar5@2x.png in Resources */,
 				D0C925B5194A024000E629CA /* fast_spiral@2x.png in Resources */,
+				D0C916C11982997B00824042 /* navbar_big_progress_17@2x.png in Resources */,
 				D07FD9E218CBA6CA009B649E /* InfoPlist.strings in Resources */,
 				93F430FB1715AA4E0094A8DC /* DialogListAvatar6@2x.png in Resources */,
 				93F430FC1715AA4E0094A8DC /* DialogListAvatar7@2x.png in Resources */,
 				D0BAF3E4193E8AC400A0093F /* ModernConversationAttach.png in Resources */,
+				D0C916EE1982997B00824042 /* MenuButtonCenter@2x.png in Resources */,
 				932FA9B0179759280063A505 /* ProgressWindowBackground@2x.png in Resources */,
 				93F430FD1715AA4E0094A8DC /* DialogListAvatar8@2x.png in Resources */,
 				93F431061715AEE50094A8DC /* ProfileAvatar1@2x.png in Resources */,
+				D0C916811982997B00824042 /* ConversationAvatar1@2x.png in Resources */,
 				D0BAF3EA193E8AC400A0093F /* TabIconSettings.png in Resources */,
+				D0C916971982997B00824042 /* DialogListGroupAvatarSmall2@2x.png in Resources */,
+				D0C916C21982997B00824042 /* navbar_big_progress_18@2x.png in Resources */,
 				93F431071715AEE50094A8DC /* ProfileAvatar2@2x.png in Resources */,
 				93F431081715AEE50094A8DC /* ProfileAvatar3@2x.png in Resources */,
 				D00C71AE193F482E0005349C /* ModernBubbleOutgoingPartialHighlightedPad.png in Resources */,
+				D0C9168F1982997B00824042 /* DialogListAvatar7@2x.png in Resources */,
 				93F431091715AEE50094A8DC /* ProfileAvatar4@2x.png in Resources */,
+				D0C916C01982997B00824042 /* navbar_big_progress_16@2x.png in Resources */,
+				D0C916B11982997B00824042 /* TitleAvatar6@2x.png in Resources */,
 				934D715517AD8FB50099858D /* 6.m4a in Resources */,
+				D0C917041982997B00824042 /* grayProgress22@2x.png in Resources */,
 				D0C925CA194A024000E629CA /* private_leg@2x.png in Resources */,
 				93F4310A1715AEE50094A8DC /* ProfileAvatar5@2x.png in Resources */,
+				D0C916E61982997B00824042 /* RProgress6@2x.png in Resources */,
 				93F4310B1715AEE50094A8DC /* ProfileAvatar6@2x.png in Resources */,
+				D0C916CA1982997B00824042 /* navbar_big_progress_2@2x.png in Resources */,
 				9351566618686EBD00621293 /* InfoPlist.strings in Resources */,
 				934134B118551FF500480294 /* builtin-wallpaper-0.jpg in Resources */,
 				93F4310C1715AEE50094A8DC /* ProfileAvatar7@2x.png in Resources */,
 				D0BAF3FC193E8AC400A0093F /* ModernConversationActionForward.png in Resources */,
 				D0E3C61D196361E400B133E0 /* BroadcastAvatarIcon.png in Resources */,
 				93F4310D1715AEE50094A8DC /* ProfileAvatar8@2x.png in Resources */,
+				D0C916FA1982997B00824042 /* grayProgress13@2x.png in Resources */,
 				93F431161715BB700094A8DC /* SmallAvatar1@2x.png in Resources */,
 				93F431171715BB700094A8DC /* SmallAvatar2@2x.png in Resources */,
+				D0C917261982997B00824042 /* 9.m4a in Resources */,
 				D0C925BC194A024000E629CA /* ic_pin@2x.png in Resources */,
+				D0C917051982997B00824042 /* grayProgress23@2x.png in Resources */,
+				D0C917071982997B00824042 /* grayProgress2@2x.png in Resources */,
+				D0C916851982997B00824042 /* ConversationAvatar5@2x.png in Resources */,
+				D0C916ED1982997B00824042 /* MenuArrowTop_Highlighted@2x.png in Resources */,
+				D0C916911982997B00824042 /* DialogListAvatarSystem@2x.png in Resources */,
 				D00C71B3193F482E0005349C /* ModernBubbleIncomingFullHighlightedPad.png in Resources */,
 				93F431181715BB700094A8DC /* SmallAvatar3@2x.png in Resources */,
 				D0A3F309195D909C009E0ACD /* ModernContactListBroadcastIcon.png in Resources */,
 				D0C925BA194A024000E629CA /* ic_cam_lens@2x.png in Resources */,
 				934134C118551FF500480294 /* builtin-wallpaper-4.jpg in Resources */,
+				D0C916AC1982997B00824042 /* TitleAvatar1@2x.png in Resources */,
 				D0C925C0194A024000E629CA /* knot_down@2x.png in Resources */,
 				D0BAF3EB193E8AC400A0093F /* ModernConversationListIconRead.png in Resources */,
 				93F431191715BB700094A8DC /* SmallAvatar4@2x.png in Resources */,
 				93F4311A1715BB700094A8DC /* SmallAvatar5@2x.png in Resources */,
+				D0C916DD1982997B00824042 /* RProgress20@2x.png in Resources */,
 				93F4311B1715BB700094A8DC /* SmallAvatar6@2x.png in Resources */,
 				93F4311C1715BB700094A8DC /* SmallAvatar7@2x.png in Resources */,
+				D0C916EA1982997B00824042 /* MenuArrowBottom@2x.png in Resources */,
 				933AA4A51860CDEA000AA848 /* ImagePickerPreviewPanel@2x.png in Resources */,
 				D0BAF3ED193E8AC400A0093F /* ModernConversationTitleIconMute.png in Resources */,
+				D0C916B51982997B00824042 /* TitleAvatarGroup2@2x.png in Resources */,
 				93F4311D1715BB700094A8DC /* SmallAvatar8@2x.png in Resources */,
 				D0C925CE194A024000E629CA /* start_arrow_ipad@2x.png in Resources */,
+				D0C9171C1982997B00824042 /* 109.m4a in Resources */,
 				D020B75F18B509C50026DB24 /* ModernConversationMicButton_Highlighted@2x.png in Resources */,
 				9302CA2F171B581200C8559D /* VideoSliderBackground@2x.png in Resources */,
+				D0C917161982997B00824042 /* 103.m4a in Resources */,
 				9386E8B4185E30EA00930205 /* ModernContactSelectionEmpty@2x.png in Resources */,
 				D0C925B8194A024000E629CA /* ic_cam@2x.png in Resources */,
 				934280DA18490569004F1C2A /* ModernMessageSelectionUnchecked@2x.png in Resources */,
+				D0C916F91982997B00824042 /* grayProgress12@2x.png in Resources */,
 				D046965A18A273AC009764B2 /* ModernConversationTitlePanelClose@2x.png in Resources */,
+				D0C916781982997B00824042 /* builtin-wallpaper-3.jpg in Resources */,
+				D0DAA483197495EA0036E709 /* Icon-72@2x.png in Resources */,
 				9302CA31171B581200C8559D /* VideoSliderForeground@2x.png in Resources */,
+				D0C916E81982997B00824042 /* RProgress8@2x.png in Resources */,
 				93F3A0FA1821B6AC0005EB98 /* ModernBubbleIncomingFull@2x.png in Resources */,
 				9302CA32171B581200C8559D /* VideoSliderHandle_Highlighted@2x.png in Resources */,
 				936219DC186460F600C52870 /* 108.m4a in Resources */,
@@ -6746,11 +7179,15 @@
 				D0984E43189BC5C40042E1BD /* Localizable.strings in Resources */,
 				D0BAF3E3193E8AC400A0093F /* ModernConversationMicButton.png in Resources */,
 				936219E0186460F600C52870 /* 104.m4a in Resources */,
+				D0C916D81982997B00824042 /* RProgress16@2x.png in Resources */,
 				93269DFA185E922500FBC69F /* ModernBubbleIncomingPartialHighlighted@2x.png in Resources */,
 				93DA959A171C6A4600A69D64 /* PlayButtonBig_Highlighted@2x.png in Resources */,
 				936219E71864693C00C52870 /* 1.m4a in Resources */,
 				93DA959B171C6A4600A69D64 /* PlayButtonBig@2x.png in Resources */,
+				D0C916E31982997B00824042 /* RProgress3@2x.png in Resources */,
+				D0C916731982997B00824042 /* builtin-wallpaper-1-thumbnail.jpg in Resources */,
 				D0BAF3F9193E8AC400A0093F /* ModernConversationActionDelete.png in Resources */,
+				D0C9170B1982997B00824042 /* grayProgress6@2x.png in Resources */,
 				93A8F79017F9981100B7D99E /* DialogListEncryptedChatIcon@2x.png in Resources */,
 				D00C7199193F3FD40005349C /* ModernBubbleIncomingFullHighlightedPad@2x.png in Resources */,
 				93DA95A8171D881000A69D64 /* DialogListGroupAvatar1@2x.png in Resources */,
@@ -6759,64 +7196,91 @@
 				93DA95AB171D881000A69D64 /* DialogListGroupAvatar4@2x.png in Resources */,
 				93DA95AC171D881000A69D64 /* DialogListGroupAvatarSmall3@2x.png in Resources */,
 				93DA95AD171D881000A69D64 /* DialogListGroupAvatarSmall4@2x.png in Resources */,
+				D0C916CD1982997B00824042 /* navbar_big_progress_5@2x.png in Resources */,
+				D0C916F41982997B00824042 /* MenuButtonSeparator@2x.png in Resources */,
 				9341B0211851E89300D1195B /* ModernMenuCheck@2x.png in Resources */,
 				93DA95AE171D881000A69D64 /* DialogListGroupAvatarSmall2@2x.png in Resources */,
 				D08696B41943A8B300770FE7 /* pad-builtin-wallpaper-1-thumbnail.jpg in Resources */,
 				D0A3F30B195D90AD009E0ACD /* EmptyBroadcastListsIcon@2x.png in Resources */,
+				D0C916D41982997B00824042 /* RProgress12@2x.png in Resources */,
 				D07FD9E318CBA6CA009B649E /* Localizable.strings in Resources */,
 				D0BAF3E1193E8AC400A0093F /* ModernConversationInput.png in Resources */,
+				D0C916831982997B00824042 /* ConversationAvatar3@2x.png in Resources */,
 				93DA95AF171D881000A69D64 /* DialogListGroupAvatarSmall1@2x.png in Resources */,
+				D0C9168A1982997B00824042 /* DialogListAvatar2@2x.png in Resources */,
 				934134C018551FF500480294 /* builtin-wallpaper-4-thumbnail.jpg in Resources */,
 				D0984E42189BC5C40042E1BD /* InfoPlist.strings in Resources */,
+				D0C916891982997B00824042 /* DialogListAvatar1@2x.png in Resources */,
 				936AA9581720708E007389A3 /* LinearProgressForeground@2x.png in Resources */,
+				D0C916C91982997B00824042 /* navbar_big_progress_24@2x.png in Resources */,
 				D0C925C4194A024000E629CA /* powerful_infinity_white@2x.png in Resources */,
 				936AA9591720708E007389A3 /* LinearProgressBackground@2x.png in Resources */,
 				934D715017AD8FB50099858D /* 3.m4a in Resources */,
 				936DE1801850857A00D90029 /* ModernConversationListIconLock@2x.png in Resources */,
 				9351566718686EBD00621293 /* Localizable.strings in Resources */,
+				D0C917111982997B00824042 /* 0.m4a in Resources */,
 				9386E8B0185E2AFF00930205 /* NavigationBackArrowLight@2x.png in Resources */,
 				937CFD7C17AED51A00E28C5B /* DialogListAvatarSystem@2x.png in Resources */,
 				D0BAF3EE193E8AC400A0093F /* DialogList_Muted.png in Resources */,
+				D0C9168C1982997B00824042 /* DialogListAvatar4@2x.png in Resources */,
 				933AA4C8186101A5000AA848 /* SearchInputFieldLight@2x.png in Resources */,
+				D0C917201982997B00824042 /* 3.m4a in Resources */,
+				D0C9168D1982997B00824042 /* DialogListAvatar5@2x.png in Resources */,
 				D0C925C6194A024000E629CA /* powerful_star@2x.png in Resources */,
 				93F3A0F91821B6AC0005EB98 /* ModernBubbleOutgoingFull@2x.png in Resources */,
 				93941A271734665700F97189 /* ClockWhiteMin@2x.png in Resources */,
 				93941A281734665700F97189 /* ClockWhiteHour@2x.png in Resources */,
+				D0C916C81982997B00824042 /* navbar_big_progress_23@2x.png in Resources */,
 				93941A291734665700F97189 /* ClockWhiteFrame@2x.png in Resources */,
+				D0C916E01982997B00824042 /* RProgress23@2x.png in Resources */,
 				D09EE2BF193484D200980617 /* ModernBubbleIncomingPartialPad@2x.png in Resources */,
 				934D715117AD8FB50099858D /* 4.m4a in Resources */,
+				D0C916BC1982997B00824042 /* navbar_big_progress_12@2x.png in Resources */,
 				D08696B61943A8B300770FE7 /* pad-builtin-wallpaper-2.jpg in Resources */,
 				93DEF681173AFA2300D4588D /* MapLocationIcon@2x.png in Resources */,
 				93DEF682173AFA2300D4588D /* MapLocationIcon_Active@2x.png in Resources */,
+				D0C9166F1982997B00824042 /* ModernMessageBroadcastIconWhite@2x.png in Resources */,
 				9315E4E5186AFE7A008DD74D /* Icon-Small@2x.png in Resources */,
 				936219D9186460F600C52870 /* 110.m4a in Resources */,
+				D0C916DE1982997B00824042 /* RProgress21@2x.png in Resources */,
 				930AD09E173C120D003DABCE /* MapCalloutCenter_Highlighted@2x.png in Resources */,
+				D0DAA485197496240036E709 /* Icon-76.png in Resources */,
+				D0C9167A1982997B00824042 /* builtin-wallpaper-4.jpg in Resources */,
 				930AD09F173C120D003DABCE /* MapCalloutRight_Highlighted@2x.png in Resources */,
 				D00C71B5193F482E0005349C /* ModernBubbleIncomingFullPad.png in Resources */,
 				930AD0A0173C120D003DABCE /* MapCalloutLeft_Highlighted@2x.png in Resources */,
+				D0C917061982997B00824042 /* grayProgress24@2x.png in Resources */,
 				930AD0A1173C120D003DABCE /* MapCalloutCenter@2x.png in Resources */,
 				930AD0A2173C120D003DABCE /* MapCalloutRight@2x.png in Resources */,
 				932E00E2184AA1100001D109 /* ModernConversationActionForward_Disabled@2x.png in Resources */,
 				930AD0A3173C120D003DABCE /* MapCalloutLeft@2x.png in Resources */,
 				D0C925A8194A024000E629CA /* .gitignore in Resources */,
+				D0C9171A1982997B00824042 /* 107.m4a in Resources */,
+				D0C917031982997B00824042 /* grayProgress21@2x.png in Resources */,
 				930AD0AA173C2E31003DABCE /* MapCalloutArrow_Highlighted@2x.png in Resources */,
 				930AD0AB173C2E31003DABCE /* MapCalloutArrow@2x.png in Resources */,
 				933AA4A31860BE79000AA848 /* ModernNavigationAddButtonIcon@2x.png in Resources */,
 				93EFBF12173EEF3300F7B89E /* Tour.bundle in Resources */,
 				9376A117174138FF0015A931 /* MapLocationIcon_ActiveHeading@2x.png in Resources */,
+				D0C9171B1982997B00824042 /* 108.m4a in Resources */,
 				9376A122174143980015A931 /* TabIconMessages_Highlighted@2x.png in Resources */,
 				9376A123174143980015A931 /* TabIconMessages@2x.png in Resources */,
 				9376A124174143980015A931 /* TabIconSettings_Highlighted@2x.png in Resources */,
 				9376A125174143980015A931 /* TabIconSettings@2x.png in Resources */,
+				D0C915901982512400824042 /* ModernMessageBroadcastIcon@2x.png in Resources */,
 				9376A126174143980015A931 /* TabIconContacts_Highlighted@2x.png in Resources */,
+				D0C917221982997B00824042 /* 5.m4a in Resources */,
 				9376A127174143980015A931 /* TabIconContacts@2x.png in Resources */,
 				9376A12B174156020015A931 /* DialogListPending@2x.png in Resources */,
 				9338C6561741AE5700CC7280 /* MessageInlineVideoIcon@2x.png in Resources */,
 				934280C61847F39B004F1C2A /* SearchImagesButtonTop@2x.png in Resources */,
+				D0C917171982997B00824042 /* 104.m4a in Resources */,
 				93C52F6D18626099008229A7 /* ModernMessageImagePlaceholder@2x.png in Resources */,
 				931C591A174BB24D00D597D9 /* RProgress10@2x.png in Resources */,
+				D0C916A41982997B00824042 /* SmallAvatar2@2x.png in Resources */,
 				9322F814178EE4E500099F0B /* Transparent@2x.png in Resources */,
 				931C591B174BB24D00D597D9 /* RProgress11@2x.png in Resources */,
+				D0C916AF1982997B00824042 /* TitleAvatar4@2x.png in Resources */,
 				931C591C174BB24D00D597D9 /* RProgress12@2x.png in Resources */,
 				931C591D174BB24D00D597D9 /* RProgress13@2x.png in Resources */,
 				D0C925CB194A024000E629CA /* private_stroked_dot@2x.png in Resources */,
@@ -6827,38 +7291,52 @@
 				931C5921174BB24D00D597D9 /* RProgress17@2x.png in Resources */,
 				D0C925D0194A024000E629CA /* telegram_sphere@2x.png in Resources */,
 				931C5922174BB24D00D597D9 /* RProgress18@2x.png in Resources */,
+				D0C916E51982997B00824042 /* RProgress5@2x.png in Resources */,
 				931C5923174BB24D00D597D9 /* RProgress19@2x.png in Resources */,
 				931C5924174BB24D00D597D9 /* RProgress1@2x.png in Resources */,
+				D0C917131982997B00824042 /* 100.m4a in Resources */,
 				931C5925174BB24D00D597D9 /* RProgress20@2x.png in Resources */,
 				931C5926174BB24D00D597D9 /* RProgress21@2x.png in Resources */,
 				931C5927174BB24D00D597D9 /* RProgress22@2x.png in Resources */,
 				931C5928174BB24D00D597D9 /* RProgress23@2x.png in Resources */,
+				D0C916771982997B00824042 /* builtin-wallpaper-3-thumbnail.jpg in Resources */,
 				931C5929174BB24D00D597D9 /* RProgress24@2x.png in Resources */,
+				D0C916A91982997B00824042 /* SmallAvatar7@2x.png in Resources */,
+				D0C916951982997B00824042 /* DialogListGroupAvatar4@2x.png in Resources */,
 				931C592A174BB24D00D597D9 /* RProgress2@2x.png in Resources */,
 				931C592B174BB24D00D597D9 /* RProgress3@2x.png in Resources */,
 				9352994F17A13D6F006D58FE /* ProgressLoupeHour@2x.png in Resources */,
+				D0C916FC1982997B00824042 /* grayProgress15@2x.png in Resources */,
 				D0555629194501A2008B69A6 /* ModernDocumentMessageIconBackground@2x.png in Resources */,
 				D0A3F307195D8D20009E0ACD /* ModernContactListBroadcastIcon@2x.png in Resources */,
+				D0C916D01982997B00824042 /* navbar_big_progress_8@2x.png in Resources */,
 				D0C92537194915C800E629CA /* ModernMessageCheckmark2.png in Resources */,
+				D0C916901982997B00824042 /* DialogListAvatar8@2x.png in Resources */,
 				D0C925B6194A024000E629CA /* ic_bubble@2x.png in Resources */,
 				931C592C174BB24D00D597D9 /* RProgress4@2x.png in Resources */,
 				D08696B71943A8B300770FE7 /* pad-builtin-wallpaper-1.jpg in Resources */,
+				D0C916711982997B00824042 /* builtin-wallpaper-0-thumbnail.jpg in Resources */,
 				933AA4EC18612A8D000AA848 /* ModernConversationUnseenMessagesButton@2x.png in Resources */,
+				D0C9171E1982997B00824042 /* 111.m4a in Resources */,
 				931C592D174BB24D00D597D9 /* RProgress5@2x.png in Resources */,
 				93269DF9185E922500FBC69F /* ModernBubbleIncomingFullHighlighted@2x.png in Resources */,
 				931C592E174BB24D00D597D9 /* RProgress6@2x.png in Resources */,
+				D0C916981982997B00824042 /* DialogListGroupAvatarSmall3@2x.png in Resources */,
 				D0BAF3EC193E8AC400A0093F /* ModernConversationListIconDelivered.png in Resources */,
 				931C592F174BB24D00D597D9 /* RProgress7@2x.png in Resources */,
 				931C5930174BB24D00D597D9 /* RProgress8@2x.png in Resources */,
+				D0C9167D1982997B00824042 /* pad-builtin-wallpaper-1-thumbnail.jpg in Resources */,
 				D0C925591949EDED00E629CA /* Localizable.strings in Resources */,
 				931C5931174BB24D00D597D9 /* RProgress9@2x.png in Resources */,
 				936219DA186460F600C52870 /* 109.m4a in Resources */,
 				931C5938174C0AB800D597D9 /* MenuButtonCenter@2x.png in Resources */,
+				D0C916931982997B00824042 /* DialogListGroupAvatar2@2x.png in Resources */,
 				931C5939174C0AB800D597D9 /* MenuButtonLeft@2x.png in Resources */,
 				931C593A174C0AB800D597D9 /* MenuButtonRight@2x.png in Resources */,
 				D0BAF3FA193E8AC400A0093F /* DeleteWhiteIcon.png in Resources */,
 				931C593C174C123500D597D9 /* MenuButtonSeparator@2x.png in Resources */,
 				93269DFC185E922500FBC69F /* ModernBubbleOutgoingPartialHighlighted@2x.png in Resources */,
+				D0C9167E1982997B00824042 /* pad-builtin-wallpaper-1.jpg in Resources */,
 				931C5942174C1D1600D597D9 /* MenuArrowTop@2x.png in Resources */,
 				931C5944174C233600D597D9 /* MenuArrowBottom@2x.png in Resources */,
 				931C594A174CC85200D597D9 /* MenuButtonRight_Highlighted@2x.png in Resources */,
@@ -6868,10 +7346,13 @@
 				D0BAF3FB193E8AC400A0093F /* ModernConversationActionForward_Disabled.png in Resources */,
 				D00C7197193F3FD40005349C /* ModernBubbleOutgoingFullHighlightedPad@2x.png in Resources */,
 				931C5951174CC9D500D597D9 /* MenuArrowTop_Highlighted@2x.png in Resources */,
+				D0C916CE1982997B00824042 /* navbar_big_progress_6@2x.png in Resources */,
 				D035EBBB194868B700EEEC17 /* InfoPlist.strings in Resources */,
 				D0C925421949172000E629CA /* ImagePickerThumbnalSelect_Checked.png in Resources */,
 				D0BAF3E2193E8AC400A0093F /* ModernConversationMicButton_Highlighted.png in Resources */,
 				931C5952174CC9D500D597D9 /* MenuArrowBottom_Highlighted@2x.png in Resources */,
+				D0C916C41982997B00824042 /* navbar_big_progress_1@2x.png in Resources */,
+				D0C916BF1982997B00824042 /* navbar_big_progress_15@2x.png in Resources */,
 				936DE18C1850AD1300D90029 /* ModernSegmentedControlBackground@2x.png in Resources */,
 				D0C925B3194A024000E629CA /* fast_arrow_shadow@2x.png in Resources */,
 				D0C925C5194A024000E629CA /* powerful_mask@2x.png in Resources */,
@@ -6880,11 +7361,16 @@
 				D0C925C1194A024000E629CA /* knot_up@2x.png in Resources */,
 				933AA4C6186101A5000AA848 /* SearchBarBackgroundLight@2x.png in Resources */,
 				934280C81847F39B004F1C2A /* SearchImagesButtonBottom@2x.png in Resources */,
+				D0C916A71982997B00824042 /* SmallAvatar5@2x.png in Resources */,
+				D0C916B91982997B00824042 /* navbar_big_progress_0@2x.png in Resources */,
+				D0C916741982997B00824042 /* builtin-wallpaper-1.jpg in Resources */,
+				D0C9170F1982997B00824042 /* MyriadPro-Bold.otf in Resources */,
 				937CFD7E17AED51A00E28C5B /* SmallAvatarSystem@2x.png in Resources */,
 				934280C91847F39B004F1C2A /* SearchImagesButtonBottom_Highlighted@2x.png in Resources */,
 				93AD55E018630CA40043B212 /* ImageDownloadCancel@2x.png in Resources */,
 				938F20DD17998386003837DA /* 0.m4a in Resources */,
 				D0BAF3F5193E8AC400A0093F /* ModernContactSelectionEmpty.png in Resources */,
+				D0C917141982997B00824042 /* 101.m4a in Resources */,
 				D0D443A71951B84600CF2A7E /* telegram_logo_still@2x~ipad.png in Resources */,
 				D0C925B2194A024000E629CA /* fast_arrow@2x.png in Resources */,
 				D0C925B4194A024000E629CA /* fast_body@2x.png in Resources */,
@@ -7533,6 +8019,22 @@
 			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
+		D0D670D2197EA36C0031B041 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D0D670D3197EA36C0031B041 /* it */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		D0D670D4197EA36C0031B041 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D0D670D5197EA36C0031B041 /* it */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
@@ -7584,8 +8086,8 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
@@ -7594,8 +8096,8 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
-				PROVISIONING_PROFILE = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
+				PROVISIONING_PROFILE = "EF13A887-A494-434B-8D01-865280D6B56F";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "EF13A887-A494-434B-8D01-865280D6B56F";
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 				WARNING_CFLAGS = (
@@ -7687,8 +8189,8 @@
 				CLANG_WARN_OBJC_RECEIVER_WEAK = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
 				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -7730,8 +8232,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-DNS_BLOCK_ASSERTIONS";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "Telegram HD";
-				PROVISIONING_PROFILE = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
+				PROVISIONING_PROFILE = "EF13A887-A494-434B-8D01-865280D6B56F";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "EF13A887-A494-434B-8D01-865280D6B56F";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";
