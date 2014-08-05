@@ -123,6 +123,7 @@
         
         [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)message.date] displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) animated:false];
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
+        [_imageModel setIsBroadcast:message.isBroadcast];
         
         /*int daytimeVariant = 0;
         NSString *dateText = [TGDateUtils stringForShortTime:(int)message.date daytimeVariant:&daytimeVariant];

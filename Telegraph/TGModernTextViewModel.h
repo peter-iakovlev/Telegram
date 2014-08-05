@@ -19,6 +19,7 @@
 @property (nonatomic, strong) NSArray *textCheckingResults;
 @property (nonatomic) NSTextAlignment alignment;
 @property (nonatomic) int layoutFlags;
+@property (nonatomic) CGFloat additionalTrailingWidth;
 @property (nonatomic, strong) NSArray *additionalAttributes;
 @property (nonatomic, readonly) bool isRTL;
 

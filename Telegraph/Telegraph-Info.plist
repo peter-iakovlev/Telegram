@@ -80,15 +80,25 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>CFBundleURLName</key>
-			<string>ph.telegra.Telegraph</string>
+			<string>org.telegram.TelegramHD</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>telegram</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>org.telegram.TelegramHD.compatibility</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tg</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>34457</string>
+	<string>34562</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIAppFonts</key>

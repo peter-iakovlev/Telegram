@@ -505,7 +505,7 @@
                 if (((TGGroupInfoUserCollectionItem *)item).user.uid == user.uid)
                 {
                     NSIndexPath *indexPath = [self indexPathForItem:item];
-                    if (indexPath != nil)
+                    if (indexPath != nil && [UIDevice currentDevice].userInterfaceIdiom != UIUserInterfaceIdiomPad)
                         [self.collectionView selectItemAtIndexPath:indexPath animated:false scrollPosition:UICollectionViewScrollPositionTop];
                     
                     break;

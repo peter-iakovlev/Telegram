@@ -60,6 +60,8 @@
         _titleLabel.text = TGLocalized(@"Compose.NewEncryptedChat");
     else if (mode == TGFlatActionCellModeBroadcasts)
         _titleLabel.text = TGLocalized(@"BroadcastLists.Title");
+    else if (mode == TGFlatActionCellModeCreateBroadcast)
+        _titleLabel.text = TGLocalized(@"Compose.NewBroadcastButton");
 
     static UIImage *inviteIcon = nil;
     static UIImage *friendsIcon = nil;
@@ -104,7 +106,7 @@
         iconFrame.origin = CGPointMake(20 - TGRetinaPixel + horizontalOffset - 1, 8 + verticalOffset);
         _iconView.frame = iconFrame;
     }
-    else if (mode == TGFlatActionCellModeBroadcasts)
+    else if (mode == TGFlatActionCellModeBroadcasts || mode == TGFlatActionCellModeCreateBroadcast)
     {
         _iconView.image = broadcastsIcon;
         [_iconView sizeToFit];

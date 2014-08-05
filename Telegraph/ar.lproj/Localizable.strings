@@ -238,6 +238,7 @@
 "Compose.NewGroup" = "مجموعة جديدة";
 "Compose.NewEncryptedChat" = "محادثة سرية جديدة";
 "Compose.NewBroadcast" = "قائمة رسائل جماعية";
+"Compose.NewBroadcastButton" = "رسالة جماعية جديدة";
 "Compose.Recipients" = "المستقبلون";
 "Compose.Create" = "إنشاء";
 
@@ -442,7 +443,7 @@
 "MediaPicker.AccessDeniedHelp" = "الرجاء الذهاب إلى إعدادات الـ %@ — الخصوصية — الصور.\nثم قم بتفعيل تيليجرام.";
 "SearchImages.Downloading#Kb" = "جاري تنزيل %d Kb";
 "SearchImages.Downloading#Mb" = "جاري تنزيل %d Mb";
-"SearchImages.ImageNofM" = "صورة %1$@ من @2$@";
+"SearchImages.ImageNofM" = "صورة %1$@ من %2$@";
 "SearchImages.DownloadCancelled" = "تم إلغاء التنزيل";
 "SearchImages.ErrorDownloadingImage" = "خطأ في تنزيل الصورة";
 "SearchImages.SkipImage" = "تخطى الصورة";

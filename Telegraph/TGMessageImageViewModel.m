@@ -64,6 +64,7 @@
     [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampString:_timestampString displayCheckmarks:_displayCheckmarks checkmarkValue:_checkmarkValue animated:false];
     [((TGMessageImageViewContainer *)self.boundView).imageView setDisplayTimestampProgress:_displayTimestampProgress];
     [((TGMessageImageViewContainer *)self.boundView).imageView setAdditionalDataString:_additionalDataString];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setIsBroadcast:_isBroadcast];
     
     ((TGMessageImageViewContainer *)self.boundView).imageView.alpha = _mediaVisible ? 1.0f : 0.0f;
 }
@@ -140,6 +141,13 @@
     _additionalDataString = additionalDataString;
     
     [((TGMessageImageViewContainer *)self.boundView).imageView setAdditionalDataString:_additionalDataString];
+}
+
+- (void)setIsBroadcast:(bool)isBroadcast
+{
+    _isBroadcast = isBroadcast;
+    
+    [((TGMessageImageViewContainer *)self.boundView).imageView setIsBroadcast:_isBroadcast];
 }
 
 - (void)reloadImage:(bool)synchronous

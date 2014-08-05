@@ -24,7 +24,7 @@
 #import "TGAppDelegate.h"
 #import "TGTabletMainViewController.h"
 
-@interface TGAlternateBroadcastListsController () <ASWatcher>
+@interface TGAlternateBroadcastListsController () <ASWatcher, TGNavigationControllerItem>
 {
     NSArray *_list;
     NSMutableArray *_backingList;
@@ -33,7 +33,7 @@
     
     TGCreateGroupController *_createGroupController;
     
-    
+    bool _removeAfterHiding;
 }
 
 @end
@@ -409,8 +409,15 @@
     cell.messageText = dialogListData[@"userNames"];*/
 }
 
+- (bool)shouldBeRemovedFromNavigationAfterHiding
+{
+    return _removeAfterHiding;
+}
+
 - (void)didSelectRowInFirstSection:(NSInteger)row
 {
+    _removeAfterHiding = true;
+    
     TGConversation *conversation = _list[row];
     
     TGBroadcastModernConversationCompanion *broadcastCompanion = [[TGBroadcastModernConversationCompanion alloc] initWithConversationId:conversation.conversationId conversation:conversation];
@@ -427,7 +434,13 @@
             [self.navigationController pushViewController:conversationController animated:true];
     }
     else
-        [self.navigationController pushViewController:conversationController animated:true];
+    {
+        NSArray *viewControllers = self.navigationController.viewControllers;
+        if (viewControllers.count > 1)
+            [self.navigationController setViewControllers:@[viewControllers[0], conversationController] animated:true];
+        else
+            [self.navigationController pushViewController:conversationController animated:true];
+    }
 }
 
 - (bool)shouldDisplaySectionIndices
@@ -573,6 +586,7 @@
                 for (UIViewController *controller in self.navigationController.viewControllers)
                 {
                     [viewControllers addObject:controller];
+                    break;
                     
                     if (controller == self)
                         break;

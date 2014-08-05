@@ -17,6 +17,7 @@
 @property (nonatomic) int overlayType;
 @property (nonatomic) float progress;
 @property (nonatomic) bool timestampHidden;
+@property (nonatomic) bool isBroadcast;
 
 - (instancetype)initWithUri:(NSString *)uri;
 

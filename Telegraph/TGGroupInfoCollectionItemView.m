@@ -126,7 +126,8 @@
     if (!_editing && !TGStringCompare(title, _titleField.text))
         _titleField.text = title;
     
-    [_avatarView setTitle:title];
+    if (!_isBroadcast)
+        [_avatarView setTitle:title];
     
     [self setNeedsLayout];
 }
@@ -323,7 +324,8 @@
                 [_titleField removeFromSuperview];
             }
             
-            [_avatarView setTitle:_titleLabel.text];
+            if (!_isBroadcast)
+                [_avatarView setTitle:_titleLabel.text];
         }
     }
 }
@@ -339,7 +341,7 @@
     if ([delegate respondsToSelector:@selector(groupInfoViewHasChangedEditedTitle:title:)])
         [delegate groupInfoViewHasChangedEditedTitle:self title:textField.text];
     
-    if (_editing)
+    if (_editing && !_isBroadcast)
         [_avatarView setTitle:textField.text];
 }
 

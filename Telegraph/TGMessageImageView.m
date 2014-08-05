@@ -18,7 +18,7 @@
 
 static const CGFloat circleDiameter = 50.0f;
 
-static const CGFloat timestampWidth = 84.0f;
+static const CGFloat timestampWidth = 100.0f;
 static const CGFloat timestampHeight = 18.0f;
 static const CGFloat timestampRightPadding = 6.0f;
 static const CGFloat timestampBottomPadding = 6.0f;
@@ -290,6 +290,11 @@ static const CGFloat additionalDataTopPadding = 6.0f;
 - (void)setDisplayTimestampProgress:(bool)displayTimestampProgress
 {
     [_timestampView setDisplayProgress:displayTimestampProgress];
+}
+
+- (void)setIsBroadcast:(bool)isBroadcast
+{
+    [_timestampView setIsBroadcast:isBroadcast];
 }
 
 - (void)actionButtonPressed

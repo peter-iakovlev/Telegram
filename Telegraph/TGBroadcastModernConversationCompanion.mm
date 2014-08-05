@@ -84,7 +84,7 @@
     [super loadInitialState];
     
     [self _setTitle:_conversation.chatTitle.length == 0 ? [self stringForMemberCount:_conversation.chatParticipantCount] :  _conversation.chatTitle];
-    [self _setAvatarConversationId:_conversationId title:@"" icon:[UIImage imageNamed:@"BroadcastAvatarIcon.png"]];
+    [self _setAvatarConversationId:_conversationId title:nil icon:[UIImage imageNamed:@"BroadcastAvatarIcon.png"]];
     [self _setAvatarUrl:_conversation.chatPhotoSmall];
     
     [self _setStatus:[self stringForUserNames] accentColored:false allowAnimation:false];
@@ -270,7 +270,7 @@
         _conversation = ((SGraphObjectNode *)resource).object;
         
         [self _setTitle:_conversation.chatTitle.length == 0 ? [self stringForMemberCount:_conversation.chatParticipantCount] : _conversation.chatTitle];
-        [self _setAvatarConversationId:_conversationId title:_conversation.chatTitle icon:[UIImage imageNamed:@"BroadcastAvatarIcon.png"]];
+        [self _setAvatarConversationId:_conversationId title:nil icon:[UIImage imageNamed:@"BroadcastAvatarIcon.png"]];
         [self _setAvatarUrl:_conversation.chatPhotoSmall];
         [self _setStatus:[self stringForUserNames] accentColored:false allowAnimation:false];
     }

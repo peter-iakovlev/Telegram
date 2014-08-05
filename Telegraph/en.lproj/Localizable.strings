@@ -238,6 +238,7 @@
 "Compose.NewGroup" = "New Group";
 "Compose.NewEncryptedChat" = "New Secret Chat";
 "Compose.NewBroadcast" = "Broadcast List";
+"Compose.NewBroadcastButton" = "New Broadcast";
 "Compose.Recipients" = "Recipients";
 "Compose.Create" = "Create";
 

@@ -2979,8 +2979,9 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
 {
     TGLegacyCameraController *legacyCameraController = [[TGLegacyCameraController alloc] init];
     legacyCameraController.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+    legacyCameraController.mediaTypes = [[NSArray alloc] initWithObjects:(__bridge NSString *)kUTTypeImage, (__bridge NSString *)kUTTypeMovie, nil];
     
-    legacyCameraController.storeCapturedAssets = [_companion controllerShouldStoreCapturedAssets];
+    legacyCameraController.storeCapturedAssets = false;
     legacyCameraController.completionDelegate = self;
     legacyCameraController.isInDocumentMode = true;
     

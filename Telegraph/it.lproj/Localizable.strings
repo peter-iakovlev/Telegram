@@ -237,7 +237,8 @@
 "Compose.NewMessage" = "Nuovo messaggio";
 "Compose.NewGroup" = "Nuovo gruppo";
 "Compose.NewEncryptedChat" = "Nuova chat segreta";
-"Compose.NewBroadcast" = "Lista di broadcast";
+"Compose.NewBroadcast" = "Broadcast List";
+"Compose.NewBroadcastButton" = "Nuovo Broadcast";
 "Compose.Recipients" = "Destinatari";
 "Compose.Create" = "Crea";
 
@@ -364,7 +365,7 @@
 "Notification.LeftChat" = "%@ ha lasciato il gruppo";
 "Notification.Kicked" = "%@ ha espulso %@";
 "Notification.CreatedChat" = "%@ ha creato un gruppo";
-"Notification.CreatedBroadcastList" = "Hai creato una lista di broadcast";
+"Notification.CreatedBroadcastList" = "You created a broadcast list";
 "Notification.CreatedChatWithTitle" = "%@ ha creato il gruppo \"%@\"";
 "Notification.Joined" = "%@ ha iniziato a usare Telegram";
 "Notification.ChangedGroupName" = "%@  ha cambiato il nome del gruppo in \"%@\"";
@@ -654,12 +655,12 @@
 
 // Broadcast Lists
 "DialogList.Broadcast" = "Broadcast";
-"BroadcastLists.Title" = "Liste di broadcast";
+"BroadcastLists.Title" = "Broadcast Lists";
 "BroadcastLists.NoListsYet" = "Ancora nessuna lista";
-"BroadcastLists.NoListsText" = "Con le liste di broadcast puoi inviare facilmente messaggi a più persone contemporaneamente.";
+"BroadcastLists.NoListsText" = "With broadcast lists you can easily send messages to many people at once.";
 
 // Broadcast List
-"BroadcastListInfo.Title" = "Lista di broadcast";
+"BroadcastListInfo.Title" = "Broadcast List";
 "BroadcastListInfo.AddRecipient" = "Aggiungi destinatario";
 
 // Video

@@ -54,5 +54,6 @@ typedef enum {
 - (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue animated:(bool)animated;
 - (void)setAdditionalDataString:(NSString *)additionalDataString;
 - (void)setDisplayTimestampProgress:(bool)displayTimestampProgress;
+- (void)setIsBroadcast:(bool)isBroadcast;
 
 @end

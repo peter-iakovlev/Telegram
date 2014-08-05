@@ -313,6 +313,8 @@ static bool _initialUpdatesScheduled = false;
     
     NSMutableArray *userTypingUpdates = [[NSMutableArray alloc] init];
     
+    bool dispatchBlocked = false;
+    
     for (TLUpdate *update in otherUpdates)
     {
         if ([update isKindOfClass:updateReadMessagesClass])
@@ -617,6 +619,70 @@ static bool _initialUpdatesScheduled = false;
                     continue;
                 
                 [[TGTelegramNetworking instance] mergeDatacenterAddress:datacenterOption.n_id address:[[MTDatacenterAddress alloc] initWithIp:datacenterOption.ip_address port:(uint16_t)(datacenterOption.port == 0 ? 443 : datacenterOption.port)]];
+            }
+        }
+        else if ([update isKindOfClass:[TLUpdate$updateUserBlocked class]])
+        {
+            TLUpdate$updateUserBlocked *userBlocked = (TLUpdate$updateUserBlocked *)update;
+            
+            if ([TGDatabaseInstance() loadUser:userBlocked.user_id] != nil)
+            {
+                [TGDatabaseInstance() setPeerIsBlocked:userBlocked.user_id blocked:userBlocked.blocked writeToActionQueue:false];
+                dispatchBlocked = true;
+            }
+        }
+        else if ([update isKindOfClass:[TLUpdate$updateNotifySettings class]])
+        {
+            TLUpdate$updateNotifySettings *notifySettings = (TLUpdate$updateNotifySettings *)update;
+            
+            int64_t peerId = 0;
+            if ([notifySettings.peer isKindOfClass:[TLNotifyPeer$notifyPeer class]])
+            {
+                TLNotifyPeer$notifyPeer *concretePeer = (TLNotifyPeer$notifyPeer *)notifySettings.peer;
+                if ([concretePeer.peer isKindOfClass:[TLPeer$peerUser class]])
+                    peerId = ((TLPeer$peerUser *)concretePeer.peer).user_id;
+                else if ([concretePeer.peer isKindOfClass:[TLPeer$peerChat class]])
+                    peerId = -((TLPeer$peerChat *)concretePeer.peer).chat_id;
+            }
+            else if ([notifySettings.peer isKindOfClass:[TLNotifyPeer$notifyAll class]])
+            {
+            }
+            else if ([notifySettings.peer isKindOfClass:[TLNotifyPeer$notifyChats class]])
+                peerId = INT_MAX - 1;
+            else if ([notifySettings.peer isKindOfClass:[TLNotifyPeer$notifyUsers class]])
+                peerId = INT_MAX - 2;
+            
+            if (peerId != 0)
+            {
+                int peerSoundId = 0;
+                int peerMuteUntil = 0;
+                bool peerPreviewText = true;
+                
+                if ([notifySettings.notify_settings isKindOfClass:[TLPeerNotifySettings$peerNotifySettings class]])
+                {
+                    TLPeerNotifySettings$peerNotifySettings *concreteSettings = (TLPeerNotifySettings$peerNotifySettings *)notifySettings.notify_settings;
+                    
+                    peerMuteUntil = concreteSettings.mute_until;
+                    
+                    if (concreteSettings.sound.length == 0)
+                        peerSoundId = 0;
+                    else if ([concreteSettings.sound isEqualToString:@"default"])
+                        peerSoundId = 1;
+                    else
+                        peerSoundId = [concreteSettings.sound intValue];
+                    
+                    peerPreviewText = concreteSettings.show_previews;
+                    
+                    [TGDatabaseInstance() storePeerNotificationSettings:peerId soundId:peerSoundId muteUntil:peerMuteUntil previewText:peerPreviewText photoNotificationsEnabled:false writeToActionQueue:false completion:^(bool changed)
+                    {
+                        if (changed)
+                        {
+                            NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:peerMuteUntil], @"muteUntil", [NSNumber numberWithInt:peerSoundId], @"soundId", [[NSNumber alloc] initWithBool:peerPreviewText], @"previewText", [[NSNumber alloc] initWithBool:false], @"photoNotificationsEnabled", nil];
+                            
+                            [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/peerSettings/(%lld)", peerId] resource:[[SGraphObjectNode alloc] initWithObject:dict]];
+                        }
+                    }];
+                }
             }
         }
     }
@@ -1083,6 +1149,21 @@ static bool _initialUpdatesScheduled = false;
                 }];
             } synchronous:false];
         }
+    }
+    
+    if (dispatchBlocked)
+    {
+        [TGDatabaseInstance() loadBlockedList:^(NSArray *blockedList)
+        {
+            NSMutableArray *users = [[NSMutableArray alloc] init];
+            for (NSNumber *nUid in blockedList)
+            {
+                TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                if (user != nil)
+                    [users addObject:user];
+            }
+            [ActionStageInstance() dispatchResource:@"/tg/blockedUsers" resource:[[SGraphObjectNode alloc] initWithObject:users]];
+        }];
     }
     
     return true;

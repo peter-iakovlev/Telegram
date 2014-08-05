@@ -30,6 +30,10 @@
 #import "TGBroadcastListsController.h"
 #import "TGAlternateBroadcastListsController.h"
 
+#import "TGBroadcastModernConversationCompanion.h"
+
+#import "TGStringUtils.h"
+
 #include <map>
 #include <set>
 
@@ -106,6 +110,7 @@ typedef enum {
         [ActionStageInstance() removeWatcher:self];
 
         [ActionStageInstance() watchForPath:@"/tg/conversations" watcher:self];
+        [ActionStageInstance() watchForPath:@"/tg/broadcastConversations" watcher:self];
         [ActionStageInstance() watchForGenericPath:@"/tg/dialoglist/@" watcher:self];
         [ActionStageInstance() watchForPath:@"/tg/userdatachanges" watcher:self];
         [ActionStageInstance() watchForPath:@"/tg/unreadCount" watcher:self];
@@ -208,8 +213,28 @@ typedef enum {
     }
     else
     {
-        int64_t conversationId = conversation.conversationId;
-        [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation];
+        if (conversation.isBroadcast)
+        {
+            TGBroadcastModernConversationCompanion *broadcastCompanion = [[TGBroadcastModernConversationCompanion alloc] initWithConversationId:conversation.conversationId conversation:conversation];
+            TGModernConversationController *conversationController = [[TGModernConversationController alloc] init];
+            conversationController.companion = broadcastCompanion;
+            [broadcastCompanion bindController:conversationController];
+            
+            if (!TGIsPad())
+            {
+                [TGAppDelegateInstance.mainNavigationController pushViewController:conversationController animated:true];
+            }
+            else
+            {
+                TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[conversationController]];
+                TGAppDelegateInstance.tabletMainViewController.detailViewController = navigationController;
+            }
+        }
+        else
+        {
+            int64_t conversationId = conversation.conversationId;
+            [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation];
+        }
     }
 }
 
@@ -385,7 +410,7 @@ typedef enum {
         int minDate = INT_MAX;
         for (TGConversation *conversation in _conversationList)
         {
-            if (conversation.date < minDate)
+            if (conversation.date < minDate && !conversation.isBroadcast)
                 minDate = conversation.date;
             
             [currentConversationIds addObject:[[NSNumber alloc] initWithLongLong:conversation.conversationId]];
@@ -448,6 +473,18 @@ typedef enum {
         int64_t conversationId = user.uid;
         [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:nil];
     }
+}
+
+- (NSString *)stringForMemberCount:(int)memberCount
+{
+    if (memberCount == 1)
+        return TGLocalizedStatic(@"Conversation.StatusRecipients_1");
+    else if (memberCount == 2)
+        return TGLocalizedStatic(@"Conversation.StatusRecipients_2");
+    else if (memberCount >= 3 && memberCount <= 10)
+        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusRecipients_3_10"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
+    else
+        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusRecipients_any"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
 }
 
 - (void)initializeDialogListData:(TGConversation *)conversation customUser:(TGUser *)customUser selfUser:(TGUser *)selfUser
@@ -547,7 +584,12 @@ typedef enum {
     }
     else
     {
-        [dict setObject:(conversation.chatTitle == nil ? @"" : conversation.chatTitle) forKey:@"title"];
+        dict[@"isBroadcast"] = @(conversation.isBroadcast);
+        
+        if (conversation.isBroadcast && conversation.chatTitle.length == 0)
+            dict[@"title"] = [self stringForMemberCount:conversation.chatParticipantCount];
+        else
+            [dict setObject:(conversation.chatTitle == nil ? @"" : conversation.chatTitle) forKey:@"title"];
         
         if (conversation.chatPhotoSmall.length != 0)
             [dict setObject:conversation.chatPhotoSmall forKey:@"avatarUrl"];
@@ -643,6 +685,9 @@ typedef enum {
                     if ((forwardMode && conversation.conversationId <= INT_MIN) && !showSecretInForwardMode)
                         continue;
                     
+                    if (forwardMode && conversation.isBroadcast)
+                        continue;
+                    
                     [self initializeDialogListData:conversation customUser:nil selfUser:selfUser];
                     [result addObject:conversation];
                 }
@@ -706,6 +751,18 @@ typedef enum {
                 for (int i = 0; i < (int)loadedItems.count; i++)
                 {
                     if (((TGConversation *)loadedItems[i]).conversationId <= INT_MIN)
+                    {
+                        [loadedItems removeObjectAtIndex:i];
+                        i--;
+                    }
+                }
+            }
+            
+            if (forwardMode)
+            {
+                for (int i = 0; i < (int)loadedItems.count; i++)
+                {
+                    if (((TGConversation *)loadedItems[i]).isBroadcast)
                     {
                         [loadedItems removeObjectAtIndex:i];
                         i--;
@@ -839,7 +896,7 @@ typedef enum {
     {
         [self actorCompleted:ASStatusSuccess path:path result:resource];
     }
-    else if ([path isEqualToString:@"/tg/conversations"])
+    else if ([path isEqualToString:@"/tg/conversations"] || [path isEqualToString:@"/tg/broadcastConversations"])
     {
         NSMutableArray *conversations = [((SGraphObjectNode *)resource).object mutableCopy];
         
@@ -850,6 +907,18 @@ typedef enum {
             for (int i = 0; i < (int)conversations.count; i++)
             {
                 if (((TGConversation *)conversations[i]).conversationId <= INT_MIN)
+                {
+                    [conversations removeObjectAtIndex:i];
+                    i--;
+                }
+            }
+        }
+        
+        if (self.forwardMode)
+        {
+            for (int i = 0; i < (int)conversations.count; i++)
+            {
+                if (((TGConversation *)conversations[i]).isBroadcast)
                 {
                     [conversations removeObjectAtIndex:i];
                     i--;

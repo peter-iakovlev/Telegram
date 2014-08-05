@@ -50,6 +50,9 @@
                 [strongSelf configRequestFailed];
         }];
     }];
+    
+    [self addCancelToken:request.internalId];
+    [[TGTelegramNetworking instance] addRequest:request];
 }
 
 - (void)inviteTextRequestSuccess:(TLhelp_InviteText *)inviteText

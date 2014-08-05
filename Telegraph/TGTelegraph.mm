@@ -1953,9 +1953,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     sendCode.api_id = [_apiId intValue];
     sendCode.api_hash = _apiHash;
     
-    NSArray *preferredLocalizations = [[NSBundle mainBundle] preferredLocalizations];
-    if (preferredLocalizations.count != 0)
-        sendCode.lang_code = [preferredLocalizations objectAtIndex:0];
+    sendCode.lang_code = [[NSLocale preferredLanguages] objectAtIndex:0];
     
     return [[TGTelegramNetworking instance] performRpc:sendCode completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
     {
@@ -2176,9 +2174,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     getAppUpdate.device_model = [self currentDeviceModel];
     getAppUpdate.system_version = [[UIDevice currentDevice] systemVersion];
     getAppUpdate.app_version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
-    NSArray *preferredLocalizations = [[NSBundle mainBundle] preferredLocalizations];
-    if (preferredLocalizations.count != 0)
-        getAppUpdate.lang_code = [preferredLocalizations objectAtIndex:0];
+    getAppUpdate.lang_code = [[NSLocale preferredLanguages] objectAtIndex:0];
     
     return [[TGTelegramNetworking instance] performRpc:getAppUpdate completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
     {
@@ -3835,11 +3831,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 
 - (NSString *)langCode
 {
-    NSArray *preferredLocalizations = [[NSBundle mainBundle] preferredLocalizations];
-    if (preferredLocalizations.count != 0)
-        return [preferredLocalizations objectAtIndex:0];
-    
-    return @"en";
+    return [[NSLocale preferredLanguages] objectAtIndex:0];
 }
 
 - (void)willSwitchBackends

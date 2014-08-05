@@ -42,6 +42,7 @@
 {
     NSArray *messages = [options objectForKey:@"messages"];
     NSMutableDictionary *chats = [options objectForKey:@"chats"];
+    bool doNotModifyDates = [options[@"doNotModifyDates"] boolValue];
     
     if (messages == nil && chats.count != 0)
     {
@@ -195,7 +196,7 @@
             [lastMessages addObject:lastMessage];
         
         TGConversation *conversation = [chats objectForKey:nConversationId];
-        [[TGDatabase instance] addMessagesToConversation:conversationMessages conversationId:[nConversationId longLongValue] updateConversation:conversation dispatch:true countUnread:true];
+        [[TGDatabase instance] addMessagesToConversation:conversationMessages conversationId:[nConversationId longLongValue] updateConversation:conversation dispatch:true countUnread:true updateDates:!doNotModifyDates];
         
         [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/conversation/(%lld)/messages", [nConversationId longLongValue]] resource:[[SGraphObjectNode alloc] initWithObject:conversationMessages]];
     }

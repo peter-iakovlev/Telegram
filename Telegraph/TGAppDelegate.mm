@@ -148,7 +148,7 @@ TGTelegraph *telegraph = nil;
         UIViewController *rootController = nil;
         bool useAnimated = true;
 #if TARGET_IPHONE_SIMULATOR
-        useAnimated = false;
+        //useAnimated = false;
 #endif
         if (useAnimated)
         {
@@ -210,7 +210,7 @@ TGTelegraph *telegraph = nil;
         
         [[TGDatabase instance] markAllPendingMessagesAsFailed];
         [[TGDatabase instance] loadConversationListInitial:^(NSArray *dialogList, NSArray *userIds)
-        {
+        {   
             TGLog(@"###### Dialog list loaded ######");
             
             preloadedDialogList = dialogList;
@@ -478,7 +478,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     
     if (iosMajorVersion() >= 7)
     {
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(freedomOne:) name:UIApplicationUserDidTakeScreenshotNotification object:nil];
+        //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(freedomOne:) name:UIApplicationUserDidTakeScreenshotNotification object:nil];
     }
     
     _foregroundResumeTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(checkForegroundResume) interval:2.0 repeat:true];
@@ -1716,7 +1716,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                 [_mainTabsController presentViewController:navigationController animated:false completion:nil];
             }
         }
-        else if ([url.scheme isEqualToString:@"telegram"])
+        else if ([url.scheme isEqualToString:@"telegram"] || [url.scheme isEqualToString:@"tg"])
         {
             if ([url.resourceSpecifier hasPrefix:@"//msg?"])
             {
