@@ -23,6 +23,7 @@
 - (bool)shouldAutorotate;
 
 - (void)showHideInterface;
+- (void)hideInterfaceAnimated;
 
 - (void)addItemHeaderView:(UIView *)itemHeaderView;
 - (void)removeItemHeaderView:(UIView *)itemHeaderView;

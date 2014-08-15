@@ -72,7 +72,7 @@ static ASQueue *taskManagementQueue()
     return [uri hasPrefix:@"video-thumbnail://"];
 }
 
-- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float))progress completion:(void (^)(TGDataResource *))completion
+- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float))progress partialCompletion:(void (^)(TGDataResource *resource))__unused partialCompletion completion:(void (^)(TGDataResource *))completion
 {
     TGMediaPreviewTask *previewTask = [[TGMediaPreviewTask alloc] init];
     

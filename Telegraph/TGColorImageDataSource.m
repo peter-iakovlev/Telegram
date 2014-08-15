@@ -28,7 +28,7 @@
     return [[TGDataResource alloc] initWithImage:[self imageWithColor:color] decoded:true];
 }
 
-- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float progress))progress completion:(void (^)(TGDataResource *resource))completion
+- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float progress))progress partialCompletion:(void (^)(TGDataResource *resource))__unused partialCompletion completion:(void (^)(TGDataResource *resource))completion
 {
     if ([uri hasPrefix:@"builtin-wallpaper://?"])
     {

@@ -11,9 +11,10 @@
 - (void)removeItemHeaderView:(UIView *)itemHeaderView;
 - (void)addItemFooterView:(UIView *)itemFooterView;
 - (void)removeItemFooterView:(UIView *)itemFooterView;
-
-- (void)setTitle:(NSString *)title;
-- (void)setTitleAlpha:(CGFloat)titleAlpha;
+- (void)addItemLeftAcessoryView:(UIView *)itemLeftAcessoryView;
+- (void)removeItemLeftAcessoryView:(UIView *)itemLeftAcessoryView;
+- (void)addItemRightAcessoryView:(UIView *)itemRightAcessoryView;
+- (void)removeItemRightAcessoryView:(UIView *)itemRightAcessoryView;
 
 - (void)animateTransitionInWithDuration:(NSTimeInterval)dutation;
 - (void)animateTransitionOutWithDuration:(NSTimeInterval)dutation;

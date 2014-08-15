@@ -18,6 +18,8 @@
 
 #import "TGAppManager.h"
 
+#import "TGHolderSet.h"
+
 extern CFAbsoluteTime applicationStartupTimestamp;
 extern CFAbsoluteTime mainLaunchTimestamp;
 
@@ -28,6 +30,8 @@ extern TGAppDelegate *TGAppDelegateInstance;
 
 @class TGPhoneMainViewController;
 @class TGTabletMainViewController;
+
+extern NSString *TGDeviceProximityStateChangedNotification;
 
 @protocol TGDeviceTokenListener <NSObject>
 
@@ -68,6 +72,8 @@ extern TGAppDelegate *TGAppDelegateInstance;
 @property (nonatomic) bool autoDownloadAudioInGroups;
 @property (nonatomic) bool autoDownloadAudioInPrivateChats;
 
+@property (nonatomic) bool autoPlayAudio;
+
 @property (nonatomic) bool useDifferentBackend;
 
 @property (nonatomic, strong) TGNavigationController *loginNavigationController;
@@ -78,6 +84,9 @@ extern TGAppDelegate *TGAppDelegateInstance;
 @property (nonatomic, strong) TGDialogListController *dialogListController;
 @property (nonatomic, strong) TGContactsController *contactsController;
 @property (nonatomic, strong) TGAccountSettingsController *settingsController;
+
+@property (nonatomic) bool deviceProximityState;
+@property (nonatomic) TGHolderSet *deviceProximityListeners;
 
 @property (nonatomic) CFAbsoluteTime enteredBackgroundTime;
 

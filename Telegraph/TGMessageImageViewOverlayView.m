@@ -20,6 +20,7 @@ typedef enum {
 
 @property (nonatomic) int overlayStyle;
 @property (nonatomic) CGFloat progress;
+@property (nonatomic) bool cancelEnabled;
 @property (nonatomic) int type;
 @property (nonatomic, strong) UIImage *blurredBackgroundImage;
 @property (nonatomic, strong) UIColor *imageBackgroundColor;
@@ -37,6 +38,7 @@ typedef enum {
         {
             _type = ((TGMessageImageViewOverlayLayer *)layer).type;
             _overlayStyle = ((TGMessageImageViewOverlayLayer *)layer).overlayStyle;
+            _cancelEnabled = ((TGMessageImageViewOverlayLayer *)layer).cancelEnabled;
         }
     }
     return self;
@@ -81,10 +83,10 @@ typedef enum {
 {
     if (_type != TGMessageImageViewOverlayViewTypeDownload)
     {
+        [self removeAnimationForKey:@"progress"];
+        
         _type = TGMessageImageViewOverlayViewTypeDownload;
         [self setNeedsDisplay];
-        
-        [self removeAnimationForKey:@"progress"];
     }
 }
 
@@ -92,14 +94,14 @@ typedef enum {
 {
     if (_type != TGMessageImageViewOverlayViewTypePlay)
     {
+        [self removeAnimationForKey:@"progress"];
+        
         _type = TGMessageImageViewOverlayViewTypePlay;
         [self setNeedsDisplay];
-        
-        [self removeAnimationForKey:@"progress"];
     }
 }
 
-- (void)setProgress:(float)progress animated:(BOOL)animated
+- (void)setProgress:(float)progress cancelEnabled:(bool)cancelEnabled animated:(bool)animated
 {
     if (_type != TGMessageImageViewOverlayViewTypeProgress || ABS(_progress - progress) > FLT_EPSILON)
     {
@@ -109,6 +111,7 @@ typedef enum {
         
         _type = TGMessageImageViewOverlayViewTypeProgress;
         _progress = progress;
+        _cancelEnabled = cancelEnabled;
         
         if (animated)
         {
@@ -213,24 +216,27 @@ typedef enum {
                 CGContextSetLineCap(context, kCGLineCapRound);
             CGContextSetLineWidth(context, lineWidth);
             
-            CGPoint crossLine[] = {
-                CGPointMake((diameter - crossSize) / 2.0f, (diameter - crossSize) / 2.0f),
-                CGPointMake((diameter + crossSize) / 2.0f, (diameter + crossSize) / 2.0f),
-                CGPointMake((diameter + crossSize) / 2.0f, (diameter - crossSize) / 2.0f),
-                CGPointMake((diameter - crossSize) / 2.0f, (diameter + crossSize) / 2.0f),
-            };
+                CGPoint crossLine[] = {
+                    CGPointMake((diameter - crossSize) / 2.0f, (diameter - crossSize) / 2.0f),
+                    CGPointMake((diameter + crossSize) / 2.0f, (diameter + crossSize) / 2.0f),
+                    CGPointMake((diameter + crossSize) / 2.0f, (diameter - crossSize) / 2.0f),
+                    CGPointMake((diameter - crossSize) / 2.0f, (diameter + crossSize) / 2.0f),
+                };
+                
+                if (_overlayStyle == TGMessageImageViewOverlayStyleDefault)
+                    CGContextSetStrokeColorWithColor(context, [UIColor clearColor].CGColor);
+                else
+                    CGContextSetStrokeColorWithColor(context, TGAccentColor().CGColor);
             
-            if (_overlayStyle == TGMessageImageViewOverlayStyleDefault)
-                CGContextSetStrokeColorWithColor(context, [UIColor clearColor].CGColor);
-            else
-                CGContextSetStrokeColorWithColor(context, TGAccentColor().CGColor);
-            CGContextStrokeLineSegments(context, crossLine, sizeof(crossLine) / sizeof(crossLine[0]));
+            if (_cancelEnabled)
+                CGContextStrokeLineSegments(context, crossLine, sizeof(crossLine) / sizeof(crossLine[0]));
             
             if (_overlayStyle == TGMessageImageViewOverlayStyleDefault)
             {
                 CGContextSetBlendMode(context, kCGBlendModeNormal);
                 CGContextSetStrokeColorWithColor(context, UIColorRGBA(0xffffff, 1.0f).CGColor);
-                CGContextStrokeLineSegments(context, crossLine, sizeof(crossLine) / sizeof(crossLine[0]));
+                if (_cancelEnabled)
+                    CGContextStrokeLineSegments(context, crossLine, sizeof(crossLine) / sizeof(crossLine[0]));
             }
             
             CGContextSetBlendMode(context, kCGBlendModeCopy);
@@ -325,7 +331,12 @@ typedef enum {
 
 - (void)setProgress:(float)progress animated:(bool)animated
 {
-    [((TGMessageImageViewOverlayLayer *)self.layer) setProgress:progress animated:animated];
+    [self setProgress:progress cancelEnabled:true animated:animated];
+}
+
+- (void)setProgress:(float)progress cancelEnabled:(bool)cancelEnabled animated:(bool)animated
+{
+    [((TGMessageImageViewOverlayLayer *)self.layer) setProgress:progress cancelEnabled:cancelEnabled animated:animated];
 }
 
 @end

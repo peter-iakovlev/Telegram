@@ -55,11 +55,13 @@
     
     CGFloat spacing = 1.0f;
     
-    CGSize nameSize = [_nameLabel sizeThatFits:CGSizeMake(self.frame.size.width - 10.0f, self.frame.size.height)];
-    CGSize dateSize = [_dateLabel sizeThatFits:CGSizeMake(self.frame.size.width - 10.0f, self.frame.size.height)];
+    CGSize nameSize = [_nameLabel.text sizeWithFont:_nameLabel.font];
+    nameSize.width = MIN(self.frame.size.width - 10.0f, nameSize.width);
+    CGSize dateSize = [_dateLabel.text sizeWithFont:_dateLabel.font];
+    dateSize.width = MIN(self.frame.size.width - 10.0f, dateSize.width);
     
     _nameLabel.frame = (CGRect){{CGFloor((self.frame.size.width - nameSize.width) / 2.0f), CGFloor((self.frame.size.height - nameSize.height - dateSize.height - spacing) / 2.0f)}, nameSize};
-    _dateLabel.frame = (CGRect){{CGFloor((self.frame.size.width - dateSize.width) / 2.0f), CGRectGetMaxY(_nameLabel.frame) + spacing}, nameSize};
+    _dateLabel.frame = (CGRect){{CGFloor((self.frame.size.width - dateSize.width) / 2.0f), CGRectGetMaxY(_nameLabel.frame) + spacing}, dateSize};
 }
 
 @end

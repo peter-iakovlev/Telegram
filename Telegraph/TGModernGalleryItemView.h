@@ -12,6 +12,7 @@
 
 @class TGModernGalleryItemView;
 @protocol TGModernGalleryDefaultFooterView;
+@protocol TGModernGalleryDefaultFooterAccessoryView;
 
 @protocol TGModernGalleryItemViewDelegate <NSObject>
 
@@ -27,11 +28,14 @@
 @property (nonatomic) NSUInteger index;
 @property (nonatomic, strong) id<TGModernGalleryItem> item;
 @property (nonatomic, strong) UIView<TGModernGalleryDefaultFooterView> *defaultFooterView;
+@property (nonatomic, strong) UIView<TGModernGalleryDefaultFooterAccessoryView> *defaultFooterAccessoryLeftView;
+@property (nonatomic, strong) UIView<TGModernGalleryDefaultFooterAccessoryView> *defaultFooterAccessoryRightView;
 
 - (void)setItem:(id<TGModernGalleryItem>)item synchronously:(bool)synchronously;
 
 - (void)prepareForRecycle;
 - (void)prepareForReuse;
+- (void)setIsVisible:(bool)isVisible;
 
 - (UIView *)headerView;
 - (UIView *)footerView;

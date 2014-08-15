@@ -12,12 +12,13 @@
 
 @implementation TGModernGalleryImageItem
 
-- (instancetype)initWithImageInfo:(TGImageInfo *)imageInfo
+- (instancetype)initWithUri:(NSString *)uri imageSize:(CGSize)imageSize
 {
     self = [super init];
     if (self != nil)
     {
-        _imageInfo = imageInfo;
+        _uri = uri;
+        _imageSize = imageSize;
     }
     return self;
 }
@@ -25,6 +26,16 @@
 - (Class)viewClass
 {
     return [TGModernGalleryImageItemView class];
+}
+
+- (BOOL)isEqual:(id)object
+{
+    if ([object isKindOfClass:[TGModernGalleryImageItem class]])
+    {
+        return TGStringCompare(_uri, ((TGModernGalleryImageItem *)object).uri) && CGSizeEqualToSize(_imageSize, ((TGModernGalleryImageItem *)object).imageSize);
+    }
+    
+    return false;
 }
 
 @end

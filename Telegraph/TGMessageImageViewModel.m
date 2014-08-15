@@ -66,7 +66,8 @@
     [((TGMessageImageViewContainer *)self.boundView).imageView setAdditionalDataString:_additionalDataString];
     [((TGMessageImageViewContainer *)self.boundView).imageView setIsBroadcast:_isBroadcast];
     
-    ((TGMessageImageViewContainer *)self.boundView).imageView.alpha = _mediaVisible ? 1.0f : 0.0f;
+    //((TGMessageImageViewContainer *)self.boundView).imageView.alpha = _mediaVisible ? 1.0f : 0.0f;
+    ((TGMessageImageViewContainer *)self.boundView).alpha = _mediaVisible ? 1.0f : 0.0f;
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
@@ -78,7 +79,8 @@
 {
     _mediaVisible = mediaVisible;
     
-    ((TGMessageImageViewContainer *)self.boundView).imageView.alpha = _mediaVisible ? 1.0f : 0.0f;
+    //((TGMessageImageViewContainer *)self.boundView).imageView.alpha = _mediaVisible ? 1.0f : 0.0f;
+    ((TGMessageImageViewContainer *)self.boundView).alpha = _mediaVisible ? 1.0f : 0.0f;
 }
 
 - (void)setUri:(NSString *)uri

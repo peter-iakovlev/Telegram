@@ -20,6 +20,8 @@
 #import "TGTelegramNetworking.h"
 #import "TGNetworkWorker.h"
 
+#import "TGDownloadManager.h"
+
 #import <AssetsLibrary/AssetsLibrary.h>
 #import <AVFoundation/AVFoundation.h>
 
@@ -130,6 +132,8 @@ public:
 @property (nonatomic) int takenTimeSamples;
 
 @property (nonatomic) float progress;
+
+@property (nonatomic, strong) NSDictionary *additionalOptions;
 
 @end
 
@@ -281,6 +285,7 @@ public:
     bool cachedOnly = false;
     
     _videoAttachment = [options objectForKey:@"videoAttachment"];
+    _additionalOptions = options[@"additionalOptions"];
     
     NSString *videoUrl = [self.path substringWithRange:NSMakeRange(17, self.path.length - 1 - 17)];
     if ([videoUrl hasPrefix:@"cached:"])
@@ -456,6 +461,11 @@ public:
                     }
                     else
                     {
+                        if (_additionalOptions[@"peerId"] != nil && _additionalOptions[@"messageId"] != nil)
+                        {
+                            [[TGDownloadManager instance] enqueueItem:self.path messageId:[_additionalOptions[@"messageId"] intValue] itemId:[[TGMediaId alloc] initWithType:1 itemId:_videoId] groupId:[_additionalOptions[@"messageId"] longLongValue] itemClass:TGDownloadItemClassVideo];
+                        }
+                        
                         [ActionStageInstance() dispatchMessageToWatchers:self.path messageType:@"willDownloadVideo" message:[[NSDictionary alloc] initWithObjectsAndKeys:[[TGMediaId alloc] initWithType:1 itemId:_videoId], @"mediaId", nil]];
                         [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"%@+download)", [self.path substringToIndex:self.path.length - 1]] options:options watcher:self];
                     }

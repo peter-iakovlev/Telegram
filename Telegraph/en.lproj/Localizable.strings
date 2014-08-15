@@ -677,3 +677,5 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 // Video
 "VideoPreview.OptionSD" = "Normal Size (%@)";
 "VideoPreview.OptionHD" = "High Definition (%@)";
+
+"ChatSettings.AutoPlayAudio" = "Autoplay Audio";

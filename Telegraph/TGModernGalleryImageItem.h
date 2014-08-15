@@ -12,8 +12,9 @@
 
 @interface TGModernGalleryImageItem : NSObject <TGModernGalleryItem>
 
-@property (nonatomic, readonly) TGImageInfo *imageInfo;
+@property (nonatomic, readonly) NSString *uri;
+@property (nonatomic, readonly) CGSize imageSize;
 
-- (instancetype)initWithImageInfo:(TGImageInfo *)imageInfo;
+- (instancetype)initWithUri:(NSString *)uri imageSize:(CGSize)imageSize;
 
 @end

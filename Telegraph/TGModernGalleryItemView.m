@@ -9,6 +9,7 @@
 #import "TGModernGalleryItemView.h"
 
 #import "TGModernGalleryDefaultFooterView.h"
+#import "TGModernGalleryDefaultFooterAccessoryView.h"
 
 @implementation TGModernGalleryItemView
 
@@ -17,6 +18,10 @@
 }
 
 - (void)prepareForReuse
+{
+}
+
+- (void)setIsVisible:(bool)__unused isVisible
 {
 }
 
@@ -49,6 +54,8 @@
 {
     _item = item;
     [self.defaultFooterView setItem:_item];
+    [self.defaultFooterAccessoryLeftView setItem:item];
+    [self.defaultFooterAccessoryRightView setItem:item];
 }
 
 @end

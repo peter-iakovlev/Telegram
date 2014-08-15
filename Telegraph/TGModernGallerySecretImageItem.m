@@ -18,7 +18,8 @@
 
 - (instancetype)initWithMessageId:(int32_t)messageId imageInfo:(TGImageInfo *)imageInfo messageCountdownTime:(NSTimeInterval)messageCountdownTime messageLifetime:(int)messageLifetime
 {
-    self = [super initWithImageInfo:imageInfo];
+    assert(false);
+    self = [super init];
     if (self != nil)
     {
         _messageId = messageId;

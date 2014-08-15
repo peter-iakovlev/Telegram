@@ -98,6 +98,8 @@
 
 #import <HockeySDK/HockeySDK.h>
 
+NSString *TGDeviceProximityStateChangedNotification = @"TGDeviceProximityStateChangedNotification";
+
 CFAbsoluteTime applicationStartupTimestamp = 0;
 CFAbsoluteTime mainLaunchTimestamp = 0;
 
@@ -235,6 +237,19 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     _globalContext = [[TGGlobalContext alloc] initWithName:@"default"];
+    
+    _deviceProximityListeners = [[TGHolderSet alloc] init];
+    _deviceProximityListeners.emptyStateChanged = ^(bool listenersExist)
+    {
+        [UIDevice currentDevice].proximityMonitoringEnabled = listenersExist;
+    };
+    
+    [[NSNotificationCenter defaultCenter] addObserverForName:UIDeviceProximityStateDidChangeNotification object:[UIDevice currentDevice] queue:nil usingBlock:^(__unused NSNotification *notification)
+    {
+        _deviceProximityState = [UIDevice currentDevice].proximityState;
+        
+        [[NSNotificationCenter defaultCenter] postNotificationName:TGDeviceProximityStateChangedNotification object:nil];
+    }];
     
     [FFNotificationCenter setShouldRotateBlock:^ bool()
     {
@@ -1177,6 +1192,11 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     else
         _autoDownloadAudioInPrivateChats = true;
     
+    if ((value = [userDefaults objectForKey:@"autoPlayAudio"]) != nil)
+        _autoPlayAudio = [value boolValue];
+    else
+        _autoPlayAudio = true;
+    
     _locationTranslationEnabled = false;
 }
 
@@ -1205,6 +1225,8 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [userDefaults setObject:[NSNumber numberWithBool:_autoDownloadPhotosInPrivateChats] forKey:@"autoDownloadPhotosInPrivateChats"];
     [userDefaults setObject:[NSNumber numberWithBool:_autoDownloadAudioInGroups] forKey:@"autoDownloadAudioInGroups"];
     [userDefaults setObject:[NSNumber numberWithBool:_autoDownloadAudioInPrivateChats] forKey:@"autoDownloadAudioInPrivateChats"];
+    
+    [userDefaults setObject:[NSNumber numberWithBool:_autoPlayAudio] forKey:@"autoPlayAudio"];
     
     [userDefaults synchronize];
 }

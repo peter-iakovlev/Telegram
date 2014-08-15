@@ -93,11 +93,11 @@ static const CGFloat swipeVelocityThreshold = 700.0f;
 {
     if (_interfaceView.alpha > FLT_EPSILON)
     {
-        [UIView animateWithDuration:0.3 animations:^
+        [UIView animateWithDuration:0.2 delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
         {
             _interfaceView.alpha = 0.0f;
             [TGHacks setApplicationStatusBarAlpha:0.0f];
-        }];
+        } completion:nil];
     }
     else
     {
@@ -105,6 +105,18 @@ static const CGFloat swipeVelocityThreshold = 700.0f;
         {
             _interfaceView.alpha = 1.0f;
             [TGHacks setApplicationStatusBarAlpha:1.0f];
+        } completion:nil];
+    }
+}
+
+- (void)hideInterfaceAnimated
+{
+    if (_interfaceView.alpha > FLT_EPSILON)
+    {
+        [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
+        {
+            _interfaceView.alpha = 0.0f;
+            [TGHacks setApplicationStatusBarAlpha:0.0f];
         } completion:nil];
     }
 }
@@ -206,10 +218,13 @@ static const CGFloat swipeVelocityThreshold = 700.0f;
 
 - (void)simpleTransitionOutWithVelocity:(CGFloat)velocity completion:(void (^)())completion
 {
-    CGFloat distance = (velocity < 0.0f ? -1.0f : 1.0f) * self.frame.size.height;
+    const CGFloat minVelocity = 2000.0f;
+    if (ABS(velocity) < minVelocity)
+        velocity = (velocity < 0.0f ? -1.0f : 1.0f) * minVelocity;
+    CGFloat distance = (velocity < FLT_EPSILON ? -1.0f : 1.0f) * self.frame.size.height;
     CGRect scrollViewFrame = (CGRect){{_scrollView.frame.origin.x, distance}, _scrollView.frame.size};
     
-    [UIView animateWithDuration:distance / velocity animations:^
+    [UIView animateWithDuration:ABS(distance / velocity) animations:^
     {
         _scrollView.frame = scrollViewFrame;
         _interfaceView.alpha = 0.0f;

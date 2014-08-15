@@ -14,7 +14,8 @@
 
 - (instancetype)initWithMessageId:(int32_t)messageId videoMedia:(TGVideoMediaAttachment *)videoMedia messageCountdownTime:(NSTimeInterval)messageCountdownTime messageLifetime:(int)messageLifetime
 {
-    self = [super initWithVideoMedia:videoMedia];
+    //TODO:
+    self = [super init];
     if (self != nil)
     {
         _messageId = messageId;

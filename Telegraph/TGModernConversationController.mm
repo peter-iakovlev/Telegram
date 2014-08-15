@@ -78,6 +78,7 @@
 #import "TGVideoConverter.h"
 
 #import "TGGenericPeerGalleryItem.h"
+#import "TGModernGalleryVideoItemView.h"
 
 #if TARGET_IPHONE_SIMULATOR
 NSInteger TGModernConversationControllerUnloadHistoryLimit = 500;
@@ -176,6 +177,9 @@ typedef enum {
     TGAudioRecorder *_currentAudioRecorder;
     TGModernConversationAudioPlayer *_currentAudioPlayer;
     int32_t _currentAudioPlayerMessageId;
+    
+    bool _streamAudioItems;
+    int32_t _currentStreamingAudioMessageId;
 }
 
 @end
@@ -217,6 +221,8 @@ typedef enum {
         self.dismissPresentedControllerWhenRemovedFromNavigationStack = true;
         
         _didDisappearBeforeAppearing = false;
+        
+        _streamAudioItems = TGAppDelegateInstance.autoPlayAudio;
     }
     return self;
 }
@@ -706,6 +712,8 @@ typedef enum {
         [_currentAudioPlayer stop];
         _currentAudioPlayer = nil;
         _currentAudioPlayerMessageId = 0;
+        
+        _currentStreamingAudioMessageId = 0;
         
         [self updateInlineMediaContexts];
     }
@@ -1515,11 +1523,45 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
     
     if (_enableUnloadHistoryRequests && (NSInteger)_items.count >= TGModernConversationControllerUnloadHistoryLimit + TGModernConversationControllerUnloadHistoryThreshold)
         [self _maybeUnloadHistory];
+    
+    if (intent == TGModernConversationInsertItemIntentGeneric && _items.count != 0 && _streamAudioItems && _currentStreamingAudioMessageId == 0)
+    {
+        for (TGMessageModernConversationItem *item in _items.reverseObjectEnumerator)
+        {
+            if (!item->_message.outgoing && [itemsArray containsObject:item])
+            {
+                for (id attachment in item->_message.mediaAttachments)
+                {
+                    if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
+                    {
+                        _currentStreamingAudioMessageId = item->_message.mid;
+                        
+                        if (item->_mediaAvailabilityStatus)
+                            [self playAudioFromMessage:item->_message.mid media:attachment];
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 - (void)updateItemAtIndex:(NSUInteger)index toItem:(TGModernConversationItem *)updatedItem
 {
     [_items[index] updateToItem:updatedItem viewStorage:_viewStorage];
+    
+    TGMessageModernConversationItem *item = (TGMessageModernConversationItem *)updatedItem;
+    if (_streamAudioItems && _currentStreamingAudioMessageId == item->_message.mid && item->_mediaAvailabilityStatus)
+    {
+        for (id attachment in item->_message.mediaAttachments)
+        {
+            if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
+            {
+                [self playAudioFromMessage:item->_message.mid media:attachment];
+                break;
+            }
+        }
+    }
 }
 
 - (void)updateItemProgressAtIndex:(NSUInteger)index toProgress:(float)progress
@@ -1987,17 +2029,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                     TGAudioMediaAttachment *audioAttachment = (TGAudioMediaAttachment *)attachment;
                     
                     if (_currentAudioPlayerMessageId != messageId)
-                    {
-                        [self stopAudioRecording];
-                        [self stopInlineMediaIfPlaying];
-                        
-                        _currentAudioPlayer = [[TGModernConversationAudioPlayer alloc] initWithFilePath:[audioAttachment localFilePath]];
-                        _currentAudioPlayer.delegate = self;
-                        _currentAudioPlayerMessageId = messageId;
-                        [_currentAudioPlayer play:0.0f];
-                        
-                        [self updateInlineMediaContexts];
-                    }
+                        [self playAudioFromMessage:messageId media:audioAttachment];
                     else
                         [_currentAudioPlayer play];
                     
@@ -2051,6 +2083,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         }
         else*/
         {
+            [self stopInlineMediaIfPlaying];
+            
             TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
             modernGallery.model = [[TGGenericPeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId atMessageId:mediaMessageItem->_message.mid];
             
@@ -2072,11 +2106,24 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                 }
             };
             
-            modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item)
+            modernGallery.finishedTransitionIn = ^(__unused id<TGModernGalleryItem> item, TGModernGalleryItemView *itemView)
+            {
+                if ([itemView isKindOfClass:[TGModernGalleryVideoItemView class]])
+                {
+                    [((TGModernGalleryVideoItemView *)itemView) play];
+                }
+            };
+            
+            modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item, TGModernGalleryItemView *itemView)
             {
                 __strong TGModernConversationController *strongSelf = weakSelf;
                 if (strongSelf != nil && [item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
                 {
+                    if ([itemView isKindOfClass:[TGModernGalleryVideoItemView class]])
+                    {
+                        [((TGModernGalleryVideoItemView *)itemView) hidePlayButton];
+                    }
+                    
                     id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
                     int32_t messageId = [concreteItem messageId];
                     
@@ -2197,7 +2244,63 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
 
 - (void)audioPlayerDidFinish
 {
+    int32_t currentStreamingAudioMessageId = _currentStreamingAudioMessageId;
+    
     [self stopInlineMediaIfPlaying];
+    
+    if (_streamAudioItems && currentStreamingAudioMessageId != 0)
+    {
+        int32_t lastIncomingAudioMessageId = 0;
+        TGAudioMediaAttachment *lastIncomingAudioMessageMedia = nil;
+        for (TGMessageModernConversationItem *item in _items)
+        {
+            if (item->_message.outgoing)
+                continue;
+            
+            if (item->_message.mid <= currentStreamingAudioMessageId)
+                break;
+            
+            for (id attachment in item->_message.mediaAttachments)
+            {
+                if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
+                {
+                    lastIncomingAudioMessageId = item->_message.mid;
+                    if (item->_mediaAvailabilityStatus)
+                        lastIncomingAudioMessageMedia = attachment;
+                    
+                    break;
+                }
+            }
+        }
+        
+        if (lastIncomingAudioMessageId != 0)
+        {
+            _currentStreamingAudioMessageId = lastIncomingAudioMessageId;
+            if (lastIncomingAudioMessageMedia != nil)
+                [self playAudioFromMessage:lastIncomingAudioMessageId media:lastIncomingAudioMessageMedia];
+        }
+        else
+            _currentStreamingAudioMessageId = 0;
+    }
+}
+
+- (void)playAudioFromMessage:(int32_t)messageId media:(TGAudioMediaAttachment *)media
+{
+    [self stopAudioRecording];
+    [self stopInlineMediaIfPlaying];
+    
+    _currentAudioPlayer = [[TGModernConversationAudioPlayer alloc] initWithFilePath:[media localFilePath]];
+    _currentAudioPlayer.delegate = self;
+    _currentAudioPlayerMessageId = messageId;
+    [_currentAudioPlayer play:0.0f];
+    
+    [self updateInlineMediaContexts];
+    
+    _streamAudioItems = TGAppDelegateInstance.autoPlayAudio;
+    if (_streamAudioItems)
+        _currentStreamingAudioMessageId = messageId;
+    else
+        _currentStreamingAudioMessageId = 0;
 }
 
 - (void)closeMediaFromMessage:(int32_t)__unused messageId

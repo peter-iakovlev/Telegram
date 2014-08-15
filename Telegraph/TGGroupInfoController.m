@@ -154,7 +154,8 @@
                 [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId],
                 @"/tg/userdatachanges",
                 @"/tg/userpresencechanges",
-                @"/as/updateRelativeTimestamps"
+                @"/as/updateRelativeTimestamps",
+                [[NSString alloc] initWithFormat:@"/tg/sharedMediaCount/(%" PRIx64 ")", (int64_t)_conversationId]
             ] watcher:self];
             
             [ActionStageInstance() watchForPath:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId64 ")", _conversationId] watcher:self];
@@ -1119,6 +1120,14 @@
         TGDispatchOnMainThread(^
         {
             [self _updateUsers:users];
+        });
+    }
+    else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/sharedMediaCount/(%" PRIx64 ")", (int64_t)_conversationId]])
+    {
+        TGDispatchOnMainThread(^
+        {
+            _sharedMediaCount = [resource intValue];
+            [self _updateSharedMediaCount];
         });
     }
 }

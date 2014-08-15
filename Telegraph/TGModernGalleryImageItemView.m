@@ -11,8 +11,9 @@
 #import "TGModernGalleryImageItem.h"
 
 #import "TGImageInfo.h"
-#import "TGRemoteImageView.h"
+#import "TGImageView.h"
 
+#import "TGModernGalleryImageItemImageView.h"
 #import "TGModernGalleryZoomableScrollView.h"
 
 @interface TGModernGalleryImageItemView ()
@@ -39,7 +40,13 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        _imageView = [[TGRemoteImageView alloc] init];
+        __weak TGModernGalleryImageItemView *weakSelf = self;
+        _imageView = [[TGModernGalleryImageItemImageView alloc] init];
+        _imageView.progressChanged = ^(float value)
+        {
+            __strong TGModernGalleryImageItemView *strongSelf = weakSelf;
+            [strongSelf setProgressVisible:value < 1.0f - FLT_EPSILON value:value animated:true];
+        };
         [self.scrollView addSubview:_imageView];
         
         //_imageView.layer.shadowColor = [UIColor blackColor].CGColor;
@@ -51,28 +58,20 @@
 
 - (void)prepareForRecycle
 {
-    [_imageView loadImage:nil];
+    [_imageView reset];
+    [self setProgressVisible:false value:0.0f animated:false];
 }
 
 - (void)setItem:(TGModernGalleryImageItem *)item synchronously:(bool)synchronously
 {
     [super setItem:item synchronously:synchronously];
     
-    _imageSize = CGSizeZero;
-    NSString *uri = [item.imageInfo closestImageUrlWithSize:CGSizeMake(1000.0f, 1000.0f) resultingSize:&_imageSize];
-    if (uri == nil)
-        [_imageView loadImage:nil];
+    _imageSize = item.imageSize;
+    
+    if (item.uri == nil)
+        [_imageView reset];
     else
-    {
-        UIImage *loadedImage = nil;
-        if (synchronously)
-            loadedImage = [[TGRemoteImageView sharedCache] cachedImage:uri availability:TGCacheDisk];
-        
-        if (loadedImage != nil)
-            [_imageView loadImage:loadedImage];
-        else
-            [_imageView loadImage:uri filter:@"maybeScale" placeholder:nil];
-    }
+        [_imageView loadUri:item.uri withOptions:@{TGImageViewOptionSynchronous: @(synchronously)}];
     
     [self reset];
 }

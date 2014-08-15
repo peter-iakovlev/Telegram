@@ -139,6 +139,7 @@
                 @"/as/updateRelativeTimestamps",
                 @"/tg/contactlist",
                 @"/tg/phonebook",
+                [[NSString alloc] initWithFormat:@"/tg/sharedMediaCount/(%" PRIx64 ")", (int64_t)_uid]
             ] watcher:self];
             
             [ActionStageInstance() watchForPath:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId32 ")", _uid] watcher:self];
@@ -1162,6 +1163,14 @@ static UIView *_findBackArrow(UIView *view)
     else if ([path hasPrefix:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId32 "", _uid]])
     {
         [self actorCompleted:ASStatusSuccess path:path result:resource];
+    }
+    else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/sharedMediaCount/(%" PRIx64 ")", (int64_t)_uid]])
+    {
+        TGDispatchOnMainThread(^
+        {
+            _sharedMediaCount = [resource intValue];
+            [self _updateSharedMediaCount];
+        });
     }
     
     [super actionStageResourceDispatched:path resource:resource arguments:arguments];

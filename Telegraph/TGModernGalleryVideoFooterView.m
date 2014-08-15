@@ -62,10 +62,11 @@
         
         CGFloat width = 4.0f;
         CGFloat spacing = 6.0f;
+        CGFloat spacingTop = 1.0f;
         
         CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillRect(context, CGRectMake(CGFloor((21.0f - spacing - width * 2.0f) / 2.0f), 0.0f, width, 22.5f));
-        CGContextFillRect(context, CGRectMake(CGFloor((21.0f - spacing - width * 2.0f) / 2.0f) + width + spacing, 0.0f, width, 22.5f));
+        CGContextFillRect(context, CGRectMake(CGFloor((21.0f - spacing - width * 2.0f) / 2.0f), spacingTop, width, 22.5f - spacingTop * 2.0f));
+        CGContextFillRect(context, CGRectMake(CGFloor((21.0f - spacing - width * 2.0f) / 2.0f) + width + spacing, spacingTop, width, 22.5f - spacingTop * 2.0f));
         
         image = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();

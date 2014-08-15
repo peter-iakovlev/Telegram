@@ -42,8 +42,6 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        self.imageView.contentHints |= TGRemoteImageContentHintLoadFromDiskSynchronously;
-        
         static UIImage *timeBackgroundImage = nil;
         static UIImage *timerFrameImage = nil;
         static dispatch_once_t onceToken;

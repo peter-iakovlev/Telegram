@@ -16,11 +16,14 @@
 #import "TGModernGalleryScrollView.h"
 #import "TGModernGalleryItemView.h"
 
+#import "TGModernGalleryContainerView.h"
 #import "TGModernGalleryInterfaceView.h"
 
 #import "TGModernGalleryModel.h"
 
 #import <pop/POP.h>
+
+#import <objc/runtime.h>
 
 #define TGModernGalleryItemPadding 20.0f
 
@@ -28,11 +31,14 @@
 {
     NSMutableDictionary *_reusableItemViewsByIdentifier;
     NSMutableArray *_visibleItemViews;
+    bool _preloadVisibleItemViews;
     
     TGModernGalleryView *_view;
+    UIView<TGModernGalleryDefaultHeaderView> *_defaultHeaderView;
     
     NSUInteger _lastReportedFocusedIndex;
     bool _synchronousBoundsChange;
+    bool _reloadingItems;
     
     UIStatusBarStyle _statusBarStyle;
 }
@@ -113,6 +119,12 @@
             [strongSelf setCurrentItemIndex:index == NSNotFound ? 0 : index synchronously:false];
         };
         
+        _model.actionSheetView = ^
+        {
+            __strong TGModernGalleryController *strongSelf = weakSelf;
+            return strongSelf.view;
+        };
+        
         [self reloadDataAtItem:_model.focusItem synchronously:false];
     }
 }
@@ -145,7 +157,10 @@
         Class itemClass = [item viewClass];
         TGModernGalleryItemView *itemView = [[itemClass alloc] init];
         itemView.delegate = self;
-        itemView.defaultFooterView = [[(id)[_model defaultFooterViewClass] alloc] init];
+        itemView.defaultFooterView = [_model createDefaultFooterView];
+        itemView.defaultFooterAccessoryLeftView = [_model createDefaultLeftAccessoryView];
+        itemView.defaultFooterAccessoryRightView = [_model createDefaultRightAccessoryView];
+        
         return itemView;
     }
 
@@ -181,6 +196,7 @@
 - (void)loadView
 {
     [super loadView];
+    object_setClass(self.view, [TGModernGalleryContainerView class]);
     
     self.view.frame = (CGRect){self.view.frame.origin, [self referenceViewSizeForOrientation:self.interfaceOrientation]};
     
@@ -190,6 +206,10 @@
     _view = [[TGModernGalleryView alloc] initWithFrame:self.view.bounds itemPadding:TGModernGalleryItemPadding];
     _view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_view];
+    
+    _defaultHeaderView = [_model createDefaultHeaderView];
+    if (_defaultHeaderView != nil)
+        [_view addItemHeaderView:_defaultHeaderView];
     
     _view.scrollView.scrollDelegate = self;
     _view.scrollView.delegate = self;
@@ -233,6 +253,11 @@
                 strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
                 [strongSelf setNeedsStatusBarAppearanceUpdate];
                 
+                [UIView animateWithDuration:0.2 animations:^
+                {
+                    [TGHacks setApplicationStatusBarAlpha:1.0f];
+                }];
+                
                 [strongSelf->_view simpleTransitionOutWithVelocity:velocity completion:^
                 {
                     __strong TGModernGalleryController *strongSelf2 = weakSelf;
@@ -248,7 +273,20 @@
     UIView *transitionInFromView = nil;
     UIView *transitionInToView = nil;
     if (_beginTransitionIn && _model.focusItem != nil)
-        transitionInFromView = _beginTransitionIn(_model.focusItem);
+    {
+        TGModernGalleryItemView *itemView = nil;
+        for (TGModernGalleryItemView *visibleItemView in self->_visibleItemViews)
+        {
+            if ([visibleItemView.item isEqual:self.model.focusItem])
+            {
+                itemView = visibleItemView;
+                
+                break;
+            }
+        }
+        
+        transitionInFromView = _beginTransitionIn(_model.focusItem, itemView);
+    }
     if (transitionInFromView != nil)
     {
         for (TGModernGalleryItemView *itemView in _visibleItemViews)
@@ -263,6 +301,28 @@
     
     if (transitionInFromView != nil && transitionInToView != nil)
         [self animateTransitionInFromView:transitionInFromView toView:transitionInToView];
+    else if (_finishedTransitionIn && _model.focusItem != nil)
+    {
+        TGModernGalleryItemView *itemView = nil;
+        if (self.finishedTransitionIn && self.model.focusItem != nil)
+        {
+            for (TGModernGalleryItemView *visibleItemView in self->_visibleItemViews)
+            {
+                if ([visibleItemView.item isEqual:self.model.focusItem])
+                {
+                    itemView = visibleItemView;
+                    
+                    break;
+                }
+            }
+        }
+        
+        _finishedTransitionIn(_model.focusItem, itemView);
+        
+        [_model _transitionCompleted];
+    }
+    else
+        [_model _transitionCompleted];
     
     [_view transitionInWithDuration:0.2];
     
@@ -310,46 +370,64 @@
     return nil;
 }
 
-- (CGRect)convertFrameOfView:(UIView *)view toView:(UIView *)toView outTransform:(CGAffineTransform *)outTransform
+- (CGRect)convertFrameOfView:(UIView *)view toView:(UIView *)toView outRotationZ:(CGFloat *)outRotationZ
 {
     if (view == toView)
         return view.bounds;
     
-    UIView *commonSuperview = [self findCommonSuperviewOfView:view andView:toView];
-    if (commonSuperview == nil)
+    CGFloat sourceWindowRotation = 0.0f;
+    
+    CGRect frame = (CGRect){CGPointZero, view.frame.size};
+    UIView *currentView = view;
+    while (currentView != nil)
     {
-        CGRect frame = view.bounds;
-        UIView *currentView = view;
-        CGAffineTransform transform = view.transform;
-        while (currentView != nil)
+        frame.origin.x += currentView.frame.origin.x - currentView.bounds.origin.x;
+        frame.origin.y += currentView.frame.origin.y - currentView.bounds.origin.y;
+        
+        CGFloat rotation = transformRotation(currentView.transform);
+        if (ABS(rotation) > FLT_EPSILON)
         {
-            //frame.origin.x += currentView.frame.origin.x - currentView.bounds.origin.x;
-            //frame.origin.y += currentView.frame.origin.y - currentView.bounds.origin.y;
-            transform = CGAffineTransformConcat(transform, currentView.transform);
-            transform = CGAffineTransformTranslate(transform, currentView.frame.origin.x - currentView.bounds.origin.x, currentView.frame.origin.y - currentView.bounds.origin.y);
-            currentView = currentView.superview;
+            CGAffineTransform transform = CGAffineTransformMakeTranslation(currentView.bounds.size.width / 2.0f, currentView.bounds.size.height / 2.0f);
+            transform = CGAffineTransformRotate(transform, rotation);
+            transform = CGAffineTransformTranslate(transform, -currentView.bounds.size.width / 2.0f, -currentView.bounds.size.height / 2.0f);
+            
+            frame = CGRectApplyAffineTransform(frame, transform);
         }
+        
+        //TGLog(@"%f: %@", rotation, currentView);
+        
+        if ([currentView.superview isKindOfClass:[UIWindow class]])
+            sourceWindowRotation = rotation;
         
         //frame = CGRectApplyAffineTransform(frame, transform);
         
-        UIView *subview = [self topSuperviewOfView:toView];
-        while (subview != nil && subview != toView)
-        {
-            //frame.origin.x -= subview.frame.origin.x - subview.bounds.origin.x;
-            //frame.origin.y -= subview.frame.origin.y - subview.bounds.origin.y;
-            
-            transform = CGAffineTransformTranslate(transform, subview.frame.origin.x - subview.bounds.origin.x, subview.frame.origin.y - subview.bounds.origin.y);
-            
-            subview = [self subviewOfView:subview containingView:toView];
-        }
-        
-        if (outTransform != NULL)
-            *outTransform = transform;
-        
-        return frame;
+        currentView = currentView.superview;
     }
     
-    return view.frame;
+    UIView *subview = [self topSuperviewOfView:toView];
+    while (subview != nil && subview != toView)
+    {
+        frame.origin.x -= subview.frame.origin.x - subview.bounds.origin.x;
+        frame.origin.y -= subview.frame.origin.y - subview.bounds.origin.y;
+        
+        if (ABS(sourceWindowRotation) > FLT_EPSILON)
+        {
+            CGAffineTransform transform = CGAffineTransformMakeTranslation(subview.bounds.size.width / 2.0f, subview.bounds.size.height / 2.0f);
+            transform = CGAffineTransformRotate(transform, -sourceWindowRotation);
+            transform = CGAffineTransformTranslate(transform, -subview.bounds.size.width / 2.0f, -subview.bounds.size.height / 2.0f);
+            
+            frame = CGRectApplyAffineTransform(frame, transform);
+            
+            sourceWindowRotation = 0.0f;
+        }
+        
+        subview = [self subviewOfView:subview containingView:toView];
+    }
+    
+    if (outRotationZ != NULL)
+        *outRotationZ = 0.0f;
+    
+    return frame;
 }
 
 static CGFloat transformRotation(CGAffineTransform transform)
@@ -357,26 +435,31 @@ static CGFloat transformRotation(CGAffineTransform transform)
     return (CGFloat)atan2(transform.b, transform.a);
 }
 
-static CGPoint transformTranslation(CGAffineTransform transform)
+- (void)animateView:(UIView *)view frameFrom:(CGRect)fromFrame to:(CGRect)toFrame rotationFrom:(CGFloat)fromRotation to:(CGFloat)toRotation completion:(void (^)(bool))completion
 {
-    return CGPointMake(transform.tx, transform.ty);
-}
-
-- (void)animateLayer:(CALayer *)layer transformFrom:(CGAffineTransform)fromTransform to:(CGAffineTransform)toTransform
-{
-    POPSpringAnimation *rotationAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerRotation];
-    rotationAnimation.fromValue = @(transformRotation(fromTransform));
-    rotationAnimation.toValue = @(transformRotation(toTransform));
-    rotationAnimation.springSpeed = 20;
-    rotationAnimation.springBounciness = 8;
-    [layer pop_addAnimation:rotationAnimation forKey:@"layerTransitionRotation"];
+    if (ABS(toRotation - fromRotation) > FLT_EPSILON)
+    {
+        POPSpringAnimation *rotationAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerRotation];
+        rotationAnimation.fromValue = @(fromRotation);
+        rotationAnimation.toValue = @(toRotation);
+        rotationAnimation.springSpeed = 20;
+        rotationAnimation.springBounciness = 8;
+        [view.layer pop_addAnimation:rotationAnimation forKey:@"layerTransitionRotation"];
+    }
     
-    POPSpringAnimation *translationAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerTranslationXY];
-    translationAnimation.fromValue = [NSValue valueWithCGPoint:transformTranslation(fromTransform)];
-    translationAnimation.toValue = [NSValue valueWithCGPoint:transformTranslation(toTransform)];
-    translationAnimation.springSpeed = 20;
-    translationAnimation.springBounciness = 8;
-    [layer pop_addAnimation:translationAnimation forKey:@"layerTransitionTranslation"];
+    POPSpringAnimation *frameAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPViewFrame];
+    frameAnimation.fromValue = [NSValue valueWithCGRect:fromFrame];
+    frameAnimation.toValue = [NSValue valueWithCGRect:toFrame];
+    frameAnimation.springSpeed = 20;
+    frameAnimation.springBounciness = 8;
+    //frameAnimation.dynamicsFriction = 2;
+    //frameAnimation.dynamicsTension = 94;
+    frameAnimation.completionBlock = ^(__unused POPAnimation *animation, BOOL finished)
+    {
+        if (completion)
+            completion(finished);
+    };
+    [view pop_addAnimation:frameAnimation forKey:@"layerTransitionFrame"];
 }
 
 - (void)animateTransitionInFromView:(UIView *)fromView toView:(UIView *)toView
@@ -384,28 +467,48 @@ static CGPoint transformTranslation(CGAffineTransform transform)
     UIView *fromScrollView = [self findScrollView:fromView];
     UIView *fromContainerView = fromScrollView.superview;
     
-    //CGRect fromFrame = [toView.superview convertRect:[fromView convertRect:fromView.bounds toView:nil] fromView:nil];
-    CGAffineTransform fromTransform = CGAffineTransformIdentity;
-    CGRect fromFrame = [self convertFrameOfView:fromView toView:toView.superview outTransform:&fromTransform];
+    CGFloat fromRotationZ = 0.0f;
+    CGRect fromFrame = [self convertFrameOfView:fromView toView:toView.superview outRotationZ:&fromRotationZ];
     
     CGRect fromContainerFromFrame = [fromContainerView convertRect:fromView.bounds fromView:fromView];
-    //CGRect fromContainerFromFrame = [self convertFrameOfView:fromView toView:fromContainerView];
-    
-    CGRect fromContainerFrame = [fromContainerView convertRect:[toView.superview convertRect:toView.frame toView:nil] fromView:nil];
-    //CGRect fromContainerFrame = [self convertFrameOfView:toView toView:fromContainerView];
+    //CGRect fromContainerFromFrame = [self convertFrameOfView:fromView toView:fromContainerView outRotationZ:NULL];
+    CGRect fromContainerFrame = [self convertFrameOfView:toView toView:fromContainerView outRotationZ:NULL];
     
     UIView *fromViewContainerCopy = [fromView snapshotViewAfterScreenUpdates:false];
     fromViewContainerCopy.frame = fromContainerFromFrame;
     [fromContainerView insertSubview:fromViewContainerCopy aboveSubview:fromScrollView];
     
-    POPSpringAnimation *toViewAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPViewFrame];
-    toViewAnimation.fromValue = [NSValue valueWithCGRect:fromFrame];
-    toViewAnimation.toValue = [NSValue valueWithCGRect:toView.frame];
-    toViewAnimation.springSpeed = 20;
-    toViewAnimation.springBounciness = 8;
-    //[toView pop_addAnimation:toViewAnimation forKey:@"transitionInSpring"];
-    
-    [self animateLayer:toView.layer transformFrom:fromTransform to:toView.transform];
+    __weak TGModernGalleryController *weakSelf = self;
+    self.view.userInteractionEnabled = false;
+    [self animateView:toView frameFrom:fromFrame to:toView.frame rotationFrom:fromRotationZ to:0.0f completion:^(bool __unused finished)
+    {
+        __strong TGModernGalleryController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            strongSelf.view.userInteractionEnabled = true;
+            
+            TGModernGalleryItemView *itemView = nil;
+            if (strongSelf.finishedTransitionIn && strongSelf.model.focusItem != nil)
+            {
+                for (TGModernGalleryItemView *visibleItemView in strongSelf->_visibleItemViews)
+                {
+                    if ([visibleItemView.item isEqual:strongSelf.model.focusItem])
+                    {
+                        itemView = visibleItemView;
+                        
+                        break;
+                    }
+                }
+            }
+            
+            strongSelf.finishedTransitionIn(strongSelf.model.focusItem, itemView);
+            
+            strongSelf->_preloadVisibleItemViews = true;
+            [strongSelf scrollViewBoundsChanged:strongSelf->_view.scrollView.bounds synchronously:false];
+            
+            [strongSelf.model _transitionCompleted];
+        }
+    }];
     
     POPSpringAnimation *fromContainerViewAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPViewFrame];
     fromContainerViewAnimation.fromValue = [NSValue valueWithCGRect:fromViewContainerCopy.frame];
@@ -427,13 +530,6 @@ static CGPoint transformTranslation(CGAffineTransform transform)
     toViewAlphaAnimation.duration = 0.15;
     toViewAlphaAnimation.fromValue = @(0.0);
     toViewAlphaAnimation.toValue = @(1.0);
-    __weak TGModernGalleryController *weakSelf = self;
-    self.view.userInteractionEnabled = false;
-    toViewAlphaAnimation.completionBlock = ^(__unused POPAnimation *animation, __unused BOOL finished)
-    {
-        __strong TGModernGalleryController *strongSelf = weakSelf;
-        strongSelf.view.userInteractionEnabled = true;
-    };
     [toView pop_addAnimation:toViewAlphaAnimation forKey:@"transitionInAlpha"];
 }
 
@@ -502,6 +598,11 @@ static CGPoint transformTranslation(CGAffineTransform transform)
         self->_statusBarStyle = UIStatusBarStyleDefault;
         [self setNeedsStatusBarAppearanceUpdate];
     }
+    
+    [UIView animateWithDuration:0.2 animations:^
+    {
+        [TGHacks setApplicationStatusBarAlpha:1.0f];
+    }];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -525,8 +626,6 @@ static CGPoint transformTranslation(CGAffineTransform transform)
     _synchronousBoundsChange = synchronously;
     _view.scrollView.bounds = CGRectMake(_view.scrollView.bounds.size.width * currentItemIndex, 0.0f, _view.scrollView.bounds.size.width, _view.scrollView.bounds.size.height);
     _synchronousBoundsChange = false;
-    
-    //[self scrollViewBoundsChanged:_view.scrollView.bounds synchronously:synchronously];
 }
 
 - (NSUInteger)currentItemIndex
@@ -542,12 +641,51 @@ static CGPoint transformTranslation(CGAffineTransform transform)
     return CGFloor((_view.scrollView.bounds.origin.x + _view.scrollView.bounds.size.width / 2.0f) / _view.scrollView.bounds.size.width);
 }
 
-- (void)reloadDataAtItem:(id<TGModernGalleryItem>)item synchronously:(bool)synchronously
+- (void)reloadDataAtItem:(id<TGModernGalleryItem>)atItem synchronously:(bool)synchronously
 {
-    if (_visibleItemViews.count != 0)
+    NSMutableIndexSet *removeIndices = nil;
+    
+    id<TGModernGalleryItem> focusItem = atItem;
+    
+    if (focusItem == nil)
     {
         for (TGModernGalleryItemView *itemView in _visibleItemViews)
         {
+            if (itemView.index == [self currentItemIndex])
+            {
+                focusItem = itemView.item;
+                
+                break;
+            }
+        }
+    }
+    
+    NSInteger itemViewIndex = -1;
+    for (TGModernGalleryItemView *itemView in _visibleItemViews)
+    {
+        itemViewIndex++;
+        
+        NSInteger itemIndex = -1;
+        bool itemFound = false;
+        for (id<TGModernGalleryItem> item in _model.items)
+        {
+            itemIndex++;
+            
+            if ([item isEqual:itemView.item])
+            {
+                itemView.index = (NSUInteger)itemIndex;
+                itemFound = true;
+                
+                break;
+            }
+        }
+        
+        if (!itemFound)
+        {
+            if (removeIndices == nil)
+                removeIndices = [[NSMutableIndexSet alloc] init];
+            [removeIndices addIndex:(NSUInteger)itemViewIndex];
+        
             UIView *itemHeaderView = [itemView headerView];
             if (itemHeaderView != nil)
                 [_view removeItemHeaderView:itemHeaderView];
@@ -556,17 +694,54 @@ static CGPoint transformTranslation(CGAffineTransform transform)
             if (itemDefaultFooterView != nil)
                 [_view removeItemFooterView:itemDefaultFooterView];
             
+            UIView *itemDefaultLeftAcessoryView = [itemView defaultFooterAccessoryLeftView];
+            if (itemDefaultLeftAcessoryView != nil)
+                [_view.interfaceView removeItemLeftAcessoryView:itemDefaultLeftAcessoryView];
+            
+            UIView *itemDefaultRightAcessoryView = [itemView defaultFooterAccessoryRightView];
+            if (itemDefaultRightAcessoryView != nil)
+                [_view.interfaceView removeItemRightAcessoryView:itemDefaultRightAcessoryView];
+            
             UIView *itemFooterView = [itemView footerView];
             if (itemFooterView != nil)
                 [_view removeItemFooterView:itemFooterView];
             [itemView removeFromSuperview];
             [self enqueueView:itemView];
         }
-        [_visibleItemViews removeAllObjects];
     }
     
-    NSUInteger index = (item == nil || _model.items == nil) ? NSNotFound : [_model.items indexOfObject:item];
-    [self setCurrentItemIndex:index == NSNotFound ? 0 : index synchronously:synchronously];
+    if (removeIndices != nil)
+        [_visibleItemViews removeObjectsAtIndexes:removeIndices];
+    
+    _reloadingItems = true;
+    
+    NSUInteger index = (focusItem == nil || _model.items.count == 0) ? NSNotFound : [_model.items indexOfObject:focusItem];
+    if (index != NSNotFound && index != _lastReportedFocusedIndex)
+    {
+        _lastReportedFocusedIndex = NSNotFound;
+        [self setCurrentItemIndex:index == NSNotFound ? 0 : index synchronously:synchronously];
+    }
+    else
+    {
+        _lastReportedFocusedIndex = NSNotFound;
+        
+        CGFloat itemWidth = _view.scrollView.bounds.size.width;
+        CGSize contentSize = CGSizeMake(_model.items.count * itemWidth, _view.scrollView.bounds.size.height);
+        if (!CGSizeEqualToSize(_view.scrollView.contentSize, contentSize))
+        {
+            _view.scrollView.contentSize = contentSize;
+            if (_view.scrollView.bounds.origin.x > contentSize.width - itemWidth)
+            {
+                _view.scrollView.bounds = CGRectMake(contentSize.width - itemWidth, 0.0f, itemWidth, _view.scrollView.bounds.size.height);
+            }
+            else
+                [self scrollViewBoundsChanged:_view.scrollView.bounds];
+        }
+        else
+            [self scrollViewBoundsChanged:_view.scrollView.bounds];
+    }
+    
+    _reloadingItems = false;
 }
 
 - (void)scrollViewWillBeginDecelerating:(UIScrollView *)__unused scrollView
@@ -588,11 +763,19 @@ static CGPoint transformTranslation(CGAffineTransform transform)
     NSUInteger leftmostVisibleItemIndex = 0;
     if (bounds.origin.x > 0.0f)
         leftmostVisibleItemIndex = (NSUInteger)floor((bounds.origin.x + 1.0f) / itemWidth);
+    NSUInteger leftmostTrulyVisibleItemIndex = leftmostVisibleItemIndex;
     
     NSUInteger rightmostVisibleItemIndex = _model.items.count - 1;
     if (bounds.origin.x + bounds.size.width < _model.items.count * itemWidth)
-    {
         rightmostVisibleItemIndex = (NSUInteger)floorf((bounds.origin.x + bounds.size.width - 1.0f) / itemWidth);
+    NSUInteger rightmostTrulyVisibleItemIndex = rightmostVisibleItemIndex;
+    
+    if (_preloadVisibleItemViews)
+    {
+        if (leftmostVisibleItemIndex > 1)
+            leftmostVisibleItemIndex = leftmostVisibleItemIndex - 1;
+        if (rightmostVisibleItemIndex < _model.items.count - 1)
+            rightmostVisibleItemIndex = rightmostVisibleItemIndex + 1;
     }
     
     if (leftmostVisibleItemIndex <= rightmostVisibleItemIndex && _model.items.count != 0)
@@ -618,6 +801,14 @@ static CGPoint transformTranslation(CGAffineTransform transform)
                 if (itemDefaultFooterView != nil)
                     [_view removeItemFooterView:itemDefaultFooterView];
                 
+                UIView *itemDefaultLeftAcessoryView = [itemView defaultFooterAccessoryLeftView];
+                if (itemDefaultLeftAcessoryView != nil)
+                    [_view.interfaceView removeItemLeftAcessoryView:itemDefaultLeftAcessoryView];
+                
+                UIView *itemDefaultRightAcessoryView = [itemView defaultFooterAccessoryRightView];
+                if (itemDefaultRightAcessoryView != nil)
+                    [_view.interfaceView removeItemRightAcessoryView:itemDefaultRightAcessoryView];
+                
                 UIView *itemFooterView = [itemView footerView];
                 if (itemFooterView != nil)
                     [_view removeItemFooterView:itemFooterView];
@@ -632,6 +823,8 @@ static CGPoint transformTranslation(CGAffineTransform transform)
             {
                 if (loadedVisibleViewIndexCount < 16)
                     loadedVisibleViewIndices[loadedVisibleViewIndexCount++] = itemView.index;
+                
+                [itemView setIsVisible:itemView.index >= leftmostTrulyVisibleItemIndex && itemView.index <= rightmostTrulyVisibleItemIndex];
                 
                 CGRect itemFrame = CGRectMake(itemWidth * itemView.index + TGModernGalleryItemPadding, 0.0f, itemWidth - TGModernGalleryItemPadding * 2.0f, bounds.size.height);
                 if (!CGRectEqualToRect(itemView.frame, itemFrame))
@@ -670,6 +863,14 @@ static CGPoint transformTranslation(CGAffineTransform transform)
                     if (defaultFooterView != nil)
                         [_view addItemFooterView:defaultFooterView];
                     
+                    UIView *itemDefaultLeftAcessoryView = [itemView defaultFooterAccessoryLeftView];
+                    if (itemDefaultLeftAcessoryView != nil)
+                        [_view.interfaceView addItemLeftAcessoryView:itemDefaultLeftAcessoryView];
+                    
+                    UIView *itemDefaultRightAcessoryView = [itemView defaultFooterAccessoryRightView];
+                    if (itemDefaultRightAcessoryView != nil)
+                        [_view.interfaceView addItemRightAcessoryView:itemDefaultRightAcessoryView];
+                    
                     UIView *footerView = [itemView footerView];
                     if (footerView != nil)
                         [_view addItemFooterView:footerView];
@@ -692,6 +893,14 @@ static CGPoint transformTranslation(CGAffineTransform transform)
             if (defaultFooterView != nil)
                 [_view removeItemFooterView:defaultFooterView];
             
+            UIView *itemDefaultLeftAcessoryView = [itemView defaultFooterAccessoryLeftView];
+            if (itemDefaultLeftAcessoryView != nil)
+                [_view.interfaceView addItemLeftAcessoryView:itemDefaultLeftAcessoryView];
+            
+            UIView *itemDefaultRightAcessoryView = [itemView defaultFooterAccessoryRightView];
+            if (itemDefaultRightAcessoryView != nil)
+                [_view.interfaceView addItemRightAcessoryView:itemDefaultRightAcessoryView];
+            
             UIView *itemFooterView = [itemView footerView];
             if (itemFooterView != nil)
                 [_view removeItemFooterView:itemFooterView];
@@ -702,8 +911,11 @@ static CGPoint transformTranslation(CGAffineTransform transform)
         [_visibleItemViews removeAllObjects];
     }
     
-    CGFloat fuzzyIndex = (_view.scrollView.bounds.origin.x) / _view.scrollView.bounds.size.width;
+    CGFloat fuzzyIndex = MAX(0, MIN(_model.items.count - 1, (_view.scrollView.bounds.origin.x) / _view.scrollView.bounds.size.width));
     CGFloat titleAlpha = 1.0f;
+    
+    NSUInteger currentItemIndex = [self currentItemIndex];
+    
     for (TGModernGalleryItemView *itemView in _visibleItemViews)
     {
         CGFloat alpha = MAX(0.0f, MIN(1.0f, 1.0f - ABS(itemView.index - fuzzyIndex)));
@@ -715,28 +927,41 @@ static CGPoint transformTranslation(CGAffineTransform transform)
             titleAlpha -= alpha;
         }
         
+        CGFloat footerAlpha = itemView.index == currentItemIndex ? 1.0f : 0.0f;
+        
         UIView *itemDefaultFooterView = [itemView defaultFooterView];
         if (itemDefaultFooterView != nil)
-            itemDefaultFooterView.alpha = alpha;
+            itemDefaultFooterView.alpha = footerAlpha;
+        
+        UIView *itemDefaultLeftAcessoryView = [itemView defaultFooterAccessoryLeftView];
+        if (itemDefaultLeftAcessoryView != nil)
+            itemDefaultLeftAcessoryView.alpha = footerAlpha;
+        
+        UIView *itemDefaultRightAcessoryView = [itemView defaultFooterAccessoryRightView];
+        if (itemDefaultRightAcessoryView != nil)
+            itemDefaultRightAcessoryView.alpha = footerAlpha;
         
         UIView *itemFooterView = [itemView footerView];
         if (itemFooterView != nil)
-            itemFooterView.alpha = alpha;
+            itemFooterView.alpha = footerAlpha;
     }
     
-    [_view.interfaceView setTitleAlpha:MAX(0.0f, MIN(1.0f, titleAlpha))];
+    _defaultHeaderView.alpha = MAX(0.0f, MIN(1.0f, titleAlpha));
     
     if (_lastReportedFocusedIndex != [self currentItemIndex])
     {
+        if (!_reloadingItems && _lastReportedFocusedIndex != NSNotFound)
+            [_view hideInterfaceAnimated];
+        
         _lastReportedFocusedIndex = [self currentItemIndex];
         
         if (_lastReportedFocusedIndex < _model.items.count)
         {
             if (_itemFocused)
                 _itemFocused(_model.items[_lastReportedFocusedIndex]);
+            
+            [_defaultHeaderView setItem:_model.items[_lastReportedFocusedIndex]];
         }
-        
-        [_view.interfaceView setTitle:[[NSString alloc] initWithFormat:@"%d %@ %d", (int)_lastReportedFocusedIndex + 1, TGLocalized(@"Common.of"), (int)_model.items.count]];
     }
 }
 

@@ -1,6 +1,8 @@
 #import <Foundation/Foundation.h>
 
+#import "TGModernGalleryDefaultHeaderView.h"
 #import "TGModernGalleryDefaultFooterView.h"
+#import "TGModernGalleryDefaultFooterAccessoryView.h"
 
 @protocol TGModernGalleryItem;
 
@@ -12,10 +14,15 @@
 
 @property (nonatomic, copy) void (^itemsUpdated)(id<TGModernGalleryItem>);
 @property (nonatomic, copy) void (^focusOnItem)(id<TGModernGalleryItem>);
+@property (nonatomic, copy) UIView *(^actionSheetView)();
 
+- (void)_transitionCompleted;
 - (void)_replaceItems:(NSArray *)items focusingOnItem:(id<TGModernGalleryItem>)item;
 - (void)_focusOnItem:(id<TGModernGalleryItem>)item;
 
-- (Class<TGModernGalleryDefaultFooterView>)defaultFooterViewClass;
+- (UIView<TGModernGalleryDefaultHeaderView> *)createDefaultHeaderView;
+- (UIView<TGModernGalleryDefaultFooterView> *)createDefaultFooterView;
+- (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultLeftAccessoryView;
+- (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultRightAccessoryView;
 
 @end

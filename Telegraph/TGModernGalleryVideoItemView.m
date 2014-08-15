@@ -11,7 +11,7 @@
 #import <AVFoundation/AVFoundation.h>
 
 #import "TGImageUtils.h"
-#import "TGRemoteImageView.h"
+#import "TGImageView.h"
 
 #import "TGModernGalleryVideoItem.h"
 #import "TGVideoMediaAttachment.h"
@@ -29,9 +29,19 @@
 #import "TGTimerTarget.h"
 #import "TGObserverProxy.h"
 
+#import "TGModernButton.h"
+#import "TGMessageImageViewOverlayView.h"
+
 #import <pop/POP.h>
 
-@interface TGModernGalleryVideoItemView () <TGDoubleTapGestureRecognizerDelegate>
+#import "ActionStage.h"
+
+#import "TGDownloadManager.h"
+#import "TGMessage.h"
+
+#import "TGGenericPeerMediaGalleryVideoItem.h"
+
+@interface TGModernGalleryVideoItemView () <TGDoubleTapGestureRecognizerDelegate, ASWatcher>
 {
     UIView *_containerView;
     TGModernGalleryVideoContentView *_contentView;
@@ -41,7 +51,12 @@
     CGFloat _playerLayerRotation;
     NSUInteger _currentLoopCount;
     
-    UIButton *_playButton;
+    TGModernButton *_actionButton;
+    TGMessageImageViewOverlayView *_progressView;
+    
+    bool _mediaAvailable;
+    bool _downloading;
+    int32_t _transactionId;
     
     TGModernGalleryVideoScrubbingInterfaceView *_scrubbingInterfaceView;
     TGModernGalleryVideoFooterView *_footerView;
@@ -54,7 +69,10 @@
     NSTimeInterval _duration;
 }
 
+@property (nonatomic, strong) ASHandle *actionHandle;
+
 @property (nonatomic) bool isPlaying;
+@property (nonatomic) bool isScrubbing;
 
 @end
 
@@ -99,6 +117,8 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
+        _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
+        
         _containerView = [[TGModernGalleryVideoContentView alloc] initWithFrame:(CGRect){CGPointZero, frame.size}];
         [self addSubview:_containerView];
         
@@ -110,7 +130,7 @@
         _contentView = [[TGModernGalleryVideoContentView alloc] init];
         [_containerView addSubview:_contentView];
         
-        _imageView = [[TGRemoteImageView alloc] init];
+        _imageView = [[TGImageView alloc] init];
         _imageView.contentMode = UIViewContentModeScaleToFill;
         _imageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [_contentView addSubview:_imageView];
@@ -119,19 +139,76 @@
         _playerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [_contentView addSubview:_playerView];
         
-        _playButton = [[UIButton alloc] init];
-        [_playButton setImage:[self playButtonImage] forState:UIControlStateNormal];
-        [_playButton sizeToFit];
+        _actionButton = [[TGModernButton alloc] initWithFrame:(CGRect){CGPointZero, {50.0f, 50.0f}}];
+        _actionButton.modernHighlight = true; 
         
-        [_playButton addTarget:self action:@selector(playPressed) forControlEvents:UIControlEventTouchUpInside];
+        CGFloat circleDiameter = 50.0f;
+        static UIImage *highlightImage = nil;
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^
+        {
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(circleDiameter, circleDiameter), false, 0.0f);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.4f).CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, circleDiameter, circleDiameter));
+            highlightImage = UIGraphicsGetImageFromCurrentImageContext();
+            UIGraphicsEndImageContext();
+        });
         
-        _contentView.button = _playButton;
-        [_contentView addSubview:_playButton];
+        _actionButton.highlightImage = highlightImage;
+        
+        _progressView = [[TGMessageImageViewOverlayView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 50.0f, 50.0f)];
+        _progressView.userInteractionEnabled = false;
+        [_actionButton addSubview:_progressView];
+        
+        [_actionButton addTarget:self action:@selector(playPressed) forControlEvents:UIControlEventTouchUpInside];
+        
+        _contentView.button = _actionButton;
+        [_contentView addSubview:_actionButton];
         
         _scrubbingInterfaceView = [[TGModernGalleryVideoScrubbingInterfaceView alloc] init];
+        __weak TGModernGalleryVideoItemView *weakSelf = self;
+        _scrubbingInterfaceView.scrubbingBegan = ^
+        {
+            __strong TGModernGalleryVideoItemView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                [strongSelf pausePressed];
+                [strongSelf setIsScrubbing:true];
+            }
+        };
+        _scrubbingInterfaceView.scrubbingChanged = ^(float position)
+        {
+            __strong TGModernGalleryVideoItemView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                NSTimeInterval positionSeconds = CMTimeGetSeconds(strongSelf.player.currentItem.duration) * position;
+                [strongSelf.player.currentItem seekToTime:CMTimeMake((int64_t)(positionSeconds * 1000.0), 1000.0)];
+            }
+        };
+        _scrubbingInterfaceView.scrubbingCancelled = ^
+        {
+            __strong TGModernGalleryVideoItemView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                [strongSelf setIsScrubbing:false];
+                [strongSelf play];
+            }
+        };
+        _scrubbingInterfaceView.scrubbingFinished = ^(float position)
+        {
+            __strong TGModernGalleryVideoItemView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                NSTimeInterval positionSeconds = CMTimeGetSeconds(strongSelf.player.currentItem.duration) * position;
+                [strongSelf.player.currentItem seekToTime:CMTimeMake((int64_t)(positionSeconds * 1000.0), 1000.0)];
+                
+                [strongSelf setIsScrubbing:false];
+                [strongSelf play];
+            }
+        };
         
         _footerView = [[TGModernGalleryVideoFooterView alloc] init];
-        __weak TGModernGalleryVideoItemView *weakSelf = self;
         _footerView.playPressed = ^
         {
             __strong TGModernGalleryVideoItemView *strongSelf = weakSelf;
@@ -150,6 +227,12 @@
     return self;
 }
 
+- (void)dealloc
+{
+    [_actionHandle reset];
+    [ActionStageInstance() removeWatcher:self];
+}
+
 - (void)setFrame:(CGRect)frame
 {
     [super setFrame:frame];
@@ -164,11 +247,13 @@
 {
     [super prepareForRecycle];
     
+    [ActionStageInstance() removeWatcher:self];
+    
     [self cleanupCurrentPlayer];
     
     _currentLoopCount = 0;
     
-    [_imageView cancelLoading];
+    [_imageView reset];
     
     [_videoFlickerTimer invalidate];
     _videoFlickerTimer = nil;
@@ -180,7 +265,7 @@
     
     _playerLayerRotation = 0.0f;
     _containerView.transform = CGAffineTransformIdentity;
-    _playButton.transform = CGAffineTransformIdentity;
+    _actionButton.transform = CGAffineTransformIdentity;
     
     self.isPlaying = false;
     
@@ -189,6 +274,15 @@
 }
 
 - (void)cleanupCurrentPlayer
+{
+    [self stopPlayer];
+    
+    _videoDimenstions = CGSizeZero;
+    
+    [_imageView reset];
+}
+
+- (void)stopPlayer
 {
     if (_player != nil)
     {
@@ -204,9 +298,11 @@
         _videoView = nil;
     }
     
-    _videoDimenstions = CGSizeZero;
+    [_positionTimer invalidate];
+    _positionTimer = nil;
     
-    [_imageView loadImage:nil];
+    self.isPlaying = false;
+    [self updatePosition:false forceZero:true];
 }
 
 - (void)addPlayerObserver
@@ -223,8 +319,68 @@
     }
 }
 
+- (void)_joinDownload
+{
+    if (((TGModernGalleryVideoItem *)self.item).videoMedia == nil)
+        return;
+    
+    TGVideoMediaAttachment *videoAttachment = ((TGModernGalleryVideoItem *)self.item).videoMedia;
+    [ActionStageInstance() dispatchOnStageQueue:^
+    {
+        NSString *url = [videoAttachment.videoInfo urlWithQuality:1 actualQuality:NULL actualSize:NULL];
+        NSString *path = [[NSString alloc] initWithFormat:@"/as/media/video/(%@)", url];
+        if ([ActionStageInstance() requestActorStateNow:path])
+        {
+            TGDispatchOnMainThread(^
+            {
+                _downloading = true;
+                [self setProgressVisible:true value:0.0f animated:false];
+            });
+            
+            [ActionStageInstance() requestActor:path options:nil watcher:self];
+        }
+    }];
+}
+
+- (void)_cancelDownload
+{
+    [ActionStageInstance() removeWatcher:self];
+    
+    TGVideoMediaAttachment *videoAttachment = ((TGModernGalleryVideoItem *)self.item).videoMedia;
+    
+    id itemId = [[TGMediaId alloc] initWithType:1 itemId:videoAttachment.videoId];
+    [[TGDownloadManager instance] cancelItem:itemId];
+    
+    TGDispatchOnMainThread(^
+    {
+        _downloading = false;
+        [self setProgressVisible:false value:0.0f animated:false];
+    });
+}
+
+- (void)_requestDownload
+{
+    TGVideoMediaAttachment *videoAttachment = ((TGModernGalleryVideoItem *)self.item).videoMedia;
+    NSString *url = [videoAttachment.videoInfo urlWithQuality:1 actualQuality:NULL actualSize:NULL];
+    
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+    dict[@"videoAttachment"] = videoAttachment;
+    if (((TGModernGalleryVideoItem *)self.item).videoDownloadArguments != nil)
+        dict[@"additionalOptions"] = ((TGModernGalleryVideoItem *)self.item).videoDownloadArguments;
+    
+    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/as/media/video/(%@)", url] options:dict watcher:self];
+    
+    TGDispatchOnMainThread(^
+    {
+        _downloading = true;
+        [self setProgressVisible:true value:0.0f animated:false];
+    });
+}
+
 - (void)setItem:(TGModernGalleryVideoItem *)item synchronously:(bool)synchronously
 {
+    _transactionId++;
+    
     [super setItem:item synchronously:synchronously];
     
     [self cleanupCurrentPlayer];
@@ -232,7 +388,7 @@
     [self defaultFooterView].hidden = false;
     [self footerView].hidden = true;
     
-    [_scrubbingInterfaceView setDuration:item.videoMedia.duration currentTime:0.0 isPlaying:false animated:false];
+    [_scrubbingInterfaceView setDuration:item.videoMedia.duration currentTime:0.0 isPlaying:false isPlayable:false animated:false];
     
     NSString *videoPath = [TGVideoDownloadActor localPathForVideoUrl:[item.videoMedia.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL]];
     
@@ -241,81 +397,121 @@
         _videoDimenstions = item.videoMedia.dimensions;
         _duration = item.videoMedia.duration;
         
-        NSString *previewUri = nil;
-        if (item.videoMedia.videoId != 0)
-            previewUri = [[NSString alloc] initWithFormat:@"video-thumbnail-remote%llx.jpg", item.videoMedia.videoId];
-        else if (item.videoMedia.localVideoId != 0)
-            previewUri = [[NSString alloc] initWithFormat:@"video-thumbnail-local%llx.jpg", item.videoMedia.localVideoId];
+        [_imageView loadUri:item.previewUri withOptions:@{TGImageViewOptionSynchronous: @(synchronously)}];
         
-        UIImage *loadedImage = nil;
+        int32_t transactionId = _transactionId;
+        __weak TGModernGalleryVideoItemView *weakSelf = self;
+        dispatch_block_t checkMediaAvailability = ^
+        {
+            __strong TGModernGalleryVideoItemView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                if ([[NSFileManager defaultManager] fileExistsAtPath:videoPath isDirectory:NULL])
+                {
+                    TGDispatchOnMainThread(^
+                    {
+                        if (strongSelf->_transactionId == transactionId)
+                            [strongSelf setMediaAvailable:true];
+                    });
+                }
+                else
+                {
+                    TGDispatchOnMainThread(^
+                    {
+                        if (strongSelf->_transactionId == transactionId)
+                        {
+                            [strongSelf setMediaAvailable:false];
+                            [strongSelf _joinDownload];
+                        }
+                    });
+                }
+            }
+        };
+        
         if (synchronously)
-            loadedImage = [[TGRemoteImageView sharedCache] cachedImage:previewUri availability:TGCacheDisk];
-        
-        if (loadedImage != nil)
-            [_imageView loadImage:loadedImage];
+            checkMediaAvailability();
         else
-            [_imageView loadImage:previewUri filter:nil placeholder:nil];
+            [ActionStageInstance() dispatchOnStageQueue:checkMediaAvailability];
         
         [self layoutSubviews];
     }
 }
 
+- (void)setMediaAvailable:(bool)mediaAvailable
+{
+    _mediaAvailable = mediaAvailable;
+    
+    if (_mediaAvailable)
+        [_progressView setPlay];
+    else
+        [_progressView setDownload];
+}
+
+- (void)play
+{
+    [self playPressed];
+}
+
+- (void)hidePlayButton
+{
+    _actionButton.hidden = true;
+}
+
 - (void)playPressed
 {
-    if (_player == nil)
+    if (_mediaAvailable)
     {
-        TGModernGalleryVideoItem *item = (TGModernGalleryVideoItem *)self.item;
-        
-        NSString *videoPath = [TGVideoDownloadActor localPathForVideoUrl:[item.videoMedia.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL]];
-        
-        if (videoPath != nil && item.videoMedia.dimensions.width > FLT_EPSILON && item.videoMedia.dimensions.height > FLT_EPSILON)
+        if (_player == nil)
         {
-            _videoDimenstions = item.videoMedia.dimensions;
+            TGModernGalleryVideoItem *item = (TGModernGalleryVideoItem *)self.item;
             
-            NSString *previewUri = nil;
-            if (item.videoMedia.videoId != 0)
-                previewUri = [[NSString alloc] initWithFormat:@"video-thumbnail-remote%llx.jpg", item.videoMedia.videoId];
-            else if (item.videoMedia.localVideoId != 0)
-                previewUri = [[NSString alloc] initWithFormat:@"video-thumbnail-local%llx.jpg", item.videoMedia.localVideoId];
+            NSString *videoPath = [TGVideoDownloadActor localPathForVideoUrl:[item.videoMedia.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL]];
             
-            [_imageView loadImage:previewUri filter:nil placeholder:nil];
-            
-            _player = [[AVPlayer alloc] initWithURL:[NSURL fileURLWithPath:videoPath]];
-            _player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
-            
-            _didPlayToEndObserver = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(playerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:[_player currentItem]];
-            
-            _videoView = [[TGModernGalleryVideoView alloc] initWithFrame:_playerView.bounds playerLayer:[AVPlayerLayer playerLayerWithPlayer:_player]];
-            _videoView.frame = _playerView.bounds;
-            _videoView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            _videoView.playerLayer.videoGravity = AVLayerVideoGravityResize;
-            _videoView.playerLayer.opaque = false;
-            _videoView.playerLayer.backgroundColor = nil;
-            [_playerView addSubview:_videoView];
-            
-            _videoView.alpha = 0.0f;
-            _videoFlickerTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(videoFlickerTimerEvent) interval:0.1 repeat:false];
-            
+            if (videoPath != nil && item.videoMedia.dimensions.width > FLT_EPSILON && item.videoMedia.dimensions.height > FLT_EPSILON)
+            {
+                _videoDimenstions = item.videoMedia.dimensions;
+                
+                _player = [[AVPlayer alloc] initWithURL:[NSURL fileURLWithPath:videoPath]];
+                _player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
+                
+                _didPlayToEndObserver = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(playerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:[_player currentItem]];
+                
+                _videoView = [[TGModernGalleryVideoView alloc] initWithFrame:_playerView.bounds playerLayer:[AVPlayerLayer playerLayerWithPlayer:_player]];
+                _videoView.frame = _playerView.bounds;
+                _videoView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                _videoView.playerLayer.videoGravity = AVLayerVideoGravityResize;
+                _videoView.playerLayer.opaque = false;
+                _videoView.playerLayer.backgroundColor = nil;
+                [_playerView addSubview:_videoView];
+                
+                _videoView.alpha = 0.0f;
+                _videoFlickerTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(videoFlickerTimerEvent) interval:0.1 repeat:false];
+                
+                self.isPlaying = true;
+                [_player play];
+                
+                _positionTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(positionTimerEvent) interval:0.25 repeat:true];
+                [self positionTimerEvent];
+                
+                [self layoutSubviews];
+                
+                [self defaultFooterView].hidden = true;
+                [self footerView].hidden = false;
+            }
+        }
+        else
+        {
             self.isPlaying = true;
             [_player play];
             
             _positionTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(positionTimerEvent) interval:0.25 repeat:true];
             [self positionTimerEvent];
-            
-            [self layoutSubviews];
-            
-            [self defaultFooterView].hidden = true;
-            [self footerView].hidden = false;
         }
     }
+    else if (_downloading)
+        [self _cancelDownload];
     else
-    {
-        self.isPlaying = true;
-        [_player play];
-        
-        _positionTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(positionTimerEvent) interval:0.25 repeat:true];
-        [self positionTimerEvent];
-    }
+        [self _requestDownload];
 }
 
 - (void)pausePressed
@@ -328,7 +524,7 @@
     
     [self updatePosition:false forceZero:false];
     
-    _playButton.hidden = true;
+    _actionButton.hidden = true;
 }
 
 - (void)playerItemDidPlayToEndTime:(NSNotification *)notification
@@ -421,7 +617,7 @@
     if (recognizer.state == UIGestureRecognizerStateChanged)
     {
         _containerView.transform = CGAffineTransformMakeRotation([self normalizeAngle:_playerLayerRotation + [recognizer rotation]]);
-        _playButton.transform = CGAffineTransformMakeRotation(-[self normalizeAngle:_playerLayerRotation + [recognizer rotation]]);
+        _actionButton.transform = CGAffineTransformMakeRotation(-[self normalizeAngle:_playerLayerRotation + [recognizer rotation]]);
     }
     else if (recognizer.state == UIGestureRecognizerStateRecognized)
     {
@@ -433,7 +629,7 @@
         [UIView animateWithDuration:0.3 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
         {
             _containerView.transform = CGAffineTransformMakeRotation(_playerLayerRotation);
-            _playButton.transform = CGAffineTransformMakeRotation(-_playerLayerRotation);
+            _actionButton.transform = CGAffineTransformMakeRotation(-_playerLayerRotation);
             [self layoutSubviews];
         } completion:nil];
     }
@@ -442,7 +638,7 @@
         [UIView animateWithDuration:0.3 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
         {
             _containerView.transform = CGAffineTransformMakeRotation(_playerLayerRotation);
-            _playButton.transform = CGAffineTransformMakeRotation(-_playerLayerRotation);
+            _actionButton.transform = CGAffineTransformMakeRotation(-_playerLayerRotation);
             [self layoutSubviews];
         } completion:nil];
     }
@@ -452,8 +648,15 @@
 {
     _isPlaying = isPlaying;
     
-    _playButton.hidden = _isPlaying;
+    _actionButton.hidden = _isPlaying || _isScrubbing;
     _footerView.isPlaying = _isPlaying;
+}
+
+- (void)setIsScrubbing:(bool)isScrubbing
+{
+    _isScrubbing = isScrubbing;
+    
+    _actionButton.hidden = _isPlaying || _isScrubbing;
 }
 
 - (void)videoFlickerTimerEvent
@@ -475,7 +678,7 @@
     NSTimeInterval actualDuration = CMTimeGetSeconds(_player.currentItem.duration);
     if (actualDuration > 0.1f)
         duration = actualDuration;
-    [_scrubbingInterfaceView setDuration:duration currentTime:forceZero ? 0.0 : CMTimeGetSeconds(_player.currentItem.currentTime) isPlaying:_isPlaying animated:animated];
+    [_scrubbingInterfaceView setDuration:duration currentTime:forceZero ? 0.0 : CMTimeGetSeconds(_player.currentItem.currentTime) isPlaying:_isPlaying isPlayable:_player != nil animated:animated];
 }
 
 - (void)doubleTapGesture:(TGDoubleTapGestureRecognizer *)recognizer
@@ -497,6 +700,58 @@
 - (UIView *)transitionView
 {
     return _contentView;
+}
+
+- (void)setIsVisible:(bool)isVisible
+{
+    [super setIsVisible:isVisible];
+    
+    if (!isVisible && _player != nil)
+        [self stopPlayer];
+}
+
+- (void)setProgressVisible:(bool)progressVisible value:(float)value animated:(bool)animated
+{
+    if (progressVisible)
+        [_progressView setProgress:value cancelEnabled:true animated:animated];
+    else if (_mediaAvailable)
+        [_progressView setPlay];
+    else
+        [_progressView setDownload];
+}
+
+- (void)actorMessageReceived:(NSString *)path messageType:(NSString *)messageType message:(id)message
+{
+    if ([path hasPrefix:@"/as/media/video/"])
+    {
+        if ([messageType isEqualToString:@"progress"])
+        {
+            float progress = [message floatValue];
+            TGDispatchOnMainThread(^
+            {
+                [self setProgressVisible:true value:progress animated:true];
+            });
+        }
+    }
+}
+
+- (void)actorCompleted:(int)status path:(NSString *)path result:(id)__unused result
+{
+    if ([path hasPrefix:@"/as/media/video/"])
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            if (status == ASStatusSuccess)
+            {
+                _downloading = false;
+                _mediaAvailable = true;
+                
+                [self setProgressVisible:false value:1.0f animated:false];
+                
+                [_imageView loadUri:((TGModernGalleryVideoItem *)self.item).previewUri withOptions:@{TGImageViewOptionKeepCurrentImageAsPlaceholder: @true}];
+            }
+        });
+    }
 }
 
 @end

@@ -8,15 +8,18 @@
 
 #import "TGModernGalleryItemView.h"
 
-@class TGRemoteImageView;
+@class TGImageView;
 @class AVPlayer;
 
 @interface TGModernGalleryVideoItemView : TGModernGalleryItemView
 
-@property (nonatomic, strong) TGRemoteImageView *imageView;
+@property (nonatomic, strong) TGImageView *imageView;
 @property (nonatomic, strong) AVPlayer *player;
 @property (nonatomic) CGSize videoDimenstions;
 
 - (bool)shouldLoopVideo:(NSUInteger)currentLoopCount;
+
+- (void)play;
+- (void)hidePlayButton;
 
 @end

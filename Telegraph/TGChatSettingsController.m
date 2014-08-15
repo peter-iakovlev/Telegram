@@ -35,6 +35,8 @@
     TGSwitchCollectionItem *_privateAudioAutoDownloadItem;
     TGSwitchCollectionItem *_groupAudioAutoDownloadItem;
     
+    TGSwitchCollectionItem *_autoPlayAudioItem;
+    
     TGSwitchCollectionItem *_useRTLItem;
     
     TGProgressWindow *_progressWindow;
@@ -75,6 +77,9 @@
         _groupAudioAutoDownloadItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Groups") isOn:TGAppDelegateInstance.autoDownloadAudioInGroups];
         _groupAudioAutoDownloadItem.interfaceHandle = _actionHandle;
         
+        _autoPlayAudioItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutoPlayAudio") isOn:TGAppDelegateInstance.autoPlayAudio];
+        _autoPlayAudioItem.interfaceHandle = _actionHandle;
+        
         TGCollectionMenuSection *autoDownloadPhotoSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutomaticPhotoDownload")],
             _privateAutoDownloadItem,
@@ -91,7 +96,8 @@
         TGCollectionMenuSection *autoDownloadAudioSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutomaticAudioDownload")],
             _privateAudioAutoDownloadItem,
-            _groupAudioAutoDownloadItem
+            _groupAudioAutoDownloadItem,
+            _autoPlayAudioItem
         ]];
         [self.menuSections addSection:autoDownloadAudioSection];
         
@@ -207,6 +213,11 @@
         else if (switchItem == _groupAudioAutoDownloadItem)
         {
             TGAppDelegateInstance.autoDownloadAudioInGroups = switchItem.isOn;
+            [TGAppDelegateInstance saveSettings];
+        }
+        else if (switchItem == _autoPlayAudioItem)
+        {
+            TGAppDelegateInstance.autoPlayAudio = switchItem.isOn;
             [TGAppDelegateInstance saveSettings];
         }
         else if (switchItem == _useRTLItem)

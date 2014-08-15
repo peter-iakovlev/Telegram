@@ -13,11 +13,17 @@
 #import "TGOpusAudioPlayerAU.h"
 #import "TGNativeAudioPlayer.h"
 
+#import "TGObserverProxy.h"
+#import "TGAppDelegate.h"
+
 #import <AVFoundation/AVFoundation.h>
 
 @interface TGAudioPlayer ()
 {
     bool _audioSessionIsActive;
+    bool _proximityState;
+    TGObserverProxy *_proximityChangedNotification;
+    TGHolder *_proximityChangeHolder;
 }
 
 @end
@@ -33,6 +39,24 @@
         return [[TGOpusAudioPlayerAU alloc] initWithPath:path];
     else
         return [[TGNativeAudioPlayer alloc] initWithPath:path];
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _proximityState = TGAppDelegateInstance.deviceProximityState;
+        _proximityChangedNotification = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(proximityChanged:) name:TGDeviceProximityStateChangedNotification object:nil];
+        _proximityChangeHolder = [[TGHolder alloc] init];
+        [TGAppDelegateInstance.deviceProximityListeners addHolder:_proximityChangeHolder];
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    [TGAppDelegateInstance.deviceProximityListeners removeHolder:_proximityChangeHolder];
 }
 
 - (void)play
@@ -74,6 +98,24 @@
     return queue;
 }
 
+- (void)proximityChanged:(NSNotification *)__unused notification
+{
+    bool proximityState = TGAppDelegateInstance.deviceProximityState;
+    [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
+    {
+        _proximityState = proximityState;
+        if (_audioSessionIsActive)
+        {
+            __autoreleasing NSError *error = nil;
+            AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+            if (![audioSession setCategory:_proximityState ? AVAudioSessionCategoryPlayAndRecord :AVAudioSessionCategoryPlayAndRecord error:&error])
+                TGLog(@"[TGAudioPlayer audio session set category failed: %@]", error);
+            if (![audioSession overrideOutputAudioPort:_proximityState ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error])
+                TGLog(@"[TGAudioPlayer override route failed: %@]", error);
+        }
+    }];
+}
+
 - (void)_beginAudioSession
 {
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
@@ -82,12 +124,17 @@
         {
             __autoreleasing NSError *error = nil;
             AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-            if (![audioSession setCategory:AVAudioSessionCategoryPlayback error:&error])
+            if (![audioSession setCategory:_proximityState ? AVAudioSessionCategoryPlayAndRecord :AVAudioSessionCategoryPlayAndRecord error:&error])
                 TGLog(@"[TGAudioPlayer audio session set category failed: %@]", error);
             else if (![audioSession setActive:true error:&error])
                 TGLog(@"[TGAudioPlayer audio session activation failed: %@]", error);
             else
+            {
+                if (![audioSession overrideOutputAudioPort:_proximityState ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error])
+                    TGLog(@"[TGAudioPlayer override route failed: %@]", error);
+                
                 _audioSessionIsActive = true;
+            }
         }
     }];
 }
@@ -102,6 +149,8 @@
             AVAudioSession *audioSession = [AVAudioSession sharedInstance];
             if (![audioSession setActive:false error:&error])
                 TGLog(@"[TGAudioPlayer audio session deactivation failed: %@]", error);
+            if (![audioSession overrideOutputAudioPort:AVAudioSessionPortOverrideNone error:&error])
+                TGLog(@"[TGAudioPlayer override route failed: %@]", error);
             
             _audioSessionIsActive = false;
         }

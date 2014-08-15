@@ -8,12 +8,12 @@
 
 #import "TGModernGalleryZoomableItemView.h"
 
-@class TGRemoteImageView;
+@class TGModernGalleryImageItemImageView;
 
 @interface TGModernGalleryImageItemView : TGModernGalleryZoomableItemView
 
 @property (nonatomic) CGSize imageSize;
 
-@property (nonatomic, strong) TGRemoteImageView *imageView;
+@property (nonatomic, strong) TGModernGalleryImageItemImageView *imageView;
 
 @end

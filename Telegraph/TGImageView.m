@@ -18,7 +18,7 @@ NSString *TGImageViewOptionSynchronous = @"TGImageViewOptionSynchronous";
 @interface TGImageView ()
 {
     id _loadToken;
-    int _version;
+    volatile int _version;
     
     UIImageView *_transitionOverlayView;
 }
@@ -68,18 +68,44 @@ NSString *TGImageViewOptionSynchronous = @"TGImageViewOptionSynchronous";
         
         __weak TGImageView *weakSelf = self;
         int version = _version;
-        _loadToken = [[TGImageManager instance] beginLoadingImageAsyncWithUri:uri decode:true progress:nil completion:^(UIImage *image)
+        _loadToken = [[TGImageManager instance] beginLoadingImageAsyncWithUri:uri decode:true progress:^(float value)
         {
             TGDispatchOnMainThread(^
             {
                 __strong TGImageView *strongSelf = weakSelf;
                 if (strongSelf != nil && strongSelf->_version == version)
+                    [strongSelf _updateProgress:value];
+            });
+        } partialCompletion:^(UIImage *partialImage)
+        {
+            TGDispatchOnMainThread(^
+            {
+                __strong TGImageView *strongSelf = weakSelf;
+                if (strongSelf != nil && strongSelf->_version == version)
+                    [strongSelf _commitImage:partialImage loadTime:(NSTimeInterval)(MTAbsoluteSystemTime() - loadStartTime)];
+                else
+                    TGLog(@"[TGImageView _commitImage version mismatch]");
+            });
+        } completion:^(UIImage *image)
+        {
+            TGDispatchOnMainThread(^
+            {
+                __strong TGImageView *strongSelf = weakSelf;
+                if (strongSelf != nil && strongSelf->_version == version)
+                {
+                    [strongSelf _updateProgress:1.0f];
                     [strongSelf _commitImage:image loadTime:(NSTimeInterval)(MTAbsoluteSystemTime() - loadStartTime)];
+                }
                 else
                     TGLog(@"[TGImageView _commitImage version mismatch]");
             });
         }];
     }
+}
+
+- (void)_updateProgress:(float)value
+{
+    [self performProgressUpdate:value];
 }
 
 - (void)_commitImage:(UIImage *)image loadTime:(NSTimeInterval)loadTime
@@ -103,6 +129,10 @@ NSString *TGImageViewOptionSynchronous = @"TGImageViewOptionSynchronous";
     }
     
     [self _commitImage:nil loadTime:0.0];
+}
+
+- (void)performProgressUpdate:(float)__unused progress
+{
 }
 
 - (void)performTransitionToImage:(UIImage *)image duration:(NSTimeInterval)duration

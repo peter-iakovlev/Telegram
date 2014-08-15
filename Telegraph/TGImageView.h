@@ -18,5 +18,6 @@ extern NSString *TGImageViewOptionSynchronous;
 - (void)reset;
 
 - (void)performTransitionToImage:(UIImage *)image duration:(NSTimeInterval)duration;
+- (void)performProgressUpdate:(float)progress;
 
 @end

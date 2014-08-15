@@ -28,6 +28,7 @@
     UILabel *_durationLabel;
     
     bool _isScrubbing;
+    
     float _scrubbingPosition;
     
     bool _isPlaying;

@@ -2,6 +2,10 @@
 
 @implementation TGModernGalleryModel
 
+- (void)_transitionCompleted
+{
+}
+
 - (void)_replaceItems:(NSArray *)items focusingOnItem:(id<TGModernGalleryItem>)item
 {
     TGDispatchOnMainThread(^
@@ -25,7 +29,22 @@
     });
 }
 
-- (Class<TGModernGalleryDefaultFooterView>)defaultFooterViewClass
+- (UIView<TGModernGalleryDefaultHeaderView> *)createDefaultHeaderView
+{
+    return nil;
+}
+
+- (UIView<TGModernGalleryDefaultFooterView> *)createDefaultFooterView
+{
+    return nil;
+}
+
+- (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultLeftAccessoryView
+{
+    return nil;
+}
+
+- (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultRightAccessoryView
 {
     return nil;
 }

@@ -17,6 +17,8 @@
 - (CGSize)contentSize;
 - (UIView *)contentView;
 
+- (void)setProgressVisible:(bool)progressVisible value:(float)value animated:(bool)animated;
+
 - (void)reset;
 
 @end
