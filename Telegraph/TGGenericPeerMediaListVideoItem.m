@@ -1,9 +1,16 @@
-#import "TGGenericPeerMediaGalleryVideoItem.h"
+#import "TGGenericPeerMediaListVideoItem.h"
 
-#import "TGMessage.h"
-#import "TGImageInfo.h"
+#import "TGVideoMediaAttachment.h"
+#import "TGImageUtils.h"
 
-@implementation TGGenericPeerMediaGalleryVideoItem
+@interface TGGenericPeerMediaListVideoItem ()
+{
+    NSString *_thumbnailUri;
+}
+
+@end
+
+@implementation TGGenericPeerMediaListVideoItem
 
 - (NSString *)filePathForVideoId:(int64_t)videoId local:(bool)local
 {
@@ -20,7 +27,7 @@
     return [videosDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@%" PRIx64 ".mov", local ? @"local" : @"remote", videoId]];
 }
 
-- (instancetype)initWithVideoMedia:(TGVideoMediaAttachment *)videoMedia peerId:(int64_t)peerId messageId:(int32_t)messageId
+- (instancetype)initWithVideoMedia:(TGVideoMediaAttachment *)videoMedia peerId:(int64_t)peerId messageId:(int32_t)messageId date:(NSTimeInterval)date
 {
     NSMutableString *previewUri = nil;
     
@@ -35,9 +42,10 @@
         else
             [previewUri appendFormat:@"local-id=%" PRId64 "", videoMedia.localVideoId];
         
-        CGSize size = videoMedia.dimensions;
+        CGSize renderSize = CGSizeMake(50.0f, 50.0f);
+        CGSize size = TGFillSize(TGFitSize(videoMedia.dimensions, renderSize), renderSize);
         
-        [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)size.width, (int)size.height, (int)size.width, (int)size.height];
+        [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)renderSize.width, (int)renderSize.height, (int)size.width, (int)size.height];
         
         [previewUri appendFormat:@"&legacy-video-file-path=%@", legacyVideoFilePath];
         if (legacyThumbnailCacheUri != nil)
@@ -46,12 +54,15 @@
         [previewUri appendFormat:@"&messageId=%" PRId32 "", (int32_t)messageId];
         [previewUri appendFormat:@"&conversationId=%" PRId64 "", (int64_t)peerId];
     }
-    
-    self = [super initWithVideoMedia:videoMedia previewUri:previewUri];
+
+    self = [super initWithImageUri:previewUri];
     if (self != nil)
     {
         _peerId = peerId;
         _messageId = messageId;
+        _date = date;
+        
+        _thumbnailUri = legacyThumbnailCacheUri;
     }
     return self;
 }
@@ -61,23 +72,17 @@
     if (![super isEqual:object])
         return false;
     
-    if ([object isKindOfClass:[TGGenericPeerMediaGalleryVideoItem class]])
+    if ([object isKindOfClass:[TGGenericPeerMediaListVideoItem class]])
     {
-        return TGObjectCompare(_author, ((TGGenericPeerMediaGalleryVideoItem *)object).author) && ABS(_date - ((TGGenericPeerMediaGalleryVideoItem *)object).date) < DBL_EPSILON && _messageId == ((TGGenericPeerMediaGalleryVideoItem *)object).messageId && _peerId == ((TGGenericPeerMediaGalleryVideoItem *)object).peerId;
+        return ABS(_date - ((TGGenericPeerMediaListVideoItem *)object).date) < DBL_EPSILON && _messageId == ((TGGenericPeerMediaListVideoItem *)object).messageId && _peerId == ((TGGenericPeerMediaListVideoItem *)object).peerId;
     }
     
     return false;
 }
 
-- (id)videoDownloadArguments
+- (bool)hasThumbnailUri:(NSString *)thumbnailUri
 {
-    return @{@"peerId": @(_peerId), @"messageId": @(_messageId)};
-}
-
-- (NSString *)filePath
-{
-    NSString *legacyVideoFilePath = [self filePathForVideoId:self.videoMedia.videoId != 0 ? self.videoMedia.videoId : self.videoMedia.localVideoId local:self.videoMedia.videoId == 0];
-    return legacyVideoFilePath;
+    return [_thumbnailUri isEqualToString:thumbnailUri];
 }
 
 @end

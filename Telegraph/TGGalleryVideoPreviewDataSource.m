@@ -88,30 +88,33 @@
         {
             NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://?", [TGGalleryVideoPreviewDataSource uriPrefix]].length]];
             
-            [ActionStageInstance() requestActor:path options:@{
-               @"isVideo": @true,
-               @"mediaId": args[@"id"],
-               @"messageId": args[@"messageId"],
-               @"conversationId": args[@"conversationId"],
-               @"uri": args[@"legacy-thumbnail-cache-url"],
-               @"legacy-thumbnail-cache-url": args[@"legacy-thumbnail-cache-url"],
-               @"completion": ^(bool success)
-                {
-                    if (success)
+            if (args[@"legacy-thumbnail-cache-url"] != nil)
+            {
+                [ActionStageInstance() requestActor:path options:@{
+                   @"isVideo": @true,
+                   @"mediaId": args[@"id"],
+                   @"messageId": args[@"messageId"],
+                   @"conversationId": args[@"conversationId"],
+                   @"uri": args[@"legacy-thumbnail-cache-url"],
+                   @"legacy-thumbnail-cache-url": args[@"legacy-thumbnail-cache-url"],
+                   @"completion": ^(bool success)
                     {
-                        TGDataResource *result = [TGGalleryVideoPreviewDataSource _performLoad:uri isCancelled:nil];
-                        if (completion)
-                            completion(result);
+                        if (success)
+                        {
+                            TGDataResource *result = [TGGalleryVideoPreviewDataSource _performLoad:uri isCancelled:nil];
+                            if (completion)
+                                completion(result);
+                        }
+                        else if (completion)
+                            completion(nil);
+                    },
+                   @"progress": ^(float value)
+                    {
+                        if (progress)
+                            progress(value);
                     }
-                    else if (completion)
-                        completion(nil);
-                },
-               @"progress": ^(float value)
-                {
-                    if (progress)
-                        progress(value);
-                }
-            } watcher:self];
+                } watcher:self];
+            }
         }
     }];
     
@@ -219,7 +222,7 @@
     return nil;
 }
 
-- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait
+- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait acceptPartialData:(bool)__unused acceptPartialData asyncTaskId:(__autoreleasing id *)__unused asyncTaskId progress:(void (^)(float))__unused progress partialCompletion:(void (^)(TGDataResource *))__unused partialCompletion completion:(void (^)(TGDataResource *))__unused completion
 {
     if (uri == nil)
         return nil;

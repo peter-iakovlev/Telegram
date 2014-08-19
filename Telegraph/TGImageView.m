@@ -48,10 +48,55 @@ NSString *TGImageViewOptionSynchronous = @"TGImageViewOptionSynchronous";
     
     UIImage *image = nil;
     
+    bool beganAsyncTask = false;
+    
     if (options[TGImageViewOptionEmbeddedImage] != nil)
         image = options[TGImageViewOptionEmbeddedImage];
     else
-        image = [[TGImageManager instance] loadImageSyncWithUri:uri canWait:[options[TGImageViewOptionSynchronous] boolValue] decode:true];
+    {
+        __autoreleasing id asyncTaskId = nil;
+        __weak TGImageView *weakSelf = self;
+        int version = _version;
+        MTAbsoluteTime loadStartTime = MTAbsoluteSystemTime();
+        image = [[TGImageManager instance] loadImageSyncWithUri:uri canWait:[options[TGImageViewOptionSynchronous] boolValue] decode:true acceptPartialData:true asyncTaskId:&asyncTaskId progress:^(float value)
+        {
+            TGDispatchOnMainThread(^
+            {
+                __strong TGImageView *strongSelf = weakSelf;
+                if (strongSelf != nil && strongSelf->_version == version)
+                    [strongSelf _updateProgress:value];
+            });
+        } partialCompletion:^(UIImage *partialImage)
+        {
+            TGDispatchOnMainThread(^
+            {
+                __strong TGImageView *strongSelf = weakSelf;
+                if (strongSelf != nil && strongSelf->_version == version)
+                    [strongSelf _commitImage:partialImage loadTime:(NSTimeInterval)(MTAbsoluteSystemTime() - loadStartTime)];
+                else
+                    TGLog(@"[TGImageView _commitImage version mismatch]");
+            });
+        } completion:^(UIImage *image)
+        {
+            TGDispatchOnMainThread(^
+            {
+                __strong TGImageView *strongSelf = weakSelf;
+                if (strongSelf != nil && strongSelf->_version == version)
+                {
+                    [strongSelf _updateProgress:1.0f];
+                    [strongSelf _commitImage:image loadTime:(NSTimeInterval)(MTAbsoluteSystemTime() - loadStartTime)];
+                }
+                else
+                    TGLog(@"[TGImageView _commitImage version mismatch]");
+            });
+        }];
+        
+        if (asyncTaskId != nil)
+        {
+            beganAsyncTask = true;
+            _loadToken = asyncTaskId;
+        }
+    }
     
     if (image != nil)
         [self _commitImage:image loadTime:0.0];

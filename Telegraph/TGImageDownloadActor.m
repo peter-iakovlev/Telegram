@@ -310,7 +310,7 @@ static inline double imageProcessingPriority()
         return;
     }
     
-    UIImage *imageManagerImage = [[TGImageManager instance] loadImageSyncWithUri:url canWait:true decode:processor == nil];
+    UIImage *imageManagerImage = [[TGImageManager instance] loadImageSyncWithUri:url canWait:true decode:processor == nil acceptPartialData:false asyncTaskId:NULL progress:nil partialCompletion:nil completion:nil];
     if (imageManagerImage != nil)
     {
         UIImage *image = processor != nil ? processor(imageManagerImage) : imageManagerImage;

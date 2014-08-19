@@ -1836,7 +1836,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                 {
                     TGDocumentMediaAttachment *documentAttachment = (TGDocumentMediaAttachment *)attachment;
                     
-                    if ([documentAttachment.fileName isEqualToString:@"Localizable.strings"])
+                    if ([[[documentAttachment.fileName pathExtension] lowercaseString] isEqualToString:@"strings"])
                     {
                         [[[TGActionSheet alloc] initWithTitle:nil actions:@[
                             [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.ApplyLocalization") action:@"applyLocalization"],

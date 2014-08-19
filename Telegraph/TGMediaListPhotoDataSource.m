@@ -1,12 +1,4 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
-#import "TGPhotoThumbnailDataSource.h"
+#import "TGMediaListPhotoDataSource.h"
 
 #import "ASQueue.h"
 
@@ -43,19 +35,13 @@ static ASQueue *taskManagementQueue()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        queue = [[ASQueue alloc] initWithName:"org.telegram.photoThumbnailTaskManagementQueue"];
+        queue = [[ASQueue alloc] initWithName:"org.telegram.mediaListPhotoThumbnailTaskManagementQueue"];
     });
     
     return queue;
 }
 
-@interface TGPhotoThumbnailDataSource ()
-{
-}
-
-@end
-
-@implementation TGPhotoThumbnailDataSource
+@implementation TGMediaListPhotoDataSource
 
 + (void)load
 {
@@ -65,14 +51,19 @@ static ASQueue *taskManagementQueue()
     }
 }
 
++ (NSString *)uriScheme
+{
+    return @"media-list-photo-thumbnail";
+}
+
 - (bool)canHandleUri:(NSString *)uri
 {
-    return [uri hasPrefix:@"photo-thumbnail://"];
+    return [uri hasPrefix:[[NSString alloc] initWithFormat:@"%@://", [TGMediaListPhotoDataSource uriScheme]]];
 }
 
 - (bool)canHandleAttributeUri:(NSString *)uri
 {
-    return [uri hasPrefix:@"photo-thumbnail://"];
+    return [uri hasPrefix:[[NSString alloc] initWithFormat:@"%@://", [TGMediaListPhotoDataSource uriScheme]]];
 }
 
 - (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float))progress partialCompletion:(void (^)(TGDataResource *resource))__unused partialCompletion completion:(void (^)(TGDataResource *))completion
@@ -83,7 +74,7 @@ static ASQueue *taskManagementQueue()
     {
         TGWorkerTask *workerTask = [[TGWorkerTask alloc] initWithBlock:^(bool (^isCancelled)())
         {
-            TGDataResource *result = [TGPhotoThumbnailDataSource _performLoad:uri isCancelled:isCancelled];
+            TGDataResource *result = [TGMediaListPhotoDataSource _performLoad:uri isCancelled:isCancelled];
             
             if (result != nil && progress != nil)
                 progress(1.0f);
@@ -92,16 +83,16 @@ static ASQueue *taskManagementQueue()
                 return;
             
             if (completion != nil)
-                completion(result != nil ? result : [TGPhotoThumbnailDataSource resultForUnavailableImage]);
+                completion(result != nil ? result : [TGMediaListPhotoDataSource resultForUnavailableImage]);
         }];
-
-        if ([TGPhotoThumbnailDataSource _isDataLocallyAvailableForUri:uri])
+        
+        if ([TGMediaListPhotoDataSource _isDataLocallyAvailableForUri:uri])
         {
             [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
         }
         else
         {
-            NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"photo-thumbnail://?".length]];
+            NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://", [TGMediaListPhotoDataSource uriScheme]].length]];
             
             if ([args[@"legacy-thumbnail-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
             {
@@ -134,14 +125,14 @@ static ASQueue *taskManagementQueue()
                     else
                     {
                         if (completion != nil)
-                            completion([TGPhotoThumbnailDataSource resultForUnavailableImage]);
+                            completion([TGMediaListPhotoDataSource resultForUnavailableImage]);
                     }
                 } workerTask:workerTask];
             }
             else
             {
                 if (completion != nil)
-                    completion([TGPhotoThumbnailDataSource resultForUnavailableImage]);
+                    completion([TGMediaListPhotoDataSource resultForUnavailableImage]);
             }
         }
     }];
@@ -167,7 +158,7 @@ static ASQueue *taskManagementQueue()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        imageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor]) decoded:true];
+        imageData = [[TGDataResource alloc] initWithImage:TGAverageColorImage([UIColor whiteColor]) decoded:true];
     });
     
     return imageData;
@@ -185,7 +176,7 @@ static ASQueue *taskManagementQueue()
         NSNumber *averageColor = [[TGMediaStoreContext instance] mediaImageAverageColor:uri];
         if (averageColor != nil)
         {
-            UIImage *image = TGAverageColorAttachmentImage(UIColorRGB([averageColor intValue]));
+            UIImage *image = TGAverageColorImage(UIColorRGB([averageColor intValue]));
             return image;
         }
         
@@ -193,7 +184,7 @@ static ASQueue *taskManagementQueue()
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            placeholder = TGAverageColorAttachmentImage([UIColor whiteColor]);
+            placeholder = TGAverageColorImage([UIColor whiteColor]);
         });
         
         return placeholder;
@@ -214,12 +205,12 @@ static ASQueue *taskManagementQueue()
     if (!canWait)
         return nil;
     
-    return [TGPhotoThumbnailDataSource _performLoad:uri isCancelled:nil];
+    return [TGMediaListPhotoDataSource _performLoad:uri isCancelled:nil];
 }
 
 + (bool)_isDataLocallyAvailableForUri:(NSString *)uri
 {
-    NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"photo-thumbnail://?".length]];
+    NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://", [TGMediaListPhotoDataSource uriScheme]].length]];
     
     if ((![args[@"id"] respondsToSelector:@selector(longLongValue)] && ![args[@"local-id"] respondsToSelector:@selector(longLongValue)]) || ![args[@"width"] respondsToSelector:@selector(intValue)] || ![args[@"height"] respondsToSelector:@selector(intValue)] || ![args[@"renderWidth"] respondsToSelector:@selector(intValue)] || ![args[@"renderHeight"] respondsToSelector:@selector(intValue)])
     {
@@ -285,7 +276,7 @@ static ASQueue *taskManagementQueue()
         return nil;
     }
     
-    NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"photo-thumbnail://?".length]];
+    NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://", [TGMediaListPhotoDataSource uriScheme]].length]];
     
     if ((![args[@"id"] respondsToSelector:@selector(longLongValue)] && ![args[@"local-id"] respondsToSelector:@selector(longLongValue)]) || ![args[@"width"] respondsToSelector:@selector(intValue)] || ![args[@"height"] respondsToSelector:@selector(intValue)] || ![args[@"renderWidth"] respondsToSelector:@selector(intValue)] || ![args[@"renderHeight"] respondsToSelector:@selector(intValue)])
     {
@@ -392,37 +383,19 @@ static ASQueue *taskManagementQueue()
         uint32_t averageColorValue = [averageColor intValue];
         
         if (lowQualityThumbnail)
-            thumbnailImage = TGBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+            thumbnailImage = TGBlurredFileImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
         else
-            thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
-        
+        {
+            thumbnailImage = thumbnailSourceImage;
+            if (needsAverageColor)
+                TGPlainImageAverageColor(thumbnailSourceImage, &averageColorValue);
+        }
+
         if (thumbnailImage != nil)
         {
             [[TGMediaStoreContext instance] setMediaImageAverageColorForKey:uri averageColor:@(averageColorValue)];
             if (!lowQualityThumbnail)
                 [[TGMediaStoreContext instance] setMediaImageForKey:uri image:thumbnailImage attributes:nil];
-            
-            //TGLog(@"[TGPhotoMediaPreviewImageDataSource loaded %@ in %f/%f ms]", uri, (CFAbsoluteTimeGetCurrent() - time1) * 1000.0, (CFAbsoluteTimeGetCurrent() - startTime) * 1000.0);
-            
-            NSDictionary *imageAttachments = [thumbnailImage attachmentsDictionary];
-            
-            [[TGMediaStoreContext instance] inMediaReducedImageCacheGenerationQueue:^
-            {
-                __autoreleasing NSDictionary *attributes = nil;
-                bool alreadyCached = [[TGMediaStoreContext instance] mediaReducedImage:uri attributes:&attributes];
-                bool cachedLowQualityThumbnail = [attributes[@"lowQuality"] boolValue];
-                
-                if (!alreadyCached || (cachedLowQualityThumbnail && !lowQualityThumbnail))
-                {
-                    UIImage *cachedImage = TGReducedAttachmentImage(thumbnailImage, size);
-                    [cachedImage setAttachmentsFromDictionary:imageAttachments];
-                    
-                    if (cachedImage != nil)
-                    {
-                        [[TGMediaStoreContext instance] setMediaReducedImageForKey:uri reducedImage:cachedImage attributes:@{@"lowQuality": @(lowQualityThumbnail)}];
-                    }
-                }
-            }];
             
             return [[TGDataResource alloc] initWithImage:thumbnailImage decoded:true];
         }

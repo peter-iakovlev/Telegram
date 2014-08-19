@@ -13,4 +13,6 @@
 
 - (instancetype)initWithVideoMedia:(TGVideoMediaAttachment *)videoMedia peerId:(int64_t)peerId messageId:(int32_t)messageId;
 
+- (NSString *)filePath;
+
 @end

@@ -125,6 +125,37 @@
             return strongSelf.view;
         };
         
+        _model.viewControllerForModalPresentation = ^
+        {
+            __strong TGModernGalleryController *strongSelf = weakSelf;
+            return strongSelf;
+        };
+        
+        _model.dismiss = ^(bool asModal)
+        {
+            __strong TGModernGalleryController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                if (asModal)
+                {
+                    strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
+                    strongSelf.view.hidden = true;
+                    
+                    [strongSelf dismissViewControllerAnimated:true completion:^
+                    {
+                        dispatch_async(dispatch_get_main_queue(), ^
+                        {
+                            [strongSelf dismiss];
+                        });
+                    }];
+                }
+                else
+                {
+                    [strongSelf dismiss];
+                }
+            }
+        };
+        
         [self reloadDataAtItem:_model.focusItem synchronously:false];
     }
 }
@@ -501,7 +532,8 @@ static CGFloat transformRotation(CGAffineTransform transform)
                 }
             }
             
-            strongSelf.finishedTransitionIn(strongSelf.model.focusItem, itemView);
+            if (strongSelf.finishedTransitionIn)
+                strongSelf.finishedTransitionIn(strongSelf.model.focusItem, itemView);
             
             strongSelf->_preloadVisibleItemViews = true;
             [strongSelf scrollViewBoundsChanged:strongSelf->_view.scrollView.bounds synchronously:false];

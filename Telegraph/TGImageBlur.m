@@ -1428,3 +1428,35 @@ UIImage *TGBlurredBackgroundImage(UIImage *source, CGSize size)
     
     return image;
 }
+
+void TGPlainImageAverageColor(UIImage *source, uint32_t *averageColor)
+{
+    CGFloat scale = source.scale;
+    CGSize size = source.size;
+    
+    const struct { int width, height; } targetContextSize = { (int)(size.width * scale), (int)(size.height * scale) };
+    
+    size_t targetBytesPerRow = ((4 * (int)targetContextSize.width) + 15) & (~15);
+    
+    void *targetMemory = malloc((int)(targetBytesPerRow * targetContextSize.height));
+    
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host;
+    
+    CGContextRef targetContext = CGBitmapContextCreate(targetMemory, (int)targetContextSize.width, (int)targetContextSize.height, 8, targetBytesPerRow, colorSpace, bitmapInfo);
+    
+    CGColorSpaceRelease(colorSpace);
+    
+    UIGraphicsPushContext(targetContext);
+    CGContextTranslateCTM(targetContext, targetContextSize.width / 2.0f, targetContextSize.height / 2.0f);
+    CGContextScaleCTM(targetContext, 1.0f, -1.0f);
+    CGContextTranslateCTM(targetContext, -targetContextSize.width / 2.0f, -targetContextSize.height / 2.0f);
+    [source drawInRect:CGRectMake(0, 0, targetContextSize.width, targetContextSize.height) blendMode:kCGBlendModeCopy alpha:1.0f];
+    UIGraphicsPopContext();
+    
+    if (averageColor != NULL)
+        *averageColor = TGImageAverageColor(targetMemory, targetContextSize.width, targetContextSize.height, targetBytesPerRow);
+    
+    CGContextRelease(targetContext);
+    free(targetMemory);
+}

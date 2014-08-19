@@ -814,6 +814,19 @@
 		D073B9D0192B876500BBD071 /* TGConversationListControllerActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D073B9CF192B876500BBD071 /* TGConversationListControllerActor.m */; };
 		D07AC9EF1577C1C700436500 /* TGConversationHistoryRequestActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D07AC9EE1577C1C700436500 /* TGConversationHistoryRequestActor.m */; };
 		D07ACA01157833D400436500 /* TGContactListRequestBuilder.mm in Sources */ = {isa = PBXBuildFile; fileRef = D07ACA00157833D400436500 /* TGContactListRequestBuilder.mm */; };
+		D07EA26C199E1BDA002ED76D /* TGModernMediaListController.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA26B199E1BDA002ED76D /* TGModernMediaListController.m */; };
+		D07EA26F199E1CE5002ED76D /* TGModernMediaListModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA26E199E1CE5002ED76D /* TGModernMediaListModel.m */; };
+		D07EA276199E1E0E002ED76D /* TGGenericPeerMediaListModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA275199E1E0E002ED76D /* TGGenericPeerMediaListModel.m */; };
+		D07EA27B199E2507002ED76D /* TGModernMediaListThumbnailItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA27A199E2507002ED76D /* TGModernMediaListThumbnailItemView.m */; };
+		D07EA27F199E2532002ED76D /* TGModernMediaListImageItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA27E199E2532002ED76D /* TGModernMediaListImageItem.m */; };
+		D07EA282199E2543002ED76D /* TGModernMediaListImageItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA281199E2543002ED76D /* TGModernMediaListImageItemView.m */; };
+		D07EA286199E2587002ED76D /* TGModernMediaListItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA285199E2587002ED76D /* TGModernMediaListItemView.m */; };
+		D07EA28A199E272C002ED76D /* TGModernMediaListVideoItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA289199E272C002ED76D /* TGModernMediaListVideoItemView.m */; };
+		D07EA28D199E273A002ED76D /* TGModernMediaListVideoItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA28C199E273A002ED76D /* TGModernMediaListVideoItem.m */; };
+		D07EA291199E28C3002ED76D /* TGModernMediaListLayout.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA290199E28C3002ED76D /* TGModernMediaListLayout.m */; };
+		D07EA294199E28D5002ED76D /* TGModernMediaListCell.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA293199E28D5002ED76D /* TGModernMediaListCell.m */; };
+		D07EA298199E2D0C002ED76D /* TGGenericPeerMediaListImageItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA297199E2D0C002ED76D /* TGGenericPeerMediaListImageItem.m */; };
+		D07EA29B199E2D1E002ED76D /* TGGenericPeerMediaListVideoItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D07EA29A199E2D1E002ED76D /* TGGenericPeerMediaListVideoItem.m */; };
 		D07FD9E218CBA6CA009B649E /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D07FD9DE18CBA6CA009B649E /* InfoPlist.strings */; };
 		D07FD9E318CBA6CA009B649E /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D07FD9E018CBA6CA009B649E /* Localizable.strings */; };
 		D0808683190EF59900EE6998 /* TGMessageImageViewOverlayView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0808682190EF59900EE6998 /* TGMessageImageViewOverlayView.m */; };
@@ -1001,6 +1014,8 @@
 		D0EC6CB015E469B700E7E687 /* TGConversationChatInfoRequestActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EC6CAF15E469B700E7E687 /* TGConversationChatInfoRequestActor.m */; };
 		D0EDECEC1924FA5F007314E3 /* TGAnimationThumbnailDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDECEB1924FA5F007314E3 /* TGAnimationThumbnailDataSource.m */; };
 		D0F057FE15EFC16900005C73 /* TGConversationCreateChatRequestActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F057FD15EFC16900005C73 /* TGConversationCreateChatRequestActor.m */; };
+		D0F4BB5B199E3431007464D5 /* TGMediaListPhotoDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F4BB5A199E3431007464D5 /* TGMediaListPhotoDataSource.m */; };
+		D0F4BB5E199E57BD007464D5 /* TGModernMediaListItemContentView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F4BB5D199E57BD007464D5 /* TGModernMediaListItemContentView.m */; };
 		D0FD8995156FCA3D00CC3714 /* TGMainTabsController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0FD8994156FCA3D00CC3714 /* TGMainTabsController.m */; };
 		D0FD89A3156FD4FC00CC3714 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0FD89A2156FD4FB00CC3714 /* Security.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 /* End PBXBuildFile section */
@@ -2395,6 +2410,34 @@
 		D07AC9F31577D48E00436500 /* Telegraph.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Telegraph.entitlements; sourceTree = "<group>"; };
 		D07AC9FF157833D400436500 /* TGContactListRequestBuilder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGContactListRequestBuilder.h; sourceTree = "<group>"; };
 		D07ACA00157833D400436500 /* TGContactListRequestBuilder.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGContactListRequestBuilder.mm; sourceTree = "<group>"; };
+		D07EA26A199E1BDA002ED76D /* TGModernMediaListController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListController.h; sourceTree = "<group>"; };
+		D07EA26B199E1BDA002ED76D /* TGModernMediaListController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernMediaListController.m; sourceTree = "<group>"; };
+		D07EA26D199E1CE5002ED76D /* TGModernMediaListModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListModel.h; sourceTree = "<group>"; };
+		D07EA26E199E1CE5002ED76D /* TGModernMediaListModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernMediaListModel.m; sourceTree = "<group>"; };
+		D07EA274199E1E0E002ED76D /* TGGenericPeerMediaListModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGGenericPeerMediaListModel.h; sourceTree = "<group>"; };
+		D07EA275199E1E0E002ED76D /* TGGenericPeerMediaListModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGenericPeerMediaListModel.m; sourceTree = "<group>"; };
+		D07EA277199E2081002ED76D /* TGModernMediaListItem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListItem.h; sourceTree = "<group>"; };
+		D07EA279199E2507002ED76D /* TGModernMediaListThumbnailItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListThumbnailItemView.h; sourceTree = "<group>"; };
+		D07EA27A199E2507002ED76D /* TGModernMediaListThumbnailItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernMediaListThumbnailItemView.m; sourceTree = "<group>"; };
+		D07EA27D199E2532002ED76D /* TGModernMediaListImageItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListImageItem.h; sourceTree = "<group>"; };
+		D07EA27E199E2532002ED76D /* TGModernMediaListImageItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernMediaListImageItem.m; sourceTree = "<group>"; };
+		D07EA280199E2543002ED76D /* TGModernMediaListImageItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListImageItemView.h; sourceTree = "<group>"; };
+		D07EA281199E2543002ED76D /* TGModernMediaListImageItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernMediaListImageItemView.m; sourceTree = "<group>"; };
+		D07EA284199E2587002ED76D /* TGModernMediaListItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListItemView.h; sourceTree = "<group>"; };
+		D07EA285199E2587002ED76D /* TGModernMediaListItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernMediaListItemView.m; sourceTree = "<group>"; };
+		D07EA288199E272C002ED76D /* TGModernMediaListVideoItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListVideoItemView.h; sourceTree = "<group>"; };
+		D07EA289199E272C002ED76D /* TGModernMediaListVideoItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernMediaListVideoItemView.m; sourceTree = "<group>"; };
+		D07EA28B199E273A002ED76D /* TGModernMediaListVideoItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListVideoItem.h; sourceTree = "<group>"; };
+		D07EA28C199E273A002ED76D /* TGModernMediaListVideoItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernMediaListVideoItem.m; sourceTree = "<group>"; };
+		D07EA28F199E28C3002ED76D /* TGModernMediaListLayout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListLayout.h; sourceTree = "<group>"; };
+		D07EA290199E28C3002ED76D /* TGModernMediaListLayout.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernMediaListLayout.m; sourceTree = "<group>"; };
+		D07EA292199E28D5002ED76D /* TGModernMediaListCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListCell.h; sourceTree = "<group>"; };
+		D07EA293199E28D5002ED76D /* TGModernMediaListCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernMediaListCell.m; sourceTree = "<group>"; };
+		D07EA295199E2CE0002ED76D /* TGGenericPeerMediaListItem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TGGenericPeerMediaListItem.h; sourceTree = "<group>"; };
+		D07EA296199E2D0C002ED76D /* TGGenericPeerMediaListImageItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGGenericPeerMediaListImageItem.h; sourceTree = "<group>"; };
+		D07EA297199E2D0C002ED76D /* TGGenericPeerMediaListImageItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGenericPeerMediaListImageItem.m; sourceTree = "<group>"; };
+		D07EA299199E2D1E002ED76D /* TGGenericPeerMediaListVideoItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGGenericPeerMediaListVideoItem.h; sourceTree = "<group>"; };
+		D07EA29A199E2D1E002ED76D /* TGGenericPeerMediaListVideoItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGenericPeerMediaListVideoItem.m; sourceTree = "<group>"; };
 		D07FD9DF18CBA6CA009B649E /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = InfoPlist.strings; sourceTree = "<group>"; };
 		D07FD9E118CBA6CA009B649E /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = Localizable.strings; sourceTree = "<group>"; };
 		D0808681190EF59900EE6998 /* TGMessageImageViewOverlayView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGMessageImageViewOverlayView.h; sourceTree = "<group>"; };
@@ -2663,6 +2706,10 @@
 		D0EDECEB1924FA5F007314E3 /* TGAnimationThumbnailDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGAnimationThumbnailDataSource.m; sourceTree = "<group>"; };
 		D0F057FC15EFC16900005C73 /* TGConversationCreateChatRequestActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGConversationCreateChatRequestActor.h; sourceTree = "<group>"; };
 		D0F057FD15EFC16900005C73 /* TGConversationCreateChatRequestActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGConversationCreateChatRequestActor.m; sourceTree = "<group>"; };
+		D0F4BB59199E3431007464D5 /* TGMediaListPhotoDataSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGMediaListPhotoDataSource.h; sourceTree = "<group>"; };
+		D0F4BB5A199E3431007464D5 /* TGMediaListPhotoDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGMediaListPhotoDataSource.m; sourceTree = "<group>"; };
+		D0F4BB5C199E57BD007464D5 /* TGModernMediaListItemContentView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListItemContentView.h; sourceTree = "<group>"; };
+		D0F4BB5D199E57BD007464D5 /* TGModernMediaListItemContentView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernMediaListItemContentView.m; sourceTree = "<group>"; };
 		D0FD8993156FCA3D00CC3714 /* TGMainTabsController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGMainTabsController.h; sourceTree = "<group>"; };
 		D0FD8994156FCA3D00CC3714 /* TGMainTabsController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGMainTabsController.m; sourceTree = "<group>"; };
 		D0FD89A2156FD4FB00CC3714 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
@@ -4091,6 +4138,8 @@
 				93C23083183CFEEC0071CB58 /* Overlay Controller */,
 				D0876FE1196F4BED005740CE /* Modern Gallery Models */,
 				939ECA32188EAFCE004ABAB7 /* Modern Gallery */,
+				D07EA270199E1CEB002ED76D /* Modern Media List Models */,
+				D07EA269199E1BC0002ED76D /* Modern Media List */,
 				93C2307F183CF97C0071CB58 /* Map */,
 				933AA49C186095BA000AA848 /* Document */,
 				9308D82918453E9800FC395E /* Legacy Camera */,
@@ -5151,6 +5200,7 @@
 		D0603920191A412C00EF850D /* Media */ = {
 			isa = PBXGroup;
 			children = (
+				D0F4BB4F199E341A007464D5 /* List */,
 				D020ACC81993A85B007818DD /* Gallery */,
 				D0603921191A413500EF850D /* Preview */,
 			);
@@ -5361,6 +5411,106 @@
 				933F501F16AEECC700EC845A /* TGExclusiveLiveNearbyActor.m */,
 			);
 			name = Contacts;
+			sourceTree = "<group>";
+		};
+		D07EA269199E1BC0002ED76D /* Modern Media List */ = {
+			isa = PBXGroup;
+			children = (
+				D07EA277199E2081002ED76D /* TGModernMediaListItem.h */,
+				D07EA284199E2587002ED76D /* TGModernMediaListItemView.h */,
+				D07EA285199E2587002ED76D /* TGModernMediaListItemView.m */,
+				D0F4BB5C199E57BD007464D5 /* TGModernMediaListItemContentView.h */,
+				D0F4BB5D199E57BD007464D5 /* TGModernMediaListItemContentView.m */,
+				D07EA26D199E1CE5002ED76D /* TGModernMediaListModel.h */,
+				D07EA26E199E1CE5002ED76D /* TGModernMediaListModel.m */,
+				D07EA26A199E1BDA002ED76D /* TGModernMediaListController.h */,
+				D07EA26B199E1BDA002ED76D /* TGModernMediaListController.m */,
+				D07EA28E199E28AA002ED76D /* Collection */,
+				D07EA278199E24E9002ED76D /* Items */,
+			);
+			name = "Modern Media List";
+			sourceTree = "<group>";
+		};
+		D07EA270199E1CEB002ED76D /* Modern Media List Models */ = {
+			isa = PBXGroup;
+			children = (
+				D07EA271199E1DEE002ED76D /* Peer Media */,
+			);
+			name = "Modern Media List Models";
+			sourceTree = "<group>";
+		};
+		D07EA271199E1DEE002ED76D /* Peer Media */ = {
+			isa = PBXGroup;
+			children = (
+				D07EA272199E1DF5002ED76D /* Generic */,
+			);
+			name = "Peer Media";
+			sourceTree = "<group>";
+		};
+		D07EA272199E1DF5002ED76D /* Generic */ = {
+			isa = PBXGroup;
+			children = (
+				D07EA273199E1DFA002ED76D /* Items */,
+				D07EA274199E1E0E002ED76D /* TGGenericPeerMediaListModel.h */,
+				D07EA275199E1E0E002ED76D /* TGGenericPeerMediaListModel.m */,
+			);
+			name = Generic;
+			sourceTree = "<group>";
+		};
+		D07EA273199E1DFA002ED76D /* Items */ = {
+			isa = PBXGroup;
+			children = (
+				D07EA295199E2CE0002ED76D /* TGGenericPeerMediaListItem.h */,
+				D07EA296199E2D0C002ED76D /* TGGenericPeerMediaListImageItem.h */,
+				D07EA297199E2D0C002ED76D /* TGGenericPeerMediaListImageItem.m */,
+				D07EA299199E2D1E002ED76D /* TGGenericPeerMediaListVideoItem.h */,
+				D07EA29A199E2D1E002ED76D /* TGGenericPeerMediaListVideoItem.m */,
+			);
+			name = Items;
+			sourceTree = "<group>";
+		};
+		D07EA278199E24E9002ED76D /* Items */ = {
+			isa = PBXGroup;
+			children = (
+				D07EA279199E2507002ED76D /* TGModernMediaListThumbnailItemView.h */,
+				D07EA27A199E2507002ED76D /* TGModernMediaListThumbnailItemView.m */,
+				D07EA27C199E2518002ED76D /* Image */,
+				D07EA287199E270A002ED76D /* Video */,
+			);
+			name = Items;
+			sourceTree = "<group>";
+		};
+		D07EA27C199E2518002ED76D /* Image */ = {
+			isa = PBXGroup;
+			children = (
+				D07EA27D199E2532002ED76D /* TGModernMediaListImageItem.h */,
+				D07EA27E199E2532002ED76D /* TGModernMediaListImageItem.m */,
+				D07EA280199E2543002ED76D /* TGModernMediaListImageItemView.h */,
+				D07EA281199E2543002ED76D /* TGModernMediaListImageItemView.m */,
+			);
+			name = Image;
+			sourceTree = "<group>";
+		};
+		D07EA287199E270A002ED76D /* Video */ = {
+			isa = PBXGroup;
+			children = (
+				D07EA28B199E273A002ED76D /* TGModernMediaListVideoItem.h */,
+				D07EA28C199E273A002ED76D /* TGModernMediaListVideoItem.m */,
+				D07EA288199E272C002ED76D /* TGModernMediaListVideoItemView.h */,
+				D07EA289199E272C002ED76D /* TGModernMediaListVideoItemView.m */,
+			);
+			name = Video;
+			sourceTree = "<group>";
+		};
+		D07EA28E199E28AA002ED76D /* Collection */ = {
+			isa = PBXGroup;
+			children = (
+				D07EA28F199E28C3002ED76D /* TGModernMediaListLayout.h */,
+				D07EA290199E28C3002ED76D /* TGModernMediaListLayout.m */,
+				D07EA292199E28D5002ED76D /* TGModernMediaListCell.h */,
+				D07EA293199E28D5002ED76D /* TGModernMediaListCell.m */,
+			);
+			name = Collection;
 			sourceTree = "<group>";
 		};
 		D07FD9DD18CBA6CA009B649E /* de.lproj */ = {
@@ -6399,6 +6549,15 @@
 			name = Contacts;
 			sourceTree = "<group>";
 		};
+		D0F4BB4F199E341A007464D5 /* List */ = {
+			isa = PBXGroup;
+			children = (
+				D0F4BB59199E3431007464D5 /* TGMediaListPhotoDataSource.h */,
+				D0F4BB5A199E3431007464D5 /* TGMediaListPhotoDataSource.m */,
+			);
+			name = List;
+			sourceTree = "<group>";
+		};
 		D0FD8992156FCA1700CC3714 /* Tabs */ = {
 			isa = PBXGroup;
 			children = (
@@ -7093,6 +7252,7 @@
 				D0E49ACE156FE9D700655FFE /* TGContactsController.mm in Sources */,
 				936CD3D3186723C700FF241C /* TGEncryptionKeyViewController.m in Sources */,
 				D052F0B6157543FE00D51E59 /* TGSchema.m in Sources */,
+				D07EA294199E28D5002ED76D /* TGModernMediaListCell.m in Sources */,
 				D05556181944E2E3008B69A6 /* TGDocumentMessageIconModel.m in Sources */,
 				93CF3B62181E7D0D003D8DE1 /* TGModernImageView.m in Sources */,
 				D052F0BB15757AB400D51E59 /* TGDialogListRequestBuilder.mm in Sources */,
@@ -7134,6 +7294,7 @@
 				93C43B2518A0546400165AE1 /* TGAudioRecorder.m in Sources */,
 				D096966815AD9B8E00D59E62 /* TGTimelineUploadPhotoRequestBuilder.m in Sources */,
 				936DE1B01850E48400D90029 /* TGNotificationSettingsController.m in Sources */,
+				D07EA282199E2543002ED76D /* TGModernMediaListImageItemView.m in Sources */,
 				939ECA4E188ED0B7004ABAB7 /* TGModernGalleryScrollView.m in Sources */,
 				93CF3B77181EF6E6003D8DE1 /* TGModernCollectionCell.m in Sources */,
 				D01FF8401966D3F200EA6FFB /* TGVibrantActionSheet.m in Sources */,
@@ -7150,7 +7311,9 @@
 				9352A9DF181DC017002A1A1A /* TGMessageModernConversationItem.mm in Sources */,
 				9341347F1854EC8D00480294 /* TGWallpaperController.m in Sources */,
 				93DEA09F183E554500B559C3 /* TGPhotoMessageViewModel.m in Sources */,
+				D07EA276199E1E0E002ED76D /* TGGenericPeerMediaListModel.m in Sources */,
 				D044CB9E192A1D8F0001C986 /* PSKeyValueEncoder.m in Sources */,
+				D07EA26F199E1CE5002ED76D /* TGModernMediaListModel.m in Sources */,
 				D0C925AD194A024000E629CA /* rngs.c in Sources */,
 				9386E89B185CCB0600930205 /* TGUserInfoVariantCollectionItemView.m in Sources */,
 				D0808688190F036F00EE6998 /* TGMessageImageViewTimestampView.m in Sources */,
@@ -7173,6 +7336,7 @@
 				93EB7AB6184F8B3000891DBF /* TGModernConversationTitleIcon.m in Sources */,
 				D0C7FDCE15D303D2001A998A /* TGTimelineRemoveItemsRequestActor.m in Sources */,
 				9341B01F18512E2400D1195B /* TGCheckCollectionItem.m in Sources */,
+				D07EA27B199E2507002ED76D /* TGModernMediaListThumbnailItemView.m in Sources */,
 				D0C7FDD115D3159A001A998A /* TGTimelineAssignProfilePhotoActor.m in Sources */,
 				9303843C1811ABE700CAC996 /* TGWallpapersCollectionItem.m in Sources */,
 				D08990F115D93BC400E76F35 /* Categories.mm in Sources */,
@@ -7201,8 +7365,10 @@
 				930384231811775200CAC996 /* TGDisclosureActionCollectionItemView.m in Sources */,
 				D0C925AF194A024000E629CA /* timing.c in Sources */,
 				D0549E3D192756B9002952ED /* TGPhonebookEntry.m in Sources */,
+				D07EA27F199E2532002ED76D /* TGModernMediaListImageItem.m in Sources */,
 				934280D4184900A1004F1C2A /* TGModernCheckButtonView.m in Sources */,
 				93B77683184DF19F00C81651 /* TGModernConversationGroupTitlePanel.m in Sources */,
+				D07EA298199E2D0C002ED76D /* TGGenericPeerMediaListImageItem.m in Sources */,
 				D0F057FE15EFC16900005C73 /* TGConversationCreateChatRequestActor.m in Sources */,
 				D0498FD8197888170080A679 /* TGGenericPeerMediaGalleryDefaultFooterView.m in Sources */,
 				9344707615F137660015AC4C /* TGConversationAddMemberRequestActor.m in Sources */,
@@ -7216,6 +7382,7 @@
 				93AB29841612F20600BC45EF /* TGImageDownloadActor.m in Sources */,
 				D0A3F312195D98EE009E0ACD /* TGBroadcastListInfoController.m in Sources */,
 				932E00F1184BAAAD0001D109 /* TGPreparedContactMessage.m in Sources */,
+				D0F4BB5E199E57BD007464D5 /* TGModernMediaListItemContentView.m in Sources */,
 				D0498FE31979541A0080A679 /* TGModernGalleryVideoView.m in Sources */,
 				D044CBA1192A241C0001C986 /* PSKeyValueCoder.m in Sources */,
 				D0549DF5192575DF002952ED /* PSLMDBKeyValueStore.m in Sources */,
@@ -7228,6 +7395,7 @@
 				D0CB14A4199CEF8F00EBCEA7 /* TGGenericPeerMediaGalleryActionsAccessoryView.m in Sources */,
 				93AD55DD186308A90043B212 /* TGModernConversationEmptyListPlaceholderView.m in Sources */,
 				93064E101834F3F90024C05A /* TGPreparedTextMessage.m in Sources */,
+				D07EA286199E2587002ED76D /* TGModernMediaListItemView.m in Sources */,
 				D066E98318C6258E00509410 /* bitwise.c in Sources */,
 				D044CB88192A11F00001C986 /* TGUserStore.m in Sources */,
 				93F3A0F618212E2B0005EB98 /* TGModernDateViewModel.m in Sources */,
@@ -7237,6 +7405,7 @@
 				93A60BF718E99A450037A43D /* TGAnimatedImagePlayer.m in Sources */,
 				93B07055161B927B0054C20F /* TGFileDownloadActor.m in Sources */,
 				93B07059161CAEF10054C20F /* TGLocationReverseGeocodeActor.mm in Sources */,
+				D0F4BB5B199E3431007464D5 /* TGMediaListPhotoDataSource.m in Sources */,
 				D04AC5DA1912BF2C00DAFDA8 /* TGMemoryImageCache.m in Sources */,
 				D0549E11192586BA002952ED /* PSLMDBKeyValueWriter.m in Sources */,
 				93B0705C161CB45F0054C20F /* TGRawHttpRequest.m in Sources */,
@@ -7298,8 +7467,10 @@
 				D046966B18A40A22009764B2 /* TGModernGalleryVideoItemView.m in Sources */,
 				933023971655A19D00178E7F /* TGMessageNotificationView.mm in Sources */,
 				9332690C16595BDB00E87917 /* TGMenuItem.m in Sources */,
+				D07EA28D199E273A002ED76D /* TGModernMediaListVideoItem.m in Sources */,
 				932E00F5184BE8530001D109 /* TGModernColorViewModel.m in Sources */,
 				9332691116595C7F00E87917 /* TGActionMenuItem.m in Sources */,
+				D07EA29B199E2D1E002ED76D /* TGGenericPeerMediaListVideoItem.m in Sources */,
 				9332691416595CCC00E87917 /* TGSwitchItem.m in Sources */,
 				D0549E4519275CD4002952ED /* TGPhonebookPhone.m in Sources */,
 				930808EA185A7EE200E62B42 /* TGUserInfoButtonCollectionItem.m in Sources */,
@@ -7371,6 +7542,7 @@
 				D066E9A918C7460700509410 /* TGAudioSliderButton.m in Sources */,
 				93DBE6BB18BFFA4700AA1623 /* TGAudioPlayer.m in Sources */,
 				93C03F1D17C54E5F00A077C4 /* TGProfilePhotoListActor.mm in Sources */,
+				D07EA291199E28C3002ED76D /* TGModernMediaListLayout.m in Sources */,
 				D060392C191C381700EF850D /* TGVideoThumbnailDataSource.m in Sources */,
 				93F6940616932F8700691086 /* TGBlockListRequestActor.mm in Sources */,
 				D073B9CD192B846200BBD071 /* TGConversationListController.m in Sources */,
@@ -7454,6 +7626,7 @@
 				933AA49B186083A4000AA848 /* TGMultipartFileDownloadActor.m in Sources */,
 				930808E7185A7ECD00E62B42 /* TGUserInfoButtonCollectionItemView.m in Sources */,
 				D046965818A2615C009764B2 /* TGPreparedRemoteAudioMessage.m in Sources */,
+				D07EA28A199E272C002ED76D /* TGModernMediaListVideoItemView.m in Sources */,
 				D0C925AC194A024000E629CA /* program.c in Sources */,
 				D0C925D3194A024000E629CA /* RMIntroPageView.m in Sources */,
 				D046964918A10EAD009764B2 /* TGAudioMediaAttachment+Telegraph.m in Sources */,
@@ -7479,6 +7652,7 @@
 				93E015CE175DE8E600BEFDB2 /* TGImageSearchActor.m in Sources */,
 				93064E0C1834F2C20024C05A /* TGPreparedMessage.m in Sources */,
 				D00372B519533D7F00776BCF /* TGMediaFoldersController.m in Sources */,
+				D07EA26C199E1BDA002ED76D /* TGModernMediaListController.m in Sources */,
 				936DE1A91850E3A300D90029 /* TGHeaderCollectionItem.m in Sources */,
 				D020ACD41994C2A4007818DD /* TGModernGalleryImageItemImageView.m in Sources */,
 				93D9DC04182C54C200945B30 /* TGNotificationMessageViewModel.m in Sources */,
@@ -7733,7 +7907,7 @@
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: David Neff (89667NCP4F)";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -7748,8 +7922,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				PROVISIONING_PROFILE = "E65FE667-6520-435B-B4EF-29CA43FD9197";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "E65FE667-6520-435B-B4EF-29CA43FD9197";
+				PROVISIONING_PROFILE = "b9042d53-de4b-4fe9-8afd-f7c2102cdb09";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "88E3703C-280C-4A8B-9635-B01756477BBC";
 				SDKROOT = iphoneos;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -7770,8 +7944,8 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP";
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
@@ -7780,8 +7954,8 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
-				PROVISIONING_PROFILE = "EF13A887-A494-434B-8D01-865280D6B56F";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "EF13A887-A494-434B-8D01-865280D6B56F";
+				PROVISIONING_PROFILE = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 				WARNING_CFLAGS = (
@@ -7849,8 +8023,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-Wextra";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "Telegram HD";
-				PROVISIONING_PROFILE = "E65FE667-6520-435B-B4EF-29CA43FD9197";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "E65FE667-6520-435B-B4EF-29CA43FD9197";
+				PROVISIONING_PROFILE = "b9042d53-de4b-4fe9-8afd-f7c2102cdb09";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "b9042d53-de4b-4fe9-8afd-f7c2102cdb09";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";
@@ -7873,8 +8047,8 @@
 				CLANG_WARN_OBJC_RECEIVER_WEAK = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP";
 				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -7916,8 +8090,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-DNS_BLOCK_ASSERTIONS";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "Telegram HD";
-				PROVISIONING_PROFILE = "EF13A887-A494-434B-8D01-865280D6B56F";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "EF13A887-A494-434B-8D01-865280D6B56F";
+				PROVISIONING_PROFILE = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";

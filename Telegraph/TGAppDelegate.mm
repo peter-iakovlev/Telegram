@@ -1287,26 +1287,26 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 {
     dispatch_async(dispatch_get_main_queue(), ^
     {
-        if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive || name == nil)
+        if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive)
             return;
         
-        static NSMutableDictionary *soundPlayed = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
+        if (name != nil && TGAppDelegateInstance.soundEnabled)
         {
-            soundPlayed = [[NSMutableDictionary alloc] init];
-        });
+            static NSMutableDictionary *soundPlayed = nil;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^
+            {
+                soundPlayed = [[NSMutableDictionary alloc] init];
+            });
+            
+            double lastTimeSoundPlayed = [[soundPlayed objectForKey:name] doubleValue];
+            
+            CFAbsoluteTime currentTime = CFAbsoluteTimeGetCurrent();
+            if (currentTime - lastTimeSoundPlayed < 0.25)
+                return;
         
-        double lastTimeSoundPlayed = [[soundPlayed objectForKey:name] doubleValue];
+            [soundPlayed setObject:[[NSNumber alloc] initWithDouble:currentTime] forKey:name];
         
-        CFAbsoluteTime currentTime = CFAbsoluteTimeGetCurrent();
-        if (currentTime - lastTimeSoundPlayed < 0.25)
-            return;
-    
-        [soundPlayed setObject:[[NSNumber alloc] initWithDouble:currentTime] forKey:name];
-        
-        if (name != nil)
-        {
             NSNumber *soundId = [_loadedSoundSamples objectForKey:name];
             if (soundId == nil)
             {

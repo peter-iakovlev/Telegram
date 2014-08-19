@@ -22,6 +22,10 @@
 
 #import "ActionStage.h"
 
+#import <AssetsLibrary/AssetsLibrary.h>
+
+#import "TGForwardTargetController.h"
+
 @interface TGGenericPeerMediaGalleryModel () <ASWatcher>
 {
     ATQueue *_queue;
@@ -53,8 +57,6 @@
         
         _atMessageId = atMessageId;
         [self _loadInitialItemsAtMessageId:_atMessageId];
-            [NSString stringWithFormat:@"/tg/conversation/(%lld)/messages", _peerId],
-            [NSString stringWithFormat:@"/tg/conversation/(%lld)/messagesChanged", _peerId],
             
         [ActionStageInstance() watchForPaths:@[
             [NSString stringWithFormat:@"/tg/conversation/(%lld)/messages", _peerId],
@@ -391,7 +393,7 @@
                 {
                     NSMutableArray *actions = [[NSMutableArray alloc] init];
                     
-                    if (!TGAppDelegateInstance.autosavePhotos || [concreteItem author].uid == TGTelegraphInstance.clientUserId)
+                    if ((!TGAppDelegateInstance.autosavePhotos || [concreteItem author].uid == TGTelegraphInstance.clientUserId) && [self _isDataAvailableForSavingItemToCameraRoll:item])
                     {
                         [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Preview.SaveToCameraRoll") action:@"save" type:TGActionSheetActionTypeGeneric]];
                     }
@@ -402,11 +404,9 @@
                     {
                         __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
                         if ([action isEqualToString:@"save"])
-                            [self _commitSaveItemToCameraRoll:item];
+                            [strongSelf _commitSaveItemToCameraRoll:item];
                         else if ([action isEqualToString:@"forward"])
-                        {
-                            
-                        }
+                            [strongSelf _commitForwardItem:item];
                     } target:strongSelf] showInView:actionSheetView];
                 }
             }
@@ -415,16 +415,128 @@
     return accessoryView;
 }
 
+- (bool)_isDataAvailableForSavingItemToCameraRoll:(id<TGModernGalleryItem>)item
+{
+    if ([item isKindOfClass:[TGGenericPeerMediaGalleryImageItem class]])
+    {
+        TGGenericPeerMediaGalleryImageItem *imageItem = (TGGenericPeerMediaGalleryImageItem *)item;
+        return [[NSFileManager defaultManager] fileExistsAtPath:[imageItem filePath]];
+    }
+    else if ([item isKindOfClass:[TGGenericPeerMediaGalleryVideoItem class]])
+    {
+        TGGenericPeerMediaGalleryVideoItem *videoItem = (TGGenericPeerMediaGalleryVideoItem *)item;
+        return [[NSFileManager defaultManager] fileExistsAtPath:[videoItem filePath]];
+    }
+    
+    return false;
+}
+
 - (void)_commitSaveItemToCameraRoll:(id<TGModernGalleryItem>)item
 {
     if ([item isKindOfClass:[TGGenericPeerMediaGalleryImageItem class]])
     {
         TGGenericPeerMediaGalleryImageItem *imageItem = (TGGenericPeerMediaGalleryImageItem *)item;
-        
+        NSData *data = [[NSData alloc] initWithContentsOfFile:[imageItem filePath]];
+        [self _saveImageDataToCameraRoll:data];
     }
     else if ([item isKindOfClass:[TGGenericPeerMediaGalleryVideoItem class]])
     {
         TGGenericPeerMediaGalleryVideoItem *videoItem = (TGGenericPeerMediaGalleryVideoItem *)item;
+        [self _saveVideoToCameraRoll:[videoItem filePath]];
+    }
+}
+
+- (void)_saveImageDataToCameraRoll:(NSData *)data
+{
+    if (data == nil)
+        return;
+    
+    ALAssetsLibrary *assetsLibrary = [[ALAssetsLibrary alloc] init];
+    
+    __block __strong ALAssetsLibrary *blockLibrary = assetsLibrary;
+    [assetsLibrary writeImageDataToSavedPhotosAlbum:data metadata:nil completionBlock:^(NSURL *assetURL, NSError *error)
+    {
+        if (error != nil)
+        {
+            dispatch_async(dispatch_get_main_queue(), ^
+            {
+                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:nil];
+                [alertView show];
+            });
+        }
+        else
+            TGLog(@"Saved to %@", assetURL);
+        
+        blockLibrary = nil;
+    }];
+}
+
+- (void)_saveVideoToCameraRoll:(NSString *)filePath
+{
+    if (filePath == nil)
+        return;
+    
+    ALAssetsLibrary *assetsLibrary = [[ALAssetsLibrary alloc] init];
+    
+    __block __strong ALAssetsLibrary *blockLibrary = assetsLibrary;
+    [assetsLibrary writeVideoAtPathToSavedPhotosAlbum:[NSURL fileURLWithPath:filePath] completionBlock:^(NSURL *assetURL, NSError *error)
+    {
+        if (error != nil)
+        {
+            dispatch_async(dispatch_get_main_queue(), ^
+            {
+                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:nil];
+                [alertView show];
+            });
+        }
+        else
+            TGLog(@"Saved to %@", assetURL);
+        
+        blockLibrary = nil;
+    }];
+}
+
+- (void)_commitForwardItem:(id<TGModernGalleryItem>)item
+{
+    if ([item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+    {
+        id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
+        
+        TGDispatchOnMainThread(^
+        {
+            [[UIApplication sharedApplication] beginIgnoringInteractionEvents];
+        });
+        
+        [ActionStageInstance() dispatchOnStageQueue:^
+        {
+            TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:[concreteItem messageId]];
+            if (message == nil)
+                message = [TGDatabaseInstance() loadMediaMessageWithMid:[concreteItem messageId]];
+            
+            TGDispatchOnMainThread(^
+            {
+                [[UIApplication sharedApplication] endIgnoringInteractionEvents];
+                
+                UIViewController *viewController = nil;
+                if (self.viewControllerForModalPresentation)
+                    viewController = self.viewControllerForModalPresentation();
+                
+                if (viewController != nil && message != nil)
+                {
+                    TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:[[NSArray alloc] initWithObjects:message, nil] sendMessages:nil];
+                    forwardController.watcherHandle = _actionHandle;
+                    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:forwardController];
+                    
+                    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+                    {
+                        navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
+                        navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
+                    }
+                    
+                    [viewController presentViewController:navigationController animated:true completion:nil];
+                }
+            });
+        }];
     }
 }
 
@@ -529,6 +641,26 @@
             {
                 [self _addMessages:message];
             }];
+        }
+    }
+}
+
+- (void)actionStageActionRequested:(NSString *)action options:(NSDictionary *)options
+{
+    if ([action isEqualToString:@"willForwardMessages"])
+    {
+        UIViewController *controller = [[options objectForKey:@"controller"] navigationController];
+        if (controller == nil)
+            return;
+        
+        UIViewController *viewController = nil;
+        if (self.viewControllerForModalPresentation)
+            viewController = self.viewControllerForModalPresentation();
+        
+        if (viewController != nil)
+        {   
+            if (self.dismiss)
+                self.dismiss(true);
         }
     }
 }

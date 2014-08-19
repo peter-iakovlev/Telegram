@@ -76,14 +76,22 @@
         if ([TGGalleryPhotoDataSource _isDataLocallyAvailableForUri:uri outIsThumbnail:&isThumbnail])
         {
             TGDataResource *result = [TGGalleryPhotoDataSource _performLoad:uri isCancelled:nil];
-            if (partialCompletion)
-                partialCompletion(result);
+            if (isThumbnail)
+            {
+                if (partialCompletion)
+                    partialCompletion(result);
+            }
+            else
+            {
+                if (completion)
+                    completion(result);
+            }
             
             completed = !isThumbnail;
         }
         
         if (!completed)
-        {
+        {   
             NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://?", [TGGalleryPhotoDataSource uriPrefix]].length]];
             
             [ActionStageInstance() requestActor:path options:@{
@@ -156,7 +164,7 @@
     return nil;
 }
 
-- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait
+- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait acceptPartialData:(bool)acceptPartialData asyncTaskId:(__autoreleasing id *)asyncTaskId progress:(void (^)(float))progress partialCompletion:(void (^)(TGDataResource *))partialCompletion completion:(void (^)(TGDataResource *))completion
 {
     if (uri == nil)
         return nil;
@@ -164,7 +172,20 @@
     if (!canWait)
         return nil;
     
-    return [TGGalleryPhotoDataSource _performLoad:uri isCancelled:nil];
+    bool isThumbnail = false;
+    if ([TGGalleryPhotoDataSource _isDataLocallyAvailableForUri:uri outIsThumbnail:&isThumbnail])
+    {
+        TGDataResource *partialData = [TGGalleryPhotoDataSource _performLoad:uri isCancelled:nil];
+        
+        if (isThumbnail && acceptPartialData && asyncTaskId != NULL)
+        {
+            *asyncTaskId = [self loadDataAsyncWithUri:uri progress:progress partialCompletion:partialCompletion completion:completion];
+        }
+        
+        return partialData;
+    }
+    
+    return nil;
 }
 
 + (bool)_isDataLocallyAvailableForUri:(NSString *)uri outIsThumbnail:(bool *)outIsThumbnail

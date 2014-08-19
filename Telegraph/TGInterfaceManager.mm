@@ -26,6 +26,9 @@
 #import "TGSecretChatUserInfoController.h"
 #import "TGPhonebookUserInfoController.h"
 
+#import "TGGenericPeerMediaListModel.h"
+#import "TGModernMediaListController.h"
+
 @interface TGInterfaceManager ()
 
 @property (nonatomic, strong) UIWindow *preloadWindow;
@@ -266,8 +269,13 @@
     if (conversationId == 0)
         return;
     
-    TGPhotoGridController *photoController = [[TGPhotoGridController alloc] initWithConversationId:conversationId isEncrypted:conversationId <= INT_MIN];
-    [navigationController pushViewController:photoController animated:true];
+    TGGenericPeerMediaListModel *model = [[TGGenericPeerMediaListModel alloc] initWithPeerId:conversationId];
+    
+    TGModernMediaListController *controller = [[TGModernMediaListController alloc] init];
+    controller.model = model;
+    
+    //TGPhotoGridController *photoController = [[TGPhotoGridController alloc] initWithConversationId:conversationId isEncrypted:conversationId <= INT_MIN];
+    [navigationController pushViewController:controller animated:true];
 }
 
 - (void)displayBannerIfNeeded:(TGMessage *)message conversationId:(int64_t)conversationId

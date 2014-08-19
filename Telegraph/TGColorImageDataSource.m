@@ -17,7 +17,7 @@
     return [uri hasPrefix:@"color://"];
 }
 
-- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)__unused canWait
+- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)__unused canWait acceptPartialData:(bool)__unused acceptPartialData asyncTaskId:(__autoreleasing id *)__unused asyncTaskId progress:(void (^)(float))__unused progress partialCompletion:(void (^)(TGDataResource *))__unused partialCompletion completion:(void (^)(TGDataResource *))__unused completion
 {
     if (![uri hasPrefix:@"color://?"])
         return nil;

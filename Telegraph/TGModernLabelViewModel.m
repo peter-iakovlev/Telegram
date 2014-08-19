@@ -26,7 +26,7 @@
         if (font != NULL)
             _font = CFRetain(font);
         
-        [self setText:text maxWidth:maxWidth];
+        [self setText:text == nil ? @"" : text maxWidth:maxWidth];
     }
     return self;
 }
