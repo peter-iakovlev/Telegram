@@ -13,12 +13,9 @@
 
 #import <pop/POP.h>
 
-#import "TGMessageImageViewOverlayView.h"
-
 @interface TGModernGalleryZoomableItemView () <UIScrollViewDelegate>
-{
-    TGMessageImageViewOverlayView *_progressView;
-}
+
+@property (nonatomic, strong) UIView *internalContainerView;
 
 @end
 
@@ -29,12 +26,18 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        _scrollView = [[TGModernGalleryZoomableScrollView alloc] initWithFrame:self.bounds];
+        _internalContainerView = [[UIView alloc] initWithFrame:self.bounds];
+        [self addSubview:_internalContainerView];
+        
+        _containerView = [[UIView alloc] initWithFrame:_internalContainerView.bounds];
+        [_internalContainerView addSubview:_containerView];
+        
+        _scrollView = [[TGModernGalleryZoomableScrollView alloc] initWithFrame:_containerView.bounds];
         _scrollView.delegate = self;
         _scrollView.showsHorizontalScrollIndicator = false;
         _scrollView.showsVerticalScrollIndicator = false;
         _scrollView.clipsToBounds = false;
-        [self addSubview:_scrollView];
+        [_containerView addSubview:_scrollView];
         
         __weak TGModernGalleryZoomableItemView *weakSelf = self;
         
@@ -102,6 +105,9 @@
 {
     [super setFrame:frame];
     
+    _internalContainerView.frame = self.bounds;
+    _containerView.frame = _internalContainerView.bounds;
+    
     CGSize contentSize = [self contentSize];
     if (!CGSizeEqualToSize(_scrollView.contentSize, contentSize) || !CGSizeEqualToSize(frame.size, _scrollView.frame.size))
     {
@@ -115,11 +121,6 @@
         
         [self adjustZoom];
         _scrollView.zoomScale = _scrollView.normalZoomScale;
-    }
-    
-    if (_progressView != nil)
-    {
-        _progressView.frame = (CGRect){{CGFloor((frame.size.width - _progressView.frame.size.width) / 2.0f), CGFloor((frame.size.height - _progressView.frame.size.height) / 2.0f)}, _progressView.frame.size};
     }
 }
 
@@ -208,43 +209,6 @@
     else
         [_scrollView setZoomScale:_scrollView.normalZoomScale animated:true];
     [TGHacks setAnimationDurationFactor:1.0f];
-}
-
-- (void)setProgressVisible:(bool)progressVisible value:(float)value animated:(bool)animated
-{
-    if (progressVisible && _progressView == nil)
-    {
-        _progressView = [[TGMessageImageViewOverlayView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 50.0f, 50.0f)];
-        _progressView.userInteractionEnabled = false;
-        
-        _progressView.frame = (CGRect){{CGFloor((self.frame.size.width - _progressView.frame.size.width) / 2.0f), CGFloor((self.frame.size.height - _progressView.frame.size.height) / 2.0f)}, _progressView.frame.size};
-    }
-    
-    if (progressVisible)
-    {
-        if (_progressView.superview == nil)
-            [self addSubview:_progressView];
-        
-        _progressView.alpha = 1.0f;
-    }
-    else if (_progressView.superview != nil)
-    {
-        if (animated)
-        {
-            [UIView animateWithDuration:0.3 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
-            {
-                _progressView.alpha = 0.0f;
-            } completion:^(BOOL finished)
-            {
-                if (finished)
-                    [_progressView removeFromSuperview];
-            }];
-        }
-        else
-            [_progressView removeFromSuperview];
-    }
-    
-    [_progressView setProgress:value cancelEnabled:false animated:animated];
 }
 
 @end

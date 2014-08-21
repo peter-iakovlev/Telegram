@@ -19,7 +19,7 @@
 
 - (void)willBecomeRecycled
 {
-    [self prepareForRecycle:nil];
+    [self prepareForRecycle];
 }
 
 - (NSString *)viewStateIdentifier

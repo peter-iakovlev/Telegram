@@ -16,8 +16,11 @@
 #import "TGModernGalleryImageItemImageView.h"
 #import "TGModernGalleryZoomableScrollView.h"
 
+#import "TGMessageImageViewOverlayView.h"
+
 @interface TGModernGalleryImageItemView ()
 {
+    TGMessageImageViewOverlayView *_progressView;
 }
 
 @end
@@ -88,7 +91,59 @@
 
 - (UIView *)transitionView
 {
-    return _imageView;
+    return self.containerView;
+}
+
+- (CGRect)transitionViewContentRect
+{
+    return [_imageView convertRect:_imageView.bounds toView:[self transitionView]];
+}
+
+- (void)setFrame:(CGRect)frame
+{
+    [super setFrame:frame];
+    
+    if (_progressView != nil)
+    {
+        _progressView.frame = (CGRect){{CGFloor((frame.size.width - _progressView.frame.size.width) / 2.0f), CGFloor((frame.size.height - _progressView.frame.size.height) / 2.0f)}, _progressView.frame.size};
+    }
+}
+
+- (void)setProgressVisible:(bool)progressVisible value:(float)value animated:(bool)animated
+{
+    if (progressVisible && _progressView == nil)
+    {
+        _progressView = [[TGMessageImageViewOverlayView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 50.0f, 50.0f)];
+        _progressView.userInteractionEnabled = false;
+        
+        _progressView.frame = (CGRect){{CGFloor((self.frame.size.width - _progressView.frame.size.width) / 2.0f), CGFloor((self.frame.size.height - _progressView.frame.size.height) / 2.0f)}, _progressView.frame.size};
+    }
+    
+    if (progressVisible)
+    {
+        if (_progressView.superview == nil)
+            [self.containerView addSubview:_progressView];
+        
+        _progressView.alpha = 1.0f;
+    }
+    else if (_progressView.superview != nil)
+    {
+        if (animated)
+        {
+            [UIView animateWithDuration:0.3 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
+             {
+                 _progressView.alpha = 0.0f;
+             } completion:^(BOOL finished)
+             {
+                 if (finished)
+                     [_progressView removeFromSuperview];
+             }];
+        }
+        else
+            [_progressView removeFromSuperview];
+    }
+    
+    [_progressView setProgress:value cancelEnabled:false animated:animated];
 }
 
 @end

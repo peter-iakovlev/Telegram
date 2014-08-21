@@ -2,7 +2,9 @@
 
 #import "TGImageView.h"
 
-@interface TGModernMediaListThumbnailItemView ()
+#import "TGModernGalleryTransitionView.h"
+
+@interface TGModernMediaListThumbnailItemView () <TGModernGalleryTransitionView>
 {
     TGImageView *_imageView;
     NSString *_imageUri;
@@ -24,6 +26,11 @@
         [self addSubview:_imageView];
     }
     return self;
+}
+
+- (UIImage *)transitionImage
+{
+    return _imageView.image;
 }
 
 - (void)setIsHidden:(bool)isHidden

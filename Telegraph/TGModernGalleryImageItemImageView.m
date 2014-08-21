@@ -1,5 +1,9 @@
 #import "TGModernGalleryImageItemImageView.h"
 
+@interface TGModernGalleryImageItemImageView ()
+
+@end
+
 @implementation TGModernGalleryImageItemImageView
 
 - (void)performProgressUpdate:(float)progress

@@ -15,6 +15,7 @@
 #import "TGModernGalleryItem.h"
 #import "TGModernGalleryScrollView.h"
 #import "TGModernGalleryItemView.h"
+#import "TGModernGalleryTransitionView.h"
 
 #import "TGModernGalleryContainerView.h"
 #import "TGModernGalleryInterfaceView.h"
@@ -253,6 +254,7 @@
         {
             UIView *transitionOutToView = nil;
             UIView *transitionOutFromView = nil;
+            CGRect transitionOutFromViewContentRect = CGRectZero;
             
             id<TGModernGalleryItem> focusItem = nil;
             if ([strongSelf currentItemIndex] < strongSelf.model.items.count)
@@ -267,6 +269,7 @@
                     if ([itemView.item isEqual:focusItem])
                     {
                         transitionOutFromView = [itemView transitionView];
+                        transitionOutFromViewContentRect = [itemView transitionViewContentRect];
                         break;
                     }
                 }
@@ -274,7 +277,7 @@
             
             if (transitionOutFromView != nil && transitionOutToView != nil)
             {
-                [strongSelf animateTransitionOutFromView:transitionOutFromView toView:transitionOutToView];
+                [strongSelf animateTransitionOutFromView:transitionOutFromView fromViewContentRect:transitionOutFromViewContentRect toView:transitionOutToView velocity:CGPointMake(0.0f, velocity * 3.8f)];
                 [strongSelf->_view transitionOutWithDuration:0.2];
                 [strongSelf->_view.interfaceView animateTransitionOutWithDuration:0.2];
             }
@@ -303,6 +306,7 @@
     
     UIView *transitionInFromView = nil;
     UIView *transitionInToView = nil;
+    CGRect transitionInToViewContentRect = CGRectMake(0.0f, 0.0f, 1.0f, 1.0f);
     if (_beginTransitionIn && _model.focusItem != nil)
     {
         TGModernGalleryItemView *itemView = nil;
@@ -325,13 +329,15 @@
             if ([itemView.item isEqual:_model.focusItem])
             {
                 transitionInToView = [itemView transitionView];
+                transitionInToViewContentRect = [itemView transitionViewContentRect];
+                
                 break;
             }
         }
     }
     
     if (transitionInFromView != nil && transitionInToView != nil)
-        [self animateTransitionInFromView:transitionInFromView toView:transitionInToView];
+        [self animateTransitionInFromView:transitionInFromView toView:transitionInToView toViewContentRect:transitionInToViewContentRect];
     else if (_finishedTransitionIn && _model.focusItem != nil)
     {
         TGModernGalleryItemView *itemView = nil;
@@ -401,14 +407,25 @@
     return nil;
 }
 
-- (CGRect)convertFrameOfView:(UIView *)view toView:(UIView *)toView outRotationZ:(CGFloat *)outRotationZ
+static CGRect adjustFrameForOriginalSubframe(CGRect originalFrame, CGRect originalSubframe, CGRect frame)
+{
+    CGFloat widthFactor = frame.size.width / originalSubframe.size.width;
+    CGFloat heightFactor = frame.size.height / originalSubframe.size.height;
+    
+    CGRect adjustedFrame = CGRectMake(frame.origin.x - originalSubframe.origin.x * widthFactor, frame.origin.y - originalSubframe.origin.y * heightFactor, originalFrame.size.width * widthFactor, originalFrame.size.height * heightFactor);
+    
+    return adjustedFrame;
+}
+
+- (CGRect)convertFrameOfView:(UIView *)view fromSubframe:(CGRect)fromSubframe toView:(UIView *)toView toSubframe:(CGRect)toSubframe outRotationZ:(CGFloat *)outRotationZ
 {
     if (view == toView)
         return view.bounds;
     
     CGFloat sourceWindowRotation = 0.0f;
     
-    CGRect frame = (CGRect){CGPointZero, view.frame.size};
+    CGRect frame = fromSubframe;
+    
     UIView *currentView = view;
     while (currentView != nil)
     {
@@ -455,6 +472,8 @@
         subview = [self subviewOfView:subview containingView:toView];
     }
     
+    frame = adjustFrameForOriginalSubframe(toView.frame, toSubframe, frame);
+    
     if (outRotationZ != NULL)
         *outRotationZ = 0.0f;
     
@@ -466,7 +485,7 @@ static CGFloat transformRotation(CGAffineTransform transform)
     return (CGFloat)atan2(transform.b, transform.a);
 }
 
-- (void)animateView:(UIView *)view frameFrom:(CGRect)fromFrame to:(CGRect)toFrame rotationFrom:(CGFloat)fromRotation to:(CGFloat)toRotation completion:(void (^)(bool))completion
+- (void)animateView:(UIView *)view frameFrom:(CGRect)fromFrame to:(CGRect)toFrame velocity:(CGPoint)velocity rotationFrom:(CGFloat)fromRotation to:(CGFloat)toRotation bounciness:(CGFloat)bounciness completion:(void (^)(bool))completion
 {
     if (ABS(toRotation - fromRotation) > FLT_EPSILON)
     {
@@ -474,44 +493,61 @@ static CGFloat transformRotation(CGAffineTransform transform)
         rotationAnimation.fromValue = @(fromRotation);
         rotationAnimation.toValue = @(toRotation);
         rotationAnimation.springSpeed = 20;
-        rotationAnimation.springBounciness = 8;
+        rotationAnimation.springBounciness = bounciness;
         [view.layer pop_addAnimation:rotationAnimation forKey:@"layerTransitionRotation"];
     }
     
-    POPSpringAnimation *frameAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPViewFrame];
-    frameAnimation.fromValue = [NSValue valueWithCGRect:fromFrame];
-    frameAnimation.toValue = [NSValue valueWithCGRect:toFrame];
-    frameAnimation.springSpeed = 20;
-    frameAnimation.springBounciness = 8;
-    //frameAnimation.dynamicsFriction = 2;
-    //frameAnimation.dynamicsTension = 94;
-    frameAnimation.completionBlock = ^(__unused POPAnimation *animation, BOOL finished)
+    POPSpringAnimation *positionAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerPosition];
+    positionAnimation.fromValue = [NSValue valueWithCGPoint:CGPointMake(CGRectGetMidX(fromFrame), CGRectGetMidY(fromFrame))];
+    positionAnimation.toValue = [NSValue valueWithCGPoint:CGPointMake(CGRectGetMidX(toFrame), CGRectGetMidY(toFrame))];
+    positionAnimation.springSpeed = 20;
+    positionAnimation.springBounciness = bounciness;
+    positionAnimation.velocity = [NSValue valueWithCGPoint:velocity];
+    positionAnimation.completionBlock = ^(__unused POPAnimation *animation, BOOL finished)
     {
         if (completion)
             completion(finished);
     };
-    [view pop_addAnimation:frameAnimation forKey:@"layerTransitionFrame"];
+    [view.layer pop_addAnimation:positionAnimation forKey:@"layerTransitionPosition"];
+    
+    POPSpringAnimation *scaleAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerScaleXY];
+    scaleAnimation.fromValue = [NSValue valueWithCGPoint:CGPointMake(fromFrame.size.width / view.bounds.size.width, fromFrame.size.height/ view.bounds.size.height)];
+    scaleAnimation.toValue = [NSValue valueWithCGPoint:CGPointMake(toFrame.size.width / view.bounds.size.width, toFrame.size.height / view.bounds.size.height)];
+    scaleAnimation.springSpeed = 20;
+    scaleAnimation.springBounciness = bounciness;
+    [view.layer pop_addAnimation:scaleAnimation forKey:@"layerTransitionScale"];
 }
 
-- (void)animateTransitionInFromView:(UIView *)fromView toView:(UIView *)toView
+- (void)animateTransitionInFromView:(UIView *)fromView toView:(UIView *)toView toViewContentRect:(CGRect)toViewContentRect
 {
     UIView *fromScrollView = [self findScrollView:fromView];
     UIView *fromContainerView = fromScrollView.superview;
     
     CGFloat fromRotationZ = 0.0f;
-    CGRect fromFrame = [self convertFrameOfView:fromView toView:toView.superview outRotationZ:&fromRotationZ];
+    CGRect fromFrame = [self convertFrameOfView:fromView fromSubframe:(CGRect){CGPointZero, fromView.frame.size} toView:toView.superview toSubframe:[toView.superview convertRect:toViewContentRect fromView:toView] outRotationZ:&fromRotationZ];
     
     CGRect fromContainerFromFrame = [fromContainerView convertRect:fromView.bounds fromView:fromView];
     //CGRect fromContainerFromFrame = [self convertFrameOfView:fromView toView:fromContainerView outRotationZ:NULL];
-    CGRect fromContainerFrame = [self convertFrameOfView:toView toView:fromContainerView outRotationZ:NULL];
+    CGRect fromContainerFrame = [self convertFrameOfView:toView fromSubframe:toViewContentRect toView:fromContainerView toSubframe:(CGRect){CGPointZero, fromContainerView.frame.size} outRotationZ:NULL];
     
-    UIView *fromViewContainerCopy = [fromView snapshotViewAfterScreenUpdates:false];
+    UIView *fromViewContainerCopy = nil;
+    
+    if ([fromView conformsToProtocol:@protocol(TGModernGalleryTransitionView)])
+    {
+        UIImage *transitionImage = [(id<TGModernGalleryTransitionView>)fromView transitionImage];
+        if (transitionImage != nil)
+            fromViewContainerCopy = [[UIImageView alloc] initWithImage:transitionImage];
+    }
+    
+    if (fromViewContainerCopy == nil)
+        fromViewContainerCopy = [fromView snapshotViewAfterScreenUpdates:false];
+    
     fromViewContainerCopy.frame = fromContainerFromFrame;
     [fromContainerView insertSubview:fromViewContainerCopy aboveSubview:fromScrollView];
     
     __weak TGModernGalleryController *weakSelf = self;
     self.view.userInteractionEnabled = false;
-    [self animateView:toView frameFrom:fromFrame to:toView.frame rotationFrom:fromRotationZ to:0.0f completion:^(bool __unused finished)
+    [self animateView:toView frameFrom:fromFrame to:toView.frame velocity:CGPointZero rotationFrom:fromRotationZ to:0.0f bounciness:5.5f completion:^(bool __unused finished)
     {
         __strong TGModernGalleryController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -542,18 +578,12 @@ static CGFloat transformRotation(CGAffineTransform transform)
         }
     }];
     
-    POPSpringAnimation *fromContainerViewAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPViewFrame];
-    fromContainerViewAnimation.fromValue = [NSValue valueWithCGRect:fromViewContainerCopy.frame];
-    fromContainerViewAnimation.toValue = [NSValue valueWithCGRect:fromContainerFrame];
-    fromContainerViewAnimation.springSpeed = 20;
-    fromContainerViewAnimation.springBounciness = 8;
     __weak UIView *weakFromViewContainerCopy = fromViewContainerCopy;
-    fromContainerViewAnimation.completionBlock = ^(__unused POPAnimation *animation, __unused BOOL finished)
+    [self animateView:fromViewContainerCopy frameFrom:fromViewContainerCopy.frame to:fromContainerFrame velocity:CGPointZero rotationFrom:0.0f to:0.0f bounciness:5.5f completion:^(__unused bool finished)
     {
         __strong UIView *strongFromViewContainerCopy = weakFromViewContainerCopy;
         [strongFromViewContainerCopy removeFromSuperview];
-    };
-    [fromViewContainerCopy pop_addAnimation:fromContainerViewAnimation forKey:@"transitionInSpring"];
+    }];
     
     toView.alpha = 0.0f;
     
@@ -565,31 +595,27 @@ static CGFloat transformRotation(CGAffineTransform transform)
     [toView pop_addAnimation:toViewAlphaAnimation forKey:@"transitionInAlpha"];
 }
 
-- (void)animateTransitionOutFromView:(UIView *)fromView toView:(UIView *)toView
+- (void)animateTransitionOutFromView:(UIView *)fromView fromViewContentRect:(CGRect)fromViewContentRect toView:(UIView *)toView velocity:(CGPoint)velocity
 {
     UIView *toScrollView = [self findScrollView:toView];
     UIView *toContainerView = toScrollView.superview;
     
     CGRect toFrame = [fromView.superview convertRect:[toView convertRect:toView.bounds toView:nil] fromView:nil];
+    toFrame = adjustFrameForOriginalSubframe(fromView.frame, fromViewContentRect, toFrame);
     
     CGRect toContainerFrame = [toContainerView convertRect:toView.bounds fromView:toView];
-    CGRect toContainerFromFrame = [toContainerView convertRect:[fromView.superview convertRect:fromView.frame toView:nil] fromView:nil];
+    CGRect toContainerFromFrame = [toContainerView convertRect:[fromView convertRect:fromViewContentRect toView:nil] fromView:nil];
     
-    POPSpringAnimation *fromViewAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPViewFrame];
-    fromViewAnimation.fromValue = [NSValue valueWithCGRect:fromView.frame];
-    fromViewAnimation.toValue = [NSValue valueWithCGRect:toFrame];
-    fromViewAnimation.springSpeed = 20;
-    fromViewAnimation.springBounciness = 5;
     __weak TGModernGalleryController *weakSelf = self;
-    fromViewAnimation.completionBlock = ^(__unused POPAnimation *animation, __unused BOOL finished)
+    self.view.userInteractionEnabled = false;
+    [self animateView:fromView frameFrom:fromView.frame to:toFrame velocity:velocity rotationFrom:0.0f to:0.0f bounciness:5.5f completion:^(__unused bool finished)
     {
         __strong TGModernGalleryController *strongSelf = weakSelf;
         if (strongSelf != nil)
         {
             [strongSelf dismiss];
         }
-    };
-    [fromView pop_addAnimation:fromViewAnimation forKey:@"transitionOutSpring"];
+    }];
     
     POPBasicAnimation *fromViewAlphaAnimation = [POPBasicAnimation animationWithPropertyNamed:kPOPViewAlpha];
     fromViewAlphaAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
@@ -598,31 +624,38 @@ static CGFloat transformRotation(CGAffineTransform transform)
     fromViewAlphaAnimation.toValue = @(0.0);
     [fromView pop_addAnimation:fromViewAlphaAnimation forKey:@"transitionOutAlpha"];
     
-    CGFloat toViewAlpha = toView.alpha;
-    bool toViewHidden = toView.hidden;
-    CGRect toViewFrame = toView.frame;
-    toView.alpha = 1.0f;
-    toView.hidden = false;
-    toView.frame = CGRectOffset(toViewFrame, 1000.0f, 0.0f);
-    UIView *toViewCopy = [toView snapshotViewAfterScreenUpdates:true];
-    toView.alpha = toViewAlpha;
-    toView.hidden = toViewHidden;
-    toView.frame = toViewFrame;
+    UIView *toViewCopy = nil;
+    
+    if ([toView conformsToProtocol:@protocol(TGModernGalleryTransitionView)])
+    {
+        UIImage *transitionImage = [(id<TGModernGalleryTransitionView>)toView transitionImage];
+        if (transitionImage != nil)
+            toViewCopy = [[UIImageView alloc] initWithImage:transitionImage];
+    }
+    
+    if (toViewCopy == nil)
+    {
+        CGFloat toViewAlpha = toView.alpha;
+        bool toViewHidden = toView.hidden;
+        CGRect toViewFrame = toView.frame;
+        toView.alpha = 1.0f;
+        toView.hidden = false;
+        toView.frame = CGRectOffset(toViewFrame, 1000.0f, 0.0f);
+        toViewCopy = [toView snapshotViewAfterScreenUpdates:true];
+        toView.alpha = toViewAlpha;
+        toView.hidden = toViewHidden;
+        toView.frame = toViewFrame;
+    }
+    
     toViewCopy.frame = toContainerFromFrame;
     [toContainerView insertSubview:toViewCopy aboveSubview:toScrollView];
     
-    POPSpringAnimation *toViewAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPViewFrame];
-    toViewAnimation.fromValue = [NSValue valueWithCGRect:toViewCopy.frame];
-    toViewAnimation.toValue = [NSValue valueWithCGRect:toContainerFrame];
-    toViewAnimation.springSpeed = 20;
-    toViewAnimation.springBounciness = 5;
     __weak UIView *weakToViewCopy = toViewCopy;
-    toViewAnimation.completionBlock = ^(__unused POPAnimation *animation, __unused BOOL finished)
+    [self animateView:toViewCopy frameFrom:toViewCopy.frame to:toContainerFrame velocity:velocity rotationFrom:0.0f to:0.0f bounciness:5.5f completion:^(__unused bool finished)
     {
         __strong UIView *strongToViewCopy = weakToViewCopy;
         [strongToViewCopy removeFromSuperview];
-    };
-    [toViewCopy pop_addAnimation:toViewAnimation forKey:@"transitionOutSpring"];
+    }];
     
     if (iosMajorVersion() >= 7)
     {

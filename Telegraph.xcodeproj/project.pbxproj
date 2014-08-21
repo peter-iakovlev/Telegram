@@ -672,6 +672,9 @@
 		D00733D115B1B9610091EBEE /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D00733D015B1B9610091EBEE /* CoreVideo.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		D00733D515B1B96C0091EBEE /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D00733D415B1B96C0091EBEE /* AVFoundation.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		D00733ED15B6DBF00091EBEE /* TGApplyStateRequestBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = D00733EC15B6DBF00091EBEE /* TGApplyStateRequestBuilder.m */; };
+		D0088D6019A54A1000ADABFA /* TGUpdateMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = D0088D5F19A54A1000ADABFA /* TGUpdateMessage.m */; };
+		D0088D6319A54A2800ADABFA /* TGUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = D0088D6219A54A2800ADABFA /* TGUpdate.m */; };
+		D0088D6719A54ADF00ADABFA /* TGDatacenterContext.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0088D6619A54ADF00ADABFA /* TGDatacenterContext.mm */; };
 		D00C7196193F3FD40005349C /* ModernBubbleOutgoingPartialHighlightedPad@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D00C7192193F3FD40005349C /* ModernBubbleOutgoingPartialHighlightedPad@2x.png */; };
 		D00C7197193F3FD40005349C /* ModernBubbleOutgoingFullHighlightedPad@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D00C7193193F3FD40005349C /* ModernBubbleOutgoingFullHighlightedPad@2x.png */; };
 		D00C7198193F3FD40005349C /* ModernBubbleIncomingPartialHighlightedPad@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D00C7194193F3FD40005349C /* ModernBubbleIncomingPartialHighlightedPad@2x.png */; };
@@ -2142,6 +2145,13 @@
 		D00733D415B1B96C0091EBEE /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		D00733EB15B6DBEF0091EBEE /* TGApplyStateRequestBuilder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGApplyStateRequestBuilder.h; sourceTree = "<group>"; };
 		D00733EC15B6DBF00091EBEE /* TGApplyStateRequestBuilder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGApplyStateRequestBuilder.m; sourceTree = "<group>"; };
+		D0088D5E19A54A1000ADABFA /* TGUpdateMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGUpdateMessage.h; sourceTree = "<group>"; };
+		D0088D5F19A54A1000ADABFA /* TGUpdateMessage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGUpdateMessage.m; sourceTree = "<group>"; };
+		D0088D6119A54A2800ADABFA /* TGUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGUpdate.h; sourceTree = "<group>"; };
+		D0088D6219A54A2800ADABFA /* TGUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGUpdate.m; sourceTree = "<group>"; };
+		D0088D6519A54ADF00ADABFA /* TGDatacenterContext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGDatacenterContext.h; sourceTree = "<group>"; };
+		D0088D6619A54ADF00ADABFA /* TGDatacenterContext.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGDatacenterContext.mm; sourceTree = "<group>"; };
+		D0088D6819A565F300ADABFA /* TGModernGalleryTransitionView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryTransitionView.h; sourceTree = "<group>"; };
 		D00C7192193F3FD40005349C /* ModernBubbleOutgoingPartialHighlightedPad@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "ModernBubbleOutgoingPartialHighlightedPad@2x.png"; path = "Resources/ModernBubbleOutgoingPartialHighlightedPad@2x.png"; sourceTree = "<group>"; };
 		D00C7193193F3FD40005349C /* ModernBubbleOutgoingFullHighlightedPad@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "ModernBubbleOutgoingFullHighlightedPad@2x.png"; path = "Resources/ModernBubbleOutgoingFullHighlightedPad@2x.png"; sourceTree = "<group>"; };
 		D00C7194193F3FD40005349C /* ModernBubbleIncomingPartialHighlightedPad@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "ModernBubbleIncomingPartialHighlightedPad@2x.png"; path = "Resources/ModernBubbleIncomingPartialHighlightedPad@2x.png"; sourceTree = "<group>"; };
@@ -2690,6 +2700,7 @@
 		D0DAA484197496240036E709 /* Icon-76.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-76.png"; sourceTree = "<group>"; };
 		D0DB965918DC85030013B9DC /* TGDownloadLocalizationActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGDownloadLocalizationActor.h; sourceTree = "<group>"; };
 		D0DB965A18DC85030013B9DC /* TGDownloadLocalizationActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGDownloadLocalizationActor.m; sourceTree = "<group>"; };
+		D0DC8BCB19A3C45600DBF43E /* TGModernGalleryZoomableItemViewContent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryZoomableItemViewContent.h; sourceTree = "<group>"; };
 		D0E2ABD618AFAB65008EDB82 /* libMtProtoKit_Legacy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libMtProtoKit_Legacy.a; path = "../MtProtoKit/build/Debug-iphoneos/libMtProtoKit_Legacy.a"; sourceTree = "<group>"; };
 		D0E3C61519633E2E00B133E0 /* TGAlternateBroadcastListsController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGAlternateBroadcastListsController.h; sourceTree = "<group>"; };
 		D0E3C61619633E2E00B133E0 /* TGAlternateBroadcastListsController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGAlternateBroadcastListsController.mm; sourceTree = "<group>"; };
@@ -3959,6 +3970,7 @@
 				D0498FD3197886AE0080A679 /* TGModernGalleryDefaultFooterView.h */,
 				D0CB149B199A791C00EBCEA7 /* TGModernGalleryDefaultHeaderView.h */,
 				D0CB14A1199BD24E00EBCEA7 /* TGModernGalleryDefaultFooterAccessoryView.h */,
+				D0088D6819A565F300ADABFA /* TGModernGalleryTransitionView.h */,
 				939ECA56188EDE7F004ABAB7 /* Zoomable */,
 				939ECA4F188EDAB2004ABAB7 /* Image */,
 				D046966218A409CE009764B2 /* Video */,
@@ -4004,6 +4016,7 @@
 				D0876FE819702474005740CE /* TGModernGalleryZoomableScrollView.m */,
 				D0498FC7197828580080A679 /* TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.h */,
 				D0498FC8197828580080A679 /* TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.m */,
+				D0DC8BCB19A3C45600DBF43E /* TGModernGalleryZoomableItemViewContent.h */,
 			);
 			name = Zoomable;
 			sourceTree = "<group>";
@@ -4416,6 +4429,28 @@
 				D0A3F30D195D9812009E0ACD /* TGBroadcastConversationTitlePanel.m */,
 			);
 			name = Broadcast;
+			sourceTree = "<group>";
+		};
+		D0088D5419A549FB00ADABFA /* Update Service */ = {
+			isa = PBXGroup;
+			children = (
+				D0088D5E19A54A1000ADABFA /* TGUpdateMessage.h */,
+				D0088D5F19A54A1000ADABFA /* TGUpdateMessage.m */,
+				D0088D6119A54A2800ADABFA /* TGUpdate.h */,
+				D0088D6219A54A2800ADABFA /* TGUpdate.m */,
+				D026205C18A8E95200A41CC8 /* TGUpdateMessageService.h */,
+				D026205D18A8E95200A41CC8 /* TGUpdateMessageService.m */,
+			);
+			name = "Update Service";
+			sourceTree = "<group>";
+		};
+		D0088D6419A54AC500ADABFA /* Legacy */ = {
+			isa = PBXGroup;
+			children = (
+				D0088D6519A54ADF00ADABFA /* TGDatacenterContext.h */,
+				D0088D6619A54ADF00ADABFA /* TGDatacenterContext.mm */,
+			);
+			name = Legacy;
 			sourceTree = "<group>";
 		};
 		D01526C618FB2E1D00656312 /* Image View */ = {
@@ -5796,6 +5831,8 @@
 		D088061A156EA28500311537 /* Network */ = {
 			isa = PBXGroup;
 			children = (
+				D0088D6419A54AC500ADABFA /* Legacy */,
+				D0088D5419A549FB00ADABFA /* Update Service */,
 				D026206318A938CF00A41CC8 /* TGTelegramNetworking.h */,
 				D026206418A938CF00A41CC8 /* TGTelegramNetworking.m */,
 				D05A849818AFC871007F1076 /* TGTLSerialization.h */,
@@ -5807,8 +5844,6 @@
 				936158B9161245EB00F5DB7C /* TGTelegraphProtocols.h */,
 				93B0705A161CB45B0054C20F /* TGRawHttpRequest.h */,
 				93B0705B161CB45D0054C20F /* TGRawHttpRequest.m */,
-				D026205C18A8E95200A41CC8 /* TGUpdateMessageService.h */,
-				D026205D18A8E95200A41CC8 /* TGUpdateMessageService.m */,
 				D05017E618AE397F0052B7D1 /* TGNetworkWorker.h */,
 				D05017E718AE397F0052B7D1 /* TGNetworkWorker.m */,
 				D0BEC9CE18B2384000D9A92D /* TGKeychainImport.h */,
@@ -7391,6 +7426,7 @@
 				9341B01818512B6700D1195B /* TGAlertSoundController.m in Sources */,
 				9341348E18551D3300480294 /* TGWallpaperItemCell.m in Sources */,
 				93AB299416131D1800BC45EF /* TGConversationUsersTypingActor.m in Sources */,
+				D0088D6719A54ADF00ADABFA /* TGDatacenterContext.mm in Sources */,
 				93C43B2B18A05B7300165AE1 /* TGPreparedLocalAudioMessage.m in Sources */,
 				D0CB14A4199CEF8F00EBCEA7 /* TGGenericPeerMediaGalleryActionsAccessoryView.m in Sources */,
 				93AD55DD186308A90043B212 /* TGModernConversationEmptyListPlaceholderView.m in Sources */,
@@ -7532,10 +7568,12 @@
 				93753ECC16793F46008CC2C5 /* TGLoginCountriesController.m in Sources */,
 				93064DF318325E990024C05A /* TGGroupModernConversationCompanion.m in Sources */,
 				930808EF185A8B0B00E62B42 /* TGCreateContactController.m in Sources */,
+				D0088D6019A54A1000ADABFA /* TGUpdateMessage.m in Sources */,
 				93753ED116794C98008CC2C5 /* TGLoginCountryCell.m in Sources */,
 				932515E1167AB130005C421F /* TGConversationHistoryAsyncRequestActor.m in Sources */,
 				93DBE6BE18BFFAEE00AA1623 /* TGNativeAudioPlayer.m in Sources */,
 				D0C925A9194A024000E629CA /* animations.c in Sources */,
+				D0088D6319A54A2800ADABFA /* TGUpdate.m in Sources */,
 				D073B9D0192B876500BBD071 /* TGConversationListControllerActor.m in Sources */,
 				932515E7167D3A69005C421F /* TGMessagesSearchActor.m in Sources */,
 				9384321118568199000CD961 /* TGPhonebookUserInfoController.m in Sources */,

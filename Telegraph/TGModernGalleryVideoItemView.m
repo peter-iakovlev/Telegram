@@ -132,11 +132,9 @@
         
         _imageView = [[TGImageView alloc] init];
         _imageView.contentMode = UIViewContentModeScaleToFill;
-        _imageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [_contentView addSubview:_imageView];
         
         _playerView = [[UIView alloc] init];
-        _playerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [_contentView addSubview:_playerView];
         
         _actionButton = [[TGModernButton alloc] initWithFrame:(CGRect){CGPointZero, {50.0f, 50.0f}}];
@@ -241,6 +239,8 @@
     _containerView.transform = CGAffineTransformIdentity;
     _containerView.frame = (CGRect){CGPointZero, frame.size};
     _containerView.transform = transform;
+    
+    _contentView.frame = (CGRect){CGPointZero, frame.size};
 }
 
 - (void)prepareForRecycle
@@ -572,12 +572,7 @@
         }
         
         CGRect playerFrame = CGRectMake(CGFloor((self.bounds.size.width - fittedSize.width) / 2.0f), CGFloor((self.bounds.size.height - fittedSize.height) / 2.0f), fittedSize.width, fittedSize.height);
-        CGRect playerBounds = (CGRect){CGPointZero, playerFrame.size};
-        
-        //if (![_contentView pop_animationForKey:@"transitionInSpring"] && ![_contentView pop_animationForKey:@"transitionOutSpring"] && !CGRectEqualToRect(_contentView.frame, playerFrame))
-        {
-            _contentView.frame = playerFrame;
-        }
+        CGRect playerBounds = playerFrame;
         
         if (!CGRectEqualToRect(_imageView.frame, playerBounds))
         {
@@ -700,6 +695,11 @@
 - (UIView *)transitionView
 {
     return _contentView;
+}
+
+- (CGRect)transitionViewContentRect
+{
+    return [_contentView convertRect:_playerView.bounds fromView:_playerView];
 }
 
 - (void)setIsVisible:(bool)isVisible

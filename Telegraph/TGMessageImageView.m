@@ -16,6 +16,8 @@
 #import "TGMessageImageAdditionalDataView.h"
 #import "TGStaticBackdropImageData.h"
 
+#import "TGModernGalleryTransitionView.h"
+
 static const CGFloat circleDiameter = 50.0f;
 
 static const CGFloat timestampWidth = 100.0f;
@@ -28,7 +30,7 @@ static const CGFloat additionalDataHeight = 18.0f;
 static const CGFloat additionalDataLeftPadding = 6.0f;
 static const CGFloat additionalDataTopPadding = 6.0f;
 
-@interface TGMessageImageViewContainer ()
+@interface TGMessageImageViewContainer () <TGModernGalleryTransitionView>
 {
     TGMessageImageViewTimestampView *_timestampView;
 }
@@ -378,6 +380,27 @@ static const CGFloat additionalDataTopPadding = 6.0f;
 - (void)willBecomeRecycled
 {
     [_imageView willBecomeRecycled];
+}
+
+- (UIImage *)transitionImage
+{
+    UIGraphicsBeginImageContextWithOptions(self.frame.size, false, 0.0f);
+    if ([UIView instancesRespondToSelector:@selector(drawViewHierarchyInRect:afterScreenUpdates:)])
+    {
+        [_imageView drawViewHierarchyInRect:_imageView.frame afterScreenUpdates:false];
+        [_timestampView drawViewHierarchyInRect:_timestampView.frame afterScreenUpdates:false];
+    }
+    else
+    {
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        [_imageView.layer renderInContext:context];
+        CGContextTranslateCTM(context, _timestampView.frame.origin.x, _timestampView.frame.origin.y);
+        [_timestampView.layer renderInContext:context];
+    }
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
 }
 
 @end

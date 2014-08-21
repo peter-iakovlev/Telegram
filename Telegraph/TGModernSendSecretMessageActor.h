@@ -8,17 +8,13 @@
 
 #import "TGModernSendMessageActor.h"
 
-#ifdef __cplusplus
-#import "TGEncryption.h"
-#endif
+#import <MTProtoKit/MTMessageEncryptionKey.h>
 
 #import "TL/TLMetaScheme.h"
 
 @interface TGModernSendSecretMessageActor : TGModernSendMessageActor
 
-#ifdef __cplusplus
-+ (MessageKeyData)generateMessageKeyData:(NSData *)messageKey incoming:(bool)incoming key:(NSData *)key;
-#endif
++ (MTMessageEncryptionKey *)generateMessageKeyData:(NSData *)messageKey incoming:(bool)incoming key:(NSData *)key;
 + (NSData *)prepareEncryptedMessage:(NSString *)text media:(TLDecryptedMessageMedia *)media randomId:(int64_t)randomId key:(NSData *)key keyId:(int64_t)keyId;
 + (NSData *)encryptMessage:(NSData *)serializedMessage key:(NSData *)key keyId:(int64_t)keyId;
 

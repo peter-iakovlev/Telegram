@@ -8,8 +8,6 @@
 #import "TGGlobalContext.h"
 #import "TGContactsContext.h"
 
-#import "TGTransport.h"
-
 #import "UIDevice+PlatformInfo.h"
 
 #import <thirdparty/AFNetworking/AFNetworking.h>
@@ -27,11 +25,6 @@
 #import "TGDatabase.h"
 
 #import "TGUser+Telegraph.h"
-
-#import "TGDatacenterHandshakeActor.h"
-#import "TGExportDatacenterAuthorizationActor.h"
-#import "TGUpdateDatacenterDataActor.h"
-#import "TGFutureSaltsRequestActor.h"
 
 #import "TGLogoutRequestBuilder.h"
 #import "TGSendCodeRequestBuilder.h"
@@ -140,9 +133,6 @@
 #import "TGInterfaceAssets.h"
 
 #import "TGInterfaceManager.h"
-
-#import "TGSession.h"
-#import "TGTcpTransport.h"
 
 #import "TGModernSendCommonMessageActor.h"
 #import "TGModernSendSecretMessageActor.h"
@@ -273,7 +263,7 @@ TGTelegraph *TGTelegraphInstance = nil;
 
 typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIterator;
 
-@interface TGTelegraph () <TGSessionDelegate>
+@interface TGTelegraph ()
 {
     std::map<int, TGUserPresence> _userPresenceToDispatch;
     std::map<int, std::pair<TGUser *, int> > _userDataToDispatch;
@@ -419,11 +409,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             NSURLCache *sharedCache = [[NSURLCache alloc] initWithMemoryCapacity:(256) diskCapacity:0 diskPath:nil];
             [NSURLCache setSharedURLCache:sharedCache];
 
-            [ASActor registerActorClass:[TGDatacenterHandshakeActor class]];
-            [ASActor registerActorClass:[TGExportDatacenterAuthorizationActor class]];
-            [ASActor registerActorClass:[TGUpdateDatacenterDataActor class]];
-            [ASActor registerActorClass:[TGFutureSaltsRequestActor class]];
-            
             [ASActor registerActorClass:[TGLogoutRequestBuilder class]];
             [ASActor registerActorClass:[TGSendCodeRequestBuilder class]];
             [ASActor registerActorClass:[TGSignInRequestBuilder class]];

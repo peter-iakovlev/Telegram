@@ -11,8 +11,6 @@
 
 #import "TGTelegraph.h"
 
-#import "TGSession.h"
-
 #import "TGInterfaceAssets.h"
 
 #import "TGRemoteImageView.h"
@@ -45,15 +43,6 @@
         sessionSection.title = @"Security";
         [_sectionList addObject:sessionSection];
         
-        TGActionMenuItem *currentSession = [[TGActionMenuItem alloc] initWithTitle:[[NSString alloc] initWithFormat:@"Session: 0x%llx", [[TGSession instance] currentDatacenterGenericSessionId]]];
-        currentSession.tag = 1;
-        [sessionSection.items addObject:currentSession];
-        
-        TGSwitchItem *debugSession = [[TGSwitchItem alloc] initWithTitle:@"Debug session"];
-        debugSession.isOn = (([[TGSession instance] currentDatacenterGenericSessionId] >> 48) & 0xffff) == 0xabcd;
-        debugSession.action = @selector(switchDebugSession);
-        [sessionSection.items addObject:debugSession];
-        
         TGMenuSection *accountSection = [[TGMenuSection alloc] init];
         accountSection.title = @"Account";
         [_sectionList addObject:accountSection];
@@ -82,20 +71,6 @@
         disableBackgroundItem.isOn = TGAppDelegateInstance.disableBackgroundMode;
         disableBackgroundItem.action = @selector(switchDisableBackground);
         [accountSection.items addObject:disableBackgroundItem];
-        
-        /*TGActionMenuItem *logoutItem = [[TGActionMenuItem alloc] initWithTitle:@"Logout"];
-        logoutItem.action = @selector(logoutButtonPressed);
-        [accountSection.items addObject:logoutItem];*/
-        
-        TGActionMenuItem *infoItem = [[TGActionMenuItem alloc] initWithTitle:[[NSString alloc] initWithFormat:@"State update fails: %d", [TGSession instance].stateConsistencyFails]];
-        [accountSection.items addObject:infoItem];
-        
-        TGActionMenuItem *infoSaltsItem = [[TGActionMenuItem alloc] initWithTitle:[[NSString alloc] initWithFormat:@"Salt fails: %d", [TGSession instance].saltFails]];
-        [accountSection.items addObject:infoSaltsItem];
-        
-        TGActionMenuItem *revokeItem = [[TGActionMenuItem alloc] initWithTitle:@"Clear other sessions"];
-        revokeItem.action = @selector(revokeButtonPressed);
-        [accountSection.items addObject:revokeItem];
 #endif
         
         TGMenuSection *miscSection = [[TGMenuSection alloc] init];
@@ -479,43 +454,6 @@
 - (void)mailComposeController:(MFMailComposeViewController *)__unused controller didFinishWithResult:(MFMailComposeResult)__unused result error:(NSError *)__unused error
 {
     [self dismissViewControllerAnimated:true completion:nil];
-}
-
-- (void)switchDebugSession
-{
-    [ActionStageInstance() dispatchOnStageQueue:^
-    {
-        int64_t currentSessionId = [[TGSession instance] switchToDebugSession:(([[TGSession instance] currentDatacenterGenericSessionId] >> 48) & 0xffff) != 0xabcd];
-        
-        dispatch_async(dispatch_get_main_queue(), ^
-        {
-            int sectionIndex = -1;
-            for (TGMenuSection *section in _sectionList)
-            {
-                sectionIndex++;
-                if (section.tag == 1)
-                {
-                    int itemIndex = -1;
-                    for (TGMenuItem *item in section.items)
-                    {
-                        itemIndex++;
-                        
-                        if (item.tag == 1)
-                        {
-                            ((TGActionMenuItem *)item).title = [[NSString alloc] initWithFormat:@"Session: 0x%llx", currentSessionId];
-                            
-                            TGActionMenuItemCell *actionCell = (TGActionMenuItemCell *)[_tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:itemIndex inSection:sectionIndex]];
-                            if (actionCell != nil)
-                                [actionCell setTitle:((TGActionMenuItem *)item).title];
-                            break;
-                        }
-                    }
-                    
-                    break;
-                }
-            }
-        });
-    }];
 }
 
 /*- (void)switchDisplayMids

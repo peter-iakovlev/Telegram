@@ -12,12 +12,11 @@
 
 @interface TGModernGalleryZoomableItemView : TGModernGalleryItemView
 
+@property (nonatomic, strong) UIView *containerView;
 @property (nonatomic, strong) TGModernGalleryZoomableScrollView *scrollView;
 
 - (CGSize)contentSize;
 - (UIView *)contentView;
-
-- (void)setProgressVisible:(bool)progressVisible value:(float)value animated:(bool)animated;
 
 - (void)reset;
 

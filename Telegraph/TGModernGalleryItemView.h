@@ -41,6 +41,7 @@
 - (UIView *)footerView;
 
 - (UIView *)transitionView;
+- (CGRect)transitionViewContentRect;
 
 - (bool)dismissControllerNowOrSchedule;
 

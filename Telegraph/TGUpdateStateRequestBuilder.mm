@@ -1529,10 +1529,10 @@ static bool _initialUpdatesScheduled = false;
         
         if (key != nil && keyId == localKeyId)
         {
-            MessageKeyData keyData = [TGModernSendSecretMessageActor generateMessageKeyData:messageKey incoming:false key:key];
+            MTMessageEncryptionKey *keyData = [TGModernSendSecretMessageActor generateMessageKeyData:messageKey incoming:false key:key];
             
             NSMutableData *messageData = [[encryptedMessage.bytes subdataWithRange:NSMakeRange(8 + 16, encryptedMessage.bytes.length - (8 + 16))] mutableCopy];
-            MTAesDecryptInplace(messageData, keyData.aesKey, keyData.aesIv);
+            MTAesDecryptInplace(messageData, keyData.key, keyData.iv);
             
             int32_t messageLength = 0;
             [messageData getBytes:&messageLength range:NSMakeRange(0, 4)];

@@ -40,6 +40,11 @@
     return nil;
 }
 
+- (CGRect)transitionViewContentRect
+{
+    return [self transitionView].bounds;
+}
+
 - (bool)dismissControllerNowOrSchedule
 {
     return true;

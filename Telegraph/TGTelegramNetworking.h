@@ -8,6 +8,19 @@
 
 #import <Foundation/Foundation.h>
 
+typedef enum {
+    TGRequestClassGeneric = 1,
+    TGRequestClassDownloadMedia = 2,
+    TGRequestClassUploadMedia = 4,
+    TGRequestClassEnableUnauthorized = 8,
+    TGRequestClassEnableMerging = 16,
+    TGRequestClassHidesActivityIndicator = 64,
+    TGRequestClassLargeMedia = 128,
+    TGRequestClassFailOnServerErrors = 256
+} TGRequestClass;
+
+#define TG_DEFAULT_DATACENTER_ID INT_MAX
+
 #define TGUseModernNetworking true//defined(DEBUG)
 
 @class MTContext;

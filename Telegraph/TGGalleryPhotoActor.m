@@ -8,7 +8,7 @@
 
 @interface TGGalleryPhotoActor () <ASWatcher>
 {
-    
+    float _progressValue;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -68,6 +68,13 @@
     [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/img/(download:%@)", uri] options:@{@"userProperties": userProperties, @"contentHints": @(TGRemoteImageContentHintLargeFile)} flags:0 watcher:self];
 }
 
+- (void)watcherJoined:(ASHandle *)watcherHandle options:(NSDictionary *)options waitingInActorQueue:(bool)waitingInActorQueue
+{
+    [super watcherJoined:watcherHandle options:options waitingInActorQueue:waitingInActorQueue];
+    
+    [watcherHandle receiveActorMessage:self.path messageType:@"progress" message:@(_progressValue)];
+}
+
 - (void)actorCompleted:(int)status path:(NSString *)path result:(id)__unused result
 {
     if ([path hasPrefix:@"/img/"])
@@ -85,6 +92,8 @@
     {
         if ([messageType isEqualToString:@"progress"])
         {
+            _progressValue = [message floatValue];
+            
             if (_progress)
                 _progress([message floatValue]);
         }

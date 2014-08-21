@@ -91,7 +91,10 @@
         }
         
         if (!completed)
-        {   
+        {
+            if (progress)
+                progress(0.0f);
+            
             NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://?", [TGGalleryPhotoDataSource uriPrefix]].length]];
             
             [ActionStageInstance() requestActor:path options:@{

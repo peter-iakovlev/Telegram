@@ -5,7 +5,6 @@
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
 #import <MTProtoKit/MTEncryption.h>
-#import "TGEncryption.h"
 #import "TLMetaClassStore.h"
 
 #import "TGImageUtils.h"
@@ -497,18 +496,11 @@
     [self _fail];
 }
 
-+ (MessageKeyData)generateMessageKeyData:(NSData *)messageKey incoming:(bool)incoming key:(NSData *)key
++ (MTMessageEncryptionKey *)generateMessageKeyData:(NSData *)messageKey incoming:(bool)incoming key:(NSData *)key
 {
-    MessageKeyData keyData;
-    
     NSData *authKey = key;
     if (authKey == nil || authKey.length == 0)
-    {
-        MessageKeyData keyData;
-        keyData.aesIv = nil;
-        keyData.aesKey = nil;
-        return keyData;
-    }
+        return nil;
     
     int x = incoming ? 8 : 0;
     
@@ -549,16 +541,14 @@
     [aesKey appendBytes:(((int8_t *)sha1_a.bytes)) length:8];
     [aesKey appendBytes:(((int8_t *)sha1_b.bytes) + 8) length:12];
     [aesKey appendBytes:(((int8_t *)sha1_c.bytes) + 4) length:12];
-    keyData.aesKey = [[NSData alloc] initWithData:aesKey];
     
     NSMutableData *aesIv = [[NSMutableData alloc] init];
     [aesIv appendBytes:(((int8_t *)sha1_a.bytes) + 8) length:12];
     [aesIv appendBytes:(((int8_t *)sha1_b.bytes)) length:8];
     [aesIv appendBytes:(((int8_t *)sha1_c.bytes) + 16) length:4];
     [aesIv appendBytes:(((int8_t *)sha1_d.bytes)) length:8];
-    keyData.aesIv = [[NSData alloc] initWithData:aesIv];
     
-    return keyData;
+    return [[MTMessageEncryptionKey alloc] initWithKey:[[NSData alloc] initWithData:aesKey] iv:[[NSData alloc] initWithData:aesIv]];
 }
 
 + (NSData *)prepareEncryptedMessage:(NSString *)text media:(TLDecryptedMessageMedia *)media randomId:(int64_t)randomId key:(NSData *)key keyId:(int64_t)keyId
@@ -603,15 +593,20 @@
         index++;
     }
     
-    MessageKeyData keyData = [self generateMessageKeyData:messageKey incoming:false key:key];
+    MTMessageEncryptionKey *keyData = [self generateMessageKeyData:messageKey incoming:false key:key];
     
-    MTAesEncryptInplace(decryptedBytes, keyData.aesKey, keyData.aesIv);
-    NSMutableData *data = [[NSMutableData alloc] init];
-    [data appendBytes:&keyId length:8];
-    [data appendData:messageKey];
-    [data appendData:decryptedBytes];
+    if (keyData != nil)
+    {
+        MTAesEncryptInplace(decryptedBytes, keyData.key, keyData.iv);
+        NSMutableData *data = [[NSMutableData alloc] init];
+        [data appendBytes:&keyId length:8];
+        [data appendData:messageKey];
+        [data appendData:decryptedBytes];
+        
+        return data;
+    }
     
-    return data;
+    return nil;
 }
 
 @end
