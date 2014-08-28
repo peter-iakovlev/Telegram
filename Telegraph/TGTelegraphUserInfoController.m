@@ -40,8 +40,11 @@
 #import "TGActionSheet.h"
 
 #import "TGRemoteImageView.h"
-#import "TGImageViewController.h"
-#import "TGTelegraphProfileImageViewCompanion.h"
+
+#import "TGOverlayControllerWindow.h"
+#import "TGModernGalleryController.h"
+#import "TGUserAvatarGalleryModel.h"
+#import "TGUserAvatarGalleryItem.h"
 
 #import "TGSynchronizeContactsActor.h"
 
@@ -1023,85 +1026,74 @@ static UIView *_findBackArrow(UIView *view)
             
             if (user != nil && user.photoUrlBig != nil && avatarView.currentImage != nil)
             {
-                UIImage *placeholder = [[TGRemoteImageView sharedCache] cachedImage:user.photoUrlSmall availability:TGCacheBoth];
+                TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
                 
-                if (placeholder == nil)
-                    placeholder = [avatarView currentImage];
+                modernGallery.model = [[TGUserAvatarGalleryModel alloc] initWithPeerId:_uid currentAvatarLegacyThumbnailImageUri:user.photoUrlSmall currentAvatarLegacyImageUri:user.photoUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
                 
-                TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
-                [imageInfo addImageWithSize:CGSizeMake(160, 160) url:user.photoUrlSmall];
-                [imageInfo addImageWithSize:CGSizeMake(640, 640) url:user.photoUrlBig];
+                __weak TGTelegraphUserInfoController *weakSelf = self;
                 
-                TGImageMediaAttachment *imageAttachment = [[TGImageMediaAttachment alloc] init];
-                imageAttachment.imageInfo = imageInfo;
-                
-                TGProfileImageItem *imageItem = [[TGProfileImageItem alloc] initWithProfilePhoto:imageAttachment];
-                TGImageViewController *imageViewController = [[TGImageViewController alloc] initWithImageItem:imageItem placeholder:placeholder];
-                
-                imageViewController.hideDates = true;
-                imageViewController.reverseOrder = true;
-                
-                TGTelegraphProfileImageViewCompanion *companion = [[TGTelegraphProfileImageViewCompanion alloc] initWithUid:_uid photoItem:imageItem loadList:true];
-                companion.watcherHandle = self.actionHandle;
-                imageViewController.imageViewCompanion = companion;
-                companion.imageViewController = imageViewController;
-                
-                CGRect windowSpaceFrame = [avatarView convertRect:avatarView.bounds toView:avatarView.window];
-                
-                if (iosMajorVersion() >= 7)
-                    [TGHacks animateApplicationStatusBarStyleTransitionWithDuration:0.3];
-                
-                [imageViewController animateAppear:self.view anchorForImage:self.collectionView fromRect:windowSpaceFrame fromImage:avatarView.currentImage start:^
+                modernGallery.itemFocused = ^(id<TGModernGalleryItem> item)
                 {
-                    avatarView.hidden = true;
-                }];
-                imageViewController.watcherHandle = self.actionHandle;
+                    __strong TGTelegraphUserInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
+                        {
+                            if (TGStringCompare(((TGUserAvatarGalleryItem *)item).legacyThumbnailUrl, strongSelf->_user.photoUrlSmall))
+                            {
+                                ((UIView *)strongSelf.userInfoItem.visibleAvatarView).hidden = true;
+                            }
+                            else
+                                ((UIView *)strongSelf.userInfoItem.visibleAvatarView).hidden = false;
+                        }
+                    }
+                };
                 
-                [TGAppDelegateInstance presentContentController:imageViewController];
-            }
-        }
-    }
-    else if ([action isEqualToString:@"closeImage"])
-    {
-        TGImageViewController *imageViewController = [options objectForKey:@"sender"];
-        TGRemoteImageView *avatarView = [self.userInfoItem visibleAvatarView];
-        
-        CGRect targetRect = [avatarView convertRect:avatarView.bounds toView:self.view.window];
-        UIImage *targetImage = [avatarView currentImage];
-        
-        TGImageInfo *imageInfo = options[@"imageInfo"];
-        
-        if (targetImage == nil || [options[@"forceSwipe"] boolValue] || (imageInfo != nil && ![imageInfo containsSizeWithUrl:[avatarView currentUrl]]))
-            targetRect = CGRectZero;
-        
-        if ([options[@"forceSwipe"] boolValue])
-            avatarView.hidden = false;
-        
-        if (iosMajorVersion() >= 7)
-            [TGHacks animateApplicationStatusBarStyleTransitionWithDuration:0.3];
-        
-        [imageViewController animateDisappear:self.view anchorForImage:self.collectionView toRect:targetRect toImage:targetImage swipeVelocity:0.0f completion:^
-        {
-            avatarView.hidden = false;
-            
-            [TGAppDelegateInstance dismissContentController];
-        }];
-        
-        [((TGNavigationController *)self.navigationController) updateControllerLayout:false];
-    }
-    else if ([action isEqualToString:@"hideImage"])
-    {
-        TGRemoteImageView *avatarView = [self.userInfoItem visibleAvatarView];
-        
-        if ([[options objectForKey:@"hide"] boolValue])
-        {
-            TGImageInfo *imageInfo = options[@"imageInfo"];
-            if (imageInfo != nil)
-            {
-                if (avatarView.currentUrl != nil && [imageInfo containsSizeWithUrl:avatarView.currentUrl])
-                    avatarView.hidden = true;
-                else
-                    avatarView.hidden = false;
+                modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
+                {
+                    __strong TGTelegraphUserInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
+                        {
+                            if (TGStringCompare(((TGUserAvatarGalleryItem *)item).legacyThumbnailUrl, strongSelf->_user.photoUrlSmall))
+                            {
+                                return strongSelf.userInfoItem.visibleAvatarView;
+                            }
+                        }
+                    }
+                    
+                    return nil;
+                };
+                
+                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
+                {
+                    __strong TGTelegraphUserInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
+                        {
+                            if (TGStringCompare(((TGUserAvatarGalleryItem *)item).legacyThumbnailUrl, strongSelf->_user.photoUrlSmall))
+                            {
+                                return strongSelf.userInfoItem.visibleAvatarView;
+                            }
+                        }
+                    }
+                    
+                    return nil;
+                };
+                
+                modernGallery.completedTransitionOut = ^
+                {
+                    __strong TGTelegraphUserInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        ((UIView *)strongSelf.userInfoItem.visibleAvatarView).hidden = false;
+                    }
+                };
+                
+                TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+                controllerWindow.hidden = false;
             }
         }
     }

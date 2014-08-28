@@ -35,6 +35,7 @@
 @interface TGForwardTargetController () <UIAlertViewDelegate>
 {
     NSString *_confirmationFormat;
+    bool _targetMode;
 }
 
 @property (nonatomic) bool blockMode;
@@ -110,6 +111,31 @@
         _confirmationPrefix = TGLocalized(@"BlockedUsers.BlockPrefix");
         _controllerTitle = TGLocalized(@"BlockedUsers.BlockTitle");
         _blockMode = true;
+    }
+    return self;
+}
+
+- (id)initWithSelectTarget
+{
+    self = [super init];
+    if (self)
+    {
+        _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
+        
+        _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
+        _dialogListCompanion.forwardMode = true;
+        _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
+        _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.customParentViewController = self;
+        _dialogListController.doNotHideSearchAutomatically = true;
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
+        
+        _contactsController = [[TGForwardContactsController alloc] initWithContactsMode:TGContactsModeRegistered | TGContactsModeClearSelectionImmediately];
+        _contactsController.watcher = _actionHandle;
+        _contactsController.customParentViewController = self;
+        
+        _controllerTitle = TGLocalized(@"BroadcastListInfo.AddRecipient");
+        _targetMode = true;
     }
     return self;
 }
@@ -410,16 +436,23 @@
             {
                 _selectedTarget = user;
                 
-                _currentAlert.delegate = nil;
-                
-                NSString *alertText = nil;
-                if (_confirmationFormat != nil)
-                    alertText = [[NSString alloc] initWithFormat:_confirmationFormat, user.displayName];
+                if (_targetMode)
+                {
+                    [_watcherHandle requestAction:@"userSelected" options:user];
+                }
                 else
-                    alertText = [NSString stringWithFormat:@"%@%@?", _confirmationPrefix, user.displayName];
-                
-                _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
-                [_currentAlert show];
+                {
+                    _currentAlert.delegate = nil;
+                    
+                    NSString *alertText = nil;
+                    if (_confirmationFormat != nil)
+                        alertText = [[NSString alloc] initWithFormat:_confirmationFormat, user.displayName];
+                    else
+                        alertText = [NSString stringWithFormat:@"%@%@?", _confirmationPrefix, user.displayName];
+                    
+                    _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                    [_currentAlert show];
+                }
             }
         }
     }
@@ -430,59 +463,73 @@
         {
             _selectedTarget = conversation;
             
-            if (conversation.isChat && conversation.conversationId > INT_MIN)
+            if (_targetMode)
             {
-                _selectedTarget = conversation;
-                
-                _currentAlert.delegate = nil;
-                
-                NSString *alertText = nil;
-                if (_blockMode)
-                    alertText = [NSString stringWithFormat:@"%@\"%@\"?", TGLocalized(@"BlockedUsers.LeavePrefix"), conversation.chatTitle];
-                else if (_confirmationFormat != nil)
-                    alertText = [[NSString alloc] initWithFormat:_confirmationFormat, conversation.chatTitle];
+                if (conversation.isChat)
+                    [_watcherHandle requestAction:@"conversationSelected" options:conversation];
                 else
-                    alertText = [NSString stringWithFormat:@"%@\"%@\"?", _confirmationPrefix, conversation.chatTitle];
-                
-                _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
-                [_currentAlert show];
+                {
+                    TGUser *user = [TGDatabaseInstance() loadUser:(int32_t)conversation.conversationId];
+                    if (user != nil)
+                        [_watcherHandle requestAction:@"userSelected" options:user];
+                }
             }
             else
             {
-                int uid = 0;
-                
-                if (conversation.isChat)
+                if (conversation.isChat && conversation.conversationId > INT_MIN)
                 {
-                    if (conversation.chatParticipants.chatParticipantUids.count != 0)
-                        uid = [conversation.chatParticipants.chatParticipantUids[0] intValue];
+                    _selectedTarget = conversation;
+                    
+                    _currentAlert.delegate = nil;
+                    
+                    NSString *alertText = nil;
+                    if (_blockMode)
+                        alertText = [NSString stringWithFormat:@"%@\"%@\"?", TGLocalized(@"BlockedUsers.LeavePrefix"), conversation.chatTitle];
+                    else if (_confirmationFormat != nil)
+                        alertText = [[NSString alloc] initWithFormat:_confirmationFormat, conversation.chatTitle];
+                    else
+                        alertText = [NSString stringWithFormat:@"%@\"%@\"?", _confirmationPrefix, conversation.chatTitle];
+                    
+                    _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                    [_currentAlert show];
                 }
                 else
-                    uid = (int)conversation.conversationId;
-                
-                TGUser *user = [TGDatabaseInstance() loadUser:uid];
-                if (user != nil)
                 {
-                    if (_blockMode)
+                    int uid = 0;
+                    
+                    if (conversation.isChat)
                     {
-                        [_watcherHandle requestAction:@"blockUser" options:user];
+                        if (conversation.chatParticipants.chatParticipantUids.count != 0)
+                            uid = [conversation.chatParticipants.chatParticipantUids[0] intValue];
                     }
                     else
+                        uid = (int)conversation.conversationId;
+                    
+                    TGUser *user = [TGDatabaseInstance() loadUser:uid];
+                    if (user != nil)
                     {
-                        _selectedTarget = conversation.isChat ? conversation : user;
-                        
-                        _currentAlert.delegate = nil;
-                        
-                        NSString *alertText = nil;
-                        if (_confirmationFormat != nil)
-                            alertText = [[NSString alloc] initWithFormat:_confirmationFormat, user.displayName];
+                        if (_blockMode)
+                        {
+                            [_watcherHandle requestAction:@"blockUser" options:user];
+                        }
                         else
-                            alertText = [NSString stringWithFormat:@"%@%@?", _confirmationPrefix, user.displayName];
-                        
-                        _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
-                        [_currentAlert show];
+                        {
+                            _selectedTarget = conversation.isChat ? conversation : user;
+                            
+                            _currentAlert.delegate = nil;
+                            
+                            NSString *alertText = nil;
+                            if (_confirmationFormat != nil)
+                                alertText = [[NSString alloc] initWithFormat:_confirmationFormat, user.displayName];
+                            else
+                                alertText = [NSString stringWithFormat:@"%@%@?", _confirmationPrefix, user.displayName];
+                            
+                            _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                            [_currentAlert show];
+                        }
                     }
                 }
-            }   
+            }
         }
     }
 }
@@ -538,6 +585,11 @@
     
     _currentAlert.delegate = nil;
     _currentAlert = nil;
+}
+
+- (TGContactsController *)contactsController
+{
+    return _contactsController;
 }
 
 @end

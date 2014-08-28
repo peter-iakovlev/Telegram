@@ -50,6 +50,20 @@
     return message;
 }
 
++ (instancetype)messageByCopyingMessageData:(TGPreparedLocalImageMessage *)source
+{
+    TGPreparedLocalImageMessage *message = [[TGPreparedLocalImageMessage alloc] init];
+    
+    message.imageSize = source.imageSize;
+    message.thumbnailSize = source.thumbnailSize;
+    message.assetUrl = source.assetUrl;
+    
+    message.localImageDataPath = [TGPreparedLocalImageMessage _fileUrlForStoredFile:source.localImageDataPath];
+    message.localThumbnailDataPath = [TGPreparedLocalImageMessage _fileUrlForStoredFile:source.localThumbnailDataPath];
+    
+    return message;
+}
+
 + (NSString *)_fileUrlForStoredData:(NSData *)data
 {
     NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
@@ -66,11 +80,28 @@
     return [@"file://" stringByAppendingString:filePath];
 }
 
++ (NSString *)_fileUrlForStoredFile:(NSString *)storedFilePath
+{
+    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+    NSString *uploadDirectory = [documentsDirectory stringByAppendingPathComponent:@"upload"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:uploadDirectory])
+        [[NSFileManager defaultManager] createDirectoryAtPath:uploadDirectory withIntermediateDirectories:true attributes:nil error:nil];
+    
+    int64_t randomId = 0;
+    arc4random_buf(&randomId, sizeof(randomId));
+    NSString *imagePathComponent = [[NSString alloc] initWithFormat:@"%" PRIx64 ".bin", randomId];
+    NSString *filePath = [uploadDirectory stringByAppendingPathComponent:imagePathComponent];
+    [[NSFileManager defaultManager] copyItemAtURL:[NSURL URLWithString:storedFilePath] toURL:[NSURL URLWithString:[@"file://" stringByAppendingString:filePath]] error:nil];
+    
+    return [@"file://" stringByAppendingString:filePath];
+}
+
 - (TGMessage *)message
 {
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
     
     TGImageMediaAttachment *imageAttachment = [[TGImageMediaAttachment alloc] init];
     TGImageInfo *imageInfo = [[TGImageInfo alloc] init];

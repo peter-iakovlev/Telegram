@@ -201,18 +201,22 @@ static const CGFloat swipeVelocityThreshold = 700.0f;
 
 - (void)_updateDismissTransitionWithProgress:(CGFloat)progress animated:(bool)animated
 {
-    UIColor *backgroundColor = UIColorRGBA(0x000000, 1.0f - MAX(0.0f, MIN(1.0f, progress)));
+    CGFloat alpha = 1.0f - MAX(0.0f, MIN(1.0f, progress * 4.0f));
+    CGFloat transitionProgress = MAX(0.0f, MIN(1.0f, progress * 2.0f));
+    UIColor *backgroundColor = UIColorRGBA(0x000000, alpha);
     
     if (animated)
     {
         [UIView animateWithDuration:0.3 animations:^
         {
             self.backgroundColor = backgroundColor;
+            [_interfaceView setTransitionOutProgress:transitionProgress];
         }];
     }
     else
     {
         self.backgroundColor = backgroundColor;
+        [_interfaceView setTransitionOutProgress:transitionProgress];
     }
 }
 

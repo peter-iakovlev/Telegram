@@ -3,6 +3,8 @@
 #import "TGImageInfo.h"
 #import "TGRemoteImageView.h"
 
+#import "TGStringUtils.h"
+
 #import "TGUser.h"
 
 @interface TGGenericPeerMediaGalleryImageItem ()
@@ -33,7 +35,9 @@
     else if (localId != 0)
         [imageUri appendFormat:@"&local-id=%" PRId64 "", imageId];
     [imageUri appendFormat:@"&legacy-file-path=%@", legacyFilePath];
-    [imageUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUrl];
+    
+    NSString *escapedLegacyThumbnailCacheUrl = (__bridge_transfer NSString *)CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (__bridge CFStringRef)legacyThumbnailCacheUrl, (__bridge CFStringRef)@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-", (__bridge CFStringRef)@"&?= ", kCFStringEncodingUTF8);
+    [imageUri appendFormat:@"&legacy-thumbnail-cache-url=%@", escapedLegacyThumbnailCacheUrl];
     
     [imageUri appendFormat:@"&width=%d", (int)imageSize.width];
     [imageUri appendFormat:@"&height=%d", (int)imageSize.height];
@@ -42,7 +46,9 @@
     
     [imageUri appendFormat:@"&messageId=%" PRId32 "", (int32_t)messageId];
     [imageUri appendFormat:@"&conversationId=%" PRId64 "", (int64_t)peerId];
-    [imageUri appendFormat:@"&legacy-cache-url=%@", legacyCacheUrl];
+    
+    NSString *escapedCacheUrl = (__bridge_transfer NSString *)CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (__bridge CFStringRef)legacyCacheUrl, (__bridge CFStringRef)@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-", (__bridge CFStringRef)@"&?= :/", kCFStringEncodingUTF8);
+    [imageUri appendFormat:@"&legacy-cache-url=%@", escapedCacheUrl];
     
     self = [super initWithUri:imageUri imageSize:imageSize];
     if (self != nil)

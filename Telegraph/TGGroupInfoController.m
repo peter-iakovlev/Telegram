@@ -39,8 +39,6 @@
 #import "TGGroupInfoSelectContactController.h"
 #import "TGAlertSoundController.h"
 
-#import "TGImageViewController.h"
-#import "TGTelegraphProfileImageViewCompanion.h"
 #import "TGRemoteImageView.h"
 #import "TGLegacyCameraController.h"
 #import "TGImagePickerController.h"
@@ -48,6 +46,11 @@
 
 #import "TGAlertView.h"
 #import "TGActionSheet.h"
+
+#import "TGModernGalleryController.h"
+#import "TGGroupAvatarGalleryItem.h"
+#import "TGGroupAvatarGalleryModel.h"
+#import "TGOverlayControllerWindow.h"
 
 @interface TGGroupInfoController () <TGGroupInfoSelectContactControllerDelegate, TGAlertSoundControllerDelegate, TGLegacyCameraControllerDelegate, TGImagePickerControllerDelegate>
 {
@@ -1022,63 +1025,68 @@
         else
         {
             TGRemoteImageView *avatarView = [_groupInfoItem avatarView];
-            UIImage *placeholder = [[TGRemoteImageView sharedCache] cachedImage:_conversation.chatPhotoSmall availability:TGCacheBoth];
-            if (placeholder == nil)
-                placeholder = [avatarView currentImage];
             
-            if (avatarView != nil && placeholder != nil)
+            if (avatarView != nil && avatarView.image != nil)
             {
-                TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
-                [imageInfo addImageWithSize:CGSizeMake(640, 640) url:_conversation.chatPhotoBig];
+                TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
                 
-                TGImageMediaAttachment *imageAttachment = [[TGImageMediaAttachment alloc] init];
-                imageAttachment.imageInfo = imageInfo;
+                modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithMessageId:0 legacyThumbnailUrl:_conversation.chatPhotoSmall legacyUrl:_conversation.chatPhotoBig imageSize:CGSizeMake(640.0f, 640.0f)];
                 
-                TGProfileImageItem *imageItem = [[TGProfileImageItem alloc] initWithProfilePhoto:imageAttachment];
-                TGImageViewController *imageViewController = [[TGImageViewController alloc] initWithImageItem:imageItem placeholder:placeholder];
-                imageViewController.hideDates = true;
+                __weak TGGroupInfoController *weakSelf = self;
                 
-                TGTelegraphProfileImageViewCompanion *companion = [[TGTelegraphProfileImageViewCompanion alloc] initWithUid:0 photoItem:imageItem loadList:false];
-                companion.watcherHandle = _actionHandle;
-                imageViewController.imageViewCompanion = companion;
-                companion.imageViewController = imageViewController;
-                
-                CGRect windowSpaceFrame = [avatarView convertRect:avatarView.bounds toView:avatarView.window];
-                
-                if (iosMajorVersion() >= 7)
-                    [TGHacks animateApplicationStatusBarStyleTransitionWithDuration:0.3];
-                
-                [imageViewController animateAppear:self.view anchorForImage:self.collectionView fromRect:windowSpaceFrame fromImage:avatarView.currentImage start:^
+                modernGallery.itemFocused = ^(id<TGModernGalleryItem> item)
                 {
-                    avatarView.alpha = 0.0f;
-                }];
+                    __strong TGGroupInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
+                        {
+                            ((UIView *)strongSelf->_groupInfoItem.avatarView).hidden = true;
+                        }
+                    }
+                };
                 
-                imageViewController.watcherHandle = _actionHandle;
+                modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
+                {
+                    __strong TGGroupInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
+                        {
+                            return strongSelf->_groupInfoItem.avatarView;
+                        }
+                    }
+                    
+                    return nil;
+                };
                 
-                [TGAppDelegateInstance presentContentController:imageViewController];
+                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
+                {
+                    __strong TGGroupInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
+                        {
+                            return strongSelf->_groupInfoItem.avatarView;
+                        }
+                    }
+                    
+                    return nil;
+                };
+                
+                modernGallery.completedTransitionOut = ^
+                {
+                    __strong TGGroupInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        ((UIView *)strongSelf->_groupInfoItem.avatarView).hidden = false;
+                    }
+                };
+                
+                TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+                controllerWindow.hidden = false;
             }
         }
-    }
-    else if ([action isEqualToString:@"closeImage"])
-    {
-        TGRemoteImageView *avatarView = [_groupInfoItem avatarView];
-        TGImageViewController *imageViewController = [options objectForKey:@"sender"];
-        
-        CGRect targetRect = [avatarView convertRect:avatarView.bounds toView:self.view.window];
-        UIImage *targetImage = [avatarView currentImage];
-        
-        if (targetImage == nil)
-            targetRect = CGRectZero;
-        
-        if (iosMajorVersion() >= 7)
-            [TGHacks animateApplicationStatusBarStyleTransitionWithDuration:0.3];
-        
-        [imageViewController animateDisappear:self.view anchorForImage:self.collectionView toRect:targetRect toImage:targetImage swipeVelocity:0.0f completion:^
-        {
-            avatarView.alpha = 1.0f;
-            
-            [TGAppDelegateInstance dismissContentController];
-        }];
     }
     else if ([action isEqualToString:@"showUpdatingAvatarOptions"])
     {

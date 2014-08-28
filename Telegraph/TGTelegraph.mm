@@ -2443,7 +2443,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 - (NSObject *)doRequestContactList:(NSString *)hash actor:(TGSynchronizeContactsActor *)actor
 {
     TLRPCcontacts_getContacts$contacts_getContacts *getContacts = [[TLRPCcontacts_getContacts$contacts_getContacts alloc] init];
-    getContacts.hash = hash;
+    getContacts.n_hash = hash;
     
     return [[TGTelegramNetworking instance] performRpc:getContacts completionBlock:^(TLcontacts_Contacts *contacts, __unused int64_t responseTime, TLError *error)
     {

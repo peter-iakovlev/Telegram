@@ -4,6 +4,10 @@
 
 #import "TGFont.h"
 
+#import "TGViewController.h"
+
+#import <CoreMotion/CoreMotion.h>
+
 @interface TGModernGalleryInterfaceView ()
 {
     TGModernBackToolbarButton *_closeButton;
@@ -12,6 +16,8 @@
     NSMutableArray *_itemFooterViews;
     NSMutableArray *_itemLeftAcessoryViews;
     NSMutableArray *_itemRightAcessoryViews;
+    
+    CGFloat _transitionProgress;
 }
 
 @end
@@ -23,16 +29,24 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
+        if (iosMajorVersion() >= 7 && [TGViewController isWidescreen] && [CMMotionActivityManager isActivityAvailable])
+        {
+            UIActivityIndicatorView *activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+            activityIndicator.alpha = 0.02f;
+            [self addSubview:activityIndicator];
+            [activityIndicator startAnimating];
+        }
+        
         _itemHeaderViews = [[NSMutableArray alloc] init];
         _itemFooterViews = [[NSMutableArray alloc] init];
         _itemLeftAcessoryViews = [[NSMutableArray alloc] init];
         _itemRightAcessoryViews = [[NSMutableArray alloc] init];
         
-        _navigationBarView = [[UIView alloc] initWithFrame:[self navigationBarFrameForSize:frame.size]];
+        _navigationBarView = [[UIView alloc] initWithFrame:[self navigationBarFrameForSize:frame.size transitionProgress:_transitionProgress]];
         _navigationBarView.backgroundColor = UIColorRGBA(0x000000, 0.65f);
         [self addSubview:_navigationBarView];
         
-        _toolbarView = [[UIView alloc] initWithFrame:[self toolbarFrameForSize:frame.size]];
+        _toolbarView = [[UIView alloc] initWithFrame:[self toolbarFrameForSize:frame.size transitionProgress:_transitionProgress]];
         _toolbarView.backgroundColor = UIColorRGBA(0x000000, 0.65f);
         [self addSubview:_toolbarView];
         
@@ -55,14 +69,14 @@
     return nil;
 }
 
-- (CGRect)navigationBarFrameForSize:(CGSize)size
+- (CGRect)navigationBarFrameForSize:(CGSize)size transitionProgress:(CGFloat)transitionProgress
 {
-    return CGRectMake(0.0f, 0.0f, size.width, 20.0f + 44.0f);
+    return CGRectMake(0.0f, -transitionProgress * (20.0f + 44.0f), size.width, 20.0f + 44.0f);
 }
 
-- (CGRect)toolbarFrameForSize:(CGSize)size
+- (CGRect)toolbarFrameForSize:(CGSize)size transitionProgress:(CGFloat)transitionProgress
 {
-    return CGRectMake(0.0f, size.height - 44.0f, size.width, 44.0f);
+    return CGRectMake(0.0f, size.height - 44.0f + transitionProgress * 44.0f, size.width, 44.0f);
 }
 
 - (CGRect)itemHeaderViewFrameForSize:(CGSize)size
@@ -98,8 +112,8 @@
 {
     [super setFrame:frame];
     
-    _navigationBarView.frame = [self navigationBarFrameForSize:frame.size];
-    _toolbarView.frame = [self toolbarFrameForSize:frame.size];
+    _navigationBarView.frame = [self navigationBarFrameForSize:frame.size transitionProgress:_transitionProgress];
+    _toolbarView.frame = [self toolbarFrameForSize:frame.size transitionProgress:_transitionProgress];
     
     CGRect itemHeaderViewFrame = [self itemHeaderViewFrameForSize:frame.size];
     for (UIView *itemHeaderView in _itemHeaderViews)
@@ -220,6 +234,14 @@
         //_navigationBarView.frame = CGRectOffset(_navigationBarView.frame, 0.0f, -_navigationBarView.frame.size.height);
         //_toolbarView.frame = CGRectOffset(_toolbarView.frame, 0.0f, _toolbarView.frame.size.height);
     }];
+}
+
+- (void)setTransitionOutProgress:(CGFloat)transitionOutProgress
+{
+    _transitionProgress = transitionOutProgress;
+    
+    _navigationBarView.frame = [self navigationBarFrameForSize:self.frame.size transitionProgress:_transitionProgress];
+    _toolbarView.frame = [self toolbarFrameForSize:self.frame.size transitionProgress:_transitionProgress];
 }
 
 - (void)closeButtonPressed

@@ -37,6 +37,7 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
     
     TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
     documentAttachment.documentId = _documentId;

@@ -43,6 +43,8 @@
 
 #import "TGConversationAddMessagesActor.h"
 
+#import "TGForwardTargetController.h"
+
 @interface TGBroadcastListInfoController () <TGGroupInfoSelectContactControllerDelegate>
 {
     bool _editing;
@@ -177,15 +179,14 @@
 
 - (void)addParticipantPressed
 {
-    TGGroupInfoSelectContactController *selectContactController = [[TGGroupInfoSelectContactController alloc] initWithContactsMode:TGContactsModeRegistered];
-    selectContactController.delegate = self;
-    
     NSMutableArray *disabledUsers = [[NSMutableArray alloc] init];
     [disabledUsers addObjectsFromArray:_conversation.chatParticipants.chatParticipantUids];
     
-    selectContactController.disabledUsers = disabledUsers;
+    TGForwardTargetController *controller = [[TGForwardTargetController alloc] initWithSelectTarget];
+    controller.contactsController.disabledUsers = disabledUsers;
+    controller.watcherHandle = _actionHandle;
     
-    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[selectContactController] navigationBarClass:[TGWhiteNavigationBar class]];
+    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[controller] navigationBarClass:[TGWhiteNavigationBar class]];
     if ([self inPopover])
     {
         navigationController.modalPresentationStyle = UIModalPresentationCurrentContext;
@@ -209,7 +210,7 @@
     TGConversationParticipantsData *participantData = [conversation.chatParticipants copy];
     [participantData addParticipantWithId:user.uid invitedBy:0 date:0];
     conversation.chatParticipants = participantData;
-    conversation.chatParticipantCount = conversation.chatParticipants.chatParticipantUids.count;
+    conversation.chatParticipantCount = conversation.chatParticipants.chatParticipantUids.count + conversation.chatParticipants.chatParticipantSecretChatPeerIds.count + conversation.chatParticipants.chatParticipantChatPeerIds.count;
     
     _conversation = conversation;
     
@@ -238,19 +239,97 @@
     [self dismissViewControllerAnimated:true completion:nil];
 }
 
+- (void)_commitAddConversation:(TGConversation *)addedConversation
+{
+    if (addedConversation.isChat)
+    {
+        TGConversation *conversation = [[TGDatabaseInstance() loadConversationWithId:_conversationId] copy];
+        TGConversationParticipantsData *participantData = [conversation.chatParticipants copy];
+        
+        if (addedConversation.conversationId <= INT_MIN)
+            [participantData addSecretChatPeerWithId:addedConversation.conversationId];
+        else
+            [participantData addChatPeerWithId:addedConversation.conversationId];
+        
+        conversation.chatParticipants = participantData;
+        conversation.chatParticipantCount = conversation.chatParticipants.chatParticipantUids.count + conversation.chatParticipants.chatParticipantSecretChatPeerIds.count + conversation.chatParticipants.chatParticipantChatPeerIds.count;
+        
+        _conversation = conversation;
+        
+        [self _loadUsersAndUpdateConversation:_conversation];
+        
+        for (id item in _usersSection.items)
+        {
+            if ([item isKindOfClass:[TGGroupInfoUserCollectionItem class]])
+            {
+                if (((TGGroupInfoUserCollectionItem *)item).conversation.conversationId == addedConversation.conversationId)
+                {
+                    NSIndexPath *indexPath = [self indexPathForItem:item];
+                    if (indexPath != nil && [UIDevice currentDevice].userInterfaceIdiom != UIUserInterfaceIdiomPad)
+                        [self.collectionView selectItemAtIndexPath:indexPath animated:false scrollPosition:UICollectionViewScrollPositionTop];
+                    
+                    break;
+                }
+            }
+        }
+        
+        static int actionId = 0;
+        [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(broadcastListInfo%d)", actionId++]] execute:@{@"chats": @{@(conversation.conversationId): conversation}}];
+        
+        [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId] resource:[[SGraphObjectNode alloc] initWithObject:_conversation]];
+    }
+}
+
 - (void)_commitDeleteParticipant:(int32_t)uid
 {
     TGConversation *conversation = [[TGDatabaseInstance() loadConversationWithId:_conversationId] copy];
     TGConversationParticipantsData *participantData = [conversation.chatParticipants copy];
     [participantData removeParticipantWithId:uid];
     conversation.chatParticipants = participantData;
-    conversation.chatParticipantCount = conversation.chatParticipants.chatParticipantUids.count;
+    conversation.chatParticipantCount = conversation.chatParticipants.chatParticipantUids.count + conversation.chatParticipants.chatParticipantSecretChatPeerIds.count + conversation.chatParticipants.chatParticipantChatPeerIds.count;
     
     _conversation = conversation;
     
     for (id item in _usersSection.items)
     {
         if ([item isKindOfClass:[TGGroupInfoUserCollectionItem class]] && ((TGGroupInfoUserCollectionItem *)item).user.uid == uid)
+        {
+            NSIndexPath *indexPath = [self indexPathForItem:item];
+            if (indexPath != nil)
+            {
+                [self.menuSections beginRecordingChanges];
+                [self.menuSections deleteItemFromSection:indexPath.section atIndex:indexPath.item];
+                [self.menuSections commitRecordedChanges:self.collectionView];
+                
+                [self _updateAllowCellEditing:true];
+            }
+            
+            break;
+        }
+    }
+    
+    static int actionId = 0;
+    [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(broadcastListInfo%d)", actionId++]] execute:@{@"chats": @{@(conversation.conversationId): conversation}}];
+    
+    [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId] resource:[[SGraphObjectNode alloc] initWithObject:_conversation]];
+}
+
+- (void)_commitDeleteConversation:(int64_t)peerId
+{
+    TGConversation *conversation = [[TGDatabaseInstance() loadConversationWithId:_conversationId] copy];
+    TGConversationParticipantsData *participantData = [conversation.chatParticipants copy];
+    
+    [participantData removeSecretChatPeerWithId:peerId];
+    [participantData removeChatPeerWithId:peerId];
+    
+    conversation.chatParticipants = participantData;
+    conversation.chatParticipantCount = conversation.chatParticipants.chatParticipantUids.count + conversation.chatParticipants.chatParticipantSecretChatPeerIds.count + conversation.chatParticipants.chatParticipantChatPeerIds.count;
+    
+    _conversation = conversation;
+    
+    for (id item in _usersSection.items)
+    {
+        if ([item isKindOfClass:[TGGroupInfoUserCollectionItem class]] && ((TGGroupInfoUserCollectionItem *)item).conversation.conversationId == peerId)
         {
             NSIndexPath *indexPath = [self indexPathForItem:item];
             if (indexPath != nil)
@@ -290,12 +369,50 @@
 
 - (void)_loadUsersAndUpdateConversation:(TGConversation *)conversation
 {
-    NSMutableArray *participantUsers = [[NSMutableArray alloc] init];
+    NSMutableArray *loadedRecipients = [[NSMutableArray alloc] init];
     for (NSNumber *nUid in conversation.chatParticipants.chatParticipantUids)
     {
         TGUser *user = [TGDatabaseInstance() loadUser:[nUid int32Value]];
         if (user != nil)
-            [participantUsers addObject:user];
+            [loadedRecipients addObject:@{@"type": @"user", @"user": user}];
+    }
+    
+    for (NSNumber *nPeerId in conversation.chatParticipants.chatParticipantSecretChatPeerIds)
+    {
+        TGConversation *secretConversation = [TGDatabaseInstance() loadConversationWithIdCached:[nPeerId longLongValue]];
+        if (secretConversation != nil)
+        {
+            if (secretConversation.isChat)
+            {
+                if (secretConversation.conversationId <= INT_MIN)
+                {
+                    int32_t uid = 0;
+                    if (secretConversation != nil && secretConversation.chatParticipants.chatParticipantUids.count != 0)
+                        uid = [secretConversation.chatParticipants.chatParticipantUids[0] intValue];
+                    
+                    if (uid != 0)
+                    {
+                        TGUser *user = [TGDatabaseInstance() loadUser:uid];
+                        [loadedRecipients addObject:@{@"type": @"secretChat", @"conversation": secretConversation, @"user": user}];
+                    }
+                }
+            }
+        }
+    }
+    
+    for (NSNumber *nPeerId in conversation.chatParticipants.chatParticipantChatPeerIds)
+    {
+        TGConversation *chatConversation = [TGDatabaseInstance() loadConversationWithIdCached:[nPeerId longLongValue]];
+        if (chatConversation != nil)
+        {
+            if (chatConversation.isChat)
+            {
+                if (chatConversation.conversationId > INT_MIN)
+                {
+                    [loadedRecipients addObject:@{@"type": @"chat", @"conversation": chatConversation}];
+                }
+            }
+        }
     }
     
     TGDispatchOnMainThread(^
@@ -303,17 +420,20 @@
         _conversation = conversation;
         [_groupInfoItem setConversation:_conversation];
         
-        [self _updateConversationWithLoadedUsers:participantUsers];
+        [self _updateConversationWithLoadedRecipients:loadedRecipients];
     });
 }
 
-- (void)_updateConversationWithLoadedUsers:(NSArray *)participantUsers
+- (void)_updateConversationWithLoadedRecipients:(NSArray *)loadedRecipients
 {
     NSDictionary *invitedDates = _conversation.chatParticipants.chatInvitedDates;
     
     int32_t selfUid = TGTelegraphInstance.clientUserId;
-    NSArray *sortedUsers = [participantUsers sortedArrayUsingComparator:^NSComparisonResult(TGUser *user1, TGUser *user2)
+    NSArray *sortedRecipients = [loadedRecipients sortedArrayUsingComparator:^NSComparisonResult(NSDictionary *desc1, NSDictionary *desc2)
     {
+        TGUser *user1 = desc1[@"user"];
+        TGUser *user2 = desc2[@"user"];
+        
         if (user1.uid == selfUid)
             return NSOrderedAscending;
         else if (user2.uid == selfUid)
@@ -355,14 +475,14 @@
     }];
     
     NSString *title = @"";
-    if (sortedUsers.count == 1)
+    if (sortedRecipients.count == 1)
         title = TGLocalized(@"GroupInfo.ParticipantCount_1");
-    else if (sortedUsers.count == 2)
+    else if (sortedRecipients.count == 2)
         title = TGLocalized(@"GroupInfo.ParticipantCount_2");
-    else if (sortedUsers.count >= 3 && sortedUsers.count <= 10)
-        title = [NSString localizedStringWithFormat:TGLocalized(@"GroupInfo.ParticipantCount_3_10"), [TGStringUtils stringWithLocalizedNumber:sortedUsers.count]];
+    else if (sortedRecipients.count >= 3 && sortedRecipients.count <= 10)
+        title = [NSString localizedStringWithFormat:TGLocalized(@"GroupInfo.ParticipantCount_3_10"), [TGStringUtils stringWithLocalizedNumber:sortedRecipients.count]];
     else
-        title = [NSString localizedStringWithFormat:TGLocalized(@"GroupInfo.ParticipantCount_any"), [TGStringUtils stringWithLocalizedNumber:sortedUsers.count]];
+        title = [NSString localizedStringWithFormat:TGLocalized(@"GroupInfo.ParticipantCount_any"), [TGStringUtils stringWithLocalizedNumber:sortedRecipients.count]];
     
     [_usersSectionHeader setTitle:title];
     
@@ -371,18 +491,41 @@
     {
         bool haveChanges = false;
         
-        if (_usersSection.items.count - 2 != sortedUsers.count)
+        if (_usersSection.items.count - 2 != sortedRecipients.count)
             haveChanges = true;
         else
         {
             for (int i = 1, j = 0; i < (int)_usersSection.items.count - 1; i++, j++)
             {
                 TGGroupInfoUserCollectionItem *userItem = _usersSection.items[i];
-                TGUser *user = sortedUsers[j];
-                if (user.uid != userItem.user.uid)
+                NSDictionary *desc = sortedRecipients[j];
+                if ([desc[@"type"] isEqualToString:@"user"])
                 {
-                    haveChanges = true;
-                    break;
+                    TGUser *user = desc[@"user"];
+                    if (user.uid != userItem.user.uid || userItem.conversation != nil)
+                    {
+                        haveChanges = true;
+                        break;
+                    }
+                }
+                else if ([desc[@"type"] isEqualToString:@"secretChat"])
+                {
+                    TGUser *user = desc[@"user"];
+                    TGConversation *conversation = desc[@"conversation"];
+                    if (user.uid != userItem.user.uid || userItem.conversation.conversationId != conversation.conversationId)
+                    {
+                        haveChanges = true;
+                        break;
+                    }
+                }
+                else if ([desc[@"type"] isEqualToString:@"chat"])
+                {
+                    TGConversation *conversation = desc[@"conversation"];
+                    if (userItem.user != nil || userItem.conversation.conversationId != conversation.conversationId)
+                    {
+                        haveChanges = true;
+                        break;
+                    }
                 }
             }
         }
@@ -397,23 +540,65 @@
             }
             
             int insertIndex = 1;
-            for (TGUser *user in sortedUsers)
+            for (NSDictionary *dict in sortedRecipients)
             {
-                TGGroupInfoUserCollectionItem *userItem = [[TGGroupInfoUserCollectionItem alloc] init];
-                userItem.interfaceHandle = _actionHandle;
-                
-                bool disabled = false;
-                userItem.selectable = user.uid != selfUid && !disabled;
-                
-                bool canEditInPrinciple = _conversation.chatParticipants.chatParticipantUids.count > 1;
-                bool canEdit = userItem.selectable && canEditInPrinciple;
-                [userItem setCanEdit:canEdit];
-                
-                [userItem setUser:user];
-                [userItem setDisabled:disabled];
-                
-                [self.menuSections insertItem:userItem toSection:sectionIndex atIndex:insertIndex];
-                insertIndex++;
+                if ([dict[@"type"] isEqualToString:@"user"])
+                {
+                    TGGroupInfoUserCollectionItem *userItem = [[TGGroupInfoUserCollectionItem alloc] init];
+                    userItem.interfaceHandle = _actionHandle;
+                    
+                    userItem.selectable = true;
+                    
+                    bool canEditInPrinciple = _conversation.chatParticipants.chatParticipantUids.count > 1;
+                    bool canEdit = userItem.selectable && canEditInPrinciple;
+                    [userItem setCanEdit:canEdit];
+                    
+                    [userItem setUser:dict[@"user"]];
+                    [userItem setConversation:nil];
+                    
+                    [userItem setDisabled:false];
+                    
+                    [self.menuSections insertItem:userItem toSection:sectionIndex atIndex:insertIndex];
+                    insertIndex++;
+                }
+                else if ([dict[@"type"] isEqualToString:@"secretChat"])
+                {
+                    TGGroupInfoUserCollectionItem *userItem = [[TGGroupInfoUserCollectionItem alloc] init];
+                    userItem.interfaceHandle = _actionHandle;
+                    
+                    userItem.selectable = true;
+                    
+                    bool canEditInPrinciple = _conversation.chatParticipants.chatParticipantUids.count > 1;
+                    bool canEdit = userItem.selectable && canEditInPrinciple;
+                    [userItem setCanEdit:canEdit];
+                    
+                    [userItem setUser:dict[@"user"]];
+                    [userItem setConversation:dict[@"conversation"]];
+                    
+                    [userItem setDisabled:false];
+                    
+                    [self.menuSections insertItem:userItem toSection:sectionIndex atIndex:insertIndex];
+                    insertIndex++;
+                }
+                else if ([dict[@"type"] isEqualToString:@"chat"])
+                {
+                    TGGroupInfoUserCollectionItem *userItem = [[TGGroupInfoUserCollectionItem alloc] init];
+                    userItem.interfaceHandle = _actionHandle;
+                    
+                    userItem.selectable = true;
+                    
+                    bool canEditInPrinciple = _conversation.chatParticipants.chatParticipantUids.count > 1;
+                    bool canEdit = userItem.selectable && canEditInPrinciple;
+                    [userItem setCanEdit:canEdit];
+                    
+                    [userItem setUser:nil];
+                    [userItem setConversation:dict[@"conversation"]];
+                    
+                    [userItem setDisabled:false];
+                    
+                    [self.menuSections insertItem:userItem toSection:sectionIndex atIndex:insertIndex];
+                    insertIndex++;
+                }
             }
             
             self.collectionLayout.withoutAnimation = true;
@@ -475,29 +660,27 @@
         userIdToUser[@(user.uid)] = user;
     }
     
-    NSMutableArray *participantUsers = [[NSMutableArray alloc] init];
-    
     for (id item in _usersSection.items)
     {
         if ([item isKindOfClass:[TGGroupInfoUserCollectionItem class]])
         {
             TGGroupInfoUserCollectionItem *userItem = item;
             
-            TGUser *user = userIdToUser[@(userItem.user.uid)];
-            if (user != nil)
+            if (userItem.user != nil)
             {
-                updatedAnyUser = true;
-                [userItem setUser:user];
+                TGUser *user = userIdToUser[@(userItem.user.uid)];
+                if (user != nil)
+                {
+                    updatedAnyUser = true;
+                    
+                    [userItem setUser:user];
+                }
             }
-            
-            [participantUsers addObject:userItem.user];
         }
     }
     
     if (updatedAnyUser)
-    {
-        [self _updateConversationWithLoadedUsers:participantUsers];
-    }
+        [self _loadUsersAndUpdateConversation:_conversation];
 }
 
 #pragma mark -
@@ -510,6 +693,12 @@
         if (uid != 0)
             [self _commitDeleteParticipant:uid];
     }
+    else if ([action isEqualToString:@"deleteConversation"])
+    {
+        int64_t conversationId = [options[@"conversationId"] longLongValue];
+        if (conversationId != 0)
+            [self _commitDeleteConversation:conversationId];
+    }
     else if ([action isEqualToString:@"openUser"])
     {
         int32_t uid = [options[@"uid"] int32Value];
@@ -518,6 +707,30 @@
             TGTelegraphUserInfoController *userInfoController = [[TGTelegraphUserInfoController alloc] initWithUid:uid];
             [self.navigationController pushViewController:userInfoController animated:true];
         }
+    }
+    else if ([action isEqualToString:@"openConversation"])
+    {
+        int64_t conversationId = [options[@"conversationId"] longLongValue];
+        if (conversationId != 0)
+            [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:nil];
+    }
+    else if ([action isEqualToString:@"userSelected"])
+    {
+        TGUser *user = options;
+        if (user.uid != 0 && ![_conversation.chatParticipants.chatParticipantUids containsObject:@(user.uid)])
+            [self _commitAddParticipant:user];
+        
+        [self dismissViewControllerAnimated:true completion:nil];
+    }
+    else if ([action isEqualToString:@"conversationSelected"])
+    {
+        TGConversation *conversation = options;
+        if (conversation.conversationId != 0 && ![_conversation.chatParticipants.chatParticipantSecretChatPeerIds containsObject:@(conversation.conversationId)] && ![_conversation.chatParticipants.chatParticipantChatPeerIds containsObject:@(conversation.conversationId)])
+        {
+            [self _commitAddConversation:conversation];
+        }
+        
+        [self dismissViewControllerAnimated:true completion:nil];
     }
 }
 

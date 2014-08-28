@@ -600,7 +600,7 @@
         
         TLError$richError *implicitError = [[TLError$richError alloc] init];
         implicitError.code = ((TLRpcError *)resultBody).error_code;
-        implicitError.description = ((TLRpcError *)resultBody).error_message;
+        implicitError.n_description = ((TLRpcError *)resultBody).error_message;
         
         return implicitError;
     }

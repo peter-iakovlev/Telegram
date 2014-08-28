@@ -194,16 +194,6 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
     return [_viewModel effectiveContentFrame];
 }
 
-- (CGRect)effectiveContentImageFrame
-{
-    return [_viewModel effectiveContentImageFrame];
-}
-
-- (UIImage *)effectiveContentImage
-{
-    return [_viewModel effectiveContentImage];
-}
-
 - (UIView *)referenceViewForImageTransition
 {
     return [_viewModel referenceViewForImageTransition];

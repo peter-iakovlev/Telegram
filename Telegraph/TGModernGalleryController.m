@@ -132,7 +132,7 @@
             return strongSelf;
         };
         
-        _model.dismiss = ^(bool asModal)
+        _model.dismiss = ^(bool animated, bool asModal)
         {
             __strong TGModernGalleryController *strongSelf = weakSelf;
             if (strongSelf != nil)
@@ -152,7 +152,25 @@
                 }
                 else
                 {
-                    [strongSelf dismiss];
+                    if (animated)
+                    {
+                        [strongSelf animateStatusBarTransition:0.2];
+                        strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
+                        [strongSelf setNeedsStatusBarAppearanceUpdate];
+                        
+                        [UIView animateWithDuration:0.2 animations:^
+                        {
+                            [TGHacks setApplicationStatusBarAlpha:1.0f];
+                        }];
+                        
+                        [strongSelf->_view simpleTransitionOutWithVelocity:0.0f completion:^
+                        {
+                            __strong TGModernGalleryController *strongSelf2 = weakSelf;
+                            [strongSelf2 dismiss];
+                        }];
+                    }
+                    else
+                        [strongSelf dismiss];
                 }
             }
         };

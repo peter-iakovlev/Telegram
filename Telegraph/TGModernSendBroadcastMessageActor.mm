@@ -34,8 +34,13 @@
 {
     int64_t _conversationId;
     NSArray *_userIds;
+    NSArray *_secretChatConversationIds;
+    NSArray *_chatConversationIds;
     
     bool _shouldPostAlmostDeliveredMessage;
+    
+    NSArray *_childSendMessageActionPaths;
+    NSMutableArray *_remainingChildSendMessageActionPaths;
 }
 
 @end
@@ -61,11 +66,56 @@
     
     _conversationId = [options[@"conversationId"] longLongValue];
     _userIds = options[@"userIds"];
+    _secretChatConversationIds = options[@"secretChatConversationIds"];
+    _chatConversationIds = options[@"chatConversationIds"];
 }
 
 - (int64_t)peerId
 {
     return _conversationId;
+}
+
+- (TGPreparedMessage *)copyPreparedMessage:(TGPreparedMessage *)preparedMessage
+{
+    if ([preparedMessage isKindOfClass:[TGPreparedTextMessage class]])
+    {
+        TGPreparedTextMessage *preparedTextMessage = (TGPreparedTextMessage *)preparedMessage;
+        
+        TGPreparedTextMessage *copyMessage = [[TGPreparedTextMessage alloc] initWithText:preparedTextMessage.text];
+        return copyMessage;
+    }
+    else if ([preparedMessage isKindOfClass:[TGPreparedLocalImageMessage class]])
+    {
+        TGPreparedLocalImageMessage *preparedLocalImageMessage = (TGPreparedLocalImageMessage *)preparedMessage;
+        
+        return [TGPreparedLocalImageMessage messageByCopyingMessageData:preparedLocalImageMessage];
+    }
+    else if ([preparedMessage isKindOfClass:[TGPreparedLocalVideoMessage class]])
+    {
+        TGPreparedLocalVideoMessage *preparedLocalVideoMessage = (TGPreparedLocalVideoMessage *)preparedMessage;
+        
+        return [TGPreparedLocalVideoMessage messageByCopyingDataFromMessage:preparedLocalVideoMessage];
+    }
+    else if ([preparedMessage isKindOfClass:[TGPreparedLocalAudioMessage class]])
+    {
+        TGPreparedLocalAudioMessage *preparedLocalAudioMessage = (TGPreparedLocalAudioMessage *)preparedMessage;
+        
+        return [TGPreparedLocalAudioMessage messageByCopyingDataFromMessage:preparedLocalAudioMessage];
+    }
+    else if ([preparedMessage isKindOfClass:[TGPreparedLocalDocumentMessage class]])
+    {
+        TGPreparedLocalDocumentMessage *preparedLocalDocumentMessage = (TGPreparedLocalDocumentMessage *)preparedMessage;
+        
+        return [TGPreparedLocalDocumentMessage messageByCopyingDataFromMessage:preparedLocalDocumentMessage];
+    }
+    else if ([preparedMessage isKindOfClass:[TGPreparedMapMessage class]])
+    {
+        TGPreparedMapMessage *preparedMapMessage = (TGPreparedMapMessage *)preparedMessage;
+        
+        return [[TGPreparedMapMessage alloc] initWithLatitude:preparedMapMessage.latitude longitude:preparedMapMessage.longitude];
+    }
+    
+    return nil;
 }
 
 - (void)_commitSend
@@ -74,136 +124,244 @@
         [self _fail];
     else
     {
-        if ([self.preparedMessage isKindOfClass:[TGPreparedTextMessage class]])
+        if (_secretChatConversationIds.count != 0 || _chatConversationIds.count != 0)
         {
-            TGPreparedTextMessage *textMessage = (TGPreparedTextMessage *)self.preparedMessage;
+            [self beginUploadProgress];
             
-            if (self.preparedMessage.randomId != 0 && self.preparedMessage.mid != 0)
-                [TGDatabaseInstance() setTempIdForMessageId:textMessage.mid tempId:textMessage.randomId];
+            NSMutableArray *actionsWithOptions = [[NSMutableArray alloc] init];
             
-            [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+            NSMutableArray *childSendMessageActionPaths = [[NSMutableArray alloc] init];
             
-            self.cancelToken = [TGTelegraphInstance doBroadcastSendMessage:_userIds messageText:textMessage.text geo:nil tmpId:0 actor:self];
-        }
-        else if ([self.preparedMessage isKindOfClass:[TGPreparedMapMessage class]])
-        {
-            TGPreparedMapMessage *mapMessage = (TGPreparedMapMessage *)self.preparedMessage;
-            
-            TLInputGeoPoint$inputGeoPoint *geoPoint = [[TLInputGeoPoint$inputGeoPoint alloc] init];
-            geoPoint.lat = mapMessage.latitude;
-            geoPoint.n_long = mapMessage.longitude;
-            
-            [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
-
-            self.cancelToken = [TGTelegraphInstance doBroadcastSendMessage:_userIds messageText:nil geo:geoPoint tmpId:0 actor:self];
-        }
-        else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalImageMessage class]])
-        {
-            TGPreparedLocalImageMessage *localImageMessage = (TGPreparedLocalImageMessage *)self.preparedMessage;
-            
-            [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
-            
-            [self uploadFilesWithExtensions:@[@[localImageMessage.localImageDataPath, @"jpg", @(true)]]];
-        }
-        else if ([self.preparedMessage isKindOfClass:[TGPreparedRemoteImageMessage class]])
-        {
-            TGPreparedRemoteImageMessage *remoteImageMessage = (TGPreparedRemoteImageMessage *)self.preparedMessage;
-            
-            TLInputMedia$inputMediaPhoto *remotePhoto = [[TLInputMedia$inputMediaPhoto alloc] init];
-            TLInputPhoto$inputPhoto *inputId = [[TLInputPhoto$inputPhoto alloc] init];
-            inputId.n_id = remoteImageMessage.imageId;
-            inputId.access_hash = remoteImageMessage.accessHash;
-            remotePhoto.n_id = inputId;
-            
-            [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
-            
-            self.cancelToken = [TGTelegraphInstance doBroadcastSendMedia:_userIds media:remotePhoto tmpId:remoteImageMessage.randomId actor:self];
-        }
-        else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalVideoMessage class]])
-        {
-            TGPreparedLocalVideoMessage *localVideoMessage = (TGPreparedLocalVideoMessage *)self.preparedMessage;
-            
-            UIImage *thumbnailImage = [[UIImage alloc] initWithContentsOfFile:[self pathForLocalImagePath:localVideoMessage.localThumbnailDataPath]];
-            CGSize thumbnailSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
-            NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbnailSize), 0.6f);
-            
-            [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
-            
-            NSMutableArray *desc = [[NSMutableArray alloc] initWithArray:@[[localVideoMessage localVideoPath], @"mp4", @(true)]];
-            if (localVideoMessage.liveData != nil)
-                [desc addObject:localVideoMessage.liveData];
-            
-            [self uploadFilesWithExtensions:@[desc, @[thumbnailData, @"jpg", @(false)]]];
-        }
-        else if ([self.preparedMessage isKindOfClass:[TGPreparedRemoteVideoMessage class]])
-        {
-            TGPreparedRemoteVideoMessage *remoteVideoMessage = (TGPreparedRemoteVideoMessage *)self.preparedMessage;
-            
-            TLInputMedia$inputMediaVideo *remoteVideo = [[TLInputMedia$inputMediaVideo alloc] init];
-            TLInputVideo$inputVideo *inputVideo = [[TLInputVideo$inputVideo alloc] init];
-            inputVideo.n_id = remoteVideoMessage.videoId;
-            inputVideo.access_hash = remoteVideoMessage.accessHash;
-            remoteVideo.n_id = inputVideo;
-            
-            [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
-            self.cancelToken = [TGTelegraphInstance doBroadcastSendMedia:_userIds media:remoteVideo tmpId:remoteVideoMessage.randomId actor:self];
-        }
-        else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalDocumentMessage class]])
-        {
-            TGPreparedLocalDocumentMessage *localDocumentMessage = (TGPreparedLocalDocumentMessage *)self.preparedMessage;
-            
-            [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
-            
-            NSMutableArray *uploadFiles = [[NSMutableArray alloc] init];
-            
-            [uploadFiles addObject:@[
-                [[localDocumentMessage localDocumentDirectory] stringByAppendingPathComponent:[localDocumentMessage localDocumentFileName]], @"bin", @(true)
-            ]];
-            
-            if (localDocumentMessage.localThumbnailDataPath != nil)
+            for (NSNumber *nPeerId in _secretChatConversationIds)
             {
-                UIImage *image = [[UIImage alloc] initWithContentsOfFile:[self pathForLocalImagePath:localDocumentMessage.localThumbnailDataPath]];
-                if (image != nil)
+                TGPreparedMessage *preparedMessage = [self copyPreparedMessage:self.preparedMessage];
+                
+                int64_t encryptedConversationId = [TGDatabaseInstance() encryptedConversationIdForPeerId:[nPeerId longLongValue]];
+                int64_t accessHash = [TGDatabaseInstance() encryptedConversationAccessHash:[nPeerId longLongValue]];
+                
+                if (preparedMessage.randomId == 0)
                 {
-                    NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(image, TGFitSize(image.size, CGSizeMake(90, 90))), 0.6f);
-                    if (thumbnailData != nil)
-                        [uploadFiles addObject:@[thumbnailData, @"jpg", @(false)]];
+                    int64_t randomId = 0;
+                    arc4random_buf(&randomId, sizeof(randomId));
+                    preparedMessage.randomId = randomId;
                 }
+                
+                int32_t messageId = [[TGDatabaseInstance() generateLocalMids:1][0] intValue];
+                preparedMessage.mid = messageId;
+                
+                preparedMessage.date = (int)[[TGTelegramNetworking instance] approximateRemoteTime];
+                
+                TGMessage *message = [preparedMessage message];
+                if (message == nil)
+                {
+                    TGLog(@"***** Failed to generate message from prepared message");
+                    continue;
+                }
+                
+                message.outgoing = true;
+                message.unread = true;
+                message.fromUid = TGTelegraphInstance.clientUserId;
+                message.toUid = [nPeerId longLongValue];
+                message.deliveryState = TGMessageDeliveryStatePending;
+                message.randomId = preparedMessage.randomId;
+                message.isBroadcast = true;
+                
+                NSString *path = [[NSString alloc] initWithFormat:@"/tg/sendSecretMessage/(%" PRId64 ")/(%" PRId32 ")", (int64_t)[nPeerId longLongValue], messageId];
+                NSDictionary *options = @{@"conversationId": nPeerId, @"encryptedConversationId": @(encryptedConversationId), @"accessHash": @(accessHash), @"preparedMessage": preparedMessage};
+                
+                [TGDatabaseInstance() addMessagesToConversation:@[message] conversationId:[nPeerId longLongValue] updateConversation:nil dispatch:true countUnread:false updateDates:false];
+                
+                [childSendMessageActionPaths addObject:path];
+                [actionsWithOptions addObject:@[path, options]];
             }
             
-            [self uploadFilesWithExtensions:uploadFiles];
-        }
-        else if ([self.preparedMessage isKindOfClass:[TGPreparedContactMessage class]])
-        {
-            TGPreparedContactMessage *contactMessage = (TGPreparedContactMessage *)self.preparedMessage;
+            for (NSNumber *nPeerId in _chatConversationIds)
+            {
+                TGPreparedMessage *preparedMessage = [self copyPreparedMessage:self.preparedMessage];
+                
+                if (preparedMessage.randomId == 0)
+                {
+                    int64_t randomId = 0;
+                    arc4random_buf(&randomId, sizeof(randomId));
+                    preparedMessage.randomId = randomId;
+                }
+                
+                int32_t messageId = [[TGDatabaseInstance() generateLocalMids:1][0] intValue];
+                preparedMessage.mid = messageId;
+                
+                preparedMessage.date = (int)[[TGTelegramNetworking instance] approximateRemoteTime];
+                
+                TGMessage *message = [preparedMessage message];
+                if (message == nil)
+                {
+                    TGLog(@"***** Failed to generate message from prepared message");
+                    continue;
+                }
+                
+                message.outgoing = true;
+                message.unread = true;
+                message.fromUid = TGTelegraphInstance.clientUserId;
+                message.toUid = [nPeerId longLongValue];
+                message.deliveryState = TGMessageDeliveryStatePending;
+                message.randomId = preparedMessage.randomId;
+                message.isBroadcast = true;
+                
+                NSString *path = [[NSString alloc] initWithFormat:@"/tg/sendCommonMessage/(%" PRId64 ")/(%" PRId32 ")", (int64_t)[nPeerId longLongValue], messageId];
+                NSDictionary *options = @{@"conversationId": nPeerId, @"preparedMessage": preparedMessage};
+                
+                [TGDatabaseInstance() addMessagesToConversation:@[message] conversationId:[nPeerId longLongValue] updateConversation:nil dispatch:true countUnread:false updateDates:false];
+                
+                [childSendMessageActionPaths addObject:path];
+                [actionsWithOptions addObject:@[path, options]];
+            }
             
-            [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+            _childSendMessageActionPaths = childSendMessageActionPaths;
+            _remainingChildSendMessageActionPaths = [[NSMutableArray alloc] initWithArray:_childSendMessageActionPaths];
             
-            TLInputMedia$inputMediaContact *inputContact = [[TLInputMedia$inputMediaContact alloc] init];
-            inputContact.first_name = contactMessage.firstName;
-            inputContact.last_name = contactMessage.lastName;
-            inputContact.phone_number = contactMessage.phoneNumber;
+            for (NSArray *actionAndOption in actionsWithOptions)
+            {
+                [ActionStageInstance() requestActor:actionAndOption[0] options:actionAndOption[1] watcher:self];
+            }
             
-            self.cancelToken = [TGTelegraphInstance doBroadcastSendMedia:_userIds media:inputContact tmpId:contactMessage.randomId actor:self];
-        }
-        else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalAudioMessage class]])
-        {
-            TGPreparedLocalAudioMessage *localAudioMessage = (TGPreparedLocalAudioMessage *)self.preparedMessage;
-            
-            [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
-            
-            NSString *pathExtension = [[localAudioMessage localAudioFilePath1] pathExtension];
-            if (pathExtension.length == 0)
-                pathExtension = @"m4a";
-            
-            NSMutableArray *desc = [[NSMutableArray alloc] initWithArray:@[[localAudioMessage localAudioFilePath1], pathExtension, @(true)]];
-            if (localAudioMessage.liveData != nil)
-                [desc addObject:localAudioMessage.liveData];
-            [self uploadFilesWithExtensions:@[desc]];
+            if (actionsWithOptions.count == 0)
+                [self _commitSendBroadcast];
         }
         else
-            [self _fail];
+            [self _commitSendBroadcast];
     }
+}
+
+- (void)_commitSendBroadcast
+{
+    if ([self.preparedMessage isKindOfClass:[TGPreparedTextMessage class]])
+    {
+        TGPreparedTextMessage *textMessage = (TGPreparedTextMessage *)self.preparedMessage;
+        
+        if (self.preparedMessage.randomId != 0 && self.preparedMessage.mid != 0)
+            [TGDatabaseInstance() setTempIdForMessageId:textMessage.mid tempId:textMessage.randomId];
+        
+        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+        
+        self.cancelToken = [TGTelegraphInstance doBroadcastSendMessage:_userIds messageText:textMessage.text geo:nil tmpId:0 actor:self];
+    }
+    else if ([self.preparedMessage isKindOfClass:[TGPreparedMapMessage class]])
+    {
+        TGPreparedMapMessage *mapMessage = (TGPreparedMapMessage *)self.preparedMessage;
+        
+        TLInputGeoPoint$inputGeoPoint *geoPoint = [[TLInputGeoPoint$inputGeoPoint alloc] init];
+        geoPoint.lat = mapMessage.latitude;
+        geoPoint.n_long = mapMessage.longitude;
+        
+        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+        
+        self.cancelToken = [TGTelegraphInstance doBroadcastSendMessage:_userIds messageText:nil geo:geoPoint tmpId:0 actor:self];
+    }
+    else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalImageMessage class]])
+    {
+        TGPreparedLocalImageMessage *localImageMessage = (TGPreparedLocalImageMessage *)self.preparedMessage;
+        
+        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+        
+        [self uploadFilesWithExtensions:@[@[localImageMessage.localImageDataPath, @"jpg", @(true)]]];
+    }
+    else if ([self.preparedMessage isKindOfClass:[TGPreparedRemoteImageMessage class]])
+    {
+        TGPreparedRemoteImageMessage *remoteImageMessage = (TGPreparedRemoteImageMessage *)self.preparedMessage;
+        
+        TLInputMedia$inputMediaPhoto *remotePhoto = [[TLInputMedia$inputMediaPhoto alloc] init];
+        TLInputPhoto$inputPhoto *inputId = [[TLInputPhoto$inputPhoto alloc] init];
+        inputId.n_id = remoteImageMessage.imageId;
+        inputId.access_hash = remoteImageMessage.accessHash;
+        remotePhoto.n_id = inputId;
+        
+        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+        
+        self.cancelToken = [TGTelegraphInstance doBroadcastSendMedia:_userIds media:remotePhoto tmpId:remoteImageMessage.randomId actor:self];
+    }
+    else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalVideoMessage class]])
+    {
+        TGPreparedLocalVideoMessage *localVideoMessage = (TGPreparedLocalVideoMessage *)self.preparedMessage;
+        
+        UIImage *thumbnailImage = [[UIImage alloc] initWithContentsOfFile:[self pathForLocalImagePath:localVideoMessage.localThumbnailDataPath]];
+        CGSize thumbnailSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
+        NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbnailSize), 0.6f);
+        
+        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+        
+        NSMutableArray *desc = [[NSMutableArray alloc] initWithArray:@[[localVideoMessage localVideoPath], @"mp4", @(true)]];
+        if (localVideoMessage.liveData != nil)
+            [desc addObject:localVideoMessage.liveData];
+        
+        [self uploadFilesWithExtensions:@[desc, @[thumbnailData, @"jpg", @(false)]]];
+    }
+    else if ([self.preparedMessage isKindOfClass:[TGPreparedRemoteVideoMessage class]])
+    {
+        TGPreparedRemoteVideoMessage *remoteVideoMessage = (TGPreparedRemoteVideoMessage *)self.preparedMessage;
+        
+        TLInputMedia$inputMediaVideo *remoteVideo = [[TLInputMedia$inputMediaVideo alloc] init];
+        TLInputVideo$inputVideo *inputVideo = [[TLInputVideo$inputVideo alloc] init];
+        inputVideo.n_id = remoteVideoMessage.videoId;
+        inputVideo.access_hash = remoteVideoMessage.accessHash;
+        remoteVideo.n_id = inputVideo;
+        
+        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+        self.cancelToken = [TGTelegraphInstance doBroadcastSendMedia:_userIds media:remoteVideo tmpId:remoteVideoMessage.randomId actor:self];
+    }
+    else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalDocumentMessage class]])
+    {
+        TGPreparedLocalDocumentMessage *localDocumentMessage = (TGPreparedLocalDocumentMessage *)self.preparedMessage;
+        
+        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+        
+        NSMutableArray *uploadFiles = [[NSMutableArray alloc] init];
+        
+        [uploadFiles addObject:@[
+                                 [[localDocumentMessage localDocumentDirectory] stringByAppendingPathComponent:[localDocumentMessage localDocumentFileName]], @"bin", @(true)
+                                 ]];
+        
+        if (localDocumentMessage.localThumbnailDataPath != nil)
+        {
+            UIImage *image = [[UIImage alloc] initWithContentsOfFile:[self pathForLocalImagePath:localDocumentMessage.localThumbnailDataPath]];
+            if (image != nil)
+            {
+                NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(image, TGFitSize(image.size, CGSizeMake(90, 90))), 0.6f);
+                if (thumbnailData != nil)
+                    [uploadFiles addObject:@[thumbnailData, @"jpg", @(false)]];
+            }
+        }
+        
+        [self uploadFilesWithExtensions:uploadFiles];
+    }
+    else if ([self.preparedMessage isKindOfClass:[TGPreparedContactMessage class]])
+    {
+        TGPreparedContactMessage *contactMessage = (TGPreparedContactMessage *)self.preparedMessage;
+        
+        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+        
+        TLInputMedia$inputMediaContact *inputContact = [[TLInputMedia$inputMediaContact alloc] init];
+        inputContact.first_name = contactMessage.firstName;
+        inputContact.last_name = contactMessage.lastName;
+        inputContact.phone_number = contactMessage.phoneNumber;
+        
+        self.cancelToken = [TGTelegraphInstance doBroadcastSendMedia:_userIds media:inputContact tmpId:contactMessage.randomId actor:self];
+    }
+    else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalAudioMessage class]])
+    {
+        TGPreparedLocalAudioMessage *localAudioMessage = (TGPreparedLocalAudioMessage *)self.preparedMessage;
+        
+        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+        
+        NSString *pathExtension = [[localAudioMessage localAudioFilePath1] pathExtension];
+        if (pathExtension.length == 0)
+            pathExtension = @"m4a";
+        
+        NSMutableArray *desc = [[NSMutableArray alloc] initWithArray:@[[localAudioMessage localAudioFilePath1], pathExtension, @(true)]];
+        if (localAudioMessage.liveData != nil)
+            [desc addObject:localAudioMessage.liveData];
+        [self uploadFilesWithExtensions:@[desc]];
+    }
+    else
+        [self _fail];
 }
 
 - (void)_fail
@@ -887,5 +1045,23 @@
     else
         [self _fail];
 }*/
+
+- (void)actorCompleted:(int)status path:(NSString *)path result:(id)result
+{
+    if ([_childSendMessageActionPaths containsObject:path])
+    {
+        if (status == ASStatusSuccess)
+        {
+            [_remainingChildSendMessageActionPaths removeObject:path];
+            
+            if (_remainingChildSendMessageActionPaths.count == 0)
+                [self _commitSendBroadcast];
+        }
+        else
+            [self _fail];
+    }
+    
+    [super actorCompleted:status path:path result:result];
+}
 
 @end

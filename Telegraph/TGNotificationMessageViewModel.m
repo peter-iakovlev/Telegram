@@ -8,7 +8,9 @@
 #import "TGModernImageViewModel.h"
 #import "TGModernFlatteningViewModel.h"
 #import "TGModernTextViewModel.h"
-#import "TGModernRemoteImageViewModel.h"
+
+#import "TGModernDataImageViewModel.h"
+#import "TGModernDataImageView.h"
 
 #import "TGModernRemoteImageView.h"
 
@@ -20,7 +22,7 @@
     TGModernImageViewModel *_backgroundModel;
     TGModernFlatteningViewModel *_contentModel;
     TGModernTextViewModel *_textModel;
-    TGModernRemoteImageViewModel *_imageModel;
+    TGModernDataImageViewModel *_imageModel;
     
     TGDoubleTapGestureRecognizer *_boundDoubleTapRecognizer;
     TGDoubleTapGestureRecognizer *_boundImageTapRecognizer;
@@ -172,9 +174,12 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
                 
                 if (imageUrl != nil)
                 {
-                    _imageModel = [[TGModernRemoteImageViewModel alloc] initWithUrl:imageUrl filter:@"circle:64x64"];
-                    _imageModel.fadeTransition = true;
-                    _imageModel.fadeTransitionDuration = 0.2;
+                    NSMutableString *imageUri = [[NSMutableString alloc] initWithString:@"peer-avatar-thumbnail://?"];
+                    
+                    [imageUri appendFormat:@"legacy-thumbnail-cache-url=%@", imageUrl];
+                    [imageUri appendFormat:@"&width=%d&height=%d", 64, 64];
+                    
+                    _imageModel = [[TGModernDataImageViewModel alloc] initWithUri:imageUri options:nil];
                     [self addSubmodel:_imageModel];
                 }
                 
@@ -214,15 +219,6 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
                     NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageActionTitleBoldFont], (NSString *)kCTFontAttributeName, nil];
                     NSRange range = NSMakeRange(formatNameRange.location, authorName.length);
                     additionalAttributes = [[NSArray alloc] initWithObjects:[[NSValue alloc] initWithBytes:&range objCType:@encode(NSRange)], fontAttributes, nil];
-                }
-                
-                if (imageUrl != nil)
-                {
-                    _imageModel = [[TGModernRemoteImageViewModel alloc] initWithUrl:imageUrl filter:@"circle:64x64"];
-                    _imageModel.skipDrawInContext = true;
-                    _imageModel.fadeTransition = true;
-                    _imageModel.fadeTransitionDuration = 0.2;
-                    [self addSubmodel:_imageModel];
                 }
                 
                 break;
@@ -340,16 +336,6 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
 - (CGRect)effectiveContentFrame
 {
     return _backgroundModel.frame;
-}
-
-- (CGRect)effectiveContentImageFrame
-{
-    return _imageModel.frame;
-}
-
-- (UIImage *)effectiveContentImage
-{
-    return [(TGModernRemoteImageView *)[_imageModel boundView] currentImage];
 }
 
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition
@@ -474,6 +460,11 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
     [_contentModel updateSubmodelContentsIfNeeded];
     
     [super layoutForContainerSize:containerSize];
+}
+
+- (UIView *)referenceViewForImageTransition
+{
+    return [_imageModel boundView];
 }
 
 @end

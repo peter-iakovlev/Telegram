@@ -300,25 +300,34 @@
             AVChannelLayoutKey: [NSData dataWithBytes:&acl length: sizeof(acl)]
         };
         
-        AVAssetWriterInput* audioWriterInput = [AVAssetWriterInput assetWriterInputWithMediaType:AVMediaTypeAudio outputSettings:audioSettings];
-        AVAssetReader *audioReader = [AVAssetReader assetReaderWithAsset:avAsset error:&error];
-        AVAssetTrack *audioTrack = [[avAsset tracksWithMediaType:AVMediaTypeAudio] objectAtIndex:0];
-        AVAssetReaderTrackOutput *readerOutput = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:audioTrack outputSettings:@{
-                AVFormatIDKey: @(kAudioFormatLinearPCM),
-                AVSampleRateKey: @(44100.0f),
-                AVNumberOfChannelsKey: @(1),
-                AVChannelLayoutKey: [NSData dataWithBytes:&acl length: sizeof(acl)],
-                AVLinearPCMBitDepthKey: @(16),
-                AVLinearPCMIsNonInterleaved: @false,
-                AVLinearPCMIsFloatKey: @false,
-                AVLinearPCMIsBigEndianKey: @false
-        }];
+        AVAssetTrack *audioTrack = [[avAsset tracksWithMediaType:AVMediaTypeAudio] firstObject];
         
-        [audioReader addOutput:readerOutput];
-        NSParameterAssert(audioWriterInput);
-        //NSParameterAssert([_assetWriter canAddInput:audioWriterInput]);
-        audioWriterInput.expectsMediaDataInRealTime = NO;
-        [_assetWriter addInput:audioWriterInput];
+        AVAssetWriterInput *audioWriterInput = nil;
+        AVAssetReaderTrackOutput *readerOutput = nil;
+        AVAssetReader *audioReader = nil;
+        if (audioTrack != nil)
+        {
+            audioWriterInput = [AVAssetWriterInput assetWriterInputWithMediaType:AVMediaTypeAudio outputSettings:audioSettings];
+            audioReader = [AVAssetReader assetReaderWithAsset:avAsset error:&error];
+            
+            readerOutput = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:audioTrack outputSettings:@{
+                    AVFormatIDKey: @(kAudioFormatLinearPCM),
+                    AVSampleRateKey: @(44100.0f),
+                    AVNumberOfChannelsKey: @(1),
+                    AVChannelLayoutKey: [NSData dataWithBytes:&acl length: sizeof(acl)],
+                    AVLinearPCMBitDepthKey: @(16),
+                    AVLinearPCMIsNonInterleaved: @false,
+                    AVLinearPCMIsFloatKey: @false,
+                    AVLinearPCMIsBigEndianKey: @false
+            }];
+            
+            [audioReader addOutput:readerOutput];
+            NSParameterAssert(audioWriterInput);
+            
+            audioWriterInput.expectsMediaDataInRealTime = NO;
+            [_assetWriter addInput:audioWriterInput];
+        }
+        
         [_assetWriter startWriting];
         [_assetWriter startSessionAtSourceTime:kCMTimeZero];
         [reader startReading];
@@ -368,6 +377,8 @@
                          }
                          case AVAssetReaderStatusCompleted:
                          {
+                             if (audioReader != nil)
+                             {
                              [audioReader startReading];
                              [_assetWriter startSessionAtSourceTime:kCMTimeZero];
 
@@ -432,6 +443,38 @@
                                   }
                                   
                               }];
+                             }
+                             else
+                             {
+                                 [_assetWriter finishWritingWithCompletionHandler:^
+                                  {
+                                      [_readQueue dispatch:^
+                                       {
+                                           NSUInteger finalSize = 0;
+                                           NSData *headerData = nil;
+                                           __block TGLiveUploadActorData *liveData = nil;
+                                           
+                                           if (_liveUpload)
+                                           {
+                                               headerData = [self _finalHeaderDataAndSize:&finalSize];
+                                               
+                                               if (headerData != nil && finalSize != 0)
+                                               {
+                                                   dispatch_sync([ActionStageInstance() globalStageDispatchQueue], ^
+                                                                 {
+                                                                     TGLiveUploadActor *actor = (TGLiveUploadActor *)[ActionStageInstance() executingActorWithPath:_liveUploadPath];
+                                                                     
+                                                                     liveData = [actor finishRestOfFileWithHeader:headerData finalSize:finalSize];
+                                                                 });
+                                               }
+                                           }
+                                           
+                                           if (completion)
+                                               completion(_tempFilePath, videoDimensions, videoDuration, liveData);
+                                       }];
+                                  }];
+                             }
+                             
                              break;
                          }
                          case AVAssetReaderStatusFailed:

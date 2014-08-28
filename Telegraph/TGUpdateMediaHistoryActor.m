@@ -46,7 +46,7 @@
     
     _peerId = [options[@"peerId"] longLongValue];
     
-    if ([TGDatabaseInstance() loadPeerMinMediaMid:_peerId] != 0)
+    if (_peerId <= INT_MIN || [TGDatabaseInstance() loadPeerMinMediaMid:_peerId] != 0)
         [ActionStageInstance() actionCompleted:self.path result:nil];
     else
         [self _requestMoreHistory];

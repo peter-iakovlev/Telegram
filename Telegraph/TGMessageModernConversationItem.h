@@ -45,8 +45,6 @@ extern int32_t TGMessageModernConversationItemLocalUserId;
 - (void)setTemporaryHighlighted:(bool)temporaryHighlighted viewStorage:(TGModernViewStorage *)viewStorage;
 
 - (CGRect)effectiveContentFrame;
-- (CGRect)effectiveContentImageFrame;
-- (UIImage *)effectiveContentImage;
 - (UIView *)referenceViewForImageTransition;
 
 @end

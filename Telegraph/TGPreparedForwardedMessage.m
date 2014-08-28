@@ -47,6 +47,7 @@
     TGMessage *message = [_innerMessage copy];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
     
     TGForwardedMessageMediaAttachment *forwardAttachment = [[TGForwardedMessageMediaAttachment alloc] init];
     forwardAttachment.forwardUid = (int32_t)_innerMessage.fromUid;

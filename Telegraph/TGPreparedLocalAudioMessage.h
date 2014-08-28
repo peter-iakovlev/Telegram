@@ -22,6 +22,7 @@
 + (instancetype)messageWithTempAudioPath:(NSString *)tempVideoPath duration:(int32_t)duration;
 + (instancetype)messageWithLocalAudioId:(int64_t)localAudioId duration:(int32_t)duration fileSize:(int32_t)fileSize;
 + (instancetype)messageByCopyingDataFromMedia:(TGAudioMediaAttachment *)audioMedia;
++ (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalAudioMessage *)source;
 
 - (NSString *)localAudioFileDirectory;
 + (NSString *)localAudioFileDirectoryForLocalAudioId:(int64_t)audioId;

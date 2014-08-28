@@ -52,4 +52,9 @@
     [scrollDelegate scrollViewBoundsChanged:bounds];
 }
 
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+}
+
 @end

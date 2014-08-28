@@ -660,7 +660,7 @@
         if (viewController != nil)
         {   
             if (self.dismiss)
-                self.dismiss(true);
+                self.dismiss(true, false);
         }
     }
 }

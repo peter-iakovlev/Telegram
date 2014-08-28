@@ -724,6 +724,19 @@ UIImage *TGAverageColorImage(UIColor *color)
     return image;
 }
 
+UIImage *TGAverageColorRoundImage(UIColor *color, CGSize size)
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(size.width, size.height), true, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, [color CGColor]);
+    CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 1.0f));
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, size.width, size.height));
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
 UIImage *TGAverageColorAttachmentImage(UIColor *color)
 {
     CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
@@ -1418,6 +1431,46 @@ UIImage *TGBlurredBackgroundImage(UIImage *source, CGSize size)
     UIGraphicsPopContext();
     
     brightenAndBlurImage(targetMemory, targetContextSize.width, targetContextSize.height, targetBytesPerRow, false);
+    
+    CGImageRef bitmapImage = CGBitmapContextCreateImage(targetContext);
+    UIImage *image = [[UIImage alloc] initWithCGImage:bitmapImage scale:scale orientation:UIImageOrientationUp];
+    CGImageRelease(bitmapImage);
+    
+    CGContextRelease(targetContext);
+    free(targetMemory);
+    
+    return image;
+}
+
+UIImage *TGRoundImage(UIImage *source, CGSize size)
+{
+    CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
+    
+    const struct { int width, height; } targetContextSize = { (int)(size.width * scale), (int)(size.height * scale) };
+    
+    size_t targetBytesPerRow = ((4 * (int)targetContextSize.width) + 15) & (~15);
+    
+    void *targetMemory = malloc((int)(targetBytesPerRow * targetContextSize.height));
+    memset(targetMemory, 0, (int)(targetBytesPerRow * targetContextSize.height));
+    
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host;
+    
+    CGContextRef targetContext = CGBitmapContextCreate(targetMemory, (int)targetContextSize.width, (int)targetContextSize.height, 8, targetBytesPerRow, colorSpace, bitmapInfo);
+    
+    CGColorSpaceRelease(colorSpace);
+    
+    UIGraphicsPushContext(targetContext);
+    CGContextTranslateCTM(targetContext, targetContextSize.width / 2.0f, targetContextSize.height / 2.0f);
+    CGContextScaleCTM(targetContext, 1.0f, -1.0f);
+    CGContextTranslateCTM(targetContext, -targetContextSize.width / 2.0f, -targetContextSize.height / 2.0f);
+    
+    CGContextBeginPath(targetContext);
+    CGContextAddEllipseInRect(targetContext, CGRectMake(0.0f, 0.0f, targetContextSize.width, targetContextSize.height));
+    CGContextClip(targetContext);
+    
+    [source drawInRect:CGRectMake(0, 0, targetContextSize.width, targetContextSize.height) blendMode:kCGBlendModeCopy alpha:1.0f];
+    UIGraphicsPopContext();
     
     CGImageRef bitmapImage = CGBitmapContextCreateImage(targetContext);
     UIImage *image = [[UIImage alloc] initWithCGImage:bitmapImage scale:scale orientation:UIImageOrientationUp];

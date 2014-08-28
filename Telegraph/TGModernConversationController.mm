@@ -39,6 +39,11 @@
 #import "TGModernGallerySecretImageItem.h"
 #import "TGModernGallerySecretVideoItem.h"
 #import "TGGenericPeerMediaGalleryModel.h"
+#import "TGGroupAvatarGalleryModel.h"
+#import "TGGroupAvatarGalleryItem.h"
+
+#import "TGGenericPeerGalleryItem.h"
+#import "TGModernGalleryVideoItemView.h"
 
 #import "TGMapViewController.h"
 #import "TGImagePickerController.h"
@@ -54,10 +59,6 @@
 #import "TGModernMediaPickerController.h"
 
 #import "TGMediaItem.h"
-#import "TGImageViewController.h"
-#import "TGTelegraphImageViewControllerCompanion.h"
-#import "TGTelegraphProfileImageViewCompanion.h"
-#import "TGTelegraphGroupPhotoImageViewControllerCompanion.h"
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
 #import "TGGenericModernConversationCompanion.h"
@@ -76,9 +77,6 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 
 #import "TGVideoConverter.h"
-
-#import "TGGenericPeerGalleryItem.h"
-#import "TGModernGalleryVideoItemView.h"
 
 #if TARGET_IPHONE_SIMULATOR
 NSInteger TGModernConversationControllerUnloadHistoryLimit = 500;
@@ -1727,10 +1725,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
 - (void)openMediaFromMessage:(int32_t)messageId
 {
     TGMessageModernConversationItem *mediaMessageItem = nil;
-    CGRect contentFrame = CGRectZero;
     TGModernCollectionCell *mediaItemCell = nil;
-    UIView *referenceView = nil;
-    TGMediaAttachment *mediaAttachment = nil;
     
     int index = -1;
     for (TGMessageModernConversationItem *messageItem in _items)
@@ -1743,7 +1738,6 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
             if (messageItem->_mediaAvailabilityStatus && cell != nil)
             {
                 mediaMessageItem = messageItem;
-                contentFrame = [[_collectionView cellForItemAtIndexPath:[NSIndexPath indexPathForItem:index inSection:0]].contentView convertRect:[messageItem effectiveContentImageFrame] toView:self.view.window];
                 mediaItemCell = cell;
             }
             
@@ -1753,38 +1747,24 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
     
     if (mediaMessageItem != nil && index >= 0)
     {
-        id<TGMediaItem> mediaItem = nil;
-        NSString *thumbnailUrl = nil;
-        UIImage *thumbnailImage = nil;
-        TGImageInfo *mediaImageInfo = nil;
-        bool isVideo = false;
-        bool isAction = false;
-        
         TGUser *author = [TGDatabaseInstance() loadUser:mediaMessageItem->_message.outgoing ? TGTelegraphInstance.clientUserId : (int32_t)mediaMessageItem->_message.fromUid];
         if (author == nil)
             return;
+        
+        bool isGallery = false;
+        bool isAvatar = false;
+        TGImageInfo *avatarImageInfo = nil;
+        bool foundMedia = false;
         
         for (TGMediaAttachment *attachment in mediaMessageItem->_message.mediaAttachments)
         {
             switch (attachment.type)
             {
                 case TGVideoMediaAttachmentType:
-                {
-                    mediaItem = [[TGMessageMediaItem alloc] initWithMessage:mediaMessageItem->_message author:author videoAttachment:(TGVideoMediaAttachment *)attachment];
-                    thumbnailUrl = [((TGVideoMediaAttachment *)attachment).thumbnailInfo closestImageUrlWithSize:CGSizeMake(90, 90) resultingSize:NULL];
-                    thumbnailImage = [mediaMessageItem effectiveContentImage];
-                    isVideo = true;
-                    mediaAttachment = attachment;
-                    
-                    break;
-                }
                 case TGImageMediaAttachmentType:
                 {
-                    mediaItem = [[TGMessageMediaItem alloc] initWithMessage:mediaMessageItem->_message author:author imageInfo:((TGImageMediaAttachment *)attachment).imageInfo];
-                    thumbnailUrl = [((TGImageMediaAttachment *)attachment).imageInfo closestImageUrlWithSize:CGSizeMake(90, 90) resultingSize:NULL];
-                    thumbnailImage = [mediaMessageItem effectiveContentImage];
-                    mediaImageInfo = ((TGImageMediaAttachment *)attachment).imageInfo;
-                    mediaAttachment = attachment;
+                    foundMedia = true;
+                    isGallery = true;
                     
                     break;
                 }
@@ -1795,14 +1775,12 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                     {
                         case TGMessageActionChatEditPhoto:
                         {
-                            TGImageMediaAttachment *photo = actionAttachment.actionData[@"photo"];
-                            TGProfileImageItem *imageItem = [[TGProfileImageItem alloc] initWithProfilePhoto:photo];
-                            [imageItem setExplicitItemId:[[NSNumber alloc] initWithInt:messageId]];
-                            mediaItem = imageItem;
-                            thumbnailUrl = [photo.imageInfo closestImageUrlWithSize:CGSizeMake(90, 90) resultingSize:NULL];
-                            thumbnailImage = [mediaMessageItem effectiveContentImage];
+                            foundMedia = true;
                             
-                            isAction = true;
+                            TGImageMediaAttachment *photo = actionAttachment.actionData[@"photo"];
+                            
+                            isAvatar = true;
+                            avatarImageInfo = photo.imageInfo;
                             
                             break;
                         }
@@ -1814,6 +1792,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                 }
                 case TGLocationMediaAttachmentType:
                 {
+                    foundMedia = true;
+                    
                     TGLocationMediaAttachment *mapAttachment = (TGLocationMediaAttachment *)attachment;
                     TGMapViewController *mapController = [[TGMapViewController alloc] initInMapModeWithLatitude:mapAttachment.latitude longitude:mapAttachment.longitude user:[TGDatabaseInstance() loadUser:(int32_t)mediaMessageItem->_message.fromUid]];
                     mapController.watcher = _companion.actionHandle;
@@ -1834,6 +1814,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                 }
                 case TGDocumentMediaAttachmentType:
                 {
+                    foundMedia = true;
+                    
                     TGDocumentMediaAttachment *documentAttachment = (TGDocumentMediaAttachment *)attachment;
                     
                     if ([[[documentAttachment.fileName pathExtension] lowercaseString] isEqualToString:@"strings"])
@@ -2026,6 +2008,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                 }
                 case TGAudioMediaAttachmentType:
                 {
+                    foundMedia = true;
+                    
                     TGAudioMediaAttachment *audioAttachment = (TGAudioMediaAttachment *)attachment;
                     
                     if (_currentAudioPlayerMessageId != messageId)
@@ -2039,61 +2023,37 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                     break;
             }
             
-            if (mediaItem != nil)
+            if (foundMedia)
                 break;
         }
         
-        if (mediaItem == nil || CGRectIsEmpty(contentFrame))
+        if (!foundMedia)
             return;
         
-#if true
-        /*if (mediaMessageItem->_message.messageLifetime != 0)
-        {
-            bool initiatedCountdown = false;
-            
-            if (isVideo)
-            {
-                TGModernGallerySecretVideoItem *secretVideoItem = [[TGModernGallerySecretVideoItem alloc] initWithMessageId:mediaMessageItem->_message.mid videoMedia:(TGVideoMediaAttachment *)mediaAttachment messageCountdownTime:[TGDatabaseInstance() messageCountdownLocalTime:mediaMessageItem->_message.mid enqueueIfNotQueued:!mediaMessageItem->_message.outgoing initiatedCountdown:&initiatedCountdown] messageLifetime:mediaMessageItem->_message.messageLifetime];
-                
-                TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
-                modernGallery.items = @[secretVideoItem];
-                
-                TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
-                controllerWindow.hidden = false;
-            }
-            else if (mediaImageInfo != nil)
-            {
-                TGModernGallerySecretImageItem *secretImageItem = [[TGModernGallerySecretImageItem alloc] initWithMessageId:mediaMessageItem->_message.mid imageInfo:mediaImageInfo messageCountdownTime:[TGDatabaseInstance() messageCountdownLocalTime:mediaMessageItem->_message.mid enqueueIfNotQueued:!mediaMessageItem->_message.outgoing initiatedCountdown:&initiatedCountdown] messageLifetime:mediaMessageItem->_message.messageLifetime];
-                
-                TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
-                modernGallery.items = @[secretImageItem];
-                
-                TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
-                controllerWindow.hidden = false;
-            }
-            
-            if (initiatedCountdown)
-            {
-                [TGDatabaseInstance() raiseSecretMessageFlagsByMessageId:mediaMessageItem->_message.mid flagsToRise:TGSecretMessageFlagViewed];
-                [_companion _setMessageFlags:mediaMessageItem->_message.mid flags:TGSecretMessageFlagViewed];
-                [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
-            }
-            
-            return;
-        }
-        else*/
-        {
             [self stopInlineMediaIfPlaying];
             
-            TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+        TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+        
+        if (isGallery)
+        {
             modernGallery.model = [[TGGenericPeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId atMessageId:mediaMessageItem->_message.mid];
+        }
+        else if (isAvatar)
+        {
+            NSString *legacyThumbnailUrl = [avatarImageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL];
+            NSString *legacyUrl = [avatarImageInfo imageUrlForLargestSize:NULL];
             
-            __weak TGModernConversationController *weakSelf = self;
-            
-            modernGallery.itemFocused = ^(id<TGModernGalleryItem> item)
+            modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithMessageId:mediaMessageItem->_message.mid legacyThumbnailUrl:legacyThumbnailUrl legacyUrl:legacyUrl imageSize:CGSizeMake(640.0f, 640.0f)];
+        }
+        
+        __weak TGModernConversationController *weakSelf = self;
+        
+        modernGallery.itemFocused = ^(id<TGModernGalleryItem> item)
+        {
+            __strong TGModernConversationController *strongSelf = weakSelf;
+            if (strongSelf != nil)
             {
-                __strong TGModernConversationController *strongSelf = weakSelf;
-                if (strongSelf != nil && [item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+                if ([item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
                 {
                     id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
                     int32_t messageId = [concreteItem messageId];
@@ -2104,20 +2064,33 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                         [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
                     }
                 }
-            };
-            
-            modernGallery.finishedTransitionIn = ^(__unused id<TGModernGalleryItem> item, TGModernGalleryItemView *itemView)
-            {
-                if ([itemView isKindOfClass:[TGModernGalleryVideoItemView class]])
+                else if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
                 {
-                    [((TGModernGalleryVideoItemView *)itemView) play];
+                    int32_t messageId = ((TGGroupAvatarGalleryItem *)item).messageId;
+                    strongSelf.companion.mediaHiddenMessageId = messageId;
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
+                    }
                 }
-            };
-            
-            modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item, TGModernGalleryItemView *itemView)
+            }
+        };
+        
+        modernGallery.finishedTransitionIn = ^(__unused id<TGModernGalleryItem> item, TGModernGalleryItemView *itemView)
+        {
+            if ([itemView isKindOfClass:[TGModernGalleryVideoItemView class]])
             {
-                __strong TGModernConversationController *strongSelf = weakSelf;
-                if (strongSelf != nil && [item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+                [((TGModernGalleryVideoItemView *)itemView) play];
+            }
+        };
+        
+        modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item, TGModernGalleryItemView *itemView)
+        {
+            __strong TGModernConversationController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                if ([item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
                 {
                     if ([itemView isKindOfClass:[TGModernGalleryVideoItemView class]])
                     {
@@ -2136,14 +2109,30 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                         }
                     }
                 }
-                
-                return nil;
-            };
+                else if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
+                {
+                    int32_t messageId = ((TGGroupAvatarGalleryItem *)item).messageId;
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        TGMessageModernConversationItem *cellItem = [cell boundItem];
+                        if (cellItem->_message.mid == messageId)
+                        {
+                            return [cellItem referenceViewForImageTransition];
+                        }
+                    }
+                }
+            }
             
-            modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
+            return nil;
+        };
+        
+        modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
+        {
+            __strong TGModernConversationController *strongSelf = weakSelf;
+            if (strongSelf != nil)
             {
-                __strong TGModernConversationController *strongSelf = weakSelf;
-                if (strongSelf != nil && [item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+                if ([item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
                 {
                     id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
                     int32_t messageId = [concreteItem messageId];
@@ -2157,88 +2146,40 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                         }
                     }
                 }
-                
-                return nil;
-            };
-            
-            modernGallery.completedTransitionOut = ^
-            {
-                __strong TGModernConversationController *strongSelf = weakSelf;
-                if (strongSelf != nil)
+                else if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
                 {
-                    strongSelf.companion.mediaHiddenMessageId = 0;
+                    int32_t messageId = ((TGGroupAvatarGalleryItem *)item).messageId;
                     
                     for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
                     {
-                        [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
+                        TGMessageModernConversationItem *cellItem = [cell boundItem];
+                        if (cellItem->_message.mid == messageId)
+                        {
+                            return [cellItem referenceViewForImageTransition];
+                        }
                     }
                 }
-            };
-            
-            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
-            controllerWindow.hidden = false;
-            
-            return;
-        }
-#endif
-        
-        [self stopInlineMediaIfPlaying];
-        
-        UIImage *cleanImage = [[TGRemoteImageView sharedCache] cachedImage:thumbnailUrl availability:TGCacheDisk];
-        if (thumbnailImage == nil)
-            thumbnailImage = cleanImage;
-        
-        TGImageViewController *imageViewController = [[TGImageViewController alloc] initWithImageItem:mediaItem placeholder:cleanImage];
-        imageViewController.autoplay = isVideo;
-        imageViewController.reverseOrder = true;
-        imageViewController.keepAspect = false;
-        imageViewController.saveToGallery = [_companion imageDownloadsShouldAutosavePhotos];
-        imageViewController.ignoreSaveToGalleryUid = TGTelegraphInstance.clientUserId;
-        imageViewController.groupIdForDownloadingItems = ((TGGenericModernConversationCompanion *)_companion).conversationId;
-        
-        if (!isAction)
-        {
-            TGTelegraphImageViewControllerCompanion *companion = [[TGTelegraphImageViewControllerCompanion alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId firstItemId:messageId isEncrypted:((TGGenericModernConversationCompanion *)_companion).conversationId <= INT_MIN];
-            companion.reverseOrder = true;
-            imageViewController.imageViewCompanion = companion;
-            companion.imageViewController = imageViewController;
-        }
-        else
-        {
-            imageViewController.hideDates = true;
-            imageViewController.saveToGallery = false;
-            
-            TGTelegraphGroupPhotoImageViewControllerCompanion *companion = [[TGTelegraphGroupPhotoImageViewControllerCompanion alloc] initWithMediaItem:mediaItem];
-            imageViewController.imageViewCompanion = companion;
-            imageViewController.currentItemId = @(messageId);
-            companion.imageViewController = imageViewController;
-        }
-        
-        _companion.mediaHiddenMessageId = messageId;
-        
-        [mediaItemCell.superview bringSubviewToFront:mediaItemCell];
-        NSUInteger cellIndex = [mediaItemCell.superview.subviews indexOfObject:mediaItemCell];
-        if (cellIndex != NSNotFound && cellIndex > 1)
-            referenceView = mediaItemCell.superview.subviews[cellIndex - 1];
-        else
-            referenceView = _collectionView;
-        
-        if (iosMajorVersion() >= 7)
-            [TGHacks animateApplicationStatusBarStyleTransitionWithDuration:0.3];
-        
-        __weak UICollectionView *weakCollectionView = _collectionView;
-        [imageViewController animateAppear:referenceView.superview anchorForImage:referenceView transform:CGAffineTransformMakeRotation((CGFloat)M_PI) fromRect:contentFrame fromImage:thumbnailImage start:^
-        {
-            UICollectionView *collectionView = weakCollectionView;
-            for (TGModernCollectionCell *cell in collectionView.visibleCells)
-            {
-                [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
             }
-        }];
+            
+            return nil;
+        };
         
-        imageViewController.watcherHandle = _actionHandle;
+        modernGallery.completedTransitionOut = ^
+        {
+            __strong TGModernConversationController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                strongSelf.companion.mediaHiddenMessageId = 0;
+                
+                for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                {
+                    [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
+                }
+            }
+        };
         
-        [TGAppDelegateInstance presentContentController:imageViewController];
+        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+        controllerWindow.hidden = false;
     }
 }
 
@@ -4082,88 +4023,6 @@ static UIView *_findBackArrow(UIView *view)
             TGMessageModernConversationItem *messageItem = cell.boundItem;
             [messageItem setTemporaryHighlighted:false viewStorage:_viewStorage];
         }
-    }
-    else if ([action isEqualToString:@"hideImage"])
-    {
-        bool ignoreHide = false;
-        id sender = options[@"sender"];
-        if ([sender isKindOfClass:[TGImageViewController class]])
-            ignoreHide = ((TGImageViewController *)sender).isDisappearing;
-        
-        if ([options[@"hide"] boolValue] && !ignoreHide)
-        {
-            int32_t messageId = [[options objectForKey:@"messageId"] int32Value];
-            _companion.mediaHiddenMessageId = messageId;
-            
-            for (TGModernCollectionCell *cell in _collectionView.visibleCells)
-            {
-                [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
-            }
-        }
-    }
-    else if ([action isEqualToString:@"closeImage"])
-    {
-        TGImageViewController *imageViewController = [options objectForKey:@"sender"];
-        
-        int messageId = [[imageViewController currentItemId] intValue];
-        
-        CGRect targetRect = CGRectZero;
-        TGMessageModernConversationItem *mediaMessageItem = nil;
-        TGModernCollectionCell *messageCell = nil;
-        
-        UIImage *currentImage = nil;
-        
-        if (messageId != 0)
-        {
-            for (TGModernCollectionCell *cell in [_collectionView visibleCells])
-            {
-                TGMessageModernConversationItem *messageItem = cell.boundItem;
-                if (messageItem != nil)
-                {
-                    if (messageItem->_message.mid == messageId)
-                    {
-                        CGRect rect = [cell.contentView convertRect:[messageItem effectiveContentImageFrame] toView:self.view.window];
-                        if (!CGRectIsNull(rect) && !CGRectIsEmpty(rect))
-                        {
-                            targetRect = rect;
-                            currentImage = [messageItem effectiveContentImage];
-                            mediaMessageItem = messageItem;
-                            messageCell = cell;
-                        }
-                        
-                        break;
-                    }
-                }
-            }
-        }
-        
-        if (currentImage == nil)
-            targetRect = CGRectZero;
-        
-        _companion.mediaHiddenMessageId = 0;
-        
-        UIView *referenceView = nil;
-        [messageCell.superview bringSubviewToFront:messageCell];
-        NSUInteger cellIndex = [messageCell.superview.subviews indexOfObject:messageCell];
-        if (cellIndex != NSNotFound && cellIndex > 1)
-            referenceView = messageCell.superview.subviews[cellIndex - 1];
-        else
-            referenceView = messageCell;
-        
-        if (iosMajorVersion() >= 7)
-            [TGHacks animateApplicationStatusBarStyleTransitionWithDuration:0.3];
-        
-        __weak UICollectionView *weakCollectionView = _collectionView;
-        [imageViewController animateDisappear:referenceView.superview anchorForImage:referenceView transform:CGAffineTransformMakeRotation((CGFloat)M_PI) toRect:targetRect toImage:currentImage swipeVelocity:0.0f completion:^
-        {
-            UICollectionView *collectionView = weakCollectionView;
-            for (TGModernCollectionCell *cell in collectionView.visibleCells)
-            {
-                [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
-            }
-            
-            [TGAppDelegateInstance dismissContentController];
-        }];
     }
 }
 

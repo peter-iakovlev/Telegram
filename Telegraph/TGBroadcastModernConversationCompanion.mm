@@ -205,7 +205,7 @@
 
 - (NSDictionary *)_optionsForMessageActions
 {
-    return @{@"conversationId": @(_conversationId), @"isBroadcast": @true, @"userIds": [[NSArray alloc] initWithArray:_conversation.chatParticipants.chatParticipantUids]};
+    return @{@"conversationId": @(_conversationId), @"isBroadcast": @true, @"userIds": [[NSArray alloc] initWithArray:_conversation.chatParticipants.chatParticipantUids], @"secretChatConversationIds": [[NSArray alloc] initWithArray:_conversation.chatParticipants.chatParticipantSecretChatPeerIds], @"chatConversationIds": [[NSArray alloc] initWithArray:_conversation.chatParticipants.chatParticipantChatPeerIds]};
 }
 
 - (void)subscribeToUpdates

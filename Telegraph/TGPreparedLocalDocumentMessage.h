@@ -23,6 +23,7 @@
 - (NSString *)localDocumentFileName;
 
 + (instancetype)messageWithTempDocumentPath:(NSString *)tempDocumentPath size:(int32_t)size fileName:(NSString *)fileName mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize;
++ (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalDocumentMessage *)source;
 + (instancetype)messageByCopyingDataFromMedia:(TGDocumentMediaAttachment *)media;
 + (instancetype)messageWithLocalDocumentId:(int64_t)localDocumentId size:(int32_t)size fileName:(NSString *)fileName mimeType:(NSString *)mimeType localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)localThumbnailSize;
 

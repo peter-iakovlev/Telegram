@@ -32,6 +32,7 @@
     message.text = _text;
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
     
     return message;
 }

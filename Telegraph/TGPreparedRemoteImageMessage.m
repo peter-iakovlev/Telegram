@@ -35,6 +35,7 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
     
     TGImageMediaAttachment *imageAttachment = [[TGImageMediaAttachment alloc] init];
     imageAttachment.imageId = _imageId;

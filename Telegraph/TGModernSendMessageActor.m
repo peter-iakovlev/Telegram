@@ -229,7 +229,12 @@
         
         [ActionStageInstance() requestActor:actorPath options:options watcher:self];
     }
-    
+
+    [self beginUploadProgress];
+}
+
+- (void)beginUploadProgress
+{
     if (_uploadProgress < 0.0f) // it may already be set by a file upload actor
     {
         _uploadProgress = 0.0f;

@@ -54,6 +54,19 @@
     return message;
 }
 
++ (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalDocumentMessage *)source
+{
+    for (id mediaAttachment in source.message.mediaAttachments)
+    {
+        if ([mediaAttachment isKindOfClass:[TGDocumentMediaAttachment class]])
+        {
+            return [self messageByCopyingDataFromMedia:mediaAttachment];
+        }
+    }
+    
+    return nil;
+}
+
 + (instancetype)messageByCopyingDataFromMedia:(TGDocumentMediaAttachment *)documentAttachment
 {
 #ifdef DEBUG
@@ -71,10 +84,10 @@
     arc4random_buf(&localDocumentId, 8);
     
     NSString *previousDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:documentAttachment.localDocumentId];
-    NSString *previousDocumentFile = [previousDocumentDirectory stringByAppendingString:[TGDocumentMediaAttachment safeFileNameForFileName:documentAttachment.fileName]];
+    NSString *previousDocumentFile = [previousDocumentDirectory stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:documentAttachment.fileName]];
     
     NSString *uploadDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localDocumentId];
-    NSString *uploadDocumentFile = [uploadDocumentDirectory stringByAppendingString:[TGDocumentMediaAttachment safeFileNameForFileName:documentAttachment.fileName]];
+    NSString *uploadDocumentFile = [uploadDocumentDirectory stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:documentAttachment.fileName]];
     
     if (![[NSFileManager defaultManager] fileExistsAtPath:uploadDocumentDirectory])
         [[NSFileManager defaultManager] createDirectoryAtPath:uploadDocumentDirectory withIntermediateDirectories:true attributes:nil error:nil];
@@ -88,7 +101,18 @@
     
     if (documentAttachment.thumbnailInfo != nil)
     {
-#warning TODO thumbnail
+        CGSize thumbnailSize = CGSizeZero;
+        NSString *thumbnailUrl = [documentAttachment.thumbnailInfo closestImageUrlWithSize:CGSizeMake(90, 90) resultingSize:&thumbnailSize];
+        NSString *thumbnailFile = nil;
+        if ([thumbnailUrl hasPrefix:@"file://"])
+            thumbnailFile = [thumbnailUrl substringFromIndex:@"file://".length];
+        if (thumbnailFile != nil)
+        {
+            NSData *thumbnailData = [[NSData alloc] initWithContentsOfFile:thumbnailFile];
+            message.localThumbnailDataPath = [self _fileUrlForStoredData:thumbnailData];
+        }
+        
+        message.thumbnailSize = thumbnailSize;
     }
     
     return message;
@@ -153,6 +177,7 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     

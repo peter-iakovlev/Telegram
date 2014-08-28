@@ -70,8 +70,6 @@ void TGUpdateMessageViewModelLayoutConstants();
 - (void)relativeBoundsUpdated:(CGRect)bounds;
 - (void)imageDataInvalidated:(NSString *)imageUrl;
 - (CGRect)effectiveContentFrame;
-- (CGRect)effectiveContentImageFrame;
-- (UIImage *)effectiveContentImage;
 - (UIView *)referenceViewForImageTransition;
 - (void)setTemporaryHighlighted:(bool)temporaryHighlighted viewStorage:(TGModernViewStorage *)viewStorage;
 

@@ -1195,7 +1195,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     if ((value = [userDefaults objectForKey:@"autoPlayAudio"]) != nil)
         _autoPlayAudio = [value boolValue];
     else
-        _autoPlayAudio = true;
+        _autoPlayAudio = false;
     
     _locationTranslationEnabled = false;
 }

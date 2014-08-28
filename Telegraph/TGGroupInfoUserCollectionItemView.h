@@ -25,6 +25,7 @@
 - (void)setFirstName:(NSString *)firstName lastName:(NSString *)lastName uidForPlaceholderCalculation:(int32_t)uidForPlaceholderCalculation;
 - (void)setStatus:(NSString *)status active:(bool)active;
 - (void)setAvatarUri:(NSString *)avatarUri;
+- (void)setIsSecretChat:(bool)isSecretChat;
 
 - (void)setDisabled:(bool)disabled animated:(bool)animated;
 

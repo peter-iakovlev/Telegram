@@ -74,6 +74,19 @@
     return message;
 }
 
++ (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalVideoMessage *)source
+{
+    for (id mediaAttachment in source.message.mediaAttachments)
+    {
+        if ([mediaAttachment isKindOfClass:[TGVideoMediaAttachment class]])
+        {
+            return [self messageByCopyingDataFromMedia:mediaAttachment];
+        }
+    }
+    
+    return nil;
+}
+
 + (instancetype)messageByCopyingDataFromMedia:(TGVideoMediaAttachment *)videoAttachment
 {
 #ifdef DEBUG
@@ -95,7 +108,7 @@
     int64_t localVideoId = 0;
     arc4random_buf(&localVideoId, sizeof(localVideoId));
     
-    NSString *currentVideoFile = [documentsDirectory stringByAppendingPathComponent:currentUrl];
+    NSString *currentVideoFile = [videosDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"local%llx.mov", videoAttachment.localVideoId]];
     NSString *uploadVideoFile = [videosDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"local%llx.mov", localVideoId]];
     [[NSFileManager defaultManager] copyItemAtPath:currentVideoFile toPath:uploadVideoFile error:nil];
     
@@ -171,6 +184,7 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
     
     TGVideoMediaAttachment *videoAttachment = [[TGVideoMediaAttachment alloc] init];
     videoAttachment.localVideoId = _localVideoId;

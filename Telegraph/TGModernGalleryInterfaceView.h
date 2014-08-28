@@ -18,5 +18,6 @@
 
 - (void)animateTransitionInWithDuration:(NSTimeInterval)dutation;
 - (void)animateTransitionOutWithDuration:(NSTimeInterval)dutation;
+- (void)setTransitionOutProgress:(CGFloat)transitionOutProgress;
 
 @end

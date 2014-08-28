@@ -29,6 +29,8 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
+    
     TGLocationMediaAttachment *locationAttachment = [[TGLocationMediaAttachment alloc] init];
     locationAttachment.latitude = _latitude;
     locationAttachment.longitude = _longitude;

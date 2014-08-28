@@ -29,5 +29,6 @@
 + (instancetype)messageWithTempVideoPath:(NSString *)tempVideoPath videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration previewImage:(UIImage *)previewImage thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl;
 + (instancetype)messageWithLocalVideoId:(int64_t)localVideoId videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl;
 + (instancetype)messageByCopyingDataFromMedia:(TGVideoMediaAttachment *)videoAttachment;
++ (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalVideoMessage *)source;
 
 @end

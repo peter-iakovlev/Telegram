@@ -33,6 +33,7 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
     
     TGVideoMediaAttachment *videoAttachment = [[TGVideoMediaAttachment alloc] init];
     videoAttachment.videoId = _videoId;

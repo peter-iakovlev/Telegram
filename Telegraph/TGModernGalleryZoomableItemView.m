@@ -9,6 +9,7 @@
 #import "TGModernGalleryZoomableItemView.h"
 
 #import "TGModernGalleryZoomableScrollView.h"
+#import "TGModernGalleryImageItemContainerView.h"
 #import "TGHacks.h"
 
 #import <pop/POP.h>
@@ -29,7 +30,7 @@
         _internalContainerView = [[UIView alloc] initWithFrame:self.bounds];
         [self addSubview:_internalContainerView];
         
-        _containerView = [[UIView alloc] initWithFrame:_internalContainerView.bounds];
+        _containerView = [[TGModernGalleryImageItemContainerView alloc] initWithFrame:_internalContainerView.bounds];
         [_internalContainerView addSubview:_containerView];
         
         _scrollView = [[TGModernGalleryZoomableScrollView alloc] initWithFrame:_containerView.bounds];
@@ -109,7 +110,7 @@
     _containerView.frame = _internalContainerView.bounds;
     
     CGSize contentSize = [self contentSize];
-    if (!CGSizeEqualToSize(_scrollView.contentSize, contentSize) || !CGSizeEqualToSize(frame.size, _scrollView.frame.size))
+    if (!CGSizeEqualToSize(frame.size, _scrollView.frame.size))
     {
         _scrollView.minimumZoomScale = 1.0f;
         _scrollView.maximumZoomScale = 1.0f;

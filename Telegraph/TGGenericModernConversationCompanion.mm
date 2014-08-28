@@ -2439,15 +2439,18 @@ typedef enum {
             for (TGMessageModernConversationItem *messageItem in _items)
             {
                 index++;
-                
-                id mediaId = mediaIdForMessage(messageItem->_message);
-                if (mediaId != nil)
+             
+                if (messageItem->_message.mid < TGMessageLocalMidBaseline || messageItem->_message.deliveryState != TGMessageDeliveryStatePending)
                 {
-                    NSNumber *nProgress = messageDownloadProgress[mediaId];
-                    if (nProgress != nil)
+                    id mediaId = mediaIdForMessage(messageItem->_message);
+                    if (mediaId != nil)
                     {
-                        [changedProgresses addObject:nProgress];
-                        [atIndices addObject:[[NSNumber alloc] initWithInt:index]];
+                        NSNumber *nProgress = messageDownloadProgress[mediaId];
+                        if (nProgress != nil)
+                        {
+                            [changedProgresses addObject:nProgress];
+                            [atIndices addObject:[[NSNumber alloc] initWithInt:index]];
+                        }
                     }
                 }
             }
@@ -2488,6 +2491,7 @@ typedef enum {
                 for (int index = 0; index < itemCount; index++)
                 {
                     TGMessageModernConversationItem *messageItem = _items[index];
+                    
                     id mediaId = mediaIdForMessage(messageItem->_message);
                     if (mediaId != nil)
                     {
@@ -2504,7 +2508,10 @@ typedef enum {
                                 [updatedItemIndices addObject:@(index)];
                             }
                             
-                            [resetProgressIndices addObject:@(index)];
+                            if (messageItem->_message.mid < TGMessageLocalMidBaseline || messageItem->_message.deliveryState != TGMessageDeliveryStatePending)
+                            {
+                                [resetProgressIndices addObject:@(index)];
+                            }
                         }
                     }
                 }

@@ -263,6 +263,145 @@
                      }];
                 }
             }
+            else
+            {
+                _progressWindow = [[TGProgressWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+                [_progressWindow show:true];
+                
+                NSURL *mediaUrl = [info objectForKey:UIImagePickerControllerMediaURL];
+                
+                NSString *assetHash = nil;
+                if (_storeCapturedAssets && [referenceUrl absoluteString].length != 0)
+                {
+                    assetHash = [[NSString alloc] initWithFormat:@"%@", [referenceUrl absoluteString]];
+                    TGLog(@"Video hash: %@", assetHash);
+                }
+                
+                bool deleteFile = true;
+                
+                if (picker.sourceType == UIImagePickerControllerSourceTypeCamera && _storeCapturedAssets)
+                {
+                    UISaveVideoAtPathToSavedPhotosAlbum(mediaUrl.path, [self class], @selector(video:didFinishSavingWithError:contextInfo:), NULL);
+                    deleteFile = false;
+                }
+                
+                NSString *videosPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0] stringByAppendingPathComponent:@"video"];
+                NSFileManager *fileManager = [NSFileManager defaultManager];
+                NSError *error = nil;
+                [fileManager createDirectoryAtPath:videosPath withIntermediateDirectories:true attributes:nil error:&error];
+                
+                NSString *tmpPath = NSTemporaryDirectory();
+                
+                int64_t fileId = 0;
+                arc4random_buf(&fileId, sizeof(fileId));
+                NSString *videoMp4FilePath = [tmpPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%" PRId64 ".mp4", fileId]];
+                
+                [ActionStageInstance() dispatchOnStageQueue:^
+                {
+                    NSDictionary *existingData = [TGImageDownloadActor serverMediaDataForAssetUrl:assetHash];
+                    if (existingData != nil)
+                    {
+                        TGDispatchOnMainThread(^
+                                               {
+                                                   [_progressWindow dismiss:true];
+                                                   _progressWindow = nil;
+                                                   
+                                                   id<TGLegacyCameraControllerDelegate> delegate = _completionDelegate;
+                                                   [delegate legacyCameraControllerCompletedWithExistingMedia:existingData[@"videoAttachment"]];
+                                               });
+                    }
+                    else
+                    {
+                        AVAsset *avAsset = [[AVURLAsset alloc] initWithURL:mediaUrl options:nil];
+                        
+                        AVAssetExportSession *exportSession = [[AVAssetExportSession alloc] initWithAsset:avAsset presetName:AVAssetExportPresetPassthrough];
+                        
+                        exportSession.outputURL = [NSURL fileURLWithPath:videoMp4FilePath];
+                        exportSession.outputFileType = AVFileTypeMPEG4;
+                        
+                        [exportSession exportAsynchronouslyWithCompletionHandler:^
+                        {
+                            bool endProcessing = false;
+                            bool success = false;
+                            
+                            switch ([exportSession status])
+                            {
+                                case AVAssetExportSessionStatusFailed:
+                                    NSLog(@"Export failed: %@", [[exportSession error] localizedDescription]);
+                                    endProcessing = true;
+                                    break;
+                                case AVAssetExportSessionStatusCancelled:
+                                    endProcessing = true;
+                                    NSLog(@"Export canceled");
+                                    break;
+                                case AVAssetExportSessionStatusCompleted:
+                                {
+                                    TGLog(@"Export mp4 completed");
+                                    endProcessing = true;
+                                    success = true;
+                                    
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
+                            
+                            if (endProcessing)
+                            {
+                                if (deleteFile)
+                                    [fileManager removeItemAtURL:mediaUrl error:nil];
+                                
+                                if (success)
+                                {
+                                    AVAsset *mp4Asset = [AVAsset assetWithURL:[NSURL fileURLWithPath:videoMp4FilePath]];
+                                    
+                                    AVAssetImageGenerator *imageGenerator = [[AVAssetImageGenerator alloc] initWithAsset:mp4Asset];
+                                    imageGenerator.maximumSize = CGSizeMake(800, 800);
+                                    imageGenerator.appliesPreferredTrackTransform = true;
+                                    NSError *imageError = nil;
+                                    CGImageRef imageRef = [imageGenerator copyCGImageAtTime:CMTimeMake(0, mp4Asset.duration.timescale) actualTime:NULL error:&imageError];
+                                    UIImage *previewImage = [[UIImage alloc] initWithCGImage:imageRef];
+                                    if (imageRef != NULL)
+                                        CGImageRelease(imageRef);
+                                    
+                                    if (error == nil && [[mp4Asset tracksWithMediaType:AVMediaTypeVideo] count] > 0)
+                                    {
+                                        AVAssetTrack *track = [[mp4Asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
+                                        
+                                        CGSize trackNaturalSize = track.naturalSize;
+                                        CGSize naturalSize = CGRectApplyAffineTransform(CGRectMake(0, 0, trackNaturalSize.width, trackNaturalSize.height), track.preferredTransform).size;
+                                        
+                                        NSTimeInterval duration = CMTimeGetSeconds(mp4Asset.duration);
+                                        
+                                        NSDictionary *finalFileAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:videoMp4FilePath error:nil];
+                                        int32_t fileSize = (int32_t)[[finalFileAttributes objectForKey:NSFileSize] intValue];
+                                        
+                                        TGDispatchOnMainThread(^
+                                                               {
+                                                                   [_progressWindow dismiss:true];
+                                                                   _progressWindow = nil;
+                                                                   
+                                                                   id<TGLegacyCameraControllerDelegate> delegate = _completionDelegate;
+                                                                   [delegate legacyCameraControllerCapturedVideoWithTempFilePath:videoMp4FilePath fileSize:fileSize previewImage:previewImage duration:duration dimensions:naturalSize assetUrl:assetHash];
+                                                               });
+                                    }
+                                }
+                                else
+                                {
+                                    TGDispatchOnMainThread(^
+                                                           {
+                                                               [_progressWindow dismiss:true];
+                                                               _progressWindow = nil;
+                                                               
+                                                               id<TGLegacyCameraControllerDelegate> delegate = _completionDelegate;
+                                                               [delegate legacyCameraControllerCompletedWithNoResult];
+                                                           });
+                                }
+                            }
+                        }];
+                    }
+                }];
+            }
         }
     }
 }

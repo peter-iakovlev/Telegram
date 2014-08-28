@@ -518,16 +518,6 @@
     return _imageModel.frame;
 }
 
-- (CGRect)effectiveContentImageFrame
-{
-    return _imageModel.frame;
-}
-
-- (UIImage *)effectiveContentImage
-{
-    return [((TGMessageImageViewContainer *)[_imageModel boundView]).imageView currentImage];
-}
-
 - (UIView *)referenceViewForImageTransition
 {
     return [_imageModel boundView];

@@ -12,6 +12,8 @@
 
 #import "ActionStage.h"
 
+#import "TGContactsController.h"
+
 @interface TGForwardTargetController : TGViewController <ASWatcher, TGViewControllerNavigationBarAppearance, TGNavigationControllerItem>
 
 @property (nonatomic, strong) NSString *controllerTitle;
@@ -22,7 +24,10 @@
 
 - (id)initWithForwardMessages:(NSArray *)forwardMessages sendMessages:(NSArray *)sendMessages;
 - (id)initWithSelectBlockTarget;
+- (id)initWithSelectTarget;
 - (id)initWithDocumentFile:(NSURL *)fileUrl size:(int)size;
 - (id)initWithDocumentFiles:(NSArray *)fileDescs;
+
+- (TGContactsController *)contactsController;
 
 @end

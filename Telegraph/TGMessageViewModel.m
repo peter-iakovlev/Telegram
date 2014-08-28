@@ -211,16 +211,6 @@ void TGUpdateMessageViewModelLayoutConstants()
     return CGRectZero;
 }
 
-- (CGRect)effectiveContentImageFrame
-{
-    return CGRectZero;
-}
-
-- (UIImage *)effectiveContentImage
-{
-    return nil;
-}
-
 - (UIView *)referenceViewForImageTransition
 {
     return nil;

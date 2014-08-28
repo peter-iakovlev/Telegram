@@ -785,6 +785,10 @@
 		D05556181944E2E3008B69A6 /* TGDocumentMessageIconModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D05556171944E2E3008B69A6 /* TGDocumentMessageIconModel.m */; };
 		D05556271944E2F4008B69A6 /* TGDocumentMessageIconView.m in Sources */ = {isa = PBXBuildFile; fileRef = D05556261944E2F4008B69A6 /* TGDocumentMessageIconView.m */; };
 		D0555629194501A2008B69A6 /* ModernDocumentMessageIconBackground@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0555628194501A2008B69A6 /* ModernDocumentMessageIconBackground@2x.png */; };
+		D0590D8E19A78C9D0082FFC8 /* ModernMessageBroadcastIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = D0590D8A19A78C9D0082FFC8 /* ModernMessageBroadcastIcon.png */; };
+		D0590D8F19A78C9D0082FFC8 /* ModernMessageBroadcastIcon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0590D8B19A78C9D0082FFC8 /* ModernMessageBroadcastIcon@2x.png */; };
+		D0590D9019A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite.png in Resources */ = {isa = PBXBuildFile; fileRef = D0590D8C19A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite.png */; };
+		D0590D9119A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0590D8D19A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite@2x.png */; };
 		D05A849A18AFC871007F1076 /* TGTLSerialization.mm in Sources */ = {isa = PBXBuildFile; fileRef = D05A849918AFC871007F1076 /* TGTLSerialization.mm */; };
 		D05A84D518AFE73D007F1076 /* MtProtoKit iOS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D05A84CC18AFE34F007F1076 /* MtProtoKit iOS.framework */; };
 		D0603915191801EB00EF850D /* TGStaticBackdropImageData.m in Sources */ = {isa = PBXBuildFile; fileRef = D0603914191801EB00EF850D /* TGStaticBackdropImageData.m */; };
@@ -860,6 +864,16 @@
 		D0880626156EA74000311537 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0880625156EA74000311537 /* SystemConfiguration.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		D0880639156EB11800311537 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D088063B156EB11800311537 /* Localizable.strings */; };
 		D08990F115D93BC400E76F35 /* Categories.mm in Sources */ = {isa = PBXBuildFile; fileRef = D08990F015D93BC400E76F35 /* Categories.mm */; };
+		D08BC65C19AD261F007F126A /* TGGroupAvatarGalleryModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D08BC65B19AD261F007F126A /* TGGroupAvatarGalleryModel.m */; };
+		D08BC65F19AD2ACA007F126A /* TGGroupAvatarGalleryItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D08BC65E19AD2ACA007F126A /* TGGroupAvatarGalleryItem.m */; };
+		D08BC66219AD2B0A007F126A /* TGGroupAvatarGalleryItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D08BC66119AD2B0A007F126A /* TGGroupAvatarGalleryItemView.m */; };
+		D08BC66619AD3C99007F126A /* TGPeerAvatarImageDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D08BC66519AD3C99007F126A /* TGPeerAvatarImageDataSource.m */; };
+		D08BC66B19ADEA89007F126A /* TGModernDataImageView.m in Sources */ = {isa = PBXBuildFile; fileRef = D08BC66A19ADEA89007F126A /* TGModernDataImageView.m */; };
+		D08BC66E19ADEAA1007F126A /* TGModernDataImageViewModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D08BC66D19ADEAA1007F126A /* TGModernDataImageViewModel.m */; };
+		D08BC67119ADF245007F126A /* TGPeerAvatarThumbnailDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D08BC67019ADF245007F126A /* TGPeerAvatarThumbnailDataSource.m */; };
+		D08BC67819AE37DA007F126A /* TGUserAvatarGalleryModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D08BC67719AE37DA007F126A /* TGUserAvatarGalleryModel.m */; };
+		D08BC67B19AE385C007F126A /* TGUserAvatarGalleryItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D08BC67A19AE385C007F126A /* TGUserAvatarGalleryItemView.m */; };
+		D08BC67E19AE38DC007F126A /* TGUserAvatarGalleryItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D08BC67D19AE38DC007F126A /* TGUserAvatarGalleryItem.m */; };
 		D096965F15ACDDE800D59E62 /* TGConversationReadHistoryActor.mm in Sources */ = {isa = PBXBuildFile; fileRef = D096965E15ACDDE800D59E62 /* TGConversationReadHistoryActor.mm */; };
 		D096966815AD9B8E00D59E62 /* TGTimelineUploadPhotoRequestBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = D096966715AD9B8E00D59E62 /* TGTimelineUploadPhotoRequestBuilder.m */; };
 		D096966F15AE069000D59E62 /* TGSettingsController.m in Sources */ = {isa = PBXBuildFile; fileRef = D096966E15AE069000D59E62 /* TGSettingsController.m */; };
@@ -890,6 +904,7 @@
 		D0A516C9193FD7E9000B8984 /* iPad-Portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = D0A516C7193FD7E9000B8984 /* iPad-Portrait.png */; };
 		D0A516CC193FD848000B8984 /* DetailLogoBlank@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0A516CA193FD848000B8984 /* DetailLogoBlank@2x.png */; };
 		D0A516CD193FD848000B8984 /* DetailLogoBlank.png in Resources */ = {isa = PBXBuildFile; fileRef = D0A516CB193FD848000B8984 /* DetailLogoBlank.png */; };
+		D0A828BA19ACA606008BF6FF /* TGModernGalleryImageItemContainerView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0A828B919ACA606008BF6FF /* TGModernGalleryImageItemContainerView.m */; };
 		D0AAD1FB1964B6F30022B101 /* BroadcastLargeAvatarIcon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0AAD1F91964B6F30022B101 /* BroadcastLargeAvatarIcon@2x.png */; };
 		D0AAD1FC1964B6F30022B101 /* BroadcastLargeAvatarIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = D0AAD1FA1964B6F30022B101 /* BroadcastLargeAvatarIcon.png */; };
 		D0AC709918BE214000CDFFA8 /* libopus.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0AC709518BE214000CDFFA8 /* libopus.a */; };
@@ -1017,6 +1032,9 @@
 		D0EC6CB015E469B700E7E687 /* TGConversationChatInfoRequestActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EC6CAF15E469B700E7E687 /* TGConversationChatInfoRequestActor.m */; };
 		D0EDECEC1924FA5F007314E3 /* TGAnimationThumbnailDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDECEB1924FA5F007314E3 /* TGAnimationThumbnailDataSource.m */; };
 		D0F057FE15EFC16900005C73 /* TGConversationCreateChatRequestActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F057FD15EFC16900005C73 /* TGConversationCreateChatRequestActor.m */; };
+		D0F404C519AFD45C00B8FB18 /* TGProfileUserAvatarGalleryModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F404C419AFD45C00B8FB18 /* TGProfileUserAvatarGalleryModel.m */; };
+		D0F404D219AFD64100B8FB18 /* TGProfileUserAvatarGalleryItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F404D119AFD64100B8FB18 /* TGProfileUserAvatarGalleryItem.m */; };
+		D0F404D519AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F404D419AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.m */; };
 		D0F4BB5B199E3431007464D5 /* TGMediaListPhotoDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F4BB5A199E3431007464D5 /* TGMediaListPhotoDataSource.m */; };
 		D0F4BB5E199E57BD007464D5 /* TGModernMediaListItemContentView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F4BB5D199E57BD007464D5 /* TGModernMediaListItemContentView.m */; };
 		D0FD8995156FCA3D00CC3714 /* TGMainTabsController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0FD8994156FCA3D00CC3714 /* TGMainTabsController.m */; };
@@ -2356,6 +2374,10 @@
 		D05556251944E2F4008B69A6 /* TGDocumentMessageIconView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGDocumentMessageIconView.h; sourceTree = "<group>"; };
 		D05556261944E2F4008B69A6 /* TGDocumentMessageIconView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGDocumentMessageIconView.m; sourceTree = "<group>"; };
 		D0555628194501A2008B69A6 /* ModernDocumentMessageIconBackground@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "ModernDocumentMessageIconBackground@2x.png"; path = "Resources/ModernDocumentMessageIconBackground@2x.png"; sourceTree = "<group>"; };
+		D0590D8A19A78C9D0082FFC8 /* ModernMessageBroadcastIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ModernMessageBroadcastIcon.png; path = Resources/ModernMessageBroadcastIcon.png; sourceTree = "<group>"; };
+		D0590D8B19A78C9D0082FFC8 /* ModernMessageBroadcastIcon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "ModernMessageBroadcastIcon@2x.png"; path = "Resources/ModernMessageBroadcastIcon@2x.png"; sourceTree = "<group>"; };
+		D0590D8C19A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ModernMessageBroadcastIconWhite.png; path = Resources/ModernMessageBroadcastIconWhite.png; sourceTree = "<group>"; };
+		D0590D8D19A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "ModernMessageBroadcastIconWhite@2x.png"; path = "Resources/ModernMessageBroadcastIconWhite@2x.png"; sourceTree = "<group>"; };
 		D05A849818AFC871007F1076 /* TGTLSerialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTLSerialization.h; sourceTree = "<group>"; };
 		D05A849918AFC871007F1076 /* TGTLSerialization.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGTLSerialization.mm; sourceTree = "<group>"; };
 		D05A84B718AFE243007F1076 /* MtProtoKit_Legacy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = MtProtoKit_Legacy.xcodeproj; path = ../MtProtoKit_Legacy/MtProtoKit_Legacy.xcodeproj; sourceTree = "<group>"; };
@@ -2492,6 +2514,26 @@
 		D0880625156EA74000311537 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		D088063A156EB11800311537 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D08990F015D93BC400E76F35 /* Categories.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Categories.mm; sourceTree = "<group>"; };
+		D08BC65A19AD261F007F126A /* TGGroupAvatarGalleryModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGGroupAvatarGalleryModel.h; sourceTree = "<group>"; };
+		D08BC65B19AD261F007F126A /* TGGroupAvatarGalleryModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGroupAvatarGalleryModel.m; sourceTree = "<group>"; };
+		D08BC65D19AD2ACA007F126A /* TGGroupAvatarGalleryItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGGroupAvatarGalleryItem.h; sourceTree = "<group>"; };
+		D08BC65E19AD2ACA007F126A /* TGGroupAvatarGalleryItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGroupAvatarGalleryItem.m; sourceTree = "<group>"; };
+		D08BC66019AD2B0A007F126A /* TGGroupAvatarGalleryItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGGroupAvatarGalleryItemView.h; sourceTree = "<group>"; };
+		D08BC66119AD2B0A007F126A /* TGGroupAvatarGalleryItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGroupAvatarGalleryItemView.m; sourceTree = "<group>"; };
+		D08BC66419AD3C99007F126A /* TGPeerAvatarImageDataSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGPeerAvatarImageDataSource.h; sourceTree = "<group>"; };
+		D08BC66519AD3C99007F126A /* TGPeerAvatarImageDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGPeerAvatarImageDataSource.m; sourceTree = "<group>"; };
+		D08BC66919ADEA89007F126A /* TGModernDataImageView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernDataImageView.h; sourceTree = "<group>"; };
+		D08BC66A19ADEA89007F126A /* TGModernDataImageView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernDataImageView.m; sourceTree = "<group>"; };
+		D08BC66C19ADEAA1007F126A /* TGModernDataImageViewModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernDataImageViewModel.h; sourceTree = "<group>"; };
+		D08BC66D19ADEAA1007F126A /* TGModernDataImageViewModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernDataImageViewModel.m; sourceTree = "<group>"; };
+		D08BC66F19ADF245007F126A /* TGPeerAvatarThumbnailDataSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGPeerAvatarThumbnailDataSource.h; sourceTree = "<group>"; };
+		D08BC67019ADF245007F126A /* TGPeerAvatarThumbnailDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGPeerAvatarThumbnailDataSource.m; sourceTree = "<group>"; };
+		D08BC67619AE37DA007F126A /* TGUserAvatarGalleryModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGUserAvatarGalleryModel.h; sourceTree = "<group>"; };
+		D08BC67719AE37DA007F126A /* TGUserAvatarGalleryModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGUserAvatarGalleryModel.m; sourceTree = "<group>"; };
+		D08BC67919AE385C007F126A /* TGUserAvatarGalleryItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGUserAvatarGalleryItemView.h; sourceTree = "<group>"; };
+		D08BC67A19AE385C007F126A /* TGUserAvatarGalleryItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGUserAvatarGalleryItemView.m; sourceTree = "<group>"; };
+		D08BC67C19AE38DC007F126A /* TGUserAvatarGalleryItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGUserAvatarGalleryItem.h; sourceTree = "<group>"; };
+		D08BC67D19AE38DC007F126A /* TGUserAvatarGalleryItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGUserAvatarGalleryItem.m; sourceTree = "<group>"; };
 		D096965D15ACDDE800D59E62 /* TGConversationReadHistoryActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGConversationReadHistoryActor.h; sourceTree = "<group>"; };
 		D096965E15ACDDE800D59E62 /* TGConversationReadHistoryActor.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGConversationReadHistoryActor.mm; sourceTree = "<group>"; };
 		D096966615AD9B8E00D59E62 /* TGTimelineUploadPhotoRequestBuilder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTimelineUploadPhotoRequestBuilder.h; sourceTree = "<group>"; };
@@ -2537,6 +2579,8 @@
 		D0A516C7193FD7E9000B8984 /* iPad-Portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "iPad-Portrait.png"; sourceTree = "<group>"; };
 		D0A516CA193FD848000B8984 /* DetailLogoBlank@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "DetailLogoBlank@2x.png"; path = "Resources/DetailLogoBlank@2x.png"; sourceTree = "<group>"; };
 		D0A516CB193FD848000B8984 /* DetailLogoBlank.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = DetailLogoBlank.png; path = Resources/DetailLogoBlank.png; sourceTree = "<group>"; };
+		D0A828B819ACA606008BF6FF /* TGModernGalleryImageItemContainerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryImageItemContainerView.h; sourceTree = "<group>"; };
+		D0A828B919ACA606008BF6FF /* TGModernGalleryImageItemContainerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryImageItemContainerView.m; sourceTree = "<group>"; };
 		D0AAD1F91964B6F30022B101 /* BroadcastLargeAvatarIcon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "BroadcastLargeAvatarIcon@2x.png"; path = "Resources/BroadcastLargeAvatarIcon@2x.png"; sourceTree = "<group>"; };
 		D0AAD1FA1964B6F30022B101 /* BroadcastLargeAvatarIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = BroadcastLargeAvatarIcon.png; path = Resources/BroadcastLargeAvatarIcon.png; sourceTree = "<group>"; };
 		D0AC709018BE214000CDFFA8 /* opus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = opus.h; sourceTree = "<group>"; };
@@ -2717,6 +2761,12 @@
 		D0EDECEB1924FA5F007314E3 /* TGAnimationThumbnailDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGAnimationThumbnailDataSource.m; sourceTree = "<group>"; };
 		D0F057FC15EFC16900005C73 /* TGConversationCreateChatRequestActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGConversationCreateChatRequestActor.h; sourceTree = "<group>"; };
 		D0F057FD15EFC16900005C73 /* TGConversationCreateChatRequestActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGConversationCreateChatRequestActor.m; sourceTree = "<group>"; };
+		D0F404C319AFD45C00B8FB18 /* TGProfileUserAvatarGalleryModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGProfileUserAvatarGalleryModel.h; sourceTree = "<group>"; };
+		D0F404C419AFD45C00B8FB18 /* TGProfileUserAvatarGalleryModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGProfileUserAvatarGalleryModel.m; sourceTree = "<group>"; };
+		D0F404D019AFD64100B8FB18 /* TGProfileUserAvatarGalleryItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGProfileUserAvatarGalleryItem.h; sourceTree = "<group>"; };
+		D0F404D119AFD64100B8FB18 /* TGProfileUserAvatarGalleryItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGProfileUserAvatarGalleryItem.m; sourceTree = "<group>"; };
+		D0F404D319AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGProfileUserAvatarGalleryItemView.h; sourceTree = "<group>"; };
+		D0F404D419AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGProfileUserAvatarGalleryItemView.m; sourceTree = "<group>"; };
 		D0F4BB59199E3431007464D5 /* TGMediaListPhotoDataSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGMediaListPhotoDataSource.h; sourceTree = "<group>"; };
 		D0F4BB5A199E3431007464D5 /* TGMediaListPhotoDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGMediaListPhotoDataSource.m; sourceTree = "<group>"; };
 		D0F4BB5C199E57BD007464D5 /* TGModernMediaListItemContentView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListItemContentView.h; sourceTree = "<group>"; };
@@ -4003,6 +4053,8 @@
 				939ECA44188EBD87004ABAB7 /* TGModernGalleryImageItemView.m */,
 				D020ACD21994C2A4007818DD /* TGModernGalleryImageItemImageView.h */,
 				D020ACD31994C2A4007818DD /* TGModernGalleryImageItemImageView.m */,
+				D0A828B819ACA606008BF6FF /* TGModernGalleryImageItemContainerView.h */,
+				D0A828B919ACA606008BF6FF /* TGModernGalleryImageItemContainerView.m */,
 			);
 			name = Image;
 			sourceTree = "<group>";
@@ -4217,6 +4269,10 @@
 				93CF3B61181E7D0D003D8DE1 /* TGModernImageView.m */,
 				93CF3B63181E7D1B003D8DE1 /* TGModernImageViewModel.h */,
 				93CF3B64181E7D1B003D8DE1 /* TGModernImageViewModel.m */,
+				D08BC66919ADEA89007F126A /* TGModernDataImageView.h */,
+				D08BC66A19ADEA89007F126A /* TGModernDataImageView.m */,
+				D08BC66C19ADEAA1007F126A /* TGModernDataImageViewModel.h */,
+				D08BC66D19ADEAA1007F126A /* TGModernDataImageViewModel.m */,
 			);
 			name = Image;
 			sourceTree = "<group>";
@@ -5238,6 +5294,7 @@
 				D0F4BB4F199E341A007464D5 /* List */,
 				D020ACC81993A85B007818DD /* Gallery */,
 				D0603921191A413500EF850D /* Preview */,
+				D08BC66319AD3C5E007F126A /* Peer Avatar */,
 			);
 			name = Media;
 			sourceTree = "<group>";
@@ -5584,6 +5641,8 @@
 		D0876FE1196F4BED005740CE /* Modern Gallery Models */ = {
 			isa = PBXGroup;
 			children = (
+				D08BC67519AE37C7007F126A /* User Avatar */,
+				D08BC65919AD25F0007F126A /* Group Avatar */,
 				D0876FE2196F4BFA005740CE /* Peer Media */,
 			);
 			name = "Modern Gallery Models";
@@ -5898,6 +5957,10 @@
 		D0880632156EAEA300311537 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D0590D8A19A78C9D0082FFC8 /* ModernMessageBroadcastIcon.png */,
+				D0590D8B19A78C9D0082FFC8 /* ModernMessageBroadcastIcon@2x.png */,
+				D0590D8C19A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite.png */,
+				D0590D8D19A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite@2x.png */,
 				D0C915B01982997A00824042 /* builtin-wallpapers */,
 				D0C915C11982997A00824042 /* Placeholders */,
 				D0C915FA1982997A00824042 /* ProgressIndicatorLarge */,
@@ -6147,6 +6210,44 @@
 				D0052CB2159513F2009482C4 /* SearchBarBackground@2x.png */,
 			);
 			name = Resources;
+			sourceTree = "<group>";
+		};
+		D08BC65919AD25F0007F126A /* Group Avatar */ = {
+			isa = PBXGroup;
+			children = (
+				D08BC65A19AD261F007F126A /* TGGroupAvatarGalleryModel.h */,
+				D08BC65B19AD261F007F126A /* TGGroupAvatarGalleryModel.m */,
+				D08BC65D19AD2ACA007F126A /* TGGroupAvatarGalleryItem.h */,
+				D08BC65E19AD2ACA007F126A /* TGGroupAvatarGalleryItem.m */,
+				D08BC66019AD2B0A007F126A /* TGGroupAvatarGalleryItemView.h */,
+				D08BC66119AD2B0A007F126A /* TGGroupAvatarGalleryItemView.m */,
+			);
+			name = "Group Avatar";
+			sourceTree = "<group>";
+		};
+		D08BC66319AD3C5E007F126A /* Peer Avatar */ = {
+			isa = PBXGroup;
+			children = (
+				D08BC66419AD3C99007F126A /* TGPeerAvatarImageDataSource.h */,
+				D08BC66519AD3C99007F126A /* TGPeerAvatarImageDataSource.m */,
+				D08BC66F19ADF245007F126A /* TGPeerAvatarThumbnailDataSource.h */,
+				D08BC67019ADF245007F126A /* TGPeerAvatarThumbnailDataSource.m */,
+			);
+			name = "Peer Avatar";
+			sourceTree = "<group>";
+		};
+		D08BC67519AE37C7007F126A /* User Avatar */ = {
+			isa = PBXGroup;
+			children = (
+				D0F404CF19AFD46000B8FB18 /* Profile Avatar */,
+				D08BC67619AE37DA007F126A /* TGUserAvatarGalleryModel.h */,
+				D08BC67719AE37DA007F126A /* TGUserAvatarGalleryModel.m */,
+				D08BC67C19AE38DC007F126A /* TGUserAvatarGalleryItem.h */,
+				D08BC67D19AE38DC007F126A /* TGUserAvatarGalleryItem.m */,
+				D08BC67919AE385C007F126A /* TGUserAvatarGalleryItemView.h */,
+				D08BC67A19AE385C007F126A /* TGUserAvatarGalleryItemView.m */,
+			);
+			name = "User Avatar";
 			sourceTree = "<group>";
 		};
 		D096966C15AE066500D59E62 /* Settings */ = {
@@ -6584,6 +6685,19 @@
 			name = Contacts;
 			sourceTree = "<group>";
 		};
+		D0F404CF19AFD46000B8FB18 /* Profile Avatar */ = {
+			isa = PBXGroup;
+			children = (
+				D0F404C319AFD45C00B8FB18 /* TGProfileUserAvatarGalleryModel.h */,
+				D0F404C419AFD45C00B8FB18 /* TGProfileUserAvatarGalleryModel.m */,
+				D0F404D019AFD64100B8FB18 /* TGProfileUserAvatarGalleryItem.h */,
+				D0F404D119AFD64100B8FB18 /* TGProfileUserAvatarGalleryItem.m */,
+				D0F404D319AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.h */,
+				D0F404D419AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.m */,
+			);
+			name = "Profile Avatar";
+			sourceTree = "<group>";
+		};
 		D0F4BB4F199E341A007464D5 /* List */ = {
 			isa = PBXGroup;
 			children = (
@@ -6958,6 +7072,7 @@
 				93AD03AB16A1CCEC005D4575 /* navbar_big_progress_23@2x.png in Resources */,
 				93AD03AC16A1CCEC005D4575 /* navbar_big_progress_24@2x.png in Resources */,
 				93AD03AD16A1CCEC005D4575 /* navbar_big_progress_2@2x.png in Resources */,
+				D0590D8F19A78C9D0082FFC8 /* ModernMessageBroadcastIcon@2x.png in Resources */,
 				93ED9EF918634CD700E22F84 /* ModernConversationEmptyListLogo@2x.png in Resources */,
 				93AD03AE16A1CCEC005D4575 /* navbar_big_progress_3@2x.png in Resources */,
 				93AD03AF16A1CCEC005D4575 /* navbar_big_progress_4@2x.png in Resources */,
@@ -6975,6 +7090,7 @@
 				93C23075183C31D60071CB58 /* ModernMessageImageBorder@2x.png in Resources */,
 				D0AAD1FB1964B6F30022B101 /* BroadcastLargeAvatarIcon@2x.png in Resources */,
 				9321E9F216A9B5C100F9D09C /* sent.caf in Resources */,
+				D0590D8E19A78C9D0082FFC8 /* ModernMessageBroadcastIcon.png in Resources */,
 				D0BAF3FD193E8AC400A0093F /* ActionsWhiteIcon.png in Resources */,
 				9315E4DF186AFC52008DD74D /* Icon-40@2x.png in Resources */,
 				9322F7FE178E056300099F0B /* DialogList_Muted@2x.png in Resources */,
@@ -7143,6 +7259,7 @@
 				D08696B61943A8B300770FE7 /* pad-builtin-wallpaper-2.jpg in Resources */,
 				93DEF681173AFA2300D4588D /* MapLocationIcon@2x.png in Resources */,
 				93DEF682173AFA2300D4588D /* MapLocationIcon_Active@2x.png in Resources */,
+				D0590D9119A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite@2x.png in Resources */,
 				9315E4E5186AFE7A008DD74D /* Icon-Small@2x.png in Resources */,
 				936219D9186460F600C52870 /* 110.m4a in Resources */,
 				930AD09E173C120D003DABCE /* MapCalloutCenter_Highlighted@2x.png in Resources */,
@@ -7207,6 +7324,7 @@
 				931C592F174BB24D00D597D9 /* RProgress7@2x.png in Resources */,
 				931C5930174BB24D00D597D9 /* RProgress8@2x.png in Resources */,
 				D0C925591949EDED00E629CA /* Localizable.strings in Resources */,
+				D0590D9019A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite.png in Resources */,
 				931C5931174BB24D00D597D9 /* RProgress9@2x.png in Resources */,
 				936219DA186460F600C52870 /* 109.m4a in Resources */,
 				931C5938174C0AB800D597D9 /* MenuButtonCenter@2x.png in Resources */,
@@ -7312,6 +7430,7 @@
 				9303841F1811765300CAC996 /* TGDisclosureActionCollectionItem.m in Sources */,
 				D066E9B618C8D0DA00509410 /* TGSupportPeerActor.m in Sources */,
 				D0549E161926269F002952ED /* ATActor.m in Sources */,
+				D08BC67B19AE385C007F126A /* TGUserAvatarGalleryItemView.m in Sources */,
 				930808DB185A758900E62B42 /* TGUserInfoPhoneCollectionItemView.m in Sources */,
 				D0AD63DB159D21F80092BB50 /* TGUserNode.m in Sources */,
 				D044CBAC192A35770001C986 /* TGMtFileLocation.m in Sources */,
@@ -7361,6 +7480,7 @@
 				D066E97E18C624F200509410 /* opusenc.m in Sources */,
 				D00733ED15B6DBF00091EBEE /* TGApplyStateRequestBuilder.m in Sources */,
 				D01E9DCA15B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm in Sources */,
+				D0A828BA19ACA606008BF6FF /* TGModernGalleryImageItemContainerView.m in Sources */,
 				D00040A515BCD2EA00AF9EBF /* TGMessage+Telegraph.m in Sources */,
 				D00040AC15BCD53900AF9EBF /* TGImageInfo+Telegraph.mm in Sources */,
 				939ECA59188EDEA4004ABAB7 /* TGModernGalleryZoomableItemView.m in Sources */,
@@ -7393,6 +7513,7 @@
 				9308D82C184541F400FC395E /* TGPreparedLocalVideoMessage.m in Sources */,
 				D046964318A01640009764B2 /* TGModernConversationInputMicButton.m in Sources */,
 				939ECA4B188ECE66004ABAB7 /* TGModernGalleryView.m in Sources */,
+				D08BC65C19AD261F007F126A /* TGGroupAvatarGalleryModel.m in Sources */,
 				D066E99D18C6A88B00509410 /* info.c in Sources */,
 				934134821855104800480294 /* TGWallpaperListLayout.m in Sources */,
 				9303848918130BF600CAC996 /* TGCollectionViewUpdateContext.m in Sources */,
@@ -7442,11 +7563,13 @@
 				93B07055161B927B0054C20F /* TGFileDownloadActor.m in Sources */,
 				93B07059161CAEF10054C20F /* TGLocationReverseGeocodeActor.mm in Sources */,
 				D0F4BB5B199E3431007464D5 /* TGMediaListPhotoDataSource.m in Sources */,
+				D08BC67E19AE38DC007F126A /* TGUserAvatarGalleryItem.m in Sources */,
 				D04AC5DA1912BF2C00DAFDA8 /* TGMemoryImageCache.m in Sources */,
 				D0549E11192586BA002952ED /* PSLMDBKeyValueWriter.m in Sources */,
 				93B0705C161CB45F0054C20F /* TGRawHttpRequest.m in Sources */,
 				D044CB7019296A8D0001C986 /* TGDatabaseContext.m in Sources */,
 				9341346C1853371200480294 /* TGEditingScrollView.m in Sources */,
+				D08BC66619AD3C99007F126A /* TGPeerAvatarImageDataSource.m in Sources */,
 				D073B9C2192AB02A00BBD071 /* TGTabletMainView.m in Sources */,
 				D0C925AA194A024000E629CA /* buffer.c in Sources */,
 				93DEA099183E4F1B00B559C3 /* TGModernButtonView.m in Sources */,
@@ -7455,9 +7578,11 @@
 				937F0381161F27A700AA32DC /* TGSaveGeocodingResultActor.m in Sources */,
 				93F3FC4D1620ECD500274E29 /* TGUpdatePresenceActor.m in Sources */,
 				D0DB965B18DC85030013B9DC /* TGDownloadLocalizationActor.m in Sources */,
+				D0F404D519AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.m in Sources */,
 				9352A9DC181DBFF0002A1A1A /* TGModernConversationItem.m in Sources */,
 				93F3FC501620FAA700274E29 /* TGImageMediaAttachment+Telegraph.m in Sources */,
 				9312321316220E80001E27A6 /* TGActionMediaAttachment+Telegraph.m in Sources */,
+				D0F404D219AFD64100B8FB18 /* TGProfileUserAvatarGalleryItem.m in Sources */,
 				93C03F1917C4EC5A00A077C4 /* UIDevice+PlatformInfo.m in Sources */,
 				93C52F691861F0AD008229A7 /* TGLoadingPlaceholderMessageModel.m in Sources */,
 				D0C925D1194A024000E629CA /* RMGeometry.m in Sources */,
@@ -7482,6 +7607,7 @@
 				9308D82818453E9300FC395E /* TGLegacyCameraController.m in Sources */,
 				9307AEDD163D726700FACF35 /* TGConversation+Telegraph.m in Sources */,
 				933B4A681641C6C9005FC985 /* TGConversationDeleteActor.m in Sources */,
+				D08BC67119ADF245007F126A /* TGPeerAvatarThumbnailDataSource.m in Sources */,
 				D06331A818BF8A2C0066E2FD /* TGOpusAudioRecorder.m in Sources */,
 				933B4A6B1641F1F1005FC985 /* TGTimelineAddItemsActor.m in Sources */,
 				933B4A7A16442EBE005FC985 /* TGSuggestedContactsRequestActor.m in Sources */,
@@ -7512,6 +7638,7 @@
 				930808EA185A7EE200E62B42 /* TGUserInfoButtonCollectionItem.m in Sources */,
 				9332691A16595EA100E87917 /* TGMenuSection.m in Sources */,
 				9341B0281851F5D100D1195B /* TGTextSizeController.m in Sources */,
+				D08BC67819AE37DA007F126A /* TGUserAvatarGalleryModel.m in Sources */,
 				D0549E1A192626C6002952ED /* ATActorSystem.m in Sources */,
 				D066E9A018C6A88B00509410 /* stream.c in Sources */,
 				D0498FCF197857CD0080A679 /* TGModernGalleryRotationGestureRecognizer.m in Sources */,
@@ -7546,6 +7673,7 @@
 				930931251668C7AD0003C944 /* TGVariantMenuItemCell.m in Sources */,
 				930931281668C7D60003C944 /* TGVariantMenuItem.m in Sources */,
 				938431FA18567685000CD961 /* TGGroupInfoController.m in Sources */,
+				D08BC65F19AD2ACA007F126A /* TGGroupAvatarGalleryItem.m in Sources */,
 				93ED9F141863CF9C00E22F84 /* TGModernRemoteWallpaperListActor.m in Sources */,
 				D046965E18A3D63A009764B2 /* TGContentBubbleViewModel.m in Sources */,
 				9340FDC6166BD4A7001CFB01 /* TGExtendedChatDataRequestActor.m in Sources */,
@@ -7666,8 +7794,10 @@
 				D046965818A2615C009764B2 /* TGPreparedRemoteAudioMessage.m in Sources */,
 				D07EA28A199E272C002ED76D /* TGModernMediaListVideoItemView.m in Sources */,
 				D0C925AC194A024000E629CA /* program.c in Sources */,
+				D0F404C519AFD45C00B8FB18 /* TGProfileUserAvatarGalleryModel.m in Sources */,
 				D0C925D3194A024000E629CA /* RMIntroPageView.m in Sources */,
 				D046964918A10EAD009764B2 /* TGAudioMediaAttachment+Telegraph.m in Sources */,
+				D08BC66B19ADEA89007F126A /* TGModernDataImageView.m in Sources */,
 				9387D8C6171AD21600DFE588 /* TGHttpServerActor.m in Sources */,
 				93DA95B5171D95FC00A69D64 /* TGReportDeliveryActor.m in Sources */,
 				93D9DBFD182BEEA300945B30 /* TGMapMessageViewModel.m in Sources */,
@@ -7676,6 +7806,7 @@
 				9341B02F18524CF300D1195B /* TGBlockedController.m in Sources */,
 				9382D179172B13FE00B75EFD /* TGTelegraphGroupPhotoImageViewControllerCompanion.m in Sources */,
 				93583BB2172ED0C3000786B5 /* TGCheckUpdatesActor.m in Sources */,
+				D08BC66E19ADEAA1007F126A /* TGModernDataImageViewModel.m in Sources */,
 				93941A2C1735414E00F97189 /* TGUpdateUserStatusesActor.mm in Sources */,
 				9386E8A8185D3CAB00930205 /* TGCreateEncryptedChatController.m in Sources */,
 				D066E98E18C6262500509410 /* opus_header.c in Sources */,
@@ -7764,6 +7895,7 @@
 				93064E1E18366FA80024C05A /* TGSecretModernConversationCompanion.m in Sources */,
 				93C23073183BB8E00071CB58 /* TGModernConversationAvatarButton.m in Sources */,
 				9352A9D1181DBCB4002A1A1A /* TGModernConversationController.mm in Sources */,
+				D08BC66219AD2B0A007F126A /* TGGroupAvatarGalleryItemView.m in Sources */,
 				93ED9EFC1863543200E22F84 /* TGSecretConversationEmptyListView.m in Sources */,
 				D01FF83D1965A1D800EA6FFB /* TGVideoPreviewView.m in Sources */,
 				93CF3B6E181EB58C003D8DE1 /* TGModernRemoteImageViewModel.m in Sources */,
@@ -7945,7 +8077,7 @@
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: David Neff (89667NCP4F)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -7960,8 +8092,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				PROVISIONING_PROFILE = "b9042d53-de4b-4fe9-8afd-f7c2102cdb09";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "88E3703C-280C-4A8B-9635-B01756477BBC";
+				PROVISIONING_PROFILE = "c40c172a-5d9d-4808-ae9a-279ae1dec7e8";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "c40c172a-5d9d-4808-ae9a-279ae1dec7e8";
 				SDKROOT = iphoneos;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -8061,8 +8193,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-Wextra";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "Telegram HD";
-				PROVISIONING_PROFILE = "b9042d53-de4b-4fe9-8afd-f7c2102cdb09";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "b9042d53-de4b-4fe9-8afd-f7c2102cdb09";
+				PROVISIONING_PROFILE = "c40c172a-5d9d-4808-ae9a-279ae1dec7e8";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "c40c172a-5d9d-4808-ae9a-279ae1dec7e8";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";

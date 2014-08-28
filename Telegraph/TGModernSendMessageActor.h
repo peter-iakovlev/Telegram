@@ -19,8 +19,6 @@
 @property (nonatomic, readonly) TGPreparedMessage *preparedMessage;
 @property (nonatomic) float uploadProgress;
 
-+ (NSArray *)conversationIdsWithSendMessageInProcess;
-
 + (NSTimeInterval)defaultTimeoutInterval;
 
 - (void)setupFailTimeout:(NSTimeInterval)timeout;
@@ -33,6 +31,7 @@
 - (void)_success:(id)result;
 
 - (void)uploadFilesWithExtensions:(NSArray *)filePathsAndExtensions;
+- (void)beginUploadProgress;
 - (void)uploadsStarted;
 - (void)uploadProgressChanged;
 - (void)uploadsCompleted:(NSDictionary *)filePathToUploadedFile;

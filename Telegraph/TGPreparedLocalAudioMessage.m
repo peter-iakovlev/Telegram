@@ -60,6 +60,19 @@
     return message;
 }
 
++ (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalAudioMessage *)source
+{
+    for (id mediaAttachment in source.message.mediaAttachments)
+    {
+        if ([mediaAttachment isKindOfClass:[TGAudioMediaAttachment class]])
+        {
+            return [self messageByCopyingDataFromMedia:mediaAttachment];
+        }
+    }
+    
+    return nil;
+}
+
 + (instancetype)messageByCopyingDataFromMedia:(TGAudioMediaAttachment *)audioMedia
 {
 #ifdef DEBUG
@@ -128,6 +141,7 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
     
     TGAudioMediaAttachment *audioAttachment = [[TGAudioMediaAttachment alloc] init];
     audioAttachment.localAudioId = _localAudioId;
