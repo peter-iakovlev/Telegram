@@ -634,6 +634,11 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 "ChatSettings.ClearOtherSessionsFailed" = "An error occurred.";
 "ChatSettings.Language" = "LANGUAGE";
 "ChatSettings.RevertLanguage" = "Revert Language";
+"ChatSettings.Usage" = "Usage";
+"ChatSettings.DiskUsage" = "Disk Usage";
+
+// Usage
+"Usage.Title" = "Disk Usage";
 
 // Blocked Users
 "BlockedUsers.Title" = "Blocked";

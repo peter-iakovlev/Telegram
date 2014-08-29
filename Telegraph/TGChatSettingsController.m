@@ -25,6 +25,8 @@
 
 #import "TGStringUtils.h"
 
+#import "TGMediaUsageController.h"
+
 @interface TGChatSettingsController () <TGTextSizeControllerDelegate>
 {
     TGVariantCollectionItem *_textSizeItem;
@@ -139,6 +141,13 @@
             ]];
             [self.menuSections addSection:languageSection];
         }
+        
+        TGButtonCollectionItem *diskUsageItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.DiskUsage") action:@selector(diskUsagePressed)];
+        TGCollectionMenuSection *usageSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Usage")],
+                diskUsageItem
+        ]];
+        //[self.menuSections addSection:usageSection];
     }
     return self;
 }
@@ -262,6 +271,12 @@
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     [progressWindow show:false];
     [progressWindow dismissWithSuccess];
+}
+
+- (void)diskUsagePressed
+{
+    TGMediaUsageController *mediaUsageController = [[TGMediaUsageController alloc] init];
+    [self.navigationController pushViewController:mediaUsageController animated:true];
 }
 
 @end

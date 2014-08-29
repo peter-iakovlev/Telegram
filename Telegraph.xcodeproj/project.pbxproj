@@ -1035,6 +1035,9 @@
 		D0F404C519AFD45C00B8FB18 /* TGProfileUserAvatarGalleryModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F404C419AFD45C00B8FB18 /* TGProfileUserAvatarGalleryModel.m */; };
 		D0F404D219AFD64100B8FB18 /* TGProfileUserAvatarGalleryItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F404D119AFD64100B8FB18 /* TGProfileUserAvatarGalleryItem.m */; };
 		D0F404D519AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F404D419AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.m */; };
+		D0F404DA19B00CE400B8FB18 /* TGMediaUsageController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F404D919B00CE400B8FB18 /* TGMediaUsageController.m */; };
+		D0F404DD19B00D0900B8FB18 /* TGMediaUsageUserItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F404DC19B00D0900B8FB18 /* TGMediaUsageUserItem.m */; };
+		D0F404E519B00D6300B8FB18 /* TGMediaUsageUserItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F404E419B00D6300B8FB18 /* TGMediaUsageUserItemView.m */; };
 		D0F4BB5B199E3431007464D5 /* TGMediaListPhotoDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F4BB5A199E3431007464D5 /* TGMediaListPhotoDataSource.m */; };
 		D0F4BB5E199E57BD007464D5 /* TGModernMediaListItemContentView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F4BB5D199E57BD007464D5 /* TGModernMediaListItemContentView.m */; };
 		D0FD8995156FCA3D00CC3714 /* TGMainTabsController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0FD8994156FCA3D00CC3714 /* TGMainTabsController.m */; };
@@ -2767,6 +2770,12 @@
 		D0F404D119AFD64100B8FB18 /* TGProfileUserAvatarGalleryItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGProfileUserAvatarGalleryItem.m; sourceTree = "<group>"; };
 		D0F404D319AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGProfileUserAvatarGalleryItemView.h; sourceTree = "<group>"; };
 		D0F404D419AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGProfileUserAvatarGalleryItemView.m; sourceTree = "<group>"; };
+		D0F404D819B00CE400B8FB18 /* TGMediaUsageController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGMediaUsageController.h; sourceTree = "<group>"; };
+		D0F404D919B00CE400B8FB18 /* TGMediaUsageController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGMediaUsageController.m; sourceTree = "<group>"; };
+		D0F404DB19B00D0900B8FB18 /* TGMediaUsageUserItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGMediaUsageUserItem.h; sourceTree = "<group>"; };
+		D0F404DC19B00D0900B8FB18 /* TGMediaUsageUserItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGMediaUsageUserItem.m; sourceTree = "<group>"; };
+		D0F404E319B00D6300B8FB18 /* TGMediaUsageUserItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGMediaUsageUserItemView.h; sourceTree = "<group>"; };
+		D0F404E419B00D6300B8FB18 /* TGMediaUsageUserItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGMediaUsageUserItemView.m; sourceTree = "<group>"; };
 		D0F4BB59199E3431007464D5 /* TGMediaListPhotoDataSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGMediaListPhotoDataSource.h; sourceTree = "<group>"; };
 		D0F4BB5A199E3431007464D5 /* TGMediaListPhotoDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGMediaListPhotoDataSource.m; sourceTree = "<group>"; };
 		D0F4BB5C199E57BD007464D5 /* TGModernMediaListItemContentView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernMediaListItemContentView.h; sourceTree = "<group>"; };
@@ -6253,6 +6262,7 @@
 		D096966C15AE066500D59E62 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				D0F404D619B00CB500B8FB18 /* Usage */,
 				9303842A1811A3A300CAC996 /* Account */,
 				936DE1AA1850E41400D90029 /* Notifications */,
 				9341B0221851F14C00D1195B /* Chat Settings */,
@@ -6696,6 +6706,67 @@
 				D0F404D419AFD69700B8FB18 /* TGProfileUserAvatarGalleryItemView.m */,
 			);
 			name = "Profile Avatar";
+			sourceTree = "<group>";
+		};
+		D0F404D619B00CB500B8FB18 /* Usage */ = {
+			isa = PBXGroup;
+			children = (
+				D0F404D719B00CBA00B8FB18 /* Media */,
+			);
+			name = Usage;
+			sourceTree = "<group>";
+		};
+		D0F404D719B00CBA00B8FB18 /* Media */ = {
+			isa = PBXGroup;
+			children = (
+				D0F404DE19B00D0C00B8FB18 /* Items */,
+				D0F404D819B00CE400B8FB18 /* TGMediaUsageController.h */,
+				D0F404D919B00CE400B8FB18 /* TGMediaUsageController.m */,
+			);
+			name = Media;
+			sourceTree = "<group>";
+		};
+		D0F404DE19B00D0C00B8FB18 /* Items */ = {
+			isa = PBXGroup;
+			children = (
+				D0F404DF19B00D1200B8FB18 /* User */,
+				D0F404E019B00D1600B8FB18 /* Group */,
+				D0F404E119B00D1F00B8FB18 /* Secret Chat */,
+				D0F404E219B00D2700B8FB18 /* Broadcast */,
+			);
+			name = Items;
+			sourceTree = "<group>";
+		};
+		D0F404DF19B00D1200B8FB18 /* User */ = {
+			isa = PBXGroup;
+			children = (
+				D0F404DB19B00D0900B8FB18 /* TGMediaUsageUserItem.h */,
+				D0F404DC19B00D0900B8FB18 /* TGMediaUsageUserItem.m */,
+				D0F404E319B00D6300B8FB18 /* TGMediaUsageUserItemView.h */,
+				D0F404E419B00D6300B8FB18 /* TGMediaUsageUserItemView.m */,
+			);
+			name = User;
+			sourceTree = "<group>";
+		};
+		D0F404E019B00D1600B8FB18 /* Group */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Group;
+			sourceTree = "<group>";
+		};
+		D0F404E119B00D1F00B8FB18 /* Secret Chat */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "Secret Chat";
+			sourceTree = "<group>";
+		};
+		D0F404E219B00D2700B8FB18 /* Broadcast */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Broadcast;
 			sourceTree = "<group>";
 		};
 		D0F4BB4F199E341A007464D5 /* List */ = {
@@ -7442,6 +7513,7 @@
 				93ED9F181863D17700E22F84 /* TGRemoteWallpaperInfo.m in Sources */,
 				D0603928191A505000EF850D /* TGMediaPreviewTask.m in Sources */,
 				D00372C91953857600776BCF /* TGBroadcastListsController.mm in Sources */,
+				D0F404DA19B00CE400B8FB18 /* TGMediaUsageController.m in Sources */,
 				D0876FE919702474005740CE /* TGModernGalleryZoomableScrollView.m in Sources */,
 				934134671853360D00480294 /* TGEditableCollectionItemView.m in Sources */,
 				D066E98818C625F700509410 /* wav_io.c in Sources */,
@@ -7454,6 +7526,7 @@
 				D01FF8401966D3F200EA6FFB /* TGVibrantActionSheet.m in Sources */,
 				930F9BB91891780600D3D7C1 /* TGModernGallerySecretImageItem.m in Sources */,
 				D044CB93192A19250001C986 /* TGUserModel.m in Sources */,
+				D0F404E519B00D6300B8FB18 /* TGMediaUsageUserItemView.m in Sources */,
 				9342137C18575C80003F000F /* TGGroupInfoSelectContactController.m in Sources */,
 				D096966F15AE069000D59E62 /* TGSettingsController.m in Sources */,
 				D096967F15AE36B300D59E62 /* TGConversationAddMessagesActor.mm in Sources */,
@@ -7541,6 +7614,7 @@
 				D0F4BB5E199E57BD007464D5 /* TGModernMediaListItemContentView.m in Sources */,
 				D0498FE31979541A0080A679 /* TGModernGalleryVideoView.m in Sources */,
 				D044CBA1192A241C0001C986 /* PSKeyValueCoder.m in Sources */,
+				D0F404DD19B00D0900B8FB18 /* TGMediaUsageUserItem.m in Sources */,
 				D0549DF5192575DF002952ED /* PSLMDBKeyValueStore.m in Sources */,
 				9308090C185B71A900E62B42 /* TGUserInfoAddPhoneCollectionItemView.m in Sources */,
 				930808D3185A6FA700E62B42 /* TGAccountInfoCollectionItem.m in Sources */,
