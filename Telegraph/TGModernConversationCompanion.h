@@ -106,6 +106,7 @@ typedef enum {
 - (void)controllerWantsToAddContactToExisting:(int32_t)uid phoneNumber:(NSString *)phoneNumber;
 - (void)controllerWantsToApplyLocalization:(NSString *)filePath;
 - (void)controllerClearedConversation;
+- (void)systemClearedConversation;
 - (void)controllerDeletedMessages:(NSArray *)messageIds;
 - (void)controllerCanReadHistoryUpdated;
 - (void)controllerRequestedNavigationToConversationWithUser:(int32_t)uid;

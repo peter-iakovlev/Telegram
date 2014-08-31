@@ -6,7 +6,6 @@
 
 @interface TGModernMediaListThumbnailItemView () <TGModernGalleryTransitionView>
 {
-    TGImageView *_imageView;
     NSString *_imageUri;
 }
 

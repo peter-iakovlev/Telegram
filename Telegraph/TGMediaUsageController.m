@@ -32,36 +32,6 @@
 
 @end
 
-@interface TGMediaUsageUserItem : TGMediaUsageItem
-
-@property (nonatomic) int32_t uid;
-
-@end
-
-@implementation TGMediaUsageUserItem
-
-@end
-
-@interface TGMediaUsageGroupItem : TGMediaUsageItem
-
-@property (nonatomic) int64_t peerId;
-
-@end
-
-@implementation TGMediaUsageGroupItem
-
-@end
-
-@interface TGMediaUsageSecretChatItem : TGMediaUsageItem
-
-@property (nonatomic) int64_t peerId;
-
-@end
-
-@implementation TGMediaUsageSecretChatItem
-
-@end
-
 @interface TGMediaUsageController ()
 {
     NSMutableArray *_isCancelled;

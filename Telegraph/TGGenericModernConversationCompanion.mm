@@ -547,7 +547,8 @@ typedef enum {
         @"/as/media/imageThumbnailUpdated",
         @"/tg/service/synchronizationstate",
         @"/tg/unreadCount",
-        @"/tg/assets/currentWallpaperInfo"
+        @"/tg/assets/currentWallpaperInfo",
+        @"/tg/conversation/historyCleared"
     ] watcher:self];
     
     int networkState = [ActionStageInstance() requestActorStateNow:@"/tg/service/updatestate"] ? 1 : 0;
@@ -1873,6 +1874,27 @@ typedef enum {
     }];
 }
 
+- (void)systemClearedConversation
+{
+    [TGModernConversationCompanion dispatchOnMessageQueue:^
+    {
+        _moreMessagesAvailableAbove = false;
+        _moreMessagesAvailableBelow = false;
+        
+        _messageUploadProgress.clear();
+        
+        [_items removeAllObjects];
+        
+        TGDispatchOnMainThread(^
+        {
+            TGModernConversationController *controller = self.controller;
+            [controller replaceItems:@[]];
+        });
+        
+        [self updateControllerEmptyState];
+    }];
+}
+
 - (void)controllerDeletedMessages:(NSArray *)messageIds
 {
     if (messageIds.count == 0)
@@ -2624,6 +2646,16 @@ typedef enum {
             TGModernConversationController *controller = self.controller;
             [controller reloadBackground];
         });
+    }
+    else if ([path isEqualToString:@"/tg/conversation/historyCleared"])
+    {
+        [TGModernConversationCompanion dispatchOnMessageQueue:^
+        {
+            if (_conversationId == [resource longLongValue])
+            {
+                [self systemClearedConversation];
+            }
+        }];
     }
     
     [super actionStageResourceDispatched:path resource:resource arguments:arguments];

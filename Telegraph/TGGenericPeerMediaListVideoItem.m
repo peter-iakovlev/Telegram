@@ -55,7 +55,7 @@
         [previewUri appendFormat:@"&conversationId=%" PRId64 "", (int64_t)peerId];
     }
 
-    self = [super initWithImageUri:previewUri];
+    self = [super initWithImageUri:previewUri duration:videoMedia.duration];
     if (self != nil)
     {
         _peerId = peerId;

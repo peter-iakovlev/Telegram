@@ -8,6 +8,8 @@
 
 #import "TGMessageImageViewOverlayView.h"
 
+#import <pop/POP.h>
+
 typedef enum {
     TGMessageImageViewOverlayViewTypeDownload = 1,
     TGMessageImageViewOverlayViewTypeProgress = 2,
@@ -44,14 +46,6 @@ typedef enum {
     return self;
 }
 
-+ (BOOL)needsDisplayForKey:(NSString *)key
-{
-    if ([key isEqualToString:@"progress"])
-        return true;
-    
-    return [super needsDisplayForKey:key];
-}
-
 - (void)setOverlayStyle:(int)overlayStyle
 {
     if (_overlayStyle != overlayStyle)
@@ -83,7 +77,7 @@ typedef enum {
 {
     if (_type != TGMessageImageViewOverlayViewTypeDownload)
     {
-        [self removeAnimationForKey:@"progress"];
+        [self pop_removeAnimationForKey:@"progress"];
         
         _type = TGMessageImageViewOverlayViewTypeDownload;
         [self setNeedsDisplay];
@@ -94,35 +88,56 @@ typedef enum {
 {
     if (_type != TGMessageImageViewOverlayViewTypePlay)
     {
-        [self removeAnimationForKey:@"progress"];
+        [self pop_removeAnimationForKey:@"progress"];
         
         _type = TGMessageImageViewOverlayViewTypePlay;
         [self setNeedsDisplay];
     }
 }
 
+- (void)setProgress:(CGFloat)progress
+{
+    _progress = progress;
+    [self setNeedsDisplay];
+}
+
 - (void)setProgress:(float)progress cancelEnabled:(bool)cancelEnabled animated:(bool)animated
 {
     if (_type != TGMessageImageViewOverlayViewTypeProgress || ABS(_progress - progress) > FLT_EPSILON)
     {
-        float previousProgress = _progress;
-        if ([self animationForKey:@"progress"] != nil)
-            previousProgress = ((TGMessageImageViewOverlayLayer *)self.presentationLayer).progress;
-        
         _type = TGMessageImageViewOverlayViewTypeProgress;
-        _progress = progress;
         _cancelEnabled = cancelEnabled;
         
         if (animated)
         {
-            CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"progress"];
-            animation.fromValue = @(previousProgress);
-            animation.toValue = @(_progress);
-            animation.duration = _progress >= 1.0f - FLT_EPSILON ? 0.1 : 0.2;
-            animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
-            animation.removedOnCompletion = true;
-            animation.fillMode = kCAFillModeForwards;
-            [self addAnimation:animation forKey:@"progress"];
+            POPBasicAnimation *animation = [self pop_animationForKey:@"progress"];
+            if (animation != nil)
+            {
+                animation.toValue = @((CGFloat)progress);
+            }
+            else
+            {
+                animation = [POPBasicAnimation animation];
+                animation.property = [POPAnimatableProperty propertyWithName:@"progress" initializer:^(POPMutableAnimatableProperty *prop)
+                {
+                    prop.readBlock = ^(TGMessageImageViewOverlayLayer *layer, CGFloat values[])
+                    {
+                        values[0] = layer.progress;
+                    };
+                    
+                    prop.writeBlock = ^(TGMessageImageViewOverlayLayer *layer, const CGFloat values[])
+                    {
+                        layer.progress = values[0];
+                    };
+                    
+                    prop.threshold = 0.01f;
+                }];
+                animation.fromValue = @(_progress);
+                animation.toValue = @(progress);
+                animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
+                animation.duration = 0.5;
+                [self pop_addAnimation:animation forKey:@"progress"];
+            }
         }
         else
             [self setNeedsDisplay];

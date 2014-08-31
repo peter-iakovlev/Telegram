@@ -1792,8 +1792,6 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                 }
                 case TGLocationMediaAttachmentType:
                 {
-                    foundMedia = true;
-                    
                     TGLocationMediaAttachment *mapAttachment = (TGLocationMediaAttachment *)attachment;
                     TGMapViewController *mapController = [[TGMapViewController alloc] initInMapModeWithLatitude:mapAttachment.latitude longitude:mapAttachment.longitude user:[TGDatabaseInstance() loadUser:(int32_t)mediaMessageItem->_message.fromUid]];
                     mapController.watcher = _companion.actionHandle;
@@ -1814,8 +1812,6 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                 }
                 case TGDocumentMediaAttachmentType:
                 {
-                    foundMedia = true;
-                    
                     TGDocumentMediaAttachment *documentAttachment = (TGDocumentMediaAttachment *)attachment;
                     
                     if ([[[documentAttachment.fileName pathExtension] lowercaseString] isEqualToString:@"strings"])
@@ -2008,8 +2004,6 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                 }
                 case TGAudioMediaAttachmentType:
                 {
-                    foundMedia = true;
-                    
                     TGAudioMediaAttachment *audioAttachment = (TGAudioMediaAttachment *)attachment;
                     
                     if (_currentAudioPlayerMessageId != messageId)
@@ -2030,7 +2024,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         if (!foundMedia)
             return;
         
-            [self stopInlineMediaIfPlaying];
+        [self stopInlineMediaIfPlaying];
             
         TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
         

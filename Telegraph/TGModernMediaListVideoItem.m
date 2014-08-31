@@ -4,12 +4,13 @@
 
 @implementation TGModernMediaListVideoItem
 
-- (instancetype)initWithImageUri:(NSString *)imageUri
+- (instancetype)initWithImageUri:(NSString *)imageUri duration:(NSTimeInterval)duration
 {
     self = [super init];
     if (self != nil)
     {
         _imageUri = imageUri;
+        _duration = duration;
     }
     return self;
 }

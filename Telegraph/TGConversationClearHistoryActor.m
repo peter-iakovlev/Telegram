@@ -23,6 +23,7 @@
         return;
     }
     
+    [ActionStageInstance() dispatchResource:@"/tg/conversation/historyCleared" resource:@(conversationId)];
     [TGDatabaseInstance() clearConversation:conversationId populateActionQueue:true];
     
     dispatch_async([ActionStageInstance() globalStageDispatchQueue], ^

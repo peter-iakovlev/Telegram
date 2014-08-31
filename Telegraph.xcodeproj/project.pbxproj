@@ -6841,6 +6841,7 @@
 				"pt-BR",
 				pt,
 				it,
+				pt_BR,
 			);
 			mainGroup = D08805A1156E8F3600311537;
 			productRefGroup = D08805AD156E8F3600311537 /* Products */;

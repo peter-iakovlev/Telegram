@@ -440,6 +440,10 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 {
 }
 
+- (void)systemClearedConversation
+{
+}
+
 - (void)controllerDeletedMessages:(NSArray *)__unused messageIds
 {
 }

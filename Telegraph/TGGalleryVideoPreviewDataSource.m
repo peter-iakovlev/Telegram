@@ -101,9 +101,12 @@
                     {
                         if (success)
                         {
-                            TGDataResource *result = [TGGalleryVideoPreviewDataSource _performLoad:uri isCancelled:nil];
-                            if (completion)
-                                completion(result);
+                            dispatch_async([TGCache diskCacheQueue], ^
+                            {
+                                TGDataResource *result = [TGGalleryVideoPreviewDataSource _performLoad:uri isCancelled:nil];
+                                if (completion)
+                                    completion(result);
+                            });
                         }
                         else if (completion)
                             completion(nil);

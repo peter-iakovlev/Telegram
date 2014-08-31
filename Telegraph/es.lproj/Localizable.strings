@@ -305,7 +305,7 @@
 "Conversation.Edit" = "Editar";
 "Conversation.Info" = "Información";
 "Conversation.Block" = "Bloquear";
-"Conversation.Unblock" = "Quitar";
+"Conversation.Unblock" = "Desbloquear";
 "Conversation.ClearAll" = "Limpiar todos";
 "Conversation.Location" = "Ubicación";
 "Conversation.Document" = "Archivo";
@@ -428,7 +428,7 @@
 "Conversation.View" = "Ver";
 "Conversation.Download" = "Descargar";
 "Conversation.SlideToCancel" = "Desliza para cancelar";
-"Conversation.ApplyLocalization" = "Aplicar ubicación";
+"Conversation.ApplyLocalization" = "Aplicar traducción";
 "Conversation.OpenFile" = "Abrir archivo";
 "Conversation.MicrophoneAccessDisabled" = "Telegram necesita acceso a tu micrófono para los mensajes de voz. Por favor, ve a Ajustes - Privacidad - Micrófono y activa la opción para Telegram.";
 

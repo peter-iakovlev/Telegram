@@ -128,7 +128,12 @@ static ASQueue *taskManagementQueue()
                 [previewTask executeWithTargetFilePath:nil uri:args[@"legacy-cache-url"] completion:^(bool success)
                 {
                     if (success)
-                        [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
+                    {
+                        dispatch_async([TGCache diskCacheQueue], ^
+                        {
+                            [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
+                        });
+                    }
                     else
                     {
                         if (completion != nil)

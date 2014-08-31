@@ -181,9 +181,12 @@
 
 - (void)updateTimestamp
 {
-    bool active = false;
-    NSString *status = [self _statusStringFromUserPresence:_user.presence active:&active];
-    [(TGGroupInfoUserCollectionItemView *)[self boundView] setStatus:status active:active];
+    if (_user != nil)
+    {
+        bool active = false;
+        NSString *status = [self _statusStringFromUserPresence:_user.presence active:&active];
+        [(TGGroupInfoUserCollectionItemView *)[self boundView] setStatus:status active:active];
+    }
 }
 
 - (void)itemSelected:(id)__unused actionTarget

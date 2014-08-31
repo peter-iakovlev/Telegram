@@ -107,9 +107,12 @@
                 {
                     if (success)
                     {
-                        TGDataResource *result = [TGGalleryPhotoDataSource _performLoad:uri isCancelled:nil];
-                        if (completion)
-                            completion(result);
+                        dispatch_async([TGCache diskCacheQueue], ^
+                        {
+                            TGDataResource *result = [TGGalleryPhotoDataSource _performLoad:uri isCancelled:nil];
+                            if (completion)
+                                completion(result);
+                        });
                     }
                     else if (completion)
                         completion(nil);

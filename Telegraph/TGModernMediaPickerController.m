@@ -254,7 +254,7 @@
     
     UIEdgeInsets contentInset = [self controllerInsetForInterfaceOrientation:orientation];
     
-    CGPoint contentOffset = CGPointMake(0, contentSize - _collectionView.frame.size.height + contentInset.bottom - 0.0f);
+    CGPoint contentOffset = CGPointMake(0, contentSize - _collectionView.frame.size.height + contentInset.top - 0.0f);
     if (contentOffset.y < -contentInset.top)
         contentOffset.y = -contentInset.top;
     [_collectionView setContentOffset:contentOffset animated:false];
