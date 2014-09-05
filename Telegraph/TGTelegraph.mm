@@ -1617,7 +1617,11 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         if (((TLError$richError *)error).type.length != 0)
             return ((TLError$richError *)error).type;
         
-        NSString *errorDescription = ((TLError$richError *)error).description;
+        NSString *errorDescription = nil;
+        if ([error isKindOfClass:[TLError$error class]])
+            errorDescription = ((TLError$error *)error).text;
+        else if ([error isKindOfClass:[TLError$richError class]])
+            errorDescription = ((TLError$richError *)error).n_description;
         
         NSMutableString *errorString = [[NSMutableString alloc] init];
         for (int i = 0; i < (int)errorDescription.length; i++)
@@ -3029,10 +3033,14 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         else
         {
             int reason = -1;
-            if ([error.description rangeOfString:@"USER_LEFT_CHAT"].location != NSNotFound)
-                reason = -2;
-            else if ([error.description rangeOfString:@"USERS_TOO_MUCH"].location != NSNotFound)
-                reason = -3;
+            if ([error isKindOfClass:[TLError$richError class]])
+            {
+                TLError$richError *richError = (TLError$richError *)error;
+                if ([richError.n_description rangeOfString:@"USER_LEFT_CHAT"].location != NSNotFound)
+                    reason = -2;
+                else if ([richError.n_description rangeOfString:@"USERS_TOO_MUCH"].location != NSNotFound)
+                    reason = -3;
+            }
             [actor addMemberFailed:reason];
         }
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];

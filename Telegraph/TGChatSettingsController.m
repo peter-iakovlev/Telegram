@@ -13,6 +13,7 @@
 #import "TGSwitchCollectionItem.h"
 #import "TGButtonCollectionItem.h"
 #import "TGCommentCollectionItem.h"
+#import "TGDisclosureActionCollectionItem.h"
 
 #import "TGTextSizeController.h"
 
@@ -26,6 +27,7 @@
 #import "TGStringUtils.h"
 
 #import "TGMediaUsageController.h"
+#import "TGCacheController.h"
 
 @interface TGChatSettingsController () <TGTextSizeControllerDelegate>
 {
@@ -142,12 +144,12 @@
             [self.menuSections addSection:languageSection];
         }
         
-        TGButtonCollectionItem *diskUsageItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.DiskUsage") action:@selector(diskUsagePressed)];
-        TGCollectionMenuSection *usageSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Usage")],
-                diskUsageItem
+        TGDisclosureActionCollectionItem *cacheItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Cache") action:@selector(cachePressed)];
+        TGCollectionMenuSection *cacheSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Cache")],
+                cacheItem
         ]];
-        //[self.menuSections addSection:usageSection];
+        [self.menuSections addSection:cacheSection];
     }
     return self;
 }
@@ -273,10 +275,10 @@
     [progressWindow dismissWithSuccess];
 }
 
-- (void)diskUsagePressed
+- (void)cachePressed
 {
-    TGMediaUsageController *mediaUsageController = [[TGMediaUsageController alloc] init];
-    [self.navigationController pushViewController:mediaUsageController animated:true];
+    TGCacheController *cacheController = [[TGCacheController alloc] init];
+    [self.navigationController pushViewController:cacheController animated:true];
 }
 
 @end

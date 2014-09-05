@@ -34,6 +34,8 @@
 
 #import "TGStringUtils.h"
 
+#import "TGProgressWindow.h"
+
 #include <map>
 #include <set>
 
@@ -49,6 +51,8 @@ typedef enum {
 @interface TGTelegraphDialogListCompanion ()
 {
     volatile int32_t _conversationsUpdateTaskId;
+    
+    TGProgressWindow *_progressWindow;
 }
 
 @property (nonatomic, strong) NSMutableArray *conversationList;
@@ -91,6 +95,12 @@ typedef enum {
 {
     [_actionHandle reset];
     [ActionStageInstance() removeWatcher:self];
+    
+    TGProgressWindow *progressWindow = _progressWindow;
+    TGDispatchOnMainThread(^
+    {
+        [progressWindow dismiss:false];
+    });
 }
 
 - (id<TGDialogListCellAssetsSource>)dialogListCellAssetsSource
@@ -247,8 +257,18 @@ typedef enum {
 {
     if (!self.forwardMode)
     {
-        int64_t conversationId = conversation.conversationId;
-        [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false animated:true];
+        if ([TGDatabaseInstance() loadMessageWithMid:messageId] != nil)
+        {
+            int64_t conversationId = conversation.conversationId;
+            [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false animated:true];
+        }
+        else
+        {
+            _progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+            [_progressWindow show:true];
+            
+            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/loadConversationAndMessageForSearch/(%" PRId64 ", %" PRId32 ")", conversation.conversationId, messageId] options:@{@"peerId": @(conversation.conversationId), @"messageId": @(messageId)} flags:0 watcher:self];
+        }
     }
 }
 
@@ -660,6 +680,42 @@ typedef enum {
     conversation.dialogListData = dict;
 }
 
+- (void)actorMessageReceived:(NSString *)path messageType:(NSString *)messageType message:(id)message
+{
+    if ([path isEqualToString:[NSString stringWithFormat:@"/tg/search/messages/(%d)", [_searchString hash]]])
+    {
+        if ([messageType isEqualToString:@"searchResultsUpdated"])
+        {
+            NSArray *conversations = [((SGraphObjectNode *)message).object sortedArrayUsingComparator:^NSComparisonResult(TGConversation *conversation1, TGConversation *conversation2)
+            {
+                return conversation1.date > conversation2.date ? NSOrderedAscending : NSOrderedDescending;
+            }];
+            
+            NSMutableArray *result = [[NSMutableArray alloc] init];
+            
+            TGUser *selfUser = [[TGDatabase instance] loadUser:TGTelegraphInstance.clientUserId];
+            
+            CFAbsoluteTime dialogListDataStartTime = CFAbsoluteTimeGetCurrent();
+            
+            for (TGConversation *conversation in conversations)
+            {
+                [self initializeDialogListData:conversation customUser:nil selfUser:selfUser];
+                [result addObject:conversation];
+            }
+            
+            NSString *searchString = _searchString;
+            
+            TGLog(@"Dialog list data parsing time: %f s", CFAbsoluteTimeGetCurrent() - dialogListDataStartTime);
+            
+            dispatch_async(dispatch_get_main_queue(), ^
+            {
+                TGDialogListController *dialogListController = self.dialogListController;
+                [dialogListController searchResultsReloaded:result searchString:searchString];
+            });
+        }
+    }
+}
+
 - (void)actorCompleted:(int)resultCode path:(NSString *)path result:(id)result
 {
     if ([path isEqualToString:[NSString stringWithFormat:@"/tg/search/dialogs/(%d)", [_searchString hash]]])
@@ -710,29 +766,7 @@ typedef enum {
     }
     else if ([path isEqualToString:[NSString stringWithFormat:@"/tg/search/messages/(%d)", [_searchString hash]]])
     {
-        NSArray *conversations = ((SGraphObjectNode *)result).object;
-        
-        NSMutableArray *result = [[NSMutableArray alloc] init];
-        
-        TGUser *selfUser = [[TGDatabase instance] loadUser:TGTelegraphInstance.clientUserId];
-        
-        CFAbsoluteTime dialogListDataStartTime = CFAbsoluteTimeGetCurrent();
-        
-        for (TGConversation *conversation in conversations)
-        {
-            [self initializeDialogListData:conversation customUser:nil selfUser:selfUser];
-            [result addObject:conversation];
-        }
-        
-        NSString *searchString = _searchString;
-        
-        TGLog(@"Dialog list data parsing time: %f s", CFAbsoluteTimeGetCurrent() - dialogListDataStartTime);
-        
-        dispatch_async(dispatch_get_main_queue(), ^
-        {
-            TGDialogListController *dialogListController = self.dialogListController;
-            [dialogListController searchResultsReloaded:result searchString:searchString];
-        });
+        [self actorMessageReceived:path messageType:@"searchResultsUpdated" message:result];
     }
     else if ([path hasPrefix:@"/tg/dialoglist"])
     {
@@ -887,6 +921,23 @@ typedef enum {
                 [dialogListController titleStateUpdated:title isLoading:newState != TGDialogListStateNormal];
             });
         }
+    }
+    else if ([path hasPrefix:@"/tg/loadConversationAndMessageForSearch/"])
+    {
+        TGDispatchOnMainThread(^
+        {
+            [_progressWindow dismiss:true];
+            _progressWindow = nil;
+            
+            if (resultCode == ASStatusSuccess)
+            {
+                int64_t conversationId = [result[@"peerId"] longLongValue];
+                TGConversation *conversation = result[@"conversation"];
+                int32_t messageId = [result[@"messageId"] intValue];
+                
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false animated:true];
+            }
+        });
     }
 }
 

@@ -904,6 +904,8 @@
 		D0A516C9193FD7E9000B8984 /* iPad-Portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = D0A516C7193FD7E9000B8984 /* iPad-Portrait.png */; };
 		D0A516CC193FD848000B8984 /* DetailLogoBlank@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0A516CA193FD848000B8984 /* DetailLogoBlank@2x.png */; };
 		D0A516CD193FD848000B8984 /* DetailLogoBlank.png in Resources */ = {isa = PBXBuildFile; fileRef = D0A516CB193FD848000B8984 /* DetailLogoBlank.png */; };
+		D0A54B3D19B9F0C600886B73 /* TGLoadConversationAndHistoryForSearchActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D0A54B3C19B9F0C600886B73 /* TGLoadConversationAndHistoryForSearchActor.m */; };
+		D0A54B4119BA086500886B73 /* TGCacheController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0A54B4019BA086500886B73 /* TGCacheController.m */; };
 		D0A828BA19ACA606008BF6FF /* TGModernGalleryImageItemContainerView.m in Sources */ = {isa = PBXBuildFile; fileRef = D0A828B919ACA606008BF6FF /* TGModernGalleryImageItemContainerView.m */; };
 		D0AAD1FB1964B6F30022B101 /* BroadcastLargeAvatarIcon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0AAD1F91964B6F30022B101 /* BroadcastLargeAvatarIcon@2x.png */; };
 		D0AAD1FC1964B6F30022B101 /* BroadcastLargeAvatarIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = D0AAD1FA1964B6F30022B101 /* BroadcastLargeAvatarIcon.png */; };
@@ -2582,6 +2584,10 @@
 		D0A516C7193FD7E9000B8984 /* iPad-Portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "iPad-Portrait.png"; sourceTree = "<group>"; };
 		D0A516CA193FD848000B8984 /* DetailLogoBlank@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "DetailLogoBlank@2x.png"; path = "Resources/DetailLogoBlank@2x.png"; sourceTree = "<group>"; };
 		D0A516CB193FD848000B8984 /* DetailLogoBlank.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = DetailLogoBlank.png; path = Resources/DetailLogoBlank.png; sourceTree = "<group>"; };
+		D0A54B3B19B9F0C600886B73 /* TGLoadConversationAndHistoryForSearchActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGLoadConversationAndHistoryForSearchActor.h; sourceTree = "<group>"; };
+		D0A54B3C19B9F0C600886B73 /* TGLoadConversationAndHistoryForSearchActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGLoadConversationAndHistoryForSearchActor.m; sourceTree = "<group>"; };
+		D0A54B3F19BA086500886B73 /* TGCacheController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGCacheController.h; sourceTree = "<group>"; };
+		D0A54B4019BA086500886B73 /* TGCacheController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGCacheController.m; sourceTree = "<group>"; };
 		D0A828B819ACA606008BF6FF /* TGModernGalleryImageItemContainerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryImageItemContainerView.h; sourceTree = "<group>"; };
 		D0A828B919ACA606008BF6FF /* TGModernGalleryImageItemContainerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryImageItemContainerView.m; sourceTree = "<group>"; };
 		D0AAD1F91964B6F30022B101 /* BroadcastLargeAvatarIcon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "BroadcastLargeAvatarIcon@2x.png"; path = "Resources/BroadcastLargeAvatarIcon@2x.png"; sourceTree = "<group>"; };
@@ -5451,6 +5457,7 @@
 			children = (
 				D0CB14A8199DF1D200EBCEA7 /* Media History */,
 				93064E14183553350024C05A /* Send Message */,
+				D0A54B3119B9F0AB00886B73 /* Search */,
 				932515DF167AB130005C421F /* TGConversationHistoryAsyncRequestActor.h */,
 				932515E0167AB130005C421F /* TGConversationHistoryAsyncRequestActor.m */,
 				D07AC9ED1577C1C700436500 /* TGConversationHistoryRequestActor.h */,
@@ -6262,6 +6269,7 @@
 		D096966C15AE066500D59E62 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				D0A54B3E19BA085900886B73 /* Cache */,
 				D0F404D619B00CB500B8FB18 /* Usage */,
 				9303842A1811A3A300CAC996 /* Account */,
 				936DE1AA1850E41400D90029 /* Notifications */,
@@ -6337,6 +6345,24 @@
 				D0A3F311195D98EE009E0ACD /* TGBroadcastListInfoController.m */,
 			);
 			name = "Broadcast List Info";
+			sourceTree = "<group>";
+		};
+		D0A54B3119B9F0AB00886B73 /* Search */ = {
+			isa = PBXGroup;
+			children = (
+				D0A54B3B19B9F0C600886B73 /* TGLoadConversationAndHistoryForSearchActor.h */,
+				D0A54B3C19B9F0C600886B73 /* TGLoadConversationAndHistoryForSearchActor.m */,
+			);
+			name = Search;
+			sourceTree = "<group>";
+		};
+		D0A54B3E19BA085900886B73 /* Cache */ = {
+			isa = PBXGroup;
+			children = (
+				D0A54B3F19BA086500886B73 /* TGCacheController.h */,
+				D0A54B4019BA086500886B73 /* TGCacheController.m */,
+			);
+			name = Cache;
 			sourceTree = "<group>";
 		};
 		D0AC708D18BE214000CDFFA8 /* opus */ = {
@@ -7561,6 +7587,7 @@
 				D00040B815BCD73A00AF9EBF /* TGUser+Telegraph.m in Sources */,
 				93C925FE15BD6D0800D1A461 /* TGTelegraphConversationMessageAssetsSource.m in Sources */,
 				93192EFB15BED22F0056FCD8 /* TGSendCodeRequestBuilder.m in Sources */,
+				D0A54B3D19B9F0C600886B73 /* TGLoadConversationAndHistoryForSearchActor.m in Sources */,
 				D0C7FDCB15D301A5001A998A /* TGActor.m in Sources */,
 				93EB7AB6184F8B3000891DBF /* TGModernConversationTitleIcon.m in Sources */,
 				D0C7FDCE15D303D2001A998A /* TGTimelineRemoveItemsRequestActor.m in Sources */,
@@ -7631,6 +7658,7 @@
 				D066E98318C6258E00509410 /* bitwise.c in Sources */,
 				D044CB88192A11F00001C986 /* TGUserStore.m in Sources */,
 				93F3A0F618212E2B0005EB98 /* TGModernDateViewModel.m in Sources */,
+				D0A54B4119BA086500886B73 /* TGCacheController.m in Sources */,
 				D0C9157E1980092200824042 /* TGModernGalleryVideoContentView.m in Sources */,
 				937CFD6E17AE8E9500E28C5B /* TGSynchronizePreferencesActor.m in Sources */,
 				D03A24BC194A45FB0061027C /* TGModernMediaPickerController.m in Sources */,
@@ -8167,8 +8195,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				PROVISIONING_PROFILE = "c40c172a-5d9d-4808-ae9a-279ae1dec7e8";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "c40c172a-5d9d-4808-ae9a-279ae1dec7e8";
+				PROVISIONING_PROFILE = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
 				SDKROOT = iphoneos;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -8189,8 +8217,8 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP";
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
@@ -8199,8 +8227,8 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
-				PROVISIONING_PROFILE = "EF13A887-A494-434B-8D01-865280D6B56F";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "EF13A887-A494-434B-8D01-865280D6B56F";
+				PROVISIONING_PROFILE = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 				WARNING_CFLAGS = (
@@ -8268,8 +8296,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-Wextra";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "Telegram HD";
-				PROVISIONING_PROFILE = "c40c172a-5d9d-4808-ae9a-279ae1dec7e8";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "c40c172a-5d9d-4808-ae9a-279ae1dec7e8";
+				PROVISIONING_PROFILE = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";
@@ -8292,8 +8320,8 @@
 				CLANG_WARN_OBJC_RECEIVER_WEAK = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP (6N38VWS5BX)";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP";
 				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -8335,8 +8363,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-DNS_BLOCK_ASSERTIONS";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "Telegram HD";
-				PROVISIONING_PROFILE = "EF13A887-A494-434B-8D01-865280D6B56F";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "EF13A887-A494-434B-8D01-865280D6B56F";
+				PROVISIONING_PROFILE = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";

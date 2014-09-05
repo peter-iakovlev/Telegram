@@ -648,7 +648,7 @@
     else if ([error isKindOfClass:[TLError$error class]])
         return [[NSString alloc] initWithFormat:@"%d: %@", ((TLError$error *)error).code, ((TLError$error *)error).text];
     else if ([error isKindOfClass:[TLError$richError class]])
-        return [[NSString alloc] initWithFormat:@"%d: %@:%@", ((TLError$richError *)error).code, ((TLError$richError *)error).type, ((TLError$richError *)error).description];
+        return [[NSString alloc] initWithFormat:@"%d: %@:%@", ((TLError$richError *)error).code, ((TLError$richError *)error).type, ((TLError$richError *)error).n_description];
     
     return [error description];
 }
