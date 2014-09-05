@@ -170,6 +170,8 @@
             AVAudioSession *audioSession = [AVAudioSession sharedInstance];
             if (![audioSession setActive:false error:&error])
                 TGLog(@"[TGAudioPlayer audio session deactivation failed: %@]", error);
+            if (![audioSession overrideOutputAudioPort:AVAudioSessionPortOverrideNone error:&error])
+                TGLog(@"[TGAudioPlayer override route failed: %@]", error);
         }
     }];
 }

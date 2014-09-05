@@ -31,6 +31,7 @@
 
 @property (nonatomic, strong) ASHandle *actionHandle;
 @property (nonatomic, copy) void (^completion)(bool);
+@property (nonatomic, copy) void (^progress)(float);
 
 @end
 
@@ -45,6 +46,11 @@
 }
 
 - (void)executeWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask
+{
+    [self executeWithTargetFilePath:targetFilePath uri:uri progress:nil completion:completion workerTask:workerTask];
+}
+
+- (void)executeWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri progress:(void (^)(float))progress completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask
 {
     _actionHandle = [[ASHandle alloc] initWithDelegate:self];
     _targetFilePath = targetFilePath;
@@ -108,6 +114,15 @@
 {
     if (_completion != nil)
         _completion(status == ASStatusSuccess);
+}
+
+- (void)actorMessageReceived:(NSString *)__unused path messageType:(NSString *)messageType message:(id)message
+{
+    if ([messageType isEqualToString:@"progress"])
+    {
+        if (_progress)
+            _progress([message floatValue]);
+    }
 }
 
 @end

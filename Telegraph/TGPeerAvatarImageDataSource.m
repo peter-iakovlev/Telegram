@@ -125,7 +125,13 @@ static ASQueue *taskManagementQueue()
             
             if ([args[@"legacy-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
             {
-                [previewTask executeWithTargetFilePath:nil uri:args[@"legacy-cache-url"] completion:^(bool success)
+                if (progress)
+                    progress(0.0);
+                [previewTask executeWithTargetFilePath:nil uri:args[@"legacy-cache-url"] progress:^(float value)
+                {
+                    if (progress)
+                        progress(value);
+                } completion:^(bool success)
                 {
                     if (success)
                     {
@@ -170,7 +176,7 @@ static ASQueue *taskManagementQueue()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        imageData = [[TGDataResource alloc] initWithImage:TGAverageColorImage([UIColor whiteColor]) decoded:true];
+        imageData = [[TGDataResource alloc] initWithImage:TGAverageColorImage([UIColor blackColor]) decoded:true];
     });
     
     return imageData;
@@ -191,7 +197,7 @@ static ASQueue *taskManagementQueue()
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            placeholder = TGAverageColorImage([UIColor whiteColor]);
+            placeholder = TGAverageColorImage([UIColor blackColor]);
         });
         
         return placeholder;
