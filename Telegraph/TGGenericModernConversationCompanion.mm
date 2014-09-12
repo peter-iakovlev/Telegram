@@ -311,6 +311,22 @@ typedef enum {
                 topMessages = messages;
             }];
         }
+        
+        int minRemoteMid = INT_MAX;
+        int maxRemoteMid = INT_MIN;
+        for (TGMessage *message in topMessages)
+        {
+            if (message.mid < TGMessageLocalMidBaseline)
+            {
+                minRemoteMid = MIN(message.mid, minRemoteMid);
+                maxRemoteMid = MAX(message.mid, maxRemoteMid);
+            }
+        }
+        
+        if (minRemoteMid <= maxRemoteMid)
+        {
+            topMessages = [TGDatabaseInstance() excludeMessagesWithHolesFromArray:topMessages peerId:_conversationId aroundMessageId:_preferredInitialPositionedMessageId];
+        }
     } synchronous:true];
     
     NSMutableArray *sortedTopMessages = [[NSMutableArray alloc] initWithArray:topMessages];

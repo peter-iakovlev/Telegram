@@ -272,7 +272,6 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
         block();
     
     _contentSize = CGSizeMake(self.collectionView.bounds.size.width, contentHeight);
-    
     std::sort(_decorationViewAttributes.begin(), _decorationViewAttributes.end(), TGDecorationViewAttrubutesComparator());
 }
 

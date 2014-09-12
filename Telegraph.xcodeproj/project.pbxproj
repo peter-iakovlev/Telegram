@@ -692,6 +692,7 @@
 		D01526D51900548200656312 /* TGWorker.m in Sources */ = {isa = PBXBuildFile; fileRef = D01526D41900548200656312 /* TGWorker.m */; };
 		D01526D9190054AB00656312 /* TGWorkerTask.m in Sources */ = {isa = PBXBuildFile; fileRef = D01526D8190054AB00656312 /* TGWorkerTask.m */; };
 		D01526DD1902111B00656312 /* TGImageBlur.m in Sources */ = {isa = PBXBuildFile; fileRef = D01526DC1902111B00656312 /* TGImageBlur.m */; };
+		D017752719C245CB006D377F /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = D017752619C245CB006D377F /* LaunchScreen.xib */; };
 		D01E9DCA15B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm in Sources */ = {isa = PBXBuildFile; fileRef = D01E9DC915B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm */; };
 		D01FF83D1965A1D800EA6FFB /* TGVideoPreviewView.m in Sources */ = {isa = PBXBuildFile; fileRef = D01FF83C1965A1D800EA6FFB /* TGVideoPreviewView.m */; };
 		D01FF8401966D3F200EA6FFB /* TGVibrantActionSheet.m in Sources */ = {isa = PBXBuildFile; fileRef = D01FF83F1966D3F200EA6FFB /* TGVibrantActionSheet.m */; };
@@ -2197,6 +2198,7 @@
 		D01526D8190054AB00656312 /* TGWorkerTask.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGWorkerTask.m; sourceTree = "<group>"; };
 		D01526DB1902111B00656312 /* TGImageBlur.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGImageBlur.h; sourceTree = "<group>"; };
 		D01526DC1902111B00656312 /* TGImageBlur.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGImageBlur.m; sourceTree = "<group>"; };
+		D017752619C245CB006D377F /* LaunchScreen.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = LaunchScreen.xib; sourceTree = "<group>"; };
 		D01E9DC815B8D7A700C624F2 /* TGTelegraphDialogListCompanion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTelegraphDialogListCompanion.h; sourceTree = "<group>"; };
 		D01E9DC915B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGTelegraphDialogListCompanion.mm; sourceTree = "<group>"; };
 		D01FF83B1965A1D800EA6FFB /* TGVideoPreviewView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGVideoPreviewView.h; sourceTree = "<group>"; };
@@ -5693,6 +5695,7 @@
 		D08805A1156E8F3600311537 = {
 			isa = PBXGroup;
 			children = (
+				D017752619C245CB006D377F /* LaunchScreen.xib */,
 				D0DAA484197496240036E709 /* Icon-76.png */,
 				D0DAA482197495EA0036E709 /* Icon-72@2x.png */,
 				D0DAA480197495A80036E709 /* Icon-72.png */,
@@ -7010,6 +7013,7 @@
 				D09A218815C9CF5100023542 /* Icon@2x.png in Resources */,
 				9303849318133F8F00CAC996 /* SearchBarBackground_Active@2x.png in Resources */,
 				D0BD442218BCD0C70036FB8B /* begin_record.caf in Resources */,
+				D017752719C245CB006D377F /* LaunchScreen.xib in Resources */,
 				D00C7196193F3FD40005349C /* ModernBubbleOutgoingPartialHighlightedPad@2x.png in Resources */,
 				D0A516CD193FD848000B8984 /* DetailLogoBlank.png in Resources */,
 				934134721853A12200480294 /* ModernMenuDeleteIcon@2x.png in Resources */,

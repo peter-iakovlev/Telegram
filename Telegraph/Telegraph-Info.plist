@@ -98,7 +98,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>35309</string>
+	<string>35383</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIAppFonts</key>
@@ -135,6 +135,8 @@
 			<string>{768, 1024}</string>
 		</dict>
 	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
 	<key>UIPrerenderedIcon</key>
 	<true/>
 	<key>UIRequiredDeviceCapabilities</key>

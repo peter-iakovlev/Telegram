@@ -11,6 +11,14 @@
 #import "TGConversation+Telegraph.h"
 #import "TGMessage+Telegraph.h"
 
+@interface TGConversationHistoryAsyncRequestActor ()
+{
+    int32_t _fromMid;
+    bool _down;
+}
+
+@end
+
 @implementation TGConversationHistoryAsyncRequestActor
 
 + (NSString *)genericPath
@@ -49,11 +57,13 @@
         if ([options objectForKey:@"limit"] != nil)
             limit = [TGSchema intFromObject:[options objectForKey:@"limit"]];
         
+        _fromMid = maxMid;
+        
         int offset = 0;
-        if ([options objectForKey:@"offset"] != nil)
-        {
-            offset = [[options objectForKey:@"offset"] intValue];
-        }
+        
+        _down = [options[@"down"] boolValue];
+        if (_down)
+            offset = -limit;
         
         self.cancelToken = [TGTelegraphInstance doRequestConversationHistory:conversationId maxMid:maxMid orOffset:offset limit:limit actor:self];
     }
@@ -90,11 +100,16 @@
     
     int maxMid = 0;
     
+    int minRemoteMid = INT_MAX;
+    int maxRemoteMid = 0;
+    
     for (TLMessage *messageDesc in messages.messages)
     {
         TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:messageDesc];
         if (!message.outgoing && message.mid > maxMid)
             maxMid = message.mid;
+        minRemoteMid = MIN(minRemoteMid, message.mid);
+        maxRemoteMid = MAX(maxRemoteMid, message.mid);
         [messageItems addObject:message];
     }
     
@@ -102,6 +117,15 @@
         [TGDatabaseInstance() storePeerMinMid:conversationId minMid:1];
     
     [[TGDatabase instance] addMessagesToConversation:messageItems conversationId:conversationId updateConversation:conversation dispatch:true countUnread:false];
+    
+    if (_down && maxRemoteMid >= _fromMid)
+    {
+        [TGDatabaseInstance() fillConversationHistoryHole:conversationId indexSet:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(_fromMid, maxRemoteMid - _fromMid)]];
+    }
+    else if (!_down && minRemoteMid <= _fromMid)
+    {
+        [TGDatabaseInstance() fillConversationHistoryHole:conversationId indexSet:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(minRemoteMid, _fromMid - minRemoteMid)]];
+    }
     
     if (maxMid > 0)
     {

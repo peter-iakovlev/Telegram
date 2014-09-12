@@ -82,17 +82,54 @@
     {
         [TGDatabaseInstance() loadMessagesFromConversationDownwards:conversationId minMid:maxMid minLocalMid:maxLocalMid minDate:maxDate limit:limit completion:^(NSArray *messages)
         {
-            [ActionStageInstance() actionCompleted:self.path result:[[NSDictionary alloc] initWithObjectsAndKeys:messages, @"messages", [[NSNumber alloc] initWithBool:true], @"downwards", nil]];
+            int minMessageId = INT_MAX;
+            int maxMessageId = 0;
+            for (TGMessage *message in messages)
+            {
+                if (message.mid < TGMessageLocalMidBaseline)
+                {
+                    minMessageId = MIN(minMessageId, message.mid);
+                    maxMessageId = MAX(maxMessageId, message.mid);
+                }
+            }
+            
+            bool sequenceContainsHoles = minMessageId >= maxMid && [TGDatabaseInstance() conversationContainsHole:conversationId minMessageId:maxMid maxMessageId:maxMessageId];
+            
+            if (sequenceContainsHoles)
+            {
+                NSMutableDictionary *newOptions = [[NSMutableDictionary alloc] initWithDictionary:options];
+                newOptions[@"down"] = @true;
+                [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversations/(%lld)/asyncHistory/(%d,down)", conversationId, maxMid] options:newOptions watcher:self];
+            }
+            else
+            {
+                [ActionStageInstance() actionCompleted:self.path result:[[NSDictionary alloc] initWithObjectsAndKeys:messages, @"messages", [[NSNumber alloc] initWithBool:true], @"downwards", nil]];
+            }
         }];
     }
     else
     {
-        [[TGDatabase instance] loadMessagesFromConversation:conversationId maxMid:(maxMid == 0 ? INT_MAX : maxMid) maxDate:(maxDate == 0 ? INT_MAX : maxDate) maxLocalMid:(maxLocalMid == 0 ? INT_MAX : maxLocalMid) atMessageId:_loadAtMessageId limit:limit extraUnread:extraUnread completion:^(NSArray *messages, bool historyExistsBelow)
+        int requestMaxMid = (maxMid == 0 ? INT_MAX : maxMid);
+        
+        [[TGDatabase instance] loadMessagesFromConversation:conversationId maxMid:requestMaxMid maxDate:(maxDate == 0 ? INT_MAX : maxDate) maxLocalMid:(maxLocalMid == 0 ? INT_MAX : maxLocalMid) atMessageId:_loadAtMessageId limit:limit extraUnread:extraUnread completion:^(NSArray *messages, bool historyExistsBelow)
         {
             int peerMinMid = [TGDatabaseInstance() loadPeerMinMid:conversationId];
             [ActionStageInstance() dispatchOnStageQueue:^
             {
-                if (messages.count != 0 || peerMinMid != 0 || [options[@"isEncrypted"] boolValue] || [options[@"isBroadcast"] boolValue])
+                int minMessageId = INT_MAX;
+                int maxMessageId = 0;
+                for (TGMessage *message in messages)
+                {
+                    if (message.mid < TGMessageLocalMidBaseline)
+                    {
+                        minMessageId = MIN(minMessageId, message.mid);
+                        maxMessageId = MAX(maxMessageId, message.mid);
+                    }
+                }
+                
+                bool sequenceContainsHoles = minMessageId <= requestMaxMid && [TGDatabaseInstance() conversationContainsHole:conversationId minMessageId:minMessageId maxMessageId:requestMaxMid];
+                
+                if ((messages.count != 0 || peerMinMid != 0 || [options[@"isEncrypted"] boolValue] || [options[@"isBroadcast"] boolValue]) && !sequenceContainsHoles)
                 {
                     bool loadedUnread = _loadUnread;
                     if (loadedUnread && !historyExistsBelow)

@@ -70,7 +70,7 @@
     }
 }
 
-- (NSUInteger)loadCount
+- (NSInteger)loadCount
 {
 #if TARGET_IPHONE_SIMULATOR
     return 10;
@@ -117,6 +117,8 @@
         NSMutableArray *messageItems = [[NSMutableArray alloc] init];
         
         int32_t maxMid = 0;
+        int minRemoteMid = INT_MAX;
+        int maxRemoteMid = 0;
         for (TLMessage *messageDesc in messages.messages)
         {
             TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:messageDesc];
@@ -124,6 +126,8 @@
             {
                 maxMid = MAX(maxMid, (int32_t)message.mid);
                 [messageItems addObject:message];
+                minRemoteMid = MIN(minRemoteMid, message.mid);
+                maxRemoteMid = MAX(maxRemoteMid, message.mid);
             }
         }
         
@@ -133,7 +137,18 @@
         }
         else
         {
+            if (!_loadingFirstHistory)
+            {
+                if (minRemoteMid < maxRemoteMid)
+                    [TGDatabaseInstance() addConversationHistoryHoleToLoadedLaterMessages:_peerId maxMessageId:maxRemoteMid];
+            }
+            
             [[TGDatabase instance] addMessagesToConversation:messageItems conversationId:_peerId updateConversation:conversation dispatch:true countUnread:false];
+            
+            if (minRemoteMid <= maxRemoteMid)
+            {
+                [TGDatabaseInstance() fillConversationHistoryHole:_peerId indexSet:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(minRemoteMid, maxRemoteMid - minRemoteMid)]];
+            }
             
             if (_loadingFirstHistory)
             {
@@ -142,8 +157,6 @@
             }
             else
             {
-                [TGDatabaseInstance() setConversationCustomProperty:_peerId name:murMurHash32(@"") value:[NSData dataWithBytes:&maxMid length:4]];
-                
                 NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
                 dict[@"peerId"] = @(_peerId);
                 dict[@"messageId"] = @(_messageId);

@@ -212,6 +212,7 @@
     [messagesByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, TGMessage *message, __unused  BOOL *stop)
     {
         [TGDatabaseInstance() addMessagesToConversation:[[NSArray alloc] initWithObjects:message, nil] conversationId:[nConversationId longLongValue] updateConversation:nil dispatch:false countUnread:false];
+        [TGDatabaseInstance() fillConversationHistoryHole:[nConversationId longLongValue] indexSet:[NSIndexSet indexSetWithIndex:message.mid]];
     }];
     
     SGraphListNode *dialogListNode = [[SGraphListNode alloc] initWithItems:conversations];

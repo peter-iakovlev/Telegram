@@ -176,6 +176,8 @@
         
         TGMessage *lastMessage = nil;
         NSTimeInterval lastMessageDate = 0;
+        int minRemoteMid = INT_MAX;
+        int maxRemoteMid = 0;
         for (TGMessage *message in conversationMessages)
         {
             NSTimeInterval messageDate = message.date;
@@ -191,12 +193,21 @@
                 lastIncomingMessage = message;
                 lastIncomingMessageDate = messageDate;
             }
+            
+            if (message.mid < TGMessageLocalMidBaseline)
+            {
+                minRemoteMid = MIN(minRemoteMid, message.mid);
+                maxRemoteMid = MAX(maxRemoteMid, message.mid);
+            }
         }
         if (lastMessage != nil)
             [lastMessages addObject:lastMessage];
         
         TGConversation *conversation = [chats objectForKey:nConversationId];
         [[TGDatabase instance] addMessagesToConversation:conversationMessages conversationId:[nConversationId longLongValue] updateConversation:conversation dispatch:true countUnread:true updateDates:!doNotModifyDates];
+        
+        if (minRemoteMid <= maxRemoteMid)
+            [TGDatabaseInstance() fillConversationHistoryHole:[nConversationId longLongValue] indexSet:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(minRemoteMid, maxRemoteMid - minRemoteMid)]];
         
         [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/conversation/(%lld)/messages", [nConversationId longLongValue]] resource:[[SGraphObjectNode alloc] initWithObject:conversationMessages]];
     }
