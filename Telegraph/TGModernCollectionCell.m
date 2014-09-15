@@ -71,4 +71,23 @@
     [super applyLayoutAttributes:layoutAttributes];
 }
 
+- (void)setFrame:(CGRect)frame
+{
+    [super setFrame:frame];
+    
+    _contentViewForBinding.frame = (CGRect){CGPointZero, frame.size};
+}
+
+- (void)setBounds:(CGRect)bounds
+{
+    [super setBounds:bounds];
+    
+    _contentViewForBinding.frame = (CGRect){CGPointZero, bounds.size};
+}
+
+- (UIView *)contentViewForBinding
+{
+    return _contentViewForBinding;
+}
+
 @end
