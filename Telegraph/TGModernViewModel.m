@@ -2,6 +2,19 @@
 
 #import "TGModernView.h"
 
+@interface TGModernViewModelId : NSObject <NSCopying>
+
+@end
+
+@implementation TGModernViewModelId
+
+- (instancetype)copyWithZone:(NSZone *)__unused zone
+{
+    return self;
+}
+
+@end
+
 @interface TGModernViewModel ()
 {
     UIView<TGModernView> *_view;
@@ -20,6 +33,7 @@
     if (self != nil)
     {
         _alpha = 1.0f;
+        _modelId = [[TGModernViewModelId alloc] init];
     }
     return self;
 }
@@ -277,6 +291,43 @@
 
 - (void)layoutForContainerSize:(CGSize)__unused containerSize
 {
+}
+
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict
+{
+    if (_modelId != nil && _view != nil)
+        dict[_modelId] = [NSValue valueWithCGRect:_view.frame];
+    
+    for (TGModernViewModel *submodel in _submodels)
+    {
+        [submodel collectBoundModelViewFramesRecursively:dict];
+    }
+}
+
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict ifPresentInDict:(NSMutableDictionary *)anotherDict
+{
+    if (_modelId != nil && _view != nil && anotherDict[_modelId] != nil)
+        dict[_modelId] = [NSValue valueWithCGRect:_view.frame];
+    
+    for (TGModernViewModel *submodel in _submodels)
+    {
+        [submodel collectBoundModelViewFramesRecursively:dict];
+    }
+}
+
+- (void)restoreBoundModelViewFramesRecursively:(NSMutableDictionary *)dict
+{
+    if (_modelId != nil && _view != nil)
+    {
+        NSValue *value = dict[_modelId];
+        if (value != nil)
+            _view.frame = [value CGRectValue];
+    }
+    
+    for (TGModernViewModel *submodel in _submodels)
+    {
+        [submodel restoreBoundModelViewFramesRecursively:dict];
+    }
 }
 
 @end

@@ -2340,7 +2340,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         TGMessageModernConversationItem *messageItem = cell.boundItem;
         if (messageItem != nil && messageItem->_message.mid == messageId)
         {
-            CGRect contentFrame = [cell.contentView convertRect:[messageItem effectiveContentFrame] toView:self.view];
+            CGRect contentFrame = [[cell contentViewForBinding] convertRect:[messageItem effectiveContentFrame] toView:self.view];
             if (CGRectIsNull(contentFrame) || CGRectIsEmpty(contentFrame))
                 break;
             

@@ -3607,6 +3607,7 @@
 				9352A9E4181DC063002A1A1A /* TGModernView.h */,
 				9352A9E1181DC046002A1A1A /* TGModernViewModel.h */,
 				9352A9E2181DC046002A1A1A /* TGModernViewModel.m */,
+				93992D721829235300F29746 /* Progress */,
 				93CF3B7F18203ACF003D8DE1 /* Flatten */,
 				932E00F2184BE8350001D109 /* Plain Color */,
 				93CF3B5B181DD19B003D8DE1 /* Text View */,
@@ -3617,7 +3618,6 @@
 				934280D11849006B004F1C2A /* Check Button */,
 				93CF3B5E181DD1E1003D8DE1 /* Remote Image */,
 				930808FF185B548300E62B42 /* Lettered Avatar */,
-				93992D721829235300F29746 /* Progress */,
 			);
 			name = Elements;
 			sourceTree = "<group>";

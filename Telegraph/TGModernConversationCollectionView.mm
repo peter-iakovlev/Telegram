@@ -6,6 +6,7 @@
 
 #import "TGModernCollectionCell.h"
 #import "TGModernConversationViewLayout.h"
+#import "TGMessageModernConversationItem.h"
 
 #import "TGModernViewStorage.h"
 #import "TGModernDateHeaderView.h"

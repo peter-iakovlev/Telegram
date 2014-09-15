@@ -23,6 +23,8 @@
     } _modelFlags;
 }
 
+@property (nonatomic, strong) id modelId;
+
 @property (nonatomic, strong) NSString *viewStateIdentifier;
 
 @property (nonatomic) CGRect frame;
@@ -64,5 +66,9 @@
 - (void)insertSubmodel:(TGModernViewModel *)model aboveSubmodel:(TGModernViewModel *)aboveSubmodel;
 - (void)removeSubmodel:(TGModernViewModel *)model viewStorage:(TGModernViewStorage *)viewStorage;
 - (void)layoutForContainerSize:(CGSize)containerSize;
+
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict;
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict ifPresentInDict:(NSMutableDictionary *)anotherDict;
+- (void)restoreBoundModelViewFramesRecursively:(NSMutableDictionary *)dict;
 
 @end

@@ -19,6 +19,7 @@
 @interface TGModernCollectionCell ()
 {
     bool _editing;
+    UIView *_contentViewForBinding;
 }
 
 @end
@@ -35,8 +36,12 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        self.contentView.transform = CGAffineTransformMakeRotation((float)M_PI);
+        [self contentViewForBinding].transform = CGAffineTransformMakeRotation((float)M_PI);
         self.clipsToBounds = true;
+        
+        _contentViewForBinding = [[UIView alloc] initWithFrame:(CGRect){CGPointZero, frame.size}];
+        _contentViewForBinding.transform = CGAffineTransformMakeRotation((float)M_PI);
+        [self addSubview:_contentViewForBinding];
     }
     return self;
 }
@@ -46,7 +51,7 @@
     id item = _boundItem;
     if (item != nil && [item conformsToProtocol:@protocol(TGModernCollectionRelativeBoundsObserver)])
     {
-        CGRect convertedBounds = [self.contentView convertRect:bounds fromView:self];
+        CGRect convertedBounds = [[self contentViewForBinding] convertRect:bounds fromView:self];
         
         [item relativeBoundsUpdated:self bounds:convertedBounds];
     }
@@ -57,13 +62,32 @@
     if (_editing != editing)
     {
         _editing = editing;
-        self.contentView.userInteractionEnabled = !_editing;
+        [self contentViewForBinding].userInteractionEnabled = !_editing;
     }
+}
+
+- (void)applyLayoutAttributes:(UICollectionViewLayoutAttributes *)layoutAttributes
+{
+    [super applyLayoutAttributes:layoutAttributes];
 }
 
 - (void)setFrame:(CGRect)frame
 {
     [super setFrame:frame];
+    
+    _contentViewForBinding.frame = (CGRect){CGPointZero, frame.size};
+}
+
+- (void)setBounds:(CGRect)bounds
+{
+    [super setBounds:bounds];
+    
+    _contentViewForBinding.frame = (CGRect){CGPointZero, bounds.size};
+}
+
+- (UIView *)contentViewForBinding
+{
+    return _contentViewForBinding;
 }
 
 @end

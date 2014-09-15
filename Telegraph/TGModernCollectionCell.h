@@ -28,4 +28,6 @@
 
 - (void)setEditing:(bool)editing animated:(bool)animated viewStorage:(TGModernViewStorage *)viewStorage;
 
+- (UIView *)contentViewForBinding;
+
 @end
