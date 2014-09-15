@@ -78,6 +78,7 @@ typedef enum {
     if (_type != TGMessageImageViewOverlayViewTypeDownload)
     {
         [self pop_removeAnimationForKey:@"progress"];
+        [self pop_removeAnimationForKey:@"progressAmbient"];
         
         _type = TGMessageImageViewOverlayViewTypeDownload;
         [self setNeedsDisplay];
@@ -89,6 +90,7 @@ typedef enum {
     if (_type != TGMessageImageViewOverlayViewTypePlay)
     {
         [self pop_removeAnimationForKey:@"progress"];
+        [self pop_removeAnimationForKey:@"progressAmbient"];
         
         _type = TGMessageImageViewOverlayViewTypePlay;
         [self setNeedsDisplay];
@@ -101,10 +103,39 @@ typedef enum {
     [self setNeedsDisplay];
 }
 
++ (void)_addAmbientProgressAnimation:(TGMessageImageViewOverlayLayer *)layer
+{
+    POPBasicAnimation *ambientProgress = [self pop_animationForKey:@"progressAmbient"];
+    
+    ambientProgress = [POPBasicAnimation animationWithPropertyNamed:kPOPLayerRotation];
+    __weak TGMessageImageViewOverlayLayer *weakLayer = layer;
+    ambientProgress.fromValue = @((CGFloat)0.0f);
+    ambientProgress.toValue = @((CGFloat)M_PI * 2.0f);
+    ambientProgress.duration = 1.6;
+    ambientProgress.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
+    
+    [ambientProgress setCompletionBlock:^(__unused POPAnimation *animation, BOOL completed)
+    {
+        __strong TGMessageImageViewOverlayLayer *strongLayer = weakLayer;
+        if (completed && strongLayer != nil && strongLayer->_type == TGMessageImageViewOverlayViewTypeProgress)
+        {
+            [TGMessageImageViewOverlayLayer _addAmbientProgressAnimation:strongLayer];
+        }
+    }];
+    
+    [layer pop_addAnimation:ambientProgress forKey:@"progressAmbient"];
+}
+
 - (void)setProgress:(float)progress cancelEnabled:(bool)cancelEnabled animated:(bool)animated
 {
     if (_type != TGMessageImageViewOverlayViewTypeProgress || ABS(_progress - progress) > FLT_EPSILON)
     {
+        if (_type != TGMessageImageViewOverlayViewTypeProgress)
+            _progress = 0.0f;
+        
+        //if ([self pop_animationForKey:@"progressAmbient"] == nil)
+        //    [TGMessageImageViewOverlayLayer _addAmbientProgressAnimation:self];
+        
         _type = TGMessageImageViewOverlayViewTypeProgress;
         _cancelEnabled = cancelEnabled;
         
