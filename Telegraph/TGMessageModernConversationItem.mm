@@ -103,7 +103,7 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
     if (cell != nil)
         cell->_needsRelativeBoundsUpdateNotifications = _viewModel.needsRelativeBoundsUpdates;
     
-    [_viewModel bindViewToContainer:cell.contentView viewStorage:viewStorage];
+    [_viewModel bindViewToContainer:[cell contentViewForBinding] viewStorage:viewStorage];
 }
 
 - (void)unbindCell:(TGModernViewStorage *)viewStorage
@@ -119,7 +119,7 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
     
     if ([self boundCell] == cell)
     {
-        [_viewModel moveViewToContainer:cell.contentView];
+        [_viewModel moveViewToContainer:[cell contentViewForBinding]];
         
         if (cell != nil)
             cell->_needsRelativeBoundsUpdateNotifications = _viewModel.needsRelativeBoundsUpdates;
@@ -176,7 +176,7 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
 
 - (void)updateEditingState:(TGModernViewStorage *)viewStorage animationDelay:(NSTimeInterval)animationDelay
 {
-    [_viewModel updateEditingState:[self boundCell].contentView viewStorage:viewStorage animationDelay:animationDelay];
+    [_viewModel updateEditingState:[[self boundCell] contentViewForBinding] viewStorage:viewStorage animationDelay:animationDelay];
 }
 
 - (void)imageDataInvalidated:(NSString *)imageUrl
@@ -197,6 +197,21 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
 - (UIView *)referenceViewForImageTransition
 {
     return [_viewModel referenceViewForImageTransition];
+}
+
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict
+{
+    [_viewModel collectBoundModelViewFramesRecursively:dict];
+}
+
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict ifPresentInDict:(NSMutableDictionary *)anotherDict
+{
+    [_viewModel collectBoundModelViewFramesRecursively:dict ifPresentInDict:anotherDict];
+}
+
+- (void)restoreBoundModelViewFramesRecursively:(NSMutableDictionary *)dict
+{
+    [_viewModel restoreBoundModelViewFramesRecursively:dict];
 }
 
 - (TGModernViewModel *)viewModel

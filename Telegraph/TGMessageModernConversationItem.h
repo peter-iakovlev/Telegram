@@ -47,4 +47,8 @@ extern int32_t TGMessageModernConversationItemLocalUserId;
 - (CGRect)effectiveContentFrame;
 - (UIView *)referenceViewForImageTransition;
 
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict;
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict ifPresentInDict:(NSMutableDictionary *)anotherDict;
+- (void)restoreBoundModelViewFramesRecursively:(NSMutableDictionary *)dict;
+
 @end

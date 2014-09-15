@@ -263,10 +263,10 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
     
     if (_animateLayout)
     {
-        [UIView animateWithDuration:0.3 * 0.7 animations:^
+        [UIView animateWithDuration:0.3 * 0.7 delay:0 options:0 animations:^
         {
             block();
-        }];
+        } completion:nil];
     }
     else
         block();
