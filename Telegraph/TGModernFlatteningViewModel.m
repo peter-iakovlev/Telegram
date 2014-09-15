@@ -101,11 +101,10 @@ CGFloat TGModernFlatteningViewModelTilingLimit = 512.0f;
 + (CGContextRef)_createContentContext:(CGSize)size
 {
     CGSize contextSize = size;
-    if (TGIsRetina())
-    {
-        contextSize.width *= 2.0f;
-        contextSize.height *= 2.0f;
-    }
+    CGFloat scaling = TGScreenScaling();
+
+    contextSize.width *= scaling;
+    contextSize.height *= scaling;
     
     size_t bytesPerRow = 4 * (int)contextSize.width;
     bytesPerRow = (bytesPerRow + 15) & ~15;
@@ -116,8 +115,7 @@ CGFloat TGModernFlatteningViewModelTilingLimit = 512.0f;
     CGContextRef context = CGBitmapContextCreate(NULL, (int)contextSize.width, (int)contextSize.height, 8, bytesPerRow, colorSpace, bitmapInfo);
     CGColorSpaceRelease(colorSpace);
     
-    if (TGIsRetina())
-        CGContextScaleCTM(context, 2.0, 2.0f);
+    CGContextScaleCTM(context, scaling, scaling);
     
     return context;
 }

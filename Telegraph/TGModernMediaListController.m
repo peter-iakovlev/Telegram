@@ -13,6 +13,9 @@
 {
     CGSize _normalItemSize;
     CGSize _wideItemSize;
+    CGFloat _widescreenWidth;
+    CGFloat _normalLineSpacing;
+    CGFloat _wideLineSpacing;
     
     UIEdgeInsets _normalEdgeInsets;
     UIEdgeInsets _wideEdgeInsets;
@@ -49,12 +52,38 @@
             [strongSelf enqueueView:itemContentView];
         };
         
-        if ([UIScreen mainScreen].scale > 1.0f + FLT_EPSILON)
+        CGSize screenSize = [UIScreen mainScreen].bounds.size;
+        _widescreenWidth = MAX(screenSize.width, screenSize.height);
+        
+        if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
         {
-            _normalItemSize = CGSizeMake(78.5f, 78.5f);
-            _wideItemSize = CGSizeMake(78.0f, 78.0f);
-            _normalEdgeInsets = UIEdgeInsetsMake(4.0f, 0.0f, 2.0f, 0.0f);
-            _wideEdgeInsets = UIEdgeInsetsMake(4.0f, 1.0f, 1.0f, 1.0f);
+            if (_widescreenWidth >= 736.0f - FLT_EPSILON)
+            {
+                _normalItemSize = CGSizeMake(103.0f, 103.0f);
+                _wideItemSize = CGSizeMake(103.0f, 103.0f);
+                _normalEdgeInsets = UIEdgeInsetsMake(4.0f, 0.0f, 2.0f, 0.0f);
+                _wideEdgeInsets = UIEdgeInsetsMake(4.0f, 2.0f, 1.0f, 2.0f);
+                _normalLineSpacing = 1.0f;
+                _wideLineSpacing = 2.0f;
+            }
+            else if (_widescreenWidth >= 667.0f - FLT_EPSILON)
+            {
+                _normalItemSize = CGSizeMake(93.0f, 93.5f);
+                _wideItemSize = CGSizeMake(93.0f, 93.0f);
+                _normalEdgeInsets = UIEdgeInsetsMake(4.0f, 0.0f, 2.0f, 0.0f);
+                _wideEdgeInsets = UIEdgeInsetsMake(4.0f, 2.0f, 1.0f, 2.0f);
+                _normalLineSpacing = 1.0f;
+                _wideLineSpacing = 2.0f;
+            }
+            else
+            {
+                _normalItemSize = CGSizeMake(78.5f, 78.5f);
+                _wideItemSize = CGSizeMake(78.0f, 78.0f);
+                _normalEdgeInsets = UIEdgeInsetsMake(4.0f, 0.0f, 2.0f, 0.0f);
+                _wideEdgeInsets = UIEdgeInsetsMake(4.0f, 1.0f, 1.0f, 1.0f);
+                _normalLineSpacing = 2.0f;
+                _wideLineSpacing = 3.0f;
+            }
         }
         else
         {
@@ -62,6 +91,8 @@
             _wideItemSize = CGSizeMake(78.0f, 78.0f);
             _normalEdgeInsets = UIEdgeInsetsMake(4.0f, 0.0f, 2.0f, 0.0f);
             _wideEdgeInsets = UIEdgeInsetsMake(4.0f, 1.0f, 1.0f, 1.0f);
+            _normalLineSpacing = 2.0f;
+            _wideLineSpacing = 2.0f;
         }
         
         self.title = TGLocalized(@"ConversationMedia.Title");
@@ -361,7 +392,7 @@
 
 - (CGSize)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)__unused indexPath
 {
-    return (_collectionViewWidth > 320.0f + FLT_EPSILON) ? _wideItemSize : _normalItemSize;
+    return (_collectionViewWidth >= _widescreenWidth - FLT_EPSILON) ? _wideItemSize : _normalItemSize;
 }
 
 - (UIEdgeInsets)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout insetForSectionAtIndex:(NSInteger)__unused section
@@ -369,7 +400,7 @@
     if (ABS(_collectionViewWidth - 540.0f) < FLT_EPSILON)
         return UIEdgeInsetsMake(10.0f, 10.0f, 10.0f, 10.0f);
     
-    return (_collectionViewWidth > 320.0f + FLT_EPSILON) ? _wideEdgeInsets : _normalEdgeInsets;
+    return (_collectionViewWidth >= _widescreenWidth - FLT_EPSILON) ? _wideEdgeInsets : _normalEdgeInsets;
 }
 
 - (CGFloat)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout minimumLineSpacingForSectionAtIndex:(NSInteger)__unused section
@@ -377,7 +408,7 @@
     if (ABS(_collectionViewWidth - 540.0f) < FLT_EPSILON)
         return 10.0f;
     
-    return 2.0f;
+    return (_collectionViewWidth >= _widescreenWidth - FLT_EPSILON) ? _wideLineSpacing : _normalLineSpacing;
 }
 
 - (CGFloat)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout minimumInteritemSpacingForSectionAtIndex:(NSInteger)__unused section

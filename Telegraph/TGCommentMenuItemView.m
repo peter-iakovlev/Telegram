@@ -16,7 +16,7 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        font = [UIFont systemFontOfSize:TGIsRetina() ? 14.0f : 14.0f];
+        font = [UIFont systemFontOfSize:14.0f];
     });
     return font;
 }
