@@ -4,6 +4,8 @@
 
 #import "TGImageUtils.h"
 
+#import "TGHacks.h"
+
 #import "TGModernCollectionCell.h"
 #import "TGModernConversationViewLayout.h"
 

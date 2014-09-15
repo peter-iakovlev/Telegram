@@ -61,9 +61,9 @@
     }
 }
 
-- (void)setFrame:(CGRect)frame
+- (void)applyLayoutAttributes:(UICollectionViewLayoutAttributes *)layoutAttributes
 {
-    [super setFrame:frame];
+    [super applyLayoutAttributes:layoutAttributes];
 }
 
 @end
