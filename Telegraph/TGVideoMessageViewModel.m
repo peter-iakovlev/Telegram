@@ -180,13 +180,6 @@
             }
             else
             {
-                _touchAreaModel = [[TGInstantPreviewTouchAreaModel alloc] init];
-                _touchAreaModel.notificationHandle = context.companionHandle;
-                _touchAreaModel.touchesBeganAction = @"openMediaRequested";
-                _touchAreaModel.touchesBeganOptions = @{@"mid": @(message.mid)};
-                _touchAreaModel.touchesCompletedAction = @"closeMediaRequested";
-                _touchAreaModel.touchesCompletedOptions = @{@"mid": @(message.mid)};
-                [self addSubmodel:_touchAreaModel];
             }
         }
         
@@ -241,7 +234,7 @@
 
 - (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage
 {
-    _touchAreaModel.touchesBeganAction = mediaIsAvailable ? @"openMediaRequested" : @"mediaDownloadRequested";
+    //_touchAreaModel.touchesBeganAction = mediaIsAvailable ? @"openMediaRequested" : @"mediaDownloadRequested";
     
     [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage];
 }

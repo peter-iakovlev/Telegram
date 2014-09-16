@@ -29,6 +29,8 @@
 
 #import "TGMessageImageView.h"
 
+#import "TGInstantPreviewTouchAreaModel.h"
+
 @interface TGImageMessageViewModel () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate, TGMessageImageViewDelegate>
 {
     TGModernViewContext *_context;
@@ -50,6 +52,7 @@
     TGDoubleTapGestureRecognizer *_boundDoubleTapRecognizer;
     UITapGestureRecognizer *_unsentButtonTapRecognizer;
     
+    TGInstantPreviewTouchAreaModel *_instantPreviewTouchAreaModel;
     UIImageView *_temporaryHighlightView;
     
     CGPoint _boundOffset;
@@ -125,11 +128,6 @@
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
         [_imageModel setIsBroadcast:message.isBroadcast];
         
-        /*int daytimeVariant = 0;
-        NSString *dateText = [TGDateUtils stringForShortTime:(int)message.date daytimeVariant:&daytimeVariant];
-        _dateModel = [[TGModernDateViewModel alloc] initWithText:dateText textColor:[self dateColor] daytimeVariant:daytimeVariant];
-        [_contentModel addSubmodel:_dateModel];*/
-        
         if (!_incoming)
         {
             /*_checkFirstModel = [[TGModernImageViewModel alloc] initWithImage:[self checkCompleteImage]];
@@ -168,6 +166,29 @@
         }
     }
     return self;
+}
+
+- (void)enableInstantPreview
+{
+    if (_instantPreviewTouchAreaModel == nil)
+    {
+        __weak TGImageMessageViewModel *weakSelf = self;
+        _instantPreviewTouchAreaModel = [[TGInstantPreviewTouchAreaModel alloc] init];
+        _instantPreviewTouchAreaModel.touchesBeganAction = ^
+        {
+            __strong TGImageMessageViewModel *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                [strongSelf activateMedia:true];
+        };
+        _instantPreviewTouchAreaModel.touchesCompletedAction = ^
+        {
+            __strong TGImageMessageViewModel *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                [strongSelf deactivateMedia:true];
+        };
+    }
+    
+    [self addSubmodel:_instantPreviewTouchAreaModel];
 }
 
 - (void)updateImageInfo:(TGImageInfo *)imageInfo
@@ -652,7 +673,17 @@
 
 - (void)activateMedia
 {
-    [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
+    [self activateMedia:false];
+}
+
+- (void)activateMedia:(bool)instant
+{
+    [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"instant": @(instant)}];
+}
+
+- (void)deactivateMedia:(bool)instant
+{
+    [_context.companionHandle requestAction:@"closeMediaRequested" options:@{@"mid": @(_mid), @"instant": @(instant)}];
 }
 
 - (void)cancelMediaDownload
@@ -708,24 +739,7 @@
         imageFrame.origin.x += 42.0f;
     _imageModel.frame = imageFrame;
     
-    //CGPoint dateOffset = [self dateOffset];
-    
-    /*CGFloat contentWidth = _dateModel.frame.size.width + 4;
-    if (!_incoming)
-        contentWidth += 17.0f;
-    _contentModel.frame = CGRectMake(CGRectGetMaxX(imageFrame) - 6.0f - contentWidth - 5.0f + dateOffset.x, CGRectGetMaxY(imageFrame) - 6 - 18 + dateOffset.y, contentWidth, 18);
-    
-    _dateModel.frame = CGRectMake(2.0f, 0.0f - (TGIsLocaleArabic() ? 2.0f : 0.0f), _dateModel.frame.size.width, _dateModel.frame.size.height);
-    
-    if (_progressModel != nil)
-        _progressModel.frame = CGRectMake(containerSize.width - 33, _contentModel.frame.origin.y + _contentModel.frame.size.height - 16 - TGRetinaPixel, 15, 15);
-    
-    CGPoint stateOffset = _contentModel.frame.origin;
-    if (_checkFirstModel != nil)
-        _checkFirstModel.frame = CGRectMake((_checkFirstEmbeddedInContent ? 0.0f : stateOffset.x) + _contentModel.frame.size.width - 15, (_checkFirstEmbeddedInContent ? 0.0f : stateOffset.y) + _contentModel.frame.size.height - 14, 12, 11);
-    
-    if (_checkSecondModel != nil)
-        _checkSecondModel.frame = CGRectMake((_checkSecondEmbeddedInContent ? 0.0f : stateOffset.x) + _contentModel.frame.size.width - 11, (_checkSecondEmbeddedInContent ? 0.0f : stateOffset.y) + _contentModel.frame.size.height - 14, 12, 11);*/
+    _instantPreviewTouchAreaModel.frame = imageFrame;
     
     if (_unsentButtonModel != nil)
     {

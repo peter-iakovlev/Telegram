@@ -54,8 +54,8 @@ typedef enum {
 - (void)updateMessageAttributes:(int32_t)messageId;
 - (void)setHasUnseenMessagesBelow:(bool)hasUnseenMessagesBelow;
 
-- (void)openMediaFromMessage:(int32_t)messageId;
-- (void)closeMediaFromMessage:(int32_t)messageId;
+- (void)openMediaFromMessage:(int32_t)messageId instant:(bool)instant;
+- (void)closeMediaFromMessage:(int32_t)messageId instant:(bool)instant;
 - (void)pauseMediaFromMessage:(int32_t)messageId;
 - (void)stopInlineMedia;
 - (void)openBrowserFromMessage:(int32_t)messageId url:(NSString *)url;

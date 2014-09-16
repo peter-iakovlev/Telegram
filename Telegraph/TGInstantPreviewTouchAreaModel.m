@@ -23,34 +23,28 @@
     
     TGInstantPreviewTouchAreaView *view = (TGInstantPreviewTouchAreaView *)[self boundView];
     
-    view.notificationHandle = _notificationHandle;
     view.touchesBeganAction = _touchesBeganAction;
-    view.touchesBeganOptions = _touchesBeganOptions;
     view.touchesCompletedAction = _touchesCompletedAction;
-    view.touchesCompletedOptions = _touchesCompletedOptions;
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
 {
     TGInstantPreviewTouchAreaView *view = (TGInstantPreviewTouchAreaView *)[self boundView];
     
-    view.notificationHandle = nil;
     view.touchesBeganAction = nil;
-    view.touchesBeganOptions = nil;
     view.touchesCompletedAction = nil;
-    view.touchesCompletedOptions = nil;
     
     [super unbindView:viewStorage];
 }
 
-- (void)setTouchesBeganAction:(NSString *)touchesBeganAction
+- (void)setTouchesBeganAction:(void (^)())touchesBeganAction
 {
     _touchesBeganAction = touchesBeganAction;
     
     ((TGInstantPreviewTouchAreaView *)[self boundView]).touchesBeganAction = touchesBeganAction;
 }
 
-- (void)setTouchesCompletedAction:(NSString *)touchesCompletedAction
+- (void)setTouchesCompletedAction:(void (^)())touchesCompletedAction
 {
     _touchesCompletedAction = touchesCompletedAction;
     

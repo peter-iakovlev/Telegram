@@ -1537,12 +1537,12 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     else if ([action isEqualToString:@"openMediaRequested"])
     {
         TGModernConversationController *controller = _controller;
-        [controller openMediaFromMessage:[options[@"mid"] intValue]];
+        [controller openMediaFromMessage:[options[@"mid"] intValue] instant:[options[@"instant"] boolValue]];
     }
     else if ([action isEqualToString:@"closeMediaRequested"])
     {
         TGModernConversationController *controller = _controller;
-        [controller closeMediaFromMessage:[options[@"mid"] intValue]];
+        [controller closeMediaFromMessage:[options[@"mid"] intValue] instant:[options[@"instant"] boolValue]];
     }
     else if ([action isEqualToString:@"showUnsentMessageMenu"])
     {

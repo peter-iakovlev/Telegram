@@ -56,6 +56,7 @@
         self.automaticallyManageScrollViewInsets = false;
         _lastReportedFocusedIndex = NSNotFound;
         _statusBarStyle = UIStatusBarStyleLightContent;
+        _animateTransition = true;
     }
     return self;
 }
@@ -322,45 +323,14 @@
     
     [self reloadDataAtItem:_model.focusItem synchronously:true];
     
-    UIView *transitionInFromView = nil;
-    UIView *transitionInToView = nil;
-    CGRect transitionInToViewContentRect = CGRectMake(0.0f, 0.0f, 1.0f, 1.0f);
-    if (_beginTransitionIn && _model.focusItem != nil)
+    if (_animateTransition)
     {
-        TGModernGalleryItemView *itemView = nil;
-        for (TGModernGalleryItemView *visibleItemView in self->_visibleItemViews)
+        UIView *transitionInFromView = nil;
+        UIView *transitionInToView = nil;
+        CGRect transitionInToViewContentRect = CGRectMake(0.0f, 0.0f, 1.0f, 1.0f);
+        if (_beginTransitionIn && _model.focusItem != nil)
         {
-            if ([visibleItemView.item isEqual:self.model.focusItem])
-            {
-                itemView = visibleItemView;
-                
-                break;
-            }
-        }
-        
-        transitionInFromView = _beginTransitionIn(_model.focusItem, itemView);
-    }
-    if (transitionInFromView != nil)
-    {
-        for (TGModernGalleryItemView *itemView in _visibleItemViews)
-        {
-            if ([itemView.item isEqual:_model.focusItem])
-            {
-                transitionInToView = [itemView transitionView];
-                transitionInToViewContentRect = [itemView transitionViewContentRect];
-                
-                break;
-            }
-        }
-    }
-    
-    if (transitionInFromView != nil && transitionInToView != nil)
-        [self animateTransitionInFromView:transitionInFromView toView:transitionInToView toViewContentRect:transitionInToViewContentRect];
-    else if (_finishedTransitionIn && _model.focusItem != nil)
-    {
-        TGModernGalleryItemView *itemView = nil;
-        if (self.finishedTransitionIn && self.model.focusItem != nil)
-        {
+            TGModernGalleryItemView *itemView = nil;
             for (TGModernGalleryItemView *visibleItemView in self->_visibleItemViews)
             {
                 if ([visibleItemView.item isEqual:self.model.focusItem])
@@ -370,18 +340,54 @@
                     break;
                 }
             }
+            
+            transitionInFromView = _beginTransitionIn(_model.focusItem, itemView);
+        }
+        if (transitionInFromView != nil)
+        {
+            for (TGModernGalleryItemView *itemView in _visibleItemViews)
+            {
+                if ([itemView.item isEqual:_model.focusItem])
+                {
+                    transitionInToView = [itemView transitionView];
+                    transitionInToViewContentRect = [itemView transitionViewContentRect];
+                    
+                    break;
+                }
+            }
         }
         
-        _finishedTransitionIn(_model.focusItem, itemView);
+        if (transitionInFromView != nil && transitionInToView != nil)
+            [self animateTransitionInFromView:transitionInFromView toView:transitionInToView toViewContentRect:transitionInToViewContentRect];
+        else if (_finishedTransitionIn && _model.focusItem != nil)
+        {
+            TGModernGalleryItemView *itemView = nil;
+            if (self.finishedTransitionIn && self.model.focusItem != nil)
+            {
+                for (TGModernGalleryItemView *visibleItemView in self->_visibleItemViews)
+                {
+                    if ([visibleItemView.item isEqual:self.model.focusItem])
+                    {
+                        itemView = visibleItemView;
+                        
+                        break;
+                    }
+                }
+            }
+            
+            _finishedTransitionIn(_model.focusItem, itemView);
+            
+            [_model _transitionCompleted];
+        }
+        else
+            [_model _transitionCompleted];
         
-        [_model _transitionCompleted];
+        [_view transitionInWithDuration:0.2];
+        
+        [self animateStatusBarTransition:0.2];
     }
     else
         [_model _transitionCompleted];
-    
-    [_view transitionInWithDuration:0.2];
-    
-    [self animateStatusBarTransition:0.2];
 }
 
 - (UIView *)findScrollView:(UIView *)view

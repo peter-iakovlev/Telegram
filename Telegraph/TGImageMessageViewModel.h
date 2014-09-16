@@ -37,4 +37,6 @@
 - (void)activateMedia;
 - (int)defaultOverlayActionType;
 
+- (void)enableInstantPreview;
+
 @end

@@ -1722,7 +1722,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
     }
 }
 
-- (void)openMediaFromMessage:(int32_t)messageId
+- (void)openMediaFromMessage:(int32_t)messageId instant:(bool)instant
 {
     TGMessageModernConversationItem *mediaMessageItem = nil;
     TGModernCollectionCell *mediaItemCell = nil;
@@ -2172,6 +2172,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
             }
         };
         
+        modernGallery.animateTransition = !instant;
+        
         TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
         controllerWindow.hidden = false;
     }
@@ -2238,9 +2240,16 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         _currentStreamingAudioMessageId = 0;
 }
 
-- (void)closeMediaFromMessage:(int32_t)__unused messageId
+- (void)closeMediaFromMessage:(int32_t)__unused messageId instant:(bool)__unused instant
 {
     self.associatedWindowStack = nil;
+    
+    _companion.mediaHiddenMessageId = 0;
+    
+    for (TGModernCollectionCell *cell in _collectionView.visibleCells)
+    {
+        [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
+    }
 }
 
 - (void)stopInlineMedia
