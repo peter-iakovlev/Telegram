@@ -126,6 +126,8 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
             apiEnvironment.apiId = 16352;
         else if ([bundleIdentifier isEqualToString:@"org.telegram.TelegramHD"])
             apiEnvironment.apiId = 7;
+        else
+            apiEnvironment.apiId = 1;
         
         _context = [[MTContext alloc] initWithSerialization:[[TGTLSerialization alloc] init] apiEnvironment:apiEnvironment];
         

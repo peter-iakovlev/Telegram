@@ -269,7 +269,7 @@
     if (conversationId == 0)
         return;
     
-    TGGenericPeerMediaListModel *model = [[TGGenericPeerMediaListModel alloc] initWithPeerId:conversationId];
+    TGGenericPeerMediaListModel *model = [[TGGenericPeerMediaListModel alloc] initWithPeerId:conversationId allowActions:conversationId > INT_MIN];
     
     TGModernMediaListController *controller = [[TGModernMediaListController alloc] init];
     controller.model = model;

@@ -32,6 +32,7 @@
     
     NSArray *_modelItems;
     int32_t _atMessageId;
+    bool _allowActions;
     
     NSUInteger _incompleteCount;
     bool _loadingCompleted;
@@ -44,7 +45,7 @@
 
 @implementation TGGenericPeerMediaGalleryModel
 
-- (instancetype)initWithPeerId:(int64_t)peerId atMessageId:(int32_t)atMessageId
+- (instancetype)initWithPeerId:(int64_t)peerId atMessageId:(int32_t)atMessageId allowActions:(bool)allowActions
 {
     self = [super init];
     if (self != nil)
@@ -56,6 +57,7 @@
         _peerId = peerId;
         
         _atMessageId = atMessageId;
+        _allowActions = allowActions;
         [self _loadInitialItemsAtMessageId:_atMessageId];
             
         [ActionStageInstance() watchForPaths:@[
@@ -375,6 +377,9 @@
 
 - (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultLeftAccessoryView
 {
+    if (!_allowActions)
+        return nil;
+    
     TGGenericPeerMediaGalleryActionsAccessoryView *accessoryView = [[TGGenericPeerMediaGalleryActionsAccessoryView alloc] init];
     __weak TGGenericPeerMediaGalleryModel *weakSelf = self;
     accessoryView.action = ^(id<TGModernGalleryItem> item)
@@ -660,7 +665,7 @@
         if (viewController != nil)
         {   
             if (self.dismiss)
-                self.dismiss(true, false);
+                self.dismiss(true, true);
         }
     }
 }

@@ -21,6 +21,7 @@
     ATQueue *_queue;
     
     int64_t _peerId;
+    bool _allowActions;
     NSArray *_modelItems;
     
     int32_t _incompleteCount;
@@ -34,7 +35,7 @@
 
 @implementation TGGenericPeerMediaListModel
 
-- (instancetype)initWithPeerId:(int64_t)peerId
+- (instancetype)initWithPeerId:(int64_t)peerId allowActions:(bool)allowActions
 {
     self = [super init];
     if (self != nil)
@@ -43,6 +44,7 @@
         _actionHandle = [[ASHandle alloc] initWithDelegate:self];
         
         _peerId = peerId;
+        _allowActions = allowActions;
         
         [self _loadInitialItems];
         
@@ -377,7 +379,7 @@
         id<TGGenericPeerMediaListItem> concreteItem = (id<TGGenericPeerMediaListItem>)item;
         
         TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
-        modernGallery.model = [[TGGenericPeerMediaGalleryModel alloc] initWithPeerId:_peerId atMessageId:[concreteItem messageId]];
+        modernGallery.model = [[TGGenericPeerMediaGalleryModel alloc] initWithPeerId:_peerId atMessageId:[concreteItem messageId] allowActions:_allowActions];
         
         __weak TGGenericPeerMediaListModel *weakSelf = self;
         
