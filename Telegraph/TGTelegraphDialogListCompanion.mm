@@ -1269,7 +1269,7 @@ typedef enum {
                 
                 NSString *title = nil;
                 
-                if (user.phoneNumber.length != 0 && ![TGDatabaseInstance() uidIsRemoteContact:user.uid] && user.uid != 333000)
+                if (user.phoneNumber.length != 0 && ![TGDatabaseInstance() uidIsRemoteContact:user.uid] && user.uid != [TGTelegraphInstance serviceUserUid])
                     title = user.formattedPhoneNumber;
                 else
                     title = [user displayName];

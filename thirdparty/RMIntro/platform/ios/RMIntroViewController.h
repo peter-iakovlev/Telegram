@@ -10,10 +10,19 @@
 #import <GLKit/GLKit.h>
 //#import "RMRootViewController.h"
 
+typedef enum {
+    Inch35 = 0,
+    Inch4 = 1,
+    Inch47 = 2,
+    Inch55 = 3
+} DeviceScreen;
+
 @interface RMIntroViewController : UIViewController<UIScrollViewDelegate, GLKViewDelegate>
 {
+    DeviceScreen _deviceScreen;
+    
     EAGLContext *context;
-
+    
     GLKView *_glkView;
     
     
@@ -31,7 +40,7 @@
     UIScrollView *_pageScrollView;
     
     NSInteger _currentPage;
-
+    
     UIButton *_startButton;
     UIPageControl *_pageControl;
     
@@ -39,7 +48,7 @@
     
     
     NSTimer *_updateAndRenderTimer;
-
+    
     
     BOOL _isOpenGLLoaded;
 }

@@ -150,6 +150,31 @@
             else
                 return CGSizeMake(91.0f, 121.0f);
         }
+        else
+        {
+            CGSize screenSize = [UIScreen mainScreen].bounds.size;
+            CGFloat widescreenWidth = MAX(screenSize.width, screenSize.height);
+            
+            if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
+            {
+                if (widescreenWidth >= 736.0f - FLT_EPSILON)
+                {
+                    return CGSizeMake(122.0f, 216.0f);
+                }
+                else if (widescreenWidth >= 667.0f - FLT_EPSILON)
+                {
+                    return CGSizeMake(108.0f, 163.0f);
+                }
+                else
+                {
+                    return CGSizeMake(91.0f, 162.0f);
+                }
+            }
+            else
+            {
+                return CGSizeMake(91.0f, 162.0f);
+            }
+        }
         
         return CGSizeMake(91.0f, 162.0f);
     }

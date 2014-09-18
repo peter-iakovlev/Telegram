@@ -2030,7 +2030,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         
         if (isGallery)
         {
-            modernGallery.model = [[TGGenericPeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId atMessageId:mediaMessageItem->_message.mid];
+            modernGallery.model = [[TGGenericPeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId atMessageId:mediaMessageItem->_message.mid allowActions:_companion.allowMessageForwarding];
         }
         else if (isAvatar)
         {

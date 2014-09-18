@@ -692,7 +692,6 @@
 		D01526D51900548200656312 /* TGWorker.m in Sources */ = {isa = PBXBuildFile; fileRef = D01526D41900548200656312 /* TGWorker.m */; };
 		D01526D9190054AB00656312 /* TGWorkerTask.m in Sources */ = {isa = PBXBuildFile; fileRef = D01526D8190054AB00656312 /* TGWorkerTask.m */; };
 		D01526DD1902111B00656312 /* TGImageBlur.m in Sources */ = {isa = PBXBuildFile; fileRef = D01526DC1902111B00656312 /* TGImageBlur.m */; };
-		D017752719C245CB006D377F /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = D017752619C245CB006D377F /* LaunchScreen.xib */; };
 		D01E9DCA15B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm in Sources */ = {isa = PBXBuildFile; fileRef = D01E9DC915B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm */; };
 		D01FF83D1965A1D800EA6FFB /* TGVideoPreviewView.m in Sources */ = {isa = PBXBuildFile; fileRef = D01FF83C1965A1D800EA6FFB /* TGVideoPreviewView.m */; };
 		D01FF8401966D3F200EA6FFB /* TGVibrantActionSheet.m in Sources */ = {isa = PBXBuildFile; fileRef = D01FF83F1966D3F200EA6FFB /* TGVibrantActionSheet.m */; };
@@ -915,6 +914,7 @@
 		D0AD63E9159D3D3F0092BB50 /* TGTimelineHistoryRequestBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = D0AD63E8159D3D3F0092BB50 /* TGTimelineHistoryRequestBuilder.m */; };
 		D0B2C8D8195B14EA00CA9F1E /* MP4Atom.m in Sources */ = {isa = PBXBuildFile; fileRef = D0B2C8D2195B14EA00CA9F1E /* MP4Atom.m */; };
 		D0B33C67159CAC3400451700 /* ImageIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0B33C66159CAC3400451700 /* ImageIO.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		D0B9B19519CA324D0020C9CF /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = D0B9B19419CA324D0020C9CF /* LaunchScreen.xib */; };
 		D0BAF3E1193E8AC400A0093F /* ModernConversationInput.png in Resources */ = {isa = PBXBuildFile; fileRef = D0BAF3C4193E8AC400A0093F /* ModernConversationInput.png */; };
 		D0BAF3E2193E8AC400A0093F /* ModernConversationMicButton_Highlighted.png in Resources */ = {isa = PBXBuildFile; fileRef = D0BAF3C5193E8AC400A0093F /* ModernConversationMicButton_Highlighted.png */; };
 		D0BAF3E3193E8AC400A0093F /* ModernConversationMicButton.png in Resources */ = {isa = PBXBuildFile; fileRef = D0BAF3C6193E8AC400A0093F /* ModernConversationMicButton.png */; };
@@ -2198,7 +2198,6 @@
 		D01526D8190054AB00656312 /* TGWorkerTask.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGWorkerTask.m; sourceTree = "<group>"; };
 		D01526DB1902111B00656312 /* TGImageBlur.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGImageBlur.h; sourceTree = "<group>"; };
 		D01526DC1902111B00656312 /* TGImageBlur.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGImageBlur.m; sourceTree = "<group>"; };
-		D017752619C245CB006D377F /* LaunchScreen.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = LaunchScreen.xib; sourceTree = "<group>"; };
 		D01E9DC815B8D7A700C624F2 /* TGTelegraphDialogListCompanion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTelegraphDialogListCompanion.h; sourceTree = "<group>"; };
 		D01E9DC915B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGTelegraphDialogListCompanion.mm; sourceTree = "<group>"; };
 		D01FF83B1965A1D800EA6FFB /* TGVideoPreviewView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGVideoPreviewView.h; sourceTree = "<group>"; };
@@ -2497,7 +2496,7 @@
 		D0876FE5196F4C33005740CE /* TGGenericPeerMediaGalleryModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGenericPeerMediaGalleryModel.m; sourceTree = "<group>"; };
 		D0876FE719702474005740CE /* TGModernGalleryZoomableScrollView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernGalleryZoomableScrollView.h; sourceTree = "<group>"; };
 		D0876FE819702474005740CE /* TGModernGalleryZoomableScrollView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernGalleryZoomableScrollView.m; sourceTree = "<group>"; };
-		D08805AC156E8F3600311537 /* Telegram HD.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Telegram HD.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D08805AC156E8F3600311537 /* Telegram.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Telegram.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D08805B0156E8F3600311537 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		D08805B2156E8F3600311537 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		D08805B4156E8F3600311537 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -2606,6 +2605,7 @@
 		D0B2C8D1195B14EA00CA9F1E /* MP4Atom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MP4Atom.h; sourceTree = "<group>"; };
 		D0B2C8D2195B14EA00CA9F1E /* MP4Atom.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MP4Atom.m; sourceTree = "<group>"; };
 		D0B33C66159CAC3400451700 /* ImageIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ImageIO.framework; path = System/Library/Frameworks/ImageIO.framework; sourceTree = SDKROOT; };
+		D0B9B19419CA324D0020C9CF /* LaunchScreen.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = LaunchScreen.xib; sourceTree = "<group>"; };
 		D0BAF3C4193E8AC400A0093F /* ModernConversationInput.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ModernConversationInput.png; path = Resources/ModernConversationInput.png; sourceTree = "<group>"; };
 		D0BAF3C5193E8AC400A0093F /* ModernConversationMicButton_Highlighted.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ModernConversationMicButton_Highlighted.png; path = Resources/ModernConversationMicButton_Highlighted.png; sourceTree = "<group>"; };
 		D0BAF3C6193E8AC400A0093F /* ModernConversationMicButton.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ModernConversationMicButton.png; path = Resources/ModernConversationMicButton.png; sourceTree = "<group>"; };
@@ -5695,7 +5695,7 @@
 		D08805A1156E8F3600311537 = {
 			isa = PBXGroup;
 			children = (
-				D017752619C245CB006D377F /* LaunchScreen.xib */,
+				D0B9B19419CA324D0020C9CF /* LaunchScreen.xib */,
 				D0DAA484197496240036E709 /* Icon-76.png */,
 				D0DAA482197495EA0036E709 /* Icon-72@2x.png */,
 				D0DAA480197495A80036E709 /* Icon-72.png */,
@@ -5730,7 +5730,7 @@
 		D08805AD156E8F3600311537 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D08805AC156E8F3600311537 /* Telegram HD.app */,
+				D08805AC156E8F3600311537 /* Telegram.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -6838,7 +6838,7 @@
 			);
 			name = Telegraph;
 			productName = Telegraph;
-			productReference = D08805AC156E8F3600311537 /* Telegram HD.app */;
+			productReference = D08805AC156E8F3600311537 /* Telegram.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -7013,7 +7013,6 @@
 				D09A218815C9CF5100023542 /* Icon@2x.png in Resources */,
 				9303849318133F8F00CAC996 /* SearchBarBackground_Active@2x.png in Resources */,
 				D0BD442218BCD0C70036FB8B /* begin_record.caf in Resources */,
-				D017752719C245CB006D377F /* LaunchScreen.xib in Resources */,
 				D00C7196193F3FD40005349C /* ModernBubbleOutgoingPartialHighlightedPad@2x.png in Resources */,
 				D0A516CD193FD848000B8984 /* DetailLogoBlank.png in Resources */,
 				934134721853A12200480294 /* ModernMenuDeleteIcon@2x.png in Resources */,
@@ -7096,6 +7095,7 @@
 				93BC0BC4165FE05800CF4B6B /* grayProgress4@2x.png in Resources */,
 				93992D8F182A706C00F29746 /* ModernBubbleIncomingPartial@2x.png in Resources */,
 				93BC0BC5165FE05800CF4B6B /* grayProgress5@2x.png in Resources */,
+				D0B9B19519CA324D0020C9CF /* LaunchScreen.xib in Resources */,
 				93BC0BC6165FE05800CF4B6B /* grayProgress6@2x.png in Resources */,
 				D035EBBC194868B700EEEC17 /* Localizable.strings in Resources */,
 				D08696B31943A8B300770FE7 /* pad-builtin-wallpaper-0-thumbnail.jpg in Resources */,
@@ -8183,8 +8183,8 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
+				CODE_SIGN_IDENTITY = "iPhone Developer: David Neff (SGA99XHTJ6)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: David Neff (SGA99XHTJ6)";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -8199,8 +8199,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				PROVISIONING_PROFILE = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
+				PROVISIONING_PROFILE = "c8bcecd2-63cb-422c-b8e0-82b77cfec215";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "c8bcecd2-63cb-422c-b8e0-82b77cfec215";
 				SDKROOT = iphoneos;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -8258,8 +8258,8 @@
 				CLANG_WARN_OBJC_RECEIVER_WEAK = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
+				CODE_SIGN_IDENTITY = "iPhone Developer: David Neff (SGA99XHTJ6)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: David Neff (SGA99XHTJ6)";
 				DEAD_CODE_STRIPPING = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -8299,9 +8299,9 @@
 				OTHER_CFLAGS = "";
 				"OTHER_CFLAGS[arch=*]" = "-Wextra";
 				OTHER_LDFLAGS = "-ObjC";
-				PRODUCT_NAME = "Telegram HD";
-				PROVISIONING_PROFILE = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
+				PRODUCT_NAME = Telegram;
+				PROVISIONING_PROFILE = "c8bcecd2-63cb-422c-b8e0-82b77cfec215";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "c8bcecd2-63cb-422c-b8e0-82b77cfec215";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";
@@ -8366,7 +8366,7 @@
 				OTHER_CFLAGS = "";
 				"OTHER_CFLAGS[arch=*]" = "-DNS_BLOCK_ASSERTIONS";
 				OTHER_LDFLAGS = "-ObjC";
-				PRODUCT_NAME = "Telegram HD";
+				PRODUCT_NAME = Telegram;
 				PROVISIONING_PROFILE = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
 				SDKROOT = iphoneos;

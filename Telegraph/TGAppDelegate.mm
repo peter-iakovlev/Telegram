@@ -482,7 +482,10 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
         else
             appId = @"af86b54bbc799bd3e6d570ae30035037";
 #else
-        appId = @"af8bed54bcf6227c821901dbd47a2510";
+        if ([[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"org.telegram.TelegramHD"])
+            appId = @"af8bed54bcf6227c821901dbd47a2510";
+        else
+            appId = @"ad8831329ffc8f8aff9a2b0b86558b24";
 #endif
         
         TGLog(@"starting with %@", appId);
@@ -1447,7 +1450,22 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     }
     
     _deviceTokenListener = listener;
-    [[UIApplication sharedApplication] registerForRemoteNotificationTypes:(UIRemoteNotificationTypeBadge | UIRemoteNotificationTypeSound | UIRemoteNotificationTypeAlert)];
+    if ([[UIApplication sharedApplication] respondsToSelector:@selector(registerUserNotificationSettings:)])
+    {
+        UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:(UIRemoteNotificationTypeBadge | UIRemoteNotificationTypeSound | UIRemoteNotificationTypeAlert) categories:nil];
+        [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
+        
+        [[UIApplication sharedApplication] registerForRemoteNotifications];
+    }
+    else
+    {
+        [[UIApplication sharedApplication] registerForRemoteNotificationTypes:(UIRemoteNotificationTypeBadge | UIRemoteNotificationTypeSound | UIRemoteNotificationTypeAlert)];
+    }
+}
+
+- (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)__unused notificationSettings
+{
+    [application registerForRemoteNotifications];
 }
 
 - (void)application:(UIApplication*)__unused application didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken

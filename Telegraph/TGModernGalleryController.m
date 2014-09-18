@@ -40,6 +40,7 @@
     NSUInteger _lastReportedFocusedIndex;
     bool _synchronousBoundsChange;
     bool _reloadingItems;
+    bool _isBeingDismissed;
     
     UIStatusBarStyle _statusBarStyle;
 }
@@ -111,7 +112,8 @@
         _model.itemsUpdated = ^(id<TGModernGalleryItem> item)
         {
             __strong TGModernGalleryController *strongSelf = weakSelf;
-            [strongSelf reloadDataAtItem:item synchronously:false];
+            if (strongSelf != nil && !strongSelf->_isBeingDismissed)
+                [strongSelf reloadDataAtItem:item synchronously:false];
         };
         
         _model.focusOnItem = ^(id<TGModernGalleryItem> item)
@@ -138,10 +140,15 @@
             __strong TGModernGalleryController *strongSelf = weakSelf;
             if (strongSelf != nil)
             {
+                strongSelf->_isBeingDismissed = true;
+                
                 if (asModal)
                 {
                     strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
                     strongSelf.view.hidden = true;
+                    
+                    if (strongSelf.completedTransitionOut)
+                        strongSelf.completedTransitionOut();
                     
                     [strongSelf dismissViewControllerAnimated:true completion:^
                     {
@@ -271,6 +278,8 @@
         __strong TGModernGalleryController *strongSelf = weakSelf;
         if (strongSelf != nil)
         {
+            strongSelf->_isBeingDismissed = true;
+            
             UIView *transitionOutToView = nil;
             UIView *transitionOutFromView = nil;
             CGRect transitionOutFromViewContentRect = CGRectZero;

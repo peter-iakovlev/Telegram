@@ -57,6 +57,7 @@
     _uri = uri;
     _completion = completion;
     _workerTask = workerTask;
+    _progress = progress;
     
     [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/img/(download:%@)", uri] options:@{} flags:0 watcher:self];
     return;

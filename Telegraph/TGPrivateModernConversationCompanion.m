@@ -281,6 +281,9 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 
 - (NSString *)stringForTitle:(TGUser *)user isContact:(bool)isContact
 {
+    if (user.uid == [TGTelegraphInstance serviceUserUid])
+        return @"Telegram";
+    
     if (isContact || user.phoneNumber.length == 0)
         return user.displayName;
     
@@ -290,18 +293,21 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     return _cachedPhone;
 }
 
-- (NSString *)stringForPresence:(TGUserPresence)presence accentColored:(bool *)accentColored
+- (NSString *)statusStringForUser:(TGUser *)user accentColored:(bool *)accentColored
 {
-    if (presence.online)
+    if (user.uid == [TGTelegraphInstance serviceUserUid])
+        return @"Service notifications";
+    
+    if (user.presence.online)
     {
         if (accentColored != NULL)
             *accentColored = true;
         return TGLocalizedStatic(@"Presence.online");
     }
-    else if (presence.lastSeen < 0)
+    else if (user.presence.lastSeen < 0)
         return TGLocalizedStatic(@"Presence.invisible");
-    else if (presence.lastSeen != 0)
-        return [TGDateUtils stringForRelativeLastSeen:presence.lastSeen];
+    else if (user.presence.lastSeen != 0)
+        return [TGDateUtils stringForRelativeLastSeen:user.presence.lastSeen];
     
     return TGLocalized(@"Presence.offline");
 }
@@ -316,7 +322,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     [self _setAvatarConversationId:_uid firstName:user.firstName lastName:user.lastName];
     [self _setAvatarUrl:user.photoUrlSmall];
     bool accentColored = false;
-    NSString *statusString = [self stringForPresence:user.presence accentColored:&accentColored];
+    NSString *statusString = [self statusStringForUser:user accentColored:&accentColored];
     [self _setStatus:statusString accentColored:accentColored allowAnimation:false];
     
     if (_initialTyping)
@@ -558,7 +564,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
             if (user.uid == _uid)
             {
                 bool accentColored = false;
-                NSString *statusString = [self stringForPresence:user.presence accentColored:&accentColored];
+                NSString *statusString = [self statusStringForUser:user accentColored:&accentColored];
                 [self _setTitle:[self stringForTitle:user isContact:[TGDatabaseInstance() uidIsRemoteContact:_uid]] andStatus:statusString accentColored:accentColored allowAnimatioon:true];
                 [self _setAvatarConversationId:_uid firstName:user.firstName lastName:user.lastName];
                 [self _setAvatarUrl:user.photoUrlSmall];
@@ -572,7 +578,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         TGUser *user = [TGDatabaseInstance() loadUser:_uid];
         
         bool accentColored = false;
-        NSString *statusString = [self stringForPresence:user.presence accentColored:&accentColored];
+        NSString *statusString = [self statusStringForUser:user accentColored:&accentColored];
         [self _setTitle:[self stringForTitle:user isContact:[TGDatabaseInstance() uidIsRemoteContact:_uid]] andStatus:statusString accentColored:accentColored allowAnimatioon:false];
         [self _setAvatarConversationId:_uid firstName:user.firstName lastName:user.lastName];
         [self _setAvatarUrl:user.photoUrlSmall];
