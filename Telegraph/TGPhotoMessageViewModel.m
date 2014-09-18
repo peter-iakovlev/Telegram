@@ -76,9 +76,12 @@
         
         _messageLifetime = message.messageLifetime;
         
-        //if (_messageLifetime != 0)
+        if (_messageLifetime != 0)
         {
-            [self enableInstantPreview];
+            if (message.outgoing)
+                self.previewEnabled = false;
+            else
+                [self enableInstantPreview];
         }
     }
     return self;

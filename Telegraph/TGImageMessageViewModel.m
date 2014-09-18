@@ -69,6 +69,8 @@
     self = [super initWithAuthor:author context:context];
     if (self != nil)
     {
+        _previewEnabled = true;
+        
         _context = context;
         
         NSString *imageUri = [imageInfo imageUrlForLargestSize:NULL];
@@ -186,6 +188,8 @@
             if (strongSelf != nil)
                 [strongSelf deactivateMedia:true];
         };
+        
+        _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable;
     }
     
     [self addSubmodel:_instantPreviewTouchAreaModel];
@@ -501,6 +505,8 @@
 
 - (void)updateImageOverlay:(bool)animated
 {
+    _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable;
+    
     if (_progressVisible)
     {
         [_imageModel setOverlayType:TGMessageImageViewOverlayProgress animated:false];
@@ -678,7 +684,8 @@
 
 - (void)activateMedia:(bool)instant
 {
-    [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"instant": @(instant)}];
+    if (_previewEnabled)
+        [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"instant": @(instant)}];
 }
 
 - (void)deactivateMedia:(bool)instant

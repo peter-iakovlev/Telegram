@@ -19,6 +19,8 @@
 
 @property (nonatomic, strong) TGMessageImageViewModel *imageModel;
 
+@property (nonatomic) bool previewEnabled;
+
 - (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo author:(TGUser *)author context:(TGModernViewContext *)context;
 
 + (void)calculateImageSizesForImageSize:(in CGSize)imageSize thumbnailSize:(out CGSize *)thumbnailSize renderSize:(out CGSize *)renderSize;

@@ -2173,6 +2173,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         };
         
         modernGallery.animateTransition = !instant;
+        modernGallery.showInterface = !instant;
         
         TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
         controllerWindow.hidden = false;

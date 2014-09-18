@@ -58,6 +58,7 @@
         _lastReportedFocusedIndex = NSNotFound;
         _statusBarStyle = UIStatusBarStyleLightContent;
         _animateTransition = true;
+        _showInterface = true;
     }
     return self;
 }
@@ -251,6 +252,13 @@
     }
 }
 
+- (void)setShowInterface:(bool)showInterface
+{
+    _showInterface = showInterface;
+    
+    _statusBarStyle = _showInterface ? UIStatusBarStyleLightContent : UIStatusBarStyleDefault;
+}
+
 - (void)loadView
 {
     [super loadView];
@@ -397,6 +405,9 @@
     }
     else
         [_model _transitionCompleted];
+    
+    if (!_showInterface)
+        _view.interfaceView.alpha = 0.0f;
 }
 
 - (UIView *)findScrollView:(UIView *)view

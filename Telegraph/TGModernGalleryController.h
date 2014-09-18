@@ -16,6 +16,7 @@
 
 @property (nonatomic, strong) TGModernGalleryModel *model;
 @property (nonatomic) bool animateTransition;
+@property (nonatomic) bool showInterface;
 
 @property (nonatomic, copy) void (^itemFocused)(id<TGModernGalleryItem>);
 @property (nonatomic, copy) UIView *(^beginTransitionIn)(id<TGModernGalleryItem>, TGModernGalleryItemView *);
