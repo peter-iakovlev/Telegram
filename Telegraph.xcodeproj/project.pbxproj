@@ -8199,8 +8199,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				PROVISIONING_PROFILE = "c8bcecd2-63cb-422c-b8e0-82b77cfec215";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "c8bcecd2-63cb-422c-b8e0-82b77cfec215";
+				PROVISIONING_PROFILE = "E3F9D39B-F1E8-4574-BE51-076F9AE64880";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "E3F9D39B-F1E8-4574-BE51-076F9AE64880";
 				SDKROOT = iphoneos;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -8300,8 +8300,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-Wextra";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = Telegram;
-				PROVISIONING_PROFILE = "c8bcecd2-63cb-422c-b8e0-82b77cfec215";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "c8bcecd2-63cb-422c-b8e0-82b77cfec215";
+				PROVISIONING_PROFILE = "E3F9D39B-F1E8-4574-BE51-076F9AE64880";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "E3F9D39B-F1E8-4574-BE51-076F9AE64880";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";

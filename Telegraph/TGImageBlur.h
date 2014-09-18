@@ -15,6 +15,7 @@ UIImage *TGAverageColorRoundImage(UIColor *color, CGSize size);
 UIImage *TGAverageColorAttachmentImage(UIColor *color);
 UIImage *TGTemporaryAttachmentImage(TGTemporaryImage *temporaryImage, CGSize size);
 UIImage *TGBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *averageColor);
+UIImage *TGSecretBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *averageColor);
 UIImage *TGBlurredFileImage(UIImage *source, CGSize size, uint32_t *averageColor);
 UIImage *TGLoadedAttachmentImage(UIImage *source, CGSize size, uint32_t *averageColor);
 UIImage *TGLoadedFileImage(UIImage *source, CGSize size, uint32_t *averageColor);

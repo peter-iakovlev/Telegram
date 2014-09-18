@@ -396,10 +396,17 @@ static ASQueue *taskManagementQueue()
         bool needsAverageColor = averageColor == nil;
         uint32_t averageColorValue = [averageColor intValue];
         
-        if (lowQualityThumbnail)
-            thumbnailImage = TGBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+        if ([args[@"secret"] boolValue])
+        {
+            thumbnailImage = TGSecretBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+        }
         else
-            thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+        {
+            if (lowQualityThumbnail)
+                thumbnailImage = TGBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+            else
+                thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+        }
         
         if (thumbnailImage != nil)
         {

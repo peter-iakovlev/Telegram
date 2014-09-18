@@ -75,6 +75,9 @@
         if (legacyThumbnailCacheUrl != nil)
             [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUrl];
         
+        if (message.messageLifetime != 0)
+            [previewUri appendFormat:@"&secret=1"];
+        
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
     }
     
@@ -218,6 +221,9 @@
             
             if (legacyThumbnailCacheUrl != nil)
                 [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUrl];
+            
+            if (message.messageLifetime != 0)
+                [previewUri appendFormat:@"&secret=1"];
             
             [previewImageInfo addImageWithSize:renderSize url:previewUri];
         }
