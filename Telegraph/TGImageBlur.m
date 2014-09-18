@@ -1043,6 +1043,116 @@ UIImage *TGBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *averag
     return image;
 }
 
+UIImage *TGSecretBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *averageColor)
+{
+    CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
+    
+    CGSize fittedSize = fitSize(size, CGSizeMake(64, 64));
+    
+    CGFloat actionCircleDiameter = 50.0f;
+    
+    const struct { int width, height; } blurredContextSize = { (int)fittedSize.width, (int)fittedSize.height };
+    const struct { int width, height; } targetContextSize = { (int)(size.width * scale), (int)(size.height * scale)};
+    const struct { int width, height; } actionCircleContextSize = { (int)(actionCircleDiameter * scale), (int)(actionCircleDiameter * scale) };
+    
+    size_t blurredBytesPerRow = ((4 * (int)blurredContextSize.width) + 15) & (~15);
+    size_t targetBytesPerRow = ((4 * (int)targetContextSize.width) + 15) & (~15);
+    size_t actionCircleBytesPerRow = ((4 * (int)actionCircleContextSize.width) + 15) & (~15);
+    
+    void *blurredMemory = malloc((int)(blurredBytesPerRow * blurredContextSize.height));
+    void *targetMemory = malloc((int)(targetBytesPerRow * targetContextSize.height));
+    void *actionCircleMemory = malloc(((int)(actionCircleBytesPerRow * actionCircleContextSize.height)));
+    
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host;
+    
+    CGContextRef blurredContext = CGBitmapContextCreate(blurredMemory, (int)blurredContextSize.width, (int)blurredContextSize.height, 8, blurredBytesPerRow, colorSpace, bitmapInfo);
+    CGContextRef targetContext = CGBitmapContextCreate(targetMemory, (int)targetContextSize.width, (int)targetContextSize.height, 8, targetBytesPerRow, colorSpace, bitmapInfo);
+    CGContextRef actionCircleContext = CGBitmapContextCreate(actionCircleMemory, (int)actionCircleContextSize.width, (int)actionCircleContextSize.height, 8, actionCircleBytesPerRow, colorSpace, bitmapInfo);
+    
+    CGColorSpaceRelease(colorSpace);
+    
+    UIGraphicsPushContext(blurredContext);
+    CGContextTranslateCTM(blurredContext, blurredContextSize.width / 2.0f, blurredContextSize.height / 2.0f);
+    CGContextScaleCTM(blurredContext, 1.0f, -1.0f);
+    CGContextTranslateCTM(blurredContext, -blurredContextSize.width / 2.0f, -blurredContextSize.height / 2.0f);
+    CGContextSetInterpolationQuality(blurredContext, kCGInterpolationLow);
+    [source drawInRect:CGRectMake(0, 0, blurredContextSize.width, blurredContextSize.height) blendMode:kCGBlendModeCopy alpha:1.0f];
+    UIGraphicsPopContext();
+    
+    fastBlur((int)blurredContextSize.width, (int)blurredContextSize.height, blurredBytesPerRow, blurredMemory);
+    
+    if (averageColor != NULL)
+        *averageColor = TGImageAverageColor(blurredMemory, blurredContextSize.width, blurredContextSize.height, blurredBytesPerRow);
+    
+    vImage_Buffer srcBuffer;
+    srcBuffer.width = blurredContextSize.width;
+    srcBuffer.height = blurredContextSize.height;
+    srcBuffer.rowBytes = blurredBytesPerRow;
+    srcBuffer.data = blurredMemory;
+    
+    vImage_Buffer dstBuffer;
+    dstBuffer.width = targetContextSize.width;
+    dstBuffer.height = targetContextSize.height;
+    dstBuffer.rowBytes = targetBytesPerRow;
+    dstBuffer.data = targetMemory;
+    
+    vImageScale_ARGB8888(&srcBuffer, &dstBuffer, NULL, kvImageDoNotTile);
+    
+    CGContextRelease(blurredContext);
+    free(blurredMemory);
+    
+    UIGraphicsPushContext(actionCircleContext);
+    CGContextTranslateCTM(actionCircleContext, actionCircleContextSize.width / 2.0f, actionCircleContextSize.height / 2.0f);
+    CGContextScaleCTM(actionCircleContext, 1.0f, -1.0f);
+    CGContextTranslateCTM(actionCircleContext, -actionCircleContextSize.width / 2.0f, -actionCircleContextSize.height / 2.0f);
+    
+    CGContextSetInterpolationQuality(actionCircleContext, kCGInterpolationLow);
+    CGContextSetBlendMode(actionCircleContext, kCGBlendModeCopy);
+    
+    [source drawInRect:CGRectMake((actionCircleContextSize.width - targetContextSize.width) / 2.0f, (actionCircleContextSize.height - targetContextSize.height) / 2.0f, targetContextSize.width, targetContextSize.height) blendMode:kCGBlendModeCopy alpha:1.0f];
+    UIGraphicsPopContext();
+    
+    brightenAndBlurImage(actionCircleMemory, actionCircleContextSize.width, actionCircleContextSize.height, actionCircleBytesPerRow, scale < 2);
+    
+    CGContextBeginPath(actionCircleContext);
+    CGContextAddRect(actionCircleContext, CGRectMake(0.0f, 0.0f, actionCircleContextSize.width, actionCircleContextSize.height));
+    CGContextAddEllipseInRect(actionCircleContext, CGRectMake(0.0f, 0.0f, actionCircleContextSize.width, actionCircleContextSize.height));
+    CGContextClosePath(actionCircleContext);
+    
+    CGContextSetFillColorWithColor(actionCircleContext, [UIColor clearColor].CGColor);
+    CGContextEOFillPath(actionCircleContext);
+    
+    CGImageRef actionCircleBitmapImage = CGBitmapContextCreateImage(actionCircleContext);
+    UIImage *actionCircleImage = [[UIImage alloc] initWithCGImage:actionCircleBitmapImage scale:scale orientation:UIImageOrientationUp];
+    CGImageRelease(actionCircleBitmapImage);
+    
+    CGContextRelease(actionCircleContext);
+    free(actionCircleMemory);
+    
+    TGStaticBackdropAreaData *timestampBackdropArea = createTimestampBackdropArea(targetMemory, targetContextSize.width, targetContextSize.height, targetBytesPerRow, CGSizeMake(size.width, size.height));
+    TGStaticBackdropAreaData *additionalDataBackdropArea = createAdditionalDataBackdropArea(targetMemory, targetContextSize.width, targetContextSize.height, targetBytesPerRow, CGSizeMake(size.width, size.height));
+    
+    addAttachmentImageCorners(targetMemory, targetContextSize.width, targetContextSize.height, targetBytesPerRow);
+    
+    CGImageRef bitmapImage = CGBitmapContextCreateImage(targetContext);
+    UIImage *image = [[UIImage alloc] initWithCGImage:bitmapImage];
+    CGImageRelease(bitmapImage);
+    
+    CGContextRelease(targetContext);
+    free(targetMemory);
+    
+    TGStaticBackdropImageData *backdropData = [[TGStaticBackdropImageData alloc] init];
+    [backdropData setBackdropArea:[[TGStaticBackdropAreaData alloc] initWithBackground:actionCircleImage] forKey:TGStaticBackdropMessageActionCircle];
+    
+    [backdropData setBackdropArea:timestampBackdropArea forKey:TGStaticBackdropMessageTimestamp];
+    [backdropData setBackdropArea:additionalDataBackdropArea forKey:TGStaticBackdropMessageAdditionalData];
+    
+    [image setStaticBackdropImageData:backdropData];
+    
+    return image;
+}
+
 UIImage *TGBlurredFileImage(UIImage *source, CGSize size, uint32_t *averageColor)
 {
     CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
