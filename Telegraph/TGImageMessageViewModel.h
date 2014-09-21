@@ -20,6 +20,7 @@
 @property (nonatomic, strong) TGMessageImageViewModel *imageModel;
 
 @property (nonatomic) bool previewEnabled;
+@property (nonatomic) bool isSecret;
 
 - (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo author:(TGUser *)author context:(TGModernViewContext *)context;
 
@@ -40,5 +41,6 @@
 - (int)defaultOverlayActionType;
 
 - (void)enableInstantPreview;
+- (NSString *)defaultAdditionalDataString;
 
 @end

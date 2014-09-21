@@ -14,13 +14,15 @@ typedef enum {
     TGMessageImageViewOverlayNone = 0,
     TGMessageImageViewOverlayProgress = 1,
     TGMessageImageViewOverlayDownload = 2,
-    TGMessageImageViewOverlayPlay = 3
+    TGMessageImageViewOverlayPlay = 3,
+    TGMessageImageViewOverlaySecret = 4
 } TGMessageImageViewOverlay;
 
 typedef enum {
     TGMessageImageViewActionDownload = 0,
     TGMessageImageViewActionCancelDownload = 1,
-    TGMessageImageViewActionPlay = 2
+    TGMessageImageViewActionPlay = 2,
+    TGMessageImageViewActionSecret = 3
 } TGMessageImageViewActionType;
 
 @class TGMessageImageView;

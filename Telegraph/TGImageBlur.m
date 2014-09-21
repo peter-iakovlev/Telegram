@@ -636,6 +636,44 @@ static int16_t *brightenMatrix(int32_t *outDivisor)
     return saturationMatrix;
 }
 
+static int16_t *secretMatrix(int32_t *outDivisor)
+{
+    static int16_t saturationMatrix[16];
+    static const int32_t divisor = 256;
+    
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        CGFloat s = 1.6f;
+        CGFloat offset = 0.0f;
+        CGFloat factor = 1.3f;
+        CGFloat satMatrix[] = {
+            0.0722f + 0.9278f * s,  0.0722f - 0.0722f * s,  0.0722f - 0.0722f * s,  0,
+            0.7152f - 0.7152f * s,  0.7152f + 0.2848f * s,  0.7152f - 0.7152f * s,  0,
+            0.2126f - 0.2126f * s,  0.2126f - 0.2126f * s,  0.2126f + 0.7873f * s,  0,
+            0.0f,                    0.0f,                    0.0f,  1,
+        };
+        CGFloat contrastMatrix[] = {
+            factor, 0.0f, 0.0f, 0.0f,
+            0.0f, factor, 0.0f, 0.0f,
+            0.0f, 0.0f, factor, 0.0f,
+            offset, offset, offset, 1.0f
+        };
+        CGFloat colorMatrix[16];
+        matrixMul(satMatrix, contrastMatrix, colorMatrix);
+        
+        NSUInteger matrixSize = sizeof(colorMatrix) / sizeof(colorMatrix[0]);
+        for (NSUInteger i = 0; i < matrixSize; ++i) {
+            saturationMatrix[i] = (int16_t)roundf(colorMatrix[i] * divisor);
+        }
+    });
+    
+    if (outDivisor != NULL)
+        *outDivisor = divisor;
+    
+    return saturationMatrix;
+}
+
 static int16_t *brightenTimestampMatrix(int32_t *outDivisor)
 {
     static int16_t saturationMatrix[16];
@@ -1047,7 +1085,7 @@ UIImage *TGSecretBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *
 {
     CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
     
-    CGSize fittedSize = fitSize(size, CGSizeMake(64, 64));
+    CGSize fittedSize = fitSize(size, CGSizeMake(40, 40));
     
     CGFloat actionCircleDiameter = 50.0f;
     
@@ -1080,7 +1118,17 @@ UIImage *TGSecretBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *
     [source drawInRect:CGRectMake(0, 0, blurredContextSize.width, blurredContextSize.height) blendMode:kCGBlendModeCopy alpha:1.0f];
     UIGraphicsPopContext();
     
-    fastBlur((int)blurredContextSize.width, (int)blurredContextSize.height, blurredBytesPerRow, blurredMemory);
+    fastBlurMore((int)blurredContextSize.width, (int)blurredContextSize.height, blurredBytesPerRow, blurredMemory);
+    fastBlurMore((int)blurredContextSize.width, (int)blurredContextSize.height, blurredBytesPerRow, blurredMemory);
+    fastBlurMore((int)blurredContextSize.width, (int)blurredContextSize.height, blurredBytesPerRow, blurredMemory);
+    
+    int32_t divisor = 256;
+    vImage_Buffer dstBuffer1;
+    dstBuffer1.width = (int)blurredContextSize.width;
+    dstBuffer1.height = (int)blurredContextSize.height;
+    dstBuffer1.rowBytes = blurredBytesPerRow;
+    dstBuffer1.data = blurredMemory;
+    vImageMatrixMultiply_ARGB8888(&dstBuffer1, &dstBuffer1, secretMatrix(NULL), divisor, NULL, NULL, kvImageDoNotTile);
     
     if (averageColor != NULL)
         *averageColor = TGImageAverageColor(blurredMemory, blurredContextSize.width, blurredContextSize.height, blurredBytesPerRow);

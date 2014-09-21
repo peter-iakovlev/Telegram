@@ -720,6 +720,15 @@
 		D03B93AD18F6EB5F00073D51 /* TGPhotoThumbnailDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D03B93AC18F6EB5F00073D51 /* TGPhotoThumbnailDataSource.m */; };
 		D03EEFF415AF40AD005D0F1B /* TGUpdateStateRequestBuilder.mm in Sources */ = {isa = PBXBuildFile; fileRef = D03EEFF315AF40AD005D0F1B /* TGUpdateStateRequestBuilder.mm */; };
 		D03EEFFB15AF60DF005D0F1B /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D03EEFFA15AF60DF005D0F1B /* AudioToolbox.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		D03FECD019CC559D004866D6 /* SecretPhotoFire.png in Resources */ = {isa = PBXBuildFile; fileRef = D03FECCE19CC559D004866D6 /* SecretPhotoFire.png */; };
+		D03FECD119CC559D004866D6 /* SecretPhotoFire@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D03FECCF19CC559D004866D6 /* SecretPhotoFire@2x.png */; };
+		D03FECD319CC69EE004866D6 /* SecretPhotoFireMask@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D03FECD219CC69EE004866D6 /* SecretPhotoFireMask@2x.png */; };
+		D03FECD519CC6D17004866D6 /* SecretPhotoFireMask.png in Resources */ = {isa = PBXBuildFile; fileRef = D03FECD419CC6D17004866D6 /* SecretPhotoFireMask.png */; };
+		D03FECDA19CC720D004866D6 /* TGSecretPeerMediaGalleryModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D03FECD919CC720D004866D6 /* TGSecretPeerMediaGalleryModel.m */; };
+		D03FECDE19CC72C2004866D6 /* TGSecretPeerMediaGalleryImageItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D03FECDD19CC72C2004866D6 /* TGSecretPeerMediaGalleryImageItem.m */; };
+		D03FECE119CC72E1004866D6 /* TGSecretPeerMediaGalleryVideoItem.m in Sources */ = {isa = PBXBuildFile; fileRef = D03FECE019CC72E1004866D6 /* TGSecretPeerMediaGalleryVideoItem.m */; };
+		D03FECE419CC73FD004866D6 /* TGSecretPeerMediaGalleryImageItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D03FECE319CC73FD004866D6 /* TGSecretPeerMediaGalleryImageItemView.m */; };
+		D03FECE719CC7446004866D6 /* TGSecretPeerMediaGalleryVideoItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D03FECE619CC7446004866D6 /* TGSecretPeerMediaGalleryVideoItemView.m */; };
 		D0447369161003A800F11E8A /* TGApplyUpdatesActor.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0447368161003A800F11E8A /* TGApplyUpdatesActor.mm */; };
 		D044CB69192825430001C986 /* TGWeakReference.m in Sources */ = {isa = PBXBuildFile; fileRef = D044CB68192825430001C986 /* TGWeakReference.m */; };
 		D044CB6C192969850001C986 /* TGLocationThumbnailDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D044CB6B192969850001C986 /* TGLocationThumbnailDataSource.m */; };
@@ -2672,6 +2681,20 @@
 		D03EEFF215AF40AD005D0F1B /* TGUpdateStateRequestBuilder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGUpdateStateRequestBuilder.h; sourceTree = "<group>"; };
 		D03EEFF315AF40AD005D0F1B /* TGUpdateStateRequestBuilder.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGUpdateStateRequestBuilder.mm; sourceTree = "<group>"; };
 		D03EEFFA15AF60DF005D0F1B /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		D03FECCE19CC559D004866D6 /* SecretPhotoFire.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = SecretPhotoFire.png; path = Resources/SecretPhotoFire.png; sourceTree = "<group>"; };
+		D03FECCF19CC559D004866D6 /* SecretPhotoFire@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "SecretPhotoFire@2x.png"; path = "Resources/SecretPhotoFire@2x.png"; sourceTree = "<group>"; };
+		D03FECD219CC69EE004866D6 /* SecretPhotoFireMask@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "SecretPhotoFireMask@2x.png"; path = "Resources/SecretPhotoFireMask@2x.png"; sourceTree = "<group>"; };
+		D03FECD419CC6D17004866D6 /* SecretPhotoFireMask.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = SecretPhotoFireMask.png; path = Resources/SecretPhotoFireMask.png; sourceTree = "<group>"; };
+		D03FECD819CC720D004866D6 /* TGSecretPeerMediaGalleryModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGSecretPeerMediaGalleryModel.h; sourceTree = "<group>"; };
+		D03FECD919CC720D004866D6 /* TGSecretPeerMediaGalleryModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGSecretPeerMediaGalleryModel.m; sourceTree = "<group>"; };
+		D03FECDC19CC72C2004866D6 /* TGSecretPeerMediaGalleryImageItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGSecretPeerMediaGalleryImageItem.h; sourceTree = "<group>"; };
+		D03FECDD19CC72C2004866D6 /* TGSecretPeerMediaGalleryImageItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGSecretPeerMediaGalleryImageItem.m; sourceTree = "<group>"; };
+		D03FECDF19CC72E1004866D6 /* TGSecretPeerMediaGalleryVideoItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGSecretPeerMediaGalleryVideoItem.h; sourceTree = "<group>"; };
+		D03FECE019CC72E1004866D6 /* TGSecretPeerMediaGalleryVideoItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGSecretPeerMediaGalleryVideoItem.m; sourceTree = "<group>"; };
+		D03FECE219CC73FD004866D6 /* TGSecretPeerMediaGalleryImageItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGSecretPeerMediaGalleryImageItemView.h; sourceTree = "<group>"; };
+		D03FECE319CC73FD004866D6 /* TGSecretPeerMediaGalleryImageItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGSecretPeerMediaGalleryImageItemView.m; sourceTree = "<group>"; };
+		D03FECE519CC7446004866D6 /* TGSecretPeerMediaGalleryVideoItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGSecretPeerMediaGalleryVideoItemView.h; sourceTree = "<group>"; };
+		D03FECE619CC7446004866D6 /* TGSecretPeerMediaGalleryVideoItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGSecretPeerMediaGalleryVideoItemView.m; sourceTree = "<group>"; };
 		D0447367161003A800F11E8A /* TGApplyUpdatesActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGApplyUpdatesActor.h; sourceTree = "<group>"; };
 		D0447368161003A800F11E8A /* TGApplyUpdatesActor.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGApplyUpdatesActor.mm; sourceTree = "<group>"; };
 		D044CB67192825430001C986 /* TGWeakReference.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGWeakReference.h; sourceTree = "<group>"; };
@@ -6012,6 +6035,31 @@
 			name = "Video Converter";
 			sourceTree = "<group>";
 		};
+		D03FECD719CC71E9004866D6 /* Secret */ = {
+			isa = PBXGroup;
+			children = (
+				D03FECDB19CC728B004866D6 /* Items */,
+				D03FECD819CC720D004866D6 /* TGSecretPeerMediaGalleryModel.h */,
+				D03FECD919CC720D004866D6 /* TGSecretPeerMediaGalleryModel.m */,
+			);
+			name = Secret;
+			sourceTree = "<group>";
+		};
+		D03FECDB19CC728B004866D6 /* Items */ = {
+			isa = PBXGroup;
+			children = (
+				D03FECDC19CC72C2004866D6 /* TGSecretPeerMediaGalleryImageItem.h */,
+				D03FECDD19CC72C2004866D6 /* TGSecretPeerMediaGalleryImageItem.m */,
+				D03FECE219CC73FD004866D6 /* TGSecretPeerMediaGalleryImageItemView.h */,
+				D03FECE319CC73FD004866D6 /* TGSecretPeerMediaGalleryImageItemView.m */,
+				D03FECDF19CC72E1004866D6 /* TGSecretPeerMediaGalleryVideoItem.h */,
+				D03FECE019CC72E1004866D6 /* TGSecretPeerMediaGalleryVideoItem.m */,
+				D03FECE519CC7446004866D6 /* TGSecretPeerMediaGalleryVideoItemView.h */,
+				D03FECE619CC7446004866D6 /* TGSecretPeerMediaGalleryVideoItemView.m */,
+			);
+			name = Items;
+			sourceTree = "<group>";
+		};
 		D044CB5F1928251E0001C986 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
@@ -7025,6 +7073,7 @@
 			isa = PBXGroup;
 			children = (
 				D0876FE3196F4C16005740CE /* Generic */,
+				D03FECD719CC71E9004866D6 /* Secret */,
 			);
 			name = "Peer Media";
 			sourceTree = "<group>";
@@ -7331,6 +7380,10 @@
 		D0880632156EAEA300311537 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D03FECD419CC6D17004866D6 /* SecretPhotoFireMask.png */,
+				D03FECD219CC69EE004866D6 /* SecretPhotoFireMask@2x.png */,
+				D03FECCE19CC559D004866D6 /* SecretPhotoFire.png */,
+				D03FECCF19CC559D004866D6 /* SecretPhotoFire@2x.png */,
 				D0590D8A19A78C9D0082FFC8 /* ModernMessageBroadcastIcon.png */,
 				D0590D8B19A78C9D0082FFC8 /* ModernMessageBroadcastIcon@2x.png */,
 				D0590D8C19A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite.png */,
@@ -9357,6 +9410,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D03FECD519CC6D17004866D6 /* SecretPhotoFireMask.png in Resources */,
 				D0BAF3E6193E8AC400A0093F /* TabIconContacts.png in Resources */,
 				D08805BB156E8F3600311537 /* InfoPlist.strings in Resources */,
 				D0880639156EB11800311537 /* Localizable.strings in Resources */,
@@ -9390,6 +9444,7 @@
 				93080913185BC39600E62B42 /* ModernUserInfoPhoneEditingSeparator@2x.png in Resources */,
 				93EB7ABA184F90FC00891DBF /* ModernConversationTitleIconLock@2x.png in Resources */,
 				D0C925CF194A024000E629CA /* telegram_plane@2x.png in Resources */,
+				D03FECD119CC559D004866D6 /* SecretPhotoFire@2x.png in Resources */,
 				93C0B3C31602533B0034D542 /* Default-568h@2x.png in Resources */,
 				D0BAF3E5193E8AC400A0093F /* TabIconContacts_Highlighted.png in Resources */,
 				937CFD7D17AED51A00E28C5B /* ProfileAvatarSystem@2x.png in Resources */,
@@ -9715,6 +9770,7 @@
 				D08696B61943A8B300770FE7 /* pad-builtin-wallpaper-2.jpg in Resources */,
 				93DEF681173AFA2300D4588D /* MapLocationIcon@2x.png in Resources */,
 				93DEF682173AFA2300D4588D /* MapLocationIcon_Active@2x.png in Resources */,
+				D03FECD319CC69EE004866D6 /* SecretPhotoFireMask@2x.png in Resources */,
 				D0590D9119A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite@2x.png in Resources */,
 				9315E4E5186AFE7A008DD74D /* Icon-Small@2x.png in Resources */,
 				936219D9186460F600C52870 /* 110.m4a in Resources */,
@@ -9728,6 +9784,7 @@
 				932E00E2184AA1100001D109 /* ModernConversationActionForward_Disabled@2x.png in Resources */,
 				930AD0A3173C120D003DABCE /* MapCalloutLeft@2x.png in Resources */,
 				D0C925A8194A024000E629CA /* .gitignore in Resources */,
+				D03FECD019CC559D004866D6 /* SecretPhotoFire.png in Resources */,
 				930AD0AA173C2E31003DABCE /* MapCalloutArrow_Highlighted@2x.png in Resources */,
 				930AD0AB173C2E31003DABCE /* MapCalloutArrow@2x.png in Resources */,
 				933AA4A31860BE79000AA848 /* ModernNavigationAddButtonIcon@2x.png in Resources */,
@@ -10228,6 +10285,7 @@
 				D05A849A18AFC871007F1076 /* TGTLSerialization.mm in Sources */,
 				D01526D219001AD700656312 /* TGWorkerPool.m in Sources */,
 				D034A5D21914520B00C93C98 /* TGImageLuminanceMap.m in Sources */,
+				D03FECE719CC7446004866D6 /* TGSecretPeerMediaGalleryVideoItemView.m in Sources */,
 				D0983DB419CB9A4300CE5BB0 /* FMResultSet.m in Sources */,
 				D0C925B0194A024000E629CA /* platform_log.c in Sources */,
 				93E8A65B1623332E0014C17A /* TGRevokeSessionsActor.m in Sources */,
@@ -10348,6 +10406,7 @@
 				D0983D8D19CB9A4300CE5BB0 /* TGModernBarButton.m in Sources */,
 				D09840ED19CB9BE200CE5BB0 /* TLphotos_Photos.mm in Sources */,
 				936DE1971850C62200D90029 /* TGSwitchCollectionItem.m in Sources */,
+				D03FECDE19CC72C2004866D6 /* TGSecretPeerMediaGalleryImageItem.m in Sources */,
 				93E05B34165CEE9F004E31C5 /* TGPhotoGridController.mm in Sources */,
 				D098410C19CB9BE200CE5BB0 /* TLRPCcontacts_declineRequest.mm in Sources */,
 				D0983D4819CB9A4300CE5BB0 /* TGCircularProgressView.m in Sources */,
@@ -10722,6 +10781,7 @@
 				D0983D9519CB9A4300CE5BB0 /* TGPhoneUtils.m in Sources */,
 				D098408019CB9BE200CE5BB0 /* TLChatPhoto.mm in Sources */,
 				939ECA3B188EB4CB004ABAB7 /* TGOverlayControllerWindow.m in Sources */,
+				D03FECE419CC73FD004866D6 /* TGSecretPeerMediaGalleryImageItemView.m in Sources */,
 				930A94E9189E4F0500A20BE0 /* TGForwardContactPickerController.m in Sources */,
 				D0983D7619CB9A4300CE5BB0 /* TGImageSearchQueryCell.m in Sources */,
 				936219F61864A80800C52870 /* TGNotificationMessageLabel.m in Sources */,
@@ -10729,6 +10789,7 @@
 				D0983D3D19CB9A4300CE5BB0 /* TGAppearance.m in Sources */,
 				D098405819CB9BE200CE5BB0 /* NSArray_ContactBlocked.mm in Sources */,
 				D098416819CB9BE200CE5BB0 /* TLRPCreq_pq.mm in Sources */,
+				D03FECDA19CC720D004866D6 /* TGSecretPeerMediaGalleryModel.m in Sources */,
 				D09840B119CB9BE200CE5BB0 /* TLInitConnection.mm in Sources */,
 				D09840CD19CB9BE200CE5BB0 /* TLmessages_Chat.mm in Sources */,
 				D098406C19CB9BE200CE5BB0 /* NSArray_Photo.mm in Sources */,
@@ -10789,6 +10850,7 @@
 				93A6063F185FC042007E3477 /* TGDocumentMessageViewModel.m in Sources */,
 				9352A9D5181DBCD8002A1A1A /* TGModernConversationCompanion.mm in Sources */,
 				9386E897185CB77000930205 /* TGRegularCheckCollectionItem.m in Sources */,
+				D03FECE119CC72E1004866D6 /* TGSecretPeerMediaGalleryVideoItem.m in Sources */,
 				D09840AB19CB9BE200CE5BB0 /* TLhelp_AppPrefs.mm in Sources */,
 				D0983D3919CB9A4300CE5BB0 /* TGActivityIndicatorView.m in Sources */,
 				D098411919CB9BE200CE5BB0 /* TLRPCcontacts_sendRequest.mm in Sources */,
@@ -11003,8 +11065,8 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Developer: David Neff (SGA99XHTJ6)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: David Neff (SGA99XHTJ6)";
+				CODE_SIGN_IDENTITY = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -11019,8 +11081,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				PROVISIONING_PROFILE = "E3F9D39B-F1E8-4574-BE51-076F9AE64880";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "E3F9D39B-F1E8-4574-BE51-076F9AE64880";
+				PROVISIONING_PROFILE = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
 				SDKROOT = iphoneos;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -11078,8 +11140,8 @@
 				CLANG_WARN_OBJC_RECEIVER_WEAK = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Developer: David Neff (SGA99XHTJ6)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: David Neff (SGA99XHTJ6)";
+				CODE_SIGN_IDENTITY = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
 				DEAD_CODE_STRIPPING = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -11123,8 +11185,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-Wextra";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = Telegram;
-				PROVISIONING_PROFILE = "E3F9D39B-F1E8-4574-BE51-076F9AE64880";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "E3F9D39B-F1E8-4574-BE51-076F9AE64880";
+				PROVISIONING_PROFILE = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "81d6c8a1-6ade-4fba-b792-3891f5ccac50";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";

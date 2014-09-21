@@ -184,6 +184,15 @@
             }
         };
         
+        _model.dismissWhenReady = ^
+        {
+            __strong TGModernGalleryController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                [strongSelf dismissWhenReady];
+            }
+        };
+        
         [self reloadDataAtItem:_model.focusItem synchronously:false];
     }
 }
@@ -404,10 +413,34 @@
         [self animateStatusBarTransition:0.2];
     }
     else
+    {
+        if (_finishedTransitionIn && _model.focusItem != nil)
+        {
+            TGModernGalleryItemView *itemView = nil;
+            if (self.finishedTransitionIn && self.model.focusItem != nil)
+            {
+                for (TGModernGalleryItemView *visibleItemView in self->_visibleItemViews)
+                {
+                    if ([visibleItemView.item isEqual:self.model.focusItem])
+                    {
+                        itemView = visibleItemView;
+                        
+                        break;
+                    }
+                }
+            }
+            
+            _finishedTransitionIn(_model.focusItem, itemView);
+        }
+        
         [_model _transitionCompleted];
+    }
     
     if (!_showInterface)
+    {
         _view.interfaceView.alpha = 0.0f;
+        [TGHacks setApplicationStatusBarAlpha:0.0f];
+    }
 }
 
 - (UIView *)findScrollView:(UIView *)view

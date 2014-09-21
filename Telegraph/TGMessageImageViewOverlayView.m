@@ -13,7 +13,8 @@
 typedef enum {
     TGMessageImageViewOverlayViewTypeDownload = 1,
     TGMessageImageViewOverlayViewTypeProgress = 2,
-    TGMessageImageViewOverlayViewTypePlay = 3
+    TGMessageImageViewOverlayViewTypePlay = 3,
+    TGMessageImageViewOverlayViewTypeSecret = 4
 } TGMessageImageViewOverlayViewType;
 
 @interface TGMessageImageViewOverlayLayer : CALayer
@@ -93,6 +94,18 @@ typedef enum {
         [self pop_removeAnimationForKey:@"progressAmbient"];
         
         _type = TGMessageImageViewOverlayViewTypePlay;
+        [self setNeedsDisplay];
+    }
+}
+
+- (void)setSecret
+{
+    if (_type != TGMessageImageViewOverlayViewTypeSecret)
+    {
+        [self pop_removeAnimationForKey:@"progress"];
+        [self pop_removeAnimationForKey:@"progressAmbient"];
+        
+        _type = TGMessageImageViewOverlayViewTypeSecret;
         [self setNeedsDisplay];
     }
 }
@@ -321,6 +334,29 @@ typedef enum {
             
             break;
         }
+        case TGMessageImageViewOverlayViewTypeSecret:
+        {
+            const CGFloat diameter = 50.0f;
+            
+            CGContextSetBlendMode(context, kCGBlendModeCopy);
+            
+            CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 0.7f).CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+            
+            static UIImage *iconMask = nil;
+            static UIImage *icon = nil;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^
+            {
+                iconMask = [UIImage imageNamed:@"SecretPhotoFireMask.png"];
+                icon = [UIImage imageNamed:@"SecretPhotoFire.png"];
+            });
+            
+            [iconMask drawAtPoint:CGPointMake(CGFloor((diameter - icon.size.width) / 2.0f), CGFloor((diameter - icon.size.height) / 2.0f)) blendMode:kCGBlendModeDestinationIn alpha:1.0f];
+            [icon drawAtPoint:CGPointMake(CGFloor((diameter - icon.size.width) / 2.0f), CGFloor((diameter - icon.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:0.4f];
+            
+            break;
+        }
         default:
             break;
     }
@@ -373,6 +409,11 @@ typedef enum {
 - (void)setPlay
 {
     [((TGMessageImageViewOverlayLayer *)self.layer) setPlay];
+}
+
+- (void)setSecret
+{
+    [((TGMessageImageViewOverlayLayer *)self.layer) setSecret];
 }
 
 - (void)setProgress:(float)progress animated:(bool)animated

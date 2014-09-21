@@ -196,6 +196,21 @@ static const CGFloat additionalDataTopPadding = 6.0f;
                 
                 break;
             }
+            case TGMessageImageViewOverlaySecret:
+            {
+                if (_actionCircleImageView.superview == nil)
+                {
+                    [self addSubview:_actionCircleImageView];
+                    [self addSubview:_buttonView];
+                }
+                
+                _actionCircleImageView.alpha = 1.0f;
+                _buttonView.alpha = 1.0f;
+                
+                [_overlayView setSecret];
+                
+                break;
+            }
             case TGMessageImageViewOverlayProgress:
             {
                 if (_actionCircleImageView.superview == nil)
@@ -318,6 +333,11 @@ static const CGFloat additionalDataTopPadding = 6.0f;
         case TGMessageImageViewOverlayPlay:
         {
             action = TGMessageImageViewActionPlay;
+            break;
+        }
+        case TGMessageImageViewOverlaySecret:
+        {
+            action = TGMessageImageViewActionSecret;
             break;
         }
         default:

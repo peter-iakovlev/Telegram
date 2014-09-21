@@ -17,6 +17,7 @@
 @property (nonatomic, copy) UIView *(^actionSheetView)();
 @property (nonatomic, copy) UIViewController *(^viewControllerForModalPresentation)();
 @property (nonatomic, copy) void (^dismiss)(bool, bool);
+@property (nonatomic, copy) void (^dismissWhenReady)();
 
 - (void)_transitionCompleted;
 - (void)_replaceItems:(NSArray *)items focusingOnItem:(id<TGModernGalleryItem>)item;

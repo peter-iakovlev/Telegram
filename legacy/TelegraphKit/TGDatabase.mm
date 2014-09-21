@@ -6551,6 +6551,8 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
             while ([result next])
             {
                 TGMessage *message = loadMessageMediaFromQueryResult(result, dateIndex, fromIdIndex, midIndex, mediaIndex);
+                if (conversationId <= INT_MIN && [self loadMessageWithMid:message.mid].messageLifetime != 0)
+                    continue;
                 //TGLog(@"mid %d", message.mid);
                 [mediaArray addObject:message];
             }
@@ -6565,15 +6567,33 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
             while ([result next])
             {
                 TGMessage *message = loadMessageMediaFromQueryResult(result, dateIndex, fromIdIndex, midIndex, mediaIndex);
+                if (conversationId <= INT_MIN && [self loadMessageWithMid:message.mid].messageLifetime != 0)
+                    continue;
                 //TGLog(@"add mid %d", message.mid);
                 [mediaArray addObject:message];
             }
             
             if (count != NULL)
             {
-                FMResultSet *countResult = [_database executeQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM %@ WHERE cid=?", _conversationMediaTableName], [[NSNumber alloc] initWithLongLong:conversationId]];
-                if ([countResult next])
-                    *count = [countResult intForColumn:@"COUNT(*)"];
+                if (conversationId <= INT_MIN)
+                {
+                    FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT mid FROM %@ WHERE cid=?", _conversationMediaTableName], @(conversationId)];
+                    int localCount = 0;
+                    while ([result next])
+                    {
+                        TGMessage *message = [self loadMessageWithMid:[result intForColumn:@"mid"]];
+                        if (message.messageLifetime == 0)
+                            localCount++;
+                    }
+                    
+                    *count = localCount;
+                }
+                else
+                {
+                    FMResultSet *countResult = [_database executeQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM %@ WHERE cid=?", _conversationMediaTableName], [[NSNumber alloc] initWithLongLong:conversationId]];
+                    if ([countResult next])
+                        *count = [countResult intForColumn:@"COUNT(*)"];
+                }
             }
         }
         
@@ -6603,15 +6623,17 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
             extraOffset++;
             
             int mid = [result intForColumnIndex:midIndex];
-            if (mid >= 800000000)
+            if (mid >= 800000000 && mid >= maxLocalMid)
             {
-                if (mid >= maxLocalMid)
-                {
-                    extraLimit++;
-                    continue;
-                }
+                extraLimit++;
+                continue;
             }
             else if (mid >= maxMid)
+            {
+                extraLimit++;
+                continue;
+            }
+            else if (conversationId <= INT_MIN && [self loadMessageWithMid:mid].messageLifetime != 0)
             {
                 extraLimit++;
                 continue;
@@ -6641,6 +6663,8 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
                 {
                     continue;
                 }
+                else if (conversationId <= INT_MIN && [self loadMessageWithMid:mid].messageLifetime != 0)
+                    continue;
                 
                 TGMessage *message = loadMessageMediaFromQueryResult(result, dateIndex, fromIdIndex, midIndex, mediaIndex);
                 
@@ -6650,9 +6674,25 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
         
         if (count != NULL)
         {
-            FMResultSet *countResult = [_database executeQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM %@ WHERE cid=?", _conversationMediaTableName], [[NSNumber alloc] initWithLongLong:conversationId]];
-            if ([countResult next])
-                *count = [countResult intForColumn:@"COUNT(*)"];
+            if (conversationId <= INT_MIN)
+            {
+                FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT mid FROM %@ WHERE cid=?", _conversationMediaTableName], @(conversationId)];
+                int localCount = 0;
+                while ([result next])
+                {
+                    TGMessage *message = [self loadMessageWithMid:[result intForColumn:@"mid"]];
+                    if (message.messageLifetime == 0)
+                        localCount++;
+                }
+                
+                *count = localCount;
+            }
+            else
+            {
+                FMResultSet *countResult = [_database executeQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM %@ WHERE cid=?", _conversationMediaTableName], [[NSNumber alloc] initWithLongLong:conversationId]];
+                if ([countResult next])
+                    *count = [countResult intForColumn:@"COUNT(*)"];
+            }
         }
     } synchronous:true];
     

@@ -39,6 +39,7 @@
     TGMessageDeliveryState _deliveryState;
     bool _read;
     int _date;
+    int32_t _messageLifetime;
     
     NSString *_legacyThumbnailCacheUri;
     
@@ -53,6 +54,7 @@
     UITapGestureRecognizer *_unsentButtonTapRecognizer;
     
     TGInstantPreviewTouchAreaModel *_instantPreviewTouchAreaModel;
+    
     UIImageView *_temporaryHighlightView;
     
     CGPoint _boundOffset;
@@ -110,6 +112,7 @@
         _deliveryState = message.deliveryState;
         _read = !message.unread;
         _date = (int32_t)message.date;
+        _messageLifetime = message.messageLifetime;
         
         CGSize imageSize = CGSizeZero;
         _imageModel = [[TGMessageImageViewModel alloc] initWithUri:[imageInfo imageUrlForLargestSize:NULL]];
@@ -190,9 +193,40 @@
         };
         
         _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable;
+        
+        [self addSubmodel:_instantPreviewTouchAreaModel];
     }
+}
+
+- (NSString *)stringForLifetime:(int32_t)remainingSeconds
+{
+    NSString *text = nil;
     
-    [self addSubmodel:_instantPreviewTouchAreaModel];
+    if (remainingSeconds < 60)
+        text = [[NSString alloc] initWithFormat:@"%ds", remainingSeconds];
+    else if (remainingSeconds < 60 * 60)
+        text = [[NSString alloc] initWithFormat:@"%dm", (remainingSeconds + 1) / 60];
+    else if (remainingSeconds < 60 * 60 * 24)
+        text = [[NSString alloc] initWithFormat:@"%dh", (remainingSeconds + 1) / (60 * 60)];
+    else
+        text = [[NSString alloc] initWithFormat:@"%dd", (remainingSeconds + 1) / (60 * 60 * 24)];
+    
+    return text;
+}
+
+- (NSString *)defaultAdditionalDataString
+{
+    if (_messageLifetime != 0)
+        return [self stringForLifetime:_messageLifetime];
+    
+    return nil;
+}
+
+- (void)setIsSecret:(bool)isSecret
+{
+    _isSecret = isSecret;
+    
+    [self updateImageOverlay:false];
 }
 
 - (void)updateImageInfo:(TGImageInfo *)imageInfo
@@ -762,7 +796,7 @@
 
 - (int)defaultOverlayActionType
 {
-    return TGMessageImageViewOverlayNone;
+    return _isSecret ? TGMessageImageViewOverlaySecret : TGMessageImageViewOverlayNone;
 }
 
 @end

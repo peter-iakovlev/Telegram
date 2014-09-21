@@ -36,11 +36,10 @@
 
 #import "TGOverlayControllerWindow.h"
 #import "TGModernGalleryController.h"
-#import "TGModernGallerySecretImageItem.h"
-#import "TGModernGallerySecretVideoItem.h"
 #import "TGGenericPeerMediaGalleryModel.h"
 #import "TGGroupAvatarGalleryModel.h"
 #import "TGGroupAvatarGalleryItem.h"
+#import "TGSecretPeerMediaGalleryModel.h"
 
 #import "TGGenericPeerGalleryItem.h"
 #import "TGModernGalleryVideoItemView.h"
@@ -2030,7 +2029,14 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         
         if (isGallery)
         {
-            modernGallery.model = [[TGGenericPeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId atMessageId:mediaMessageItem->_message.mid allowActions:_companion.allowMessageForwarding];
+            if (mediaMessageItem->_message.messageLifetime != 0)
+            {
+                modernGallery.model = [[TGSecretPeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId messageId:mediaMessageItem->_message.mid];
+            }
+            else
+            {
+                modernGallery.model = [[TGGenericPeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId atMessageId:mediaMessageItem->_message.mid allowActions:_companion.allowMessageForwarding];
+            }
         }
         else if (isAvatar)
         {

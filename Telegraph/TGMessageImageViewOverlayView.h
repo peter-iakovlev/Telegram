@@ -22,5 +22,6 @@ typedef enum {
 - (void)setProgress:(float)progress animated:(bool)animated;
 - (void)setProgress:(float)progress cancelEnabled:(bool)cancelEnabled animated:(bool)animated;
 - (void)setPlay;
+- (void)setSecret;
 
 @end

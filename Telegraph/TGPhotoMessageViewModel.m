@@ -66,6 +66,9 @@
         if (legacyThumbnailCacheUrl != nil)
             [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUrl];
         
+        if (message.messageLifetime != 0)
+            [previewUri appendString:@"&secret=1"];
+        
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
     }
     
@@ -78,11 +81,16 @@
         
         if (_messageLifetime != 0)
         {
+            self.isSecret = true;
+            
             if (message.outgoing)
                 self.previewEnabled = false;
             else
                 [self enableInstantPreview];
         }
+        
+        if (self.isSecret)
+            [self.imageModel setAdditionalDataString:[self defaultAdditionalDataString]];
     }
     return self;
 }
@@ -142,6 +150,9 @@
             
             if (legacyThumbnailCacheUrl != nil)
                 [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUrl];
+            
+            if (message.messageLifetime != 0)
+                [previewUri appendString:@"&secret=1"];
             
             [previewImageInfo addImageWithSize:renderSize url:previewUri];
         }
