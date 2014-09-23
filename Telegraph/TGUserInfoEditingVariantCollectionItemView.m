@@ -78,7 +78,7 @@
     _titleLabel.frame = CGRectMake(leftPadding, 14.0f, titleSize.width, titleSize.height);
     
     CGSize variantSize = [_variantLabel sizeThatFits:CGSizeMake(bounds.size.width - 122.0f - 35.0f, CGFLOAT_MAX)];
-    _variantLabel.frame = CGRectMake(122.0f, 11.0f, variantSize.width, variantSize.height);
+    _variantLabel.frame = CGRectMake(bounds.size.width - variantSize.width - 35.0f, 12.0f, variantSize.width, variantSize.height);
     
     CGSize arrowSize = _arrowView.bounds.size;
     _arrowView.frame = CGRectMake(bounds.size.width - 15.0f - arrowSize.width, 18.0f, arrowSize.width, arrowSize.height);

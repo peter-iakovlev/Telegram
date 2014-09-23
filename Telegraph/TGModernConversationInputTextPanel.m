@@ -368,7 +368,7 @@ static CGRect viewFrame(UIView *view)
     dispatch_once(&onceToken, ^
     {
         CGFloat labelWidth = [TGLocalized(@"Conversation.SlideToCancel") sizeWithFont:TGSystemFontOfSize(14.0f)].width;
-        CGFloat arrowOrigin = CGFloor(([UIScreen mainScreen].bounds.size.width - labelWidth) / 2.0f) - 9.0f - 6.0f;
+        CGFloat arrowOrigin = CGFloor((TGScreenSize().width - labelWidth) / 2.0f) - 9.0f - 6.0f;
         CGFloat timerWidth = 70.0f;
         
         freeOffsetLimit = MAX(0.0f, arrowOrigin - timerWidth);

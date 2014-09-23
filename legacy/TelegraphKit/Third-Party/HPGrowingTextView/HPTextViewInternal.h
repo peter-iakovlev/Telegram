@@ -50,6 +50,8 @@
 
 + (void)addTextViewMethods;
 
+- (void)textViewEnsureSelectionVisible;
+
 @end
 
 @protocol HPTextViewInternalDelegate <NSObject>

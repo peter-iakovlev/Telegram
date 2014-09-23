@@ -9,6 +9,8 @@
 #import "TGModernGalleryController.h"
 #import "TGOverlayControllerWindow.h"
 
+#import "TGImageUtils.h"
+
 @interface TGModernMediaListController () <UICollectionViewDelegateFlowLayout, UICollectionViewDataSource>
 {
     CGSize _normalItemSize;
@@ -52,7 +54,7 @@
             [strongSelf enqueueView:itemContentView];
         };
         
-        CGSize screenSize = [UIScreen mainScreen].bounds.size;
+        CGSize screenSize = TGScreenSize();
         _widescreenWidth = MAX(screenSize.width, screenSize.height);
         
         if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)

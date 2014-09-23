@@ -234,10 +234,9 @@
     NSMutableArray *updatedModelItems = [[NSMutableArray alloc] initWithArray:_modelItems];
     
     bool changesFound = false;
-    NSInteger index = -1;
-    for (id<TGGenericPeerGalleryItem> item in updatedModelItems)
+    for (NSInteger index = 0; index < (NSInteger)updatedModelItems.count; index++)
     {
-        index++;
+        id<TGGenericPeerGalleryItem> item = updatedModelItems[index];
         
         if (messagesById[@([item messageId])] != nil)
         {
@@ -398,7 +397,7 @@
                 {
                     NSMutableArray *actions = [[NSMutableArray alloc] init];
                     
-                    if ((!TGAppDelegateInstance.autosavePhotos || [concreteItem author].uid == TGTelegraphInstance.clientUserId) && [self _isDataAvailableForSavingItemToCameraRoll:item])
+                    if ((!TGAppDelegateInstance.autosavePhotos || [concreteItem author].uid == TGTelegraphInstance.clientUserId) && [strongSelf _isDataAvailableForSavingItemToCameraRoll:item])
                     {
                         [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Preview.SaveToCameraRoll") action:@"save" type:TGActionSheetActionTypeGeneric]];
                     }

@@ -93,6 +93,9 @@ static void setDefaultMapMode(int mode)
 #pragma mark -
 
 @interface TGMapViewController () <MKMapViewDelegate>
+{
+    CLLocationManager *_locationManager;
+}
 
 @property (nonatomic) TGMapViewControllerMode mode;
 
@@ -131,6 +134,10 @@ static void setDefaultMapMode(int mode)
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
         _mode = TGMapViewControllerModePick;
+        
+        _locationManager = [[CLLocationManager alloc] init];
+        if ([_locationManager respondsToSelector:@selector(requestWhenInUseAuthorization)])
+            [_locationManager requestWhenInUseAuthorization];
     }
     return self;
 }
@@ -254,8 +261,6 @@ static void setDefaultMapMode(int mode)
     }
     
     [self.view addSubview:_mapView];
-    
-    UIImage *rawButtonImage = [UIImage imageNamed:@"MapSingleButton.png"];
     
     float retinaPixel = TGIsRetina() ? 0.5f : 0.0f;
     

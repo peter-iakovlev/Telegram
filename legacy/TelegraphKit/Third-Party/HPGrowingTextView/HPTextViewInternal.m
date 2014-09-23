@@ -56,12 +56,21 @@
         impl(self, selector, range, animated);
 }
 
+- (void)scrollRectToVisible:(CGRect)__unused rect animated:(BOOL)__unused animated
+{
+}
+
 - (void)setContentOffset:(CGPoint)contentOffset animated:(BOOL)animated
 {
     if (_freezeContentOffset)
         return;
     
     [super setContentOffset:contentOffset animated:_disableContentOffsetAnimation ? false : animated];
+}
+
+- (void)setFrame:(CGRect)frame
+{
+    [super setFrame:frame];
 }
 
 -(void)setContentOffset:(CGPoint)s
@@ -92,6 +101,7 @@
         if (caretFrame.origin.y + caretFrame.size.height > contentOffset.y + frameHeight)
             contentOffset.y = caretFrame.origin.y + caretFrame.size.height - frameHeight;
         contentOffset.y = MAX(0, contentOffset.y);
+        contentOffset.y = 0;
         
         if (!CGPointEqualToPoint(contentOffset, self.contentOffset))
             self.contentOffset = contentOffset;
@@ -101,7 +111,7 @@
 - (void)setContentSize:(CGSize)contentSize
 {
     [super setContentSize:contentSize];
-    
+ 
     [self textViewEnsureSelectionVisible];
 }
 

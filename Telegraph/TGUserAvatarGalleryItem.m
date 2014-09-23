@@ -2,6 +2,8 @@
 
 #import "TGUserAvatarGalleryItemView.h"
 
+#import "TGRemoteImageView.h"
+
 @implementation TGUserAvatarGalleryItem
 
 - (instancetype)initWithLegacyThumbnailUrl:(NSString *)legacyThumbnailUrl legacyUrl:(NSString *)legacyUrl imageSize:(CGSize)imageSize
@@ -15,6 +17,7 @@
     if (self != nil)
     {
         _legacyThumbnailUrl = legacyThumbnailUrl;
+        _legacyUrl = legacyUrl;
     }
     return self;
 }
@@ -22,6 +25,11 @@
 - (Class)viewClass
 {
     return [TGUserAvatarGalleryItemView class];
+}
+
+- (NSString *)filePath
+{
+    return [[TGRemoteImageView sharedCache] pathForCachedData:_legacyUrl];
 }
 
 @end

@@ -71,6 +71,8 @@ bool TGIsRetina();
 CGFloat TGScreenScaling();
 bool TGIsPad();
     
+CGSize TGScreenSize();
+    
 extern CGFloat TGRetinaPixel;
 
 #ifdef __cplusplus

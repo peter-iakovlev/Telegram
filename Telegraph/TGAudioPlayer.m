@@ -104,13 +104,14 @@
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
         _proximityState = proximityState;
+        bool overridePort = _proximityState && ![TGAudioPlayer isHeadsetPluggedIn];
         if (_audioSessionIsActive)
         {
             __autoreleasing NSError *error = nil;
             AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-            if (![audioSession setCategory:_proximityState ? AVAudioSessionCategoryPlayAndRecord :AVAudioSessionCategoryPlayAndRecord error:&error])
+            if (![audioSession setCategory:overridePort ? AVAudioSessionCategoryPlayAndRecord:AVAudioSessionCategoryPlayback error:&error])
                 TGLog(@"[TGAudioPlayer audio session set category failed: %@]", error);
-            if (![audioSession overrideOutputAudioPort:_proximityState ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error])
+            if (![audioSession overrideOutputAudioPort:overridePort ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error])
                 TGLog(@"[TGAudioPlayer override route failed: %@]", error);
         }
     }];
@@ -124,13 +125,14 @@
         {
             __autoreleasing NSError *error = nil;
             AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-            if (![audioSession setCategory:_proximityState ? AVAudioSessionCategoryPlayAndRecord :AVAudioSessionCategoryPlayAndRecord error:&error])
+            bool overridePort = _proximityState && ![TGAudioPlayer isHeadsetPluggedIn];
+            if (![audioSession setCategory:overridePort ? AVAudioSessionCategoryPlayAndRecord :AVAudioSessionCategoryPlayback error:&error])
                 TGLog(@"[TGAudioPlayer audio session set category failed: %@]", error);
             else if (![audioSession setActive:true error:&error])
                 TGLog(@"[TGAudioPlayer audio session activation failed: %@]", error);
             else
             {
-                if (![audioSession overrideOutputAudioPort:_proximityState ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error])
+                if (![audioSession overrideOutputAudioPort:overridePort ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error])
                     TGLog(@"[TGAudioPlayer override route failed: %@]", error);
                 
                 _audioSessionIsActive = true;
@@ -168,10 +170,10 @@
         {
             __autoreleasing NSError *error = nil;
             AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-            if (![audioSession setActive:false error:&error])
-                TGLog(@"[TGAudioPlayer audio session deactivation failed: %@]", error);
             if (![audioSession overrideOutputAudioPort:AVAudioSessionPortOverrideNone error:&error])
                 TGLog(@"[TGAudioPlayer override route failed: %@]", error);
+            if (![audioSession setActive:false error:&error])
+                TGLog(@"[TGAudioPlayer audio session deactivation failed: %@]", error);
         }
     }];
 }
@@ -181,6 +183,16 @@
     id<TGAudioPlayerDelegate> delegate = _delegate;
     if ([delegate respondsToSelector:@selector(audioPlayerDidFinishPlaying:)])
         [delegate audioPlayerDidFinishPlaying:self];
+}
+
++ (BOOL)isHeadsetPluggedIn
+{
+    AVAudioSessionRouteDescription* route = [[AVAudioSession sharedInstance] currentRoute];
+    for (AVAudioSessionPortDescription* desc in [route outputs]) {
+        if ([[desc portType] isEqualToString:AVAudioSessionPortHeadphones])
+            return YES;
+    }
+    return NO;
 }
 
 @end
