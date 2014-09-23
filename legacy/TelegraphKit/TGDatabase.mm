@@ -2278,10 +2278,15 @@ bool searchDialogsResultComparator(const std::pair<id, int> &obj1, const std::pa
                 {
                     NSString *chatTitle = [listResult stringForColumnIndex:titleIndex];
                     
-                    if ([[chatTitle lowercaseString] hasPrefix:cleanQuery])
+                    for (NSString *string in [[chatTitle lowercaseString] componentsSeparatedByString:@" "])
                     {
-                        TGConversation *conversation = loadConversationFromDatabase(listResult);
-                        searchResults.push_back(std::pair<id, int>(conversation, date));
+                        if ([string hasPrefix:cleanQuery])
+                        {
+                            TGConversation *conversation = loadConversationFromDatabase(listResult);
+                            searchResults.push_back(std::pair<id, int>(conversation, date));
+                            
+                            break;
+                        }
                     }
                 }
                 else

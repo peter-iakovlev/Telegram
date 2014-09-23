@@ -97,32 +97,35 @@
             
             NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://?", [TGGalleryPhotoDataSource uriPrefix]].length]];
             
-            [ActionStageInstance() requestActor:path options:@{
-                @"mediaId": args[@"id"],
-                @"messageId": args[@"messageId"],
-                @"conversationId": args[@"conversationId"],
-                @"uri": args[@"legacy-cache-url"],
-                @"legacy-thumbnail-cache-url": args[@"legacy-thumbnail-cache-url"],
-                @"completion": ^(bool success)
-                {
-                    if (success)
+            if (args[@"id"] != nil && args[@"messageId"] != nil && args[@"conversationId"] != nil && args[@"legacy-cache-url"] && args[@"legacy-thumbnail-cache-url"])
+            {
+                [ActionStageInstance() requestActor:path options:@{
+                    @"mediaId": args[@"id"],
+                    @"messageId": args[@"messageId"],
+                    @"conversationId": args[@"conversationId"],
+                    @"uri": args[@"legacy-cache-url"],
+                    @"legacy-thumbnail-cache-url": args[@"legacy-thumbnail-cache-url"],
+                    @"completion": ^(bool success)
                     {
-                        dispatch_async([TGCache diskCacheQueue], ^
+                        if (success)
                         {
-                            TGDataResource *result = [TGGalleryPhotoDataSource _performLoad:uri isCancelled:nil];
-                            if (completion)
-                                completion(result);
-                        });
+                            dispatch_async([TGCache diskCacheQueue], ^
+                            {
+                                TGDataResource *result = [TGGalleryPhotoDataSource _performLoad:uri isCancelled:nil];
+                                if (completion)
+                                    completion(result);
+                            });
+                        }
+                        else if (completion)
+                            completion(nil);
+                    },
+                    @"progress": ^(float value)
+                    {
+                        if (progress)
+                            progress(value);
                     }
-                    else if (completion)
-                        completion(nil);
-                },
-                @"progress": ^(float value)
-                {
-                    if (progress)
-                        progress(value);
-                }
-            } watcher:self];
+                } watcher:self];
+            }
         }
     }];
 

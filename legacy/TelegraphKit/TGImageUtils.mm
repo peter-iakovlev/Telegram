@@ -841,3 +841,20 @@ bool TGIsPad()
     
     return value;
 }
+
+CGSize TGScreenSize()
+{
+    static CGSize size;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        UIScreen *screen = [UIScreen mainScreen];
+        
+        if ([screen respondsToSelector:@selector(fixedCoordinateSpace)])
+            size = [screen.coordinateSpace convertRect:screen.bounds toCoordinateSpace:screen.fixedCoordinateSpace].size;
+        else
+            size = screen.bounds.size;
+    });
+    
+    return size;
+}

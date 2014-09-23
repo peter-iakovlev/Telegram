@@ -12,6 +12,8 @@
 #import "TGInteractiveNavigationTransition.h"
 #import "TGRTLScreenEdgePanGestureRecognizer.h"
 
+#import "TGImageUtils.h"
+
 #import <QuartzCore/QuartzCore.h>
 #import <objc/runtime.h>
 #import <objc/message.h>
@@ -166,13 +168,12 @@ static UIView *findDimmingView(UIView *view)
 {
     [super viewDidLayoutSubviews];
     
-    static CGSize screenSize;
+    CGSize screenSize = TGScreenSize();
     static Class containerClass = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
         containerClass = freedomClass(0xf045e5dfU);
-        screenSize = [[UIScreen mainScreen] bounds].size;
     });
     
     for (UIView *view in self.view.subviews)

@@ -8,16 +8,13 @@
 
 #import "TGImageViewControllerView.h"
 
+#import "TGImageUtils.h"
+
 @implementation TGImageViewControllerView
 
 - (void)setFrame:(CGRect)frame
 {
-    static CGSize screenSize;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        screenSize = [UIScreen mainScreen].bounds.size;
-    });
+    CGSize screenSize = TGScreenSize();
     
     frame.origin = CGPointZero;
     
@@ -31,12 +28,7 @@
 
 - (void)setCenter:(CGPoint)center
 {
-    static CGSize screenSize;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        screenSize = [UIScreen mainScreen].bounds.size;
-    });
+    CGSize screenSize = TGScreenSize();
     
     if (ABS(center.x - screenSize.width / 2.0f) < FLT_EPSILON)
         center.y = screenSize.height / 2.0f;
@@ -48,12 +40,7 @@
 
 - (void)setBounds:(CGRect)bounds
 {
-    static CGSize screenSize;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        screenSize = [UIScreen mainScreen].bounds.size;
-    });
+    CGSize screenSize = TGScreenSize();
     
     if (ABS(bounds.size.width - screenSize.width) < FLT_EPSILON)
         bounds.size.height = screenSize.height;

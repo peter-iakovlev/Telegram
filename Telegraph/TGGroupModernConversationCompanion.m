@@ -82,7 +82,7 @@ typedef enum {
         return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusOnline_any"), [TGStringUtils stringWithLocalizedNumber:onlineCount]];
 }
 
-- (NSString *)stringForMemberCount:(int)memberCount onlineCount:(int)onlineCount participationStatus:(TGGroupParticipationStatus)participationStatus
+- (id)stringForMemberCount:(int)memberCount onlineCount:(int)onlineCount participationStatus:(TGGroupParticipationStatus)participationStatus
 {
     if (participationStatus == TGGroupParticipationStatusKicked)
         return TGLocalized(@"Conversation.StatusKickedFromGroup");
@@ -90,10 +90,16 @@ typedef enum {
         return TGLocalized(@"Conversation.StatusLeftGroup");
     else
     {
-        if (onlineCount == 0)
+        if (onlineCount <= 1)
             return [self stringForMemberCount:memberCount];
         else
-            return [[NSString alloc] initWithFormat:@"%@, %@", [self stringForMemberCount:memberCount], [self stringForOnlineCount:onlineCount]];
+        {
+            NSString *firstPart = [[NSString alloc] initWithFormat:@"%@, ", [self stringForMemberCount:memberCount]];
+            NSString *secondPart = [self stringForOnlineCount:onlineCount];
+            NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:[firstPart stringByAppendingString:secondPart]];
+            [attributedString addAttribute:NSForegroundColorAttributeName value:TGAccentColor() range:NSMakeRange(firstPart.length, secondPart.length)];
+            return attributedString;
+        }
     }
 }
 

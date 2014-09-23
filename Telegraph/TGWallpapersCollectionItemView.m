@@ -93,7 +93,7 @@
     }
     else
     {
-        CGSize screenSize = [UIScreen mainScreen].bounds.size;
+        CGSize screenSize = TGScreenSize();
         CGFloat widescreenWidth = MAX(screenSize.width, screenSize.height);
         
         if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)

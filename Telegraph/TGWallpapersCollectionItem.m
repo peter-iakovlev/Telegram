@@ -5,6 +5,8 @@
 #import "TGWallpapersCollectionItemView.h"
 #import "TGWallpaperManager.h"
 
+#import "TGImageUtils.h"
+
 @interface TGWallpapersCollectionItem ()
 {
     NSArray *_wallpaperItems;
@@ -54,7 +56,7 @@
 {
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
     {
-        CGSize screenSize = [UIScreen mainScreen].bounds.size;
+        CGSize screenSize = TGScreenSize();
         CGFloat widescreenWidth = MAX(screenSize.width, screenSize.height);
         
         CGSize itemSize = CGSizeZero;

@@ -482,7 +482,7 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        CGSize screenSize = [UIScreen mainScreen].bounds.size;
+        CGSize screenSize = TGScreenSize();
         landscapeScreenWidth = MAX(screenSize.width, screenSize.height);
     });
 

@@ -88,7 +88,7 @@
         {
             NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://?", [TGGalleryVideoPreviewDataSource uriPrefix]].length]];
             
-            if (args[@"legacy-thumbnail-cache-url"] != nil)
+            if (args[@"legacy-thumbnail-cache-url"] != nil && args[@"id"] != nil && args[@"messageId"] != nil && args[@"conversationId"] && args[@"legacy-thumbnail-cache-url"] != nil)
             {
                 [ActionStageInstance() requestActor:path options:@{
                    @"isVideo": @true,

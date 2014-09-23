@@ -76,44 +76,44 @@
 "Presence.invisible" = "invisible";
 
 // Date
-"Month.GenJanuary" = "Enero";
-"Month.GenFebruary" = "Febrero";
-"Month.GenMarch" = "Marzo";
-"Month.GenApril" = "Abril";
-"Month.GenMay" = "May";
-"Month.GenJune" = "Junio";
-"Month.GenJuly" = "Julio";
-"Month.GenAugust" = "Agosto";
-"Month.GenSeptember" = "Septiembre";
-"Month.GenOctober" = "Octubre";
-"Month.GenNovember" = "Noviembre";
-"Month.GenDecember" = "Diciembre";
-"Month.ShortJanuary" = "Ene";
-"Month.ShortFebruary" = "Feb";
-"Month.ShortMarch" = "Mar";
-"Month.ShortApril" = "Abr";
-"Month.ShortMay" = "May";
-"Month.ShortJune" = "Jun";
-"Month.ShortJuly" = "Jul";
-"Month.ShortAugust" = "Ago";
-"Month.ShortSeptember" = "Sep";
-"Month.ShortOctober" = "Oct";
-"Month.ShortNovember" = "Nov";
-"Month.ShortDecember" = "Dic";
-"Weekday.ShortMonday" = "Lun";
-"Weekday.ShortTuesday" = "Mar";
-"Weekday.ShortWednesday" = "Mié";
-"Weekday.ShortThursday" = "Jue";
-"Weekday.ShortFriday" = "Vie";
-"Weekday.ShortSaturday" = "Sáb";
-"Weekday.ShortSunday" = "Dom";
-"Weekday.Monday" = "Lunes";
-"Weekday.Tuesday" = "Martes";
-"Weekday.Wednesday" = "Miércoles";
-"Weekday.Thursday" = "Jueves";
-"Weekday.Friday" = "Viernes";
-"Weekday.Saturday" = "Sábado";
-"Weekday.Sunday" = "Domingo";
+"Month.GenJanuary" = "enero";
+"Month.GenFebruary" = "febrero";
+"Month.GenMarch" = "marzo";
+"Month.GenApril" = "abril";
+"Month.GenMay" = "mayo";
+"Month.GenJune" = "junio";
+"Month.GenJuly" = "julio";
+"Month.GenAugust" = "agosto";
+"Month.GenSeptember" = "septiembre";
+"Month.GenOctober" = "octubre";
+"Month.GenNovember" = "noviembre";
+"Month.GenDecember" = "diciembre";
+"Month.ShortJanuary" = "ene.";
+"Month.ShortFebruary" = "feb.";
+"Month.ShortMarch" = "mar.";
+"Month.ShortApril" = "abr.";
+"Month.ShortMay" = "may.";
+"Month.ShortJune" = "jun.";
+"Month.ShortJuly" = "jul.";
+"Month.ShortAugust" = "ago.";
+"Month.ShortSeptember" = "sep.";
+"Month.ShortOctober" = "oct.";
+"Month.ShortNovember" = "nov.";
+"Month.ShortDecember" = "dic.";
+"Weekday.ShortMonday" = "lun.";
+"Weekday.ShortTuesday" = "mar.";
+"Weekday.ShortWednesday" = "mié.";
+"Weekday.ShortThursday" = "jue.";
+"Weekday.ShortFriday" = "vie.";
+"Weekday.ShortSaturday" = "sáb.";
+"Weekday.ShortSunday" = "dom.";
+"Weekday.Monday" = "lunes";
+"Weekday.Tuesday" = "martes";
+"Weekday.Wednesday" = "miércoles";
+"Weekday.Thursday" = "jueves";
+"Weekday.Friday" = "viernes";
+"Weekday.Saturday" = "sábado";
+"Weekday.Sunday" = "domingo";
 
 "Time.TodayAt" = "hoy a las %@";
 "Time.YesterdayAt" = "ayer a las %@";
@@ -182,12 +182,12 @@
 "Login.InactiveHelp" = "Ninguno de tus contactos\nusa Telegram todavía.\nTe notificaremos cuando se unan.\nTambién puedes invitar a algún amigo ahora mismo.";
 "Login.InviteButton" = "Invitar a chatear a un amigo";
 
-"Login.PhoneTitle" = "Tu Teléfono";
+"Login.PhoneTitle" = "Tu teléfono";
 "Login.PhonePlaceholder" = "Tu número de teléfono";
 "Login.CountryCode" = "Prefijo internacional";
 "Login.InvalidCountryCode" = "Prefijo internacional inválido";
 
-"Login.CodeTitle" = "Tu Código";
+"Login.CodeTitle" = "Tu código";
 
 "Login.InfoTitle" = "Tu información";
 "Login.InfoAvatarAdd" = "añadir";
@@ -282,9 +282,9 @@
 "Conversation.InputTextPlaceholder" = "Mensaje";
 "Conversation.Send" = "Enviar";
 "Conversation.typing" = "escribiendo";
-"Conversation.MessageDeliveryFailed" = "Tu mensaje no se ha enviado. Pulsa sobre \"Reenviar\" para enviar este mensaje.";
+"Conversation.MessageDeliveryFailed" = "Tu mensaje no se ha enviado. Pulsa sobre \"Enviar de nuevo\" para enviar este mensaje.";
 "Conversation.MessageDialogEdit" = "Editar";
-"Conversation.MessageDialogRetry" = "Reenviar";
+"Conversation.MessageDialogRetry" = "Enviar de nuevo";
 "Conversation.MessageDialogRetryAll" = "Reenviar %1$d mensajes";
 "Conversation.MessageDialogDelete" = "Borrar";
 "Conversation.LinkDialogOpen" = "Abrir";
@@ -372,7 +372,7 @@
 "Notification.CreatedGeoChat" = "%@ creó un lugar";
 "Notification.CreatedGeoChatWithTitle" = "%@ creó el lugar \"%@\"";
 "Notification.GeochatUserCheckedIn" = "%@ hizo check-in";
-"Notification.NewAuthDetected" = "%1$@,Hemos detectado una conexión a tu cuenta desde un nuevo dispositivo el %2$@, %3$@ a las %4$@Dispositivo: %5$@Ubicación: %6$@Si no eras tú, puedes ir a Ajustes – Ajustes de Chat – Cerrar todas las otras sesiones.\nGracias,el equipo de Telegram";
+"Notification.NewAuthDetected" = "%1$@, hemos detectado una conexión a tu cuenta desde un nuevo dispositivo el %2$@, %3$@ a las %4$@.\n\nDispositivo: %5$@\nUbicación: %6$@ \n\nSi no eras tú, puedes ir a Ajustes – Ajustes de Chat – Cerrar todas las otras sesiones.\n\nGracias, el equipo de Telegram";
 "Notification.EncryptedChatRequested" = "Chat secreto solicitado";
 "Notification.EncryptedChatAccepted" = "Chat secreto iniciado";
 "Notification.MessageLifetimeChanged" = "%1$@ activó la autodestrucción en %2$@";
@@ -623,6 +623,11 @@
 "ChatSettings.ClearOtherSessionsFailed" = "Ocurrió un error.";
 "ChatSettings.Language" = "IDIOMA";
 "ChatSettings.RevertLanguage" = "Revertir el idioma";
+"ChatSettings.Cache" = "Caché";
+
+// Usage
+"Cache.Title" = "Caché";
+"Cache.ClearCache" = "Limpiar caché";
 
 // Blocked Users
 "BlockedUsers.Title" = "Usuarios bloqueados";
@@ -651,7 +656,7 @@
 "Service.ApplyLocalizationWithWarnings" = "%@\n\n¿Aplicar traducción?";
 
 "Notification.SecretChatMessageScreenshot" = "¡Captura de pantalla!";
-"Notification.SecretChatScreenshot" = "¡Captura de pantalla tomada!";
+"Notification.SecretChatScreenshot" = "¡Captura de pantalla hecha!";
 
 // Broadcast Lists
 "DialogList.Broadcast" = "Difusión";
@@ -666,3 +671,5 @@
 // Video
 "VideoPreview.OptionSD" = "Tamaño normal (%@)";
 "VideoPreview.OptionHD" = "Alta definición (%@)";
+
+"ChatSettings.AutoPlayAudio" = "Reproducir automáticamente";

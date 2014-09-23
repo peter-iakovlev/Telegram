@@ -249,6 +249,8 @@
     internalTextViewFrame.origin = CGPointZero;
     if(!CGRectEqualToRect(_internalTextView.frame, internalTextViewFrame))
         _internalTextView.frame = internalTextViewFrame;
+    
+    //[_internalTextView textViewEnsureSelectionVisible];
 }
 
 - (BOOL)becomeFirstResponder

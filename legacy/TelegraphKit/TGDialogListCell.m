@@ -1216,7 +1216,7 @@ static UIColor *mediaTextColor = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        screenSize = [UIScreen mainScreen].bounds.size;
+        screenSize = TGScreenSize();
         widescreenWidth = MAX(screenSize.width, screenSize.height);
     });
     

@@ -56,6 +56,7 @@
         [self setTitleText:TGLocalized(@"Wallpaper.Title")];
         
         _photoLibraryItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Wallpaper.PhotoLibrary") action:@selector(photoLibraryPressed)];
+        _photoLibraryItem.deselectAutomatically = TGIsPad();
         
         NSMutableArray *wallpaperItems = [[NSMutableArray alloc] init];
         [wallpaperItems addObjectsFromArray:[[TGWallpaperManager instance] builtinWallpaperList]];
@@ -152,7 +153,7 @@
         }
         else
         {
-            CGSize screenSize = [UIScreen mainScreen].bounds.size;
+            CGSize screenSize = TGScreenSize();
             CGFloat widescreenWidth = MAX(screenSize.width, screenSize.height);
             
             if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)

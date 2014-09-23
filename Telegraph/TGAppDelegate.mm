@@ -1391,11 +1391,11 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
         {
             if (_notificationWindow == nil)
             {
-                _notificationWindow = [[TGNotificationWindow alloc] initWithFrame:CGRectZero];
+                _notificationWindow = [[TGNotificationWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                _notificationWindow.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
                 _notificationWindow.windowHeight = 20 + 44;
-                [_notificationWindow adjustToInterfaceOrientation:[[UIApplication sharedApplication] statusBarOrientation]];
+                //[_notificationWindow adjustToInterfaceOrientation:[[UIApplication sharedApplication] statusBarOrientation]];
                 _notificationWindow.windowLevel = UIWindowLevelStatusBar + 0.1f;
-                //_notificationWindow.backgroundColor = [UIColor greenColor];
             }
             
             [_notificationWindow setContentView:view];

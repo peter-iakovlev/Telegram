@@ -16,8 +16,6 @@
 @property (nonatomic, strong) NSString *watcherAction;
 @property (nonatomic, strong) NSDictionary *watcherOptions;
 
-- (void)adjustToInterfaceOrientation:(UIInterfaceOrientation)orientation;
-
 - (void)setContentView:(UIView *)view;
 - (UIView *)contentView;
 

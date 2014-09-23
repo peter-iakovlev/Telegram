@@ -9,8 +9,8 @@
 #import <QuartzCore/QuartzCore.h>
 
 #import "TGHacks.h"
-
 #import "TGFont.h"
+#import "TGImageUtils.h"
 
 #import <set>
 
@@ -169,13 +169,7 @@ static std::set<int> autorotationLockIds;
 
 + (CGSize)screenSize:(UIDeviceOrientation)orientation
 {
-    static bool mainScreenSizeInitialized = false;
-    static CGSize mainScreenSize;
-    if (!mainScreenSizeInitialized)
-    {
-        mainScreenSize = [UIScreen mainScreen].bounds.size;
-        mainScreenSizeInitialized = true;
-    }
+    CGSize mainScreenSize = TGScreenSize();
     
     CGSize size = CGSizeZero;
     if (UIDeviceOrientationIsPortrait(orientation))
@@ -187,13 +181,7 @@ static std::set<int> autorotationLockIds;
 
 + (CGSize)screenSizeForInterfaceOrientation:(UIInterfaceOrientation)orientation
 {
-    static bool mainScreenSizeInitialized = false;
-    static CGSize mainScreenSize;
-    if (!mainScreenSizeInitialized)
-    {
-        mainScreenSize = [UIScreen mainScreen].bounds.size;
-        mainScreenSizeInitialized = true;
-    }
+    CGSize mainScreenSize = TGScreenSize();
     
     CGSize size = CGSizeZero;
     if (UIInterfaceOrientationIsPortrait(orientation))
@@ -534,7 +522,7 @@ static std::set<int> autorotationLockIds;
 {
     if ([self inFormSheet])
         return UIInterfaceOrientationPortrait;
-    return (self.view.bounds.size.width >= [UIScreen mainScreen].bounds.size.height - FLT_EPSILON) ? UIInterfaceOrientationLandscapeLeft : UIInterfaceOrientationPortrait;
+    return (self.view.bounds.size.width >= TGScreenSize().height - FLT_EPSILON) ? UIInterfaceOrientationLandscapeLeft : UIInterfaceOrientationPortrait;
 }
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation

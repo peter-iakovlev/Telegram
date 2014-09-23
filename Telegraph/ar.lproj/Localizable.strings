@@ -623,6 +623,11 @@
 "ChatSettings.ClearOtherSessionsFailed" = "حدث خطأ.";
 "ChatSettings.Language" = "اللغة";
 "ChatSettings.RevertLanguage" = "Revert Language";
+"ChatSettings.Cache" = "مخبأ";
+
+// Usage
+"Cache.Title" = "مخبأ";
+"Cache.ClearCache" = "مسح الملفات المنزلة";
 
 // Blocked Users
 "BlockedUsers.Title" = "جهات الاتصال المحظورة";
@@ -666,3 +671,5 @@
 // Video
 "VideoPreview.OptionSD" = "الحجم الطبيعي (%@)";
 "VideoPreview.OptionHD" = "عالي الدقة (%@)";
+
+"ChatSettings.AutoPlayAudio" = "Autoplay Audio";

@@ -157,29 +157,6 @@ void InjectInstanceMethodFromAnotherClass(Class toClass, Class fromClass, SEL fr
 
 @end
 
-@interface UITextField (TGHacks)
-
-@end
-
-@implementation UITextField (TGHacks)
-
-- (BOOL)tg_keyboardInputShouldDelete:(id)object
-{
-    bool result = [self tg_keyboardInputShouldDelete:object];
-    
-    if (result && self.text.length == 0 && [self respondsToSelector:@selector(deleteLastBackward)])
-    {
-        dispatch_async(dispatch_get_main_queue(), ^
-        {
-            [self performSelector:@selector(deleteLastBackward)];
-        });
-    }
-    
-    return result;
-}
-
-@end
-
 #pragma mark -
 
 @implementation TGHacks
