@@ -598,7 +598,7 @@ typedef enum {
                 _messageUploadProgress[(int32_t)[nMid intValue]] = [nProgress floatValue];
             }];
             
-            [self _updateProgressForItemsInIndexSet:[[NSIndexSet alloc] initWithIndexesInRange:NSMakeRange(0, _items.count)]];
+            [self _updateProgressForItemsInIndexSet:[[NSIndexSet alloc] initWithIndexesInRange:NSMakeRange(0, _items.count)] animated:false];
         }];
     }
 }
@@ -2451,6 +2451,8 @@ typedef enum {
     }
     else if ([path isEqualToString:@"downloadManagerStateChanged"])
     {
+        bool animated = ![arguments[@"requested"] boolValue];
+        
         NSDictionary *mediaList = resource;
         
         NSMutableDictionary *messageDownloadProgress = [[NSMutableDictionary alloc] init];
@@ -2502,7 +2504,7 @@ typedef enum {
                     for (NSNumber *nProgress in changedProgresses)
                     {
                         index++;
-                        [controller updateItemProgressAtIndex:[atIndices[index] intValue] toProgress:[nProgress floatValue]];
+                        [controller updateItemProgressAtIndex:[atIndices[index] intValue] toProgress:[nProgress floatValue] animated:animated];
                     }
                 });
             }
@@ -2568,7 +2570,7 @@ typedef enum {
                         
                         for (NSNumber *nIndex in resetProgressIndices)
                         {
-                            [controller updateItemProgressAtIndex:[nIndex unsignedIntegerValue] toProgress:-1.0f];
+                            [controller updateItemProgressAtIndex:[nIndex unsignedIntegerValue] toProgress:-1.0f animated:animated];
                         }
                     });
                 }
@@ -2610,7 +2612,7 @@ typedef enum {
             }
             
             if (indexSet.count != 0)
-                [self _updateMediaStatusDataForItemsInIndexSet:indexSet];
+                [self _updateMediaStatusDataForItemsInIndexSet:indexSet animated:false];
         }];
     }
     else if ([path isEqualToString:@"/tg/service/synchronizationstate"])
@@ -2699,7 +2701,7 @@ typedef enum {
                 [self _updateMessageDeliveryFailed:mid];
                 
                 _messageUploadProgress.erase(mid);
-                [self _updateItemProgress:mid];
+                [self _updateItemProgress:mid animated:false];
             }];
         }
         else if ([messageType isEqualToString:@"messageProgress"])
@@ -2710,13 +2712,13 @@ typedef enum {
                 float progress = [message[@"progress"] floatValue];
                 
                 _messageUploadProgress[mid] = progress;
-                [self _updateItemProgress:mid];
+                [self _updateItemProgress:mid animated:true];
             }];
         }
     }
 }
 
-- (void)_updateItemProgress:(int32_t)mid
+- (void)_updateItemProgress:(int32_t)mid animated:(bool)animated
 {
 #ifdef DEBUG
     NSAssert([TGModernConversationCompanion isMessageQueue], @"Should be called on message queue");
@@ -2737,7 +2739,7 @@ typedef enum {
             TGDispatchOnMainThread(^
             {
                 TGModernConversationController *controller = self.controller;
-                [controller updateItemProgressAtIndex:index toProgress:progress];
+                [controller updateItemProgressAtIndex:index toProgress:progress animated:animated];
             });
             
             break;
@@ -2745,7 +2747,7 @@ typedef enum {
     }
 }
 
-- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)indexSet
+- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated
 {
     if (_messageUploadProgress.empty() || indexSet.count == 0)
         return;
@@ -2779,7 +2781,7 @@ typedef enum {
             for (NSNumber *nProgress in updatedProgresses)
             {
                 index++;
-                [controller updateItemProgressAtIndex:[updatedIndices[index] unsignedIntegerValue] toProgress:[nProgress floatValue]];
+                [controller updateItemProgressAtIndex:[updatedIndices[index] unsignedIntegerValue] toProgress:[nProgress floatValue] animated:animated];
             }
         });
     }
@@ -2840,7 +2842,7 @@ typedef enum {
             {
                 int32_t previousMid = (int32_t)[result[@"previousMid"] intValue];
                 _messageUploadProgress.erase(previousMid);
-                [self _updateItemProgress:previousMid];
+                [self _updateItemProgress:previousMid animated:true];
                 
                 [self _updateMessageDelivered:previousMid mid:[result[@"mid"] intValue] date:[result[@"date"] intValue] message:result[@"message"]];
             }

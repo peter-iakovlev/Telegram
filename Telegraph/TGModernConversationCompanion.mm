@@ -291,7 +291,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
         
         [TGModernConversationCompanion dispatchOnMessageQueue:^
         {
-            [self _updateMediaStatusDataForItemsInIndexSet:_tempVisibleItemsIndices];
+            [self _updateMediaStatusDataForItemsInIndexSet:_tempVisibleItemsIndices animated:false];
         }];
     }
 }
@@ -965,10 +965,10 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 
 - (void)_updateMediaStatusDataForCurrentItems
 {
-    [self _updateMediaStatusDataForItemsInIndexSet:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, _items.count)]];
+    [self _updateMediaStatusDataForItemsInIndexSet:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, _items.count)] animated:false];
 }
 
-- (void)_updateMediaStatusDataForItemsInIndexSet:(NSIndexSet *)indexSet
+- (void)_updateMediaStatusDataForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated
 {
     if (indexSet.count == 0)
         return;
@@ -1047,7 +1047,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
         });
     }
     
-    [self _updateProgressForItemsInIndexSet:indexSet];
+    [self _updateProgressForItemsInIndexSet:indexSet animated:animated];
     
     if (highPriorityDownloads.count != 0 || regularDownloads.count != 0)
     {
@@ -1129,7 +1129,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     }
 }
 
-- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)__unused indexSet
+- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)__unused indexSet animated:(bool)__unused animated
 {
 }
 
@@ -1311,7 +1311,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
                 [controller setEnableSendButton:true];
         });
         
-        [self _updateMediaStatusDataForItemsInIndexSet:insertAtIndices];
+        [self _updateMediaStatusDataForItemsInIndexSet:insertAtIndices animated:false];
         [self _updateControllerEmptyState:_items.count == 0];
     }];
 }
@@ -1601,7 +1601,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
                     [controller replaceItems:replacedItems atIndices:indexSet];
                 });
                 
-                [self _updateMediaStatusDataForItemsInIndexSet:indexSet];
+                [self _updateMediaStatusDataForItemsInIndexSet:indexSet animated:false];
             }];
         }
     }

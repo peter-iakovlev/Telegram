@@ -175,6 +175,12 @@
     else
         contentFrame.origin.y = 0;
     
+    
+    contentFrame.origin.x = floorf(contentFrame.origin.x);
+    contentFrame.origin.y = floorf(contentFrame.origin.y);
+    contentFrame.size.width = ceilf(contentFrame.size.width);
+    contentFrame.size.height = ceilf(contentFrame.size.height);
+    
     [self contentView].frame = contentFrame;
     
 #warning TODO adjusted to bounds, disable scrolling

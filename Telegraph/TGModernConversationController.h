@@ -48,7 +48,7 @@ typedef enum {
 - (void)deleteItemsAtIndices:(NSIndexSet *)indices animated:(bool)animated;
 - (void)moveItems:(NSArray *)moveIndexPairs;
 - (void)updateItemAtIndex:(NSUInteger)index toItem:(TGModernConversationItem *)updatedItem;
-- (void)updateItemProgressAtIndex:(NSUInteger)index toProgress:(float)progress;
+- (void)updateItemProgressAtIndex:(NSUInteger)index toProgress:(float)progress animated:(bool)animated;
 - (void)imageDataInvalidated:(NSString *)imageUrl;
 - (void)updateCheckedMessages;
 - (void)updateMessageAttributes:(int32_t)messageId;

@@ -6,25 +6,72 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGTabletMainViewController.h"
+
 #import <QuartzCore/QuartzCore.h>
 
 @implementation TGOverlayWindowViewController
 
-- (UIStatusBarStyle)preferredStatusBarStyle
+- (UIViewController *)statusBarAppearanceSourceController
 {
-    UIViewController *topViewController = ((UINavigationController *)TGAppDelegateInstance.mainNavigationController).topViewController;
+    UIViewController *topViewController = nil;
+    if (TGAppDelegateInstance.tabletMainViewController != nil)
+    {
+        topViewController = TGAppDelegateInstance.tabletMainViewController.detailViewController;
+    }
+    else
+    {
+        topViewController = ((UINavigationController *)TGAppDelegateInstance.mainNavigationController).topViewController;
+    }
+    
     if ([topViewController isKindOfClass:[UITabBarController class]])
         topViewController = [(UITabBarController *)topViewController selectedViewController];
-    UIStatusBarStyle style = [topViewController preferredStatusBarStyle];
+    if ([topViewController isKindOfClass:[TGViewController class]])
+    {
+        TGViewController *concreteTopViewController = (TGViewController *)topViewController;
+        if (concreteTopViewController.associatedWindowStack.count != 0)
+        {
+            for (UIWindow *window in concreteTopViewController.associatedWindowStack.reverseObjectEnumerator)
+            {
+                if (window.rootViewController != nil && window.rootViewController != self)
+                {
+                    topViewController = window.rootViewController;
+                    break;
+                }
+            }
+        }
+    }
+
+    return topViewController;
+}
+
+- (UIViewController *)autorotationSourceController
+{
+    UIViewController *topViewController = nil;
+    if (TGAppDelegateInstance.tabletMainViewController != nil)
+    {
+        topViewController = TGAppDelegateInstance.tabletMainViewController.detailViewController;
+    }
+    else
+    {
+        topViewController = ((UINavigationController *)TGAppDelegateInstance.mainNavigationController).topViewController;
+    }
+    
+    if ([topViewController isKindOfClass:[UITabBarController class]])
+        topViewController = [(UITabBarController *)topViewController selectedViewController];
+    
+    return topViewController;
+}
+
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+    UIStatusBarStyle style = [[self statusBarAppearanceSourceController] preferredStatusBarStyle];
     return style;
 }
 
 - (BOOL)prefersStatusBarHidden
 {
-    UIViewController *topViewController = ((UINavigationController *)TGAppDelegateInstance.mainNavigationController).topViewController;
-    if ([topViewController isKindOfClass:[UITabBarController class]])
-        topViewController = [(UITabBarController *)topViewController selectedViewController];
-    bool value = [topViewController prefersStatusBarHidden];
+    bool value = [[self statusBarAppearanceSourceController] prefersStatusBarHidden];
     return value;
 }
 
@@ -51,10 +98,19 @@
         }
     }
     
+    if (TGAppDelegateInstance.tabletMainViewController != nil)
+    {
+        if (TGAppDelegateInstance.tabletMainViewController.presentedViewController != nil)
+            return [TGAppDelegateInstance.tabletMainViewController.presentedViewController shouldAutorotate];
+    }
+    
     if (TGAppDelegateInstance.mainNavigationController.presentedViewController != nil)
         return [TGAppDelegateInstance.mainNavigationController.presentedViewController shouldAutorotate];
 
-    return [TGAppDelegateInstance.mainNavigationController shouldAutorotate];
+    if ([self autorotationSourceController] != nil)
+        return [[self autorotationSourceController] shouldAutorotate];
+    
+    return true;
 }
 
 - (void)loadView
@@ -289,8 +345,6 @@
             break;
         }
     }
-    
-    TGDumpViews(self.view.window, @"");
 }
 
 @end

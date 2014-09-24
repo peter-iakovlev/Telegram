@@ -96,7 +96,7 @@ void TGRequestAddressBookAccessWithCompletion(__unused ABAddressBookRef addressB
                 }
                 else
                 {
-                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:@"Enable phonebook access?" delegate:proxy cancelButtonTitle:@"No" otherButtonTitles:@"Yes", nil];
+                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:@"Enable phonebook access?" delegate:proxy cancelButtonTitle:@"No" otherButtonTitles:@"Yes", nil];
                     [alertView show];
                 }
             });

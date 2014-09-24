@@ -171,7 +171,11 @@ typedef enum {
             }
         }
         else
+        {
+            _progress = progress;
+            
             [self setNeedsDisplay];
+        }
     }
 }
 

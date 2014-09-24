@@ -46,8 +46,6 @@
 
 #import <set>
 
-static const float imageSize = 105;
-
 @interface TGImageSearchMediaItem : NSObject <TGMediaItem>
 
 @property (nonatomic) TGMediaItemType type;
@@ -150,7 +148,11 @@ static const float imageSize = 105;
 
 @property (nonatomic) bool showingSearchResultsTableView;
 @property (nonatomic, strong) UITableView *searchResultsTableView;
+
 @property (nonatomic) int imagesInRow;
+@property (nonatomic) CGFloat imageSize;
+@property (nonatomic) CGFloat inset;
+@property (nonatomic) CGFloat lineHeight;
 
 @property (nonatomic, strong) NSArray *searchResults;
 @property (nonatomic) bool canLoadMore;
@@ -243,11 +245,133 @@ static const float imageSize = 105;
     _assetsLibrary = nil;
 }
 
+- (int)assetsInRowForWidth:(CGFloat)width widescreenWidth:(CGFloat)widescreenWidth
+{
+    return (int)(width / [self imageSizeForWidth:width widescreenWidth:widescreenWidth]);
+}
+
+- (CGFloat)imageSizeForWidth:(CGFloat)width widescreenWidth:(CGFloat)widescreenWidth
+{
+    if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
+    {
+        if (widescreenWidth >= 736.0f - FLT_EPSILON)
+        {
+            if (width >= widescreenWidth - FLT_EPSILON)
+                return 103.0f;
+            else
+                return 103.0f;
+        }
+        else if (widescreenWidth >= 667.0f - FLT_EPSILON)
+        {
+            if (width >= widescreenWidth - FLT_EPSILON)
+                return 93.0f;
+            else
+                return 93.0f;
+        }
+        else if (widescreenWidth >= 540 - FLT_EPSILON)
+        {
+            if (width >= widescreenWidth - FLT_EPSILON)
+                return 84.0f;
+            else
+                return 84.0f;
+        }
+        else
+        {
+            if (width >= widescreenWidth - FLT_EPSILON)
+                return 78.0f;
+            else
+                return 78.5f;
+        }
+    }
+    else
+    {
+        if (width >= widescreenWidth - FLT_EPSILON)
+            return 78.0f;
+        else
+            return 78.0f;
+    }
+}
+
+- (CGFloat)lineSpacingForWidth:(CGFloat)width widescreenWidth:(CGFloat)widescreenWidth
+{
+    if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
+    {
+        if (widescreenWidth >= 736.0f - FLT_EPSILON)
+        {
+            if (width >= widescreenWidth - FLT_EPSILON)
+                return 2.0f;
+            else
+                return 1.0f;
+        }
+        else if (widescreenWidth >= 667.0f - FLT_EPSILON)
+        {
+            if (width >= widescreenWidth - FLT_EPSILON)
+                return 2.0f;
+            else
+                return 1.0f;
+        }
+        else
+        {
+            if (width >= widescreenWidth - FLT_EPSILON)
+                return 3.0f;
+            else
+                return 2.0f;
+        }
+    }
+    else
+    {
+        if (width >= widescreenWidth - FLT_EPSILON)
+            return 2.0f;
+        else
+            return 2.0f;
+    }
+}
+
+- (CGFloat)lineHeightForWidth:(CGFloat)width widescreenWidth:(CGFloat)widescreenWidth
+{
+    return [self lineSpacingForWidth:width widescreenWidth:widescreenWidth] + [self imageSizeForWidth:width widescreenWidth:widescreenWidth];
+}
+
+- (CGFloat)insetForWidth:(CGFloat)width widescreenWidth:(CGFloat)widescreenWidth
+{
+    if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
+    {
+        if (widescreenWidth >= 736.0f - FLT_EPSILON)
+        {
+            if (width >= widescreenWidth - FLT_EPSILON)
+                return 2.0f;
+            else
+                return 0.0f;
+        }
+        else if (widescreenWidth >= 667.0f - FLT_EPSILON)
+        {
+            if (width >= widescreenWidth - FLT_EPSILON)
+                return 2.0f;
+            else
+                return 0.0f;
+        }
+        else
+        {
+            if (width >= widescreenWidth - FLT_EPSILON)
+                return 1.0f;
+            else
+                return 0.0f;
+        }
+    }
+    else
+    {
+        if (width >= widescreenWidth - FLT_EPSILON)
+            return 1.0f;
+        else
+            return 0.0f;
+    }
+}
+
 - (void)loadView
 {
     [super loadView];
     
-    CGSize screenSize = [self referenceViewSizeForOrientation:[[UIApplication sharedApplication] statusBarOrientation]];
+    CGSize screenSize = [self referenceViewSizeForOrientation:[self currentInterfaceOrientation]];
     
     dispatchOnAssetsProcessingQueue(^
     {
@@ -257,7 +381,12 @@ static const float imageSize = 105;
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(assetsLibraryDidChange:) name:ALAssetsLibraryChangedNotification object:_assetsLibrary];
     });
     
-    _imagesInRow = (int)(screenSize.width / (imageSize));
+    CGFloat widescreenWidth = MAX(screenSize.width, screenSize.height);
+    
+    _imagesInRow = [self assetsInRowForWidth:screenSize.width widescreenWidth:widescreenWidth];
+    _imageSize = [self imageSizeForWidth:screenSize.width widescreenWidth:widescreenWidth];
+    _lineHeight = [self lineHeightForWidth:screenSize.width widescreenWidth:[self referenceViewSizeForOrientation:UIInterfaceOrientationLandscapeLeft].width];
+    _inset = [self insetForWidth:screenSize.width widescreenWidth:[self referenceViewSizeForOrientation:UIInterfaceOrientationLandscapeLeft].width];
     
     _hideSearchId = -1;
     
@@ -572,14 +701,25 @@ static const float imageSize = 105;
     CGAffineTransform tableTransform = _searchResultsTableView.transform;
     _searchResultsTableView.transform = CGAffineTransformIdentity;
     
-    CGSize screenSize = [self referenceViewSizeForOrientation:(self.view.bounds.size.width > 320 + FLT_EPSILON) ? UIInterfaceOrientationLandscapeLeft : UIInterfaceOrientationPortrait];
+    CGSize screenSize = [self referenceViewSizeForOrientation:[self currentInterfaceOrientation]];
     
     CGRect tableFrame = CGRectMake(0, 0, screenSize.width, screenSize.height);
     _searchResultsTableView.frame = tableFrame;
     
-    int imagesInRow = (int)(_searchResultsTableView.frame.size.width / (75 + 4));
+    CGFloat widescreenWidth = MAX(screenSize.width, screenSize.height);
+    
+    int imagesInRow = [self assetsInRowForWidth:screenSize.width widescreenWidth:widescreenWidth];
+    CGFloat imageSize = [self imageSizeForWidth:screenSize.width widescreenWidth:widescreenWidth];
+    CGFloat lineHeight = [self lineHeightForWidth:screenSize.width widescreenWidth:[self referenceViewSizeForOrientation:UIInterfaceOrientationLandscapeLeft].width];
+    CGFloat inset = [self insetForWidth:screenSize.width widescreenWidth:[self referenceViewSizeForOrientation:UIInterfaceOrientationLandscapeLeft].width];
+    
     if (imagesInRow != _imagesInRow)
     {
+        _imagesInRow = imagesInRow;
+        _imageSize = imageSize;
+        _lineHeight = lineHeight;
+        _inset = inset;
+        
         [_searchResultsTableView reloadData];
     }
     
@@ -687,7 +827,12 @@ static const float imageSize = 105;
         CGRect tableFrame = CGRectMake(0, 0, screenSize.width, screenSize.height);
         _searchResultsTableView.frame = tableFrame;
         
-        _imagesInRow = (int)(screenSize.width / (imageSize));
+        CGFloat widescreenWidth = MAX(screenSize.width, screenSize.height);
+        
+        _imagesInRow = [self assetsInRowForWidth:screenSize.width widescreenWidth:widescreenWidth];
+        _imageSize = [self imageSizeForWidth:screenSize.width widescreenWidth:widescreenWidth];
+        _lineHeight = [self lineHeightForWidth:screenSize.width widescreenWidth:[self referenceViewSizeForOrientation:UIInterfaceOrientationLandscapeLeft].width];
+        _inset = [self insetForWidth:screenSize.width widescreenWidth:[self referenceViewSizeForOrientation:UIInterfaceOrientationLandscapeLeft].width];
         
         [_searchResultsTableView reloadData];
         
@@ -992,7 +1137,7 @@ static const float imageSize = 105;
     {
         int rowStartIndex = indexPath.row * _imagesInRow;
         if (rowStartIndex < _searchResults.count)
-            return imageSize + 4;
+            return _lineHeight;
         return 26;
     }
     else if (tableView == _searchHistoryTableView)
@@ -1033,11 +1178,11 @@ static const float imageSize = 105;
             TGImagePickerCell *imageCell = (TGImagePickerCell *)[tableView dequeueReusableCellWithIdentifier:imageCellIdentifier];
             if (imageCell == nil)
             {
-                imageCell = [[TGImagePickerCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:imageCellIdentifier selectionControls:!_avatarSelectionMode imageSize:imageSize];
+                imageCell = [[TGImagePickerCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:imageCellIdentifier selectionControls:!_avatarSelectionMode imageSize:_imageSize];
                 imageCell.selectionStyle = UITableViewCellSelectionStyleNone;
             }
             
-            [imageCell resetImages:_imagesInRow imageSize:imageSize inset:0.0f];
+            [imageCell resetImages:_imagesInRow imageSize:_imageSize inset:_inset];
             
             int assetListCount = _searchResults.count;
             for (int i = rowStartIndex; i < rowStartIndex + _imagesInRow && i < assetListCount; i++)

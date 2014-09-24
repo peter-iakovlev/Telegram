@@ -5859,28 +5859,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                         int messageLifetime = [result intForColumnIndex:messageLifetimeIndex];
                         if (messageLifetime != 0)
                         {
-                            bool hasSecretMedia = false;
-
-                            for (TGMediaAttachment *attachment in [TGMessage parseMediaAttachments:[result dataForColumnIndex:mediaIndex]])
-                            {
-                                switch (attachment.type)
-                                {
-                                    case TGImageMediaAttachmentType:
-                                    case TGVideoMediaAttachmentType:
-                                    {
-                                        hasSecretMedia = true;
-                                        break;
-                                    }
-                                    default:
-                                        break;
-                                }
-                                
-                                if (hasSecretMedia)
-                                    break;
-                            }
-                            
-                            if (!hasSecretMedia)
-                                midsWithLifetime.push_back(std::pair<int, int>(mid, messageLifetime));
+                            midsWithLifetime.push_back(std::pair<int, int>(mid, messageLifetime));
                         }
                     }
                 }
@@ -6062,28 +6041,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             
             if (lifetime != 0)
             {
-                bool hasSecretMedia = false;
-
-                for (TGMediaAttachment *attachment in [TGMessage parseMediaAttachments:[result dataForColumn:@"media"]])
-                {
-                    switch (attachment.type)
-                    {
-                        case TGImageMediaAttachmentType:
-                        case TGVideoMediaAttachmentType:
-                        {
-                            hasSecretMedia = true;
-                            break;
-                        }
-                        default:
-                            break;
-                    }
-                    
-                    if (hasSecretMedia)
-                        break;
-                }
-                
-                if (!hasSecretMedia)
-                    midWithLifetime.push_back(std::pair<int, int>(mid, lifetime));
+                midWithLifetime.push_back(std::pair<int, int>(mid, lifetime));
             }
         }
         

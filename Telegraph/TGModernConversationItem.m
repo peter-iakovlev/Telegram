@@ -91,7 +91,7 @@
 {
 }
 
-- (void)updateProgress:(float)__unused progress viewStorage:(TGModernViewStorage *)__unused viewStorage
+- (void)updateProgress:(float)__unused progress viewStorage:(TGModernViewStorage *)__unused viewStorage animated:(bool)__unused animated
 {
 }
 

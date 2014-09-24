@@ -239,21 +239,4 @@
     return difference;
 }
 
-/*#ifdef DEBUG
-- (NSString *)photoUrlBig
-{
-    return nil;
-}
-
-- (NSString *)photoUrlMedium
-{
-    return nil;
-}
-
-- (NSString *)photoUrlSmall
-{
-    return nil;
-}
-#endif*/
-
 @end

@@ -151,7 +151,7 @@
 "Tour.Text5" = "**Telegram** te permite acceder a tus\nmensajes desde múltiples dispositivos.";
 
 "Tour.Title6" = "Gratis";
-"Tour.Text6" = "**Telegram** es gratis para siempre. Sin avisos.\nSin cuotas de suscripción.";
+"Tour.Text6" = "**Telegram** es gratis para siempre. \nSin publicidad ni suscripciones.";
 
 "Tour.Title7" = "Privada";
 "Tour.Text7" = "Los mensajes de **Telegram** están fuertemente cifrados y se pueden autodestruir.";
@@ -291,7 +291,7 @@
 "Conversation.LinkDialogCopy" = "Copiar";
 "Conversation.EditDelete" = "Borrar";
 "Conversation.EditForward" = "Reenviar";
-"Conversation.ForwardToPrefix" = "Reenviar a ";
+"Conversation.ForwardToPrefix" = "¿Reenviar a ";
 "Conversation.ForwardTitle" = "Reenviar";
 "Conversation.ForwardChats" = "Chats";
 "Conversation.ForwardContacts" = "Contactos";
@@ -323,11 +323,11 @@
 "Conversation.EmptyPlaceholder" = "No hay mensajes aquí todavía...";
 "Conversation.EncryptedPlaceholderTitleIncoming" = "%@ te ha invitado a un chat secreto.";
 "Conversation.EncryptedPlaceholderTitleOutgoing" = "Has invitado a %@ a un chat secreto.";
-"Conversation.EncryptedDescriptionTitle" = "Los Chats Secretos:";
-"Conversation.EncryptedDescription1" = "Usan cifrado de móvil-a-móvil";
-"Conversation.EncryptedDescription2" = "No dejan rastro en nuestros servidores";
-"Conversation.EncryptedDescription3" = "Tienen autodestrucción de mensajes";
-"Conversation.EncryptedDescription4" = "No permiten el reenvío de mensajes";
+"Conversation.EncryptedDescriptionTitle" = "Los chats secretos:";
+"Conversation.EncryptedDescription1" = "Usan cifrado end-to-end";
+"Conversation.EncryptedDescription2" = "No dejan rastro en el servidor";
+"Conversation.EncryptedDescription3" = "Tienen autodestrucción";
+"Conversation.EncryptedDescription4" = "No reenvían mensajes";
 "Conversation.EncryptedForwardingAlert" = "Lo siento, no puedes reenviar un mensaje desde un chat secreto.";
 "Conversation.ContextMenuCopy" = "Copiar";
 "Conversation.ContextMenuDelete" = "Borrar";
@@ -497,7 +497,7 @@
 "SecretChat.Title" = "Chat secreto";
 
 // Group Info
-"GroupInfo.Title" = "Info. del grupo";
+"GroupInfo.Title" = "Información";
 "GroupInfo.GroupNamePlaceholder" = "Nombre del grupo";
 "GroupInfo.BroadcastListNamePlaceholder" = "Nombre de la lista";
 "GroupInfo.SetGroupPhoto" = "Poner foto del grupo";
@@ -586,13 +586,13 @@
 "Notifications.MessageNotificationsAlert" = "Alerta";
 "Notifications.MessageNotificationsPreview" = "Vista previa en la app";
 "Notifications.MessageNotificationsSound" = "Sonidos";
-"Notifications.MessageNotificationsHelp" = "Puedes establecer una notificación personalizada para un usuario específico en la Info. del Usuario";
+"Notifications.MessageNotificationsHelp" = "Puedes establecer notificaciones específicas en la información del usuario";
 
 "Notifications.GroupNotifications" = "NOTIFICACIONES PARA GRUPO";
 "Notifications.GroupNotificationsAlert" = "Alerta";
 "Notifications.GroupNotificationsPreview" = "Vista previa en la app";
 "Notifications.GroupNotificationsSound" = "Sonidos";
-"Notifications.GroupNotificationsHelp" = "Puedes establecer una notificación personalizada para un grupo específico en la Info. del Grupo";
+"Notifications.GroupNotificationsHelp" = "Puedes establecer notificationes específicas en la información del grupo";
 
 "Notifications.TextTone" = "Tonos";
 "Notifications.AlertTones" = "TONOS DE ALERTA";
@@ -605,7 +605,7 @@
 
 "Notifications.Reset" = "Reiniciar";
 "Notifications.ResetAllNotifications" = "Restablecer todas las notificaciones";
-"Notifications.ResetAllNotificationsHelp" = "Deshacer todas las notificaciones personalizadas para todos tus usuarios y grupos";
+"Notifications.ResetAllNotificationsHelp" = "Deshacer las notificaciones personalizadas para todos los usuarios y grupos";
 
 // Chat Settings
 "ChatSettings.Title" = "Ajustes de chat";
@@ -619,7 +619,7 @@
 "ChatSettings.Security" = "SEGURIDAD";
 "ChatSettings.ClearOtherSessions" = "Cerrar todas las otras sesiones";
 "ChatSettings.ClearOtherSessionsHelp" = "Cerrar sesión en todos los dispositivos, excepto este.";
-"ChatSettings.ClearOtherSessionsConfirmation" = "¿Estás seguro de que quieres finalizar la sesión de todos los dispositivos, excepto este?";
+"ChatSettings.ClearOtherSessionsConfirmation" = "¿Estás seguro que quieres finalizar la sesión de todos los dispositivos, excepto este?";
 "ChatSettings.ClearOtherSessionsFailed" = "Ocurrió un error.";
 "ChatSettings.Language" = "IDIOMA";
 "ChatSettings.RevertLanguage" = "Revertir el idioma";
@@ -673,3 +673,6 @@
 "VideoPreview.OptionHD" = "Alta definición (%@)";
 
 "ChatSettings.AutoPlayAudio" = "Reproducir automáticamente";
+
+"Settings.LogoutConfirmationTitle" = "¿Quieres cerrar sesión?";
+"Settings.LogoutConfirmationText" = "\nConsidera que puedes usar Telegram en todos tus dispositivos a la vez.\n\nRecuerda que, al cerrar sesión, eliminas todos tus chats secretos.";

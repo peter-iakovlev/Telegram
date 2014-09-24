@@ -11,6 +11,8 @@
 
 #import "TGLabel.h"
 
+#import "TGAlertView.h"
+
 #import <AVFoundation/AVFoundation.h>
 
 @interface TGWebController () <UIWebViewDelegate, UIActionSheetDelegate, UIScrollViewDelegate>
@@ -544,7 +546,7 @@
     if (error.code == -999)
         return;
     
-    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Web.Error") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Web.Error") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
     [alertView show];
     
     [self updateWebInterface];

@@ -235,7 +235,7 @@
         {
             [TGViewController setUseExperimentalRTL:switchItem.isOn];
             
-            [[[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"ChatSettings.LayoutSettingsNeedsAppRestart") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"ChatSettings.LayoutSettingsNeedsAppRestart") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
         }
     }
 }

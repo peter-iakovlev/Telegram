@@ -43,7 +43,7 @@ typedef enum {
 - (CGSize)sizeForContainerSize:(CGSize)containerSize;
 
 - (void)updateToItem:(TGModernConversationItem *)updatedItem viewStorage:(TGModernViewStorage *)viewStorage;
-- (void)updateProgress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage;
+- (void)updateProgress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated;
 - (void)updateInlineMediaContext;
 - (void)updateAnimationsEnabled;
 - (void)stopInlineMedia;

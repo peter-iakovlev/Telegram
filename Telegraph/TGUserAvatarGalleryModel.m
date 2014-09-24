@@ -11,11 +11,14 @@
 
 #import "TGActionSheet.h"
 
+#import "TGAlertView.h"
+
 #import <AssetsLibrary/AssetsLibrary.h>
 
 @interface TGUserAvatarGalleryModel () <ASWatcher>
 {
     int64_t _peerId;
+    TGUserAvatarGalleryItem *_firstItem;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -42,13 +45,12 @@
             }];
         } synchronous:true];
         
+        _firstItem = [self itemForImageId:0 accessHash:0 legacyThumbnailUrl:currentAvatarLegacyThumbnailImageUri legacyUrl:currentAvatarLegacyImageUri imageSize:currentAvatarImageSize];
+        
         if (imageMediaList.count != 0)
             [self _replaceItemsFromImageMediaList:imageMediaList focusOnFirst:true];
         else
-        {
-            TGUserAvatarGalleryItem *item = [self itemForImageId:0 accessHash:0 legacyThumbnailUrl:currentAvatarLegacyThumbnailImageUri legacyUrl:currentAvatarLegacyImageUri imageSize:currentAvatarImageSize];
-            [self _replaceItems:@[item] focusingOnItem:item];
-        }
+            [self _replaceItems:@[_firstItem] focusingOnItem:_firstItem];
     }
     return self;
 }
@@ -103,10 +105,20 @@
     }];
     
     NSMutableArray *updatedItems = [[NSMutableArray alloc] init];
+    NSInteger index = -1;
     for (TGImageMediaAttachment *imageMedia in sortedResult)
     {
-        NSString *legacyThumbnailUrl = [imageMedia.imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL];
+        index++;
+        
+        NSString *legacyThumbnailUrl = [imageMedia.imageInfo closestImageUrlWithSize:CGSizeMake(640.0f, 640.0f) resultingSize:NULL];
         NSString *legacyUrl = [imageMedia.imageInfo imageUrlForLargestSize:NULL];
+        
+        if (index == 0 && _firstItem != nil)
+        {
+            legacyThumbnailUrl = _firstItem.legacyThumbnailUrl;
+            legacyUrl = _firstItem.legacyUrl;
+        }
+        
         TGUserAvatarGalleryItem *item = [self itemForImageId:imageMedia.imageId accessHash:imageMedia.accessHash legacyThumbnailUrl:legacyThumbnailUrl legacyUrl:legacyUrl imageSize:CGSizeMake(640.0f, 640.0f)];
         [updatedItems addObject:item];
     }
@@ -129,7 +141,7 @@
         TGDispatchOnMainThread(^
         {
             if (status == ASStatusSuccess && ((NSArray *)result).count != 0)
-            {
+            {   
                 [self _replaceItemsFromImageMediaList:result focusOnFirst:false];
             }
         });
@@ -209,7 +221,7 @@
         {
             dispatch_async(dispatch_get_main_queue(), ^
             {
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:nil];
+                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:nil];
                 [alertView show];
             });
         }

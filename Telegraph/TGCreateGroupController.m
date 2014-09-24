@@ -20,6 +20,8 @@
 
 #import "TGProgressWindow.h"
 
+#import "TGAlertView.h"
+
 @interface TGCreateGroupController ()
 {
     NSArray *_userIds;
@@ -178,7 +180,7 @@
             }
             else
             {
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"ConversationProfile.ErrorCreatingConversation") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"ConversationProfile.ErrorCreatingConversation") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                 [alertView show];
             }
         });

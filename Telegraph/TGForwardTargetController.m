@@ -13,6 +13,8 @@
 #import "TGImageUtils.h"
 #import "TGBackdropView.h"
 
+#import "TGAlertView.h"
+
 @interface TGForwardContactsController : TGContactsController
 
 @property (nonatomic, strong) ASHandle *watcher;
@@ -450,7 +452,7 @@
                     else
                         alertText = [NSString stringWithFormat:@"%@%@?", _confirmationPrefix, user.displayName];
                     
-                    _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                    _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
                     [_currentAlert show];
                 }
             }
@@ -490,7 +492,7 @@
                     else
                         alertText = [NSString stringWithFormat:@"%@\"%@\"?", _confirmationPrefix, conversation.chatTitle];
                     
-                    _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                    _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
                     [_currentAlert show];
                 }
                 else
@@ -524,7 +526,7 @@
                             else
                                 alertText = [NSString stringWithFormat:@"%@%@?", _confirmationPrefix, user.displayName];
                             
-                            _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                            _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
                             [_currentAlert show];
                         }
                     }

@@ -23,6 +23,8 @@
 
 #import "TGSynchronizeContactsActor.h"
 
+#import "TGAlertView.h"
+
 @interface TGCreateContactController () <TGUserInfoEditingPhoneCollectionItemDelegate, TGPhoneLabelPickerControllerDelegate>
 {
     int32_t _uid;
@@ -418,7 +420,7 @@
             {
                 self.view.userInteractionEnabled = true;
                 
-                [[[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Profile.PhonebookAccessDisabled") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Profile.PhonebookAccessDisabled") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
             });
         }
         else

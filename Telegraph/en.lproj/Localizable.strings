@@ -684,3 +684,9 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 "VideoPreview.OptionHD" = "High Definition (%@)";
 
 "ChatSettings.AutoPlayAudio" = "Autoplay Audio";
+
+"Settings.LogoutConfirmationTitle" = "Log out?";
+"Settings.LogoutConfirmationText" = "
+Note that you can seamlessly use Telegram on all your devices at once.
+
+Remember, logging out kills all your Secret Chats.";

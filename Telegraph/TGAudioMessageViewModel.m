@@ -348,13 +348,14 @@ static UIImage *cancelImageWithColor(UIColor *color, bool incoming)
     [self updateButtonText:false];
 }
         
-- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage
+- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated
 {
-    [super updateProgress:progressVisible progress:progress viewStorage:viewStorage];
+    [super updateProgress:progressVisible progress:progress viewStorage:viewStorage animated:animated];
+    
     _progressVisible = progressVisible;
     _progress = progress;
     
-    [self updateButtonText:_progress < 0.01f ? false : true];
+    [self updateButtonText:animated && (_progress < 0.01f ? false : true)];
 }
 
 - (void)updateInlineMediaContext

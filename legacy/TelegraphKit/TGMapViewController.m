@@ -17,6 +17,8 @@
 
 #import "TGActionSheet.h"
 
+#import "TGAlertView.h"
+
 typedef enum {
     TGMapViewControllerModePick = 0,
     TGMapViewControllerModeMap = 1
@@ -484,7 +486,7 @@ static void setDefaultMapMode(int mode)
         
         if (_locationServicesDisabled && _mode == TGMapViewControllerModePick)
         {
-            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Map.AccessDeniedError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+            TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Map.AccessDeniedError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
             [alertView show];
         }
     }
@@ -773,7 +775,7 @@ static void setDefaultMapMode(int mode)
     {
         if (_locationServicesDisabled)
         {
-            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Map.AccessDeniedError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+            TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Map.AccessDeniedError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
             [alertView show];
         }
         [self updateLocationAvailability];

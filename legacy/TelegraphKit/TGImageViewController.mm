@@ -31,6 +31,8 @@
 
 #import "TGImageViewControllerView.h"
 
+#import "TGAlertView.h"
+
 #define TGDeletePhotoActionSheetTag ((int)0x4B57F962)
 #define TGDeleteActionsActionSheetTag ((int)0x675697E8)
 
@@ -716,7 +718,7 @@
         {
             dispatch_async(dispatch_get_main_queue(), ^
             {
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Preview.VideoNotYetDownloaded") delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:TGLocalized(@"Common.OK"), nil];
+                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Preview.VideoNotYetDownloaded") delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:TGLocalized(@"Common.OK"), nil];
                 [alertView show];
             });
         }
@@ -737,7 +739,7 @@
         {
             dispatch_async(dispatch_get_main_queue(), ^
             {
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:nil];
+                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:nil];
                 [alertView show];
             });
         }

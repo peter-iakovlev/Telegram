@@ -134,9 +134,9 @@ typedef enum {
 
 - (void)_updateMessageItemsWithData:(NSArray *)items;
 - (void)_updateMediaStatusDataForCurrentItems;
-- (void)_updateMediaStatusDataForItemsInIndexSet:(NSIndexSet *)indexSet;
+- (void)_updateMediaStatusDataForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated;
 - (void)_downloadMediaInMessage:(TGMessage *)message highPriority:(bool)highPriority;
-- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)indexSet;
+- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated;
 - (TGMessageModernConversationItem *)_updateMediaStatusData:(TGMessageModernConversationItem *)item;
 - (void)_updateImportantMediaStatusDataInplace:(TGMessageModernConversationItem *)item;
 

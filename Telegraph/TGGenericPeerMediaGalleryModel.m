@@ -25,6 +25,9 @@
 #import <AssetsLibrary/AssetsLibrary.h>
 
 #import "TGForwardTargetController.h"
+#import "TGProgressWindow.h"
+
+#import "TGAlertView.h"
 
 @interface TGGenericPeerMediaGalleryModel () <ASWatcher>
 {
@@ -397,9 +400,12 @@
                 {
                     NSMutableArray *actions = [[NSMutableArray alloc] init];
                     
-                    if ((!TGAppDelegateInstance.autosavePhotos || [concreteItem author].uid == TGTelegraphInstance.clientUserId) && [strongSelf _isDataAvailableForSavingItemToCameraRoll:item])
+                    if ([strongSelf _isDataAvailableForSavingItemToCameraRoll:item])
                     {
-                        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Preview.SaveToCameraRoll") action:@"save" type:TGActionSheetActionTypeGeneric]];
+                        if (([concreteItem isKindOfClass:[TGGenericPeerMediaGalleryImageItem class]] && (!TGAppDelegateInstance.autosavePhotos || [concreteItem author].uid == TGTelegraphInstance.clientUserId)) || [concreteItem isKindOfClass:[TGGenericPeerMediaGalleryVideoItem class]])
+                        {
+                            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Preview.SaveToCameraRoll") action:@"save" type:TGActionSheetActionTypeGeneric]];
+                        }
                     }
                     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Preview.ForwardViaTelegram") action:@"forward" type:TGActionSheetActionTypeGeneric]];
                     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
@@ -455,21 +461,34 @@
     if (data == nil)
         return;
     
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    [progressWindow show:true];
+    
     ALAssetsLibrary *assetsLibrary = [[ALAssetsLibrary alloc] init];
     
     __block __strong ALAssetsLibrary *blockLibrary = assetsLibrary;
     [assetsLibrary writeImageDataToSavedPhotosAlbum:data metadata:nil completionBlock:^(NSURL *assetURL, NSError *error)
     {
+        TGDispatchOnMainThread(^
+        {
+            if (error != nil)
+                [progressWindow dismiss:true];
+            else
+                [progressWindow dismissWithSuccess];
+        });
+        
         if (error != nil)
         {
             dispatch_async(dispatch_get_main_queue(), ^
             {
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:nil];
+                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:nil];
                 [alertView show];
             });
         }
         else
+        {
             TGLog(@"Saved to %@", assetURL);
+        }
         
         blockLibrary = nil;
     }];
@@ -480,16 +499,27 @@
     if (filePath == nil)
         return;
     
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    [progressWindow show:true];
+    
     ALAssetsLibrary *assetsLibrary = [[ALAssetsLibrary alloc] init];
     
     __block __strong ALAssetsLibrary *blockLibrary = assetsLibrary;
     [assetsLibrary writeVideoAtPathToSavedPhotosAlbum:[NSURL fileURLWithPath:filePath] completionBlock:^(NSURL *assetURL, NSError *error)
     {
+        TGDispatchOnMainThread(^
+        {
+            if (error != nil)
+                [progressWindow dismiss:true];
+            else
+                [progressWindow dismissWithSuccess];
+        });
+
         if (error != nil)
         {
             dispatch_async(dispatch_get_main_queue(), ^
             {
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:nil];
+                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:nil];
                 [alertView show];
             });
         }

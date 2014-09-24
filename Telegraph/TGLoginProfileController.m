@@ -31,6 +31,8 @@
 
 #import "TGTextField.h"
 
+#import "TGAlertView.h"
+
 #define TG_USE_CUSTOM_CAMERA false
 
 #if TG_USE_CUSTOM_CAMERA
@@ -723,7 +725,7 @@
                 else if (resultCode == TGSignUpResultInvalidLastName)
                     errorText = TGLocalized(@"Login.InvalidLastNameError");
                 
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                 [alertView show];
             }
         });
