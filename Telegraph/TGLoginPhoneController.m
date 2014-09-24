@@ -35,6 +35,8 @@
 
 #import "TGSendCodeRequestBuilder.h"
 
+#import "TGAlertView.h"
+
 @interface TGLoginPhoneController () <UITextFieldDelegate>
 {
     UIView *_grayBackground;
@@ -816,7 +818,7 @@
                 else if (resultCode == TGSendCodeErrorNetwork)
                     errorText = TGLocalized(@"Login.NetworkError");
                 
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                 [alertView show];
             }
         });

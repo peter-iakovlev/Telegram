@@ -182,8 +182,10 @@
     [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage];
 }
 
-- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage
+- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated
 {
+    [super updateProgress:progressVisible progress:progress viewStorage:viewStorage animated:animated];
+    
     _progressVisible = progressVisible;
     
     NSString *labelText = nil;
@@ -212,8 +214,6 @@
     }
     
     [self.imageModel setAdditionalDataString:labelText];
-    
-    [super updateProgress:progressVisible progress:progress viewStorage:viewStorage];
 }
 
 - (NSString *)filterForMessage:(TGMessage *)message imageSize:(CGSize)imageSize sourceSize:(CGSize)sourceSize
@@ -234,7 +234,7 @@
 
 - (bool)instantPreviewGesture
 {
-    return _messageLifetime != 0;
+    return false;
 }
 
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition

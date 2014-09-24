@@ -477,6 +477,7 @@ typedef enum {
 {
     [super loadView];
     
+    self.view.clipsToBounds = true;
     self.view.backgroundColor = [UIColor whiteColor];
     
     _backgroundView = [[UIImageView alloc] initWithFrame:self.view.bounds];
@@ -791,6 +792,7 @@ typedef enum {
         {
             [self.view addSubview:_currentInputPanel];
             [_currentInputPanel adjustForOrientation:self.interfaceOrientation keyboardHeight:_keyboardHeight duration:0.0 animationCurve:0];
+            _currentInputPanel.frame = CGRectMake(_currentInputPanel.frame.origin.x, [self collectionViewSizeForInterfaceOrientation:self.interfaceOrientation].height, _currentInputPanel.frame.size.width, _currentInputPanel.frame.size.height);
             
             [self _adjustCollectionViewForOrientation:self.interfaceOrientation keyboardHeight:_keyboardHeight inputContainerHeight:_currentInputPanel.frame.size.height duration:0.0 animationCurve:0];
         }
@@ -1561,9 +1563,9 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
     }
 }
 
-- (void)updateItemProgressAtIndex:(NSUInteger)index toProgress:(float)progress
+- (void)updateItemProgressAtIndex:(NSUInteger)index toProgress:(float)progress animated:(bool)animated
 {
-    [_items[index] updateProgress:progress viewStorage:_viewStorage];
+    [_items[index] updateProgress:progress viewStorage:_viewStorage animated:animated];
 }
 
 - (void)imageDataInvalidated:(NSString *)imageUrl
@@ -1936,7 +1938,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                                     
                                     if (missingKeysString.length != 0)
                                     {
-                                        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:[[NSString alloc] initWithFormat:@"Localization file is valid, but the following keys are missing: %@", missingKeysString] delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                                        TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:[[NSString alloc] initWithFormat:@"Localization file is valid, but the following keys are missing: %@", missingKeysString] delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                                         [alertView show];
                                     }
                                     
@@ -1964,7 +1966,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                                         reasonString = [[NSString alloc] initWithFormat:@"invalid value format for keys %@", invalidFormatKeysString];
                                     }
                                     
-                                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:[[NSString alloc] initWithFormat:@"Invalid localization file: %@", reasonString] delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:[[NSString alloc] initWithFormat:@"Invalid localization file: %@", reasonString] delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                                     [alertView show];
                                 }
                             }
@@ -1979,7 +1981,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                                     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[documentController]];
                                     navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
                                     navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-                                    [controller presentViewController:navigationController animated:true completion:nil];
+                                    
+                                    [controller presentViewController:documentController animated:true completion:nil];
                                 }
                             }
                         } target:self] showInView:self.view];
@@ -3701,6 +3704,8 @@ static UIView *_findBackArrow(UIView *view)
     CGRect keyboardFrame = [self.view convertRect:screenKeyboardFrame fromView:nil];
     
     CGFloat keyboardHeight = (keyboardFrame.size.height <= FLT_EPSILON || keyboardFrame.size.width <= FLT_EPSILON) ? 0.0f :  (collectionViewSize.height - keyboardFrame.origin.y);
+    
+    keyboardHeight = MAX(keyboardHeight, 0.0f);
     
     if (keyboardFrame.origin.y + keyboardFrame.size.height < collectionViewSize.height - FLT_EPSILON)
         keyboardHeight = 0.0f;

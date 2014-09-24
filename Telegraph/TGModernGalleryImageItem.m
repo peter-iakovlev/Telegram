@@ -32,7 +32,13 @@
 {
     if ([object isKindOfClass:[TGModernGalleryImageItem class]])
     {
-        return TGStringCompare(_uri, ((TGModernGalleryImageItem *)object).uri) && CGSizeEqualToSize(_imageSize, ((TGModernGalleryImageItem *)object).imageSize);
+        if (!TGStringCompare(_uri, ((TGModernGalleryImageItem *)object).uri))
+            return false;
+        
+        if (!CGSizeEqualToSize(_imageSize, ((TGModernGalleryImageItem *)object).imageSize))
+            return false;
+        
+        return true;
     }
     
     return false;

@@ -914,7 +914,7 @@ static CGFloat transformRotation(CGAffineTransform transform)
     
     if (_preloadVisibleItemViews)
     {
-        if (leftmostVisibleItemIndex > 1)
+        if (leftmostVisibleItemIndex >= 1)
             leftmostVisibleItemIndex = leftmostVisibleItemIndex - 1;
         if (rightmostVisibleItemIndex < _model.items.count - 1)
             rightmostVisibleItemIndex = rightmostVisibleItemIndex + 1;

@@ -269,6 +269,21 @@
         _glkView.enableSetNeedsDisplay = NO;
         _glkView.userInteractionEnabled=NO;
         _glkView.delegate = self;
+        
+        int patchHalfWidth=1;
+        UIView *v1 = [[UIView alloc]initWithFrame:CGRectMake(-patchHalfWidth, -patchHalfWidth, _glkView.frame.size.width+patchHalfWidth*2, patchHalfWidth*2)];
+        UIView *v2 = [[UIView alloc]initWithFrame:CGRectMake(-patchHalfWidth, -patchHalfWidth, patchHalfWidth*2, _glkView.frame.size.height+patchHalfWidth*2)];
+        
+        UIView *v3 = [[UIView alloc]initWithFrame:CGRectMake(-patchHalfWidth, -patchHalfWidth+_glkView.frame.size.height, _glkView.frame.size.width+patchHalfWidth*2, patchHalfWidth*2)];
+        UIView *v4 = [[UIView alloc]initWithFrame:CGRectMake(-patchHalfWidth+_glkView.frame.size.width, -patchHalfWidth, patchHalfWidth*2, _glkView.frame.size.height+patchHalfWidth*2)];
+        
+        v1.backgroundColor=v2.backgroundColor=v3.backgroundColor=v4.backgroundColor=[UIColor whiteColor];
+        
+        [_glkView addSubview:v1];
+        [_glkView addSubview:v2];
+        [_glkView addSubview:v3];
+        [_glkView addSubview:v4];
+        
         [self setupGL];
         [self.view addSubview:_glkView];
         

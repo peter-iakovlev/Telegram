@@ -15,6 +15,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGAlertView.h"
+
 @interface TGDownloadLocalizationActor () <TGRawHttpActor>
 {
     TGProgressWindow *_progressWindow;
@@ -222,7 +224,7 @@
                 reasonString = [[NSString alloc] initWithFormat:@"invalid value format for keys %@", invalidFormatKeysString];
             }
             
-            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:[[NSString alloc] initWithFormat:@"Invalid localization file: %@", reasonString] delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+            TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:[[NSString alloc] initWithFormat:@"Invalid localization file: %@", reasonString] delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
             [alertView show];
         }
     });

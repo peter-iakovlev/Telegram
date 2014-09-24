@@ -96,9 +96,16 @@ typedef enum {
         {
             NSString *firstPart = [[NSString alloc] initWithFormat:@"%@, ", [self stringForMemberCount:memberCount]];
             NSString *secondPart = [self stringForOnlineCount:onlineCount];
-            NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:[firstPart stringByAppendingString:secondPart]];
+            NSString *combinedString = [firstPart stringByAppendingString:secondPart];
+            
+            //NSRange range1 = NSMakeRange(firstPart.length, secondPart.length);
+            //NSRange range2 = [combinedString rangeOfString:secondPart];
+            
+            return combinedString;
+            
+            /*NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:[firstPart stringByAppendingString:secondPart]];
             [attributedString addAttribute:NSForegroundColorAttributeName value:TGAccentColor() range:NSMakeRange(firstPart.length, secondPart.length)];
-            return attributedString;
+            return attributedString;*/
         }
     }
 }

@@ -27,6 +27,8 @@
 
 #import "TGBackdropView.h"
 
+#import "TGAlertView.h"
+
 @interface TGLoginInactiveUserController ()
 {
     UIView *_navigationBarBackgroundView;
@@ -495,7 +497,7 @@
             
             if (resultCode != ASStatusSuccess)
             {
-                [[[UIAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
             }
             
             [self.navigationController popToRootViewControllerAnimated:true];

@@ -74,6 +74,8 @@
 #import "TGSelectContactController.h"
 #import "TGAlternateBroadcastListsController.h"
 
+#import "TGAlertView.h"
+
 #include <vector>
 #include <map>
 #include <algorithm>
@@ -2393,7 +2395,7 @@ static UIView *findControl(UIView *view)
     
     if (result == MessageComposeResultFailed)
     {
-        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Contacts.FailedToSendInvitesMessage") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles: nil];
+        TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Contacts.FailedToSendInvitesMessage") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles: nil];
         [alertView show];
     }
     else if (result == MessageComposeResultSent)

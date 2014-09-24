@@ -15,6 +15,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGAlertView.h"
+
 #define TGUseModernAudio true
 
 #import "TGOpusAudioRecorder.h"
@@ -134,7 +136,7 @@ static void playSoundCompleted(__unused SystemSoundID ssID, __unused void *clien
             }
             else
             {
-                [[[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Conversation.MicrophoneAccessDisabled") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Conversation.MicrophoneAccessDisabled") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
             }
         };
         

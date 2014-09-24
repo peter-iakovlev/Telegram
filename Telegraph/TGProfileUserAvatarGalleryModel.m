@@ -82,6 +82,10 @@
         {
             if (concreteItem.imageId != 0 && concreteItem.accessHash != 0)
             {
+                NSMutableArray *updatedItems = [[NSMutableArray alloc] initWithArray:self.items];
+                [updatedItems removeObject:item];
+                [self _replaceItems:updatedItems focusingOnItem:nil];
+                
                 [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/deleteProfilePhoto/(%lld)", concreteItem.imageId] options:@{@"imageId": @(concreteItem.imageId), @"accessHash": @(concreteItem.accessHash)} flags:0 watcher:TGTelegraphInstance];
             }
         }

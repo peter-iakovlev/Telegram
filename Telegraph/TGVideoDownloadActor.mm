@@ -218,6 +218,12 @@ public:
             return storeFilePath;
         }
     }
+    else if ([url hasPrefix:@"local-video:"])
+    {
+        NSString *videoFileName = [url substringFromIndex:@"local-video:".length];
+        NSString *storeFilePath = [videosPath stringByAppendingPathComponent:videoFileName];
+        return storeFilePath;
+    }
     else if ([url hasPrefix:@"mt-encrypted-file://"])
     {
         NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[url substringFromIndex:@"mt-encrypted-file://?".length]];

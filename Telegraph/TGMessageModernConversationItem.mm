@@ -270,9 +270,9 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
     }
 }
 
-- (void)updateProgress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage
+- (void)updateProgress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated
 {
-    [_viewModel updateProgress:progress > -FLT_EPSILON progress:MAX(0.0f, progress) viewStorage:viewStorage];
+    [_viewModel updateProgress:progress > -FLT_EPSILON progress:MAX(0.0f, progress) viewStorage:viewStorage animated:animated];
 }
 
 - (void)updateInlineMediaContext

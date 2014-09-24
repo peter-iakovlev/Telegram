@@ -44,6 +44,8 @@
 
 #import "TGSettingsController.h"
 
+#import "TGAlertView.h"
+
 @interface TGAccountSettingsController () <TGImagePickerControllerDelegate, TGLegacyCameraControllerDelegate, TGWallpaperControllerDelegate>
 {
     int32_t _uid;
@@ -541,20 +543,32 @@
 
 - (void)logoutPressed
 {
-    [[[TGActionSheet alloc] initWithTitle:nil actions:@[
+    __weak TGAccountSettingsController *weakSelf = self;
+    
+    /*[[[TGActionSheet alloc] initWithTitle:nil actions:@[
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Settings.Logout") action:@"logout" type:TGActionSheetActionTypeDestructive],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel],
-    ] actionBlock:^(TGAccountSettingsController *target, NSString *action)
+    ] actionBlock:^(__unused TGAccountSettingsController *target, NSString *action)
     {
         if ([action isEqualToString:@"logout"])
-        {
-            target.progressWindow = [[TGProgressWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-            [target.progressWindow show:true];
-            
-            static int actionId = 0;
-            [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/auth/logout/(%d)", actionId++] options:nil watcher:target];
-        }
-    } target:self] showInView:self.tabBarController.view];
+        {*/
+            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Settings.LogoutConfirmationTitle") message:TGLocalized(@"Settings.LogoutConfirmationText") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
+            {
+                if (okButtonPressed)
+                {
+                    __strong TGAccountSettingsController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        strongSelf.progressWindow = [[TGProgressWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+                        [strongSelf.progressWindow show:true];
+                        
+                        static int actionId = 0;
+                        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/auth/logout/(%d)", actionId++] options:nil watcher:strongSelf];
+                    }
+                }
+            }] show];
+        /*}
+    } target:self] showInView:self.tabBarController.view];*/
 }
 
 #pragma mark -
@@ -624,7 +638,7 @@
             
             if (status != ASStatusSuccess)
             {
-                [[[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Settings.LogoutError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Settings.LogoutError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
             }
         });
     }
@@ -654,7 +668,7 @@
             {
                 [_profileDataItem setUpdatingAvatar:nil hasUpdatingAvatar:false];
                 
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Profile.ImageUploadError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Profile.ImageUploadError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                 [alertView show];
             }
         });

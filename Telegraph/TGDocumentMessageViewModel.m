@@ -158,15 +158,17 @@
     [self updateImageOverlay:false];
 }
 
-- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)__unused viewStorage
+- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated
 {
+    [super updateProgress:progressVisible progress:progress viewStorage:viewStorage animated:animated];
+    
     bool progressWasVisible = _progressVisible;
     float previousProgress = _progress;
     
     _progress = progress;
     _progressVisible = progressVisible;
     
-    [self updateImageOverlay:(progressWasVisible && !_progressVisible) || (_progressVisible && ABS(_progress - previousProgress) > FLT_EPSILON)];
+    [self updateImageOverlay:((progressWasVisible && !_progressVisible) || (_progressVisible && ABS(_progress - previousProgress) > FLT_EPSILON)) && animated];
 }
 
 - (void)updateImageOverlay:(bool)animated

@@ -58,6 +58,7 @@
 
 - (void)scrollRectToVisible:(CGRect)__unused rect animated:(BOOL)__unused animated
 {
+    
 }
 
 - (void)setContentOffset:(CGPoint)contentOffset animated:(BOOL)animated
@@ -101,7 +102,6 @@
         if (caretFrame.origin.y + caretFrame.size.height > contentOffset.y + frameHeight)
             contentOffset.y = caretFrame.origin.y + caretFrame.size.height - frameHeight;
         contentOffset.y = MAX(0, contentOffset.y);
-        contentOffset.y = 0;
         
         if (!CGPointEqualToPoint(contentOffset, self.contentOffset))
             self.contentOffset = contentOffset;

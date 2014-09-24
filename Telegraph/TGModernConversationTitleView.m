@@ -274,7 +274,7 @@ const NSTimeInterval typingIntervalSecond = 0.14;
         if (_typingStatus == nil)
         {
             if ([status isKindOfClass:[NSAttributedString class]])
-                [self statusLabel].attributedText = status;
+                [self statusLabel].text = ((NSAttributedString *)status).string;
             else
                 [self statusLabel].text = status;
             
@@ -312,14 +312,14 @@ const NSTimeInterval typingIntervalSecond = 0.14;
         
         if (typingStatus == nil)
         {
-            [self statusLabel].text = _status;
+            [self statusLabel].attributedText = [[NSAttributedString alloc] initWithString:_status];
             _statusLabel.textColor = _statusHasAccentColor ? UIColorRGB(0x007bff) : UIColorRGB(0x86868d);
             
             [self _endTypingAnimation:reallyAnimated];
         }
         else
         {
-            [self statusLabel].text = typingStatus;
+            [self statusLabel].attributedText = [[NSAttributedString alloc] initWithString:typingStatus];
             _statusLabel.textColor = UIColorRGB(0x007bff);
             
             [self _beginTypingAnimation:reallyAnimated];

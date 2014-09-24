@@ -36,6 +36,8 @@
 
 #import "TGModernButton.h"
 
+#import "TGAlertView.h"
+
 #import <MessageUI/MessageUI.h>
 
 @interface TGLoginCodeController () <UITextFieldDelegate, UIAlertViewDelegate, MFMailComposeViewControllerDelegate, UINavigationControllerDelegate>
@@ -339,7 +341,7 @@
             }
             else
             {
-                [[[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.EmailNotConfiguredError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.EmailNotConfiguredError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
             }
         }
     }
@@ -769,7 +771,7 @@
                 
                 if (errorText != nil)
                 {
-                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:errorText delegate:setDelegate ? self : nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:setDelegate ? self : nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                     [alertView show];
                 }
             }
@@ -803,7 +805,7 @@
                     else if (resultCode == TGSendCodeErrorNetwork)
                         errorText = TGLocalized(@"Login.NetworkError");
                     
-                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                     [alertView show];
                 }
             }
@@ -832,7 +834,7 @@
                     else if (resultCode == TGSendCodeErrorNetwork)
                         errorText = TGLocalized(@"Login.NetworkError");
                     
-                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                     [alertView show];
                 }
             }

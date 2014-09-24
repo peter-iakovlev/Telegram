@@ -190,7 +190,7 @@
 
 - (bool)instantPreviewGesture
 {
-    return _messageLifetime != 0;
+    return false;
 }
 
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition

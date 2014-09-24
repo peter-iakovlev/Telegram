@@ -208,7 +208,7 @@
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
-        [watcherHandle notifyResourceDispatched:@"downloadManagerStateChanged" resource:_itemsQueue];
+        [watcherHandle notifyResourceDispatched:@"downloadManagerStateChanged" resource:_itemsQueue arguments:@{@"requested": @true}];
     }];
 }
 

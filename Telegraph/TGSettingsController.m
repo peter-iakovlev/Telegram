@@ -447,7 +447,7 @@
     }
     else
     {
-        [[[UIAlertView alloc] initWithTitle:nil message:@"Please configure at least one email account" delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+        [[[TGAlertView alloc] initWithTitle:nil message:@"Please configure at least one email account" delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
     }*/
 }
 

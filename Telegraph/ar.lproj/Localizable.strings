@@ -673,3 +673,6 @@
 "VideoPreview.OptionHD" = "عالي الدقة (%@)";
 
 "ChatSettings.AutoPlayAudio" = "Autoplay Audio";
+
+"Settings.LogoutConfirmationTitle" = "Log out?";
+"Settings.LogoutConfirmationText" = "\nNote that you can seamlessly use Telegram on all your devices at once.\n\nRemember, logging out kills all your Secret Chats.";
