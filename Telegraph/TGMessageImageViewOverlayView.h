@@ -20,8 +20,9 @@ typedef enum {
 - (void)setImageBackgroundColor:(UIColor *)imageBackgroundColor;
 - (void)setDownload;
 - (void)setProgress:(float)progress animated:(bool)animated;
+- (void)setSecretProgress:(float)progress animated:(bool)animated;
 - (void)setProgress:(float)progress cancelEnabled:(bool)cancelEnabled animated:(bool)animated;
 - (void)setPlay;
-- (void)setSecret;
+- (void)setSecret:(bool)isViewed;
 
 @end

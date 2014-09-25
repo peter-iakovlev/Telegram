@@ -21,6 +21,7 @@
 - (bool)isMessageChecked:(int32_t)messageId;
 - (bool)isSecretMessageViewed:(int32_t)messageId;
 - (bool)isSecretMessageScreenshotted:(int32_t)messageId;
+- (NSTimeInterval)secretMessageViewDate:(int32_t)messageId;
 
 - (TGModernViewInlineMediaContext *)inlineMediaContext:(int32_t)messageId;
 

@@ -282,7 +282,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 - (NSString *)stringForTitle:(TGUser *)user isContact:(bool)isContact
 {
     if (user.uid == [TGTelegraphInstance serviceUserUid])
-        return @"Telegram";
+        return @"Telegram Notifications";
     
     if (isContact || user.phoneNumber.length == 0)
         return user.displayName;

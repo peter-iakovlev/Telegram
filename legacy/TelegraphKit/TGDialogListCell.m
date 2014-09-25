@@ -911,6 +911,13 @@ static UIColor *mediaTextColor = nil;
                         
                         break;
                     }
+                    case TGMessageActionEncryptedChatScreenshot:
+                    case TGMessageActionEncryptedChatMessageScreenshot:
+                    {
+                        _messageText = TGLocalized(@"Notification.SecretChatMessageScreenshot");
+                        
+                        break;
+                    }
                     default:
                         break;
                 }

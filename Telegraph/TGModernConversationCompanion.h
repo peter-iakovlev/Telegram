@@ -127,8 +127,11 @@ typedef enum {
 - (bool)_isMessageChecked:(int32_t)messageId;
 
 - (void)_setMessageFlags:(int32_t)messageId flags:(int)flags;
+- (void)_setMessageViewDate:(int32_t)messageId viewDate:(NSTimeInterval)viewDate;
+- (void)_setMessageFlagsAndViewDate:(int32_t)messageId flags:(int)flags viewDate:(NSTimeInterval)viewDate;
 - (bool)_isSecretMessageViewed:(int32_t)messageId;
 - (bool)_isSecretMessageScreenshotted:(int32_t)messageId;
+- (NSTimeInterval)_secretMessageViewDate:(int32_t)messageId;
 
 - (TGModernViewInlineMediaContext *)_inlineMediaContext:(int32_t)messageId;
 

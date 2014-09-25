@@ -992,7 +992,7 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
     
     sqlite3_exec([_database sqliteHandle], "PRAGMA encoding=\"UTF-8\"", NULL, NULL, NULL);
     sqlite3_exec([_database sqliteHandle], "PRAGMA synchronous=NORMAL", NULL, NULL, NULL);
-    sqlite3_exec([_database sqliteHandle], "PRAGMA journal_mode=MEMORY", NULL, NULL, NULL);
+    sqlite3_exec([_database sqliteHandle], "PRAGMA journal_mode=WAL", NULL, NULL, NULL);
     sqlite3_exec([_database sqliteHandle], "PRAGMA temp_store=MEMORY", NULL, NULL, NULL);
     
     [self dispatchOnIndexThread:^
@@ -1010,7 +1010,7 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
             
             sqlite3_exec([_indexDatabase sqliteHandle], "PRAGMA encoding=\"UTF-8\"", NULL, NULL, NULL);
             sqlite3_exec([_indexDatabase sqliteHandle], "PRAGMA synchronous=NORMAL", NULL, NULL, NULL);
-            sqlite3_exec([_indexDatabase sqliteHandle], "PRAGMA journal_mode=MEMORY", NULL, NULL, NULL);
+            sqlite3_exec([_indexDatabase sqliteHandle], "PRAGMA journal_mode=WAL", NULL, NULL, NULL);
             sqlite3_exec([_indexDatabase sqliteHandle], "PRAGMA temp_store=MEMORY", NULL, NULL, NULL);
         }
     } synchronous:false];
@@ -4777,7 +4777,11 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 }
             }
             
-            [_database executeUpdate:queryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:messageLifetime], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? 1 : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? INT_MAX : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithLongLong:message.flags]];
+            int currentLifetime = messageLifetime;
+            if (message.messageLifetime != 0)
+                currentLifetime = message.messageLifetime;
+            
+            [_database executeUpdate:queryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:currentLifetime], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? 1 : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? INT_MAX : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithLongLong:message.flags]];
             
             if (mediaData != nil && mediaData.length != 0)
                 [_database executeUpdate:mediaInsertQueryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:(int)message.date], [[NSNumber alloc] initWithInt:(int)message.fromUid], [[NSNumber alloc] initWithInt:mediaType], mediaData];
@@ -8769,6 +8773,8 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
                 NSString *selfDestructInsertQuery = [[NSString alloc] initWithFormat:@"INSERT OR IGNORE INTO %@ (mid, date) VALUES (?, ?)", _selfDestructTableName];
                 [_database executeUpdate:selfDestructInsertQuery, @(mid), @(currentDate + messageLifetime)];
                 
+                [self raiseSecretMessageFlagsByMessageId:mid flagsToRise:TGSecretMessageFlagViewed];
+                
                 [self processAndScheduleSelfDestruct];
                 
                 if (initiatedCountdown != NULL)
@@ -8776,12 +8782,16 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
                 
                 countdownTime = (int)(currentDate - (kCFAbsoluteTimeIntervalSince1970 + _timeDifferenceFromUTC));
                 
-                int64_t encryptedConversationId = [self encryptedConversationIdForPeerId:[messageResult longLongIntForColumn:@"cid"]];
+                int64_t peerId = [messageResult longLongIntForColumn:@"cid"];
+                int64_t encryptedConversationId = [self encryptedConversationIdForPeerId:peerId];
                 int64_t randomId = [self randomIdForMessageId:mid];
                 int64_t messageRandomId = 0;
                 arc4random_buf(&messageRandomId, 8);
                 
                 [self storeFutureActions:@[[[TGEncryptedChatServiceAction alloc] initWithEncryptedConversationId:encryptedConversationId messageRandomId:messageRandomId action:TGEncryptedChatServiceActionViewMessage actionContext:randomId]]];
+                
+                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messageFlagChanges", peerId] resource:@{@(mid): @([self secretMessageFlags:mid])}];
+                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/messageViewDateChanges"] resource:@{@(mid): @(countdownTime)}];
             }
         }
     } synchronous:true];
@@ -8964,6 +8974,16 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
         if (completion)
             completion(messages);
     } synchronous:true];
+}
+
+- (void)updateLastUseDateForMediaId:(int64_t)mediaId messageId:(int32_t)messageId
+{
+    
+}
+
+- (void)processAndScheduleMediaCleanup
+{
+    
 }
 
 @end

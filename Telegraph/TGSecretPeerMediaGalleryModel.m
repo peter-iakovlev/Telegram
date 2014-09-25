@@ -1,6 +1,7 @@
 #import "TGSecretPeerMediaGalleryModel.h"
 
 #import "TGDatabase.h"
+#import "TGTelegraph.h"
 #import "TGStringUtils.h"
 
 #import "TGSecretPeerMediaGalleryImageItem.h"
@@ -9,10 +10,14 @@
 #import "ActionStage.h"
 #import "SGraphObjectNode.h"
 
+#import "TGObserverProxy.h"
+
 @interface TGSecretPeerMediaGalleryModel () <ASWatcher>
 {
     int64_t _peerId;
     int32_t _messageId;
+    
+    TGObserverProxy *_screenshotObserver;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -28,6 +33,11 @@
     {
         _actionHandle = [[ASHandle alloc] initWithDelegate:self];
         
+        if (iosMajorVersion() >= 7)
+        {
+            _screenshotObserver = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(somethingChanged:) name:UIApplicationUserDidTakeScreenshotNotification];
+        }
+        
         _peerId = peerId;
         _messageId = messageId;
         
@@ -38,6 +48,10 @@
         {
             bool initiatedCountdown = false;
             NSTimeInterval messageCountdownTime = [TGDatabaseInstance() messageCountdownLocalTime:message.mid enqueueIfNotQueued:true initiatedCountdown:&initiatedCountdown];
+            if (initiatedCountdown)
+            {
+                [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
+            }
             
             for (id attachment in message.mediaAttachments)
             {
@@ -101,6 +115,36 @@
             }
         }
     }
+}
+
+- (void)somethingChanged:(id)__unused arg
+{
+    [TGDatabaseInstance() dispatchOnDatabaseThread:^
+    {
+        int messageFlags = [TGDatabaseInstance() secretMessageFlags:_messageId];
+        if ((messageFlags & TGSecretMessageFlagScreenshot) == 0)
+        {
+            messageFlags |= TGSecretMessageFlagScreenshot;
+            TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:_messageId];
+            if (message != nil)
+            {
+                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/messageFlagChanges", message.cid] resource:@{@(_messageId): @(messageFlags)}];
+                
+                int64_t encryptedConversationId = [TGDatabaseInstance() encryptedConversationIdForPeerId:message.cid];
+                int64_t randomId = [TGDatabaseInstance() randomIdForMessageId:_messageId];
+                
+                if (encryptedConversationId != 0 && randomId != 0)
+                {
+                    [TGDatabaseInstance() raiseSecretMessageFlagsByRandomId:randomId flagsToRise:TGSecretMessageFlagScreenshot];
+                    
+                    int64_t actionRandomId = 0;
+                    arc4random_buf(&actionRandomId, 8);
+                    [TGDatabaseInstance() storeFutureActions:@[[[TGEncryptedChatServiceAction alloc] initWithEncryptedConversationId:encryptedConversationId messageRandomId:actionRandomId action:TGEncryptedChatServiceActionMessageScreenshotTaken actionContext:randomId]]];
+                    [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
+                }
+            }
+        }
+    } synchronous:false];
 }
 
 @end

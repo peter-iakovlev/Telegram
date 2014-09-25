@@ -323,6 +323,7 @@
         [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId],
         [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/readByDateMessages", _conversationId],
         [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messageFlagChanges", _conversationId],
+        [[NSString alloc] initWithFormat:@"/tg/conversation/messageViewDateChanges"],
         [[NSString alloc] initWithFormat:@"/tg/encrypted/messageLifetime/(%" PRId64 ")", _conversationId]
     ] watcher:self];
     
@@ -358,8 +359,10 @@
                 case TGVideoMediaAttachmentType:
                 {
                     int flags = [TGDatabaseInstance() secretMessageFlags:item->_message.mid];
-                    if (flags != 0)
-                        [self _setMessageFlags:item->_message.mid flags:flags];
+                    NSTimeInterval viewDate = [TGDatabaseInstance() messageCountdownLocalTime:item->_message.mid enqueueIfNotQueued:false initiatedCountdown:NULL];
+                    
+                    if (flags != 0 || ABS(viewDate - DBL_EPSILON) > 0.0)
+                        [self _setMessageFlagsAndViewDate:item->_message.mid flags:flags viewDate:viewDate];
                     break;
                 }
                 default:
@@ -465,10 +468,23 @@
     }
     else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messageFlagChanges", _conversationId]])
     {
-        [(NSMutableDictionary *)resource enumerateKeysAndObjectsUsingBlock:^(NSNumber *nMessageId, NSNumber *nFlags, __unused BOOL *stop)
+        TGDispatchOnMainThread(^
         {
-            [self _setMessageFlags:(int32_t)[nMessageId intValue] flags:[nFlags intValue]];
-        }];
+            [(NSMutableDictionary *)resource enumerateKeysAndObjectsUsingBlock:^(NSNumber *nMessageId, NSNumber *nFlags, __unused BOOL *stop)
+            {
+                [self _setMessageFlags:(int32_t)[nMessageId intValue] flags:[nFlags intValue]];
+            }];
+        });
+    }
+    else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/messageViewDateChanges"]])
+    {
+        TGDispatchOnMainThread(^
+        {
+            [(NSMutableDictionary *)resource enumerateKeysAndObjectsUsingBlock:^(NSNumber *nMessageId, NSNumber *nViewDate, __unused BOOL *stop)
+            {
+                [self _setMessageViewDate:(int32_t)[nMessageId intValue] viewDate:[nViewDate doubleValue]];
+            }];
+        });
     }
     else if ([path hasPrefix:@"/tg/encrypted/messageLifetime/"])
     {

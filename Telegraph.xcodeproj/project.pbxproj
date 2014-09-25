@@ -1503,6 +1503,10 @@
 		D0D443B8195315D500CF2A7E /* Icon-76@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0D443B7195315D500CF2A7E /* Icon-76@2x.png */; };
 		D0D670D6197EA36C0031B041 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0D670D2197EA36C0031B041 /* InfoPlist.strings */; };
 		D0D670D7197EA36C0031B041 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0D670D4197EA36C0031B041 /* Localizable.strings */; };
+		D0D95BCD19D438DC00047005 /* SecretPhotoCheckMask@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0D95BC919D438DC00047005 /* SecretPhotoCheckMask@2x.png */; };
+		D0D95BCE19D438DC00047005 /* SecretPhotoCheckMask.png in Resources */ = {isa = PBXBuildFile; fileRef = D0D95BCA19D438DC00047005 /* SecretPhotoCheckMask.png */; };
+		D0D95BCF19D438DC00047005 /* SecretPhotoCheck@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0D95BCB19D438DC00047005 /* SecretPhotoCheck@2x.png */; };
+		D0D95BD019D438DC00047005 /* SecretPhotoCheck.png in Resources */ = {isa = PBXBuildFile; fileRef = D0D95BCC19D438DC00047005 /* SecretPhotoCheck.png */; };
 		D0DA76AF193BDD9E00157F4B /* TGFileThumbnailDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D0DA76AE193BDD9E00157F4B /* TGFileThumbnailDataSource.m */; };
 		D0DAA481197495A80036E709 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = D0DAA480197495A80036E709 /* Icon-72.png */; };
 		D0DAA483197495EA0036E709 /* Icon-72@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0DAA482197495EA0036E709 /* Icon-72@2x.png */; };
@@ -4158,6 +4162,10 @@
 		D0D443B7195315D500CF2A7E /* Icon-76@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-76@2x.png"; sourceTree = "<group>"; };
 		D0D670D3197EA36C0031B041 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = InfoPlist.strings; sourceTree = "<group>"; };
 		D0D670D5197EA36C0031B041 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = Localizable.strings; sourceTree = "<group>"; };
+		D0D95BC919D438DC00047005 /* SecretPhotoCheckMask@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "SecretPhotoCheckMask@2x.png"; path = "Resources/SecretPhotoCheckMask@2x.png"; sourceTree = "<group>"; };
+		D0D95BCA19D438DC00047005 /* SecretPhotoCheckMask.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = SecretPhotoCheckMask.png; path = Resources/SecretPhotoCheckMask.png; sourceTree = "<group>"; };
+		D0D95BCB19D438DC00047005 /* SecretPhotoCheck@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "SecretPhotoCheck@2x.png"; path = "Resources/SecretPhotoCheck@2x.png"; sourceTree = "<group>"; };
+		D0D95BCC19D438DC00047005 /* SecretPhotoCheck.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = SecretPhotoCheck.png; path = Resources/SecretPhotoCheck.png; sourceTree = "<group>"; };
 		D0DA76AD193BDD9E00157F4B /* TGFileThumbnailDataSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGFileThumbnailDataSource.h; sourceTree = "<group>"; };
 		D0DA76AE193BDD9E00157F4B /* TGFileThumbnailDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGFileThumbnailDataSource.m; sourceTree = "<group>"; };
 		D0DAA480197495A80036E709 /* Icon-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-72.png"; sourceTree = "<group>"; };
@@ -7380,6 +7388,10 @@
 		D0880632156EAEA300311537 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D0D95BC919D438DC00047005 /* SecretPhotoCheckMask@2x.png */,
+				D0D95BCA19D438DC00047005 /* SecretPhotoCheckMask.png */,
+				D0D95BCB19D438DC00047005 /* SecretPhotoCheck@2x.png */,
+				D0D95BCC19D438DC00047005 /* SecretPhotoCheck.png */,
 				D03FECD419CC6D17004866D6 /* SecretPhotoFireMask.png */,
 				D03FECD219CC69EE004866D6 /* SecretPhotoFireMask@2x.png */,
 				D03FECCE19CC559D004866D6 /* SecretPhotoFire.png */,
@@ -9613,6 +9625,7 @@
 				93064E031833C5EA0024C05A /* NavigationBackButtonLandscape@2x.png in Resources */,
 				934134B318551FF500480294 /* builtin-wallpaper-1.jpg in Resources */,
 				D0BAF3F3193E8AC400A0093F /* ModernWallpaperSelectedIndicator.png in Resources */,
+				D0D95BCF19D438DC00047005 /* SecretPhotoCheck@2x.png in Resources */,
 				9352994E17A13D6F006D58FE /* ProgressLoupeMinute@2x.png in Resources */,
 				D0BAF3F1193E8AC400A0093F /* ModernContactListCreateGroupIcon.png in Resources */,
 				93AD55E118630CA40043B212 /* ImageDownloadCancel_Highlighted@2x.png in Resources */,
@@ -9743,6 +9756,7 @@
 				93DA95AD171D881000A69D64 /* DialogListGroupAvatarSmall4@2x.png in Resources */,
 				9341B0211851E89300D1195B /* ModernMenuCheck@2x.png in Resources */,
 				93DA95AE171D881000A69D64 /* DialogListGroupAvatarSmall2@2x.png in Resources */,
+				D0D95BCE19D438DC00047005 /* SecretPhotoCheckMask.png in Resources */,
 				D08696B41943A8B300770FE7 /* pad-builtin-wallpaper-1-thumbnail.jpg in Resources */,
 				D0A3F30B195D90AD009E0ACD /* EmptyBroadcastListsIcon@2x.png in Resources */,
 				D07FD9E318CBA6CA009B649E /* Localizable.strings in Resources */,
@@ -9805,6 +9819,7 @@
 				931C591B174BB24D00D597D9 /* RProgress11@2x.png in Resources */,
 				931C591C174BB24D00D597D9 /* RProgress12@2x.png in Resources */,
 				931C591D174BB24D00D597D9 /* RProgress13@2x.png in Resources */,
+				D0D95BD019D438DC00047005 /* SecretPhotoCheck.png in Resources */,
 				D0C925CB194A024000E629CA /* private_stroked_dot@2x.png in Resources */,
 				931C591E174BB24D00D597D9 /* RProgress14@2x.png in Resources */,
 				D0BAF3EF193E8AC400A0093F /* ModernNavigationAddButtonIcon.png in Resources */,
@@ -9865,6 +9880,7 @@
 				93064DFB1832A2970024C05A /* ModernTypingDot2@2x.png in Resources */,
 				930CBDF418BACF460068116F /* ModernConversationAudioSlideToCancel@2x.png in Resources */,
 				D0C925C1194A024000E629CA /* knot_up@2x.png in Resources */,
+				D0D95BCD19D438DC00047005 /* SecretPhotoCheckMask@2x.png in Resources */,
 				933AA4C6186101A5000AA848 /* SearchBarBackgroundLight@2x.png in Resources */,
 				934280C81847F39B004F1C2A /* SearchImagesButtonBottom@2x.png in Resources */,
 				937CFD7E17AED51A00E28C5B /* SmallAvatarSystem@2x.png in Resources */,

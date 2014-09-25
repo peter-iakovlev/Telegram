@@ -197,6 +197,7 @@ static const CGFloat additionalDataTopPadding = 6.0f;
                 break;
             }
             case TGMessageImageViewOverlaySecret:
+            case TGMessageImageViewOverlaySecretViewed:
             {
                 if (_actionCircleImageView.superview == nil)
                 {
@@ -207,7 +208,7 @@ static const CGFloat additionalDataTopPadding = 6.0f;
                 _actionCircleImageView.alpha = 1.0f;
                 _buttonView.alpha = 1.0f;
                 
-                [_overlayView setSecret];
+                [_overlayView setSecret:_overlayType == TGMessageImageViewOverlaySecretViewed];
                 
                 break;
             }
@@ -223,6 +224,20 @@ static const CGFloat additionalDataTopPadding = 6.0f;
                 _buttonView.alpha = 1.0f;
                 
                 [_overlayView setProgress:_progress animated:false];
+                
+                break;
+            }
+            case TGMessageImageViewOverlaySecretProgress:
+            {
+                if (_actionCircleImageView.superview != nil)
+                {
+                    [_actionCircleImageView removeFromSuperview];
+                }
+                
+                _actionCircleImageView.alpha = 1.0f;
+                _buttonView.alpha = 1.0f;
+                
+                [_overlayView setSecretProgress:_progress animated:false];
                 
                 break;
             }
@@ -272,6 +287,17 @@ static const CGFloat additionalDataTopPadding = 6.0f;
         
         if (_overlayType == TGMessageImageViewOverlayProgress)
             [_overlayView setProgress:progress animated:animated];
+    }
+}
+
+- (void)setSecretProgress:(float)progress animated:(bool)animated
+{
+    if (ABS(_progress - progress) > FLT_EPSILON)
+    {
+        _progress = progress;
+        
+        if (_overlayType == TGMessageImageViewOverlaySecretProgress)
+            [_overlayView setSecretProgress:progress animated:animated];
     }
 }
 
@@ -336,6 +362,11 @@ static const CGFloat additionalDataTopPadding = 6.0f;
             break;
         }
         case TGMessageImageViewOverlaySecret:
+        {
+            action = TGMessageImageViewActionSecret;
+            break;
+        }
+        case TGMessageImageViewOverlaySecretViewed:
         {
             action = TGMessageImageViewActionSecret;
             break;

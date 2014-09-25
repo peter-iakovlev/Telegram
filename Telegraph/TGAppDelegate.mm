@@ -496,11 +496,6 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     });
 #endif
     
-    if (iosMajorVersion() >= 7)
-    {
-        //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(freedomOne:) name:UIApplicationUserDidTakeScreenshotNotification object:nil];
-    }
-    
     _foregroundResumeTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(checkForegroundResume) interval:2.0 repeat:true];
     
     TGDispatchAfter(1.0, dispatch_get_main_queue(), ^

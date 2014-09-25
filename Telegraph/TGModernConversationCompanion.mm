@@ -105,6 +105,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     std::set<int32_t> _checkedMessages;
     
     std::map<int32_t, int> _messageFlags;
+    std::map<int32_t, NSTimeInterval> _messageViewDate;
     
     TGMessageModernConversationItem * (*_updateMediaStatusDataImpl)(id, SEL, TGMessageModernConversationItem *);
     
@@ -576,6 +577,29 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     });
 }
 
+- (void)_setMessageViewDate:(int32_t)messageId viewDate:(NSTimeInterval)viewDate
+{
+    TGDispatchOnMainThread(^
+    {
+        _messageViewDate[messageId] = viewDate;
+        
+        TGModernConversationController *controller = _controller;
+        [controller updateMessageAttributes:messageId];
+    });
+}
+
+- (void)_setMessageFlagsAndViewDate:(int32_t)messageId flags:(int)flags viewDate:(NSTimeInterval)viewDate
+{
+    TGDispatchOnMainThread(^
+    {
+        _messageFlags[messageId] = _messageFlags[messageId] | flags;
+        _messageViewDate[messageId] = viewDate;
+        
+        TGModernConversationController *controller = _controller;
+        [controller updateMessageAttributes:messageId];
+    });
+}
+
 - (bool)_isSecretMessageViewed:(int32_t)messageId
 {
     auto it = _messageFlags.find(messageId);
@@ -590,6 +614,14 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     if (it != _messageFlags.end())
         return it->second & TGSecretMessageFlagScreenshot;
     return false;
+}
+
+- (NSTimeInterval)_secretMessageViewDate:(int32_t)messageId
+{
+    auto it = _messageViewDate.find(messageId);
+    if (it != _messageViewDate.end())
+        return it->second;
+    return 0.0;
 }
 
 - (TGModernViewInlineMediaContext *)_inlineMediaContext:(int32_t)messageId

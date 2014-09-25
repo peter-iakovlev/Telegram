@@ -107,6 +107,16 @@
     }
 }
 
+- (void)setSecretProgress:(float)progress animated:(bool)animated
+{
+    if (ABS(_progress - progress) > FLT_EPSILON)
+    {
+        _progress = progress;
+        
+        [((TGMessageImageViewContainer *)self.boundView).imageView setSecretProgress:_progress animated:animated];
+    }
+}
+
 - (void)setOverlayType:(int)overlayType
 {
     [self setOverlayType:overlayType animated:false];

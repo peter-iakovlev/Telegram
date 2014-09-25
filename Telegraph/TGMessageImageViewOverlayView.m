@@ -14,7 +14,9 @@ typedef enum {
     TGMessageImageViewOverlayViewTypeDownload = 1,
     TGMessageImageViewOverlayViewTypeProgress = 2,
     TGMessageImageViewOverlayViewTypePlay = 3,
-    TGMessageImageViewOverlayViewTypeSecret = 4
+    TGMessageImageViewOverlayViewTypeSecret = 4,
+    TGMessageImageViewOverlayViewTypeSecretViewed = 5,
+    TGMessageImageViewOverlayViewTypeSecretProgress = 6
 } TGMessageImageViewOverlayViewType;
 
 @interface TGMessageImageViewOverlayLayer : CALayer
@@ -98,14 +100,20 @@ typedef enum {
     }
 }
 
-- (void)setSecret
+- (void)setSecret:(bool)isViewed
 {
-    if (_type != TGMessageImageViewOverlayViewTypeSecret)
+    int newType = 0;
+    if (isViewed)
+        newType = TGMessageImageViewOverlayViewTypeSecretViewed;
+    else
+        newType = TGMessageImageViewOverlayViewTypeSecret;
+    
+    if (_type != newType)
     {
         [self pop_removeAnimationForKey:@"progress"];
         [self pop_removeAnimationForKey:@"progressAmbient"];
         
-        _type = TGMessageImageViewOverlayViewTypeSecret;
+        _type = newType;
         [self setNeedsDisplay];
     }
 }
@@ -151,6 +159,58 @@ typedef enum {
         
         _type = TGMessageImageViewOverlayViewTypeProgress;
         _cancelEnabled = cancelEnabled;
+        
+        if (animated)
+        {
+            POPBasicAnimation *animation = [self pop_animationForKey:@"progress"];
+            if (animation != nil)
+            {
+                animation.toValue = @((CGFloat)progress);
+            }
+            else
+            {
+                animation = [POPBasicAnimation animation];
+                animation.property = [POPAnimatableProperty propertyWithName:@"progress" initializer:^(POPMutableAnimatableProperty *prop)
+                {
+                    prop.readBlock = ^(TGMessageImageViewOverlayLayer *layer, CGFloat values[])
+                    {
+                        values[0] = layer.progress;
+                    };
+                    
+                    prop.writeBlock = ^(TGMessageImageViewOverlayLayer *layer, const CGFloat values[])
+                    {
+                        layer.progress = values[0];
+                    };
+                    
+                    prop.threshold = 0.01f;
+                }];
+                animation.fromValue = @(_progress);
+                animation.toValue = @(progress);
+                animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
+                animation.duration = 0.5;
+                [self pop_addAnimation:animation forKey:@"progress"];
+            }
+        }
+        else
+        {
+            _progress = progress;
+            
+            [self setNeedsDisplay];
+        }
+    }
+}
+
+- (void)setSecretProgress:(float)progress animated:(bool)animated
+{
+    if (_type != TGMessageImageViewOverlayViewTypeSecretProgress || ABS(_progress - progress) > FLT_EPSILON)
+    {
+        if (_type != TGMessageImageViewOverlayViewTypeSecretProgress)
+        {
+            _progress = 0.0f;
+            [self setNeedsDisplay];
+        }
+        
+        _type = TGMessageImageViewOverlayViewTypeSecretProgress;
         
         if (animated)
         {
@@ -339,6 +399,7 @@ typedef enum {
             break;
         }
         case TGMessageImageViewOverlayViewTypeSecret:
+        case TGMessageImageViewOverlayViewTypeSecretViewed:
         {
             const CGFloat diameter = 50.0f;
             
@@ -347,17 +408,50 @@ typedef enum {
             CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 0.7f).CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             
-            static UIImage *iconMask = nil;
-            static UIImage *icon = nil;
+            static UIImage *fireIconMask = nil;
+            static UIImage *fireIcon = nil;
+            static UIImage *viewedIconMask = nil;
+            static UIImage *viewedIcon = nil;
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                iconMask = [UIImage imageNamed:@"SecretPhotoFireMask.png"];
-                icon = [UIImage imageNamed:@"SecretPhotoFire.png"];
+                fireIconMask = [UIImage imageNamed:@"SecretPhotoFireMask.png"];
+                fireIcon = [UIImage imageNamed:@"SecretPhotoFire.png"];
+                viewedIconMask = [UIImage imageNamed:@"SecretPhotoCheckMask.png"];
+                viewedIcon = [UIImage imageNamed:@"SecretPhotoCheck.png"];
             });
             
-            [iconMask drawAtPoint:CGPointMake(CGFloor((diameter - icon.size.width) / 2.0f), CGFloor((diameter - icon.size.height) / 2.0f)) blendMode:kCGBlendModeDestinationIn alpha:1.0f];
-            [icon drawAtPoint:CGPointMake(CGFloor((diameter - icon.size.width) / 2.0f), CGFloor((diameter - icon.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:0.4f];
+            if (_type == TGMessageImageViewOverlayViewTypeSecret)
+            {
+                [fireIconMask drawAtPoint:CGPointMake(CGFloor((diameter - fireIcon.size.width) / 2.0f), CGFloor((diameter - fireIcon.size.height) / 2.0f)) blendMode:kCGBlendModeDestinationIn alpha:1.0f];
+                [fireIcon drawAtPoint:CGPointMake(CGFloor((diameter - fireIcon.size.width) / 2.0f), CGFloor((diameter - fireIcon.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:0.4f];
+            }
+            else
+            {
+                CGPoint offset = CGPointMake(1.0f, 2.0f);
+                [viewedIconMask drawAtPoint:CGPointMake(offset.x + CGFloor((diameter - viewedIcon.size.width) / 2.0f), offset.y + CGFloor((diameter - viewedIcon.size.height) / 2.0f)) blendMode:kCGBlendModeDestinationIn alpha:1.0f];
+                [viewedIcon drawAtPoint:CGPointMake(offset.x + CGFloor((diameter - viewedIcon.size.width) / 2.0f), offset.y + CGFloor((diameter - viewedIcon.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:0.3f];
+            }
+            
+            break;
+        }
+        case TGMessageImageViewOverlayViewTypeSecretProgress:
+        {
+            const CGFloat diameter = 50.0f;
+            
+            CGContextSetBlendMode(context, kCGBlendModeCopy);
+            
+            CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 0.7f).CGColor);
+
+            CGPoint center = CGPointMake(diameter / 2.0f, diameter / 2.0f);
+            CGFloat radius = diameter / 2.0f;
+            CGFloat startAngle = - ((float)M_PI / 2);
+            CGFloat endAngle = (_progress * 2 * (float)M_PI) + startAngle;
+            CGContextMoveToPoint(context, center.x, center.y);
+            CGContextAddArc(context, center.x, center.y, radius, startAngle, endAngle, 0);
+            CGContextClosePath(context);
+            
+            CGContextFillPath(context);
             
             break;
         }
@@ -415,9 +509,9 @@ typedef enum {
     [((TGMessageImageViewOverlayLayer *)self.layer) setPlay];
 }
 
-- (void)setSecret
+- (void)setSecret:(bool)isViewed
 {
-    [((TGMessageImageViewOverlayLayer *)self.layer) setSecret];
+    [((TGMessageImageViewOverlayLayer *)self.layer) setSecret:isViewed];
 }
 
 - (void)setProgress:(float)progress animated:(bool)animated
@@ -428,6 +522,11 @@ typedef enum {
 - (void)setProgress:(float)progress cancelEnabled:(bool)cancelEnabled animated:(bool)animated
 {
     [((TGMessageImageViewOverlayLayer *)self.layer) setProgress:progress cancelEnabled:cancelEnabled animated:animated];
+}
+
+- (void)setSecretProgress:(float)progress animated:(bool)animated
+{
+    [((TGMessageImageViewOverlayLayer *)self.layer) setSecretProgress:progress animated:animated];
 }
 
 @end

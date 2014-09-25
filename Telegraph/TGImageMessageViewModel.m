@@ -31,6 +31,8 @@
 
 #import "TGInstantPreviewTouchAreaModel.h"
 
+#import "TGTimerTarget.h"
+
 @interface TGImageMessageViewModel () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate, TGMessageImageViewDelegate>
 {
     TGModernViewContext *_context;
@@ -50,6 +52,9 @@
     float _progress;
     bool _progressVisible;
     
+    bool _isMessageViewed;
+    NSTimeInterval _messageViewDate;
+    
     TGDoubleTapGestureRecognizer *_boundDoubleTapRecognizer;
     UITapGestureRecognizer *_unsentButtonTapRecognizer;
     
@@ -60,6 +65,8 @@
     CGPoint _boundOffset;
     
     bool _mediaIsAvailable;
+    
+    NSTimer *_viewDateTimer;
 }
 
 @end
@@ -132,6 +139,12 @@
         [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)message.date] displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) animated:false];
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
         [_imageModel setIsBroadcast:message.isBroadcast];
+        
+        if (_messageLifetime != 0)
+        {
+            _isMessageViewed = [context isSecretMessageViewed:_mid];
+            _messageViewDate = [context secretMessageViewDate:_mid];
+        }
         
         if (!_incoming)
         {
@@ -217,7 +230,20 @@
 - (NSString *)defaultAdditionalDataString
 {
     if (_messageLifetime != 0)
-        return [self stringForLifetime:_messageLifetime];
+    {
+        if (_isMessageViewed)
+        {
+            if (ABS(_messageViewDate - DBL_EPSILON) > 0.0)
+            {
+                NSTimeInterval endTime = _messageViewDate + _messageLifetime;
+                int remainingSeconds = MAX(0, (int)(endTime - CFAbsoluteTimeGetCurrent()));
+                return [self stringForLifetime:remainingSeconds];
+            }
+            return [self stringForLifetime:0];
+        }
+        else
+            return [self stringForLifetime:_messageLifetime];
+    }
     
     return nil;
 }
@@ -539,6 +565,48 @@
     [self updateImageOverlay:((progressWasVisible && !_progressVisible) || (_progressVisible && ABS(_progress - previousProgress) > FLT_EPSILON)) && animated];
 }
 
+- (void)updateMessageAttributes
+{
+    [super updateMessageAttributes];
+    
+    if (_messageLifetime != 0)
+    {
+        bool isMessageViewed = [_context isSecretMessageViewed:_mid];
+        NSTimeInterval messageViewDate = [_context secretMessageViewDate:_mid];
+        
+        if (_isMessageViewed != isMessageViewed || ABS(_messageViewDate - messageViewDate) > DBL_EPSILON)
+        {
+            _isMessageViewed = isMessageViewed;
+            _messageViewDate = messageViewDate;
+            
+            [self updateImageOverlay:false];
+            
+            if (ABS(_messageViewDate) > DBL_EPSILON)
+                [self _updateViewDateTimerIfVisible];
+        }
+    }
+}
+
+- (void)_updateViewDateTimerIfVisible
+{
+    [_viewDateTimer invalidate];
+    _viewDateTimer = nil;
+    
+    if (_isMessageViewed && ABS(_messageViewDate) > DBL_EPSILON && _imageModel.boundView != nil)
+    {
+        [_imageModel setAdditionalDataString:[self defaultAdditionalDataString]];
+        [self updateImageOverlay:true];
+        
+        _viewDateTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(_updateViewDateTimerIfVisible) interval:0.5 repeat:false runLoopModes:NSRunLoopCommonModes];
+    }
+}
+
+- (void)_invalidateViewDateTimer
+{
+    [_viewDateTimer invalidate];
+    _viewDateTimer = nil;
+}
+
 - (void)updateImageOverlay:(bool)animated
 {
     _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable;
@@ -554,7 +622,18 @@
         [_imageModel setProgress:0.0f animated:false];
     }
     else
-        [_imageModel setOverlayType:[self defaultOverlayActionType] animated:animated];
+    {
+        if (_messageLifetime != 0 && _isMessageViewed && ABS(_messageViewDate) > DBL_EPSILON)
+        {
+            NSTimeInterval endTime = _messageViewDate + _messageLifetime;
+            int remainingSeconds = MAX(0, (int)(endTime - CFAbsoluteTimeGetCurrent()));
+            
+            [_imageModel setOverlayType:TGMessageImageViewOverlaySecretProgress];
+            [_imageModel setSecretProgress:(CGFloat)remainingSeconds / (CGFloat)_messageLifetime animated:animated];
+        }
+        else
+            [_imageModel setOverlayType:[self defaultOverlayActionType] animated:animated];
+    }
 }
 
 - (void)imageDataInvalidated:(NSString *)imageUrl
@@ -609,6 +688,8 @@
     _imageModel.mediaVisible = [_context isMediaVisibleInMessage:_mid];
     
     ((TGMessageImageViewContainer *)[_imageModel boundView]).imageView.delegate = self;
+    
+    [self _updateViewDateTimerIfVisible];
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
@@ -633,6 +714,8 @@
         [[_unsentButtonModel boundView] removeGestureRecognizer:_unsentButtonTapRecognizer];
         _unsentButtonTapRecognizer = nil;
     }
+    
+    [self _invalidateViewDateTimer];
     
     [super unbindView:viewStorage];
 }
@@ -798,7 +881,7 @@
 
 - (int)defaultOverlayActionType
 {
-    return _isSecret ? TGMessageImageViewOverlaySecret : TGMessageImageViewOverlayNone;
+    return _isSecret ? (_isMessageViewed ? TGMessageImageViewOverlaySecretViewed : TGMessageImageViewOverlaySecret) : TGMessageImageViewOverlayNone;
 }
 
 @end
