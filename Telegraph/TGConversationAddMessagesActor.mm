@@ -155,7 +155,15 @@
             if (!message.outgoing && messageLifetimeByConversation[conversationId] != 0)
             {
                 storeMessage = [message copy];
-                storeMessage.messageLifetime = messageLifetimeByConversation[conversationId];
+                NSTimeInterval minLifetime = 0.0;
+                for (id attachment in storeMessage.mediaAttachments)
+                {
+                    if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
+                    {
+                        minLifetime = ((TGVideoMediaAttachment *)attachment).duration;
+                    }
+                }
+                storeMessage.messageLifetime = (int)MAX(minLifetime, (NSTimeInterval)messageLifetimeByConversation[conversationId]);
             }
         }
         

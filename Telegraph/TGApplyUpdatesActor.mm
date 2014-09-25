@@ -1001,14 +1001,14 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                         {
                             if (globalMessagePreviewText && !attachmentFound)
                                 text = [[NSString alloc] initWithFormat:@"%@: %@", user.displayName, message.text];
-                            else
+                            else if (!attachmentFound)
                                 text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_NOTEXT"), user.displayName];
                         }
                         else
                         {
                             if (globalGroupPreviewText && !attachmentFound)
                                 text = [[NSString alloc] initWithFormat:@"%@@%@: %@", user.displayName, chatName, message.text];
-                            else
+                            else if (!attachmentFound)
                                 text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_NOTEXT"), user.displayName, chatName];
                         }
                         

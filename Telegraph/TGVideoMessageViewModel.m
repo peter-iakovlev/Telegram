@@ -251,6 +251,11 @@
     [super bindViewToContainer:container viewStorage:viewStorage];
 }
 
+- (void)layoutForContainerSize:(CGSize)containerSize
+{
+    [super layoutForContainerSize:containerSize];
+}
+
 - (int)defaultOverlayActionType
 {
     if (self.isSecret)
