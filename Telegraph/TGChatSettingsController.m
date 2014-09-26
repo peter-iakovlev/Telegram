@@ -145,7 +145,7 @@
             [self.menuSections addSection:languageSection];
         }
         
-        TGDisclosureActionCollectionItem *cacheItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Cache") action:@selector(cachePressed)];
+        TGDisclosureActionCollectionItem *cacheItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Cache.Title") action:@selector(cachePressed)];
         TGCollectionMenuSection *cacheSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Cache")],
                 cacheItem

@@ -158,15 +158,15 @@
 "Login.PhoneAndCountryHelp" = "يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول.";
 "Login.CodeHelp" = "تم إرسال رسالة قصيرة تحتوي على رمز التفعيل الخاص بك للرقم %@";
 "Login.CodeSentInternal" = "يرجى إدخال الرمز الذي استقبلته للتو على تطبيق **تيليجرام** السابق الخاص بك";
-"Login.HaveNotReceivedCodeInternal" = "Haven't received the code?";
-"Login.CodeSentSms" = "We have sent you an SMS with the code";
+"Login.HaveNotReceivedCodeInternal" = "لم تستقبل رمز التفعيل بعد؟";
+"Login.CodeSentSms" = "تم إرسال رسالة قصيرة تحتوي على رمز التفعيل";
 "Login.Code" = "الرمز";
 "Login.CallRequestState1" = "تيليجرام سيتصل بك خلال %d:%.2d";
 "Login.CallRequestState2" = "جاري طلب اتصال من تيليجرام...";
 "Login.CallRequestState3" = "تيليجرام اتصل برقمك";
-"Login.EmailNotConfiguredError" = "Please set up an email account.";
-"Login.EmailCodeSubject" = "%@, no code";
-"Login.EmailCodeBody" = "My phone number is:\n%@\nI can't get an activation code for Telegram.";
+"Login.EmailNotConfiguredError" = "فضلًا، قم بإعداد حساب بريدك الإلكتروني";
+"Login.EmailCodeSubject" = "%@, لا يوجد رمز تفعيل";
+"Login.EmailCodeBody" = "رقم هاتفي هو:\n%@\nلم استطع الحصول على رمز التفعيل الخاص بتيليجرام.";
 "Login.UnknownError" = "حدث خطأ. يرجى المحاولة لاحقًا";
 "Login.InvalidCodeError" = "لقد قمت بإدخال رمز غير صحيح، حاول مرة أخرى.";
 "Login.NetworkError" = "يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.";
@@ -374,7 +374,7 @@
 "Notification.MessageLifetimeChanged" = "%1$@ قام بتعيين عداد التدمير الذاتي إلى %2$@";
 "Notification.MessageLifetimeChangedOutgoing" = "لقد قمت بتعيين عداد التدمير الذاتي إلى %1$@";
 "Notification.MessageLifetimeRemoved" = "%1$@ قام بإيقاف عداد التدمير الذاتي";
-"Notification.MessageLifetimeRemovedOutgoing" = "You disabled the self-destruct timer";
+"Notification.MessageLifetimeRemovedOutgoing" = "لقد قمت بتعطيل عداد التدمير الذاتي";
 "Notification.MessageLifetime2s" = "ثانيتان";
 "Notification.MessageLifetime5s" = "٥ ثوانٍ";
 "Notification.MessageLifetime1m" = "دقيقة";
@@ -400,11 +400,11 @@
 
 "ConversationProfile.LeaveDeleteAndExit" = "خروج وحذف";
 
-"Conversation.DownloadPhoto" = "Download Photo";
+"Conversation.DownloadPhoto" = "تنزيل الصورة";
 "Conversation.ViewPhoto" = "اعرض الصورة";
 "Conversation.PlayVideo" = "اعرض المقطع المرئي";
 "Conversation.Play" = "Play";
-"Conversation.Stop" = "Stop";
+"Conversation.Stop" = "إيقاف";
 "Conversation.ViewFile" = "View File";
 "Conversation.Download" = "تنزيل";
 "Conversation.DownloadMegabytes" = "تنزيل %.1fMb";
@@ -424,9 +424,9 @@
 "Conversation.View" = "عرض";
 "Conversation.Download" = "تنزيل";
 "Conversation.SlideToCancel" = "Slide to cancel";
-"Conversation.ApplyLocalization" = "Apply Localization";
-"Conversation.OpenFile" = "Open File";
-"Conversation.MicrophoneAccessDisabled" = "Telegram needs access to your microphone for voice messages. Please go to Settings — Privacy — Microphone and set Telegram to ON.";
+"Conversation.ApplyLocalization" = "تطبيق واجهة اللغة";
+"Conversation.OpenFile" = "فتح الملف";
+"Conversation.MicrophoneAccessDisabled" = "يحتاج تيليجرام للسماع له باستخدام الميكروفون لتسجيل الرسائل الصوتية. يرجى الذهاب إلى إعدادات — الخصوصية — الميكروفون ثم قم بتفعيل تيليجرام.";
 
 // Media Picker
 "MediaPicker.Send" = "أرسل";
@@ -495,7 +495,7 @@
 // Group Info
 "GroupInfo.Title" = "معلومات المجموعة";
 "GroupInfo.GroupNamePlaceholder" = "اسم المجموعة";
-"GroupInfo.BroadcastListNamePlaceholder" = "List Name";
+"GroupInfo.BroadcastListNamePlaceholder" = "اسم القائمة";
 "GroupInfo.SetGroupPhoto" = "تعيين صورة للمجموعة";
 "GroupInfo.SetGroupPhotoStop" = "إيقاف";
 "GroupInfo.SetGroupPhotoDelete" = "حذف الصورة";
@@ -570,8 +570,8 @@
 "Settings.Support" = "اسأل سؤالًا";
 "Settings.FAQ" = "الأسئلة الشائعة عن تيليجرام";
 "Settings.FAQ_URL" = "https://telegram.org/faq/ar";
-"Settings.FAQ_Intro" = "Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.Please take a look at the Telegram FAQ: it has important troubleshooting tips and answers to most questions.";
-"Settings.FAQ_Button" = "FAQ";
+"Settings.FAQ_Intro" = "نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحن نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت. يرجى الإطلاع على صفحة الأسئلة الأكثر شيوعًا: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.";
+"Settings.FAQ_Button" = "الأسئلة الشائعة";
 "Settings.SaveIncomingPhotos" = "احفظ الصور الواردة";
 "Settings.SaveIncomingPhotosHelp" = "قم بحفظ الصور الواردة في ألبوم الكاميرا";
 "Settings.LogoutError" = "حدث خطأ. الرجاء المحاولة في وقت لاحق.";
@@ -618,8 +618,8 @@
 "ChatSettings.ClearOtherSessionsConfirmation" = "هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟";
 "ChatSettings.ClearOtherSessionsFailed" = "حدث خطأ.";
 "ChatSettings.Language" = "اللغة";
-"ChatSettings.RevertLanguage" = "Revert Language";
-"ChatSettings.Cache" = "CACHE";
+"ChatSettings.RevertLanguage" = "استرجاع واجهة اللغة الأصلية";
+"ChatSettings.Cache" = "الذاكرة المخبئية";
 
 // Usage
 "Cache.Title" = "مخبأ";
@@ -627,9 +627,9 @@
 
 // Blocked Users
 "BlockedUsers.Title" = "جهات الاتصال المحظورة";
-"BlockedUsers.SelectUserTitle" = "Block User";
-"BlockedUsers.AlreadyBlocked" = "This user is already blocked";
-"BlockedUsers.BlockUser" = "Block User";
+"BlockedUsers.SelectUserTitle" = "حظر المستخدم";
+"BlockedUsers.AlreadyBlocked" = "هذا المستخدم محظور مسبقًا";
+"BlockedUsers.BlockUser" = "حظر المستخدم";
 "BlockedUsers.BlockPrefix" = "حظر ";
 "BlockedUsers.BlockTitle" = "حظر";
 "BlockedUsers.LeavePrefix" = "مغادرة ";
@@ -647,17 +647,17 @@
 "Update.Update" = "تحديث";
 
 // Service
-"Service.LocalizationDownloadError" = "Couldn't download localization file. Please check your internet connection and try again.";
-"Service.ApplyLocalization" = "Apply Localization?";
-"Service.ApplyLocalizationWithWarnings" = "%@\n\nApply Localization?";
+"Service.LocalizationDownloadError" = "لم يتمكن تيليجرام من تنزيل ملف واجهة اللغة. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.";
+"Service.ApplyLocalization" = "هل تريد تطبيق واجهة اللغة؟";
+"Service.ApplyLocalizationWithWarnings" = "%@\n\nهل تريد تطبيق واجهة اللغة؟";
 
-"Notification.SecretChatMessageScreenshot" = "Screenshot!";
-"Notification.SecretChatScreenshot" = "Screenshot taken!";
+"Notification.SecretChatMessageScreenshot" = "لقطة من الشاشة!";
+"Notification.SecretChatScreenshot" = "لقط تم أخذ لقطة من الشاشة!";
 
 // Broadcast Lists
 "DialogList.Broadcast" = "رسالة جماعية";
 "BroadcastLists.Title" = "قوائم الرسائل الجماعية";
-"BroadcastLists.NoListsYet" = "No Lists Yet";
+"BroadcastLists.NoListsYet" = "لا توجد قوائم بعد";
 "BroadcastLists.NoListsText" = "يمكنك إرسال رسائل لعدة مستخدمين مرة واحدة بشكل سهل من خلال قوائم الرسائل الجماعية.";
 
 // Broadcast List
@@ -668,10 +668,10 @@
 "VideoPreview.OptionSD" = "الحجم الطبيعي (%@)";
 "VideoPreview.OptionHD" = "عالي الدقة (%@)";
 
-"ChatSettings.AutoPlayAudio" = "Autoplay Audio";
+"ChatSettings.AutoPlayAudio" = "تشغيل تلقائي للمقاطع الصوتية";
 
-"Settings.LogoutConfirmationTitle" = "Log out?";
-"Settings.LogoutConfirmationText" = "\nNote that you can seamlessly use Telegram on all your devices at once.\n\nRemember, logging out kills all your Secret Chats.";
+"Settings.LogoutConfirmationTitle" = "هل تريد تسجيل الخروج؟";
+"Settings.LogoutConfirmationText" = "\nنرجو الأخذ بالعلم أنه يمكنك استخدام تيليجرام على أجهزتك المتعددة بسهولة تامة وفي وقت واحد.\n\nوتذكر، تسجيل الخروج يحذف كافة محادثاتك السرية.";
 
-"Login.PadPhoneHelp" = "\nYou can use your main mobile number to log in to Telegram on all devices.\nDon't use your iPad's SIM number here – we'll need to send you an SMS.\n\nIs this number correct?\n{number}";
-"Login.PadPhoneHelpTitle" = "Your Number";
+"Login.PadPhoneHelp" = "\nتستطيع استخدام رقم هاتفك الرئيسي لتسجيل الدخول في تيليجرام على كافة أجهزتك.\nلا تستخدم شريحة الآيباد الخاص بك هنا – سنحتاج لأن نرسل لك رسالة قصيرة للتفعيل.\n\nهل هذا الرقم صحيح؟\n{number}";
+"Login.PadPhoneHelpTitle" = "رقمك";

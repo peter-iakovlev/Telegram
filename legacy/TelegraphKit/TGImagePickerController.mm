@@ -688,7 +688,7 @@ void sharedAssetsLibraryRelease()
     _darkCancelButton.titleLabel.font = TGSystemFontOfSize(17);
     _darkCancelButton.contentEdgeInsets = UIEdgeInsetsMake(0, 10, 0, 0);
     [_darkCancelButton sizeToFit];
-    _darkCancelButton.frame = CGRectMake(0, 0, MAX(60, _darkDoneButton.frame.size.width), 44);
+    _darkCancelButton.frame = CGRectMake(0, 0, MAX(120, _darkDoneButton.frame.size.width), 44);
     _darkCancelButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
     [_darkCancelButton addTarget:self action:@selector(cancelButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [_darkPanelView addSubview:_darkCancelButton];

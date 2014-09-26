@@ -59,6 +59,25 @@
     return self;
 }
 
+- (void)sizeToFit
+{
+    CGFloat height = 0.0f;
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+        height = 27.0f;
+    else
+        height = 32.0f;
+    
+    CGSize size = CGSizeMake(27.0f, height);
+    if (_timerValue == 0)
+    {
+    }
+    else
+    {
+        [_timeLabel sizeToFit];
+        size.width = MAX(size.width, _timeLabel.frame.size.width);
+    }
+}
+
 - (void)setTimerValue:(NSInteger)timerValue
 {
     if (_timerValue != timerValue)

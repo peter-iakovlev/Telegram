@@ -132,13 +132,13 @@
 
 // Tour
 "Tour.Title1" = "Telegram";
-"Tour.Text1" = "L'app di messaggi **più veloce** al mondo.\nÈ **gratuita** e **sicura**.";
+"Tour.Text1" = "L'app di messaggi **più veloce** al mondo. È **gratuita** e **sicura**.";
 
 "Tour.Title2" = "Veloce";
 "Tour.Text2" = "**Telegram** consegna i messaggi più \nvelocemente di ogni altra app.";
 
 "Tour.Title3" = "Potente";
-"Tour.Text3" = "**Telegram** non ha limiti di dimensione\nper le tue chat e per i file multimediali";
+"Tour.Text3" = "**Telegram** non ha limiti di dimensione\nper le chat e per i file multimediali.";
 
 "Tour.Title4" = "Sicuro";
 "Tour.Text4" = "**Telegram** protegge i tuoi messaggi \ndagli attacchi degli hacker.";
@@ -455,12 +455,12 @@
 "Profile.EncryptionKey" = "Chiave di cifratura";
 "Profile.MessageLifetime" = "Timer di autodistruzione";
 "Profile.MessageLifetimeForever" = "Spento";
-"Profile.MessageLifetime2s" = "2s";
-"Profile.MessageLifetime5s" = "5s";
+"Profile.MessageLifetime2s" = "2sc";
+"Profile.MessageLifetime5s" = "5sc";
 "Profile.MessageLifetime1m" = "1m";
 "Profile.MessageLifetime1h" = "1h";
 "Profile.MessageLifetime1d" = "1g";
-"Profile.MessageLifetime1w" = "1sett";
+"Profile.MessageLifetime1w" = "1st";
 "Profile.ShareContactButton" = "Condividi contatto";
 "Profile.ShareContactPrefix" = "Invia contatto a";
 

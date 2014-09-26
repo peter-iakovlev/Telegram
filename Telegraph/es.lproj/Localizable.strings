@@ -64,7 +64,7 @@
 "State.updating" = "actualizando";
 "State.Connecting" = "Conectando...";
 "State.Updating" = "Actualizando...";
-"State.WaitingForNetwork" = "Esperando señal de red";
+"State.WaitingForNetwork" = "Esperando red";
 
 // Presence
 "Presence.online" = "en línea";
@@ -570,10 +570,10 @@
 "Settings.Support" = "Hacer una pregunta";
 "Settings.FAQ" = "Preguntas frecuentes";
 "Settings.FAQ_URL" = "https://telegram.org/faq/es";
-"Settings.FAQ_Intro" = "Por favor, considera que el Soporte de Telegram está hecho por voluntarios. Respondemos lo antes posible, pero puede tomar tiempo. Puedes mirar las preguntas frecuentes de Telegram: tienen soluciones a problemas y respuestas para la mayoría de las preguntas.";
+"Settings.FAQ_Intro" = "Por favor, considera que el soporte de Telegram está hecho por voluntarios. Respondemos lo antes posible, pero puede tomar tiempo. Si quieres, mira las preguntas frecuentes de Telegram: tienen soluciones a problemas, y respuestas para la mayoría de las preguntas.";
 "Settings.FAQ_Button" = "Preguntas frecuentes";
 "Settings.SaveIncomingPhotos" = "Guardar fotos recibidas";
-"Settings.SaveIncomingPhotosHelp" = "Guardar fotos recibidas en el Carrete";
+"Settings.SaveIncomingPhotosHelp" = "Guardar las fotos recibidas en el Carrete";
 "Settings.LogoutError" = "Ha ocurrido un error. Por favor, inténtalo de nuevo más tarde.";
 
 // Notifications and Sounds
@@ -614,12 +614,12 @@
 "ChatSettings.Groups" = "Grupos";
 "ChatSettings.Security" = "SEGURIDAD";
 "ChatSettings.ClearOtherSessions" = "Cerrar todas las otras sesiones";
-"ChatSettings.ClearOtherSessionsHelp" = "Cerrar sesión en todos los dispositivos, excepto este.";
+"ChatSettings.ClearOtherSessionsHelp" = "Salir de todos los dispositivos, excepto este.";
 "ChatSettings.ClearOtherSessionsConfirmation" = "¿Quieres finalizar la sesión en todos los dispositivos, excepto este?";
 "ChatSettings.ClearOtherSessionsFailed" = "Ocurrió un error.";
 "ChatSettings.Language" = "IDIOMA";
 "ChatSettings.RevertLanguage" = "Revertir el idioma";
-"ChatSettings.Cache" = "CACHE";
+"ChatSettings.Cache" = "CACHÉ";
 
 // Usage
 "Cache.Title" = "Caché";
@@ -673,5 +673,5 @@
 "Settings.LogoutConfirmationTitle" = "¿Quieres cerrar sesión?";
 "Settings.LogoutConfirmationText" = "\nConsidera que puedes usar Telegram en todos tus dispositivos a la vez.\n\nRecuerda que, al cerrar sesión, eliminas todos tus chats secretos.";
 
-"Login.PadPhoneHelp" = "\nYou can use your main mobile number to log in to Telegram on all devices.\nDon't use your iPad's SIM number here – we'll need to send you an SMS.\n\nIs this number correct?\n{number}";
+"Login.PadPhoneHelp" = "\nPuedes usar tu número para ingresar a Telegram desde todos tus dispositivos. \nNo uses el número de la SIM de iPad - necesitaremos enviarte un SMS. \n\n¿Es correcto este número? \n{number}";
 "Login.PadPhoneHelpTitle" = "Tu número";
