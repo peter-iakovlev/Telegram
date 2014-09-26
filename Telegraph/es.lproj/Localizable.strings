@@ -29,18 +29,14 @@
 "CHAT_DELETE_MEMBER" = "%1$@ expulsó a %3$@ del grupo %2$@";
 "CHAT_LEFT" = "%1$@ dejó el grupo %2$@";
 "CHAT_RETURNED" = "%1$@ volvió al grupo %2$@";
-"PHOTO_PUBLISHED" = "%1$@ publicó una foto en el grupo %2$@";
 
 "CONTACT_JOINED" = "¡%1$@ se ha unido a Telegram!";
 "CONTACT_REQUESTED" = "%1$@ solicita tu información de contacto";
 "CONTACT_ACCEPTED" = "%1$@ ha aceptado tu solicitud";
 "CONTACT_ACTIVATED" = "¡%1$@ te ha ayudado a activar tu cuenta!";
-"CONTACT_PHOTO" = "%1$@ añadió una nueva foto de perfil";
 
 "AUTH_UNKNOWN" = "Sesión iniciada desde un nuevo dispositivo %1$@";
 "AUTH_REGION" = "Sesión iniciada desde un nuevo dispositivo %1$@, ubicación: %2$@";
-
-"GEOCHAT_CHECKIN" = "%1$@ hizo check-in en %2$@";
 
 // Common
 "Common.OK" = "OK";
@@ -72,7 +68,7 @@
 
 // Presence
 "Presence.online" = "en línea";
-"Presence.offline" = "desconectado/a";
+"Presence.offline" = "fuera de línea";
 "Presence.invisible" = "invisible";
 
 // Date
@@ -136,10 +132,10 @@
 
 // Tour
 "Tour.Title1" = "Telegram";
-"Tour.Text1" = "La aplicación de mensajería más **rápida** del mundo.\nEs **gratis** y **segura**.";
+"Tour.Text1" = "La aplicación de mensajería más \n**veloz** del mundo. Es **gratis** y **segura**.";
 
 "Tour.Title2" = "Rápida";
-"Tour.Text2" = "**Telegram** entrega mensajes\nmás rápido que cualquier otra aplicación.";
+"Tour.Text2" = "**Telegram** entrega mensajes más \nrápido que cualquier otra aplicación.";
 
 "Tour.Title3" = "Poderosa";
 "Tour.Text3" = "**Telegram** no tiene límites en\nel tamaño de tus chats y archivos.";
@@ -193,7 +189,7 @@
 "Login.InfoAvatarAdd" = "añadir";
 "Login.InfoAvatarPhoto" = "foto";
 "Login.InfoFirstNamePlaceholder" = "Nombre";
-"Login.InfoLastNamePlaceholder" = "Apellido/s";
+"Login.InfoLastNamePlaceholder" = "Apellido";
 "Login.InfoUpdatePhoto" = "Actualizar foto";
 "Login.InfoDeletePhoto" = "Eliminar foto";
 "Login.InfoHelp" = "Ingresa tu nombre y añade una foto de perfil.";
@@ -218,7 +214,7 @@
 "DialogList.SelectContacts" = "Seleccionar contactos";
 "DialogList.Create" = "Crear";
 "DialogList.NoMessagesTitle" = "No tienes conversaciones todavía";
-"DialogList.NoMessagesText" = "Empieza a chatear presionando el botón del lápiz de la esquina superior derecha o ve a la sección de Contactos.";
+"DialogList.NoMessagesText" = "Empieza a chatear presionando el botón del lápiz, de la esquina superior derecha, o ve a Contactos.";
 "DialogList.SingleTypingSuffix" = "%@ está escribiendo";
 "DialogList.MultipleTypingSuffix" = "%d están escribiendo";
 "DialogList.Typing" = "escribiendo";
@@ -233,7 +229,7 @@
 "DialogList.Messages" = "Mensajes";
 
 // Compose
-"Compose.TokenListPlaceholder" = "¿A quién te gustaría enviarle un mensaje?";
+"Compose.TokenListPlaceholder" = "¿A quién te gustaría enviar un mensaje?";
 "Compose.NewMessage" = "Nuevo mensaje";
 "Compose.NewGroup" = "Nuevo grupo";
 "Compose.NewEncryptedChat" = "Nuevo chat secreto";
@@ -295,7 +291,7 @@
 "Conversation.ForwardTitle" = "Reenviar";
 "Conversation.ForwardChats" = "Chats";
 "Conversation.ForwardContacts" = "Contactos";
-"Conversation.StatusKickedFromGroup" = "has sido expulsado del grupo";
+"Conversation.StatusKickedFromGroup" = "te han expulsado del grupo";
 "Conversation.StatusLeftGroup" = "has abandonado el grupo";
 "Conversation.StatusTyping" = "escribiendo";
 "Conversation.BroadcastTitle" = "Difusión";
@@ -320,7 +316,7 @@
 "Conversation.EncryptionWaiting" = "Esperando que %@ se conecte...";
 "Conversation.EncryptionProcessing" = "Intercambiando claves de cifrado...";
 "Conversation.SupportPlaceholder" = "¿Tienes alguna pregunta sobre Telegram?";
-"Conversation.EmptyPlaceholder" = "No hay mensajes aquí todavía...";
+"Conversation.EmptyPlaceholder" = "Aún no hay mensajes...";
 "Conversation.EncryptedPlaceholderTitleIncoming" = "%@ te ha invitado a un chat secreto.";
 "Conversation.EncryptedPlaceholderTitleOutgoing" = "Has invitado a %@ a un chat secreto.";
 "Conversation.EncryptedDescriptionTitle" = "Los chats secretos:";
@@ -398,7 +394,7 @@
 
 // Conversation Profile
 "ConversationProfile.ErrorCreatingConversation" = "Ocurrió un error";
-"ConversationProfile.UserLeftChatError" = "Lo siento, %@ ha decidido abandonar este grupo, así que no puedes volver a invitarlo/a a formar parte de nuevo.";
+"ConversationProfile.UserLeftChatError" = "Lo siento, %@ ha decidido abandonar este grupo, así que no puedes enviarle una invitación de nuevo.";
 "ConversationProfile.UnknownAddMemberError" = "Ha ocurrido un error inesperado. Ya hemos informado a nuestros magos y arreglarán el problema cuanto antes. Lo sentimos.";
 "ConversationProfile.UsersTooMuchError" = "Lo siento, este grupo está lleno. Ya no se pueden agregar más miembros.";
 
@@ -419,7 +415,7 @@
 "Conversation.DownloadProgressKilobytes" = "%1$dKb / %2$dKb";
 "Conversation.ViewLocation" = "Ver ubicación";
 "Conversation.SearchWebImages" = "Buscar imágenes en la web";
-"Conversation.ShareMyContactInfo" = "Compartir mi info. de contacto";
+"Conversation.ShareMyContactInfo" = "Compartir mi inf. de contacto";
 "Conversation.AddContact" = "Añadir contacto";
 "Conversation.SendMessage" = "Enviar mensaje";
 "Conversation.EncryptionCanceled" = "Chat secreto cancelado";
@@ -453,7 +449,7 @@
 "Profile.ImageUploadError" = "Ha ocurrido un error. Por favor, inténtalo de nuevo más tarde.";
 "Profile.PhonebookAccessDisabled" = "Para activar esta opción, por favor, ve a los Ajustes de tu iPhone — Privacidad — Contactos y activa la opción para Telegram.";
 "Profile.CreateEncryptedChatError" = "Ocurrió un error.";
-"Profile.CreateEncryptedChatOutdatedError" = "No se puede crear un Chat Secreto con %@.\n%@ porque está utilizando una versión antigua de Telegram. Necesita actualizarla antes.";
+"Profile.CreateEncryptedChatOutdatedError" = "No se puede crear un chat secreto con %@.\n%@ está utilizando una versión antigua de Telegram y necesita actualizarla.";
 "Profile.CreateNewContact" = "Crear nuevo contacto";
 "Profile.AddToExisting" = "Añadir a contacto existente";
 "Profile.EncryptionKey" = "Clave de cifrado";
@@ -476,7 +472,7 @@
 "UserInfo.SendMessage" = "Enviar mensaje";
 "UserInfo.AddContact" = "Añadir contacto";
 "UserInfo.ShareContact" = "Compartir contacto";
-"UserInfo.StartSecretChat" = "Crear chat secreto";
+"UserInfo.StartSecretChat" = "Iniciar chat secreto";
 "UserInfo.DeleteContact" = "Eliminar contacto";
 "UserInfo.CreateNewContact" = "Crear nuevo contacto";
 "UserInfo.AddToExisting" = "Añadir a contacto existente";
@@ -485,7 +481,7 @@
 "UserInfo.NotificationsDisabled" = "Inhabilitadas";
 "UserInfo.NotificationsEnable" = "Habilitadas";
 "UserInfo.NotificationsDisable" = "Inhabilitadas";
-"UserInfo.Invite" = "invitar a Telegram";
+"UserInfo.Invite" = "Invitar a Telegram";
 
 // New Contact
 "NewContact.Title" = "Nuevo contacto";
@@ -516,7 +512,7 @@
 "GroupInfo.AddParticipant" = "Añadir participante...";
 "GroupInfo.AddParticipantTitle" = "Contactos";
 "GroupInfo.AddParticipantConfirmation" = "¿Añadir a %@ al grupo?";
-"GroupInfo.KickedStatus" = "Has sido expulsado del grupo";
+"GroupInfo.KickedStatus" = "Te han expulsado del grupo";
 "GroupInfo.LeftStatus" = "Has abandonado el grupo";
 
 // Encryption Key
@@ -546,7 +542,7 @@
 "Map.Map" = "Mapa";
 "Map.Satellite" = "Satélite";
 "Map.Hybrid" = "Híbrido";
-"Map.AccessDeniedError" = "Para activar esta función, por favor, marca la opción de Telegram como activa en los servicios de localización de los Ajustes de privacidad de tu iPhone.";
+"Map.AccessDeniedError" = "Para usar esta función, por favor, marca la opción de Telegram como 'activa', en los servicios de localización de los Ajustes de privacidad en tu iPhone.";
 "Map.ForwardViaTelegram" = "Reenviar mediante Telegram";
 "Map.GetDirections" = "Obtener direcciones";
 "Map.OpenInGoogleMaps" = "Abrir en Google Maps";
@@ -570,11 +566,11 @@
 "Settings.NotificationsAndSounds" = "Notificaciones y sonidos";
 "Settings.ChatSettings" = "Ajustes de chat";
 "Settings.BlockedUsers" = "Usuarios bloqueados";
-"Settings.ChatBackground" = "Fondo del chat";
+"Settings.ChatBackground" = "Fondo de chat";
 "Settings.Support" = "Hacer una pregunta";
 "Settings.FAQ" = "Preguntas frecuentes";
 "Settings.FAQ_URL" = "https://telegram.org/faq/es";
-"Settings.FAQ_Intro" = "Por favor, ten en cuenta que el Soporte de Telegram está hecho por voluntarios. Intentamos responder lo antes posible, pero puede tomar un tiempo. Por favor, echa un vistazo a las Preguntas frecuentes de Telegram: tiene importantes soluciones a problemas y respuestas para la mayoría de las preguntas.";
+"Settings.FAQ_Intro" = "Por favor, considera que el Soporte de Telegram está hecho por voluntarios. Respondemos lo antes posible, pero puede tomar tiempo. Puedes mirar las preguntas frecuentes de Telegram: tienen soluciones a problemas y respuestas para la mayoría de las preguntas.";
 "Settings.FAQ_Button" = "Preguntas frecuentes";
 "Settings.SaveIncomingPhotos" = "Guardar fotos recibidas";
 "Settings.SaveIncomingPhotosHelp" = "Guardar fotos recibidas en el Carrete";
@@ -619,11 +615,11 @@
 "ChatSettings.Security" = "SEGURIDAD";
 "ChatSettings.ClearOtherSessions" = "Cerrar todas las otras sesiones";
 "ChatSettings.ClearOtherSessionsHelp" = "Cerrar sesión en todos los dispositivos, excepto este.";
-"ChatSettings.ClearOtherSessionsConfirmation" = "¿Estás seguro que quieres finalizar la sesión de todos los dispositivos, excepto este?";
+"ChatSettings.ClearOtherSessionsConfirmation" = "¿Quieres finalizar la sesión en todos los dispositivos, excepto este?";
 "ChatSettings.ClearOtherSessionsFailed" = "Ocurrió un error.";
 "ChatSettings.Language" = "IDIOMA";
 "ChatSettings.RevertLanguage" = "Revertir el idioma";
-"ChatSettings.Cache" = "Caché";
+"ChatSettings.Cache" = "CACHE";
 
 // Usage
 "Cache.Title" = "Caché";
@@ -676,3 +672,6 @@
 
 "Settings.LogoutConfirmationTitle" = "¿Quieres cerrar sesión?";
 "Settings.LogoutConfirmationText" = "\nConsidera que puedes usar Telegram en todos tus dispositivos a la vez.\n\nRecuerda que, al cerrar sesión, eliminas todos tus chats secretos.";
+
+"Login.PadPhoneHelp" = "\nYou can use your main mobile number to log in to Telegram on all devices.\nDon't use your iPad's SIM number here – we'll need to send you an SMS.\n\nIs this number correct?\n{number}";
+"Login.PadPhoneHelpTitle" = "Tu número";

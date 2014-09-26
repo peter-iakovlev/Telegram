@@ -268,6 +268,13 @@
             else
                 return 93.0f;
         }
+        else if (widescreenWidth >= 568 - FLT_EPSILON)
+        {
+            if (width >= widescreenWidth - FLT_EPSILON)
+                return 111.0f;
+            else
+                return 105.0f;
+        }
         else if (widescreenWidth >= 540 - FLT_EPSILON)
         {
             if (width >= widescreenWidth - FLT_EPSILON)
@@ -278,17 +285,17 @@
         else
         {
             if (width >= widescreenWidth - FLT_EPSILON)
-                return 78.0f;
+                return 105.0f;
             else
-                return 78.5f;
+                return 105.0f;
         }
     }
     else
     {
         if (width >= widescreenWidth - FLT_EPSILON)
-            return 78.0f;
+            return 105.0f;
         else
-            return 78.0f;
+            return 105.0f;
     }
 }
 

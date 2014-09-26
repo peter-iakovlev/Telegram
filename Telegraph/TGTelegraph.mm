@@ -2162,7 +2162,8 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     
     getAppUpdate.device_model = [self currentDeviceModel];
     getAppUpdate.system_version = [[UIDevice currentDevice] systemVersion];
-    getAppUpdate.app_version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+    NSString *versionString = [[NSString alloc] initWithFormat:@"%@ (%@)", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"], [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
+    getAppUpdate.app_version = versionString;
     getAppUpdate.lang_code = [[NSLocale preferredLanguages] objectAtIndex:0];
     
     return [[TGTelegramNetworking instance] performRpc:getAppUpdate completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
@@ -2240,7 +2241,8 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         
         registerDevice.device_model = [self currentDeviceModel];
         registerDevice.system_version = [[UIDevice currentDevice] systemVersion];
-        registerDevice.app_version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+        NSString *versionString = [[NSString alloc] initWithFormat:@"%@ (%@)", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"], [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
+        registerDevice.app_version = versionString;
 #ifdef DEBUG
         registerDevice.app_sandbox = true;
 #else

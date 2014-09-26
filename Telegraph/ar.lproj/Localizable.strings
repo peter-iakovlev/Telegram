@@ -29,18 +29,14 @@
 "CHAT_DELETE_MEMBER" = "%1$@ قام بإخراج %3$@ من المجموعة %2$@";
 "CHAT_LEFT" = "%1$@ غادر المجموعة %2$@";
 "CHAT_RETURNED" = "%1$@ عاد إلى المجموعة %2$@";
-"PHOTO_PUBLISHED" = "%1$@ published a photo to the group %2$@";
 
 "CONTACT_JOINED" = "%1$@ قام بالتسجيل في تيليجرام!";
 "CONTACT_REQUESTED" = "%1$@ requested your contact information";
 "CONTACT_ACCEPTED" = "%1$@ accepted your contact request";
 "CONTACT_ACTIVATED" = "%1$@ ساعدك في تفعيل حسابك!";
-"CONTACT_PHOTO" = "%1$@ قام بإضافة صورة شخصية";
 
 "AUTH_UNKNOWN" = "تم تسجيل الدخول لحسابك من جهاز جديد%1$@";
 "AUTH_REGION" = "تم تسجيل الدخول لحسابك من جهاز جديد %1$@, الموقع: %2$@";
-
-"GEOCHAT_CHECKIN" = "%1$@ checked in at %2$@";
 
 // Common
 "Common.OK" = "موافق";
@@ -623,7 +619,7 @@
 "ChatSettings.ClearOtherSessionsFailed" = "حدث خطأ.";
 "ChatSettings.Language" = "اللغة";
 "ChatSettings.RevertLanguage" = "Revert Language";
-"ChatSettings.Cache" = "مخبأ";
+"ChatSettings.Cache" = "CACHE";
 
 // Usage
 "Cache.Title" = "مخبأ";
@@ -676,3 +672,6 @@
 
 "Settings.LogoutConfirmationTitle" = "Log out?";
 "Settings.LogoutConfirmationText" = "\nNote that you can seamlessly use Telegram on all your devices at once.\n\nRemember, logging out kills all your Secret Chats.";
+
+"Login.PadPhoneHelp" = "\nYou can use your main mobile number to log in to Telegram on all devices.\nDon't use your iPad's SIM number here – we'll need to send you an SMS.\n\nIs this number correct?\n{number}";
+"Login.PadPhoneHelpTitle" = "Your Number";

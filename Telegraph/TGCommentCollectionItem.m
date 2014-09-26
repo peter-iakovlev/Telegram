@@ -53,6 +53,12 @@
     textSize.width = ceilf(textSize.width);
     textSize.height = ceilf(textSize.height);
     
+    if (_skipLastLineInSizeComputation)
+    {
+        CGFloat lineHeight = [@" " sizeWithFont:font].height;
+        textSize.height = MAX(lineHeight, textSize.height - lineHeight);
+    }
+    
     return CGSizeMake(containerSize.width, textSize.height + 7.0f + 7.0f);
 }
 

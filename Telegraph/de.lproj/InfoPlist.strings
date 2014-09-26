@@ -2,4 +2,5 @@
 
 "CFBundleDisplayName" = "Telegram";
 
-"NSContactsUsageDescription" = "Telegram speichert deine Kontakte verschlüsselt in der Cloud, damit du dich mit deinen Freunden auf all deinen Geräten verbinden kannst.";
+"NSContactsUsageDescription" = "Telegram speichert deine Kontakte verschlüsselt in der sicheren Telegram Cloud, damit du dich mit deinen Freunden auf all deinen Geräten verbinden kannst.";
+"NSLocationWhenInUseUsageDescription" = "Wenn du Freunden deinen Standort mitteilen willst, musst du Telegram den Zugriff darauf erlauben.";
