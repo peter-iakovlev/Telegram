@@ -18,6 +18,8 @@
 
 #import "TGMediaStoreContext.h"
 
+#import "TGDatabase.h"
+
 @interface TGGalleryPhotoDataSource () <ASWatcher>
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -90,12 +92,12 @@
             completed = !isThumbnail;
         }
         
+        NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://?", [TGGalleryPhotoDataSource uriPrefix]].length]];
+        
         if (!completed)
         {
             if (progress)
                 progress(0.0f);
-            
-            NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://?", [TGGalleryPhotoDataSource uriPrefix]].length]];
             
             if (args[@"id"] != nil && args[@"messageId"] != nil && args[@"conversationId"] != nil && args[@"legacy-cache-url"] && args[@"legacy-thumbnail-cache-url"])
             {
@@ -125,6 +127,14 @@
                             progress(value);
                     }
                 } watcher:self];
+            }
+        }
+        else
+        {
+            if (args[@"messageId"] != nil && args[@"id"] != nil)
+            {
+                int messageId = [args[@"messageId"] intValue];
+                [TGDatabaseInstance() updateLastUseDateForMediaType:2 mediaId:[args[@"id"] longLongValue] messageId:messageId];
             }
         }
     }];
@@ -189,6 +199,15 @@
         if (isThumbnail && acceptPartialData && asyncTaskId != NULL)
         {
             *asyncTaskId = [self loadDataAsyncWithUri:uri progress:progress partialCompletion:partialCompletion completion:completion];
+        }
+        else
+        {
+            NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://?", [TGGalleryPhotoDataSource uriPrefix]].length]];
+            if (args[@"messageId"] != nil && args[@"id"] != nil)
+            {
+                int messageId = [args[@"messageId"] intValue];
+                [TGDatabaseInstance() updateLastUseDateForMediaType:2 mediaId:[args[@"id"] longLongValue] messageId:messageId];
+            }
         }
         
         return partialData;

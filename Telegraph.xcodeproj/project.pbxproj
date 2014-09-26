@@ -799,6 +799,7 @@
 		D0590D9119A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0590D8D19A78C9D0082FFC8 /* ModernMessageBroadcastIconWhite@2x.png */; };
 		D05A849A18AFC871007F1076 /* TGTLSerialization.mm in Sources */ = {isa = PBXBuildFile; fileRef = D05A849918AFC871007F1076 /* TGTLSerialization.mm */; };
 		D05A84D518AFE73D007F1076 /* MtProtoKit iOS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D05A84CC18AFE34F007F1076 /* MtProtoKit iOS.framework */; };
+		D05E4B2B19D5A9A500A537C1 /* TGGenericPeerMediaGalleryVideoItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D05E4B2A19D5A9A500A537C1 /* TGGenericPeerMediaGalleryVideoItemView.m */; };
 		D0603915191801EB00EF850D /* TGStaticBackdropImageData.m in Sources */ = {isa = PBXBuildFile; fileRef = D0603914191801EB00EF850D /* TGStaticBackdropImageData.m */; };
 		D06039191918140C00EF850D /* TGStaticBackdropAreaData.m in Sources */ = {isa = PBXBuildFile; fileRef = D06039181918140C00EF850D /* TGStaticBackdropAreaData.m */; };
 		D060391C1918E23000EF850D /* TGMessageImageViewTimestampCheckmarkLayer.m in Sources */ = {isa = PBXBuildFile; fileRef = D060391B1918E23000EF850D /* TGMessageImageViewTimestampCheckmarkLayer.m */; };
@@ -2837,6 +2838,8 @@
 		D05A849818AFC871007F1076 /* TGTLSerialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTLSerialization.h; sourceTree = "<group>"; };
 		D05A849918AFC871007F1076 /* TGTLSerialization.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGTLSerialization.mm; sourceTree = "<group>"; };
 		D05A84C318AFE34F007F1076 /* MtProtoKit.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = MtProtoKit.xcodeproj; path = ../MtProtoKit/MtProtoKit.xcodeproj; sourceTree = "<group>"; };
+		D05E4B2919D5A9A500A537C1 /* TGGenericPeerMediaGalleryVideoItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGGenericPeerMediaGalleryVideoItemView.h; sourceTree = "<group>"; };
+		D05E4B2A19D5A9A500A537C1 /* TGGenericPeerMediaGalleryVideoItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGGenericPeerMediaGalleryVideoItemView.m; sourceTree = "<group>"; };
 		D0603913191801EB00EF850D /* TGStaticBackdropImageData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGStaticBackdropImageData.h; sourceTree = "<group>"; };
 		D0603914191801EB00EF850D /* TGStaticBackdropImageData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGStaticBackdropImageData.m; sourceTree = "<group>"; };
 		D06039171918140C00EF850D /* TGStaticBackdropAreaData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGStaticBackdropAreaData.h; sourceTree = "<group>"; };
@@ -6409,6 +6412,8 @@
 				D0498FDB1978885A0080A679 /* TGGenericPeerMediaGalleryImageItem.m */,
 				D0498FDD197888940080A679 /* TGGenericPeerMediaGalleryVideoItem.h */,
 				D0498FDE197888940080A679 /* TGGenericPeerMediaGalleryVideoItem.m */,
+				D05E4B2919D5A9A500A537C1 /* TGGenericPeerMediaGalleryVideoItemView.h */,
+				D05E4B2A19D5A9A500A537C1 /* TGGenericPeerMediaGalleryVideoItemView.m */,
 			);
 			name = Items;
 			sourceTree = "<group>";
@@ -10480,6 +10485,7 @@
 				D044CBC3192AA9270001C986 /* TGPhoneMainViewController.m in Sources */,
 				D020ACBE1993625D007818DD /* TGHolderSet.m in Sources */,
 				93898CF0166E45C800AFA2BB /* TGConversationClearHistoryActor.m in Sources */,
+				D05E4B2B19D5A9A500A537C1 /* TGGenericPeerMediaGalleryVideoItemView.m in Sources */,
 				D044CB96192A19360001C986 /* TGUserUUID.m in Sources */,
 				D098413C19CB9BE200CE5BB0 /* TLRPCmessages_deleteMessages.mm in Sources */,
 				932E0113184CE1E10001D109 /* TGModernConversationGenericTitlePanel.m in Sources */,

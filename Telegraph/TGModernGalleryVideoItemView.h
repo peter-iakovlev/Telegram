@@ -22,4 +22,6 @@
 - (void)play;
 - (void)hidePlayButton;
 
+- (void)_willPlay;
+
 @end

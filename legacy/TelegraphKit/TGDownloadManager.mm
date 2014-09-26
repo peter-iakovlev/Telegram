@@ -4,6 +4,9 @@
 
 #include <set>
 
+#import "TGMessage.h"
+#import "TGDatabase.h"
+
 @implementation TGDownloadItem
 
 - (id)copyWithZone:(NSZone *)__unused zone
@@ -116,7 +119,18 @@
         [_itemsQueue enumerateKeysAndObjectsUsingBlock:^(NSString *path, TGDownloadItem *item, __unused BOOL *stop)
         {
             if (item.itemId != nil && [item.itemId isEqual:itemId])
+            {
                 [removeKeys addObject:path];
+                
+                if ([item.itemId isKindOfClass:[TGMediaId class]])
+                {
+                    TGMediaId *mediaId = item.itemId;
+                    if (mediaId.itemId != 0)
+                    {
+                        [TGDatabaseInstance() updateLastUseDateForMediaType:mediaId.type mediaId:mediaId.itemId messageId:item.messageId];
+                    }
+                }
+            }
         }];
         
         for (NSString *path in removeKeys)
@@ -161,6 +175,15 @@
                 if (item.itemId != nil)
                     [removeMediaIds addObject:item.itemId];
                 [removeKeys addObject:path];
+                
+                if ([item.itemId isKindOfClass:[TGMediaId class]])
+                {
+                    TGMediaId *mediaId = item.itemId;
+                    if (mediaId.itemId != 0)
+                    {
+                        [TGDatabaseInstance() updateLastUseDateForMediaType:mediaId.type mediaId:mediaId.itemId messageId:item.messageId];
+                    }
+                }
             }
         }];
         
@@ -191,6 +214,15 @@
                 if (item.itemId != nil)
                     [removeMediaIds addObject:item.itemId];
                 [removeKeys addObject:path];
+                
+                if ([item.itemId isKindOfClass:[TGMediaId class]])
+                {
+                    TGMediaId *mediaId = item.itemId;
+                    if (mediaId.itemId != 0)
+                    {
+                        [TGDatabaseInstance() updateLastUseDateForMediaType:mediaId.type mediaId:mediaId.itemId messageId:item.messageId];
+                    }
+                }
             }
         }];
         
@@ -266,6 +298,15 @@
         [_itemsQueue removeObjectForKey:path];
         
         [self _notifyWatcher:item.itemId != nil ? [[NSArray alloc] initWithObjects:item.itemId, nil] : nil failedItemIds:nil];
+        
+        if ([item.itemId isKindOfClass:[TGMediaId class]])
+        {
+            TGMediaId *mediaId = item.itemId;
+            if (mediaId.itemId != 0)
+            {
+                [TGDatabaseInstance() updateLastUseDateForMediaType:mediaId.type mediaId:mediaId.itemId messageId:item.messageId];
+            }
+        }
     }
 }
 

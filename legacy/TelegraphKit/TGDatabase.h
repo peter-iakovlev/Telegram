@@ -84,6 +84,13 @@ typedef enum {
     TGSecretMessageFlagScreenshot = 2
 } TGSecretMessageFlags;
 
+typedef enum {
+    TGMediaTypeRemoteImage = 0,
+    TGMediaTypeRemoteVideo = 1,
+    TGMediaTypeRemoteAudio = 2,
+    TGMediaTypeRemoteDocument = 3
+} TGMediaType;
+
 @class TGDatabase;
 
 #ifdef __cplusplus
@@ -328,5 +335,8 @@ typedef void (^TGDatabaseCleanupEverythingBlock)();
 - (int)secretMessageFlags:(int32_t)messageId;
 
 - (void)findAllMediaMessages:(void (^)(NSArray *))completion isCancelled:(bool (^)())isCancelled;
+
+- (void)updateLastUseDateForMediaType:(int32_t)mediaType mediaId:(int64_t)mediaId messageId:(int32_t)messageId;
+- (void)processAndScheduleMediaCleanup;
 
 @end

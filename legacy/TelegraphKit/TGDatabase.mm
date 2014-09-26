@@ -15,6 +15,9 @@
 #import "TGCache.h"
 #import "TGRemoteImageView.h"
 
+#import "TGPreparedLocalAudioMessage.h"
+#import "TGPreparedLocalDocumentMessage.h"
+
 #include <map>
 #include <set>
 #include <tr1/unordered_map>
@@ -216,6 +219,8 @@ static TGFutureAction *futureActionDeserializer(int type)
 
 @property (nonatomic, strong) NSString *secretMediaAttributesTableName;
 
+@property (nonatomic, strong) NSString *mediaCacheInvalidationTableName;
+
 @property (nonatomic) int serviceLastCleanTimeKey;
 @property (nonatomic) int serviceLastMidKey;
 @property (nonatomic) int servicePtsKey;
@@ -232,6 +237,7 @@ static TGFutureAction *futureActionDeserializer(int type)
 @property (nonatomic) int userLinksVersion;
 
 @property (nonatomic, strong) TGTimer *selfDestructTimer;
+@property (nonatomic, strong) TGTimer *mediaCleanupTimer;
 
 - (void)initDatabase;
 
@@ -734,6 +740,8 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
         
         _secretMediaAttributesTableName = [NSString stringWithFormat:@"secret_media_v%d", _schemaVersion];
         
+        _mediaCacheInvalidationTableName = [NSString stringWithFormat:@"media_cache_v%d", _schemaVersion];
+        
         _peerHistoryHolesTableName = [NSString stringWithFormat:@"history_holes_%d", _schemaVersion];
     }
     return self;
@@ -824,6 +832,8 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
             [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", [NSString stringWithFormat:@"secret_media_%d", i]]];
             
             [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", [NSString stringWithFormat:@"history_holes_%d", i]]];
+            
+            [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", [NSString stringWithFormat:@"media_cache_v%d", i]]];
         }
     }
     
@@ -955,6 +965,9 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
     
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (mid INTEGER PRIMARY KEY, flags INTEGER)", _secretMediaAttributesTableName]];
     
+    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (date INTEGER, media_type INTEGER, media_id INTEGER, mids BLOB, PRIMARY KEY(media_type, media_id))", _mediaCacheInvalidationTableName]];
+    [_database executeUpdate:[[NSString alloc] initWithFormat:@"CREATE INDEX IF NOT EXISTS media_cache_invalidation_date ON %@ (date)", _mediaCacheInvalidationTableName]];
+    
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (peer_id INTEGER PRIMARY KEY, holes BLOB)", _peerHistoryHolesTableName]];
     
     [self dispatchOnIndexThread:^
@@ -1085,6 +1098,7 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
 
             [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", _encryptedConversationIdsTableName]];
             [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", _secretMediaAttributesTableName]];
+            [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", _mediaCacheInvalidationTableName]];
             
             [self dispatchOnIndexThread:^
             {
@@ -8976,14 +8990,227 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
     } synchronous:true];
 }
 
-- (void)updateLastUseDateForMediaId:(int64_t)mediaId messageId:(int32_t)messageId
+//CREATE TABLE IF NOT EXISTS %@ (date INTEGER, media_type INTEGER, media_id INTEGER, mids BLOB)
+
+- (void)updateLastUseDateForMediaType:(int32_t)mediaType mediaId:(int64_t)mediaId messageId:(int32_t)messageId
 {
-    
+    [self dispatchOnDatabaseThread:^
+    {
+        int currentDate = (int)(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970 + _timeDifferenceFromUTC);
+        
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE media_type=? AND media_id=?", _mediaCacheInvalidationTableName], @(mediaType), @(mediaId)];
+        if ([result next])
+        {
+            NSData *midsData = [result dataForColumn:@"mids"];
+            int32_t const *midPtr = (int32_t *)midsData.bytes;
+            int32_t const *midsEnd = (int32_t *)(((uint8_t *)midsData.bytes) + midsData.length);
+            bool foundMid = false;
+            while (midPtr != midsEnd)
+            {
+                if (*midPtr == messageId)
+                {
+                    foundMid = true;
+                    break;
+                }
+                midPtr++;
+            }
+            
+            NSData *updatedMidsData = midsData;
+            if (!foundMid)
+            {
+                updatedMidsData = [[NSMutableData alloc] initWithData:midsData];
+                [(NSMutableData *)updatedMidsData appendBytes:&messageId length:4];
+            }
+            
+            [_database executeUpdate:[[NSString alloc] initWithFormat:@"UPDATE %@ SET date=?", _mediaCacheInvalidationTableName], @(currentDate)];
+        }
+        else
+        {
+            NSMutableData *midsData = [[NSMutableData alloc] initWithBytes:&messageId length:4];
+            [_database executeUpdate:[[NSString alloc] initWithFormat:@"INSERT INTO %@ (date, media_type, media_id, mids) VALUES (?, ?, ?, ?)", _mediaCacheInvalidationTableName], @(currentDate), @(mediaType), @(mediaId), midsData];
+        }
+        
+        [self processAndScheduleMediaCleanup];
+    } synchronous:false];
 }
 
 - (void)processAndScheduleMediaCleanup
 {
+    [self dispatchOnDatabaseThread:^
+    {
+        if (_mediaCleanupTimer != nil)
+        {
+            [_mediaCleanupTimer invalidate];
+            _mediaCleanupTimer = nil;
+        }
+        
+        int keepMediaSeconds = INT_MAX;
+        NSNumber *nKeepMediaSeconds = [[NSUserDefaults standardUserDefaults] objectForKey:@"keepMediaSeconds"];
+        if (nKeepMediaSeconds != nil)
+            keepMediaSeconds = [nKeepMediaSeconds intValue];
+        
+        if (keepMediaSeconds == INT_MAX)
+            return;
+        
+        int currentDate = (int)(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970 + _timeDifferenceFromUTC) ;
+        int removeDate = currentDate - keepMediaSeconds;
+        
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE date<=?", _mediaCacheInvalidationTableName], @(removeDate)];
+        
+        std::vector<std::pair<int32_t, int64_t> > removeKeys;
+        NSMutableArray *removeMidSets = [[NSMutableArray alloc] init];
+        NSMutableSet *removedMids = [[NSMutableSet alloc] init];
+        
+        while ([result next])
+        {
+            int32_t mediaType = [result intForColumn:@"media_type"];
+            int64_t mediaId = [result longLongIntForColumn:@"media_id"];
+            NSData *midsData = [result dataForColumn:@"mids"];
+            
+            NSMutableArray *midsSet = [[NSMutableArray alloc] init];
+            int32_t const *midPtr = (int32_t *)midsData.bytes;
+            int32_t const *midsEnd = (int32_t *)(((uint8_t *)midsData.bytes) + midsData.length);
+            while (midPtr != midsEnd)
+            {
+                [midsSet addObject:@(*midPtr)];
+                [removedMids addObject:@(*midPtr)];
+                midPtr++;
+            }
+            
+            removeKeys.push_back(std::pair<int32_t, int64_t>(mediaType, mediaId));
+            [removeMidSets addObject:midsSet];
+        }
+        
+        NSMutableArray *removedMedias = [[NSMutableArray alloc] init];
+        
+        [_database beginTransaction];
+        for (auto it : removeKeys)
+        {
+            [_database executeUpdate:[[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE media_type=? and media_id=?", _mediaCacheInvalidationTableName], @(it.first), @(it.second)];
+        }
+        for (NSArray *midsSet in removeMidSets)
+        {
+            TGMessage *foundMessage = nil;
+            for (NSNumber *nMid in midsSet)
+            {
+                TGMessage *message = [self loadMessageWithMid:[nMid intValue]];
+                if (message != nil)
+                {
+                    foundMessage = message;
+                    break;
+                }
+            }
+            if (foundMessage == nil)
+            {
+                for (NSNumber *nMid in midsSet)
+                {
+                    TGMessage *message = [self loadMediaMessageWithMid:[nMid intValue]];
+                    if (message != nil)
+                    {
+                        foundMessage = message;
+                        break;
+                    }
+                }
+            }
+            
+            if (foundMessage != nil)
+            {
+                for (id media in foundMessage.mediaAttachments)
+                {
+                    [self removeFilesForMediaAttachment:media];
+                    [removedMedias addObject:media];
+                }
+            }
+        }
+        [_database commit];
+        
+        if (removedMedias.count != 0)
+            [ActionStageInstance() dispatchResource:@"/tg/removedMediasForMessageIds" resource:removedMids];
+        
+        FMResultSet *nextDateResult = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT MIN(date) FROM %@", _mediaCacheInvalidationTableName]];
+        if ([nextDateResult next])
+        {
+            int nextDate = [nextDateResult intForColumn:@"MIN(date)"];
+            if (nextDate != 0)
+            {
+                NSTimeInterval delay = MAX(0, nextDate + keepMediaSeconds - currentDate + 0.25);
+
+                _mediaCleanupTimer = [[TGTimer alloc] initWithTimeout:delay repeat:false completion:^
+                {
+                    [self processAndScheduleMediaCleanup];
+                } queue:[self databaseQueue]];
+                [_mediaCleanupTimer start];
+            }
+        }
+    } synchronous:false];
+}
+
+- (NSString *)filePathForVideoId:(int64_t)videoId local:(bool)local
+{
+    static NSString *videosDirectory = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+        videosDirectory = [documentsDirectory stringByAppendingPathComponent:@"video"];
+    });
     
+    return [videosDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@%" PRIx64 ".mov", local ? @"local" : @"remote", videoId]];
+}
+
+- (NSString *)filePathForAudio:(TGAudioMediaAttachment *)audio
+{
+    NSString *filePath = nil;
+    if (audio.audioId != 0)
+        filePath = [TGPreparedLocalAudioMessage localAudioFilePathForRemoteAudioId1:audio.audioId];
+    else
+        filePath = [TGPreparedLocalAudioMessage localAudioFilePathForLocalAudioId1:audio.localAudioId];
+    return filePath;
+}
+
+- (NSString *)filePathForDocument:(TGDocumentMediaAttachment *)document
+{
+    NSString *directory = nil;
+    if (document.documentId != 0)
+        directory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId];
+    else
+        directory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId];
+    
+    NSString *filePath = [directory stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:document.fileName]];
+    return filePath;
+}
+
+- (void)removeFilesForMediaAttachment:(id)media
+{
+    if ([media isKindOfClass:[TGImageMediaAttachment class]])
+    {
+        TGImageMediaAttachment *imageAttachment = media;
+        NSString *url = [imageAttachment.imageInfo imageUrlForLargestSize:NULL];
+        NSString *path = [[TGRemoteImageView sharedCache] pathForCachedData:url];
+        TGLog(@"[CacheCleanup remove %@]", path);
+        [[TGRemoteImageView sharedCache] removeFromDiskCache:url];
+    }
+    else if ([media isKindOfClass:[TGVideoMediaAttachment class]])
+    {
+        TGVideoMediaAttachment *videoAttachment = media;
+        NSString *filePath = [self filePathForVideoId:videoAttachment.videoId != 0 ? videoAttachment.videoId : videoAttachment.localVideoId local:videoAttachment.videoId == 0];
+        TGLog(@"[CacheCleanup remove %@]", filePath);
+        [[NSFileManager defaultManager] removeItemAtPath:filePath error:nil];
+    }
+    else if ([media isKindOfClass:[TGAudioMediaAttachment class]])
+    {
+        TGAudioMediaAttachment *audioAttachment = media;
+        NSString *filePath = [self filePathForAudio:audioAttachment];
+        TGLog(@"[CacheCleanup remove %@]", filePath);
+        [[NSFileManager defaultManager] removeItemAtPath:filePath error:nil];
+    }
+    else if ([media isKindOfClass:[TGDocumentMediaAttachment class]])
+    {
+        TGDocumentMediaAttachment *documentAttachment = media;
+        NSString *filePath = [self filePathForDocument:documentAttachment];
+        TGLog(@"[CacheCleanup remove %@]", filePath);
+        [[NSFileManager defaultManager] removeItemAtPath:filePath error:nil];
+    }
 }
 
 @end

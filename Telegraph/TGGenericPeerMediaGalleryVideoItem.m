@@ -3,6 +3,8 @@
 #import "TGMessage.h"
 #import "TGImageInfo.h"
 
+#import "TGGenericPeerMediaGalleryVideoItemView.h"
+
 @implementation TGGenericPeerMediaGalleryVideoItem
 
 - (NSString *)filePathForVideoId:(int64_t)videoId local:(bool)local
@@ -78,6 +80,11 @@
 {
     NSString *legacyVideoFilePath = [self filePathForVideoId:self.videoMedia.videoId != 0 ? self.videoMedia.videoId : self.videoMedia.localVideoId local:self.videoMedia.videoId == 0];
     return legacyVideoFilePath;
+}
+
+- (Class)viewClass
+{
+    return [TGGenericPeerMediaGalleryVideoItemView class];
 }
 
 @end

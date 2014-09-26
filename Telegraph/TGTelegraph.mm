@@ -1515,6 +1515,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
                 [ActionStageInstance() requestActor:@"/tg/liveNearby" options:nil watcher:self];
             
             [TGDatabaseInstance() processAndScheduleSelfDestruct];
+            [TGDatabaseInstance() processAndScheduleMediaCleanup];
         }
     }];
 }
@@ -3784,7 +3785,10 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     [TGDatabaseInstance() setTimeDifferenceFromUTC:timeDifference];
     
     if (majorChange)
+    {
         [TGDatabaseInstance() processAndScheduleSelfDestruct];
+        [TGDatabaseInstance() processAndScheduleMediaCleanup];
+    }
 }
 
 - (bool)useDifferentBackend

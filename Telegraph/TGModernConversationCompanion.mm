@@ -1000,6 +1000,30 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     [self _updateMediaStatusDataForItemsInIndexSet:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, _items.count)] animated:false];
 }
 
+- (void)_updateMediaStatusDataForItemsWithMessageIdsInSet:(NSMutableSet *)messageIds
+{
+    if (messageIds.count == 0)
+        return;
+    
+#ifdef DEBUG
+    NSAssert([TGModernConversationCompanion isMessageQueue], @"Should be on message queue");
+#endif
+    
+    NSMutableIndexSet *indexSet = [[NSMutableIndexSet alloc] init];
+    
+    NSInteger index = -1;
+    for (TGMessageModernConversationItem *item in _items)
+    {
+        index++;
+        
+        if ([messageIds containsObject:@(item->_message.mid)])
+            [indexSet addIndex:index];
+    }
+    
+    if (indexSet.count != 0)
+        [self _updateMediaStatusDataForItemsInIndexSet:indexSet animated:false];
+}
+
 - (void)_updateMediaStatusDataForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated
 {
     if (indexSet.count == 0)
@@ -1637,6 +1661,10 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
             }];
         }
     }
+}
+
+- (void)updateMediaAccessTimeForMessageId:(int32_t)__unused messageId
+{
 }
 
 @end

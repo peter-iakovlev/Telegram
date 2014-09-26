@@ -1984,6 +1984,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                                     
                                     [controller presentViewController:documentController animated:true completion:nil];
                                 }
+                                
+                                [controller.companion updateMediaAccessTimeForMessageId:messageId];
                             }
                         } target:self] showInView:self.view];
                         
@@ -2001,6 +2003,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                         navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
                         [self presentViewController:navigationController animated:true completion:nil];
                     }
+                    
+                    [_companion updateMediaAccessTimeForMessageId:messageId];
                     
                     break;
                 }
@@ -2248,6 +2252,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         _currentStreamingAudioMessageId = messageId;
     else
         _currentStreamingAudioMessageId = 0;
+    
+    [_companion updateMediaAccessTimeForMessageId:messageId];
 }
 
 - (void)closeMediaFromMessage:(int32_t)__unused messageId instant:(bool)__unused instant
