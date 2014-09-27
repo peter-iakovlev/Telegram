@@ -22,8 +22,6 @@
 
 #import "TL/TLMetaScheme.h"
 
-#import "TGDatabase.h"
-
 @interface TGDatacenterWatchdogActor ()
 {
     MTTimer *_startupTimer;
