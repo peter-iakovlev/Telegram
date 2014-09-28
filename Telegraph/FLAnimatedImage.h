@@ -20,6 +20,8 @@
 //
 @interface FLAnimatedImage : NSObject
 
+@property (nonatomic, strong) UIImage *(^imageDrawingBlock)(UIImage *);
+
 @property (nonatomic, strong, readonly) UIImage *posterImage; // Guaranteed to be loaded; usually equivalent to `-imageLazilyCachedAtIndex:0`
 @property (nonatomic, assign, readonly) CGSize size; // The `.posterImage`'s `.size`
 
@@ -40,7 +42,7 @@
 
 // Designated initializer
 // On success, returns a new `FLAnimatedImage` with all fields populated, on failure returns `nil` and an error will be logged.
-- (instancetype)initWithAnimatedGIFData:(NSData *)data;
+- (instancetype)initWithAnimatedGIFData:(NSData *)data imageDrawingBlock:(UIImage *(^)(UIImage *))imageDrawingBlock;
 
 @property (nonatomic, strong, readonly) NSData *data; // The data the receiver was initialized with; read-only
 

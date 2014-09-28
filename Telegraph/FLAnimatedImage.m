@@ -145,7 +145,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 }
 
 
-- (instancetype)initWithAnimatedGIFData:(NSData *)data
+- (instancetype)initWithAnimatedGIFData:(NSData *)data imageDrawingBlock:(UIImage *(^)(UIImage *))imageDrawingBlock
 {
     // Early return if no data supplied!
     BOOL hasData = ([data length] > 0);
@@ -156,6 +156,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
     
     self = [super init];
     if (self) {
+        self.imageDrawingBlock = imageDrawingBlock;
         // Do one-time initializations of `readonly` properties directly to ivar to prevent implicit actions and avoid need for private `readwrite` property overrides.
         
         // Keep a strong reference to `data` and expose it read-only publicly.
@@ -208,7 +209,10 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
                 if (frameImage) {
                     // Set poster image
                     if (!self.posterImage) {
-                        _posterImage = frameImage;
+                        if (_imageDrawingBlock)
+                            _posterImage = _imageDrawingBlock(frameImage);
+                        else
+                            _posterImage = frameImage;
                         // Set its size to proxy our size.
                         _size = _posterImage.size;
                         // Remember index of poster image so we never purge it; also add it to the cache.
@@ -485,8 +489,13 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
     UIImage *image = [UIImage imageWithCGImage:imageRef];
     CFRelease(imageRef);
     
-    // Loading in the image object is only half the work, the displaying image view would still have to synchronosly wait and decode the image, so we go ahead and do that here on the background thread.
-    image = [[self class] predrawnImageFromImage:image];
+    if (_imageDrawingBlock)
+        image = _imageDrawingBlock(image);
+    else
+    {
+        // Loading in the image object is only half the work, the displaying image view would still have to synchronosly wait and decode the image, so we go ahead and do that here on the background thread.
+        image = [[self class] predrawnImageFromImage:image];
+    }
     
     return image;
 }

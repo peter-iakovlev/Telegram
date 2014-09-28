@@ -1344,6 +1344,45 @@ UIImage *TGLoadedAttachmentImage(UIImage *source, CGSize size, uint32_t *average
     return image;
 }
 
+UIImage *TGAnimationFrameAttachmentImage(UIImage *source, CGSize size)
+{
+    CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
+    
+    const struct { int width, height; } targetContextSize = { (int)(size.width * scale), (int)(size.height * scale) };
+    
+    size_t targetBytesPerRow = ((4 * (int)targetContextSize.width) + 15) & (~15);
+    
+    void *targetMemory = malloc((int)(targetBytesPerRow * targetContextSize.height));
+    
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host;
+    
+    CGContextRef targetContext = CGBitmapContextCreate(targetMemory, (int)targetContextSize.width, (int)targetContextSize.height, 8, targetBytesPerRow, colorSpace, bitmapInfo);
+    
+    CGColorSpaceRelease(colorSpace);
+    
+    UIGraphicsPushContext(targetContext);
+    CGContextTranslateCTM(targetContext, targetContextSize.width / 2.0f, targetContextSize.height / 2.0f);
+    CGContextScaleCTM(targetContext, 1.0f, -1.0f);
+    CGContextTranslateCTM(targetContext, -targetContextSize.width / 2.0f, -targetContextSize.height / 2.0f);
+    
+    CGContextSetFillColorWithColor(targetContext, [UIColor blackColor].CGColor);
+    CGContextFillRect(targetContext, CGRectMake(0, 0, targetContextSize.width, targetContextSize.height));
+    [source drawInRect:CGRectMake(0, 0, targetContextSize.width, targetContextSize.height) blendMode:kCGBlendModeNormal alpha:1.0f];
+    UIGraphicsPopContext();
+    
+    addAttachmentImageCorners(targetMemory, targetContextSize.width, targetContextSize.height, targetBytesPerRow);
+    
+    CGImageRef bitmapImage = CGBitmapContextCreateImage(targetContext);
+    UIImage *image = [[UIImage alloc] initWithCGImage:bitmapImage scale:scale orientation:UIImageOrientationUp];
+    CGImageRelease(bitmapImage);
+    
+    CGContextRelease(targetContext);
+    free(targetMemory);
+    
+    return image;
+}
+
 UIImage *TGLoadedFileImage(UIImage *source, CGSize size, uint32_t *averageColor)
 {
     CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;

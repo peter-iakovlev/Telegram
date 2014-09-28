@@ -18,6 +18,7 @@ UIImage *TGBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *averag
 UIImage *TGSecretBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *averageColor);
 UIImage *TGBlurredFileImage(UIImage *source, CGSize size, uint32_t *averageColor);
 UIImage *TGLoadedAttachmentImage(UIImage *source, CGSize size, uint32_t *averageColor);
+UIImage *TGAnimationFrameAttachmentImage(UIImage *source, CGSize size);
 UIImage *TGLoadedFileImage(UIImage *source, CGSize size, uint32_t *averageColor);
 UIImage *TGReducedAttachmentImage(UIImage *source, CGSize originalSize);
 UIImage *TGBlurredBackgroundImage(UIImage *source, CGSize size);
