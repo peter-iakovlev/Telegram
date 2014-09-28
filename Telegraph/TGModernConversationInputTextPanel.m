@@ -916,4 +916,11 @@ static CGRect viewFrame(UIView *view)
         [delegate inputPanelRequestedSendImages:self images:images];
 }
 
+- (void)growingTextView:(HPGrowingTextView *)__unused growingTextView didPasteData:(NSData *)data
+{
+    id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
+    if ([delegate respondsToSelector:@selector(inputPanelRequestedSendData:data:)])
+        [delegate inputPanelRequestedSendData:self data:data];
+}
+
 @end

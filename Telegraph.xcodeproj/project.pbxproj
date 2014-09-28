@@ -708,6 +708,8 @@
 		D026205E18A8E95200A41CC8 /* TGUpdateMessageService.m in Sources */ = {isa = PBXBuildFile; fileRef = D026205D18A8E95200A41CC8 /* TGUpdateMessageService.m */; };
 		D026206518A938CF00A41CC8 /* TGTelegramNetworking.m in Sources */ = {isa = PBXBuildFile; fileRef = D026206418A938CF00A41CC8 /* TGTelegramNetworking.m */; };
 		D0270191196193E1008AB6F4 /* ModernMediaItemVideoIcon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0270190196193E1008AB6F4 /* ModernMediaItemVideoIcon@2x.png */; };
+		D02CAE9C19D8BE4B00FF4B95 /* FLAnimatedImage.m in Sources */ = {isa = PBXBuildFile; fileRef = D02CAE9B19D8BE4B00FF4B95 /* FLAnimatedImage.m */; };
+		D02CAEA519D8BE8F00FF4B95 /* TGModernAnimatedImagePlayer.m in Sources */ = {isa = PBXBuildFile; fileRef = D02CAEA419D8BE8F00FF4B95 /* TGModernAnimatedImagePlayer.m */; };
 		D02CD02E19490FA5007700A2 /* TGWallpaperItemsBackgroundDecorationView.m in Sources */ = {isa = PBXBuildFile; fileRef = D02CD02D19490FA5007700A2 /* TGWallpaperItemsBackgroundDecorationView.m */; };
 		D034A5D21914520B00C93C98 /* TGImageLuminanceMap.m in Sources */ = {isa = PBXBuildFile; fileRef = D034A5D11914520B00C93C98 /* TGImageLuminanceMap.m */; };
 		D035EBBB194868B700EEEC17 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D035EBB7194868B700EEEC17 /* InfoPlist.strings */; };
@@ -2651,6 +2653,10 @@
 		D026206318A938CF00A41CC8 /* TGTelegramNetworking.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTelegramNetworking.h; sourceTree = "<group>"; };
 		D026206418A938CF00A41CC8 /* TGTelegramNetworking.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGTelegramNetworking.m; sourceTree = "<group>"; };
 		D0270190196193E1008AB6F4 /* ModernMediaItemVideoIcon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "ModernMediaItemVideoIcon@2x.png"; path = "Resources/ModernMediaItemVideoIcon@2x.png"; sourceTree = "<group>"; };
+		D02CAE9A19D8BE4B00FF4B95 /* FLAnimatedImage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FLAnimatedImage.h; sourceTree = "<group>"; };
+		D02CAE9B19D8BE4B00FF4B95 /* FLAnimatedImage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FLAnimatedImage.m; sourceTree = "<group>"; };
+		D02CAEA319D8BE8F00FF4B95 /* TGModernAnimatedImagePlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernAnimatedImagePlayer.h; sourceTree = "<group>"; };
+		D02CAEA419D8BE8F00FF4B95 /* TGModernAnimatedImagePlayer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernAnimatedImagePlayer.m; sourceTree = "<group>"; };
 		D02CD02C19490FA5007700A2 /* TGWallpaperItemsBackgroundDecorationView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGWallpaperItemsBackgroundDecorationView.h; sourceTree = "<group>"; };
 		D02CD02D19490FA5007700A2 /* TGWallpaperItemsBackgroundDecorationView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGWallpaperItemsBackgroundDecorationView.m; sourceTree = "<group>"; };
 		D034A5D01914520B00C93C98 /* TGImageLuminanceMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGImageLuminanceMap.h; sourceTree = "<group>"; };
@@ -5484,6 +5490,10 @@
 			children = (
 				93A60BF518E99A450037A43D /* TGAnimatedImagePlayer.h */,
 				93A60BF618E99A450037A43D /* TGAnimatedImagePlayer.m */,
+				D02CAEA319D8BE8F00FF4B95 /* TGModernAnimatedImagePlayer.h */,
+				D02CAEA419D8BE8F00FF4B95 /* TGModernAnimatedImagePlayer.m */,
+				D02CAE9A19D8BE4B00FF4B95 /* FLAnimatedImage.h */,
+				D02CAE9B19D8BE4B00FF4B95 /* FLAnimatedImage.m */,
 			);
 			name = "Animated Image";
 			sourceTree = "<group>";
@@ -10026,6 +10036,7 @@
 				D098411C19CB9BE200CE5BB0 /* TLRPCdestroy_session.mm in Sources */,
 				D00040A515BCD2EA00AF9EBF /* TGMessage+Telegraph.m in Sources */,
 				D09840A919CB9BE200CE5BB0 /* TLGeoPoint.mm in Sources */,
+				D02CAEA519D8BE8F00FF4B95 /* TGModernAnimatedImagePlayer.m in Sources */,
 				D00040AC15BCD53900AF9EBF /* TGImageInfo+Telegraph.mm in Sources */,
 				939ECA59188EDEA4004ABAB7 /* TGModernGalleryZoomableItemView.m in Sources */,
 				D0983D8E19CB9A4300CE5BB0 /* TGModernButton.m in Sources */,
@@ -10394,6 +10405,7 @@
 				D098410B19CB9BE200CE5BB0 /* TLRPCcontacts_clearContact.mm in Sources */,
 				D046965E18A3D63A009764B2 /* TGContentBubbleViewModel.m in Sources */,
 				9340FDC6166BD4A7001CFB01 /* TGExtendedChatDataRequestActor.m in Sources */,
+				D02CAE9C19D8BE4B00FF4B95 /* FLAnimatedImage.m in Sources */,
 				D0983D7B19CB9A4300CE5BB0 /* TGImageViewControllerView.m in Sources */,
 				D098419019CB9BE200CE5BB0 /* TLMetaType.mm in Sources */,
 				93080905185B569B00E62B42 /* TGModernLetteredAvatarViewModel.m in Sources */,

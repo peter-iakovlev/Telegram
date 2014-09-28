@@ -3278,6 +3278,17 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         [_companion controllerWantsToSendImagesWithDescriptions:imageDescriptions];
 }
 
+- (void)inputPanelRequestedSendData:(TGModernConversationInputTextPanel *)__unused inputTextPanel data:(NSData *)data
+{
+    if (data != nil)
+    {
+        NSString *filePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%x%x", (int)arc4random(), (int)arc4random()]];
+        [data writeToFile:filePath atomically:true];
+        
+        [_companion controllerWantsToSendDocumentWithTempFileUrl:[NSURL fileURLWithPath:filePath] fileName:@"animation.gif" mimeType:@"image/gif"];
+    }
+}
+
 - (void)_displayContactPicker
 {
     TGForwardContactPickerController *contactPickerController = [[TGForwardContactPickerController alloc] init];

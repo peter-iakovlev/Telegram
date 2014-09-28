@@ -54,6 +54,7 @@
 - (BOOL)growingTextViewShouldReturn:(HPGrowingTextView *)growingTextView;
 
 - (void)growingTextView:(HPGrowingTextView *)growingTextView didPasteImages:(NSArray *)images;
+- (void)growingTextView:(HPGrowingTextView *)growingTextView didPasteData:(NSData *)data;
 
 @end
 
