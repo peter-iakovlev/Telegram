@@ -447,7 +447,6 @@
 		93A60639185FBDFA007E3477 /* TGDocumentMediaAttachment+Telegraph.m in Sources */ = {isa = PBXBuildFile; fileRef = 93A60638185FBDF9007E3477 /* TGDocumentMediaAttachment+Telegraph.m */; };
 		93A6063F185FC042007E3477 /* TGDocumentMessageViewModel.m in Sources */ = {isa = PBXBuildFile; fileRef = 93A6063E185FC042007E3477 /* TGDocumentMessageViewModel.m */; };
 		93A60642185FC429007E3477 /* TGPreparedLocalDocumentMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = 93A60641185FC429007E3477 /* TGPreparedLocalDocumentMessage.m */; };
-		93A60BF718E99A450037A43D /* TGAnimatedImagePlayer.m in Sources */ = {isa = PBXBuildFile; fileRef = 93A60BF618E99A450037A43D /* TGAnimatedImagePlayer.m */; };
 		93A8319A16EBA3F70026A492 /* TGTelegraphImageViewControllerCompanion.mm in Sources */ = {isa = PBXBuildFile; fileRef = 93A8319916EBA3F70026A492 /* TGTelegraphImageViewControllerCompanion.mm */; };
 		93A8F79017F9981100B7D99E /* DialogListEncryptedChatIcon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 93A8F78E17F9981100B7D99E /* DialogListEncryptedChatIcon@2x.png */; };
 		93A8F79817F9BFE700B7D99E /* TGEncryptedChatResponseActor.m in Sources */ = {isa = PBXBuildFile; fileRef = 93A8F79717F9BFE700B7D99E /* TGEncryptedChatResponseActor.m */; };
@@ -2273,8 +2272,6 @@
 		93A6063E185FC042007E3477 /* TGDocumentMessageViewModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGDocumentMessageViewModel.m; sourceTree = "<group>"; };
 		93A60640185FC429007E3477 /* TGPreparedLocalDocumentMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGPreparedLocalDocumentMessage.h; sourceTree = "<group>"; };
 		93A60641185FC429007E3477 /* TGPreparedLocalDocumentMessage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGPreparedLocalDocumentMessage.m; sourceTree = "<group>"; };
-		93A60BF518E99A450037A43D /* TGAnimatedImagePlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGAnimatedImagePlayer.h; sourceTree = "<group>"; };
-		93A60BF618E99A450037A43D /* TGAnimatedImagePlayer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGAnimatedImagePlayer.m; sourceTree = "<group>"; };
 		93A8319816EBA3F70026A492 /* TGTelegraphImageViewControllerCompanion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTelegraphImageViewControllerCompanion.h; sourceTree = "<group>"; };
 		93A8319916EBA3F70026A492 /* TGTelegraphImageViewControllerCompanion.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGTelegraphImageViewControllerCompanion.mm; sourceTree = "<group>"; };
 		93A8F78E17F9981100B7D99E /* DialogListEncryptedChatIcon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "DialogListEncryptedChatIcon@2x.png"; path = "Resources/DialogListEncryptedChatIcon@2x.png"; sourceTree = "<group>"; };
@@ -5488,8 +5485,6 @@
 		93A60BEE18E99A140037A43D /* Animated Image */ = {
 			isa = PBXGroup;
 			children = (
-				93A60BF518E99A450037A43D /* TGAnimatedImagePlayer.h */,
-				93A60BF618E99A450037A43D /* TGAnimatedImagePlayer.m */,
 				D02CAEA319D8BE8F00FF4B95 /* TGModernAnimatedImagePlayer.h */,
 				D02CAEA419D8BE8F00FF4B95 /* TGModernAnimatedImagePlayer.m */,
 				D02CAE9A19D8BE4B00FF4B95 /* FLAnimatedImage.h */,
@@ -10180,7 +10175,6 @@
 				D09840A719CB9BE200CE5BB0 /* TLgeochats_StatedMessage.mm in Sources */,
 				937CFD6E17AE8E9500E28C5B /* TGSynchronizePreferencesActor.m in Sources */,
 				D03A24BC194A45FB0061027C /* TGModernMediaPickerController.m in Sources */,
-				93A60BF718E99A450037A43D /* TGAnimatedImagePlayer.m in Sources */,
 				93B07055161B927B0054C20F /* TGFileDownloadActor.m in Sources */,
 				D0983D6E19CB9A4300CE5BB0 /* TGImagePickerAsset.m in Sources */,
 				D0983D9F19CB9A4300CE5BB0 /* TGSharedPtrWrapper.mm in Sources */,
