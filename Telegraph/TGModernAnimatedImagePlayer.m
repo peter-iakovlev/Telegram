@@ -60,7 +60,7 @@
     
     if ((NSInteger)[_image delayTimes].count > _currentFrame)
     {
-        _timer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(_pollNextFrame) interval:gotFrame ? [_image.delayTimes[_currentFrame] doubleValue] : 0.1 repeat:false runLoopModes:NSDefaultRunLoopMode];
+        _timer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(_pollNextFrame) interval:gotFrame ? [_image.delayTimes[_currentFrame] doubleValue] : (1.0f / 80.0f) repeat:false runLoopModes:NSDefaultRunLoopMode];
     }
 }
 
