@@ -777,6 +777,7 @@ static bool _initialUpdatesScheduled = false;
     }
     
     std::map<int64_t, NSMutableDictionary *> secretMessageFlagChangesByPeerId;
+    NSMutableArray *initiateSelfDestructMessageRandomIds = [[NSMutableArray alloc] init];
     
     for (NSDictionary *actionDesc in newAddedEncryptedActions)
     {
@@ -785,6 +786,7 @@ static bool _initialUpdatesScheduled = false;
         {
             int64_t randomId = (int64_t)[actionDesc[@"randomId"] longLongValue];
             [TGDatabaseInstance() raiseSecretMessageFlagsByRandomId:randomId flagsToRise:TGSecretMessageFlagViewed];
+            [initiateSelfDestructMessageRandomIds addObject:@(randomId)];
             
             NSNumber *nRandomId = @(randomId);
             
@@ -984,6 +986,21 @@ static bool _initialUpdatesScheduled = false;
                 [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/messageFlagChanges", it->first] resource:it->second];
             }
         }
+    }
+    
+    if (initiateSelfDestructMessageRandomIds.count != 0)
+    {
+        [TGDatabaseInstance() dispatchOnDatabaseThread:^
+        {
+            std::map<int64_t, int32_t> randomIdToMessageIdMap;
+            [TGDatabaseInstance() messageIdsForRandomIds:initiateSelfDestructMessageRandomIds mapping:&randomIdToMessageIdMap];
+            NSMutableArray *messageIds = [[NSMutableArray alloc] init];
+            for (auto it : randomIdToMessageIdMap)
+            {
+                [messageIds addObject:@(it.second)];
+            }
+            [TGDatabaseInstance() initiateSelfDestructForMessageIds:messageIds];
+        } synchronous:false];
     }
     
     static int readMessagesCounter = 0;

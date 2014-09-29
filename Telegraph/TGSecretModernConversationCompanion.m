@@ -26,8 +26,6 @@
 #import "TGPopoverController.h"
 
 #import "TGModernGalleryController.h"
-#import "TGModernGallerySecretImageItem.h"
-#import "TGModernGallerySecretVideoItem.h"
 
 @interface TGSecretModernConversationCompanion () <TGSecretModernConversationAccessoryTimerViewDelegate>
 {

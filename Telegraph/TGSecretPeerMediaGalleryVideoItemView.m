@@ -108,10 +108,26 @@
     
     _startTime = item.messageCountdownTime;
     _endTime = _startTime + item.messageLifetime;
-    
-    [self updateProgress];
-    [self updateLabel];
-    [self startTimer];
+
+    if (ABS(_startTime) > DBL_EPSILON)
+    {
+        _infoBackgroundView.hidden = false;
+        _timerFrameView.hidden = false;
+        _progressView.hidden = false;
+        _progressLabel.hidden = false;
+        
+        [self updateProgress];
+        [self updateLabel];
+        [self startTimer];
+    }
+    else
+    {
+        _infoBackgroundView.hidden = true;
+        _timerFrameView.hidden = true;
+        _progressView.hidden = true;
+        _progressLabel.hidden = true;
+    }
+
 }
 
 - (void)invalidateTimer

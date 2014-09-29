@@ -5,6 +5,8 @@
 #import "TGUser.h"
 #import "TGMessage.h"
 
+#import "TGTelegraph.h"
+
 #import "NSObject+TGLock.h"
 
 #import "TGStringUtils.h"
@@ -5402,10 +5404,10 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
 
 - (void)deleteMessages:(NSArray *)mids populateActionQueue:(bool)populateActionQueue fillMessagesByConversationId:(NSMutableDictionary *)messagesByConversationId
 {
-    [self deleteMessages:mids populateActionQueue:populateActionQueue fillMessagesByConversationId:messagesByConversationId keepDate:false];
+    [self deleteMessages:mids populateActionQueue:populateActionQueue fillMessagesByConversationId:messagesByConversationId keepDate:false populateActionQueueIfIncoming:false];
 }
 
-- (void)deleteMessages:(NSArray *)mids populateActionQueue:(bool)populateActionQueue fillMessagesByConversationId:(NSMutableDictionary *)messagesByConversationId keepDate:(bool)keepDate
+- (void)deleteMessages:(NSArray *)mids populateActionQueue:(bool)populateActionQueue fillMessagesByConversationId:(NSMutableDictionary *)messagesByConversationId keepDate:(bool)keepDate populateActionQueueIfIncoming:(bool)populateActionQueueIfIncoming
 {
     [self dispatchOnDatabaseThread:^
     {
@@ -5428,6 +5430,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             bool found = false;
             int64_t cid = 0;
             NSData *localMedia = nil;
+            bool outgoing = false;
             
             if ([messageResult next])
             {
@@ -5437,6 +5440,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 int indexCid = [messageResult columnIndexForName:@"cid"];
                 
                 cid = [messageResult longLongIntForColumnIndex:indexCid];
+                
+                outgoing = [messageResult intForColumn:@"outgoing"] != 0;
                 
                 if (messagesByConversationId != nil)
                 {
@@ -5498,7 +5503,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                     cleanupMessage(self, [nMid intValue], [TGMessage parseMediaAttachments:localMedia], _messageCleanupBlock);
                 }
 
-                if (populateActionQueue)
+                if (populateActionQueue || (populateActionQueueIfIncoming && !outgoing))
                 {
                     if (cid <= INT_MIN)
                     {
@@ -5536,7 +5541,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             [self setUnreadCount:MAX(unreadCount, 0)];
         }
         
-        if (populateActionQueue && actions.count != 0)
+        if (actions.count != 0)
             [self storeQueuedActions:actions];
         
         [_database setSoftShouldCacheStatements:false];
@@ -8725,12 +8730,14 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
         if (deleteMids.count != 0)
         {
             NSMutableDictionary *messagesByConversation = [[NSMutableDictionary alloc] init];
-            [self deleteMessages:deleteMids populateActionQueue:false fillMessagesByConversationId:messagesByConversation keepDate:true];
+            [self deleteMessages:deleteMids populateActionQueue:false fillMessagesByConversationId:messagesByConversation keepDate:true populateActionQueueIfIncoming:true];
             
             [messagesByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSArray *messagesInConversation, __unused BOOL *stop)
              {
                  [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messagesDeleted", [nConversationId longLongValue]] resource:[[SGraphObjectNode alloc] initWithObject:messagesInConversation]];
              }];
+            
+            [ActionStageInstance() requestActor:@"/tg/service/synchronizeactionqueue/(global)" options:nil watcher:TGTelegraphInstance];
         }
         
         FMResultSet *nextDateResult = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT MIN(date) FROM %@", _selfDestructTableName]];
@@ -8750,6 +8757,56 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
                 [_selfDestructTimer start];
             }
         }
+    } synchronous:false];
+}
+
+- (void)initiateSelfDestructForMessageIds:(NSArray *)messageIds
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        [_database setSoftShouldCacheStatements:false];
+        NSMutableArray *messages = [[NSMutableArray alloc] init];
+        NSMutableString *midsString = [[NSMutableString alloc] init];
+        for (NSUInteger i = 0; i < messageIds.count; i++)
+        {
+            [midsString deleteCharactersInRange:NSMakeRange(0, midsString.length)];
+            
+            for (int j = 0; j < 256 && i < messageIds.count; j++, i++)
+            {
+                int32_t mid = [messageIds[i] intValue];
+                
+                if (j != 0)
+                    [midsString appendFormat:@",%" PRId32 "", mid];
+                else
+                    [midsString appendFormat:@"%" PRId32 "", mid];
+            }
+            
+            FMResultSet *resultSet = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE mid IN (%@)", _messagesTableName, midsString]];
+            
+            while ([resultSet next])
+            {
+                TGMessage *message = loadMessageFromQueryResult(resultSet);
+                if (message != nil)
+                    [messages addObject:message];
+            }
+        }
+        [_database setSoftShouldCacheStatements:true];
+        
+        int currentDate = (int)(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970 + _timeDifferenceFromUTC);
+        NSString *selfDestructInsertQuery = [[NSString alloc] initWithFormat:@"INSERT OR IGNORE INTO %@ (mid, date) VALUES (?, ?)", _selfDestructTableName];
+        
+        [_database beginTransaction];
+        for (TGMessage *message in messages)
+        {
+            if (message.messageLifetime != 0)
+            {
+                NSNumber *nDate = [[NSNumber alloc] initWithInt:currentDate + message.messageLifetime];
+                [_database executeUpdate:selfDestructInsertQuery, [[NSNumber alloc] initWithInt:message.mid], nDate];
+            }
+        }
+        [_database commit];
+        
+        [self processAndScheduleSelfDestruct];
     } synchronous:false];
 }
 

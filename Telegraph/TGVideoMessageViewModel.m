@@ -92,19 +92,6 @@
     self = [super initWithMessage:message imageInfo:previewImageInfo author:author context:context];
     if (self != nil)
     {
-        static UIImage *dateBackgroundImage = nil;
-        static UIImage *videoIconImage = nil;
-        static TGTelegraphConversationMessageAssetsSource *assetsSource = nil;
-        
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            dateBackgroundImage = [[UIImage imageNamed:@"ModernMessageImageDateBackground.png"] stretchableImageWithLeftCapWidth:9 topCapHeight:9];
-            videoIconImage = [UIImage imageNamed:@"ModernMessageVideoIcon.png"];
-            
-            assetsSource = [TGTelegraphConversationMessageAssetsSource instance];
-        });
-        
         _video = video;
         [_video.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:&_videoSize];
         
@@ -114,10 +101,7 @@
         {
             self.isSecret = true;
             
-            if (message.outgoing)
-                self.previewEnabled = false;
-            else
-                [self enableInstantPreview];
+            [self enableInstantPreview];
         }
         
         int minutes = video.duration / 60;

@@ -47,7 +47,11 @@
         if (message != nil)
         {
             bool initiatedCountdown = false;
-            NSTimeInterval messageCountdownTime = [TGDatabaseInstance() messageCountdownLocalTime:message.mid enqueueIfNotQueued:true initiatedCountdown:&initiatedCountdown];
+            NSTimeInterval messageCountdownTime = 0.0;
+            if (!message.outgoing)
+            {
+                messageCountdownTime = [TGDatabaseInstance() messageCountdownLocalTime:message.mid enqueueIfNotQueued:true initiatedCountdown:&initiatedCountdown];
+            }
             if (initiatedCountdown)
             {
                 [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];

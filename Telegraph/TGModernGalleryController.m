@@ -163,9 +163,12 @@
                 {
                     if (animated)
                     {
-                        [strongSelf animateStatusBarTransition:0.2];
-                        strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
-                        [strongSelf setNeedsStatusBarAppearanceUpdate];
+                        if (iosMajorVersion() >= 7)
+                        {
+                            [strongSelf animateStatusBarTransition:0.2];
+                            strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
+                            [strongSelf setNeedsStatusBarAppearanceUpdate];
+                        }
                         
                         [UIView animateWithDuration:0.2 animations:^
                         {
@@ -328,9 +331,12 @@
             }
             else
             {
-                [strongSelf animateStatusBarTransition:0.2];
-                strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
-                [strongSelf setNeedsStatusBarAppearanceUpdate];
+                if (iosMajorVersion() >= 7)
+                {
+                    [strongSelf animateStatusBarTransition:0.2];
+                    strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
+                    [strongSelf setNeedsStatusBarAppearanceUpdate];
+                }
                 
                 [UIView animateWithDuration:0.2 animations:^
                 {
@@ -434,12 +440,6 @@
         }
         
         [_model _transitionCompleted];
-    }
-    
-    if (!_showInterface)
-    {
-        _view.interfaceView.alpha = 0.0f;
-        [TGHacks setApplicationStatusBarAlpha:0.0f];
     }
 }
 
@@ -751,14 +751,23 @@ static CGFloat transformRotation(CGAffineTransform transform)
 {
     [super viewWillAppear:animated];
     
-    //[TGHacks setApplicationStatusBarAlpha:0.0f];
+    if (!_showInterface)
+    {
+        _view.interfaceView.alpha = 0.0f;
+        [TGHacks setApplicationStatusBarAlpha:0.0f];
+    }
 }
 
 - (void)viewWillDisappear:(BOOL)animated
 {
     [super viewWillDisappear:animated];
-    
+
     [TGHacks setApplicationStatusBarAlpha:1.0f];
+    
+    dispatch_async(dispatch_get_main_queue(), ^
+    {
+        [TGHacks setApplicationStatusBarAlpha:1.0f];
+    });
 }
 
 #pragma mark -

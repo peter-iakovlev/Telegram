@@ -83,10 +83,7 @@
         {
             self.isSecret = true;
             
-            if (message.outgoing)
-                self.previewEnabled = false;
-            else
-                [self enableInstantPreview];
+            [self enableInstantPreview];
         }
         
         if (self.isSecret)

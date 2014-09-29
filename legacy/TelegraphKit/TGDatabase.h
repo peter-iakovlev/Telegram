@@ -323,6 +323,7 @@ typedef void (^TGDatabaseCleanupEverythingBlock)();
 - (int)messageLifetimeForPeerId:(int64_t)peerId;
 - (void)setMessageLifetimeForPeerId:(int64_t)peerId encryptedConversationId:(int64_t)encryptedConversationId messageLifetime:(int)messageLifetime writeToActionQueue:(bool)writeToActionQueue;
 
+- (void)initiateSelfDestructForMessageIds:(NSArray *)messageIds;
 - (NSTimeInterval)messageCountdownLocalTime:(int32_t)mid enqueueIfNotQueued:(bool)enqueueIfNotQueued initiatedCountdown:(bool *)initiatedCountdown;
 - (void)raiseSecretMessageFlagsByRandomId:(int64_t)randomId flagsToRise:(int)flagsToRise;
 - (int)secretMessageFlags:(int32_t)messageId;

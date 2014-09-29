@@ -70,8 +70,6 @@
 
 #import "TGOverlayControllerWindow.h"
 #import "TGModernGalleryController.h"
-#import "TGModernGallerySecretImageItem.h"
-#import "TGModernGallerySecretVideoItem.h"
 
 #import "TGSecretModernConversationCompanion.h"
 
@@ -511,92 +509,6 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     });
     
     return true;
-}
-
-- (void)freedomOne:(NSNotification *)__unused notification
-{
-    bool foundOverlay = false;
-    
-    for (UIWindow *window in [[UIApplication sharedApplication] windows])
-    {
-        if ([window isKindOfClass:[TGOverlayControllerWindow class]])
-        {
-            TGOverlayControllerWindow *overlayControllerWindow = (TGOverlayControllerWindow *)window;
-            if ([overlayControllerWindow.rootViewController isKindOfClass:[TGModernGalleryController class]])
-            {
-                TGModernGalleryController *galleryController = (TGModernGalleryController *)overlayControllerWindow.rootViewController;
-                for (id item in galleryController.model.items)
-                {
-                    int32_t secretMessageId = 0;
-                    if ([item isKindOfClass:[TGModernGallerySecretImageItem class]])
-                        secretMessageId = ((TGModernGallerySecretImageItem *)item).messageId;
-                    if ([item isKindOfClass:[TGModernGallerySecretVideoItem class]])
-                        secretMessageId = ((TGModernGallerySecretVideoItem *)item).messageId;
-                    
-                    if (secretMessageId != 0)
-                    {
-                        [TGDatabaseInstance() dispatchOnDatabaseThread:^
-                        {
-                            int messageFlags = [TGDatabaseInstance() secretMessageFlags:secretMessageId];
-                            if ((messageFlags & TGSecretMessageFlagScreenshot) == 0)
-                            {
-                                messageFlags |= TGSecretMessageFlagScreenshot;
-                                TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:secretMessageId];
-                                if (message != nil)
-                                {
-                                    [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/messageFlagChanges", message.cid] resource:@{@(secretMessageId): @(messageFlags)}];
-                                    
-                                    int64_t encryptedConversationId = [TGDatabaseInstance() encryptedConversationIdForPeerId:message.cid];
-                                    int64_t randomId = [TGDatabaseInstance() randomIdForMessageId:secretMessageId];
-                                    
-                                    if (encryptedConversationId != 0 && randomId != 0)
-                                    {
-                                        [TGDatabaseInstance() raiseSecretMessageFlagsByRandomId:randomId flagsToRise:TGSecretMessageFlagScreenshot];
-                                        
-                                        int64_t actionRandomId = 0;
-                                        arc4random_buf(&actionRandomId, 8);
-                                        [TGDatabaseInstance() storeFutureActions:@[[[TGEncryptedChatServiceAction alloc] initWithEncryptedConversationId:encryptedConversationId messageRandomId:actionRandomId action:TGEncryptedChatServiceActionMessageScreenshotTaken actionContext:randomId]]];
-                                        [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
-                                    }
-                                }
-                            }
-                        } synchronous:false];
-                        
-                        foundOverlay = true;
-                        
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    
-    if (!foundOverlay)
-    {
-//#if TG_MODERN_SECRET_MEDIA
-        if ([_mainNavigationController.topViewController isKindOfClass:[TGModernConversationController class]])
-        {
-            TGModernConversationController *conversationController = (TGModernConversationController *)_mainNavigationController.topViewController;
-            TGGenericModernConversationCompanion *companion = (TGGenericModernConversationCompanion *)conversationController.companion;
-            if ([companion isKindOfClass:[TGSecretModernConversationCompanion class]])
-            {
-                int64_t conversationId = companion.conversationId;
-                if (conversationId != 0)
-                {
-                    [TGDatabaseInstance() dispatchOnDatabaseThread:^
-                    {
-                        int64_t encryptedConversationId = [TGDatabaseInstance() encryptedConversationIdForPeerId:conversationId];
-                        
-                        int64_t actionRandomId = 0;
-                        arc4random_buf(&actionRandomId, 8);
-                        [TGDatabaseInstance() storeFutureActions:@[[[TGEncryptedChatServiceAction alloc] initWithEncryptedConversationId:encryptedConversationId messageRandomId:actionRandomId action:TGEncryptedChatServiceActionChatScreenshotTaken actionContext:0]]];
-                        [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
-                    } synchronous:false];
-                }
-            }
-        }
-//#endif
-    }
 }
 
 - (void)checkForegroundResume
