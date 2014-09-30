@@ -11113,8 +11113,8 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: Digital Fortress LLC (C67CF9S4VU)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Digital Fortress LLC (C67CF9S4VU)";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP";
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
@@ -11123,8 +11123,8 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
-				PROVISIONING_PROFILE = "07ee3eeb-0172-4c19-b572-8fe3983efe05";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "07ee3eeb-0172-4c19-b572-8fe3983efe05";
+				PROVISIONING_PROFILE = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 				WARNING_CFLAGS = (
@@ -11220,8 +11220,8 @@
 				CLANG_WARN_OBJC_RECEIVER_WEAK = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: Digital Fortress LLC (C67CF9S4VU)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Digital Fortress LLC (C67CF9S4VU)";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP";
 				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -11267,8 +11267,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-DNS_BLOCK_ASSERTIONS";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = Telegram;
-				PROVISIONING_PROFILE = "07ee3eeb-0172-4c19-b572-8fe3983efe05";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "07ee3eeb-0172-4c19-b572-8fe3983efe05";
+				PROVISIONING_PROFILE = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";
