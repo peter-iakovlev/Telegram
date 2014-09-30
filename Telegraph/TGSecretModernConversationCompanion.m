@@ -29,6 +29,10 @@
 #import "TGModernGallerySecretImageItem.h"
 #import "TGModernGallerySecretVideoItem.h"
 
+#import "TGSecretTimerValueController.h"
+
+#import "TGStringUtils.h"
+
 @interface TGSecretModernConversationCompanion () <TGSecretModernConversationAccessoryTimerViewDelegate>
 {
     int64_t _encryptedConversationId;
@@ -183,24 +187,14 @@
 {
     NSMutableArray *actions = [[NSMutableArray alloc] init];
     
-    NSArray *labels = @[
-        TGLocalized(@"Profile.MessageLifetimeForever"),
-        TGLocalized(@"Profile.MessageLifetime2s"),
-        TGLocalized(@"Profile.MessageLifetime5s"),
-        TGLocalized(@"Profile.MessageLifetime1m"),
-        TGLocalized(@"Profile.MessageLifetime1h"),
-        TGLocalized(@"Profile.MessageLifetime1d"),
-        TGLocalized(@"Profile.MessageLifetime1w")
-    ];
-    
     NSArray *values = @[@0, @2, @5, @(1 * 60), @(1 * 60 * 60), @(1 * 60 * 60 * 24), @(7 * 60 * 60 * 24)];
     
-    int index = -1;
-    for (NSString *item in labels)
+    for (NSNumber *item in values)
     {
-        index++;
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:item action:[[NSString alloc] initWithFormat:@"%@", values[index]]]];
+        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:[item intValue] == 0 ? TGLocalized(@"Profile.MessageLifetimeForever") : [TGStringUtils stringForMessageTimerSeconds:[item intValue]] action:[[NSString alloc] initWithFormat:@"%@", item]]];
     }
+    
+    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"MessageTimer.Custom") action:@"_custom"]];
     
     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
     
@@ -210,7 +204,26 @@
     {
         [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused TGModernConversationController *controller, NSString *action)
         {
-            if (![action isEqualToString:@"cancel"])
+            __strong TGSecretModernConversationCompanion *strongSelf = weakSelf;
+            if ([action isEqualToString:@"_custom"])
+            {
+                TGSecretTimerValueController *timerController = [[TGSecretTimerValueController alloc] init];
+                timerController.timerValueSelected = ^(NSUInteger seconds)
+                {
+                    __strong TGSecretModernConversationCompanion *strongSelf = weakSelf;
+                    [strongSelf _commitSetSelfDestructTimer:seconds];
+                };
+                
+                TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[timerController]];
+                if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+                {
+                    navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
+                    navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
+                }
+                
+                [((TGModernConversationController *)strongSelf.controller) presentViewController:navigationController animated:true completion:nil];
+            }
+            else if (![action isEqualToString:@"cancel"])
             {
                 __strong TGSecretModernConversationCompanion *strongSelf = weakSelf;
                 [strongSelf _commitSetSelfDestructTimer:[action intValue]];

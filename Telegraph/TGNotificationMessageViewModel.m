@@ -17,6 +17,8 @@
 #import "TGReusableLabel.h"
 #import "TGDoubleTapGestureRecognizer.h"
 
+#import "TGStringUtils.h"
+
 @interface TGNotificationMessageViewModel () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate>
 {
     TGModernImageViewModel *_backgroundModel;
@@ -248,20 +250,7 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
                 }
                 else
                 {
-                    NSString *lifetimeString = @"";
-                    
-                    if (messageLifetime <= 2)
-                        lifetimeString = TGLocalized(@"Notification.MessageLifetime2s");
-                    else if (messageLifetime <= 5)
-                        lifetimeString = TGLocalized(@"Notification.MessageLifetime5s");
-                    else if (messageLifetime <= 1 * 60)
-                        lifetimeString = TGLocalized(@"Notification.MessageLifetime1m");
-                    else if (messageLifetime <= 60 * 60)
-                        lifetimeString = TGLocalized(@"Notification.MessageLifetime1h");
-                    else if (messageLifetime <= 24 * 60 * 60)
-                        lifetimeString = TGLocalized(@"Notification.MessageLifetime1d");
-                    else if (messageLifetime <= 7 * 24 * 60 * 60)
-                        lifetimeString = TGLocalized(@"Notification.MessageLifetime1w");
+                    NSString *lifetimeString = [TGStringUtils stringForMessageTimerSeconds:messageLifetime];
                     
                     if (message.outgoing)
                         actionText = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Notification.MessageLifetimeChangedOutgoing"), lifetimeString];

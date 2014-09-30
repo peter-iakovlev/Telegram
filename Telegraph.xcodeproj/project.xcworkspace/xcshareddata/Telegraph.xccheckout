@@ -16,6 +16,8 @@
 		<string>ssh://bitbucket.org/iakovlevpeterp/telegramprivate.git</string>
 		<key>F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3</key>
 		<string>https://github.com/facebook/pop.git</string>
+		<key>FF65A8AFC255E5913A7BCDE7153CC9C006153EAE</key>
+		<string>https://github.com/skywinder/ActionSheetPicker-3.0.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
 	<string>Telegraph.xcodeproj/project.xcworkspace</string>
@@ -27,6 +29,8 @@
 		<string>../..</string>
 		<key>F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3</key>
 		<string>../../thirdparty/pop</string>
+		<key>FF65A8AFC255E5913A7BCDE7153CC9C006153EAE</key>
+		<string>../../thirdparty/ActionSheetPicker/</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>ssh://bitbucket.org/iakovlevpeterp/telegramprivate.git</string>
@@ -36,6 +40,14 @@
 	<string>9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B</string>
 	<key>IDESourceControlProjectWCConfigurations</key>
 	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>FF65A8AFC255E5913A7BCDE7153CC9C006153EAE</string>
+			<key>IDESourceControlWCCName</key>
+			<string>ActionSheetPicker</string>
+		</dict>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>

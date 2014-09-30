@@ -39,6 +39,10 @@ bool TGIsLocaleArabic();
 
 + (bool)stringContainsEmoji:(NSString *)string;
 
++ (NSString *)stringForMessageTimerSeconds:(NSUInteger)seconds;
++ (NSString *)stringForShortMessageTimerSeconds:(NSUInteger)seconds;
++ (NSArray *)stringComponentsForMessageTimerSeconds:(NSUInteger)seconds;
+
 @end
 
 @interface NSString (Telegraph)

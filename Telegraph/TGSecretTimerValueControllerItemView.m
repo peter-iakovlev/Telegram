@@ -1,0 +1,59 @@
+#import "TGSecretTimerValueControllerItemView.h"
+
+#import "TGFont.h"
+
+#import "TGStringUtils.h"
+
+@interface TGSecretTimerValueControllerItemView ()
+{
+    UILabel *_numberLabel;
+    UILabel *_unitLabel;
+}
+
+@end
+
+@implementation TGSecretTimerValueControllerItemView
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self != nil)
+    {
+        _numberLabel = [[UILabel alloc] init];
+        _numberLabel.backgroundColor = nil;
+        _numberLabel.opaque = false;
+        _numberLabel.font = TGSystemFontOfSize(24.0f);
+        [self addSubview:_numberLabel];
+        
+        _unitLabel = [[UILabel alloc] init];
+        _unitLabel.backgroundColor = nil;
+        _unitLabel.opaque = false;
+        _unitLabel.font = TGMediumSystemFontOfSize(16.0f);
+        [self addSubview:_unitLabel];
+    }
+    return self;
+}
+
+- (void)setSeconds:(NSUInteger)seconds
+{
+    _seconds = seconds;
+    
+    NSArray *components = [TGStringUtils stringComponentsForMessageTimerSeconds:seconds];
+    _numberLabel.text = components[0];
+    _unitLabel.text = components[1];
+    
+    [self setNeedsLayout];
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    [_numberLabel sizeToFit];
+    [_unitLabel sizeToFit];
+    
+    _numberLabel.frame = (CGRect){{self.frame.size.width / 2.0f - 20.0f - _numberLabel.frame.size.width, CGFloor((self.frame.size.height - _numberLabel.frame.size.height) / 2.0f)}, _numberLabel.frame.size};
+    _unitLabel.frame = (CGRect){{self.frame.size.width / 2.0f - 12.0f, CGFloor((self.frame.size.height - _unitLabel.frame.size.height) / 2.0f) + 2.0f}, _unitLabel.frame.size};
+}
+
+@end

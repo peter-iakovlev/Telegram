@@ -814,6 +814,8 @@
 		D066E9AF18C8CAF400509410 /* TGOpusAudioPlayerAU.mm in Sources */ = {isa = PBXBuildFile; fileRef = D066E9AE18C8CAF400509410 /* TGOpusAudioPlayerAU.mm */; };
 		D066E9B618C8D0DA00509410 /* TGSupportPeerActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D066E9B518C8D0DA00509410 /* TGSupportPeerActor.m */; };
 		D066E9CA18C924F500509410 /* TGDatacenterWatchdogActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D066E9C918C924F500509410 /* TGDatacenterWatchdogActor.m */; };
+		D06EE99519DA124700088C19 /* TGSecretTimerValueController.m in Sources */ = {isa = PBXBuildFile; fileRef = D06EE99319DA124700088C19 /* TGSecretTimerValueController.m */; };
+		D06EE99919DA153600088C19 /* TGSecretTimerValueControllerItemView.m in Sources */ = {isa = PBXBuildFile; fileRef = D06EE99819DA153600088C19 /* TGSecretTimerValueControllerItemView.m */; };
 		D072C9C615E2D86C00A93A95 /* TGDialogListSearchActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D072C9C515E2D86C00A93A95 /* TGDialogListSearchActor.m */; };
 		D073B9C2192AB02A00BBD071 /* TGTabletMainView.m in Sources */ = {isa = PBXBuildFile; fileRef = D073B9C1192AB02A00BBD071 /* TGTabletMainView.m */; };
 		D073B9CD192B846200BBD071 /* TGConversationListController.m in Sources */ = {isa = PBXBuildFile; fileRef = D073B9CC192B846200BBD071 /* TGConversationListController.m */; };
@@ -2858,6 +2860,10 @@
 		D066E9C318C91E9700509410 /* TGAudioBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGAudioBuffer.h; sourceTree = "<group>"; };
 		D066E9C818C924F500509410 /* TGDatacenterWatchdogActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGDatacenterWatchdogActor.h; sourceTree = "<group>"; };
 		D066E9C918C924F500509410 /* TGDatacenterWatchdogActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGDatacenterWatchdogActor.m; sourceTree = "<group>"; };
+		D06EE99319DA124700088C19 /* TGSecretTimerValueController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGSecretTimerValueController.m; sourceTree = "<group>"; };
+		D06EE99419DA124700088C19 /* TGSecretTimerValueController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGSecretTimerValueController.h; sourceTree = "<group>"; };
+		D06EE99719DA153600088C19 /* TGSecretTimerValueControllerItemView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGSecretTimerValueControllerItemView.h; sourceTree = "<group>"; };
+		D06EE99819DA153600088C19 /* TGSecretTimerValueControllerItemView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGSecretTimerValueControllerItemView.m; sourceTree = "<group>"; };
 		D072C9C415E2D86C00A93A95 /* TGDialogListSearchActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGDialogListSearchActor.h; sourceTree = "<group>"; };
 		D072C9C515E2D86C00A93A95 /* TGDialogListSearchActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGDialogListSearchActor.m; sourceTree = "<group>"; };
 		D072C9CD15E3055000A93A95 /* libTestFlight.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libTestFlight.a; path = Telegraph/thirdparty/TestFlightSDK1.0/libTestFlight.a; sourceTree = "<group>"; };
@@ -4617,6 +4623,7 @@
 		932E010C184CD3AF0001D109 /* Private */ = {
 			isa = PBXGroup;
 			children = (
+				D06EE99619DA152100088C19 /* Secret Timer Value Controller */,
 				93064DF518325EB70024C05A /* TGPrivateModernConversationCompanion.h */,
 				93064DF618325EB70024C05A /* TGPrivateModernConversationCompanion.m */,
 				93064E1C18366FA80024C05A /* TGSecretModernConversationCompanion.h */,
@@ -6767,6 +6774,17 @@
 				93DBE6BD18BFFAEE00AA1623 /* TGNativeAudioPlayer.m */,
 			);
 			name = Native;
+			sourceTree = "<group>";
+		};
+		D06EE99619DA152100088C19 /* Secret Timer Value Controller */ = {
+			isa = PBXGroup;
+			children = (
+				D06EE99419DA124700088C19 /* TGSecretTimerValueController.h */,
+				D06EE99319DA124700088C19 /* TGSecretTimerValueController.m */,
+				D06EE99719DA153600088C19 /* TGSecretTimerValueControllerItemView.h */,
+				D06EE99819DA153600088C19 /* TGSecretTimerValueControllerItemView.m */,
+			);
+			name = "Secret Timer Value Controller";
 			sourceTree = "<group>";
 		};
 		D07041FB15891CEF008AA657 /* External */ = {
@@ -10122,6 +10140,7 @@
 				93992D8118296E7D00F29746 /* TGMessageViewModel.m in Sources */,
 				9344707915F138EA0015AC4C /* TGConversationDeleteMemberRequestActor.m in Sources */,
 				D046965518A15368009764B2 /* TGModernConversationAudioPlayer.m in Sources */,
+				D06EE99919DA153600088C19 /* TGSecretTimerValueControllerItemView.m in Sources */,
 				D098417419CB9BE200CE5BB0 /* TLScheme.mm in Sources */,
 				939ECA42188EB8D1004ABAB7 /* TGModernGalleryItemView.m in Sources */,
 				D0BD441C18B792AE0036FB8B /* TGModernViewInlineMediaContext.m in Sources */,
@@ -10380,6 +10399,7 @@
 				D0983D7219CB9A4300CE5BB0 /* TGImagePickerController.mm in Sources */,
 				D0C925AB194A024000E629CA /* objects.c in Sources */,
 				9309311D1668B17A0003C944 /* TGSynchronizeServiceActionsActor.mm in Sources */,
+				D06EE99519DA124700088C19 /* TGSecretTimerValueController.m in Sources */,
 				D098419519CB9BE200CE5BB0 /* TLSerializationContext.m in Sources */,
 				D098407919CB9BE200CE5BB0 /* TLauth_SentCode.mm in Sources */,
 				D020ACDA1994E016007818DD /* TGGalleryVideoPreviewDataSource.m in Sources */,
@@ -11115,6 +11135,7 @@
 					legacy/TL/TL,
 					legacy/TL,
 					thirdparty/pop,
+					thirdparty/ActionSheetPicker/Pickers,
 				);
 				INFOPLIST_FILE = "Telegraph/Telegraph-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -11185,6 +11206,7 @@
 					legacy/TL/TL,
 					legacy/TL,
 					thirdparty/pop,
+					thirdparty/ActionSheetPicker/Pickers,
 				);
 				INFOPLIST_FILE = "Telegraph/Telegraph-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;

@@ -692,3 +692,48 @@ Remember, logging out kills all your Secret Chats.";
 Is this number correct?
 {number}";
 "Login.PadPhoneHelpTitle" = "Your Number";
+
+"MessageTimer.Custom" = "Custom";
+"MessageTimer.Title" = "Custom Timer";
+
+"MessageTimer.Seconds_1" = "%@ second";
+"MessageTimer.Seconds_2" = "%@ seconds";
+"MessageTimer.Seconds_3_10" = "%@ seconds";
+"MessageTimer.Seconds_any" = "%@ seconds";
+"MessageTimer.Minutes_1" = "%@ minute";
+"MessageTimer.Minutes_2" = "%@ minutes";
+"MessageTimer.Minutes_3_10" = "%@ minutes";
+"MessageTimer.Minutes_any" = "%@ minutes";
+"MessageTimer.Hours_1" = "%@ hour";
+"MessageTimer.Hours_2" = "%@ hours";
+"MessageTimer.Hours_3_10" = "%@ hours";
+"MessageTimer.Hours_any" = "%@ hours";
+"MessageTimer.Days_1" = "%@ day";
+"MessageTimer.Days_2" = "%@ days";
+"MessageTimer.Days_3_10" = "%@ days";
+"MessageTimer.Days_any" = "%@ days";
+"MessageTimer.Weeks_1" = "%@ week";
+"MessageTimer.Weeks_2" = "%@ weeks";
+"MessageTimer.Weeks_3_10" = "%@ weeks";
+"MessageTimer.Weeks_any" = "%@ weeks";
+
+"MessageTimer.ShortSeconds_1" = "%@s";
+"MessageTimer.ShortSeconds_2" = "%@s";
+"MessageTimer.ShortSeconds_3_10" = "%@s";
+"MessageTimer.ShortSeconds_any" = "%@s";
+"MessageTimer.ShortMinutes_1" = "%@m";
+"MessageTimer.ShortMinutes_2" = "%@m";
+"MessageTimer.ShortMinutes_3_10" = "%@m";
+"MessageTimer.ShortMinutes_any" = "%@m";
+"MessageTimer.ShortHours_1" = "%@h";
+"MessageTimer.ShortHours_2" = "%@h";
+"MessageTimer.ShortHours_3_10" = "%@h";
+"MessageTimer.ShortHours_any" = "%@h";
+"MessageTimer.ShortDays_1" = "%@d";
+"MessageTimer.ShortDays_2" = "%@d";
+"MessageTimer.ShortDays_3_10" = "%@d";
+"MessageTimer.ShortDays_any" = "%@d";
+"MessageTimer.ShortWeeks_1" = "%@w";
+"MessageTimer.ShortWeeks_2" = "%@w";
+"MessageTimer.ShortWeeks_3_10" = "%@w";
+"MessageTimer.ShortWeeks_any" = "%@w";
