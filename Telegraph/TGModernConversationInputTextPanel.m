@@ -529,18 +529,6 @@ static CGRect viewFrame(UIView *view)
         
         _inputField.delegate = nil;
         
-        /*
-         CGRect inputFieldClippingFrame = _fieldBackground.frame;
-         inputFieldClippingFrame.size.width -= _panelAccessoryView.frame.size.width;
-         _inputFieldClippingContainer = [[UIView alloc] initWithFrame:inputFieldClippingFrame];
-         _inputFieldClippingContainer.clipsToBounds = true;
-         [self addSubview:_inputFieldClippingContainer];
-         
-         UIEdgeInsets inputFieldInternalEdgeInsets = [self inputFieldInternalEdgeInsets];
-         
-         _inputField = [[HPGrowingTextView alloc] initWithFrame:CGRectMake(inputFieldInternalEdgeInsets.left, inputFieldInternalEdgeInsets.top, _inputFieldClippingContainer.frame.size.width - inputFieldInternalEdgeInsets.left, _inputFieldClippingContainer.frame.size.height)];
-         */
-        
         UIEdgeInsets inputFieldInsets = [self inputFieldInsets];
         UIEdgeInsets inputFieldInternalEdgeInsets = [self inputFieldInternalEdgeInsets];
         
@@ -926,6 +914,13 @@ static CGRect viewFrame(UIView *view)
     id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
     if ([delegate respondsToSelector:@selector(inputPanelRequestedSendImages:images:)])
         [delegate inputPanelRequestedSendImages:self images:images];
+}
+
+- (void)growingTextView:(HPGrowingTextView *)__unused growingTextView didPasteData:(NSData *)data
+{
+    id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
+    if ([delegate respondsToSelector:@selector(inputPanelRequestedSendData:data:)])
+        [delegate inputPanelRequestedSendData:self data:data];
 }
 
 @end

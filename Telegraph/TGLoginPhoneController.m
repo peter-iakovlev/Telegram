@@ -741,7 +741,7 @@
     }];
 }
 
-- (void)nextButtonPressed
+- (void)_commitNextButtonPressed
 {
     if (_inProgress)
         return;
@@ -774,6 +774,37 @@
         _phoneNumber = [NSString stringWithFormat:@"%@%@", [_countryCodeField.text substringFromIndex:1], _phoneField.text];
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/service/auth/sendCode/(%d)", _currentActionIndex] options:[NSDictionary dictionaryWithObjectsAndKeys:_phoneNumber, @"phoneNumber", nil] watcher:self];
     }
+}
+
+- (void)nextButtonPressed
+{
+    if (_inProgress)
+        return;
+    
+    if (TGIsPad())
+    {
+        NSMutableString *string = [[NSMutableString alloc] initWithString:TGLocalized(@"Login.PadPhoneHelp")];
+        NSRange range = [string rangeOfString:@"{number}"];
+        if (range.location != NSNotFound)
+        {
+            NSString *phoneNumber = [NSString stringWithFormat:@"%@%@", [_countryCodeField.text substringFromIndex:1], _phoneField.text];
+            [string replaceCharactersInRange:range withString:[TGPhoneUtils formatPhone:phoneNumber forceInternational:true]];
+        }
+        __weak TGLoginPhoneController *weakSelf = self;
+        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Login.PadPhoneHelpTitle") message:string cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
+        {
+            if (okButtonPressed)
+            {
+                __strong TGLoginPhoneController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    [strongSelf _commitNextButtonPressed];
+                }
+            }
+        }] show];
+    }
+    else
+        [self _commitNextButtonPressed];
 }
 
 - (void)countryButtonPressed:(id)__unused sender

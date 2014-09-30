@@ -29,18 +29,14 @@
 "CHAT_DELETE_MEMBER" = "%1$@ kicked %3$@ from the group %2$@";
 "CHAT_LEFT" = "%1$@ left the group %2$@";
 "CHAT_RETURNED" = "%1$@ returned to the group %2$@";
-"PHOTO_PUBLISHED" = "%1$@ published a photo to the group %2$@";
 
 "CONTACT_JOINED" = "%1$@ joined Telegram!";
 "CONTACT_REQUESTED" = "%1$@ requested your contact information";
 "CONTACT_ACCEPTED" = "%1$@ accepted your contact request";
 "CONTACT_ACTIVATED" = "%1$@ helped you activate your account!";
-"CONTACT_PHOTO" = "%1$@ added a new profile photo";
 
 "AUTH_UNKNOWN" = "Login from a new device %1$@";
 "AUTH_REGION" = "Login from a new device %1$@, location: %2$@";
-
-"GEOCHAT_CHECKIN" = "%1$@ checked in at %2$@";
 
 // Common
 "Common.OK" = "OK";
@@ -634,7 +630,7 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 "ChatSettings.ClearOtherSessionsFailed" = "An error occurred.";
 "ChatSettings.Language" = "LANGUAGE";
 "ChatSettings.RevertLanguage" = "Revert Language";
-"ChatSettings.Cache" = "Cache";
+"ChatSettings.Cache" = "CACHE";
 
 // Usage
 "Cache.Title" = "Cache";
@@ -690,3 +686,54 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 Note that you can seamlessly use Telegram on all your devices at once.
 
 Remember, logging out kills all your Secret Chats.";
+
+"Login.PadPhoneHelp" = "\nYou can use your main mobile number to log in to Telegram on all devices.\nDon't use your iPad's SIM number here – we'll need to send you an SMS.
+
+Is this number correct?
+{number}";
+"Login.PadPhoneHelpTitle" = "Your Number";
+
+"MessageTimer.Custom" = "Custom";
+"MessageTimer.Title" = "Custom Timer";
+
+"MessageTimer.Seconds_1" = "%@ second";
+"MessageTimer.Seconds_2" = "%@ seconds";
+"MessageTimer.Seconds_3_10" = "%@ seconds";
+"MessageTimer.Seconds_any" = "%@ seconds";
+"MessageTimer.Minutes_1" = "%@ minute";
+"MessageTimer.Minutes_2" = "%@ minutes";
+"MessageTimer.Minutes_3_10" = "%@ minutes";
+"MessageTimer.Minutes_any" = "%@ minutes";
+"MessageTimer.Hours_1" = "%@ hour";
+"MessageTimer.Hours_2" = "%@ hours";
+"MessageTimer.Hours_3_10" = "%@ hours";
+"MessageTimer.Hours_any" = "%@ hours";
+"MessageTimer.Days_1" = "%@ day";
+"MessageTimer.Days_2" = "%@ days";
+"MessageTimer.Days_3_10" = "%@ days";
+"MessageTimer.Days_any" = "%@ days";
+"MessageTimer.Weeks_1" = "%@ week";
+"MessageTimer.Weeks_2" = "%@ weeks";
+"MessageTimer.Weeks_3_10" = "%@ weeks";
+"MessageTimer.Weeks_any" = "%@ weeks";
+
+"MessageTimer.ShortSeconds_1" = "%@s";
+"MessageTimer.ShortSeconds_2" = "%@s";
+"MessageTimer.ShortSeconds_3_10" = "%@s";
+"MessageTimer.ShortSeconds_any" = "%@s";
+"MessageTimer.ShortMinutes_1" = "%@m";
+"MessageTimer.ShortMinutes_2" = "%@m";
+"MessageTimer.ShortMinutes_3_10" = "%@m";
+"MessageTimer.ShortMinutes_any" = "%@m";
+"MessageTimer.ShortHours_1" = "%@h";
+"MessageTimer.ShortHours_2" = "%@h";
+"MessageTimer.ShortHours_3_10" = "%@h";
+"MessageTimer.ShortHours_any" = "%@h";
+"MessageTimer.ShortDays_1" = "%@d";
+"MessageTimer.ShortDays_2" = "%@d";
+"MessageTimer.ShortDays_3_10" = "%@d";
+"MessageTimer.ShortDays_any" = "%@d";
+"MessageTimer.ShortWeeks_1" = "%@w";
+"MessageTimer.ShortWeeks_2" = "%@w";
+"MessageTimer.ShortWeeks_3_10" = "%@w";
+"MessageTimer.ShortWeeks_any" = "%@w";

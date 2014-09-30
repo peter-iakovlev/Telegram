@@ -27,15 +27,15 @@
 
 #import "TGMessageImageView.h"
 
-#import "TGAnimatedImagePlayer.h"
+#import "TGModernAnimatedImagePlayer.h"
 
 #import "TGImageBlur.h"
 
-@interface TGAnimatedImageMessageViewModel () <TGAnimatedImagePlayerDelegate>
+@interface TGAnimatedImageMessageViewModel ()
 {
     TGDocumentMediaAttachment *_document;
     
-    TGAnimatedImagePlayer *_player;
+    TGModernAnimatedImagePlayer *_player;
 }
 
 @end
@@ -97,7 +97,6 @@
 
 - (void)dealloc
 {
-    _player.delegate = nil;
     [_player stop];
 }
 
@@ -125,7 +124,6 @@
 {
     if (_player != nil)
     {
-        _player.delegate = nil;
         [_player stop];
         _player = nil;
         
@@ -144,7 +142,6 @@
     
     if (_player != nil)
     {
-        _player.delegate = nil;
         [_player stop];
         _player = nil;
         
@@ -169,13 +166,19 @@
         
         [_context.companionHandle requestAction:@"stopInlineMedia" options:@{}];
         
-        _player = [[TGAnimatedImagePlayer alloc] initWithDelegate:self path:filePath];
+        _player = [[TGModernAnimatedImagePlayer alloc] initWithSize:self.imageModel.frame.size path:filePath];
+        __weak TGAnimatedImageMessageViewModel *weakSelf = self;
+        _player.frameReady = ^(UIImage *image)
+        {
+            __strong TGAnimatedImageMessageViewModel *strongSelf = weakSelf;
+            [strongSelf animationFrameReady:image];
+        };
         
         CGSize imageSize = self.imageModel.frame.size;
-        _player.filter = ^(UIImage *image)
+        /*_player.filter = ^(UIImage *image)
         {
             return TGLoadedAttachmentImage(image, imageSize, NULL);
-        };
+        };*/
         [_player play];
         
         [self.imageModel setOverlayType:TGMessageImageViewOverlayNone];
@@ -184,7 +187,6 @@
     {
         [self.imageModel reloadImage:true];
         
-        _player.delegate = nil;
         [_player stop];
         _player = nil;
         

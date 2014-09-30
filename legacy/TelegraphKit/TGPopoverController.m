@@ -67,4 +67,12 @@
     return self;
 }
 
+- (void)setPopoverContentSize:(CGSize)size animated:(BOOL)animated
+{
+    [super setPopoverContentSize:size animated:animated];
+    
+    if ([self.contentViewController respondsToSelector:@selector(setPreferredContentSize:)])
+        [self.contentViewController setPreferredContentSize:size];
+}
+
 @end

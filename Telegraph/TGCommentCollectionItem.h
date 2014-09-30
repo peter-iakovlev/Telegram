@@ -10,6 +10,8 @@
 
 @interface TGCommentCollectionItem : TGCollectionItem
 
+@property (nonatomic) bool skipLastLineInSizeComputation;
+
 - (instancetype)initWithText:(NSString *)text;
 
 @end

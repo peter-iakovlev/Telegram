@@ -521,7 +521,7 @@
     
     _codeField.frame = CGRectMake(sideInset, _fieldSeparatorView.frame.origin.y - 56.0f, screenSize.width - sideInset * 2.0f, 56.0f);
     
-    CGFloat labelAnchor = _separatorView.frame.origin.y + ([TGViewController isWidescreen] ? 160 : 134) - 44;
+    CGFloat labelAnchor = CGRectGetMaxY(_noticeLabel.frame) + 4.0f + ([TGViewController isWidescreen] ? 10.0f : 0.0f);
     
     _timeoutLabel.frame = CGRectMake((int)((screenSize.width - _timeoutLabel.frame.size.width) / 2), labelAnchor, _timeoutLabel.frame.size.width, _timeoutLabel.frame.size.height);
     _requestingCallLabel.frame = CGRectMake((int)((screenSize.width - _requestingCallLabel.frame.size.width) / 2), labelAnchor, _requestingCallLabel.frame.size.width, _requestingCallLabel.frame.size.height);

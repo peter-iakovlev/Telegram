@@ -40,7 +40,6 @@ static const CGFloat additionalDataTopPadding = 6.0f;
 @interface TGMessageImageView ()
 {
     TGModernButton *_buttonView;
-    UIImageView *_actionCircleImageView;
     TGMessageImageViewOverlayView *_overlayView;
     
     TGMessageImageAdditionalDataView *_additionalDataView;
@@ -77,9 +76,6 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        _actionCircleImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, circleDiameter, circleDiameter)];
-        _actionCircleImageView.userInteractionEnabled = false;
-        
         _buttonView = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, circleDiameter, circleDiameter)];
         _buttonView.exclusiveTouch = true;
         _buttonView.modernHighlight = true;
@@ -120,7 +116,6 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     if (!CGRectEqualToRect(_buttonView.frame, buttonFrame))
     {
         _buttonView.frame = buttonFrame;
-        _actionCircleImageView.frame = buttonFrame;
     }
     
     _timestampView.frame = CGRectMake(frame.size.width - timestampWidth - timestampRightPadding, frame.size.height - timestampHeight - timestampBottomPadding, timestampWidth, timestampHeight);
@@ -133,19 +128,7 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     TGStaticBackdropImageData *backdropData = [image staticBackdropImageData];
     UIImage *actionCircleImage = [backdropData backdropAreaForKey:TGStaticBackdropMessageActionCircle].background;
     
-    if (_actionCircleImageView.image == nil && actionCircleImage != nil && duration > DBL_EPSILON)
-    {
-        _actionCircleImageView.alpha = 0.0;
-        
-        [UIView animateWithDuration:duration animations:^
-        {
-            _actionCircleImageView.alpha = 1.0;
-        } completion:^(__unused BOOL finished)
-        {
-        }];
-    }
-    
-    _actionCircleImageView.image = actionCircleImage;
+    [_overlayView setBlurredBackgroundImage:actionCircleImage];
     
     [_timestampView setBackdropArea:[backdropData backdropAreaForKey:TGStaticBackdropMessageTimestamp] transitionDuration:duration];
     
@@ -168,13 +151,9 @@ static const CGFloat additionalDataTopPadding = 6.0f;
         {
             case TGMessageImageViewOverlayDownload:
             {
-                if (_actionCircleImageView.superview == nil)
-                {
-                    [self addSubview:_actionCircleImageView];
+                if (_buttonView.superview == nil)
                     [self addSubview:_buttonView];
-                }
                 
-                _actionCircleImageView.alpha = 1.0f;
                 _buttonView.alpha = 1.0f;
                 
                 [_overlayView setDownload];
@@ -183,13 +162,9 @@ static const CGFloat additionalDataTopPadding = 6.0f;
             }
             case TGMessageImageViewOverlayPlay:
             {
-                if (_actionCircleImageView.superview == nil)
-                {
-                    [self addSubview:_actionCircleImageView];
+                if (_buttonView.superview == nil)
                     [self addSubview:_buttonView];
-                }
                 
-                _actionCircleImageView.alpha = 1.0f;
                 _buttonView.alpha = 1.0f;
                 
                 [_overlayView setPlay];
@@ -214,13 +189,9 @@ static const CGFloat additionalDataTopPadding = 6.0f;
             }
             case TGMessageImageViewOverlayProgress:
             {
-                if (_actionCircleImageView.superview == nil)
-                {
-                    [self addSubview:_actionCircleImageView];
+                if (_buttonView.superview == nil)
                     [self addSubview:_buttonView];
-                }
                 
-                _actionCircleImageView.alpha = 1.0f;
                 _buttonView.alpha = 1.0f;
                 
                 [_overlayView setProgress:_progress animated:false];
@@ -244,26 +215,21 @@ static const CGFloat additionalDataTopPadding = 6.0f;
             case TGMessageImageViewOverlayNone:
             default:
             {
-                if (_actionCircleImageView.superview != nil)
+                if (_buttonView.superview != nil)
                 {
                     if (animated)
                     {
                         [UIView animateWithDuration:0.2 animations:^
                         {
-                            _actionCircleImageView.alpha = 0.0f;
                             _buttonView.alpha = 0.0f;
                         } completion:^(BOOL finished)
                         {
                             if (finished)
-                            {
-                                [_actionCircleImageView removeFromSuperview];
                                 [_buttonView removeFromSuperview];
-                            }
                         }];
                     }
                     else
                     {
-                        [_actionCircleImageView removeFromSuperview];
                         [_buttonView removeFromSuperview];
                     }
                 }

@@ -888,20 +888,7 @@ static UIColor *mediaTextColor = nil;
                         }
                         else
                         {
-                            NSString *lifetimeString = @"";
-                            
-                            if (messageLifetime <= 2)
-                                lifetimeString = TGLocalized(@"Notification.MessageLifetime2s");
-                            else if (messageLifetime <= 5)
-                                lifetimeString = TGLocalized(@"Notification.MessageLifetime5s");
-                            else if (messageLifetime <= 1 * 60)
-                                lifetimeString = TGLocalized(@"Notification.MessageLifetime1m");
-                            else if (messageLifetime <= 60 * 60)
-                                lifetimeString = TGLocalized(@"Notification.MessageLifetime1h");
-                            else if (messageLifetime <= 24 * 60 * 60)
-                                lifetimeString = TGLocalized(@"Notification.MessageLifetime1d");
-                            else if (messageLifetime <= 7 * 24 * 60 * 60)
-                                lifetimeString = TGLocalized(@"Notification.MessageLifetime1w");
+                            NSString *lifetimeString = [TGStringUtils stringForMessageTimerSeconds:messageLifetime];
                             
                             if (_outgoing)
                                 _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.MessageLifetimeChangedOutgoing"), lifetimeString];

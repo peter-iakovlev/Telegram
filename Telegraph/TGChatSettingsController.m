@@ -126,10 +126,11 @@
         terminateSessionsItem.titleColor = TGDestructiveAccentColor();
         terminateSessionsItem.deselectAutomatically = true;
         
+        TGCommentCollectionItem *clearOtherSessionsHelpItem = [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"ChatSettings.ClearOtherSessionsHelp")];
         TGCollectionMenuSection *securitySection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Security")],
             terminateSessionsItem,
-            [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"ChatSettings.ClearOtherSessionsHelp")]
+            clearOtherSessionsHelpItem
         ]];
         [self.menuSections addSection:securitySection];
         
@@ -144,11 +145,12 @@
             [self.menuSections addSection:languageSection];
         }
         
-        TGDisclosureActionCollectionItem *cacheItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Cache") action:@selector(cachePressed)];
+        TGDisclosureActionCollectionItem *cacheItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Cache.Title") action:@selector(cachePressed)];
         TGCollectionMenuSection *cacheSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Cache")],
                 cacheItem
         ]];
+        cacheSection.insets = (UIEdgeInsets){cacheSection.insets.top - 12.0f, cacheSection.insets.left, cacheSection.insets.bottom, cacheSection.insets.right};
         [self.menuSections addSection:cacheSection];
     }
     return self;

@@ -29,18 +29,14 @@
 "CHAT_DELETE_MEMBER" = "%1$@ ha espulso %3$@ dal gruppo %2$@";
 "CHAT_LEFT" = "%1$@ ha lasciato il gruppo %2$@";
 "CHAT_RETURNED" = "%1$@ è rientrato nel gruppo %2$@";
-"PHOTO_PUBLISHED" = "%1$@ ha pubblicato una foto nel gruppo %2$@";
 
 "CONTACT_JOINED" = "%1$@ ha iniziato a usare Telegram!";
 "CONTACT_REQUESTED" = "%1$@ ha richiesto le tue informazioni di contatto";
 "CONTACT_ACCEPTED" = "%1$@ ha accettato la tua richiesta di contatto";
 "CONTACT_ACTIVATED" = "%1$@ ti ha aiutato ad attivare il tuo account!";
-"CONTACT_PHOTO" = "%1$@ ha aggiunto una nuova foto del profilo";
 
 "AUTH_UNKNOWN" = "Accesso da un nuovo dispositivo %1$@";
 "AUTH_REGION" = "Accesso da un nuovo dispositivo %1$@, posizione: %2$@";
-
-"GEOCHAT_CHECKIN" = "%1$@ è entrato su %2$@";
 
 // Common
 "Common.OK" = "OK";
@@ -136,22 +132,22 @@
 
 // Tour
 "Tour.Title1" = "Telegram";
-"Tour.Text1" = "L'applicazione di messaggistica **più veloce** al mondo.\nÈ **gratuita** e **sicura**.";
+"Tour.Text1" = "L'app di messaggi **più veloce** al mondo. È **gratuita** e **sicura**.";
 
 "Tour.Title2" = "Veloce";
-"Tour.Text2" = "**Telegram** consegna i messaggi più \nvelocemente di qualsiasi altra applicazione.";
+"Tour.Text2" = "**Telegram** consegna i messaggi più \nvelocemente di ogni altra app.";
 
 "Tour.Title3" = "Potente";
-"Tour.Text3" = "**Telegram** non ha limiti di dimensione\nper le tue chat e per i file multimediali";
+"Tour.Text3" = "**Telegram** non ha limiti di dimensione\nper le chat e per i file multimediali.";
 
 "Tour.Title4" = "Sicuro";
-"Tour.Text4" = "**Telegram** tiene i tuoi messaggi al sicuro \ndagli attacchi degli hacker.";
+"Tour.Text4" = "**Telegram** protegge i tuoi messaggi \ndagli attacchi degli hacker.";
 
 "Tour.Title5" = "Basato sul cloud";
 "Tour.Text5" = "**Telegram** ti consente di accedere ai \ntuoi messaggi da più dispositivi.";
 
 "Tour.Title6" = "Gratuito";
-"Tour.Text6" = "**Telegram** sarà sempre gratuito. Nessuna\n pubblicità. Nessun costo di abbonamento.";
+"Tour.Text6" = "**Telegram** sarà sempre gratuito. \nNessuna pubblicità. \nNessun abbonamento.";
 
 "Tour.Title7" = "Privato";
 "Tour.Text7" = "**Telegram** cifra in modo sicuro i messaggi e può far sì che si autodistruggano.";
@@ -159,7 +155,7 @@
 "Tour.StartButton" = "Inizia a inviare messaggi";
 
 // Login
-"Login.PhoneAndCountryHelp" = "Conferma il prefisso della tua nazione e inserisci il tuo numero di telefono.";
+"Login.PhoneAndCountryHelp" = "Conferma il prefisso nazionale e inserisci il tuo numero di telefono.";
 "Login.CodeHelp" = "Ti abbiamo inviato un SMS con un codice al numero\n%@";
 "Login.CodeSentInternal" = "Inserisci il codice che hai appena ricevuto nella tua app **Telegram** precedente";
 "Login.HaveNotReceivedCodeInternal" = "Non hai ricevuto il codice?";
@@ -301,7 +297,7 @@
 "Conversation.BroadcastTitle" = "Broadcast";
 "Conversation.Call" = "Chiama";
 "Conversation.Mute" = "Silenzia";
-"Conversation.Unmute" = "Rimuovi silenzioso";
+"Conversation.Unmute" = "Suona";
 "Conversation.Edit" = "Modifica";
 "Conversation.Info" = "Informazioni";
 "Conversation.Block" = "Blocca";
@@ -459,12 +455,12 @@
 "Profile.EncryptionKey" = "Chiave di cifratura";
 "Profile.MessageLifetime" = "Timer di autodistruzione";
 "Profile.MessageLifetimeForever" = "Spento";
-"Profile.MessageLifetime2s" = "2s";
-"Profile.MessageLifetime5s" = "5s";
+"Profile.MessageLifetime2s" = "2sc";
+"Profile.MessageLifetime5s" = "5sc";
 "Profile.MessageLifetime1m" = "1m";
 "Profile.MessageLifetime1h" = "1h";
 "Profile.MessageLifetime1d" = "1g";
-"Profile.MessageLifetime1w" = "1sett";
+"Profile.MessageLifetime1w" = "1st";
 "Profile.ShareContactButton" = "Condividi contatto";
 "Profile.ShareContactPrefix" = "Invia contatto a";
 
@@ -574,7 +570,7 @@
 "Settings.Support" = "Fai una domanda";
 "Settings.FAQ" = "Domande frequenti su Telegram";
 "Settings.FAQ_URL" = "https://telegram.org/faq/it#domande-generali";
-"Settings.FAQ_Intro" = "Per favore, considera che il supporto su Telegram è offerto da volontari. Proveremo a risponderti il più velocemente possibile, ma potrebbe volerci un po' di tempo. Dai un'occhiata alle domande frequenti su Telegram: potrai trovare importanti suggerimenti riguardo alcune problematiche e risposte alla maggior parte delle domande.";
+"Settings.FAQ_Intro" = "Per favore, considera che il supporto su Telegram è offerto da volontari. Proveremo a risponderti il più velocemente possibile, ma potrebbe volerci un po' di tempo. \nDai un'occhiata alle domande frequenti su Telegram: potrai trovare importanti suggerimenti riguardo alcune problematiche e risposte alla maggior parte delle domande.";
 "Settings.FAQ_Button" = "Domande frequenti";
 "Settings.SaveIncomingPhotos" = "Salva foto ricevute";
 "Settings.SaveIncomingPhotosHelp" = "Salva le foto ricevute nel Rullino";
@@ -623,7 +619,7 @@
 "ChatSettings.ClearOtherSessionsFailed" = "Si è verificato un errore.";
 "ChatSettings.Language" = "LINGUA";
 "ChatSettings.RevertLanguage" = "Ripristina lingua";
-"ChatSettings.Cache" = "Cache";
+"ChatSettings.Cache" = "CACHE";
 
 // Usage
 "Cache.Title" = "Cache";
@@ -675,4 +671,7 @@
 "ChatSettings.AutoPlayAudio" = "Riproduzione automatica Audio";
 
 "Settings.LogoutConfirmationTitle" = "Disconnetti?";
-"Settings.LogoutConfirmationText" = "\nRicorda che puoi usare Telegram su tutti i tuoi device contemporaneamente.\n\nRicorda che disconnettendoti, eliminerai tutte le Chat Segrete";
+"Settings.LogoutConfirmationText" = "\nRicorda che puoi usare Telegram su tutti i tuoi device insieme.\n\nRicorda che disconnettendoti, eliminerai tutte le Chat Segrete";
+
+"Login.PadPhoneHelp" = "\nPuoi usare il tuo numero per connetterti a Telegram su tutti i dispositivi.\nNon usare il numero dell'iPad qui - dovremo mandarti un SMS.\n\nIl tuo numero è corretto?\n{number}";
+"Login.PadPhoneHelpTitle" = "Il Tuo Numero";

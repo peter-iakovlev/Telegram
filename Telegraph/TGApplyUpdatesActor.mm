@@ -1015,6 +1015,8 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                         if (text.length > 256)
                             text = [text substringToIndex:256];
                         
+                        text = [text stringByReplacingOccurrencesOfString:@"%" withString:@"%%"];
+                        
                         localNotification.alertBody = text;
                         localNotification.userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:message.cid], @"cid", nil];
                         

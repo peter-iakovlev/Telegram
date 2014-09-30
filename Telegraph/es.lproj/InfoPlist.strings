@@ -2,4 +2,5 @@
 
 "CFBundleDisplayName" = "Telegram";
 
-"NSContactsUsageDescription" = "Telegram almacena tus contactos fuertemente cifrados en la nube, para que te conectes con ellos desde todos tus dispositivos.";
+"NSContactsUsageDescription" = "Telegram almacena tus contactos fuertemente cifrados en la nube, para permitirte la conexión con amigos a través de todos tus dispositivos.";
+"NSLocationWhenInUseUsageDescription" = "Cuando envías tu ubicación a tus amigos, Telegram necesita acceso para mostrarles un mapa.";

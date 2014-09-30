@@ -559,6 +559,262 @@ static int EscapeMapCompare(const void *ucharVoid, const void *mapVoid) {
     return returnValue;
 }
 
++ (NSString *)stringForMessageTimerSeconds:(NSUInteger)seconds
+{
+    if (seconds < 60)
+    {
+        int number = seconds;
+        
+        NSString *format = TGLocalized(@"MessageTimer.Seconds_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Seconds_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Seconds_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Seconds_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else if (seconds < 60 * 60)
+    {
+        int number = seconds / 60;
+        
+        NSString *format = TGLocalized(@"MessageTimer.Minutes_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Minutes_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Minutes_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Minutes_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else if (seconds < 60 * 60 * 24)
+    {
+        int number = seconds / (60 * 60);
+        
+        NSString *format = TGLocalized(@"MessageTimer.Hours_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Hours_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Hours_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Hours_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else if (seconds < 60 * 60 * 24 * 7)
+    {
+        int number = seconds / (60 * 60 * 24);
+        
+        NSString *format = TGLocalized(@"MessageTimer.Days_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Days_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Days_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Days_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else
+    {
+        int number = seconds / (60 * 60 * 24 * 7);
+        
+        NSString *format = TGLocalized(@"MessageTimer.Weeks_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Weeks_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Weeks_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Weeks_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    
+    return @"";
+}
+
++ (NSString *)stringForShortMessageTimerSeconds:(NSUInteger)seconds
+{
+    if (seconds < 60)
+    {
+        int number = seconds;
+        
+        NSString *format = TGLocalized(@"MessageTimer.ShortSeconds_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.ShortSeconds_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.ShortSeconds_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.ShortSeconds_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else if (seconds < 60 * 60)
+    {
+        int number = seconds / 60;
+        
+        NSString *format = TGLocalized(@"MessageTimer.ShortMinutes_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.ShortMinutes_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.ShortMinutes_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.ShortMinutes_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else if (seconds < 60 * 60 * 24)
+    {
+        int number = seconds / (60 * 60);
+        
+        NSString *format = TGLocalized(@"MessageTimer.ShortHours_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.ShortHours_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.ShortHours_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.ShortHours_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else if (seconds < 60 * 60 * 24 * 7)
+    {
+        int number = seconds / (60 * 60 * 24);
+        
+        NSString *format = TGLocalized(@"MessageTimer.ShortDays_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.ShortDays_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.ShortDays_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.ShortDays_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else
+    {
+        int number = seconds / (60 * 60 * 24 * 7);
+        
+        NSString *format = TGLocalized(@"MessageTimer.ShortWeeks_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.ShortWeeks_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.ShortWeeks_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.ShortWeeks_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    
+    return @"";
+}
+
++ (NSArray *)stringComponentsForMessageTimerSeconds:(NSUInteger)seconds
+{
+    NSString *first = @"";
+    NSString *second = @"";
+    
+    if (seconds < 60)
+    {
+        int number = seconds;
+        
+        NSString *format = TGLocalized(@"MessageTimer.Seconds_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Seconds_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Seconds_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Seconds_3_10");
+        
+        NSRange range = [format rangeOfString:@"%@"];
+        if (range.location != NSNotFound)
+        {
+            first = [[NSString alloc] initWithFormat:@"%d", number];
+            second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        }
+    }
+    else if (seconds < 60 * 60)
+    {
+        int number = seconds / 60;
+
+        NSString *format = TGLocalized(@"MessageTimer.Minutes_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Minutes_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Minutes_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Minutes_3_10");
+        
+        NSRange range = [format rangeOfString:@"%@"];
+        if (range.location != NSNotFound)
+        {
+            first = [[NSString alloc] initWithFormat:@"%d", number];
+            second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        }
+    }
+    else if (seconds < 60 * 60 * 24)
+    {
+        int number = seconds / (60 * 60);
+
+        NSString *format = TGLocalized(@"MessageTimer.Hours_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Hours_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Hours_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Hours_3_10");
+        
+        NSRange range = [format rangeOfString:@"%@"];
+        if (range.location != NSNotFound)
+        {
+            first = [[NSString alloc] initWithFormat:@"%d", number];
+            second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        }
+    }
+    else if (seconds < 60 * 60 * 24 * 7)
+    {
+        int number = seconds / (60 * 60 * 24);
+
+        NSString *format = TGLocalized(@"MessageTimer.Days_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Days_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Days_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Days_3_10");
+        
+        NSRange range = [format rangeOfString:@"%@"];
+        if (range.location != NSNotFound)
+        {
+            first = [[NSString alloc] initWithFormat:@"%d", number];
+            second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        }
+    }
+    else
+    {
+        int number = seconds / (60 * 60 * 24 * 7);
+        
+        NSString *format = TGLocalized(@"MessageTimer.Weeks_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Weeks_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Weeks_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Weeks_3_10");
+        
+        NSRange range = [format rangeOfString:@"%@"];
+        if (range.location != NSNotFound)
+        {
+            first = [[NSString alloc] initWithFormat:@"%d", number];
+            second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        }
+    }
+    
+    return @[first, second];
+}
+
 @end
 
 #if defined(_MSC_VER)

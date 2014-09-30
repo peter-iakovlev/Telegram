@@ -174,38 +174,53 @@
 {
     UIPasteboard *pasteBoard = [UIPasteboard generalPasteboard];
     
-    NSMutableArray *images = [NSMutableArray arrayWithCapacity:1];
-    
-    if (pasteBoard.images.count != 0)
-    {
-        for (id object in pasteBoard.images)
-        {
-            if ([object isKindOfClass:[UIImage class]])
-                [images addObject:object];
-        }
-    }
-    else if (pasteBoard.image != nil)
-    {
-        if ([pasteBoard.image isKindOfClass:[UIImage class]])
-            [images addObject:pasteBoard.image];
-    }
-    
-    if (images.count != 0)
+    NSData *gifData = [pasteBoard dataForPasteboardType:@"com.compuserve.gif"];
+    if (gifData != nil)
     {
         id delegate = self.delegate;
         if ([delegate isKindOfClass:[HPGrowingTextView class]])
         {
             HPGrowingTextView *textView = delegate;
             NSObject<HPGrowingTextViewDelegate> *textViewDelegate = (NSObject<HPGrowingTextViewDelegate> *)textView.delegate;
-            if ([textViewDelegate respondsToSelector:@selector(growingTextView:didPasteImages:)])
-                [textViewDelegate growingTextView:textView didPasteImages:images];
+            if ([textViewDelegate respondsToSelector:@selector(growingTextView:didPasteData:)])
+                [textViewDelegate growingTextView:textView didPasteData:gifData];
         }
     }
     else
     {
-        _isPasting = true;
-        [super paste:sender];
-        _isPasting = false;
+        NSMutableArray *images = [NSMutableArray arrayWithCapacity:1];
+        
+        if (pasteBoard.images.count != 0)
+        {
+            for (id object in pasteBoard.images)
+            {
+                if ([object isKindOfClass:[UIImage class]])
+                    [images addObject:object];
+            }
+        }
+        else if (pasteBoard.image != nil)
+        {
+            if ([pasteBoard.image isKindOfClass:[UIImage class]])
+                [images addObject:pasteBoard.image];
+        }
+        
+        if (images.count != 0)
+        {
+            id delegate = self.delegate;
+            if ([delegate isKindOfClass:[HPGrowingTextView class]])
+            {
+                HPGrowingTextView *textView = delegate;
+                NSObject<HPGrowingTextViewDelegate> *textViewDelegate = (NSObject<HPGrowingTextViewDelegate> *)textView.delegate;
+                if ([textViewDelegate respondsToSelector:@selector(growingTextView:didPasteImages:)])
+                    [textViewDelegate growingTextView:textView didPasteImages:images];
+            }
+        }
+        else
+        {
+            _isPasting = true;
+            [super paste:sender];
+            _isPasting = false;
+        }
     }
 }
 

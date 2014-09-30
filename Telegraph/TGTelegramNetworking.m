@@ -168,20 +168,10 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
         
         _context.keychain = _keychain;
         
-#if TARGET_IPHONE_SIMULATOR
-        /*[_context updateAddressSetForDatacenterWithId:2 addressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-            [[MTDatacenterAddress alloc] initWithIp:@"173.2.14.88" port:443]
-        ]]];*/
-#endif
-        
         NSNumber *nDefaultDatacenterId = [_keychain objectForKey:@"defaultDatacenterId" group:@"persistent"];
         [self resetMainMtProto:nDefaultDatacenterId == nil ? 1 : [nDefaultDatacenterId integerValue]];
         
         [ActionStageInstance() requestActor:@"/tg/datacenterWatchdog" options:nil flags:0 watcher:self];
-        
-#if TARGET_IPHONE_SIMULATOR
-        //[_context beginTransportSchemeDiscoveryForDatacenterId:3];
-#endif
         
 #if TARGET_IPHONE_SIMULATOR && false
         MTRequest *getSchemeRequest = [[MTRequest alloc] init];

@@ -1,0 +1,3 @@
+[submodule "thirdparty/ActionSheetPicker"]
+	path = thirdparty/ActionSheetPicker
+	url = https://github.com/skywinder/ActionSheetPicker-3.0.git

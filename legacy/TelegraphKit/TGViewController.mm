@@ -426,7 +426,7 @@ static std::set<int> autorotationLockIds;
         switch (((TGNavigationController *)self.navigationController).presentationStyle)
         {
             case TGNavigationControllerPresentationStyleRootInPopover:
-                return true;
+                return iosMajorVersion() < 8;
             default:
                 break;
         }
@@ -843,7 +843,9 @@ static std::set<int> autorotationLockIds;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
+        CGSize screenSize = TGScreenSize();
+        CGFloat widescreenWidth = MAX(screenSize.width, screenSize.height);
+        if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone && ABS(widescreenWidth - 736) > FLT_EPSILON)
         {
             portraitHeight = 44.0f;
             landscapeHeight = 32.0f;

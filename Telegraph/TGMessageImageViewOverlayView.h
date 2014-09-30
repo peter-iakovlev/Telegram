@@ -17,7 +17,6 @@ typedef enum {
 
 - (void)setOverlayStyle:(TGMessageImageViewOverlayStyle)overlayStyle;
 - (void)setBlurredBackgroundImage:(UIImage *)blurredBackgroundImage;
-- (void)setImageBackgroundColor:(UIColor *)imageBackgroundColor;
 - (void)setDownload;
 - (void)setProgress:(float)progress animated:(bool)animated;
 - (void)setSecretProgress:(float)progress animated:(bool)animated;
