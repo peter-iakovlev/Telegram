@@ -174,13 +174,9 @@ static const CGFloat additionalDataTopPadding = 6.0f;
             case TGMessageImageViewOverlaySecret:
             case TGMessageImageViewOverlaySecretViewed:
             {
-                if (_actionCircleImageView.superview == nil)
-                {
-                    [self addSubview:_actionCircleImageView];
+                if (_buttonView.superview == nil)
                     [self addSubview:_buttonView];
-                }
                 
-                _actionCircleImageView.alpha = 1.0f;
                 _buttonView.alpha = 1.0f;
                 
                 [_overlayView setSecret:_overlayType == TGMessageImageViewOverlaySecretViewed];
@@ -200,15 +196,12 @@ static const CGFloat additionalDataTopPadding = 6.0f;
             }
             case TGMessageImageViewOverlaySecretProgress:
             {
-                if (_actionCircleImageView.superview != nil)
-                {
-                    [_actionCircleImageView removeFromSuperview];
-                }
+                if (_buttonView.superview == nil)
+                    [self addSubview:_buttonView];
                 
-                _actionCircleImageView.alpha = 1.0f;
                 _buttonView.alpha = 1.0f;
                 
-                [_overlayView setSecretProgress:_progress animated:false];
+                [_overlayView setSecretProgress:_progress completeDuration:_completeDuration animated:false];
                 
                 break;
             }
@@ -256,14 +249,15 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     }
 }
 
-- (void)setSecretProgress:(float)progress animated:(bool)animated
+- (void)setSecretProgress:(float)progress completeDuration:(NSTimeInterval)completeDuration animated:(bool)animated
 {
-    if (ABS(_progress - progress) > FLT_EPSILON)
+    if (ABS(_progress - progress) > FLT_EPSILON || ABS(completeDuration - _completeDuration) > DBL_EPSILON)
     {
         _progress = progress;
+        _completeDuration = completeDuration;
         
         if (_overlayType == TGMessageImageViewOverlaySecretProgress)
-            [_overlayView setSecretProgress:progress animated:animated];
+            [_overlayView setSecretProgress:progress completeDuration:completeDuration animated:animated];
     }
 }
 

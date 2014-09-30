@@ -19,7 +19,7 @@ typedef enum {
 - (void)setBlurredBackgroundImage:(UIImage *)blurredBackgroundImage;
 - (void)setDownload;
 - (void)setProgress:(float)progress animated:(bool)animated;
-- (void)setSecretProgress:(float)progress animated:(bool)animated;
+- (void)setSecretProgress:(float)progress completeDuration:(NSTimeInterval)completeDuration animated:(bool)animated;
 - (void)setProgress:(float)progress cancelEnabled:(bool)cancelEnabled animated:(bool)animated;
 - (void)setPlay;
 - (void)setSecret:(bool)isViewed;

@@ -17,6 +17,7 @@
     int _checkmarkValue;
     bool _displayTimestampProgress;
     NSString *_additionalDataString;
+    NSTimeInterval _completeDuration;
 }
 
 @end
@@ -107,13 +108,14 @@
     }
 }
 
-- (void)setSecretProgress:(float)progress animated:(bool)animated
+- (void)setSecretProgress:(float)progress completeDuration:(NSTimeInterval)completeDuration animated:(bool)animated
 {
-    if (ABS(_progress - progress) > FLT_EPSILON)
+    if (ABS(_progress - progress) > FLT_EPSILON || ABS(completeDuration - _completeDuration) > DBL_EPSILON)
     {
         _progress = progress;
+        _completeDuration = completeDuration;
         
-        [((TGMessageImageViewContainer *)self.boundView).imageView setSecretProgress:_progress animated:animated];
+        [((TGMessageImageViewContainer *)self.boundView).imageView setSecretProgress:_progress completeDuration:_completeDuration animated:animated];
     }
 }
 

@@ -23,7 +23,7 @@
 
 - (void)setOverlayType:(int)overlayType animated:(bool)animated;
 - (void)setProgress:(float)progress animated:(bool)animated;
-- (void)setSecretProgress:(float)progress animated:(bool)animated;
+- (void)setSecretProgress:(float)progress completeDuration:(NSTimeInterval)completeDuration animated:(bool)animated;
 - (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue animated:(bool)animated;
 - (void)setDisplayTimestampProgress:(bool)displayTimestampProgress;
 - (void)setAdditionalDataString:(NSString *)additionalDataString;

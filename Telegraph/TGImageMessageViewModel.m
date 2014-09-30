@@ -628,8 +628,8 @@
             NSTimeInterval endTime = _messageViewDate + _messageLifetime;
             int remainingSeconds = MAX(0, (int)(endTime - CFAbsoluteTimeGetCurrent()));
             
+            [_imageModel setSecretProgress:(CGFloat)remainingSeconds / (CGFloat)_messageLifetime completeDuration:_messageLifetime animated:animated];
             [_imageModel setOverlayType:TGMessageImageViewOverlaySecretProgress];
-            [_imageModel setSecretProgress:(CGFloat)remainingSeconds / (CGFloat)_messageLifetime animated:animated];
         }
         else
             [_imageModel setOverlayType:[self defaultOverlayActionType] animated:animated];

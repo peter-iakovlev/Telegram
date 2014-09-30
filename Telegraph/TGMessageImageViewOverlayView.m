@@ -16,11 +16,10 @@ typedef enum {
     TGMessageImageViewOverlayViewTypeProgress = 2,
     TGMessageImageViewOverlayViewTypeProgressCancel = 3,
     TGMessageImageViewOverlayViewTypeProgressNoCancel = 4,
-    TGMessageImageViewOverlayViewTypePlay = 5
-    TGMessageImageViewOverlayViewTypePlay = 3,
-    TGMessageImageViewOverlayViewTypeSecret = 4,
-    TGMessageImageViewOverlayViewTypeSecretViewed = 5,
-    TGMessageImageViewOverlayViewTypeSecretProgress = 6
+    TGMessageImageViewOverlayViewTypePlay = 5,
+    TGMessageImageViewOverlayViewTypeSecret = 6,
+    TGMessageImageViewOverlayViewTypeSecretViewed = 7,
+    TGMessageImageViewOverlayViewTypeSecretProgress = 8
 } TGMessageImageViewOverlayViewType;
 
 @interface TGMessageImageViewOverlayLayer : CALayer
@@ -30,6 +29,8 @@ typedef enum {
 @property (nonatomic) int overlayStyle;
 @property (nonatomic) CGFloat progress;
 @property (nonatomic) int type;
+
+@property (nonatomic, strong) UIImage *blurredBackgroundImage;
 
 @end
 
@@ -208,7 +209,7 @@ typedef enum {
     }
 }
 
-- (void)setSecretProgress:(float)progress animated:(bool)animated
+- (void)setSecretProgress:(float)progress completeDuration:(NSTimeInterval)completeDuration animated:(bool)animated
 {
     if (_type != TGMessageImageViewOverlayViewTypeSecretProgress || ABS(_progress - progress) > FLT_EPSILON)
     {
@@ -225,7 +226,6 @@ typedef enum {
             POPBasicAnimation *animation = [self pop_animationForKey:@"progress"];
             if (animation != nil)
             {
-                animation.toValue = @((CGFloat)progress);
             }
             else
             {
@@ -245,9 +245,9 @@ typedef enum {
                     prop.threshold = 0.01f;
                 }];
                 animation.fromValue = @(_progress);
-                animation.toValue = @(progress);
+                animation.toValue = @(0.0);
                 animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
-                animation.duration = 0.5;
+                animation.duration = completeDuration * _progress;
                 [self pop_addAnimation:animation forKey:@"progress"];
             }
         }
@@ -471,14 +471,18 @@ typedef enum {
         {
             const CGFloat diameter = 50.0f;
             
-            CGContextSetBlendMode(context, kCGBlendModeCopy);
+            [_blurredBackgroundImage drawInRect:CGRectMake(0.0f, 0.0f, diameter, diameter) blendMode:kCGBlendModeCopy alpha:1.0f];
+            CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 0.5f).CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             
-            CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 0.7f).CGColor);
-
+            CGContextSetBlendMode(context, kCGBlendModeClear);
+            
+            CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 1.0f).CGColor);
+            
             CGPoint center = CGPointMake(diameter / 2.0f, diameter / 2.0f);
-            CGFloat radius = diameter / 2.0f;
+            CGFloat radius = diameter / 2.0f + 0.25f;
             CGFloat startAngle = - ((float)M_PI / 2);
-            CGFloat endAngle = (_progress * 2 * (float)M_PI) + startAngle;
+            CGFloat endAngle = ((1.0f - _progress) * 2 * (float)M_PI) + startAngle;
             CGContextMoveToPoint(context, center.x, center.y);
             CGContextAddArc(context, center.x, center.y, radius, startAngle, endAngle, 0);
             CGContextClosePath(context);
@@ -543,6 +547,9 @@ typedef enum {
 - (void)setBlurredBackgroundImage:(UIImage *)blurredBackgroundImage
 {
     _blurredBackgroundLayer.contents = (__bridge id)blurredBackgroundImage.CGImage;
+    _contentLayer.blurredBackgroundImage = blurredBackgroundImage;
+    if (_contentLayer.type == TGMessageImageViewOverlayViewTypeSecretProgress)
+        [_contentLayer setNeedsDisplay];
 }
 
 - (void)setDownload
@@ -550,6 +557,7 @@ typedef enum {
     [_contentLayer setDownload];
     [_progressLayer setNone];
     _progressLayer.hidden = true;
+    _blurredBackgroundLayer.hidden = false;
 }
 
 - (void)setPlay
@@ -557,11 +565,15 @@ typedef enum {
     [_contentLayer setPlay];
     [_progressLayer setNone];
     _progressLayer.hidden = true;
+    _blurredBackgroundLayer.hidden = false;
 }
 
 - (void)setSecret:(bool)isViewed
 {
-    [((TGMessageImageViewOverlayLayer *)self.layer) setSecret:isViewed];
+    [_contentLayer setSecret:isViewed];
+    [_progressLayer setNone];
+    _progressLayer.hidden = true;
+    _blurredBackgroundLayer.hidden = false;
 }
 
 - (void)setProgress:(float)progress animated:(bool)animated
@@ -571,6 +583,7 @@ typedef enum {
 
 - (void)setProgress:(float)progress cancelEnabled:(bool)cancelEnabled animated:(bool)animated
 {
+    _blurredBackgroundLayer.hidden = false;
     _progressLayer.hidden = false;
     [_progressLayer setProgress:progress animated:animated];
     
@@ -580,9 +593,12 @@ typedef enum {
         [_contentLayer setProgressNoCancel];
 }
 
-- (void)setSecretProgress:(float)progress animated:(bool)animated
+- (void)setSecretProgress:(float)progress completeDuration:(NSTimeInterval)completeDuration animated:(bool)animated
 {
-    [((TGMessageImageViewOverlayLayer *)self.layer) setSecretProgress:progress animated:animated];
+    _blurredBackgroundLayer.hidden = true;
+    [_progressLayer setNone];
+    _progressLayer.hidden = true;
+    [_contentLayer setSecretProgress:progress completeDuration:completeDuration animated:animated];
 }
 
 @end
