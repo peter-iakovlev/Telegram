@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>434B2FF1-4AD6-463C-8DD5-2C570944FB50</string>
+	<key>IDESourceControlProjectName</key>
+	<string>Telegraph</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C</key>
+		<string>github.com:iakovlev-peter/MtProtoKit.git</string>
+		<key>9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B</key>
+		<string>bitbucket.org:iakovlevpeterp/telegramprivate.git</string>
+		<key>F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3</key>
+		<string>https://github.com/facebook/pop.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>Telegraph.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C</key>
+		<string>../../../MtProtoKit</string>
+		<key>9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B</key>
+		<string>../..</string>
+		<key>F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3</key>
+		<string>../..thirdparty/pop</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>bitbucket.org:iakovlevpeterp/telegramprivate.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C</string>
+			<key>IDESourceControlWCCName</key>
+			<string>MtProtoKit</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3</string>
+			<key>IDESourceControlWCCName</key>
+			<string>pop</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B</string>
+			<key>IDESourceControlWCCName</key>
+			<string>Telegraph</string>
+		</dict>
+	</array>
+</dict>
+</plist>
