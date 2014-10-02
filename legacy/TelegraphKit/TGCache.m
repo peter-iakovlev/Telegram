@@ -76,8 +76,6 @@ static NSFileManager *cacheFileManager = nil;
 @property (nonatomic, strong) NSMutableDictionary *dataMemoryCache;
 @property (nonatomic) int dataMemoryCacheSize;
 
-@property (nonatomic, strong) NSString *diskCachePath;
-
 @end
 
 @implementation TGCache

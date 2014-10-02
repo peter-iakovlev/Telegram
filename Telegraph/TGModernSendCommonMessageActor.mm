@@ -399,6 +399,8 @@
                         if (localImageMessage.assetUrl.length != 0)
                             [TGImageDownloadActor addServerMediaSataForAssetUrl:localImageMessage.assetUrl attachment:imageAttachment];
                         
+                        [TGDatabaseInstance() updateLastUseDateForMediaType:2 mediaId:imageAttachment.imageId messageId:message.mid];
+                        
                         break;
                     }
                 }
@@ -463,6 +465,8 @@
                         
                         if (localVideoMessage.assetUrl.length != 0)
                             [TGImageDownloadActor addServerMediaSataForAssetUrl:localVideoMessage.assetUrl attachment:videoAttachment];
+                        
+                        [TGDatabaseInstance() updateLastUseDateForMediaType:1 mediaId:videoAttachment.videoId messageId:message.mid];
                     }
                 }
                 
@@ -511,6 +515,8 @@
                         
                         NSString *updatedDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:documentAttachment.documentId];
                         [[NSFileManager defaultManager] moveItemAtPath:[localDocumentMessage localDocumentDirectory] toPath:updatedDocumentDirectory error:nil];
+                        
+                        [TGDatabaseInstance() updateLastUseDateForMediaType:3 mediaId:documentAttachment.documentId messageId:message.mid];
                     }
                 }
                 
@@ -546,6 +552,8 @@
                         TGAudioMediaAttachment *audioAttachment = (TGAudioMediaAttachment *)attachment;
                         
                         [[NSFileManager defaultManager] moveItemAtPath:[localAudioMessage localAudioFileDirectory] toPath:[TGPreparedLocalAudioMessage localAudioFileDirectoryForRemoteAudioId:audioAttachment.audioId] error:nil];
+                        
+                        [TGDatabaseInstance() updateLastUseDateForMediaType:4 mediaId:audioAttachment.audioId messageId:message.mid];
                     }
                 }
                 

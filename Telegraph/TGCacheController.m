@@ -24,7 +24,8 @@
 - (NSArray *)keepMediaVariants
 {
     return @[
-        @{@"title": @"10 seconds", @"value": @(10)},
+        //@{@"title": @"10 seconds", @"value": @(10)},
+        @{@"title": @"1 hour", @"value": @(60 * 60)},
         @{@"title": @"1 week", @"value": @(1 * 60 * 60 * 24 * 7)},
         @{@"title": @"1 month", @"value": @(1 * 60 * 60 * 24 * 7 * 30)},
         @{@"title": @"Forever", @"value": @(INT_MAX)}

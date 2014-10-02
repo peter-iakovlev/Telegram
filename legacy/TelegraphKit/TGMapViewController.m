@@ -846,7 +846,7 @@ static void setDefaultMapMode(int mode)
 {
     CLLocationCoordinate2D centerLocation = _mapView.centerCoordinate;
     CLLocation *userLocation = _mapView.userLocation.location;
-    NSURL *addressUrl = [[NSURL alloc] initWithString:[[NSString alloc] initWithFormat:@"comgooglemaps://?center=%f,%f%@", centerLocation.latitude, centerLocation.longitude, (true || userLocation == nil) ? @"" : [[NSString alloc] initWithFormat:@"&saddr=%f,%f", userLocation.coordinate.latitude, userLocation.coordinate.longitude]]];
+    NSURL *addressUrl = [[NSURL alloc] initWithString:[[NSString alloc] initWithFormat:@"comgooglemaps-x-callback://?center=%f,%f&q=%f,%f&x-success=telegram://?resume=true&&x-source=Telegram", centerLocation.latitude, centerLocation.longitude, centerLocation.latitude, centerLocation.longitude]];
     
     if ([[UIApplication sharedApplication] respondsToSelector:@selector(openURL:forceNative:)])
         [(id<TGApplicationWithCustomURLHandling>)[UIApplication sharedApplication] openURL:addressUrl forceNative:true];

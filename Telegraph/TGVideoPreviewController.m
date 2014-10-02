@@ -479,7 +479,7 @@
     #endif
         
         __weak TGVideoPreviewController *weakSelf = self;
-        _converter = [[TGVideoConverter alloc] initWithAssetUrl:_assetUrl liveUpload:_liveUpload && expectedFileSize < 20 * 1024 * 1024 highDefinition:highDefinition];
+        _converter = [[TGVideoConverter alloc] initWithAssetUrl:_assetUrl liveUpload:enableLiveUpload && _liveUpload && expectedFileSize < 20 * 1024 * 1024 highDefinition:highDefinition];
         [_converter convertWithCompletion:^(NSString *tempFilePath, CGSize dimensions, NSTimeInterval duration, TGLiveUploadActorData *liveUploadData)
         {
             if (tempFilePath != nil)
