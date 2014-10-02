@@ -452,6 +452,10 @@
     [self playPressed];
 }
 
+- (void)_willPlay
+{
+}
+
 - (void)hidePlayButton
 {
     _actionButton.hidden = true;
@@ -461,6 +465,8 @@
 {
     if (_mediaAvailable)
     {
+        [self _willPlay];
+        
         if (_player == nil)
         {
             TGModernGalleryVideoItem *item = (TGModernGalleryVideoItem *)self.item;

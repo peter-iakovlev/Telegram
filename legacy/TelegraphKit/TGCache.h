@@ -34,6 +34,8 @@ typedef UIImage *(^TGCacheJpegDecodingBlock)(NSData *data);
 @property (nonatomic) int diskLimit;
 @property (nonatomic) int diskEvictionInterval;
 
+@property (nonatomic, strong, readonly) NSString *diskCachePath;
+
 + (dispatch_queue_t)diskCacheQueue;
 + (NSFileManager *)diskFileManager;
 

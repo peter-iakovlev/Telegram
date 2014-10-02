@@ -1085,6 +1085,8 @@
             [imageInfo addImageWithSize:localImageMessage.imageSize url:imageUrl fileSize:_sentDecryptedPhoto.size];
             imageAttachment.imageInfo = imageInfo;
             messageMedia = @[imageAttachment];
+            
+            [TGDatabaseInstance() updateLastUseDateForMediaType:2 mediaId:imageAttachment.imageId messageId:self.preparedMessage.mid];
         }
     }
     else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalDocumentMessage class]])
@@ -1115,6 +1117,8 @@
             documentAttachment.documentUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, _sentDecryptedDocument.size, concreteFile.key_fingerprint, [_sentDecryptedDocument.key stringByEncodingInHex], [_sentDecryptedDocument.iv stringByEncodingInHex]];
             
             messageMedia = @[documentAttachment];
+            
+            [TGDatabaseInstance() updateLastUseDateForMediaType:3 mediaId:documentAttachment.localDocumentId messageId:self.preparedMessage.mid];
         }
     }
     else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalAudioMessage class]])
@@ -1134,6 +1138,8 @@
             audioAttachment.audioUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, _sentDecryptedAudio.size, concreteFile.key_fingerprint, [_sentDecryptedAudio.key stringByEncodingInHex], [_sentDecryptedAudio.iv stringByEncodingInHex]];
             
             messageMedia = @[audioAttachment];
+            
+            [TGDatabaseInstance() updateLastUseDateForMediaType:4 mediaId:audioAttachment.localAudioId messageId:self.preparedMessage.mid];
         }
     }
     

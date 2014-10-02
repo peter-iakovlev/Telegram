@@ -138,6 +138,7 @@ typedef enum {
 - (void)_updateMessageItemsWithData:(NSArray *)items;
 - (void)_updateMediaStatusDataForCurrentItems;
 - (void)_updateMediaStatusDataForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated;
+- (void)_updateMediaStatusDataForItemsWithMessageIdsInSet:(NSMutableSet *)messageIds;
 - (void)_downloadMediaInMessage:(TGMessage *)message highPriority:(bool)highPriority;
 - (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated;
 - (TGMessageModernConversationItem *)_updateMediaStatusData:(TGMessageModernConversationItem *)item;
@@ -157,5 +158,7 @@ typedef enum {
 - (void)_updateMessageDelivered:(int32_t)previousMid;
 - (void)_updateMessageDelivered:(int32_t)previousMid mid:(int32_t)mid date:(int32_t)date message:(TGMessage *)message;
 - (void)_updateMessageDeliveryFailed:(int32_t)previousMid;
+
+- (void)updateMediaAccessTimeForMessageId:(int32_t)messageId;
 
 @end

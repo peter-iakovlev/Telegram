@@ -51,6 +51,11 @@ static NSMutableDictionary *serverAssetData()
 typedef void (^TGRemoteImageDownloadCompletionBlock)(NSData *data);
 
 @interface TGImageDownloadActor ()
+{
+    bool _updateMediaAccessTimeOnRelease;
+    int32_t _messageId;
+    int64_t _imageId;
+}
 
 @property (nonatomic, copy) TGRemoteImageDownloadCompletionBlock downloadCompletionBlock;
 
@@ -632,7 +637,13 @@ static inline double imageProcessingPriority()
                     if (contentHints & TGRemoteImageContentHintLargeFile && userProperties != nil && [[userProperties objectForKey:@"messageId"] intValue] != 0 && [userProperties objectForKey:@"mediaId"] != nil)
                     {
                         int64_t conversationId = [userProperties[@"conversationId"] longLongValue];
+                        int32_t messageId = [[userProperties objectForKey:@"messageId"] intValue];
                         [[TGDownloadManager instance] enqueueItem:self.path messageId:[[userProperties objectForKey:@"messageId"] intValue] itemId:[userProperties objectForKey:@"mediaId"] groupId:conversationId itemClass:TGDownloadItemClassImage];
+                        
+                        _updateMediaAccessTimeOnRelease = true;
+                        _messageId = messageId;
+                        TGMediaId *mediaId = [userProperties objectForKey:@"mediaId"];
+                        _imageId = mediaId.itemId;
                     }
                     
                     _requestedActors = true;

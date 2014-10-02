@@ -2,6 +2,8 @@
 
 #import "FMDatabase.h"
 
+#import "ATQueue.h"
+
 #import "TGUser.h"
 #import "TGMessage.h"
 
@@ -16,6 +18,9 @@
 
 #import "TGCache.h"
 #import "TGRemoteImageView.h"
+
+#import "TGPreparedLocalAudioMessage.h"
+#import "TGPreparedLocalDocumentMessage.h"
 
 #include <map>
 #include <set>
@@ -55,6 +60,85 @@ static NSString *databaseName = nil;
 static NSString *_liveMessagesDispatchPath = nil;
 static NSString *_liveBroadcastMessagesDispatchPath = nil;
 static NSString *_liveUnreadCountDispatchPath = nil;
+
+static NSString *md5String(NSString *string)
+{
+    const char *ptr = [string UTF8String];
+    unsigned char md5Buffer[16];
+    CC_MD5(ptr, [string lengthOfBytesUsingEncoding:NSUTF8StringEncoding], md5Buffer);
+    NSString *output = [[NSString alloc] initWithFormat:@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", md5Buffer[0], md5Buffer[1], md5Buffer[2], md5Buffer[3], md5Buffer[4], md5Buffer[5], md5Buffer[6], md5Buffer[7], md5Buffer[8], md5Buffer[9], md5Buffer[10], md5Buffer[11], md5Buffer[12], md5Buffer[13], md5Buffer[14], md5Buffer[15]];
+    return output;
+}
+
+@interface TGCacheFileDesc : NSObject
+
+@property (nonatomic, strong) NSString *filePath;
+@property (nonatomic) int32_t date;
+
+@end
+
+@implementation TGCacheFileDesc
+
+- (instancetype)initWithFilePath:(NSString *)filePath date:(int32_t)date
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _filePath = filePath;
+        _date = date;
+    }
+    return self;
+}
+
+@end
+
+@interface TGDeleteFileDesc : NSObject
+
+@property (nonatomic) int64_t hash0;
+@property (nonatomic) int64_t hash1;
+@property (nonatomic, strong) NSString *filePath;
+
+@end
+
+@implementation TGDeleteFileDesc
+
+- (instancetype)initWithHash0:(int64_t)hash0 hash1:(int64_t)hash1 filePath:(NSString *)filePath
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _hash0 = hash0;
+        _hash1 = hash1;
+        _filePath = filePath;
+    }
+    return self;
+}
+
+@end
+
+@interface TGMediaDataDesc : NSObject
+
+@property (nonatomic) int32_t messageId;
+@property (nonatomic, strong) NSData *mediaData;
+@property (nonatomic) int64_t peerId;
+
+@end
+
+@implementation TGMediaDataDesc
+
+- (instancetype)initWithMessageId:(int32_t)messageId mediaData:(NSData *)mediaData peerId:(int64_t)peerId
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _messageId = messageId;
+        _mediaData = mediaData;
+        _peerId = peerId;
+    }
+    return self;
+}
+
+@end
 
 static TGFutureAction *futureActionDeserializer(int type)
 {
@@ -119,6 +203,9 @@ static TGFutureAction *futureActionDeserializer(int type)
 
 @interface TGDatabase ()
 {
+    ATQueue *_fileDeletionQueue;
+    ATQueue *_backgroundFileIndexingQueue;
+    
     TG_SYNCHRONIZED_DEFINE(_userByUid);
     TG_SYNCHRONIZED_DEFINE(_contactsByPhoneId);
     TG_SYNCHRONIZED_DEFINE(_phonebookContacts);
@@ -218,6 +305,9 @@ static TGFutureAction *futureActionDeserializer(int type)
 
 @property (nonatomic, strong) NSString *secretMediaAttributesTableName;
 
+@property (nonatomic, strong) NSString *mediaCacheInvalidationTableName;
+@property (nonatomic, strong) NSString *fileDeletionTableName;
+
 @property (nonatomic) int serviceLastCleanTimeKey;
 @property (nonatomic) int serviceLastMidKey;
 @property (nonatomic) int servicePtsKey;
@@ -234,6 +324,9 @@ static TGFutureAction *futureActionDeserializer(int type)
 @property (nonatomic) int userLinksVersion;
 
 @property (nonatomic, strong) TGTimer *selfDestructTimer;
+@property (nonatomic, strong) TGTimer *mediaCleanupTimer;
+@property (nonatomic, strong) TGTimer *deletionTickTimer;
+@property (nonatomic) bool deletionInProgress;
 
 - (void)initDatabase;
 
@@ -661,10 +754,8 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
     self = [super init];
     if (self != nil)
     {
-#ifdef DEBUG
-        
-#endif
-        
+        _fileDeletionQueue = [[ATQueue alloc] init];
+        _backgroundFileIndexingQueue = [[ATQueue alloc] init];
         
         TG_SYNCHRONIZED_INIT(_userByUid);
         TG_SYNCHRONIZED_INIT(_contactsByPhoneId);
@@ -735,6 +826,9 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
         _encryptedConversationIdsTableName = [NSString stringWithFormat:@"encrypted_cids_v%d", _schemaVersion];
         
         _secretMediaAttributesTableName = [NSString stringWithFormat:@"secret_media_v%d", _schemaVersion];
+        
+        _mediaCacheInvalidationTableName = [NSString stringWithFormat:@"media_cache_v%d", _schemaVersion];
+        _fileDeletionTableName = [NSString stringWithFormat:@"file_deletion_v%d", _schemaVersion];
         
         _peerHistoryHolesTableName = [NSString stringWithFormat:@"history_holes_%d", _schemaVersion];
     }
@@ -826,6 +920,8 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
             [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", [NSString stringWithFormat:@"secret_media_%d", i]]];
             
             [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", [NSString stringWithFormat:@"history_holes_%d", i]]];
+            
+            [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", [NSString stringWithFormat:@"media_cache_v%d", i]]];
         }
     }
     
@@ -957,7 +1053,17 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
     
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (mid INTEGER PRIMARY KEY, flags INTEGER)", _secretMediaAttributesTableName]];
     
+    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (date INTEGER, media_type INTEGER, media_id INTEGER, mids BLOB, PRIMARY KEY(media_type, media_id))", _mediaCacheInvalidationTableName]];
+    [_database executeUpdate:[[NSString alloc] initWithFormat:@"CREATE INDEX IF NOT EXISTS media_cache_invalidation_date ON %@ (date)", _mediaCacheInvalidationTableName]];
+    
+    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (hash0 INTEGER, hash1 INTEGER, path STRING, PRIMARY KEY(hash0, hash1))", _fileDeletionTableName]];
+    
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (peer_id INTEGER PRIMARY KEY, holes BLOB)", _peerHistoryHolesTableName]];
+    
+    if ([self customProperty:@"backgroundMediaIndexingCompleted"].length == 0)
+    {
+        [self _beginBackgroundIndexing];
+    }
     
     [self dispatchOnIndexThread:^
     {
@@ -9033,14 +9139,761 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
     } synchronous:true];
 }
 
-- (void)updateLastUseDateForMediaId:(int64_t)mediaId messageId:(int32_t)messageId
+typedef struct {
+    int32_t messageId;
+    int32_t mediaType;
+    int64_t mediaId;
+    int32_t date;
+} TGUpdateLastUseRecord;
+
+- (void)_updateLastUseDateRecords:(std::vector<TGUpdateLastUseRecord> const *)records
 {
+    [_database beginTransaction];
     
+    NSString *selectQuery = [[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE media_type=? AND media_id=?", _mediaCacheInvalidationTableName];
+    NSString *updateQuery = [[NSString alloc] initWithFormat:@"UPDATE %@ SET date=?", _mediaCacheInvalidationTableName];
+    NSString *insertQuery = [[NSString alloc] initWithFormat:@"INSERT INTO %@ (date, media_type, media_id, mids) VALUES (?, ?, ?, ?)", _mediaCacheInvalidationTableName];
+    
+    for (auto it : *records)
+    {
+        FMResultSet *result = [_database executeQuery:selectQuery, @(it.mediaType), @(it.mediaId)];
+        if ([result next])
+        {
+            NSData *midsData = [result dataForColumn:@"mids"];
+            int32_t const *midPtr = (int32_t *)midsData.bytes;
+            int32_t const *midsEnd = (int32_t *)(((uint8_t *)midsData.bytes) + midsData.length);
+            bool foundMid = false;
+            while (midPtr != midsEnd)
+            {
+                if (*midPtr == it.messageId)
+                {
+                    foundMid = true;
+                    break;
+                }
+                midPtr++;
+            }
+            
+            NSData *updatedMidsData = midsData;
+            if (!foundMid)
+            {
+                updatedMidsData = [[NSMutableData alloc] initWithData:midsData];
+                [(NSMutableData *)updatedMidsData appendBytes:&it.messageId length:4];
+            }
+            
+            [_database executeUpdate:updateQuery, @(it.date)];
+        }
+        else
+        {
+            NSMutableData *midsData = [[NSMutableData alloc] initWithBytes:&it.messageId length:4];
+            [_database executeUpdate:insertQuery, @(it.date), @(it.mediaType), @(it.mediaId), midsData];
+        }
+    }
+    [_database commit];
+}
+
+- (void)updateLastUseDateForMediaType:(int32_t)mediaType mediaId:(int64_t)mediaId messageId:(int32_t)messageId
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        int currentDate = (int)(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970 + _timeDifferenceFromUTC);
+        
+        std::vector<TGUpdateLastUseRecord> records;
+        TGUpdateLastUseRecord record = {.messageId = messageId, .mediaType = mediaType, .mediaId = mediaId, .date = currentDate};
+        records.push_back(record);
+        [self _updateLastUseDateRecords:&records];
+        
+        [self processAndScheduleMediaCleanup];
+    } synchronous:false];
 }
 
 - (void)processAndScheduleMediaCleanup
 {
+    [self dispatchOnDatabaseThread:^
+    {
+        if (_mediaCleanupTimer != nil)
+        {
+            [_mediaCleanupTimer invalidate];
+            _mediaCleanupTimer = nil;
+        }
+        
+        int keepMediaSeconds = INT_MAX;
+        NSNumber *nKeepMediaSeconds = [[NSUserDefaults standardUserDefaults] objectForKey:@"keepMediaSeconds"];
+        if (nKeepMediaSeconds != nil)
+            keepMediaSeconds = [nKeepMediaSeconds intValue];
+        
+        if (keepMediaSeconds == INT_MAX)
+            return;
+        
+        int currentDate = (int)(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970 + _timeDifferenceFromUTC) ;
+        int removeDate = currentDate - keepMediaSeconds;
+        
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE date<=?", _mediaCacheInvalidationTableName], @(removeDate)];
+        
+        std::vector<std::pair<int32_t, int64_t> > removeKeys;
+        NSMutableArray *removeMidSets = [[NSMutableArray alloc] init];
+        NSMutableSet *removedMids = [[NSMutableSet alloc] init];
+        
+        while ([result next])
+        {
+            int32_t mediaType = [result intForColumn:@"media_type"];
+            int64_t mediaId = [result longLongIntForColumn:@"media_id"];
+            NSData *midsData = [result dataForColumn:@"mids"];
+            
+            NSMutableArray *midsSet = [[NSMutableArray alloc] init];
+            int32_t const *midPtr = (int32_t *)midsData.bytes;
+            int32_t const *midsEnd = (int32_t *)(((uint8_t *)midsData.bytes) + midsData.length);
+            while (midPtr != midsEnd)
+            {
+                [midsSet addObject:@(*midPtr)];
+                [removedMids addObject:@(*midPtr)];
+                midPtr++;
+            }
+            
+            removeKeys.push_back(std::pair<int32_t, int64_t>(mediaType, mediaId));
+            [removeMidSets addObject:midsSet];
+        }
+        
+        NSMutableArray *removedMedias = [[NSMutableArray alloc] init];
+        
+        [_database beginTransaction];
+        for (auto it : removeKeys)
+        {
+            [_database executeUpdate:[[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE media_type=? and media_id=?", _mediaCacheInvalidationTableName], @(it.first), @(it.second)];
+        }
+        
+        NSMutableArray *filePathsForDeletion = [[NSMutableArray alloc] init];
+        
+        for (NSArray *midsSet in removeMidSets)
+        {
+            TGMessage *foundMessage = nil;
+            for (NSNumber *nMid in midsSet)
+            {
+                TGMessage *message = [self loadMessageWithMid:[nMid intValue]];
+                if (message != nil)
+                {
+                    foundMessage = message;
+                    break;
+                }
+            }
+            if (foundMessage == nil)
+            {
+                for (NSNumber *nMid in midsSet)
+                {
+                    TGMessage *message = [self loadMediaMessageWithMid:[nMid intValue]];
+                    if (message != nil)
+                    {
+                        foundMessage = message;
+                        break;
+                    }
+                }
+            }
+            
+            if (foundMessage != nil)
+            {
+                for (id media in foundMessage.mediaAttachments)
+                {
+                    [filePathsForDeletion addObjectsFromArray:[self _filePathsForDeletionOfMedia:media]];
+                    [removedMedias addObject:media];
+                }
+            }
+        }
+        [_database commit];
+        
+        [self _enqueueFilesToDelete:filePathsForDeletion];
+        
+        if (removedMedias.count != 0)
+            [ActionStageInstance() dispatchResource:@"/tg/removedMediasForMessageIds" resource:removedMids];
+        
+        FMResultSet *nextDateResult = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT MIN(date) FROM %@", _mediaCacheInvalidationTableName]];
+        if ([nextDateResult next])
+        {
+            int nextDate = [nextDateResult intForColumn:@"MIN(date)"];
+            if (nextDate != 0)
+            {
+                NSTimeInterval delay = MAX(0, nextDate + keepMediaSeconds - currentDate + 0.25);
+
+                _mediaCleanupTimer = [[TGTimer alloc] initWithTimeout:delay repeat:false completion:^
+                {
+                    [self processAndScheduleMediaCleanup];
+                } queue:[self databaseQueue]];
+                [_mediaCleanupTimer start];
+            }
+        }
+    } synchronous:false];
+}
+
+- (NSString *)filePathForVideoId:(int64_t)videoId local:(bool)local
+{
+    static NSString *videosDirectory = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+        videosDirectory = [documentsDirectory stringByAppendingPathComponent:@"video"];
+    });
     
+    return [videosDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@%" PRIx64 ".mov", local ? @"local" : @"remote", videoId]];
+}
+
+- (NSString *)filePathForAudio:(TGAudioMediaAttachment *)audio
+{
+    NSString *filePath = nil;
+    if (audio.audioId != 0)
+        filePath = [TGPreparedLocalAudioMessage localAudioFilePathForRemoteAudioId1:audio.audioId];
+    else
+        filePath = [TGPreparedLocalAudioMessage localAudioFilePathForLocalAudioId1:audio.localAudioId];
+    return filePath;
+}
+
+- (NSString *)filePathForDocument:(TGDocumentMediaAttachment *)document
+{
+    NSString *directory = nil;
+    if (document.documentId != 0)
+        directory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId];
+    else
+        directory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId];
+    
+    NSString *filePath = [directory stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:document.fileName]];
+    return filePath;
+}
+
+- (void)_beginBackgroundIndexing
+{
+    [_backgroundFileIndexingQueue dispatch:^
+    {
+        TGLog(@"[TGDatabase starting background media indexing]");
+        
+        NSFileManager *fileManager = [NSFileManager defaultManager];
+        
+        NSMutableDictionary *imageFileByUrlHash = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary *videoFileById = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary *videoFileByLocalId = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary *documentFileById = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary *documentFileByLocalId = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary *audioFileById = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary *audioFileByLocalId = [[NSMutableDictionary alloc] init];
+        
+        NSString *cachesPath = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, true)[0];
+        for (NSURL *fileUrl in [fileManager contentsOfDirectoryAtURL:[NSURL fileURLWithPath:cachesPath] includingPropertiesForKeys:@[NSURLIsDirectoryKey, NSURLCreationDateKey] options:0 error:nil])
+        {
+            NSNumber *isDirectory = nil;
+            if ([fileUrl getResourceValue:&isDirectory forKey:NSURLIsDirectoryKey error:NULL] && ![isDirectory boolValue])
+            {
+                int32_t date = 0;
+                NSDate *accessDate = nil;
+                [fileUrl getResourceValue:&accessDate forKey:NSURLCreationDateKey error:nil];
+                date = (int32_t)[accessDate timeIntervalSince1970];
+                
+                NSString *filePath = [fileUrl path];
+                imageFileByUrlHash[[filePath lastPathComponent]] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+            }
+        }
+        
+        NSString *systemDocumentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+        
+        NSString *videosDirectory = [systemDocumentsDirectory stringByAppendingPathComponent:@"video"];
+        NSString *audiosDirectory = [systemDocumentsDirectory stringByAppendingPathComponent:@"audio"];
+        NSString *documentsDirectory = [systemDocumentsDirectory stringByAppendingPathComponent:@"files"];
+        
+        for (NSURL *fileUrl in [fileManager contentsOfDirectoryAtURL:[NSURL fileURLWithPath:videosDirectory] includingPropertiesForKeys:@[NSURLIsDirectoryKey, NSURLCreationDateKey] options:0 error:nil])
+        {
+            NSNumber *isDirectory = nil;
+            if ([fileUrl getResourceValue:&isDirectory forKey:NSURLIsDirectoryKey error:NULL] && ![isDirectory boolValue])
+            {
+                int32_t date = 0;
+                NSDate *accessDate = nil;
+                [fileUrl getResourceValue:&accessDate forKey:NSURLCreationDateKey error:nil];
+                date = (int32_t)[accessDate timeIntervalSince1970];
+                
+                NSString *filePath = [fileUrl path];
+                NSString *fileName = [filePath lastPathComponent];
+                if ([fileName hasPrefix:@"remote"] && [fileName hasSuffix:@".mov"])
+                {
+                    NSScanner *scanner = [[NSScanner alloc] initWithString:[fileName substringWithRange:NSMakeRange(6, fileName.length - 4 - 6)]];
+                    long long videoId = 0;
+                    [scanner scanHexLongLong:(unsigned long long *)&videoId];
+                    
+                    if (videoId != 0)
+                        videoFileById[@((int64_t)videoId)] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+                }
+                else if ([fileName hasPrefix:@"local"] && [fileName hasSuffix:@".mov"])
+                {
+                    NSScanner *scanner = [[NSScanner alloc] initWithString:[fileName substringWithRange:NSMakeRange(5, fileName.length - 4 - 5)]];
+                    long long localVideoId = 0;
+                    [scanner scanHexLongLong:(unsigned long long *)&localVideoId];
+                    
+                    if (localVideoId != 0)
+                        videoFileByLocalId[@((int64_t)localVideoId)] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+                }
+            }
+        }
+        
+        for (NSURL *fileUrl in [fileManager contentsOfDirectoryAtURL:[NSURL fileURLWithPath:audiosDirectory] includingPropertiesForKeys:@[NSURLIsDirectoryKey, NSURLCreationDateKey] options:0 error:nil])
+        {
+            NSNumber *isDirectory = nil;
+            if ([fileUrl getResourceValue:&isDirectory forKey:NSURLIsDirectoryKey error:NULL] && [isDirectory boolValue])
+            {
+                int32_t date = 0;
+                NSDate *accessDate = nil;
+                [fileUrl getResourceValue:&accessDate forKey:NSURLCreationDateKey error:nil];
+                date = (int32_t)[accessDate timeIntervalSince1970];
+                
+                NSString *filePath = [fileUrl path];
+                NSString *fileName = [filePath lastPathComponent];
+                if ([fileName hasPrefix:@"local"])
+                {
+                    NSScanner *scanner = [[NSScanner alloc] initWithString:[fileName substringFromIndex:5]];
+                    long long localAudioId = 0;
+                    [scanner scanHexLongLong:(unsigned long long *)&localAudioId];
+                    
+                    if (localAudioId != 0)
+                        audioFileByLocalId[@((int64_t)localAudioId)] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+                }
+                else
+                {
+                    NSScanner *scanner = [[NSScanner alloc] initWithString:fileName];
+                    long long audioId = 0;
+                    [scanner scanHexLongLong:(unsigned long long *)&audioId];
+                    
+                    if (audioId != 0)
+                        audioFileById[@((int64_t)audioId)] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+                }
+            }
+        }
+        
+        for (NSURL *fileUrl in [fileManager contentsOfDirectoryAtURL:[NSURL fileURLWithPath:documentsDirectory] includingPropertiesForKeys:@[NSURLIsDirectoryKey, NSURLCreationDateKey] options:0 error:nil])
+        {
+            NSNumber *isDirectory = nil;
+            if ([fileUrl getResourceValue:&isDirectory forKey:NSURLIsDirectoryKey error:NULL] && [isDirectory boolValue])
+            {
+                int32_t date = 0;
+                NSDate *accessDate = nil;
+                [fileUrl getResourceValue:&accessDate forKey:NSURLCreationDateKey error:nil];
+                date = (int32_t)[accessDate timeIntervalSince1970];
+                
+                NSString *filePath = [fileUrl path];
+                NSString *fileName = [filePath lastPathComponent];
+                if ([fileName hasPrefix:@"local"])
+                {
+                    NSScanner *scanner = [[NSScanner alloc] initWithString:[fileName substringFromIndex:5]];
+                    long long localDocumentId = 0;
+                    [scanner scanHexLongLong:(unsigned long long *)&localDocumentId];
+                    
+                    if (localDocumentId != 0)
+                        documentFileByLocalId[@((int64_t)localDocumentId)] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+                }
+                else
+                {
+                    NSScanner *scanner = [[NSScanner alloc] initWithString:fileName];
+                    long long documentId = 0;
+                    [scanner scanHexLongLong:(unsigned long long *)&documentId];
+                    
+                    if (documentId != 0)
+                        documentFileById[@((int64_t)documentId)] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+                }
+            }
+        }
+        
+        NSMutableArray *mediaDataList = [[NSMutableArray alloc] init];
+        
+        TGLog(@"[TGDatabase starting media extraction]");
+        
+        int counter = 0;
+        __block int32_t lastMid = INT_MAX;
+        while (true)
+        {
+            counter++;
+            
+            int currentMid = lastMid;
+            [self dispatchOnDatabaseThread:^
+            {
+                FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT mid, media, cid FROM %@ WHERE mid < ? ORDER BY mid DESC LIMIT 512", _messagesTableName], @(lastMid)];
+                int midIndex = [result columnIndexForName:@"mid"];
+                int dataIndex = [result columnIndexForName:@"media"];
+                int cidIndex = [result columnIndexForName:@"cid"];
+                while ([result next])
+                {
+                    int32_t mid = [result intForColumnIndex:midIndex];
+                    int64_t peerId = [result longLongIntForColumnIndex:cidIndex];
+                    
+                    NSData *mediaData = [result dataForColumnIndex:dataIndex];
+                    if (mediaData.length != 0)
+                    {
+                        [mediaDataList addObject:[[TGMediaDataDesc alloc] initWithMessageId:mid mediaData:mediaData peerId:peerId]];
+                    }
+                    
+                    lastMid = mid;
+                }
+            } synchronous:true];
+            
+            if (lastMid == currentMid)
+                break;
+            
+            usleep(20 * 1000);
+        }
+        
+        TGLog(@"[TGDatabase completed media extraction in %d passes]", counter);
+        
+        TGLog(@"[TGDatabase starting avatar extraction]");
+        
+        NSMutableSet *activeAvatarUrls = [[NSMutableSet alloc] init];
+        
+        counter = 0;
+        __block int32_t lastUid = INT_MAX;
+        while (true)
+        {
+            counter++;
+            
+            int currentUid = lastUid;
+            [self dispatchOnDatabaseThread:^
+            {
+                FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT uid, photo_small, photo_big FROM %@ WHERE uid < ? ORDER BY uid DESC LIMIT 512", _usersTableName], @(lastUid)];
+                int uidIndex = [result columnIndexForName:@"uid"];
+                int photoSmallIndex = [result columnIndexForName:@"photo_small"];
+                int photoBigIndex = [result columnIndexForName:@"photo_big"];
+                while ([result next])
+                {
+                    int32_t uid = [result intForColumnIndex:uidIndex];
+                    NSString *photoSmall = [result stringForColumnIndex:photoSmallIndex];
+                    NSString *photoBig = [result stringForColumnIndex:photoBigIndex];
+                    
+                    if (photoSmall.length != 0)
+                        [activeAvatarUrls addObject:photoSmall];
+                    if (photoBig.length != 0)
+                        [activeAvatarUrls addObject:photoBig];
+                    
+                    lastUid = uid;
+                }
+            } synchronous:true];
+            
+            if (lastUid == currentUid)
+                break;
+            
+            usleep(20 * 1000);
+        }
+        
+        counter = 0;
+        __block int64_t lastPeerId = 0;
+        while (true)
+        {
+            counter++;
+            
+            int64_t currentPeerId = lastPeerId;
+            [self dispatchOnDatabaseThread:^
+             {
+                 FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT cid, chat_photo FROM %@ WHERE cid < ? AND cid > ? ORDER BY cid DESC LIMIT 512", _conversationListTableName], @(lastPeerId), @(INT_MIN)];
+                 int cidIndex = [result columnIndexForName:@"cid"];
+                 int photoIndex = [result columnIndexForName:@"chat_photo"];
+                 TGConversation *tmpConversation = [[TGConversation alloc] init];
+                 while ([result next])
+                 {
+                     int64_t cid = [result longLongIntForColumnIndex:cidIndex];
+                     NSData *photoData = [result dataForColumnIndex:photoIndex];
+                     [tmpConversation deserializeChatPhoto:photoData];
+                     
+                     if (tmpConversation.chatPhotoSmall.length != 0)
+                         [activeAvatarUrls addObject:tmpConversation.chatPhotoSmall];
+                     if (tmpConversation.chatPhotoBig.length != 0)
+                         [activeAvatarUrls addObject:tmpConversation.chatPhotoBig];
+                     
+                     lastPeerId = cid;
+                 }
+             } synchronous:true];
+            
+            if (lastPeerId == currentPeerId)
+                break;
+            
+            usleep(20 * 1000);
+        }
+        
+        TGLog(@"[TGDatabase completed avatar extraction in %d passes]", counter);
+        
+        std::vector<std::pair<NSString *, NSString *> > immediatelyDeleteFiles;
+        
+        std::vector<TGUpdateLastUseRecord> updateLastUseRecords;
+        
+        for (TGMediaDataDesc *mediaData in mediaDataList)
+        {
+            for (id media in [TGMessage parseMediaAttachments:mediaData.mediaData])
+            {
+                if ([media isKindOfClass:[TGImageMediaAttachment class]])
+                {
+                    NSString *url = [((TGImageMediaAttachment *)media).imageInfo imageUrlForLargestSize:NULL];
+                    NSString *urlHash = md5String(url);
+                    if (urlHash != nil)
+                    {
+                        TGCacheFileDesc *desc = imageFileByUrlHash[urlHash];
+                        if (desc != nil)
+                        {
+                            [imageFileByUrlHash removeObjectForKey:urlHash];
+                            
+                            if (((TGImageMediaAttachment *)media).imageId != 0)
+                            {
+                                TGUpdateLastUseRecord record = {.messageId = mediaData.messageId, .mediaType = 2, .mediaId = ((TGImageMediaAttachment *)media).imageId, .date = desc.date};
+                                updateLastUseRecords.push_back(record);
+                            }
+                        }
+                    }
+                }
+                else if ([media isKindOfClass:[TGLocationMediaAttachment class]])
+                {
+                    //TODO:
+                }
+                else if ([media isKindOfClass:[TGVideoMediaAttachment class]])
+                {
+                    TGVideoMediaAttachment *videoAttachment = media;
+                    TGCacheFileDesc *desc = nil;
+                    if (videoAttachment.videoId != 0)
+                    {
+                        desc = videoFileById[@(videoAttachment.videoId)];
+                        if (desc != nil)
+                            [videoFileById removeObjectForKey:@(videoAttachment.videoId)];
+                    }
+                    else
+                    {
+                        desc = videoFileByLocalId[@(videoAttachment.localVideoId)];
+                        if (desc != nil)
+                            [videoFileByLocalId removeObjectForKey:@(videoAttachment.localVideoId)];
+                    }
+                    if (desc != nil)
+                    {
+                        if (videoAttachment.videoId != 0)
+                        {
+                            TGUpdateLastUseRecord record = {.messageId = mediaData.messageId, .mediaType = 1, .mediaId = videoAttachment.videoId != 0 ? videoAttachment.videoId : videoAttachment.localVideoId, .date = desc.date};
+                            updateLastUseRecords.push_back(record);
+                        }
+                    }
+                }
+                else if ([media isKindOfClass:[TGAudioMediaAttachment class]])
+                {
+                    TGAudioMediaAttachment *audioAttachment = media;
+                    TGCacheFileDesc *desc = nil;
+                    if (audioAttachment.audioId != 0)
+                    {
+                        desc = audioFileById[@(audioAttachment.audioId)];
+                        if (desc != nil)
+                            [audioFileById removeObjectForKey:@(audioAttachment.audioId)];
+                    }
+                    else
+                    {
+                        desc = audioFileByLocalId[@(audioAttachment.localAudioId)];
+                        if (desc != nil)
+                            [audioFileByLocalId removeObjectForKey:@(audioAttachment.localAudioId)];
+                    }
+                    if (desc != nil)
+                    {
+                        if (audioAttachment.audioId != 0)
+                        {
+                            TGUpdateLastUseRecord record = {.messageId = mediaData.messageId, .mediaType = 4, .mediaId = audioAttachment.audioId != 0 ? audioAttachment.audioId : audioAttachment.localAudioId, .date = desc.date};
+                            updateLastUseRecords.push_back(record);
+                        }
+                    }
+                }
+                else if ([media isKindOfClass:[TGDocumentMediaAttachment class]])
+                {
+                    TGDocumentMediaAttachment *documentAttachment = media;
+                    TGCacheFileDesc *desc = nil;
+                    if (documentAttachment.documentId != 0)
+                    {
+                        desc = documentFileById[@(documentAttachment.documentId)];
+                        if (desc != nil)
+                            [documentFileById removeObjectForKey:@(documentAttachment.documentId)];
+                    }
+                    else
+                    {
+                        desc = documentFileByLocalId[@(documentAttachment.localDocumentId)];
+                        if (desc != nil)
+                            [documentFileByLocalId removeObjectForKey:@(documentAttachment.localDocumentId)];
+                    }
+                    
+                    NSString *thumbnailUrl = [documentAttachment.thumbnailInfo imageUrlForLargestSize:NULL];
+                    if (thumbnailUrl.length != 0)
+                        [imageFileByUrlHash removeObjectForKey:md5String(thumbnailUrl)];
+                    
+                    if (desc != nil)
+                    {
+                        if (documentAttachment.documentId != 0)
+                        {
+                            TGUpdateLastUseRecord record = {.messageId = mediaData.messageId, .mediaType = 3, .mediaId = documentAttachment.documentId != 0 ? documentAttachment.documentId : documentAttachment.localDocumentId, .date = desc.date};
+                            updateLastUseRecords.push_back(record);
+                        }
+                    }
+                }
+            }
+        }
+        
+        [activeAvatarUrls enumerateObjectsUsingBlock:^(NSString *url, __unused BOOL *stop)
+        {
+            NSString *urlHash = md5String(url);
+            [imageFileByUrlHash removeObjectForKey:urlHash];
+        }];
+        
+        TGLog(@"[TGDatabase starting last use date updates for %d records]", (int)updateLastUseRecords.size());
+        
+        auto it = updateLastUseRecords.begin();
+        while (it != updateLastUseRecords.end())
+        {
+            std::vector<TGUpdateLastUseRecord> currentSet;
+            auto *pCurrentSet = &currentSet;
+            for (int i = 0; i < 512 && it != updateLastUseRecords.end(); i++, it++)
+            {
+                currentSet.push_back(*it);
+            }
+            
+            if (!currentSet.empty())
+            {
+                [self dispatchOnDatabaseThread:^
+                {
+                    [self _updateLastUseDateRecords:pCurrentSet];
+                } synchronous:true];
+            }
+        }
+        
+        TGLog(@"[TGDatabase completed last use date updates]");
+        
+        NSMutableArray *unreferencedFiles = [[NSMutableArray alloc] init];
+        [unreferencedFiles addObjectsFromArray:[imageFileByUrlHash allValues]];
+        [unreferencedFiles addObjectsFromArray:[videoFileById allValues]];
+        [unreferencedFiles addObjectsFromArray:[videoFileByLocalId allValues]];
+        [unreferencedFiles addObjectsFromArray:[documentFileById allValues]];
+        [unreferencedFiles addObjectsFromArray:[documentFileByLocalId allValues]];
+        [unreferencedFiles addObjectsFromArray:[audioFileById allValues]];
+        [unreferencedFiles addObjectsFromArray:[audioFileByLocalId allValues]];
+        
+        TGLog(@"[TGDatabase scheduling %d unused images for deletion]", unreferencedFiles.count);
+        NSUInteger unreferencedCounter = 0;
+        while (unreferencedCounter < unreferencedFiles.count)
+        {
+            NSMutableArray *filePathsSet = [[NSMutableArray alloc] init];
+            for (int i = 0; i < 512 && unreferencedCounter < unreferencedFiles.count; i++, unreferencedCounter++)
+            {
+                [filePathsSet addObject:((TGCacheFileDesc *)unreferencedFiles[unreferencedCounter]).filePath];
+            }
+            
+            [self _enqueueFilesToDelete:filePathsSet];
+        }
+        
+        TGLog(@"[TGDatabase completed background media indexing]");
+        int32_t one = 1;
+        //[self setCustomProperty:@"backgroundMediaIndexingCompleted" value:[NSData dataWithBytes:&one length:4]];
+        
+        [self processAndScheduleMediaCleanup];
+    }];
+}
+
+- (void)_enqueueFilesToDelete:(NSArray *)filesToDelete
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        [_database beginTransaction];
+        
+        NSString *insertQuery = [[NSString alloc] initWithFormat:@"INSERT OR IGNORE INTO %@ (hash0, hash1, path) VALUES (?, ?, ?)", _fileDeletionTableName];
+        
+        for (NSString *filePath in filesToDelete)
+        {
+            const char *ptr = [filePath UTF8String];
+            unsigned char md5Buffer[16];
+            CC_MD5(ptr, [filePath lengthOfBytesUsingEncoding:NSUTF8StringEncoding], md5Buffer);
+            
+            int64_t hash0 = *((int64_t *)md5Buffer);
+            int64_t hash1 = *((int64_t *)(md5Buffer + 8));
+            
+            [_database executeUpdate:insertQuery, @(hash0), @(hash1), filePath];
+        }
+        
+        [_database commit];
+        
+        [self _processDeletionQueue];
+    } synchronous:false];
+}
+
+- (void)_processDeletionQueue
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        if (_deletionInProgress)
+            return;
+        
+        [_deletionTickTimer invalidate];
+        _deletionTickTimer = nil;
+        
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ LIMIT 128", _fileDeletionTableName]];
+        NSMutableArray *deleteFiles = [[NSMutableArray alloc] init];
+        while ([result next])
+        {
+            int64_t hash0 = [result longLongIntForColumn:@"hash0"];
+            int64_t hash1 = [result longLongIntForColumn:@"hash1"];
+            NSString *filePath = [result stringForColumn:@"path"];
+            
+            [deleteFiles addObject:[[TGDeleteFileDesc alloc] initWithHash0:hash0 hash1:hash1 filePath:filePath]];
+        }
+        
+        if (deleteFiles.count != 0)
+        {
+            _deletionInProgress = true;
+            
+            [_fileDeletionQueue dispatch:^
+            {
+                NSFileManager *fileManager = [NSFileManager defaultManager];
+                for (TGDeleteFileDesc *desc in deleteFiles)
+                {
+#ifdef DEBUG
+                    TGLog(@"Delete: %@", desc.filePath);
+#endif
+                    [fileManager removeItemAtPath:desc.filePath error:nil];
+                }
+                
+                [self dispatchOnDatabaseThread:^
+                {
+                    NSString *queryString = [[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE hash0=? AND hash1=?", _fileDeletionTableName];
+                    [_database beginTransaction];
+                    for (TGDeleteFileDesc *desc in deleteFiles)
+                    {
+                        [_database executeUpdate:queryString, @(desc.hash0), @(desc.hash1)];
+                    }
+                    [_database commit];
+                    
+                    _deletionTickTimer = [[TGTimer alloc] initWithTimeout:0.1 repeat:false completion:^
+                    {
+                        _deletionInProgress = false;
+                        [self _processDeletionQueue];
+                    } queue:[self databaseQueue]];
+                    [_deletionTickTimer start];
+                } synchronous:false];
+            }];
+        }
+    } synchronous:false];
+}
+
+- (NSArray *)_filePathsForDeletionOfMedia:(id)media
+{
+    if ([media isKindOfClass:[TGImageMediaAttachment class]])
+    {
+        TGImageMediaAttachment *imageAttachment = media;
+        NSString *url = [imageAttachment.imageInfo imageUrlForLargestSize:NULL];
+        NSString *path = [[TGRemoteImageView sharedCache] pathForCachedData:url];
+        return @[path];
+    }
+    else if ([media isKindOfClass:[TGVideoMediaAttachment class]])
+    {
+        TGVideoMediaAttachment *videoAttachment = media;
+        NSString *filePath = [self filePathForVideoId:videoAttachment.videoId != 0 ? videoAttachment.videoId : videoAttachment.localVideoId local:videoAttachment.videoId == 0];
+        return @[filePath];
+    }
+    else if ([media isKindOfClass:[TGAudioMediaAttachment class]])
+    {
+        TGAudioMediaAttachment *audioAttachment = media;
+        NSString *filePath = [self filePathForAudio:audioAttachment];
+        return @[filePath];
+    }
+    else if ([media isKindOfClass:[TGDocumentMediaAttachment class]])
+    {
+        TGDocumentMediaAttachment *documentAttachment = media;
+        NSString *filePath = [self filePathForDocument:documentAttachment];
+        return @[filePath];
+    }
+    
+    return @[];
 }
 
 @end

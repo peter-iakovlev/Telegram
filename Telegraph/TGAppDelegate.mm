@@ -545,6 +545,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     }];
     
     [TGDatabaseInstance() processAndScheduleSelfDestruct];
+    [TGDatabaseInstance() processAndScheduleMediaCleanup];
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application

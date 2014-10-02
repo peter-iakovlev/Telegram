@@ -564,7 +564,8 @@ typedef enum {
         @"/tg/service/synchronizationstate",
         @"/tg/unreadCount",
         @"/tg/assets/currentWallpaperInfo",
-        @"/tg/conversation/historyCleared"
+        @"/tg/conversation/historyCleared",
+        @"/tg/removedMediasForMessageIds"
     ] watcher:self];
     
     int networkState = [ActionStageInstance() requestActorStateNow:@"/tg/service/updatestate"] ? 1 : 0;
@@ -2675,6 +2676,13 @@ typedef enum {
             }
         }];
     }
+    else if ([path isEqualToString:@"/tg/removedMediasForMessageIds"])
+    {
+        [TGModernConversationCompanion dispatchOnMessageQueue:^
+        {
+            [self _updateMediaStatusDataForItemsWithMessageIdsInSet:resource];
+        }];
+    }
     
     [super actionStageResourceDispatched:path resource:resource arguments:arguments];
 }
@@ -2961,6 +2969,26 @@ static id mediaIdForMessage(TGMessage *message)
                     id mediaId = [[TGMediaId alloc] initWithType:4 itemId:audioAttachment.audioId != 0 ? audioAttachment.audioId : audioAttachment.localAudioId];
                     [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/audio/(%" PRId32 ":%" PRId64 ":%@)", audioAttachment.datacenterId, audioAttachment.audioId, audioAttachment.audioUri.length != 0 ? audioAttachment.audioUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:audioAttachment, @"audioAttachment", nil] changePriority:highPriority messageId:message.mid itemId:mediaId groupId:conversationId itemClass:TGDownloadItemClassAudio];
                 }
+            }
+        }
+    }];
+}
+
+- (void)updateMediaAccessTimeForMessageId:(int32_t)messageId
+{
+    [TGModernConversationCompanion dispatchOnMessageQueue:^
+    {
+        for (TGMessageModernConversationItem *item in _items)
+        {
+            if (item->_message.mid == messageId)
+            {
+                TGMediaId *mediaId = mediaIdForMessage(item->_message);
+                if (mediaId != 0)
+                {
+                    [TGDatabaseInstance() updateLastUseDateForMediaType:mediaId.type mediaId:mediaId.itemId messageId:messageId];
+                }
+                
+                break;
             }
         }
     }];
