@@ -1060,7 +1060,9 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
     
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (peer_id INTEGER PRIMARY KEY, holes BLOB)", _peerHistoryHolesTableName]];
     
+#if !TARGET_IPHONE_SIMULATOR
     if ([self customProperty:@"backgroundMediaIndexingCompleted"].length == 0)
+#endif
     {
         [self _beginBackgroundIndexing];
     }
@@ -9292,7 +9294,9 @@ typedef struct {
             {
                 for (id media in foundMessage.mediaAttachments)
                 {
-                    [filePathsForDeletion addObjectsFromArray:[self _filePathsForDeletionOfMedia:media]];
+                    NSString *mediaFilePath = [self _filePathForDeletionOfMedia:media];
+                    if (mediaFilePath != nil)
+                        [filePathsForDeletion addObject:mediaFilePath];
                     [removedMedias addObject:media];
                 }
             }
@@ -9385,7 +9389,25 @@ typedef struct {
                 date = (int32_t)[accessDate timeIntervalSince1970];
                 
                 NSString *filePath = [fileUrl path];
-                imageFileByUrlHash[[filePath lastPathComponent]] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+                NSString *fileName = [filePath lastPathComponent];
+                
+                const char *utf8Bytes = [fileName UTF8String];
+                bool containsInvalidCharacters = false;
+                while (*utf8Bytes != 0)
+                {
+                    char c = *utf8Bytes;
+                    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))
+                    {
+                        containsInvalidCharacters = true;
+                        break;
+                    }
+                    
+                    utf8Bytes++;
+                }
+                if (!containsInvalidCharacters)
+                {
+                    imageFileByUrlHash[fileName] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+                }
             }
         }
         
@@ -9407,23 +9429,29 @@ typedef struct {
                 
                 NSString *filePath = [fileUrl path];
                 NSString *fileName = [filePath lastPathComponent];
-                if ([fileName hasPrefix:@"remote"] && [fileName hasSuffix:@".mov"])
+                bool hasSuffixMov = [fileName hasSuffix:@".mov"];
+                bool hasSuffixMovparts = [fileName hasSuffix:@".mov.parts"];
+                if (hasSuffixMov || hasSuffixMovparts)
                 {
-                    NSScanner *scanner = [[NSScanner alloc] initWithString:[fileName substringWithRange:NSMakeRange(6, fileName.length - 4 - 6)]];
-                    long long videoId = 0;
-                    [scanner scanHexLongLong:(unsigned long long *)&videoId];
-                    
-                    if (videoId != 0)
-                        videoFileById[@((int64_t)videoId)] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
-                }
-                else if ([fileName hasPrefix:@"local"] && [fileName hasSuffix:@".mov"])
-                {
-                    NSScanner *scanner = [[NSScanner alloc] initWithString:[fileName substringWithRange:NSMakeRange(5, fileName.length - 4 - 5)]];
-                    long long localVideoId = 0;
-                    [scanner scanHexLongLong:(unsigned long long *)&localVideoId];
-                    
-                    if (localVideoId != 0)
-                        videoFileByLocalId[@((int64_t)localVideoId)] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+                    int suffixLength = hasSuffixMov ? 4 : 10;
+                    if ([fileName hasPrefix:@"remote"])
+                    {
+                        NSScanner *scanner = [[NSScanner alloc] initWithString:[fileName substringWithRange:NSMakeRange(6, fileName.length - suffixLength - 6)]];
+                        long long videoId = 0;
+                        [scanner scanHexLongLong:(unsigned long long *)&videoId];
+                        
+                        if (videoId != 0)
+                            videoFileById[@((int64_t)videoId)] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+                    }
+                    else if ([fileName hasPrefix:@"local"])
+                    {
+                        NSScanner *scanner = [[NSScanner alloc] initWithString:[fileName substringWithRange:NSMakeRange(5, fileName.length - suffixLength - 5)]];
+                        long long localVideoId = 0;
+                        [scanner scanHexLongLong:(unsigned long long *)&localVideoId];
+                        
+                        if (localVideoId != 0)
+                            videoFileByLocalId[@((int64_t)localVideoId)] = [[TGCacheFileDesc alloc] initWithFilePath:filePath date:date];
+                    }
                 }
             }
         }
@@ -9760,7 +9788,7 @@ typedef struct {
         [unreferencedFiles addObjectsFromArray:[audioFileById allValues]];
         [unreferencedFiles addObjectsFromArray:[audioFileByLocalId allValues]];
         
-        TGLog(@"[TGDatabase scheduling %d unused images for deletion]", unreferencedFiles.count);
+        TGLog(@"[TGDatabase scheduling %d unreferenced files for deletion]", unreferencedFiles.count);
         NSUInteger unreferencedCounter = 0;
         while (unreferencedCounter < unreferencedFiles.count)
         {
@@ -9775,7 +9803,7 @@ typedef struct {
         
         TGLog(@"[TGDatabase completed background media indexing]");
         int32_t one = 1;
-        //[self setCustomProperty:@"backgroundMediaIndexingCompleted" value:[NSData dataWithBytes:&one length:4]];
+        [self setCustomProperty:@"backgroundMediaIndexingCompleted" value:[NSData dataWithBytes:&one length:4]];
         
         [self processAndScheduleMediaCleanup];
     }];
@@ -9841,6 +9869,7 @@ typedef struct {
                     TGLog(@"Delete: %@", desc.filePath);
 #endif
                     [fileManager removeItemAtPath:desc.filePath error:nil];
+                    [fileManager removeItemAtPath:[desc.filePath stringByAppendingString:@""] error:nil];
                 }
                 
                 [self dispatchOnDatabaseThread:^
@@ -9865,35 +9894,35 @@ typedef struct {
     } synchronous:false];
 }
 
-- (NSArray *)_filePathsForDeletionOfMedia:(id)media
+- (NSString *)_filePathForDeletionOfMedia:(id)media
 {
     if ([media isKindOfClass:[TGImageMediaAttachment class]])
     {
         TGImageMediaAttachment *imageAttachment = media;
         NSString *url = [imageAttachment.imageInfo imageUrlForLargestSize:NULL];
         NSString *path = [[TGRemoteImageView sharedCache] pathForCachedData:url];
-        return @[path];
+        return path;
     }
     else if ([media isKindOfClass:[TGVideoMediaAttachment class]])
     {
         TGVideoMediaAttachment *videoAttachment = media;
         NSString *filePath = [self filePathForVideoId:videoAttachment.videoId != 0 ? videoAttachment.videoId : videoAttachment.localVideoId local:videoAttachment.videoId == 0];
-        return @[filePath];
+        return filePath;
     }
     else if ([media isKindOfClass:[TGAudioMediaAttachment class]])
     {
         TGAudioMediaAttachment *audioAttachment = media;
         NSString *filePath = [self filePathForAudio:audioAttachment];
-        return @[filePath];
+        return filePath;
     }
     else if ([media isKindOfClass:[TGDocumentMediaAttachment class]])
     {
         TGDocumentMediaAttachment *documentAttachment = media;
         NSString *filePath = [self filePathForDocument:documentAttachment];
-        return @[filePath];
+        return filePath;
     }
     
-    return @[];
+    return nil;
 }
 
 @end

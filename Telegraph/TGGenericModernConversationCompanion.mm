@@ -1065,7 +1065,7 @@ typedef enum {
         originalSize.width *= image.scale;
         originalSize.height *= image.scale;
         
-        CGSize imageSize = TGFitSize(originalSize, CGSizeMake(800, 800));
+        CGSize imageSize = TGFitSize(originalSize, CGSizeMake(1280, 1280));
         CGSize thumbnailSize = TGFitSize(originalSize, CGSizeMake(90, 90));
         
         UIImage *fullImage = TGScaleImageToPixelSize(image, imageSize);

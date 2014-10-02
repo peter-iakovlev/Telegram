@@ -64,8 +64,6 @@
     
     CGPoint _boundOffset;
     
-    bool _mediaIsAvailable;
-    
     NSTimer *_viewDateTimer;
 }
 

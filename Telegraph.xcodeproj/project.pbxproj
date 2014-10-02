@@ -688,6 +688,8 @@
 		D01526D51900548200656312 /* TGWorker.m in Sources */ = {isa = PBXBuildFile; fileRef = D01526D41900548200656312 /* TGWorker.m */; };
 		D01526D9190054AB00656312 /* TGWorkerTask.m in Sources */ = {isa = PBXBuildFile; fileRef = D01526D8190054AB00656312 /* TGWorkerTask.m */; };
 		D01526DD1902111B00656312 /* TGImageBlur.m in Sources */ = {isa = PBXBuildFile; fileRef = D01526DC1902111B00656312 /* TGImageBlur.m */; };
+		D01D7D3E19DDF8C200955BDE /* TGYoutubeMessageViewModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D3D19DDF8C200955BDE /* TGYoutubeMessageViewModel.m */; };
+		D01D7D4819DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D4719DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.m */; };
 		D01E9DCA15B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm in Sources */ = {isa = PBXBuildFile; fileRef = D01E9DC915B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm */; };
 		D01FF83D1965A1D800EA6FFB /* TGVideoPreviewView.m in Sources */ = {isa = PBXBuildFile; fileRef = D01FF83C1965A1D800EA6FFB /* TGVideoPreviewView.m */; };
 		D01FF8401966D3F200EA6FFB /* TGVibrantActionSheet.m in Sources */ = {isa = PBXBuildFile; fileRef = D01FF83F1966D3F200EA6FFB /* TGVibrantActionSheet.m */; };
@@ -2628,6 +2630,10 @@
 		D01526D8190054AB00656312 /* TGWorkerTask.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGWorkerTask.m; sourceTree = "<group>"; };
 		D01526DB1902111B00656312 /* TGImageBlur.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGImageBlur.h; sourceTree = "<group>"; };
 		D01526DC1902111B00656312 /* TGImageBlur.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGImageBlur.m; sourceTree = "<group>"; };
+		D01D7D3C19DDF8C200955BDE /* TGYoutubeMessageViewModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGYoutubeMessageViewModel.h; sourceTree = "<group>"; };
+		D01D7D3D19DDF8C200955BDE /* TGYoutubeMessageViewModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGYoutubeMessageViewModel.m; sourceTree = "<group>"; };
+		D01D7D4619DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGYoutubeThumbnailDataSource.h; sourceTree = "<group>"; };
+		D01D7D4719DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGYoutubeThumbnailDataSource.m; sourceTree = "<group>"; };
 		D01E9DC815B8D7A700C624F2 /* TGTelegraphDialogListCompanion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTelegraphDialogListCompanion.h; sourceTree = "<group>"; };
 		D01E9DC915B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGTelegraphDialogListCompanion.mm; sourceTree = "<group>"; };
 		D01FF83B1965A1D800EA6FFB /* TGVideoPreviewView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGVideoPreviewView.h; sourceTree = "<group>"; };
@@ -5385,6 +5391,8 @@
 				93992D8518296F6200F29746 /* TGVideoMessageViewModel.m */,
 				932B9F7418E58DCB0057EFF5 /* TGAnimatedImageMessageViewModel.h */,
 				932B9F7518E58DCB0057EFF5 /* TGAnimatedImageMessageViewModel.m */,
+				D01D7D3C19DDF8C200955BDE /* TGYoutubeMessageViewModel.h */,
+				D01D7D3D19DDF8C200955BDE /* TGYoutubeMessageViewModel.m */,
 			);
 			name = "Image and Video";
 			sourceTree = "<group>";
@@ -5954,6 +5962,15 @@
 				D034A5D11914520B00C93C98 /* TGImageLuminanceMap.m */,
 			);
 			name = Processing;
+			sourceTree = "<group>";
+		};
+		D01D7D4519DDF9F300955BDE /* Youtube */ = {
+			isa = PBXGroup;
+			children = (
+				D01D7D4619DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.h */,
+				D01D7D4719DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.m */,
+			);
+			name = Youtube;
 			sourceTree = "<group>";
 		};
 		D01E9E0015B8D94700C624F2 /* Media */ = {
@@ -6723,6 +6740,7 @@
 				D020ACC81993A85B007818DD /* Gallery */,
 				D0603921191A413500EF850D /* Preview */,
 				D08BC66319AD3C5E007F126A /* Peer Avatar */,
+				D01D7D4519DDF9F300955BDE /* Youtube */,
 			);
 			name = Media;
 			sourceTree = "<group>";
@@ -10367,6 +10385,7 @@
 				9330232E1655087F00178E7F /* TGNotificationWindow.m in Sources */,
 				D046966B18A40A22009764B2 /* TGModernGalleryVideoItemView.m in Sources */,
 				933023971655A19D00178E7F /* TGMessageNotificationView.mm in Sources */,
+				D01D7D4819DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.m in Sources */,
 				D0983D4719CB9A4300CE5BB0 /* TGChangePrivacySettingsFutureAction.m in Sources */,
 				9332690C16595BDB00E87917 /* TGMenuItem.m in Sources */,
 				D07EA28D199E273A002ED76D /* TGModernMediaListVideoItem.m in Sources */,
@@ -10855,6 +10874,7 @@
 				D098412419CB9BE200CE5BB0 /* TLRPCgeochats_editChatTitle.mm in Sources */,
 				D0BEC9D018B2384000D9A92D /* TGKeychainImport.m in Sources */,
 				D0E3C61A1963591000B133E0 /* TGBroadcastConversationCell.m in Sources */,
+				D01D7D3E19DDF8C200955BDE /* TGYoutubeMessageViewModel.m in Sources */,
 				D098406119CB9BE200CE5BB0 /* NSArray_DestroySessionRes.mm in Sources */,
 				D0983BFC19CB93C500CE5BB0 /* NSObject+TGLock.m in Sources */,
 				D0983DB919CB9A4300CE5BB0 /* UIScrollView+TGHacks.m in Sources */,

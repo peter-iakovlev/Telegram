@@ -16,6 +16,11 @@
 @class TGMessageImageViewModel;
 
 @interface TGImageMessageViewModel : TGMessageViewModel
+{
+    @protected
+    
+    bool _mediaIsAvailable;
+}
 
 @property (nonatomic, strong) TGMessageImageViewModel *imageModel;
 

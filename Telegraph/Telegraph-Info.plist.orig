@@ -99,10 +99,10 @@
 	</array>
 	<key>CFBundleVersion</key>
 <<<<<<< HEAD
-	<string>35833</string>
+	<string>36162</string>
 =======
-	<string>36144</string>
->>>>>>> master
+	<string>35905</string>
+>>>>>>> cache_invalidation
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIAppFonts</key>
