@@ -11,6 +11,7 @@
 @property (nonatomic, retain) TLInputPeer *peer;
 @property (nonatomic) int32_t max_id;
 @property (nonatomic) int32_t offset;
+@property (nonatomic) bool read_contents;
 
 - (Class)responseClass;
 

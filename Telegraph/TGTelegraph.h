@@ -18,6 +18,8 @@
 
 #import "TGDatabase.h"
 
+#import "TGModernConversationActivityManager.h"
+
 #ifdef __cplusplus
 #include <map>
 #include <tr1/memory>
@@ -117,6 +119,8 @@ extern TGTelegraph *TGTelegraphInstance;
 - (void)cancelRequestByToken:(NSObject *)token;
 - (void)cancelRequestByToken:(NSObject *)token softCancel:(bool)softCancel;
 
+- (TGModernConversationActivityManager *)activityManagerForConversationId:(int64_t)conversationId;
+
 - (void)doLogout;
 - (void)updatePresenceNow;
 
@@ -134,9 +138,8 @@ extern TGTelegraph *TGTelegraphInstance;
 #ifdef __cplusplus
 - (void)dispatchMultipleUserPresenceChanges:(std::tr1::shared_ptr<std::map<int, TGUserPresence> >)presenceMap;
 #endif
-- (void)dispatchUserTyping:(int)uid inConversation:(int64_t)conversationId typing:(bool)typing;
-- (NSArray *)userIdsTypingInConversation:(int64_t)conversationId;
-- (NSArray *)typingUsersInConversationFromMainThread:(int64_t)conversationId;
+- (void)dispatchUserActivity:(int)uid inConversation:(int64_t)conversationId type:(NSString *)type;
+- (NSDictionary *)typingUserActivitiesInConversationFromMainThread:(int64_t)conversationId;
 - (void)dispatchUserLinkChanged:(int)uid link:(int)link;
 
 - (void)subscribeToUserUpdates:(ASHandle *)watcherHandle;
@@ -199,7 +202,7 @@ extern TGTelegraph *TGTelegraphInstance;
 - (NSObject *)doConversationForwardMessage:(int64_t)conversationId messageId:(int)messageId tmpId:(int64_t)tmpId actor:(TGModernSendCommonMessageActor *)actor;
 - (NSObject *)doConversationReadHistory:(int64_t)conversationId maxMid:(int)maxMid offset:(int)offset actor:(TGSynchronizeActionQueueActor *)actor;
 - (NSObject *)doReportDelivery:(int)maxMid actor:(TGReportDeliveryActor *)actor;
-- (NSObject *)doReportConversationTypingActivity:(int64_t)conversationId requestBuilder:(TGConversationActivityRequestBuilder *)requestBuilder;
+- (NSObject *)doReportConversationActivity:(int64_t)conversationId activity:(id)activity actor:(TGConversationActivityRequestBuilder *)actor;
 - (NSObject *)doChangeConversationTitle:(int64_t)conversationId title:(NSString *)title actor:(TGConversationChangeTitleRequestActor *)actor;
 - (NSObject *)doChangeConversationPhoto:(int64_t)conversationId photo:(TLInputChatPhoto *)photo actor:(TGConversationChangePhotoActor *)actor;
 - (NSObject *)doCreateChat:(NSArray *)uidList title:(NSString *)title actor:(TGConversationCreateChatRequestActor *)actor;

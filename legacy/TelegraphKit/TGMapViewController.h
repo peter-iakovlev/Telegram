@@ -18,6 +18,8 @@
 
 @property (nonatomic, strong) id message;
 
+@property (nonatomic, strong) id activityHolder;
+
 - (id)initInPickingMode;
 - (id)initInMapModeWithLatitude:(double)latitude longitude:(double)longitude user:(TGUser *)user;
 

@@ -17,7 +17,8 @@
 @interface TGForwardTargetController : TGViewController <ASWatcher, TGViewControllerNavigationBarAppearance, TGNavigationControllerItem>
 
 @property (nonatomic, strong) NSString *controllerTitle;
-@property (nonatomic, strong) NSString *confirmationPrefix;
+@property (nonatomic, strong) NSString *confirmationDefaultPersonFormat;
+@property (nonatomic, strong) NSString *confirmationDefaultGroupFormat;
 
 @property (nonatomic, strong) ASHandle *actionHandle;
 @property (nonatomic, strong) ASHandle *watcherHandle;

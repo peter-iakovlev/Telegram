@@ -6,12 +6,17 @@
 #import "TGTimer.h"
 
 #import "TGPreparedMessage.h"
+#import "TGPreparedLocalImageMessage.h"
+#import "TGPreparedLocalVideoMessage.h"
+#import "TGPreparedLocalDocumentMessage.h"
 
 #import "TGUpdateStateRequestBuilder.h"
 
 #import "TGNetworkWorker.h"
 
 #import "TGLiveUploadActor.h"
+
+#import "TGTelegraph.h"
 
 @interface TGModernSendMessageActor ()
 {
@@ -23,6 +28,8 @@
     NSMutableDictionary *_uploadingActorPathToFileUrl;
     NSMutableDictionary *_uploadingProgressActorPaths;
     NSMutableDictionary *_completedUploads;
+    
+    id _activityHolder;
 }
 
 @end
@@ -178,10 +185,55 @@
 
 #pragma mark -
 
+- (int64_t)conversationIdForActivity
+{
+    return 0;
+}
+
+/*
+ 
+ if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordVideoAction class]])
+ activity = @"recordingVideo";
+ if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadVideoAction class]])
+ activity = @"uploadingVideo";
+ else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordAudioAction class]])
+ activity = @"recordingAudio";
+ else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadAudioAction class]])
+ activity = @"uploadingAudio";
+ else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadPhotoAction class]])
+ activity = @"uploadingPhoto";
+ else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadDocumentAction class]])
+ activity = @"uploadingDocument";
+ else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageGeoLocationAction class]])
+ activity = @"pickingLocation";
+ else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageChooseContactAction class]])
+ activity = @"choosingContact";
+ else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageCancelAction class]])
+ activity = nil;
+ 
+ */
+
+- (NSString *)activityType
+{
+    if ([_preparedMessage isKindOfClass:[TGPreparedLocalImageMessage class]])
+        return @"uploadingPhoto";
+    else if ([_preparedMessage isKindOfClass:[TGPreparedLocalVideoMessage class]])
+        return @"uploadingVideo";
+    else if ([_preparedMessage isKindOfClass:[TGPreparedLocalDocumentMessage class]])
+        return @"uploadingDocument";
+    
+    return nil;
+}
+
 - (void)uploadFilesWithExtensions:(NSArray *)filePathsAndExtensions
 {
     if (filePathsAndExtensions.count == 0)
         return;
+    
+    if (_activityHolder == nil && [self conversationIdForActivity] != 0 && [self activityType] != nil)
+    {
+        _activityHolder = [[TGTelegraphInstance activityManagerForConversationId:[self conversationIdForActivity]] addActivityWithType:[self activityType] priority:2];
+    }
     
     _notifiedUploadsStarted = false;
     

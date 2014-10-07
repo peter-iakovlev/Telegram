@@ -287,7 +287,8 @@
 "Conversation.LinkDialogCopy" = "Copy";
 "Conversation.EditDelete" = "Delete";
 "Conversation.EditForward" = "Forward";
-"Conversation.ForwardToPrefix" = "Forward to ";
+"Conversation.ForwardToPersonFormat" = "Forward to %@?";
+"Conversation.ForwardToGroupFormat" = "Forward to %@?";
 "Conversation.ForwardTitle" = "Forward";
 "Conversation.ForwardChats" = "Chats";
 "Conversation.ForwardContacts" = "Contacts";
@@ -471,7 +472,8 @@ The Telegram Team";
 "Profile.MessageLifetime1d" = "1d";
 "Profile.MessageLifetime1w" = "1w";
 "Profile.ShareContactButton" = "Share Contact";
-"Profile.ShareContactPrefix" = "Send contact to ";
+"Profile.ShareContactPersonFormat" = "Send contact to %@?";
+"Profile.ShareContactGroupFormat" = "Send contact to %@?";
 
 // User Info
 "UserInfo.Title" = "Info";
@@ -641,7 +643,7 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 "BlockedUsers.SelectUserTitle" = "Block User";
 "BlockedUsers.AlreadyBlocked" = "This user is already blocked";
 "BlockedUsers.BlockUser" = "Block User";
-"BlockedUsers.BlockPrefix" = "Block ";
+"BlockedUsers.BlockFormat" = "Block %@?";
 "BlockedUsers.BlockTitle" = "Block";
 "BlockedUsers.LeavePrefix" = "Leave ";
 "BlockedUsers.Info" = "You will not receive messages from people on the block list.";
@@ -737,3 +739,11 @@ Is this number correct?
 "MessageTimer.ShortWeeks_2" = "%@w";
 "MessageTimer.ShortWeeks_3_10" = "%@w";
 "MessageTimer.ShortWeeks_any" = "%@w";
+
+"Activity.UploadingPhoto" = "sending photo...";
+"Activity.UploadingVideo" = "sending video...";
+"Activity.UploadingDocument" = "sending file...";
+"Activity.RecordingAudio" = "recording audio...";
+"Activity.Location" = "picking location...";
+
+"Service.NetworkConfigurationUpdatedMessage" = "Connection settings updated successfully.";

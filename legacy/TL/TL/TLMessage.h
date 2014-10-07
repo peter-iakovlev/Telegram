@@ -20,10 +20,9 @@
 
 @interface TLMessage$message : TLMessage
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic) int32_t from_id;
 @property (nonatomic, retain) TLPeer *to_id;
-@property (nonatomic) bool out;
-@property (nonatomic) bool unread;
 @property (nonatomic) int32_t date;
 @property (nonatomic, retain) NSString *message;
 @property (nonatomic, retain) TLMessageMedia *media;
@@ -32,12 +31,11 @@
 
 @interface TLMessage$messageForwarded : TLMessage
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic) int32_t fwd_from_id;
 @property (nonatomic) int32_t fwd_date;
 @property (nonatomic) int32_t from_id;
 @property (nonatomic, retain) TLPeer *to_id;
-@property (nonatomic) bool out;
-@property (nonatomic) bool unread;
 @property (nonatomic) int32_t date;
 @property (nonatomic, retain) NSString *message;
 @property (nonatomic, retain) TLMessageMedia *media;
@@ -46,10 +44,9 @@
 
 @interface TLMessage$messageService : TLMessage
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic) int32_t from_id;
 @property (nonatomic, retain) TLPeer *to_id;
-@property (nonatomic) bool out;
-@property (nonatomic) bool unread;
 @property (nonatomic) int32_t date;
 @property (nonatomic, retain) TLMessageAction *action;
 

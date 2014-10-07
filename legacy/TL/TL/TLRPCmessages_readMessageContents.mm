@@ -1,11 +1,27 @@
-#import "TLInvokeWithLayer15.h"
+#import "TLRPCmessages_readMessageContents.h"
 
 #import "../NSInputStream+TL.h"
 #import "../NSOutputStream+TL.h"
 
+#import "NSArray_int.h"
 
-@implementation TLInvokeWithLayer15
+@implementation TLRPCmessages_readMessageContents
 
+
+- (Class)responseClass
+{
+    return [NSArray class];
+}
+
+- (int)impliedResponseSignature
+{
+    return (int)0xa03855ae;
+}
+
+- (int)layerVersion
+{
+    return 17;
+}
 
 - (int32_t)TLconstructorSignature
 {
@@ -33,23 +49,23 @@
 
 @end
 
-@implementation TLInvokeWithLayer15$invokeWithLayer15 : TLInvokeWithLayer15
+@implementation TLRPCmessages_readMessageContents$messages_readMessageContents : TLRPCmessages_readMessageContents
 
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xb4418b64;
+    return (int32_t)0x354b5bc2;
 }
 
 - (int32_t)TLconstructorName
 {
-    return (int32_t)0x4e4414b7;
+    return (int32_t)0x40cdc0b4;
 }
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
-    TLInvokeWithLayer15$invokeWithLayer15 *object = [[TLInvokeWithLayer15$invokeWithLayer15 alloc] init];
-    object.query = metaObject->getObject((int32_t)0x5de9dcb1);
+    TLRPCmessages_readMessageContents$messages_readMessageContents *object = [[TLRPCmessages_readMessageContents$messages_readMessageContents alloc] init];
+    object.n_id = metaObject->getArray((int32_t)0x7a5601fb);
     return object;
 }
 
@@ -57,9 +73,9 @@
 {
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.query;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x5de9dcb1, value));
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.n_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
     }
 }
 

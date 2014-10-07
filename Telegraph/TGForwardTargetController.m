@@ -36,7 +36,7 @@
 
 @interface TGForwardTargetController () <UIAlertViewDelegate>
 {
-    NSString *_confirmationFormat;
+    NSString *_confirmationCustomFormat;
     bool _targetMode;
 }
 
@@ -71,7 +71,8 @@
     {
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
-        _confirmationPrefix = TGLocalized(@"Conversation.ForwardToPrefix");
+        _confirmationDefaultPersonFormat = TGLocalized(@"Conversation.ForwardToPersonFormat");
+        _confirmationDefaultGroupFormat = TGLocalized(@"Conversation.ForwardToGroupFormat");
         
         _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
         _dialogListCompanion.forwardMode = true;
@@ -110,7 +111,7 @@
         _contactsController.watcher = _actionHandle;
         _contactsController.customParentViewController = self;
         
-        _confirmationPrefix = TGLocalized(@"BlockedUsers.BlockPrefix");
+        _confirmationDefaultPersonFormat = _confirmationDefaultGroupFormat = TGLocalized(@"BlockedUsers.BlockFormat");
         _controllerTitle = TGLocalized(@"BlockedUsers.BlockTitle");
         _blockMode = true;
     }
@@ -166,12 +167,13 @@
             if (targetRange.location != NSNotFound)
                 genericFormat = [genericFormat stringByReplacingCharactersInRange:targetRange withString:@"%@"];
             
-            _confirmationFormat = genericFormat;
+            _confirmationCustomFormat = genericFormat;
         }
         
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
-        _confirmationPrefix = TGLocalized(@"Conversation.ForwardToPrefix");
+        _confirmationDefaultPersonFormat = TGLocalized(@"Conversation.ForwardToPersonFormat");
+        _confirmationDefaultGroupFormat = TGLocalized(@"Conversation.ForwardToGroupFormat");
         
         _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
         _dialogListCompanion.forwardMode = true;
@@ -217,12 +219,13 @@
             if (targetRange.location != NSNotFound)
                 genericFormat = [genericFormat stringByReplacingCharactersInRange:targetRange withString:@"%@"];
             
-            _confirmationFormat = genericFormat;
+            _confirmationCustomFormat = genericFormat;
         }
         
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
-        _confirmationPrefix = TGLocalized(@"Conversation.ForwardToPrefix");
+        _confirmationDefaultPersonFormat = TGLocalized(@"Conversation.ForwardToPersonFormat");
+        _confirmationDefaultGroupFormat = TGLocalized(@"Conversation.ForwardToGroupFormat");
         
         _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
         _dialogListCompanion.forwardMode = true;
@@ -447,10 +450,10 @@
                     _currentAlert.delegate = nil;
                     
                     NSString *alertText = nil;
-                    if (_confirmationFormat != nil)
-                        alertText = [[NSString alloc] initWithFormat:_confirmationFormat, user.displayName];
+                    if (_confirmationCustomFormat != nil)
+                        alertText = [[NSString alloc] initWithFormat:_confirmationCustomFormat, user.displayName];
                     else
-                        alertText = [NSString stringWithFormat:@"%@%@?", _confirmationPrefix, user.displayName];
+                        alertText = [NSString stringWithFormat:_confirmationDefaultPersonFormat, user.displayName];
                     
                     _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
                     [_currentAlert show];
@@ -487,10 +490,10 @@
                     NSString *alertText = nil;
                     if (_blockMode)
                         alertText = [NSString stringWithFormat:@"%@\"%@\"?", TGLocalized(@"BlockedUsers.LeavePrefix"), conversation.chatTitle];
-                    else if (_confirmationFormat != nil)
-                        alertText = [[NSString alloc] initWithFormat:_confirmationFormat, conversation.chatTitle];
+                    else if (_confirmationCustomFormat != nil)
+                        alertText = [[NSString alloc] initWithFormat:_confirmationCustomFormat, conversation.chatTitle];
                     else
-                        alertText = [NSString stringWithFormat:@"%@\"%@\"?", _confirmationPrefix, conversation.chatTitle];
+                        alertText = [NSString stringWithFormat:_confirmationDefaultGroupFormat, conversation.chatTitle];
                     
                     _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
                     [_currentAlert show];
@@ -521,10 +524,10 @@
                             _currentAlert.delegate = nil;
                             
                             NSString *alertText = nil;
-                            if (_confirmationFormat != nil)
-                                alertText = [[NSString alloc] initWithFormat:_confirmationFormat, user.displayName];
+                            if (_confirmationCustomFormat != nil)
+                                alertText = [[NSString alloc] initWithFormat:_confirmationCustomFormat, user.displayName];
                             else
-                                alertText = [NSString stringWithFormat:@"%@%@?", _confirmationPrefix, user.displayName];
+                                alertText = [NSString stringWithFormat:_confirmationDefaultPersonFormat, user.displayName];
                             
                             _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
                             [_currentAlert show];

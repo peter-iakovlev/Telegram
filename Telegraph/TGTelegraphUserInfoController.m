@@ -707,7 +707,8 @@ static UIView *_findBackArrow(UIView *view)
     TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:nil sendMessages:[[NSArray alloc] initWithObjects:message, nil]];
     forwardController.watcherHandle = self.actionHandle;
     forwardController.controllerTitle = TGLocalized(@"Profile.ShareContactButton");
-    forwardController.confirmationPrefix = TGLocalized(@"Profile.ShareContactPrefix");
+    forwardController.confirmationDefaultPersonFormat = TGLocalized(@"Profile.ShareContactPersonFormat");
+    forwardController.confirmationDefaultGroupFormat = TGLocalized(@"Profile.ShareContactGroupFormat");
     
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[forwardController] navigationBarClass:[TGWhiteNavigationBar class]];
     if ([self inPopover])

@@ -1221,7 +1221,9 @@
     
     decryptedMessage.random_id = randomId;
     
-    decryptedMessage.random_bytes = nil;
+    uint8_t randomBytes[15];
+    arc4random_buf(randomBytes, 15);
+    decryptedMessage.random_bytes = [[NSData alloc] initWithBytes:randomBytes length:15];
     
     decryptedMessage.message = text;
     

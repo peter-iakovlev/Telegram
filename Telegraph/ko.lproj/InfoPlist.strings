@@ -1,0 +1,6 @@
+/* Localized versions of Info.plist keys */
+
+"CFBundleDisplayName" = "텔레그램";
+
+"NSContactsUsageDescription" = "텔레그램은 사용자의 모든 기기에서 친구와 연락할 수 있게 모든 연락처를 강력하게 암호화하여 클라우드에 저장합니다.";
+"NSLocationWhenInUseUsageDescription" = "친구에게 사용자의 위치를 전송할 경우 위치를 지도에 표시하기 위해 텔레그램이 위치 정보에 접근할 수 있어야 합니다.";

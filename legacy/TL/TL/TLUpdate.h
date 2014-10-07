@@ -16,6 +16,7 @@
 @class TLEncryptedChat;
 @class TLNotifyPeer;
 @class TLPeerNotifySettings;
+@class TLSendMessageAction;
 
 @interface TLUpdate : NSObject <TLObject>
 
@@ -54,19 +55,6 @@
 
 @property (nonatomic, retain) NSArray *messages;
 @property (nonatomic) int32_t pts;
-
-@end
-
-@interface TLUpdate$updateUserTyping : TLUpdate
-
-@property (nonatomic) int32_t user_id;
-
-@end
-
-@interface TLUpdate$updateChatUserTyping : TLUpdate
-
-@property (nonatomic) int32_t chat_id;
-@property (nonatomic) int32_t user_id;
 
 @end
 
@@ -224,6 +212,21 @@
 
 @property (nonatomic, retain) TLNotifyPeer *peer;
 @property (nonatomic, retain) TLPeerNotifySettings *notify_settings;
+
+@end
+
+@interface TLUpdate$updateUserTyping : TLUpdate
+
+@property (nonatomic) int32_t user_id;
+@property (nonatomic, retain) TLSendMessageAction *action;
+
+@end
+
+@interface TLUpdate$updateChatUserTyping : TLUpdate
+
+@property (nonatomic) int32_t chat_id;
+@property (nonatomic) int32_t user_id;
+@property (nonatomic, retain) TLSendMessageAction *action;
 
 @end
 

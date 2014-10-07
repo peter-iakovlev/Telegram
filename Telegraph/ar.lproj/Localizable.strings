@@ -287,7 +287,7 @@
 "Conversation.LinkDialogCopy" = "نسخ";
 "Conversation.EditDelete" = "احذف";
 "Conversation.EditForward" = "أعد التوجيه";
-"Conversation.ForwardToPrefix" = "تحويل لـ ";
+"Conversation.ForwardToFormat" = "%@ تحويل لـ ";
 "Conversation.ForwardTitle" = "تحويل";
 "Conversation.ForwardChats" = "المحادثات";
 "Conversation.ForwardContacts" = "جهات الاتصال";
@@ -630,7 +630,7 @@
 "BlockedUsers.SelectUserTitle" = "حظر المستخدم";
 "BlockedUsers.AlreadyBlocked" = "هذا المستخدم محظور مسبقًا";
 "BlockedUsers.BlockUser" = "حظر المستخدم";
-"BlockedUsers.BlockPrefix" = "حظر ";
+"BlockedUsers.BlockFormat" = "حظر %@";
 "BlockedUsers.BlockTitle" = "حظر";
 "BlockedUsers.LeavePrefix" = "مغادرة ";
 "BlockedUsers.Info" = "لن تستقبل رسائل من جهات الاتصال التي في قائمة جهات الاتصال المحظورة";

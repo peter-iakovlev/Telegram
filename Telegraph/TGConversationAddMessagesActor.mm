@@ -259,7 +259,7 @@
             {
                 for (std::set<int>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
                 {
-                    [TGTelegraphInstance dispatchUserTyping:*it2 inConversation:it->first typing:false];
+                    [TGTelegraphInstance dispatchUserActivity:*it2 inConversation:it->first type:nil];
                 }
             }
         }

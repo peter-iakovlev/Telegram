@@ -10,6 +10,6 @@
 
 @interface TGSecretModernConversationCompanion : TGPrivateModernConversationCompanion
 
-- (instancetype)initWithEncryptedConversationId:(int64_t)encryptedConversationId accessHash:(int64_t)accessHash conversationId:(int64_t)conversationId uid:(int)uid typing:(bool)typing mayHaveUnreadMessages:(bool)mayHaveUnreadMessages;
+- (instancetype)initWithEncryptedConversationId:(int64_t)encryptedConversationId accessHash:(int64_t)accessHash conversationId:(int64_t)conversationId uid:(int)uid activity:(NSString *)activity mayHaveUnreadMessages:(bool)mayHaveUnreadMessages;
 
 @end

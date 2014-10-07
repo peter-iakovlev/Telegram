@@ -2994,4 +2994,14 @@ static id mediaIdForMessage(TGMessage *message)
     }];
 }
 
+- (id)acquireAudioRecordingActivityHolder
+{
+    return [[TGTelegraphInstance activityManagerForConversationId:_conversationId] addActivityWithType:@"recordingAudio" priority:0];
+}
+
+- (id)acquireLocationPickingActivityHolder
+{
+    return [[TGTelegraphInstance activityManagerForConversationId:_conversationId] addActivityWithType:@"pickingLocation" priority:0];
+}
+
 @end

@@ -11,16 +11,14 @@
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
 		<key>7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C</key>
-		<string>ssh://github.com/iakovlev-peter/MtProtoKit.git</string>
+		<string>github.com:iakovlev-peter/MtProtoKit.git</string>
 		<key>9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B</key>
-		<string>ssh://bitbucket.org/iakovlevpeterp/telegramprivate.git</string>
+		<string>bitbucket.org:iakovlevpeterp/telegramprivate.git</string>
 		<key>F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3</key>
 		<string>https://github.com/facebook/pop.git</string>
-		<key>FF65A8AFC255E5913A7BCDE7153CC9C006153EAE</key>
-		<string>https://github.com/skywinder/ActionSheetPicker-3.0.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>Telegraph.xcodeproj/project.xcworkspace</string>
+	<string>Telegraph.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C</key>
@@ -28,26 +26,16 @@
 		<key>9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B</key>
 		<string>../..</string>
 		<key>F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3</key>
-		<string>../../thirdparty/pop</string>
-		<key>FF65A8AFC255E5913A7BCDE7153CC9C006153EAE</key>
-		<string>../../thirdparty/ActionSheetPicker/</string>
+		<string>../..thirdparty/pop/</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
-	<string>ssh://bitbucket.org/iakovlevpeterp/telegramprivate.git</string>
+	<string>bitbucket.org:iakovlevpeterp/telegramprivate.git</string>
 	<key>IDESourceControlProjectVersion</key>
 	<integer>111</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>
 	<string>9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B</string>
 	<key>IDESourceControlProjectWCConfigurations</key>
 	<array>
-		<dict>
-			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
-			<string>public.vcs.git</string>
-			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>FF65A8AFC255E5913A7BCDE7153CC9C006153EAE</string>
-			<key>IDESourceControlWCCName</key>
-			<string>ActionSheetPicker</string>
-		</dict>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>

@@ -287,7 +287,7 @@
 "Conversation.LinkDialogCopy" = "Copiar";
 "Conversation.EditDelete" = "Borrar";
 "Conversation.EditForward" = "Reenviar";
-"Conversation.ForwardToPrefix" = "¿Reenviar a ";
+"Conversation.ForwardToFormat" = "¿Reenviar a %@";
 "Conversation.ForwardTitle" = "Reenviar";
 "Conversation.ForwardChats" = "Chats";
 "Conversation.ForwardContacts" = "Contactos";
@@ -630,7 +630,7 @@
 "BlockedUsers.SelectUserTitle" = "Bloquear usuario";
 "BlockedUsers.AlreadyBlocked" = "Este usuario ya se encuentra bloqueado";
 "BlockedUsers.BlockUser" = "Bloquear usuario";
-"BlockedUsers.BlockPrefix" = "Bloquear a";
+"BlockedUsers.BlockFormat" = "Bloquear a %@";
 "BlockedUsers.BlockTitle" = "Bloquear";
 "BlockedUsers.LeavePrefix" = "Dejar";
 "BlockedUsers.Info" = "No recibirás mensajes de las personas en tu lista de bloqueados.";

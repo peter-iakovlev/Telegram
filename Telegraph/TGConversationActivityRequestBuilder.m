@@ -6,6 +6,8 @@
 
 #import "TGTelegraph.h"
 
+#import "TL/TLMetaScheme.h"
+
 @implementation TGConversationActivityRequestBuilder
 
 + (NSString *)genericPath
@@ -24,7 +26,86 @@
         if ([options[@"encryptedConversationId"] longLongValue] != 0)
             self.cancelToken = [TGTelegraphInstance doReportEncryptedConversationTypingActivity:[options[@"encryptedConversationId"] longLongValue] accessHash:[options[@"accessHash"] longLongValue] actor:self];
         else
-            self.cancelToken = [TGTelegraphInstance doReportConversationTypingActivity:conversationId requestBuilder:self];
+        {
+            self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId activity:[[TLSendMessageAction$sendMessageTypingAction alloc] init] actor:self];
+        }
+    }
+    else if ([activity isEqualToString:@"recordingAudio"])
+    {
+        if ([options[@"encryptedConversationId"] longLongValue] != 0)
+        {
+            
+        }
+        else
+        {
+            self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId activity:[[TLSendMessageAction$sendMessageRecordAudioAction alloc] init] actor:self];
+        }
+    }
+    else if ([activity isEqualToString:@"uploadingAudio"])
+    {
+        if ([options[@"encryptedConversationId"] longLongValue] != 0)
+        {
+            
+        }
+        else
+        {
+            self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId activity:[[TLSendMessageAction$sendMessageUploadAudioAction alloc] init] actor:self];
+        }
+    }
+    else if ([activity isEqualToString:@"uploadingPhoto"])
+    {
+        if ([options[@"encryptedConversationId"] longLongValue] != 0)
+        {
+            
+        }
+        else
+        {
+            self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId activity:[[TLSendMessageAction$sendMessageUploadPhotoAction alloc] init] actor:self];
+        }
+    }
+    else if ([activity isEqualToString:@"recordingVideo"])
+    {
+        if ([options[@"encryptedConversationId"] longLongValue] != 0)
+        {
+            
+        }
+        else
+        {
+            self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId activity:[[TLSendMessageAction$sendMessageRecordVideoAction alloc] init] actor:self];
+        }
+    }
+    else if ([activity isEqualToString:@"uploadingVideo"])
+    {
+        if ([options[@"encryptedConversationId"] longLongValue] != 0)
+        {
+            
+        }
+        else
+        {
+            self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId activity:[[TLSendMessageAction$sendMessageUploadVideoAction alloc] init] actor:self];
+        }
+    }
+    else if ([activity isEqualToString:@"uploadingDocument"])
+    {
+        if ([options[@"encryptedConversationId"] longLongValue] != 0)
+        {
+            
+        }
+        else
+        {
+            self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId activity:[[TLSendMessageAction$sendMessageUploadDocumentAction alloc] init] actor:self];
+        }
+    }
+    else if ([activity isEqualToString:@"pickingLocation"])
+    {
+        if ([options[@"encryptedConversationId"] longLongValue] != 0)
+        {
+            
+        }
+        else
+        {
+            self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId activity:[[TLSendMessageAction$sendMessageGeoLocationAction alloc] init] actor:self];
+        }
     }
     else
     {

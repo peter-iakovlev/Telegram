@@ -21,7 +21,7 @@
 
 - (int)layerVersion
 {
-    return 8;
+    return 17;
 }
 
 - (int32_t)TLconstructorSignature
@@ -55,7 +55,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xb04f2510;
+    return (int32_t)0xeed884c6;
 }
 
 - (int32_t)TLconstructorName
@@ -69,6 +69,7 @@
     object.peer = metaObject->getObject((int32_t)0x9344c37d);
     object.max_id = metaObject->getInt32((int32_t)0xe2c00ace);
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
+    object.read_contents = metaObject->getBool((int32_t)0xe3a5f15f);
     return object;
 }
 
@@ -91,6 +92,12 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.offset;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xfc56269, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveBool;
+        value.primitive.boolValue = self.read_contents;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe3a5f15f, value));
     }
 }
 

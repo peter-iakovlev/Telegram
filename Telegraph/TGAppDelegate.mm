@@ -81,6 +81,8 @@
 
 #import "TGModernGalleryModel.h"
 
+#import "TGConversationAddMessagesActor.h"
+
 #import <pthread.h>
 
 #import <objc/runtime.h>
@@ -435,7 +437,6 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                 }
                 
                 printStartupCheckpoint(12);
-                
             }
             else
             {
@@ -1574,6 +1575,37 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
             }
         }
     }
+}
+
+- (void)_generateUpdateNetworkConfigurationMessage
+{
+    [ActionStageInstance() dispatchOnStageQueue:^
+    {
+        TGUser *selfUser = [TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId];
+        if (selfUser != nil)
+        {
+            int uid = [TGTelegraphInstance createServiceUserIfNeeded];
+            
+            TGMessage *message = [[TGMessage alloc] init];
+            message.mid = [[[TGDatabaseInstance() generateLocalMids:1] objectAtIndex:0] intValue];
+            
+            message.fromUid = uid;
+            message.toUid = TGTelegraphInstance.clientUserId;
+            message.date = (int)[[TGTelegramNetworking instance] approximateRemoteTime];
+            message.unread = false;
+            message.outgoing = false;
+            message.cid = uid;
+            
+            NSString *displayName = selfUser.firstName;
+            if (displayName.length == 0)
+                displayName = selfUser.lastName;
+            
+            message.text = TGLocalized(@"Service.NetworkConfigurationUpdatedMessage");
+            
+            static int messageActionId = 1000000;
+            [[[TGConversationAddMessagesActor alloc] initWithPath:[NSString stringWithFormat:@"/tg/addmessage/(%dact3)", messageActionId++]] execute:[NSDictionary dictionaryWithObjectsAndKeys:[[NSArray alloc] initWithObjects:message, nil], @"messages", nil]];
+        }
+    }];
 }
 
 - (NSUInteger)application:(UIApplication *)__unused application supportedInterfaceOrientationsForWindow:(UIWindow *)__unused window

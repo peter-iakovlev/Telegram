@@ -287,7 +287,7 @@ template<typename T>
 static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
 {
     int64_t fromUid = concreteMessage.from_id;
-    bool outgoing = concreteMessage.out;
+    bool outgoing = concreteMessage.flags & 2;
     
     if (!outgoing)
         outFromUid = (int)fromUid;
@@ -449,7 +449,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                 
                 TLMessage *message = newMessage.message;
                 
-                if (updateSet.messageDate != 0 && updateSet.messageDate - date < 4 && ([message isKindOfClass:[TLMessage$message class]] || [message isKindOfClass:[TLMessage$messageService class]]) && !((TLMessage$message *)message).out)
+                if (updateSet.messageDate != 0 && updateSet.messageDate - date < 4 && ([message isKindOfClass:[TLMessage$message class]] || [message isKindOfClass:[TLMessage$messageService class]]) && !(((TLMessage$message *)message).flags & 2))
                     [messagesForLocalNotification addObject:newMessage.message];
                 else
                 {

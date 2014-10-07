@@ -30,7 +30,7 @@ typedef enum {
 
 @interface TGGroupModernConversationCompanion ()
 {
-    NSArray *_initialTypingUserIds;
+    NSDictionary *_initialUserActivities;
     
     TGConversation *_conversation;
     
@@ -45,13 +45,13 @@ typedef enum {
 
 @implementation TGGroupModernConversationCompanion
 
-- (instancetype)initWithConversationId:(int64_t)conversationId conversation:(TGConversation *)conversation typingUserIds:(NSArray *)typingUserIds mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
+- (instancetype)initWithConversationId:(int64_t)conversationId conversation:(TGConversation *)conversation userActivities:(NSDictionary *)userActivities mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
 {
     self = [super initWithConversationId:conversationId mayHaveUnreadMessages:mayHaveUnreadMessages];
     if (self != nil)
     {
         _conversation = conversation;
-        _initialTypingUserIds = typingUserIds;
+        _initialUserActivities = userActivities;
         
         _everyMessageNeedsAuthor = true;
     }
@@ -110,13 +110,13 @@ typedef enum {
     }
 }
 
-- (NSString *)stringForTypingUids:(NSArray *)typingUids
+- (NSString *)stringForUserActivities:(NSDictionary *)activities
 {
-    if (typingUids.count != 0)
+    if (activities.count != 0)
     {
         NSMutableString *typingString = [[NSMutableString alloc] init];
         
-        for (NSNumber *nUid in typingUids)
+        for (NSNumber *nUid in activities)
         {
             TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
             if (user != nil)
@@ -158,8 +158,8 @@ typedef enum {
     }
     [self _setStatus:[self stringForMemberCount:_conversation.chatParticipantCount onlineCount:onlineCount participationStatus:[self participationStatusForConversation:_conversation]] accentColored:false allowAnimation:false];
     
-    if (_initialTypingUserIds.count != 0)
-        [self _setTypingStatus:[self stringForTypingUids:_initialTypingUserIds]];
+    if (_initialUserActivities.count != 0)
+        [self _setTypingStatus:[self stringForUserActivities:_initialUserActivities]];
     
     [self updatePatricipationStatus:[self participationStatusForConversation:_conversation]];
 }
@@ -457,9 +457,9 @@ typedef enum {
     }
     else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", _conversationId]])
     {
-        NSArray *typingUsers = ((SGraphObjectNode *)resource).object;
-        if (typingUsers.count != 0)
-            [self _setTypingStatus:[self stringForTypingUids:typingUsers]];
+        NSDictionary *userActivities = ((SGraphObjectNode *)resource).object;
+        if (userActivities.count != 0)
+            [self _setTypingStatus:[self stringForUserActivities:userActivities]];
         else
             [self _setTypingStatus:nil];
     }

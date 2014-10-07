@@ -26,6 +26,8 @@
 
 #import "TGUser+Telegraph.h"
 
+#import "NSObject+TGLock.h"
+
 #import "TGLogoutRequestBuilder.h"
 #import "TGSendCodeRequestBuilder.h"
 #import "TGSignInRequestBuilder.h"
@@ -80,7 +82,6 @@
 #import "TGConversationDeleteMessagesActor.h"
 #import "TGConversationDeleteActor.h"
 #import "TGConversationClearHistoryActor.h"
-#import "TGConversationUsersTypingActor.h"
 
 #import "TGTimelineHistoryRequestBuilder.h"
 #import "TGTimelineUploadPhotoRequestBuilder.h"
@@ -147,6 +148,28 @@
 
 #include <set>
 #include <map>
+
+@interface TGTypingRecord : NSObject
+
+@property (nonatomic) NSTimeInterval date;
+@property (nonatomic) NSString *type;
+
+@end
+
+@implementation TGTypingRecord
+
+- (instancetype)initWithDate:(NSTimeInterval)date type:(NSString *)type
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _date = date;
+        _type = type;
+    }
+    return self;
+}
+
+@end
 
 static CGSize extractSize(NSString *string, NSString *prefix)
 {
@@ -271,6 +294,9 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     std::map<int, int> _userPresenceExpiration;
     
     std::map<int, int> _userLinksToDispatch;
+    
+    TG_SYNCHRONIZED_DEFINE(_activityManagerByConversationId);
+    NSMutableDictionary *_activityManagerByConversationId;
 }
 
 @property (nonatomic, strong) NSMutableArray *runningRequests;
@@ -287,8 +313,8 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 @property (nonatomic, strong) TGTimer *userPresenceExpirationTimer;
 
 @property (nonatomic, strong) TGTimer *usersTypingServiceTimer;
-@property (nonatomic, strong) NSMutableDictionary *typingUsersByConversation;
-@property (nonatomic, strong) NSMutableDictionary *typingUsersByConversationMainThread;
+@property (nonatomic, strong) NSMutableDictionary *typingUserRecordsByConversation;
+@property (nonatomic, strong) NSMutableDictionary *typingUserRecordsByConversationMainThread;
 
 @end
 
@@ -300,6 +326,8 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     if (self != nil)
     {
         TGTelegraphInstance = self;
+        
+        TG_SYNCHRONIZED_INIT(_activityManagerByConversationId);
         
 #if !TGUseModernNetworking
         [TGSession instance].delegate = self;
@@ -392,7 +420,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateBackground)
                 [_updateRelativeTimestampsTimer start];
             
-            _typingUsersByConversation = [[NSMutableDictionary alloc] init];
+            _typingUserRecordsByConversation = [[NSMutableDictionary alloc] init];
             _usersTypingServiceTimer = [[TGTimer alloc] initWithTimeout:1.0 repeat:false completion:^
             {
                 [self updateUserTypingStatuses];
@@ -476,7 +504,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             [ASActor registerActorClass:[TGConversationDeleteMessagesActor class]];
             [ASActor registerActorClass:[TGConversationDeleteActor class]];
             [ASActor registerActorClass:[TGConversationClearHistoryActor class]];
-            [ASActor registerActorClass:[TGConversationUsersTypingActor class]];
             
             [ASActor registerActorClass:[TGProfilePhotoListActor class]];
             [ASActor registerActorClass:[TGDeleteProfilePhotoActor class]];
@@ -828,6 +855,26 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     return self;
 }
 
+- (TGModernConversationActivityManager *)activityManagerForConversationId:(int64_t)conversationId
+{
+    TG_SYNCHRONIZED_BEGIN(_activityManagerByConversationId);
+    if (_activityManagerByConversationId == nil)
+        _activityManagerByConversationId = [[NSMutableDictionary alloc] init];
+    TGModernConversationActivityManager *activityManager = _activityManagerByConversationId[@(conversationId)];
+    if (activityManager == nil)
+    {
+        activityManager = [[TGModernConversationActivityManager alloc] init];
+        activityManager.sendActivityUpdate = ^(NSString *type)
+        {
+            [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/activity/(%@)", conversationId, type] options:nil watcher:self];
+        };
+        _activityManagerByConversationId[@(conversationId)] = activityManager;
+    }
+    TG_SYNCHRONIZED_END(_activityManagerByConversationId);
+    
+    return activityManager;
+}
+
 - (void)doLogout
 {
     [ActionStageInstance() dispatchOnStageQueue:^
@@ -854,6 +901,10 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         _userLinksToDispatch.clear();
         _userDataToDispatch.clear();
         _userPresenceToDispatch.clear();
+        
+        TG_SYNCHRONIZED_BEGIN(_activityManagerByConversationId);
+        [_activityManagerByConversationId removeAllObjects];
+        TG_SYNCHRONIZED_END(_activityManagerByConversationId);
         
         dispatch_async(dispatch_get_main_queue(), ^
         {
@@ -1168,64 +1219,64 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         
         __block NSTimeInterval nextTypingUpdate = DBL_MAX;
         
-        [_typingUsersByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSMutableDictionary *typingUsers, __unused BOOL *stop)
+        [_typingUserRecordsByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSMutableDictionary *typingUserRecords, __unused BOOL *stop)
         {
             int64_t conversationId = [nConversationId longLongValue];
             
             std::set<int> usersStoppedTyping;
             std::set<int> *pUsersStoppedTyping = &usersStoppedTyping;
             
-            [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, NSNumber *startedTypingDate, __unused BOOL *stop)
+            [typingUserRecords enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, TGTypingRecord *record, __unused BOOL *stop)
             {
-                if (ABS(currentTime - [startedTypingDate doubleValue]) > 6.0)
+                if (ABS(currentTime - record.date) > 6.0)
                 {
                     pUsersStoppedTyping->insert([nUid intValue]);
                 }
-                else if ([startedTypingDate longLongValue] + 6.0 < nextTypingUpdate)
-                    nextTypingUpdate = [startedTypingDate doubleValue] + 6.0;
+                else if (record.date + 6.0 < nextTypingUpdate)
+                    nextTypingUpdate = record.date + 6.0;
             }];
             
             if (!usersStoppedTyping.empty())
             {
                 for (std::set<int>::iterator it = usersStoppedTyping.begin(); it != usersStoppedTyping.end(); it++)
                 {
-                    [typingUsers removeObjectForKey:[NSNumber numberWithInt:*it]];
+                    [typingUserRecords removeObjectForKey:[NSNumber numberWithInt:*it]];
                 }
                 
-                NSMutableArray *typingUsersArray = [[NSMutableArray alloc] init];
-                [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, __unused id obj, __unused BOOL *stop)
+                NSMutableDictionary *typingUsersActivitiesDict = [[NSMutableDictionary alloc] init];
+                [typingUserRecords enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, TGTypingRecord *record, __unused BOOL *stop)
                 {
-                    [typingUsersArray addObject:nUid];
+                    typingUsersActivitiesDict[nUid] = record.type;
                 }];
                 
-                if (typingUsers.count == 0)
+                if (typingUserRecords.count == 0)
                     pConversationsWithoutTypingUsers->insert(conversationId);
                 
-                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersArray]];
-                [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersArray, @"typingUsers", nil]]];
+                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersActivitiesDict]];
+                [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersActivitiesDict, @"typingUsers", nil]]];
             }
         }];
         
         for (std::set<int64_t>::iterator it = conversationsWithoutTypingUsers.begin(); it != conversationsWithoutTypingUsers.end(); it++)
         {
-            [_typingUsersByConversation removeObjectForKey:[NSNumber numberWithLongLong:*it]];
+            [_typingUserRecordsByConversation removeObjectForKey:[NSNumber numberWithLongLong:*it]];
         }
         
         NSMutableDictionary *dictForMainThread = [[NSMutableDictionary alloc] init];
-        [_typingUsersByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSMutableDictionary *typingUsers, __unused BOOL *stop)
+        [_typingUserRecordsByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSMutableDictionary *typingUsers, __unused BOOL *stop)
         {
-            NSMutableArray *array = [[NSMutableArray alloc] initWithCapacity:typingUsers.count];
-            for (NSNumber *nUid in typingUsers)
+            NSMutableDictionary *typingUsersActivitiesDict = [[NSMutableDictionary alloc] init];
+            [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, TGTypingRecord *record, __unused BOOL *stop)
             {
-                [array addObject:nUid];
-            }
+                typingUsersActivitiesDict[nUid] = record.type;
+            }];
             
-            dictForMainThread[nConversationId] = array;
+            dictForMainThread[nConversationId] = typingUsersActivitiesDict;
         }];
         
         TGDispatchOnMainThread(^
         {
-            _typingUsersByConversationMainThread = dictForMainThread;
+            _typingUserRecordsByConversationMainThread = dictForMainThread;
         });
         
         if (nextTypingUpdate < DBL_MAX - DBL_EPSILON && nextTypingUpdate - CFAbsoluteTimeGetCurrent() > 0)
@@ -1235,67 +1286,67 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     }];
 }
 
-- (void)dispatchUserTyping:(int)uid inConversation:(int64_t)conversationId typing:(bool)typing
+- (void)dispatchUserActivity:(int)uid inConversation:(int64_t)conversationId type:(NSString *)type
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
         NSNumber *key = [[NSNumber alloc] initWithLongLong:conversationId];
-        NSMutableDictionary *typingUsers = [_typingUsersByConversation objectForKey:key];
+        NSMutableDictionary *typingUserRecords = [_typingUserRecordsByConversation objectForKey:key];
         NSNumber *userKey = [[NSNumber alloc] initWithInt:uid];
         
-        if (typing)
+        if (type != nil)
         {
-            if (typingUsers == nil)
+            if (typingUserRecords == nil)
             {
-                typingUsers = [[NSMutableDictionary alloc] init];
-                [_typingUsersByConversation setObject:typingUsers forKey:key];
+                typingUserRecords = [[NSMutableDictionary alloc] init];
+                [_typingUserRecordsByConversation setObject:typingUserRecords forKey:key];
             }
             
             bool updated = false;
-            if ([typingUsers objectForKey:userKey] == nil)
+            if ([typingUserRecords objectForKey:userKey] == nil || !TGStringCompare(((TGTypingRecord *)typingUserRecords[userKey]).type, type))
                 updated = true;
             
-            [typingUsers setObject:[NSNumber numberWithDouble:CFAbsoluteTimeGetCurrent()] forKey:userKey];
+            [typingUserRecords setObject:[[TGTypingRecord alloc] initWithDate:CFAbsoluteTimeGetCurrent() type:type] forKey:userKey];
             
             if (updated)
             {
-                NSMutableArray *typingUsersArray = [[NSMutableArray alloc] init];
-                [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, __unused id obj, __unused BOOL *stop)
+                NSMutableDictionary *typingUsersActivitiesDict = [[NSMutableDictionary alloc] init];
+                [typingUserRecords enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, TGTypingRecord *record, __unused BOOL *stop)
                 {
-                    [typingUsersArray addObject:nUid];
+                    typingUsersActivitiesDict[nUid] = record.type;
                 }];
                 
-                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersArray]];
-                [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersArray, @"typingUsers", nil]]];
+                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersActivitiesDict]];
+                [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersActivitiesDict, @"typingUsers", nil]]];
             }
         }
         else
         {
-            if (typingUsers != nil && [typingUsers objectForKey:userKey] != nil)
+            if (typingUserRecords != nil && [typingUserRecords objectForKey:userKey] != nil)
             {
-                [typingUsers removeObjectForKey:userKey];
+                [typingUserRecords removeObjectForKey:userKey];
             }
             
-            NSMutableArray *typingUsersArray = [[NSMutableArray alloc] init];
-            [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, __unused id obj, __unused BOOL *stop)
+            NSMutableDictionary *typingUsersActivitiesDict = [[NSMutableDictionary alloc] init];
+            [typingUserRecords enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, TGTypingRecord *record, __unused BOOL *stop)
             {
-                [typingUsersArray addObject:nUid];
+                typingUsersActivitiesDict[nUid] = record.type;
             }];
             
-            [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersArray]];
-            [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersArray, @"typingUsers", nil]]];
+            [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersActivitiesDict]];
+            [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersActivitiesDict, @"typingUsers", nil]]];
             
-            if (typingUsers.count == 0)
-                [_typingUsersByConversation removeObjectForKey:key];
+            if (typingUserRecords.count == 0)
+                [_typingUserRecordsByConversation removeObjectForKey:key];
         }
         
         [self updateUserTypingStatuses];
     }];
 }
 
-- (NSArray *)typingUsersInConversationFromMainThread:(int64_t)conversationId
+- (NSDictionary *)typingUserActivitiesInConversationFromMainThread:(int64_t)conversationId
 {
-    return _typingUsersByConversationMainThread[@(conversationId)];
+    return _typingUserRecordsByConversationMainThread[@(conversationId)];
 }
 
 - (void)updatePresenceNow
@@ -1361,24 +1412,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             [ActionStageInstance() removeWatcher:self fromPath:@"/tg/liveNearby"];
         }
     }];
-}
-
-- (NSArray *)userIdsTypingInConversation:(int64_t)conversationId
-{
-    NSNumber *key = [[NSNumber alloc] initWithLongLong:conversationId];
-    NSMutableDictionary *typingUsers = [_typingUsersByConversation objectForKey:key];
-    if (typingUsers == nil)
-    {
-        return [[NSArray alloc] init];
-    }
-    
-    NSMutableArray *typingUsersArray = [[NSMutableArray alloc] init];
-    [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, __unused id obj, __unused BOOL *stop)
-    {
-        [typingUsersArray addObject:nUid];
-    }];
-    
-    return typingUsersArray;
 }
 
 - (void)dispatchUserLinkChanged:(int)uid link:(int)link
@@ -1516,6 +1549,19 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             
             [TGDatabaseInstance() processAndScheduleSelfDestruct];
             [TGDatabaseInstance() processAndScheduleMediaCleanup];
+            
+            if (iosMajorVersion() >= 7 && user.phoneNumber.length != 0)
+            {
+                TGDispatchOnMainThread(^
+                {
+                    NSUbiquitousKeyValueStore *store = [NSUbiquitousKeyValueStore defaultStore];
+                    if (!TGStringCompare(user.phoneNumber, [store objectForKey:@"telegram_currentPhoneNumber"]))
+                    {
+                        [store setObject:user.phoneNumber forKey:@"telegram_currentPhoneNumber"];
+                        [store synchronize];
+                    }
+                });
+            }
         }
     }];
 }
@@ -2904,6 +2950,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     readHistory.peer = [self createInputPeerForConversation:conversationId];
     readHistory.max_id = maxMid;
     readHistory.offset = offset;
+    readHistory.read_contents = true;
     
     return [[TGTelegramNetworking instance] performRpc:readHistory completionBlock:^(TLmessages_AffectedHistory *result, __unused int64_t responseTime, TLError *error)
     {
@@ -2936,21 +2983,21 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassHidesActivityIndicator];
 }
 
-- (NSObject *)doReportConversationTypingActivity:(int64_t)conversationId requestBuilder:(TGConversationActivityRequestBuilder *)requestActor
+- (NSObject *)doReportConversationActivity:(int64_t)conversationId activity:(id)activity actor:(TGConversationActivityRequestBuilder *)actor
 {
     TLRPCmessages_setTyping$messages_setTyping *setTyping = [[TLRPCmessages_setTyping$messages_setTyping alloc] init];
     setTyping.peer = [self createInputPeerForConversation:conversationId];
-    setTyping.typing = true;
+    setTyping.action = activity;
     
     return [[TGTelegramNetworking instance] performRpc:setTyping completionBlock:^(__unused id<TLObject> result, __unused int64_t responseTime, TLError *error)
     {
         if (error == nil)
         {
-            [requestActor reportTypingActivitySuccess];
+            [actor reportTypingActivitySuccess];
         }
         else
         {
-            [requestActor reportTypingActivityFailed];
+            [actor reportTypingActivityFailed];
         }
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassHidesActivityIndicator | TGRequestClassFailOnServerErrors];
 }

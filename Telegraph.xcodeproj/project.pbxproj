@@ -449,7 +449,6 @@
 		93A8F79017F9981100B7D99E /* DialogListEncryptedChatIcon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 93A8F78E17F9981100B7D99E /* DialogListEncryptedChatIcon@2x.png */; };
 		93A8F79817F9BFE700B7D99E /* TGEncryptedChatResponseActor.m in Sources */ = {isa = PBXBuildFile; fileRef = 93A8F79717F9BFE700B7D99E /* TGEncryptedChatResponseActor.m */; };
 		93AB29841612F20600BC45EF /* TGImageDownloadActor.m in Sources */ = {isa = PBXBuildFile; fileRef = 93AB29831612F20600BC45EF /* TGImageDownloadActor.m */; };
-		93AB299416131D1800BC45EF /* TGConversationUsersTypingActor.m in Sources */ = {isa = PBXBuildFile; fileRef = 93AB299316131D1800BC45EF /* TGConversationUsersTypingActor.m */; };
 		93AD039C16A1CCEC005D4575 /* navbar_big_progress_0@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 93AD038316A1CCEC005D4575 /* navbar_big_progress_0@2x.png */; };
 		93AD039D16A1CCEC005D4575 /* navbar_big_progress_10@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 93AD038416A1CCEC005D4575 /* navbar_big_progress_10@2x.png */; };
 		93AD039E16A1CCEC005D4575 /* navbar_big_progress_11@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 93AD038516A1CCEC005D4575 /* navbar_big_progress_11@2x.png */; };
@@ -690,6 +689,15 @@
 		D01526DD1902111B00656312 /* TGImageBlur.m in Sources */ = {isa = PBXBuildFile; fileRef = D01526DC1902111B00656312 /* TGImageBlur.m */; };
 		D01D7D3E19DDF8C200955BDE /* TGYoutubeMessageViewModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D3D19DDF8C200955BDE /* TGYoutubeMessageViewModel.m */; };
 		D01D7D4819DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D4719DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.m */; };
+		D01D7D4C19DE01F400955BDE /* TGExternalVideoGalleryModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D4B19DE01F400955BDE /* TGExternalVideoGalleryModel.m */; };
+		D01D7D5319DE04AD00955BDE /* TLInvokeWithLayer17.mm in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D4E19DE04AD00955BDE /* TLInvokeWithLayer17.mm */; };
+		D01D7D5419DE04AD00955BDE /* TLRPCmessages_readMessageContents.mm in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D5019DE04AD00955BDE /* TLRPCmessages_readMessageContents.mm */; };
+		D01D7D5519DE04AD00955BDE /* TLSendMessageAction.mm in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D5219DE04AD00955BDE /* TLSendMessageAction.mm */; };
+		D01D7D5919DE0BF500955BDE /* TGModernConversationActivityManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D5819DE0BF500955BDE /* TGModernConversationActivityManager.m */; };
+		D01D7D5C19DE0C0B00955BDE /* TGModernConversationActivity.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D5B19DE0C0B00955BDE /* TGModernConversationActivity.m */; };
+		D01D7D6219DECE2800955BDE /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D01D7D5E19DECE2800955BDE /* InfoPlist.strings */; };
+		D01D7D6319DECE2800955BDE /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D01D7D6019DECE2800955BDE /* Localizable.strings */; };
+		D01D7D6719DEE85900955BDE /* TGModernConversationTitleActivityIndicator.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D6619DEE85900955BDE /* TGModernConversationTitleActivityIndicator.m */; };
 		D01E9DCA15B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm in Sources */ = {isa = PBXBuildFile; fileRef = D01E9DC915B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm */; };
 		D01FF83D1965A1D800EA6FFB /* TGVideoPreviewView.m in Sources */ = {isa = PBXBuildFile; fileRef = D01FF83C1965A1D800EA6FFB /* TGVideoPreviewView.m */; };
 		D01FF8401966D3F200EA6FFB /* TGVibrantActionSheet.m in Sources */ = {isa = PBXBuildFile; fileRef = D01FF83F1966D3F200EA6FFB /* TGVibrantActionSheet.m */; };
@@ -1158,7 +1166,6 @@
 		D09840C519CB9BE200CE5BB0 /* TLInputUser.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0983EA919CB9BE000CE5BB0 /* TLInputUser.mm */; };
 		D09840C619CB9BE200CE5BB0 /* TLInputVideo.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0983EAB19CB9BE000CE5BB0 /* TLInputVideo.mm */; };
 		D09840C719CB9BE200CE5BB0 /* TLInvokeAfterMsg.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0983EAD19CB9BE000CE5BB0 /* TLInvokeAfterMsg.mm */; };
-		D09840C819CB9BE200CE5BB0 /* TLInvokeWithLayer15.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0983EAF19CB9BE000CE5BB0 /* TLInvokeWithLayer15.mm */; };
 		D09840C919CB9BE200CE5BB0 /* TLMessage.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0983EB119CB9BE000CE5BB0 /* TLMessage.mm */; };
 		D09840CA19CB9BE200CE5BB0 /* TLMessageAction.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0983EB319CB9BE000CE5BB0 /* TLMessageAction.mm */; };
 		D09840CB19CB9BE200CE5BB0 /* TLMessageMedia.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0983EB519CB9BE000CE5BB0 /* TLMessageMedia.mm */; };
@@ -2289,8 +2296,6 @@
 		93A8F79717F9BFE700B7D99E /* TGEncryptedChatResponseActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGEncryptedChatResponseActor.m; sourceTree = "<group>"; };
 		93AB29821612F20600BC45EF /* TGImageDownloadActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGImageDownloadActor.h; sourceTree = "<group>"; };
 		93AB29831612F20600BC45EF /* TGImageDownloadActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGImageDownloadActor.m; sourceTree = "<group>"; };
-		93AB299216131D1800BC45EF /* TGConversationUsersTypingActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGConversationUsersTypingActor.h; sourceTree = "<group>"; };
-		93AB299316131D1800BC45EF /* TGConversationUsersTypingActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGConversationUsersTypingActor.m; sourceTree = "<group>"; };
 		93AD038316A1CCEC005D4575 /* navbar_big_progress_0@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "navbar_big_progress_0@2x.png"; sourceTree = "<group>"; };
 		93AD038416A1CCEC005D4575 /* navbar_big_progress_10@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "navbar_big_progress_10@2x.png"; sourceTree = "<group>"; };
 		93AD038516A1CCEC005D4575 /* navbar_big_progress_11@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "navbar_big_progress_11@2x.png"; sourceTree = "<group>"; };
@@ -2634,6 +2639,23 @@
 		D01D7D3D19DDF8C200955BDE /* TGYoutubeMessageViewModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGYoutubeMessageViewModel.m; sourceTree = "<group>"; };
 		D01D7D4619DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGYoutubeThumbnailDataSource.h; sourceTree = "<group>"; };
 		D01D7D4719DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGYoutubeThumbnailDataSource.m; sourceTree = "<group>"; };
+		D01D7D4A19DE01F400955BDE /* TGExternalVideoGalleryModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGExternalVideoGalleryModel.h; sourceTree = "<group>"; };
+		D01D7D4B19DE01F400955BDE /* TGExternalVideoGalleryModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGExternalVideoGalleryModel.m; sourceTree = "<group>"; };
+		D01D7D4D19DE04AD00955BDE /* TLInvokeWithLayer17.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TLInvokeWithLayer17.h; sourceTree = "<group>"; };
+		D01D7D4E19DE04AD00955BDE /* TLInvokeWithLayer17.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TLInvokeWithLayer17.mm; sourceTree = "<group>"; };
+		D01D7D4F19DE04AD00955BDE /* TLRPCmessages_readMessageContents.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TLRPCmessages_readMessageContents.h; sourceTree = "<group>"; };
+		D01D7D5019DE04AD00955BDE /* TLRPCmessages_readMessageContents.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TLRPCmessages_readMessageContents.mm; sourceTree = "<group>"; };
+		D01D7D5119DE04AD00955BDE /* TLSendMessageAction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TLSendMessageAction.h; sourceTree = "<group>"; };
+		D01D7D5219DE04AD00955BDE /* TLSendMessageAction.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TLSendMessageAction.mm; sourceTree = "<group>"; };
+		D01D7D5719DE0BF500955BDE /* TGModernConversationActivityManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernConversationActivityManager.h; sourceTree = "<group>"; };
+		D01D7D5819DE0BF500955BDE /* TGModernConversationActivityManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernConversationActivityManager.m; sourceTree = "<group>"; };
+		D01D7D5A19DE0C0B00955BDE /* TGModernConversationActivity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernConversationActivity.h; sourceTree = "<group>"; };
+		D01D7D5B19DE0C0B00955BDE /* TGModernConversationActivity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernConversationActivity.m; sourceTree = "<group>"; };
+		D01D7D5F19DECE2800955BDE /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = InfoPlist.strings; sourceTree = "<group>"; };
+		D01D7D6119DECE2800955BDE /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = Localizable.strings; sourceTree = "<group>"; };
+		D01D7D6419DEE1A800955BDE /* Telegram.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Telegram.entitlements; sourceTree = "<group>"; };
+		D01D7D6519DEE85900955BDE /* TGModernConversationTitleActivityIndicator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernConversationTitleActivityIndicator.h; sourceTree = "<group>"; };
+		D01D7D6619DEE85900955BDE /* TGModernConversationTitleActivityIndicator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernConversationTitleActivityIndicator.m; sourceTree = "<group>"; };
 		D01E9DC815B8D7A700C624F2 /* TGTelegraphDialogListCompanion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTelegraphDialogListCompanion.h; sourceTree = "<group>"; };
 		D01E9DC915B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGTelegraphDialogListCompanion.mm; sourceTree = "<group>"; };
 		D01FF83B1965A1D800EA6FFB /* TGVideoPreviewView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGVideoPreviewView.h; sourceTree = "<group>"; };
@@ -3555,8 +3577,6 @@
 		D0983EAB19CB9BE000CE5BB0 /* TLInputVideo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TLInputVideo.mm; sourceTree = "<group>"; };
 		D0983EAC19CB9BE000CE5BB0 /* TLInvokeAfterMsg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TLInvokeAfterMsg.h; sourceTree = "<group>"; };
 		D0983EAD19CB9BE000CE5BB0 /* TLInvokeAfterMsg.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TLInvokeAfterMsg.mm; sourceTree = "<group>"; };
-		D0983EAE19CB9BE000CE5BB0 /* TLInvokeWithLayer15.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TLInvokeWithLayer15.h; sourceTree = "<group>"; };
-		D0983EAF19CB9BE000CE5BB0 /* TLInvokeWithLayer15.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TLInvokeWithLayer15.mm; sourceTree = "<group>"; };
 		D0983EB019CB9BE000CE5BB0 /* TLMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TLMessage.h; sourceTree = "<group>"; };
 		D0983EB119CB9BE000CE5BB0 /* TLMessage.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TLMessage.mm; sourceTree = "<group>"; };
 		D0983EB219CB9BE000CE5BB0 /* TLMessageAction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TLMessageAction.h; sourceTree = "<group>"; };
@@ -4936,6 +4956,7 @@
 		9351565D18686E9D00621293 /* Localization */ = {
 			isa = PBXGroup;
 			children = (
+				D01D7D5D19DECE2800955BDE /* ko.lproj */,
 				D0D670D1197EA36C0031B041 /* it.lproj */,
 				D0C9254D1949ED1A00E629CA /* pt.lproj */,
 				D035EBB6194868B700EEEC17 /* nl.lproj */,
@@ -4980,6 +5001,7 @@
 		9352A9D2181DBCBD002A1A1A /* Companion */ = {
 			isa = PBXGroup;
 			children = (
+				D01D7D5619DE0BD900955BDE /* Activity */,
 				93064E0D1834F2F20024C05A /* Data */,
 				9352A9D3181DBCD8002A1A1A /* TGModernConversationCompanion.h */,
 				9352A9D4181DBCD8002A1A1A /* TGModernConversationCompanion.mm */,
@@ -5973,6 +5995,35 @@
 			name = Youtube;
 			sourceTree = "<group>";
 		};
+		D01D7D4919DE01DE00955BDE /* External Video */ = {
+			isa = PBXGroup;
+			children = (
+				D01D7D4A19DE01F400955BDE /* TGExternalVideoGalleryModel.h */,
+				D01D7D4B19DE01F400955BDE /* TGExternalVideoGalleryModel.m */,
+			);
+			name = "External Video";
+			sourceTree = "<group>";
+		};
+		D01D7D5619DE0BD900955BDE /* Activity */ = {
+			isa = PBXGroup;
+			children = (
+				D01D7D5719DE0BF500955BDE /* TGModernConversationActivityManager.h */,
+				D01D7D5819DE0BF500955BDE /* TGModernConversationActivityManager.m */,
+				D01D7D5A19DE0C0B00955BDE /* TGModernConversationActivity.h */,
+				D01D7D5B19DE0C0B00955BDE /* TGModernConversationActivity.m */,
+			);
+			name = Activity;
+			sourceTree = "<group>";
+		};
+		D01D7D5D19DECE2800955BDE /* ko.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				D01D7D5E19DECE2800955BDE /* InfoPlist.strings */,
+				D01D7D6019DECE2800955BDE /* Localizable.strings */,
+			);
+			path = ko.lproj;
+			sourceTree = "<group>";
+		};
 		D01E9E0015B8D94700C624F2 /* Media */ = {
 			isa = PBXGroup;
 			children = (
@@ -6332,6 +6383,8 @@
 				93EB7AB5184F8B3000891DBF /* TGModernConversationTitleIcon.m */,
 				93C23071183BB8E00071CB58 /* TGModernConversationAvatarButton.h */,
 				93C23072183BB8E00071CB58 /* TGModernConversationAvatarButton.m */,
+				D01D7D6519DEE85900955BDE /* TGModernConversationTitleActivityIndicator.h */,
+				D01D7D6619DEE85900955BDE /* TGModernConversationTitleActivityIndicator.m */,
 			);
 			name = Title;
 			sourceTree = "<group>";
@@ -6913,8 +6966,6 @@
 				9344707515F137660015AC4C /* TGConversationAddMemberRequestActor.m */,
 				9344707715F138E90015AC4C /* TGConversationDeleteMemberRequestActor.h */,
 				9344707815F138EA0015AC4C /* TGConversationDeleteMemberRequestActor.m */,
-				93AB299216131D1800BC45EF /* TGConversationUsersTypingActor.h */,
-				93AB299316131D1800BC45EF /* TGConversationUsersTypingActor.m */,
 				937A4DBA1634D990004A1FDE /* TGConversationDeleteMessagesActor.h */,
 				937A4DBB1634D990004A1FDE /* TGConversationDeleteMessagesActor.m */,
 				933B4A661641C6C9005FC985 /* TGConversationDeleteActor.h */,
@@ -7091,6 +7142,7 @@
 				D08BC67519AE37C7007F126A /* User Avatar */,
 				D08BC65919AD25F0007F126A /* Group Avatar */,
 				D0876FE2196F4BFA005740CE /* Peer Media */,
+				D01D7D4919DE01DE00955BDE /* External Video */,
 			);
 			name = "Modern Gallery Models";
 			sourceTree = "<group>";
@@ -7207,6 +7259,7 @@
 		D08805B6156E8F3600311537 /* Telegraph */ = {
 			isa = PBXGroup;
 			children = (
+				D01D7D6419DEE1A800955BDE /* Telegram.entitlements */,
 				D07AC9F31577D48E00436500 /* Telegraph.entitlements */,
 				D0880632156EAEA300311537 /* Resources */,
 				D0983BE319CB936B00CE5BB0 /* Legacy */,
@@ -8154,6 +8207,12 @@
 		D0983DC519CB9BE000CE5BB0 /* TL */ = {
 			isa = PBXGroup;
 			children = (
+				D01D7D4D19DE04AD00955BDE /* TLInvokeWithLayer17.h */,
+				D01D7D4E19DE04AD00955BDE /* TLInvokeWithLayer17.mm */,
+				D01D7D4F19DE04AD00955BDE /* TLRPCmessages_readMessageContents.h */,
+				D01D7D5019DE04AD00955BDE /* TLRPCmessages_readMessageContents.mm */,
+				D01D7D5119DE04AD00955BDE /* TLSendMessageAction.h */,
+				D01D7D5219DE04AD00955BDE /* TLSendMessageAction.mm */,
 				D0983DC619CB9BE000CE5BB0 /* NSArray_Chat.h */,
 				D0983DC719CB9BE000CE5BB0 /* NSArray_Chat.mm */,
 				D0983DC819CB9BE000CE5BB0 /* NSArray_ChatLocated.h */,
@@ -8386,8 +8445,6 @@
 				D0983EAB19CB9BE000CE5BB0 /* TLInputVideo.mm */,
 				D0983EAC19CB9BE000CE5BB0 /* TLInvokeAfterMsg.h */,
 				D0983EAD19CB9BE000CE5BB0 /* TLInvokeAfterMsg.mm */,
-				D0983EAE19CB9BE000CE5BB0 /* TLInvokeWithLayer15.h */,
-				D0983EAF19CB9BE000CE5BB0 /* TLInvokeWithLayer15.mm */,
 				D0983EB019CB9BE000CE5BB0 /* TLMessage.h */,
 				D0983EB119CB9BE000CE5BB0 /* TLMessage.mm */,
 				D0983EB219CB9BE000CE5BB0 /* TLMessageAction.h */,
@@ -9335,7 +9392,12 @@
 				LastUpgradeCheck = 0460;
 				TargetAttributes = {
 					D08805AB156E8F3600311537 = {
-						DevelopmentTeam = 6N38VWS5BX;
+						DevelopmentTeam = X834Q8SBVP;
+						SystemCapabilities = {
+							com.apple.iCloud = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -9355,6 +9417,7 @@
 				pt,
 				it,
 				pt_BR,
+				ko,
 			);
 			mainGroup = D08805A1156E8F3600311537;
 			productRefGroup = D08805AD156E8F3600311537 /* Products */;
@@ -9636,6 +9699,7 @@
 				9315E4DF186AFC52008DD74D /* Icon-40@2x.png in Resources */,
 				9322F7FE178E056300099F0B /* DialogList_Muted@2x.png in Resources */,
 				D0C925411949172000E629CA /* ImagePickerThumbnalSelect.png in Resources */,
+				D01D7D6219DECE2800955BDE /* InfoPlist.strings in Resources */,
 				930808FE185B432D00E62B42 /* ModernListsDisclosureIndicatorSmall@2x.png in Resources */,
 				D0BAF3F2193E8AC400A0093F /* ModernContactListCreateSecretChatIcon.png in Resources */,
 				930808CD185A309200E62B42 /* ModernConversationListBadgeUnsent@2x.png in Resources */,
@@ -9818,6 +9882,7 @@
 				D0C925A8194A024000E629CA /* .gitignore in Resources */,
 				D03FECD019CC559D004866D6 /* SecretPhotoFire.png in Resources */,
 				930AD0AA173C2E31003DABCE /* MapCalloutArrow_Highlighted@2x.png in Resources */,
+				D01D7D6319DECE2800955BDE /* Localizable.strings in Resources */,
 				930AD0AB173C2E31003DABCE /* MapCalloutArrow@2x.png in Resources */,
 				933AA4A31860BE79000AA848 /* ModernNavigationAddButtonIcon@2x.png in Resources */,
 				93EFBF12173EEF3300F7B89E /* Tour.bundle in Resources */,
@@ -9989,6 +10054,7 @@
 				D098408419CB9BE200CE5BB0 /* TLContactBlocked.mm in Sources */,
 				D098412D19CB9BE200CE5BB0 /* TLRPCget_future_salts.mm in Sources */,
 				93843209185680DB000CD961 /* TGUserInfoController.m in Sources */,
+				D01D7D5319DE04AD00955BDE /* TLInvokeWithLayer17.mm in Sources */,
 				D098415219CB9BE200CE5BB0 /* TLRPCmessages_sendEncryptedService.mm in Sources */,
 				D098418319CB9BE200CE5BB0 /* TLUserProfilePhoto.mm in Sources */,
 				D09840B319CB9BE200CE5BB0 /* TLInputChatPhoto.mm in Sources */,
@@ -10049,6 +10115,7 @@
 				939ECA4E188ED0B7004ABAB7 /* TGModernGalleryScrollView.m in Sources */,
 				D0983D5D19CB9A4300CE5BB0 /* TGEncryptedChatServiceAction.m in Sources */,
 				93CF3B77181EF6E6003D8DE1 /* TGModernCollectionCell.m in Sources */,
+				D01D7D5919DE0BF500955BDE /* TGModernConversationActivityManager.m in Sources */,
 				D098408619CB9BE200CE5BB0 /* TLContactLocated.mm in Sources */,
 				D01FF8401966D3F200EA6FFB /* TGVibrantActionSheet.m in Sources */,
 				D0983D3E19CB9A4300CE5BB0 /* TGAudioInfo.m in Sources */,
@@ -10227,6 +10294,7 @@
 				D0F404DD19B00D0900B8FB18 /* TGMediaUsageUserItem.m in Sources */,
 				D098406719CB9BE200CE5BB0 /* NSArray_InputPhoto.mm in Sources */,
 				D098405919CB9BE200CE5BB0 /* NSArray_ContactFound.mm in Sources */,
+				D01D7D5419DE04AD00955BDE /* TLRPCmessages_readMessageContents.mm in Sources */,
 				D0549DF5192575DF002952ED /* PSLMDBKeyValueStore.m in Sources */,
 				9308090C185B71A900E62B42 /* TGUserInfoAddPhoneCollectionItemView.m in Sources */,
 				930808D3185A6FA700E62B42 /* TGAccountInfoCollectionItem.m in Sources */,
@@ -10237,7 +10305,6 @@
 				9341348E18551D3300480294 /* TGWallpaperItemCell.m in Sources */,
 				D098413A19CB9BE200CE5BB0 /* TLRPCmessages_deleteChatUser.mm in Sources */,
 				D098419419CB9BE200CE5BB0 /* TLRpcResult.mm in Sources */,
-				93AB299416131D1800BC45EF /* TGConversationUsersTypingActor.m in Sources */,
 				D0088D6719A54ADF00ADABFA /* TGDatacenterContext.mm in Sources */,
 				D098412519CB9BE200CE5BB0 /* TLRPCgeochats_getFullChat.mm in Sources */,
 				93C43B2B18A05B7300165AE1 /* TGPreparedLocalAudioMessage.m in Sources */,
@@ -10337,7 +10404,6 @@
 				D098418F19CB9BE200CE5BB0 /* TLMetaRpc.mm in Sources */,
 				D0CB14A7199CEFAE00EBCEA7 /* TGGenericPeerMediaGalleryDeleteAccessoryView.m in Sources */,
 				D0983DB619CB9A4300CE5BB0 /* HPTextViewInternal.m in Sources */,
-				D09840C819CB9BE200CE5BB0 /* TLInvokeWithLayer15.mm in Sources */,
 				937A4DB91634CEC8004A1FDE /* TGSynchronizeActionQueueActor.mm in Sources */,
 				D0C925AE194A024000E629CA /* shader.c in Sources */,
 				937A4DBC1634D990004A1FDE /* TGConversationDeleteMessagesActor.m in Sources */,
@@ -10385,6 +10451,7 @@
 				9330232E1655087F00178E7F /* TGNotificationWindow.m in Sources */,
 				D046966B18A40A22009764B2 /* TGModernGalleryVideoItemView.m in Sources */,
 				933023971655A19D00178E7F /* TGMessageNotificationView.mm in Sources */,
+				D01D7D5C19DE0C0B00955BDE /* TGModernConversationActivity.m in Sources */,
 				D01D7D4819DDFA0F00955BDE /* TGYoutubeThumbnailDataSource.m in Sources */,
 				D0983D4719CB9A4300CE5BB0 /* TGChangePrivacySettingsFutureAction.m in Sources */,
 				9332690C16595BDB00E87917 /* TGMenuItem.m in Sources */,
@@ -10456,6 +10523,7 @@
 				D0983D8719CB9A4300CE5BB0 /* TGMapViewController.m in Sources */,
 				D0983D9919CB9A4300CE5BB0 /* TGReusableLabel.mm in Sources */,
 				D09840F919CB9BE200CE5BB0 /* TLRPCaccount_unregisterDevice.mm in Sources */,
+				D01D7D5519DE04AD00955BDE /* TLSendMessageAction.mm in Sources */,
 				D09840F019CB9BE200CE5BB0 /* TLProtoMessage.mm in Sources */,
 				D09840A819CB9BE200CE5BB0 /* TLGeoPlaceName.mm in Sources */,
 				932A9E9216641DCD00FEF7FE /* TGPeerSettingsActor.m in Sources */,
@@ -10621,6 +10689,7 @@
 				D0983D7E19CB9A4300CE5BB0 /* TGInteractiveNavigationTransition.m in Sources */,
 				D098412719CB9BE200CE5BB0 /* TLRPCgeochats_getLocated.mm in Sources */,
 				930F9BC21891B7CB00D3D7C1 /* TGMessageImageView.m in Sources */,
+				D01D7D6719DEE85900955BDE /* TGModernConversationTitleActivityIndicator.m in Sources */,
 				D098414819CB9BE200CE5BB0 /* TLRPCmessages_readEncryptedHistory.mm in Sources */,
 				93C1AF6216C4641A00710640 /* TGSynchronizeContactsActor.mm in Sources */,
 				9352A9EA181DC161002A1A1A /* TGModernViewStorage.m in Sources */,
@@ -10816,6 +10885,7 @@
 				D0983D9519CB9A4300CE5BB0 /* TGPhoneUtils.m in Sources */,
 				D098408019CB9BE200CE5BB0 /* TLChatPhoto.mm in Sources */,
 				939ECA3B188EB4CB004ABAB7 /* TGOverlayControllerWindow.m in Sources */,
+				D01D7D4C19DE01F400955BDE /* TGExternalVideoGalleryModel.m in Sources */,
 				D03FECE419CC73FD004866D6 /* TGSecretPeerMediaGalleryImageItemView.m in Sources */,
 				930A94E9189E4F0500A20BE0 /* TGForwardContactPickerController.m in Sources */,
 				D0983D7619CB9A4300CE5BB0 /* TGImageSearchQueryCell.m in Sources */,
@@ -10992,6 +11062,22 @@
 			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
+		D01D7D5E19DECE2800955BDE /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D01D7D5F19DECE2800955BDE /* ko */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		D01D7D6019DECE2800955BDE /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D01D7D6119DECE2800955BDE /* ko */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
 		D035EBB7194868B700EEEC17 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -11117,8 +11203,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				PROVISIONING_PROFILE = "f00fd17b-9932-4fe0-a1b2-182be7b101c8";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "f00fd17b-9932-4fe0-a1b2-182be7b101c8";
+				PROVISIONING_PROFILE = "ae50629d-ac5a-4991-bd7c-5c3b96519b7f";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "ae50629d-ac5a-4991-bd7c-5c3b96519b7f";
 				SDKROOT = iphoneos;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -11176,7 +11262,8 @@
 				CLANG_WARN_OBJC_RECEIVER_WEAK = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
+				CODE_SIGN_ENTITLEMENTS = Telegraph/Telegram.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
 				DEAD_CODE_STRIPPING = YES;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -11222,8 +11309,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-Wextra";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = Telegram;
-				PROVISIONING_PROFILE = "f00fd17b-9932-4fe0-a1b2-182be7b101c8";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "f00fd17b-9932-4fe0-a1b2-182be7b101c8";
+				PROVISIONING_PROFILE = "";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "ae50629d-ac5a-4991-bd7c-5c3b96519b7f";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";
@@ -11246,8 +11333,9 @@
 				CLANG_WARN_OBJC_RECEIVER_WEAK = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP";
+				CODE_SIGN_ENTITLEMENTS = Telegraph/Telegram.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -11293,7 +11381,7 @@
 				"OTHER_CFLAGS[arch=*]" = "-DNS_BLOCK_ASSERTIONS";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = Telegram;
-				PROVISIONING_PROFILE = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
+				PROVISIONING_PROFILE = "";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B94FA693-F9B7-4688-82BF-9C0E51DFEE67";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

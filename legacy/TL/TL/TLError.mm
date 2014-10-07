@@ -91,7 +91,7 @@
     TLError$richError *object = [[TLError$richError alloc] init];
     object.code = metaObject->getInt32((int32_t)0x806ab544);
     object.type = metaObject->getString((int32_t)0x9211ab0a);
-    object.n_description = metaObject->getString((int32_t)0x4baddf54);
+    object.n_description = metaObject->getString((int32_t)0x9e47ce86);
     object.debug = metaObject->getString((int32_t)0x859bf05a);
     object.request_params = metaObject->getString((int32_t)0xb8ccdd50);
     return object;
@@ -115,7 +115,7 @@
         TLConstructedValue value;
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.n_description;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x4baddf54, value));
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9e47ce86, value));
     }
     {
         TLConstructedValue value;

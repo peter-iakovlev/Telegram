@@ -22,6 +22,7 @@
 @interface TGAudioRecorder : NSObject
 
 @property (nonatomic, weak) id<TGAudioRecorderDelegate> delegate;
+@property (nonatomic, strong) id activityHolder;
 
 - (instancetype)initWithFileEncryption:(bool)fileEncryption;
 

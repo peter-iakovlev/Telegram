@@ -4,11 +4,12 @@
 #import "TLMetaRpc.h"
 
 @class TLInputPeer;
+@class TLSendMessageAction;
 
 @interface TLRPCmessages_setTyping : TLMetaRpc
 
 @property (nonatomic, retain) TLInputPeer *peer;
-@property (nonatomic) bool typing;
+@property (nonatomic, retain) TLSendMessageAction *action;
 
 - (Class)responseClass;
 

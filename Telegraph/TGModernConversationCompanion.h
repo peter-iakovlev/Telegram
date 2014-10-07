@@ -161,4 +161,7 @@ typedef enum {
 
 - (void)updateMediaAccessTimeForMessageId:(int32_t)messageId;
 
+- (id)acquireAudioRecordingActivityHolder;
+- (id)acquireLocationPickingActivityHolder;
+
 @end

@@ -42,8 +42,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 
 @interface TGPrivateModernConversationCompanion () <TGModernConversationContactLinkTitlePanelDelegate>
 {
-    bool _initialTyping;
-    NSTimeInterval _lastTypingActivity;
+    NSString *_initialActivity;
     
     NSString *_cachedPhone;
     
@@ -63,18 +62,18 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 
 @implementation TGPrivateModernConversationCompanion
 
-- (instancetype)initWithUid:(int)uid typing:(bool)typing mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
+- (instancetype)initWithUid:(int)uid activity:(NSString *)activity mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
 {
-    return [self initWithConversationId:uid uid:uid typing:typing mayHaveUnreadMessages:mayHaveUnreadMessages];
+    return [self initWithConversationId:uid uid:uid activity:activity mayHaveUnreadMessages:mayHaveUnreadMessages];
 }
 
-- (instancetype)initWithConversationId:(int64_t)conversationId uid:(int)uid typing:(bool)typing mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
+- (instancetype)initWithConversationId:(int64_t)conversationId uid:(int)uid activity:(NSString *)activity mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
 {
     self = [super initWithConversationId:conversationId mayHaveUnreadMessages:mayHaveUnreadMessages];
     if (self != nil)
     {
         _uid = uid;
-        _initialTyping = typing;
+        _initialActivity = activity;
     }
     return self;
 }
@@ -312,6 +311,22 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     return TGLocalized(@"Presence.offline");
 }
 
+- (NSString *)stringForActivity:(NSString *)activity
+{
+    if ([activity isEqualToString:@"recordingAudio"])
+        return TGLocalized(@"Activity.RecordingAudio");
+    else if ([activity isEqualToString:@"uploadingPhoto"])
+        return TGLocalized(@"Activity.UploadingPhoto");
+    else if ([activity isEqualToString:@"uploadingVideo"])
+        return TGLocalized(@"Activity.UploadingVideo");
+    else if ([activity isEqualToString:@"uploadingDocument"])
+        return TGLocalized(@"Activity.UploadingDocument");
+    else if ([activity isEqualToString:@"pickingLocation"])
+        return TGLocalized(@"Activity.Location");
+        
+    return TGLocalized(@"Conversation.typing");
+}
+
 - (void)loadInitialState
 {
     [super loadInitialState];
@@ -325,8 +340,8 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     NSString *statusString = [self statusStringForUser:user accentColored:&accentColored];
     [self _setStatus:statusString accentColored:accentColored allowAnimation:false];
     
-    if (_initialTyping)
-        [self _setTypingStatus:TGLocalized(@"Conversation.typing")];
+    if (_initialActivity != nil)
+        [self _setTypingStatus:[self stringForActivity:_initialActivity]];
 }
 
 #pragma mark -
@@ -430,11 +445,9 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
-        CFAbsoluteTime currentTime = CFAbsoluteTimeGetCurrent();
-        if (ABS(currentTime - _lastTypingActivity) >= 4.0 && (![TGDatabaseInstance() uidIsRemoteContact:_uid] || [TGDatabaseInstance() loadUser:_uid].presence.online))
+        if ((![TGDatabaseInstance() uidIsRemoteContact:_uid] || [TGDatabaseInstance() loadUser:_uid].presence.online))
         {
-            _lastTypingActivity = currentTime;
-            [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%d)/activity/(typing)", _uid] options:nil watcher:self];
+            [[TGTelegraphInstance activityManagerForConversationId:_conversationId] addActivityWithType:@"typing" priority:10 timeout:5.0];
         }
     }];
 }
@@ -585,11 +598,13 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     }
     else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", _conversationId]])
     {
-        NSArray *typingUsers = ((SGraphObjectNode *)resource).object;
-        if (typingUsers.count == 0)
+        NSDictionary *userActivities = ((SGraphObjectNode *)resource).object;
+        if (userActivities.count == 0)
             [self _setTypingStatus:nil];
         else
-            [self _setTypingStatus:TGLocalized(@"Conversation.typing")];
+        {
+            [self _setTypingStatus:[self stringForActivity:userActivities[userActivities.allKeys.firstObject]]];
+        }
     }
     else if ([path hasPrefix:@"/tg/blockedUsers"])
     {

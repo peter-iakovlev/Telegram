@@ -135,7 +135,7 @@
             int64_t encryptedConversationId = [TGDatabaseInstance() encryptedConversationIdForPeerId:conversationId];
             int64_t accessHash = [TGDatabaseInstance() encryptedConversationAccessHash:conversationId];
             int32_t uid = [TGDatabaseInstance() encryptedParticipantIdForConversationId:conversationId];
-            TGSecretModernConversationCompanion *companion = [[TGSecretModernConversationCompanion alloc] initWithEncryptedConversationId:encryptedConversationId accessHash:accessHash conversationId:conversationId uid:uid typing:[TGTelegraphInstance typingUsersInConversationFromMainThread:conversationId].count != 0 mayHaveUnreadMessages:conversationUnreadCount != 0];
+            TGSecretModernConversationCompanion *companion = [[TGSecretModernConversationCompanion alloc] initWithEncryptedConversationId:encryptedConversationId accessHash:accessHash conversationId:conversationId uid:uid activity:[TGTelegraphInstance typingUserActivitiesInConversationFromMainThread:conversationId][@(uid)] mayHaveUnreadMessages:conversationUnreadCount != 0];
             if (atMessage != nil)
                 [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue]];
             [companion setInitialMessagePayloadWithForwardMessages:performActions[@"forwardMessages"] sendMessages:performActions[@"sendMessages"] sendFiles:performActions[@"sendFiles"]];
@@ -145,7 +145,7 @@
         else if (conversationId < 0)
         {
             TGConversation *cachedConversation = [TGDatabaseInstance() loadConversationWithIdCached:conversationId];
-            TGGroupModernConversationCompanion *companion = [[TGGroupModernConversationCompanion alloc] initWithConversationId:conversationId conversation:cachedConversation typingUserIds:[TGTelegraphInstance typingUsersInConversationFromMainThread:conversationId] mayHaveUnreadMessages:conversationUnreadCount != 0];
+            TGGroupModernConversationCompanion *companion = [[TGGroupModernConversationCompanion alloc] initWithConversationId:conversationId conversation:cachedConversation userActivities:[TGTelegraphInstance typingUserActivitiesInConversationFromMainThread:conversationId] mayHaveUnreadMessages:conversationUnreadCount != 0];
             if (atMessage != nil)
                 [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue]];
             [companion setInitialMessagePayloadWithForwardMessages:performActions[@"forwardMessages"] sendMessages:performActions[@"sendMessages"] sendFiles:performActions[@"sendFiles"]];
@@ -154,7 +154,7 @@
         }
         else
         {
-            TGPrivateModernConversationCompanion *companion = [[TGPrivateModernConversationCompanion alloc] initWithUid:(int)conversationId typing:[TGTelegraphInstance typingUsersInConversationFromMainThread:conversationId].count != 0 mayHaveUnreadMessages:conversationUnreadCount != 0];
+            TGPrivateModernConversationCompanion *companion = [[TGPrivateModernConversationCompanion alloc] initWithUid:(int)conversationId activity:[TGTelegraphInstance typingUserActivitiesInConversationFromMainThread:conversationId][@((int)conversationId)] mayHaveUnreadMessages:conversationUnreadCount != 0];
             if (atMessage != nil)
                 [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue]];
             [companion setInitialMessagePayloadWithForwardMessages:performActions[@"forwardMessages"] sendMessages:performActions[@"sendMessages"] sendFiles:performActions[@"sendFiles"]];

@@ -4,6 +4,7 @@
 #import "../NSOutputStream+TL.h"
 
 #import "TLInputPeer.h"
+#import "TLSendMessageAction.h"
 
 @implementation TLRPCmessages_setTyping
 
@@ -20,7 +21,7 @@
 
 - (int)layerVersion
 {
-    return 8;
+    return 17;
 }
 
 - (int32_t)TLconstructorSignature
@@ -54,7 +55,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x719839e9;
+    return (int32_t)0xa3825e50;
 }
 
 - (int32_t)TLconstructorName
@@ -66,7 +67,7 @@
 {
     TLRPCmessages_setTyping$messages_setTyping *object = [[TLRPCmessages_setTyping$messages_setTyping alloc] init];
     object.peer = metaObject->getObject((int32_t)0x9344c37d);
-    object.typing = metaObject->getBool((int32_t)0x77929cef);
+    object.action = metaObject->getObject((int32_t)0xc2d4a0f7);
     return object;
 }
 
@@ -80,9 +81,9 @@
     }
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveBool;
-        value.primitive.boolValue = self.typing;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x77929cef, value));
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.action;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc2d4a0f7, value));
     }
 }
 

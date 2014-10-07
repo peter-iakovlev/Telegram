@@ -1,27 +1,11 @@
-#import "TLRPCcontacts_getContacts.h"
+#import "TLInvokeWithLayer17.h"
 
 #import "../NSInputStream+TL.h"
 #import "../NSOutputStream+TL.h"
 
-#import "TLcontacts_Contacts.h"
 
-@implementation TLRPCcontacts_getContacts
+@implementation TLInvokeWithLayer17
 
-
-- (Class)responseClass
-{
-    return [TLcontacts_Contacts class];
-}
-
-- (int)impliedResponseSignature
-{
-    return 0;
-}
-
-- (int)layerVersion
-{
-    return 8;
-}
 
 - (int32_t)TLconstructorSignature
 {
@@ -49,23 +33,23 @@
 
 @end
 
-@implementation TLRPCcontacts_getContacts$contacts_getContacts : TLRPCcontacts_getContacts
+@implementation TLInvokeWithLayer17$invokeWithLayer17 : TLInvokeWithLayer17
 
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x22c6aa08;
+    return (int32_t)0x50858a19;
 }
 
 - (int32_t)TLconstructorName
 {
-    return (int32_t)0x18ccaa08;
+    return (int32_t)0xeefcebed;
 }
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
-    TLRPCcontacts_getContacts$contacts_getContacts *object = [[TLRPCcontacts_getContacts$contacts_getContacts alloc] init];
-    object.n_hash = metaObject->getString((int32_t)0xd51ba198);
+    TLInvokeWithLayer17$invokeWithLayer17 *object = [[TLInvokeWithLayer17$invokeWithLayer17 alloc] init];
+    object.query = metaObject->getObject((int32_t)0x5de9dcb1);
     return object;
 }
 
@@ -73,9 +57,9 @@
 {
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.n_hash;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xd51ba198, value));
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.query;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x5de9dcb1, value));
     }
 }
 

@@ -24,12 +24,14 @@
 - (void)setupFailTimeout:(NSTimeInterval)timeout;
 - (void)restartFailTimeoutIfRunning;
 - (NSString *)pathForLocalImagePath:(NSString *)path;
+- (int64_t)conversationIdForActivity;
 
 - (bool)_encryptUploads;
 - (void)_commitSend;
 - (void)_fail;
 - (void)_success:(id)result;
 
+- (void)acquireMediaUploadActivityHolderForPreparedMessage:(TGPreparedMessage *)preparedMessage;
 - (void)uploadFilesWithExtensions:(NSArray *)filePathsAndExtensions;
 - (void)beginUploadProgress;
 - (void)uploadsStarted;

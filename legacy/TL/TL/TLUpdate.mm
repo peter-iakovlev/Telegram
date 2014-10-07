@@ -16,6 +16,7 @@
 #import "TLEncryptedChat.h"
 #import "TLNotifyPeer.h"
 #import "TLPeerNotifySettings.h"
+#import "TLSendMessageAction.h"
 
 @implementation TLUpdate
 
@@ -240,79 +241,6 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.pts;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x4fc5f572, value));
-    }
-}
-
-
-@end
-
-@implementation TLUpdate$updateUserTyping : TLUpdate
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0x6baa8508;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0x83cd7672;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
-{
-    TLUpdate$updateUserTyping *object = [[TLUpdate$updateUserTyping alloc] init];
-    object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.user_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xafdf4073, value));
-    }
-}
-
-
-@end
-
-@implementation TLUpdate$updateChatUserTyping : TLUpdate
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0x3c46cfe6;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0xecc51515;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
-{
-    TLUpdate$updateChatUserTyping *object = [[TLUpdate$updateChatUserTyping alloc] init];
-    object.chat_id = metaObject->getInt32((int32_t)0x7234457c);
-    object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.chat_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7234457c, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.user_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xafdf4073, value));
     }
 }
 
@@ -1214,6 +1142,93 @@
         value.type = TLConstructedValueTypeObject;
         value.nativeObject = self.notify_settings;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xfa59265, value));
+    }
+}
+
+
+@end
+
+@implementation TLUpdate$updateUserTyping : TLUpdate
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x5c486927;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x83cd7672;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLUpdate$updateUserTyping *object = [[TLUpdate$updateUserTyping alloc] init];
+    object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
+    object.action = metaObject->getObject((int32_t)0xc2d4a0f7);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.user_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xafdf4073, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.action;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc2d4a0f7, value));
+    }
+}
+
+
+@end
+
+@implementation TLUpdate$updateChatUserTyping : TLUpdate
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x9a65ea1f;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xecc51515;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLUpdate$updateChatUserTyping *object = [[TLUpdate$updateChatUserTyping alloc] init];
+    object.chat_id = metaObject->getInt32((int32_t)0x7234457c);
+    object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
+    object.action = metaObject->getObject((int32_t)0xc2d4a0f7);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.chat_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7234457c, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.user_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xafdf4073, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.action;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc2d4a0f7, value));
     }
 }
 

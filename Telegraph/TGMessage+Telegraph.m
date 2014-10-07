@@ -33,8 +33,8 @@
             TLMessage$message *concreteMessage = (TLMessage$message *)desc;
             
             self.mid = concreteMessage.n_id;
-            self.unread = concreteMessage.unread;
-            self.outgoing = concreteMessage.out;
+            self.unread = concreteMessage.flags & 1;
+            self.outgoing = concreteMessage.flags & 2;
             self.fromUid = concreteMessage.from_id;
             
             self.text = concreteMessage.message;
@@ -223,8 +223,8 @@
             TLMessage$messageService *concreteMessage = (TLMessage$messageService *)desc;
             
             self.mid = concreteMessage.n_id;
-            self.unread = concreteMessage.unread;
-            self.outgoing = concreteMessage.out;
+            self.unread = concreteMessage.flags & 1;
+            self.outgoing = concreteMessage.flags & 2;
             self.fromUid = concreteMessage.from_id;
             
             self.text = @"";

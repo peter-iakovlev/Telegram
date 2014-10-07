@@ -4,13 +4,13 @@
 #import "TLMetaRpc.h"
 
 
-@interface TLInvokeWithLayer15 : NSObject <TLObject>
+@interface TLInvokeWithLayer17 : NSObject <TLObject>
 
 @property (nonatomic) id<NSObject> query;
 
 @end
 
-@interface TLInvokeWithLayer15$invokeWithLayer15 : TLInvokeWithLayer15
+@interface TLInvokeWithLayer17$invokeWithLayer17 : TLInvokeWithLayer17
 
 
 @end

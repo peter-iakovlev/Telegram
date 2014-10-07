@@ -239,8 +239,7 @@
             newMessage.to_id = peerChat;
         }
         
-        newMessage.out = false;
-        newMessage.unread = true;
+        newMessage.flags = 1;
         newMessage.date = ((TLUpdates$updateShortMessage *)incomingMessage.body).date;
         newMessage.message = ((TLUpdates$updateShortMessage *)incomingMessage.body).message;
         newMessage.media = [[TLMessageMedia$messageMediaEmpty alloc] init];

@@ -37,6 +37,10 @@
 
 #import "TGAlertView.h"
 
+#import "TGObserverProxy.h"
+
+#import "TGPhoneUtils.h"
+
 @interface TGLoginPhoneController () <UITextFieldDelegate>
 {
     UIView *_grayBackground;
@@ -44,6 +48,9 @@
     UILabel *_titleLabel;
     UILabel *_noticeLabel;
     UIImageView *_inputBackgroundView;
+    
+    TGObserverProxy *_keyValueStoreChangeProxy;
+    bool _editedText;
 }
 
 @property (nonatomic, strong) NSString *presetPhoneCountry;
@@ -252,7 +259,61 @@
     
     [self updateCountry];
     
+    if (_presetPhoneNumber.length == 0 || _presetPhoneCountry.length == 0)
+    {
+        if (iosMajorVersion() >= 7)
+        {
+            NSUbiquitousKeyValueStore *store = [NSUbiquitousKeyValueStore defaultStore];
+            _keyValueStoreChangeProxy = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(keyValueStoreChanged:) name:NSUbiquitousKeyValueStoreDidChangeExternallyNotification object:store];
+            
+            NSString *phoneNumber = [TGPhoneUtils cleanPhone:[store objectForKey:@"telegram_currentPhoneNumber"]];
+            if (phoneNumber.length != 0)
+            {
+                for (int i = 0; i < (int)phoneNumber.length; i++)
+                {
+                    int countryCode = [[phoneNumber substringWithRange:NSMakeRange(0, phoneNumber.length - i)] intValue];
+                    NSString *countryName = [TGLoginCountriesController countryNameByCode:countryCode];
+                    if (countryName != nil)
+                    {
+                        _presetPhoneCountry = [[NSString alloc] initWithFormat:@"+%@", [phoneNumber substringWithRange:NSMakeRange(0, phoneNumber.length - i)]];
+                        _presetPhoneNumber = [phoneNumber substringFromIndex:phoneNumber.length - i];
+                    }
+                }
+            }
+        }
+    }
+    
     [self _applyPresetNumber];
+}
+
+- (void)keyValueStoreChanged:(NSNotification *)__unused notification
+{
+    if (iosMajorVersion() >= 7)// && !_editedText)
+    {
+        NSUbiquitousKeyValueStore *store = [NSUbiquitousKeyValueStore defaultStore];
+        NSString *phoneNumber = [TGPhoneUtils cleanPhone:[store objectForKey:@"telegram_currentPhoneNumber"]];
+        if (phoneNumber.length != 0)
+        {
+            for (int i = 0; i < (int)phoneNumber.length; i++)
+            {
+                int countryCode = [[phoneNumber substringWithRange:NSMakeRange(0, phoneNumber.length - i)] intValue];
+                NSString *countryName = [TGLoginCountriesController countryNameByCode:countryCode];
+                if (countryName != nil)
+                {
+                    NSString *presetPhoneCountry = [[NSString alloc] initWithFormat:@"+%@", [phoneNumber substringWithRange:NSMakeRange(0, phoneNumber.length - i)]];
+                    NSString *presetPhoneNumber = [phoneNumber substringFromIndex:phoneNumber.length - i];
+                    
+                    if (!TGStringCompare(_presetPhoneCountry, presetPhoneCountry) || !TGStringCompare(_presetPhoneNumber, presetPhoneNumber))
+                    {
+                        _presetPhoneCountry = presetPhoneCountry;
+                        _presetPhoneNumber = presetPhoneNumber;
+                        
+                        [self _applyPresetNumber];
+                    }
+                }
+            }
+        }
+    }
 }
 
 - (void)performClose
@@ -396,6 +457,8 @@
 {
     if (_inProgress)
         return false;
+    
+    _editedText = true;
     
     if (textField == _countryCodeField)
     {

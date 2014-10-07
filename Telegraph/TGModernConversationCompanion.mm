@@ -1667,4 +1667,14 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 {
 }
 
+- (id)acquireAudioRecordingActivityHolder
+{
+    return nil;
+}
+
+- (id)acquireLocationPickingActivityHolder
+{
+    return nil;
+}
+
 @end

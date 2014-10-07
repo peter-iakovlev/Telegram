@@ -1158,8 +1158,9 @@ typedef enum {
         int64_t conversationId = [[dict objectForKey:@"conversationId"] longLongValue];
         if (conversationId != 0)
         {
-            NSArray *typingUsers = [dict objectForKey:@"typingUsers"];
+            NSDictionary *userActivities = [dict objectForKey:@"typingUsers"];
             NSString *typingString = nil;
+            NSArray *typingUsers = userActivities.allKeys;
             if (conversationId < 0)
             {
                 if (typingUsers.count == 1)

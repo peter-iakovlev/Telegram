@@ -3023,6 +3023,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
             else if ([action isEqualToString:@"chooseLocation"])
             {
                 TGMapViewController *mapController = [[TGMapViewController alloc] initInPickingMode];
+                mapController.activityHolder = [controller.companion acquireLocationPickingActivityHolder];
                 mapController.watcher = controller.actionHandle;
                 TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[mapController]];
                 
@@ -3370,6 +3371,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
     {
         _currentAudioRecorder = [[TGAudioRecorder alloc] initWithFileEncryption:[_companion encryptUploads]];
         _currentAudioRecorder.delegate = self;
+        _currentAudioRecorder.activityHolder = [_companion acquireAudioRecordingActivityHolder];
         [_currentAudioRecorder start];
     }
 }

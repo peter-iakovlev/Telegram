@@ -54,6 +54,11 @@
     return _conversationId;
 }
 
+- (int64_t)conversationIdForActivity
+{
+    return _conversationId;
+}
+
 - (void)_commitSend
 {
     if (_conversationId == 0)
