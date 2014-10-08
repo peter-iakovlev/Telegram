@@ -698,6 +698,11 @@
 		D01D7D6219DECE2800955BDE /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D01D7D5E19DECE2800955BDE /* InfoPlist.strings */; };
 		D01D7D6319DECE2800955BDE /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D01D7D6019DECE2800955BDE /* Localizable.strings */; };
 		D01D7D6719DEE85900955BDE /* TGModernConversationTitleActivityIndicator.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D6619DEE85900955BDE /* TGModernConversationTitleActivityIndicator.m */; };
+		D01D7D6B19E43F0300955BDE /* SchemeLayer17.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D6A19E43F0300955BDE /* SchemeLayer17.m */; };
+		D01D7D7419E4BD9900955BDE /* SecretLayer8.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D6D19E4BD9900955BDE /* SecretLayer8.m */; };
+		D01D7D7519E4BD9900955BDE /* SecretLayer10.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D6F19E4BD9900955BDE /* SecretLayer10.m */; };
+		D01D7D7619E4BD9900955BDE /* SecretLayer13.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D7119E4BD9900955BDE /* SecretLayer13.m */; };
+		D01D7D7719E4BD9900955BDE /* SecretLayer17.m in Sources */ = {isa = PBXBuildFile; fileRef = D01D7D7319E4BD9900955BDE /* SecretLayer17.m */; };
 		D01E9DCA15B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm in Sources */ = {isa = PBXBuildFile; fileRef = D01E9DC915B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm */; };
 		D01FF83D1965A1D800EA6FFB /* TGVideoPreviewView.m in Sources */ = {isa = PBXBuildFile; fileRef = D01FF83C1965A1D800EA6FFB /* TGVideoPreviewView.m */; };
 		D01FF8401966D3F200EA6FFB /* TGVibrantActionSheet.m in Sources */ = {isa = PBXBuildFile; fileRef = D01FF83F1966D3F200EA6FFB /* TGVibrantActionSheet.m */; };
@@ -2656,6 +2661,16 @@
 		D01D7D6419DEE1A800955BDE /* Telegram.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Telegram.entitlements; sourceTree = "<group>"; };
 		D01D7D6519DEE85900955BDE /* TGModernConversationTitleActivityIndicator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGModernConversationTitleActivityIndicator.h; sourceTree = "<group>"; };
 		D01D7D6619DEE85900955BDE /* TGModernConversationTitleActivityIndicator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGModernConversationTitleActivityIndicator.m; sourceTree = "<group>"; };
+		D01D7D6919E43F0300955BDE /* SchemeLayer17.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SchemeLayer17.h; path = API/SchemeLayer17.h; sourceTree = "<group>"; };
+		D01D7D6A19E43F0300955BDE /* SchemeLayer17.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SchemeLayer17.m; path = API/SchemeLayer17.m; sourceTree = "<group>"; };
+		D01D7D6C19E4BD9900955BDE /* SecretLayer8.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SecretLayer8.h; path = API/SecretLayer8.h; sourceTree = "<group>"; };
+		D01D7D6D19E4BD9900955BDE /* SecretLayer8.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SecretLayer8.m; path = API/SecretLayer8.m; sourceTree = "<group>"; };
+		D01D7D6E19E4BD9900955BDE /* SecretLayer10.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SecretLayer10.h; path = API/SecretLayer10.h; sourceTree = "<group>"; };
+		D01D7D6F19E4BD9900955BDE /* SecretLayer10.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SecretLayer10.m; path = API/SecretLayer10.m; sourceTree = "<group>"; };
+		D01D7D7019E4BD9900955BDE /* SecretLayer13.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SecretLayer13.h; path = API/SecretLayer13.h; sourceTree = "<group>"; };
+		D01D7D7119E4BD9900955BDE /* SecretLayer13.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SecretLayer13.m; path = API/SecretLayer13.m; sourceTree = "<group>"; };
+		D01D7D7219E4BD9900955BDE /* SecretLayer17.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SecretLayer17.h; path = API/SecretLayer17.h; sourceTree = "<group>"; };
+		D01D7D7319E4BD9900955BDE /* SecretLayer17.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SecretLayer17.m; path = API/SecretLayer17.m; sourceTree = "<group>"; };
 		D01E9DC815B8D7A700C624F2 /* TGTelegraphDialogListCompanion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTelegraphDialogListCompanion.h; sourceTree = "<group>"; };
 		D01E9DC915B8D7A700C624F2 /* TGTelegraphDialogListCompanion.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = TGTelegraphDialogListCompanion.mm; sourceTree = "<group>"; };
 		D01FF83B1965A1D800EA6FFB /* TGVideoPreviewView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGVideoPreviewView.h; sourceTree = "<group>"; };
@@ -6024,6 +6039,23 @@
 			path = ko.lproj;
 			sourceTree = "<group>";
 		};
+		D01D7D6819E43EF900955BDE /* API */ = {
+			isa = PBXGroup;
+			children = (
+				D01D7D6C19E4BD9900955BDE /* SecretLayer8.h */,
+				D01D7D6D19E4BD9900955BDE /* SecretLayer8.m */,
+				D01D7D6E19E4BD9900955BDE /* SecretLayer10.h */,
+				D01D7D6F19E4BD9900955BDE /* SecretLayer10.m */,
+				D01D7D7019E4BD9900955BDE /* SecretLayer13.h */,
+				D01D7D7119E4BD9900955BDE /* SecretLayer13.m */,
+				D01D7D7219E4BD9900955BDE /* SecretLayer17.h */,
+				D01D7D7319E4BD9900955BDE /* SecretLayer17.m */,
+				D01D7D6919E43F0300955BDE /* SchemeLayer17.h */,
+				D01D7D6A19E43F0300955BDE /* SchemeLayer17.m */,
+			);
+			name = API;
+			sourceTree = "<group>";
+		};
 		D01E9E0015B8D94700C624F2 /* Media */ = {
 			isa = PBXGroup;
 			children = (
@@ -7392,6 +7424,7 @@
 		D088061A156EA28500311537 /* Network */ = {
 			isa = PBXGroup;
 			children = (
+				D01D7D6819E43EF900955BDE /* API */,
 				D0088D6419A54AC500ADABFA /* Legacy */,
 				D0088D5419A549FB00ADABFA /* Update Service */,
 				D026206318A938CF00A41CC8 /* TGTelegramNetworking.h */,
@@ -10343,6 +10376,7 @@
 				D098415319CB9BE200CE5BB0 /* TLRPCmessages_sendMedia.mm in Sources */,
 				93B0705C161CB45F0054C20F /* TGRawHttpRequest.m in Sources */,
 				D044CB7019296A8D0001C986 /* TGDatabaseContext.m in Sources */,
+				D01D7D7419E4BD9900955BDE /* SecretLayer8.m in Sources */,
 				9341346C1853371200480294 /* TGEditingScrollView.m in Sources */,
 				D098412C19CB9BE200CE5BB0 /* TLRPCgeochats_setTyping.mm in Sources */,
 				D098410F19CB9BE200CE5BB0 /* TLRPCcontacts_getBlocked.mm in Sources */,
@@ -10586,6 +10620,8 @@
 				93753ECC16793F46008CC2C5 /* TGLoginCountriesController.m in Sources */,
 				93064DF318325E990024C05A /* TGGroupModernConversationCompanion.m in Sources */,
 				930808EF185A8B0B00E62B42 /* TGCreateContactController.m in Sources */,
+				D01D7D7719E4BD9900955BDE /* SecretLayer17.m in Sources */,
+				D01D7D7519E4BD9900955BDE /* SecretLayer10.m in Sources */,
 				D098413919CB9BE200CE5BB0 /* TLRPCmessages_createChat.mm in Sources */,
 				D0088D6019A54A1000ADABFA /* TGUpdateMessage.m in Sources */,
 				D0983D9219CB9A4300CE5BB0 /* TGObserverProxy.m in Sources */,
@@ -10774,6 +10810,7 @@
 				D046964918A10EAD009764B2 /* TGAudioMediaAttachment+Telegraph.m in Sources */,
 				D098409E19CB9BE200CE5BB0 /* TLEncryptedChat.mm in Sources */,
 				D08BC66B19ADEA89007F126A /* TGModernDataImageView.m in Sources */,
+				D01D7D7619E4BD9900955BDE /* SecretLayer13.m in Sources */,
 				D098411719CB9BE200CE5BB0 /* TLRPCcontacts_importContacts.mm in Sources */,
 				D09840D919CB9BE200CE5BB0 /* TLMetaScheme.mm in Sources */,
 				9387D8C6171AD21600DFE588 /* TGHttpServerActor.m in Sources */,
@@ -10965,6 +11002,7 @@
 				93080908185B6C2300E62B42 /* TGPhoneTextField.m in Sources */,
 				D0983DAE19CB9A4300CE5BB0 /* TGVideoMediaAttachment.m in Sources */,
 				93064DED183199A50024C05A /* TGTextMessageBackgroundViewModel.m in Sources */,
+				D01D7D6B19E43F0300955BDE /* SchemeLayer17.m in Sources */,
 				D09840AC19CB9BE200CE5BB0 /* TLhelp_AppUpdate.mm in Sources */,
 				D098405719CB9BE200CE5BB0 /* NSArray_Contact.mm in Sources */,
 				932465251805D6AC00FDCFEF /* TGDiscardEncryptedChatActor.m in Sources */,
