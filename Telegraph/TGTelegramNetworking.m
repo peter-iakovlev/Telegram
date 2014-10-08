@@ -108,7 +108,10 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
             NSLog(@"%@", parsedObject);
         }
         {
-            
+            Secret17_DecryptedMessageAction_decryptedMessageActionReadMessages *object = [Secret17_DecryptedMessageAction decryptedMessageActionReadMessagesWithRandom_ids:@[@(1), @(2), @(3)]];
+            NSData *data = [Secret17__Environment serializeObject:object];
+            id parsedObject = [Secret17__Environment parseObject:data];
+            NSLog(@"%@", parsedObject);
         }
         
         _actionHandle = [[ASHandle alloc] initWithDelegate:self];
