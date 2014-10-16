@@ -164,4 +164,6 @@ typedef enum {
 - (id)acquireAudioRecordingActivityHolder;
 - (id)acquireLocationPickingActivityHolder;
 
+- (void)serviceNotificationsForMessageIds:(NSArray *)messageIds;
+
 @end

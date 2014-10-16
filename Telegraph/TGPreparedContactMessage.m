@@ -36,6 +36,7 @@
     message.mid = self.mid;
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
+    message.messageLifetime = self.messageLifetime;
     
     TGContactMediaAttachment *contactAttachment = [[TGContactMediaAttachment alloc] init];
     contactAttachment.uid = _uid;

@@ -56,7 +56,6 @@ typedef enum {
 
 - (void)openMediaFromMessage:(int32_t)messageId instant:(bool)instant;
 - (void)closeMediaFromMessage:(int32_t)messageId instant:(bool)instant;
-- (void)pauseMediaFromMessage:(int32_t)messageId;
 - (void)stopInlineMedia;
 - (void)openBrowserFromMessage:(int32_t)messageId url:(NSString *)url;
 - (void)showActionsMenuForUnsentMessage:(int32_t)messageId;
@@ -85,6 +84,7 @@ typedef enum {
 - (void)setPrimaryTitlePanel:(TGModernConversationTitlePanel *)titlePanel;
 - (TGModernConversationTitlePanel *)primaryTitlePanel;
 - (void)setSecondaryTitlePanel:(TGModernConversationTitlePanel *)secondaryTitlePanel;
+- (void)setSecondaryTitlePanel:(TGModernConversationTitlePanel *)secondaryTitlePanel animated:(bool)animated;
 - (TGModernConversationTitlePanel *)secondaryTitlePanel;
 - (void)setEmptyListPlaceholder:(TGModernConversationEmptyListPlaceholderView *)emptyListPlaceholder;
 

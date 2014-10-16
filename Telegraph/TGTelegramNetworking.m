@@ -19,8 +19,6 @@
 
 #import "TGTelegraph.h"
 
-#import "SecretLayer17.h"
-
 #import <MTProtoKit/MTLogging.h>
 #import <MTProtoKit/MTKeychain.h>
 #import <MTProtoKit/MTContext.h>
@@ -101,19 +99,6 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
     self = [super init];
     if (self != nil)
     {
-        {
-            Secret17_DecryptedMessageLayer *object = [Secret17_DecryptedMessageLayer decryptedMessageLayerWithLayer:@(1) message:[Secret17_DecryptedMessage decryptedMessageWithRandom_id:@(12345) random_bytes:[NSData data] in_seq_no:@(4) out_seq_no:@(5) ttl:@(9) message:@"test message text" media:[Secret17_DecryptedMessageMedia decryptedMessageMediaEmpty]]];
-            NSData *data = [Secret17__Environment serializeObject:object];
-            Secret17_DecryptedMessageLayer *parsedObject = [Secret17__Environment parseObject:data];
-            NSLog(@"%@", parsedObject);
-        }
-        {
-            Secret17_DecryptedMessageAction_decryptedMessageActionReadMessages *object = [Secret17_DecryptedMessageAction decryptedMessageActionReadMessagesWithRandom_ids:@[@(1), @(2), @(3)]];
-            NSData *data = [Secret17__Environment serializeObject:object];
-            id parsedObject = [Secret17__Environment parseObject:data];
-            NSLog(@"%@", parsedObject);
-        }
-        
         _actionHandle = [[ASHandle alloc] initWithDelegate:self];
         [ActionStageInstance() watchForPath:@"/tg/service/synchronizationstate" watcher:self];
         

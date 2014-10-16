@@ -1086,8 +1086,8 @@ ActionStage *ActionStageInstance()
         NSMutableDictionary *requestInfo = [_activeRequests objectForKey:path];
         if (requestInfo != nil)
         {
-            NSMutableArray *actionWatchers = [requestInfo objectForKey:@"watchers"];
-            for (ASHandle *handle in actionWatchers)
+            NSArray *actionWatchersCopy = [[requestInfo objectForKey:@"watchers"] copy];
+            for (ASHandle *handle in actionWatchersCopy)
             {
                 [handle receiveActorMessage:path messageType:messageType message:message];
             }
@@ -1096,10 +1096,11 @@ ActionStage *ActionStageInstance()
         if (_actorMessagesWatchers.count != 0)
         {
             NSString *genericPath = [self genericStringForParametrizedPath:path];
-            NSMutableArray *messagesWatchers = [_actorMessagesWatchers objectForKey:genericPath];
-            if (messagesWatchers != nil)
+            NSArray *messagesWatchersCopy = [[_actorMessagesWatchers objectForKey:genericPath] copy];
+            
+            if (messagesWatchersCopy != nil)
             {
-                for (ASHandle *handle in messagesWatchers)
+                for (ASHandle *handle in messagesWatchersCopy)
                 {
                     [handle receiveActorMessage:path messageType:messageType message:message];
                 }

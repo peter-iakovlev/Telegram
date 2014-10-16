@@ -13,8 +13,6 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLmessages_StatedMessages$messages_statedMessagesLinks new]);
     TLMetaClassStore::registerObjectClass([TLPeer$peerUser new]);
     TLMetaClassStore::registerObjectClass([TLPeer$peerChat new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessage$decryptedMessage new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessage$decryptedMessageService new]);
     TLMetaClassStore::registerObjectClass([TLInputUser$inputUserEmpty new]);
     TLMetaClassStore::registerObjectClass([TLInputUser$inputUserSelf new]);
     TLMetaClassStore::registerObjectClass([TLInputUser$inputUserContact new]);
@@ -105,12 +103,6 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLMessage$message new]);
     TLMetaClassStore::registerObjectClass([TLMessage$messageForwarded new]);
     TLMetaClassStore::registerObjectClass([TLMessage$messageService new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageAction$decryptedMessageActionSetMessageTTL new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageAction$decryptedMessageActionViewMessage new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageAction$decryptedMessageActionScreenshotMessage new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageAction$decryptedMessageActionScreenshot new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageAction$decryptedMessageActionDeleteMessages new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageAction$decryptedMessageActionFlushHistory new]);
     TLMetaClassStore::registerObjectClass([TLChatParticipants$chatParticipantsForbidden new]);
     TLMetaClassStore::registerObjectClass([TLChatParticipants$chatParticipants new]);
     TLMetaClassStore::registerObjectClass([TLClient_DH_Inner_Data$client_DH_inner_data new]);
@@ -311,13 +303,6 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLMsgDetailedInfo$msg_detailed_info new]);
     TLMetaClassStore::registerObjectClass([TLMsgDetailedInfo$msg_new_detailed_info new]);
     TLMetaClassStore::registerVectorClass([NSArray_int new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageMedia$decryptedMessageMediaEmpty new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageMedia$decryptedMessageMediaPhoto new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageMedia$decryptedMessageMediaVideo new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageMedia$decryptedMessageMediaGeoPoint new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageMedia$decryptedMessageMediaContact new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageMedia$decryptedMessageMediaDocument new]);
-    TLMetaClassStore::registerObjectClass([TLDecryptedMessageMedia$decryptedMessageMediaAudio new]);
     TLMetaClassStore::registerObjectClass([TLContactLocated$contactLocated new]);
     TLMetaClassStore::registerObjectClass([TLContactLocated$contactLocatedPreview new]);
     TLMetaClassStore::registerVectorClass([NSArray_InputUser new]);

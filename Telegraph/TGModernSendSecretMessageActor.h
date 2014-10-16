@@ -12,13 +12,36 @@
 
 #import "TL/TLMetaScheme.h"
 
+#import "SecretLayer1.h"
+#import "SecretLayer17.h"
+
+@class TGStoredOutgoingMessageFileInfo;
+
 @interface TGModernSendSecretMessageActor : TGModernSendMessageActor
 
++ (NSUInteger)currentLayer;
+
 + (MTMessageEncryptionKey *)generateMessageKeyData:(NSData *)messageKey incoming:(bool)incoming key:(NSData *)key;
-+ (NSData *)prepareEncryptedMessage:(NSString *)text media:(TLDecryptedMessageMedia *)media randomId:(int64_t)randomId key:(NSData *)key keyId:(int64_t)keyId;
++ (int32_t)enqueueOutgoingMessageForPeerId:(int64_t)peerId layer:(NSUInteger)layer randomId:(int64_t)randomId messageData:(NSData *)messageData storedFileInfo:(TGStoredOutgoingMessageFileInfo *)storedFileInfo watcher:(id)watcher;
++ (void)enqueueOutgoingServiceMessageForPeerId:(int64_t)peerId layer:(NSUInteger)layer randomId:(int64_t)randomId messageData:(NSData *)messageData;
++ (void)enqueueOutgoingResendMessagesForPeerId:(int64_t)peerId fromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq;
++ (void)enqueueIncomingMessagesByPeerId:(NSDictionary *)messageByPeerId;
++ (void)beginIncomingQueueProcessingIfNeeded:(int64_t)peerId;
++ (void)beginOutgoingQueueProcessingIfNeeded:(int64_t)peerId;
+
 + (NSData *)encryptMessage:(NSData *)serializedMessage key:(NSData *)key keyId:(int64_t)keyId;
+
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer setTTL:(int32_t)ttl randomId:(int64_t)randomId;
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer deleteMessagesWithRandomIds:(NSArray *)randomIds randomId:(int64_t)randomId;
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer flushHistoryWithRandomId:(int64_t)randomId;
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer readMessagesWithRandomIds:(NSArray *)randomIds randomId:(int64_t)randomId;
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer screenshotMessagesWithRandomIds:(NSArray *)randomIds randomId:(int64_t)randomId;
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer notifyLayer:(NSUInteger)notifyLayer randomId:(int64_t)randomId;
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer resendMessagesFromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq randomId:(int64_t)randomId;
 
 - (void)sendEncryptedMessageSuccess:(int32_t)date encryptedFile:(TLEncryptedFile *)encryptedFile;
 - (void)sendEncryptedMessageFailed;
+
+- (bool)waitsForActionWithId:(int32_t)actionId;
 
 @end

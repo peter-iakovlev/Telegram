@@ -178,6 +178,7 @@
     message.mid = self.mid;
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
+    message.messageLifetime = self.messageLifetime;
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     

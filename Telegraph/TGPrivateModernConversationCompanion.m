@@ -159,12 +159,15 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 {
     TGDispatchOnMainThread(^
     {
+        if (![self shouldDisplayContactLinkPanel])
+            return;
+        
         TGModernConversationController *controller = self.controller;
         
         TGModernConversationContactLinkTitlePanel *panel = [controller.secondaryTitlePanel isKindOfClass:[TGModernConversationContactLinkTitlePanel class]] ? (TGModernConversationContactLinkTitlePanel *)controller.secondaryTitlePanel : nil;
         TGUser *user = [TGDatabaseInstance() loadUser:_uid];
         
-        if ([self shouldDisplayContactLinkPanel] && (_phoneSharingStatus == TGPhoneSharingStatusNotShared || (!_isContact && user.phoneNumber.length != 0)))
+        if ((_phoneSharingStatus == TGPhoneSharingStatusNotShared || (!_isContact && user.phoneNumber.length != 0)))
         {
             bool shareContact = _isContact || _phoneSharingStatus == TGPhoneSharingStatusNotShared;
             

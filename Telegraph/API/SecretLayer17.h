@@ -10,6 +10,7 @@
 @class Secret17_DecryptedMessageAction_decryptedMessageActionFlushHistory;
 @class Secret17_DecryptedMessageAction_decryptedMessageActionNotifyLayer;
 @class Secret17_DecryptedMessageAction_decryptedMessageActionTyping;
+@class Secret17_DecryptedMessageAction_decryptedMessageActionResend;
 
 @class Secret17_SendMessageAction;
 @class Secret17_SendMessageAction_sendMessageTypingAction;
@@ -60,6 +61,7 @@
 + (Secret17_DecryptedMessageAction_decryptedMessageActionFlushHistory *)decryptedMessageActionFlushHistory;
 + (Secret17_DecryptedMessageAction_decryptedMessageActionNotifyLayer *)decryptedMessageActionNotifyLayerWithLayer:(NSNumber *)layer;
 + (Secret17_DecryptedMessageAction_decryptedMessageActionTyping *)decryptedMessageActionTypingWithAction:(Secret17_SendMessageAction *)action;
++ (Secret17_DecryptedMessageAction_decryptedMessageActionResend *)decryptedMessageActionResendWithStart_seq_no:(NSNumber *)start_seq_no end_seq_no:(NSNumber *)end_seq_no;
 
 @end
 
@@ -100,6 +102,13 @@
 @interface Secret17_DecryptedMessageAction_decryptedMessageActionTyping : Secret17_DecryptedMessageAction
 
 @property (nonatomic, strong, readonly) Secret17_SendMessageAction * action;
+
+@end
+
+@interface Secret17_DecryptedMessageAction_decryptedMessageActionResend : Secret17_DecryptedMessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * start_seq_no;
+@property (nonatomic, strong, readonly) NSNumber * end_seq_no;
 
 @end
 
@@ -162,10 +171,13 @@
 
 @interface Secret17_DecryptedMessageLayer : NSObject
 
+@property (nonatomic, strong, readonly) NSData * random_bytes;
 @property (nonatomic, strong, readonly) NSNumber * layer;
+@property (nonatomic, strong, readonly) NSNumber * in_seq_no;
+@property (nonatomic, strong, readonly) NSNumber * out_seq_no;
 @property (nonatomic, strong, readonly) Secret17_DecryptedMessage * message;
 
-+ (Secret17_DecryptedMessageLayer_decryptedMessageLayer *)decryptedMessageLayerWithLayer:(NSNumber *)layer message:(Secret17_DecryptedMessage *)message;
++ (Secret17_DecryptedMessageLayer_decryptedMessageLayer *)decryptedMessageLayerWithRandom_bytes:(NSData *)random_bytes layer:(NSNumber *)layer in_seq_no:(NSNumber *)in_seq_no out_seq_no:(NSNumber *)out_seq_no message:(Secret17_DecryptedMessage *)message;
 
 @end
 
@@ -177,12 +189,9 @@
 @interface Secret17_DecryptedMessage : NSObject
 
 @property (nonatomic, strong, readonly) NSNumber * random_id;
-@property (nonatomic, strong, readonly) NSData * random_bytes;
-@property (nonatomic, strong, readonly) NSNumber * in_seq_no;
-@property (nonatomic, strong, readonly) NSNumber * out_seq_no;
 
-+ (Secret17_DecryptedMessage_decryptedMessage *)decryptedMessageWithRandom_id:(NSNumber *)random_id random_bytes:(NSData *)random_bytes in_seq_no:(NSNumber *)in_seq_no out_seq_no:(NSNumber *)out_seq_no ttl:(NSNumber *)ttl message:(NSString *)message media:(Secret17_DecryptedMessageMedia *)media;
-+ (Secret17_DecryptedMessage_decryptedMessageService *)decryptedMessageServiceWithRandom_id:(NSNumber *)random_id random_bytes:(NSData *)random_bytes in_seq_no:(NSNumber *)in_seq_no out_seq_no:(NSNumber *)out_seq_no action:(Secret17_DecryptedMessageAction *)action;
++ (Secret17_DecryptedMessage_decryptedMessage *)decryptedMessageWithRandom_id:(NSNumber *)random_id ttl:(NSNumber *)ttl message:(NSString *)message media:(Secret17_DecryptedMessageMedia *)media;
++ (Secret17_DecryptedMessage_decryptedMessageService *)decryptedMessageServiceWithRandom_id:(NSNumber *)random_id action:(Secret17_DecryptedMessageAction *)action;
 
 @end
 

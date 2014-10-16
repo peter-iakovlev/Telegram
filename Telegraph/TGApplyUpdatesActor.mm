@@ -636,7 +636,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
             [chatsToProcess addObject:it->second];
         }
         
-        [TGUpdateStateRequestBuilder applyUpdates:addedMessages addedParsedMessages:nil otherUpdates:allUpdates addedEncryptedActions:nil usersDesc:usersToProcess chatsDesc:chatsToProcess chatParticipantsDesc:nil updatesWithDates:updatesWithDates];
+        [TGUpdateStateRequestBuilder applyUpdates:addedMessages otherUpdates:allUpdates usersDesc:usersToProcess chatsDesc:chatsToProcess chatParticipantsDesc:nil updatesWithDates:updatesWithDates addedEncryptedActionsByPeerId:nil];
         
         [delayedNotifications() addObjectsFromArray:messagesForLocalNotification];
         

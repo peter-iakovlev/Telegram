@@ -152,7 +152,7 @@
                 }
             }
             
-            if (!message.outgoing && messageLifetimeByConversation[conversationId] != 0)
+            if (!message.outgoing && messageLifetimeByConversation[conversationId] != 0 && message.layer < 17)
             {
                 storeMessage = [message copy];
                 NSTimeInterval minLifetime = 0.0;

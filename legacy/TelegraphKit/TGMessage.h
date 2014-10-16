@@ -20,6 +20,8 @@
 #import "TGDocumentMediaAttachment.h"
 #import "TGAudioMediaAttachment.h"
 
+#import "PSCoding.h"
+
 typedef enum {
     TGMessageDeliveryStateDelivered = 0,
     TGMessageDeliveryStatePending = 1,
@@ -28,7 +30,7 @@ typedef enum {
 
 #define TGMessageLocalMidBaseline 800000000
 
-@interface TGMessage : NSObject <NSCopying>
+@interface TGMessage : NSObject <NSCopying, PSCoding>
 
 @property (nonatomic) int mid;
 @property (nonatomic) bool unread;
@@ -57,6 +59,7 @@ typedef enum {
 @property (nonatomic) int64_t flags;
 
 @property (nonatomic) bool isBroadcast;
+@property (nonatomic) NSUInteger layer;
 
 - (bool)local;
 

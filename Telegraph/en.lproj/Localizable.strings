@@ -698,6 +698,8 @@ Is this number correct?
 "MessageTimer.Custom" = "Custom";
 "MessageTimer.Title" = "Custom Timer";
 
+"MessageTimer.Forever" = "Forever";
+
 "MessageTimer.Seconds_1" = "%@ second";
 "MessageTimer.Seconds_2" = "%@ seconds";
 "MessageTimer.Seconds_3_10" = "%@ seconds";
@@ -747,3 +749,7 @@ Is this number correct?
 "Activity.Location" = "picking location...";
 
 "Service.NetworkConfigurationUpdatedMessage" = "Connection settings updated successfully.";
+
+"Compatibility.SecretMediaVersionTooLow" = "Your conversation partner is using an outdated version of the app. Secret photos will be shown in compatibilty mode.
+
+Once your friend updates the app, photos with timers <1 minute will work in 'tap and hold to view' mode — and the countdown will begin once the photo is opened.";

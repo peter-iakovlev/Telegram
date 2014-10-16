@@ -84,7 +84,7 @@
 
 - (BOOL)shouldAutorotate
 {
-    return [super shouldAutorotate] && [_view shouldAutorotate];
+    return [super shouldAutorotate] && (_view == nil || [_view shouldAutorotate]);
 }
 
 - (void)dismissWhenReady
@@ -101,6 +101,13 @@
     }
     
     [self dismiss];
+}
+
+- (bool)isFullyOpaque
+{
+    CGFloat alpha = 0.0f;
+    [_view.backgroundColor getWhite:NULL alpha:&alpha];
+    return alpha >= 1.0f - FLT_EPSILON;
 }
 
 - (void)setModel:(TGModernGalleryModel *)model
@@ -134,6 +141,12 @@
         {
             __strong TGModernGalleryController *strongSelf = weakSelf;
             return strongSelf;
+        };
+        
+        _model.visibleItems = ^NSArray *()
+        {
+            __strong TGModernGalleryController *strongSelf = weakSelf;
+            return [strongSelf visibleItems];
         };
         
         _model.dismiss = ^(bool animated, bool asModal)
@@ -790,6 +803,19 @@ static CGFloat transformRotation(CGAffineTransform transform)
         return 0.0f;
     
     return CGFloor((_view.scrollView.bounds.origin.x + _view.scrollView.bounds.size.width / 2.0f) / _view.scrollView.bounds.size.width);
+}
+
+- (NSArray *)visibleItems
+{
+    NSMutableArray *items = [[NSMutableArray alloc] init];
+    
+    for (TGModernGalleryItemView *itemView in _visibleItemViews)
+    {
+        if (itemView.item != nil)
+            [items addObject:itemView.item];
+    }
+    
+    return items;
 }
 
 - (void)reloadDataAtItem:(id<TGModernGalleryItem>)atItem synchronously:(bool)synchronously

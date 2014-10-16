@@ -34,6 +34,7 @@
     message.mid = self.mid;
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
+    message.messageLifetime = self.messageLifetime;
     
     TGVideoMediaAttachment *videoAttachment = [[TGVideoMediaAttachment alloc] init];
     videoAttachment.videoId = _videoId;

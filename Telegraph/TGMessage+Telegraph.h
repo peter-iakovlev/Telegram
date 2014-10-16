@@ -10,9 +10,16 @@
 
 #import "TL/TLMetaScheme.h"
 
+#import "SecretLayer1.h"
+#import "SecretLayer17.h"
+
+#import "TGStoredIncomingMessageFileInfo.h"
+
 @interface TGMessage (Telegraph)
 
 - (id)initWithTelegraphMessageDesc:(TLMessage *)desc;
-- (id)initWithTelegraphDecryptedMessageDesc:(TLDecryptedMessage *)desc encryptedFile:(TLEncryptedFile *)encryptedFile conversationId:(int64_t)conversationId fromUid:(int)fromUid date:(int)date;
+
+- (instancetype)initWithDecryptedMessageDesc1:(Secret1_DecryptedMessage *)desc encryptedFile:(TGStoredIncomingMessageFileInfo *)encryptedFile conversationId:(int64_t)conversationId fromUid:(int)fromUid date:(int)date;
+- (instancetype)initWithDecryptedMessageDesc17:(Secret17_DecryptedMessage *)desc encryptedFile:(TGStoredIncomingMessageFileInfo *)encryptedFile conversationId:(int64_t)conversationId fromUid:(int)fromUid date:(int)date;
 
 @end

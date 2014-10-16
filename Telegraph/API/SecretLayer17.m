@@ -54,7 +54,7 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
     {
         _constructorSignature = constructorSignature;
     }
-    return nil;
+    return self;
 }
 
 @end
@@ -153,7 +153,7 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
                 *offset += 3;
                 length >>= 8;
 
-                paddingBytes = ((length % 4) == 0 ? length : (length + 4 - (length % 4)));
+                paddingBytes = (((length % 4) == 0 ? length : (length + 4 - (length % 4)))) - length;
             }
             else
                 paddingBytes = ((((length + 1) % 4) == 0 ? (length + 1) : ((length + 1) + 4 - ((length + 1) % 4)))) - (length + 1);
@@ -268,6 +268,16 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
                return nil;
             return [Secret17_DecryptedMessageAction decryptedMessageActionTypingWithAction:action];
         } copy];
+        parsers[@((int32_t)0x511110b0)] = [^id (NSData *data, NSUInteger* _offset, __unused id metaInfo)
+        {
+            NSNumber * start_seq_no = nil;
+            if ((start_seq_no = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xa8509bda metaInfo:nil]) == nil)
+               return nil;
+            NSNumber * end_seq_no = nil;
+            if ((end_seq_no = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xa8509bda metaInfo:nil]) == nil)
+               return nil;
+            return [Secret17_DecryptedMessageAction decryptedMessageActionResendWithStart_seq_no:start_seq_no end_seq_no:end_seq_no];
+        } copy];
         parsers[@((int32_t)0x16bf744e)] = [^id (__unused NSData *data, __unused NSUInteger* _offset, __unused id metaInfo)
         {
             return [Secret17_SendMessageAction sendMessageTypingAction];
@@ -308,30 +318,30 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
         {
             return [Secret17_SendMessageAction sendMessageChooseContactAction];
         } copy];
-        parsers[@((int32_t)0x99a438cf)] = [^id (NSData *data, NSUInteger* _offset, __unused id metaInfo)
+        parsers[@((int32_t)0x1be31789)] = [^id (NSData *data, NSUInteger* _offset, __unused id metaInfo)
         {
-            NSNumber * layer = nil;
-            if ((layer = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xa8509bda metaInfo:nil]) == nil)
-               return nil;
-            Secret17_DecryptedMessage * message = nil;
-            int32_t message_signature = 0; [data getBytes:(void *)&message_signature range:NSMakeRange(*_offset, 4)]; *_offset += 4;
-            if ((message = [Secret17__Environment parseObject:data offset:_offset implicitSignature:message_signature metaInfo:nil]) == nil)
-               return nil;
-            return [Secret17_DecryptedMessageLayer decryptedMessageLayerWithLayer:layer message:message];
-        } copy];
-        parsers[@((int32_t)0x4e748938)] = [^id (NSData *data, NSUInteger* _offset, __unused id metaInfo)
-        {
-            NSNumber * random_id = nil;
-            if ((random_id = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0x22076cba metaInfo:nil]) == nil)
-               return nil;
             NSData * random_bytes = nil;
             if ((random_bytes = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xb5286e24 metaInfo:[Secret17__PreferNSDataTypeMetaInfo preferNSDataTypeMetaInfo]]) == nil)
+               return nil;
+            NSNumber * layer = nil;
+            if ((layer = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xa8509bda metaInfo:nil]) == nil)
                return nil;
             NSNumber * in_seq_no = nil;
             if ((in_seq_no = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xa8509bda metaInfo:nil]) == nil)
                return nil;
             NSNumber * out_seq_no = nil;
             if ((out_seq_no = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xa8509bda metaInfo:nil]) == nil)
+               return nil;
+            Secret17_DecryptedMessage * message = nil;
+            int32_t message_signature = 0; [data getBytes:(void *)&message_signature range:NSMakeRange(*_offset, 4)]; *_offset += 4;
+            if ((message = [Secret17__Environment parseObject:data offset:_offset implicitSignature:message_signature metaInfo:nil]) == nil)
+               return nil;
+            return [Secret17_DecryptedMessageLayer decryptedMessageLayerWithRandom_bytes:random_bytes layer:layer in_seq_no:in_seq_no out_seq_no:out_seq_no message:message];
+        } copy];
+        parsers[@((int32_t)0x204d3878)] = [^id (NSData *data, NSUInteger* _offset, __unused id metaInfo)
+        {
+            NSNumber * random_id = nil;
+            if ((random_id = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0x22076cba metaInfo:nil]) == nil)
                return nil;
             NSNumber * ttl = nil;
             if ((ttl = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xa8509bda metaInfo:nil]) == nil)
@@ -343,27 +353,18 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
             int32_t media_signature = 0; [data getBytes:(void *)&media_signature range:NSMakeRange(*_offset, 4)]; *_offset += 4;
             if ((media = [Secret17__Environment parseObject:data offset:_offset implicitSignature:media_signature metaInfo:nil]) == nil)
                return nil;
-            return [Secret17_DecryptedMessage decryptedMessageWithRandom_id:random_id random_bytes:random_bytes in_seq_no:in_seq_no out_seq_no:out_seq_no ttl:ttl message:message media:media];
+            return [Secret17_DecryptedMessage decryptedMessageWithRandom_id:random_id ttl:ttl message:message media:media];
         } copy];
-        parsers[@((int32_t)0xda431693)] = [^id (NSData *data, NSUInteger* _offset, __unused id metaInfo)
+        parsers[@((int32_t)0x73164160)] = [^id (NSData *data, NSUInteger* _offset, __unused id metaInfo)
         {
             NSNumber * random_id = nil;
             if ((random_id = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0x22076cba metaInfo:nil]) == nil)
-               return nil;
-            NSData * random_bytes = nil;
-            if ((random_bytes = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xb5286e24 metaInfo:[Secret17__PreferNSDataTypeMetaInfo preferNSDataTypeMetaInfo]]) == nil)
-               return nil;
-            NSNumber * in_seq_no = nil;
-            if ((in_seq_no = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xa8509bda metaInfo:nil]) == nil)
-               return nil;
-            NSNumber * out_seq_no = nil;
-            if ((out_seq_no = [Secret17__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xa8509bda metaInfo:nil]) == nil)
                return nil;
             Secret17_DecryptedMessageAction * action = nil;
             int32_t action_signature = 0; [data getBytes:(void *)&action_signature range:NSMakeRange(*_offset, 4)]; *_offset += 4;
             if ((action = [Secret17__Environment parseObject:data offset:_offset implicitSignature:action_signature metaInfo:nil]) == nil)
                return nil;
-            return [Secret17_DecryptedMessage decryptedMessageServiceWithRandom_id:random_id random_bytes:random_bytes in_seq_no:in_seq_no out_seq_no:out_seq_no action:action];
+            return [Secret17_DecryptedMessage decryptedMessageServiceWithRandom_id:random_id action:action];
         } copy];
         parsers[@((int32_t)0x89f5c4a)] = [^id (__unused NSData *data, __unused NSUInteger* _offset, __unused id metaInfo)
         {
@@ -618,7 +619,7 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
             uint8_t tmp = 254;
             [data appendBytes:&tmp length:1];
             [data appendBytes:(void *)&length length:3];
-            padding = ((length % 4) == 0 ? length : (length + 4 - (length % 4)));
+            padding = (((length % 4) == 0 ? length : (length + 4 - (length % 4)))) - length;
         }
         else
         {
@@ -655,7 +656,7 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
             uint8_t tmp = 254;
             [data appendBytes:&tmp length:1];
             [data appendBytes:(void *)&length length:3];
-            padding = ((length % 4) == 0 ? length : (length + 4 - (length % 4)));
+            padding = (((length % 4) == 0 ? length : (length + 4 - (length % 4)))) - length;
         }
         else
         {
@@ -756,6 +757,13 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
 
 @end
 
+@interface Secret17_DecryptedMessageAction_decryptedMessageActionResend ()
+
+@property (nonatomic, strong) NSNumber * start_seq_no;
+@property (nonatomic, strong) NSNumber * end_seq_no;
+
+@end
+
 @implementation Secret17_DecryptedMessageAction
 
 + (Secret17_DecryptedMessageAction_decryptedMessageActionSetMessageTTL *)decryptedMessageActionSetMessageTTLWithTtl_seconds:(NSNumber *)ttl_seconds
@@ -768,7 +776,14 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
 + (Secret17_DecryptedMessageAction_decryptedMessageActionReadMessages *)decryptedMessageActionReadMessagesWithRandom_ids:(NSArray *)random_ids
 {
     Secret17_DecryptedMessageAction_decryptedMessageActionReadMessages *_object = [[Secret17_DecryptedMessageAction_decryptedMessageActionReadMessages alloc] init];
-    _object.random_ids = [Secret17__Serializer addSerializerToObject:[random_ids copy] serializer:[[Secret17__Serializer alloc] initWithConstructorSignature:(int32_t)0x1cb5c415 serializeBlock:^bool (NSArray *object, NSMutableData *data)
+    _object.random_ids = 
+({
+NSMutableArray *random_ids_copy = [[NSMutableArray alloc] initWithCapacity:random_ids.count];
+for (id random_ids_item in random_ids)
+{
+    [random_ids_copy addObject:[Secret17__Serializer addSerializerToObject:[random_ids_item copy] serializer:[[Secret17_BuiltinSerializer_Long alloc] init]]];
+}
+id random_ids_result = [Secret17__Serializer addSerializerToObject:random_ids_copy serializer:[[Secret17__Serializer alloc] initWithConstructorSignature:(int32_t)0x1cb5c415 serializeBlock:^bool (NSArray *object, NSMutableData *data)
 {
     int32_t count = (int32_t)object.count;
     [data appendBytes:(void *)&count length:4];
@@ -778,14 +793,21 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
         return false;
     }
     return true;
-}]];
+}]]; random_ids_result;});
     return _object;
 }
 
 + (Secret17_DecryptedMessageAction_decryptedMessageActionDeleteMessages *)decryptedMessageActionDeleteMessagesWithRandom_ids:(NSArray *)random_ids
 {
     Secret17_DecryptedMessageAction_decryptedMessageActionDeleteMessages *_object = [[Secret17_DecryptedMessageAction_decryptedMessageActionDeleteMessages alloc] init];
-    _object.random_ids = [Secret17__Serializer addSerializerToObject:[random_ids copy] serializer:[[Secret17__Serializer alloc] initWithConstructorSignature:(int32_t)0x1cb5c415 serializeBlock:^bool (NSArray *object, NSMutableData *data)
+    _object.random_ids = 
+({
+NSMutableArray *random_ids_copy = [[NSMutableArray alloc] initWithCapacity:random_ids.count];
+for (id random_ids_item in random_ids)
+{
+    [random_ids_copy addObject:[Secret17__Serializer addSerializerToObject:[random_ids_item copy] serializer:[[Secret17_BuiltinSerializer_Long alloc] init]]];
+}
+id random_ids_result = [Secret17__Serializer addSerializerToObject:random_ids_copy serializer:[[Secret17__Serializer alloc] initWithConstructorSignature:(int32_t)0x1cb5c415 serializeBlock:^bool (NSArray *object, NSMutableData *data)
 {
     int32_t count = (int32_t)object.count;
     [data appendBytes:(void *)&count length:4];
@@ -795,14 +817,21 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
         return false;
     }
     return true;
-}]];
+}]]; random_ids_result;});
     return _object;
 }
 
 + (Secret17_DecryptedMessageAction_decryptedMessageActionScreenshotMessages *)decryptedMessageActionScreenshotMessagesWithRandom_ids:(NSArray *)random_ids
 {
     Secret17_DecryptedMessageAction_decryptedMessageActionScreenshotMessages *_object = [[Secret17_DecryptedMessageAction_decryptedMessageActionScreenshotMessages alloc] init];
-    _object.random_ids = [Secret17__Serializer addSerializerToObject:[random_ids copy] serializer:[[Secret17__Serializer alloc] initWithConstructorSignature:(int32_t)0x1cb5c415 serializeBlock:^bool (NSArray *object, NSMutableData *data)
+    _object.random_ids = 
+({
+NSMutableArray *random_ids_copy = [[NSMutableArray alloc] initWithCapacity:random_ids.count];
+for (id random_ids_item in random_ids)
+{
+    [random_ids_copy addObject:[Secret17__Serializer addSerializerToObject:[random_ids_item copy] serializer:[[Secret17_BuiltinSerializer_Long alloc] init]]];
+}
+id random_ids_result = [Secret17__Serializer addSerializerToObject:random_ids_copy serializer:[[Secret17__Serializer alloc] initWithConstructorSignature:(int32_t)0x1cb5c415 serializeBlock:^bool (NSArray *object, NSMutableData *data)
 {
     int32_t count = (int32_t)object.count;
     [data appendBytes:(void *)&count length:4];
@@ -812,7 +841,7 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
         return false;
     }
     return true;
-}]];
+}]]; random_ids_result;});
     return _object;
 }
 
@@ -833,6 +862,14 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
 {
     Secret17_DecryptedMessageAction_decryptedMessageActionTyping *_object = [[Secret17_DecryptedMessageAction_decryptedMessageActionTyping alloc] init];
     _object.action = action;
+    return _object;
+}
+
++ (Secret17_DecryptedMessageAction_decryptedMessageActionResend *)decryptedMessageActionResendWithStart_seq_no:(NSNumber *)start_seq_no end_seq_no:(NSNumber *)end_seq_no
+{
+    Secret17_DecryptedMessageAction_decryptedMessageActionResend *_object = [[Secret17_DecryptedMessageAction_decryptedMessageActionResend alloc] init];
+    _object.start_seq_no = [Secret17__Serializer addSerializerToObject:[start_seq_no copy] serializer:[[Secret17_BuiltinSerializer_Int alloc] init]];
+    _object.end_seq_no = [Secret17__Serializer addSerializerToObject:[end_seq_no copy] serializer:[[Secret17_BuiltinSerializer_Int alloc] init]];
     return _object;
 }
 
@@ -1001,6 +1038,32 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
 - (NSString *)description
 {
     return [[NSString alloc] initWithFormat:@"(decryptedMessageActionTyping action:%@)", self.action];
+}
+
+@end
+
+@implementation Secret17_DecryptedMessageAction_decryptedMessageActionResend
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self != nil)
+    {
+        [Secret17__Serializer addSerializerToObject:self withConstructorSignature:0x511110b0 serializeBlock:^bool (Secret17_DecryptedMessageAction_decryptedMessageActionResend *object, NSMutableData *data)
+        {
+            if (![Secret17__Environment serializeObject:object.start_seq_no data:data addSignature:false])
+                return false;
+            if (![Secret17__Environment serializeObject:object.end_seq_no data:data addSignature:false])
+                return false;
+            return true;
+        }];
+    }
+    return self;
+}
+
+- (NSString *)description
+{
+    return [[NSString alloc] initWithFormat:@"(decryptedMessageActionResend start_seq_no:%@ end_seq_no:%@)", self.start_seq_no, self.end_seq_no];
 }
 
 @end
@@ -1342,7 +1405,10 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
 
 @interface Secret17_DecryptedMessageLayer ()
 
+@property (nonatomic, strong) NSData * random_bytes;
 @property (nonatomic, strong) NSNumber * layer;
+@property (nonatomic, strong) NSNumber * in_seq_no;
+@property (nonatomic, strong) NSNumber * out_seq_no;
 @property (nonatomic, strong) Secret17_DecryptedMessage * message;
 
 @end
@@ -1353,10 +1419,13 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
 
 @implementation Secret17_DecryptedMessageLayer
 
-+ (Secret17_DecryptedMessageLayer_decryptedMessageLayer *)decryptedMessageLayerWithLayer:(NSNumber *)layer message:(Secret17_DecryptedMessage *)message
++ (Secret17_DecryptedMessageLayer_decryptedMessageLayer *)decryptedMessageLayerWithRandom_bytes:(NSData *)random_bytes layer:(NSNumber *)layer in_seq_no:(NSNumber *)in_seq_no out_seq_no:(NSNumber *)out_seq_no message:(Secret17_DecryptedMessage *)message
 {
     Secret17_DecryptedMessageLayer_decryptedMessageLayer *_object = [[Secret17_DecryptedMessageLayer_decryptedMessageLayer alloc] init];
+    _object.random_bytes = [Secret17__Serializer addSerializerToObject:[random_bytes copy] serializer:[[Secret17_BuiltinSerializer_Bytes alloc] init]];
     _object.layer = [Secret17__Serializer addSerializerToObject:[layer copy] serializer:[[Secret17_BuiltinSerializer_Int alloc] init]];
+    _object.in_seq_no = [Secret17__Serializer addSerializerToObject:[in_seq_no copy] serializer:[[Secret17_BuiltinSerializer_Int alloc] init]];
+    _object.out_seq_no = [Secret17__Serializer addSerializerToObject:[out_seq_no copy] serializer:[[Secret17_BuiltinSerializer_Int alloc] init]];
     _object.message = message;
     return _object;
 }
@@ -1371,9 +1440,15 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
     self = [super init];
     if (self != nil)
     {
-        [Secret17__Serializer addSerializerToObject:self withConstructorSignature:0x99a438cf serializeBlock:^bool (Secret17_DecryptedMessageLayer_decryptedMessageLayer *object, NSMutableData *data)
+        [Secret17__Serializer addSerializerToObject:self withConstructorSignature:0x1be31789 serializeBlock:^bool (Secret17_DecryptedMessageLayer_decryptedMessageLayer *object, NSMutableData *data)
         {
+            if (![Secret17__Environment serializeObject:object.random_bytes data:data addSignature:false])
+                return false;
             if (![Secret17__Environment serializeObject:object.layer data:data addSignature:false])
+                return false;
+            if (![Secret17__Environment serializeObject:object.in_seq_no data:data addSignature:false])
+                return false;
+            if (![Secret17__Environment serializeObject:object.out_seq_no data:data addSignature:false])
                 return false;
             if (![Secret17__Environment serializeObject:object.message data:data addSignature:true])
                 return false;
@@ -1385,7 +1460,7 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
 
 - (NSString *)description
 {
-    return [[NSString alloc] initWithFormat:@"(decryptedMessageLayer layer:%@ message:%@)", self.layer, self.message];
+    return [[NSString alloc] initWithFormat:@"(decryptedMessageLayer random_bytes:%@ layer:%@ in_seq_no:%@ out_seq_no:%@ message:%@)", self.random_bytes, self.layer, self.in_seq_no, self.out_seq_no, self.message];
 }
 
 @end
@@ -1396,9 +1471,6 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
 @interface Secret17_DecryptedMessage ()
 
 @property (nonatomic, strong) NSNumber * random_id;
-@property (nonatomic, strong) NSData * random_bytes;
-@property (nonatomic, strong) NSNumber * in_seq_no;
-@property (nonatomic, strong) NSNumber * out_seq_no;
 
 @end
 
@@ -1418,26 +1490,20 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
 
 @implementation Secret17_DecryptedMessage
 
-+ (Secret17_DecryptedMessage_decryptedMessage *)decryptedMessageWithRandom_id:(NSNumber *)random_id random_bytes:(NSData *)random_bytes in_seq_no:(NSNumber *)in_seq_no out_seq_no:(NSNumber *)out_seq_no ttl:(NSNumber *)ttl message:(NSString *)message media:(Secret17_DecryptedMessageMedia *)media
++ (Secret17_DecryptedMessage_decryptedMessage *)decryptedMessageWithRandom_id:(NSNumber *)random_id ttl:(NSNumber *)ttl message:(NSString *)message media:(Secret17_DecryptedMessageMedia *)media
 {
     Secret17_DecryptedMessage_decryptedMessage *_object = [[Secret17_DecryptedMessage_decryptedMessage alloc] init];
     _object.random_id = [Secret17__Serializer addSerializerToObject:[random_id copy] serializer:[[Secret17_BuiltinSerializer_Long alloc] init]];
-    _object.random_bytes = [Secret17__Serializer addSerializerToObject:[random_bytes copy] serializer:[[Secret17_BuiltinSerializer_Bytes alloc] init]];
-    _object.in_seq_no = [Secret17__Serializer addSerializerToObject:[in_seq_no copy] serializer:[[Secret17_BuiltinSerializer_Int alloc] init]];
-    _object.out_seq_no = [Secret17__Serializer addSerializerToObject:[out_seq_no copy] serializer:[[Secret17_BuiltinSerializer_Int alloc] init]];
     _object.ttl = [Secret17__Serializer addSerializerToObject:[ttl copy] serializer:[[Secret17_BuiltinSerializer_Int alloc] init]];
     _object.message = [Secret17__Serializer addSerializerToObject:[message copy] serializer:[[Secret17_BuiltinSerializer_String alloc] init]];
     _object.media = media;
     return _object;
 }
 
-+ (Secret17_DecryptedMessage_decryptedMessageService *)decryptedMessageServiceWithRandom_id:(NSNumber *)random_id random_bytes:(NSData *)random_bytes in_seq_no:(NSNumber *)in_seq_no out_seq_no:(NSNumber *)out_seq_no action:(Secret17_DecryptedMessageAction *)action
++ (Secret17_DecryptedMessage_decryptedMessageService *)decryptedMessageServiceWithRandom_id:(NSNumber *)random_id action:(Secret17_DecryptedMessageAction *)action
 {
     Secret17_DecryptedMessage_decryptedMessageService *_object = [[Secret17_DecryptedMessage_decryptedMessageService alloc] init];
     _object.random_id = [Secret17__Serializer addSerializerToObject:[random_id copy] serializer:[[Secret17_BuiltinSerializer_Long alloc] init]];
-    _object.random_bytes = [Secret17__Serializer addSerializerToObject:[random_bytes copy] serializer:[[Secret17_BuiltinSerializer_Bytes alloc] init]];
-    _object.in_seq_no = [Secret17__Serializer addSerializerToObject:[in_seq_no copy] serializer:[[Secret17_BuiltinSerializer_Int alloc] init]];
-    _object.out_seq_no = [Secret17__Serializer addSerializerToObject:[out_seq_no copy] serializer:[[Secret17_BuiltinSerializer_Int alloc] init]];
     _object.action = action;
     return _object;
 }
@@ -1452,15 +1518,9 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
     self = [super init];
     if (self != nil)
     {
-        [Secret17__Serializer addSerializerToObject:self withConstructorSignature:0x4e748938 serializeBlock:^bool (Secret17_DecryptedMessage_decryptedMessage *object, NSMutableData *data)
+        [Secret17__Serializer addSerializerToObject:self withConstructorSignature:0x204d3878 serializeBlock:^bool (Secret17_DecryptedMessage_decryptedMessage *object, NSMutableData *data)
         {
             if (![Secret17__Environment serializeObject:object.random_id data:data addSignature:false])
-                return false;
-            if (![Secret17__Environment serializeObject:object.random_bytes data:data addSignature:false])
-                return false;
-            if (![Secret17__Environment serializeObject:object.in_seq_no data:data addSignature:false])
-                return false;
-            if (![Secret17__Environment serializeObject:object.out_seq_no data:data addSignature:false])
                 return false;
             if (![Secret17__Environment serializeObject:object.ttl data:data addSignature:false])
                 return false;
@@ -1476,7 +1536,7 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
 
 - (NSString *)description
 {
-    return [[NSString alloc] initWithFormat:@"(decryptedMessage random_id:%@ random_bytes:%@ in_seq_no:%@ out_seq_no:%@ ttl:%@ message:%@ media:%@)", self.random_id, self.random_bytes, self.in_seq_no, self.out_seq_no, self.ttl, self.message, self.media];
+    return [[NSString alloc] initWithFormat:@"(decryptedMessage random_id:%@ ttl:%@ message:%@ media:%@)", self.random_id, self.ttl, self.message, self.media];
 }
 
 @end
@@ -1488,15 +1548,9 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
     self = [super init];
     if (self != nil)
     {
-        [Secret17__Serializer addSerializerToObject:self withConstructorSignature:0xda431693 serializeBlock:^bool (Secret17_DecryptedMessage_decryptedMessageService *object, NSMutableData *data)
+        [Secret17__Serializer addSerializerToObject:self withConstructorSignature:0x73164160 serializeBlock:^bool (Secret17_DecryptedMessage_decryptedMessageService *object, NSMutableData *data)
         {
             if (![Secret17__Environment serializeObject:object.random_id data:data addSignature:false])
-                return false;
-            if (![Secret17__Environment serializeObject:object.random_bytes data:data addSignature:false])
-                return false;
-            if (![Secret17__Environment serializeObject:object.in_seq_no data:data addSignature:false])
-                return false;
-            if (![Secret17__Environment serializeObject:object.out_seq_no data:data addSignature:false])
                 return false;
             if (![Secret17__Environment serializeObject:object.action data:data addSignature:true])
                 return false;
@@ -1508,7 +1562,7 @@ static const char *Secret17__Serializer_Key = "Secret17__Serializer";
 
 - (NSString *)description
 {
-    return [[NSString alloc] initWithFormat:@"(decryptedMessageService random_id:%@ random_bytes:%@ in_seq_no:%@ out_seq_no:%@ action:%@)", self.random_id, self.random_bytes, self.in_seq_no, self.out_seq_no, self.action];
+    return [[NSString alloc] initWithFormat:@"(decryptedMessageService random_id:%@ action:%@)", self.random_id, self.action];
 }
 
 @end

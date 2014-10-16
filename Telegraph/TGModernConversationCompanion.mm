@@ -1677,4 +1677,8 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     return nil;
 }
 
+- (void)serviceNotificationsForMessageIds:(NSArray *)__unused messageIds
+{
+}
+
 @end

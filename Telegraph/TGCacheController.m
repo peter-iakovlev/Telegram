@@ -11,6 +11,8 @@
 
 #import "TGDatabase.h"
 
+#import "TGStringUtils.h"
+
 @interface TGCacheController ()
 {
     TGProgressWindow *_progressWindow;
@@ -23,9 +25,24 @@
 
 - (NSArray *)keepMediaVariants
 {
+    NSArray *values = @[@(1 * 60 * 60 * 24 * 7),
+                        @(1 * 60 * 60 * 24 * 7 * 30),
+                        @(INT_MAX)];
+    
+    NSMutableArray *variants = [[NSMutableArray alloc] init];
+    for (NSNumber *nValue in values)
+    {
+        NSString *title = @"";
+        
+        if ([nValue intValue] == INT_MAX)
+            title = TGLocalized(@"MessageTimer.Forever");
+        else
+            title = [TGStringUtils stringForMessageTimerSeconds:[nValue intValue]];
+        
+        [variants addObject:@{@"title": title, @"value": nValue}];
+    }
+    
     return @[
-        //@{@"title": @"10 seconds", @"value": @(10)},
-        @{@"title": @"1 hour", @"value": @(60 * 60)},
         @{@"title": @"1 week", @"value": @(1 * 60 * 60 * 24 * 7)},
         @{@"title": @"1 month", @"value": @(1 * 60 * 60 * 24 * 7 * 30)},
         @{@"title": @"Forever", @"value": @(INT_MAX)}

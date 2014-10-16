@@ -26,6 +26,9 @@
 #import "TGSynchronizeEncryptedChatSettingsFutureAction.h"
 #import "TGAcceptEncryptionFutureAction.h"
 #import "TGEncryptedChatServiceAction.h"
+#import "TGUpdatePeerLayerFutureAction.h"
+
+#import "TGStoredSecretAction.h"
 
 typedef struct {
     int pts;
@@ -315,8 +318,15 @@ typedef void (^TGDatabaseCleanupEverythingBlock)();
 - (void)storeEncryptionKeyForConversationId:(int64_t)conversationId key:(NSData *)key keyFingerprint:(int64_t)keyFingerprint;
 - (void)raiseSecretMessageFlagsByMessageId:(int32_t)messageId flagsToRise:(int)flagsToRise;
 - (int)encryptedParticipantIdForConversationId:(int64_t)conversationId;
+- (bool)encryptedConversationIsCreator:(int64_t)conversationId;
 
 - (int64_t)activeEncryptedPeerIdForUserId:(int)userId;
+
+- (void)setLastReportedToPeerLayer:(int64_t)peerId layer:(NSUInteger)layer;
+- (NSUInteger)lastReportedToPeerLayer:(int64_t)peerId;
+- (void)setPeerLayer:(int64_t)peerId layer:(NSUInteger)layer;
+- (NSUInteger)peerLayer:(int64_t)peerId;
+- (void)loadAllSercretChatPeerIds:(void (^)(NSArray *))completion;
 
 - (bool)hasBroadcastConversations;
 - (void)addBroadcastConversation:(NSString *)title userIds:(NSArray *)userIds completion:(void (^)(TGConversation *conversation))completion;
@@ -339,5 +349,21 @@ typedef void (^TGDatabaseCleanupEverythingBlock)();
 
 - (void)updateLastUseDateForMediaType:(int32_t)mediaType mediaId:(int64_t)mediaId messageId:(int32_t)messageId;
 - (void)processAndScheduleMediaCleanup;
+
+- (void)peersWithOutgoingAndIncomingActions:(void (^)(NSArray *, NSArray *))completion;
+- (void)enqueuePeerOutgoingAction:(int64_t)peerId action:(id<PSCoding>)action useSeq:(bool)useSeq seqOut:(int32_t *)seqOut seqIn:(int32_t *)seqIn actionId:(int32_t *)actionId;
+- (void)dequeuePeerOutgoingActions:(int64_t)peerId completion:(void (^)(NSArray *, NSArray *))completion;
+- (void)enqueuePeerOutgoingResendActions:(int64_t)peerId fromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq;
+- (void)deletePeerOutgoingActions:(int64_t)peerId actionIds:(NSArray *)actionIds;
+- (void)enqueuePeerIncomingActions:(int64_t)peerId actions:(NSArray *)actions;
+- (void)dequeuePeerIncomingActions:(int64_t)peerId completion:(void (^)(NSArray *, int32_t))completion;
+- (void)deletePeerOutgoingResendActions:(int64_t)peerId actionIds:(NSArray *)actionIds;
+- (void)confirmPeerSeqOut:(int64_t)peerId seqOut:(int32_t)seqOut;
+- (void)applyPeerSeqOut:(int64_t)peerId seqOut:(int32_t)seqOut;
+- (int32_t)currentPeerSentSeqOut:(int64_t)peerId;
+- (void)applyPeerSeqIn:(int64_t)peerId seqIn:(int32_t)seqIn;
+- (bool)currentPeerResendSeqIn:(int64_t)peerId seqIn:(int32_t *)seqIn;
+- (void)setCurrentPeerResendSeqIn:(int64_t)peerId seqIn:(int32_t)seqIn;
+- (void)deletePeerIncomingActions:(int64_t)peerId actionIds:(NSArray *)actionIds;
 
 @end

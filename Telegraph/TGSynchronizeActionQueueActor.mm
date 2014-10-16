@@ -139,36 +139,18 @@
                 
                 int64_t messageRandomId = 0;
                 arc4random_buf(&messageRandomId, 8);
-                TLDecryptedMessage$decryptedMessageService *serviceMessage = [[TLDecryptedMessage$decryptedMessageService alloc] init];
-                serviceMessage.random_id = messageRandomId;
                 
-                TLDecryptedMessageAction$decryptedMessageActionDeleteMessages *deleteMessages = [[TLDecryptedMessageAction$decryptedMessageActionDeleteMessages alloc] init];
-                deleteMessages.random_ids = randomIds;
-                serviceMessage.action = deleteMessages;
+                NSUInteger peerLayer = [TGDatabaseInstance() peerLayer:currentConversationId];
                 
-                NSOutputStream *os = [[NSOutputStream alloc] initToMemory];
-                [os open];
-                TLMetaClassStore::serializeObject(os, serviceMessage, true);
-                NSData *serializedData = [os currentBytes];
-                [os close];
+                NSData *messageData = [TGModernSendSecretMessageActor decryptedServiceMessageActionWithLayer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) deleteMessagesWithRandomIds:randomIds randomId:messageRandomId];
                 
-                int64_t encryptedPeerId = [TGDatabaseInstance() encryptedConversationIdForPeerId:currentConversationId];
-                
-                int64_t keyFingerprint = 0;
-                NSData *key = [TGDatabaseInstance() encryptionKeyForConversationId:currentConversationId keyFingerprint:&keyFingerprint];
-                int64_t accessHash = [TGDatabaseInstance() encryptedConversationAccessHash:currentConversationId];
-                
-                if (encryptedPeerId == 0 || key == nil || accessHash == 0)
+                if (messageData != nil)
                 {
-                    [TGDatabaseInstance() confirmQueuedActions:currentActions requireFullMatch:true];
-                    [self execute:nil];
+                    [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:currentConversationId layer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) randomId:messageRandomId messageData:messageData];
                 }
-                else
-                {
-                    _currentSecretActions = currentActions;
-                    
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedServiceMessage:encryptedPeerId accessHash:accessHash randomId:messageRandomId data:[TGModernSendSecretMessageActor encryptMessage:serializedData key:key keyId:keyFingerprint] actor:(TGSynchronizeServiceActionsActor *)self];
-                }
+                
+                [TGDatabaseInstance() confirmQueuedActions:currentActions requireFullMatch:true];
+                [self execute:nil];
             }
             else if (deleteConversationActions.count != 0)
             {
@@ -236,35 +218,18 @@
                 
                 int64_t messageRandomId = 0;
                 arc4random_buf(&messageRandomId, 8);
-                TLDecryptedMessage$decryptedMessageService *serviceMessage = [[TLDecryptedMessage$decryptedMessageService alloc] init];
-                serviceMessage.random_id = messageRandomId;
                 
-                TLDecryptedMessageAction$decryptedMessageActionFlushHistory *flushHistory = [[TLDecryptedMessageAction$decryptedMessageActionFlushHistory alloc] init];
-                serviceMessage.action = flushHistory;
+                NSUInteger peerLayer = [TGDatabaseInstance() peerLayer:currentConversationId];
                 
-                NSOutputStream *os = [[NSOutputStream alloc] initToMemory];
-                [os open];
-                TLMetaClassStore::serializeObject(os, serviceMessage, true);
-                NSData *serializedData = [os currentBytes];
-                [os close];
+                NSData *messageData = [TGModernSendSecretMessageActor decryptedServiceMessageActionWithLayer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) flushHistoryWithRandomId:messageRandomId];
                 
-                int64_t encryptedPeerId = [TGDatabaseInstance() encryptedConversationIdForPeerId:currentConversationId];
-                
-                int64_t keyFingerprint = 0;
-                NSData *key = [TGDatabaseInstance() encryptionKeyForConversationId:currentConversationId keyFingerprint:&keyFingerprint];
-                int64_t accessHash = [TGDatabaseInstance() encryptedConversationAccessHash:currentConversationId];
-                
-                if (encryptedPeerId == 0 || key == nil || accessHash == 0)
+                if (messageData != nil)
                 {
-                    [TGDatabaseInstance() confirmQueuedActions:currentActions requireFullMatch:true];
-                    [self execute:nil];
+                    [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:currentConversationId layer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) randomId:messageRandomId messageData:messageData];
                 }
-                else
-                {
-                    _currentSecretActions = currentActions;
-                    
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedServiceMessage:encryptedPeerId accessHash:accessHash randomId:messageRandomId data:[TGModernSendSecretMessageActor encryptMessage:serializedData key:key keyId:keyFingerprint] actor:(TGSynchronizeServiceActionsActor *)self];
-                }
+                
+                [TGDatabaseInstance() confirmQueuedActions:currentActions requireFullMatch:true];
+                [self execute:nil];
             }
             else
             {

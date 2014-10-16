@@ -25,7 +25,6 @@
 
 @interface TGSecretChatUserInfoController ()
 {
-    TGUserInfoVariantCollectionItem *_selfDestructTimerItem;
     TGUserInfoVariantCollectionItem *_encryptionKeyItem;
     
     int _selfDestructTimer;
@@ -53,20 +52,16 @@
         
         [self setTitleText:TGLocalized(@"SecretChat.Title")];
         
-        _selfDestructTimerItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Profile.MessageLifetime") variant:nil action:@selector(selfDestructTimerPressed)];
-        _selfDestructTimerItem.deselectAutomatically = true;
         _encryptionKeyItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Profile.EncryptionKey") variant:nil action:@selector(encryptionKeyPressed)];
         
         _selfDestructTimer = [TGDatabaseInstance() messageLifetimeForPeerId:_peerId];
         
         [self _updateSecretDataItems];
-        [self _updateSelfDestructTimer];
         
         [ActionStageInstance() dispatchOnStageQueue:^
         {
             [ActionStageInstance() watchForPaths:@[
-               [[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/conversation", _peerId],
-               [[NSString alloc] initWithFormat:@"/tg/encrypted/messageLifetime/(%" PRId64 ")", _peerId]
+               [[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/conversation", _peerId]
             ] watcher:self];
         }];
     }
@@ -86,13 +81,6 @@
             needsReload = true;
         }
         
-        NSIndexPath *timerIndexPath = [self indexPathForItem:_selfDestructTimerItem];
-        if (timerIndexPath != nil)
-        {
-            [self.menuSections deleteItemFromSection:timerIndexPath.section atIndex:timerIndexPath.item];
-            needsReload = true;
-        }
-        
         NSIndexPath *keyIndexPath = [self indexPathForItem:_encryptionKeyItem];
         if (keyIndexPath != nil)
         {
@@ -108,12 +96,6 @@
             if ([self indexPathForItem:self.sharedMediaItem] == nil)
             {
                 [self.menuSections addItemToSection:dataSectionIndex item:self.sharedMediaItem];
-                needsReload = true;
-            }
-            
-            if ([self indexPathForItem:_selfDestructTimerItem] == nil)
-            {
-                [self.menuSections addItemToSection:dataSectionIndex item:_selfDestructTimerItem];
                 needsReload = true;
             }
             
@@ -140,67 +122,14 @@
         [self.collectionView reloadData];
 }
 
-- (void)selfDestructTimerPressed
-{
-    NSMutableArray *actions = [[NSMutableArray alloc] init];
-    
-    NSArray *values = @[@0, @2, @5, @(1 * 60), @(1 * 60 * 60), @(1 * 60 * 60 * 24), @(7 * 60 * 60 * 24)];
-    
-    int index = -1;
-    for (NSNumber *item in values)
-    {
-        index++;
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:[item intValue] == 0 ? TGLocalized(@"Profile.MessageLifetimeForever") : [TGStringUtils stringForMessageTimerSeconds:[item intValue]] action:[[NSString alloc] initWithFormat:@"%@", values[index]]]];
-    }
-    
-    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
-    
-    [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGSecretChatUserInfoController *controller, NSString *action)
-    {
-        if (![action isEqualToString:@"cancel"])
-            [controller _commitSetSelfDestructTimer:[action intValue]];
-    } target:self] showInView:self.view];
-}
-
-
-- (void)_commitSetSelfDestructTimer:(int)value
-{
-    if (value != _selfDestructTimer)
-    {
-        _selfDestructTimer = value;
-        
-        [TGDatabaseInstance() setMessageLifetimeForPeerId:_peerId encryptedConversationId:_encryptedConversationId messageLifetime:value writeToActionQueue:true];
-        [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
-        
-        [self _updateSelfDestructTimer];
-    }
-}
-
 - (void)encryptionKeyPressed
 {
     [self.navigationController pushViewController:[[TGEncryptionKeyViewController alloc] initWithEncryptedConversationId:_encryptedConversationId userId:self.uid] animated:true];
 }
 
-- (void)_updateSelfDestructTimer
-{
-    int messageLifetime = _selfDestructTimer;
-    if (messageLifetime == 0)
-        _selfDestructTimerItem.variant = TGLocalized(@"Profile.MessageLifetimeForever");
-    else
-        _selfDestructTimerItem.variant = [TGStringUtils stringForShortMessageTimerSeconds:messageLifetime];
-}
-
 - (void)actionStageResourceDispatched:(NSString *)path resource:(id)resource arguments:(id)arguments
 {
-    if ([path hasPrefix:@"/tg/encrypted/messageLifetime/"])
-    {
-        TGDispatchOnMainThread(^
-        {
-            _selfDestructTimer = [resource intValue];
-            [self _updateSelfDestructTimer];
-        });
-    }
-    else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/conversation", _peerId]])
+    if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/conversation", _peerId]])
     {
         int64_t keyId = 0;
         NSData *keyData = [TGDatabaseInstance() encryptionKeyForConversationId:_peerId keyFingerprint:&keyId];
@@ -209,8 +138,6 @@
             if ((keyData != nil) != (_encryptionKey != nil))
             {
                 _encryptionKey = keyData;
-                
-                
                 
                 [self _updateSecretDataItems];
             }

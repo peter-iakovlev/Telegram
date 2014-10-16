@@ -35,6 +35,10 @@ const TGMessageViewModelLayoutConstants *TGGetMessageViewModelLayoutConstants()
         CGFloat maxTextFontSize = 0.0f;
         CGFloat defaultTextFontSize = 0.0f;
         
+        CGSize screenSize = TGScreenSize();
+        CGFloat screenSide = MAX(screenSize.width, screenSize.height);
+        bool isLargeScreen = screenSide >= 667.0f - FLT_EPSILON;
+        
         if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
         {
             constants.topInset = 2.0f;
@@ -56,7 +60,11 @@ const TGMessageViewModelLayoutConstants *TGGetMessageViewModelLayoutConstants()
             
             minTextFontSize = 12.0f;
             maxTextFontSize = 24.0f;
-            defaultTextFontSize = 16.0f;
+            
+            if (isLargeScreen)
+                defaultTextFontSize = 17.0f;
+            else
+                defaultTextFontSize = 16.0f;
         }
         else
         {
@@ -84,7 +92,7 @@ const TGMessageViewModelLayoutConstants *TGGetMessageViewModelLayoutConstants()
         
         if (iosMajorVersion() >= 7 && [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
         {
-            CGFloat fontSize = [UIFont preferredFontForTextStyle:UIFontTextStyleBody].pointSize - 1.0f;
+            CGFloat fontSize = [UIFont preferredFontForTextStyle:UIFontTextStyleBody].pointSize - (isLargeScreen ? 0 : 1.0f);
             constants.textFontSize = MAX(minTextFontSize, MIN(maxTextFontSize, fontSize));
         }
         else
