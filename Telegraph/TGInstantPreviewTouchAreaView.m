@@ -91,12 +91,20 @@
 
 - (void)timerEvent
 {
+    TGLog(@"activate %p", self);
+    
     [self invalidateTimer];
     
     _activated = true;
     
     if (_touchesBeganAction)
         _touchesBeganAction();
+}
+
+- (void)cancel
+{
+    [self invalidateTimer];
+    _activated = false;
 }
 
 @end

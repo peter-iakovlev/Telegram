@@ -11,9 +11,10 @@ typedef enum {
 
 @interface TGModernConversationTitleActivityIndicator ()
 {
-    CGFloat _animationValue;
     TGModernConversationTitleActivityIndicatorType _type;
 }
+
+@property (nonatomic) CGFloat animationValue;
 
 @end
 
@@ -35,13 +36,13 @@ typedef enum {
             prop.readBlock = ^(TGModernConversationTitleActivityIndicator *view, CGFloat values[])
             {
                 if (view != nil)
-                    values[0] = view->_animationValue;
+                    values[0] = view.animationValue;
             };
             
             prop.writeBlock = ^(TGModernConversationTitleActivityIndicator *view, const CGFloat values[])
             {
                 if (view != nil)
-                    view->_animationValue = values[0];
+                    view.animationValue = values[0];
             };
             
             prop.threshold = 0.01f;
@@ -84,6 +85,12 @@ typedef enum {
         [self setNeedsDisplay];
         [self _beginAnimationIfNeeded];
     }
+}
+
+- (void)setAnimationValue:(CGFloat)animationValue
+{
+    _animationValue = animationValue;
+    [self setNeedsDisplay];
 }
 
 - (void)drawRect:(CGRect)__unused rect

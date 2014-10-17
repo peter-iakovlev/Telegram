@@ -635,8 +635,10 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 "ChatSettings.Cache" = "CACHE";
 
 // Usage
-"Cache.Title" = "Cache";
+"Cache.Title" = "Cache Settings";
 "Cache.ClearCache" = "Clear Cache";
+"Cache.KeepMedia" = "Keep Media";
+"Cache.Help" = "Photos, videos and other files from cloud chats that you have not **accessed** during this period will be removed from this device to save disk space. All media will stay in the Telegram cloud and can be re-downloaded whenever you need it again.";
 
 // Blocked Users
 "BlockedUsers.Title" = "Blocked";
@@ -664,7 +666,7 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 "Service.ApplyLocalization" = "Apply Localization?";
 "Service.ApplyLocalizationWithWarnings" = "%@\n\nApply Localization?";
 
-"Notification.SecretChatMessageScreenshot" = "Screenshot!";
+"Notification.SecretChatMessageScreenshot" = "%@ took a screenshot!";
 "Notification.SecretChatScreenshot" = "Screenshot taken!";
 
 // Broadcast Lists
@@ -720,6 +722,10 @@ Is this number correct?
 "MessageTimer.Weeks_2" = "%@ weeks";
 "MessageTimer.Weeks_3_10" = "%@ weeks";
 "MessageTimer.Weeks_any" = "%@ weeks";
+"MessageTimer.Months_1" = "%@ month";
+"MessageTimer.Months_2" = "%@ months";
+"MessageTimer.Months_3_10" = "%@ months";
+"MessageTimer.Months_any" = "%@ months";
 
 "MessageTimer.ShortSeconds_1" = "%@s";
 "MessageTimer.ShortSeconds_2" = "%@s";
@@ -750,6 +756,6 @@ Is this number correct?
 
 "Service.NetworkConfigurationUpdatedMessage" = "Connection settings updated successfully.";
 
-"Compatibility.SecretMediaVersionTooLow" = "Your conversation partner is using an outdated version of the app. Secret photos will be shown in compatibilty mode.
+"Compatibility.SecretMediaVersionTooLow" = "%@ is using an older version of Telegram, so secret photos will be shown in compatibility mode.
 
-Once your friend updates the app, photos with timers <1 minute will work in 'tap and hold to view' mode — and the countdown will begin once the photo is opened.";
+Once %@ updates Telegram, photos with timers for 1 minute or less will start working in 'Tap and hold to view' mode, and you will be notified whenever the other party takes a screenshot.";

@@ -275,13 +275,13 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
             case TGMessageActionEncryptedChatScreenshot:
             case TGMessageActionEncryptedChatMessageScreenshot:
             {
-                if (message.outgoing)
+                /*if (message.outgoing)
                     actionText = actionMedia.actionType == TGMessageActionEncryptedChatScreenshot ? TGLocalizedStatic(@"Notification.SecretChatScreenshotOutgoing") : TGLocalizedStatic(@"Notification.SecretChatMessageScreenshotOutgoing");
-                else
+                else*/
                 {
                     NSString *authorName = author.displayFirstName;
                     
-                    NSString *formatString = actionMedia.actionType == TGMessageActionEncryptedChatScreenshot ? TGLocalizedStatic(@"Notification.SecretChatScreenshot") : TGLocalizedStatic(@"Notification.SecretChatMessageScreenshot");
+                    NSString *formatString = TGLocalizedStatic(@"Notification.SecretChatMessageScreenshot");
                     actionText = [[NSString alloc] initWithFormat:formatString, authorName];
                     
                     NSRange formatNameRange = [formatString rangeOfString:@"%1$@"];

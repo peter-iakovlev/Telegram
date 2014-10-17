@@ -59,7 +59,7 @@
                 int32_t messageId = [nMid intValue];
                 
                 int messageFlags = [TGDatabaseInstance() secretMessageFlags:messageId];
-                if ((messageFlags & TGSecretMessageFlagScreenshot) == 0)
+                //if ((messageFlags & TGSecretMessageFlagScreenshot) == 0)
                 {
                     messageFlags |= TGSecretMessageFlagScreenshot;
                     TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:messageId];

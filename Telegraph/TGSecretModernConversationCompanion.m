@@ -296,9 +296,11 @@
         
         if (_selfDestructTimer > 0 && _selfDestructTimer <= 60 && [self layer] < 17)
         {
+            TGUser *user = [TGDatabaseInstance() loadUser:_uid];
             TGDispatchOnMainThread(^
             {
-                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Compatibility.SecretMediaVersionTooLow") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                NSString *text = [[NSString alloc] initWithFormat:TGLocalized(@"Compatibility.SecretMediaVersionTooLow"), user.displayFirstName, user.displayFirstName];
+                [[[TGAlertView alloc] initWithTitle:text message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
             });
         }
         
@@ -454,7 +456,7 @@
             int32_t messageId = [nMid intValue];
             
             int messageFlags = [TGDatabaseInstance() secretMessageFlags:messageId];
-            if ((messageFlags & TGSecretMessageFlagScreenshot) == 0)
+            //if ((messageFlags & TGSecretMessageFlagScreenshot) == 0)
             {
                 messageFlags |= TGSecretMessageFlagScreenshot;
                 TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:messageId];
@@ -555,13 +557,16 @@
             
             for (TGMessageModernConversationItem *messageItem in _items)
             {
-                if (messageItem->_additionalDate != 0)
+                if (messageItem->_message.deliveryState == TGMessageDeliveryStateDelivered)
                 {
-                    if (messageItem->_additionalDate <= maxDate)
+                    if (messageItem->_additionalDate != 0)
+                    {
+                        if (messageItem->_additionalDate <= maxDate)
+                            [messageIds addObject:[[NSNumber alloc] initWithInt:messageItem->_message.mid]];
+                    }
+                    else if (messageItem->_message.date <= maxDate)
                         [messageIds addObject:[[NSNumber alloc] initWithInt:messageItem->_message.mid]];
                 }
-                else if (messageItem->_message.date <= maxDate)
-                    [messageIds addObject:[[NSNumber alloc] initWithInt:messageItem->_message.mid]];
             }
             
             if (messageIds.count != 0)

@@ -491,14 +491,13 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
         return model;
     }
     
-    //http://youtu.be/_7-yOB9NIbU
-    if ([message.text hasPrefix:@"http://youtu.be/"])
+    /*if ([message.text hasPrefix:@"http://youtu.be/"])
     {
         TGYoutubeMessageViewModel *model = [[TGYoutubeMessageViewModel alloc] initWithVideoId:[message.text substringFromIndex:@"http://youtu.be/".length] message:message author:useAuthor ? _author : nil context:_context];
         model.collapseFlags = _collapseFlags;
         [model layoutForContainerSize:containerSize];
         return model;
-    }
+    }*/
     
     TGTextMessageModernViewModel *model = [[TGTextMessageModernViewModel alloc] initWithMessage:message author:useAuthor ? _author : nil context:_context];
     if (unsupportedMessage)

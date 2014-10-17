@@ -109,9 +109,9 @@
     switch (layer)
     {
         case 1:
-            return [Secret1_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv];
+            return [Secret1_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv];
         case 17:
-            return [Secret17_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv];
+            return [Secret17_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv];
         default:
             break;
     }
@@ -124,9 +124,9 @@
     switch (layer)
     {
         case 1:
-            return [Secret1_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb:thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) duration:@(duration) w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv];
+            return [Secret1_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) duration:@(duration) w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv];
         case 17:
-            return [Secret17_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb: thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) duration:@(duration) mime_type:mimeType w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv];
+            return [Secret17_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb: thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) duration:@(duration) mime_type:mimeType w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv];
     }
     
     return nil;
@@ -137,9 +137,9 @@
     switch (layer)
     {
         case 1:
-            return [Secret1_DecryptedMessageMedia decryptedMessageMediaDocumentWithThumb:thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) file_name:fileName mime_type:mimeType size:@(size) key:key iv:iv];
+            return [Secret1_DecryptedMessageMedia decryptedMessageMediaDocumentWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) file_name:fileName mime_type:mimeType size:@(size) key:key iv:iv];
         case 17:
-            return [Secret17_DecryptedMessageMedia decryptedMessageMediaDocumentWithThumb:thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) file_name:fileName mime_type:mimeType size:@(size) key:key iv:iv];
+            return [Secret17_DecryptedMessageMedia decryptedMessageMediaDocumentWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) file_name:fileName mime_type:mimeType size:@(size) key:key iv:iv];
         default:
             break;
     }
@@ -1094,12 +1094,19 @@
     flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDeliveryState, .value = TGMessageDeliveryStateDelivered});
     flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDate, .value = date});
     [TGDatabaseInstance() updateMessage:self.preparedMessage.mid flags:flags media:messageMedia dispatch:true];
-        
-    [self _success:@{
-        @"previousMid": @(self.preparedMessage.mid),
-        @"mid": @(self.preparedMessage.mid),
-        @"date": @(date)
-    }];
+    
+    TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:self.preparedMessage.mid];
+    if (message != nil)
+    {
+        [self _success:@{
+            @"previousMid": @(self.preparedMessage.mid),
+            @"mid": @(self.preparedMessage.mid),
+            @"date": @(date),
+            @"message": message
+        }];
+    }
+    else
+        [self _fail];
 }
 
 - (void)sendEncryptedMessageFailed

@@ -26,19 +26,19 @@
         _label = [[UILabel alloc] init];
         _label.backgroundColor = [UIColor clearColor];
         _label.textColor = UIColorRGB(0x6d6d72);
-        _label.font = TGSystemFontOfSize(14.0f);
+        /*_label.font = TGSystemFontOfSize(14.0f);
         if (iosMajorVersion() >= 7)
             _label.textAlignment = NSTextAlignmentNatural;
-        _label.lineBreakMode = NSLineBreakByWordWrapping;
+        _label.lineBreakMode = NSLineBreakByWordWrapping;*/
         _label.numberOfLines = 0;
         [self addSubview:_label];
     }
     return self;
 }
 
-- (void)setText:(NSString *)text
+- (void)setAttributedText:(NSAttributedString *)text
 {
-    _label.text = text;
+    _label.attributedText = text;
 }
 
 - (void)layoutSubviews

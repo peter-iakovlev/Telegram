@@ -587,8 +587,20 @@
             _imageView.frame = playerBounds;
         }
     }
-    
-    //_playButton.frame = (CGRect){{CGFloor((self.frame.size.width - _playButton.frame.size.width) / 2.0f), CGFloor((self.frame.size.height - _playButton.frame.size.height) / 2.0f)}, _playButton.frame.size};
+    else
+    {
+        CGSize fittedSize = CGSizeMake(128.0f, 128.0f);
+        
+        CGRect playerFrame = CGRectMake(CGFloor((self.bounds.size.width - fittedSize.width) / 2.0f), CGFloor((self.bounds.size.height - fittedSize.height) / 2.0f), fittedSize.width, fittedSize.height);
+        CGRect playerBounds = playerFrame;
+        
+        if (!CGRectEqualToRect(_imageView.frame, playerBounds))
+        {
+            _playerView.frame = playerBounds;
+            _videoView.frame = (CGRect){CGPointZero, playerBounds.size};
+            _imageView.frame = playerBounds;
+        }
+    }
 }
 
 - (UIView *)headerView

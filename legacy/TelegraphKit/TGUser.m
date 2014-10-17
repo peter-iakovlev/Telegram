@@ -75,7 +75,12 @@
     NSString *lastName = self.lastName;
     
     if (firstName != nil && firstName.length != 0 && lastName != nil && lastName.length != 0)
-        return [[NSString alloc] initWithFormat:@"%@ %@", firstName, lastName];
+    {
+        if (TGIsKorean())
+            return [[NSString alloc] initWithFormat:@"%@ %@", lastName, firstName];
+        else
+            return [[NSString alloc] initWithFormat:@"%@ %@", firstName, lastName];
+    }
     else if (firstName != nil && firstName.length != 0)
         return firstName;
     else if (lastName != nil && lastName.length != 0)

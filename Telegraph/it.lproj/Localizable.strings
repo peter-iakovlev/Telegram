@@ -287,7 +287,8 @@
 "Conversation.LinkDialogCopy" = "Copia";
 "Conversation.EditDelete" = "Elimina";
 "Conversation.EditForward" = "Inoltra";
-"Conversation.ForwardToFormat" = "Inoltra a %@";
+"Conversation.ForwardToPersonFormat" = "Inoltra a %@?";
+"Conversation.ForwardToGroupFormat" = "Inoltra a %@?";
 "Conversation.ForwardTitle" = "Inoltra";
 "Conversation.ForwardChats" = "Chat";
 "Conversation.ForwardContacts" = "Contatti";
@@ -372,7 +373,7 @@
 "Notification.EncryptedChatRequested" = "Chat segreta richiesta";
 "Notification.EncryptedChatAccepted" = "Chat segreta iniziata";
 "Notification.MessageLifetimeChanged" = "%1$@ ha impostato il timer di autodistruzione a %2$@";
-"Notification.MessageLifetimeChangedOutgoing" = "Hai impostato il timer di autodistruzione a %1$@";
+"Notification.MessageLifetimeChangedOutgoing" = "Hai impostato il timer a %1$@";
 "Notification.MessageLifetimeRemoved" = "%1$@ ha disabilitato il timer di autodistruzione";
 "Notification.MessageLifetimeRemovedOutgoing" = "Hai disabilitato il timer di autodistruzione";
 "Notification.MessageLifetime2s" = "2 secondi";
@@ -415,7 +416,7 @@
 "Conversation.DownloadProgressKilobytes" = "%1$dKb / %2$dKb";
 "Conversation.ViewLocation" = "Visualizza posizione";
 "Conversation.SearchWebImages" = "Cerca immagini sul Web";
-"Conversation.ShareMyContactInfo" = "Condividi informazioni di contatto";
+"Conversation.ShareMyContactInfo" = "Condividi informazioni contatto";
 "Conversation.AddContact" = "Aggiungi contatto";
 "Conversation.SendMessage" = "Invia messaggio";
 "Conversation.EncryptionCanceled" = "Chat segreta annullata";
@@ -462,7 +463,8 @@
 "Profile.MessageLifetime1d" = "1g";
 "Profile.MessageLifetime1w" = "1st";
 "Profile.ShareContactButton" = "Condividi contatto";
-"Profile.ShareContactPrefix" = "Invia contatto a";
+"Profile.ShareContactPersonFormat" = "Invia contatto a %@?";
+"Profile.ShareContactGroupFormat" = "Invia contatto a %@?";
 
 // User Info
 "UserInfo.Title" = "Informazioni";
@@ -624,16 +626,17 @@
 // Usage
 "Cache.Title" = "Cache";
 "Cache.ClearCache" = "Pulisci Cache";
+"Cache.KeepMedia" = "Mantieni Media";
 
 // Blocked Users
 "BlockedUsers.Title" = "Bloccato";
 "BlockedUsers.SelectUserTitle" = "Blocca utente";
 "BlockedUsers.AlreadyBlocked" = "Questo utente è già bloccato";
 "BlockedUsers.BlockUser" = "Blocca utente";
-"BlockedUsers.BlockFormat" = "Blocca %@";
+"BlockedUsers.BlockFormat" = "Blocca %@?";
 "BlockedUsers.BlockTitle" = "Blocca";
 "BlockedUsers.LeavePrefix" = "Lascia";
-"BlockedUsers.Info" = "Non riceverai messaggi dalle persone nell'elenco di blocco.";
+"BlockedUsers.Info" = "Non riceverai messaggi dalle persone bloccate.";
 "BlockedUsers.AddNew" = "Aggiungi nuovo...";
 "BlockedUsers.Unblock" = "Sblocca";
 
@@ -651,7 +654,7 @@
 "Service.ApplyLocalization" = "Applicare la lingua?";
 "Service.ApplyLocalizationWithWarnings" = "%@\n\nApplicare la localizzazione?";
 
-"Notification.SecretChatMessageScreenshot" = "Schermata!";
+"Notification.SecretChatMessageScreenshot" = "%@ ha fatto uno screenshot!";
 "Notification.SecretChatScreenshot" = "Schermata acquisita!";
 
 // Broadcast Lists
@@ -675,3 +678,60 @@
 
 "Login.PadPhoneHelp" = "\nPuoi usare il tuo numero per connetterti a Telegram su tutti i dispositivi.\nNon usare il numero dell'iPad qui - dovremo mandarti un SMS.\n\nIl tuo numero è corretto?\n{number}";
 "Login.PadPhoneHelpTitle" = "Il Tuo Numero";
+
+"MessageTimer.Custom" = "Personalizzato";
+"MessageTimer.Title" = "Timer Personalizzato";
+
+"MessageTimer.Forever" = "Per sempre";
+
+"MessageTimer.Seconds_1" = "%@ secondo";
+"MessageTimer.Seconds_2" = "%@ secondi";
+"MessageTimer.Seconds_3_10" = "%@ secondi";
+"MessageTimer.Seconds_any" = "%@ secondi";
+"MessageTimer.Minutes_1" = "%@ minuto";
+"MessageTimer.Minutes_2" = "%@ minuti";
+"MessageTimer.Minutes_3_10" = "%@ minuti";
+"MessageTimer.Minutes_any" = "%@ minuti";
+"MessageTimer.Hours_1" = "%@ ora";
+"MessageTimer.Hours_2" = "%@ ore";
+"MessageTimer.Hours_3_10" = "%@ ore";
+"MessageTimer.Hours_any" = "%@ ore";
+"MessageTimer.Days_1" = "%@ giorno";
+"MessageTimer.Days_2" = "%@ giorni";
+"MessageTimer.Days_3_10" = "%@ giorni";
+"MessageTimer.Days_any" = "%@ giorni";
+"MessageTimer.Weeks_1" = "%@ settimana";
+"MessageTimer.Weeks_2" = "%@ settimane";
+"MessageTimer.Weeks_3_10" = "%@ settimane";
+"MessageTimer.Weeks_any" = "%@ settimane";
+
+"MessageTimer.ShortSeconds_1" = "%@s";
+"MessageTimer.ShortSeconds_2" = "%@s";
+"MessageTimer.ShortSeconds_3_10" = "%@s";
+"MessageTimer.ShortSeconds_any" = "%@s";
+"MessageTimer.ShortMinutes_1" = "%@m";
+"MessageTimer.ShortMinutes_2" = "%@m";
+"MessageTimer.ShortMinutes_3_10" = "%@m";
+"MessageTimer.ShortMinutes_any" = "%@m";
+"MessageTimer.ShortHours_1" = "%@h";
+"MessageTimer.ShortHours_2" = "%@h";
+"MessageTimer.ShortHours_3_10" = "%@h";
+"MessageTimer.ShortHours_any" = "%@h";
+"MessageTimer.ShortDays_1" = "%@g";
+"MessageTimer.ShortDays_2" = "%@g";
+"MessageTimer.ShortDays_3_10" = "%@g";
+"MessageTimer.ShortDays_any" = "%@g";
+"MessageTimer.ShortWeeks_1" = "%@S";
+"MessageTimer.ShortWeeks_2" = "%@S";
+"MessageTimer.ShortWeeks_3_10" = "%@S";
+"MessageTimer.ShortWeeks_any" = "%@S";
+
+"Activity.UploadingPhoto" = "invio foto...";
+"Activity.UploadingVideo" = "invio video...";
+"Activity.UploadingDocument" = "invio file...";
+"Activity.RecordingAudio" = "registrazione audio...";
+"Activity.Location" = "cercando la posizione...";
+
+"Service.NetworkConfigurationUpdatedMessage" = "Impostazioni di connessione aggiornate con successo.";
+
+"Compatibility.SecretMediaVersionTooLow" = "%@ sta usando una versione vecchia di Telegram, quindi le foto segrete verranno visualizzate in modalità di compatibilità.\n\nUna volta che  %@ avrà aggiornato Telegram, le foto con il timer minore di 1 minuto verranno visualizzate in modalità 'Tieni premuto per vedere' , e verrai notificato ogni volta che l'altro esegue uno screenshot.";

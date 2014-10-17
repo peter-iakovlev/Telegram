@@ -7,6 +7,7 @@
 #import "TGTimerTarget.h"
 
 #import "TGModernConversationTitleIcon.h"
+#import "TGModernConversationTitleActivityIndicator.h"
 
 #import "TGViewController.h"
 
@@ -27,6 +28,8 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     int _typingDotState;
     bool _typingAnimation;
     bool _animationsAreSuspended;
+    
+    TGModernConversationTitleActivityIndicator *_activityIndicator;
     
     id _status;
     

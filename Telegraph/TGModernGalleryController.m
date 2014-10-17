@@ -55,6 +55,7 @@
     if (self != nil)
     {
         self.automaticallyManageScrollViewInsets = false;
+        self.autoManageStatusBarBackground = false;
         _lastReportedFocusedIndex = NSNotFound;
         _statusBarStyle = UIStatusBarStyleLightContent;
         _animateTransition = true;
@@ -281,6 +282,8 @@
 {
     _showInterface = showInterface;
     
+    _view.userInteractionEnabled = showInterface;
+    
     _statusBarStyle = _showInterface ? UIStatusBarStyleLightContent : UIStatusBarStyleDefault;
 }
 
@@ -304,6 +307,8 @@
     
     _view.scrollView.scrollDelegate = self;
     _view.scrollView.delegate = self;
+    
+    _view.userInteractionEnabled = _showInterface;
     
     __weak TGModernGalleryController *weakSelf = self;
     _view.transitionOut = ^bool (CGFloat velocity)
@@ -402,8 +407,10 @@
             }
         }
         
-        if (transitionInFromView != nil && transitionInToView != nil)
+        if (transitionInFromView != nil && transitionInToView != nil && transitionInToView.frame.size.width > FLT_EPSILON && transitionInToView.frame.size.height > FLT_EPSILON && transitionInToViewContentRect.size.width > FLT_EPSILON && transitionInToViewContentRect.size.height > FLT_EPSILON)
+        {
             [self animateTransitionInFromView:transitionInFromView toView:transitionInToView toViewContentRect:transitionInToViewContentRect];
+        }
         else if (_finishedTransitionIn && _model.focusItem != nil)
         {
             TGModernGalleryItemView *itemView = nil;

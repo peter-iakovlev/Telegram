@@ -203,7 +203,7 @@
                 [strongSelf deactivateMedia:true];
         };
         
-        _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable;
+        _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable || _progressVisible;
         
         [self addSubmodel:_instantPreviewTouchAreaModel];
     }
@@ -211,18 +211,7 @@
 
 - (NSString *)stringForLifetime:(int32_t)remainingSeconds
 {
-    NSString *text = nil;
-    
-    if (remainingSeconds < 60)
-        text = [[NSString alloc] initWithFormat:@"%ds", remainingSeconds];
-    else if (remainingSeconds < 60 * 60)
-        text = [[NSString alloc] initWithFormat:@"%dm", (remainingSeconds + 1) / 60];
-    else if (remainingSeconds < 60 * 60 * 24)
-        text = [[NSString alloc] initWithFormat:@"%dh", (remainingSeconds + 1) / (60 * 60)];
-    else
-        text = [[NSString alloc] initWithFormat:@"%dd", (remainingSeconds + 1) / (60 * 60 * 24)];
-    
-    return text;
+    return [TGStringUtils stringForShortMessageTimerSeconds:remainingSeconds];
 }
 
 - (NSString *)defaultAdditionalDataString
@@ -618,7 +607,7 @@
 
 - (void)updateImageOverlay:(bool)animated
 {
-    _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable;
+    _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable || _progressVisible;
     
     if (_progressVisible)
     {

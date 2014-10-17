@@ -128,7 +128,7 @@
     [TGDatabaseInstance() dispatchOnDatabaseThread:^
     {
         int messageFlags = [TGDatabaseInstance() secretMessageFlags:_messageId];
-        if ((messageFlags & TGSecretMessageFlagScreenshot) == 0)
+        //if ((messageFlags & TGSecretMessageFlagScreenshot) == 0)
         {
             messageFlags |= TGSecretMessageFlagScreenshot;
             TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:_messageId];

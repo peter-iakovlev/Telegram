@@ -64,6 +64,8 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
         TGModernConversationCollectionViewInstantPreviewRecognizer *previewRecognizer = [[TGModernConversationCollectionViewInstantPreviewRecognizer alloc] initWithTarget:self action:@selector(instantPreviewGesture:)];
         previewRecognizer.delegate = self;
         [self addGestureRecognizer:previewRecognizer];
+        
+        self.exclusiveTouch = true;
     }
     return self;
 }
@@ -159,6 +161,13 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
         void (^touchCompletion)() = [touchBehaviour forwardTouchToCollectionWithCompletion];
         if (touchCompletion != nil)
         {
+            id<TGModernConversationCollectionTouchBehaviour> currentYouchBehaviour = touchBehaviour;
+            if (currentYouchBehaviour != touchBehaviour)
+            {
+                [currentYouchBehaviour cancel];
+                [self endInstantPreviewGesture];
+            }
+            
             __weak TGModernConversationCollectionView *weakSelf = self;
             self.touchCompletion = ^
             {

@@ -57,6 +57,8 @@ typedef enum {
 
 @property (nonatomic) int32_t messageLifetime;
 @property (nonatomic) int64_t flags;
+@property (nonatomic) int32_t seqIn;
+@property (nonatomic) int32_t seqOut;
 
 @property (nonatomic) bool isBroadcast;
 @property (nonatomic) NSUInteger layer;
@@ -69,6 +71,7 @@ typedef enum {
 + (NSData *)serializeMediaAttachments:(bool)includeMeta attachments:(NSArray *)attachments;
 + (NSData *)serializeAttachment:(TGMediaAttachment *)attachment;
 + (NSArray *)parseMediaAttachments:(NSData *)data;
++ (NSUInteger)layerFromFlags:(int64_t)flags;
 
 @end
 

@@ -901,7 +901,7 @@ static UIColor *mediaTextColor = nil;
                     case TGMessageActionEncryptedChatScreenshot:
                     case TGMessageActionEncryptedChatMessageScreenshot:
                     {
-                        _messageText = TGLocalized(@"Notification.SecretChatMessageScreenshot");
+                        _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.SecretChatMessageScreenshot"), _encryptionFirstName];
                         
                         break;
                     }

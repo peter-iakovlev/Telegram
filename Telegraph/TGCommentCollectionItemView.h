@@ -10,6 +10,6 @@
 
 @interface TGCommentCollectionItemView : TGCollectionItemView
 
-- (void)setText:(NSString *)text;
+- (void)setAttributedText:(NSAttributedString *)text;
 
 @end

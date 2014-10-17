@@ -609,7 +609,7 @@ typedef enum {
 
 - (void)serviceNotificationReceived:(NSNotification *)__unused notification
 {
-    if (self.navigationController.topViewController == self)
+    if (self.navigationController.topViewController == self && self.presentedViewController == nil)
     {
         for (UIWindow *window in [[UIApplication sharedApplication] windows])
         {
@@ -2240,8 +2240,9 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         modernGallery.animateTransition = !instant;
         modernGallery.showInterface = !instant;
         
+        [self closeExistingMediaGallery];
+        
         TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
-        controllerWindow.userInteractionEnabled = !instant;
         controllerWindow.hidden = false;
     }
 }
@@ -2309,8 +2310,24 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
     [_companion updateMediaAccessTimeForMessageId:messageId];
 }
 
+- (void)closeExistingMediaGallery
+{
+    for (UIWindow *window in [self.associatedWindowStack copy])
+    {
+        if ([window isKindOfClass:[TGOverlayControllerWindow class]])
+        {
+            if ([window.rootViewController isKindOfClass:[TGModernGalleryController class]])
+            {
+                [((TGModernGalleryController *)window.rootViewController) dismiss];
+            }
+        }
+    }
+}
+
 - (void)closeMediaFromMessage:(int32_t)__unused messageId instant:(bool)__unused instant
 {
+    [self closeExistingMediaGallery];
+    
     self.associatedWindowStack = nil;
     
     _companion.mediaHiddenMessageId = 0;

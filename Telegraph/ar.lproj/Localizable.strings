@@ -287,7 +287,8 @@
 "Conversation.LinkDialogCopy" = "نسخ";
 "Conversation.EditDelete" = "احذف";
 "Conversation.EditForward" = "أعد التوجيه";
-"Conversation.ForwardToFormat" = "%@ تحويل لـ ";
+"Conversation.ForwardToPersonFormat" = "Forward to %@?";
+"Conversation.ForwardToGroupFormat" = "Forward to %@?";
 "Conversation.ForwardTitle" = "تحويل";
 "Conversation.ForwardChats" = "المحادثات";
 "Conversation.ForwardContacts" = "جهات الاتصال";
@@ -368,7 +369,7 @@
 "Notification.CreatedGeoChat" = "%@ created place";
 "Notification.CreatedGeoChatWithTitle" = "%@ created place \"%@\"";
 "Notification.GeochatUserCheckedIn" = "%@ checked in";
-"Notification.NewAuthDetected" = "%1$@,تم تسجيل الدخول لحسابك من جهاز جديد يوم %2$@, %3$@ الساعة %4$@الجهاز: %5$@المكان: %6$@إذا لم تسجل الدخول، بإمكانك الذهاب إلى إعدادات – إعدادات المحادثة – سجل الخروج من كافة الأجهزة الأخرى.\nشكرًا،فريق تيليجرام";
+"Notification.NewAuthDetected" = "%1$@,\nتم تسجيل الدخول لحسابك من جهاز جديد يوم %2$@, %3$@ الساعة %4$@\nالجهاز: %5$@\nالمكان: %6$@\n\nإذا لم تسجل الدخول، بإمكانك الذهاب إلى إعدادات – إعدادات المحادثة – سجل الخروج من كافة الأجهزة الأخرى.\n\nشكرًا،\nفريق تيليجرام";
 "Notification.EncryptedChatRequested" = "تم طلب محادثة سرية";
 "Notification.EncryptedChatAccepted" = "تم قبول المحادثة السرية";
 "Notification.MessageLifetimeChanged" = "%1$@ قام بتعيين عداد التدمير الذاتي إلى %2$@";
@@ -462,7 +463,8 @@
 "Profile.MessageLifetime1d" = "يوم";
 "Profile.MessageLifetime1w" = "أسبوع";
 "Profile.ShareContactButton" = "قم بمشاركة جهة الاتصال";
-"Profile.ShareContactPrefix" = "أرسل جهة الاتصال لـ ";
+"Profile.ShareContactPersonFormat" = "Send contact to %@?";
+"Profile.ShareContactGroupFormat" = "Send contact to %@?";
 
 // User Info
 "UserInfo.Title" = "معلومات";
@@ -622,15 +624,16 @@
 "ChatSettings.Cache" = "الذاكرة المخبئية";
 
 // Usage
-"Cache.Title" = "مخبأ";
+"Cache.Title" = "الذاكرة المخبئية";
 "Cache.ClearCache" = "مسح الملفات المنزلة";
+"Cache.KeepMedia" = "Keep Media";
 
 // Blocked Users
 "BlockedUsers.Title" = "جهات الاتصال المحظورة";
 "BlockedUsers.SelectUserTitle" = "حظر المستخدم";
 "BlockedUsers.AlreadyBlocked" = "هذا المستخدم محظور مسبقًا";
 "BlockedUsers.BlockUser" = "حظر المستخدم";
-"BlockedUsers.BlockFormat" = "حظر %@";
+"BlockedUsers.BlockFormat" = "Block %@?";
 "BlockedUsers.BlockTitle" = "حظر";
 "BlockedUsers.LeavePrefix" = "مغادرة ";
 "BlockedUsers.Info" = "لن تستقبل رسائل من جهات الاتصال التي في قائمة جهات الاتصال المحظورة";
@@ -651,7 +654,7 @@
 "Service.ApplyLocalization" = "هل تريد تطبيق واجهة اللغة؟";
 "Service.ApplyLocalizationWithWarnings" = "%@\n\nهل تريد تطبيق واجهة اللغة؟";
 
-"Notification.SecretChatMessageScreenshot" = "لقطة من الشاشة!";
+"Notification.SecretChatMessageScreenshot" = "%@ took a screenshot!";
 "Notification.SecretChatScreenshot" = "لقط تم أخذ لقطة من الشاشة!";
 
 // Broadcast Lists
@@ -675,3 +678,60 @@
 
 "Login.PadPhoneHelp" = "\nتستطيع استخدام رقم هاتفك الرئيسي لتسجيل الدخول في تيليجرام على كافة أجهزتك.\nلا تستخدم شريحة الآيباد الخاص بك هنا – سنحتاج لأن نرسل لك رسالة قصيرة للتفعيل.\n\nهل هذا الرقم صحيح؟\n{number}";
 "Login.PadPhoneHelpTitle" = "رقمك";
+
+"MessageTimer.Custom" = "Custom";
+"MessageTimer.Title" = "Custom Timer";
+
+"MessageTimer.Forever" = "Forever";
+
+"MessageTimer.Seconds_1" = "%@ second";
+"MessageTimer.Seconds_2" = "%@ seconds";
+"MessageTimer.Seconds_3_10" = "%@ seconds";
+"MessageTimer.Seconds_any" = "%@ seconds";
+"MessageTimer.Minutes_1" = "%@ minute";
+"MessageTimer.Minutes_2" = "%@ minutes";
+"MessageTimer.Minutes_3_10" = "%@ minutes";
+"MessageTimer.Minutes_any" = "%@ minutes";
+"MessageTimer.Hours_1" = "%@ hour";
+"MessageTimer.Hours_2" = "%@ hours";
+"MessageTimer.Hours_3_10" = "%@ hours";
+"MessageTimer.Hours_any" = "%@ hours";
+"MessageTimer.Days_1" = "%@ day";
+"MessageTimer.Days_2" = "%@ days";
+"MessageTimer.Days_3_10" = "%@ days";
+"MessageTimer.Days_any" = "%@ days";
+"MessageTimer.Weeks_1" = "%@ week";
+"MessageTimer.Weeks_2" = "%@ weeks";
+"MessageTimer.Weeks_3_10" = "%@ weeks";
+"MessageTimer.Weeks_any" = "%@ weeks";
+
+"MessageTimer.ShortSeconds_1" = "%@s";
+"MessageTimer.ShortSeconds_2" = "%@s";
+"MessageTimer.ShortSeconds_3_10" = "%@s";
+"MessageTimer.ShortSeconds_any" = "%@s";
+"MessageTimer.ShortMinutes_1" = "%@m";
+"MessageTimer.ShortMinutes_2" = "%@m";
+"MessageTimer.ShortMinutes_3_10" = "%@m";
+"MessageTimer.ShortMinutes_any" = "%@m";
+"MessageTimer.ShortHours_1" = "%@h";
+"MessageTimer.ShortHours_2" = "%@h";
+"MessageTimer.ShortHours_3_10" = "%@h";
+"MessageTimer.ShortHours_any" = "%@h";
+"MessageTimer.ShortDays_1" = "%@d";
+"MessageTimer.ShortDays_2" = "%@d";
+"MessageTimer.ShortDays_3_10" = "%@d";
+"MessageTimer.ShortDays_any" = "%@d";
+"MessageTimer.ShortWeeks_1" = "%@w";
+"MessageTimer.ShortWeeks_2" = "%@w";
+"MessageTimer.ShortWeeks_3_10" = "%@w";
+"MessageTimer.ShortWeeks_any" = "%@w";
+
+"Activity.UploadingPhoto" = "sending photo...";
+"Activity.UploadingVideo" = "sending video...";
+"Activity.UploadingDocument" = "sending file...";
+"Activity.RecordingAudio" = "recording audio...";
+"Activity.Location" = "picking location...";
+
+"Service.NetworkConfigurationUpdatedMessage" = "Connection settings updated successfully.";
+
+"Compatibility.SecretMediaVersionTooLow" = "%@ is using an older version of Telegram, so secret photos will be shown in compatibility mode.\n\nOnce %@ updates Telegram, photos with timers less than 1 minute will start working in 'Tap and hold to view' mode, and you will be notified whenever the other party takes a screenshot.";

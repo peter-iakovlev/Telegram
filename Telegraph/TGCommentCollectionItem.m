@@ -14,7 +14,7 @@
 
 @interface TGCommentCollectionItem ()
 {
-    NSString *_text;
+    NSAttributedString *_attributedText;
 }
 
 @end
@@ -30,9 +30,68 @@
         self.highlightable = false;
         self.selectable = false;
         
-        _text = text;
+        _attributedText = [self attributedStringFromText:text allowFormatting:false];
     }
     return self;
+}
+
+- (instancetype)initWithFormattedText:(NSString *)text
+{
+    self = [super init];
+    if (self != nil)
+    {
+        self.transparent = true;
+        self.highlightable = false;
+        self.selectable = false;
+        
+        _attributedText = [self attributedStringFromText:text allowFormatting:true];
+    }
+    return self;
+}
+
+- (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting
+{
+    NSMutableArray *boldRanges = [[NSMutableArray alloc] init];
+    
+    NSMutableString *cleanText = [[NSMutableString alloc] initWithString:text];
+    if (allowFormatting)
+    {
+        while (true)
+        {
+            NSRange startRange = [cleanText rangeOfString:@"**"];
+            if (startRange.location == NSNotFound)
+                break;
+            
+            [cleanText deleteCharactersInRange:startRange];
+            
+            NSRange endRange = [cleanText rangeOfString:@"**"];
+            if (endRange.location == NSNotFound)
+                break;
+            
+            [cleanText deleteCharactersInRange:endRange];
+            
+            [boldRanges addObject:[NSValue valueWithRange:NSMakeRange(startRange.location, endRange.location - startRange.location)]];
+        }
+    }
+    
+    NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
+    style.lineSpacing = 3;
+    style.lineBreakMode = NSLineBreakByWordWrapping;
+    style.alignment = NSTextAlignmentLeft;
+
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:cleanText attributes:@
+    {
+    }];
+    
+    [attributedString addAttributes:@{NSParagraphStyleAttributeName: style, NSFontAttributeName: TGSystemFontOfSize(14.0f)} range:NSMakeRange(0, attributedString.length)];
+
+    NSDictionary *boldAttributes = @{NSFontAttributeName: TGBoldSystemFontOfSize(14.0f)};
+    for (NSValue *nRange in boldRanges)
+    {
+        [attributedString addAttributes:boldAttributes range:[nRange rangeValue]];
+    }
+
+    return attributedString;
 }
 
 - (Class)itemViewClass
@@ -49,7 +108,8 @@
         font = TGSystemFontOfSize(14);
     });
     
-    CGSize textSize = [_text sizeWithFont:font constrainedToSize:CGSizeMake(containerSize.width - 30.0f, CGFLOAT_MAX) lineBreakMode:NSLineBreakByWordWrapping];
+    CGSize textSize = [_attributedText boundingRectWithSize:CGSizeMake(containerSize.width - 30.0f, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin context:NULL].size;
+    
     textSize.width = ceilf(textSize.width);
     textSize.height = ceilf(textSize.height);
     
@@ -66,7 +126,7 @@
 {
     [super bindView:view];
     
-    [((TGCommentCollectionItemView *)view) setText:_text];
+    [((TGCommentCollectionItemView *)view) setAttributedText:_attributedText];
 }
 
 @end

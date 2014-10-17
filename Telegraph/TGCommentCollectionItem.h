@@ -13,5 +13,6 @@
 @property (nonatomic) bool skipLastLineInSizeComputation;
 
 - (instancetype)initWithText:(NSString *)text;
+- (instancetype)initWithFormattedText:(NSString *)text;
 
 @end

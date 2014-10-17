@@ -43,6 +43,8 @@ typedef enum {
     
     object->_messageLifetime = [coder decodeInt32ForCKey:"lt"];
     object->_flags = [coder decodeInt64ForCKey:"f"];
+    object->_seqIn = [coder decodeInt32ForCKey:"sqi"];
+    object->_seqOut = [coder decodeInt32ForCKey:"sqo"];
     
     return object;
 }
@@ -67,6 +69,9 @@ typedef enum {
     
     [coder encodeInt32:_messageLifetime forCKey:"lt"];
     [coder encodeInt64:_flags forCKey:"f"];
+    
+    [coder encodeInt32:_seqIn forCKey:"sqi"];
+    [coder encodeInt32:_seqOut forCKey:"sqo"];
 }
 
 - (id)copyWithZone:(NSZone *)__unused zone
@@ -100,6 +105,9 @@ typedef enum {
     copyMessage->_messageLifetime = _messageLifetime;
     copyMessage->_flags = _flags;
     
+    copyMessage->_seqIn = _seqIn;
+    copyMessage->_seqOut = _seqOut;
+    
     return copyMessage;
 }
 
@@ -124,6 +132,14 @@ typedef enum {
 - (NSUInteger)layer
 {
     NSUInteger value = (_flags & TGMessageFlagLayerMask) >> 1;
+    if (value < 1)
+        value = 1;
+    return value;
+}
+
++ (NSUInteger)layerFromFlags:(int64_t)flags
+{
+    NSUInteger value = (flags & TGMessageFlagLayerMask) >> 1;
     if (value < 1)
         value = 1;
     return value;

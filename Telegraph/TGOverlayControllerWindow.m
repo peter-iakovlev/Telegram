@@ -46,6 +46,7 @@
 {
     TGViewController *parentController = _parentController;
     [parentController.associatedWindowStack removeObject:self];
+    self.hidden = true;
 }
 
 @end

@@ -381,14 +381,14 @@
     
     if ((decryptedAction == nil || decodeMessage) && decodeMessageWithoutAction)
     {
-        TGMessage *message = [TGSecretIncomingQueueActor parseDecryptedMessage:decryptedObject date:action.date fileInfo:action.fileInfo conversationId:_peerId fromUid:_userId];
+        TGMessage *message = [TGSecretIncomingQueueActor parseDecryptedMessage:decryptedObject date:action.date fileInfo:action.fileInfo conversationId:_peerId fromUid:_userId seqIn:seqIn seqOut:seqOut];
         message.layer = action.layer;
         if (message != nil)
             [addedMessages addObject:message];
     }
 }
 
-+ (TGMessage *)parseDecryptedMessage:(id)decryptedMessage date:(int32_t)date fileInfo:(TGStoredIncomingMessageFileInfo *)fileInfo conversationId:(int64_t)conversationId fromUid:(int32_t)fromUid
++ (TGMessage *)parseDecryptedMessage:(id)decryptedMessage date:(int32_t)date fileInfo:(TGStoredIncomingMessageFileInfo *)fileInfo conversationId:(int64_t)conversationId fromUid:(int32_t)fromUid seqIn:(int32_t)seqIn seqOut:(int32_t)seqOut
 {
     TGMessage *message = nil;
     
@@ -401,6 +401,8 @@
         message = [[TGMessage alloc] initWithDecryptedMessageDesc17:decryptedMessage encryptedFile:fileInfo conversationId:conversationId fromUid:fromUid date:date];
     }
     message.mid = INT_MIN;
+    message.seqIn = seqIn;
+    message.seqOut = seqOut;
     
     return message;
 }

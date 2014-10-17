@@ -12,5 +12,6 @@
 
 - (void (^)())forwardTouchToCollectionWithCompletion;
 - (bool)scrollingShouldCancelInstantPreview;
+- (void)cancel;
 
 @end

@@ -1469,6 +1469,11 @@ static bool _initialUpdatesScheduled = false;
                             {
                                 uint8_t randomBytesLength = 0;
                                 [messageContentData getBytes:&randomBytesLength range:NSMakeRange(4, 1)];
+                                while ((randomBytesLength + 1) % 4 != 0)
+                                {
+                                    randomBytesLength++;
+                                }
+                                
                                 if (messageContentData.length >= 4 + 1 + randomBytesLength + 4 + 4 + 4)
                                 {
                                     int32_t value = 0;
