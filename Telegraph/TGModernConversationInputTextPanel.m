@@ -532,7 +532,7 @@ static CGRect viewFrame(UIView *view)
         UIEdgeInsets inputFieldInsets = [self inputFieldInsets];
         UIEdgeInsets inputFieldInternalEdgeInsets = [self inputFieldInternalEdgeInsets];
         
-        CGRect inputFieldClippingFrame = CGRectMake(inputFieldInsets.left, inputFieldInsets.top, messageAreaSize.width - inputFieldInsets.left - inputFieldInsets.right - _sendButtonWidth - 1, 0.0f);
+        CGRect inputFieldClippingFrame = CGRectMake(inputFieldInsets.left, inputFieldInsets.top, messageAreaSize.width - inputFieldInsets.left - inputFieldInsets.right - _sendButtonWidth - 1 - _panelAccessoryView.frame.size.width, 0.0f);
         
         CGRect inputFieldFrame = CGRectMake(inputFieldInternalEdgeInsets.left, inputFieldInternalEdgeInsets.top, inputFieldClippingFrame.size.width - inputFieldInternalEdgeInsets.left, 0.0f);
         

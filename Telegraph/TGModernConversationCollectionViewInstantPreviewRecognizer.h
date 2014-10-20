@@ -12,6 +12,7 @@
 
 @optional
 
+- (void)instantPreviewGestureDidBegin;
 - (void)instantPreviewGestureDidEnd;
 - (void)instantPreviewGestureDidMove;
 

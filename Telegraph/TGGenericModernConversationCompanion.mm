@@ -1744,7 +1744,18 @@ typedef enum {
     
     for (TGPreparedMessage *preparedMessage in preparedMessages)
     {
-        preparedMessage.messageLifetime = [self messageLifetime];
+        int32_t minLifetime = 0;
+        
+        if ([preparedMessage isKindOfClass:[TGPreparedLocalAudioMessage class]])
+            minLifetime = ((TGPreparedLocalAudioMessage *)preparedMessage).duration;
+        else if ([preparedMessage isKindOfClass:[TGPreparedRemoteAudioMessage class]])
+            minLifetime = ((TGPreparedRemoteAudioMessage *)preparedMessage).duration;
+        else if ([preparedMessage isKindOfClass:[TGPreparedLocalVideoMessage class]])
+            minLifetime = (int32_t)((TGPreparedLocalVideoMessage *)preparedMessage).duration;
+        else if ([preparedMessage isKindOfClass:[TGPreparedRemoteVideoMessage class]])
+            minLifetime = (int32_t)((TGPreparedRemoteVideoMessage *)preparedMessage).duration;
+        
+        preparedMessage.messageLifetime = MAX([self messageLifetime], minLifetime);
         
         if (preparedMessage.randomId == 0)
         {

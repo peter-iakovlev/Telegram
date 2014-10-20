@@ -165,7 +165,7 @@
             navigationController.presentationStyle = TGNavigationControllerPresentationStyleRootInPopover;
             TGPopoverController *popoverController = [[TGPopoverController alloc] initWithContentViewController:navigationController];
             navigationController.parentPopoverController = popoverController;
-            [popoverController setPopoverContentSize:CGSizeMake(320.0f, 528.0f) animated:false];
+            [popoverController setContentSize:CGSizeMake(320.0f, 528.0f)];
             
             controller.associatedPopoverController = popoverController;
             [popoverController presentPopoverFromBarButtonItem:controller.navigationItem.rightBarButtonItem permittedArrowDirections:UIPopoverArrowDirectionAny animated:true];
@@ -489,6 +489,31 @@
             [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/messageFlagChanges", _conversationId] resource:messageFlagChanges];
         }
     }];
+}
+
+- (void)markMessagesAsViewed:(NSArray *)messageIds
+{
+    [TGDatabaseInstance() dispatchOnDatabaseThread:^
+    {
+        NSMutableArray *readMesageIds = [[NSMutableArray alloc] init];
+        
+        for (NSNumber *nMessageId in messageIds)
+        {
+            TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:[nMessageId intValue]];
+            if (!message.outgoing && message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17)
+            {
+                bool initiatedCountdown = false;
+                [TGDatabaseInstance() messageCountdownLocalTime:[nMessageId intValue] enqueueIfNotQueued:true initiatedCountdown:&initiatedCountdown];
+                if (initiatedCountdown)
+                    [readMesageIds addObject:nMessageId];
+            }
+        }
+        
+        if (readMesageIds.count != 0)
+        {
+            [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
+        }
+    } synchronous:false];
 }
 
 #pragma mark -

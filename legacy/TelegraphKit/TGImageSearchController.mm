@@ -14,7 +14,6 @@
 
 #import "TGLinearProgressView.h"
 
-#import "TGImageViewController.h"
 #import "TGImagePickerGalleryCell.h"
 
 #import "TGImagePickerCheckButton.h"
@@ -252,6 +251,11 @@
 
 - (CGFloat)imageSizeForWidth:(CGFloat)width widescreenWidth:(CGFloat)widescreenWidth
 {
+    if (TGIsPad())
+    {
+        return 102.0f;
+    }
+    
     if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
     {
         if (widescreenWidth >= 736.0f - FLT_EPSILON)
@@ -301,6 +305,9 @@
 
 - (CGFloat)lineSpacingForWidth:(CGFloat)width widescreenWidth:(CGFloat)widescreenWidth
 {
+    if (TGIsPad())
+        return 3.0f;
+    
     if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
     {
         if (widescreenWidth >= 736.0f - FLT_EPSILON)

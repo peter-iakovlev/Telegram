@@ -78,7 +78,7 @@ typedef enum {
 - (void)setAvatarUrl:(NSString *)avatarUrl;
 - (void)setStatus:(NSString *)status accentColored:(bool)accentColored allowAnimation:(bool)allowAnimation;
 - (void)setAttributedStatus:(NSAttributedString *)status allowAnimation:(bool)allowAnimation;
-- (void)setTypingStatus:(NSString *)typingStatus;
+- (void)setTypingStatus:(NSString *)typingStatus activity:(int)activity;
 - (void)setGlobalUnreadCount:(int)unreadCount;
 - (void)setCustomInputPanel:(TGModernConversationInputPanel *)customInputPanel;
 - (void)setPrimaryTitlePanel:(TGModernConversationTitlePanel *)titlePanel;

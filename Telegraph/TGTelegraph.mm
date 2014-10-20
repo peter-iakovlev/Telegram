@@ -2589,6 +2589,25 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
 }
 
+- (NSObject *)doSearchContactsByName:(NSString *)query limit:(int)limit completion:(void (^)(TLcontacts_Found *))completion
+{
+    TLRPCcontacts_search$contacts_search *search = [[TLRPCcontacts_search$contacts_search alloc] init];
+    search.q = query;
+    search.limit = limit;
+    
+    return [[TGTelegramNetworking instance] performRpc:search completionBlock:^(TLcontacts_Found *result, __unused int64_t responseTime, TLError *error)
+    {
+        if (error == nil)
+        {
+            completion(result);
+        }
+        else
+        {
+            completion(nil);
+        }
+    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
+}
+
 - (NSObject *)doSendContactRequest:(int)uid actor:(TGContactRequestActionActor *)actor
 {
     TLRPCcontacts_sendRequest$contacts_sendRequest *sendRequest = [[TLRPCcontacts_sendRequest$contacts_sendRequest alloc] init];

@@ -10,6 +10,12 @@
 
 @interface TGCommentCollectionItemView : TGCollectionItemView
 
+@property (nonatomic) CGFloat topInset;
+@property (nonatomic) CGFloat labelAlpha;
+@property (nonatomic) CGSize calculatedSize;
+@property (nonatomic) bool showProgress;
+
+- (void)setTextColor:(UIColor *)textColor;
 - (void)setAttributedText:(NSAttributedString *)text;
 
 @end

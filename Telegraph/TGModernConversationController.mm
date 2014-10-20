@@ -2308,6 +2308,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         _currentStreamingAudioMessageId = 0;
     
     [_companion updateMediaAccessTimeForMessageId:messageId];
+    
+    [_companion markMessagesAsViewed:@[@(messageId)]];
 }
 
 - (void)closeExistingMediaGallery
@@ -2722,9 +2724,9 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
     [_titleView setStatusHasAccentColor:false];
 }
 
-- (void)setTypingStatus:(NSString *)typingStatus
+- (void)setTypingStatus:(NSString *)typingStatus activity:(int)activity
 {
-    [_titleView setTypingStatus:typingStatus animated:self.isViewLoaded];
+    [_titleView setTypingStatus:typingStatus activity:(TGModernConversationTitleViewActivity)activity animated:self.isViewLoaded];
 }
 
 - (void)setGlobalUnreadCount:(int)unreadCount
@@ -3098,7 +3100,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
             else if ([action isEqualToString:@"chooseLocation"])
             {
                 TGMapViewController *mapController = [[TGMapViewController alloc] initInPickingMode];
-                mapController.activityHolder = [controller.companion acquireLocationPickingActivityHolder];
+                //mapController.activityHolder = [controller.companion acquireLocationPickingActivityHolder];
                 mapController.watcher = controller.actionHandle;
                 TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[mapController]];
                 

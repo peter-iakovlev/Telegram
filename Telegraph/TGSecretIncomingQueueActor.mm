@@ -94,6 +94,8 @@
                         }
                         else if (action.seqOut < nextExpectedSeqOut)
                             [removeActionIds addObject:@(action.actionId)];
+                        else if ([self isResendAction:action.action])
+                            [actionsToProcess addObject:action];
                     }
                     else if (concreteAction.layer >= 17)
                     {
@@ -108,6 +110,8 @@
                         }
                         else if (action.seqOut < nextExpectedSeqOut)
                             [removeActionIds addObject:@(action.actionId)];
+                        else if ([self isResendAction:action.action])
+                            [actionsToProcess addObject:action];
                     }
                     else
                         [actionsToProcess addObject:action];
@@ -148,7 +152,7 @@
                     
                     if (messageData != nil)
                     {
-                        [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:_peerId layer:MIN(17U, [TGModernSendSecretMessageActor currentLayer]) randomId:randomId messageData:messageData];
+                        [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:_peerId layer:MIN(currentPeerLayer, [TGModernSendSecretMessageActor currentLayer]) randomId:randomId messageData:messageData];
                     }
                 }
             }
@@ -287,7 +291,7 @@
                 
                 if (messageData != nil)
                 {
-                    [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:_peerId layer:MIN(17U, [TGModernSendSecretMessageActor currentLayer]) randomId:randomId messageData:messageData];
+                    [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:_peerId layer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) randomId:randomId messageData:messageData];
                 }
                 
                 [TGDatabaseInstance() setPeerLayer:_peerId layer:layerUpdate];
@@ -342,6 +346,34 @@
             }
         }];
     }];
+}
+
+- (bool)isResendAction:(TGStoredIncomingMessageSecretAction *)action
+{
+    id decryptedObject = nil;
+    switch (action.layer)
+    {
+        case 1:
+            decryptedObject = [Secret1__Environment parseObject:action.data];
+            break;
+        case 17:
+        {
+            decryptedObject = [Secret17__Environment parseObject:action.data];
+            if ([decryptedObject isKindOfClass:[Secret17_DecryptedMessageLayer class]])
+                decryptedObject = ((Secret17_DecryptedMessageLayer *)decryptedObject).message;
+            break;
+        }
+        default:
+            break;
+    }
+    
+    bool decodeMessage = false;
+    bool flushHistory = false;
+    bool decodeMessageWithoutAction = true;
+    NSDictionary *decryptedAction = [TGSecretIncomingQueueActor parseDecryptedAction:decryptedObject conversationId:_peerId decodeMessageWithAction:&decodeMessage flushHistory:&flushHistory decodeMessageWithoutAction:&decodeMessageWithoutAction date:action.date];
+    if ([decryptedAction[@"actionType"] isEqualToString:@"resendActions"])
+        return true;
+    return false;
 }
 
 - (void)_processIncomingMessage:(TGStoredIncomingMessageSecretAction *)action seqIn:(int32_t)seqIn seqOut:(int32_t)seqOut addedMessages:(NSMutableArray *)addedMessages addedActions:(NSMutableArray *)addedActions layerUpdate:(NSUInteger *)layerUpdate
@@ -443,6 +475,15 @@
         {
             if (decodeMessageWithoutAction)
                 *decodeMessageWithoutAction = true;
+        }
+        else if ([action isKindOfClass:[Secret1_DecryptedMessageAction_decryptedMessageActionNotifyLayer class]])
+        {
+            Secret1_DecryptedMessageAction_decryptedMessageActionNotifyLayer *concreteAction = action;
+            return @{
+                     @"peerId": @(conversationId),
+                     @"actionType": @"updateLayer",
+                     @"layer": @([concreteAction.layer unsignedIntegerValue])
+                     };
         }
     }
     else if ([decryptedMessage isKindOfClass:[Secret17_DecryptedMessage_decryptedMessageService class]])

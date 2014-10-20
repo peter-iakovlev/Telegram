@@ -417,6 +417,13 @@ static const char *Secret1__Serializer_Key = "Secret1__Serializer";
         {
             return [Secret1_DecryptedMessageAction decryptedMessageActionFlushHistory];
         } copy];
+        parsers[@((int32_t)0xf3048883)] = [^id (NSData *data, NSUInteger* _offset, __unused id metaInfo)
+        {
+            NSNumber * layer = nil;
+            if ((layer = [Secret1__Environment parseObject:data offset:_offset implicitSignature:(int32_t)0xa8509bda metaInfo:nil]) == nil)
+               return nil;
+            return [Secret1_DecryptedMessageAction decryptedMessageActionNotifyLayerWithLayer:layer];
+        } copy];
 });
 
     return parsers[@(constructorSignature)];
@@ -1144,6 +1151,12 @@ static const char *Secret1__Serializer_Key = "Secret1__Serializer";
 
 @end
 
+@interface Secret1_DecryptedMessageAction_decryptedMessageActionNotifyLayer ()
+
+@property (nonatomic, strong) NSNumber * layer;
+
+@end
+
 @implementation Secret1_DecryptedMessageAction
 
 + (Secret1_DecryptedMessageAction_decryptedMessageActionSetMessageTTL *)decryptedMessageActionSetMessageTTLWithTtl_seconds:(NSNumber *)ttl_seconds
@@ -1228,6 +1241,13 @@ id random_ids_result = [Secret1__Serializer addSerializerToObject:random_ids_cop
 + (Secret1_DecryptedMessageAction_decryptedMessageActionFlushHistory *)decryptedMessageActionFlushHistory
 {
     Secret1_DecryptedMessageAction_decryptedMessageActionFlushHistory *_object = [[Secret1_DecryptedMessageAction_decryptedMessageActionFlushHistory alloc] init];
+    return _object;
+}
+
++ (Secret1_DecryptedMessageAction_decryptedMessageActionNotifyLayer *)decryptedMessageActionNotifyLayerWithLayer:(NSNumber *)layer
+{
+    Secret1_DecryptedMessageAction_decryptedMessageActionNotifyLayer *_object = [[Secret1_DecryptedMessageAction_decryptedMessageActionNotifyLayer alloc] init];
+    _object.layer = [Secret1__Serializer addSerializerToObject:[layer copy] serializer:[[Secret1_BuiltinSerializer_Int alloc] init]];
     return _object;
 }
 
@@ -1348,6 +1368,30 @@ id random_ids_result = [Secret1__Serializer addSerializerToObject:random_ids_cop
 - (NSString *)description
 {
     return [[NSString alloc] initWithFormat:@"(decryptedMessageActionFlushHistory)"];
+}
+
+@end
+
+@implementation Secret1_DecryptedMessageAction_decryptedMessageActionNotifyLayer
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self != nil)
+    {
+        [Secret1__Serializer addSerializerToObject:self withConstructorSignature:0xf3048883 serializeBlock:^bool (Secret1_DecryptedMessageAction_decryptedMessageActionNotifyLayer *object, NSMutableData *data)
+        {
+            if (![Secret1__Environment serializeObject:object.layer data:data addSignature:false])
+                return false;
+            return true;
+        }];
+    }
+    return self;
+}
+
+- (NSString *)description
+{
+    return [[NSString alloc] initWithFormat:@"(decryptedMessageActionNotifyLayer layer:%@)", self.layer];
 }
 
 @end

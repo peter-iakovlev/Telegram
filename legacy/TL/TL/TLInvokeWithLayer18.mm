@@ -1,10 +1,10 @@
-#import "TLInvokeWithLayer17.h"
+#import "TLInvokeWithLayer18.h"
 
 #import "../NSInputStream+TL.h"
 #import "../NSOutputStream+TL.h"
 
 
-@implementation TLInvokeWithLayer17
+@implementation TLInvokeWithLayer18
 
 
 - (int32_t)TLconstructorSignature
@@ -33,22 +33,22 @@
 
 @end
 
-@implementation TLInvokeWithLayer17$invokeWithLayer17 : TLInvokeWithLayer17
+@implementation TLInvokeWithLayer18$invokeWithLayer18 : TLInvokeWithLayer18
 
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x50858a19;
+    return (int32_t)0x1c900537;
 }
 
 - (int32_t)TLconstructorName
 {
-    return (int32_t)0xeefcebed;
+    return (int32_t)0x4e9cb73e;
 }
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
-    TLInvokeWithLayer17$invokeWithLayer17 *object = [[TLInvokeWithLayer17$invokeWithLayer17 alloc] init];
+    TLInvokeWithLayer18$invokeWithLayer18 *object = [[TLInvokeWithLayer18$invokeWithLayer18 alloc] init];
     object.query = metaObject->getObject((int32_t)0x5de9dcb1);
     return object;
 }

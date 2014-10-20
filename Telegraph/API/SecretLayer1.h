@@ -21,6 +21,7 @@
 @class Secret1_DecryptedMessageAction_decryptedMessageActionDeleteMessages;
 @class Secret1_DecryptedMessageAction_decryptedMessageActionScreenshotMessages;
 @class Secret1_DecryptedMessageAction_decryptedMessageActionFlushHistory;
+@class Secret1_DecryptedMessageAction_decryptedMessageActionNotifyLayer;
 
 
 @interface Secret1__Environment : NSObject
@@ -147,6 +148,7 @@
 + (Secret1_DecryptedMessageAction_decryptedMessageActionDeleteMessages *)decryptedMessageActionDeleteMessagesWithRandom_ids:(NSArray *)random_ids;
 + (Secret1_DecryptedMessageAction_decryptedMessageActionScreenshotMessages *)decryptedMessageActionScreenshotMessagesWithRandom_ids:(NSArray *)random_ids;
 + (Secret1_DecryptedMessageAction_decryptedMessageActionFlushHistory *)decryptedMessageActionFlushHistory;
++ (Secret1_DecryptedMessageAction_decryptedMessageActionNotifyLayer *)decryptedMessageActionNotifyLayerWithLayer:(NSNumber *)layer;
 
 @end
 
@@ -175,6 +177,12 @@
 @end
 
 @interface Secret1_DecryptedMessageAction_decryptedMessageActionFlushHistory : Secret1_DecryptedMessageAction
+
+@end
+
+@interface Secret1_DecryptedMessageAction_decryptedMessageActionNotifyLayer : Secret1_DecryptedMessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * layer;
 
 @end
 

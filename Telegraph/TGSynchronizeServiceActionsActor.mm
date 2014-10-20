@@ -246,7 +246,7 @@
                     
                     if (messageData != nil)
                     {
-                        [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:peerId layer:MIN(17U, [TGModernSendSecretMessageActor currentLayer]) randomId:settingsAction.messageRandomId messageData:messageData];
+                        [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:peerId layer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) randomId:settingsAction.messageRandomId messageData:messageData];
                     }
 
                     [TGDatabaseInstance() removeFutureAction:action.uniqueId type:action.type randomId:action.randomId];

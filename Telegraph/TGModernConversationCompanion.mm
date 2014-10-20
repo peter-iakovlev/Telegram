@@ -696,12 +696,12 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     });
 }
 
-- (void)_setTypingStatus:(NSString *)typingStatus
+- (void)_setTypingStatus:(NSString *)typingStatus activity:(int)activity
 {
     TGDispatchOnMainThread(^
     {
         TGModernConversationController *controller = _controller;
-        [controller setTypingStatus:typingStatus];
+        [controller setTypingStatus:typingStatus activity:activity];
     });
 }
 
@@ -1678,6 +1678,10 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 }
 
 - (void)serviceNotificationsForMessageIds:(NSArray *)__unused messageIds
+{
+}
+
+- (void)markMessagesAsViewed:(NSArray *)__unused messageIds
 {
 }
 

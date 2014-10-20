@@ -353,7 +353,7 @@ typedef void (^TGDatabaseCleanupEverythingBlock)();
 - (void)peersWithOutgoingAndIncomingActions:(void (^)(NSArray *, NSArray *))completion;
 - (void)enqueuePeerOutgoingAction:(int64_t)peerId action:(id<PSCoding>)action useSeq:(bool)useSeq seqOut:(int32_t *)seqOut seqIn:(int32_t *)seqIn actionId:(int32_t *)actionId;
 - (void)dequeuePeerOutgoingActions:(int64_t)peerId completion:(void (^)(NSArray *, NSArray *))completion;
-- (void)enqueuePeerOutgoingResendActions:(int64_t)peerId fromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq;
+- (void)enqueuePeerOutgoingResendActions:(int64_t)peerId fromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq completion:(void (^)(bool))completion;
 - (void)deletePeerOutgoingActions:(int64_t)peerId actionIds:(NSArray *)actionIds;
 - (void)enqueuePeerIncomingActions:(int64_t)peerId actions:(NSArray *)actions;
 - (void)dequeuePeerIncomingActions:(int64_t)peerId completion:(void (^)(NSArray *, int32_t))completion;

@@ -190,29 +190,6 @@
     return 0;
 }
 
-/*
- 
- if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordVideoAction class]])
- activity = @"recordingVideo";
- if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadVideoAction class]])
- activity = @"uploadingVideo";
- else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordAudioAction class]])
- activity = @"recordingAudio";
- else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadAudioAction class]])
- activity = @"uploadingAudio";
- else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadPhotoAction class]])
- activity = @"uploadingPhoto";
- else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadDocumentAction class]])
- activity = @"uploadingDocument";
- else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageGeoLocationAction class]])
- activity = @"pickingLocation";
- else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageChooseContactAction class]])
- activity = @"choosingContact";
- else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageCancelAction class]])
- activity = nil;
- 
- */
-
 - (NSString *)activityType
 {
     if ([_preparedMessage isKindOfClass:[TGPreparedLocalImageMessage class]])

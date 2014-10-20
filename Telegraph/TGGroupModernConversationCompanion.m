@@ -22,6 +22,8 @@
 #import "TGImageUtils.h"
 #import "TGStringUtils.h"
 
+#import "TGModernConversationTitleView.h"
+
 typedef enum {
     TGGroupParticipationStatusMember = 0,
     TGGroupParticipationStatusLeft = 1,
@@ -110,6 +112,38 @@ typedef enum {
     }
 }
 
+- (NSString *)stringForActivity:(NSString *)activity
+{
+    if ([activity isEqualToString:@"recordingAudio"])
+        return TGLocalized(@"Activity.RecordingAudio");
+    else if ([activity isEqualToString:@"uploadingPhoto"])
+        return TGLocalized(@"Activity.UploadingPhoto");
+    else if ([activity isEqualToString:@"uploadingVideo"])
+        return TGLocalized(@"Activity.UploadingVideo");
+    else if ([activity isEqualToString:@"uploadingDocument"])
+        return TGLocalized(@"Activity.UploadingDocument");
+    else if ([activity isEqualToString:@"pickingLocation"])
+        return nil;
+    
+    return TGLocalized(@"Conversation.typing");
+}
+
+- (int)activityTypeForActivity:(NSString *)activity
+{
+    if ([activity isEqualToString:@"recordingAudio"])
+        return TGModernConversationTitleViewActivityAudioRecording;
+    else if ([activity isEqualToString:@"uploadingPhoto"])
+        return TGModernConversationTitleViewActivityUploading;
+    else if ([activity isEqualToString:@"uploadingVideo"])
+        return TGModernConversationTitleViewActivityUploading;
+    else if ([activity isEqualToString:@"uploadingDocument"])
+        return TGModernConversationTitleViewActivityUploading;
+    else if ([activity isEqualToString:@"pickingLocation"])
+        return 0;
+    
+    return TGModernConversationTitleViewActivityTyping;
+}
+
 - (NSString *)stringForUserActivities:(NSDictionary *)activities
 {
     if (activities.count != 0)
@@ -131,6 +165,20 @@ typedef enum {
     }
     
     return nil;
+}
+
+- (int)activityTypeForActivities:(NSDictionary *)activities
+{
+    if (activities.count == 1)
+    {
+        return [self activityTypeForActivity:activities.allValues.firstObject];
+    }
+    else if (activities.count != 0)
+    {
+        return TGModernConversationTitleViewActivityTyping;
+    }
+    
+    return 0;
 }
 
 - (TGGroupParticipationStatus)participationStatusForConversation:(TGConversation *)conversation
@@ -159,7 +207,7 @@ typedef enum {
     [self _setStatus:[self stringForMemberCount:_conversation.chatParticipantCount onlineCount:onlineCount participationStatus:[self participationStatusForConversation:_conversation]] accentColored:false allowAnimation:false];
     
     if (_initialUserActivities.count != 0)
-        [self _setTypingStatus:[self stringForUserActivities:_initialUserActivities]];
+        [self _setTypingStatus:[self stringForUserActivities:_initialUserActivities] activity:[self activityTypeForActivities:_initialUserActivities]];
     
     [self updatePatricipationStatus:[self participationStatusForConversation:_conversation]];
 }
@@ -201,7 +249,7 @@ typedef enum {
             navigationController.presentationStyle = TGNavigationControllerPresentationStyleRootInPopover;
             TGPopoverController *popoverController = [[TGPopoverController alloc] initWithContentViewController:navigationController];
             navigationController.parentPopoverController = popoverController;
-            [popoverController setPopoverContentSize:CGSizeMake(320.0f, 528.0f) animated:false];
+            [popoverController setContentSize:CGSizeMake(320.0f, 528.0f)];
             
             controller.associatedPopoverController = popoverController;
             [popoverController presentPopoverFromBarButtonItem:controller.navigationItem.rightBarButtonItem permittedArrowDirections:UIPopoverArrowDirectionAny animated:true];
@@ -459,9 +507,9 @@ typedef enum {
     {
         NSDictionary *userActivities = ((SGraphObjectNode *)resource).object;
         if (userActivities.count != 0)
-            [self _setTypingStatus:[self stringForUserActivities:userActivities]];
+            [self _setTypingStatus:[self stringForUserActivities:userActivities] activity:[self activityTypeForActivities:userActivities]];
         else
-            [self _setTypingStatus:nil];
+            [self _setTypingStatus:nil activity:0];
     }
     else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId]])
     {

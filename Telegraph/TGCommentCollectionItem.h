@@ -11,6 +11,12 @@
 @interface TGCommentCollectionItem : TGCollectionItem
 
 @property (nonatomic) bool skipLastLineInSizeComputation;
+@property (nonatomic) CGFloat topInset;
+@property (nonatomic) CGFloat alpha;
+@property (nonatomic) bool hidden;
+@property (nonatomic, strong) UIColor *textColor;
+@property (nonatomic, strong) NSString *text;
+@property (nonatomic) bool showProgress;
 
 - (instancetype)initWithText:(NSString *)text;
 - (instancetype)initWithFormattedText:(NSString *)text;

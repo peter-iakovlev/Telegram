@@ -162,6 +162,10 @@
                     {
                         minLifetime = ((TGVideoMediaAttachment *)attachment).duration;
                     }
+                    else if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
+                    {
+                        minLifetime = ((TGAudioMediaAttachment *)attachment).duration;
+                    }
                 }
                 storeMessage.messageLifetime = (int)MAX(minLifetime, (NSTimeInterval)messageLifetimeByConversation[conversationId]);
             }

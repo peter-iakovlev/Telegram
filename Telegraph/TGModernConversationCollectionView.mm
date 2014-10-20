@@ -113,6 +113,29 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
 {
 }
 
+- (void)instantPreviewGestureDidBegin
+{
+    id<TGModernConversationCollectionTouchBehaviour> touchBehaviour = _currentInstantPreviewTarget;
+    if (touchBehaviour != nil)
+    {
+        //TGLog(@"begin with %p", touchBehaviour);
+        
+        void (^touchCompletion)() = [touchBehaviour forwardTouchToCollectionWithCompletion];
+        if (touchCompletion != nil)
+        {
+            __weak TGModernConversationCollectionView *weakSelf = self;
+            self.touchCompletion = ^
+            {
+                __strong TGModernConversationCollectionView *strongSelf = weakSelf;
+                
+                touchCompletion();
+                
+                strongSelf.touchCompletion = nil;
+            };
+        }
+    }
+}
+
 - (void)instantPreviewGestureDidEnd
 {
     [self endInstantPreviewGesture];
@@ -132,12 +155,16 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
 
 - (void)endInstantPreviewGesture
 {
+    //TGLog(@"end with %p", _currentInstantPreviewTarget);
+    
     if (self.touchCompletion != nil)
     {
         self.touchCompletion();
         self.touchCompletion = nil;
         self.scrollEnabled = true;
     }
+    
+    _currentInstantPreviewTarget = nil;
 }
 
 - (id<TGModernConversationCollectionTouchBehaviour>)touchBehaviourForViewOrSuperviews:(UIView *)view
@@ -158,29 +185,15 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
     id<TGModernConversationCollectionTouchBehaviour> touchBehaviour = [self touchBehaviourForViewOrSuperviews:result];
     if (touchBehaviour != nil)
     {
-        void (^touchCompletion)() = [touchBehaviour forwardTouchToCollectionWithCompletion];
-        if (touchCompletion != nil)
+        id<TGModernConversationCollectionTouchBehaviour> currentTouchBehaviour = _currentInstantPreviewTarget;
+        if (currentTouchBehaviour != touchBehaviour)
         {
-            id<TGModernConversationCollectionTouchBehaviour> currentYouchBehaviour = touchBehaviour;
-            if (currentYouchBehaviour != touchBehaviour)
-            {
-                [currentYouchBehaviour cancel];
-                [self endInstantPreviewGesture];
-            }
-            
-            __weak TGModernConversationCollectionView *weakSelf = self;
-            self.touchCompletion = ^
-            {
-                __strong TGModernConversationCollectionView *strongSelf = weakSelf;
-                
-                touchCompletion();
-                
-                strongSelf.touchCompletion = nil;
-            };
-            _currentInstantPreviewTarget = touchBehaviour;
-            
-            return self;
+            [self endInstantPreviewGesture];
         }
+        
+        _currentInstantPreviewTarget = touchBehaviour;
+        
+        return self;
     }
     
     return result;

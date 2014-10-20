@@ -475,6 +475,7 @@ static bool _initialUpdatesScheduled = false;
                 
                 user.firstName = userNameUpdate.first_name;
                 user.lastName = userNameUpdate.last_name;
+                user.userName = userNameUpdate.username;
                 
                 if (![user isEqualToUser:originalUser])
                 {
@@ -1076,12 +1077,22 @@ static bool _initialUpdatesScheduled = false;
             TLUpdate$updateChatUserTyping *userTyping = (TLUpdate$updateChatUserTyping *)update;
             
             NSString *activity = @"typing";
-            if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordAudioAction class]])
-                activity = @"recordingAudio";
-            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordVideoAction class]])
+            if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordVideoAction class]])
                 activity = @"recordingVideo";
+            if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadVideoAction class]])
+                activity = @"uploadingVideo";
+            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordAudioAction class]])
+                activity = @"recordingAudio";
+            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadAudioAction class]])
+                activity = @"uploadingAudio";
+            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadPhotoAction class]])
+                activity = @"uploadingPhoto";
+            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadDocumentAction class]])
+                activity = @"uploadingDocument";
             else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageGeoLocationAction class]])
                 activity = @"pickingLocation";
+            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageChooseContactAction class]])
+                activity = @"choosingContact";
             else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageCancelAction class]])
                 activity = nil;
             

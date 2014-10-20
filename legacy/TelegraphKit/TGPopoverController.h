@@ -2,4 +2,6 @@
 
 @interface TGPopoverController : UIPopoverController
 
+- (void)setContentSize:(CGSize)contentSize;
+
 @end

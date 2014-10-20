@@ -29,6 +29,12 @@
 
 @implementation TGPickerSheetOverlayController
 
+- (void)dealloc
+{
+    _pickerView.delegate = nil;
+    _pickerView.dataSource = nil;
+}
+
 - (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
 {
     [super willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
@@ -123,13 +129,20 @@
     [_backgroundView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(backgroundTapped:)]];
     [self.view addSubview:_backgroundView];
     
-    CGFloat containerHeight = 216.0f + 44.0f;
+    CGFloat containerHeight = 216.0f + 32.0f;
     _containerView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - containerHeight, self.view.frame.size.width, containerHeight)];
     _containerView.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleWidth;
     _containerView.backgroundColor = [UIColor whiteColor];
     [self.view addSubview:_containerView];
     
     CGFloat buttonInset = 10.0f;
+    
+    _pickerView = [[UIPickerView alloc] initWithFrame:CGRectMake(0.0f, 32.0f + CGFloor((_containerView.frame.size.height - 44.0f - 216.0f) / 2.0f), _containerView.frame.size.width, 216.0)];
+    _pickerView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    _pickerView.dataSource = self;
+    _pickerView.delegate = self;
+    [_pickerView reloadAllComponents];
+    [_containerView addSubview:_pickerView];
     
     _cancelButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 100.0f, 44.0f)];
     [_cancelButton setTitleEdgeInsets:UIEdgeInsetsMake(0.0f, buttonInset, 0.0f, buttonInset)];
@@ -149,13 +162,6 @@
     _doneButton.titleLabel.font = TGBoldSystemFontOfSize(16.0f);
     [_doneButton addTarget:self action:@selector(doneButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [_containerView addSubview:_doneButton];
-    
-    _pickerView = [[UIPickerView alloc] initWithFrame:CGRectMake(0.0f, 44.0f + CGFloor((_containerView.frame.size.height - 44.0f - 216.0f) / 2.0f), _containerView.frame.size.width, 216.0)];
-    _pickerView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    _pickerView.dataSource = self;
-    _pickerView.delegate = self;
-    [_pickerView reloadAllComponents];
-    [_containerView addSubview:_pickerView];
 }
 
 - (void)backgroundTapped:(UITapGestureRecognizer *)recognizer
@@ -266,6 +272,12 @@
         [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(doneButtonPressed)]];
     }
     return self;
+}
+
+- (void)dealloc
+{
+    _pickerView.delegate = nil;
+    _pickerView.dataSource = nil;
 }
 
 - (void)cancelButtonPressed

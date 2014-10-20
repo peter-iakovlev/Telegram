@@ -10,6 +10,8 @@
 
 #import "TGModernButton.h"
 
+#import "TGTimerTarget.h"
+
 @interface TGSearchBar () <UITextFieldDelegate>
 {
     CGFloat _cancelButtonWidth;
@@ -32,6 +34,8 @@
 @property (nonatomic) bool showsCustomCancelButton;
 @property (nonatomic, strong) UILabel *placeholderLabel;
 @property (nonatomic, strong) UIImageView *customSearchIcon;
+@property (nonatomic, strong) UIActivityIndicatorView *customSearchActivityIndicator;
+@property (nonatomic, strong) NSTimer *searchActivityTimer;
 @property (nonatomic, strong) UIButton *customClearButton;
 
 @property (nonatomic, strong) UIView *customScopeButtonContainer;
@@ -170,6 +174,12 @@
         _customSearchIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:iconFileName]];
         _customSearchIcon.userInteractionEnabled = false;
         [_wrappingView addSubview:_customSearchIcon];
+        
+        _customSearchActivityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:4];
+        _customSearchActivityIndicator.alpha = 0.4f;
+        _customSearchActivityIndicator.userInteractionEnabled = false;
+        _customSearchActivityIndicator.hidden = true;
+        [_wrappingView addSubview:_customSearchActivityIndicator];
     }
     return self;
 }
@@ -438,6 +448,8 @@
     _textFieldBackground.frame = CGRectMake(8, 9 + [self topPadding], self.frame.size.width - 16 - rightPadding, _textFieldBackground.frame.size.height);
     
     _customSearchIcon.frame = CGRectMake(_showsCustomCancelButton ? (_textFieldBackground.frame.origin.x + 8.0f) : ((floorf((self.frame.size.width - _placeholderLabel.frame.size.width) / 2) + 10 + TGRetinaPixel) - 20), 16 + retinaPixel + [self topPadding], _customSearchIcon.frame.size.width, _customSearchIcon.frame.size.height);
+    
+    _customSearchActivityIndicator.frame = (CGRect){{CGFloor(_customSearchIcon.frame.origin.x + (_customSearchIcon.frame.size.width - _customSearchActivityIndicator.frame.size.width) / 2.0f), CGFloor(_customSearchIcon.frame.origin.y + (_customSearchIcon.frame.size.height - _customSearchActivityIndicator.frame.size.height) / 2.0f) + 1.0f + TGRetinaPixel}, _customSearchActivityIndicator.frame.size};
     
     _placeholderLabel.frame = CGRectMake(_showsCustomCancelButton ? (TGIsRTL() ? (CGRectGetMaxX(_textFieldBackground.frame) - _placeholderLabel.frame.size.width - 32.0f) : 36) : (floorf((self.frame.size.width - _placeholderLabel.frame.size.width) / 2) + 10 + TGRetinaPixel), 14 + [self topPadding], _placeholderLabel.frame.size.width, _placeholderLabel.frame.size.height);
     
@@ -743,6 +755,34 @@
     }
     
     [self setNeedsLayout];
+}
+
+- (void)setShowActivity:(bool)showActivity
+{
+    if (_showActivity != showActivity)
+    {
+        [_searchActivityTimer invalidate];
+        _searchActivityTimer = nil;
+        
+        _showActivity = showActivity;
+        
+        _searchActivityTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(searchActivityTimerEvent) interval:0.2 repeat:false];
+    }
+}
+
+- (void)searchActivityTimerEvent
+{
+    _customSearchIcon.hidden = _showActivity;
+    if (_showActivity)
+    {
+        _customSearchActivityIndicator.hidden = false;
+        [_customSearchActivityIndicator startAnimating];
+    }
+    else
+    {
+        _customSearchActivityIndicator.hidden = true;
+        [_customSearchActivityIndicator stopAnimating];
+    }
 }
 
 @end

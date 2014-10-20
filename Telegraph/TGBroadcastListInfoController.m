@@ -31,7 +31,6 @@
 #import "TGGroupInfoSelectContactController.h"
 #import "TGAlertSoundController.h"
 
-#import "TGImageViewController.h"
 #import "TGTelegraphProfileImageViewCompanion.h"
 #import "TGRemoteImageView.h"
 #import "TGLegacyCameraController.h"

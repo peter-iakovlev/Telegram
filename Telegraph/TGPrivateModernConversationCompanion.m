@@ -23,6 +23,8 @@
 
 #import "TGModernConversationTitleIcon.h"
 
+#import "TGModernConversationTitleView.h"
+
 typedef enum {
     TGPhoneSharingStatusUnknown = 0,
     TGPhoneSharingStatusNotShared = 1,
@@ -272,7 +274,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
             navigationController.presentationStyle = TGNavigationControllerPresentationStyleRootInPopover;
             TGPopoverController *popoverController = [[TGPopoverController alloc] initWithContentViewController:navigationController];
             navigationController.parentPopoverController = popoverController;
-            [popoverController setPopoverContentSize:CGSizeMake(320.0f, 528.0f) animated:false];
+            [popoverController setContentSize:CGSizeMake(320.0f, 528.0f)];
 
             controller.associatedPopoverController = popoverController;
             [popoverController presentPopoverFromBarButtonItem:controller.navigationItem.rightBarButtonItem permittedArrowDirections:UIPopoverArrowDirectionAny animated:true];
@@ -325,9 +327,25 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     else if ([activity isEqualToString:@"uploadingDocument"])
         return TGLocalized(@"Activity.UploadingDocument");
     else if ([activity isEqualToString:@"pickingLocation"])
-        return TGLocalized(@"Activity.Location");
+        return nil;
         
     return TGLocalized(@"Conversation.typing");
+}
+
+- (int)activityTypeForActivity:(NSString *)activity
+{
+    if ([activity isEqualToString:@"recordingAudio"])
+        return TGModernConversationTitleViewActivityAudioRecording;
+    else if ([activity isEqualToString:@"uploadingPhoto"])
+        return TGModernConversationTitleViewActivityUploading;
+    else if ([activity isEqualToString:@"uploadingVideo"])
+        return TGModernConversationTitleViewActivityUploading;
+    else if ([activity isEqualToString:@"uploadingDocument"])
+        return TGModernConversationTitleViewActivityUploading;
+    else if ([activity isEqualToString:@"pickingLocation"])
+        return 0;
+    
+    return TGModernConversationTitleViewActivityTyping;
 }
 
 - (void)loadInitialState
@@ -344,7 +362,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     [self _setStatus:statusString accentColored:accentColored allowAnimation:false];
     
     if (_initialActivity != nil)
-        [self _setTypingStatus:[self stringForActivity:_initialActivity]];
+        [self _setTypingStatus:[self stringForActivity:_initialActivity] activity:[self activityTypeForActivity:_initialActivity]];
 }
 
 #pragma mark -
@@ -603,10 +621,11 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     {
         NSDictionary *userActivities = ((SGraphObjectNode *)resource).object;
         if (userActivities.count == 0)
-            [self _setTypingStatus:nil];
+            [self _setTypingStatus:nil activity:0];
         else
         {
-            [self _setTypingStatus:[self stringForActivity:userActivities[userActivities.allKeys.firstObject]]];
+            NSString *activity = userActivities[userActivities.allKeys.firstObject];
+            [self _setTypingStatus:[self stringForActivity:activity] activity:[self activityTypeForActivity:activity]];
         }
     }
     else if ([path hasPrefix:@"/tg/blockedUsers"])

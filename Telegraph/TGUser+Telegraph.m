@@ -121,6 +121,7 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
             userPhone = concreteUser.phone;
             extractUserPhoto(concreteUser.photo, self);
             self.presence = extractUserPresence(concreteUser.status);
+            self.userName = concreteUser.username;
         }
         else if ([user isKindOfClass:[TLUser$userContact class]])
         {
@@ -131,6 +132,7 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
             userPhone = concreteUser.phone;
             extractUserPhoto(concreteUser.photo, self);
             self.presence = extractUserPresence(concreteUser.status);
+            self.userName = concreteUser.username;
         }
         else if ([user isKindOfClass:[TLUser$userForeign class]])
         {
@@ -140,6 +142,7 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
             self.phoneNumberHash = concreteUser.access_hash;
             extractUserPhoto(concreteUser.photo, self);
             self.presence = extractUserPresence(concreteUser.status);
+            self.userName = concreteUser.username;
         }
         else if ([user isKindOfClass:[TLUser$userRequest class]])
         {
@@ -150,6 +153,7 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
             self.phoneNumberHash = concreteUser.access_hash;
             extractUserPhoto(concreteUser.photo, self);
             self.presence = extractUserPresence(concreteUser.status);
+            self.userName = concreteUser.username;
         }
         else if ([user isKindOfClass:[TLUser$userDeleted class]])
         {
@@ -160,6 +164,7 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
             presence.online = false;
             presence.lastSeen = 0;
             self.presence = presence;
+            self.userName = concreteUser.username;
         }
         
         if (userPhone.length != 0)

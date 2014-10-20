@@ -16,6 +16,7 @@
 #import "TGWallpapersCollectionItem.h"
 #import "TGSwitchCollectionItem.h"
 #import "TGCommentCollectionItem.h"
+#import "TGVariantCollectionItem.h"
 
 #import "TGWallpaperListController.h"
 #import "TGWallpaperController.h"
@@ -44,6 +45,8 @@
 
 #import "TGSettingsController.h"
 
+#import "TGUsernameController.h"
+
 #import "TGAlertView.h"
 
 @interface TGAccountSettingsController () <TGImagePickerControllerDelegate, TGLegacyCameraControllerDelegate, TGWallpaperControllerDelegate>
@@ -58,6 +61,8 @@
     TGSwitchCollectionItem *_autosavePhotosItem;
     
     TGWallpapersCollectionItem *_wallpapersItem;
+    
+    TGVariantCollectionItem *_usernameItem;
     
     TGDisclosureActionCollectionItem *_notificationsItem;
     TGDisclosureActionCollectionItem *_blockedUsersItem;
@@ -113,6 +118,10 @@
         ]];
         [self.menuSections addSection:settingsSection];
         
+        _usernameItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.Username") action:@selector(usernamePressed)];
+        TGCollectionMenuSection *usernameSection = [[TGCollectionMenuSection alloc] initWithItems:@[_usernameItem]];
+        [self.menuSections addSection:usernameSection];
+        
         _autosavePhotosItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.SaveIncomingPhotos") isOn:TGAppDelegateInstance.autosavePhotos];
         _autosavePhotosItem.interfaceHandle = _actionHandle;
         
@@ -145,7 +154,10 @@
     
     _editing = false;
     
-    [_profileDataItem setUser:[TGDatabaseInstance() loadUser:_uid] animated:false];
+    TGUser *user = [TGDatabaseInstance() loadUser:_uid];
+    
+    [_profileDataItem setUser:user animated:false];
+    [_usernameItem setVariant:user.userName.length == 0 ? TGLocalized(@"Settings.UsernameEmpty") : [[NSString alloc] initWithFormat:@"@%@", user.userName]];
     
     [self setTitleText:TGLocalized(@"Settings.Title")];
     
@@ -598,6 +610,7 @@
                 TGDispatchOnMainThread(^
                 {
                     [_profileDataItem setUser:user animated:true];
+                    [_usernameItem setVariant:user.userName.length == 0 ? TGLocalized(@"Settings.UsernameEmpty") : [[NSString alloc] initWithFormat:@"@%@", user.userName]];
                 });
                 
                 break;
@@ -836,6 +849,22 @@
     }
 }
 
+- (void)usernamePressed
+{
+    TGUsernameController *usernameController = [[TGUsernameController alloc] init];
+    
+    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[usernameController]];
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+        navigationController.restrictLandscape = false;
+    else
+    {
+        navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
+        navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
+    }
+    
+    [self presentViewController:navigationController animated:true completion:nil];
+}
+
 - (void)localizationUpdated
 {
     [self setTitleText:TGLocalized(@"Settings.Title")];
@@ -860,6 +889,7 @@
     _setProfilePhotoItem.title = TGLocalized(@"Settings.SetProfilePhoto");
     _autosavePhotosItem.title = TGLocalized(@"Settings.SaveIncomingPhotos");
     _wallpapersItem.title = TGLocalized(@"Settings.ChatBackground");
+    _usernameItem.title = TGLocalized(@"Settings.Username");
     _supportItem.title = TGLocalized(@"Settings.Support");
     
     [_profileDataItem localizationUpdated];

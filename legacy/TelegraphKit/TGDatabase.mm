@@ -940,7 +940,22 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
     
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (key INTEGER PRIMARY KEY, value BLOB)", _serviceTableName]];
     
-    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (uid INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, local_first_name TEXT, local_last_name TEXT, phone_number TEXT, access_hash INTEGER, sex INTEGER, photo_small TEXT, photo_medium TEXT, photo_big TEXT, last_seen INTEGER)", _usersTableName]];
+    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (uid INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, local_first_name TEXT, local_last_name TEXT, phone_number TEXT, access_hash INTEGER, sex INTEGER, photo_small TEXT, photo_medium TEXT, photo_big TEXT, last_seen INTEGER, username STRING)", _usersTableName]];
+    
+    FMResultSet *usersHaveUsernameResult = [_database executeQuery:[[NSString alloc] initWithFormat:@"PRAGMA table_info(%@)", _usersTableName]];
+    bool usersHaveUsername = false;
+    while ([usersHaveUsernameResult next])
+    {
+        if ([[usersHaveUsernameResult stringForColumn:@"name"] isEqualToString:@"username"])
+        {
+            usersHaveUsername = true;
+            break;
+        }
+    }
+    if (!usersHaveUsername)
+    {
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"ALTER TABLE %@ ADD COLUMN username STRING", _usersTableName]];
+    }
     
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (cid INTEGER PRIMARY KEY, date INTEGER, from_uid INTEGER, message TEXT, media BLOB, unread_count INTEGER, flags INTEGER, chat_title TEXT, chat_photo BLOB, participants BLOB, participants_count INTEGER, chat_version INTEGER, service_unread INTEGER)", _conversationListTableName]];
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE INDEX IF NOT EXISTS date ON %@ (date DESC)", _conversationListTableName]];
@@ -1371,9 +1386,9 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
 
 inline static void storeUserToDatabase(TGDatabase *instance, FMDatabase *database, TGUser *user)
 {
-    static NSString *queryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (uid, first_name, last_name, local_first_name, local_last_name, phone_number, access_hash, sex, photo_small, photo_medium, photo_big, last_seen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", instance.usersTableName];
+    static NSString *queryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (uid, first_name, last_name, local_first_name, local_last_name, phone_number, access_hash, sex, photo_small, photo_medium, photo_big, last_seen, username) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", instance.usersTableName];
     
-    [database executeUpdate:queryFormat, [[NSNumber alloc] initWithInt:user.uid], user.realFirstName, user.realLastName, user.phonebookFirstName, user.phonebookLastName, user.phoneNumber, [[NSNumber alloc] initWithLongLong:user.phoneNumberHash], [[NSNumber alloc] initWithInt:user.sex], user.photoUrlSmall, user.photoUrlMedium, user.photoUrlBig, [[NSNumber alloc] initWithInt:((int)user.presence.lastSeen)]];
+    [database executeUpdate:queryFormat, [[NSNumber alloc] initWithInt:user.uid], user.realFirstName, user.realLastName, user.phonebookFirstName, user.phonebookLastName, user.phoneNumber, [[NSNumber alloc] initWithLongLong:user.phoneNumberHash], [[NSNumber alloc] initWithInt:user.sex], user.photoUrlSmall, user.photoUrlMedium, user.photoUrlBig, [[NSNumber alloc] initWithInt:((int)user.presence.lastSeen)], user.userName == nil ? @"" : user.userName];
 }
 
 inline static TGUser *loadUserFromDatabase(FMResultSet *result)
@@ -1395,6 +1410,7 @@ inline static TGUser *loadUserFromDatabase(FMResultSet *result)
     presence.online = false;
     presence.lastSeen = [result intForColumn:@"last_seen"];
     user.presence = presence;
+    user.userName = [result stringForColumn:@"username"];
     
     return user;
 }
@@ -2658,6 +2674,7 @@ static NSMutableDictionary *transliterationPartsCache()
         NSArray *latinQueryParts = breakStringIntoParts([mutableQuery lowercaseString], characterSet);
         
         NSMutableString *testString = [[NSMutableString alloc] initWithCapacity:128];
+        NSString *nameQuery = [[query lowercaseString] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
         
         NSMutableDictionary *cache = transliterationPartsCache();
         
@@ -2670,6 +2687,12 @@ static NSMutableDictionary *transliterationPartsCache()
             
             NSString *firstName = user.firstName;
             NSString *lastName = user.lastName;
+            
+            if (user.userName.length != 0 && [[user.userName lowercaseString] hasPrefix:nameQuery])
+            {
+                [usersArray addObject:user];
+                continue;
+            }
             
             if (firstName.length != 0 || lastName.length != 0)
             {
@@ -6102,6 +6125,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                                 {
                                     case TGImageMediaAttachmentType:
                                     case TGVideoMediaAttachmentType:
+                                    case TGAudioMediaAttachmentType:
                                     {
                                         hasSecretMedia = true;
                                         break;
@@ -6310,6 +6334,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                     {
                         case TGImageMediaAttachmentType:
                         case TGVideoMediaAttachmentType:
+                        case TGAudioMediaAttachmentType:
                         {
                             hasSecretMedia = true;
                             break;
@@ -10381,13 +10406,18 @@ typedef struct {
     } synchronous:false];
 }
 
-- (void)enqueuePeerOutgoingResendActions:(int64_t)peerId fromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq
+- (void)enqueuePeerOutgoingResendActions:(int64_t)peerId fromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq completion:(void (^)(bool))completion
 {
     [self dispatchOnDatabaseThread:^
     {
         NSMutableArray *actions = [[NSMutableArray alloc] init];
         
         FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE peer_id=? AND seq_out>=? AND seq_out<=? ORDER BY seq_out ASC", _secretPeerOutgoingTableName], @(peerId), @(fromSeq), @(toSeq)];
+        NSMutableSet *indices = [[NSMutableSet alloc] init];
+        for (int32_t seq = fromSeq; seq <= toSeq; seq++)
+        {
+            [indices addObject:@(seq)];
+        }
         PSKeyValueDecoder *decoder = [[PSKeyValueDecoder alloc] init];
         while ([result next])
         {
@@ -10400,9 +10430,13 @@ typedef struct {
             
             id<PSCoding> action = [decoder decodeObjectForCKey:"action"];
             [actions addObject:[[TGStoredSecretActionWithSeq alloc] initWithActionId:actionId action:action seqIn:seqIn seqOut:seqOut]];
+            [indices removeObject:@(seqOut)];
         }
         
         [self _enqueuePeerOutgoingResendActions:peerId actions:actions];
+        
+        if (completion)
+            completion(indices.count == 0);
     } synchronous:false];
 }
 

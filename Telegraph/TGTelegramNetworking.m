@@ -173,7 +173,7 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
         
         [ActionStageInstance() requestActor:@"/tg/datacenterWatchdog" options:nil flags:0 watcher:self];
         
-#if TARGET_IPHONE_SIMULATOR && false
+#if TARGET_IPHONE_SIMULATOR && true
         MTRequest *getSchemeRequest = [[MTRequest alloc] init];
         getSchemeRequest.body = [[TLRPChelp_getScheme$help_getScheme alloc] init];
         [getSchemeRequest setCompleted:^(TLScheme$scheme *result, __unused NSTimeInterval timestamp, __unused id error)

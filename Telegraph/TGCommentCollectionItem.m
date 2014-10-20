@@ -15,6 +15,8 @@
 @interface TGCommentCollectionItem ()
 {
     NSAttributedString *_attributedText;
+    CGFloat _lastContainerWidth;
+    CGSize _calculatedSize;
 }
 
 @end
@@ -29,8 +31,10 @@
         self.transparent = true;
         self.highlightable = false;
         self.selectable = false;
+        _alpha = 1.0f;
         
         _attributedText = [self attributedStringFromText:text allowFormatting:false];
+        _textColor = UIColorRGB(0x6d6d72);
     }
     return self;
 }
@@ -43,8 +47,25 @@
         self.transparent = true;
         self.highlightable = false;
         self.selectable = false;
+        _alpha = 1.0f;
         
         _attributedText = [self attributedStringFromText:text allowFormatting:true];
+        _textColor = UIColorRGB(0x6d6d72);
+    }
+    return self;
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self != nil)
+    {
+        self.transparent = true;
+        self.highlightable = false;
+        self.selectable = false;
+        _alpha = 1.0f;
+        
+        _textColor = UIColorRGB(0x6d6d72);
     }
     return self;
 }
@@ -75,7 +96,7 @@
     }
     
     NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
-    style.lineSpacing = 3;
+    style.lineSpacing = 2;
     style.lineBreakMode = NSLineBreakByWordWrapping;
     style.alignment = NSTextAlignmentLeft;
 
@@ -92,6 +113,28 @@
     }
 
     return attributedString;
+}
+
+- (void)setText:(NSString *)text
+{
+    _text = text;
+    
+    _attributedText = [self attributedStringFromText:text allowFormatting:false];
+    
+    if (_lastContainerWidth > FLT_EPSILON)
+    {
+        [self itemSizeForContainerSize:CGSizeMake(_lastContainerWidth, FLT_MAX)];
+        [((TGCommentCollectionItemView *)self.boundView) setCalculatedSize:_calculatedSize];
+    }
+    
+    [((TGCommentCollectionItemView *)self.boundView) setAttributedText:_attributedText];
+}
+
+- (void)setTextColor:(UIColor *)textColor
+{
+    _textColor = textColor;
+    
+    [((TGCommentCollectionItemView *)self.boundView) setTextColor:_textColor];
 }
 
 - (Class)itemViewClass
@@ -119,14 +162,40 @@
         textSize.height = MAX(lineHeight, textSize.height - lineHeight);
     }
     
-    return CGSizeMake(containerSize.width, textSize.height + 7.0f + 7.0f);
+    _calculatedSize = CGSizeMake(containerSize.width, textSize.height + 7.0f + 7.0f + _topInset);
+    
+    _lastContainerWidth = containerSize.width;
+    
+    if (_hidden)
+        return CGSizeMake(containerSize.width, 1.0f);
+    
+    return _calculatedSize;
+}
+
+- (void)setAlpha:(CGFloat)alpha
+{
+    _alpha = alpha;
+    
+    [((TGCommentCollectionItemView *)self.boundView) setLabelAlpha:_alpha];
 }
 
 - (void)bindView:(TGCollectionItemView *)view
 {
     [super bindView:view];
-    
+
+    [((TGCommentCollectionItemView *)self.boundView) setLabelAlpha:_alpha];
+    [((TGCommentCollectionItemView *)view) setCalculatedSize:_calculatedSize];
+    [((TGCommentCollectionItemView *)view) setTopInset:_topInset];
+    [((TGCommentCollectionItemView *)view) setTextColor:_textColor];
+    [((TGCommentCollectionItemView *)view) setShowProgress:_showProgress];
     [((TGCommentCollectionItemView *)view) setAttributedText:_attributedText];
+}
+
+- (void)setShowProgress:(bool)showProgress
+{
+    _showProgress = showProgress;
+    
+    [((TGCommentCollectionItemView *)self.boundView) setShowProgress:_showProgress];
 }
 
 @end

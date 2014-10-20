@@ -1222,7 +1222,14 @@
 
 + (void)enqueueOutgoingResendMessagesForPeerId:(int64_t)peerId fromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq
 {
-    [TGDatabaseInstance() enqueuePeerOutgoingResendActions:peerId fromSeq:fromSeq toSeq:toSeq];
+    [TGDatabaseInstance() enqueuePeerOutgoingResendActions:peerId fromSeq:fromSeq toSeq:toSeq completion:^(bool success)
+    {
+        if (!success)
+        {
+            int64_t encryptedChatId = [TGDatabaseInstance() encryptedConversationIdForPeerId:peerId];
+        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/encrypted/discardEncryptedChat/(%lld)", encryptedChatId] options:@{@"encryptedConversationId": @(encryptedChatId)} flags:0 watcher:TGTelegraphInstance];
+        }
+    }];
     
     NSString *path = [[NSString alloc] initWithFormat:@"/tg/secret/outgoing/(%" PRId64 ")", peerId];
     [ActionStageInstance() requestActor:path options:@{@"peerId": @(peerId)} watcher:TGTelegraphInstance];
@@ -1404,10 +1411,15 @@
 {
     NSData *messageData = nil;
     
+    uint8_t randomBytes[15];
+    arc4random_buf(randomBytes, 15);
+    NSData *randomBytesData = [[NSData alloc] initWithBytes:randomBytes length:15];
+    
     switch (layer)
     {
-        case 1: // act like 17
-            messageData = [Secret17__Environment serializeObject:[Secret17_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) action:[Secret17_DecryptedMessageAction decryptedMessageActionNotifyLayerWithLayer:@(notifyLayer)]]];
+        case 1:
+            messageData = [Secret1__Environment serializeObject:[Secret1_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) random_bytes:randomBytesData action:[Secret1_DecryptedMessageAction decryptedMessageActionNotifyLayerWithLayer:@(notifyLayer)]]];
+            break;
         case 17:
             messageData = [Secret17__Environment serializeObject:[Secret17_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) action:[Secret17_DecryptedMessageAction decryptedMessageActionNotifyLayerWithLayer:@(notifyLayer)]]];
             break;

@@ -186,6 +186,7 @@ extern TGTelegraph *TGTelegraphInstance;
 - (NSObject *)doRequestSuggestedContacts:(int)limit actor:(TGSuggestedContactsRequestActor *)actor;
 - (NSObject *)doLocateContacts:(double)latitude longitude:(double)longitude radius:(int)radius discloseLocation:(bool)discloseLocation actor:(id<TGLocateContactsProtocol>)actor;
 - (NSObject *)doSearchContacts:(NSString *)query limit:(int)limit actor:(TGContactsGlobalSearchActor *)actor;
+- (NSObject *)doSearchContactsByName:(NSString *)query limit:(int)limit completion:(void (^)(TLcontacts_Found *))completion;
 - (NSObject *)doSendContactRequest:(int)uid actor:(TGContactRequestActionActor *)actor;
 - (NSObject *)doAcceptContactRequest:(int)uid actor:(TGContactRequestActionActor *)actor;
 - (NSObject *)doDeclineContactRequest:(int)uid actor:(TGContactRequestActionActor *)actor;

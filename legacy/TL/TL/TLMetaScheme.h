@@ -16,6 +16,7 @@
 #import "TLmessages_AffectedHistory.h"
 #import "TLInputEncryptedChat.h"
 #import "TLInputPhoneCall.h"
+#import "TLInvokeWithLayer18.h"
 #import "TLMsgResendReq.h"
 #import "TLInputEncryptedFile.h"
 #import "TLcontacts_Link.h"
@@ -83,7 +84,6 @@
 #import "NSArray_ContactRequest.h"
 #import "TLSchemeMethod.h"
 #import "TLInputPeerNotifySettings.h"
-#import "TLInvokeWithLayer17.h"
 #import "TLGeoPlaceName.h"
 #import "NSArray_Chat.h"
 #import "TLauth_CheckedPhone.h"
@@ -210,7 +210,6 @@
 #import "TLRPCcontacts_getRequests.h"
 #import "TLRPCcontacts_getLink.h"
 #import "TLRPCcontacts_importContacts.h"
-#import "TLRPCcontacts_search.h"
 #import "TLRPCcontacts_getLocated.h"
 #import "TLRPCcontacts_getSuggested.h"
 #import "TLRPCcontacts_sendRequest.h"
@@ -302,6 +301,9 @@
 #import "TLRPCmessages_setTyping.h"
 #import "TLRPCmessages_readHistory.h"
 #import "TLRPCmessages_readMessageContents.h"
+#import "TLRPCaccount_checkUsername.h"
+#import "TLRPCaccount_updateUsername.h"
+#import "TLRPCcontacts_search.h"
 
 #ifdef __cplusplus
 extern "C" {

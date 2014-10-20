@@ -26,7 +26,7 @@
 		<key>9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B</key>
 		<string>../..</string>
 		<key>F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3</key>
-		<string>../..thirdparty/pop/</string>
+		<string>../..thirdparty/pop</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>bitbucket.org:iakovlevpeterp/telegramprivate.git</string>

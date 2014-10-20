@@ -16,6 +16,7 @@
 @property (nonatomic) int32_t actionId;
 @property (nonatomic) int32_t seqOut;
 @property (nonatomic) bool isResend;
+@property (nonatomic) NSUInteger layer;
 
 @end
 
@@ -98,13 +99,14 @@
                     int32_t actionId = action.actionId;
                     int32_t actionSeqOut = request.seqOut;
                     bool isResend = request.isResend;
+                    NSUInteger actionLayer = request.layer;
                     [request setCompleted:^(id result, NSTimeInterval timestamp, id error)
                     {
                         __strong TGSecretOutgoingQueueActor *strongSelf = weakSelf;
                         if (strongSelf != nil)
                         {
                             if (error == nil)
-                                [strongSelf actionCompletedWithId:actionId date:(int32_t)(timestamp * 4294967296.0) result:result actionSeqOut:actionSeqOut isResend:isResend];
+                                [strongSelf actionCompletedWithId:actionId date:(int32_t)(timestamp * 4294967296.0) result:result actionSeqOut:actionSeqOut actionLayer:actionLayer isResend:isResend];
                             else
                             {
                                 TGLog(@"something's went terribly wrong");
@@ -142,13 +144,13 @@
     }];
 }
 
-- (void)actionCompletedWithId:(int32_t)actionId date:(int32_t)date result:(id)result actionSeqOut:(int32_t)actionSeqOut isResend:(bool)isResend
+- (void)actionCompletedWithId:(int32_t)actionId date:(int32_t)date result:(id)result actionSeqOut:(int32_t)actionSeqOut actionLayer:(NSUInteger)actionLayer isResend:(bool)isResend
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
         if (isResend)
             [TGDatabaseInstance() deletePeerOutgoingResendActions:_peerId actionIds:@[@(actionId)]];
-        else if (actionSeqOut >= 0)
+        else if (actionSeqOut >= 0 && actionLayer >= 17)
             [TGDatabaseInstance() applyPeerSeqOut:_peerId seqOut:actionSeqOut];
         else
             [TGDatabaseInstance() deletePeerOutgoingActions:_peerId actionIds:@[@(actionId)]];
@@ -218,6 +220,7 @@
         request.actionId = actionId;
         request.isResend = isResend;
         request.seqOut = concreteAction.layer >= 17 ? seqOut : -1;
+        request.layer = concreteAction.layer;
         
         if (concreteAction.fileInfo == nil)
         {
@@ -320,6 +323,7 @@
         request.actionId = actionId;
         request.isResend = isResend;
         request.seqOut = concreteAction.layer >= 17 ? seqOut : -1;
+        request.layer = concreteAction.layer;
         
         TLRPCmessages_sendEncryptedService$messages_sendEncryptedService *sendEncryptedService = [[TLRPCmessages_sendEncryptedService$messages_sendEncryptedService alloc] init];
         
