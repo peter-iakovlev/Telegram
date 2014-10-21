@@ -11331,7 +11331,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				ARCHS = armv7;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
@@ -11353,8 +11353,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				PROVISIONING_PROFILE = "06be30c5-6cd6-4c59-870c-7f95c4f82fe1";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "06be30c5-6cd6-4c59-870c-7f95c4f82fe1";
+				PROVISIONING_PROFILE = "05b82dfa-e32c-49d6-90ab-b67f4a1386d7";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "05b82dfa-e32c-49d6-90ab-b67f4a1386d7";
 				SDKROOT = iphoneos;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -11369,14 +11369,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				ARCHS = armv7;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Digital Fortress LLC (C67CF9S4VU)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Digital Fortress LLC (C67CF9S4VU)";
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
@@ -11385,8 +11385,8 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
-				PROVISIONING_PROFILE = "7ec632a9-54cd-43ea-a76a-bc5f75dc1ca9";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "7ec632a9-54cd-43ea-a76a-bc5f75dc1ca9";
+				PROVISIONING_PROFILE = "1a06be8b-3921-4fde-a495-bd71d904d53e";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "1a06be8b-3921-4fde-a495-bd71d904d53e";
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 				WARNING_CFLAGS = (
@@ -11413,8 +11413,8 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_ENTITLEMENTS = Telegraph/Telegram.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEAD_CODE_STRIPPING = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -11459,8 +11459,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-Wextra";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = Telegram;
-				PROVISIONING_PROFILE = "06be30c5-6cd6-4c59-870c-7f95c4f82fe1";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "06be30c5-6cd6-4c59-870c-7f95c4f82fe1";
+				PROVISIONING_PROFILE = "";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "05b82dfa-e32c-49d6-90ab-b67f4a1386d7";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";
@@ -11484,8 +11484,8 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_ENTITLEMENTS = Telegraph/Telegram.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: TELEGRAM MESSENGER LLP";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: TELEGRAM MESSENGER LLP";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Digital Fortress LLC (C67CF9S4VU)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Digital Fortress LLC (C67CF9S4VU)";
 				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -11531,8 +11531,8 @@
 				"OTHER_CFLAGS[arch=*]" = "-DNS_BLOCK_ASSERTIONS";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = Telegram;
-				PROVISIONING_PROFILE = "7ec632a9-54cd-43ea-a76a-bc5f75dc1ca9";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "7ec632a9-54cd-43ea-a76a-bc5f75dc1ca9";
+				PROVISIONING_PROFILE = "1a06be8b-3921-4fde-a495-bd71d904d53e";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "1a06be8b-3921-4fde-a495-bd71d904d53e";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../TelegraphKit/TelegraphKit/** ../ActionStage/ActionStage ../MtProtoKit_Legacy/MtProtoKit/** Telegraph/thirdparty/opus/include/**";

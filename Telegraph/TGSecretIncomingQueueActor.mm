@@ -284,6 +284,8 @@
             {
                 int64_t randomId = 0;
                 arc4random_buf(&randomId, 8);
+                
+                [TGDatabaseInstance() setPeerLayer:_peerId layer:layerUpdate];
 
                 NSUInteger peerLayer = [TGDatabaseInstance() peerLayer:_peerId];
                 
@@ -293,8 +295,6 @@
                 {
                     [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:_peerId layer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) randomId:randomId messageData:messageData];
                 }
-                
-                [TGDatabaseInstance() setPeerLayer:_peerId layer:layerUpdate];
                 
                 [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/peerLayerUpdates/(%" PRId64 ")", _peerId] resource:@{@"layer": @(layerUpdate)}];
             }

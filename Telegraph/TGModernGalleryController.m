@@ -90,7 +90,7 @@
 
 - (void)dismissWhenReady
 {
-    for (TGModernGalleryItemView *itemView in _visibleItemViews)
+    /*for (TGModernGalleryItemView *itemView in _visibleItemViews)
     {
         if (itemView.index == [self currentItemIndex])
         {
@@ -99,7 +99,7 @@
             
             return;
         }
-    }
+    }*/
     
     [self dismiss];
 }

@@ -38,6 +38,7 @@
         _textField.autocorrectionType = UITextAutocorrectionTypeNo;
         _textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
         _textField.spellCheckingType = UITextSpellCheckingTypeNo;
+        _textField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
         [self.contentView addSubview:_textField];
         
         _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
@@ -89,6 +90,11 @@
         _usernameChanged(username);
     
     return true;
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)__unused textField
+{
+    return false;
 }
 
 @end
