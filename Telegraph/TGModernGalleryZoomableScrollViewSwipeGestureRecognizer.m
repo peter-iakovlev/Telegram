@@ -62,6 +62,8 @@
     UITouch *touch = [touches anyObject];
     CGPoint touchLocation = [touch locationInView:self.view];
     
+    TGLog(@"difference %f", ABS(touchLocation.y - _touchStartLocation.y));
+    
     if (_recognizingGesture)
     {
         _swipeDistance = touchLocation.y - _gestureStartLocation.y;

@@ -200,7 +200,7 @@ static CGRect viewFrame(UIView *view)
     return _inputField;
 }
 
-- (void)growingTextViewDidChange:(HPGrowingTextView *)__unused growingTextView
+- (void)growingTextViewDidChange:(HPGrowingTextView *)__unused growingTextView afterSetText:(bool)afterSetText
 {
     int textLength = growingTextView.text.length;
     NSString *text = growingTextView.text;
@@ -220,7 +220,7 @@ static CGRect viewFrame(UIView *view)
     
     [self updateSendButtonVisibility];
     
-    if (hasNonWhitespace)
+    if (hasNonWhitespace && !afterSetText)
     {
         id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
         if ([delegate respondsToSelector:@selector(inputTextPanelHasIndicatedTypingActivity:)])
@@ -532,7 +532,7 @@ static CGRect viewFrame(UIView *view)
         UIEdgeInsets inputFieldInsets = [self inputFieldInsets];
         UIEdgeInsets inputFieldInternalEdgeInsets = [self inputFieldInternalEdgeInsets];
         
-        CGRect inputFieldClippingFrame = CGRectMake(inputFieldInsets.left, inputFieldInsets.top, messageAreaSize.width - inputFieldInsets.left - inputFieldInsets.right - _sendButtonWidth - 1, 0.0f);
+        CGRect inputFieldClippingFrame = CGRectMake(inputFieldInsets.left, inputFieldInsets.top, messageAreaSize.width - inputFieldInsets.left - inputFieldInsets.right - _sendButtonWidth - 1 - _panelAccessoryView.frame.size.width, 0.0f);
         
         CGRect inputFieldFrame = CGRectMake(inputFieldInternalEdgeInsets.left, inputFieldInternalEdgeInsets.top, inputFieldClippingFrame.size.width - inputFieldInternalEdgeInsets.left, 0.0f);
         
@@ -716,6 +716,8 @@ static CGRect viewFrame(UIView *view)
             _inputFieldClippingContainer.alpha = 0.0f;
             _fieldBackground.alpha = 0.0f;
             _fieldBackground.transform = CGAffineTransformMakeTranslation(-320.0f, 0.0f);
+            _panelAccessoryView.transform = CGAffineTransformMakeTranslation(-320.0f, 0.0f);
+            _panelAccessoryView.alpha = 0.0f;
             _inputFieldPlaceholder.alpha = 0.0f;
         } completion:nil];
 
@@ -775,6 +777,8 @@ static CGRect viewFrame(UIView *view)
             _fieldBackground.alpha = 1.0f;
             _fieldBackground.transform = CGAffineTransformIdentity;
             _inputFieldPlaceholder.alpha = 1.0f;
+            _panelAccessoryView.alpha = 1.0f;
+            _panelAccessoryView.transform = CGAffineTransformIdentity;
         } completion:nil];
         
         [UIView animateWithDuration:0.25 delay:0 options:options animations:^

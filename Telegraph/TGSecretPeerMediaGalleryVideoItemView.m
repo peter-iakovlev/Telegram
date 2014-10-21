@@ -3,6 +3,7 @@
 #import "TGFont.h"
 #import "TGImageUtils.h"
 #import "TGTimerTarget.h"
+#import "TGStringUtils.h"
 
 #import "TGRemoteImageView.h"
 #import "TGCircularProgressView.h"
@@ -178,14 +179,7 @@
     
     NSString *text = nil;
     
-    if (remainingSeconds < 60)
-        text = [[NSString alloc] initWithFormat:@"%d", remainingSeconds];
-    else if (remainingSeconds < 60 * 60)
-        text = [[NSString alloc] initWithFormat:@"%dm", remainingSeconds / 60 + 1];
-    else if (remainingSeconds < 60 * 60 * 24)
-        text = [[NSString alloc] initWithFormat:@"%dh", remainingSeconds / (60 * 60) + 1];
-    else
-        text = [[NSString alloc] initWithFormat:@"%dd", remainingSeconds / (60 * 60 * 24) + 1];
+    text = [TGStringUtils stringForShortMessageTimerSeconds:remainingSeconds];
     
     if (!TGStringCompare(text, _progressLabel.text))
     {

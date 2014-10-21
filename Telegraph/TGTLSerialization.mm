@@ -126,9 +126,9 @@
         
         return [[NSString alloc] initWithFormat:@"%@ (%" PRId64 "/%" PRId32 ") for (%@)", NSStringFromClass([messageBody class]), messageId, messageSeqNo, idsString];
     }
-    else if ([messageBody isKindOfClass:[TLInvokeWithLayer17 class]])
+    else if ([messageBody isKindOfClass:[TLInvokeWithLayer18 class]])
     {
-        id subBody = ((TLInvokeWithLayer17 *)messageBody).query;
+        id subBody = ((TLInvokeWithLayer18 *)messageBody).query;
         if ([subBody isKindOfClass:[TLInitConnection class]])
             return [[NSString alloc] initWithFormat:@"%@ (I, L, %" PRId64 "/%" PRId32 ")", NSStringFromClass([((TLInitConnection *)subBody).query class]), messageId, messageSeqNo];
         else
@@ -508,7 +508,7 @@
 
 - (id)wrapInLayer:(id)message
 {
-    static int maxLayerVersion = 17;
+    static int maxLayerVersion = 18;
     
     static NSMutableDictionary *layerClassesByVersion = nil;
     static dispatch_once_t onceToken;

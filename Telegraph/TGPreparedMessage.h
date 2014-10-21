@@ -19,6 +19,8 @@
 
 @property (nonatomic) int32_t replacingMid;
 
+@property (nonatomic) int32_t messageLifetime;
+
 - (TGMessage *)message;
 
 @end

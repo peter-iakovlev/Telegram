@@ -31,8 +31,6 @@
 "CHAT_RETURNED" = "%1$@ returned to the group %2$@";
 
 "CONTACT_JOINED" = "%1$@ joined Telegram!";
-"CONTACT_REQUESTED" = "%1$@ requested your contact information";
-"CONTACT_ACCEPTED" = "%1$@ accepted your contact request";
 "CONTACT_ACTIVATED" = "%1$@ helped you activate your account!";
 
 "AUTH_UNKNOWN" = "Login from a new device %1$@";
@@ -255,25 +253,6 @@
 "Contacts.InviteFriends" = "Invite Friends";
 "Contacts.SelectAll" = "Select All";
 
-"Contacts.Discover" = "Find Friends";
-
-// Requests
-"Requests.TabTitle" = "Requests";
-"Requests.Title" = "Requests";
-
-// Places
-"Places.TabTitle" = "Places";
-"Places.Title" = "Places";
-
-// Places.Recents
-"Places.Recents.Title" = "Recent Places";
-
-// Create Place
-"CreatePlace.Title" = "Create Place";
-"CreatePlace.GenericError" = "An error occurred";
-"CreatePlace.NamePlaceholder" = "Name";
-"CreatePlace.AddressPlaceholder" = "Address";
-
 // Conversation
 "Conversation.InputTextPlaceholder" = "Message";
 "Conversation.Send" = "Send";
@@ -366,18 +345,15 @@
 "Notification.CreatedChatWithTitle" = "%@ created the group \"%@\"";
 "Notification.Joined" = "%@ joined Telegram";
 "Notification.ChangedGroupName" = "%@ changed group name to \"%@\"";
-"Notification.CreatedGeoChat" = "%@ created place";
-"Notification.CreatedGeoChatWithTitle" = "%@ created place \"%@\"";
-"Notification.GeochatUserCheckedIn" = "%@ checked in";
-"Notification.NewAuthDetected" = "%1$@,\
-We detected a login into your account from a new device on %2$@, %3$@ at %4$@\
-\
-Device: %5$@\
-Location: %6$@\
-\
-If this wasn’t you, you can go to Settings – Chat Settings – Terminate all sessions.
-\
-Thanks,\
+"Notification.NewAuthDetected" = "%1$@,
+We detected a login into your account from a new device on %2$@, %3$@ at %4$@
+
+Device: %5$@
+Location: %6$@
+
+If this wasn't you, you can go to Settings — Chat Settings — Terminate all sessions.
+
+Thanks,
 The Telegram Team";
 "Notification.EncryptedChatRequested" = "Secret chat requested";
 "Notification.EncryptedChatAccepted" = "Secret chat started";
@@ -586,7 +562,7 @@ The Telegram Team";
 Please take a look at the Telegram FAQ: it has important troubleshooting tips and answers to most questions.";
 "Settings.FAQ_Button" = "FAQ";
 "Settings.SaveIncomingPhotos" = "Save Incoming Photos";
-"Settings.SaveIncomingPhotosHelp" = "Save incoming photos to the Camera Roll";
+"Settings.SaveIncomingPhotosHelp" = "Save incoming photos to the Camera Roll.";
 "Settings.LogoutError" = "An error occurred. Please try again later.";
 
 // Notifications and Sounds
@@ -595,13 +571,13 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 "Notifications.MessageNotificationsAlert" = "Alert";
 "Notifications.MessageNotificationsPreview" = "Message Preview";
 "Notifications.MessageNotificationsSound" = "Sound";
-"Notifications.MessageNotificationsHelp" = "You can set custom notifications for specific users in User Info";
+"Notifications.MessageNotificationsHelp" = "You can set custom notifications for specific users on their Info page.";
 
 "Notifications.GroupNotifications" = "GROUP NOTIFICATIONS";
 "Notifications.GroupNotificationsAlert" = "Alert";
 "Notifications.GroupNotificationsPreview" = "Message Preview";
 "Notifications.GroupNotificationsSound" = "Sound";
-"Notifications.GroupNotificationsHelp" = "You can set custom notifications for specific groups in Group Info";
+"Notifications.GroupNotificationsHelp" = "You can set custom notifications for specific groups on the Group Info page.";
 
 "Notifications.TextTone" = "Text Tone";
 "Notifications.AlertTones" = "ALERT TONES";
@@ -614,7 +590,7 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 
 "Notifications.Reset" = "Reset";
 "Notifications.ResetAllNotifications" = "Reset All Notifications";
-"Notifications.ResetAllNotificationsHelp" = "Undo all custom notification settings for all your contacts and groups";
+"Notifications.ResetAllNotificationsHelp" = "Undo all custom notification settings for all your contacts and groups.";
 
 // Chat Settings
 "ChatSettings.Title" = "Chat Settings";
@@ -627,7 +603,7 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 "ChatSettings.Groups" = "Groups";
 "ChatSettings.Security" = "SECURITY";
 "ChatSettings.ClearOtherSessions" = "Terminate all other sessions";
-"ChatSettings.ClearOtherSessionsHelp" = "Logs out all devices except for the current one.";
+"ChatSettings.ClearOtherSessionsHelp" = "Logs out all devices except for this one.";
 "ChatSettings.ClearOtherSessionsConfirmation" = "Are you sure you want to log out all devices except for the current one?";
 "ChatSettings.ClearOtherSessionsFailed" = "An error occurred.";
 "ChatSettings.Language" = "LANGUAGE";
@@ -635,8 +611,12 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 "ChatSettings.Cache" = "CACHE";
 
 // Usage
-"Cache.Title" = "Cache";
+"Cache.Title" = "Cache Settings";
 "Cache.ClearCache" = "Clear Cache";
+"Cache.KeepMedia" = "Keep Media";
+"Cache.Help" = "Photos, videos and other files from cloud chats that you have **not accessed** during this period will be removed from this device to save disk space.
+
+All media will stay in the Telegram cloud and can be re-downloaded if you need it again.";
 
 // Blocked Users
 "BlockedUsers.Title" = "Blocked";
@@ -646,7 +626,7 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 "BlockedUsers.BlockFormat" = "Block %@?";
 "BlockedUsers.BlockTitle" = "Block";
 "BlockedUsers.LeavePrefix" = "Leave ";
-"BlockedUsers.Info" = "You will not receive messages from people on the block list.";
+"BlockedUsers.Info" = "Blocked users can't send you messages or add you to groups. They will not see your profile pictures, online and last seen status.";
 "BlockedUsers.AddNew" = "Add New...";
 "BlockedUsers.Unblock" = "Unblock";
 
@@ -664,7 +644,7 @@ Please take a look at the Telegram FAQ: it has important troubleshooting tips an
 "Service.ApplyLocalization" = "Apply Localization?";
 "Service.ApplyLocalizationWithWarnings" = "%@\n\nApply Localization?";
 
-"Notification.SecretChatMessageScreenshot" = "Screenshot!";
+"Notification.SecretChatMessageScreenshot" = "%@ took a screenshot!";
 "Notification.SecretChatScreenshot" = "Screenshot taken!";
 
 // Broadcast Lists
@@ -689,7 +669,7 @@ Note that you can seamlessly use Telegram on all your devices at once.
 
 Remember, logging out kills all your Secret Chats.";
 
-"Login.PadPhoneHelp" = "\nYou can use your main mobile number to log in to Telegram on all devices.\nDon't use your iPad's SIM number here – we'll need to send you an SMS.
+"Login.PadPhoneHelp" = "\nYou can use your main mobile number to log in to Telegram on all devices.\nDon't use your iPad's SIM number here — we'll need to send you an SMS.
 
 Is this number correct?
 {number}";
@@ -697,6 +677,8 @@ Is this number correct?
 
 "MessageTimer.Custom" = "Custom";
 "MessageTimer.Title" = "Custom Timer";
+
+"MessageTimer.Forever" = "Forever";
 
 "MessageTimer.Seconds_1" = "%@ second";
 "MessageTimer.Seconds_2" = "%@ seconds";
@@ -718,6 +700,10 @@ Is this number correct?
 "MessageTimer.Weeks_2" = "%@ weeks";
 "MessageTimer.Weeks_3_10" = "%@ weeks";
 "MessageTimer.Weeks_any" = "%@ weeks";
+"MessageTimer.Months_1" = "%@ month";
+"MessageTimer.Months_2" = "%@ months";
+"MessageTimer.Months_3_10" = "%@ months";
+"MessageTimer.Months_any" = "%@ months";
 
 "MessageTimer.ShortSeconds_1" = "%@s";
 "MessageTimer.ShortSeconds_2" = "%@s";
@@ -740,10 +726,32 @@ Is this number correct?
 "MessageTimer.ShortWeeks_3_10" = "%@w";
 "MessageTimer.ShortWeeks_any" = "%@w";
 
-"Activity.UploadingPhoto" = "sending photo...";
-"Activity.UploadingVideo" = "sending video...";
-"Activity.UploadingDocument" = "sending file...";
-"Activity.RecordingAudio" = "recording audio...";
-"Activity.Location" = "picking location...";
+"Activity.UploadingPhoto" = "sending photo";
+"Activity.UploadingVideo" = "sending video";
+"Activity.UploadingDocument" = "sending file";
+"Activity.RecordingAudio" = "recording audio";
+"Activity.Location" = "picking location";
 
 "Service.NetworkConfigurationUpdatedMessage" = "Connection settings updated successfully.";
+
+"Compatibility.SecretMediaVersionTooLow" = "%@ is using an older version of Telegram, so secret photos will be shown in compatibility mode.
+
+Once %@ updates Telegram, photos with timers for 1 minute or less will start working in 'Tap and hold to view' mode, and you will be notified whenever the other party takes a screenshot.";
+
+"Contacts.GlobalSearch" = "Global Search";
+"Profile.Username" = "username";
+"Settings.Username" = "Username";
+"Settings.UsernameEmpty" = "None";
+
+"Username.Title" = "Username";
+"Username.Placeholder" = "Your Username";
+"Username.Help" = "You can choose a username on **Telegram**. If you do, other people will be able to find you by this username and contact you without knowing your phone number.
+
+You can use **a-z**, **0-9** and underscores. Minimum length is **5** characters.";
+"Username.InvalidTooShort" = "A username must have at least 5 characters.";
+"Username.InvalidStartsWithNumber" = "Sorry, a username can't start with a number.";
+"Username.InvalidCharacters" = "Sorry, this username is invalid.";
+"Username.InvalidTaken" = "Sorry, this username is already taken.";
+
+"Username.CheckingUsername" = "Checking username...";
+"Username.UsernameIsAvailable" = "%@ is available.";

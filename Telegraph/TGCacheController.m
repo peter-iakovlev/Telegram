@@ -2,6 +2,7 @@
 
 #import "TGButtonCollectionItem.h"
 #import "TGVariantCollectionItem.h"
+#import "TGCommentCollectionItem.h"
 
 #import "TGProgressWindow.h"
 
@@ -10,6 +11,8 @@
 #import "TGActionSheet.h"
 
 #import "TGDatabase.h"
+
+#import "TGStringUtils.h"
 
 @interface TGCacheController ()
 {
@@ -23,13 +26,25 @@
 
 - (NSArray *)keepMediaVariants
 {
-    return @[
-        //@{@"title": @"10 seconds", @"value": @(10)},
-        @{@"title": @"1 hour", @"value": @(60 * 60)},
-        @{@"title": @"1 week", @"value": @(1 * 60 * 60 * 24 * 7)},
-        @{@"title": @"1 month", @"value": @(1 * 60 * 60 * 24 * 7 * 30)},
-        @{@"title": @"Forever", @"value": @(INT_MAX)}
-    ];
+    NSArray *values = @[//@(1 * 60 * 60 * 24),
+                        @(1 * 60 * 60 * 24 * 7),
+                        @(1 * 60 * 60 * 24 * 7 * 4),
+                        @(INT_MAX)];
+    
+    NSMutableArray *variants = [[NSMutableArray alloc] init];
+    for (NSNumber *nValue in values)
+    {
+        NSString *title = @"";
+        
+        if ([nValue intValue] == INT_MAX)
+            title = TGLocalized(@"MessageTimer.Forever");
+        else
+            title = [TGStringUtils stringForMessageTimerSeconds:[nValue intValue]];
+        
+        [variants addObject:@{@"title": title, @"value": nValue}];
+    }
+    
+    return variants;
 }
 
 - (NSString *)keepMediaVariantTitleForSeconds:(int)seconds
@@ -55,12 +70,16 @@
         if (nKeepMediaSeconds != nil)
             keepMediaSeconds = [nKeepMediaSeconds intValue];
         
-        _cacheItem = [[TGVariantCollectionItem alloc] initWithTitle:@"Keep Media" action:@selector(keepMediaPressed)];
+        _cacheItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Cache.KeepMedia") action:@selector(keepMediaPressed)];
         _cacheItem.variant = [self keepMediaVariantTitleForSeconds:keepMediaSeconds];
         
         _cacheItem.deselectAutomatically = true;
+        
+        TGCommentCollectionItem *commentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Cache.Help")];
+        
         TGCollectionMenuSection *cacheSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            _cacheItem
+            _cacheItem,
+            commentItem
         ]];
         
         UIEdgeInsets topSectionInsets = cacheSection.insets;

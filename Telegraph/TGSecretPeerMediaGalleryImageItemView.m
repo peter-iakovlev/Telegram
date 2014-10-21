@@ -4,6 +4,7 @@
 #import "TGImageUtils.h"
 #import "TGFont.h"
 #import "TGTimerTarget.h"
+#import "TGStringUtils.h"
 
 #import "TGSecretPeerMediaGalleryImageItem.h"
 
@@ -169,16 +170,7 @@
 {
     int remainingSeconds = MAX(0, (int)(_endTime - CFAbsoluteTimeGetCurrent()));
     
-    NSString *text = nil;
-    
-    if (remainingSeconds < 60)
-        text = [[NSString alloc] initWithFormat:@"%d", remainingSeconds];
-    else if (remainingSeconds < 60 * 60)
-        text = [[NSString alloc] initWithFormat:@"%dm", remainingSeconds / 60 + 1];
-    else if (remainingSeconds < 60 * 60 * 24)
-        text = [[NSString alloc] initWithFormat:@"%dh", remainingSeconds / (60 * 60) + 1];
-    else
-        text = [[NSString alloc] initWithFormat:@"%dd", remainingSeconds / (60 * 60 * 24) + 1];
+    NSString *text = [TGStringUtils stringForShortMessageTimerSeconds:remainingSeconds];
     
     if (!TGStringCompare(text, _progressLabel.text))
     {

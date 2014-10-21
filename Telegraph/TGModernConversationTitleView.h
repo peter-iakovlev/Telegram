@@ -8,6 +8,12 @@
 
 #import <UIKit/UIKit.h>
 
+typedef enum {
+    TGModernConversationTitleViewActivityTyping,
+    TGModernConversationTitleViewActivityAudioRecording,
+    TGModernConversationTitleViewActivityUploading
+} TGModernConversationTitleViewActivity;
+
 @class TGModernConversationTitleView;
 
 @protocol TGModernConversationTitleViewDelegate <NSObject>
@@ -32,7 +38,7 @@
 
 - (void)setStatus:(NSString *)status animated:(bool)animated;
 - (void)setAttributedStatus:(NSAttributedString *)attributedStatus animated:(bool)animated;
-- (void)setTypingStatus:(NSString *)typingStatus animated:(bool)animated;
+- (void)setTypingStatus:(NSString *)typingStatus activity:(TGModernConversationTitleViewActivity)activity animated:(bool)animated;
 - (void)setIcons:(NSArray *)icons;
 - (void)setModalProgressStatus:(NSString *)modalProgressStatus;
 - (void)setUnreadCount:(int)unreadCount;

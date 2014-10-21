@@ -17,6 +17,7 @@
 @class TLNotifyPeer;
 @class TLPeerNotifySettings;
 @class TLSendMessageAction;
+@class TLMessageMedia;
 
 @interface TLUpdate : NSObject <TLObject>
 
@@ -68,14 +69,6 @@
 
 @property (nonatomic) int32_t user_id;
 @property (nonatomic, retain) TLUserStatus *status;
-
-@end
-
-@interface TLUpdate$updateUserName : TLUpdate
-
-@property (nonatomic) int32_t user_id;
-@property (nonatomic, retain) NSString *first_name;
-@property (nonatomic, retain) NSString *last_name;
 
 @end
 
@@ -227,6 +220,24 @@
 @property (nonatomic) int32_t chat_id;
 @property (nonatomic) int32_t user_id;
 @property (nonatomic, retain) TLSendMessageAction *action;
+
+@end
+
+@interface TLUpdate$updateUserName : TLUpdate
+
+@property (nonatomic) int32_t user_id;
+@property (nonatomic, retain) NSString *first_name;
+@property (nonatomic, retain) NSString *last_name;
+@property (nonatomic, retain) NSString *username;
+
+@end
+
+@interface TLUpdate$updateServiceNotification : TLUpdate
+
+@property (nonatomic, retain) NSString *type;
+@property (nonatomic, retain) NSString *message;
+@property (nonatomic, retain) TLMessageMedia *media;
+@property (nonatomic) bool popup;
 
 @end
 

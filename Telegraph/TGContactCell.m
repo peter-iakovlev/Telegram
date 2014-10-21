@@ -233,6 +233,18 @@ static UIImage *contactCellCheckedImage()
     return self;
 }
 
+- (void)setSubtitleText:(NSString *)subtitleText
+{
+    _subtitleAttributedText = nil;
+    _subtitleText = subtitleText;
+}
+
+- (void)setSubtitleAttributedText:(NSAttributedString *)subtitleAttributedText
+{
+    _subtitleAttributedText = subtitleAttributedText;
+    _subtitleText = nil;
+}
+
 - (void)viewTapped:(UITapGestureRecognizer *)recognizer
 {
     if (recognizer.state == UIGestureRecognizerStateEnded)
@@ -285,10 +297,20 @@ static UIImage *contactCellCheckedImage()
         _contactContentsView.titleFirst = _titleTextFirst;
         _contactContentsView.titleSecond = _titleTextSecond;
     }
-    _subtitleLabel.dateText = _subtitleText;
-    [_subtitleLabel measureTextSize];
-    
-    _subtitleLabel.hidden = _subtitleText == nil || _subtitleText.length == 0;
+    if (_subtitleAttributedText != nil)
+    {
+        _subtitleLabel.attributedText = _subtitleAttributedText;
+        [_subtitleLabel measureTextSize];
+        
+        _subtitleLabel.hidden = _subtitleAttributedText.length == 0;
+    }
+    else
+    {
+        _subtitleLabel.dateText = _subtitleText;
+        [_subtitleLabel measureTextSize];
+        
+        _subtitleLabel.hidden = _subtitleText == nil || _subtitleText.length == 0;
+    }
     
     if (_hideAvatar)
     {

@@ -152,7 +152,7 @@
                 }
             }
             
-            if (!message.outgoing && messageLifetimeByConversation[conversationId] != 0)
+            if (!message.outgoing && messageLifetimeByConversation[conversationId] != 0 && message.layer < 17)
             {
                 storeMessage = [message copy];
                 NSTimeInterval minLifetime = 0.0;
@@ -161,6 +161,10 @@
                     if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
                     {
                         minLifetime = ((TGVideoMediaAttachment *)attachment).duration;
+                    }
+                    else if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
+                    {
+                        minLifetime = ((TGAudioMediaAttachment *)attachment).duration;
                     }
                 }
                 storeMessage.messageLifetime = (int)MAX(minLifetime, (NSTimeInterval)messageLifetimeByConversation[conversationId]);

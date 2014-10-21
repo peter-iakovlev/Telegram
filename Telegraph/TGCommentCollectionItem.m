@@ -14,7 +14,9 @@
 
 @interface TGCommentCollectionItem ()
 {
-    NSString *_text;
+    NSAttributedString *_attributedText;
+    CGFloat _lastContainerWidth;
+    CGSize _calculatedSize;
 }
 
 @end
@@ -29,10 +31,110 @@
         self.transparent = true;
         self.highlightable = false;
         self.selectable = false;
+        _alpha = 1.0f;
         
-        _text = text;
+        _attributedText = [self attributedStringFromText:text allowFormatting:false];
+        _textColor = UIColorRGB(0x6d6d72);
     }
     return self;
+}
+
+- (instancetype)initWithFormattedText:(NSString *)text
+{
+    self = [super init];
+    if (self != nil)
+    {
+        self.transparent = true;
+        self.highlightable = false;
+        self.selectable = false;
+        _alpha = 1.0f;
+        
+        _attributedText = [self attributedStringFromText:text allowFormatting:true];
+        _textColor = UIColorRGB(0x6d6d72);
+    }
+    return self;
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self != nil)
+    {
+        self.transparent = true;
+        self.highlightable = false;
+        self.selectable = false;
+        _alpha = 1.0f;
+        
+        _textColor = UIColorRGB(0x6d6d72);
+    }
+    return self;
+}
+
+- (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting
+{
+    NSMutableArray *boldRanges = [[NSMutableArray alloc] init];
+    
+    NSMutableString *cleanText = [[NSMutableString alloc] initWithString:text];
+    if (allowFormatting)
+    {
+        while (true)
+        {
+            NSRange startRange = [cleanText rangeOfString:@"**"];
+            if (startRange.location == NSNotFound)
+                break;
+            
+            [cleanText deleteCharactersInRange:startRange];
+            
+            NSRange endRange = [cleanText rangeOfString:@"**"];
+            if (endRange.location == NSNotFound)
+                break;
+            
+            [cleanText deleteCharactersInRange:endRange];
+            
+            [boldRanges addObject:[NSValue valueWithRange:NSMakeRange(startRange.location, endRange.location - startRange.location)]];
+        }
+    }
+    
+    NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
+    style.lineSpacing = 2;
+    style.lineBreakMode = NSLineBreakByWordWrapping;
+    style.alignment = NSTextAlignmentLeft;
+
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:cleanText attributes:@
+    {
+    }];
+    
+    [attributedString addAttributes:@{NSParagraphStyleAttributeName: style, NSFontAttributeName: TGSystemFontOfSize(14.0f)} range:NSMakeRange(0, attributedString.length)];
+
+    NSDictionary *boldAttributes = @{NSFontAttributeName: TGBoldSystemFontOfSize(14.0f)};
+    for (NSValue *nRange in boldRanges)
+    {
+        [attributedString addAttributes:boldAttributes range:[nRange rangeValue]];
+    }
+
+    return attributedString;
+}
+
+- (void)setText:(NSString *)text
+{
+    _text = text;
+    
+    _attributedText = [self attributedStringFromText:text allowFormatting:false];
+    
+    if (_lastContainerWidth > FLT_EPSILON)
+    {
+        [self itemSizeForContainerSize:CGSizeMake(_lastContainerWidth, FLT_MAX)];
+        [((TGCommentCollectionItemView *)self.boundView) setCalculatedSize:_calculatedSize];
+    }
+    
+    [((TGCommentCollectionItemView *)self.boundView) setAttributedText:_attributedText];
+}
+
+- (void)setTextColor:(UIColor *)textColor
+{
+    _textColor = textColor;
+    
+    [((TGCommentCollectionItemView *)self.boundView) setTextColor:_textColor];
 }
 
 - (Class)itemViewClass
@@ -49,7 +151,8 @@
         font = TGSystemFontOfSize(14);
     });
     
-    CGSize textSize = [_text sizeWithFont:font constrainedToSize:CGSizeMake(containerSize.width - 30.0f, CGFLOAT_MAX) lineBreakMode:NSLineBreakByWordWrapping];
+    CGSize textSize = [_attributedText boundingRectWithSize:CGSizeMake(containerSize.width - 30.0f, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin context:NULL].size;
+    
     textSize.width = ceilf(textSize.width);
     textSize.height = ceilf(textSize.height);
     
@@ -59,14 +162,40 @@
         textSize.height = MAX(lineHeight, textSize.height - lineHeight);
     }
     
-    return CGSizeMake(containerSize.width, textSize.height + 7.0f + 7.0f);
+    _calculatedSize = CGSizeMake(containerSize.width, textSize.height + 7.0f + 7.0f + _topInset);
+    
+    _lastContainerWidth = containerSize.width;
+    
+    if (_hidden)
+        return CGSizeMake(containerSize.width, 1.0f);
+    
+    return _calculatedSize;
+}
+
+- (void)setAlpha:(CGFloat)alpha
+{
+    _alpha = alpha;
+    
+    [((TGCommentCollectionItemView *)self.boundView) setLabelAlpha:_alpha];
 }
 
 - (void)bindView:(TGCollectionItemView *)view
 {
     [super bindView:view];
+
+    [((TGCommentCollectionItemView *)self.boundView) setLabelAlpha:_alpha];
+    [((TGCommentCollectionItemView *)view) setCalculatedSize:_calculatedSize];
+    [((TGCommentCollectionItemView *)view) setTopInset:_topInset];
+    [((TGCommentCollectionItemView *)view) setTextColor:_textColor];
+    [((TGCommentCollectionItemView *)view) setShowProgress:_showProgress];
+    [((TGCommentCollectionItemView *)view) setAttributedText:_attributedText];
+}
+
+- (void)setShowProgress:(bool)showProgress
+{
+    _showProgress = showProgress;
     
-    [((TGCommentCollectionItemView *)view) setText:_text];
+    [((TGCommentCollectionItemView *)self.boundView) setShowProgress:_showProgress];
 }
 
 @end

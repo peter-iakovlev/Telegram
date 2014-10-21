@@ -129,7 +129,7 @@
         _imageModel.skipDrawInContext = true;
         
         CGSize renderSize = CGSizeZero;
-        [TGImageMessageViewModel calculateImageSizesForImageSize:imageSize thumbnailSize:&imageSize renderSize:&renderSize];
+        [TGImageMessageViewModel calculateImageSizesForImageSize:imageSize thumbnailSize:&imageSize renderSize:&renderSize squareAspect:false];
         
         _imageModel.frame = CGRectMake(0, 0, imageSize.width, imageSize.height);
         [self addSubmodel:_imageModel];
@@ -138,7 +138,7 @@
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
         [_imageModel setIsBroadcast:message.isBroadcast];
         
-        if (_messageLifetime != 0)
+        if (_messageLifetime != 0 && message.layer >= 17)
         {
             _isMessageViewed = [context isSecretMessageViewed:_mid];
             _messageViewDate = [context secretMessageViewDate:_mid];
@@ -203,7 +203,7 @@
                 [strongSelf deactivateMedia:true];
         };
         
-        _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable;
+        _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable || _progressVisible;
         
         [self addSubmodel:_instantPreviewTouchAreaModel];
     }
@@ -211,23 +211,12 @@
 
 - (NSString *)stringForLifetime:(int32_t)remainingSeconds
 {
-    NSString *text = nil;
-    
-    if (remainingSeconds < 60)
-        text = [[NSString alloc] initWithFormat:@"%ds", remainingSeconds];
-    else if (remainingSeconds < 60 * 60)
-        text = [[NSString alloc] initWithFormat:@"%dm", (remainingSeconds + 1) / 60];
-    else if (remainingSeconds < 60 * 60 * 24)
-        text = [[NSString alloc] initWithFormat:@"%dh", (remainingSeconds + 1) / (60 * 60)];
-    else
-        text = [[NSString alloc] initWithFormat:@"%dd", (remainingSeconds + 1) / (60 * 60 * 24)];
-    
-    return text;
+    return [TGStringUtils stringForShortMessageTimerSeconds:remainingSeconds];
 }
 
 - (NSString *)defaultAdditionalDataString
 {
-    if (_messageLifetime != 0)
+    if (self.isSecret)
     {
         if (_isMessageViewed)
         {
@@ -275,8 +264,29 @@
     [_imageModel setUri:imageUri];
 }
 
-+ (void)calculateImageSizesForImageSize:(in CGSize)imageSize thumbnailSize:(out CGSize *)thumbnailSize renderSize:(out CGSize *)renderSize
++ (void)calculateImageSizesForImageSize:(in CGSize)imageSize thumbnailSize:(out CGSize *)thumbnailSize renderSize:(out CGSize *)renderSize squareAspect:(bool)squareAspect
 {
+    if (squareAspect)
+    {
+        CGFloat squareSide = 180.0f;
+        
+        if (imageSize.width > imageSize.height)
+        {
+            if (renderSize)
+                *renderSize = CGSizeMake(imageSize.width * squareSide / imageSize.height, squareSide);
+        }
+        else
+        {
+            if (renderSize)
+                *renderSize = CGSizeMake(squareSide, imageSize.height * squareSide / imageSize.width);
+        }
+        
+        if (thumbnailSize)
+            *thumbnailSize = CGSizeMake(squareSide, squareSide);
+        
+        return;
+    }
+    
     CGFloat maxSide = TGIsPad() ? 312.0f : 246.0f;
     CGSize imageTargetMaxSize = CGSizeMake(maxSide, maxSide);
     CGSize imageScalingMaxSize = CGSizeMake(imageTargetMaxSize.width - 18.0f, imageTargetMaxSize.height - 18.0f);
@@ -369,16 +379,6 @@
 - (CGPoint)dateOffset
 {
     return CGPointZero;
-}
-
-- (NSString *)filterForMessage:(TGMessage *)__unused message imageSize:(CGSize)imageSize sourceSize:(CGSize)sourceSize
-{
-    return [[NSString alloc] initWithFormat:@"%@:%dx%d,%dx%d", @"attachmentImageOutgoing", (int)imageSize.width, (int)imageSize.height, (int)sourceSize.width, (int)sourceSize.height];
-}
-
-- (CGSize)minimumImageSizeForMessage:(TGMessage *)__unused message
-{
-    return CGSizeMake(90, 90);
 }
 
 - (bool)instantPreviewGesture
@@ -567,7 +567,7 @@
 {
     [super updateMessageAttributes];
     
-    if (_messageLifetime != 0)
+    if (self.isSecret)
     {
         bool isMessageViewed = [_context isSecretMessageViewed:_mid];
         NSTimeInterval messageViewDate = [_context secretMessageViewDate:_mid];
@@ -579,7 +579,7 @@
             
             [self updateImageOverlay:false];
             
-            if (ABS(_messageViewDate) > DBL_EPSILON)
+            if (_incoming && ABS(_messageViewDate) > DBL_EPSILON)
                 [self _updateViewDateTimerIfVisible];
         }
     }
@@ -590,7 +590,7 @@
     [_viewDateTimer invalidate];
     _viewDateTimer = nil;
     
-    if (_isMessageViewed && ABS(_messageViewDate) > DBL_EPSILON && _imageModel.boundView != nil)
+    if (_isMessageViewed && _incoming && ABS(_messageViewDate) > DBL_EPSILON && _imageModel.boundView != nil)
     {
         [_imageModel setAdditionalDataString:[self defaultAdditionalDataString]];
         [self updateImageOverlay:true];
@@ -607,7 +607,7 @@
 
 - (void)updateImageOverlay:(bool)animated
 {
-    _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable;
+    _instantPreviewTouchAreaModel.viewUserInteractionDisabled = !_mediaIsAvailable || _progressVisible;
     
     if (_progressVisible)
     {
@@ -621,7 +621,7 @@
     }
     else
     {
-        if (_messageLifetime != 0 && _isMessageViewed && ABS(_messageViewDate) > DBL_EPSILON)
+        if (self.isSecret && _isMessageViewed && _incoming && ABS(_messageViewDate) > DBL_EPSILON)
         {
             NSTimeInterval endTime = _messageViewDate + _messageLifetime;
             int remainingSeconds = MAX(0, (int)(endTime - CFAbsoluteTimeGetCurrent()));

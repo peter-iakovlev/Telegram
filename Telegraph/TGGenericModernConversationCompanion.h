@@ -26,6 +26,8 @@
 - (bool)_shouldDisplayProcessUnreadCount;
 + (CGSize)preferredInlineThumbnailSize;
 - (int)messageLifetime;
+- (NSUInteger)layer;
+- (void)setLayer:(NSUInteger)layer;
 
 - (NSString *)_conversationIdPathComponent;
 - (NSString *)_sendMessagePathForMessageId:(int32_t)mid;

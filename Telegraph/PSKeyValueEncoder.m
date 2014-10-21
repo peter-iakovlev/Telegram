@@ -265,6 +265,22 @@ static void encodeObjectValue(PSKeyValueEncoder *self, id<PSCoding> object)
     [_data replaceBytesInRange:NSMakeRange(objectLengthPosition, 4) withBytes:&objectLength];
 }
 
+- (void)encodeData:(NSData *)data forCKey:(const char *)key
+{
+    if (key == nil || data == nil)
+        return;
+    
+    uint32_t keyLength = (uint32_t)strlen(key);
+    writeLength(self, keyLength);
+    [_data appendBytes:key length:keyLength];
+    
+    uint8_t fieldType = PSKeyValueCoderFieldTypeData;
+    [_data appendBytes:&fieldType length:1];
+    
+    writeLength(self, (uint32_t)data.length);
+    [_data appendData:data];
+}
+
 - (void)reset
 {
     [_data setLength:0];

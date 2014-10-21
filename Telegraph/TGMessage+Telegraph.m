@@ -271,12 +271,12 @@
     return self;
 }
 
-- (id)initWithTelegraphDecryptedMessageDesc:(TLDecryptedMessage *)desc encryptedFile:(TLEncryptedFile *)encryptedFile conversationId:(int64_t)conversationId fromUid:(int)fromUid date:(int)date
+- (instancetype)initWithDecryptedMessageDesc1:(Secret1_DecryptedMessage *)desc encryptedFile:(TGStoredIncomingMessageFileInfo *)encryptedFile conversationId:(int64_t)conversationId fromUid:(int)fromUid date:(int)date
 {
     self = [super init];
     if (self != nil)
     {
-        self.randomId = desc.random_id;
+        self.randomId = (int64_t)[desc.random_id longLongValue];
         self.fromUid = fromUid;
         self.toUid = TGTelegraphInstance.clientUserId;
         self.date = date;
@@ -286,31 +286,29 @@
         
         NSArray *mediaAttachments = nil;
         
-        if ([desc isKindOfClass:[TLDecryptedMessage$decryptedMessage class]])
+        if ([desc isKindOfClass:[Secret1_DecryptedMessage_decryptedMessage class]])
         {
-            TLDecryptedMessage$decryptedMessage *concreteMessage = (TLDecryptedMessage$decryptedMessage *)desc;
+            Secret1_DecryptedMessage_decryptedMessage *concreteMessage = (Secret1_DecryptedMessage_decryptedMessage *)desc;
             
             self.text = concreteMessage.message;
             
-            if (![concreteMessage.media isKindOfClass:[TLDecryptedMessageMedia$decryptedMessageMediaEmpty class]])
+            if (![concreteMessage.media isKindOfClass:[Secret1_DecryptedMessageMedia_decryptedMessageMediaEmpty class]])
             {
-                if ([concreteMessage.media isKindOfClass:[TLDecryptedMessageMedia$decryptedMessageMediaPhoto class]])
+                if ([concreteMessage.media isKindOfClass:[Secret1_DecryptedMessageMedia_decryptedMessageMediaPhoto class]])
                 {
-                    if ([encryptedFile isKindOfClass:[TLEncryptedFile$encryptedFile class]])
+                    if (encryptedFile != nil)
                     {
-                        TLDecryptedMessageMedia$decryptedMessageMediaPhoto *decryptedPhoto = (TLDecryptedMessageMedia$decryptedMessageMediaPhoto *)concreteMessage.media;
-                        
-                        TLEncryptedFile$encryptedFile *concreteFile = (TLEncryptedFile$encryptedFile *)encryptedFile;
+                        Secret1_DecryptedMessageMedia_decryptedMessageMediaPhoto *decryptedPhoto = (Secret1_DecryptedMessageMedia_decryptedMessageMediaPhoto *)concreteMessage.media;
                         
                         TGImageMediaAttachment *imageAttachment = [[TGImageMediaAttachment alloc] init];
                         
-                        imageAttachment.imageId = concreteFile.n_id;
-                        imageAttachment.accessHash = concreteFile.access_hash;
+                        imageAttachment.imageId = encryptedFile.n_id;
+                        imageAttachment.accessHash = encryptedFile.accessHash;
                         
-                        NSString *thumbnailUrl = [[NSString alloc] initWithFormat:@"encryptedThumbnail:%lld", concreteFile.n_id];
+                        NSString *thumbnailUrl = [[NSString alloc] initWithFormat:@"encryptedThumbnail:%lld", encryptedFile.n_id];
                         
                         TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
-                        [imageInfo addImageWithSize:CGSizeMake(decryptedPhoto.thumb_w, decryptedPhoto.thumb_h) url:thumbnailUrl];
+                        [imageInfo addImageWithSize:CGSizeMake([decryptedPhoto.thumb_w intValue], [decryptedPhoto.thumb_h intValue]) url:thumbnailUrl];
                         
                         [[TGRemoteImageView sharedCache] diskCacheContains:thumbnailUrl orUrl:nil completion:^(bool containsFirst, __unused bool containsSecond)
                         {
@@ -333,9 +331,9 @@
                             }
                         }];
                         
-                        NSString *fileUrl = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, decryptedPhoto.size, concreteFile.key_fingerprint, [decryptedPhoto.key stringByEncodingInHex], [decryptedPhoto.iv stringByEncodingInHex]];
+                        NSString *fileUrl = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", encryptedFile.datacenterId, encryptedFile.n_id, encryptedFile.accessHash, encryptedFile.size, [decryptedPhoto.size intValue], encryptedFile.keyFingerprint, [decryptedPhoto.key stringByEncodingInHex], [decryptedPhoto.iv stringByEncodingInHex]];
                         
-                        [imageInfo addImageWithSize:CGSizeMake(decryptedPhoto.w, decryptedPhoto.h) url:fileUrl fileSize:concreteFile.size];
+                        [imageInfo addImageWithSize:CGSizeMake([decryptedPhoto.w intValue], [decryptedPhoto.h intValue]) url:fileUrl fileSize:encryptedFile.size];
                         
                         imageAttachment.imageInfo = imageInfo;
                         
@@ -350,23 +348,21 @@
                         }
                     }
                 }
-                else if ([concreteMessage.media isKindOfClass:[TLDecryptedMessageMedia$decryptedMessageMediaVideo class]])
+                else if ([concreteMessage.media isKindOfClass:[Secret1_DecryptedMessageMedia_decryptedMessageMediaVideo class]])
                 {
-                    if ([encryptedFile isKindOfClass:[TLEncryptedFile$encryptedFile class]])
+                    if (encryptedFile != nil)
                     {
-                        TLDecryptedMessageMedia$decryptedMessageMediaVideo *decryptedVideo = (TLDecryptedMessageMedia$decryptedMessageMediaVideo *)concreteMessage.media;
-                        
-                        TLEncryptedFile$encryptedFile *concreteFile = (TLEncryptedFile$encryptedFile *)encryptedFile;
+                        Secret1_DecryptedMessageMedia_decryptedMessageMediaVideo *decryptedVideo = (Secret1_DecryptedMessageMedia_decryptedMessageMediaVideo *)concreteMessage.media;
                         
                         TGVideoMediaAttachment *videoAttachment = [[TGVideoMediaAttachment alloc] init];
                         
-                        videoAttachment.videoId = concreteFile.n_id;
-                        videoAttachment.accessHash = concreteFile.access_hash;
+                        videoAttachment.videoId = encryptedFile.n_id;
+                        videoAttachment.accessHash = encryptedFile.accessHash;
                         
-                        NSString *thumbnailUrl = [[NSString alloc] initWithFormat:@"encryptedThumbnail:%lld", concreteFile.n_id];
+                        NSString *thumbnailUrl = [[NSString alloc] initWithFormat:@"encryptedThumbnail:%lld", encryptedFile.n_id];
                         
                         TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
-                        [imageInfo addImageWithSize:CGSizeMake(decryptedVideo.thumb_w, decryptedVideo.thumb_h) url:thumbnailUrl];
+                        [imageInfo addImageWithSize:CGSizeMake([decryptedVideo.thumb_w intValue], [decryptedVideo.thumb_h intValue]) url:thumbnailUrl];
                         
                         [[TGRemoteImageView sharedCache] diskCacheContains:thumbnailUrl orUrl:nil completion:^(bool containsFirst, __unused bool containsSecond)
                         {
@@ -391,14 +387,14 @@
                         
                         videoAttachment.thumbnailInfo = imageInfo;
                         
-                        videoAttachment.duration = decryptedVideo.duration;
-                        videoAttachment.dimensions = CGSizeMake(decryptedVideo.w, decryptedVideo.h);
+                        videoAttachment.duration = [decryptedVideo.duration intValue];
+                        videoAttachment.dimensions = CGSizeMake([decryptedVideo.w intValue], [decryptedVideo.h intValue]);
                         
                         TGVideoInfo *videoInfo = [[TGVideoInfo alloc] init];
                         
-                        NSString *fileUrl = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, decryptedVideo.size, concreteFile.key_fingerprint, [decryptedVideo.key stringByEncodingInHex], [decryptedVideo.iv stringByEncodingInHex]];
+                        NSString *fileUrl = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", encryptedFile.datacenterId, encryptedFile.n_id, encryptedFile.accessHash, encryptedFile.size, [decryptedVideo.size intValue], encryptedFile.keyFingerprint, [decryptedVideo.key stringByEncodingInHex], [decryptedVideo.iv stringByEncodingInHex]];
                         
-                        [videoInfo addVideoWithQuality:1 url:fileUrl size:decryptedVideo.size];
+                        [videoInfo addVideoWithQuality:1 url:fileUrl size:[decryptedVideo.size intValue]];
                         videoAttachment.videoInfo = videoInfo;
                         
                         if (mediaAttachments == nil)
@@ -412,11 +408,9 @@
                         }
                     }
                 }
-                else if ([concreteMessage.media isKindOfClass:[TLDecryptedMessageMedia$decryptedMessageMediaDocument class]])
+                else if ([concreteMessage.media isKindOfClass:[Secret1_DecryptedMessageMedia_decryptedMessageMediaDocument class]])
                 {
-                    TLDecryptedMessageMedia$decryptedMessageMediaDocument *decryptedDocument = (TLDecryptedMessageMedia$decryptedMessageMediaDocument *)concreteMessage.media;
-                    
-                    TLEncryptedFile$encryptedFile *concreteFile = (TLEncryptedFile$encryptedFile *)encryptedFile;
+                    Secret1_DecryptedMessageMedia_decryptedMessageMediaDocument *decryptedDocument = (Secret1_DecryptedMessageMedia_decryptedMessageMediaDocument *)concreteMessage.media;
                     
                     TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
                     
@@ -426,16 +420,16 @@
                     documentAttachment.localDocumentId = localId;
                     documentAttachment.fileName = decryptedDocument.file_name;
                     documentAttachment.mimeType = decryptedDocument.mime_type;
-                    documentAttachment.size = decryptedDocument.size;
+                    documentAttachment.size = [decryptedDocument.size intValue];
                     
-                    documentAttachment.documentUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, decryptedDocument.size, concreteFile.key_fingerprint, [decryptedDocument.key stringByEncodingInHex], [decryptedDocument.iv stringByEncodingInHex]];
+                    documentAttachment.documentUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", encryptedFile.datacenterId, encryptedFile.n_id, encryptedFile.accessHash, encryptedFile.size, [decryptedDocument.size intValue], encryptedFile.keyFingerprint, [decryptedDocument.key stringByEncodingInHex], [decryptedDocument.iv stringByEncodingInHex]];
                     
-                    if (decryptedDocument.thumb != nil && decryptedDocument.thumb_w > 0 && decryptedDocument.thumb_h > 0)
+                    if (decryptedDocument.thumb != nil && [decryptedDocument.thumb_w intValue] > 0 && [decryptedDocument.thumb_h intValue] > 0)
                     {
-                        NSString *thumbnailUrl = [[NSString alloc] initWithFormat:@"encryptedThumbnail:%lld", concreteFile.n_id];
+                        NSString *thumbnailUrl = [[NSString alloc] initWithFormat:@"encryptedThumbnail:%lld", encryptedFile.n_id];
                         
                         TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
-                        [imageInfo addImageWithSize:CGSizeMake(decryptedDocument.thumb_w, decryptedDocument.thumb_h) url:thumbnailUrl];
+                        [imageInfo addImageWithSize:CGSizeMake([decryptedDocument.thumb_w intValue], [decryptedDocument.thumb_h intValue]) url:thumbnailUrl];
                         documentAttachment.thumbnailInfo = imageInfo;
                         
                         [[TGRemoteImageView sharedCache] diskCacheContains:thumbnailUrl orUrl:nil completion:^(bool containsFirst, __unused bool containsSecond)
@@ -470,11 +464,9 @@
                         mediaAttachments = array;
                     }
                 }
-                else if ([concreteMessage.media isKindOfClass:[TLDecryptedMessageMedia$decryptedMessageMediaAudio class]])
+                else if ([concreteMessage.media isKindOfClass:[Secret1_DecryptedMessageMedia_decryptedMessageMediaAudio class]])
                 {
-                    TLDecryptedMessageMedia$decryptedMessageMediaAudio *decryptedAudio = (TLDecryptedMessageMedia$decryptedMessageMediaAudio *)concreteMessage.media;
-                    
-                    TLEncryptedFile$encryptedFile *concreteFile = (TLEncryptedFile$encryptedFile *)encryptedFile;
+                    Secret1_DecryptedMessageMedia_decryptedMessageMediaAudio *decryptedAudio = (Secret1_DecryptedMessageMedia_decryptedMessageMediaAudio *)concreteMessage.media;
                     
                     TGAudioMediaAttachment *audioAttachment = [[TGAudioMediaAttachment alloc] init];
                     
@@ -482,10 +474,10 @@
                     arc4random_buf(&localId, sizeof(localId));
                     
                     audioAttachment.localAudioId = localId;
-                    audioAttachment.duration = decryptedAudio.duration;
-                    audioAttachment.fileSize = decryptedAudio.size;
+                    audioAttachment.duration = [decryptedAudio.duration intValue];
+                    audioAttachment.fileSize = [decryptedAudio.size intValue];
                     
-                    audioAttachment.audioUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, decryptedAudio.size, concreteFile.key_fingerprint, [decryptedAudio.key stringByEncodingInHex], [decryptedAudio.iv stringByEncodingInHex]];
+                    audioAttachment.audioUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", encryptedFile.datacenterId, encryptedFile.n_id, encryptedFile.accessHash, encryptedFile.size, [decryptedAudio.size intValue], encryptedFile.keyFingerprint, [decryptedAudio.key stringByEncodingInHex], [decryptedAudio.iv stringByEncodingInHex]];
                     
                     if (mediaAttachments == nil)
                         mediaAttachments = [NSArray arrayWithObject:audioAttachment];
@@ -497,13 +489,13 @@
                         mediaAttachments = array;
                     }
                 }
-                else if ([concreteMessage.media isKindOfClass:[TLDecryptedMessageMedia$decryptedMessageMediaGeoPoint class]])
+                else if ([concreteMessage.media isKindOfClass:[Secret1_DecryptedMessageMedia_decryptedMessageMediaGeoPoint class]])
                 {
-                    TLDecryptedMessageMedia$decryptedMessageMediaGeoPoint *concreteGeo = (TLDecryptedMessageMedia$decryptedMessageMediaGeoPoint *)concreteMessage.media;
+                    Secret1_DecryptedMessageMedia_decryptedMessageMediaGeoPoint *concreteGeo = (Secret1_DecryptedMessageMedia_decryptedMessageMediaGeoPoint *)concreteMessage.media;
                     
                     TGLocationMediaAttachment *locationMediaAttachment = [[TGLocationMediaAttachment alloc] init];
-                    locationMediaAttachment.latitude = concreteGeo.lat;
-                    locationMediaAttachment.longitude = concreteGeo.n_long;
+                    locationMediaAttachment.latitude = [concreteGeo.lat doubleValue];
+                    locationMediaAttachment.longitude = [concreteGeo.plong doubleValue];
                     
                     if (mediaAttachments == nil)
                         mediaAttachments = [NSArray arrayWithObject:locationMediaAttachment];
@@ -515,15 +507,15 @@
                         mediaAttachments = array;
                     }
                 }
-                else if ([concreteMessage.media isKindOfClass:[TLDecryptedMessageMedia$decryptedMessageMediaContact class]])
+                else if ([concreteMessage.media isKindOfClass:[Secret1_DecryptedMessageMedia_decryptedMessageMediaContact class]])
                 {
-                    TLDecryptedMessageMedia$decryptedMessageMediaContact *mediaContact = (TLDecryptedMessageMedia$decryptedMessageMediaContact *)concreteMessage.media;
+                    Secret1_DecryptedMessageMedia_decryptedMessageMediaContact *mediaContact = (Secret1_DecryptedMessageMedia_decryptedMessageMediaContact *)concreteMessage.media;
                     
                     TLMessageMedia$messageMediaContact *convertedContact = [[TLMessageMedia$messageMediaContact alloc] init];
                     convertedContact.phone_number = mediaContact.phone_number;
                     convertedContact.first_name = mediaContact.first_name;
                     convertedContact.last_name = mediaContact.last_name;
-                    convertedContact.user_id = mediaContact.user_id;
+                    convertedContact.user_id = [mediaContact.user_id intValue];
                     
                     TGContactMediaAttachment *contactAttachment = [[TGContactMediaAttachment alloc] initWithTelegraphContactDesc:convertedContact];
                     
@@ -539,48 +531,18 @@
                 }
             }
         }
-        else if ([desc isKindOfClass:[TLDecryptedMessage$decryptedMessageService class]])
+        else if ([desc isKindOfClass:[Secret1_DecryptedMessage_decryptedMessageService class]])
         {
-            TLDecryptedMessage$decryptedMessageService *concreteMessage = (TLDecryptedMessage$decryptedMessageService *)desc;
+            Secret1_DecryptedMessage_decryptedMessageService *concreteMessage = (Secret1_DecryptedMessage_decryptedMessageService *)desc;
             self.unread = false;
             
-            if ([concreteMessage.action isKindOfClass:[TLDecryptedMessageAction$decryptedMessageActionSetMessageTTL class]])
+            if ([concreteMessage.action isKindOfClass:[Secret1_DecryptedMessageAction_decryptedMessageActionSetMessageTTL class]])
             {
-                TLDecryptedMessageAction$decryptedMessageActionSetMessageTTL *concreteAction = (TLDecryptedMessageAction$decryptedMessageActionSetMessageTTL *)concreteMessage.action;
+                Secret1_DecryptedMessageAction_decryptedMessageActionSetMessageTTL *concreteAction = (Secret1_DecryptedMessageAction_decryptedMessageActionSetMessageTTL *)concreteMessage.action;
                 
                 TGActionMediaAttachment *actionAttachment = [[TGActionMediaAttachment alloc] init];
                 actionAttachment.actionType = TGMessageActionEncryptedChatMessageLifetime;
-                actionAttachment.actionData = [[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithInt:concreteAction.ttl_seconds], @"messageLifetime", nil];
-                
-                if (mediaAttachments == nil)
-                    mediaAttachments = [NSArray arrayWithObject:actionAttachment];
-                else
-                {
-                    NSMutableArray *array = [[NSMutableArray alloc] init];
-                    [array addObjectsFromArray:mediaAttachments];
-                    [array addObject:actionAttachment];
-                    mediaAttachments = array;
-                }
-            }
-            else if ([concreteMessage.action isKindOfClass:[TLDecryptedMessageAction$decryptedMessageActionScreenshotMessage class]])
-            {
-                TGActionMediaAttachment *actionAttachment = [[TGActionMediaAttachment alloc] init];
-                actionAttachment.actionType = TGMessageActionEncryptedChatMessageScreenshot;
-                
-                if (mediaAttachments == nil)
-                    mediaAttachments = [NSArray arrayWithObject:actionAttachment];
-                else
-                {
-                    NSMutableArray *array = [[NSMutableArray alloc] init];
-                    [array addObjectsFromArray:mediaAttachments];
-                    [array addObject:actionAttachment];
-                    mediaAttachments = array;
-                }
-            }
-            else if ([concreteMessage.action isKindOfClass:[TLDecryptedMessageAction$decryptedMessageActionScreenshot class]])
-            {
-                TGActionMediaAttachment *actionAttachment = [[TGActionMediaAttachment alloc] init];
-                actionAttachment.actionType = TGMessageActionEncryptedChatScreenshot;
+                actionAttachment.actionData = [[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithInt:[concreteAction.ttl_seconds intValue]], @"messageLifetime", nil];
                 
                 if (mediaAttachments == nil)
                     mediaAttachments = [NSArray arrayWithObject:actionAttachment];
@@ -593,6 +555,317 @@
                 }
             }
         }
+        
+        if (mediaAttachments != nil)
+            self.mediaAttachments = mediaAttachments;
+    }
+    return self;
+}
+
+- (instancetype)initWithDecryptedMessageDesc17:(Secret17_DecryptedMessage *)desc encryptedFile:(TGStoredIncomingMessageFileInfo *)encryptedFile conversationId:(int64_t)conversationId fromUid:(int)fromUid date:(int)date
+{
+    self = [super init];
+    if (self != nil)
+    {
+        self.randomId = (int64_t)[desc.random_id longLongValue];
+        self.fromUid = fromUid;
+        self.toUid = TGTelegraphInstance.clientUserId;
+        self.date = date;
+        self.unread = true;
+        self.outgoing = false;
+        self.cid = conversationId;
+        
+        NSArray *mediaAttachments = nil;
+        
+        if ([desc isKindOfClass:[Secret17_DecryptedMessage_decryptedMessage class]])
+        {
+            Secret17_DecryptedMessage_decryptedMessage *concreteMessage = (Secret17_DecryptedMessage_decryptedMessage *)desc;
+            
+            self.text = concreteMessage.message;
+            self.messageLifetime = [concreteMessage.ttl intValue];
+            
+            if (![concreteMessage.media isKindOfClass:[Secret17_DecryptedMessageMedia_decryptedMessageMediaEmpty class]])
+            {
+                if ([concreteMessage.media isKindOfClass:[Secret17_DecryptedMessageMedia_decryptedMessageMediaPhoto class]])
+                {
+                    if (encryptedFile != nil)
+                    {
+                        Secret17_DecryptedMessageMedia_decryptedMessageMediaPhoto *decryptedPhoto = (Secret17_DecryptedMessageMedia_decryptedMessageMediaPhoto *)concreteMessage.media;
+                        
+                        TGImageMediaAttachment *imageAttachment = [[TGImageMediaAttachment alloc] init];
+                        
+                        imageAttachment.imageId = encryptedFile.n_id;
+                        imageAttachment.accessHash = encryptedFile.accessHash;
+                        
+                        NSString *thumbnailUrl = [[NSString alloc] initWithFormat:@"encryptedThumbnail:%lld", encryptedFile.n_id];
+                        
+                        TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
+                        [imageInfo addImageWithSize:CGSizeMake([decryptedPhoto.thumb_w intValue], [decryptedPhoto.thumb_h intValue]) url:thumbnailUrl];
+                        
+                        [[TGRemoteImageView sharedCache] diskCacheContains:thumbnailUrl orUrl:nil completion:^(bool containsFirst, __unused bool containsSecond)
+                        {
+                            if (!containsFirst)
+                            {
+                                if (decryptedPhoto.thumb.length < 128 * 1024)
+                                {
+                                    if (TGEnableBlur() && cpuCoreCount() > 1)
+                                    {
+                                        NSData *data = nil;
+                                        TGScaleAndBlurImage(decryptedPhoto.thumb, CGSizeZero, &data);
+                                        if (data != nil)
+                                            [[TGRemoteImageView sharedCache] cacheImage:nil withData:data url:thumbnailUrl availability:TGCacheDisk];
+                                        else
+                                            [[TGRemoteImageView sharedCache] cacheImage:nil withData:decryptedPhoto.thumb url:thumbnailUrl availability:TGCacheDisk];
+                                    }
+                                    else
+                                        [[TGRemoteImageView sharedCache] cacheImage:nil withData:decryptedPhoto.thumb url:thumbnailUrl availability:TGCacheDisk];
+                                }
+                            }
+                        }];
+                        
+                        NSString *fileUrl = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", encryptedFile.datacenterId, encryptedFile.n_id, encryptedFile.accessHash, encryptedFile.size, [decryptedPhoto.size intValue], encryptedFile.keyFingerprint, [decryptedPhoto.key stringByEncodingInHex], [decryptedPhoto.iv stringByEncodingInHex]];
+                        
+                        [imageInfo addImageWithSize:CGSizeMake([decryptedPhoto.w intValue], [decryptedPhoto.h intValue]) url:fileUrl fileSize:encryptedFile.size];
+                        
+                        imageAttachment.imageInfo = imageInfo;
+                        
+                        if (mediaAttachments == nil)
+                            mediaAttachments = [NSArray arrayWithObject:imageAttachment];
+                        else
+                        {
+                            NSMutableArray *array = [[NSMutableArray alloc] init];
+                            [array addObjectsFromArray:mediaAttachments];
+                            [array addObject:imageAttachment];
+                            mediaAttachments = array;
+                        }
+                    }
+                }
+                else if ([concreteMessage.media isKindOfClass:[Secret17_DecryptedMessageMedia_decryptedMessageMediaVideo class]])
+                {
+                    if (encryptedFile != nil)
+                    {
+                        Secret17_DecryptedMessageMedia_decryptedMessageMediaVideo *decryptedVideo = (Secret17_DecryptedMessageMedia_decryptedMessageMediaVideo *)concreteMessage.media;
+                        
+                        TGVideoMediaAttachment *videoAttachment = [[TGVideoMediaAttachment alloc] init];
+                        
+                        videoAttachment.videoId = encryptedFile.n_id;
+                        videoAttachment.accessHash = encryptedFile.accessHash;
+                        
+                        NSString *thumbnailUrl = [[NSString alloc] initWithFormat:@"encryptedThumbnail:%lld", encryptedFile.n_id];
+                        
+                        TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
+                        [imageInfo addImageWithSize:CGSizeMake([decryptedVideo.thumb_w intValue], [decryptedVideo.thumb_h intValue]) url:thumbnailUrl];
+                        
+                        [[TGRemoteImageView sharedCache] diskCacheContains:thumbnailUrl orUrl:nil completion:^(bool containsFirst, __unused bool containsSecond)
+                        {
+                            if (!containsFirst)
+                            {
+                                if (decryptedVideo.thumb.length < 128 * 1024)
+                                {
+                                    if (TGEnableBlur() && cpuCoreCount() > 1)
+                                    {
+                                        NSData *data = nil;
+                                        TGScaleAndBlurImage(decryptedVideo.thumb, CGSizeZero, &data);
+                                        if (data != nil)
+                                            [[TGRemoteImageView sharedCache] cacheImage:nil withData:data url:thumbnailUrl availability:TGCacheDisk];
+                                        else
+                                            [[TGRemoteImageView sharedCache] cacheImage:nil withData:decryptedVideo.thumb url:thumbnailUrl availability:TGCacheDisk];
+                                    }
+                                    else
+                                        [[TGRemoteImageView sharedCache] cacheImage:nil withData:decryptedVideo.thumb url:thumbnailUrl availability:TGCacheDisk];
+                                }
+                            }
+                        }];
+                        
+                        videoAttachment.thumbnailInfo = imageInfo;
+                        
+                        videoAttachment.duration = [decryptedVideo.duration intValue];
+                        videoAttachment.dimensions = CGSizeMake([decryptedVideo.w intValue], [decryptedVideo.h intValue]);
+                        
+                        TGVideoInfo *videoInfo = [[TGVideoInfo alloc] init];
+                        
+                        NSString *fileUrl = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", encryptedFile.datacenterId, encryptedFile.n_id, encryptedFile.accessHash, encryptedFile.size, [decryptedVideo.size intValue], encryptedFile.keyFingerprint, [decryptedVideo.key stringByEncodingInHex], [decryptedVideo.iv stringByEncodingInHex]];
+                        
+                        [videoInfo addVideoWithQuality:1 url:fileUrl size:[decryptedVideo.size intValue]];
+                        videoAttachment.videoInfo = videoInfo;
+                        
+                        if (mediaAttachments == nil)
+                            mediaAttachments = [NSArray arrayWithObject:videoAttachment];
+                        else
+                        {
+                            NSMutableArray *array = [[NSMutableArray alloc] init];
+                            [array addObjectsFromArray:mediaAttachments];
+                            [array addObject:videoAttachment];
+                            mediaAttachments = array;
+                        }
+                    }
+                }
+                else if ([concreteMessage.media isKindOfClass:[Secret17_DecryptedMessageMedia_decryptedMessageMediaDocument class]])
+                {
+                    Secret17_DecryptedMessageMedia_decryptedMessageMediaDocument *decryptedDocument = (Secret17_DecryptedMessageMedia_decryptedMessageMediaDocument *)concreteMessage.media;
+                    
+                    TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
+                    
+                    int64_t localId = 0;
+                    arc4random_buf(&localId, sizeof(localId));
+                    
+                    documentAttachment.localDocumentId = localId;
+                    documentAttachment.fileName = decryptedDocument.file_name;
+                    documentAttachment.mimeType = decryptedDocument.mime_type;
+                    documentAttachment.size = [decryptedDocument.size intValue];
+                    
+                    documentAttachment.documentUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", encryptedFile.datacenterId, encryptedFile.n_id, encryptedFile.accessHash, encryptedFile.size, [decryptedDocument.size intValue], encryptedFile.keyFingerprint, [decryptedDocument.key stringByEncodingInHex], [decryptedDocument.iv stringByEncodingInHex]];
+                    
+                    if (decryptedDocument.thumb != nil && [decryptedDocument.thumb_w intValue] > 0 && [decryptedDocument.thumb_h intValue] > 0)
+                    {
+                        NSString *thumbnailUrl = [[NSString alloc] initWithFormat:@"encryptedThumbnail:%lld", encryptedFile.n_id];
+                        
+                        TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
+                        [imageInfo addImageWithSize:CGSizeMake([decryptedDocument.thumb_w intValue], [decryptedDocument.thumb_h intValue]) url:thumbnailUrl];
+                        documentAttachment.thumbnailInfo = imageInfo;
+                        
+                        [[TGRemoteImageView sharedCache] diskCacheContains:thumbnailUrl orUrl:nil completion:^(bool containsFirst, __unused bool containsSecond)
+                        {
+                            if (!containsFirst)
+                            {
+                                if (decryptedDocument.thumb.length < 128 * 1024)
+                                {
+                                    if (TGEnableBlur() && cpuCoreCount() > 1)
+                                    {
+                                        NSData *data = nil;
+                                        TGScaleAndBlurImage(decryptedDocument.thumb, CGSizeZero, &data);
+                                        if (data != nil)
+                                            [[TGRemoteImageView sharedCache] cacheImage:nil withData:data url:thumbnailUrl availability:TGCacheDisk];
+                                        else
+                                            [[TGRemoteImageView sharedCache] cacheImage:nil withData:decryptedDocument.thumb url:thumbnailUrl availability:TGCacheDisk];
+                                    }
+                                    else
+                                        [[TGRemoteImageView sharedCache] cacheImage:nil withData:decryptedDocument.thumb url:thumbnailUrl availability:TGCacheDisk];
+                                }
+                            }
+                        }];
+                    }
+                    
+                    if (mediaAttachments == nil)
+                        mediaAttachments = [NSArray arrayWithObject:documentAttachment];
+                    else
+                    {
+                        NSMutableArray *array = [[NSMutableArray alloc] init];
+                        [array addObjectsFromArray:mediaAttachments];
+                        [array addObject:documentAttachment];
+                        mediaAttachments = array;
+                    }
+                }
+                else if ([concreteMessage.media isKindOfClass:[Secret17_DecryptedMessageMedia_decryptedMessageMediaAudio class]])
+                {
+                    Secret17_DecryptedMessageMedia_decryptedMessageMediaAudio *decryptedAudio = (Secret17_DecryptedMessageMedia_decryptedMessageMediaAudio *)concreteMessage.media;
+                    
+                    TGAudioMediaAttachment *audioAttachment = [[TGAudioMediaAttachment alloc] init];
+                    
+                    int64_t localId = 0;
+                    arc4random_buf(&localId, sizeof(localId));
+                    
+                    audioAttachment.localAudioId = localId;
+                    audioAttachment.duration = [decryptedAudio.duration intValue];
+                    audioAttachment.fileSize = [decryptedAudio.size intValue];
+                    
+                    audioAttachment.audioUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", encryptedFile.datacenterId, encryptedFile.n_id, encryptedFile.accessHash, encryptedFile.size, [decryptedAudio.size intValue], encryptedFile.keyFingerprint, [decryptedAudio.key stringByEncodingInHex], [decryptedAudio.iv stringByEncodingInHex]];
+                    
+                    if (mediaAttachments == nil)
+                        mediaAttachments = [NSArray arrayWithObject:audioAttachment];
+                    else
+                    {
+                        NSMutableArray *array = [[NSMutableArray alloc] init];
+                        [array addObjectsFromArray:mediaAttachments];
+                        [array addObject:audioAttachment];
+                        mediaAttachments = array;
+                    }
+                }
+                else if ([concreteMessage.media isKindOfClass:[Secret17_DecryptedMessageMedia_decryptedMessageMediaGeoPoint class]])
+                {
+                    Secret17_DecryptedMessageMedia_decryptedMessageMediaGeoPoint *concreteGeo = (Secret17_DecryptedMessageMedia_decryptedMessageMediaGeoPoint *)concreteMessage.media;
+                    
+                    TGLocationMediaAttachment *locationMediaAttachment = [[TGLocationMediaAttachment alloc] init];
+                    locationMediaAttachment.latitude = [concreteGeo.lat doubleValue];
+                    locationMediaAttachment.longitude = [concreteGeo.plong doubleValue];
+                    
+                    if (mediaAttachments == nil)
+                        mediaAttachments = [NSArray arrayWithObject:locationMediaAttachment];
+                    else
+                    {
+                        NSMutableArray *array = [[NSMutableArray alloc] init];
+                        [array addObjectsFromArray:mediaAttachments];
+                        [array addObject:locationMediaAttachment];
+                        mediaAttachments = array;
+                    }
+                }
+                else if ([concreteMessage.media isKindOfClass:[Secret17_DecryptedMessageMedia_decryptedMessageMediaContact class]])
+                {
+                    Secret17_DecryptedMessageMedia_decryptedMessageMediaContact *mediaContact = (Secret17_DecryptedMessageMedia_decryptedMessageMediaContact *)concreteMessage.media;
+                    
+                    TLMessageMedia$messageMediaContact *convertedContact = [[TLMessageMedia$messageMediaContact alloc] init];
+                    convertedContact.phone_number = mediaContact.phone_number;
+                    convertedContact.first_name = mediaContact.first_name;
+                    convertedContact.last_name = mediaContact.last_name;
+                    convertedContact.user_id = [mediaContact.user_id intValue];
+                    
+                    TGContactMediaAttachment *contactAttachment = [[TGContactMediaAttachment alloc] initWithTelegraphContactDesc:convertedContact];
+                    
+                    if (mediaAttachments == nil)
+                        mediaAttachments = [NSArray arrayWithObject:contactAttachment];
+                    else
+                    {
+                        NSMutableArray *array = [[NSMutableArray alloc] init];
+                        [array addObjectsFromArray:mediaAttachments];
+                        [array addObject:contactAttachment];
+                        mediaAttachments = array;
+                    }
+                }
+            }
+        }
+        else if ([desc isKindOfClass:[Secret17_DecryptedMessage_decryptedMessageService class]])
+        {
+            Secret17_DecryptedMessage_decryptedMessageService *concreteMessage = (Secret17_DecryptedMessage_decryptedMessageService *)desc;
+            self.unread = false;
+            
+            if ([concreteMessage.action isKindOfClass:[Secret17_DecryptedMessageAction_decryptedMessageActionSetMessageTTL class]])
+            {
+                Secret17_DecryptedMessageAction_decryptedMessageActionSetMessageTTL *concreteAction = (Secret17_DecryptedMessageAction_decryptedMessageActionSetMessageTTL *)concreteMessage.action;
+                
+                TGActionMediaAttachment *actionAttachment = [[TGActionMediaAttachment alloc] init];
+                actionAttachment.actionType = TGMessageActionEncryptedChatMessageLifetime;
+                actionAttachment.actionData = [[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithInt:[concreteAction.ttl_seconds intValue]], @"messageLifetime", nil];
+                
+                if (mediaAttachments == nil)
+                    mediaAttachments = [NSArray arrayWithObject:actionAttachment];
+                else
+                {
+                    NSMutableArray *array = [[NSMutableArray alloc] init];
+                    [array addObjectsFromArray:mediaAttachments];
+                    [array addObject:actionAttachment];
+                    mediaAttachments = array;
+                }
+            }
+            else if ([concreteMessage.action isKindOfClass:[Secret17_DecryptedMessageAction_decryptedMessageActionScreenshotMessages class]])
+            {
+                Secret17_DecryptedMessageAction_decryptedMessageActionScreenshotMessages *concreteAction = (Secret17_DecryptedMessageAction_decryptedMessageActionScreenshotMessages *)concreteMessage.action;
+                TGActionMediaAttachment *actionAttachment = [[TGActionMediaAttachment alloc] init];
+                actionAttachment.actionType = TGMessageActionEncryptedChatMessageScreenshot;
+                actionAttachment.actionData = @{@"randomIds": concreteAction.random_ids};
+                
+                if (mediaAttachments == nil)
+                    mediaAttachments = [NSArray arrayWithObject:actionAttachment];
+                else
+                {
+                    NSMutableArray *array = [[NSMutableArray alloc] init];
+                    [array addObjectsFromArray:mediaAttachments];
+                    [array addObject:actionAttachment];
+                    mediaAttachments = array;
+                }
+            }
+        }
+        else
+            return nil;
         
         if (mediaAttachments != nil)
             self.mediaAttachments = mediaAttachments;

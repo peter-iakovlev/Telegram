@@ -33,8 +33,6 @@
     bool _progressVisible;
     
     CGPoint _boundOffset;
-    
-    int _messageLifetime;
 }
 
 @end
@@ -75,7 +73,7 @@
         
         CGSize thumbnailSize = CGSizeZero;
         CGSize renderSize = CGSizeZero;
-        [TGImageMessageViewModel calculateImageSizesForImageSize:video.dimensions thumbnailSize:&thumbnailSize renderSize:&renderSize];
+        [TGImageMessageViewModel calculateImageSizesForImageSize:video.dimensions thumbnailSize:&thumbnailSize renderSize:&renderSize squareAspect:message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17];
         
         [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)thumbnailSize.width, (int)thumbnailSize.height, (int)renderSize.width, (int)renderSize.height];
         
@@ -83,7 +81,7 @@
         if (legacyThumbnailCacheUri != nil)
             [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUri];
         
-        if (message.messageLifetime != 0)
+        if (message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17)
             [previewUri appendString:@"&secret=1"];
         
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
@@ -95,9 +93,7 @@
         _video = video;
         [_video.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:&_videoSize];
         
-        _messageLifetime = message.messageLifetime;
-        
-        if (_messageLifetime != 0)
+        if (message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17)
         {
             self.isSecret = true;
             
@@ -141,7 +137,7 @@
             
             CGSize thumbnailSize = CGSizeZero;
             CGSize renderSize = CGSizeZero;
-            [TGImageMessageViewModel calculateImageSizesForImageSize:video.dimensions thumbnailSize:&thumbnailSize renderSize:&renderSize];
+            [TGImageMessageViewModel calculateImageSizesForImageSize:video.dimensions thumbnailSize:&thumbnailSize renderSize:&renderSize squareAspect:message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17];
             
             [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)thumbnailSize.width, (int)thumbnailSize.height, (int)renderSize.width, (int)renderSize.height];
             
@@ -149,7 +145,7 @@
             if (legacyThumbnailCacheUri != nil)
                 [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUri];
             
-            if (message.messageLifetime != 0)
+            if (message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17)
                 [previewUri appendString:@"&secret=1"];
             
             [previewImageInfo addImageWithSize:renderSize url:previewUri];
@@ -198,22 +194,6 @@
     }
     
     [self.imageModel setAdditionalDataString:labelText];
-}
-
-- (NSString *)filterForMessage:(TGMessage *)message imageSize:(CGSize)imageSize sourceSize:(CGSize)sourceSize
-{
-    if (message.messageLifetime == 0)
-        return [super filterForMessage:message imageSize:imageSize sourceSize:sourceSize];
-    
-    return [[NSString alloc] initWithFormat:@"%@:%dx%d,%dx%d", @"secretAttachmentImageOutgoing", (int)imageSize.width, (int)imageSize.height, (int)sourceSize.width, (int)sourceSize.height];
-}
-
-- (CGSize)minimumImageSizeForMessage:(TGMessage *)message
-{
-    if (message.messageLifetime == 0)
-        return [super minimumImageSizeForMessage:message];
-    
-    return CGSizeMake(120, 120);
 }
 
 - (bool)instantPreviewGesture

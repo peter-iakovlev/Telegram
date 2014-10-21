@@ -22,6 +22,9 @@
 #import "TGPreparedLocalAudioMessage.h"
 #import "TGPreparedLocalDocumentMessage.h"
 
+#import "PSKeyValueEncoder.h"
+#import "PSKeyValueDecoder.h"
+
 #include <map>
 #include <set>
 #include <tr1/unordered_map>
@@ -151,6 +154,7 @@ static TGFutureAction *futureActionDeserializer(int type)
     static TGRemoveContactFutureAction *TGRemoveContactFutureActionDeserializer = nil;
     static TGExportContactFutureAction *TGExportContactFutureActionDeserializer = nil;
     static TGSynchronizeEncryptedChatSettingsFutureAction *TGSynchronizeEncryptedChatSettingsFutureActionDeserializer = nil;
+    static TGUpdatePeerLayerFutureAction *TGUpdatePeerLayerFutureActionDeserializer = nil;
     static TGAcceptEncryptionFutureAction *TGAcceptEncryptionFutureActionDeserializer = nil;
     static TGEncryptedChatServiceAction *TGEncryptedChatServiceActionDeserializer = nil;
     
@@ -166,6 +170,7 @@ static TGFutureAction *futureActionDeserializer(int type)
         TGRemoveContactFutureActionDeserializer = [[TGRemoveContactFutureAction alloc] init];
         TGExportContactFutureActionDeserializer = [[TGExportContactFutureAction alloc] init];
         TGSynchronizeEncryptedChatSettingsFutureActionDeserializer = [[TGSynchronizeEncryptedChatSettingsFutureAction alloc] init];
+        TGUpdatePeerLayerFutureActionDeserializer = [[TGUpdatePeerLayerFutureAction alloc] init];
         TGAcceptEncryptionFutureActionDeserializer = [[TGAcceptEncryptionFutureAction alloc] init];
         TGEncryptedChatServiceActionDeserializer = [[TGEncryptedChatServiceAction alloc] init];
     });
@@ -190,6 +195,8 @@ static TGFutureAction *futureActionDeserializer(int type)
             return TGExportContactFutureActionDeserializer;
         case TGSynchronizeEncryptedChatSettingsFutureActionType:
             return TGSynchronizeEncryptedChatSettingsFutureActionDeserializer;
+        case TGUpdatePeerLayerFutureActionType:
+            return TGUpdatePeerLayerFutureActionDeserializer;
         case TGAcceptEncryptionFutureActionType:
             return TGAcceptEncryptionFutureActionDeserializer;
         case TGEncryptedChatServiceActionType:
@@ -221,6 +228,7 @@ static TGFutureAction *futureActionDeserializer(int type)
     TG_SYNCHRONIZED_DEFINE(_encryptedConversationIds);
     TG_SYNCHRONIZED_DEFINE(_conversationEncryptionKeys);
     TG_SYNCHRONIZED_DEFINE(_encryptedParticipantIds);
+    TG_SYNCHRONIZED_DEFINE(_encryptedConversationIsCreator);
     TG_SYNCHRONIZED_DEFINE(_encryptedConversationAccessHash);
     TG_SYNCHRONIZED_DEFINE(_messageLifetimeByPeerId);
     TG_SYNCHRONIZED_DEFINE(_cachedConversations);
@@ -254,10 +262,16 @@ static TGFutureAction *futureActionDeserializer(int type)
     std::map<int64_t, int64_t> _peerIdsForEncryptedConversationIds;
     std::map<int64_t, std::pair<int64_t, NSData *> > _conversationEncryptionKeys;
     std::map<int64_t, int32_t> _encryptedParticipantIds;
+    std::map<int64_t, bool> _encryptedConversationIsCreator;
     std::map<int64_t, int64_t> _encryptedConversationAccessHash;
     std::map<int64_t, int32_t> _messageLifetimeByPeerId;
     
     std::map<int64_t, NSString *> _conversationInputStates;
+    
+    std::map<int64_t, NSUInteger> _peerLayers;
+    TG_SYNCHRONIZED_DEFINE(_peerLayers);
+    std::map<int64_t, NSUInteger> _lastReportedToPeerLayers;
+    TG_SYNCHRONIZED_DEFINE(_lastReportedToPeerLayers);
 }
 
 @property (nonatomic, strong) NSString *databasePath;
@@ -307,6 +321,10 @@ static TGFutureAction *futureActionDeserializer(int type)
 
 @property (nonatomic, strong) NSString *mediaCacheInvalidationTableName;
 @property (nonatomic, strong) NSString *fileDeletionTableName;
+
+@property (nonatomic, strong) NSString *secretPeerOutgoingTableName;
+@property (nonatomic, strong) NSString *secretPeerOutgoingResendTableName;
+@property (nonatomic, strong) NSString *secretPeerIncomingTableName;
 
 @property (nonatomic) int serviceLastCleanTimeKey;
 @property (nonatomic) int serviceLastMidKey;
@@ -772,10 +790,14 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
         TG_SYNCHRONIZED_INIT(_encryptedConversationIds);
         TG_SYNCHRONIZED_INIT(_conversationEncryptionKeys);
         TG_SYNCHRONIZED_INIT(_encryptedParticipantIds);
+        TG_SYNCHRONIZED_INIT(_encryptedConversationIsCreator);
         TG_SYNCHRONIZED_INIT(_encryptedConversationAccessHash);
         TG_SYNCHRONIZED_INIT(_messageLifetimeByPeerId);
         TG_SYNCHRONIZED_INIT(_cachedConversations);
         TG_SYNCHRONIZED_INIT(_conversationInputStates);
+        
+        TG_SYNCHRONIZED_INIT(_peerLayers);
+        TG_SYNCHRONIZED_INIT(_lastReportedToPeerLayers);
         
         _userLinksVersion = 1;
         
@@ -831,6 +853,10 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
         _fileDeletionTableName = [NSString stringWithFormat:@"file_deletion_v%d", _schemaVersion];
         
         _peerHistoryHolesTableName = [NSString stringWithFormat:@"history_holes_%d", _schemaVersion];
+        
+        _secretPeerIncomingTableName = [NSString stringWithFormat:@"peer_incoming_actions_%d", _schemaVersion];
+        _secretPeerOutgoingTableName = [NSString stringWithFormat:@"peer_outgoing_actions_%d", _schemaVersion];
+        _secretPeerOutgoingResendTableName = [NSString stringWithFormat:@"peer_outgoing_actions_resend_%d", _schemaVersion];
     }
     return self;
 }
@@ -866,23 +892,6 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
 
 - (void)upgradeTables
 {
-/*#ifdef DEBUG
-    if ([self customProperty:@"didVauum2"].length == 0)
-    {
-        TGLog(@"===== Performing Vacuum");
-        [_database executeUpdate:@"VACUUM"];
-        
-        uint8_t one = 1;
-        [self setCustomProperty:@"didVauum2" value:[NSData dataWithBytes:&one length:1]];
-        
-        TGLog(@"===== Done");
-    }
-#endif*/
-    
-    //[_database executeUpdate:[[NSString alloc] initWithFormat:@"DROP INDEX unread_by_cid_with_date"]];
-    //[self setCustomProperty:@"hasPartialIndexOnUnread" value:[NSData data]];
-    
-    //[_database executeUpdate:[[NSString alloc] initWithFormat:@"DROP TABLE %@", _selfDestructTableName]];
     for (int i = _schemaVersion - 2; i < _schemaVersion + 2; i++)
     {
         if (i != _schemaVersion)
@@ -922,12 +931,31 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
             [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", [NSString stringWithFormat:@"history_holes_%d", i]]];
             
             [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", [NSString stringWithFormat:@"media_cache_v%d", i]]];
+            
+            [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", [NSString stringWithFormat:@"peer_incoming_actions_%d", i]]];
+            [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", [NSString stringWithFormat:@"peer_outgoing_actions_%d", i]]];
+            [_database executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", [NSString stringWithFormat:@"peer_outgoing_actions_resend_%d", i]]];
         }
     }
     
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (key INTEGER PRIMARY KEY, value BLOB)", _serviceTableName]];
     
-    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (uid INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, local_first_name TEXT, local_last_name TEXT, phone_number TEXT, access_hash INTEGER, sex INTEGER, photo_small TEXT, photo_medium TEXT, photo_big TEXT, last_seen INTEGER)", _usersTableName]];
+    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (uid INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, local_first_name TEXT, local_last_name TEXT, phone_number TEXT, access_hash INTEGER, sex INTEGER, photo_small TEXT, photo_medium TEXT, photo_big TEXT, last_seen INTEGER, username STRING)", _usersTableName]];
+    
+    FMResultSet *usersHaveUsernameResult = [_database executeQuery:[[NSString alloc] initWithFormat:@"PRAGMA table_info(%@)", _usersTableName]];
+    bool usersHaveUsername = false;
+    while ([usersHaveUsernameResult next])
+    {
+        if ([[usersHaveUsernameResult stringForColumn:@"name"] isEqualToString:@"username"])
+        {
+            usersHaveUsername = true;
+            break;
+        }
+    }
+    if (!usersHaveUsername)
+    {
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"ALTER TABLE %@ ADD COLUMN username STRING", _usersTableName]];
+    }
     
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (cid INTEGER PRIMARY KEY, date INTEGER, from_uid INTEGER, message TEXT, media BLOB, unread_count INTEGER, flags INTEGER, chat_title TEXT, chat_photo BLOB, participants BLOB, participants_count INTEGER, chat_version INTEGER, service_unread INTEGER)", _conversationListTableName]];
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE INDEX IF NOT EXISTS date ON %@ (date DESC)", _conversationListTableName]];
@@ -939,7 +967,7 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (cid INTEGER PRIMARY KEY, date INTEGER, from_uid INTEGER, message TEXT, media BLOB, unread_count INTEGER, flags INTEGER, chat_title TEXT, chat_photo BLOB, participants BLOB, participants_count INTEGER, chat_version INTEGER, service_unread INTEGER)", _broadcastConversationListTableName]];
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE INDEX IF NOT EXISTS broadcast_conversations_date ON %@ (date DESC)", _broadcastConversationListTableName]];
     
-    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (mid INTEGER PRIMARY KEY, cid INTEGER, localMid INTEGER, message TEXT, media BLOB, from_id INTEGER, to_id INTEGER, outgoing INTEGER, unread INTEGER, dstate INTEGER, date INTEGER, flags INTEGER)", _messagesTableName]];
+    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (mid INTEGER PRIMARY KEY, cid INTEGER, localMid INTEGER, message TEXT, media BLOB, from_id INTEGER, to_id INTEGER, outgoing INTEGER, unread INTEGER, dstate INTEGER, date INTEGER, flags INTEGER, seq_in INTEGER, seq_out INTEGER)", _messagesTableName]];
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE INDEX IF NOT EXISTS cid ON %@ (cid)", _messagesTableName]];
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE INDEX IF NOT EXISTS cid_date ON %@ (cid, date)", _messagesTableName]];
     
@@ -1029,7 +1057,53 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
     
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (mid INTEGER PRIMARY KEY, cid INTEGER, dstate INTEGER, local_media_id INTEGER)", _outgoingMessagesTableName]];
     
-    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (id INTEGER, type INTEGER, data BLOB, insert_date INTEGER, random_id INTEGER, PRIMARY KEY(id, type))", _futureActionsTableName]];
+    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (id INTEGER, type INTEGER, data BLOB, random_id INTEGER, sort_key INTEGER AUTO_INCREMENT, PRIMARY KEY(id, type))", _futureActionsTableName]];
+    
+    FMResultSet *futureActionsHasSortingKeyResult = [_database executeQuery:[[NSString alloc] initWithFormat:@"PRAGMA table_info(%@)", _futureActionsTableName]];
+    bool futureActionsHasSortingKey = false;
+    while ([futureActionsHasSortingKeyResult next])
+    {
+        if ([[futureActionsHasSortingKeyResult stringForColumn:@"name"] isEqualToString:@"sort_key"])
+        {
+            futureActionsHasSortingKey = true;
+            break;
+        }
+    }
+    if (!futureActionsHasSortingKey)
+    {
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ ORDER BY insert_date ASC", _futureActionsTableName]];
+        
+        NSMutableArray *actions = [[NSMutableArray alloc] init];
+        while ([result next])
+        {
+            id action = loadFutureActionFromQueryResult(result);
+            if (action != nil)
+                [actions addObject:action];
+        }
+        result = nil;
+        
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"ALTER TABLE %@ RENAME TO %@_old", _futureActionsTableName, _futureActionsTableName]];
+        
+        [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE %@ (id INTEGER, type INTEGER, data BLOB, random_id INTEGER, sort_key INTEGER AUTO_INCREMENT, PRIMARY KEY(id, type))", _futureActionsTableName]];
+        
+        [self storeFutureActions:actions];
+    }
+    
+    FMResultSet *messagesHaveSeqInOutResult = [_database executeQuery:[[NSString alloc] initWithFormat:@"PRAGMA table_info(%@)", _messagesTableName]];
+    bool messagesHaveSeqInOut = false;
+    while ([messagesHaveSeqInOutResult next])
+    {
+        if ([[messagesHaveSeqInOutResult stringForColumn:@"name"] isEqualToString:@"seq_in"])
+        {
+            messagesHaveSeqInOut = true;
+            break;
+        }
+    }
+    if (!messagesHaveSeqInOut)
+    {
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"ALTER TABLE %@ ADD COLUMN seq_in INTEGER", _messagesTableName]];
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"ALTER TABLE %@ ADD COLUMN seq_out INTEGER", _messagesTableName]];
+    }
     
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (hash_high INTEGER, hash_low INTEGER, PRIMARY KEY(hash_high, hash_low))", _assetsTableName]];
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (vid INTEGER PRIMARY KEY, mids BLOB)", _videosTableName]];
@@ -1059,6 +1133,13 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (hash0 INTEGER, hash1 INTEGER, path STRING, PRIMARY KEY(hash0, hash1))", _fileDeletionTableName]];
     
     [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (peer_id INTEGER PRIMARY KEY, holes BLOB)", _peerHistoryHolesTableName]];
+    
+    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (action_id INTEGER PRIMARY KEY AUTOINCREMENT, peer_id INTEGER, seq_in INTEGER, seq_out INTEGER, data BLOB)", _secretPeerIncomingTableName]];
+    [_database executeUpdate:[[NSString alloc] initWithFormat:@"CREATE INDEX IF NOT EXISTS %@_peer_id_action_id ON %@ (peer_id, action_id)", _secretPeerIncomingTableName, _secretPeerIncomingTableName]];
+    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (action_id INTEGER PRIMARY KEY AUTOINCREMENT, peer_id INTEGER, seq_out INTEGER, seq_in INTEGER, data BLOB)", _secretPeerOutgoingTableName]];
+    [_database executeUpdate:[[NSString alloc] initWithFormat:@"CREATE INDEX IF NOT EXISTS %@_peer_id_action_id ON %@ (peer_id, action_id)", _secretPeerOutgoingTableName, _secretPeerOutgoingTableName]];
+    [_database executeUpdate:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (action_id INTEGER PRIMARY KEY AUTOINCREMENT, peer_id INTEGER, seq_out INTEGER, seq_in INTEGER, data BLOB)", _secretPeerOutgoingResendTableName]];
+    [_database executeUpdate:[[NSString alloc] initWithFormat:@"CREATE INDEX IF NOT EXISTS %@_peer_id ON %@ (peer_id)", _secretPeerOutgoingResendTableName, _secretPeerOutgoingResendTableName]];
     
 #if !TARGET_IPHONE_SIMULATOR
     if ([self customProperty:@"backgroundMediaIndexingCompleted"].length == 0)
@@ -1271,6 +1352,10 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
         _encryptedParticipantIds.clear();
         TG_SYNCHRONIZED_END(_encryptedParticipantIds);
         
+        TG_SYNCHRONIZED_BEGIN(_encryptedConversationIsCreator);
+        _encryptedConversationIsCreator.clear();
+        TG_SYNCHRONIZED_END(_encryptedConversationIsCreator);
+        
         TG_SYNCHRONIZED_BEGIN(_encryptedConversationAccessHash);
         _encryptedConversationAccessHash.clear();
         TG_SYNCHRONIZED_END(_encryptedConversationAccessHash);
@@ -1283,6 +1368,14 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
         _conversationInputStates.clear();
         TG_SYNCHRONIZED_END(_conversationInputStates);
         
+        TG_SYNCHRONIZED_BEGIN(_peerLayers);
+        _peerLayers.clear();
+        TG_SYNCHRONIZED_END(_peerLayers);
+        
+        TG_SYNCHRONIZED_BEGIN(_lastReportedToPeerLayers);
+        _lastReportedToPeerLayers.clear();
+        TG_SYNCHRONIZED_END(_lastReportedToPeerLayers);
+        
         [self clearCachedUserLinks];
         
         _nextLocalMid = 0;
@@ -1293,9 +1386,9 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
 
 inline static void storeUserToDatabase(TGDatabase *instance, FMDatabase *database, TGUser *user)
 {
-    static NSString *queryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (uid, first_name, last_name, local_first_name, local_last_name, phone_number, access_hash, sex, photo_small, photo_medium, photo_big, last_seen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", instance.usersTableName];
+    static NSString *queryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (uid, first_name, last_name, local_first_name, local_last_name, phone_number, access_hash, sex, photo_small, photo_medium, photo_big, last_seen, username) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", instance.usersTableName];
     
-    [database executeUpdate:queryFormat, [[NSNumber alloc] initWithInt:user.uid], user.realFirstName, user.realLastName, user.phonebookFirstName, user.phonebookLastName, user.phoneNumber, [[NSNumber alloc] initWithLongLong:user.phoneNumberHash], [[NSNumber alloc] initWithInt:user.sex], user.photoUrlSmall, user.photoUrlMedium, user.photoUrlBig, [[NSNumber alloc] initWithInt:((int)user.presence.lastSeen)]];
+    [database executeUpdate:queryFormat, [[NSNumber alloc] initWithInt:user.uid], user.realFirstName, user.realLastName, user.phonebookFirstName, user.phonebookLastName, user.phoneNumber, [[NSNumber alloc] initWithLongLong:user.phoneNumberHash], [[NSNumber alloc] initWithInt:user.sex], user.photoUrlSmall, user.photoUrlMedium, user.photoUrlBig, [[NSNumber alloc] initWithInt:((int)user.presence.lastSeen)], user.userName == nil ? @"" : user.userName];
 }
 
 inline static TGUser *loadUserFromDatabase(FMResultSet *result)
@@ -1317,6 +1410,7 @@ inline static TGUser *loadUserFromDatabase(FMResultSet *result)
     presence.online = false;
     presence.lastSeen = [result intForColumn:@"last_seen"];
     user.presence = presence;
+    user.userName = [result stringForColumn:@"username"];
     
     return user;
 }
@@ -2580,6 +2674,7 @@ static NSMutableDictionary *transliterationPartsCache()
         NSArray *latinQueryParts = breakStringIntoParts([mutableQuery lowercaseString], characterSet);
         
         NSMutableString *testString = [[NSMutableString alloc] initWithCapacity:128];
+        NSString *nameQuery = [[query lowercaseString] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
         
         NSMutableDictionary *cache = transliterationPartsCache();
         
@@ -2592,6 +2687,12 @@ static NSMutableDictionary *transliterationPartsCache()
             
             NSString *firstName = user.firstName;
             NSString *lastName = user.lastName;
+            
+            if (user.userName.length != 0 && [[user.userName lowercaseString] hasPrefix:nameQuery])
+            {
+                [usersArray addObject:user];
+                continue;
+            }
             
             if (firstName.length != 0 || lastName.length != 0)
             {
@@ -3775,7 +3876,7 @@ static NSMutableDictionary *transliterationPartsCache()
     return array;
 }
 
-static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result, int64_t conversationId, int indexMid, int indexMessage, int indexMedia, int indexFromId, int indexToId, int indexOutgoing, int indexUnread, int indexDeliveryState, int indexDate, int indexLifetime, int indexFlags)
+static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result, int64_t conversationId, int indexMid, int indexMessage, int indexMedia, int indexFromId, int indexToId, int indexOutgoing, int indexUnread, int indexDeliveryState, int indexDate, int indexLifetime, int indexFlags, int indexSeqIn, int indexSeqOut)
 {
     TGMessage *message = [[TGMessage alloc] init];
     
@@ -3795,6 +3896,9 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result, int64_t
     message.messageLifetime = [result intForColumnIndex:indexLifetime];
     
     message.flags = (int64_t)[result longLongIntForColumnIndex:indexFlags];
+    
+    message.seqIn = [result intForColumnIndex:indexSeqIn];
+    message.seqOut = [result intForColumnIndex:indexSeqOut];
     
     return message;
 }
@@ -3817,6 +3921,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
     message.messageLifetime = [result intForColumn:@"localMid"];
     
     message.flags = (int64_t)[result longLongIntForColumn:@"flags"];
+    message.seqIn = [result intForColumn:@"seq_in"];
+    message.seqOut = [result intForColumn:@"seq_out"];
     
     return message;
 }
@@ -3880,6 +3986,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         int indexDate = [result columnIndexForName:@"date"];
         int indexLifetime = [result columnIndexForName:@"localMid"];
         int indexFlags = [result columnIndexForName:@"flags"];
+        int indexSeqIn = [result columnIndexForName:@"seq_in"];
+        int indexSeqOut = [result columnIndexForName:@"seq_out"];
         
         int minDate = INT_MAX;
         int minMid = INT_MAX;
@@ -3891,7 +3999,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         
         if ([result next])
         {
-            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags);
+            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
             if (message != nil)
             {
                 minDate = (int)message.date;
@@ -3927,10 +4035,12 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             indexDate = [result columnIndexForName:@"date"];
             indexLifetime = [result columnIndexForName:@"localMid"];
             indexFlags = [result columnIndexForName:@"flags"];
+            indexSeqIn = [result columnIndexForName:@"seq_in"];
+            indexSeqOut = [result columnIndexForName:@"seq_out"];
             
             while ([result next])
             {
-                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags);
+                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
                 if (message != nil)
                 {
                     if (message.mid < TGMessageLocalMidBaseline)
@@ -3961,10 +4071,12 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         indexDate = [result columnIndexForName:@"date"];
         indexLifetime = [result columnIndexForName:@"localMid"];
         indexFlags = [result columnIndexForName:@"flags"];
+        indexSeqIn = [result columnIndexForName:@"seq_in"];
+        indexSeqOut = [result columnIndexForName:@"seq_out"];
         
         while ([result next])
         {
-            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags);
+            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
             if (message != nil)
             {
                 if (message.mid < TGMessageLocalMidBaseline)
@@ -4077,12 +4189,14 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                     int indexDate = [result columnIndexForName:@"date"];
                     int indexLifetime = [result columnIndexForName:@"localMid"];
                     int indexFlags = [result columnIndexForName:@"flags"];
+                    int indexSeqIn = [result columnIndexForName:@"seq_in"];
+                    int indexSeqOut = [result columnIndexForName:@"seq_out"];
                     
                     int loadedUnreadMessages = 0;
                     
                     while ([result next])
                     {
-                        TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags);
+                        TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
                         
                         [array addObject:message];
                         
@@ -4114,6 +4228,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         int indexDate = [result columnIndexForName:@"date"];
         int indexLifetime = [result columnIndexForName:@"localMid"];
         int indexFlags = [result columnIndexForName:@"flags"];
+        int indexSeqIn = [result columnIndexForName:@"seq_in"];
+        int indexSeqOut = [result columnIndexForName:@"seq_out"];
         
         while ([result next])
         {
@@ -4134,7 +4250,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 continue;
             }
             
-            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags);
+            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
             [array addObject:message];
         }
         
@@ -4155,6 +4271,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             indexDate = [result columnIndexForName:@"date"];
             indexLifetime = [result columnIndexForName:@"localMid"];
             int indexFlags = [result columnIndexForName:@"flags"];
+            int indexSeqIn = [result columnIndexForName:@"seq_in"];
+            int indexSeqOut = [result columnIndexForName:@"seq_out"];
             
             while ([result next])
             {
@@ -4167,7 +4285,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 else if (mid >= maxMid)
                     continue;
                 
-                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags);
+                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
                 [array addObject:message];
             }
         }
@@ -4208,6 +4326,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 indexDate = [result columnIndexForName:@"date"];
                 indexLifetime = [result columnIndexForName:@"localMid"];
                 indexFlags = [result columnIndexForName:@"flags"];
+                indexSeqIn = [result columnIndexForName:@"seq_in"];
+                indexSeqOut = [result columnIndexForName:@"seq_out"];
                 
                 while ([result next])
                 {
@@ -4229,7 +4349,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                     }
                     
                     loadedDownMessages++;
-                    TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags);
+                    TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
                     [array addObject:message];
                 }
             }
@@ -4249,6 +4369,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 indexDate = [result columnIndexForName:@"date"];
                 indexLifetime = [result columnIndexForName:@"localMid"];
                 indexFlags = [result columnIndexForName:@"flags"];
+                indexSeqIn = [result columnIndexForName:@"seq_in"];
+                indexSeqOut = [result columnIndexForName:@"seq_out"];
                 
                 while ([result next])
                 {
@@ -4262,7 +4384,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                         continue;
                     
                     loadedDownMessages++;
-                    TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags);
+                    TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
                     [array addObject:message];
                 }
             }
@@ -4304,6 +4426,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         int indexDate = [result columnIndexForName:@"date"];
         int indexLifetime = [result columnIndexForName:@"localMid"];
         int indexFlags = [result columnIndexForName:@"flags"];
+        int indexSeqIn = [result columnIndexForName:@"seq_in"];
+        int indexSeqOut = [result columnIndexForName:@"seq_out"];
         
         while ([result next])
         {
@@ -4324,7 +4448,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 continue;
             }
             
-            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags);
+            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
             [array addObject:message];
         }
         
@@ -4345,6 +4469,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             indexDate = [result columnIndexForName:@"date"];
             indexLifetime = [result columnIndexForName:@"localMid"];
             indexFlags = [result columnIndexForName:@"flags"];
+            indexSeqIn = [result columnIndexForName:@"seq_in"];
+            indexSeqOut = [result columnIndexForName:@"seq_out"];
             
             while ([result next])
             {
@@ -4357,7 +4483,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 else if (mid <= minMid)
                     continue;
                 
-                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags);
+                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
                 [array addObject:message];
             }
         }
@@ -4381,8 +4507,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
 
     [self dispatchOnDatabaseThread:^
     {
-        NSString *insertQueryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, localMid, message, media, from_id, to_id, outgoing, unread, dstate, date, flags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", _messagesTableName];
-        NSString *updateQueryFormat = [NSString stringWithFormat:@"UPDATE %@ SET mid=?, cid=?, message=?, media=?, from_id=?, to_id=?, outgoing=?, unread=?, dstate=?, date=? WHERE mid=?", _messagesTableName];
+        NSString *insertQueryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, localMid, message, media, from_id, to_id, outgoing, unread, dstate, date, flags, seq_in, seq_out) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", _messagesTableName];
+        NSString *updateQueryFormat = [NSString stringWithFormat:@"UPDATE %@ SET mid=?, cid=?, message=?, media=?, from_id=?, to_id=?, outgoing=?, unread=?, dstate=?, date=?, seq_in=?, seq_out=? WHERE mid=?", _messagesTableName];
         
         NSString *mediaInsertQueryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, date, from_id, type, media) VALUES (?, ?, ?, ?, ?, ?)", _conversationMediaTableName];
         NSString *mediaUpdateQueryFormat = [NSString stringWithFormat:@"UPDATE OR IGNORE %@ SET mid=?, cid=?, date=?, from_id=?, type=?, media=? WHERE mid=?", _conversationMediaTableName];
@@ -4490,11 +4616,11 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             
             if (update)
             {
-                [_database executeUpdate:updateQueryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? INT_MAX : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? 1 : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithInt:previousMid]];
+                [_database executeUpdate:updateQueryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? INT_MAX : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? 1 : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithInt:message.seqIn], [[NSNumber alloc] initWithInt:message.seqOut], [[NSNumber alloc] initWithInt:previousMid]];
             }
             else
             {
-                [_database executeUpdate:insertQueryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:messageLifetime], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? 1 : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? INT_MAX : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithLongLong:message.flags]];
+                [_database executeUpdate:insertQueryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:messageLifetime], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? 1 : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? INT_MAX : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithLongLong:message.flags], [[NSNumber alloc] initWithInt:message.seqIn], [[NSNumber alloc] initWithInt:message.seqOut]];
             }
             
             if (videoId != 0)
@@ -4728,11 +4854,11 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             }
         }
         
-        int messageLifetime = 0;
+        int legacyMessageLifetime = 0;
         if (conversationId <= INT_MIN)
-            messageLifetime = [self messageLifetimeForPeerId:conversationId];
+            legacyMessageLifetime = [self messageLifetimeForPeerId:conversationId];
         
-        NSString *queryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, localMid, message, media, from_id, to_id, outgoing, unread, dstate, date, flags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", _messagesTableName];
+        NSString *queryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, localMid, message, media, from_id, to_id, outgoing, unread, dstate, date, flags, seq_in, seq_out) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", _messagesTableName];
         
         NSString *mediaInsertQueryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, date, from_id, type, media) VALUES (?, ?, ?, ?, ?, ?)", _conversationMediaTableName];
         
@@ -4887,11 +5013,15 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 }
             }
             
-            int currentLifetime = messageLifetime;
-            if (message.messageLifetime != 0)
+            int currentLifetime = 0;
+            if (message.layer >= 17)
                 currentLifetime = message.messageLifetime;
+            else if (message.messageLifetime != 0)
+                currentLifetime = message.messageLifetime;
+            else
+                currentLifetime = legacyMessageLifetime;
             
-            [_database executeUpdate:queryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:currentLifetime], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? 1 : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? INT_MAX : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithLongLong:message.flags]];
+            [_database executeUpdate:queryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:currentLifetime], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? 1 : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? INT_MAX : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithLongLong:message.flags], [[NSNumber alloc] initWithInt:message.seqIn], [[NSNumber alloc] initWithInt:message.seqOut]];
             
             if (mediaData != nil && mediaData.length != 0)
                 [_database executeUpdate:mediaInsertQueryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:(int)message.date], [[NSNumber alloc] initWithInt:(int)message.fromUid], [[NSNumber alloc] initWithInt:mediaType], mediaData];
@@ -5778,6 +5908,10 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             {
                 [_database executeUpdate:[NSString stringWithFormat:@"DELETE FROM %@ WHERE cid=?", [self _listTableNameForConversationId:conversationId]], [[NSNumber alloc] initWithLongLong:conversationId]];
                 
+                [_database executeUpdate:[[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE peer_id=?", _secretPeerIncomingTableName], @(conversationId)];
+                [_database executeUpdate:[[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE peer_id=?", _secretPeerOutgoingTableName], @(conversationId)];
+                [_database executeUpdate:[[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE peer_id=?", _secretPeerOutgoingResendTableName], @(conversationId)];
+                
                 TG_SYNCHRONIZED_BEGIN(_cachedConversations);
                 _cachedConversations.erase(conversationId);
                 TG_SYNCHRONIZED_END(_cachedConversations);
@@ -5938,14 +6072,21 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         {
             [midsString deleteCharactersInRange:NSMakeRange(0, midsString.length)];
             
-            FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT mid, date, unread, outgoing, localMid, media FROM %@ WHERE cid=? AND date<=? ORDER BY date DESC LIMIT ?, ?", _messagesTableName], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:startingDate], [[NSNumber alloc] initWithInt:startingDateLimit], [[NSNumber alloc] initWithInt:firstLoop ? 8 : 64]];
+            FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE cid=? AND date<=? ORDER BY date DESC LIMIT ?, ?", _messagesTableName], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:startingDate], [[NSNumber alloc] initWithInt:startingDateLimit], [[NSNumber alloc] initWithInt:firstLoop ? 8 : 64]];
             
             int midIndex = [result columnIndexForName:@"mid"];
+            int messageIndex = [result columnIndexForName:@"message"];
             int dateIndex = [result columnIndexForName:@"date"];
+            int fromIdIndex = [result columnIndexForName:@"from_id"];
+            int toIdIndex = [result columnIndexForName:@"to_id"];
             int unreadIndex = [result columnIndexForName:@"unread"];
             int outgoingIndex = [result columnIndexForName:@"outgoing"];
             int messageLifetimeIndex = [result columnIndexForName:@"localMid"];
             int mediaIndex = [result columnIndexForName:@"media"];
+            int deliveryStateIndex = [result columnIndexForName:@"dstate"];
+            int flagsIndex = [result columnIndexForName:@"flags"];
+            int indexSeqIn = [result columnIndexForName:@"seq_in"];
+            int indexSeqOut = [result columnIndexForName:@"seq_out"];
             
             firstLoop = false;
             
@@ -5955,15 +6096,17 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             
             while ([result next])
             {
+                TGMessage *message = loadMessageFromQueryResult(result, conversationId, midIndex, messageIndex, mediaIndex, fromIdIndex, toIdIndex, outgoingIndex, unreadIndex, deliveryStateIndex, dateIndex, messageLifetimeIndex, flagsIndex, indexSeqIn, indexSeqOut);
+                
                 anyFound = true;
                 
-                if ([result intForColumnIndex:outgoingIndex])
+                if (message.outgoing && message.deliveryState == TGMessageDeliveryStateDelivered)
                 {
                     outgoingFound = true;
                     
-                    if ([result longLongIntForColumnIndex:unreadIndex])
+                    if (message.unread)
                     {
-                        int mid = [result intForColumnIndex:midIndex];
+                        int mid = message.mid;
                         
                         if (midsString.length != 0)
                             [midsString appendString:@","];
@@ -5973,17 +6116,16 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                         
                         [markedMids addObject:[[NSNumber alloc] initWithInt:mid]];
                         
-                        int messageLifetime = [result intForColumnIndex:messageLifetimeIndex];
-                        if (messageLifetime != 0)
+                        bool hasSecretMedia = false;
+                        if (message.messageLifetime != 0)
                         {
-                            bool hasSecretMedia = false;
-                            
                             for (TGMediaAttachment *attachment in [TGMessage parseMediaAttachments:[result dataForColumnIndex:mediaIndex]])
                             {
                                 switch (attachment.type)
                                 {
                                     case TGImageMediaAttachmentType:
                                     case TGVideoMediaAttachmentType:
+                                    case TGAudioMediaAttachmentType:
                                     {
                                         hasSecretMedia = true;
                                         break;
@@ -5996,9 +6138,12 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                                     break;
                             }
                             
-                            if (!hasSecretMedia)
-                                midsWithLifetime.push_back(std::pair<int, int>(mid, messageLifetime));
+                            if (hasSecretMedia)
+                                hasSecretMedia = message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17;
                         }
+                        
+                        if (message.messageLifetime != 0 && !hasSecretMedia)
+                            midsWithLifetime.push_back(std::pair<int, int>(mid, message.messageLifetime));
                     }
                 }
                 
@@ -6144,7 +6289,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         
         //[self explainQuery:[[NSString alloc] initWithFormat:@"SELECT date, mid, localMid FROM %@ WHERE unread=%lld", _messagesTableName, conversationId]];
         
-        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT date, mid, localMid%s FROM %@ WHERE unread=?", conversationId <= INT_MIN ? ", media" : "", _messagesTableName], [[NSNumber alloc] initWithLongLong:conversationId]];
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT date, mid, flags, localMid%s FROM %@ WHERE unread=?", conversationId <= INT_MIN ? ", media" : "", _messagesTableName], [[NSNumber alloc] initWithLongLong:conversationId]];
         
         std::set<int> unreadMids;
         std::vector<std::pair<int, int> > midWithLifetime;
@@ -6152,6 +6297,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         int midIndex = [result columnIndexForName:@"mid"];
         int lifetimeIndex = [result columnIndexForName:@"localMid"];
         int dateIndex = [result columnIndexForName:@"date"];
+        int flagsIndex = [result columnIndexForName:@"flags"];
         
         int lastMid = 0;
         int actionQueueMid = 0;
@@ -6162,6 +6308,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             int mid = [result intForColumnIndex:midIndex];
             int lifetime = [result intForColumnIndex:lifetimeIndex];
             int date = [result intForColumnIndex:dateIndex];
+            int64_t flags = [result longLongIntForColumnIndex:flagsIndex];
+            int layer = [TGMessage layerFromFlags:flags];
             
             if (mid < TGMessageLocalMidBaseline)
             {
@@ -6177,16 +6325,16 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             
             unreadMids.insert(mid);
             
+            bool hasSecretMedia = false;
             if (lifetime != 0)
             {
-                bool hasSecretMedia = false;
-                
                 for (TGMediaAttachment *attachment in [TGMessage parseMediaAttachments:[result dataForColumn:@"media"]])
                 {
                     switch (attachment.type)
                     {
                         case TGImageMediaAttachmentType:
                         case TGVideoMediaAttachmentType:
+                        case TGAudioMediaAttachmentType:
                         {
                             hasSecretMedia = true;
                             break;
@@ -6199,9 +6347,12 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                         break;
                 }
                 
-                if (!hasSecretMedia)
-                    midWithLifetime.push_back(std::pair<int, int>(mid, lifetime));
+                if (hasSecretMedia)
+                    hasSecretMedia = lifetime > 0 && lifetime <= 60 && layer >= 17;
             }
+            
+            if (lifetime != 0 && !hasSecretMedia)
+                midWithLifetime.push_back(std::pair<int, int>(mid, lifetime));
         }
         
         NSMutableString *rangeString = [[NSMutableString alloc] init];
@@ -6673,7 +6824,8 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
             while ([result next])
             {
                 TGMessage *message = loadMessageMediaFromQueryResult(result, dateIndex, fromIdIndex, midIndex, mediaIndex);
-                if (conversationId <= INT_MIN && [self loadMessageWithMid:message.mid].messageLifetime != 0)
+                TGMessage *actualMessage = [self loadMessageWithMid:message.mid];
+                if (conversationId <= INT_MIN && (actualMessage.messageLifetime > 0 && actualMessage.messageLifetime <= 60 && actualMessage.layer >= 17))
                     continue;
                 //TGLog(@"mid %d", message.mid);
                 [mediaArray addObject:message];
@@ -6689,7 +6841,8 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
             while ([result next])
             {
                 TGMessage *message = loadMessageMediaFromQueryResult(result, dateIndex, fromIdIndex, midIndex, mediaIndex);
-                if (conversationId <= INT_MIN && [self loadMessageWithMid:message.mid].messageLifetime != 0)
+                TGMessage *actualMessage = [self loadMessageWithMid:message.mid];
+                if (conversationId <= INT_MIN && (actualMessage.messageLifetime > 0 && actualMessage.messageLifetime <= 60 && actualMessage.layer >= 17))
                     continue;
                 //TGLog(@"add mid %d", message.mid);
                 [mediaArray addObject:message];
@@ -6704,7 +6857,7 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
                     while ([result next])
                     {
                         TGMessage *message = [self loadMessageWithMid:[result intForColumn:@"mid"]];
-                        if (message.messageLifetime == 0)
+                        if (message.messageLifetime == 0 || message.messageLifetime > 60 || message.layer < 17)
                             localCount++;
                     }
                     
@@ -6755,10 +6908,14 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
                 extraLimit++;
                 continue;
             }
-            else if (conversationId <= INT_MIN && [self loadMessageWithMid:mid].messageLifetime != 0)
+            else if (conversationId <= INT_MIN)
             {
-                extraLimit++;
-                continue;
+                TGMessage *actualMessage = [self loadMessageWithMid:mid];
+                if (actualMessage.messageLifetime > 0 && actualMessage.messageLifetime <= 60 && actualMessage.layer >= 17)
+                {
+                    extraLimit++;
+                    continue;
+                }
             }
             
             TGMessage *message = loadMessageMediaFromQueryResult(result, dateIndex, fromIdIndex, midIndex, mediaIndex);
@@ -6785,8 +6942,12 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
                 {
                     continue;
                 }
-                else if (conversationId <= INT_MIN && [self loadMessageWithMid:mid].messageLifetime != 0)
-                    continue;
+                else if (conversationId <= INT_MIN)
+                {
+                    TGMessage *actualMessage = [self loadMessageWithMid:mid];
+                    if (actualMessage.messageLifetime > 0 && actualMessage.messageLifetime <= 60 && actualMessage.layer >= 17)
+                        continue;
+                }
                 
                 TGMessage *message = loadMessageMediaFromQueryResult(result, dateIndex, fromIdIndex, midIndex, mediaIndex);
                 
@@ -6803,7 +6964,7 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
                 while ([result next])
                 {
                     TGMessage *message = [self loadMessageWithMid:[result intForColumn:@"mid"]];
-                    if (message.messageLifetime == 0)
+                    if ((message.messageLifetime == 0 || message.messageLifetime > 60) || message.layer < 17)
                         localCount++;
                 }
                 
@@ -6999,14 +7160,12 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
 {
     [self dispatchOnDatabaseThread:^
     {
-        NSString *queryFormat = [[NSString alloc] initWithFormat:@"INSERT OR REPLACE INTO %@ (id, type, data, random_id, insert_date) VALUES (?, ?, ?, ?, ?)", _futureActionsTableName];
-        
-        int date = (int)(CFAbsoluteTimeGetCurrent() * 100.0);
+        NSString *queryFormat = [[NSString alloc] initWithFormat:@"INSERT OR REPLACE INTO %@ (id, type, data, random_id) VALUES (?, ?, ?, ?)", _futureActionsTableName];
         
         [_database beginTransaction];
         for (TGFutureAction *action in actions)
         {
-            [_database executeUpdate:queryFormat, [[NSNumber alloc] initWithLongLong:action.uniqueId], [[NSNumber alloc] initWithInt:action.type], [action serialize], [[NSNumber alloc] initWithInt:action.randomId], [[NSNumber alloc] initWithInt:date]];
+            [_database executeUpdate:queryFormat, [[NSNumber alloc] initWithLongLong:action.uniqueId], [[NSNumber alloc] initWithInt:action.type], [action serialize], [[NSNumber alloc] initWithInt:action.randomId]];
         }
         [_database commit];
     } synchronous:false];
@@ -7078,7 +7237,7 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
     
     [self dispatchOnDatabaseThread:^
     {   
-        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT id, type, data, random_id FROM %@ WHERE type NOT IN (%d, %d, %d, %d) ORDER BY insert_date ASC LIMIT 1", _futureActionsTableName, TGUploadAvatarFutureActionType, TGDeleteProfilePhotoFutureActionType, TGRemoveContactFutureActionType, TGExportContactFutureActionType]];
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT id, type, data, random_id FROM %@ WHERE type NOT IN (%d, %d, %d, %d) ORDER BY sort_key ASC LIMIT 1", _futureActionsTableName, TGUploadAvatarFutureActionType, TGDeleteProfilePhotoFutureActionType, TGRemoveContactFutureActionType, TGExportContactFutureActionType]];
         
         if ([result next])
         {
@@ -7098,7 +7257,7 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
     
     [self dispatchOnDatabaseThread:^
     {
-        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT id, type, data, random_id FROM %@ WHERE type=? ORDER BY insert_date ASC", _futureActionsTableName], [[NSNumber alloc] initWithInt:type]];
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT id, type, data, random_id FROM %@ WHERE type=? ORDER BY sort_key ASC", _futureActionsTableName], [[NSNumber alloc] initWithInt:type]];
         
         while ([result next])
         {
@@ -8551,6 +8710,37 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
     return uid;
 }
 
+- (bool)encryptedConversationIsCreator:(int64_t)conversationId
+{
+    bool value = false;
+    bool found = false;
+    
+    TG_SYNCHRONIZED_BEGIN(_encryptedConversationIsCreator);
+    auto it = _encryptedConversationIsCreator.find(conversationId);
+    if (it != _encryptedConversationIsCreator.end())
+    {
+        found = true;
+        value = it->second;
+    }
+    TG_SYNCHRONIZED_END(_encryptedConversationIsCreator);
+    
+    if (!found)
+    {
+        TGConversation *conversation = [self loadConversationWithId:conversationId];
+        
+        if (conversation != nil && conversation.chatParticipants != nil)
+        {
+            value = conversation.chatParticipants.chatAdminId == TGTelegraphInstance.clientUserId;
+
+            TG_SYNCHRONIZED_BEGIN(_encryptedConversationIsCreator);
+            _encryptedConversationIsCreator[conversationId] = value;
+            TG_SYNCHRONIZED_END(_encryptedConversationIsCreator);
+        }
+    }
+    
+    return value;
+}
+
 - (void)filterExistingRandomIds:(std::set<int64_t> *)randomIds
 {
     [self dispatchOnDatabaseThread:^
@@ -9923,6 +10113,503 @@ typedef struct {
     }
     
     return nil;
+}
+
+- (void)setLastReportedToPeerLayer:(int64_t)peerId layer:(NSUInteger)layer
+{
+    bool updated = false;
+    TG_SYNCHRONIZED_BEGIN(_lastReportedToPeerLayers);
+    auto it = _lastReportedToPeerLayers.find(peerId);
+    if (it == _lastReportedToPeerLayers.end() || it->second != layer)
+        updated = true;
+    _lastReportedToPeerLayers[peerId] = layer;
+    TG_SYNCHRONIZED_END(_lastReportedToPeerLayers);
+    
+    if (updated)
+    {
+        [self dispatchOnDatabaseThread:^
+        {
+            int32_t localLayer = (int32_t)layer;
+            [self setConversationCustomProperty:peerId name:[@"reportedLayer" hash] value:[[NSData alloc] initWithBytes:(const void *)&localLayer length:4]];
+        } synchronous:false];
+    }
+}
+
+- (NSUInteger)lastReportedToPeerLayer:(int64_t)peerId
+{
+    __block NSUInteger result = 1;
+    bool found = false;
+    TG_SYNCHRONIZED_BEGIN(_lastReportedToPeerLayers);
+    auto it = _lastReportedToPeerLayers.find(peerId);
+    if (it != _lastReportedToPeerLayers.end())
+    {
+        found = true;
+        result = it->second;
+    }
+    TG_SYNCHRONIZED_END(_lastReportedToPeerLayers);
+    
+    if (!found)
+    {
+        [self dispatchOnDatabaseThread:^
+        {
+            NSData *data = [self conversationCustomPropertySync:peerId name:[@"reportedLayer" hash]];
+            if (data.length < 4)
+                result = 1;
+            else
+            {
+                int32_t localResult = 0;
+                [data getBytes:&localResult length:4];
+                result = (NSUInteger)localResult;
+            }
+        } synchronous:true];
+    }
+    
+    TG_SYNCHRONIZED_BEGIN(_lastReportedToPeerLayers);
+    _lastReportedToPeerLayers[peerId] = result;
+    TG_SYNCHRONIZED_END(_lastReportedToPeerLayers);
+    
+    return result;
+}
+
+- (void)setPeerLayer:(int64_t)peerId layer:(NSUInteger)layer
+{
+    bool updated = false;
+    TG_SYNCHRONIZED_BEGIN(_peerLayers);
+    auto it = _peerLayers.find(peerId);
+    if (it == _peerLayers.end() || it->second != layer)
+        updated = true;
+    _peerLayers[peerId] = layer;
+    TG_SYNCHRONIZED_END(_peerLayers);
+    
+    if (updated)
+    {
+        [self dispatchOnDatabaseThread:^
+        {
+            int32_t localLayer = (int32_t)layer;
+            [self setConversationCustomProperty:peerId name:[@"layer" hash] value:[[NSData alloc] initWithBytes:(const void *)&localLayer length:4]];
+        } synchronous:false];
+    }
+}
+
+- (NSUInteger)peerLayer:(int64_t)peerId
+{
+    __block NSUInteger result = 1;
+    bool found = false;
+    TG_SYNCHRONIZED_BEGIN(_peerLayers);
+    auto it = _peerLayers.find(peerId);
+    if (it != _peerLayers.end())
+    {
+        found = true;
+        result = it->second;
+    }
+    TG_SYNCHRONIZED_END(_peerLayers);
+    
+    if (!found)
+    {
+        [self dispatchOnDatabaseThread:^
+        {
+            NSData *data = [self conversationCustomPropertySync:peerId name:[@"layer" hash]];
+            if (data.length < 4)
+                result = 1;
+            else
+            {
+                int32_t localResult = 0;
+                [data getBytes:&localResult length:4];
+                result = (NSUInteger)localResult;
+            }
+        } synchronous:true];
+    }
+    
+    TG_SYNCHRONIZED_BEGIN(_peerLayers);
+    _peerLayers[peerId] = result;
+    TG_SYNCHRONIZED_END(_peerLayers);
+    
+    return result;
+}
+
+- (void)loadAllSercretChatPeerIds:(void (^)(NSArray *))completion
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        NSMutableArray *peerIds = [[NSMutableArray alloc] init];
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT cid FROM %@ WHERE cid<=%d ORDER BY cid DESC", _conversationListTableName, INT_MIN]];
+        int cidIndex = [result columnIndexForName:@"cid"];
+        while ([result next])
+        {
+            int64_t peerId = [result longLongIntForColumnIndex:cidIndex];
+            [peerIds addObject:[[NSNumber alloc] initWithLongLong:peerId]];
+        }
+        if (completion)
+            completion(peerIds);
+    } synchronous:false];
+}
+
+- (void)peersWithOutgoingAndIncomingActions:(void (^)(NSArray *, NSArray *))completion
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        NSMutableSet *outgoingPeerIds = [[NSMutableSet alloc] init];
+        NSMutableSet *incomingPeerIds = [[NSMutableSet alloc] init];
+        
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT DISTINCT peer_id FROM %@", _secretPeerOutgoingTableName]];
+        while ([result next])
+        {
+            [outgoingPeerIds addObject:@([result longLongIntForColumn:@"peer_id"])];
+        }
+        
+        result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT DISTINCT peer_id FROM %@", _secretPeerOutgoingResendTableName]];
+        while ([result next])
+        {
+            [outgoingPeerIds addObject:@([result longLongIntForColumn:@"peer_id"])];
+        }
+        
+        result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT DISTINCT peer_id FROM %@", _secretPeerIncomingTableName]];
+        while ([result next])
+        {
+            [incomingPeerIds addObject:@([result longLongIntForColumn:@"peer_id"])];
+        }
+        
+        if (completion)
+            completion([outgoingPeerIds allObjects], [incomingPeerIds allObjects]);
+    } synchronous:false];
+}
+
+- (void)enqueuePeerOutgoingAction:(int64_t)peerId action:(id<PSCoding>)action useSeq:(bool)useSeq seqOut:(int32_t *)seqOut seqIn:(int32_t *)seqIn actionId:(int32_t *)actionId
+{
+    __block int32_t blockSeqIn = 0;
+    __block int32_t blockSeqOut = 0;
+    __block int32_t blockActionId = 0;
+    
+    [self dispatchOnDatabaseThread:^
+    {
+        if (useSeq)
+        {
+            NSData *seqOutData = [self conversationCustomPropertySync:peerId name:[@"seq_out" hash]];
+            NSData *seqInData = [self conversationCustomPropertySync:peerId name:[@"seq_in" hash]];
+            if (seqOutData.length == 4)
+            {
+                int32_t value = 0;
+                [seqOutData getBytes:&value length:4];
+                blockSeqOut = value + 1;
+            }
+            if (seqInData.length == 4)
+            {
+                int32_t value = 0;
+                [seqInData getBytes:&value length:4];
+                blockSeqIn = value;
+            }
+            
+            [self setConversationCustomProperty:peerId name:[@"seq_out" hash] value:[[NSData alloc] initWithBytes:&blockSeqOut length:4]];
+        }
+        
+        PSKeyValueEncoder *encoder = [[PSKeyValueEncoder alloc] init];
+        [encoder encodeObject:action forCKey:"action"];
+        NSData *data = [encoder data];
+        
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"INSERT INTO %@ (peer_id, seq_out, seq_in, data) VALUES (?, ?, ?, ?)", _secretPeerOutgoingTableName], @(peerId), @(blockSeqOut), @(blockSeqIn), data];
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT last_insert_rowid()"]];
+        if ([result next])
+            blockActionId = [result intForColumn:@"last_insert_rowid()"];
+    } synchronous:true];
+    
+    if (seqOut)
+        *seqOut = blockSeqOut;
+    if (seqIn)
+        *seqIn = blockSeqIn;
+    if (actionId)
+        *actionId = blockActionId;
+}
+
+- (void)dequeuePeerOutgoingActions:(int64_t)peerId completion:(void (^)(NSArray *, NSArray *))completion
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        NSMutableArray *actions = [[NSMutableArray alloc] init];
+        NSArray *resendActions = [self _dequeuePeerOutgoingResendActions:peerId];
+        
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE peer_id=? ORDER BY action_id ASC", _secretPeerOutgoingTableName], @(peerId)];
+        int32_t sentSeqOut = [self currentPeerSentSeqOut:peerId];
+        if ([self peerLayer:peerId] < 17)
+            sentSeqOut = -1;
+        PSKeyValueDecoder *decoder = [[PSKeyValueDecoder alloc] init];
+        while ([result next])
+        {
+            int32_t seqOut = (int32_t)[result intForColumn:@"seq_out"];
+            if (seqOut > sentSeqOut)
+            {
+                int32_t actionId = (int32_t)[result intForColumn:@"action_id"];
+                
+                int32_t seqIn = (int32_t)[result intForColumn:@"seq_in"];
+                NSData *data = [result dataForColumn:@"data"];
+                [decoder resetData:data];
+                
+                id<PSCoding> action = [decoder decodeObjectForCKey:"action"];
+                [actions addObject:[[TGStoredSecretActionWithSeq alloc] initWithActionId:actionId action:action seqIn:seqIn seqOut:seqOut]];
+            }
+        }
+        
+        if (completion)
+            completion(actions, resendActions);
+    } synchronous:false];
+}
+
+- (void)_enqueuePeerOutgoingResendActions:(int64_t)peerId actions:(NSArray *)actions
+{
+    for (TGStoredSecretActionWithSeq *action in actions)
+    {
+        PSKeyValueEncoder *encoder = [[PSKeyValueEncoder alloc] init];
+        [encoder encodeObject:action.action forCKey:"action"];
+        NSData *data = [encoder data];
+        
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"INSERT INTO %@ (peer_id, seq_out, seq_in, data) VALUES (?, ?, ?, ?)", _secretPeerOutgoingResendTableName], @(peerId), @(action.seqOut), @(action.seqIn), data];
+    }
+}
+
+- (NSArray *)_dequeuePeerOutgoingResendActions:(int64_t)peerId
+{
+    NSMutableArray *actions = [[NSMutableArray alloc] init];
+    
+    FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE peer_id=? ORDER BY action_id ASC", _secretPeerOutgoingResendTableName], @(peerId)];
+    PSKeyValueDecoder *decoder = [[PSKeyValueDecoder alloc] init];
+    while ([result next])
+    {
+        int32_t seqOut = (int32_t)[result intForColumn:@"seq_out"];
+        int32_t actionId = (int32_t)[result intForColumn:@"action_id"];
+        
+        int32_t seqIn = (int32_t)[result intForColumn:@"seq_in"];
+        NSData *data = [result dataForColumn:@"data"];
+        [decoder resetData:data];
+        
+        id<PSCoding> action = [decoder decodeObjectForCKey:"action"];
+        [actions addObject:[[TGStoredSecretActionWithSeq alloc] initWithActionId:actionId action:action seqIn:seqIn seqOut:seqOut]];
+    }
+
+    return actions;
+}
+
+- (void)deletePeerOutgoingResendActions:(int64_t)peerId actionIds:(NSArray *)actionIds
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        NSMutableString *actionIdsString = [[NSMutableString alloc] init];
+        for (NSNumber *nActionId in actionIds)
+        {
+            if (actionIdsString.length == 0)
+                [actionIdsString appendFormat:@"%d", [nActionId intValue]];
+            else
+                [actionIdsString appendFormat:@",%d", [nActionId intValue]];
+        }
+        
+        [_database setSoftShouldCacheStatements:false];
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE peer_id=? AND action_id IN (%@)", _secretPeerOutgoingResendTableName, actionIdsString], @(peerId)];
+        [_database setSoftShouldCacheStatements:true];
+    } synchronous:false];
+}
+
+- (void)enqueuePeerOutgoingResendActions:(int64_t)peerId fromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq completion:(void (^)(bool))completion
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        NSMutableArray *actions = [[NSMutableArray alloc] init];
+        
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE peer_id=? AND seq_out>=? AND seq_out<=? ORDER BY seq_out ASC", _secretPeerOutgoingTableName], @(peerId), @(fromSeq), @(toSeq)];
+        NSMutableSet *indices = [[NSMutableSet alloc] init];
+        for (int32_t seq = fromSeq; seq <= toSeq; seq++)
+        {
+            [indices addObject:@(seq)];
+        }
+        PSKeyValueDecoder *decoder = [[PSKeyValueDecoder alloc] init];
+        while ([result next])
+        {
+            int32_t seqOut = (int32_t)[result intForColumn:@"seq_out"];
+            int32_t actionId = (int32_t)[result intForColumn:@"action_id"];
+            
+            int32_t seqIn = (int32_t)[result intForColumn:@"seq_in"];
+            NSData *data = [result dataForColumn:@"data"];
+            [decoder resetData:data];
+            
+            id<PSCoding> action = [decoder decodeObjectForCKey:"action"];
+            [actions addObject:[[TGStoredSecretActionWithSeq alloc] initWithActionId:actionId action:action seqIn:seqIn seqOut:seqOut]];
+            [indices removeObject:@(seqOut)];
+        }
+        
+        [self _enqueuePeerOutgoingResendActions:peerId actions:actions];
+        
+        if (completion)
+            completion(indices.count == 0);
+    } synchronous:false];
+}
+
+- (void)deletePeerOutgoingActions:(int64_t)peerId actionIds:(NSArray *)actionIds
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        NSMutableString *actionIdsString = [[NSMutableString alloc] init];
+        for (NSNumber *nActionId in actionIds)
+        {
+            if (actionIdsString.length == 0)
+                [actionIdsString appendFormat:@"%d", [nActionId intValue]];
+            else
+                [actionIdsString appendFormat:@",%d", [nActionId intValue]];
+        }
+        
+        [_database setSoftShouldCacheStatements:false];
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE peer_id=? AND action_id IN (%@)", _secretPeerOutgoingTableName, actionIdsString], @(peerId)];
+        [_database setSoftShouldCacheStatements:true];
+    } synchronous:false];
+}
+
+- (void)enqueuePeerIncomingActions:(int64_t)peerId actions:(NSArray *)actions
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        PSKeyValueEncoder *encoder = [[PSKeyValueEncoder alloc] init];
+        
+        for (TGStoredSecretIncomingActionWithSeq *action in actions)
+        {
+            [encoder reset];
+            [encoder encodeObject:action.action forCKey:"action"];
+            NSData *data = [encoder data];
+            [_database executeUpdate:[[NSString alloc] initWithFormat:@"INSERT OR REPLACE INTO %@ (peer_id, seq_in, seq_out, data) VALUES (?, ?, ?, ?)", _secretPeerIncomingTableName], @(peerId), @(action.seqIn), @(action.seqOut), data];
+        }
+    } synchronous:false];
+}
+
+- (void)dequeuePeerIncomingActions:(int64_t)peerId completion:(void (^)(NSArray *, int32_t))completion
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        NSMutableArray *actions = [[NSMutableArray alloc] init];
+        
+        FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE peer_id=? ORDER BY action_id ASC", _secretPeerIncomingTableName], @(peerId)];
+        PSKeyValueDecoder *decoder = [[PSKeyValueDecoder alloc] init];
+        while ([result next])
+        {
+            int32_t actionId = (int32_t)[result intForColumn:@"action_id"];
+            int32_t seqIn = (int32_t)[result intForColumn:@"seq_in"];
+            int32_t seqOut = (int32_t)[result intForColumn:@"seq_out"];
+            NSData *data = [result dataForColumn:@"data"];
+            [decoder resetData:data];
+            
+            id<PSCoding> action = [decoder decodeObjectForCKey:"action"];
+            [actions addObject:[[TGStoredSecretActionWithSeq alloc] initWithActionId:actionId action:action seqIn:seqIn seqOut:seqOut]];
+        }
+        
+        int32_t nextExpectedSeqOut = 0;
+        NSData *seqInData = [self conversationCustomPropertySync:peerId name:[@"seq_in" hash]];
+        if (seqInData.length == 4)
+        {
+            int32_t value = 0;
+            [seqInData getBytes:&value length:4];
+            nextExpectedSeqOut = value;
+        }
+        
+        [actions sortUsingComparator:^NSComparisonResult(TGStoredSecretActionWithSeq *action1, TGStoredSecretActionWithSeq *action2)
+        {
+            if (action1.seqOut != action2.seqOut)
+            {
+                if (action1.seqOut < action2.seqOut)
+                    return NSOrderedAscending;
+                else
+                    return NSOrderedDescending;
+            }
+            else if (action1.actionId < action2.actionId)
+                return NSOrderedAscending;
+            else if (action1.actionId > action2.actionId)
+                return NSOrderedDescending;
+            else
+                return NSOrderedSame;
+        }];
+        
+        if (completion)
+            completion(actions, nextExpectedSeqOut);
+    } synchronous:false];
+}
+
+- (void)applyPeerSeqOut:(int64_t)peerId seqOut:(int32_t)seqOut
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        int32_t localSeqOut = seqOut;
+        [self setConversationCustomProperty:peerId name:[@"sent_seq_out" hash] value:[[NSData alloc] initWithBytes:&localSeqOut length:4]];
+    } synchronous:false];
+}
+
+- (void)confirmPeerSeqOut:(int64_t)peerId seqOut:(int32_t)seqOut
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE peer_id=? AND seq_out<=?", _secretPeerOutgoingTableName], @(peerId), @(seqOut)];
+    } synchronous:false];
+}
+
+- (int32_t)currentPeerSentSeqOut:(int64_t)peerId
+{
+    int32_t sentSeqOut = -1;
+    
+    NSData *seqInData = [self conversationCustomPropertySync:peerId name:[@"sent_seq_out" hash]];
+    if (seqInData.length == 4)
+    {
+        int32_t value = 0;
+        [seqInData getBytes:&value length:4];
+        sentSeqOut = value;
+    }
+    
+    return sentSeqOut;
+}
+
+- (void)applyPeerSeqIn:(int64_t)peerId seqIn:(int32_t)seqIn
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        int32_t localSeqIn = seqIn;
+        [self setConversationCustomProperty:peerId name:[@"seq_in" hash] value:[[NSData alloc] initWithBytes:&localSeqIn length:4]];
+    } synchronous:false];
+}
+
+- (bool)currentPeerResendSeqIn:(int64_t)peerId seqIn:(int32_t *)seqIn
+{
+    bool found = false;
+    
+    NSData *seqInData = [self conversationCustomPropertySync:peerId name:[@"resend_seq_in" hash]];
+    if (seqInData.length == 4)
+    {
+        found = true;
+        int32_t value = 0;
+        [seqInData getBytes:&value length:4];
+        if (seqIn)
+            *seqIn = value;
+    }
+    
+    return found;
+}
+
+- (void)setCurrentPeerResendSeqIn:(int64_t)peerId seqIn:(int32_t)seqIn
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        int32_t localSeqIn = seqIn;
+        [self setConversationCustomProperty:peerId name:[@"resend_seq_in" hash] value:[[NSData alloc] initWithBytes:&localSeqIn length:4]];
+    } synchronous:false];
+}
+
+- (void)deletePeerIncomingActions:(int64_t)peerId actionIds:(NSArray *)actionIds
+{
+    [self dispatchOnDatabaseThread:^
+     {
+         NSMutableString *actionIdsString = [[NSMutableString alloc] init];
+         for (NSNumber *nActionId in actionIds)
+         {
+             if (actionIdsString.length == 0)
+                 [actionIdsString appendFormat:@"%d", [nActionId intValue]];
+             else
+                 [actionIdsString appendFormat:@",%d", [nActionId intValue]];
+         }
+         
+         [_database setSoftShouldCacheStatements:false];
+         [_database executeUpdate:[[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE peer_id=? AND action_id IN (%@)", _secretPeerIncomingTableName, actionIdsString], @(peerId)];
+         [_database setSoftShouldCacheStatements:true];
+     } synchronous:false];
 }
 
 @end

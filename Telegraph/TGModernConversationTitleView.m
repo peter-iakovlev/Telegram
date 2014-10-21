@@ -7,6 +7,7 @@
 #import "TGTimerTarget.h"
 
 #import "TGModernConversationTitleIcon.h"
+#import "TGModernConversationTitleActivityIndicator.h"
 
 #import "TGViewController.h"
 
@@ -22,11 +23,9 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     UIActivityIndicatorView *_titleModalProgressIndicator;
     NSString *_modalProgressStatus;
     
-    NSArray *_typingDots;
-    NSTimer *_typingDotTimer;
-    int _typingDotState;
-    bool _typingAnimation;
     bool _animationsAreSuspended;
+    
+    TGModernConversationTitleActivityIndicator *_activityIndicator;
     
     id _status;
     
@@ -88,156 +87,14 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     return _statusLabel;
 }
 
-- (CALayer *)_createTypingDot:(bool)large
-{
-    static CGImageRef dotImage1 = NULL;
-    static CGImageRef dotImage2 = NULL;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        dotImage1 = CGImageRetain([UIImage imageNamed:@"ModernTypingDot1"].CGImage);
-        dotImage2 = CGImageRetain([UIImage imageNamed:@"ModernTypingDot2"].CGImage);
-    });
-    
-    CALayer *layer = [[CALayer alloc] init];
-    layer.bounds = CGRectMake(0, 0, 4, 4);
-    layer.actions = @{@"content": [NSNull null], @"position": [NSNull null]};
-    layer.contents = (__bridge id)(large ? dotImage2 : dotImage1);
-    layer.opacity = large ? 0.0f : 1.0f;
-    return layer;
-}
-
-- (NSArray *)typingDots
-{
-    if (_typingDots == nil)
-    {
-        _typingDots = @[[self _createTypingDot:false], [self _createTypingDot:false], [self _createTypingDot:false],
-                        [self _createTypingDot:true], [self _createTypingDot:true], [self _createTypingDot:true]];
-    }
-    
-    return _typingDots;
-}
-
-- (CAAnimation *)_animationFromOpacity:(CGFloat)fromOpacity to:(CGFloat)toOpacity duration:(NSTimeInterval)duration
-{
-    CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"opacity"];
-    animation.fromValue = @(fromOpacity);
-    animation.toValue = @(toOpacity);
-    animation.duration = duration;
-    animation.removedOnCompletion = true;
-    
-    return animation;
-}
-
-- (void)_beginTypingAnimation:(bool)animated
-{
-    if (_typingAnimation)
-        return;
-    
-    for (CALayer *layer in [self typingDots])
-    {
-        CAAnimation *animation = [layer animationForKey:@"opacity"];
-        if ([animation.delegate isKindOfClass:[TGAnimationBlockDelegate class]])
-            ((TGAnimationBlockDelegate *)animation.delegate).removeLayerOnCompletion = false;
-        [layer removeAllAnimations];
-        [self.layer addSublayer:layer];
-    }
-    [self setNeedsLayout];
-    
-    if (!_animationsAreSuspended)
-    {
-        _typingDotState = 0;
-        [self _typingAnimationEvent];
-        _typingDotTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(_typingAnimationEvent) interval:typingIntervalFirst repeat:true];
-        [[NSRunLoop mainRunLoop] addTimer:_typingDotTimer forMode:NSRunLoopCommonModes];
-        
-        if (animated)
-        {
-            [self typingDots];
-            for (int i = 0; i < 3; i++)
-            {
-                CALayer *layer = _typingDots[i];
-                [layer addAnimation:[self _animationFromOpacity:0.0f to:1.0f duration:0.12] forKey:@"opacity"];
-            }
-        }
-    }
-    
-    _typingAnimation = true;
-}
-
-- (void)_endTypingAnimation:(bool)animated
-{
-    if (!_typingAnimation)
-        return;
-    
-    if (animated)
-    {
-        for (CALayer *layer in [self typingDots])
-        {
-            CAAnimation *animation = [self _animationFromOpacity:layer.opacity to:0.0f duration:0.12];
-            TGAnimationBlockDelegate *delegate = [[TGAnimationBlockDelegate alloc] initWithLayer:layer];
-            delegate.removeLayerOnCompletion = true;
-            animation.delegate = delegate;
-            [layer addAnimation:animation forKey:@"opacity"];
-        }
-    }
-    else
-    {
-        for (CALayer *layer in [self typingDots])
-        {
-            [layer removeFromSuperlayer];
-        }
-    }
-    
-    [_typingDotTimer invalidate];
-    _typingDotTimer = nil;
-    
-    _typingAnimation = false;
-}
-
 - (void)suspendAnimations
 {
     _animationsAreSuspended = true;
-    
-    if (_typingAnimation)
-    {
-        [_typingDotTimer invalidate];
-        _typingDotTimer = nil;
-    }
 }
 
 - (void)resumeAnimations
 {
     _animationsAreSuspended = false;
-    
-    if (_typingAnimation)
-    {
-        [_typingDotTimer invalidate];
-        _typingDotTimer = nil;
-        
-        [self _typingAnimationEvent];
-        _typingDotTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(_typingAnimationEvent) interval:typingIntervalFirst repeat:true];
-        [[NSRunLoop mainRunLoop] addTimer:_typingDotTimer forMode:NSRunLoopCommonModes];
-    }
-}
-
-- (void)_typingAnimationEvent
-{
-    if (_typingDots.count == 0)
-        return;
-    
-    int focusIndex = (_typingDotState++) % (_typingDots.count / 2);
-    for (int index = 0; index < 3; index++)
-    {
-        CALayer *layer = _typingDots[3 + index];
-        if (index == focusIndex)
-        {
-            CAAnimation *animation = [self _animationFromOpacity:0.0f to:1.0f duration:typingIntervalSecond];
-            animation.autoreverses = true;
-            [layer addAnimation:animation forKey:@"opacity"];
-        }
-    }
 }
 
 - (void)setTitle:(NSString *)title
@@ -299,10 +156,10 @@ const NSTimeInterval typingIntervalSecond = 0.14;
 
 - (void)setTypingStatus:(NSString *)typingStatus
 {
-    [self setTypingStatus:typingStatus animated:false];
+    [self setTypingStatus:typingStatus activity:TGModernConversationTitleViewActivityTyping animated:false];
 }
 
-- (void)setTypingStatus:(NSString *)typingStatus animated:(bool)animated
+- (void)setTypingStatus:(NSString *)typingStatus activity:(TGModernConversationTitleViewActivity)activity animated:(bool)animated
 {
     if (!TGStringCompare(typingStatus, _typingStatus))
     {
@@ -314,15 +171,68 @@ const NSTimeInterval typingIntervalSecond = 0.14;
         {
             [self statusLabel].attributedText = [[NSAttributedString alloc] initWithString:_status];
             _statusLabel.textColor = _statusHasAccentColor ? UIColorRGB(0x007bff) : UIColorRGB(0x86868d);
-            
-            [self _endTypingAnimation:reallyAnimated];
         }
         else
         {
             [self statusLabel].attributedText = [[NSAttributedString alloc] initWithString:typingStatus];
             _statusLabel.textColor = UIColorRGB(0x007bff);
+        }
+        
+        if (typingStatus == nil)
+        {
+            if (reallyAnimated)
+            {
+                [UIView animateWithDuration:0.12 animations:^
+                {
+                    _activityIndicator.alpha = 0.0f;
+                } completion:^(BOOL finished)
+                {
+                    if (finished)
+                    {
+                        [_activityIndicator setNone];
+                        [_activityIndicator removeFromSuperview];
+                    }
+                }];
+            }
+            else
+            {
+                [_activityIndicator setNone];
+                [_activityIndicator removeFromSuperview];
+            }
+        }
+        else
+        {
+            if (_activityIndicator == nil)
+            {
+                _activityIndicator = [[TGModernConversationTitleActivityIndicator alloc] init];
+                _activityIndicator.alpha = 0.0f;
+            }
             
-            [self _beginTypingAnimation:reallyAnimated];
+            if (_activityIndicator.superview != self)
+                [self addSubview:_activityIndicator];
+            
+            switch (activity)
+            {
+                case TGModernConversationTitleViewActivityAudioRecording:
+                    [_activityIndicator setAudioRecording];
+                    break;
+                case TGModernConversationTitleViewActivityUploading:
+                    [_activityIndicator setUploading];
+                    break;
+                default:
+                    [_activityIndicator setTyping];
+                    break;
+            }
+            
+            if (reallyAnimated)
+            {
+                [UIView animateWithDuration:0.12 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
+                {
+                    _activityIndicator.alpha = 1.0f;
+                } completion:nil];
+            }
+            else
+                _activityIndicator.alpha = 1.0f;
         }
         
         if (reallyAnimated)
@@ -407,10 +317,7 @@ const NSTimeInterval typingIntervalSecond = 0.14;
             [_titleModalProgressIndicator removeFromSuperview];
         }
         
-        for (CALayer *layer in _typingDots)
-        {
-            layer.hidden = modalProgressStatus != nil;
-        }
+        _activityIndicator.hidden = modalProgressStatus != nil;
         
         _titleLabel.hidden = modalProgressStatus != nil;
         _statusLabel.hidden = modalProgressStatus != nil;
@@ -662,7 +569,7 @@ static UIView *findNavigationBar(UIView *view)
     
     if (_titleLabel != nil && _statusLabel != nil)
     {
-        CGFloat portraitScreenWidth = [TGViewController screenSizeForInterfaceOrientation:UIInterfaceOrientationPortrait].width;
+        CGFloat portraitScreenWidth = [TGViewController screenSizeForInterfaceOrientation:UIInterfaceOrientationPortrait].width - 12.0f;
         CGFloat landscapeScreenWidth = [TGViewController screenSizeForInterfaceOrientation:UIInterfaceOrientationLandscapeLeft].width;
         
         if (TGIsPad())
@@ -762,13 +669,7 @@ static UIView *findNavigationBar(UIView *view)
             
             if (_typingStatus != nil)
             {
-                CGPoint dotPosition = CGPointMake(_statusLabel.frame.origin.x - 16, _statusLabel.frame.origin.y + 9);
-                int index = -1;
-                for (CALayer *layer in _typingDots)
-                {
-                    index++;
-                    layer.position = CGPointMake(dotPosition.x + 5.0f * (index % 3), dotPosition.y);
-                }
+                _activityIndicator.frame = CGRectMake(_statusLabel.frame.origin.x - 24.0f, _statusLabel.frame.origin.y, 24.0f, 16.0f);
             }
         }
         else
@@ -810,13 +711,7 @@ static UIView *findNavigationBar(UIView *view)
             
             if (_typingStatus != nil)
             {
-                CGPoint dotPosition = CGPointMake(_statusLabel.frame.origin.x - 16, _statusLabel.frame.origin.y + 9);
-                int index = -1;
-                for (CALayer *layer in _typingDots)
-                {
-                    index++;
-                    layer.position = CGPointMake(dotPosition.x + 5.0f * (index % 3), dotPosition.y);
-                }
+                _activityIndicator.frame = CGRectMake(_statusLabel.frame.origin.x - 24.0f, _statusLabel.frame.origin.y, 24.0f, 16.0f);
             }
         }
     }

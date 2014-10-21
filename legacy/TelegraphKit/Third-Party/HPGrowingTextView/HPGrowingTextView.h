@@ -46,7 +46,7 @@
 - (void)growingTextViewDidEndEditing:(HPGrowingTextView *)growingTextView;
 
 - (BOOL)growingTextView:(HPGrowingTextView *)growingTextView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text;
-- (void)growingTextViewDidChange:(HPGrowingTextView *)growingTextView;
+- (void)growingTextViewDidChange:(HPGrowingTextView *)growingTextView afterSetText:(bool)afterSetText;
 
 - (void)growingTextView:(HPGrowingTextView *)growingTextView willChangeHeight:(float)height duration:(NSTimeInterval)duration animationCurve:(int)animationCurve;
 

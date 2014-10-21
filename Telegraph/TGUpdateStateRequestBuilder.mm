@@ -44,6 +44,9 @@
 
 #import "TGModernSendSecretMessageActor.h"
 
+#import "SecretLayer1.h"
+#import "SecretLayer17.h"
+
 #import <set>
 
 static int stateVersion = 0;
@@ -256,7 +259,7 @@ static bool _initialUpdatesScheduled = false;
     [[[TGTelegramNetworking instance] mtProto] requestTimeResync];
 }
 
-+ (bool)applyUpdates:(NSArray *)addedMessagesDesc addedParsedMessages:(NSArray *)addedParsedMessages otherUpdates:(NSArray *)otherUpdates addedEncryptedActions:(NSArray *)addedEncryptedActions usersDesc:(NSArray *)usersDesc chatsDesc:(NSArray *)chatsDesc chatParticipantsDesc:(NSArray *)chatParticipantsDesc updatesWithDates:(NSArray *)updatesWithDates
++ (bool)applyUpdates:(NSArray *)addedMessagesDesc otherUpdates:(NSArray *)otherUpdates usersDesc:(NSArray *)usersDesc chatsDesc:(NSArray *)chatsDesc chatParticipantsDesc:(NSArray *)chatParticipantsDesc updatesWithDates:(NSArray *)updatesWithDates addedEncryptedActionsByPeerId:(NSDictionary *)addedEncryptedActionsByPeerId
 {
     static Class updateReadMessagesClass = [TLUpdate$updateReadMessages class];
     static Class updateDeleteMessagesClass = [TLUpdate$updateDeleteMessages class];
@@ -288,7 +291,6 @@ static bool _initialUpdatesScheduled = false;
     }
     
     NSMutableArray *addedMessages = [[NSMutableArray alloc] init];
-    NSMutableArray *newAddedEncryptedActions = [[NSMutableArray alloc] init];
     NSMutableDictionary *updatedEncryptedChats = [[NSMutableDictionary alloc] init];
     
     std::set<int64_t> &ignoredConversationsForCurrentUser = _ignoredConversationIds[TGTelegraphInstance.clientUserId];
@@ -306,6 +308,7 @@ static bool _initialUpdatesScheduled = false;
     std::vector<std::pair<int64_t, int> > messageIdUpdates;
     
     std::set<int64_t> acceptEncryptedChats;
+    std::set<int64_t> updatePeerLayers;
     
     std::map<int, std::vector<id> > chatParticipantUpdateArrays;
     
@@ -314,6 +317,10 @@ static bool _initialUpdatesScheduled = false;
     NSMutableArray *userTypingUpdates = [[NSMutableArray alloc] init];
     
     bool dispatchBlocked = false;
+    
+    NSMutableDictionary *encryptedActionsByPeerId = [[NSMutableDictionary alloc] init];
+    if (addedEncryptedActionsByPeerId != nil)
+        [encryptedActionsByPeerId addEntriesFromDictionary:addedEncryptedActionsByPeerId];
     
     for (TLUpdate *update in otherUpdates)
     {
@@ -468,6 +475,7 @@ static bool _initialUpdatesScheduled = false;
                 
                 user.firstName = userNameUpdate.first_name;
                 user.lastName = userNameUpdate.last_name;
+                user.userName = userNameUpdate.username;
                 
                 if (![user isEqualToUser:originalUser])
                 {
@@ -525,12 +533,14 @@ static bool _initialUpdatesScheduled = false;
                     [TGDatabaseInstance() setConversationCustomProperty:conversation.conversationId name:murMurHash32(@"a") value:concreteChat.g_a];
                     
                     acceptEncryptedChats.insert(concreteChat.n_id);
+                    updatePeerLayers.insert(conversation.conversationId);
                 }
                 else if ([updateEncryption.chat isKindOfClass:[TLEncryptedChat$encryptedChat class]])
                 {
                     if ([TGDatabaseInstance() loadConversationWithId:conversation.conversationId].encryptedData.handshakeState != 4)
                     {
                         updatedEncryptedChats[@(conversation.conversationId)] = conversation;
+                        updatePeerLayers.insert(conversation.conversationId);
                         
                         TLEncryptedChat$encryptedChat *concreteChat = (TLEncryptedChat$encryptedChat *)updateEncryption.chat;
                         NSData *aBytes = [TGDatabaseInstance() conversationCustomPropertySync:conversation.conversationId name:murMurHash32(@"a")];
@@ -591,22 +601,46 @@ static bool _initialUpdatesScheduled = false;
             TLEncryptedMessage *encryptedMessage = ((TLUpdate$updateNewEncryptedMessage *)update).message;
             
             int64_t conversationId = 0;
-            int32_t fromUid = 0;
-            TLDecryptedMessage *decryptedMessage = [TGUpdateStateRequestBuilder decryptMessageObject:encryptedMessage cachedPeerIds:&cachedPeerIds cachedKeys:&cachedKeys cachedParticipantIds:&cachedParticipantIds outConversationId:&conversationId outFromUid:&fromUid];
-            if (decryptedMessage != nil)
+            int32_t seqIn = 0;
+            int32_t seqOut = 0;
+            NSUInteger decryptedLayer = 1;
+            NSData *decryptedMessageData = [TGUpdateStateRequestBuilder decryptEncryptedMessageData:encryptedMessage decryptedLayer:&decryptedLayer cachedPeerIds:&cachedPeerIds cachedKeys:&cachedKeys cachedParticipantIds:&cachedParticipantIds outConversationId:&conversationId outSeqIn:&seqIn outSeqOut:&seqOut];
+            if (decryptedMessageData != nil)
             {
-                bool decodeMessage = false;
+                NSMutableArray *encryptedActions = encryptedActionsByPeerId[@(conversationId)];
+                if (encryptedActions == nil)
+                {
+                    encryptedActions = [[NSMutableArray alloc] init];
+                    encryptedActionsByPeerId[@(conversationId)] = encryptedActions;
+                }
+                
+                TGStoredIncomingMessageFileInfo *fileInfo = nil;
+                if ([encryptedMessage isKindOfClass:[TLEncryptedMessage$encryptedMessage class]])
+                {
+                    id encryptedFile = ((TLEncryptedMessage$encryptedMessage *)encryptedMessage).file;
+                    if ([encryptedFile isKindOfClass:[TLEncryptedFile$encryptedFile class]])
+                    {
+                        TLEncryptedFile$encryptedFile *concreteFile = encryptedFile;
+                        fileInfo = [[TGStoredIncomingMessageFileInfo alloc] initWithId:concreteFile.n_id accessHash:concreteFile.access_hash size:concreteFile.size datacenterId:concreteFile.dc_id keyFingerprint:concreteFile.key_fingerprint];
+                    }
+                }
+                
+                [encryptedActions addObject:[[TGStoredSecretIncomingActionWithSeq alloc] initWithAction:[[TGStoredIncomingMessageSecretAction alloc] initWithLayer:decryptedLayer data:decryptedMessageData date:encryptedMessage.date fileInfo:fileInfo] seqIn:seqIn seqOut:seqOut layer:decryptedLayer]];
+                
+                /*bool decodeMessage = false;
+                bool decodeMessageWithoutAction = true;
                 bool flushHistory = false;
-                NSDictionary *decryptedAction = [TGUpdateStateRequestBuilder parseDecryptedAction:decryptedMessage conversationId:conversationId decodeMessageWithAction:&decodeMessage flushHistory:&flushHistory];
+                NSDictionary *decryptedAction = [TGUpdateStateRequestBuilder parseDecryptedAction:decryptedMessage conversationId:conversationId decodeMessageWithAction:&decodeMessage flushHistory:&flushHistory decodeMessageWithoutAction:&decodeMessageWithoutAction];
                 if (decryptedAction != nil)
                     [newAddedEncryptedActions addObject:decryptedAction];
                 
-                if (decryptedAction == nil || decodeMessage)
+                if ((decryptedAction == nil || decodeMessage) && decodeMessageWithoutAction)
                 {
                     TGMessage *message = [TGUpdateStateRequestBuilder parseDecryptedMessage:decryptedMessage encryptedMessage:encryptedMessage conversationId:conversationId fromUid:fromUid];
+                    message.layer = decryptedLayer;
                     if (message != nil)
                         [addedMessages addObject:message];
-                }
+                }*/
             }
         }
         else if ([update isKindOfClass:[TLUpdate$updateDcOptions class]])
@@ -723,40 +757,24 @@ static bool _initialUpdatesScheduled = false;
             if (it != readMessageIds.end())
                 message.unread = false;
             
-            /*if (message.cid <= INT_MIN)
-            {
-                auto it = maxReadDateInEncryptedConversation.find(message.cid);
-                if (it != maxReadDateInEncryptedConversation.end() && (int32_t)message.date <= it->second.first)
-                    message.unread = false;
-            }*/
-            
             addedMessageIds.insert(message.mid);
             
             [addedMessages addObject:message];
         }
     }
     
-    for (TGMessage *message in addedParsedMessages)
+    /*for (TGMessage *message in addedParsedMessages)
     {
         if (message.randomId != 0)
         {
             addingRandomIds.insert(message.randomId);
         }
-        
-        /*if (message.cid <= INT_MIN)
-        {
-            auto it = maxReadDateInEncryptedConversation.find(message.cid);
-            if (it != maxReadDateInEncryptedConversation.end() && (int32_t)message.date <= it->second)
-                message.unread = false;
-        }*/
-    }
-    
-    [newAddedEncryptedActions addObjectsFromArray:addedEncryptedActions];
+    }*/
     
     if (!addingRandomIds.empty())
         [TGDatabaseInstance() filterExistingRandomIds:&addingRandomIds];
     
-    for (TGMessage *message in addedParsedMessages)
+    /*for (TGMessage *message in addedParsedMessages)
     {
         if (message != nil && (message.mid != 0 || message.local) && ignoredConversationsForCurrentUser.find(message.cid) == ignoredConversationsForCurrentUser.end())
         {
@@ -774,87 +792,11 @@ static bool _initialUpdatesScheduled = false;
             
             [addedMessages addObject:message];
         }
-    }
+    }*/
     
-    std::map<int64_t, NSMutableDictionary *> secretMessageFlagChangesByPeerId;
-    NSMutableArray *initiateSelfDestructMessageRandomIds = [[NSMutableArray alloc] init];
-    
-    for (NSDictionary *actionDesc in newAddedEncryptedActions)
+    for (int64_t encryptedConversationId : acceptEncryptedChats)
     {
-        NSString *actionType = actionDesc[@"actionType"];
-        if ([actionType isEqualToString:@"viewMessage"])
-        {
-            int64_t randomId = (int64_t)[actionDesc[@"randomId"] longLongValue];
-            [TGDatabaseInstance() raiseSecretMessageFlagsByRandomId:randomId flagsToRise:TGSecretMessageFlagViewed];
-            [initiateSelfDestructMessageRandomIds addObject:@(randomId)];
-            
-            NSNumber *nRandomId = @(randomId);
-            
-            NSMutableDictionary *peerMessageFlagChanges = secretMessageFlagChangesByPeerId[(int64_t)[actionDesc[@"peerId"] longLongValue]];
-            if (peerMessageFlagChanges == nil)
-            {
-                peerMessageFlagChanges = [[NSMutableDictionary alloc] init];
-                secretMessageFlagChangesByPeerId[(int64_t)[actionDesc[@"peerId"] longLongValue]] = peerMessageFlagChanges;
-            }
-            
-            if (peerMessageFlagChanges[nRandomId] == nil)
-                peerMessageFlagChanges[nRandomId] = @(TGSecretMessageFlagViewed);
-            else
-                peerMessageFlagChanges[nRandomId] = @([peerMessageFlagChanges[nRandomId] intValue] | TGSecretMessageFlagViewed);
-        }
-        else if ([actionType isEqualToString:@"screenshotMessage"])
-        {
-            int64_t randomId = (int64_t)[actionDesc[@"randomId"] longLongValue];
-            [TGDatabaseInstance() raiseSecretMessageFlagsByRandomId:randomId flagsToRise:TGSecretMessageFlagScreenshot];
-            
-            NSNumber *nRandomId = @(randomId);
-
-            NSMutableDictionary *peerMessageFlagChanges = secretMessageFlagChangesByPeerId[(int64_t)[actionDesc[@"peerId"] longLongValue]];
-            if (peerMessageFlagChanges == nil)
-            {
-                peerMessageFlagChanges = [[NSMutableDictionary alloc] init];
-                secretMessageFlagChangesByPeerId[(int64_t)[actionDesc[@"peerId"] longLongValue]] = peerMessageFlagChanges;
-            }
-            
-            if (peerMessageFlagChanges[nRandomId] == nil)
-                peerMessageFlagChanges[nRandomId] = @(TGSecretMessageFlagScreenshot);
-            else
-                peerMessageFlagChanges[nRandomId] = @([peerMessageFlagChanges[nRandomId] intValue] | TGSecretMessageFlagScreenshot);
-        }
-        else if ([actionType isEqualToString:@"deleteMessages"])
-        {
-            std::map<int64_t, int32_t> mapping;
-            [TGDatabaseInstance() messageIdsForRandomIds:actionDesc[@"randomIds"] mapping:&mapping];
-            
-            for (auto it : mapping)
-            {
-                deleteMessageIds.insert(it.second);
-            }
-            
-            for (NSNumber *nRandomId in actionDesc[@"randomIds"])
-            {
-                int64_t randomId = [nRandomId longLongValue];
-                int index = -1;
-                for (TGMessage *message in addedMessages)
-                {
-                    index++;
-                    if (message.randomId == randomId)
-                    {
-                        [addedMessages removeObjectAtIndex:index];
-                        
-                        break;
-                    }
-                }
-            }
-        }
-        else if ([actionType isEqualToString:@"flushHistory"])
-        {
-            NSArray *messageIds = [TGDatabaseInstance() messageIdsInConversation:[actionDesc[@"peerId"] longLongValue]];
-            for (NSNumber *nMid in messageIds)
-            {
-                deleteMessageIds.insert([nMid intValue]);
-            }
-        }
+        [TGDatabaseInstance() storeFutureActions:@[[[TGAcceptEncryptionFutureAction alloc] initWithEncryptedConversationId:encryptedConversationId]]];
     }
     
     if (!messageIdUpdates.empty())
@@ -945,63 +887,48 @@ static bool _initialUpdatesScheduled = false;
         [[[TGConversationAddMessagesActor alloc] initWithPath:[NSString stringWithFormat:@"/tg/addmessage/(%dcf)", messageActionId++]] execute:[NSDictionary dictionaryWithObjectsAndKeys:updatedEncryptedChats, @"chats", nil]];
     }
     
+    /*if (!peerLayerUpdates.empty())
+    {
+        NSMutableArray *futureActions = [[NSMutableArray alloc] init];
+        
+        for (auto it : peerLayerUpdates)
+        {
+            if ([TGDatabaseInstance() peerLayer:it.first] < it.second)
+            {
+                int64_t randomId = 0;
+                arc4random_buf(&randomId, 8);
+                [futureActions addObject:[[TGUpdatePeerLayerFutureAction alloc] initWithEncryptedConversationId:[TGDatabaseInstance() encryptedConversationIdForPeerId:it.first] messageRandomId:randomId]];
+                
+                [TGDatabaseInstance() setPeerLayer:it.first layer:it.second];
+                
+                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/peerLayerUpdates/(%" PRId64 ")", it.first] resource:@{@"layer": @(it.second)}];
+            }
+        }
+        
+        [TGDatabaseInstance() storeFutureActions:futureActions];
+    }*/
+    
+    if (!updatePeerLayers.empty())
+    {
+        NSMutableArray *futureActions = [[NSMutableArray alloc] init];
+        
+        for (int64_t peerId : updatePeerLayers)
+        {
+            int64_t randomId = 0;
+            arc4random_buf(&randomId, 8);
+            [futureActions addObject:[[TGUpdatePeerLayerFutureAction alloc] initWithEncryptedConversationId:[TGDatabaseInstance() encryptedConversationIdForPeerId:peerId] messageRandomId:randomId]];
+        }
+        
+        [TGDatabaseInstance() storeFutureActions:futureActions];
+    }
+    
     if (addedMessages.count != 0)
     {
         [[[TGConversationAddMessagesActor alloc] initWithPath:[NSString stringWithFormat:@"/tg/addmessage/(%dcf)", messageActionId++]] execute:[NSDictionary dictionaryWithObjectsAndKeys:addedMessages, @"messages", chatItems, @"chats", nil]];
     }
     
-    if (!secretMessageFlagChangesByPeerId.empty())
-    {
-        auto pSecretMessageFlagChangesByPeerId = &secretMessageFlagChangesByPeerId;
-        
-        std::map<int64_t, NSMutableDictionary *> secretMessageFlagChangesByPeerIdWithMessageIds;
-        auto pSecretMessageFlagChangesByPeerIdWithMessageIds = &secretMessageFlagChangesByPeerIdWithMessageIds;
-        
-        [TGDatabaseInstance() dispatchOnDatabaseThread:^
-        {
-            for (auto it = pSecretMessageFlagChangesByPeerId->begin(); it != pSecretMessageFlagChangesByPeerId->end(); it++)
-            {
-                [it->second enumerateKeysAndObjectsUsingBlock:^(NSNumber *nRandomId, NSNumber *nFlags, __unused BOOL *stop)
-                {
-                    int32_t messageId = [TGDatabaseInstance() messageIdForRandomId:(int64_t)[nRandomId longLongValue]];
-                    if (messageId != 0)
-                    {
-                        NSMutableDictionary *peerMessageFlagsByMessageId = (*pSecretMessageFlagChangesByPeerIdWithMessageIds)[it->first];
-                        if (peerMessageFlagsByMessageId == nil)
-                        {
-                            peerMessageFlagsByMessageId = [[NSMutableDictionary alloc] init];
-                            (*pSecretMessageFlagChangesByPeerIdWithMessageIds)[it->first] = peerMessageFlagsByMessageId;
-                        }
-                        
-                        peerMessageFlagsByMessageId[@(messageId)] = nFlags;
-                    }
-                }];
-            };
-        } synchronous:true];
-        
-        for (auto it = secretMessageFlagChangesByPeerIdWithMessageIds.begin(); it != secretMessageFlagChangesByPeerIdWithMessageIds.end(); it++)
-        {
-            if (it->second.count != 0)
-            {
-                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/messageFlagChanges", it->first] resource:it->second];
-            }
-        }
-    }
-    
-    if (initiateSelfDestructMessageRandomIds.count != 0)
-    {
-        [TGDatabaseInstance() dispatchOnDatabaseThread:^
-        {
-            std::map<int64_t, int32_t> randomIdToMessageIdMap;
-            [TGDatabaseInstance() messageIdsForRandomIds:initiateSelfDestructMessageRandomIds mapping:&randomIdToMessageIdMap];
-            NSMutableArray *messageIds = [[NSMutableArray alloc] init];
-            for (auto it : randomIdToMessageIdMap)
-            {
-                [messageIds addObject:@(it.second)];
-            }
-            [TGDatabaseInstance() initiateSelfDestructForMessageIds:messageIds];
-        } synchronous:false];
-    }
+    if (encryptedActionsByPeerId.count != 0)
+        [TGModernSendSecretMessageActor enqueueIncomingMessagesByPeerId:encryptedActionsByPeerId];
     
     static int readMessagesCounter = 0;
     NSMutableArray *readMessageIdsArray = [[NSMutableArray alloc] initWithCapacity:readMessageIds.size()];
@@ -1111,12 +1038,7 @@ static bool _initialUpdatesScheduled = false;
         }
     }
     
-    for (int64_t encryptedConversationId : acceptEncryptedChats)
-    {
-        [TGDatabaseInstance() storeFutureActions:@[[[TGAcceptEncryptionFutureAction alloc] initWithEncryptedConversationId:encryptedConversationId]]];
-    }
-    
-    if (!acceptEncryptedChats.empty())
+    if (!acceptEncryptedChats.empty() || !updatePeerLayers.empty())
         [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
     
     for (id update in userTypingUpdates)
@@ -1155,12 +1077,22 @@ static bool _initialUpdatesScheduled = false;
             TLUpdate$updateChatUserTyping *userTyping = (TLUpdate$updateChatUserTyping *)update;
             
             NSString *activity = @"typing";
-            if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordAudioAction class]])
-                activity = @"recordingAudio";
-            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordVideoAction class]])
+            if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordVideoAction class]])
                 activity = @"recordingVideo";
+            if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadVideoAction class]])
+                activity = @"uploadingVideo";
+            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageRecordAudioAction class]])
+                activity = @"recordingAudio";
+            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadAudioAction class]])
+                activity = @"uploadingAudio";
+            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadPhotoAction class]])
+                activity = @"uploadingPhoto";
+            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageUploadDocumentAction class]])
+                activity = @"uploadingDocument";
             else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageGeoLocationAction class]])
                 activity = @"pickingLocation";
+            else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageChooseContactAction class]])
+                activity = @"choosingContact";
             else if ([userTyping.action isKindOfClass:[TLSendMessageAction$sendMessageCancelAction class]])
                 activity = nil;
             
@@ -1270,14 +1202,11 @@ static bool _initialUpdatesScheduled = false;
     if ([difference isKindOfClass:[TLupdates_Difference$updates_difference class]] || [difference isKindOfClass:[TLupdates_Difference$updates_differenceSlice class]])
     {
         NSArray *newMessages = ((TLupdates_Difference$updates_difference *)difference).n_new_messages;
-        NSMutableArray *newEncryptedMessages = nil;
-        NSMutableArray *newEncryptedActions = nil;
+        
+        NSMutableDictionary *encryptedActionsByPeerId = [[NSMutableDictionary alloc] init];
         
         if (((TLupdates_Difference$updates_difference *)difference).n_new_encrypted_messages.count != 0)
         {
-            newEncryptedMessages = [[NSMutableArray alloc] initWithCapacity:((TLupdates_Difference$updates_difference *)difference).n_new_encrypted_messages.count];
-            newEncryptedActions = [[NSMutableArray alloc] init];
-            
             std::map<int64_t, int64_t> cachedPeerIds;
             std::map<int64_t, std::pair<int64_t, NSData *> > cachedKeys;
             std::map<int64_t, int32_t> cachedParticipantIds;
@@ -1285,26 +1214,32 @@ static bool _initialUpdatesScheduled = false;
             for (TLEncryptedMessage *encryptedMessage in ((TLupdates_Difference$updates_difference *)difference).n_new_encrypted_messages)
             {
                 int64_t conversationId = 0;
-                int32_t fromUid = 0;
-                TLDecryptedMessage *decryptedMessage = [TGUpdateStateRequestBuilder decryptMessageObject:encryptedMessage cachedPeerIds:&cachedPeerIds cachedKeys:&cachedKeys cachedParticipantIds:&cachedParticipantIds outConversationId:&conversationId outFromUid:&fromUid];
-                if (decryptedMessage != nil)
+                int32_t seqIn = 0;
+                int32_t seqOut = 0;
+                NSUInteger decryptedLayer = 1;
+                
+                NSData *decryptedMessageData = [TGUpdateStateRequestBuilder decryptEncryptedMessageData:encryptedMessage decryptedLayer:&decryptedLayer cachedPeerIds:&cachedPeerIds cachedKeys:&cachedKeys cachedParticipantIds:&cachedParticipantIds outConversationId:&conversationId outSeqIn:&seqIn outSeqOut:&seqOut];
+                if (decryptedMessageData != nil)
                 {
-                    bool decodeMessage = false;
-                    bool flushHistory = false;
-                    NSDictionary *decryptedAction = [TGUpdateStateRequestBuilder parseDecryptedAction:decryptedMessage conversationId:conversationId decodeMessageWithAction:&decodeMessage flushHistory:&flushHistory];
-                    
-                    if (flushHistory)
-                        [newEncryptedMessages removeAllObjects];
-                    
-                    if (decryptedAction != nil)
-                        [newEncryptedActions addObject:decryptedAction];
-                    
-                    if (decryptedAction == nil || decodeMessage)
+                    NSMutableArray *encryptedActions = encryptedActionsByPeerId[@(conversationId)];
+                    if (encryptedActions == nil)
                     {
-                        TGMessage *message = [TGUpdateStateRequestBuilder parseDecryptedMessage:decryptedMessage encryptedMessage:encryptedMessage conversationId:conversationId fromUid:fromUid];
-                        if (message != nil)
-                            [newEncryptedMessages addObject:message];
+                        encryptedActions = [[NSMutableArray alloc] init];
+                        encryptedActionsByPeerId[@(conversationId)] = encryptedActions;
                     }
+                    
+                    TGStoredIncomingMessageFileInfo *fileInfo = nil;
+                    if ([encryptedMessage isKindOfClass:[TLEncryptedMessage$encryptedMessage class]])
+                    {
+                        id encryptedFile = ((TLEncryptedMessage$encryptedMessage *)encryptedMessage).file;
+                        if ([encryptedFile isKindOfClass:[TLEncryptedFile$encryptedFile class]])
+                        {
+                            TLEncryptedFile$encryptedFile *concreteFile = encryptedFile;
+                            fileInfo = [[TGStoredIncomingMessageFileInfo alloc] initWithId:concreteFile.n_id accessHash:concreteFile.access_hash size:concreteFile.size datacenterId:concreteFile.dc_id keyFingerprint:concreteFile.key_fingerprint];
+                        }
+                    }
+                    
+                    [encryptedActions addObject:[[TGStoredSecretIncomingActionWithSeq alloc] initWithAction:[[TGStoredIncomingMessageSecretAction alloc] initWithLayer:decryptedLayer data:decryptedMessageData date:encryptedMessage.date fileInfo:fileInfo] seqIn:seqIn seqOut:seqOut layer:decryptedLayer]];
                 }
             }
         }
@@ -1313,7 +1248,7 @@ static bool _initialUpdatesScheduled = false;
         NSArray *usersDesc = ((TLupdates_Difference$updates_difference *)difference).users;
         NSArray *chatsDesc = ((TLupdates_Difference$updates_difference *)difference).chats;
         
-        [TGUpdateStateRequestBuilder applyUpdates:newMessages addedParsedMessages:newEncryptedMessages otherUpdates:otherUpdates addedEncryptedActions:newEncryptedActions usersDesc:usersDesc chatsDesc:chatsDesc chatParticipantsDesc:nil updatesWithDates:nil];
+        [TGUpdateStateRequestBuilder applyUpdates:newMessages otherUpdates:otherUpdates usersDesc:usersDesc chatsDesc:chatsDesc chatParticipantsDesc:nil updatesWithDates:nil addedEncryptedActionsByPeerId:encryptedActionsByPeerId];
     }
     
     static int applyStateCounter = 0;
@@ -1454,73 +1389,7 @@ static bool _initialUpdatesScheduled = false;
     [super cancel];
 }
 
-+ (TGMessage *)parseDecryptedMessage:(TLDecryptedMessage *)decryptedMessage encryptedMessage:(TLEncryptedMessage *)encryptedMessage conversationId:(int64_t)conversationId fromUid:(int32_t)fromUid
-{
-    TLEncryptedFile *encryptedFile = nil;
-    if ([encryptedMessage isKindOfClass:[TLEncryptedMessage$encryptedMessage class]])
-        encryptedFile = ((TLEncryptedMessage$encryptedMessage *)encryptedMessage).file;
-    
-    TGMessage *message = [[TGMessage alloc] initWithTelegraphDecryptedMessageDesc:decryptedMessage encryptedFile:encryptedFile conversationId:conversationId fromUid:fromUid date:encryptedMessage.date];
-    message.mid = INT_MIN;
-    
-    return message;
-}
-
-+ (NSDictionary *)parseDecryptedAction:(TLDecryptedMessage *)decryptedMessage conversationId:(int64_t)conversationId decodeMessageWithAction:(bool *)decodeMessageWithAction flushHistory:(bool *)flushHistory
-{
-    if ([decryptedMessage isKindOfClass:[TLDecryptedMessage$decryptedMessageService class]])
-    {
-        TLDecryptedMessageAction *action = ((TLDecryptedMessage$decryptedMessageService *)decryptedMessage).action;
-        
-        if ([action isKindOfClass:[TLDecryptedMessageAction$decryptedMessageActionViewMessage class]])
-        {
-            TLDecryptedMessageAction$decryptedMessageActionViewMessage *concreteAction = (TLDecryptedMessageAction$decryptedMessageActionViewMessage *)action;
-            
-            return @{
-                @"peerId": @(conversationId),
-                @"actionType": @"viewMessage",
-                @"randomId": @(concreteAction.random_id)
-            };
-        }
-        else if ([action isKindOfClass:[TLDecryptedMessageAction$decryptedMessageActionScreenshotMessage class]])
-        {
-            TLDecryptedMessageAction$decryptedMessageActionScreenshotMessage *concreteAction = (TLDecryptedMessageAction$decryptedMessageActionScreenshotMessage *)action;
-            
-            if (decodeMessageWithAction != NULL)
-                *decodeMessageWithAction = true;
-            
-            return @{
-                @"peerId": @(conversationId),
-                @"actionType": @"screenshotMessage",
-                @"randomId": @(concreteAction.random_id)
-            };
-        }
-        else if ([action isKindOfClass:[TLDecryptedMessageAction$decryptedMessageActionDeleteMessages class]])
-        {
-            TLDecryptedMessageAction$decryptedMessageActionDeleteMessages *concreteAction = (TLDecryptedMessageAction$decryptedMessageActionDeleteMessages *)action;
-
-            return @{
-                @"peerId": @(conversationId),
-                @"actionType": @"deleteMessages",
-                @"randomIds": concreteAction.random_ids == nil ? @[] : concreteAction.random_ids
-            };
-        }
-        else if ([action isKindOfClass:[TLDecryptedMessageAction$decryptedMessageActionFlushHistory class]])
-        {
-            if (flushHistory != NULL)
-                *flushHistory = true;
-            
-            return @{
-                @"peerId": @(conversationId),
-                @"actionType": @"flushHistory"
-            };
-        }
-    }
-    
-    return nil;
-}
-
-+ (TLDecryptedMessage *)decryptMessageObject:(TLEncryptedMessage *)encryptedMessage cachedPeerIds:(std::map<int64_t, int64_t> *)cachedPeerIds cachedKeys:(std::map<int64_t, std::pair<int64_t, NSData *> > *)cachedKeys cachedParticipantIds:(std::map<int64_t, int> *)cachedParticipantIds outConversationId:(int64_t *)outConversationId outFromUid:(int32_t *)outFromUid
++ (NSData *)decryptEncryptedMessageData:(TLEncryptedMessage *)encryptedMessage decryptedLayer:(NSUInteger *)decryptedLayer cachedPeerIds:(std::map<int64_t, int64_t> *)cachedPeerIds cachedKeys:(std::map<int64_t, std::pair<int64_t, NSData *> > *)cachedKeys cachedParticipantIds:(std::map<int64_t, int> *)cachedParticipantIds outConversationId:(int64_t *)outConversationId outSeqIn:(int32_t *)outSeqIn outSeqOut:(int32_t *)outSeqOut
 {
     int64_t conversationId = 0;
     bool peerFound = false;
@@ -1596,53 +1465,110 @@ static bool _initialUpdatesScheduled = false;
                     TGLog(@"***** Ignoring message from conversation with message key mismatch %lld", encryptedMessage.chat_id);
                 else
                 {
-                    NSInputStream *is = [[NSInputStream alloc] initWithData:messageData];
-                    [is open];
-                    [is readInt32];
+                    NSData *messageContentData = [messageData subdataWithRange:NSMakeRange(4, messageData.length - 4)];
                     
-                    int32_t signature = [is readInt32];
-                    id decryptedObject = TLMetaClassStore::constructObject(is, signature, nil, nil, nil);
-                    
-                    [is close];
-                    
-                    if ([decryptedObject isKindOfClass:[TLDecryptedMessage$decryptedMessage class]] || [decryptedObject isKindOfClass:[TLDecryptedMessage$decryptedMessageService class]])
+                    if (messageContentData.length >= 4)
                     {
-                        int fromUid = 0;
-                        bool fromFound = false;
-                        
-                        if (cachedParticipantIds != NULL)
+                        NSUInteger layer = 1;
+                        int32_t seqIn = 0;
+                        int32_t seqOut = 0;
+                        int32_t possibleLayerSignature = 0;
+                        [messageContentData getBytes:&possibleLayerSignature length:4];
+                        if (possibleLayerSignature == (int32_t)0x1be31789)
                         {
-                            auto it = cachedParticipantIds->find(encryptedMessage.chat_id);
-                            if (it != cachedParticipantIds->end())
+                            if (messageContentData.length >= 4 + 1)
                             {
-                                fromFound = true;
-                                fromUid = it->second;
+                                uint8_t randomBytesLength = 0;
+                                [messageContentData getBytes:&randomBytesLength range:NSMakeRange(4, 1)];
+                                while ((randomBytesLength + 1) % 4 != 0)
+                                {
+                                    randomBytesLength++;
+                                }
+                                
+                                if (messageContentData.length >= 4 + 1 + randomBytesLength + 4 + 4 + 4)
+                                {
+                                    int32_t value = 0;
+                                    [messageContentData getBytes:&value range:NSMakeRange(4 + 1 + randomBytesLength, 4)];
+                                    layer = value;
+                                    
+                                    [messageContentData getBytes:&value range:NSMakeRange(4 + 1 + randomBytesLength + 4, 4)];
+                                    if (outSeqIn)
+                                        *outSeqIn = value / 2;
+                                    seqIn = value;
+                                    
+                                    [messageContentData getBytes:&value range:NSMakeRange(4 + 1 + randomBytesLength + 4 + 4, 4)];
+                                    if (outSeqOut)
+                                        *outSeqOut = value / 2;
+                                    seqOut = value;
+                                }
                             }
                         }
                         
-                        if (!fromFound)
-                        {
-                            fromUid = [TGDatabaseInstance() encryptedParticipantIdForConversationId:conversationId];
-                            
-                            if (cachedParticipantIds != NULL)
-                                (*cachedParticipantIds)[encryptedMessage.chat_id] = fromUid;
-                        }
+                        if (decryptedLayer)
+                            *decryptedLayer = layer;
                         
-                        if (fromUid != 0)
+                        if (layer >= 17)
                         {
-                            if (outConversationId != NULL)
-                                *outConversationId = conversationId;
-                            
-                            if (outFromUid != NULL)
-                                *outFromUid = fromUid;
-                            
-                            return decryptedObject;
+                            bool isCreator = [TGDatabaseInstance() encryptedConversationIsCreator:conversationId];
+                            if (isCreator)
+                            {
+                                if ((seqIn & 1) == 0)
+                                {
+                                    TGLog(@"***** Ignoring message from conversation %lld with seq_in %d", encryptedMessage.chat_id, seqIn);
+                                    return nil;
+                                }
+                                if (seqOut & 1)
+                                {
+                                    TGLog(@"***** Ignoring message from conversation %lld with seq_out %d", encryptedMessage.chat_id, seqOut);
+                                    return nil;
+                                }
+                            }
+                            else
+                            {
+                                if (seqIn & 1)
+                                {
+                                    TGLog(@"***** Ignoring message from conversation %lld with seq_in %d", encryptedMessage.chat_id, seqIn);
+                                    return nil;
+                                }
+                                if ((seqOut & 1) == 0)
+                                {
+                                    TGLog(@"***** Ignoring message from conversation %lld with seq_out %d", encryptedMessage.chat_id, seqOut);
+                                    return nil;
+                                }
+                            }
                         }
-                        else
-                            TGLog(@"***** Couldn't find participant uid for conversation %lld", encryptedMessage.chat_id);
+                    }
+                    
+                    int fromUid = 0;
+                    bool fromFound = false;
+                    
+                    if (cachedParticipantIds != NULL)
+                    {
+                        auto it = cachedParticipantIds->find(encryptedMessage.chat_id);
+                        if (it != cachedParticipantIds->end())
+                        {
+                            fromFound = true;
+                            fromUid = it->second;
+                        }
+                    }
+                    
+                    if (!fromFound)
+                    {
+                        fromUid = [TGDatabaseInstance() encryptedParticipantIdForConversationId:conversationId];
+                        
+                        if (cachedParticipantIds != NULL)
+                            (*cachedParticipantIds)[encryptedMessage.chat_id] = fromUid;
+                    }
+                    
+                    if (fromUid != 0)
+                    {
+                        if (outConversationId != NULL)
+                            *outConversationId = conversationId;
+                        
+                        return messageContentData;
                     }
                     else
-                        TGLog(@"***** Ignoring unknown decrypted object %@", decryptedObject);
+                        TGLog(@"***** Couldn't find participant uid for conversation %lld", encryptedMessage.chat_id);
                 }
             }
         }

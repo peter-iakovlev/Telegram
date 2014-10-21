@@ -41,7 +41,8 @@ typedef enum {
     TGUserFieldPhotoUrlMedium = 512,
     TGUserFieldPhotoUrlBig = 1024,
     TGUserFieldPresenceLastSeen = 2048,
-    TGUserFieldPresenceOnline = 4096
+    TGUserFieldPresenceOnline = 4096,
+    TGUserFieldUsername = 8192
 } TGUserFields;
 
 #define TGUserFieldsAllButPresenceMask (TGUserFieldUid | TGUserFieldPhoneNumber | TGUserFieldPhoneNumberHash | TGUserFieldFirstName| TGUserFieldLastName | TGUserFieldPhonebookFirstName | TGUserFieldPhonebookLastName | TGUserFieldSex | TGUserFieldPhotoUrlSmall | TGUserFieldPhotoUrlMedium | TGUserFieldPhotoUrlBig)
@@ -53,6 +54,7 @@ typedef enum {
 @property (nonatomic) int64_t phoneNumberHash;
 @property (nonatomic, strong) NSString *firstName;
 @property (nonatomic, strong) NSString *lastName;
+@property (nonatomic, strong) NSString *userName;
 @property (nonatomic, strong) NSString *phonebookFirstName;
 @property (nonatomic, strong) NSString *phonebookLastName;
 @property (nonatomic) TGUserSex sex;

@@ -97,6 +97,7 @@ typedef enum {
     TG_SYNCHRONIZED_DEFINE(_processingDownloadMids);
     
     id _dynamicTypeObserver;
+    NSUInteger _layer;
 }
 
 @end
@@ -191,6 +192,18 @@ typedef enum {
 - (int)messageLifetime
 {
     return 0;
+}
+
+- (NSUInteger)layer
+{
+    if (_layer < 1)
+        return 1;
+    return _layer;
+}
+
+- (void)setLayer:(NSUInteger)layer
+{
+    _layer = layer;
 }
 
 - (NSDictionary *)_optionsForMessageActions
@@ -994,14 +1007,22 @@ typedef enum {
     NSMutableArray *preparedMessages = [[NSMutableArray alloc] init];
     
     if (text.length <= messagePartLimit)
-        [preparedMessages addObject:[[TGPreparedTextMessage alloc] initWithText:text]];
+    {
+        TGPreparedTextMessage *preparedMessage = [[TGPreparedTextMessage alloc] initWithText:text];
+        preparedMessage.messageLifetime = [self messageLifetime];
+        [preparedMessages addObject:preparedMessage];
+    }
     else
     {
         for (NSUInteger i = 0; i < text.length; i += messagePartLimit)
         {
             NSString *substring = [text substringWithRange:NSMakeRange(i, MIN(messagePartLimit, text.length - i))];
             if (substring.length != 0)
-                [preparedMessages addObject:[[TGPreparedTextMessage alloc] initWithText:substring]];
+            {
+                TGPreparedTextMessage *preparedMessage = [[TGPreparedTextMessage alloc] initWithText:substring];
+                preparedMessage.messageLifetime = [self messageLifetime];
+                [preparedMessages addObject:preparedMessage];
+            }
         }
     }
     
@@ -1020,7 +1041,9 @@ typedef enum {
 {
     [TGModernConversationCompanion dispatchOnMessageQueue:^
     {
-        [self _sendPreparedMessages:@[[[TGPreparedMapMessage alloc] initWithLatitude:latitude longitude:longitude]] automaticallyAddToList:true withIntent:TGSendMessageIntentOther];
+        TGPreparedMapMessage *preparedMessage = [[TGPreparedMapMessage alloc] initWithLatitude:latitude longitude:longitude];
+        preparedMessage.messageLifetime = [self messageLifetime];
+        [self _sendPreparedMessages:@[preparedMessage] automaticallyAddToList:true withIntent:TGSendMessageIntentOther];
     }];
 }
 
@@ -1069,7 +1092,7 @@ typedef enum {
         CGSize thumbnailSize = TGFitSize(originalSize, CGSizeMake(90, 90));
         
         UIImage *fullImage = TGScaleImageToPixelSize(image, imageSize);
-        NSData *imageData = UIImageJPEGRepresentation(fullImage, 0.8f);
+        NSData *imageData = UIImageJPEGRepresentation(fullImage, 0.54f);
         
         UIImage *previewImage = TGScaleImageToPixelSize(fullImage, TGFitSize(originalSize, [TGGenericModernConversationCompanion preferredInlineThumbnailSize]));
         NSData *thumbnailData = UIImageJPEGRepresentation(previewImage, 0.9f);
@@ -1618,6 +1641,7 @@ typedef enum {
         if (message.text.length != 0)
         {
             TGPreparedTextMessage *textMessage = [[TGPreparedTextMessage alloc] initWithText:message.text];
+            textMessage.messageLifetime = [self messageLifetime];
             if (!copyAssetsData)
                 textMessage.replacingMid = message.mid;
             [preparedMessages addObject:textMessage];
@@ -1720,6 +1744,19 @@ typedef enum {
     
     for (TGPreparedMessage *preparedMessage in preparedMessages)
     {
+        int32_t minLifetime = 0;
+        
+        if ([preparedMessage isKindOfClass:[TGPreparedLocalAudioMessage class]])
+            minLifetime = ((TGPreparedLocalAudioMessage *)preparedMessage).duration;
+        else if ([preparedMessage isKindOfClass:[TGPreparedRemoteAudioMessage class]])
+            minLifetime = ((TGPreparedRemoteAudioMessage *)preparedMessage).duration;
+        else if ([preparedMessage isKindOfClass:[TGPreparedLocalVideoMessage class]])
+            minLifetime = (int32_t)((TGPreparedLocalVideoMessage *)preparedMessage).duration;
+        else if ([preparedMessage isKindOfClass:[TGPreparedRemoteVideoMessage class]])
+            minLifetime = (int32_t)((TGPreparedRemoteVideoMessage *)preparedMessage).duration;
+        
+        preparedMessage.messageLifetime = MAX([self messageLifetime], minLifetime);
+        
         if (preparedMessage.randomId == 0)
         {
             int64_t randomId = 0;
@@ -1739,7 +1776,7 @@ typedef enum {
             continue;
         }
         
-        message.messageLifetime = [self messageLifetime];
+        message.layer = [self layer];
         
         message.outgoing = true;
         message.unread = true;

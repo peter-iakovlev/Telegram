@@ -1157,6 +1157,9 @@ static std::set<int> autorotationLockIds;
 
 - (void)presentViewController:(UIViewController *)viewControllerToPresent animated:(BOOL)flag completion:(void (^)())completion
 {
+    if (TGIsPad())
+        viewControllerToPresent.preferredContentSize = [self.navigationController preferredContentSize];
+    
     if (iosMajorVersion() >= 8 && self.presentedViewController != nil && [self.presentedViewController isKindOfClass:[UIAlertController class]])
     {
         dispatch_async(dispatch_get_main_queue(), ^

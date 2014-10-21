@@ -55,6 +55,7 @@
     if (self != nil)
     {
         self.automaticallyManageScrollViewInsets = false;
+        self.autoManageStatusBarBackground = false;
         _lastReportedFocusedIndex = NSNotFound;
         _statusBarStyle = UIStatusBarStyleLightContent;
         _animateTransition = true;
@@ -84,12 +85,12 @@
 
 - (BOOL)shouldAutorotate
 {
-    return [super shouldAutorotate] && [_view shouldAutorotate];
+    return [super shouldAutorotate] && (_view == nil || [_view shouldAutorotate]);
 }
 
 - (void)dismissWhenReady
 {
-    for (TGModernGalleryItemView *itemView in _visibleItemViews)
+    /*for (TGModernGalleryItemView *itemView in _visibleItemViews)
     {
         if (itemView.index == [self currentItemIndex])
         {
@@ -98,9 +99,16 @@
             
             return;
         }
-    }
+    }*/
     
     [self dismiss];
+}
+
+- (bool)isFullyOpaque
+{
+    CGFloat alpha = 0.0f;
+    [_view.backgroundColor getWhite:NULL alpha:&alpha];
+    return alpha >= 1.0f - FLT_EPSILON;
 }
 
 - (void)setModel:(TGModernGalleryModel *)model
@@ -134,6 +142,12 @@
         {
             __strong TGModernGalleryController *strongSelf = weakSelf;
             return strongSelf;
+        };
+        
+        _model.visibleItems = ^NSArray *()
+        {
+            __strong TGModernGalleryController *strongSelf = weakSelf;
+            return [strongSelf visibleItems];
         };
         
         _model.dismiss = ^(bool animated, bool asModal)
@@ -268,6 +282,8 @@
 {
     _showInterface = showInterface;
     
+    _view.userInteractionEnabled = showInterface;
+    
     _statusBarStyle = _showInterface ? UIStatusBarStyleLightContent : UIStatusBarStyleDefault;
 }
 
@@ -291,6 +307,8 @@
     
     _view.scrollView.scrollDelegate = self;
     _view.scrollView.delegate = self;
+    
+    _view.userInteractionEnabled = _showInterface;
     
     __weak TGModernGalleryController *weakSelf = self;
     _view.transitionOut = ^bool (CGFloat velocity)
@@ -389,8 +407,10 @@
             }
         }
         
-        if (transitionInFromView != nil && transitionInToView != nil)
+        if (transitionInFromView != nil && transitionInToView != nil && transitionInToView.frame.size.width > FLT_EPSILON && transitionInToView.frame.size.height > FLT_EPSILON && transitionInToViewContentRect.size.width > FLT_EPSILON && transitionInToViewContentRect.size.height > FLT_EPSILON)
+        {
             [self animateTransitionInFromView:transitionInFromView toView:transitionInToView toViewContentRect:transitionInToViewContentRect];
+        }
         else if (_finishedTransitionIn && _model.focusItem != nil)
         {
             TGModernGalleryItemView *itemView = nil;
@@ -790,6 +810,19 @@ static CGFloat transformRotation(CGAffineTransform transform)
         return 0.0f;
     
     return CGFloor((_view.scrollView.bounds.origin.x + _view.scrollView.bounds.size.width / 2.0f) / _view.scrollView.bounds.size.width);
+}
+
+- (NSArray *)visibleItems
+{
+    NSMutableArray *items = [[NSMutableArray alloc] init];
+    
+    for (TGModernGalleryItemView *itemView in _visibleItemViews)
+    {
+        if (itemView.item != nil)
+            [items addObject:itemView.item];
+    }
+    
+    return items;
 }
 
 - (void)reloadDataAtItem:(id<TGModernGalleryItem>)atItem synchronously:(bool)synchronously

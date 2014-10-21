@@ -27,7 +27,7 @@
 + (bool)ignoringConversationId:(int64_t)conversationId;
 + (void)removeIgnoreConversationId:(int64_t)conversationId;
 
-+ (bool)applyUpdates:(NSArray *)addedMessagesDesc addedParsedMessages:(NSArray *)addedParsedMessages otherUpdates:(NSArray *)otherUpdates addedEncryptedActions:(NSArray *)addedEncryptedActions usersDesc:(NSArray *)usersDesc chatsDesc:(NSArray *)chatsDesc chatParticipantsDesc:(NSArray *)chatParticipantsDesc updatesWithDates:(NSArray *)updatesWithDates;
++ (bool)applyUpdates:(NSArray *)addedMessagesDesc otherUpdates:(NSArray *)otherUpdates usersDesc:(NSArray *)usersDesc chatsDesc:(NSArray *)chatsDesc chatParticipantsDesc:(NSArray *)chatParticipantsDesc updatesWithDates:(NSArray *)updatesWithDates addedEncryptedActionsByPeerId:(NSDictionary *)addedEncryptedActionsByPeerId;
 + (void)processDelayedMessagesInConversation:(int64_t)conversationId completedPath:(NSString *)path;
 
 - (void)stateDeltaRequestSuccess:(TLupdates_Difference *)difference;

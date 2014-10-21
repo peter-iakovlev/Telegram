@@ -38,9 +38,17 @@
 {
     _seconds = seconds;
     
-    NSArray *components = [TGStringUtils stringComponentsForMessageTimerSeconds:seconds];
-    _numberLabel.text = components[0];
-    _unitLabel.text = components[1];
+    if (_seconds == 0)
+    {
+        _numberLabel.text = TGLocalized(@"Profile.MessageLifetimeForever");
+        _unitLabel.text = @"";
+    }
+    else
+    {
+        NSArray *components = [TGStringUtils stringComponentsForMessageTimerSeconds:seconds];
+        _numberLabel.text = components[0];
+        _unitLabel.text = components[1];
+    }
     
     [self setNeedsLayout];
 }
@@ -52,8 +60,15 @@
     [_numberLabel sizeToFit];
     [_unitLabel sizeToFit];
     
-    _numberLabel.frame = (CGRect){{self.frame.size.width / 2.0f - 20.0f - _numberLabel.frame.size.width, CGFloor((self.frame.size.height - _numberLabel.frame.size.height) / 2.0f)}, _numberLabel.frame.size};
-    _unitLabel.frame = (CGRect){{self.frame.size.width / 2.0f - 12.0f, CGFloor((self.frame.size.height - _unitLabel.frame.size.height) / 2.0f) + 2.0f}, _unitLabel.frame.size};
+    if (_unitLabel.text.length > 0)
+    {
+        _numberLabel.frame = (CGRect){{self.frame.size.width / 2.0f - 20.0f - _numberLabel.frame.size.width, CGFloor((self.frame.size.height - _numberLabel.frame.size.height) / 2.0f)}, _numberLabel.frame.size};
+        _unitLabel.frame = (CGRect){{self.frame.size.width / 2.0f - 12.0f, CGFloor((self.frame.size.height - _unitLabel.frame.size.height) / 2.0f) + 2.0f}, _unitLabel.frame.size};
+    }
+    else
+    {
+        _numberLabel.frame = (CGRect){{CGFloor((self.frame.size.width - _numberLabel.frame.size.width) / 2.0f), CGFloor((self.frame.size.height - _numberLabel.frame.size.height) / 2.0f)}, _numberLabel.frame.size};
+    }
 }
 
 @end

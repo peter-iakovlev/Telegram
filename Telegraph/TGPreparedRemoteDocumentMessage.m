@@ -38,6 +38,7 @@
     message.mid = self.mid;
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
+    message.messageLifetime = self.messageLifetime;
     
     TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
     documentAttachment.documentId = _documentId;

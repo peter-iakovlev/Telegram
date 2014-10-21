@@ -120,7 +120,7 @@
             navigationController.presentationStyle = TGNavigationControllerPresentationStyleRootInPopover;
             TGPopoverController *popoverController = [[TGPopoverController alloc] initWithContentViewController:navigationController];
             navigationController.parentPopoverController = popoverController;
-            [popoverController setPopoverContentSize:CGSizeMake(320.0f, 528.0f) animated:false];
+            [popoverController setContentSize:CGSizeMake(320.0f, 528.0f)];
             
             controller.associatedPopoverController = popoverController;
             [popoverController presentPopoverFromBarButtonItem:controller.navigationItem.rightBarButtonItem permittedArrowDirections:UIPopoverArrowDirectionAny animated:true];

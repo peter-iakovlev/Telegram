@@ -76,7 +76,7 @@ typedef enum {
 - (void)_setAvatarUrl:(NSString *)avatarUrl;
 - (void)_setStatus:(NSString *)status accentColored:(bool)accentColored allowAnimation:(bool)allowAnimation;
 - (void)_setTitle:(NSString *)title andStatus:(NSString *)status accentColored:(bool)accentColored allowAnimatioon:(bool)allowAnimation;
-- (void)_setTypingStatus:(NSString *)typingStatus;
+- (void)_setTypingStatus:(NSString *)typingStatus activity:(int)activity;
 
 - (void)_controllerWillAppearAnimated:(bool)animated firstTime:(bool)firstTime;
 - (void)_controllerDidAppear:(bool)firstTime;
@@ -163,5 +163,8 @@ typedef enum {
 
 - (id)acquireAudioRecordingActivityHolder;
 - (id)acquireLocationPickingActivityHolder;
+
+- (void)serviceNotificationsForMessageIds:(NSArray *)messageIds;
+- (void)markMessagesAsViewed:(NSArray *)messageIds;
 
 @end

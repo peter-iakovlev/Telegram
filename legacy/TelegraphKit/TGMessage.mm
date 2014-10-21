@@ -1,12 +1,17 @@
 #import "TGMessage.h"
 
+#import "PSKeyValueCoder.h"
+
 #include <tr1/unordered_map>
 
 static std::tr1::unordered_map<int, id<TGMediaAttachmentParser> > mediaAttachmentParsers;
 
 typedef enum {
-    TGMessageFlagBroadcast = 1
+    TGMessageFlagBroadcast = 1,
+    TGMessageFlagLayerMask = 2 | 4 | 8 | 16 | 32
 } TGMessageFlags;
+
+
 
 @interface TGMessage ()
 
@@ -15,6 +20,59 @@ typedef enum {
 @end
 
 @implementation TGMessage
+
+- (instancetype)initWithKeyValueCoder:(PSKeyValueCoder *)coder
+{
+    TGMessage *object = [[TGMessage alloc] init];
+    
+    object->_mid = [coder decodeInt32ForCKey:"i"];
+    object->_unread = [coder decodeInt32ForCKey:"unr"] != 0;
+    object->_outgoing = [coder decodeInt32ForCKey:"out"] != 0;
+    object->_deliveryState = (TGMessageDeliveryState)[coder decodeInt32ForCKey:"ds"];
+    object->_fromUid = [coder decodeInt64ForCKey:"fi"];
+    object->_toUid = [coder decodeInt64ForCKey:"ti"];
+    object->_cid = [coder decodeInt64ForCKey:"ci"];
+    
+    object->_text = [coder decodeStringForCKey:"t"];
+    object->_date = [coder decodeInt32ForCKey:"d"];
+    object->_mediaAttachments = [TGMessage parseMediaAttachments:[coder decodeDataCorCKey:"md"]];
+    
+    object->_realDate = [coder decodeInt32ForCKey:"rd"];
+    object->_randomId = [coder decodeInt64ForCKey:"ri"];
+    object->_forwardUid = [coder decodeInt32ForCKey:"fwi"];
+    
+    object->_messageLifetime = [coder decodeInt32ForCKey:"lt"];
+    object->_flags = [coder decodeInt64ForCKey:"f"];
+    object->_seqIn = [coder decodeInt32ForCKey:"sqi"];
+    object->_seqOut = [coder decodeInt32ForCKey:"sqo"];
+    
+    return object;
+}
+
+- (void)encodeWithKeyValueCoder:(PSKeyValueCoder *)coder
+{
+    [coder encodeInt32:_mid forCKey:"i"];
+    [coder encodeInt32:_unread ? 1 : 0 forCKey:"unr"];
+    [coder encodeInt32:_outgoing ? 1 : 0 forCKey:"out"];
+    [coder encodeInt32:_deliveryState forCKey:"ds"];
+    [coder encodeInt64:_fromUid forCKey:"fi"];
+    [coder encodeInt64:_toUid forCKey:"ti"];
+    [coder encodeInt64:_cid forCKey:"ci"];
+    
+    [coder encodeString:_text forCKey:"t"];
+    [coder encodeInt32:(int32_t)_date forCKey:"d"];
+    [coder encodeData:[self serializeMediaAttachments:true] forCKey:"md"];
+    
+    [coder encodeInt32:(int32_t)_realDate forCKey:"rd"];
+    [coder encodeInt64:_randomId forCKey:"ri"];
+    [coder encodeInt64:_forwardUid forCKey:"fwi"];
+    
+    [coder encodeInt32:_messageLifetime forCKey:"lt"];
+    [coder encodeInt64:_flags forCKey:"f"];
+    
+    [coder encodeInt32:_seqIn forCKey:"sqi"];
+    [coder encodeInt32:_seqOut forCKey:"sqo"];
+}
 
 - (id)copyWithZone:(NSZone *)__unused zone
 {
@@ -47,6 +105,9 @@ typedef enum {
     copyMessage->_messageLifetime = _messageLifetime;
     copyMessage->_flags = _flags;
     
+    copyMessage->_seqIn = _seqIn;
+    copyMessage->_seqOut = _seqOut;
+    
     return copyMessage;
 }
 
@@ -61,6 +122,27 @@ typedef enum {
 - (bool)isBroadcast
 {
     return _flags & TGMessageFlagBroadcast;
+}
+
+- (void)setLayer:(NSUInteger)layer
+{
+    _flags = (_flags & ~TGMessageFlagLayerMask) | ((layer & (1 | 2 | 4 | 8 | 16)) << 1);
+}
+
+- (NSUInteger)layer
+{
+    NSUInteger value = (_flags & TGMessageFlagLayerMask) >> 1;
+    if (value < 1)
+        value = 1;
+    return value;
+}
+
++ (NSUInteger)layerFromFlags:(int64_t)flags
+{
+    NSUInteger value = (flags & TGMessageFlagLayerMask) >> 1;
+    if (value < 1)
+        value = 1;
+    return value;
 }
 
 - (int)forwardUid

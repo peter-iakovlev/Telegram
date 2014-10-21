@@ -4,6 +4,15 @@
 
 #import "TGImageInfo.h"
 
+#import "TGRemoteImageView.h"
+
+@interface TGGroupAvatarGalleryItem ()
+{
+    NSString *_legacyUrl;
+}
+
+@end
+
 @implementation TGGroupAvatarGalleryItem
 
 - (Class)viewClass
@@ -22,6 +31,7 @@
     if (self != nil)
     {
         _messageId = messageId;
+        _legacyUrl = legacyUrl;
     }
     return self;
 }
@@ -37,6 +47,11 @@
     }
     
     return false;
+}
+
+- (NSString *)filePath
+{
+    return [[TGRemoteImageView sharedCache] pathForCachedData:_legacyUrl];
 }
 
 @end

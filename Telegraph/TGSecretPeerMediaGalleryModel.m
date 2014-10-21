@@ -12,6 +12,8 @@
 
 #import "TGObserverProxy.h"
 
+#import "TGModernSendSecretMessageActor.h"
+
 @interface TGSecretPeerMediaGalleryModel () <ASWatcher>
 {
     int64_t _peerId;
@@ -126,25 +128,31 @@
     [TGDatabaseInstance() dispatchOnDatabaseThread:^
     {
         int messageFlags = [TGDatabaseInstance() secretMessageFlags:_messageId];
-        if ((messageFlags & TGSecretMessageFlagScreenshot) == 0)
+        //if ((messageFlags & TGSecretMessageFlagScreenshot) == 0)
         {
             messageFlags |= TGSecretMessageFlagScreenshot;
             TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:_messageId];
-            if (message != nil)
+            if (message != nil && !message.outgoing)
             {
                 [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/messageFlagChanges", message.cid] resource:@{@(_messageId): @(messageFlags)}];
                 
                 int64_t encryptedConversationId = [TGDatabaseInstance() encryptedConversationIdForPeerId:message.cid];
                 int64_t randomId = [TGDatabaseInstance() randomIdForMessageId:_messageId];
+                int64_t actionRandomId = 0;
+                arc4random_buf(&actionRandomId, 8);
                 
                 if (encryptedConversationId != 0 && randomId != 0)
                 {
-                    [TGDatabaseInstance() raiseSecretMessageFlagsByRandomId:randomId flagsToRise:TGSecretMessageFlagScreenshot];
+                    int64_t peerId = [TGDatabaseInstance() peerIdForEncryptedConversationId:encryptedConversationId createIfNecessary:false];
                     
-                    int64_t actionRandomId = 0;
-                    arc4random_buf(&actionRandomId, 8);
-                    [TGDatabaseInstance() storeFutureActions:@[[[TGEncryptedChatServiceAction alloc] initWithEncryptedConversationId:encryptedConversationId messageRandomId:actionRandomId action:TGEncryptedChatServiceActionMessageScreenshotTaken actionContext:randomId]]];
-                    [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
+                    NSUInteger peerLayer = [TGDatabaseInstance() peerLayer:peerId];
+                    
+                    NSData *messageData = [TGModernSendSecretMessageActor decryptedServiceMessageActionWithLayer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) screenshotMessagesWithRandomIds:@[@(message.randomId)] randomId:actionRandomId];
+                    
+                    if (messageData != nil)
+                    {
+                        [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:peerId layer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) randomId:actionRandomId messageData:messageData];
+                    }
                 }
             }
         }

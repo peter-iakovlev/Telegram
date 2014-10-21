@@ -73,7 +73,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x720535ec;
+    return (int32_t)0x7007b451;
 }
 
 - (int32_t)TLconstructorName
@@ -87,6 +87,7 @@
     object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
     object.first_name = metaObject->getString((int32_t)0xa604f05d);
     object.last_name = metaObject->getString((int32_t)0x10662e0e);
+    object.username = metaObject->getString((int32_t)0x626830ca);
     object.phone = metaObject->getString((int32_t)0x9e6a8d86);
     object.photo = metaObject->getObject((int32_t)0xe6c52372);
     object.status = metaObject->getObject((int32_t)0xab757700);
@@ -113,6 +114,12 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.last_name;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x10662e0e, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.username;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x626830ca, value));
     }
     {
         TLConstructedValue value;
@@ -148,7 +155,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xf2fb8319;
+    return (int32_t)0xcab35e18;
 }
 
 - (int32_t)TLconstructorName
@@ -162,6 +169,7 @@
     object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
     object.first_name = metaObject->getString((int32_t)0xa604f05d);
     object.last_name = metaObject->getString((int32_t)0x10662e0e);
+    object.username = metaObject->getString((int32_t)0x626830ca);
     object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
     object.phone = metaObject->getString((int32_t)0x9e6a8d86);
     object.photo = metaObject->getObject((int32_t)0xe6c52372);
@@ -188,6 +196,12 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.last_name;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x10662e0e, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.username;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x626830ca, value));
     }
     {
         TLConstructedValue value;
@@ -223,7 +237,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x22e8ceb0;
+    return (int32_t)0xd9ccc4ef;
 }
 
 - (int32_t)TLconstructorName
@@ -237,6 +251,7 @@
     object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
     object.first_name = metaObject->getString((int32_t)0xa604f05d);
     object.last_name = metaObject->getString((int32_t)0x10662e0e);
+    object.username = metaObject->getString((int32_t)0x626830ca);
     object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
     object.phone = metaObject->getString((int32_t)0x9e6a8d86);
     object.photo = metaObject->getObject((int32_t)0xe6c52372);
@@ -263,6 +278,12 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.last_name;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x10662e0e, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.username;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x626830ca, value));
     }
     {
         TLConstructedValue value;
@@ -298,7 +319,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x5214c89d;
+    return (int32_t)0x75cf7a8;
 }
 
 - (int32_t)TLconstructorName
@@ -312,6 +333,7 @@
     object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
     object.first_name = metaObject->getString((int32_t)0xa604f05d);
     object.last_name = metaObject->getString((int32_t)0x10662e0e);
+    object.username = metaObject->getString((int32_t)0x626830ca);
     object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
     object.photo = metaObject->getObject((int32_t)0xe6c52372);
     object.status = metaObject->getObject((int32_t)0xab757700);
@@ -337,6 +359,12 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.last_name;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x10662e0e, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.username;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x626830ca, value));
     }
     {
         TLConstructedValue value;
@@ -366,7 +394,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xb29ad7cc;
+    return (int32_t)0xd6016d7a;
 }
 
 - (int32_t)TLconstructorName
@@ -380,6 +408,7 @@
     object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
     object.first_name = metaObject->getString((int32_t)0xa604f05d);
     object.last_name = metaObject->getString((int32_t)0x10662e0e);
+    object.username = metaObject->getString((int32_t)0x626830ca);
     return object;
 }
 
@@ -402,6 +431,12 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.last_name;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x10662e0e, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.username;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x626830ca, value));
     }
 }
 

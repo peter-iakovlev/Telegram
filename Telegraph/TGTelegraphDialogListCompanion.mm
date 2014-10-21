@@ -1161,21 +1161,23 @@ typedef enum {
             NSDictionary *userActivities = [dict objectForKey:@"typingUsers"];
             NSString *typingString = nil;
             NSArray *typingUsers = userActivities.allKeys;
-            if (conversationId < 0)
+            if (conversationId < 0 && conversationId > INT_MIN && typingUsers.count != 0)
             {
-                if (typingUsers.count == 1)
+                NSMutableString *userNames = [[NSMutableString alloc] init];
+                for (NSNumber *nUid in typingUsers)
                 {
-                    TGUser *user = [TGDatabaseInstance() loadUser:[(NSNumber *)[typingUsers objectAtIndex:0] intValue]];
-                    NSString *firstName = user.firstName;
-                    if (firstName.length == 0)
-                        firstName = user.lastName;
-                    typingString = [[NSString alloc] initWithFormat:TGLocalized(@"DialogList.SingleTypingSuffix"), firstName];
+                    TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                    if (userNames.length != 0)
+                        [userNames appendString:@", "];
+                    [userNames appendString:user.displayFirstName];
                 }
-                else if (typingUsers.count > 1)
-                    typingString = [[NSString alloc] initWithFormat:TGLocalized(@"DialogList.MultipleTypingSuffix"), typingUsers.count];
+                
+                typingString = userNames;
             }
             else if (typingUsers.count != 0)
+            {
                 typingString = TGLocalized(@"DialogList.Typing");
+            }
             
             dispatch_async(dispatch_get_main_queue(), ^
             {

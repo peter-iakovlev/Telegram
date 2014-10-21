@@ -1,13 +1,10 @@
-//
-//  TGModernConversationTitleActivityIndicator.h
-//  Telegraph
-//
-//  Created by Peter on 03/10/14.
-//
-//
-
 #import <UIKit/UIKit.h>
 
 @interface TGModernConversationTitleActivityIndicator : UIView
+
+- (void)setNone;
+- (void)setTyping;
+- (void)setAudioRecording;
+- (void)setUploading;
 
 @end

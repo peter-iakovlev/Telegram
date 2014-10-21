@@ -2,6 +2,9 @@
 #import "HPTextViewInternal.h"
 
 @interface HPGrowingTextView ()
+{
+    bool _ignoreChangeNotification;
+}
 
 @end
 
@@ -201,8 +204,8 @@
         }
 	}
 	
-    if ([delegate respondsToSelector:@selector(growingTextViewDidChange:)])
-		[delegate growingTextViewDidChange:self];
+    if ([delegate respondsToSelector:@selector(growingTextViewDidChange:afterSetText:)])
+		[delegate growingTextViewDidChange:self afterSetText:_ignoreChangeNotification];
 
     _oneTimeLongAnimation = false;
 }
@@ -289,7 +292,9 @@
     
     bool previousAnimateHeightChange = _animateHeightChange;
     _animateHeightChange = animated;
+    _ignoreChangeNotification = true;
     [self performSelector:@selector(textViewDidChange:) withObject:_internalTextView];
+    _ignoreChangeNotification = false;
     _animateHeightChange = previousAnimateHeightChange;
 }
 

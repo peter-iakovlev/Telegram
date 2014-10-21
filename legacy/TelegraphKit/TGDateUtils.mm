@@ -47,16 +47,13 @@ static __strong NSString *value_weekdayNamesFull[] = {
     nil, nil, nil, nil, nil, nil, nil
 };
 
-static bool value_dialogTimeMonthNameFirst = false;
 static NSString *value_dialogTimeFormat = nil;
-
-static NSString *value_am = @"AM";
-static NSString *value_pm = @"PM";
 
 static NSString *value_date_separator = @".";
 static bool value_monthFirst = false;
 
 static bool isArabic = false;
+static bool isKorean = false;
 
 static bool TGDateUtilsInitialized = false;
 static void initializeTGDateUtils()
@@ -96,8 +93,10 @@ static void initializeTGDateUtils()
     {
         isArabic = true;
         value_date_separator = @"\u060d";
-        
-        
+    }
+    else if ([identifier isEqualToString:@"ko"] || [identifier hasPrefix:@"ko-"])
+    {
+        isKorean = true;
     }
     
     value_monthNamesGenShort[0] = TGLocalized(@"Month.ShortJanuary");
@@ -142,8 +141,7 @@ static void initializeTGDateUtils()
     value_weekdayNamesFull[5] = TGLocalized(@"Weekday.Saturday");
     value_weekdayNamesFull[6] = TGLocalized(@"Weekday.Sunday");
     
-    value_dialogTimeMonthNameFirst = [TGLocalized(@"Date.DialogDateFormat") hasPrefix:@"{month}"];
-    value_dialogTimeFormat = [[TGLocalized(@"Date.DialogDateFormat") stringByReplacingOccurrencesOfString:@"{month}" withString:@"%@"] stringByReplacingOccurrencesOfString:@"{day}" withString:@"%@"];
+    value_dialogTimeFormat = [[TGLocalized(@"Date.DialogDateFormat") stringByReplacingOccurrencesOfString:@"{month}" withString:@"%1$@"] stringByReplacingOccurrencesOfString:@"{day}" withString:@"%2$@"];
     
     TGDateUtilsInitialized = true;
 }
@@ -226,14 +224,6 @@ static inline NSString *monthNameGenFull(int number)
     return value_monthNamesGenFull[number];
 }
 
-static inline bool dialogTimeMonthNameFirst()
-{
-    if (!TGDateUtilsInitialized)
-        initializeTGDateUtils();
-    
-    return value_dialogTimeMonthNameFirst;
-}
-
 static inline NSString *dialogTimeFormat()
 {
     if (!TGDateUtilsInitialized)
@@ -275,6 +265,10 @@ static inline NSString *dialogTimeFormat()
         else
             return [TGStringUtils stringWithLocalizedNumberCharacters:[[NSString alloc] initWithFormat:@"%02d:%02d", hours, minutes]];
     }
+    else if (isKorean)
+    {
+        return [[NSString alloc] initWithFormat:@"%02d:%02d", hours, minutes];
+    }
     else
     {
         if (dateHas12hFormat())
@@ -300,10 +294,7 @@ static inline NSString *dialogTimeFormat()
     struct tm timeinfo;
     gmtime_r(&t, &timeinfo);
     
-    if (dialogTimeMonthNameFirst())
-        return [[NSString alloc] initWithFormat:dialogTimeFormat(), monthNameGenFull(timeinfo.tm_mon), [TGStringUtils stringWithLocalizedNumber:timeinfo.tm_mday]];
-    else
-        return [[NSString alloc] initWithFormat:dialogTimeFormat(), [TGStringUtils stringWithLocalizedNumber:timeinfo.tm_mday], monthNameGenFull(timeinfo.tm_mon)];
+    return [[NSString alloc] initWithFormat:dialogTimeFormat(), monthNameGenFull(timeinfo.tm_mon), [TGStringUtils stringWithLocalizedNumber:timeinfo.tm_mday]];
 }
 
 + (NSString *)stringForDayOfWeek:(int)date
@@ -320,6 +311,10 @@ static inline NSString *dialogTimeFormat()
     if (isArabic)
     {
         return [TGStringUtils stringWithLocalizedNumberCharacters:[[NSString alloc] initWithFormat:@"%d%@%d%@%02d", day, value_date_separator, month, value_date_separator, year - 100]];
+    }
+    else if (isKorean)
+    {
+        return [TGStringUtils stringWithLocalizedNumberCharacters:[[NSString alloc] initWithFormat:@"%04d년 %d월 %d일", year - 100 + 2000, month, day]];
     }
     else
     {

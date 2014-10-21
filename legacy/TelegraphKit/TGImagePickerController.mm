@@ -11,8 +11,6 @@
 
 #import <QuartzCore/QuartzCore.h>
 
-#import "TGImageViewController.h"
-
 #import "TGImagePagingScrollView.h"
 #import "TGImageViewPage.h"
 #import "TGImagePanGestureRecognizer.h"

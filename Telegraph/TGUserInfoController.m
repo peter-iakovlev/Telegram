@@ -43,9 +43,16 @@
         
         _phonesSection = [[TGCollectionMenuSection alloc] init];
         UIEdgeInsets phonesSectionInsets = _phonesSection.insets;
-        phonesSectionInsets.bottom = 44.0f;
+        phonesSectionInsets.bottom = 0.0f;
         _phonesSection.insets = phonesSectionInsets;
         [self.menuSections addSection:_phonesSection];
+        
+        _usernameSection = [[TGCollectionMenuSection alloc] init];
+        UIEdgeInsets usernameSectionInsets = _usernameSection.insets;
+        usernameSectionInsets.top = 0.0f;
+        usernameSectionInsets.bottom = 44.0f;
+        _usernameSection.insets = usernameSectionInsets;
+        [self.menuSections addSection:_usernameSection];
         
         _actionsSection = [[TGCollectionMenuSection alloc] init];
         UIEdgeInsets actionsSectionInsets = _actionsSection.insets;

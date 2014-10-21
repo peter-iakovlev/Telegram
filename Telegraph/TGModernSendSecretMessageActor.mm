@@ -31,17 +31,31 @@
     int64_t _encryptedConversationId;
     int64_t _accessHash;
     
-    TLDecryptedMessageMedia$decryptedMessageMediaPhoto *_sentDecryptedPhoto;
-    TLDecryptedMessageMedia$decryptedMessageMediaVideo *_sentDecryptedVideo;
-    TLDecryptedMessageMedia$decryptedMessageMediaDocument *_sentDecryptedDocument;
-    TLDecryptedMessageMedia$decryptedMessageMediaAudio *_sentDecryptedAudio;
+    int32_t _sentDecryptedPhotoSize;
+    NSData *_sendDecryptedPhotoKey;
+    NSData *_sendDecryptedPhotoIv;
+    
+    int32_t _sentDecryptedDocumentSize;
+    NSData *_sendDecryptedDocumentKey;
+    NSData *_sendDecryptedDocumentIv;
+    
+    int32_t _sentDecryptedAudioSize;
+    NSData *_sendDecryptedAudioKey;
+    NSData *_sendDecryptedAudioIv;
     
     id _downloadingItemId;
+    
+    int32_t _actionId;
 }
 
 @end
 
 @implementation TGModernSendSecretMessageActor
+
++ (NSUInteger)currentLayer
+{
+    return 17;
+}
 
 + (NSString *)genericPath
 {
@@ -75,6 +89,84 @@
     return _conversationId;
 }
 
+- (id)decryptedGeoPointWithLayer:(NSUInteger)layer latitude:(double)latitude longitude:(double)longitude
+{
+    switch (layer)
+    {
+        case 1:
+            return [Secret1_DecryptedMessageMedia decryptedMessageMediaGeoPointWithLat:@(latitude) plong:@(longitude)];
+        case 17:
+            return [Secret17_DecryptedMessageMedia decryptedMessageMediaGeoPointWithLat:@(latitude) plong:@(longitude)];
+        default:
+            break;
+    }
+    
+    return nil;
+}
+
+- (id)decryptedPhotoWithLayer:(NSUInteger)layer thumbnailData:(NSData *)thumbnailData thumbnailSize:(CGSize)thumbnailSize imageSize:(CGSize)imageSize size:(int)size key:(NSData *)key iv:(NSData *)iv
+{
+    switch (layer)
+    {
+        case 1:
+            return [Secret1_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv];
+        case 17:
+            return [Secret17_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv];
+        default:
+            break;
+    }
+    
+    return nil;
+}
+
+- (id)decryptedVideoWithLayer:(NSUInteger)layer thumbnailData:(NSData *)thumbnailData thumbnailSize:(CGSize)thumbnailSize duration:(int)duration dimensions:(CGSize)dimensions mimeType:(NSString *)mimeType size:(int)size key:(NSData *)key iv:(NSData *)iv
+{
+    switch (layer)
+    {
+        case 1:
+            return [Secret1_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) duration:@(duration) w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv];
+        case 17:
+            return [Secret17_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb: thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) duration:@(duration) mime_type:mimeType w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv];
+    }
+    
+    return nil;
+}
+
+- (id)decryptedDocumentWithLayer:(NSUInteger)layer thumbnailData:(NSData *)thumbnailData thumbnailSize:(CGSize)thumbnailSize fileName:(NSString *)fileName mimeType:(NSString *)mimeType size:(int)size key:(NSData *)key iv:(NSData *)iv
+{
+    switch (layer)
+    {
+        case 1:
+            return [Secret1_DecryptedMessageMedia decryptedMessageMediaDocumentWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) file_name:fileName mime_type:mimeType size:@(size) key:key iv:iv];
+        case 17:
+            return [Secret17_DecryptedMessageMedia decryptedMessageMediaDocumentWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumb_w:@((int)thumbnailSize.width) thumb_h:@((int)thumbnailSize.height) file_name:fileName mime_type:mimeType size:@(size) key:key iv:iv];
+        default:
+            break;
+    }
+    
+    return nil;
+}
+
+- (id)decryptedAudioWithLayer:(NSUInteger)layer duration:(int)duration mimeType:(NSString *)mimeType size:(int)size key:(NSData *)key iv:(NSData *)iv
+{
+    switch (layer)
+    {
+        case 1:
+            return [Secret1_DecryptedMessageMedia decryptedMessageMediaAudioWithDuration:@(duration) size:@(size) key:key iv:iv];
+        case 17:
+            return [Secret17_DecryptedMessageMedia decryptedMessageMediaAudioWithDuration:@(duration) mime_type:mimeType size:@(size) key:key iv:iv];
+            
+        default:
+            break;
+    }
+    return nil;
+}
+
+- (NSUInteger)currentPeerLayer
+{
+    return MIN([TGModernSendSecretMessageActor currentLayer], [TGDatabaseInstance() peerLayer:_conversationId]);
+}
+
 - (void)_commitSend
 {
     if (_conversationId == 0)
@@ -95,16 +187,8 @@
                 int64_t randomId = self.preparedMessage.randomId;
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
-                NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:textMessage.text media:nil randomId:randomId key:key keyId:keyId];
-                if (encryptedMessage != nil)
-                {
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:nil actor:self];
-                }
-                else
-                {
-                    TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                    [self _fail];
-                }
+                
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:textMessage.text media:nil lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:nil watcher:self];
             }
             else if ([self.preparedMessage isKindOfClass:[TGPreparedMapMessage class]])
             {
@@ -112,23 +196,13 @@
                 
                 TGPreparedMapMessage *mapMessage = (TGPreparedMapMessage *)self.preparedMessage;
                 
-                TLDecryptedMessageMedia$decryptedMessageMediaGeoPoint *decryptedGeoPoint = [[TLDecryptedMessageMedia$decryptedMessageMediaGeoPoint alloc] init];
-                decryptedGeoPoint.lat = mapMessage.latitude;
-                decryptedGeoPoint.n_long = mapMessage.longitude;
+                id media = [self decryptedGeoPointWithLayer:[self currentPeerLayer] latitude:mapMessage.latitude longitude:mapMessage.longitude];
                 
                 int64_t randomId = self.preparedMessage.randomId;
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
-                NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:nil media:decryptedGeoPoint randomId:randomId key:key keyId:keyId];
-                if (encryptedMessage != nil)
-                {
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:nil actor:self];
-                }
-                else
-                {
-                    TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                    [self _fail];
-                }
+                
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:nil watcher:self];
             }
             else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalImageMessage class]])
             {
@@ -197,16 +271,8 @@
                     int64_t randomId = self.preparedMessage.randomId;
                     if (randomId == 0)
                         arc4random_buf(&randomId, 8);
-                    NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:preparedForwardedMessage.innerMessage.text media:nil randomId:randomId key:key keyId:keyId];
-                    if (encryptedMessage != nil)
-                    {
-                        self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:nil actor:self];
-                    }
-                    else
-                    {
-                        TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                        [self _fail];
-                    }
+                    
+                    _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:preparedForwardedMessage.innerMessage.text media:nil lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:nil watcher:self];
                 }
             }
             else
@@ -444,6 +510,28 @@
     return false;
 }
 
+- (id)storedFileInfoForSchemeFileInfo:(id)schemeFileInfo
+{
+    id storedFileInfo = nil;
+    if ([schemeFileInfo isKindOfClass:[TLInputEncryptedFile$inputEncryptedFileUploaded class]])
+    {
+        TLInputEncryptedFile$inputEncryptedFileUploaded *concreteFileInfo = schemeFileInfo;
+        storedFileInfo = [[TGStoredOutgoingMessageFileInfoUploaded alloc] initWithN_id:concreteFileInfo.n_id parts:concreteFileInfo.parts md5_checksum:concreteFileInfo.md5_checksum key_fingerprint:concreteFileInfo.key_fingerprint];
+    }
+    else if ([schemeFileInfo isKindOfClass:[TLInputEncryptedFile$inputEncryptedFile class]])
+    {
+        TLInputEncryptedFile$inputEncryptedFile *concreteFileInfo = schemeFileInfo;
+        storedFileInfo = [[TGStoredOutgoingMessageFileInfoExisting alloc] initWithN_id:concreteFileInfo.n_id accessHash:concreteFileInfo.access_hash];
+    }
+    else if ([schemeFileInfo isKindOfClass:[TLInputEncryptedFile$inputEncryptedFileBigUploaded class]])
+    {
+        TLInputEncryptedFile$inputEncryptedFileBigUploaded *concreteFileInfo = schemeFileInfo;
+        storedFileInfo = [[TGStoredOutgoingMessageFileInfoBigUploaded alloc] initWithN_id:concreteFileInfo.n_id parts:concreteFileInfo.parts key_fingerprint:concreteFileInfo.key_fingerprint];
+    }
+    
+    return storedFileInfo;
+}
+
 - (bool)sendForwardedMedia:(id)attachment filePathToUploadedFile:(NSDictionary *)filePathToUploadedFile
 {
     if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
@@ -465,34 +553,18 @@
                 CGSize thumbnailSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
                 NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbnailSize), 0.6f);
                 
-                TLDecryptedMessageMedia$decryptedMessageMediaPhoto *decryptedPhoto = [[TLDecryptedMessageMedia$decryptedMessageMediaPhoto alloc] init];
-                decryptedPhoto.thumb = thumbnailData;
-                decryptedPhoto.thumb_w = (int32_t)thumbnailSize.width;
-                decryptedPhoto.thumb_h = (int32_t)thumbnailSize.height;
-                decryptedPhoto.w = (int32_t)size.width;
-                decryptedPhoto.h = (int32_t)size.height;
-                decryptedPhoto.size = (int32_t)[fileInfo[@"fileSize"] intValue];
-                decryptedPhoto.key = fileInfo[@"key"];
-                decryptedPhoto.iv = fileInfo[@"iv"];
+                id media = [self decryptedPhotoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize imageSize:size size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
-                _sentDecryptedPhoto = decryptedPhoto;
+                _sentDecryptedPhotoSize = (int32_t)[fileInfo[@"fileSize"] intValue];
+                _sendDecryptedPhotoKey = fileInfo[@"key"];
+                _sendDecryptedPhotoIv = fileInfo[@"iv"];
                 
                 int64_t randomId = self.preparedMessage.randomId;
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
-                NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:nil media:decryptedPhoto randomId:randomId key:key keyId:keyId];
-                if (encryptedMessage != nil)
-                {
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:fileInfo[@"file"] actor:self];
-                    
-                    return true;
-                }
-                else
-                {
-                    TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                    
-                    return false;
-                }
+                
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                return true;
             }
             else
                 return false;
@@ -545,35 +617,14 @@
                 CGSize thumbnailSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
                 NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbnailSize), 0.6f);
                 
-                TLDecryptedMessageMedia$decryptedMessageMediaVideo *decryptedVideo = [[TLDecryptedMessageMedia$decryptedMessageMediaVideo alloc] init];
-                decryptedVideo.thumb = thumbnailData;
-                decryptedVideo.thumb_w = (int32_t)thumbnailSize.width;
-                decryptedVideo.thumb_h = (int32_t)thumbnailSize.height;
-                decryptedVideo.duration = (int32_t)videoAttachment.duration;
-                decryptedVideo.w = (int32_t)videoAttachment.dimensions.width;
-                decryptedVideo.h = (int32_t)videoAttachment.dimensions.height;
-                decryptedVideo.size = (int32_t)videoSize;
-                decryptedVideo.key = fileInfo[@"key"];
-                decryptedVideo.iv = fileInfo[@"iv"];
-                
-                _sentDecryptedVideo = decryptedVideo;
+                id media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int32_t)videoAttachment.duration dimensions:videoAttachment.dimensions mimeType:@"video/mp4" size:videoSize key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
                 int64_t randomId = self.preparedMessage.randomId;
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
-                NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:nil media:decryptedVideo randomId:randomId key:key keyId:keyId];
-                if (encryptedMessage != nil)
-                {
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:fileInfo[@"file"] actor:self];
-                    
-                    return true;
-                }
-                else
-                {
-                    TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                    
-                    return false;
-                }
+                
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                return true;
             }
             else
                 return false;
@@ -590,16 +641,12 @@
             TGDocumentMediaAttachment *documentAttachment = attachment;
             NSString *documentPath = [self filePathForDocument:documentAttachment];
             
+            NSData *thumbnailData = nil;
+            CGSize thumbnailSize = CGSizeZero;
+            
             NSDictionary *fileInfo = filePathToUploadedFile[documentPath];
             if (fileInfo != nil)
             {
-                TLDecryptedMessageMedia$decryptedMessageMediaDocument *decryptedDocument = [[TLDecryptedMessageMedia$decryptedMessageMediaDocument alloc] init];
-                decryptedDocument.file_name = documentAttachment.fileName;
-                decryptedDocument.mime_type = documentAttachment.mimeType;
-                decryptedDocument.size = documentAttachment.size;
-                decryptedDocument.key = fileInfo[@"key"];
-                decryptedDocument.iv = fileInfo[@"iv"];
-                
                 UIImage *thumbnailImage = nil;
                 
                 if (documentAttachment.thumbnailInfo != nil)
@@ -641,44 +688,31 @@
                         
                         filePreviewUri = previewUri;
                     }
-
+                    
                     thumbnailImage = [[[TGImageManager instance] loadDataSyncWithUri:filePreviewUri canWait:true acceptPartialData:false asyncTaskId:NULL progress:nil partialCompletion:nil completion:nil] image];
                 }
                 
                 if (thumbnailImage != nil)
                 {
                     CGSize thumbSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
-                    NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbSize), 0.6f);
+                    thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbSize), 0.6f);
                     
                     if (thumbnailData != nil)
-                    {
-                        decryptedDocument.thumb = thumbnailData;
-                        decryptedDocument.thumb_w = (int32_t)thumbSize.width;
-                        decryptedDocument.thumb_h = (int32_t)thumbSize.height;
-                    }
+                        thumbnailSize = thumbSize;
                 }
                 
-                _sentDecryptedDocument = decryptedDocument;
+                id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize fileName:documentAttachment.fileName mimeType:documentAttachment.mimeType size:documentAttachment.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                
+                _sentDecryptedDocumentSize = documentAttachment.size;
+                _sendDecryptedDocumentKey = fileInfo[@"key"];
+                _sendDecryptedDocumentIv = fileInfo[@"iv"];
                 
                 int64_t randomId = self.preparedMessage.randomId;
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
-                NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:nil media:decryptedDocument randomId:randomId key:key keyId:keyId];
-                if (encryptedMessage != nil)
-                {
-                    int64_t randomId = self.preparedMessage.randomId;
-                    if (randomId == 0)
-                        arc4random_buf(&randomId, 8);
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:fileInfo[@"file"] actor:self];
-                    
-                    return true;
-                }
-                else
-                {
-                    TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                    
-                    return false;
-                }
+                
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                return true;
             }
             else
                 return false;
@@ -698,33 +732,18 @@
             NSDictionary *fileInfo = filePathToUploadedFile[audioPath];
             if (fileInfo != nil)
             {
-                TLDecryptedMessageMedia$decryptedMessageMediaAudio *decryptedAudio = [[TLDecryptedMessageMedia$decryptedMessageMediaAudio alloc] init];
-                decryptedAudio.duration = audioAttachment.duration;
-                decryptedAudio.size = [fileInfo[@"fileSize"] intValue];
-                decryptedAudio.key = fileInfo[@"key"];
-                decryptedAudio.iv = fileInfo[@"iv"];
+                id media = [self decryptedAudioWithLayer:[self currentPeerLayer] duration:audioAttachment.duration mimeType:@"audio/ogg" size:[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
-                _sentDecryptedAudio = decryptedAudio;
+                _sentDecryptedAudioSize = [fileInfo[@"fileSize"] intValue];
+                _sendDecryptedAudioKey = fileInfo[@"key"];
+                _sendDecryptedAudioIv = fileInfo[@"iv"];
                 
                 int64_t randomId = self.preparedMessage.randomId;
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
-                NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:nil media:decryptedAudio randomId:randomId key:key keyId:keyId];
-                if (encryptedMessage != nil)
-                {
-                    int64_t randomId = self.preparedMessage.randomId;
-                    if (randomId == 0)
-                        arc4random_buf(&randomId, 8);
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:fileInfo[@"file"] actor:self];
-                    
-                    return true;
-                }
-                else
-                {
-                    TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                    
-                    return false;
-                }
+                
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                return true;
             }
             else
                 return false;
@@ -742,26 +761,14 @@
             
             TGLocationMediaAttachment *locationAttachment = attachment;
             
-            TLDecryptedMessageMedia$decryptedMessageMediaGeoPoint *decryptedGeoPoint = [[TLDecryptedMessageMedia$decryptedMessageMediaGeoPoint alloc] init];
-            decryptedGeoPoint.lat = locationAttachment.latitude;
-            decryptedGeoPoint.n_long = locationAttachment.longitude;
+            id media = [self decryptedGeoPointWithLayer:[self currentPeerLayer] latitude:locationAttachment.latitude longitude:locationAttachment.longitude];
             
             int64_t randomId = self.preparedMessage.randomId;
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
-            NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:nil media:decryptedGeoPoint randomId:randomId key:key keyId:keyId];
-            if (encryptedMessage != nil)
-            {
-                self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:nil actor:self];
-                
-                return true;
-            }
-            else
-            {
-                TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                
-                return false;
-            }
+            
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:nil watcher:self];
+            return true;
         }
         else
             return false;
@@ -854,31 +861,17 @@
                 CGSize thumbnailSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
                 NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbnailSize), 0.6f);
                 
-                TLDecryptedMessageMedia$decryptedMessageMediaPhoto *decryptedPhoto = [[TLDecryptedMessageMedia$decryptedMessageMediaPhoto alloc] init];
-                decryptedPhoto.thumb = thumbnailData;
-                decryptedPhoto.thumb_w = (int32_t)thumbnailSize.width;
-                decryptedPhoto.thumb_h = (int32_t)thumbnailSize.height;
-                decryptedPhoto.w = (int32_t)localImageMessage.imageSize.width;
-                decryptedPhoto.h = (int32_t)localImageMessage.imageSize.height;
-                decryptedPhoto.size = (int32_t)[fileInfo[@"fileSize"] intValue];
-                decryptedPhoto.key = fileInfo[@"key"];
-                decryptedPhoto.iv = fileInfo[@"iv"];
+                id media = [self decryptedPhotoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize imageSize:localImageMessage.imageSize size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
-                _sentDecryptedPhoto = decryptedPhoto;
+                _sentDecryptedPhotoSize = (int32_t)[fileInfo[@"fileSize"] intValue];
+                _sendDecryptedPhotoKey = fileInfo[@"key"];
+                _sendDecryptedPhotoIv = fileInfo[@"iv"];
                 
                 int64_t randomId = self.preparedMessage.randomId;
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
-                NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:nil media:decryptedPhoto randomId:randomId key:key keyId:keyId];
-                if (encryptedMessage != nil)
-                {
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:fileInfo[@"file"] actor:self];
-                }
-                else
-                {
-                    TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                    [self _fail];
-                }
+                
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             }
             else
                 [self _fail];
@@ -901,32 +894,13 @@
                 CGSize thumbnailSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
                 NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbnailSize), 0.6f);
                 
-                TLDecryptedMessageMedia$decryptedMessageMediaVideo *decryptedVideo = [[TLDecryptedMessageMedia$decryptedMessageMediaVideo alloc] init];
-                decryptedVideo.thumb = thumbnailData;
-                decryptedVideo.thumb_w = (int32_t)thumbnailSize.width;
-                decryptedVideo.thumb_h = (int32_t)thumbnailSize.height;
-                decryptedVideo.duration = (int32_t)localVideoMessage.duration;
-                decryptedVideo.w = (int32_t)localVideoMessage.videoSize.width;
-                decryptedVideo.h = (int32_t)localVideoMessage.videoSize.height;
-                decryptedVideo.size = localVideoMessage.size;
-                decryptedVideo.key = fileInfo[@"key"];
-                decryptedVideo.iv = fileInfo[@"iv"];
-                
-                _sentDecryptedVideo = decryptedVideo;
+                id media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int)localVideoMessage.duration dimensions:localVideoMessage.videoSize mimeType:@"video/mp4" size:localVideoMessage.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
                 int64_t randomId = self.preparedMessage.randomId;
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
-                NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:nil media:decryptedVideo randomId:randomId key:key keyId:keyId];
-                if (encryptedMessage != nil)
-                {
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:fileInfo[@"file"] actor:self];
-                }
-                else
-                {
-                    TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                    [self _fail];
-                }
+                
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             }
             else
                 [self _fail];
@@ -945,12 +919,8 @@
             NSDictionary *fileInfo = filePathToUploadedFile[[[localDocumentMessage localDocumentDirectory] stringByAppendingPathComponent:[localDocumentMessage localDocumentFileName]]];
             if (fileInfo != nil)
             {
-                TLDecryptedMessageMedia$decryptedMessageMediaDocument *decryptedDocument = [[TLDecryptedMessageMedia$decryptedMessageMediaDocument alloc] init];
-                decryptedDocument.file_name = localDocumentMessage.fileName;
-                decryptedDocument.mime_type = localDocumentMessage.mimeType;
-                decryptedDocument.size = localDocumentMessage.size;
-                decryptedDocument.key = fileInfo[@"key"];
-                decryptedDocument.iv = fileInfo[@"iv"];
+                NSData *thumbnailData = nil;
+                CGSize thumbnailSize = CGSizeZero;
                 
                 if (localDocumentMessage.localThumbnailDataPath != nil)
                 {
@@ -958,35 +928,25 @@
                     if (image != nil)
                     {
                         CGSize thumbSize = TGFitSize(image.size, CGSizeMake(90, 90));
-                        NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(image, thumbSize), 0.6f);
+                        thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(image, thumbSize), 0.6f);
                         
                         if (thumbnailData != nil)
-                        {
-                            decryptedDocument.thumb = thumbnailData;
-                            decryptedDocument.thumb_w = (int32_t)thumbSize.width;
-                            decryptedDocument.thumb_h = (int32_t)thumbSize.height;
-                        }
+                            thumbnailSize = thumbSize;
                     }
                 }
                 
-                _sentDecryptedDocument = decryptedDocument;
+                id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize fileName:localDocumentMessage.fileName mimeType:localDocumentMessage.mimeType size:localDocumentMessage.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                
+                
+                _sentDecryptedDocumentSize = localDocumentMessage.size;
+                _sendDecryptedDocumentKey = fileInfo[@"key"];
+                _sendDecryptedDocumentIv = fileInfo[@"iv"];
                 
                 int64_t randomId = self.preparedMessage.randomId;
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
-                NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:nil media:decryptedDocument randomId:randomId key:key keyId:keyId];
-                if (encryptedMessage != nil)
-                {
-                    int64_t randomId = self.preparedMessage.randomId;
-                    if (randomId == 0)
-                        arc4random_buf(&randomId, 8);
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:fileInfo[@"file"] actor:self];
-                }
-                else
-                {
-                    TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                    [self _fail];
-                }
+                
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             }
             else
                 [self _fail];
@@ -1005,30 +965,17 @@
             NSDictionary *fileInfo = filePathToUploadedFile[[localAudioMessage localAudioFilePath1]];
             if (fileInfo != nil)
             {
-                TLDecryptedMessageMedia$decryptedMessageMediaAudio *decryptedAudio = [[TLDecryptedMessageMedia$decryptedMessageMediaAudio alloc] init];
-                decryptedAudio.duration = localAudioMessage.duration;
-                decryptedAudio.size = [fileInfo[@"fileSize"] intValue];
-                decryptedAudio.key = fileInfo[@"key"];
-                decryptedAudio.iv = fileInfo[@"iv"];
+                id media = [self decryptedAudioWithLayer:[self currentPeerLayer] duration:localAudioMessage.duration mimeType:@"audio/ogg" size:[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
-                _sentDecryptedAudio = decryptedAudio;
+                _sentDecryptedAudioSize = [fileInfo[@"fileSize"] intValue];
+                _sendDecryptedAudioKey = fileInfo[@"key"];
+                _sendDecryptedAudioIv = fileInfo[@"iv"];
                 
                 int64_t randomId = self.preparedMessage.randomId;
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
-                NSData *encryptedMessage = [TGModernSendSecretMessageActor prepareEncryptedMessage:nil media:decryptedAudio randomId:randomId key:key keyId:keyId];
-                if (encryptedMessage != nil)
-                {
-                    int64_t randomId = self.preparedMessage.randomId;
-                    if (randomId == 0)
-                        arc4random_buf(&randomId, 8);
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedMessage:_encryptedConversationId accessHash:_accessHash randomId:randomId data:encryptedMessage encryptedFile:fileInfo[@"file"] actor:self];
-                }
-                else
-                {
-                    TGLog(@"***** Couldn't encrypt message for conversation %lld", _encryptedConversationId);
-                    [self _fail];
-                }
+                
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media lifetime:self.preparedMessage.messageLifetime randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             }
             else
                 [self _fail];
@@ -1064,7 +1011,7 @@
         {
             TLEncryptedFile$encryptedFile *concreteFile = (TLEncryptedFile$encryptedFile *)encryptedFile;
             
-            NSString *imageUrl = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, _sentDecryptedPhoto.size, concreteFile.key_fingerprint, [_sentDecryptedPhoto.key stringByEncodingInHex], [_sentDecryptedPhoto.iv stringByEncodingInHex]];
+            NSString *imageUrl = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, _sentDecryptedPhotoSize, concreteFile.key_fingerprint, [_sendDecryptedPhotoKey stringByEncodingInHex], [_sendDecryptedPhotoIv stringByEncodingInHex]];
             if (localImageMessage.localImageDataPath != nil)
             {
                 [[TGRemoteImageView sharedCache] moveToCache:[self pathForLocalImagePath:localImageMessage.localImageDataPath] cacheUrl:imageUrl];
@@ -1082,7 +1029,7 @@
             imageAttachment.imageId = concreteFile.n_id;
             TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
             [imageInfo addImageWithSize:localImageMessage.thumbnailSize url:thumbnailUrl];
-            [imageInfo addImageWithSize:localImageMessage.imageSize url:imageUrl fileSize:_sentDecryptedPhoto.size];
+            [imageInfo addImageWithSize:localImageMessage.imageSize url:imageUrl fileSize:_sentDecryptedPhotoSize];
             imageAttachment.imageInfo = imageInfo;
             messageMedia = @[imageAttachment];
             
@@ -1114,7 +1061,7 @@
                 documentAttachment.thumbnailInfo = thumbnailInfo;
             }
             
-            documentAttachment.documentUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, _sentDecryptedDocument.size, concreteFile.key_fingerprint, [_sentDecryptedDocument.key stringByEncodingInHex], [_sentDecryptedDocument.iv stringByEncodingInHex]];
+            documentAttachment.documentUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, _sentDecryptedDocumentSize, concreteFile.key_fingerprint, [_sendDecryptedDocumentKey stringByEncodingInHex], [_sendDecryptedDocumentIv stringByEncodingInHex]];
             
             messageMedia = @[documentAttachment];
             
@@ -1133,9 +1080,9 @@
             
             audioAttachment.localAudioId = localAudioMessage.localAudioId;
             audioAttachment.duration = localAudioMessage.duration;
-            audioAttachment.fileSize = _sentDecryptedAudio.size;
+            audioAttachment.fileSize = _sentDecryptedAudioSize;
             
-            audioAttachment.audioUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, _sentDecryptedAudio.size, concreteFile.key_fingerprint, [_sentDecryptedAudio.key stringByEncodingInHex], [_sentDecryptedAudio.iv stringByEncodingInHex]];
+            audioAttachment.audioUri = [[NSString alloc] initWithFormat:@"mt-encrypted-file://?dc=%d&id=%lld&accessHash=%lld&size=%d&decryptedSize=%d&fingerprint=%d&key=%@%@", concreteFile.dc_id, concreteFile.n_id, concreteFile.access_hash, concreteFile.size, _sentDecryptedAudioSize, concreteFile.key_fingerprint, [_sendDecryptedAudioKey stringByEncodingInHex], [_sendDecryptedAudioIv stringByEncodingInHex]];
             
             messageMedia = @[audioAttachment];
             
@@ -1147,17 +1094,29 @@
     flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDeliveryState, .value = TGMessageDeliveryStateDelivered});
     flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDate, .value = date});
     [TGDatabaseInstance() updateMessage:self.preparedMessage.mid flags:flags media:messageMedia dispatch:true];
-        
-    [self _success:@{
-        @"previousMid": @(self.preparedMessage.mid),
-        @"mid": @(self.preparedMessage.mid),
-        @"date": @(date)
-    }];
+    
+    TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:self.preparedMessage.mid];
+    if (message != nil)
+    {
+        [self _success:@{
+            @"previousMid": @(self.preparedMessage.mid),
+            @"mid": @(self.preparedMessage.mid),
+            @"date": @(date),
+            @"message": message
+        }];
+    }
+    else
+        [self _fail];
 }
 
 - (void)sendEncryptedMessageFailed
 {
     [self _fail];
+}
+
+- (bool)waitsForActionWithId:(int32_t)actionId
+{
+    return _actionId == actionId;
 }
 
 + (MTMessageEncryptionKey *)generateMessageKeyData:(NSData *)messageKey incoming:(bool)incoming key:(NSData *)key
@@ -1215,31 +1174,99 @@
     return [[MTMessageEncryptionKey alloc] initWithKey:[[NSData alloc] initWithData:aesKey] iv:[[NSData alloc] initWithData:aesIv]];
 }
 
-+ (NSData *)prepareEncryptedMessage:(NSString *)text media:(TLDecryptedMessageMedia *)media randomId:(int64_t)randomId key:(NSData *)key keyId:(int64_t)keyId
++ (NSData *)prepareDecryptedMessageWithLayer:(NSUInteger)layer text:(NSString *)text media:(id)media lifetime:(int32_t)lifetime randomId:(int64_t)randomId
 {
-    TLDecryptedMessage$decryptedMessage *decryptedMessage = [[TLDecryptedMessage$decryptedMessage alloc] init];
-    
-    decryptedMessage.random_id = randomId;
+    NSData *messageData = nil;
     
     uint8_t randomBytes[15];
     arc4random_buf(randomBytes, 15);
-    decryptedMessage.random_bytes = [[NSData alloc] initWithBytes:randomBytes length:15];
+    NSData *randomBytesData = [[NSData alloc] initWithBytes:randomBytes length:15];
     
-    decryptedMessage.message = text;
+    if (text == nil)
+        text = @"";
+    switch (layer)
+    {
+        case 1:
+            messageData = [Secret1__Environment serializeObject:[Secret1_DecryptedMessage decryptedMessageWithRandom_id:@(randomId) random_bytes:randomBytesData message:text media:media != nil ? media : [Secret1_DecryptedMessageMedia decryptedMessageMediaEmpty]]];
+            break;
+        case 17:
+            messageData = [Secret17__Environment serializeObject:[Secret17_DecryptedMessage decryptedMessageWithRandom_id:@(randomId) ttl:@(lifetime) message:text media:media != nil ? media : [Secret17_DecryptedMessageMedia decryptedMessageMediaEmpty]]];
+            break;
+        default:
+            break;
+    }
     
-    decryptedMessage.media = media == nil ? [TLDecryptedMessageMedia$decryptedMessageMediaEmpty new] : media;
+    return messageData;
+}
+
++ (int32_t)enqueueOutgoingMessageForPeerId:(int64_t)peerId layer:(NSUInteger)layer randomId:(int64_t)randomId messageData:(NSData *)messageData storedFileInfo:(TGStoredOutgoingMessageFileInfo *)storedFileInfo watcher:(id)watcher
+{
+    int32_t actionId = 0;
+    [TGDatabaseInstance() enqueuePeerOutgoingAction:peerId action:[[TGStoredOutgoingMessageSecretAction alloc] initWithRandomId:randomId layer:layer data:messageData fileInfo:storedFileInfo] useSeq:layer >= 17 seqOut:NULL seqIn:NULL actionId:&actionId];
     
-    NSOutputStream *os = [[NSOutputStream alloc] initToMemory];
-    [os open];
-    TLMetaClassStore::serializeObject(os, decryptedMessage, true);
-    NSData *result = [self encryptMessage:[os currentBytes] key:key keyId:keyId];
-    [os close];
+    NSString *path = [[NSString alloc] initWithFormat:@"/tg/secret/outgoing/(%" PRId64 ")", peerId];
+    [ActionStageInstance() requestActor:path options:@{@"peerId": @(peerId)} watcher:TGTelegraphInstance];
+    if (watcher != nil)
+        [ActionStageInstance() requestActor:path options:nil watcher:watcher];
     
-    return result;
+    return actionId;
+}
+
++ (void)enqueueOutgoingServiceMessageForPeerId:(int64_t)peerId layer:(NSUInteger)layer randomId:(int64_t)randomId messageData:(NSData *)messageData
+{
+    [TGDatabaseInstance() enqueuePeerOutgoingAction:peerId action:[[TGStoredOutgoingServiceMessageSecretAction alloc] initWithRandomId:randomId layer:layer data:messageData] useSeq:layer >= 17 seqOut:NULL seqIn:NULL actionId:NULL];
+    
+    NSString *path = [[NSString alloc] initWithFormat:@"/tg/secret/outgoing/(%" PRId64 ")", peerId];
+    [ActionStageInstance() requestActor:path options:@{@"peerId": @(peerId)} watcher:TGTelegraphInstance];
+}
+
++ (void)enqueueOutgoingResendMessagesForPeerId:(int64_t)peerId fromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq
+{
+    [TGDatabaseInstance() enqueuePeerOutgoingResendActions:peerId fromSeq:fromSeq toSeq:toSeq completion:^(bool success)
+    {
+        if (!success)
+        {
+            int64_t encryptedChatId = [TGDatabaseInstance() encryptedConversationIdForPeerId:peerId];
+        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/encrypted/discardEncryptedChat/(%lld)", encryptedChatId] options:@{@"encryptedConversationId": @(encryptedChatId)} flags:0 watcher:TGTelegraphInstance];
+        }
+    }];
+    
+    NSString *path = [[NSString alloc] initWithFormat:@"/tg/secret/outgoing/(%" PRId64 ")", peerId];
+    [ActionStageInstance() requestActor:path options:@{@"peerId": @(peerId)} watcher:TGTelegraphInstance];
+}
+
++ (void)enqueueIncomingMessagesByPeerId:(NSDictionary *)messageByPeerId
+{
+    [ActionStageInstance() dispatchOnStageQueue:^
+    {
+        [messageByPeerId enumerateKeysAndObjectsUsingBlock:^(NSNumber *nPeerId, NSArray *actions, __unused BOOL *stop)
+        {
+            int64_t peerId = (int64_t)[nPeerId longLongValue];
+            
+            [TGDatabaseInstance() enqueuePeerIncomingActions:peerId actions:actions];
+            
+            NSString *path = [[NSString alloc] initWithFormat:@"/tg/secret/incoming/(%" PRId64 ")", peerId];
+            [ActionStageInstance() requestActor:path options:@{@"peerId": @(peerId)} watcher:TGTelegraphInstance];
+        }];
+    }];
+}
+
++ (void)beginIncomingQueueProcessingIfNeeded:(int64_t)peerId
+{
+    NSString *path = [[NSString alloc] initWithFormat:@"/tg/secret/incoming/(%" PRId64 ")", peerId];
+    [ActionStageInstance() requestActor:path options:@{@"peerId": @(peerId)} watcher:TGTelegraphInstance];
+}
+
++ (void)beginOutgoingQueueProcessingIfNeeded:(int64_t)peerId
+{
+    NSString *path = [[NSString alloc] initWithFormat:@"/tg/secret/outgoing/(%" PRId64 ")", peerId];
+    [ActionStageInstance() requestActor:path options:@{@"peerId": @(peerId)} watcher:TGTelegraphInstance];
 }
 
 + (NSData *)encryptMessage:(NSData *)serializedMessage key:(NSData *)key keyId:(int64_t)keyId
 {
+    if (serializedMessage == nil)
+        return nil;
     NSMutableData *decryptedBytesOriginal = [serializedMessage mutableCopy];
     int32_t messageLength = decryptedBytesOriginal.length;
     [decryptedBytesOriginal replaceBytesInRange:NSMakeRange(0, 0) withBytes:&messageLength length:4];
@@ -1273,6 +1300,152 @@
     }
     
     return nil;
+}
+
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer setTTL:(int32_t)ttl randomId:(int64_t)randomId
+{
+    NSData *messageData = nil;
+    
+    uint8_t randomBytes[15];
+    arc4random_buf(randomBytes, 15);
+    NSData *randomBytesData = [[NSData alloc] initWithBytes:randomBytes length:15];
+    
+    switch (layer)
+    {
+        case 1:
+            messageData = [Secret1__Environment serializeObject:[Secret1_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) random_bytes:randomBytesData action:[Secret1_DecryptedMessageAction decryptedMessageActionSetMessageTTLWithTtl_seconds:@(ttl)]]];
+            break;
+        case 17:
+            messageData = [Secret17__Environment serializeObject:[Secret17_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) action:[Secret17_DecryptedMessageAction decryptedMessageActionSetMessageTTLWithTtl_seconds:@(ttl)]]];
+            break;
+        default:
+            break;
+    }
+    
+    return messageData;
+}
+
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer deleteMessagesWithRandomIds:(NSArray *)randomIds randomId:(int64_t)randomId
+{
+    NSData *messageData = nil;
+    
+    uint8_t randomBytes[15];
+    arc4random_buf(randomBytes, 15);
+    NSData *randomBytesData = [[NSData alloc] initWithBytes:randomBytes length:15];
+    
+    switch (layer)
+    {
+        case 1:
+            messageData = [Secret1__Environment serializeObject:[Secret1_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) random_bytes:randomBytesData action:[Secret1_DecryptedMessageAction decryptedMessageActionDeleteMessagesWithRandom_ids:randomIds]]];
+            break;
+        case 17:
+            messageData = [Secret17__Environment serializeObject:[Secret17_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) action:[Secret17_DecryptedMessageAction decryptedMessageActionDeleteMessagesWithRandom_ids:randomIds]]];
+            break;
+        default:
+            break;
+    }
+    
+    return messageData;
+}
+
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer flushHistoryWithRandomId:(int64_t)randomId
+{
+    NSData *messageData = nil;
+    
+    uint8_t randomBytes[15];
+    arc4random_buf(randomBytes, 15);
+    NSData *randomBytesData = [[NSData alloc] initWithBytes:randomBytes length:15];
+    
+    switch (layer)
+    {
+        case 1:
+            messageData = [Secret1__Environment serializeObject:[Secret1_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) random_bytes:randomBytesData action:[Secret1_DecryptedMessageAction decryptedMessageActionFlushHistory]]];
+            break;
+        case 17:
+            messageData = [Secret17__Environment serializeObject:[Secret17_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) action:[Secret17_DecryptedMessageAction decryptedMessageActionFlushHistory]]];
+            break;
+        default:
+            break;
+    }
+    
+    return messageData;
+}
+
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer readMessagesWithRandomIds:(NSArray *)randomIds randomId:(int64_t)randomId
+{
+    NSData *messageData = nil;
+    
+    switch (layer)
+    {
+        case 1: // not supported
+            break;
+        case 17:
+            messageData = [Secret17__Environment serializeObject:[Secret17_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) action:[Secret17_DecryptedMessageAction decryptedMessageActionReadMessagesWithRandom_ids:randomIds]]];
+            break;
+        default:
+            break;
+    }
+    
+    return messageData;
+}
+
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer screenshotMessagesWithRandomIds:(NSArray *)randomIds randomId:(int64_t)randomId
+{
+    NSData *messageData = nil;
+    
+    switch (layer)
+    {
+        case 1: // not supported
+            break;
+        case 17:
+            messageData = [Secret17__Environment serializeObject:[Secret17_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) action:[Secret17_DecryptedMessageAction decryptedMessageActionScreenshotMessagesWithRandom_ids:randomIds]]];
+            break;
+        default:
+            break;
+    }
+    
+    return messageData;
+}
+
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer notifyLayer:(NSUInteger)notifyLayer randomId:(int64_t)randomId
+{
+    NSData *messageData = nil;
+    
+    uint8_t randomBytes[15];
+    arc4random_buf(randomBytes, 15);
+    NSData *randomBytesData = [[NSData alloc] initWithBytes:randomBytes length:15];
+    
+    switch (layer)
+    {
+        case 1:
+            messageData = [Secret1__Environment serializeObject:[Secret1_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) random_bytes:randomBytesData action:[Secret1_DecryptedMessageAction decryptedMessageActionNotifyLayerWithLayer:@(notifyLayer)]]];
+            break;
+        case 17:
+            messageData = [Secret17__Environment serializeObject:[Secret17_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) action:[Secret17_DecryptedMessageAction decryptedMessageActionNotifyLayerWithLayer:@(notifyLayer)]]];
+            break;
+        default:
+            break;
+    }
+    
+    return messageData;
+}
+
++ (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer resendMessagesFromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq randomId:(int64_t)randomId
+{
+    NSData *messageData = nil;
+    
+    switch (layer)
+    {
+        case 1: // not supported
+            return nil;
+        case 17:
+            messageData = [Secret17__Environment serializeObject:[Secret17_DecryptedMessage decryptedMessageServiceWithRandom_id:@(randomId) action:[Secret17_DecryptedMessageAction decryptedMessageActionResendWithStart_seq_no:@(fromSeq) end_seq_no:@(toSeq)]]];
+            break;
+        default:
+            break;
+    }
+    
+    return messageData;
 }
 
 - (void)actionStageResourceDispatched:(NSString *)path resource:(id)resource arguments:(id)arguments
@@ -1312,6 +1485,31 @@
     
     if ([[self superclass] instancesRespondToSelector:@selector(actionStageResourceDispatched:resource:arguments:)])
         [super actionStageResourceDispatched:path resource:resource arguments:arguments];
+}
+
+- (void)actorMessageReceived:(NSString *)path messageType:(NSString *)messageType message:(id)message
+{
+    if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/secret/outgoing/(%" PRId64 ")", [self peerId]]])
+    {
+        if ([messageType isEqualToString:@"actionCompletedWithSeq"])
+        {
+            if ([message[@"actionId"] intValue] == _actionId)
+            {
+                TLmessages_SentEncryptedMessage *result = message[@"result"];
+                
+                [self sendEncryptedMessageSuccess:result.date encryptedFile:[result isKindOfClass:[TLmessages_SentEncryptedMessage$messages_sentEncryptedFile class]] ? [(TLmessages_SentEncryptedMessage$messages_sentEncryptedFile *)result file] : nil];
+            }
+        }
+        else if ([messageType isEqualToString:@"actionQuickAck"])
+        {
+            if ([message[@"actionId"] intValue] == _actionId)
+            {
+            }
+        }
+    }
+    
+    if ([[self superclass] instancesRespondToSelector:@selector(actorMessageReceived:messageType:message:)])
+        [super actorMessageReceived:path messageType:messageType message:messageType];
 }
 
 @end

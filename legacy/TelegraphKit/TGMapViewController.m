@@ -153,6 +153,10 @@ static void setDefaultMapMode(int mode)
         
         _mode = TGMapViewControllerModeMap;
         
+        _locationManager = [[CLLocationManager alloc] init];
+        if ([_locationManager respondsToSelector:@selector(requestWhenInUseAuthorization)])
+            [_locationManager requestWhenInUseAuthorization];
+        
         _user = user;
         _mapLocation = [[CLLocation alloc] initWithLatitude:latitude longitude:longitude];
         _highlightedLocationAnnotation = [[TGLocationAnnotation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) title:nil];

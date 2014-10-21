@@ -21,6 +21,7 @@
 
 @property (nonatomic, retain) NSString *first_name;
 @property (nonatomic, retain) NSString *last_name;
+@property (nonatomic, retain) NSString *username;
 @property (nonatomic, retain) NSString *phone;
 @property (nonatomic, retain) TLUserProfilePhoto *photo;
 @property (nonatomic, retain) TLUserStatus *status;
@@ -32,6 +33,7 @@
 
 @property (nonatomic, retain) NSString *first_name;
 @property (nonatomic, retain) NSString *last_name;
+@property (nonatomic, retain) NSString *username;
 @property (nonatomic) int64_t access_hash;
 @property (nonatomic, retain) NSString *phone;
 @property (nonatomic, retain) TLUserProfilePhoto *photo;
@@ -43,6 +45,7 @@
 
 @property (nonatomic, retain) NSString *first_name;
 @property (nonatomic, retain) NSString *last_name;
+@property (nonatomic, retain) NSString *username;
 @property (nonatomic) int64_t access_hash;
 @property (nonatomic, retain) NSString *phone;
 @property (nonatomic, retain) TLUserProfilePhoto *photo;
@@ -54,6 +57,7 @@
 
 @property (nonatomic, retain) NSString *first_name;
 @property (nonatomic, retain) NSString *last_name;
+@property (nonatomic, retain) NSString *username;
 @property (nonatomic) int64_t access_hash;
 @property (nonatomic, retain) TLUserProfilePhoto *photo;
 @property (nonatomic, retain) TLUserStatus *status;
@@ -64,6 +68,7 @@
 
 @property (nonatomic, retain) NSString *first_name;
 @property (nonatomic, retain) NSString *last_name;
+@property (nonatomic, retain) NSString *username;
 
 @end
 

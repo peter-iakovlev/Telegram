@@ -27,6 +27,7 @@
 #import "TGUserInfoEditingVariantCollectionItem.h"
 #import "TGUserInfoAddPhoneCollectionItem.h"
 #import "TGUserInfoVariantCollectionItem.h"
+#import "TGUserInfoUsernameCollectionItem.h"
 
 #import "TGAppDelegate.h"
 #import "TGTelegraph.h"
@@ -191,6 +192,21 @@
         }
     }
     
+    NSUInteger usernameSectionIndex = [self indexForSection:self.usernameSection];
+    if (usernameSectionIndex != NSNotFound)
+    {
+        for (int i = self.usernameSection.items.count - 1; i >= 0; i--)
+        {
+            [self.menuSections deleteItemFromSection:usernameSectionIndex atIndex:0];
+        }
+        
+        if (!_editing && _user.userName.length != 0)
+        {
+            TGUserInfoUsernameCollectionItem *usernameItem = [[TGUserInfoUsernameCollectionItem alloc] initWithLabel:TGLocalized(@"Profile.Username") username:[[NSString alloc] initWithFormat:@"@%@", _user.userName]];
+            [self.menuSections addItemToSection:usernameSectionIndex item:usernameItem];
+        }
+    }
+    
     NSUInteger phonesSectionIndex = [self indexForSection:self.phonesSection];
     if (phonesSectionIndex == NSNotFound)
         return;
@@ -284,9 +300,19 @@
         NSUInteger actionsSectionIndex = [self indexForSection:self.actionsSection];
         if (actionsSectionIndex == NSNotFound)
         {
-            NSUInteger phonesSectionIndex = [self indexForSection:self.phonesSection];
-            if (phonesSectionIndex != NSNotFound)
-                [self.menuSections insertSection:self.actionsSection atIndex:phonesSectionIndex + 1];
+            NSUInteger usernameSectionIndex = [self indexForSection:self.usernameSection];
+            if (usernameSectionIndex != NSNotFound)
+            {
+                NSUInteger usernameSectionIndex = [self indexForSection:self.usernameSection];
+                if (usernameSectionIndex != NSNotFound)
+                    [self.menuSections insertSection:self.actionsSection atIndex:usernameSectionIndex + 1];
+            }
+            else
+            {
+                NSUInteger phonesSectionIndex = [self indexForSection:self.phonesSection];
+                if (phonesSectionIndex != NSNotFound)
+                    [self.menuSections insertSection:self.actionsSection atIndex:phonesSectionIndex + 1];
+            }
             
             actionsSectionIndex = [self indexForSection:self.actionsSection];
         }
@@ -1120,12 +1146,12 @@ static UIView *_findBackArrow(UIView *view)
                     int difference = [_user differenceFromUser:user];
                     _user = user;
                     
-                    if (difference & (TGUserFieldFirstName | TGUserFieldLastName | TGUserFieldPhonebookFirstName | TGUserFieldPhonebookLastName | TGUserFieldPresenceOnline))
+                    if (difference & (TGUserFieldFirstName | TGUserFieldLastName | TGUserFieldPhonebookFirstName | TGUserFieldPhonebookLastName | TGUserFieldPresenceOnline | TGUserFieldUsername))
                     {
                         [self.userInfoItem setUser:_user animated:true];
                     }
                     
-                    if (difference & TGUserFieldPhoneNumber)
+                    if (difference & (TGUserFieldPhoneNumber | TGUserFieldUsername))
                         [self _updatePhonesAndActions];
                 });
                 

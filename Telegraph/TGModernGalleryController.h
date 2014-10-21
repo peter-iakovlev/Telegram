@@ -26,4 +26,6 @@
 
 - (void)dismissWhenReady;
 
+- (bool)isFullyOpaque;
+
 @end

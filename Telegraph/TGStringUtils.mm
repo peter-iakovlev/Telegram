@@ -617,7 +617,7 @@ static int EscapeMapCompare(const void *ucharVoid, const void *mapVoid) {
         
         return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
     }
-    else
+    else if (seconds < 60 * 60 * 24 * 7 * 4)
     {
         int number = seconds / (60 * 60 * 24 * 7);
         
@@ -628,6 +628,20 @@ static int EscapeMapCompare(const void *ucharVoid, const void *mapVoid) {
             format = TGLocalized(@"MessageTimer.Weeks_2");
         else if (number == 4)
             format = TGLocalized(@"MessageTimer.Weeks_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else
+    {
+        int number = seconds / (60 * 60 * 24 * 7 * 4);
+        
+        NSString *format = TGLocalized(@"MessageTimer.Months_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Months_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Months_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Months_3_10");
         
         return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
     }
@@ -1008,6 +1022,18 @@ bool TGIsArabic()
     {
         NSString *language = [[NSLocale preferredLanguages] objectAtIndex:0];
         value = [language isEqualToString:@"ar"];
+    });
+    return value;
+}
+
+bool TGIsKorean()
+{
+    static bool value = false;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        NSString *language = [[NSLocale preferredLanguages] objectAtIndex:0];
+        value = [language isEqualToString:@"ko"];
     });
     return value;
 }

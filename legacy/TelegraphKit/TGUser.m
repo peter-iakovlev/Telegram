@@ -28,6 +28,7 @@
     user.phoneNumberHash = _phoneNumberHash;
     user.firstName = _firstName;
     user.lastName = _lastName;
+    user.userName = _userName;
     user.phonebookFirstName = _phonebookFirstName;
     user.phonebookLastName = _phonebookLastName;
     user.sex = _sex;
@@ -75,7 +76,12 @@
     NSString *lastName = self.lastName;
     
     if (firstName != nil && firstName.length != 0 && lastName != nil && lastName.length != 0)
-        return [[NSString alloc] initWithFormat:@"%@ %@", firstName, lastName];
+    {
+        if (TGIsKorean())
+            return [[NSString alloc] initWithFormat:@"%@ %@", lastName, firstName];
+        else
+            return [[NSString alloc] initWithFormat:@"%@ %@", firstName, lastName];
+    }
     else if (firstName != nil && firstName.length != 0)
         return firstName;
     else if (lastName != nil && lastName.length != 0)
@@ -186,7 +192,7 @@
         ((anotherUser.photoUrlSmall == nil && _photoUrlSmall == nil) || [anotherUser.photoUrlSmall isEqualToString:_photoUrlSmall]) &&
         ((anotherUser.photoUrlMedium == nil && _photoUrlMedium == nil) || [anotherUser.photoUrlMedium isEqualToString:_photoUrlMedium]) &&
         ((anotherUser.photoUrlBig == nil && _photoUrlBig == nil) || [anotherUser.photoUrlBig isEqualToString:_photoUrlBig]) &&
-        anotherUser.presence.online == _presence.online && anotherUser.presence.lastSeen == _presence.lastSeen)
+        anotherUser.presence.online == _presence.online && anotherUser.presence.lastSeen == _presence.lastSeen && TGStringCompare(_userName, anotherUser.userName))
     {
         return true;
     }
@@ -211,6 +217,9 @@
     
     if ((_lastName == nil) != (anotherUser.realLastName == nil) || (_lastName != nil && ![_lastName isEqualToString:anotherUser.realLastName]))
         difference |= TGUserFieldLastName;
+    
+    if (!TGStringCompare(_userName, anotherUser.userName))
+        difference |= TGUserFieldUsername;
     
     if ((_phonebookFirstName == nil) != (anotherUser.phonebookFirstName == nil) || (_phonebookFirstName != nil && ![_phonebookFirstName isEqualToString:anotherUser.phonebookFirstName]))
         difference |= TGUserFieldPhonebookFirstName;

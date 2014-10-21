@@ -18,6 +18,7 @@ int32_t phoneMatchHash(NSString *phone);
     
 bool TGIsRTL();
 bool TGIsArabic();
+bool TGIsKorean();
 bool TGIsLocaleArabic();
     
 #ifdef __cplusplus

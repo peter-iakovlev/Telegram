@@ -25,6 +25,7 @@
 @interface TGNavigationController () <UINavigationControllerDelegate>
 {
     UITapGestureRecognizer *_dimmingTapRecognizer;
+    CGSize _preferredContentSize;
 }
 
 @property (nonatomic) bool wasShowingNavigationBar;
@@ -463,6 +464,16 @@ TGNavigationController *findNavigationController()
     }
     
     return result;
+}
+
+- (void)setPreferredContentSize:(CGSize)preferredContentSize
+{
+    _preferredContentSize = preferredContentSize;
+}
+
+- (CGSize)preferredContentSize
+{
+    return _preferredContentSize;
 }
 
 @end

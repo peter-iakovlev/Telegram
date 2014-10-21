@@ -40,6 +40,7 @@
 #import "TGGroupAvatarGalleryModel.h"
 #import "TGGroupAvatarGalleryItem.h"
 #import "TGSecretPeerMediaGalleryModel.h"
+#import "TGSecretInfiniteLifetimePeerMediaGalleryModel.h"
 
 #import "TGGenericPeerGalleryItem.h"
 #import "TGModernGalleryVideoItemView.h"
@@ -148,6 +149,8 @@ typedef enum {
     TGObserverProxy *_applicationDidEnterBackgroundProxy;
     TGObserverProxy *_applicationDidBecomeActiveProxy;
     
+    TGObserverProxy *_screenshotProxy;
+    
     CGPoint _collectionPanTouchContentOffset;
     bool _collectionPanStartedAtBottom;
     
@@ -201,6 +204,11 @@ typedef enum {
         _applicationWillResignActiveProxy = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification];
         _applicationDidEnterBackgroundProxy = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(applicationDidEnterBackground:) name:UIApplicationDidEnterBackgroundNotification];
         _applicationDidBecomeActiveProxy = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(applicationDidBecomeActive:) name:UIApplicationDidBecomeActiveNotification];
+        
+        if (iosMajorVersion() >= 7)
+        {
+            _screenshotProxy = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(serviceNotificationReceived:) name:UIApplicationUserDidTakeScreenshotNotification];
+        }
         
         _titleView = [[TGModernConversationTitleView alloc] initWithFrame:CGRectMake(0, 0, 1, 1)];
         _titleView.delegate = self;
@@ -501,6 +509,13 @@ typedef enum {
     else
         [self setInputPanel:_inputTextPanel animated:false];
     
+    if (_currentTitlePanel != nil)
+    {
+        id currentTitlePanel = _currentTitlePanel;
+        _currentTitlePanel = nil;
+        [self setCurrentTitlePanel:currentTitlePanel animation:TGModernConversationPanelAnimationNone];
+    }
+    
     [self.view insertSubview:_emptyListPlaceholder belowSubview:_currentInputPanel];
     
     if (![self _updateControllerInset:false])
@@ -590,6 +605,39 @@ typedef enum {
 - (void)applicationDidBecomeActive:(NSNotification *)__unused notification
 {
     [self _updateCanReadHistory:TGModernConversationActivityChangeAuto];
+}
+
+- (void)serviceNotificationReceived:(NSNotification *)__unused notification
+{
+    if (self.navigationController.topViewController == self && self.presentedViewController == nil)
+    {
+        for (UIWindow *window in [[UIApplication sharedApplication] windows])
+        {
+            if ([window isKindOfClass:[TGOverlayControllerWindow class]])
+            {
+                TGOverlayControllerWindow *overlayControllerWindow = (TGOverlayControllerWindow *)window;
+                if ([overlayControllerWindow.rootViewController isKindOfClass:[TGModernGalleryController class]])
+                {
+                    TGModernGalleryController *galleryController = (TGModernGalleryController *)overlayControllerWindow.rootViewController;
+                    
+                    if ([galleryController isFullyOpaque])
+                        return;
+                }
+            }
+        }
+    }
+    else
+        return;
+    
+    NSMutableArray *messageIds = [[NSMutableArray alloc] init];
+    for (TGModernCollectionCell *cell in _collectionView.visibleCells)
+    {
+        TGMessageModernConversationItem *item = cell.boundItem;
+        if (item != nil)
+            [messageIds addObject:@(item->_message.mid)];
+    }
+    
+    [_companion serviceNotificationsForMessageIds:messageIds];
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -2036,9 +2084,13 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         
         if (isGallery)
         {
-            if (mediaMessageItem->_message.messageLifetime != 0)
+            if (mediaMessageItem->_message.messageLifetime > 0 && mediaMessageItem->_message.messageLifetime <= 60 && mediaMessageItem->_message.layer >= 17)
             {
                 modernGallery.model = [[TGSecretPeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId messageId:mediaMessageItem->_message.mid];
+            }
+            else if (!_companion.allowMessageForwarding)
+            {
+                modernGallery.model = [[TGSecretInfiniteLifetimePeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId atMessageId:mediaMessageItem->_message.mid allowActions:_companion.allowMessageForwarding];
             }
             else
             {
@@ -2188,6 +2240,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         modernGallery.animateTransition = !instant;
         modernGallery.showInterface = !instant;
         
+        [self closeExistingMediaGallery];
+        
         TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
         controllerWindow.hidden = false;
     }
@@ -2254,10 +2308,28 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         _currentStreamingAudioMessageId = 0;
     
     [_companion updateMediaAccessTimeForMessageId:messageId];
+    
+    [_companion markMessagesAsViewed:@[@(messageId)]];
+}
+
+- (void)closeExistingMediaGallery
+{
+    for (UIWindow *window in [self.associatedWindowStack copy])
+    {
+        if ([window isKindOfClass:[TGOverlayControllerWindow class]])
+        {
+            if ([window.rootViewController isKindOfClass:[TGModernGalleryController class]])
+            {
+                [((TGModernGalleryController *)window.rootViewController) dismiss];
+            }
+        }
+    }
 }
 
 - (void)closeMediaFromMessage:(int32_t)__unused messageId instant:(bool)__unused instant
 {
+    [self closeExistingMediaGallery];
+    
     self.associatedWindowStack = nil;
     
     _companion.mediaHiddenMessageId = 0;
@@ -2652,9 +2724,9 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
     [_titleView setStatusHasAccentColor:false];
 }
 
-- (void)setTypingStatus:(NSString *)typingStatus
+- (void)setTypingStatus:(NSString *)typingStatus activity:(int)activity
 {
-    [_titleView setTypingStatus:typingStatus animated:self.isViewLoaded];
+    [_titleView setTypingStatus:typingStatus activity:(TGModernConversationTitleViewActivity)activity animated:self.isViewLoaded];
 }
 
 - (void)setGlobalUnreadCount:(int)unreadCount
@@ -2693,6 +2765,11 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
 
 - (void)setSecondaryTitlePanel:(TGModernConversationTitlePanel *)secondaryTitlePanel
 {
+    [self setSecondaryTitlePanel:secondaryTitlePanel animated:true];
+}
+
+- (void)setSecondaryTitlePanel:(TGModernConversationTitlePanel *)secondaryTitlePanel animated:(bool)animated
+{
     if (_secondaryTitlePanel != secondaryTitlePanel)
     {
         bool applyAsCurrent = _currentTitlePanel == nil || _currentTitlePanel == _secondaryTitlePanel;
@@ -2701,7 +2778,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         if (applyAsCurrent)
         {
             NSTimeInterval appearTime = ABS(CFAbsoluteTimeGetCurrent() - _willAppearTimestamp);
-            [self setCurrentTitlePanel:secondaryTitlePanel animation:appearTime > 0.1 ? (appearTime > 0.4 ? TGModernConversationPanelAnimationSlide : TGModernConversationPanelAnimationFade) : TGModernConversationPanelAnimationNone];
+            [self setCurrentTitlePanel:secondaryTitlePanel animation:(animated && appearTime > 0.1) ? (appearTime > 0.4 ? TGModernConversationPanelAnimationSlide : TGModernConversationPanelAnimationFade) : TGModernConversationPanelAnimationNone];
         }
     }
 }
@@ -2749,7 +2826,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
         
         _currentTitlePanel = currentTitlePanel;
         
-        if (_currentTitlePanel != nil)
+        if (_currentTitlePanel != nil && [self isViewLoaded])
         {
             if (_titlePanelWrappingView == nil)
             {
@@ -3023,7 +3100,7 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
             else if ([action isEqualToString:@"chooseLocation"])
             {
                 TGMapViewController *mapController = [[TGMapViewController alloc] initInPickingMode];
-                mapController.activityHolder = [controller.companion acquireLocationPickingActivityHolder];
+                //mapController.activityHolder = [controller.companion acquireLocationPickingActivityHolder];
                 mapController.watcher = controller.actionHandle;
                 TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[mapController]];
                 

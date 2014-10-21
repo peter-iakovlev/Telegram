@@ -24,4 +24,23 @@
     }
 }
 
+- (CGRect)textRectForBounds:(CGRect)bounds
+{
+    CGRect rect = [super textRectForBounds:bounds];
+    rect.origin.x += _leftInset;
+    rect.size.width -= _leftInset;
+    rect.origin.y = CGFloor((self.bounds.size.height - rect.size.height) / 2.0f);
+    return rect;
+}
+
+- (CGRect)editingRectForBounds:(CGRect)bounds
+{
+    return CGRectOffset([self textRectForBounds:bounds], 0.0f, TGRetinaPixel);
+}
+
+- (CGRect)placeholderRectForBounds:(CGRect)bounds
+{
+    return [self textRectForBounds:bounds];
+}
+
 @end

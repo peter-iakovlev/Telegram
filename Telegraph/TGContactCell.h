@@ -20,6 +20,7 @@
 @property (nonatomic, strong) NSString *titleTextFirst;
 @property (nonatomic, strong) NSString *titleTextSecond;
 @property (nonatomic, strong) NSString *subtitleText;
+@property (nonatomic, strong) NSAttributedString *subtitleAttributedText;
 
 @property (nonatomic) int itemId;
 @property (nonatomic) int itemKind;

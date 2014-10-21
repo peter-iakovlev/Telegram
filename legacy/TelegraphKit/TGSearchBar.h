@@ -41,6 +41,8 @@ typedef enum {
 @property (nonatomic, strong) NSString *text;
 @property (nonatomic, strong) NSString *placeholder;
 
+@property (nonatomic) bool showActivity;
+
 - (instancetype)initWithFrame:(CGRect)frame style:(TGSearchBarStyle)style;
 
 - (void)setShowsCancelButton:(bool)showsCancelButton animated:(bool)animated;
