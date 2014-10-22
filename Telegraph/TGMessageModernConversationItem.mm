@@ -14,6 +14,7 @@
 #import "TGAudioMessageViewModel.h"
 #import "TGAnimatedImageMessageViewModel.h"
 #import "TGYoutubeMessageViewModel.h"
+#import "TGInstagramMessageViewModel.h"
 
 #import "TGPreparedLocalDocumentMessage.h"
 
@@ -491,13 +492,24 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
         return model;
     }
     
-    /*if ([message.text hasPrefix:@"http://youtu.be/"])
+    if ([message.text hasPrefix:@"http://youtu.be/"])
     {
         TGYoutubeMessageViewModel *model = [[TGYoutubeMessageViewModel alloc] initWithVideoId:[message.text substringFromIndex:@"http://youtu.be/".length] message:message author:useAuthor ? _author : nil context:_context];
         model.collapseFlags = _collapseFlags;
         [model layoutForContainerSize:containerSize];
         return model;
-    }*/
+    }
+    else if ([message.text hasPrefix:@"http://instagram.com/p/"])
+    {
+        NSString *shortcode = [message.text substringFromIndex:@"http://instagram.com/p/".length];
+        if ([shortcode hasSuffix:@"/"])
+            shortcode = [shortcode substringToIndex:shortcode.length - 1];
+        
+        TGInstagramMessageViewModel *model = [[TGInstagramMessageViewModel alloc] initWithShortcode:shortcode message:message author:useAuthor ? _author : nil context:_context];
+        model.collapseFlags = _collapseFlags;
+        [model layoutForContainerSize:containerSize];
+        return model;
+    }
     
     TGTextMessageModernViewModel *model = [[TGTextMessageModernViewModel alloc] initWithMessage:message author:useAuthor ? _author : nil context:_context];
     if (unsupportedMessage)

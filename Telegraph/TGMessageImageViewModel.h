@@ -19,6 +19,8 @@
 @property (nonatomic) bool timestampHidden;
 @property (nonatomic) bool isBroadcast;
 
+@property (nonatomic, strong) NSArray *detailStrings;
+
 - (instancetype)initWithUri:(NSString *)uri;
 
 - (void)setOverlayType:(int)overlayType animated:(bool)animated;

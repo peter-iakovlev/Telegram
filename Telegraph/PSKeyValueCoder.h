@@ -36,6 +36,7 @@ typedef enum {
 - (NSArray *)decodeArrayForKey:(NSString *)key;
 - (NSArray *)decodeArrayForCKey:(const char *)key;
 - (NSData *)decodeDataCorCKey:(const char *)key;
+- (NSDictionary *)decodeObjectsByKeys;
 
 + (Class<PSCoding>)classForName:(NSString *)name;
 

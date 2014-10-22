@@ -61,5 +61,6 @@ typedef enum {
 - (void)setAdditionalDataString:(NSString *)additionalDataString;
 - (void)setDisplayTimestampProgress:(bool)displayTimestampProgress;
 - (void)setIsBroadcast:(bool)isBroadcast;
+- (void)setDetailStrings:(NSArray *)detailStrings;
 
 @end

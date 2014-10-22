@@ -17,6 +17,7 @@
 
 - (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait acceptPartialData:(bool)acceptPartialData asyncTaskId:(__autoreleasing id *)asyncTaskId progress:(void (^)(float))progress partialCompletion:(void (^)(TGDataResource *))partialCompletion completion:(void (^)(TGDataResource *))completion;
 - (id)loadAttributeSyncForUri:(NSString *)uri attribute:(NSString *)attribute;
+- (id)loadAttributeAsyncForUri:(NSString *)uri attribute:(NSString *)attribute completion:(void (^)(id))completion;
 
 - (void)cancelTaskWithId:(id)taskId;
 

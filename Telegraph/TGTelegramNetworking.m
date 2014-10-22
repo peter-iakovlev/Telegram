@@ -30,6 +30,7 @@
 #import <MTProtoKit/MTRequestMessageService.h>
 #import <MTProtoKit/MTRequest.h>
 #import <MTProtoKit/MTRequestErrorContext.h>
+#import <MTProtoKit/MTEncryption.h>
 #import "TGUpdateMessageService.h"
 
 #import <MTProtoKit/MTInternalId.h>
@@ -173,7 +174,7 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
         
         [ActionStageInstance() requestActor:@"/tg/datacenterWatchdog" options:nil flags:0 watcher:self];
         
-#if TARGET_IPHONE_SIMULATOR && true
+#if TARGET_IPHONE_SIMULATOR && false
         MTRequest *getSchemeRequest = [[MTRequest alloc] init];
         getSchemeRequest.body = [[TLRPChelp_getScheme$help_getScheme alloc] init];
         [getSchemeRequest setCompleted:^(TLScheme$scheme *result, __unused NSTimeInterval timestamp, __unused id error)

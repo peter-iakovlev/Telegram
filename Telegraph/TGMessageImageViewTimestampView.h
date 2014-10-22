@@ -18,5 +18,6 @@
 - (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue animated:(bool)animated;
 - (void)setDisplayProgress:(bool)displayProgress;
 - (void)setIsBroadcast:(bool)setIsBroadcast;
+- (void)setTransparent:(bool)transparent;
 
 @end

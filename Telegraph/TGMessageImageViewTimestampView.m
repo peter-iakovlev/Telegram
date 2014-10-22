@@ -225,6 +225,7 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     CALayer *_clockHourLayer;
     
     bool _isBroadcast;
+    bool _transparent;
 }
 
 @end
@@ -524,6 +525,15 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     [super didMoveToWindow];
 }
 
+- (void)setTransparent:(bool)transparent
+{
+    if (_transparent != transparent)
+    {
+        _transparent = transparent;
+        [self setNeedsDisplay];
+    }
+}
+
 - (UIFont *)timestampFont
 {
     static UIFont *font = nil;
@@ -597,8 +607,11 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     {
         color = UIColorRGBA(0x000000, 0.4f);
     });
-    CGContextSetFillColorWithColor(context, color.CGColor);
-    CGContextFillRect(context, backgroundRect);
+    if (!_transparent)
+    {
+        CGContextSetFillColorWithColor(context, color.CGColor);
+        CGContextFillRect(context, backgroundRect);
+    }
     
     CGFloat luminance = 0.0f;//_backdropArea.luminance;
     
@@ -651,19 +664,6 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
             }
         }
     }
-    
-    /*CGContextBeginPath(context);
-    CGContextMoveToPoint(context, backgroundRect.origin.x, backgroundRect.origin.y + backgroundRect.size.height / 2.0f);
-    CGContextAddArcToPoint(context, backgroundRect.origin.x, backgroundRect.origin.y, backgroundRect.origin.x + backgroundRect.size.height / 2.0f, backgroundRect.origin.y, backgroundRect.size.height / 2.0f);
-    CGContextAddLineToPoint(context, backgroundRect.origin.x + backgroundRect.size.width - backgroundRect.size.height / 2.0f, backgroundRect.origin.y);
-    CGContextAddArcToPoint(context, backgroundRect.origin.x + backgroundRect.size.width, backgroundRect.origin.y, backgroundRect.origin.x + backgroundRect.size.width, backgroundRect.origin.y + backgroundRect.size.height / 2.0f, backgroundRect.size.height / 2.0f);
-    CGContextAddArcToPoint(context, backgroundRect.origin.x + backgroundRect.size.width, backgroundRect.origin.y + backgroundRect.size.height, backgroundRect.origin.x + backgroundRect.size.width - backgroundRect.size.height / 2.0f, backgroundRect.origin.y + backgroundRect.size.height, backgroundRect.size.height / 2.0f);
-    CGContextAddLineToPoint(context, backgroundRect.origin.x + backgroundRect.size.height / 2.0f, backgroundRect.origin.y + backgroundRect.size.height);
-    CGContextAddArcToPoint(context, backgroundRect.origin.x, backgroundRect.origin.y + backgroundRect.size.height, backgroundRect.origin.x, backgroundRect.origin.y + backgroundRect.size.height / 2.0f, backgroundRect.size.height / 2.0f);
-    CGContextClosePath(context);
-    CGContextSetLineWidth(context, 2.0f);
-    CGContextSetStrokeColorWithColor(context, UIColorRGBA(0x000000, 0.1f).CGColor);
-    CGContextStrokePath(context);*/
 }
 
 @end

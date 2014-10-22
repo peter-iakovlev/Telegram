@@ -976,6 +976,11 @@ static void cleanupMessage(TGDatabase *database, int mid, NSArray *attachments, 
         [_database executeUpdate:[[NSString alloc] initWithFormat:@"ALTER TABLE %@ ADD COLUMN flags INTEGER", _messagesTableName]];
     }
     
+    if (![self table:_messagesTableName containsField:@"content_properties"])
+    {
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"ALTER TABLE %@ ADD COLUMN content_properties BLOB", _messagesTableName]];
+    }
+    
     if ([self customProperty:@"hasPartialIndexOnUnread"].length == 0)
     {
         TGLog(@"===== Upgrading database (unread partial index)");
@@ -2338,6 +2343,7 @@ static inline TGConversation *loadConversationFromDatabase(FMResultSet *result)
             bool outgoing = [messageResult intForColumn:@"outgoing"];
             int date = [messageResult intForColumn:@"date"];
             int flags = [messageResult intForColumn:@"flags"];
+            NSData *contentProperties = [messageResult dataForColumn:@"content_properties"];
             TGMessageDeliveryState deliveryState = (TGMessageDeliveryState)[messageResult intForColumn:@"dstate"];
             
             int oldDate = newConversation.date;
@@ -2351,6 +2357,7 @@ static inline TGConversation *loadConversationFromDatabase(FMResultSet *result)
             message.unread = unread;
             message.deliveryState = deliveryState;
             message.flags = flags;
+            message.contentProperties = [TGMessage parseContentProperties:contentProperties];
             [newConversation mergeMessage:message];
             
             if ((keepDate || message.isBroadcast))// && oldDate > newConversation.date)
@@ -3119,6 +3126,7 @@ static NSMutableDictionary *transliterationPartsCache()
                     int outgoingIndex = [result columnIndexForName:@"outgoing"];
                     int dstateIndex = [result columnIndexForName:@"dstate"];
                     int unreadIndex = [result columnIndexForName:@"unread"];
+                    int contentPropertiesIndex = [result columnIndexForName:@"content_properties"];
                     
                     while ([result next])
                     {
@@ -3137,6 +3145,7 @@ static NSMutableDictionary *transliterationPartsCache()
                         message.deliveryState = (TGMessageDeliveryState)[result intForColumnIndex:dstateIndex];
                         message.unread = [result longLongIntForColumnIndex:unreadIndex];
                         message.mediaAttachments = [TGMessage parseMediaAttachments:[result dataForColumnIndex:mediaIndex]];
+                        message.contentProperties = [TGMessage parseContentProperties:[result dataForColumnIndex:contentPropertiesIndex]];
                         
                         conversationsToLoad.insert(message.cid);
                         
@@ -3876,7 +3885,7 @@ static NSMutableDictionary *transliterationPartsCache()
     return array;
 }
 
-static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result, int64_t conversationId, int indexMid, int indexMessage, int indexMedia, int indexFromId, int indexToId, int indexOutgoing, int indexUnread, int indexDeliveryState, int indexDate, int indexLifetime, int indexFlags, int indexSeqIn, int indexSeqOut)
+static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result, int64_t conversationId, int indexMid, int indexMessage, int indexMedia, int indexFromId, int indexToId, int indexOutgoing, int indexUnread, int indexDeliveryState, int indexDate, int indexLifetime, int indexFlags, int indexSeqIn, int indexSeqOut, int indexContentProperties)
 {
     TGMessage *message = [[TGMessage alloc] init];
     
@@ -3886,6 +3895,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result, int64_t
     NSData *mediaData = [result dataForColumnIndex:indexMedia];
     if (mediaData != nil)
         message.mediaAttachments = [TGMessage parseMediaAttachments:mediaData];
+    message.contentProperties = [TGMessage parseContentProperties:[result dataForColumnIndex:indexContentProperties]];
     message.fromUid = [result longLongIntForColumnIndex:indexFromId];
     message.toUid = [result longLongIntForColumnIndex:indexToId];
     message.outgoing = [result intForColumnIndex:indexOutgoing];
@@ -3911,6 +3921,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
     message.cid = [result longLongIntForColumn:@"cid"];
     message.text = [result stringForColumn:@"message"];
     message.mediaAttachments = [TGMessage parseMediaAttachments:[result dataForColumn:@"media"]];
+    message.contentProperties = [TGMessage parseContentProperties:[result dataForColumn:@"content_properties"]];
     message.fromUid = [result longLongIntForColumn:@"from_id"];
     message.toUid = [result longLongIntForColumn:@"to_id"];
     message.outgoing = [result intForColumn:@"outgoing"];
@@ -3988,6 +3999,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         int indexFlags = [result columnIndexForName:@"flags"];
         int indexSeqIn = [result columnIndexForName:@"seq_in"];
         int indexSeqOut = [result columnIndexForName:@"seq_out"];
+        int indexContentProperties = [result columnIndexForName:@"content_properties"];
         
         int minDate = INT_MAX;
         int minMid = INT_MAX;
@@ -3999,7 +4011,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         
         if ([result next])
         {
-            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
+            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut, indexContentProperties);
             if (message != nil)
             {
                 minDate = (int)message.date;
@@ -4037,10 +4049,11 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             indexFlags = [result columnIndexForName:@"flags"];
             indexSeqIn = [result columnIndexForName:@"seq_in"];
             indexSeqOut = [result columnIndexForName:@"seq_out"];
+            int indexContentProperties = [result columnIndexForName:@"content_properties"];
             
             while ([result next])
             {
-                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
+                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut, indexContentProperties);
                 if (message != nil)
                 {
                     if (message.mid < TGMessageLocalMidBaseline)
@@ -4073,10 +4086,11 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         indexFlags = [result columnIndexForName:@"flags"];
         indexSeqIn = [result columnIndexForName:@"seq_in"];
         indexSeqOut = [result columnIndexForName:@"seq_out"];
+        indexContentProperties = [result columnIndexForName:@"content_properties"];
         
         while ([result next])
         {
-            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
+            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut, indexContentProperties);
             if (message != nil)
             {
                 if (message.mid < TGMessageLocalMidBaseline)
@@ -4191,12 +4205,13 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                     int indexFlags = [result columnIndexForName:@"flags"];
                     int indexSeqIn = [result columnIndexForName:@"seq_in"];
                     int indexSeqOut = [result columnIndexForName:@"seq_out"];
+                    int indexContentProperties = [result columnIndexForName:@"content_properties"];
                     
                     int loadedUnreadMessages = 0;
                     
                     while ([result next])
                     {
-                        TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
+                        TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut, indexContentProperties);
                         
                         [array addObject:message];
                         
@@ -4230,6 +4245,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         int indexFlags = [result columnIndexForName:@"flags"];
         int indexSeqIn = [result columnIndexForName:@"seq_in"];
         int indexSeqOut = [result columnIndexForName:@"seq_out"];
+        int indexContentProperties = [result columnIndexForName:@"content_properties"];
         
         while ([result next])
         {
@@ -4250,7 +4266,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 continue;
             }
             
-            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
+            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut, indexContentProperties);
             [array addObject:message];
         }
         
@@ -4273,6 +4289,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             int indexFlags = [result columnIndexForName:@"flags"];
             int indexSeqIn = [result columnIndexForName:@"seq_in"];
             int indexSeqOut = [result columnIndexForName:@"seq_out"];
+            int indexContentProperties = [result columnIndexForName:@"content_properties"];
             
             while ([result next])
             {
@@ -4285,7 +4302,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 else if (mid >= maxMid)
                     continue;
                 
-                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
+                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut, indexContentProperties);
                 [array addObject:message];
             }
         }
@@ -4328,6 +4345,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 indexFlags = [result columnIndexForName:@"flags"];
                 indexSeqIn = [result columnIndexForName:@"seq_in"];
                 indexSeqOut = [result columnIndexForName:@"seq_out"];
+                indexContentProperties = [result columnIndexForName:@"content_properties"];
                 
                 while ([result next])
                 {
@@ -4349,7 +4367,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                     }
                     
                     loadedDownMessages++;
-                    TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
+                    TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut, indexContentProperties);
                     [array addObject:message];
                 }
             }
@@ -4371,6 +4389,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 indexFlags = [result columnIndexForName:@"flags"];
                 indexSeqIn = [result columnIndexForName:@"seq_in"];
                 indexSeqOut = [result columnIndexForName:@"seq_out"];
+                indexContentProperties = [result columnIndexForName:@"content_properties"];
                 
                 while ([result next])
                 {
@@ -4384,7 +4403,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                         continue;
                     
                     loadedDownMessages++;
-                    TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
+                    TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut, indexContentProperties);
                     [array addObject:message];
                 }
             }
@@ -4428,6 +4447,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         int indexFlags = [result columnIndexForName:@"flags"];
         int indexSeqIn = [result columnIndexForName:@"seq_in"];
         int indexSeqOut = [result columnIndexForName:@"seq_out"];
+        int indexContentProperties = [result columnIndexForName:@"content_properties"];
         
         while ([result next])
         {
@@ -4448,7 +4468,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 continue;
             }
             
-            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
+            TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut, indexContentProperties);
             [array addObject:message];
         }
         
@@ -4471,6 +4491,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             indexFlags = [result columnIndexForName:@"flags"];
             indexSeqIn = [result columnIndexForName:@"seq_in"];
             indexSeqOut = [result columnIndexForName:@"seq_out"];
+            indexContentProperties = [result columnIndexForName:@"content_properties"];
             
             while ([result next])
             {
@@ -4483,7 +4504,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
                 else if (mid <= minMid)
                     continue;
                 
-                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut);
+                TGMessage *message = loadMessageFromQueryResult(result, conversationId, indexMid, indexMessage, indexMedia, indexFromId, indexToId, indexOutgoing, indexUnread, indexDeliveryState, indexDate, indexLifetime, indexFlags, indexSeqIn, indexSeqOut, indexContentProperties);
                 [array addObject:message];
             }
         }
@@ -4507,8 +4528,8 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
 
     [self dispatchOnDatabaseThread:^
     {
-        NSString *insertQueryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, localMid, message, media, from_id, to_id, outgoing, unread, dstate, date, flags, seq_in, seq_out) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", _messagesTableName];
-        NSString *updateQueryFormat = [NSString stringWithFormat:@"UPDATE %@ SET mid=?, cid=?, message=?, media=?, from_id=?, to_id=?, outgoing=?, unread=?, dstate=?, date=?, seq_in=?, seq_out=? WHERE mid=?", _messagesTableName];
+        NSString *insertQueryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, localMid, message, media, from_id, to_id, outgoing, unread, dstate, date, flags, seq_in, seq_out, content_properties) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", _messagesTableName];
+        NSString *updateQueryFormat = [NSString stringWithFormat:@"UPDATE %@ SET mid=?, cid=?, message=?, media=?, from_id=?, to_id=?, outgoing=?, unread=?, dstate=?, date=?, seq_in=?, seq_out=?, content_properties=? WHERE mid=?", _messagesTableName];
         
         NSString *mediaInsertQueryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, date, from_id, type, media) VALUES (?, ?, ?, ?, ?, ?)", _conversationMediaTableName];
         NSString *mediaUpdateQueryFormat = [NSString stringWithFormat:@"UPDATE OR IGNORE %@ SET mid=?, cid=?, date=?, from_id=?, type=?, media=? WHERE mid=?", _conversationMediaTableName];
@@ -4616,11 +4637,11 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             
             if (update)
             {
-                [_database executeUpdate:updateQueryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? INT_MAX : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? 1 : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithInt:message.seqIn], [[NSNumber alloc] initWithInt:message.seqOut], [[NSNumber alloc] initWithInt:previousMid]];
+                [_database executeUpdate:updateQueryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? INT_MAX : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? 1 : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithInt:message.seqIn], [[NSNumber alloc] initWithInt:message.seqOut], [message serializeContentProperties], [[NSNumber alloc] initWithInt:previousMid]];
             }
             else
             {
-                [_database executeUpdate:insertQueryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:messageLifetime], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? 1 : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? INT_MAX : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithLongLong:message.flags], [[NSNumber alloc] initWithInt:message.seqIn], [[NSNumber alloc] initWithInt:message.seqOut]];
+                [_database executeUpdate:insertQueryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:messageLifetime], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? 1 : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? INT_MAX : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithLongLong:message.flags], [[NSNumber alloc] initWithInt:message.seqIn], [[NSNumber alloc] initWithInt:message.seqOut], [message serializeContentProperties]];
             }
             
             if (videoId != 0)
@@ -4714,6 +4735,14 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             
             [_database executeUpdate:[[NSString alloc] initWithFormat:@"UPDATE %@ SET media=? WHERE mid=?", _messagesTableName], media, [[NSNumber alloc] initWithInt:mid]];
         }
+    } synchronous:false];
+}
+
+- (void)replaceContentPropertiesInMessageWithId:(int32_t)messageId contentProperties:(NSDictionary *)contentProperties
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        [_database executeUpdate:[[NSString alloc] initWithFormat:@"UPDATE %@ SET content_properties=? WHERE mid=?", _messagesTableName], [TGMessage serializeContentProperties:contentProperties], [[NSNumber alloc] initWithInt:messageId]];
     } synchronous:false];
 }
 
@@ -4858,7 +4887,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
         if (conversationId <= INT_MIN)
             legacyMessageLifetime = [self messageLifetimeForPeerId:conversationId];
         
-        NSString *queryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, localMid, message, media, from_id, to_id, outgoing, unread, dstate, date, flags, seq_in, seq_out) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", _messagesTableName];
+        NSString *queryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, localMid, message, media, from_id, to_id, outgoing, unread, dstate, date, flags, seq_in, seq_out, content_properties) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", _messagesTableName];
         
         NSString *mediaInsertQueryFormat = [NSString stringWithFormat:@"INSERT OR REPLACE INTO %@ (mid, cid, date, from_id, type, media) VALUES (?, ?, ?, ?, ?, ?)", _conversationMediaTableName];
         
@@ -5021,7 +5050,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             else
                 currentLifetime = legacyMessageLifetime;
             
-            [_database executeUpdate:queryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:currentLifetime], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? 1 : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? INT_MAX : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithLongLong:message.flags], [[NSNumber alloc] initWithInt:message.seqIn], [[NSNumber alloc] initWithInt:message.seqOut]];
+            [_database executeUpdate:queryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:currentLifetime], message.text, [message serializeMediaAttachments:false], [[NSNumber alloc] initWithLongLong:message.fromUid], [[NSNumber alloc] initWithLongLong:message.toUid], [[NSNumber alloc] initWithInt:message.outgoing ? 1 : 0], message.unread ? [[NSNumber alloc] initWithLongLong:message.outgoing ? INT_MAX : conversationId] : nil, [[NSNumber alloc] initWithInt:message.deliveryState], [[NSNumber alloc] initWithInt:(int)(message.date)], [[NSNumber alloc] initWithLongLong:message.flags], [[NSNumber alloc] initWithInt:message.seqIn], [[NSNumber alloc] initWithInt:message.seqOut], [message serializeContentProperties]];
             
             if (mediaData != nil && mediaData.length != 0)
                 [_database executeUpdate:mediaInsertQueryFormat, [[NSNumber alloc] initWithInt:message.mid], [[NSNumber alloc] initWithLongLong:conversationId], [[NSNumber alloc] initWithInt:(int)message.date], [[NSNumber alloc] initWithInt:(int)message.fromUid], [[NSNumber alloc] initWithInt:mediaType], mediaData];
@@ -6087,6 +6116,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             int flagsIndex = [result columnIndexForName:@"flags"];
             int indexSeqIn = [result columnIndexForName:@"seq_in"];
             int indexSeqOut = [result columnIndexForName:@"seq_out"];
+            int indexContentProperties = [result columnIndexForName:@"content_properties"];
             
             firstLoop = false;
             
@@ -6096,7 +6126,7 @@ static inline TGMessage *loadMessageFromQueryResult(FMResultSet *result)
             
             while ([result next])
             {
-                TGMessage *message = loadMessageFromQueryResult(result, conversationId, midIndex, messageIndex, mediaIndex, fromIdIndex, toIdIndex, outgoingIndex, unreadIndex, deliveryStateIndex, dateIndex, messageLifetimeIndex, flagsIndex, indexSeqIn, indexSeqOut);
+                TGMessage *message = loadMessageFromQueryResult(result, conversationId, midIndex, messageIndex, mediaIndex, fromIdIndex, toIdIndex, outgoingIndex, unreadIndex, deliveryStateIndex, dateIndex, messageLifetimeIndex, flagsIndex, indexSeqIn, indexSeqOut, indexContentProperties);
                 
                 anyFound = true;
                 

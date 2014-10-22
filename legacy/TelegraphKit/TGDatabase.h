@@ -206,6 +206,7 @@ typedef void (^TGDatabaseCleanupEverythingBlock)();
 - (void)addMessagesToConversation:(NSArray *)messages conversationId:(int64_t)conversationId updateConversation:(TGConversation *)conversation dispatch:(bool)dispatch countUnread:(bool)countUnread;
 - (void)addMessagesToConversation:(NSArray *)argMessages conversationId:(int64_t)conversationId updateConversation:(TGConversation *)conversation dispatch:(bool)dispatch countUnread:(bool)countUnread updateDates:(bool)updateDates;
 - (void)replaceMediaInMessagesWithLocalMediaId:(int)localMediaId media:(NSData *)media;
+- (void)replaceContentPropertiesInMessageWithId:(int32_t)messageId contentProperties:(NSDictionary *)contentProperties;
 - (NSArray *)generateLocalMids:(int)count;
 - (void)renewLocalMessagesInConversation:(NSArray *)messages conversationId:(int64_t)conversationId;
 - (void)deleteMessages:(NSArray *)mids populateActionQueue:(bool)populateActionQueue fillMessagesByConversationId:(NSMutableDictionary *)messagesByConversationId;

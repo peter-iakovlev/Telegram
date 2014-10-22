@@ -66,6 +66,7 @@
     [((TGMessageImageViewContainer *)self.boundView).imageView setDisplayTimestampProgress:_displayTimestampProgress];
     [((TGMessageImageViewContainer *)self.boundView).imageView setAdditionalDataString:_additionalDataString];
     [((TGMessageImageViewContainer *)self.boundView).imageView setIsBroadcast:_isBroadcast];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setDetailStrings:_detailStrings];
     
     //((TGMessageImageViewContainer *)self.boundView).imageView.alpha = _mediaVisible ? 1.0f : 0.0f;
     ((TGMessageImageViewContainer *)self.boundView).alpha = _mediaVisible ? 1.0f : 0.0f;
@@ -162,6 +163,13 @@
     _isBroadcast = isBroadcast;
     
     [((TGMessageImageViewContainer *)self.boundView).imageView setIsBroadcast:_isBroadcast];
+}
+
+- (void)setDetailStrings:(NSArray *)detailStrings
+{
+    _detailStrings = detailStrings;
+    
+    [((TGMessageImageViewContainer *)self.boundView).imageView setDetailStrings:detailStrings];
 }
 
 - (void)reloadImage:(bool)synchronous

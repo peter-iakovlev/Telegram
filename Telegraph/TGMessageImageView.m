@@ -18,6 +18,8 @@
 
 #import "TGModernGalleryTransitionView.h"
 
+#import "TGFont.h"
+
 static const CGFloat circleDiameter = 50.0f;
 
 static const CGFloat timestampWidth = 100.0f;
@@ -25,7 +27,7 @@ static const CGFloat timestampHeight = 18.0f;
 static const CGFloat timestampRightPadding = 6.0f;
 static const CGFloat timestampBottomPadding = 6.0f;
 
-static const CGFloat additionalDataWidth = 160.0f;
+static const CGFloat additionalDataWidth = 200.0f;
 static const CGFloat additionalDataHeight = 18.0f;
 static const CGFloat additionalDataLeftPadding = 6.0f;
 static const CGFloat additionalDataTopPadding = 6.0f;
@@ -44,6 +46,10 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     
     TGMessageImageAdditionalDataView *_additionalDataView;
     TGStaticBackdropAreaData *_additionalDataBackdropArea;
+    
+    UIImageView *_detailStringsBackground;
+    UILabel *_detailStringLabel1;
+    UILabel *_detailStringLabel2;
 }
 
 @property (nonatomic, strong) NSString *viewIdentifier;
@@ -119,6 +125,12 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     }
     
     _timestampView.frame = CGRectMake(frame.size.width - timestampWidth - timestampRightPadding, frame.size.height - timestampHeight - timestampBottomPadding, timestampWidth, timestampHeight);
+    
+    if (_detailStringsBackground.superview != nil)
+    {
+        CGFloat height = _detailStringsBackground.frame.size.height;
+        _detailStringsBackground.frame = CGRectMake(2.0f, self.frame.size.height - height - 1, self.frame.size.width - 4, height);
+    }
 }
 
 - (void)performTransitionToImage:(UIImage *)image duration:(NSTimeInterval)duration
@@ -298,6 +310,87 @@ static const CGFloat additionalDataTopPadding = 6.0f;
 - (void)setIsBroadcast:(bool)isBroadcast
 {
     [_timestampView setIsBroadcast:isBroadcast];
+}
+
+- (void)setDetailStrings:(NSArray *)detailStrings
+{
+    [_timestampView setTransparent:detailStrings.count != 0];
+    
+    if (detailStrings.count == 0)
+    {
+        [_detailStringsBackground removeFromSuperview];
+        [_detailStringLabel1 removeFromSuperview];
+        [_detailStringLabel2 removeFromSuperview];
+    }
+    else
+    {
+        if (_detailStringsBackground == nil)
+        {
+            static UIImage *backgroundImage = nil;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^
+            {
+                CGFloat diameter = 26.0f;
+                UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter / 2 + 1), false, 0.0f);
+                CGContextRef context = UIGraphicsGetCurrentContext();
+                
+                CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.5f).CGColor);
+                CGContextFillEllipseInRect(context, CGRectMake(0.0f, -diameter / 2, diameter, diameter));
+                
+                backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2) topCapHeight:1];
+                UIGraphicsEndImageContext();
+            });
+            _detailStringsBackground = [[UIImageView alloc] initWithImage:backgroundImage];
+        }
+        
+        if (_detailStringsBackground.superview == nil)
+            [self insertSubview:_detailStringsBackground belowSubview:_timestampView];
+        
+        CGFloat height = 41.0f;
+        
+        _detailStringsBackground.frame = CGRectMake(2.0f, self.frame.size.height - height - 1, self.frame.size.width - 4, height);
+        
+        if (_detailStringLabel1 == nil)
+        {
+            _detailStringLabel1 = [[UILabel alloc] init];
+            _detailStringLabel1.backgroundColor = [UIColor clearColor];
+            _detailStringLabel1.textColor = [UIColor whiteColor];
+            _detailStringLabel1.font = TGSystemFontOfSize(13.0f);
+            
+            _detailStringLabel1.text = @" ";
+            [_detailStringLabel1 sizeToFit];
+        }
+        
+        if (_detailStringLabel1.superview == nil)
+            [self addSubview:_detailStringLabel1];
+        
+        _detailStringLabel1.text = detailStrings[0];
+        
+        _detailStringLabel1.frame = CGRectMake(12.0f, _detailStringsBackground.frame.origin.y + 4.0f, self.frame.size.width - 30.0f, _detailStringLabel1.frame.size.height);
+        
+        if (detailStrings.count >= 2)
+        {
+            if (_detailStringLabel2 == nil)
+            {
+                _detailStringLabel2 = [[UILabel alloc] init];
+                _detailStringLabel2.backgroundColor = [UIColor clearColor];
+                _detailStringLabel2.textColor = [UIColor whiteColor];
+                _detailStringLabel2.font = TGSystemFontOfSize(12.0f);
+                
+                _detailStringLabel2.text = @" ";
+                [_detailStringLabel2 sizeToFit];
+            }
+            
+            if (_detailStringLabel2.superview == nil)
+                [self addSubview:_detailStringLabel2];
+            
+            _detailStringLabel2.text = detailStrings[1];
+            
+            _detailStringLabel2.frame = CGRectMake(12.0f, _detailStringsBackground.frame.origin.y + 20.0f, self.frame.size.width - 24.0f - 60.0f, _detailStringLabel2.frame.size.height);
+        }
+        else
+            [_detailStringLabel2 removeFromSuperview];
+    }
 }
 
 - (void)actionButtonPressed

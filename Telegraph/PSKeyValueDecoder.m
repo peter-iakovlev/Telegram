@@ -87,18 +87,19 @@ static  int64_t readInt64(uint8_t const **currentPtr)
     return number;
 }
 
-static  void skipInt64(uint8_t const **currentPtr)
+static void skipInt64(uint8_t const **currentPtr)
 {
     (*currentPtr) += 8;
 }
 
-static  id<PSCoding> readObject(uint8_t const **currentPtr, PSKeyValueDecoder *tempCoder)
+static id<PSCoding> readObject(uint8_t const **currentPtr, PSKeyValueDecoder *tempCoder)
 {
     uint32_t objectLength = *((uint32_t *)(*currentPtr));
     (*currentPtr) += 4;
     
     uint8_t const *objectEnd = (*currentPtr) + objectLength;
 
+    
     const char *className = (const char *)(*currentPtr);
     NSUInteger classNameLength = strlen(className) + 1;
     (*currentPtr) += classNameLength;
@@ -492,6 +493,40 @@ static NSData *decodeDataForRawKey(PSKeyValueDecoder *self, uint8_t const *key, 
 - (NSData *)decodeDataCorCKey:(const char *)key
 {
     return decodeDataForRawKey(self, (uint8_t const *)key, strlen(key));
+}
+
+- (NSDictionary *)decodeObjectsByKeys
+{
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+    
+    if (self->_tempCoder == nil)
+        self->_tempCoder = [[PSKeyValueDecoder alloc] init];
+    
+    self->_currentPtr = self->_begin;
+    while (self->_currentPtr < self->_end)
+    {
+        uint32_t keyLength = readLength(&self->_currentPtr);
+        NSString *key = [[NSString alloc] initWithBytes:self->_currentPtr length:keyLength encoding:NSUTF8StringEncoding];
+        self->_currentPtr += keyLength;
+        
+        uint8_t fieldType = *self->_currentPtr;
+        self->_currentPtr++;
+        
+        if (fieldType == PSKeyValueCoderFieldTypeCustomClass)
+        {
+            id<PSCoding> value = readObject(&self->_currentPtr, self->_tempCoder);
+            if (value == nil)
+                continue;
+            
+            dict[key] = value;
+        }
+        else
+            break;
+    }
+    
+    self->_currentPtr = self->_begin;
+    
+    return dict;
 }
 
 @end
