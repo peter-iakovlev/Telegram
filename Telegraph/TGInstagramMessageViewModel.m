@@ -89,6 +89,16 @@
 
 - (void)activateMedia
 {
+    if (_instagramData.mediaId != nil)
+    {
+        NSURL *clientUrl = [[NSURL alloc] initWithString:[[NSString alloc] initWithFormat:@"instagram://media?id=%@", _instagramData.mediaId]];
+        if ([[UIApplication sharedApplication] canOpenURL:clientUrl])
+        {
+            [[UIApplication sharedApplication] openURL:clientUrl];
+            return;
+        }
+    }
+    
     [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[[NSString alloc] initWithFormat:@"%@", _originalText]]];
 }
 

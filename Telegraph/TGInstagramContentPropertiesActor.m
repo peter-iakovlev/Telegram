@@ -56,6 +56,7 @@
 - (void)httpRequestSuccess:(NSString *)__unused url response:(NSData *)response
 {
     NSString *imageUrl = nil;
+    NSString *mediaId = nil;
     
     @try {
         NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:response options:0 error:nil];
@@ -64,11 +65,15 @@
             NSString *dictImageUrl = [self objectAtDictionaryPath:@"data.images.low_resolution.url" dictionary:dict];
             if ([dictImageUrl respondsToSelector:@selector(characterAtIndex:)])
                 imageUrl = dictImageUrl;
+            
+            NSString *dictMediaId = [self objectAtDictionaryPath:@"data.id" dictionary:dict];
+            if ([dictMediaId respondsToSelector:@selector(characterAtIndex:)])
+                mediaId = dictMediaId;
         }
     } @catch(__unused id exception) {
     }
     
-    TGInstagramDataContentProperty *property = [[TGInstagramDataContentProperty alloc] initWithImageUrl:imageUrl];
+    TGInstagramDataContentProperty *property = [[TGInstagramDataContentProperty alloc] initWithImageUrl:imageUrl mediaId:mediaId];
     
     NSArray *messageIds = _messageIds;
     

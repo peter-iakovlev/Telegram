@@ -151,7 +151,7 @@ static ASQueue *taskManagementQueue()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        imageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor]) decoded:true];
+        imageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor darkGrayColor]) decoded:true];
     });
     
     return imageData;

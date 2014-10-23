@@ -1526,6 +1526,7 @@
 		D0CC4D7119F817BC001E8D57 /* TGInstagramDataContentProperty.m in Sources */ = {isa = PBXBuildFile; fileRef = D0CC4D7019F817BC001E8D57 /* TGInstagramDataContentProperty.m */; };
 		D0CC4D7519F81F5D001E8D57 /* TGInstagramThumbnailDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = D0CC4D7419F81F5D001E8D57 /* TGInstagramThumbnailDataSource.m */; };
 		D0CC4D7819F82134001E8D57 /* TGInstagramContentPropertiesActor.m in Sources */ = {isa = PBXBuildFile; fileRef = D0CC4D7719F82134001E8D57 /* TGInstagramContentPropertiesActor.m */; };
+		D0CC4D9319F95167001E8D57 /* TGTwitterMessageViewModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D0CC4D9219F95167001E8D57 /* TGTwitterMessageViewModel.m */; };
 		D0CF869219ED6431005BE1B1 /* TGPickerSheet.m in Sources */ = {isa = PBXBuildFile; fileRef = D0CF869119ED6431005BE1B1 /* TGPickerSheet.m */; };
 		D0D03650158F7F5B00E39802 /* libstdc++.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D0D0364F158F7F5B00E39802 /* libstdc++.dylib */; };
 		D0D4439F1951B53000CF2A7E /* telegram_logo_still@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D0D4439E1951B53000CF2A7E /* telegram_logo_still@2x.png */; };
@@ -4242,6 +4243,8 @@
 		D0CC4D7419F81F5D001E8D57 /* TGInstagramThumbnailDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGInstagramThumbnailDataSource.m; sourceTree = "<group>"; };
 		D0CC4D7619F82134001E8D57 /* TGInstagramContentPropertiesActor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGInstagramContentPropertiesActor.h; sourceTree = "<group>"; };
 		D0CC4D7719F82134001E8D57 /* TGInstagramContentPropertiesActor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGInstagramContentPropertiesActor.m; sourceTree = "<group>"; };
+		D0CC4D9119F95167001E8D57 /* TGTwitterMessageViewModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGTwitterMessageViewModel.h; sourceTree = "<group>"; };
+		D0CC4D9219F95167001E8D57 /* TGTwitterMessageViewModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGTwitterMessageViewModel.m; sourceTree = "<group>"; };
 		D0CF869019ED6431005BE1B1 /* TGPickerSheet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TGPickerSheet.h; sourceTree = "<group>"; };
 		D0CF869119ED6431005BE1B1 /* TGPickerSheet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TGPickerSheet.m; sourceTree = "<group>"; };
 		D0D0364F158F7F5B00E39802 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "usr/lib/libstdc++.dylib"; sourceTree = SDKROOT; };
@@ -5491,6 +5494,8 @@
 				D0CC4D6D19F8179E001E8D57 /* TGInstagramMessageViewModel.m */,
 				D0CC4D6F19F817BC001E8D57 /* TGInstagramDataContentProperty.h */,
 				D0CC4D7019F817BC001E8D57 /* TGInstagramDataContentProperty.m */,
+				D0CC4D9119F95167001E8D57 /* TGTwitterMessageViewModel.h */,
+				D0CC4D9219F95167001E8D57 /* TGTwitterMessageViewModel.m */,
 			);
 			name = "Image and Video";
 			sourceTree = "<group>";
@@ -10843,6 +10848,7 @@
 				93340A4216A848F700F4BCBB /* TGChangeNameActor.m in Sources */,
 				D0983D6719CB9A4300CE5BB0 /* TGImageDataSource.m in Sources */,
 				9321E9D916A9280100F9D09C /* TGCommentMenuItem.m in Sources */,
+				D0CC4D9319F95167001E8D57 /* TGTwitterMessageViewModel.m in Sources */,
 				9384320018567795000CD961 /* TGGroupInfoCollectionItem.m in Sources */,
 				D098413519CB9BE200CE5BB0 /* TLRPChelp_saveNetworkStats.mm in Sources */,
 				D098419219CB9BE200CE5BB0 /* TLObject.mm in Sources */,
@@ -11469,8 +11475,8 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_ENTITLEMENTS = Telegraph/Telegram.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Peter Iakovlev (9J4EJ3F97G)";
 				DEAD_CODE_STRIPPING = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -11515,7 +11521,7 @@
 				"OTHER_CFLAGS[arch=*]" = "-Wextra";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = Telegram;
-				PROVISIONING_PROFILE = "";
+				PROVISIONING_PROFILE = "05b82dfa-e32c-49d6-90ab-b67f4a1386d7";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "05b82dfa-e32c-49d6-90ab-b67f4a1386d7";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -11540,7 +11546,7 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_ENTITLEMENTS = Telegraph/Telegram.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Distribution: Digital Fortress LLC (C67CF9S4VU)";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Digital Fortress LLC (C67CF9S4VU)";
 				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = (
