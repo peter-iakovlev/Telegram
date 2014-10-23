@@ -271,7 +271,7 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     [_timestampView setTimestampString:timestampString displayCheckmarks:displayCheckmarks checkmarkValue:checkmarkValue animated:animated];
 }
 
-- (void)setAdditionalDataString:(NSString *)additionalDataString
+- (void)setAdditionalDataString:(NSString *)additionalDataString icon:(UIImage *)icon
 {
     if (additionalDataString.length != 0)
     {

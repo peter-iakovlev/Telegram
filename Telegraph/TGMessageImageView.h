@@ -58,7 +58,7 @@ typedef enum {
 - (void)setSecretProgress:(float)progress completeDuration:(NSTimeInterval)completeDuration animated:(bool)animated;
 - (void)setTimestampHidden:(bool)timestampHidden;
 - (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue animated:(bool)animated;
-- (void)setAdditionalDataString:(NSString *)additionalDataString;
+- (void)setAdditionalDataString:(NSString *)additionalDataString icon:(UIImage *)icon;
 - (void)setDisplayTimestampProgress:(bool)displayTimestampProgress;
 - (void)setIsBroadcast:(bool)isBroadcast;
 
