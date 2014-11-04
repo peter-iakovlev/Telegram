@@ -27,7 +27,7 @@ static const CGFloat timestampHeight = 18.0f;
 static const CGFloat timestampRightPadding = 6.0f;
 static const CGFloat timestampBottomPadding = 6.0f;
 
-static const CGFloat additionalDataWidth = 200.0f;
+static const CGFloat additionalDataWidth = 180.0f;
 static const CGFloat additionalDataHeight = 18.0f;
 static const CGFloat additionalDataLeftPadding = 6.0f;
 static const CGFloat additionalDataTopPadding = 6.0f;
@@ -283,7 +283,7 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     [_timestampView setTimestampString:timestampString displayCheckmarks:displayCheckmarks checkmarkValue:checkmarkValue animated:animated];
 }
 
-- (void)setAdditionalDataString:(NSString *)additionalDataString
+- (void)setAdditionalDataString:(NSString *)additionalDataString animated:(bool)animated
 {
     if (additionalDataString.length != 0)
     {
@@ -296,7 +296,22 @@ static const CGFloat additionalDataTopPadding = 6.0f;
         [_additionalDataView setText:additionalDataString];
         
         if (_additionalDataView.superview == nil)
+        {
+            _additionalDataView.alpha = 0.0f;
             [self addSubview:_additionalDataView];
+        }
+        
+        if (animated)
+        {
+            [UIView animateWithDuration:0.3 animations:^
+            {
+                _additionalDataView.alpha = 1.0f;
+            }];
+        }
+        else
+        {
+            _additionalDataView.alpha = 1.0f;
+        }
     }
     else
         [_additionalDataView removeFromSuperview];
@@ -312,7 +327,7 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     [_timestampView setIsBroadcast:isBroadcast];
 }
 
-- (void)setDetailStrings:(NSArray *)detailStrings
+- (void)setDetailStrings:(NSArray *)detailStrings animated:(bool)animated
 {
     [_timestampView setTransparent:detailStrings.count != 0];
     
@@ -344,7 +359,10 @@ static const CGFloat additionalDataTopPadding = 6.0f;
         }
         
         if (_detailStringsBackground.superview == nil)
+        {
+            _detailStringsBackground.alpha = 0.0f;
             [self insertSubview:_detailStringsBackground belowSubview:_timestampView];
+        }
         
         CGFloat height = 41.0f;
         
@@ -362,7 +380,10 @@ static const CGFloat additionalDataTopPadding = 6.0f;
         }
         
         if (_detailStringLabel1.superview == nil)
+        {
+            _detailStringLabel1.alpha = 0.0f;
             [self addSubview:_detailStringLabel1];
+        }
         
         _detailStringLabel1.text = detailStrings[0];
         
@@ -382,7 +403,10 @@ static const CGFloat additionalDataTopPadding = 6.0f;
             }
             
             if (_detailStringLabel2.superview == nil)
+            {
+                _detailStringLabel2.alpha = 0.0f;
                 [self addSubview:_detailStringLabel2];
+            }
             
             _detailStringLabel2.text = detailStrings[1];
             
@@ -390,6 +414,22 @@ static const CGFloat additionalDataTopPadding = 6.0f;
         }
         else
             [_detailStringLabel2 removeFromSuperview];
+        
+        if (animated)
+        {
+            [UIView animateWithDuration:0.3 animations:^
+            {
+                _detailStringsBackground.alpha = 1.0f;
+                _detailStringLabel1.alpha = 1.0f;
+                _detailStringLabel2.alpha = 1.0f;
+            }];
+        }
+        else
+        {
+            _detailStringsBackground.alpha = 1.0f;
+            _detailStringLabel1.alpha = 1.0f;
+            _detailStringLabel2.alpha = 1.0f;
+        }
     }
 }
 

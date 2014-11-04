@@ -492,9 +492,12 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
         return model;
     }
     
+    
     if ([message.text hasPrefix:@"http://youtu.be/"])
     {
         TGYoutubeMessageViewModel *model = [[TGYoutubeMessageViewModel alloc] initWithVideoId:[message.text substringFromIndex:@"http://youtu.be/".length] message:message author:useAuthor ? _author : nil context:_context];
+        if (useAuthor)
+            [model setAuthorAvatarUrl:_author.photoUrlSmall];
         model.collapseFlags = _collapseFlags;
         [model layoutForContainerSize:containerSize];
         return model;
@@ -518,9 +521,11 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
         {
             NSString *videoId = nil;
             NSRange ampRange = [message.text rangeOfString:@"&"];
-            if (ampRange.location != NSNotFound)
+            NSRange hashRange = [message.text rangeOfString:@"#"];
+            if (ampRange.location != NSNotFound || hashRange.location != NSNotFound)
             {
-                videoId = [message.text substringWithRange:NSMakeRange(range1.location + range1.length, ampRange.location - range1.location - range1.length)];
+                NSInteger location = MIN(ampRange.location, hashRange.location);
+                videoId = [message.text substringWithRange:NSMakeRange(range1.location + range1.length, location - range1.location - range1.length)];
             }
             else
                 videoId = [message.text substringFromIndex:range1.location + range1.length];
@@ -528,6 +533,8 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
             if (videoId.length != 0)
             {
                 TGYoutubeMessageViewModel *model = [[TGYoutubeMessageViewModel alloc] initWithVideoId:videoId message:message author:useAuthor ? _author : nil context:_context];
+                if (useAuthor)
+                    [model setAuthorAvatarUrl:_author.photoUrlSmall];
                 model.collapseFlags = _collapseFlags;
                 [model layoutForContainerSize:containerSize];
                 return model;
@@ -542,13 +549,14 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
             shortcode = [shortcode substringToIndex:shortcode.length - 1];
         
         TGInstagramMessageViewModel *model = [[TGInstagramMessageViewModel alloc] initWithShortcode:shortcode message:message author:useAuthor ? _author : nil context:_context];
+        if (useAuthor)
+            [model setAuthorAvatarUrl:_author.photoUrlSmall];
         model.collapseFlags = _collapseFlags;
         [model layoutForContainerSize:containerSize];
         return model;
     }
     
-    //https://twitter.com/TechCrunch/status/525296214342774785
-    if ([message.text hasPrefix:@"https://twitter.com/"])
+    /*if ([message.text hasPrefix:@"https://twitter.com/"])
     {
         NSRange range1 = [message.text rangeOfString:@"/status/"];
         if (range1.location != NSNotFound)
@@ -572,7 +580,7 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
                 
             }
         }
-    }
+    }*/
     
     TGTextMessageModernViewModel *model = [[TGTextMessageModernViewModel alloc] initWithMessage:message author:useAuthor ? _author : nil context:_context];
     if (unsupportedMessage)

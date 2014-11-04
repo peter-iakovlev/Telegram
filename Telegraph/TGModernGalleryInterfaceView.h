@@ -1,11 +1,12 @@
 #import <UIKit/UIKit.h>
 
-@interface TGModernGalleryInterfaceView : UIView
+#import "TGModernGalleryItem.h"
 
-@property (nonatomic, copy) void (^closePressed)();
+@protocol TGModernGalleryInterfaceView <NSObject>
 
-@property (nonatomic, strong, readonly) UIView *navigationBarView;
-@property (nonatomic, strong, readonly) UIView *toolbarView;
+- (void)setClosePressed:(void (^)())closePressed;
+
+- (void)itemFocused:(id<TGModernGalleryItem>)item;
 
 - (void)addItemHeaderView:(UIView *)itemHeaderView;
 - (void)removeItemHeaderView:(UIView *)itemHeaderView;
@@ -19,5 +20,8 @@
 - (void)animateTransitionInWithDuration:(NSTimeInterval)dutation;
 - (void)animateTransitionOutWithDuration:(NSTimeInterval)dutation;
 - (void)setTransitionOutProgress:(CGFloat)transitionOutProgress;
+
+- (bool)prefersStatusBarHidden;
+- (bool)allowsHide;
 
 @end

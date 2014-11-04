@@ -31,7 +31,6 @@
     id<TGModernMediaListItem> _hiddenItem;
     
     void (^_recycleItemContentView)(TGModernMediaListItemContentView *);
-    
     NSMutableArray *_storedItemContentViews;
 }
 

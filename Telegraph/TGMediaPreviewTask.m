@@ -19,6 +19,8 @@
 
 #import "TL/TLMetaScheme.h"
 
+#import "TGMediaStoreContext.h"
+
 @interface TGMediaPreviewTask () <ASWatcher>
 {
     volatile bool _idCancelled;
@@ -31,6 +33,7 @@
 
 @property (nonatomic, strong) ASHandle *actionHandle;
 @property (nonatomic, copy) void (^completion)(bool);
+@property (nonatomic, copy) void (^completionWithData)(NSData *);
 @property (nonatomic, copy) void (^progress)(float);
 
 @end
@@ -59,36 +62,26 @@
     _workerTask = workerTask;
     _progress = progress;
     
-    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/img/(download:%@)", uri] options:@{} flags:0 watcher:self];
-    return;
-    
-    if (_uri.length != 0 && _targetFilePath.length != 0)
+    if ([uri hasPrefix:@"http://"] || [uri hasPrefix:@"https://"])
     {
-        id inputFileLocation = nil;
-
-        int datacenterId = 0;
-        int64_t volumeId = 0;
-        int localId = 0;
-        int64_t secret = 0;
-        if (extractFileUrlComponents(_uri, &datacenterId, &volumeId, &localId, &secret))
-        {
-            TLInputFileLocation$inputFileLocation *concreteLocation = [[TLInputFileLocation$inputFileLocation alloc] init];
-            concreteLocation.volume_id = volumeId;
-            concreteLocation.local_id = localId;
-            concreteLocation.secret = secret;
-            
-            inputFileLocation = concreteLocation;
-        }
-
-        if (inputFileLocation != nil)
-        {
-            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/multipart-file/(%@)", _uri] options:@{
-                @"fileLocation": inputFileLocation,
-                @"storeFilePath": _targetFilePath,
-                @"datacenterId": @(datacenterId)
-            } watcher:self];
-        }
+        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/temporaryDownload/(%@)", uri] options:@{@"url": uri, @"path": targetFilePath == nil ? @"" : targetFilePath, @"cache": [[TGMediaStoreContext instance] temporaryFilesCache]} flags:0 watcher:self];
     }
+    else
+    {
+        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/img/(download:%@)", uri] options:@{} flags:0 watcher:self];
+    }
+}
+
+- (void)executeTempDownloadWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri progress:(void (^)(float))progress completionWithData:(void (^)(NSData *))completionWithData workerTask:(TGWorkerTask *)workerTask
+{
+    _actionHandle = [[ASHandle alloc] initWithDelegate:self];
+    _targetFilePath = targetFilePath;
+    _uri = uri;
+    _completionWithData = completionWithData;
+    _workerTask = workerTask;
+    _progress = progress;
+    
+    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/temporaryDownload/(%@)", uri] options:@{@"url": uri} flags:0 watcher:self];
 }
 
 - (void)dealloc
@@ -111,10 +104,12 @@
         [ActionStageInstance() removeWatcherByHandle:_actionHandle];
 }
 
-- (void)actorCompleted:(int)status path:(NSString *)__unused path result:(id)__unused result
+- (void)actorCompleted:(int)status path:(NSString *)__unused path result:(id)result
 {
     if (_completion != nil)
         _completion(status == ASStatusSuccess);
+    if (_completionWithData != nil)
+        _completionWithData(status == ASStatusSuccess ? result : nil);
 }
 
 - (void)actorMessageReceived:(NSString *)__unused path messageType:(NSString *)messageType message:(id)message

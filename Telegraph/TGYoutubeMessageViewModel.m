@@ -14,6 +14,8 @@
 
 #import "TGModernImageViewModel.h"
 
+#import "TGViewController.h"
+
 @interface TGYoutubeMessageViewModel () <ASWatcher>
 {
     NSString *_videoId;
@@ -23,8 +25,6 @@
     TGYoutubeDataContentProperty *_youtubeData;
     
     bool _didRequestInfo;
-    
-    TGModernImageViewModel *_buttonView;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -37,7 +37,7 @@
 {
     TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
     
-    CGFloat maxSide = TGIsPad() ? 312.0f : 294.0f;
+    CGFloat maxSide = TGIsPad() ? 312.0f : ([TGViewController hasLargeScreen] ? 294.0f : 256.0f);
     CGSize size = CGSizeMake(maxSide, CGFloor(maxSide * 9.0f / 16.0f));
     
     [imageInfo addImageWithSize:size url:[[NSString alloc] initWithFormat:@"youtube-preview://?videoId=%@&width=%d&height=%d", videoId, (int)size.width, (int)size.height]];
@@ -51,10 +51,6 @@
         _mediaIsAvailable = true;
         self.imageModel.frame = CGRectMake(0, 0, size.width, size.height);
         
-        _buttonView = [[TGModernImageViewModel alloc] initWithImage:[UIImage imageNamed:@"ModernMessageYoutubeButton.png"]];
-        [_buttonView sizeToFit];
-        [self.imageModel addSubmodel:_buttonView];
-        
         _videoUrl = message.text;
         if ([_videoUrl hasPrefix:@"http://"])
             _videoUrl = [_videoUrl substringFromIndex:@"http://".length];
@@ -62,7 +58,7 @@
             _videoUrl = [_videoUrl substringFromIndex:@"https://".length];
         
         _youtubeData = message.contentProperties[@"youtube"];
-        [self _updateYoutubeData];
+        [self _updateYoutubeData:false];
     }
     return self;
 }
@@ -110,12 +106,12 @@
     return nil;
 }
 
-- (void)_updateYoutubeData
+- (void)_updateYoutubeData:(bool)animated
 {
-    [self.imageModel setAdditionalDataString:self.defaultAdditionalDataString];
+    [self.imageModel setAdditionalDataString:self.defaultAdditionalDataString animated:animated];
     if (_youtubeData != nil)
     {
-        [self.imageModel setDetailStrings:@[_youtubeData.title == nil ? @"" : _youtubeData.title, _videoUrl == nil ? @"" : _videoUrl]];
+        [self.imageModel setDetailStrings:@[_youtubeData.title == nil ? @"" : _youtubeData.title, _videoUrl == nil ? @"" : _videoUrl] animated:animated];
     }
     else
         [self.imageModel setDetailStrings:@[]];
@@ -143,8 +139,6 @@
 - (void)layoutForContainerSize:(CGSize)containerSize
 {
     [super layoutForContainerSize:containerSize];
-    
-    _buttonView.frame = (CGRect){{CGFloor((self.imageModel.frame.size.width - _buttonView.frame.size.width) / 2.0f), CGFloor((self.imageModel.frame.size.height - _buttonView.frame.size.height) / 2.0f)}, _buttonView.frame.size};
 }
 
 - (void)actorCompleted:(int)status path:(NSString *)path result:(id)result
@@ -156,7 +150,7 @@
             if (status == ASStatusSuccess)
             {
                 _youtubeData = result[@"youtube"];
-                [self _updateYoutubeData];
+                [self _updateYoutubeData:true];
             }
         });
     }

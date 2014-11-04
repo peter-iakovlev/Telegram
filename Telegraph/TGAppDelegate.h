@@ -47,8 +47,6 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 
 @property (nonatomic, strong, readonly) ASHandle *actionHandle;
 
-@property (nonatomic, strong) TGGlobalContext *globalContext;
-
 @property (nonatomic, strong) TGPhoneMainViewController *phoneMainViewController;
 @property (nonatomic, strong) TGTabletMainViewController *tabletMainViewController;
 

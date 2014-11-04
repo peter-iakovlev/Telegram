@@ -42,6 +42,7 @@ typedef enum {
 @property (nonatomic, strong) NSString *placeholder;
 
 @property (nonatomic) bool showActivity;
+@property (nonatomic) bool delayActivity;
 
 - (instancetype)initWithFrame:(CGRect)frame style:(TGSearchBarStyle)style;
 

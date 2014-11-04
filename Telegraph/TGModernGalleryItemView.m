@@ -25,6 +25,10 @@
 {
 }
 
+- (void)setIsCurrent:(bool)__unused isCurrent
+{
+}
+
 - (UIView *)headerView
 {
     return nil;

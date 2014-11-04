@@ -208,6 +208,21 @@ static std::set<int> autorotationLockIds;
     return isWidescreen;
 }
 
++ (bool)hasLargeScreen
+{
+    static bool value = false;
+    
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        CGSize screenSize = [TGViewController screenSizeForInterfaceOrientation:UIInterfaceOrientationPortrait];
+        CGFloat side = MAX(screenSize.width, screenSize.height);
+        value = side >= 667.0f - FLT_EPSILON;
+    });
+    
+    return value;
+}
+
 + (void)disableAutorotation
 {
     autorotationDisabled = true;

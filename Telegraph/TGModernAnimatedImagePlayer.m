@@ -5,6 +5,8 @@
 
 #import "TGImageBlur.h"
 
+#import "TGImageUtils.h"
+
 @interface TGModernAnimatedImagePlayer ()
 {
     FLAnimatedImage *_image;
@@ -16,7 +18,7 @@
 
 @implementation TGModernAnimatedImagePlayer
 
-- (instancetype)initWithSize:(CGSize)size path:(NSString *)path
+- (instancetype)initWithSize:(CGSize)size renderSize:(CGSize)renderSize path:(NSString *)path
 {
     self = [super init];
     if (self != nil)
@@ -24,7 +26,20 @@
         NSData *data = [[NSData alloc] initWithContentsOfURL:[NSURL fileURLWithPath:path] options:NSDataReadingMappedIfSafe error:nil];
         _image = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data imageDrawingBlock:^UIImage *(UIImage *image)
         {
-            return TGAnimationFrameAttachmentImage(image, size);
+            return TGAnimationFrameAttachmentImage(image, size, renderSize);
+        }];
+    }
+    return self;
+}
+
+- (instancetype)initWithSize:(CGSize)size data:(NSData *)data
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _image = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data imageDrawingBlock:^UIImage *(UIImage *image)
+        {
+            return TGScaleImageToPixelSize(image, size);
         }];
     }
     return self;
@@ -50,9 +65,13 @@
     if (image != nil)
     {
         gotFrame = true;
-        _currentFrame++;
-        if (_currentFrame >= (NSInteger)_image.delayTimes.count)
-            _currentFrame = 0;
+        
+        if ([[NSRunLoop mainRunLoop].currentMode isEqualToString:NSDefaultRunLoopMode])
+        {
+            _currentFrame++;
+            if (_currentFrame >= (NSInteger)_image.delayTimes.count)
+                _currentFrame = 0;
+        }
         
         if (_frameReady)
             _frameReady(image);

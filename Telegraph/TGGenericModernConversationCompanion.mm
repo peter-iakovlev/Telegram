@@ -37,6 +37,8 @@
 #import "TGPreparedRemoteDocumentMessage.h"
 #import "TGPreparedLocalAudioMessage.h"
 #import "TGPreparedRemoteAudioMessage.h"
+#import "TGPreparedDownloadImageMessage.h"
+#import "TGPreparedDownloadDocumentMessage.h"
 
 #import "TGForwardTargetController.h"
 
@@ -55,6 +57,16 @@
 #import "NSObject+TGLock.h"
 
 #import "TGProgressWindow.h"
+
+#import "TGBingSearchResultItem.h"
+#import "TGGiphySearchResultItem.h"
+#import "TGWebSearchInternalImageResult.h"
+#import "TGWebSearchInternalGifResult.h"
+
+#import "TGMediaStoreContext.h"
+#import "TGModernSendCommonMessageActor.h"
+#import "TGWebSearchController.h"
+#import "TGWebSearchInternalImageResult.h"
 
 #import <map>
 #import <vector>
@@ -245,11 +257,42 @@ typedef enum {
     }];
 }
 
+- (void)_addMediaRecentsFromMessages:(NSArray *)messages
+{
+    for (TGMessage *message in messages)
+    {
+        if (message.outgoing)
+            continue;
+        
+        for (id attachment in message.mediaAttachments)
+        {
+            if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
+            {
+                TGImageMediaAttachment *imageAttachment = attachment;
+                if (imageAttachment.imageId != 0)
+                {
+                    [TGWebSearchController addRecentSelectedItems:@[[[TGWebSearchInternalImageResult alloc] initWithImageId:imageAttachment.imageId accessHash:imageAttachment.accessHash imageInfo:imageAttachment.imageInfo]]];
+                }
+            }
+            else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
+            {
+                TGDocumentMediaAttachment *documentAttachment = attachment;
+                if ([documentAttachment.mimeType isEqualToString:@"image/gif"] && documentAttachment.thumbnailInfo != nil && documentAttachment.documentId != 0)
+                {
+                    [TGWebSearchController addRecentSelectedItems:@[[[TGWebSearchInternalGifResult alloc] initWithDocumentId:documentAttachment.documentId accessHash:documentAttachment.accessHash size:documentAttachment.size fileName:documentAttachment.fileName mimeType:documentAttachment.mimeType thumbnailInfo:documentAttachment.thumbnailInfo]]];
+                }
+            }
+        }
+    }
+}
+
 - (void)standaloneForwardMessages:(NSArray *)messages
 {
     [TGModernConversationCompanion dispatchOnMessageQueue:^
     {
         [self _sendPreparedMessages:[self _createPreparedForwardMessagesFromMessages:messages] automaticallyAddToList:true withIntent:TGSendMessageIntentSendOther];
+        
+        [self _addMediaRecentsFromMessages:messages];
     }];
 }
 
@@ -276,6 +319,8 @@ typedef enum {
             if (_initialForwardMessagePayload.count != 0)
             {
                 [self _sendPreparedMessages:[self _createPreparedForwardMessagesFromMessages:_initialForwardMessagePayload] automaticallyAddToList:false withIntent:TGSendMessageIntentOther];
+                
+                [self _addMediaRecentsFromMessages:_initialForwardMessagePayload];
             }
             _initialForwardMessagePayload = nil;
             
@@ -865,17 +910,35 @@ typedef enum {
                     
                     NSString *url = [imageAttachment.imageInfo closestImageUrlWithSize:(CGSizeMake(1136, 1136)) resultingSize:NULL pickLargest:true];
                     
-                    NSString *path = [cache pathForCachedData:url];
-                    if (path != nil)
+                    bool imageDownloaded = false;
+                    
+                    if ([url hasPrefix:@"http://"] || [url hasPrefix:@"https://"])
                     {
-                        bool imageDownloaded = ([url hasPrefix:@"upload/"] || [url hasPrefix:@"file://"]) ? true : [fileManager fileExistsAtPath:path];
-                        
-                        if (item->_mediaAvailabilityStatus != imageDownloaded)
+                        imageDownloaded = [[[TGMediaStoreContext instance] temporaryFilesCache] containsValueForKey:[url dataUsingEncoding:NSUTF8StringEncoding]];
+                    }
+                    else
+                    {
+                        if (imageAttachment.imageId != 0)
                         {
-                            TGMessageModernConversationItem *updatedItem = [item copy];
-                            updatedItem->_mediaAvailabilityStatus = imageDownloaded;
-                            return updatedItem;
+                            NSString *path = [TGPreparedRemoteImageMessage filePathForRemoteImageId:imageAttachment.imageId];
+                            imageDownloaded = [fileManager fileExistsAtPath:path];
                         }
+                        
+                        if (!imageDownloaded)
+                        {
+                            NSString *path = [cache pathForCachedData:url];
+                            if (path != nil)
+                            {
+                                imageDownloaded = ([url hasPrefix:@"upload/"] || [url hasPrefix:@"file://"]) ? true : [fileManager fileExistsAtPath:path];
+                            }
+                        }
+                    }
+                    
+                    if (item->_mediaAvailabilityStatus != imageDownloaded)
+                    {
+                        TGMessageModernConversationItem *updatedItem = [item copy];
+                        updatedItem->_mediaAvailabilityStatus = imageDownloaded;
+                        return updatedItem;
                     }
                     
                     break;
@@ -1119,6 +1182,62 @@ typedef enum {
     return nil;
 }
 
+- (NSDictionary *)imageDescriptionFromBingSearchResult:(TGBingSearchResultItem *)item
+{
+    if (item != nil)
+    {
+        TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
+        [imageInfo addImageWithSize:item.imageSize url:item.imageUrl];
+        [imageInfo addImageWithSize:item.previewSize url:item.previewUrl];
+        return @{@"downloadImage": @{@"imageInfo": imageInfo}};
+    }
+    
+    return nil;
+}
+
+- (NSDictionary *)documentDescriptionFromGiphySearchResult:(TGGiphySearchResultItem *)item
+{
+    if (item != nil && item.gifId.length != 0)
+    {
+        TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
+        [imageInfo addImageWithSize:item.previewSize url:item.previewUrl];
+        return @{@"downloadDocument": @{
+                @"id": item.gifId,
+                @"thumbnailInfo": imageInfo,
+                @"url": item.gifUrl,
+                @"fileSize": @(item.gifFileSize)
+            }
+        };
+    }
+    
+    return nil;
+}
+
+- (NSDictionary *)imageDescriptionFromInternalSearchImageResult:(TGWebSearchInternalImageResult *)item
+{
+    return @{
+        @"remoteImage": @{
+            @"imageId": @(item.imageId),
+            @"accessHash": @(item.accessHash),
+            @"imageInfo": item.imageInfo
+        }
+    };
+}
+
+- (NSDictionary *)documentDescriptionFromInternalSearchResult:(TGWebSearchInternalGifResult *)item
+{
+    return @{
+        @"remoteDocument": @{
+            @"documentId": @(item.documentId),
+            @"accessHash": @(item.accessHash),
+            @"size": @(item.size),
+            @"fileName": item.fileName,
+            @"mimeType": item.mimeType,
+            @"thumbnailInfo": item.thumbnailInfo
+        }
+    };
+}
+
 - (void)controllerWantsToSendImagesWithDescriptions:(NSArray *)imageDescriptions
 {
     [TGModernConversationCompanion dispatchOnMessageQueue:^
@@ -1140,6 +1259,58 @@ typedef enum {
                 TGPreparedRemoteImageMessage *imageMessage = [[TGPreparedRemoteImageMessage alloc] initWithImageId:[remoteImage[@"imageId"] longLongValue] accessHash:[remoteImage[@"accessHash"] longLongValue] imageInfo:remoteImage[@"imageInfo"]];
                 
                 [preparedMessages addObject:imageMessage];
+            }
+            else if (imageDescription[@"downloadImage"] != nil)
+            {
+                NSDictionary *downloadImage = imageDescription[@"downloadImage"];
+                TGImageInfo *imageInfo = downloadImage[@"imageInfo"];
+                
+                TGImageMediaAttachment *imageAttachment = [TGModernSendCommonMessageActor remoteImageByRemoteUrl:[imageInfo imageUrlForLargestSize:NULL]];
+                if ([self controllerShouldCacheServerAssets] && imageAttachment != nil)
+                {
+                    TGPreparedRemoteImageMessage *remoteImageMessage = [[TGPreparedRemoteImageMessage alloc] initWithImageId:imageAttachment.imageId accessHash:imageAttachment.accessHash imageInfo:imageAttachment.imageInfo];
+                    
+                    [preparedMessages addObject:remoteImageMessage];
+                }
+                else
+                {
+                    TGPreparedDownloadImageMessage *downloadImageMessage = [[TGPreparedDownloadImageMessage alloc] initWithImageInfo:imageInfo];
+                    
+                    [preparedMessages addObject:downloadImageMessage];
+                }
+            }
+            else if (imageDescription[@"downloadDocument"] != nil)
+            {
+                NSDictionary *downloadDocument = imageDescription[@"downloadDocument"];
+                
+                TGDocumentMediaAttachment *documentAttachment = [TGModernSendCommonMessageActor remoteDocumentByGiphyId:downloadDocument[@"id"]];
+                if ([self controllerShouldCacheServerAssets] && documentAttachment != nil)
+                {
+                    TGPreparedRemoteDocumentMessage *remoteDocumentMessage = [[TGPreparedRemoteDocumentMessage alloc] initWithDocumentMedia:documentAttachment];
+                    [preparedMessages addObject:remoteDocumentMessage];
+                }
+                else
+                {
+                    int64_t localDocumentId = 0;
+                    arc4random_buf(&localDocumentId, 8);
+                    TGPreparedDownloadDocumentMessage *downloadDocumentMessage = [[TGPreparedDownloadDocumentMessage alloc] initWithGiphyId:downloadDocument[@"id"] documentUrl:downloadDocument[@"url"] localDocumentId:localDocumentId fileName:@"animation.gif" mimeType:@"image/gif" size:[downloadDocument[@"fileSize"] intValue] thumbnailInfo:downloadDocument[@"thumbnailInfo"]];
+                    
+                    [preparedMessages addObject:downloadDocumentMessage];
+                }
+            }
+            else if (imageDescription[@"remoteDocument"] != nil)
+            {
+                NSDictionary *remoteDocument = imageDescription[@"remoteDocument"];
+                TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
+                documentAttachment.documentId = [remoteDocument[@"documentId"] longLongValue];
+                documentAttachment.accessHash = [remoteDocument[@"accessHash"] longLongValue];
+                documentAttachment.size = [remoteDocument[@"size"] intValue];
+                documentAttachment.fileName = remoteDocument[@"fileName"];
+                documentAttachment.mimeType = remoteDocument[@"mimeType"];
+                documentAttachment.thumbnailInfo = remoteDocument[@"thumbnailInfo"];
+                
+                TGPreparedRemoteDocumentMessage *remoteDocumentMessage = [[TGPreparedRemoteDocumentMessage alloc] initWithDocumentMedia:documentAttachment];
+                [preparedMessages addObject:remoteDocumentMessage];
             }
         }
         
@@ -1454,8 +1625,15 @@ typedef enum {
                             NSString *thumbnailUrl = [imageAttachment.imageInfo closestImageUrlWithSize:thumbnailSize resultingSize:&thumbnailSize];
                             CGSize imageSize = CGSizeZero;
                             NSString *imageUrl = [imageAttachment.imageInfo closestImageUrlWithSize:CGSizeMake(1136, 1146) resultingSize:&imageSize];
-                            
-                            if (thumbnailUrl != nil && imageUrl != nil)
+                         
+                            if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
+                            {
+                                TGPreparedDownloadImageMessage *downloadImageMessage = [[TGPreparedDownloadImageMessage alloc] initWithImageInfo:imageAttachment.imageInfo];
+                                if (!copyAssetsData)
+                                    downloadImageMessage.replacingMid = message.mid;
+                                [preparedMessages addObject:downloadImageMessage];
+                            }
+                            else if (thumbnailUrl != nil && imageUrl != nil)
                             {
                                 if (copyAssetsData)
                                 {
@@ -1551,34 +1729,45 @@ typedef enum {
                         TGPreparedRemoteDocumentMessage *remoteDocumentMessage = [[TGPreparedRemoteDocumentMessage alloc] initWithDocumentMedia:documentAttachment];
                         if (!copyAssetsData)
                             remoteDocumentMessage.replacingMid = message.mid;
-                        [preparedMessages addObject:documentAttachment];
+                        [preparedMessages addObject:remoteDocumentMessage];
                     }
                     else if (documentAttachment.localDocumentId != 0)
                     {
-                        CGSize thumbnailSize = CGSizeZero;
-                        NSString *thumbnailUrl = nil;
-                        CGSize largestSize = CGSizeZero;
-                        if ([documentAttachment.thumbnailInfo imageUrlForLargestSize:&largestSize] != nil)
+                        if (message.contentProperties[@"downloadDocumentUrl"] != nil)
                         {
-                            thumbnailSize = TGFitSize(largestSize, CGSizeMake(90, 90));
-                            thumbnailUrl = [documentAttachment.thumbnailInfo closestImageUrlWithSize:thumbnailSize resultingSize:&thumbnailSize];
+                            TGDownloadDocumentUrl *documentUrl = message.contentProperties[@"downloadDocumentUrl"];
+                            TGPreparedDownloadDocumentMessage *downloadDocumentMessage = [[TGPreparedDownloadDocumentMessage alloc] initWithGiphyId:documentUrl.giphyId documentUrl:documentUrl.documentUrl localDocumentId:documentAttachment.localDocumentId fileName:documentAttachment.fileName mimeType:documentAttachment.mimeType size:documentAttachment.size thumbnailInfo:documentAttachment.thumbnailInfo];
+                            if (!copyAssetsData)
+                                downloadDocumentMessage.replacingMid = message.mid;
+                            [preparedMessages addObject:downloadDocumentMessage];
                         }
-                        
-                        if (documentAttachment.thumbnailInfo == nil || thumbnailUrl != nil)
+                        else
                         {
-                            if (copyAssetsData)
+                            CGSize thumbnailSize = CGSizeZero;
+                            NSString *thumbnailUrl = nil;
+                            CGSize largestSize = CGSizeZero;
+                            if ([documentAttachment.thumbnailInfo imageUrlForLargestSize:&largestSize] != nil)
                             {
-                                TGPreparedLocalDocumentMessage *localDocumentMessage = [TGPreparedLocalDocumentMessage messageByCopyingDataFromMedia:documentAttachment];
-                                if (!copyAssetsData)
-                                    localDocumentMessage.replacingMid = message.mid;
-                                [preparedMessages addObject:localDocumentMessage];
+                                thumbnailSize = TGFitSize(largestSize, CGSizeMake(90, 90));
+                                thumbnailUrl = [documentAttachment.thumbnailInfo closestImageUrlWithSize:thumbnailSize resultingSize:&thumbnailSize];
                             }
-                            else
+                            
+                            if (documentAttachment.thumbnailInfo == nil || thumbnailUrl != nil)
                             {
-                                TGPreparedLocalDocumentMessage *localDocumentMessage = [TGPreparedLocalDocumentMessage messageWithLocalDocumentId:documentAttachment.localDocumentId size:documentAttachment.size fileName:documentAttachment.fileName mimeType:documentAttachment.mimeType localThumbnailDataPath:thumbnailUrl thumbnailSize:thumbnailSize];
-                                if (!copyAssetsData)
-                                    localDocumentMessage.replacingMid = message.mid;
-                                [preparedMessages addObject:localDocumentMessage];
+                                if (copyAssetsData)
+                                {
+                                    TGPreparedLocalDocumentMessage *localDocumentMessage = [TGPreparedLocalDocumentMessage messageByCopyingDataFromMedia:documentAttachment];
+                                    if (!copyAssetsData)
+                                        localDocumentMessage.replacingMid = message.mid;
+                                    [preparedMessages addObject:localDocumentMessage];
+                                }
+                                else
+                                {
+                                    TGPreparedLocalDocumentMessage *localDocumentMessage = [TGPreparedLocalDocumentMessage messageWithLocalDocumentId:documentAttachment.localDocumentId size:documentAttachment.size fileName:documentAttachment.fileName mimeType:documentAttachment.mimeType localThumbnailDataPath:thumbnailUrl thumbnailSize:thumbnailSize];
+                                    if (!copyAssetsData)
+                                        localDocumentMessage.replacingMid = message.mid;
+                                    [preparedMessages addObject:localDocumentMessage];
+                                }
                             }
                         }
                     }
@@ -1755,7 +1944,7 @@ typedef enum {
         else if ([preparedMessage isKindOfClass:[TGPreparedRemoteVideoMessage class]])
             minLifetime = (int32_t)((TGPreparedRemoteVideoMessage *)preparedMessage).duration;
         
-        preparedMessage.messageLifetime = MAX([self messageLifetime], minLifetime);
+        preparedMessage.messageLifetime = [self messageLifetime] == 0 ? 0 : MAX([self messageLifetime], minLifetime);
         
         if (preparedMessage.randomId == 0)
         {
@@ -2887,9 +3076,10 @@ typedef enum {
             {
                 int32_t previousMid = (int32_t)[result[@"previousMid"] intValue];
                 _messageUploadProgress.erase(previousMid);
-                [self _updateItemProgress:previousMid animated:true];
                 
                 [self _updateMessageDelivered:previousMid mid:[result[@"mid"] intValue] date:[result[@"date"] intValue] message:result[@"message"]];
+                
+                [self _updateItemProgress:[result[@"mid"] intValue] animated:true];
             }
         }];
     }

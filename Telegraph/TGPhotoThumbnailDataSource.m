@@ -231,6 +231,15 @@ static ASQueue *taskManagementQueue()
         return false;
     }
     
+    NSString *imageUrl = args[@"legacy-thumbnail-cache-url"];
+    if (imageUrl.length != 0)
+    {
+        if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
+        {
+            return [[[TGMediaStoreContext instance] temporaryFilesCache] containsValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+    }
+    
     static NSString *filesDirectory = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
@@ -345,7 +354,8 @@ static ASQueue *taskManagementQueue()
         if (image == nil)
         {
             image = [[UIImage alloc] initWithContentsOfFile:temporaryThumbnailImagePath];
-            lowQualityThumbnail = true;
+            if (image != nil)
+                lowQualityThumbnail = true;
         }
         
         if (image == nil && [args[@"legacy-thumbnail-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
@@ -354,6 +364,25 @@ static ASQueue *taskManagementQueue()
             if (image != nil)
             {
                 [[NSFileManager defaultManager] copyItemAtPath:[[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]] toPath:temporaryThumbnailImagePath error:nil];
+                lowQualityThumbnail = true;
+            }
+        }
+        
+        if (image == nil)
+        {
+            NSString *imageUrl = args[@"legacy-thumbnail-cache-url"];
+            if (imageUrl.length != 0)
+            {
+                if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
+                {
+                    NSData *imageData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+                    if (imageData != nil)
+                    {
+                        image = [[UIImage alloc] initWithData:imageData];
+                        if (image != nil)
+                            lowQualityThumbnail = true;
+                    }
+                }
             }
         }
         

@@ -71,6 +71,8 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
+        _delayActivity = true;
+        
         _wrappingClip = [[UIView alloc] initWithFrame:CGRectMake(0.0f, -20.0f, frame.size.width, frame.size.height + 20.0f)];
         _wrappingClip.clipsToBounds = true;
         [self addSubview:_wrappingClip];
@@ -299,6 +301,8 @@
         
         [_wrappingView addSubview:_customTextField];
         [_wrappingView addSubview:_customClearButton];
+        
+        [self setNeedsLayout];
     }
     
     return _customTextField;
@@ -384,7 +388,7 @@
                 [self layoutSubviews];
                 
                 _customActiveBackgroundView.alpha = showsCancelButton ? 1.0f : 0.0f;
-            } completion:^(BOOL finished)
+            } completion:^(__unused BOOL finished)
             {
                 //if (finished)
                 {
@@ -408,7 +412,10 @@
             _wrappingClip.clipsToBounds = !showsCancelButton;
             
             if (_customScopeButtonTitles.count > 1)
+            {
                 [self setSearchBarShouldShowScopeControl:showsCancelButton];
+                _customScopeButtonContainer.alpha = showsCancelButton ? 1.0f : 0.0f;
+            }
             
             _customTextField.alpha = showsCancelButton ? 1.0f : 0.0f;
             _customClearButton.alpha = _customTextField.alpha;
@@ -692,6 +699,11 @@
     return _customSegmentedControl.selectedSegmentIndex;
 }
 
+- (void)setSelectedScopeButtonIndex:(int)selectedScopeButtonIndex
+{
+    [self.customSegmentedControl setSelectedSegmentIndex:selectedScopeButtonIndex];
+}
+
 - (void)setPlaceholder:(NSString *)placeholder
 {
     _placeholderLabel.text = placeholder;
@@ -707,7 +719,10 @@
 
 - (void)setText:(NSString *)text
 {
-    _customTextField.text = text;
+    bool layout = _customTextField == nil;
+    self.customTextField.text = text;
+    if (layout)
+        [self setNeedsLayout];
     
     [self textFieldDidChange:_customTextField];
 }
@@ -766,7 +781,12 @@
         
         _showActivity = showActivity;
         
-        _searchActivityTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(searchActivityTimerEvent) interval:0.2 repeat:false];
+        if (_delayActivity && showActivity)
+        {
+            _searchActivityTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(searchActivityTimerEvent) interval:0.2 repeat:false];
+        }
+        else
+            [self searchActivityTimerEvent];
     }
 }
 

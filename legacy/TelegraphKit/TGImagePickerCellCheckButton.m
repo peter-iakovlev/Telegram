@@ -16,6 +16,13 @@ static UIImage *checkImageChecked()
     return image;
 }
 
+@interface TGImagePickerCellCheckButton ()
+{
+    bool _checked;
+}
+
+@end
+
 @implementation TGImagePickerCellCheckButton
 
 - (id)initWithFrame:(CGRect)frame
@@ -59,8 +66,15 @@ static UIImage *checkImageChecked()
     [super touchesCancelled:touches withEvent:event];
 }
 
+- (bool)checked
+{
+    return _checked;
+}
+
 - (void)setChecked:(bool)checked animated:(bool)animated
 {
+    _checked = checked;
+    
     _checkView.image = checked ? checkImageChecked() : checkImageNormal();
     
     if (animated)
@@ -70,7 +84,7 @@ static UIImage *checkImageChecked()
         {
             [UIView animateWithDuration:0.12 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^
              {
-                 _checkView.transform = CGAffineTransformMakeScale(1.16, 1.16f);
+                 _checkView.transform = CGAffineTransformMakeScale(1.16f, 1.16f);
              } completion:^(BOOL finished)
              {
                  if (finished)
@@ -85,9 +99,9 @@ static UIImage *checkImageChecked()
         else
         {
             [UIView animateWithDuration:0.16 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^
-             {
-                 _checkView.transform = CGAffineTransformIdentity;
-             } completion:nil];
+            {
+                _checkView.transform = CGAffineTransformIdentity;
+            } completion:nil];
         }
     }
     else

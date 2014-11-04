@@ -29,6 +29,11 @@
     });
 }
 
+- (UIView<TGModernGalleryInterfaceView> *)createInterfaceView
+{
+    return nil;
+}
+
 - (UIView<TGModernGalleryDefaultHeaderView> *)createDefaultHeaderView
 {
     return nil;

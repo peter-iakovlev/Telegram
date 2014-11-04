@@ -8,17 +8,18 @@
 
 #import <UIKit/UIKit.h>
 
+#import "TGModernGalleryInterfaceView.h"
+
 @class TGModernGalleryScrollView;
-@class TGModernGalleryInterfaceView;
 
 @interface TGModernGalleryView : UIView
 
 @property (nonatomic, copy) bool (^transitionOut)(CGFloat velocity);
 
-@property (nonatomic, strong, readonly) TGModernGalleryInterfaceView *interfaceView;
+@property (nonatomic, strong, readonly) UIView<TGModernGalleryInterfaceView> *interfaceView;
 @property (nonatomic, strong, readonly) TGModernGalleryScrollView *scrollView;
 
-- (instancetype)initWithFrame:(CGRect)frame itemPadding:(CGFloat)itemPadding;
+- (instancetype)initWithFrame:(CGRect)frame itemPadding:(CGFloat)itemPadding interfaceView:(UIView<TGModernGalleryInterfaceView> *)interfaceView;
 
 - (bool)shouldAutorotate;
 

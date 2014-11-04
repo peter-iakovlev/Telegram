@@ -151,7 +151,16 @@ static ASQueue *taskManagementQueue()
 {
     NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"animation-thumbnail://?".length]];
     
-    if ((![args[@"id"] respondsToSelector:@selector(longLongValue)] && [args[@"local-id"] respondsToSelector:@selector(longLongValue)]) || ![args[@"width"] respondsToSelector:@selector(intValue)] || ![args[@"height"] respondsToSelector:@selector(intValue)] || ![args[@"renderWidth"] respondsToSelector:@selector(intValue)] || ![args[@"renderHeight"] respondsToSelector:@selector(intValue)] || ![args[@"file-name"] respondsToSelector:@selector(characterAtIndex:)])
+    NSString *imageUrl = args[@"legacy-thumbnail-cache-url"];
+    if (imageUrl.length != 0)
+    {
+        if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
+        {
+            return [[[TGMediaStoreContext instance] temporaryFilesCache] containsValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+    }
+    
+    if ((![args[@"id"] respondsToSelector:@selector(longLongValue)] && ![args[@"local-id"] respondsToSelector:@selector(longLongValue)]) || ![args[@"width"] respondsToSelector:@selector(intValue)] || ![args[@"height"] respondsToSelector:@selector(intValue)] || ![args[@"renderWidth"] respondsToSelector:@selector(intValue)] || ![args[@"renderHeight"] respondsToSelector:@selector(intValue)] || ![args[@"file-name"] respondsToSelector:@selector(characterAtIndex:)])
     {
         return false;
     }
@@ -329,7 +338,22 @@ static ASQueue *taskManagementQueue()
                 }
             }
             
-            lowQualityThumbnail = true;
+            if (image == nil)
+            {
+                NSString *imageUrl = args[@"legacy-thumbnail-cache-url"];
+                if (imageUrl.length != 0)
+                {
+                    if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
+                    {
+                        NSData *imageData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+                        if (imageData != nil)
+                            image = [[UIImage alloc] initWithData:imageData];
+                    }
+                }
+            }
+            
+            if (image != nil)
+                lowQualityThumbnail = true;
         }
         
         if (image != nil)

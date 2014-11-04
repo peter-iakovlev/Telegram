@@ -16,6 +16,8 @@
     pthread_rwlock_t _mediaReducedImageCacheLock;
     
     ATQueue *_mediaReducedImageGenerationQueue;
+    
+    TGModernCache *_temporaryFilesCache;
 }
 
 @end
@@ -37,9 +39,17 @@
         pthread_rwlock_init(&_mediaImageCacheLock, NULL);
         pthread_rwlock_init(&_mediaReducedImageCacheLock, NULL);
         
+        NSString *tempCachePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"tempcache"];
+        _temporaryFilesCache = [[TGModernCache alloc] initWithPath:tempCachePath size:10 * 1024 * 1024];
+        
         _mediaReducedImageGenerationQueue = [[ATQueue alloc] init];
     }
     return self;
+}
+
+- (TGModernCache *)temporaryFilesCache
+{
+    return _temporaryFilesCache;
 }
 
 + (TGMediaStoreContext *)instance

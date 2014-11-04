@@ -36,6 +36,7 @@
     TGDocumentMediaAttachment *_document;
     
     TGModernAnimatedImagePlayer *_player;
+    CGSize _renderSize;
 }
 
 @end
@@ -62,6 +63,7 @@
     NSString *legacyThumbnailCacheUri = [imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:&dimensions];
     dimensions.width *= 10.0f;
     dimensions.height *= 10.0f;
+    CGSize renderSize = CGSizeZero;
     
     if ((document.documentId != 0 || document.localDocumentId != 0) && legacyThumbnailCacheUri.length != 0)
     {
@@ -76,13 +78,14 @@
         [previewUri appendFormat:@"&file-name=%@", [document.fileName stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
         
         CGSize thumbnailSize = CGSizeZero;
-        CGSize renderSize = CGSizeZero;
         [TGImageMessageViewModel calculateImageSizesForImageSize:dimensions thumbnailSize:&thumbnailSize renderSize:&renderSize squareAspect:false];
         
         [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)thumbnailSize.width, (int)thumbnailSize.height, (int)renderSize.width, (int)renderSize.height];
         
         if (legacyThumbnailCacheUri != nil)
-            [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUri];
+        {
+            [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", [TGStringUtils stringByEscapingForURL:legacyThumbnailCacheUri]];
+        }
         
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
     }
@@ -91,6 +94,7 @@
     if (self != nil)
     {
         _document = document;
+        _renderSize = renderSize;
     }
     return self;
 }
@@ -113,6 +117,39 @@
     {
         if (attachment.type == TGDocumentMediaAttachmentType)
             _document = (TGDocumentMediaAttachment *)attachment;
+    }
+    
+    CGSize dimensions = CGSizeZero;
+    NSString *legacyThumbnailCacheUri = [_document.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:&dimensions];
+    dimensions.width *= 10.0f;
+    dimensions.height *= 10.0f;
+    
+    if ((_document.documentId != 0 || _document.localDocumentId != 0) && legacyThumbnailCacheUri.length != 0)
+    {
+        TGImageInfo *previewImageInfo = [[TGImageInfo alloc] init];
+        
+        NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"animation-thumbnail://?"];
+        if (_document.documentId != 0)
+            [previewUri appendFormat:@"id=%" PRId64 "", _document.documentId];
+        else
+            [previewUri appendFormat:@"local-id=%" PRId64 "", _document.localDocumentId];
+        
+        [previewUri appendFormat:@"&file-name=%@", [_document.fileName stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+        
+        CGSize thumbnailSize = CGSizeZero;
+        CGSize renderSize = CGSizeZero;
+        [TGImageMessageViewModel calculateImageSizesForImageSize:dimensions thumbnailSize:&thumbnailSize renderSize:&renderSize squareAspect:false];
+        
+        [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)thumbnailSize.width, (int)thumbnailSize.height, (int)renderSize.width, (int)renderSize.height];
+        
+        if (legacyThumbnailCacheUri != nil)
+        {
+            [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", [TGStringUtils stringByEscapingForURL:legacyThumbnailCacheUri]];
+        }
+        
+        [previewImageInfo addImageWithSize:renderSize url:previewUri];
+        
+        [self updateImageInfo:previewImageInfo];
     }
 }
 
@@ -166,7 +203,7 @@
         
         [_context.companionHandle requestAction:@"stopInlineMedia" options:@{}];
         
-        _player = [[TGModernAnimatedImagePlayer alloc] initWithSize:self.imageModel.frame.size path:filePath];
+        _player = [[TGModernAnimatedImagePlayer alloc] initWithSize:self.imageModel.frame.size renderSize:_renderSize path:filePath];
         __weak TGAnimatedImageMessageViewModel *weakSelf = self;
         _player.frameReady = ^(UIImage *image)
         {
@@ -174,11 +211,6 @@
             [strongSelf animationFrameReady:image];
         };
         
-        CGSize imageSize = self.imageModel.frame.size;
-        /*_player.filter = ^(UIImage *image)
-        {
-            return TGLoadedAttachmentImage(image, imageSize, NULL);
-        };*/
         [_player play];
         
         [self.imageModel setOverlayType:TGMessageImageViewOverlayNone];

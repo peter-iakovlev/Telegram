@@ -36,6 +36,7 @@
 - (void)prepareForRecycle;
 - (void)prepareForReuse;
 - (void)setIsVisible:(bool)isVisible;
+- (void)setIsCurrent:(bool)isCurrent;
 
 - (UIView *)headerView;
 - (UIView *)footerView;

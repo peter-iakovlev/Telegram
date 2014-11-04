@@ -400,7 +400,7 @@ The Telegram Team";
 "Conversation.DownloadProgressMegabytes" = "%1$.1fMb / %2$.1fMb";
 "Conversation.DownloadProgressKilobytes" = "%1$dKb / %2$dKb";
 "Conversation.ViewLocation" = "View Location";
-"Conversation.SearchWebImages" = "Search Web Images";
+"Conversation.SearchWebImages" = "Find Images";
 "Conversation.ShareMyContactInfo" = "Share My Contact Info";
 "Conversation.AddContact" = "Add Contact";
 "Conversation.SendMessage" = "Send Message";
@@ -755,3 +755,8 @@ You can use **a-z**, **0-9** and underscores. Minimum length is **5** characters
 
 "Username.CheckingUsername" = "Checking username...";
 "Username.UsernameIsAvailable" = "%@ is available.";
+
+"WebSearch.Images" = "Images";
+"WebSearch.GIFs" = "GIFs";
+"WebSearch.RecentSectionTitle" = "Recent";
+"WebSearch.RecentSectionClear" = "Clear";

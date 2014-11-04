@@ -48,6 +48,29 @@ struct TGImageSizeRecord
 
 @implementation TGImageInfo
 
+- (instancetype)initWithCoder:(NSCoder *)aDecoder
+{
+    self = [super init];
+    if (self != nil)
+    {
+        for (NSDictionary *sizeDict in [aDecoder decodeObjectForKey:@"sizes"])
+        {
+            [self addImageWithSize:CGSizeMake([sizeDict[@"width"] floatValue], [sizeDict[@"height"] floatValue]) url:sizeDict[@"url"] fileSize:[sizeDict[@"fileSize"] intValue]];
+        }
+    }
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder
+{
+    NSMutableArray *array = [[NSMutableArray alloc] init];
+    for (auto it : sizes)
+    {
+        [array addObject:@{@"width": @(it.size.width), @"height": @(it.size.height), @"url": it.url == nil ? @"" : it.url, @"fileSize": @(it.fileSize)}];
+    }
+    [aCoder encodeObject:array forKey:@"sizes"];
+}
+
 - (BOOL)isEqual:(id)object
 {
     if (![object isKindOfClass:[TGImageInfo class]])

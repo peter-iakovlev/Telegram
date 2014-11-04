@@ -47,4 +47,20 @@
     return message;
 }
 
++ (NSString *)filePathForRemoteImageId:(int64_t)imageId
+{
+    static NSString *filesDirectory = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        filesDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"files"];
+    });
+    
+    NSString *photoDirectoryName = [[NSString alloc] initWithFormat:@"image-remote-%" PRIx64 "", imageId];
+    NSString *photoDirectory = [filesDirectory stringByAppendingPathComponent:photoDirectoryName];
+    
+    NSString *imagePath = [photoDirectory stringByAppendingPathComponent:@"image.jpg"];
+    return imagePath;
+}
+
 @end

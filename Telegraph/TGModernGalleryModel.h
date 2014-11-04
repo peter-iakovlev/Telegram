@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 
+#import "TGModernGalleryInterfaceView.h"
 #import "TGModernGalleryDefaultHeaderView.h"
 #import "TGModernGalleryDefaultFooterView.h"
 #import "TGModernGalleryDefaultFooterAccessoryView.h"
@@ -24,6 +25,7 @@
 - (void)_replaceItems:(NSArray *)items focusingOnItem:(id<TGModernGalleryItem>)item;
 - (void)_focusOnItem:(id<TGModernGalleryItem>)item;
 
+- (UIView<TGModernGalleryInterfaceView> *)createInterfaceView;
 - (UIView<TGModernGalleryDefaultHeaderView> *)createDefaultHeaderView;
 - (UIView<TGModernGalleryDefaultFooterView> *)createDefaultFooterView;
 - (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultLeftAccessoryView;

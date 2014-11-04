@@ -29,6 +29,8 @@
 - (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue animated:(bool)animated;
 - (void)setDisplayTimestampProgress:(bool)displayTimestampProgress;
 - (void)setAdditionalDataString:(NSString *)additionalDataString;
+- (void)setAdditionalDataString:(NSString *)additionalDataString animated:(bool)animated;
 - (void)reloadImage:(bool)synchronous;
+- (void)setDetailStrings:(NSArray *)detailStrings animated:(bool)animated;
 
 @end

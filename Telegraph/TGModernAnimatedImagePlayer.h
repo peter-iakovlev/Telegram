@@ -4,7 +4,8 @@
 
 @property (nonatomic, copy) void (^frameReady)(UIImage *);
 
-- (instancetype)initWithSize:(CGSize)size path:(NSString *)path;
+- (instancetype)initWithSize:(CGSize)size renderSize:(CGSize)renderSize path:(NSString *)path;
+- (instancetype)initWithSize:(CGSize)size data:(NSData *)data;
 
 - (void)play;
 - (void)stop;

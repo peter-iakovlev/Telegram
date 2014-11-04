@@ -10,7 +10,6 @@
 
 #import "TGImageUtils.h"
 #import "TGStringUtils.h"
-#import "TGRemoteImageView.h"
 
 #import "TGImageBlur.h"
 #import "UIImage+TG.h"
@@ -81,10 +80,11 @@ static ASQueue *taskManagementQueue()
 
 - (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float))progress partialCompletion:(void (^)(TGDataResource *resource))__unused partialCompletion completion:(void (^)(TGDataResource *))completion
 {
+    CGSize size = CGSizeZero;
     if ([TGInstagramThumbnailDataSource imageAddressForUri:uri size:NULL] == nil)
     {
         if (completion)
-            completion([TGInstagramThumbnailDataSource resultForUnavailableImage]);
+            completion([TGInstagramThumbnailDataSource resultForUnavailableImage:size]);
         return nil;
     }
     
@@ -103,7 +103,7 @@ static ASQueue *taskManagementQueue()
                 return;
             
             if (completion != nil)
-                completion(result != nil ? result : [TGInstagramThumbnailDataSource resultForUnavailableImage]);
+                completion(result != nil ? result : [TGInstagramThumbnailDataSource resultForUnavailableImage:size]);
         }];
         
         if ([TGInstagramThumbnailDataSource _isDataLocallyAvailableForUri:uri])
@@ -116,15 +116,12 @@ static ASQueue *taskManagementQueue()
             {
                 if (success)
                 {
-                    dispatch_async([TGCache diskCacheQueue], ^
-                    {
-                        [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
-                    });
+                    [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
                 }
                 else
                 {
                     if (completion != nil)
-                        completion([TGInstagramThumbnailDataSource resultForUnavailableImage]);
+                        completion([TGInstagramThumbnailDataSource resultForUnavailableImage:size]);
                 }
             } workerTask:workerTask];
         }
@@ -145,30 +142,40 @@ static ASQueue *taskManagementQueue()
     }];
 }
 
-+ (TGDataResource *)resultForUnavailableImage
++ (TGDataResource *)resultForUnavailableImage:(CGSize)size
 {
-    static TGDataResource *imageData = nil;
+    static NSMutableDictionary *placeholderBySize = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        imageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor darkGrayColor]) decoded:true];
+        placeholderBySize = [[NSMutableDictionary alloc] init];
     });
     
-    return imageData;
+    NSString *sizeString = NSStringFromCGSize(size);
+    UIImage *placeholder = placeholderBySize[sizeString];
+    if (placeholder == nil)
+    {
+        UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
+        [TGAverageColorAttachmentImage([UIColor whiteColor]) drawInRect:CGRectMake(0.0f, 0.0f, size.width, size.height) blendMode:kCGBlendModeCopy alpha:1.0f];
+        CGRect imageRect = CGRectMake(0.0f, 0.0f, size.width, size.height);
+        UIImage *buttonImage = [UIImage imageNamed:@"ModernMessageInstagramLogoPlaceholder.png"];
+        [buttonImage drawInRect:CGRectMake(imageRect.origin.x + CGFloor((imageRect.size.width - buttonImage.size.width) / 2.0f), imageRect.origin.y + CGFloor((imageRect.size.height - buttonImage.size.height) / 2.0f), buttonImage.size.width, buttonImage.size.height)];
+        placeholder = UIGraphicsGetImageFromCurrentImageContext();
+        if (placeholder != nil)
+            placeholderBySize[sizeString] = placeholder;
+        UIGraphicsEndImageContext();
+    }
+    
+    return [[TGDataResource alloc] initWithImage:placeholder decoded:true];
 }
 
 - (id)loadAttributeSyncForUri:(NSString *)__unused uri attribute:(NSString *)attribute
 {
     if ([attribute isEqualToString:@"placeholder"])
     {
-        static UIImage *placeholder = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            placeholder = TGAverageColorAttachmentImage([UIColor whiteColor]);
-        });
-        
-        return placeholder;
+        CGSize size = CGSizeZero;
+        [TGInstagramThumbnailDataSource imageAddressForUri:uri size:&size];
+        return [TGInstagramThumbnailDataSource resultForUnavailableImage:size].image;
     }
     
     return nil;
@@ -179,8 +186,9 @@ static ASQueue *taskManagementQueue()
     if (uri == nil)
         return nil;
     
-    if ([TGInstagramThumbnailDataSource imageAddressForUri:uri size:NULL] == nil)
-        return [TGInstagramThumbnailDataSource resultForUnavailableImage];
+    CGSize size = CGSizeZero;
+    if ([TGInstagramThumbnailDataSource imageAddressForUri:uri size:&size] == nil)
+        return [TGInstagramThumbnailDataSource resultForUnavailableImage:size];
     
     UIImage *cachedImage = [[TGMediaStoreContext instance] mediaImage:uri attributes:nil];
     if (cachedImage != nil)
@@ -195,12 +203,7 @@ static ASQueue *taskManagementQueue()
 + (bool)_isDataLocallyAvailableForUri:(NSString *)uri
 {
     NSString *mapAddress = [self imageAddressForUri:uri size:NULL];
-    
-    NSString *filePath = [[TGRemoteImageView sharedCache] pathForCachedData:mapAddress];
-    if ([[NSFileManager defaultManager] fileExistsAtPath:filePath])
-        return true;
-    
-    return false;
+    return [[[TGMediaStoreContext instance] temporaryFilesCache] containsValueForKey:[mapAddress dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
 + (TGDataResource *)_performLoad:(NSString *)uri isCancelled:(bool (^)())isCancelled
@@ -216,9 +219,9 @@ static ASQueue *taskManagementQueue()
     });
     
     CGSize size = CGSizeZero;
-    NSString *thumbnailPath = [[TGRemoteImageView sharedCache] pathForCachedData:[TGInstagramThumbnailDataSource imageAddressForUri:uri size:&size]];
-    
-    UIImage *thumbnailSourceImage = [[UIImage alloc] initWithContentsOfFile:thumbnailPath];
+    NSString *imageUrl = [TGInstagramThumbnailDataSource imageAddressForUri:uri size:&size];
+    NSData *thumbnailSourceData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+    UIImage *thumbnailSourceImage = [[UIImage alloc] initWithData:thumbnailSourceData];
     
     UIGraphicsBeginImageContextWithOptions(size, true, 0.0f);
     

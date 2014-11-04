@@ -55,13 +55,21 @@
 
 - (void)donePressed
 {
-    [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
+    if (iosMajorVersion() >= 8)
+        [self.presentingViewController dismissViewControllerAnimated:false completion:nil];
+    else
+        [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
 }
 
 - (void)viewDidLoad
 {
     if ([TGViewController useExperimentalRTL])
         self.view.transform = CGAffineTransformMakeScale(-1.0f, 1.0f);
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
 }
 
 - (NSInteger)numberOfPreviewItemsInPreviewController:(QLPreviewController *)__unused controller
