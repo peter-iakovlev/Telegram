@@ -15,10 +15,13 @@
 #import <MTProtoKit/MTRequest.h>
 #import "TGTelegramNetworking.h"
 
+#import "TGUserDataRequestBuilder.h"
+
 @interface TGUpdateConfigActor ()
 {
     bool _inviteReceived;
     bool _configReceived;
+    bool _userReceived;
 }
 
 @end
@@ -34,31 +37,61 @@
 {
     [self addCancelToken:[TGTelegraphInstance doRequestInviteText:self]];
     
-    MTRequest *request = [[MTRequest alloc] init];
-    
-    request.body = [[TLRPChelp_getConfig$help_getConfig alloc] init];
-    
-    __weak TGUpdateConfigActor *weakSelf = self;
-    [request setCompleted:^(TLConfig *result, __unused NSTimeInterval timestamp, id error)
     {
-        [ActionStageInstance() dispatchOnStageQueue:^
+        MTRequest *request = [[MTRequest alloc] init];
+        
+        request.body = [[TLRPChelp_getConfig$help_getConfig alloc] init];
+        
+        __weak TGUpdateConfigActor *weakSelf = self;
+        [request setCompleted:^(TLConfig *result, __unused NSTimeInterval timestamp, id error)
         {
-            __strong TGUpdateConfigActor *strongSelf = weakSelf;
-            if (error == nil)
-                [strongSelf configRequestSuccess:result];
-            else
-                [strongSelf configRequestFailed];
+            [ActionStageInstance() dispatchOnStageQueue:^
+            {
+                __strong TGUpdateConfigActor *strongSelf = weakSelf;
+                if (error == nil)
+                    [strongSelf configRequestSuccess:result];
+                else
+                    [strongSelf configRequestFailed];
+            }];
         }];
-    }];
-    
-    [self addCancelToken:request.internalId];
-    [[TGTelegramNetworking instance] addRequest:request];
+        
+        [self addCancelToken:request.internalId];
+        [[TGTelegramNetworking instance] addRequest:request];
+    }
+    {
+        MTRequest *request = [[MTRequest alloc] init];
+        
+        TLRPCusers_getUsers$users_getUsers *getUsers = [[TLRPCusers_getUsers$users_getUsers alloc] init];
+        
+        getUsers.n_id = @[[[TLInputUser$inputUserSelf alloc] init]];
+        request.body = getUsers;
+        
+        __weak TGUpdateConfigActor *weakSelf = self;
+        [request setCompleted:^(id result, __unused NSTimeInterval timestamp, id error)
+        {
+            [ActionStageInstance() dispatchOnStageQueue:^
+            {
+                __strong TGUpdateConfigActor *strongSelf = weakSelf;
+                if (error == nil)
+                    [strongSelf getUsersSuccess:result];
+                else
+                    [strongSelf getUsersFailed];
+            }];
+        }];
+        
+        [self addCancelToken:request.internalId];
+        [[TGTelegramNetworking instance] addRequest:request];
+    }
+}
+
+- (void)_maybeComplete
+{
+    if (_inviteReceived && _configReceived && _userReceived)
+        [ActionStageInstance() actionCompleted:self.path result:nil];
 }
 
 - (void)inviteTextRequestSuccess:(TLhelp_InviteText *)inviteText
 {
-    _inviteReceived = true;
-    
     TGDispatchOnMainThread(^
     {
         if (inviteText.message.length != 0)
@@ -68,37 +101,45 @@
         }
     });
     
-    if (_inviteReceived && _configReceived)
-        [ActionStageInstance() actionCompleted:self.path result:nil];
+    _inviteReceived = true;
+    [self _maybeComplete];
 }
 
 - (void)inviteTextRequestFailed
 {
     _inviteReceived = true;
-    
-    if (_inviteReceived && _configReceived)
-        [ActionStageInstance() actionFailed:self.path reason:-1];
+    [self _maybeComplete];
 }
 
 - (void)configRequestSuccess:(TLConfig *)config
 {
-    _configReceived = true;
-    
     int32_t maxChatParticipants = MAX(100, config.chat_size_max);
     int32_t maxBroadcastReceivers = MAX(100, config.broadcast_size_max);
     [TGDatabaseInstance() setCustomProperty:@"maxChatParticipants" value:[NSData dataWithBytes:&maxChatParticipants length:4]];
     [TGDatabaseInstance() setCustomProperty:@"maxBroadcastReceivers" value:[NSData dataWithBytes:&maxBroadcastReceivers length:4]];
-    
-    if (_inviteReceived && _configReceived)
-        [ActionStageInstance() actionCompleted:self.path result:nil];
+ 
+    _configReceived = true;
+    [self _maybeComplete];
 }
 
 - (void)configRequestFailed
 {
     _configReceived = true;
+    [self _maybeComplete];
+}
+
+- (void)getUsersSuccess:(NSArray *)users
+{
+    [TGUserDataRequestBuilder executeUserDataUpdate:users];
     
-    if (_inviteReceived && _configReceived)
-        [ActionStageInstance() actionFailed:self.path reason:-1];
+    _userReceived = true;
+    [self _maybeComplete];
+}
+
+- (void)getUsersFailed
+{
+    _userReceived = true;
+    [self _maybeComplete];
 }
 
 @end

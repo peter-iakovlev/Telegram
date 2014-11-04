@@ -19,6 +19,7 @@
 
 #import "TGModernGalleryContainerView.h"
 #import "TGModernGalleryInterfaceView.h"
+#import "TGModernGalleryDefaultInterfaceView.h"
 
 #import "TGModernGalleryModel.h"
 
@@ -297,7 +298,11 @@
     _reusableItemViewsByIdentifier = [[NSMutableDictionary alloc] init];
     _visibleItemViews = [[NSMutableArray alloc] init];
     
-    _view = [[TGModernGalleryView alloc] initWithFrame:self.view.bounds itemPadding:TGModernGalleryItemPadding];
+    UIView<TGModernGalleryInterfaceView> *interfaceView = [_model createInterfaceView];
+    if (interfaceView == nil)
+        interfaceView = [[TGModernGalleryDefaultInterfaceView alloc] initWithFrame:CGRectZero];
+    
+    _view = [[TGModernGalleryView alloc] initWithFrame:self.view.bounds itemPadding:TGModernGalleryItemPadding interfaceView:interfaceView];
     _view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_view];
     
@@ -506,6 +511,9 @@
 
 static CGRect adjustFrameForOriginalSubframe(CGRect originalFrame, CGRect originalSubframe, CGRect frame)
 {
+    if (originalSubframe.size.width < FLT_EPSILON || originalSubframe.size.height < FLT_EPSILON)
+        return frame;
+    
     CGFloat widthFactor = frame.size.width / originalSubframe.size.width;
     CGFloat heightFactor = frame.size.height / originalSubframe.size.height;
     
@@ -622,6 +630,9 @@ static CGFloat transformRotation(CGAffineTransform transform)
     
     CGFloat fromRotationZ = 0.0f;
     CGRect fromFrame = [self convertFrameOfView:fromView fromSubframe:(CGRect){CGPointZero, fromView.frame.size} toView:toView.superview toSubframe:[toView.superview convertRect:toViewContentRect fromView:toView] outRotationZ:&fromRotationZ];
+    
+    fromFrame.origin.x -= toView.superview.frame.origin.x;
+    fromFrame.origin.y -= toView.superview.frame.origin.y;
     
     CGRect fromContainerFromFrame = [fromContainerView convertRect:fromView.bounds fromView:fromView];
     //CGRect fromContainerFromFrame = [self convertFrameOfView:fromView toView:fromContainerView outRotationZ:NULL];
@@ -774,6 +785,10 @@ static CGFloat transformRotation(CGAffineTransform transform)
     if (!_showInterface)
     {
         _view.interfaceView.alpha = 0.0f;
+        [TGHacks setApplicationStatusBarAlpha:0.0f];
+    }
+    else if ([_view.interfaceView prefersStatusBarHidden])
+    {
         [TGHacks setApplicationStatusBarAlpha:0.0f];
     }
 }
@@ -1009,6 +1024,7 @@ static CGFloat transformRotation(CGAffineTransform transform)
                     loadedVisibleViewIndices[loadedVisibleViewIndexCount++] = itemView.index;
                 
                 [itemView setIsVisible:itemView.index >= leftmostTrulyVisibleItemIndex && itemView.index <= rightmostTrulyVisibleItemIndex];
+                [itemView setIsCurrent:itemView.index == [self currentItemIndex]];
                 
                 CGRect itemFrame = CGRectMake(itemWidth * itemView.index + TGModernGalleryItemPadding, 0.0f, itemWidth - TGModernGalleryItemPadding * 2.0f, bounds.size.height);
                 if (!CGRectEqualToRect(itemView.frame, itemFrame))
@@ -1143,6 +1159,7 @@ static CGFloat transformRotation(CGAffineTransform transform)
         {
             if (_itemFocused)
                 _itemFocused(_model.items[_lastReportedFocusedIndex]);
+            [_view.interfaceView itemFocused:_model.items[_lastReportedFocusedIndex]];
             
             [_defaultHeaderView setItem:_model.items[_lastReportedFocusedIndex]];
         }

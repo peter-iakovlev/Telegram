@@ -670,7 +670,7 @@
     else if ([error isKindOfClass:[TLError$error class]])
         return ((TLError$error *)error).text;
     else if ([error isKindOfClass:[TLError$richError class]])
-        return ((TLError$richError *)error).type;
+        return ((TLError$richError *)error).n_description;
     
     return nil;
 }

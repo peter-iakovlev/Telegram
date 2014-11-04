@@ -18,6 +18,7 @@
 
 @property (nonatomic, readonly) TGPreparedMessage *preparedMessage;
 @property (nonatomic) float uploadProgress;
+@property (nonatomic) bool uploadProgressContainsPreDownloads;
 
 + (NSTimeInterval)defaultTimeoutInterval;
 
@@ -31,6 +32,7 @@
 - (void)_fail;
 - (void)_success:(id)result;
 
+- (void)updatePreDownloadsProgress:(float)preDownloadsProgress;
 - (void)acquireMediaUploadActivityHolderForPreparedMessage:(TGPreparedMessage *)preparedMessage;
 - (void)uploadFilesWithExtensions:(NSArray *)filePathsAndExtensions;
 - (void)beginUploadProgress;

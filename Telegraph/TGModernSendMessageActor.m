@@ -296,11 +296,24 @@
     }
 }
 
+- (void)updatePreDownloadsProgress:(float)preDownloadsProgress
+{
+    if (_uploadProgressContainsPreDownloads)
+    {
+        _uploadProgress = preDownloadsProgress / 2.0f;
+        
+        [ActionStageInstance() dispatchMessageToWatchers:self.path messageType:@"messageProgress" message:@{@"mid": @(_preparedMessage.mid), @"progress": @(_uploadProgress)}];
+    }
+}
+
 - (void)actorReportedProgress:(NSString *)path progress:(float)progress
 {
     if ([_uploadingProgressActorPaths[path] boolValue])
     {
-        _uploadProgress = progress;
+        if (_uploadProgressContainsPreDownloads)
+            _uploadProgress = 0.5f + progress / 2.0f;
+        else
+            _uploadProgress = progress;
         
         if (!_notifiedUploadsStarted)
         {

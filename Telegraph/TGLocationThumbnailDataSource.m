@@ -10,7 +10,6 @@
 
 #import "TGImageUtils.h"
 #import "TGStringUtils.h"
-#import "TGRemoteImageView.h"
 
 #import "TGImageBlur.h"
 #import "UIImage+TG.h"
@@ -110,10 +109,7 @@ static ASQueue *taskManagementQueue()
             {
                 if (success)
                 {
-                    dispatch_async([TGCache diskCacheQueue], ^
-                    {
-                        [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
-                    });
+                    [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
                 }
                 else
                 {
@@ -186,12 +182,7 @@ static ASQueue *taskManagementQueue()
 + (bool)_isDataLocallyAvailableForUri:(NSString *)uri
 {
     NSString *mapAddress = [self mapAddressForUri:uri size:NULL];
-    
-    NSString *filePath = [[TGRemoteImageView sharedCache] pathForCachedData:mapAddress];
-    if ([[NSFileManager defaultManager] fileExistsAtPath:filePath])
-        return true;
-    
-    return false;
+    return [[[TGMediaStoreContext instance] temporaryFilesCache] containsValueForKey:[mapAddress dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
 + (TGDataResource *)_performLoad:(NSString *)uri isCancelled:(bool (^)())isCancelled
@@ -207,9 +198,10 @@ static ASQueue *taskManagementQueue()
     });
     
     CGSize size = CGSizeZero;
-    NSString *thumbnailPath = [[TGRemoteImageView sharedCache] pathForCachedData:[TGLocationThumbnailDataSource mapAddressForUri:uri size:&size]];
+    NSString *imageUrl = [TGLocationThumbnailDataSource mapAddressForUri:uri size:&size];
     
-    UIImage *thumbnailSourceImage = [[UIImage alloc] initWithContentsOfFile:thumbnailPath];
+    NSData *thumbnailSourceData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+    UIImage *thumbnailSourceImage = [[UIImage alloc] initWithData:thumbnailSourceData];
     
     UIGraphicsBeginImageContextWithOptions(size, true, 0.0f);
     

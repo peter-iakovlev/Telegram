@@ -1392,9 +1392,12 @@ UIImage *TGLoadedAttachmentImage(UIImage *source, CGSize size, uint32_t *average
     return image;
 }
 
-UIImage *TGAnimationFrameAttachmentImage(UIImage *source, CGSize size)
+UIImage *TGAnimationFrameAttachmentImage(UIImage *source, CGSize size, CGSize renderSize)
 {
     CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
+    
+    renderSize.width *= scale;
+    renderSize.height *= scale;
     
     const struct { int width, height; } targetContextSize = { (int)(size.width * scale), (int)(size.height * scale) };
     
@@ -1416,7 +1419,8 @@ UIImage *TGAnimationFrameAttachmentImage(UIImage *source, CGSize size)
     
     CGContextSetFillColorWithColor(targetContext, [UIColor blackColor].CGColor);
     CGContextFillRect(targetContext, CGRectMake(0, 0, targetContextSize.width, targetContextSize.height));
-    [source drawInRect:CGRectMake(0, 0, targetContextSize.width, targetContextSize.height) blendMode:kCGBlendModeNormal alpha:1.0f];
+    CGRect imageRect = CGRectMake((targetContextSize.width - renderSize.width) / 2.0f, (targetContextSize.height - renderSize.height) / 2.0f, renderSize.width, renderSize.height);
+    [source drawInRect:imageRect blendMode:kCGBlendModeNormal alpha:1.0f];
     UIGraphicsPopContext();
     
     addAttachmentImageCorners(targetMemory, targetContextSize.width, targetContextSize.height, targetBytesPerRow);

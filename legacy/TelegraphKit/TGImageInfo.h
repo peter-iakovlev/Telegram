@@ -8,7 +8,7 @@
 
 #import <UIKit/UIKit.h>
 
-@interface TGImageInfo : NSObject
+@interface TGImageInfo : NSObject <NSCoding>
 
 - (void)addImageWithSize:(CGSize)size url:(NSString *)url;
 - (void)addImageWithSize:(CGSize)size url:(NSString *)url fileSize:(int)fileSize;

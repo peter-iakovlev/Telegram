@@ -1,6 +1,6 @@
 #import "TGModernGalleryView.h"
 
-#import "TGModernGalleryInterfaceView.h"
+#import "TGModernGalleryDefaultInterfaceView.h"
 #import "TGModernGalleryScrollView.h"
 
 #import "TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.h"
@@ -24,12 +24,13 @@ static const CGFloat swipeVelocityThreshold = 700.0f;
 
 @implementation TGModernGalleryView
 
-- (instancetype)initWithFrame:(CGRect)frame
+- (instancetype)initWithFrame:(CGRect)__unused frame
 {
-    return [self initWithFrame:frame itemPadding:0.0f];
+    NSAssert(false, @"use designated initializer");
+    return nil;
 }
 
-- (instancetype)initWithFrame:(CGRect)frame itemPadding:(CGFloat)itemPadding
+- (instancetype)initWithFrame:(CGRect)frame itemPadding:(CGFloat)itemPadding interfaceView:(UIView<TGModernGalleryInterfaceView> *)interfaceView
 {
     self = [super initWithFrame:frame];
     if (self != nil)
@@ -45,7 +46,8 @@ static const CGFloat swipeVelocityThreshold = 700.0f;
         _scrollView = [[TGModernGalleryScrollView alloc] initWithFrame:CGRectMake(-_itemPadding, 0.0f, frame.size.width + itemPadding * 2.0f, frame.size.height)];
         [_scrollViewContainer addSubview:_scrollView];
         
-        _interfaceView = [[TGModernGalleryInterfaceView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frame.size.width, frame.size.height)];
+        _interfaceView = interfaceView;
+        _interfaceView.frame = CGRectMake(0.0f, 0.0f, frame.size.width, frame.size.height);
         __weak TGModernGalleryView *weakSelf = self;
         _interfaceView.closePressed = ^
         {
@@ -91,33 +93,40 @@ static const CGFloat swipeVelocityThreshold = 700.0f;
 
 - (void)showHideInterface
 {
-    if (_interfaceView.alpha > FLT_EPSILON)
+    if ([_interfaceView allowsHide])
     {
-        [UIView animateWithDuration:0.2 delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
+        if (_interfaceView.alpha > FLT_EPSILON)
         {
-            _interfaceView.alpha = 0.0f;
-            [TGHacks setApplicationStatusBarAlpha:0.0f];
-        } completion:nil];
-    }
-    else
-    {
-        [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
+            [UIView animateWithDuration:0.2 delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
+            {
+                _interfaceView.alpha = 0.0f;
+                [TGHacks setApplicationStatusBarAlpha:0.0f];
+            } completion:nil];
+        }
+        else
         {
-            _interfaceView.alpha = 1.0f;
-            [TGHacks setApplicationStatusBarAlpha:1.0f];
-        } completion:nil];
+            [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
+            {
+                _interfaceView.alpha = 1.0f;
+                if (![_interfaceView prefersStatusBarHidden])
+                    [TGHacks setApplicationStatusBarAlpha:1.0f];
+            } completion:nil];
+        }
     }
 }
 
 - (void)hideInterfaceAnimated
 {
-    if (_interfaceView.alpha > FLT_EPSILON)
+    if ([_interfaceView allowsHide])
     {
-        [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
+        if (_interfaceView.alpha > FLT_EPSILON)
         {
-            _interfaceView.alpha = 0.0f;
-            [TGHacks setApplicationStatusBarAlpha:0.0f];
-        } completion:nil];
+            [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
+            {
+                _interfaceView.alpha = 0.0f;
+                [TGHacks setApplicationStatusBarAlpha:0.0f];
+            } completion:nil];
+        }
     }
 }
 

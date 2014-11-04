@@ -53,6 +53,7 @@ typedef enum {
 + (CGSize)screenSize:(UIDeviceOrientation)orientation;
 + (CGSize)screenSizeForInterfaceOrientation:(UIInterfaceOrientation)orientation;
 + (bool)isWidescreen;
++ (bool)hasLargeScreen;
 
 + (void)disableAutorotation;
 + (void)enableAutorotation;

@@ -24,6 +24,11 @@
 @class TGModernViewInlineMediaContext;
 @class TGLiveUploadActorData;
 
+@class TGBingSearchResultItem;
+@class TGGiphySearchResultItem;
+@class TGWebSearchInternalImageResult;
+@class TGWebSearchInternalGifResult;
+
 typedef enum {
     TGInitialScrollPositionTop = 0,
     TGInitialScrollPositionCenter = 1,
@@ -93,6 +98,10 @@ typedef enum {
 - (void)controllerWantsToSendMapWithLatitude:(double)latitude longitude:(double)longitude;
 - (NSURL *)fileUrlForDocumentMedia:(TGDocumentMediaAttachment *)documentMedia;
 - (NSDictionary *)imageDescriptionFromImage:(UIImage *)image optionalAssetUrl:(NSString *)assetUrl;
+- (NSDictionary *)imageDescriptionFromBingSearchResult:(TGBingSearchResultItem *)item;
+- (NSDictionary *)documentDescriptionFromGiphySearchResult:(TGGiphySearchResultItem *)item;
+- (NSDictionary *)imageDescriptionFromInternalSearchImageResult:(TGWebSearchInternalImageResult *)item;
+- (NSDictionary *)documentDescriptionFromInternalSearchResult:(TGWebSearchInternalGifResult *)item;
 - (void)controllerWantsToSendImagesWithDescriptions:(NSArray *)imageDescriptions;
 - (void)controllerWantsToSendLocalVideoWithTempFilePath:(NSString *)tempVideoFilePath fileSize:(int32_t)fileSize previewImage:(UIImage *)previewImage duration:(NSTimeInterval)duration dimensions:(CGSize)dimenstions assetUrl:(NSString *)assetUrl liveUploadData:(TGLiveUploadActorData *)liveUploadData;
 - (TGVideoMediaAttachment *)serverCachedAssetWithId:(NSString *)assetId;

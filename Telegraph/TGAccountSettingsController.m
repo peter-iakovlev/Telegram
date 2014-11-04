@@ -522,20 +522,20 @@
     {
         if (okButtonPressed)
         {
-            NSData *data = [TGDatabaseInstance() customProperty:@"supportAccountUid"];
-            if (data.length != 4)
+            //NSData *data = [TGDatabaseInstance() customProperty:@"supportAccountUid"];
+            //if (data.length != 4)
             {
                 _progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
                 [_progressWindow show:true];
                 
                 [ActionStageInstance() requestActor:@"/tg/support/preferredPeer" options:nil flags:0 watcher:self];
             }
-            else
+            /*else
             {
                 int32_t uid = 0;
                 [data getBytes:&uid];
                 [[TGInterfaceManager instance] navigateToConversationWithId:uid conversation:nil performActions:nil atMessage:nil clearStack:true openKeyboard:true animated:true];
-            }
+            }*/
         }
         else
         {

@@ -2,26 +2,21 @@
 
 #import "lmdb.h"
 
-#import <pthread.h>
-
 #import "PSLMDBTable.h"
-#import "PSLMDBKeyValueReader.h"
-#import "PSLMDBKeyValueWriter.h"
+#import "PSLMDBKeyValueReaderWriter.h"
 
 @interface PSLMDBKeyValueStore ()
 {
     NSString *_path;
     MDB_env *_env;
-    
-    NSMutableDictionary *_tables;
-    pthread_rwlock_t _tablesLock;
+    PSLMDBTable *_table;
 }
 
 @end
 
 @implementation PSLMDBKeyValueStore
 
-+ (instancetype)storeWithPath:(NSString *)path
++ (instancetype)storeWithPath:(NSString *)path size:(NSUInteger)size
 {
     if (path.length == 0)
         return nil;
@@ -30,10 +25,8 @@
     if (result != nil)
     {
         result->_path = path;
-        result->_tables = [[NSMutableDictionary alloc] init];
-        pthread_rwlock_init(&result->_tablesLock, NULL);
         
-        if (![result _open])
+        if (![result _open:size])
         {
             [result close];
             
@@ -44,7 +37,7 @@
     return result;
 }
 
-- (bool)_open
+- (bool)_open:(NSUInteger)size
 {
     int rc = 0;
     
@@ -69,7 +62,7 @@
     if (createDirectory)
         [[NSFileManager defaultManager] createDirectoryAtPath:_path withIntermediateDirectories:true attributes:nil error:nil];
     
-    mdb_env_set_mapsize(_env, 256 * 1024 * 1024);
+    mdb_env_set_mapsize(_env, (size_t)size);
     mdb_env_set_maxdbs(_env, 64);
     
     rc = mdb_env_open(_env, [_path UTF8String], MDB_NOSYNC, 0664);
@@ -82,18 +75,14 @@
     if (removedReaders != 0)
         TGLog(@"[PSLMDBKeyValueStore removed %d stale readers]", removedReaders);
     
+    _table = [self _createTableWithName:@"main"];
+    
     return true;
 }
 
 - (void)close
 {
-    pthread_rwlock_wrlock(&_tablesLock);
-    for (PSLMDBTable *table in _tables)
-    {
-        mdb_close(_env, table.dbi);
-    }
-    [_tables removeAllObjects];
-    pthread_rwlock_unlock(&_tablesLock);
+    mdb_close(_env, _table.dbi);
     
     mdb_env_close(_env);
     
@@ -106,9 +95,7 @@
     rc = mdb_env_sync(_env, 1);
     
     if (rc != MDB_SUCCESS)
-    {
         TGLog(@"[PSLMDBKeyValueStore sync: mdb_env_sync error %d]", rc);
-    }
 }
 
 - (void)panic
@@ -116,66 +103,55 @@
     
 }
 
-- (PSLMDBTable *)_tableWithName:(NSString *)name
+- (PSLMDBTable *)_createTableWithName:(NSString *)name
 {
     PSLMDBTable *result = nil;
     
-    pthread_rwlock_rdlock(&_tablesLock);
-    result = _tables[name];
-    pthread_rwlock_unlock(&_tablesLock);
-    
     if (result == nil)
     {
-        pthread_rwlock_wrlock(&_tablesLock);
-        result = _tables[name];
-        if (result == nil)
+        int rc = 0;
+        
+        MDB_txn *txn = NULL;
+        rc = mdb_txn_begin(_env, NULL, 0, &txn);
+        if (rc != MDB_SUCCESS)
         {
-            int rc = 0;
+            TGLog(@"[PSLMDBKeyValueStore transaction begin failed %d]", rc);
             
-            MDB_txn *txn = NULL;
-            rc = mdb_txn_begin(_env, NULL, 0, &txn);
-            if (rc != MDB_SUCCESS)
+            if (rc == MDB_PANIC)
             {
-                TGLog(@"[PSLMDBKeyValueStore transaction begin failed %d]", rc);
+                TGLog(@"[PSLMDBKeyValueStore critical error received]");
                 
-                if (rc == MDB_PANIC)
-                {
-                    TGLog(@"[PSLMDBKeyValueStore critical error received]");
-                    
-                    [self panic];
-                }
-            }
-            
-            MDB_dbi dbi;
-            
-            rc = mdb_dbi_open(txn, [name UTF8String], MDB_CREATE, &dbi);
-            if (rc != MDB_SUCCESS)
-            {
-                mdb_txn_abort(txn);
-                
-                TGLog(@"[PSLMDBKeyValueStore mdb_dbi_open failed %d]", rc);
-            }
-            else
-            {
-                mdb_txn_commit(txn);
-                
-                PSLMDBTable *createdTable = [[PSLMDBTable alloc] initWithDbi:dbi];
-                _tables[name] = createdTable;
-                result = createdTable;
+                [self panic];
             }
         }
-        pthread_rwlock_unlock(&_tablesLock);
+        
+        MDB_dbi dbi;
+        
+        rc = mdb_dbi_open(txn, [name UTF8String], MDB_CREATE, &dbi);
+        if (rc != MDB_SUCCESS)
+        {
+            mdb_txn_abort(txn);
+            
+            TGLog(@"[PSLMDBKeyValueStore mdb_dbi_open failed %d]", rc);
+        }
+        else
+        {
+            mdb_txn_commit(txn);
+            
+            PSLMDBTable *createdTable = [[PSLMDBTable alloc] initWithDbi:dbi];
+            result = createdTable;
+        }
     }
     
     return result;
 }
 
-- (void)readFromTable:(NSString *)name inTransaction:(void (^)(id<PSKeyValueReader>))transaction
+- (void)readInTransaction:(void (^)(id<PSKeyValueReader>))transaction
 {
     if (transaction == nil)
         return;
     
-    PSLMDBTable *table = [self _tableWithName:name];
+    PSLMDBTable *table = _table;
     if (table != nil)
     {
         int rc = 0;
@@ -195,7 +171,7 @@
         }
         else
         {
-            transaction([[PSLMDBKeyValueReader alloc] initWithTable:table transaction:txn]);
+            transaction([[PSLMDBKeyValueReaderWriter alloc] initWithTable:table transaction:txn]);
             
             rc = mdb_txn_commit(txn);
             
@@ -205,12 +181,12 @@
     }
 }
 
-- (void)writeToTable:(NSString *)name inTransaction:(void (^)(id<PSKeyValueWriter>))transaction
+- (void)readWriteInTransaction:(void (^)(id<PSKeyValueReader, PSKeyValueWriter>))transaction
 {
     if (transaction == nil)
         return;
     
-    PSLMDBTable *table = [self _tableWithName:name];
+    PSLMDBTable *table = _table;
     if (table != nil)
     {
         int rc = 0;
@@ -230,7 +206,7 @@
         }
         else
         {
-            transaction([[PSLMDBKeyValueWriter alloc] initWithTable:table transaction:txn]);
+            transaction([[PSLMDBKeyValueReaderWriter alloc] initWithTable:table transaction:txn]);
             
             rc = mdb_txn_commit(txn);
             

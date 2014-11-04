@@ -2,7 +2,7 @@
 
 @interface PSLMDBKeyValueStore : NSObject <PSKeyValueStore>
 
-+ (instancetype)storeWithPath:(NSString *)path;
++ (instancetype)storeWithPath:(NSString *)path size:(NSUInteger)size;
 
 - (void)close;
 

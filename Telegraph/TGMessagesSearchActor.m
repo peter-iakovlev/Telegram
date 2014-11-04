@@ -61,7 +61,7 @@
             search.min_date = 0;
             search.max_date = 0;
             search.offset = 0;
-            search.limit = 128;
+            search.limit = 100;
             search.max_id = 0;
             request.body = search;
             

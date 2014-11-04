@@ -32,9 +32,9 @@
     NSMutableString *imageUri = [[NSMutableString alloc] init];
     [imageUri appendString:@"media-list-photo-thumbnail://?"];
     if (imageId != 0)
-        [imageUri appendFormat:@"&id=%" PRId64 "", imageId];
+        [imageUri appendFormat:@"id=%" PRId64 "", imageId];
     else if (localId != 0)
-        [imageUri appendFormat:@"&local-id=%" PRId64 "", imageId];
+        [imageUri appendFormat:@"local-id=%" PRId64 "", imageId];
     [imageUri appendFormat:@"&legacy-file-path=%@", legacyFilePath];
     [imageUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUrl];
     

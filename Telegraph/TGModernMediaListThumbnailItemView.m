@@ -43,13 +43,21 @@
 {
     [super setFrame:frame];
     
+    CGAffineTransform transform = _imageView.transform;
+    _imageView.transform = CGAffineTransformIdentity;
     _imageView.frame = (CGRect){CGPointZero, frame.size};
+    _imageView.transform = transform;
 }
 
 - (void)setImageUri:(NSString *)imageUri
 {
+    [self setImageUri:imageUri synchronously:false];
+}
+
+- (void)setImageUri:(NSString *)imageUri synchronously:(bool)synchronously
+{
     _imageUri = imageUri;
-    [_imageView loadUri:imageUri withOptions:@{}];
+    [_imageView loadUri:imageUri withOptions:@{TGImageViewOptionSynchronous: @(synchronously)}];
 }
 
 - (void)updateItem

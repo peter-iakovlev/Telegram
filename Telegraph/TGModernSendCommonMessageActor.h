@@ -8,7 +8,16 @@
 
 #import "TGModernSendMessageActor.h"
 
+@class TGDocumentMediaAttachment;
+@class TGImageMediaAttachment;
+
 @interface TGModernSendCommonMessageActor : TGModernSendMessageActor
+
++ (TGDocumentMediaAttachment *)remoteDocumentByGiphyId:(NSString *)giphyId;
++ (void)setRemoteDocumentForGiphyId:(NSString *)giphyId document:(TGDocumentMediaAttachment *)document;
++ (TGImageMediaAttachment *)remoteImageByRemoteUrl:(NSString *)url;
++ (void)setRemoteImageForRemoteUrl:(NSString *)url image:(TGImageMediaAttachment *)image;
++ (void)clearRemoteMediaMapping;
 
 - (void)conversationSendMessageRequestSuccess:(id)result;
 - (void)conversationSendMessageQuickAck;

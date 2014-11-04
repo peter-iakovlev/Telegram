@@ -62,7 +62,7 @@
             [previewUri appendFormat:@"&legacy-file-path=%@", legacyFilePath];
         
         if (legacyThumbnailCacheUrl != nil)
-            [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUrl];
+            [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", [TGStringUtils stringByEscapingForURL:legacyThumbnailCacheUrl]];
         
         if (message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17)
             [previewUri appendString:@"&secret=1"];
@@ -142,7 +142,7 @@
                 [previewUri appendFormat:@"&legacy-file-path=%@", legacyFilePath];
             
             if (legacyThumbnailCacheUrl != nil)
-                [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUrl];
+                [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", [TGStringUtils stringByEscapingForURL:legacyThumbnailCacheUrl]];
             
             if (message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17)
                 [previewUri appendString:@"&secret=1"];

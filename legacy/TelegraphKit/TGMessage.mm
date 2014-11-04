@@ -1,6 +1,8 @@
 #import "TGMessage.h"
 
 #import "PSKeyValueCoder.h"
+#import "PSKeyValueEncoder.h"
+#import "PSKeyValueDecoder.h"
 
 #include <tr1/unordered_map>
 
@@ -97,9 +99,6 @@ typedef enum {
     
     copyMessage->_actionInfo = _actionInfo;
     
-    copyMessage->_additionalProperties = _additionalProperties;
-    copyMessage->_cachedLayoutData = _cachedLayoutData;
-    
     copyMessage->_textCheckingResults = _textCheckingResults;
     
     copyMessage->_messageLifetime = _messageLifetime;
@@ -107,6 +106,8 @@ typedef enum {
     
     copyMessage->_seqIn = _seqIn;
     copyMessage->_seqOut = _seqOut;
+    
+    copyMessage->_contentProperties = _contentProperties;
     
     return copyMessage;
 }
@@ -465,6 +466,43 @@ typedef enum {
     [is close];
     
     return [NSArray arrayWithArray:attachments];
+}
+
+- (NSData *)serializeContentProperties
+{
+    if (_contentProperties.count == 0)
+        return nil;
+    
+    PSKeyValueEncoder *encoder = [[PSKeyValueEncoder alloc] init];
+    [_contentProperties enumerateKeysAndObjectsUsingBlock:^(NSString *key, id<PSCoding> value, __unused BOOL *stop)
+    {
+        [encoder encodeObject:value forKey:key];
+    }];
+    
+    return encoder.data;
+}
+
++ (NSData *)serializeContentProperties:(NSDictionary *)contentProperties
+{
+    if (contentProperties.count == 0)
+        return nil;
+    
+    PSKeyValueEncoder *encoder = [[PSKeyValueEncoder alloc] init];
+    [contentProperties enumerateKeysAndObjectsUsingBlock:^(NSString *key, id<PSCoding> value, __unused BOOL *stop)
+    {
+        [encoder encodeObject:value forKey:key];
+    }];
+    
+    return encoder.data;
+}
+
++ (NSDictionary *)parseContentProperties:(NSData *)data
+{
+    if (data.length == 0)
+        return nil;
+    
+    PSKeyValueDecoder *decoder = [[PSKeyValueDecoder alloc] initWithData:data];
+    return [decoder decodeObjectsByKeys];
 }
 
 @end

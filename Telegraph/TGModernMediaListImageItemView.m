@@ -12,9 +12,9 @@
 
 @implementation TGModernMediaListImageItemView
 
-- (void)setItem:(TGModernMediaListImageItem *)item
+- (void)setItem:(TGModernMediaListImageItem *)item synchronously:(bool)synchronously
 {
-    [super setItem:item];
+    [super setItem:item synchronously:synchronously];
     
     [super setImageUri:item.imageUri];
 }

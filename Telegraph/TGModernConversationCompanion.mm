@@ -388,6 +388,26 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     return nil;
 }
 
+- (NSDictionary *)imageDescriptionFromBingSearchResult:(TGBingSearchResultItem *)__unused item
+{
+    return nil;
+}
+
+- (NSDictionary *)documentDescriptionFromGiphySearchResult:(TGGiphySearchResultItem *)__unused item
+{
+    return nil;
+}
+
+- (NSDictionary *)imageDescriptionFromInternalSearchImageResult:(TGWebSearchInternalImageResult *)__unused item
+{
+    return nil;
+}
+
+- (NSDictionary *)documentDescriptionFromInternalSearchResult:(TGWebSearchInternalGifResult *)__unused item
+{
+    return nil;
+}
+
 - (void)controllerWantsToSendImagesWithDescriptions:(NSArray *)__unused imageDescriptions
 {
 }
@@ -1491,6 +1511,14 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
                 updatedMessage.deliveryState = TGMessageDeliveryStateDelivered;
                 
                 updatedItem->_message = updatedMessage;
+                
+                TGMessageModernConversationItem *statusItem = [self _updateMediaStatusData:updatedItem];
+                bool updateMediaAvailability = false;
+                if (statusItem != nil)
+                {
+                    updatedItem = statusItem;
+                    updateMediaAvailability = true;
+                }
                 
                 [_items replaceObjectAtIndex:index withObject:updatedItem];
                 

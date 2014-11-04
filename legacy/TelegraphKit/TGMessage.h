@@ -50,9 +50,6 @@ typedef enum {
 
 @property (nonatomic, strong) TGActionMediaAttachment *actionInfo;
 
-@property (nonatomic, strong) id additionalProperties;
-@property (nonatomic, strong) id cachedLayoutData;
-
 @property (nonatomic, strong) NSArray *textCheckingResults;
 
 @property (nonatomic) int32_t messageLifetime;
@@ -63,6 +60,8 @@ typedef enum {
 @property (nonatomic) bool isBroadcast;
 @property (nonatomic) NSUInteger layer;
 
+@property (nonatomic, strong) NSDictionary *contentProperties;
+
 - (bool)local;
 
 + (void)registerMediaAttachmentParser:(int)type parser:(id<TGMediaAttachmentParser>)parser;
@@ -72,6 +71,10 @@ typedef enum {
 + (NSData *)serializeAttachment:(TGMediaAttachment *)attachment;
 + (NSArray *)parseMediaAttachments:(NSData *)data;
 + (NSUInteger)layerFromFlags:(int64_t)flags;
+
+- (NSData *)serializeContentProperties;
++ (NSData *)serializeContentProperties:(NSDictionary *)contentProperties;
++ (NSDictionary *)parseContentProperties:(NSData *)data;
 
 @end
 

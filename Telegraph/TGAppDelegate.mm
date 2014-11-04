@@ -6,8 +6,6 @@
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"
 
-#import "TGGlobalContext.h"
-
 #import "TGPhoneMainViewController.h"
 #import "TGTabletMainViewController.h"
 
@@ -235,9 +233,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 }
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
-{
-    _globalContext = [[TGGlobalContext alloc] initWithName:@"default"];
-    
+{   
     _deviceProximityListeners = [[TGHolderSet alloc] init];
     _deviceProximityListeners.emptyStateChanged = ^(bool listenersExist)
     {
@@ -364,7 +360,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
     {
-        _phoneMainViewController = [[TGPhoneMainViewController alloc] initWithGlobalContext:_globalContext];
+        _phoneMainViewController = [[TGPhoneMainViewController alloc] init];
         
         _mainNavigationController = [TGNavigationController navigationControllerWithRootController:_mainTabsController];
         self.window.rootViewController = _mainNavigationController;

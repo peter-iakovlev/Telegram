@@ -12,7 +12,10 @@
 #import "TGPreparedForwardedMessage.h"
 #import "TGPreparedContactMessage.h"
 #import "TGPreparedLocalDocumentMessage.h"
+#import "TGPreparedRemoteDocumentMessage.h"
 #import "TGPreparedLocalAudioMessage.h"
+#import "TGPreparedDownloadImageMessage.h"
+#import "TGPreparedDownloadDocumentMessage.h"
 
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"
@@ -23,8 +26,13 @@
 #import "TGVideoDownloadActor.h"
 
 #import "TGImageUtils.h"
+#import "TGStringUtils.h"
 
 #import "TGMessage+Telegraph.h"
+
+#import "TGMediaStoreContext.h"
+
+#import "PSLMDBKeyValueStore.h"
 
 @interface TGModernSendCommonMessageActor ()
 {
@@ -36,6 +44,122 @@
 @end
 
 @implementation TGModernSendCommonMessageActor
+
++ (PSLMDBKeyValueStore *)uploadedMediaStore
+{
+    static PSLMDBKeyValueStore *store = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        NSString *documentsPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0];
+        store = [PSLMDBKeyValueStore storeWithPath:[documentsPath stringByAppendingPathComponent:@"misc/remotefiles"] size:4 * 1024 * 1024];
+    });
+    return store;
+}
+
++ (TGDocumentMediaAttachment *)remoteDocumentByGiphyId:(NSString *)giphyId
+{
+    if (giphyId.length == 0)
+        return nil;
+    
+    __block NSData *documentData = nil;
+    [[self uploadedMediaStore] readInTransaction:^(id<PSKeyValueReader> reader)
+    {
+        NSMutableData *keyData = [[NSMutableData alloc] init];
+        int8_t keyspace = 0;
+        [keyData appendBytes:&keyspace length:1];
+        [keyData appendData:[giphyId dataUsingEncoding:NSUTF8StringEncoding]];
+        PSData key = {.data = (uint8_t *)keyData.bytes, .length = keyData.length};
+        PSData value;
+        if ([reader readValueForRawKey:&key value:&value])
+            documentData = [[NSData alloc] initWithBytes:value.data length:value.length];
+    }];
+    
+    if (documentData != nil)
+    {
+        id attachment = [TGMessage parseMediaAttachments:documentData].firstObject;
+        if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
+            return attachment;
+    }
+    return nil;
+}
+
++ (void)setRemoteDocumentForGiphyId:(NSString *)giphyId document:(TGDocumentMediaAttachment *)document
+{
+    if (giphyId.length == 0 || document == nil)
+        return;
+    
+    NSData *documentData = [TGMessage serializeMediaAttachments:true attachments:@[document]];
+    if (documentData != nil)
+    {
+        [[self uploadedMediaStore] readWriteInTransaction:^(id<PSKeyValueReader,PSKeyValueWriter> writer)
+        {
+            NSMutableData *keyData = [[NSMutableData alloc] init];
+            int8_t keyspace = 0;
+            [keyData appendBytes:&keyspace length:1];
+            [keyData appendData:[giphyId dataUsingEncoding:NSUTF8StringEncoding]];
+            PSData key = {.data = (uint8_t *)keyData.bytes, .length = keyData.length};
+            PSData value = {.data = (uint8_t *)documentData.bytes, .length = documentData.length};
+            [writer writeValueForRawKey:key.data keyLength:key.length value:value.data valueLength:value.length];
+        }];
+    }
+}
+
++ (TGImageMediaAttachment *)remoteImageByRemoteUrl:(NSString *)url
+{
+    if (url.length == 0)
+        return nil;
+    
+    __block NSData *imageData = nil;
+    [[self uploadedMediaStore] readInTransaction:^(id<PSKeyValueReader> reader)
+    {
+        NSMutableData *keyData = [[NSMutableData alloc] init];
+        int8_t keyspace = 1;
+        [keyData appendBytes:&keyspace length:1];
+        [keyData appendData:[url dataUsingEncoding:NSUTF8StringEncoding]];
+        PSData key = {.data = (uint8_t *)keyData.bytes, .length = keyData.length};
+        PSData value;
+        if ([reader readValueForRawKey:&key value:&value])
+            imageData = [[NSData alloc] initWithBytes:value.data length:value.length];
+    }];
+    
+    if (imageData != nil)
+    {
+        id attachment = [TGMessage parseMediaAttachments:imageData].firstObject;
+        if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
+            return attachment;
+    }
+    return nil;
+}
+
++ (void)setRemoteImageForRemoteUrl:(NSString *)url image:(TGImageMediaAttachment *)image
+{
+    if (url.length == 0 || image == nil)
+        return;
+    
+    NSData *imageData = [TGMessage serializeMediaAttachments:true attachments:@[image]];
+    if (imageData != nil)
+    {
+        [[self uploadedMediaStore] readWriteInTransaction:^(id<PSKeyValueReader,PSKeyValueWriter> writer)
+        {
+            NSMutableData *keyData = [[NSMutableData alloc] init];
+            int8_t keyspace = 1;
+            [keyData appendBytes:&keyspace length:1];
+            [keyData appendData:[url dataUsingEncoding:NSUTF8StringEncoding]];
+            PSData key = {.data = (uint8_t *)keyData.bytes, .length = keyData.length};
+            PSData value = {.data = (uint8_t *)imageData.bytes, .length = imageData.length};
+            [writer writeValueForRawKey:key.data keyLength:key.length value:value.data valueLength:value.length];
+        }];
+    }
+}
+
++ (void)clearRemoteMediaMapping
+{
+    [[self uploadedMediaStore] readWriteInTransaction:^(id<PSKeyValueReader,PSKeyValueWriter> writer)
+    {
+        [writer deleteAllValues];
+    }];
+}
 
 + (NSString *)genericPath
 {
@@ -163,6 +287,19 @@
             
             [self uploadFilesWithExtensions:uploadFiles];
         }
+        else if ([self.preparedMessage isKindOfClass:[TGPreparedRemoteDocumentMessage class]])
+        {
+            TGPreparedRemoteDocumentMessage *remoteDocumentMessage = (TGPreparedRemoteDocumentMessage *)self.preparedMessage;
+            
+            TLInputMedia$inputMediaDocument *remoteDocument = [[TLInputMedia$inputMediaDocument alloc] init];
+            TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
+            inputDocument.n_id = remoteDocumentMessage.documentId;
+            inputDocument.access_hash = remoteDocumentMessage.accessHash;
+            remoteDocument.n_id = inputDocument;
+            
+            [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+            self.cancelToken = [TGTelegraphInstance doConversationSendMedia:_conversationId media:remoteDocument messageGuid:nil tmpId:remoteDocumentMessage.randomId actor:self];
+        }
         else if ([self.preparedMessage isKindOfClass:[TGPreparedForwardedMessage class]])
         {
             TGPreparedForwardedMessage *forwardedMessage = (TGPreparedForwardedMessage *)self.preparedMessage;
@@ -198,9 +335,123 @@
                 [desc addObject:localAudioMessage.liveData];
             [self uploadFilesWithExtensions:@[desc]];
         }
+        else if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadImageMessage class]])
+        {
+            TGPreparedDownloadImageMessage *downloadImageMessage = (TGPreparedDownloadImageMessage *)self.preparedMessage;
+            
+            [self setupFailTimeout:[TGModernSendCommonMessageActor defaultTimeoutInterval]];
+            
+            bool dispatchThumbnail = false;
+            NSString *url = [downloadImageMessage.imageInfo imageUrlForLargestSize:NULL];
+            NSString *imagePath = [self filePathForLocalImageUrl:url];
+            [[NSFileManager defaultManager] createDirectoryAtPath:[imagePath stringByDeletingLastPathComponent] withIntermediateDirectories:true attributes:nil error:nil];
+            NSData *imageData = [[NSData alloc] initWithContentsOfFile:imagePath];
+            if (imageData == nil)
+            {
+                imageData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[url dataUsingEncoding:NSUTF8StringEncoding]];
+                if (imageData != nil)
+                {
+                    [imageData writeToFile:imagePath atomically:false];
+                    
+                    dispatchThumbnail = true;
+                }
+            }
+            
+            if (imageData != nil)
+            {
+                [self _uploadDownloadedData:imageData dispatchThumbnail:dispatchThumbnail];
+            }
+            else
+            {
+                self.uploadProgressContainsPreDownloads = true;
+                
+                NSString *path = [[NSString alloc] initWithFormat:@"/temporaryDownload/(%@)", url];
+                [ActionStageInstance() requestActor:path options:@{@"url": url, @"file": imagePath, @"queue": @"messagePreDownloads"} flags:0 watcher:self];
+                
+                [self beginUploadProgress];
+            }
+        }
+        else if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadDocumentMessage class]])
+        {
+            TGPreparedDownloadDocumentMessage *downloadDocumentMessage = (TGPreparedDownloadDocumentMessage *)self.preparedMessage;
+            
+            bool dispatchThumbnail = false;
+            
+            NSString *documentPath = [self filePathForLocalDocumentId:downloadDocumentMessage.localDocumentId fileName:downloadDocumentMessage.fileName];
+            NSData *documentData = [[NSData alloc] initWithContentsOfFile:documentPath];
+            if (documentData == nil)
+            {
+                documentData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[downloadDocumentMessage.documentUrl dataUsingEncoding:NSUTF8StringEncoding]];
+                if (documentData != nil)
+                {
+                    [[NSFileManager defaultManager] createDirectoryAtPath:[documentPath stringByDeletingLastPathComponent] withIntermediateDirectories:true attributes:nil error:nil];
+                    [documentData writeToFile:documentPath atomically:false];
+                    
+                    dispatchThumbnail = true;
+                }
+            }
+            
+            if (documentData != nil)
+            {
+                [self _uploadDownloadedData:documentData dispatchThumbnail:dispatchThumbnail];
+            }
+            else
+            {
+                [self setupFailTimeout:[TGModernSendCommonMessageActor defaultTimeoutInterval]];
+                self.uploadProgressContainsPreDownloads = true;
+                
+                NSString *path = [[NSString alloc] initWithFormat:@"/temporaryDownload/(%@)", downloadDocumentMessage.documentUrl];
+                [ActionStageInstance() requestActor:path options:@{@"url": downloadDocumentMessage.documentUrl, @"path": documentPath, @"queue": @"messagePreDownloads"} flags:0 watcher:self];
+                
+                [self beginUploadProgress];
+            }
+        }
         else
             [self _fail];
     }
+}
+
+- (NSString *)filePathForLocalDocumentId:(int64_t)localDocumentId fileName:(NSString *)fileName
+{
+    NSString *directory = nil;
+    directory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localDocumentId];
+    
+    NSString *filePath = [directory stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:fileName]];
+    return filePath;
+}
+
+- (NSString *)filePathForLocalImageUrl:(NSString *)localImageUrl
+{
+    static NSString *filesDirectory = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        filesDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"files"];
+    });
+    
+    int64_t localImageId = murMurHash32(localImageUrl);
+    
+    NSString *photoDirectoryName = [[NSString alloc] initWithFormat:@"image-local-%" PRIx64 "", localImageId];
+    NSString *photoDirectory = [filesDirectory stringByAppendingPathComponent:photoDirectoryName];
+    
+    NSString *imagePath = [photoDirectory stringByAppendingPathComponent:@"image.jpg"];
+    return imagePath;
+}
+
+- (NSString *)filePathForRemoteImageId:(int64_t)remoteImageId
+{
+    static NSString *filesDirectory = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        filesDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"files"];
+    });
+    
+    NSString *photoDirectoryName = [[NSString alloc] initWithFormat:@"image-remote-%" PRIx64 "", remoteImageId];
+    NSString *photoDirectory = [filesDirectory stringByAppendingPathComponent:photoDirectoryName];
+    
+    NSString *imagePath = [photoDirectory stringByAppendingPathComponent:@"image.jpg"];
+    return imagePath;
 }
 
 - (void)_fail
@@ -214,6 +465,99 @@
     }];
     
     [super _fail];
+}
+
+#pragma mark -
+
+- (void)_uploadDownloadedData:(NSData *)data dispatchThumbnail:(bool)dispatchThumbnail
+{
+    if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadImageMessage class]])
+    {
+        TGPreparedDownloadImageMessage *downloadImageMessage = (TGPreparedDownloadImageMessage *)self.preparedMessage;
+        if (dispatchThumbnail)
+        {
+            NSString *thumbnailUrl = [downloadImageMessage.imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL];
+            if (thumbnailUrl != nil)
+            {
+                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/as/media/imageThumbnailUpdated"] resource:thumbnailUrl];
+            }
+        }
+        
+        [self uploadFilesWithExtensions:@[@[data, @"jpg", @(true)]]];
+    }
+    else if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadDocumentMessage class]])
+    {
+        TGPreparedDownloadDocumentMessage *downloadDocumentMessage = (TGPreparedDownloadDocumentMessage *)self.preparedMessage;
+        if (dispatchThumbnail)
+        {
+            NSString *thumbnailUrl = [downloadDocumentMessage.thumbnailInfo imageUrlForLargestSize:NULL];
+            if (thumbnailUrl != nil)
+            {
+                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/as/media/imageThumbnailUpdated"] resource:thumbnailUrl];
+            }
+        }
+        
+        NSMutableArray *files = [[NSMutableArray alloc] init];
+        [files addObject:@[data, @"gif", @(true)]];
+        
+        UIImage *image = [[UIImage alloc] initWithData:data];
+        NSData *thumbnailData = nil;
+        if (image != nil)
+        {
+            image = TGScaleImageToPixelSize(image, TGFitSize(image.size, CGSizeMake(90, 90)));
+            if (image != nil)
+                thumbnailData = UIImageJPEGRepresentation(image, 0.6f);
+            if (thumbnailData != nil)
+                [files addObject:@[thumbnailData, @"jpg", @(false)]];
+        }
+        [self uploadFilesWithExtensions:files];
+    }
+    else
+        [self _fail];
+}
+
+- (void)actorCompleted:(int)status path:(NSString *)path result:(id)result
+{
+    if ([path hasPrefix:@"/temporaryDownload/"])
+    {
+        if (status == ASStatusSuccess)
+        {
+            if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadDocumentMessage class]])
+            {
+                NSData *documentData = result;
+                TGPreparedDownloadDocumentMessage *downloadDocumentMessage = (TGPreparedDownloadDocumentMessage *)self.preparedMessage;
+                NSString *documentPath = [self filePathForLocalDocumentId:downloadDocumentMessage.localDocumentId fileName:downloadDocumentMessage.fileName];
+                [[NSFileManager defaultManager] createDirectoryAtPath:[documentPath stringByDeletingLastPathComponent] withIntermediateDirectories:true attributes:nil error:nil];
+                [documentData writeToFile:documentPath atomically:false];
+            }
+            else if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadImageMessage class]])
+            {
+                NSData *imageData = result;
+                TGPreparedDownloadImageMessage *downloadImageMessage = (TGPreparedDownloadImageMessage *)self.preparedMessage;
+                NSString *imagePath = [self filePathForLocalImageUrl:[downloadImageMessage.imageInfo imageUrlForLargestSize:NULL]];
+                [[NSFileManager defaultManager] createDirectoryAtPath:[imagePath stringByDeletingLastPathComponent] withIntermediateDirectories:true attributes:nil error:nil];
+                [imageData writeToFile:imagePath atomically:false];
+            }
+            [self _uploadDownloadedData:result dispatchThumbnail:true];
+        }
+        else
+            [self _fail];
+    }
+    
+    [super actorCompleted:status path:path result:result];
+}
+
+- (void)actorMessageReceived:(NSString *)path messageType:(NSString *)messageType message:(id)message
+{
+    if ([path hasPrefix:@"/temporaryDownload/"])
+    {
+        [self restartFailTimeoutIfRunning];
+        
+        [self updatePreDownloadsProgress:[message floatValue]];
+    }
+    
+    if ([self.superclass instancesRespondToSelector:@selector(actorMessageReceived:messageType:message:)])
+        [super actorMessageReceived:path messageType:messageType message:message];
 }
 
 #pragma mark -
@@ -315,6 +659,56 @@
             uploadedAudio.duration = localAudioMessage.duration;
             
             self.cancelToken = [TGTelegraphInstance doConversationSendMedia:_conversationId media:uploadedAudio messageGuid:nil tmpId:localAudioMessage.randomId actor:self];
+        }
+        else
+            [self _fail];
+    }
+    else if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadImageMessage class]])
+    {
+        TGPreparedDownloadImageMessage *downloadImageMessage = (TGPreparedDownloadImageMessage *)self.preparedMessage;
+        
+        NSDictionary *fileInfo = filePathToUploadedFile[@"embedded-data://0"];
+        if (fileInfo != nil)
+        {
+            TLInputMedia$inputMediaUploadedPhoto *uploadedPhoto = [[TLInputMedia$inputMediaUploadedPhoto alloc] init];
+            uploadedPhoto.file = fileInfo[@"file"];
+            
+            self.cancelToken = [TGTelegraphInstance doConversationSendMedia:_conversationId media:uploadedPhoto messageGuid:nil tmpId:downloadImageMessage.randomId actor:self];
+        }
+        else
+            [self _fail];
+    }
+    else if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadDocumentMessage class]])
+    {
+        TGPreparedDownloadDocumentMessage *downloadDocumentMessage = (TGPreparedDownloadDocumentMessage *)self.preparedMessage;
+        
+        NSDictionary *documentFileInfo = filePathToUploadedFile[@"embedded-data://0"];
+        NSDictionary *thumbnailFileInfo = filePathToUploadedFile[@"embedded-data://1"];
+        if (documentFileInfo != nil)
+        {
+            id uploadedDocument = nil;
+            
+            if (thumbnailFileInfo != nil)
+            {
+                TLInputMedia$inputMediaUploadedThumbDocument *thumbUploadedDocument = [[TLInputMedia$inputMediaUploadedThumbDocument alloc] init];
+                thumbUploadedDocument.file = documentFileInfo[@"file"];
+                thumbUploadedDocument.file_name = downloadDocumentMessage.fileName;
+                thumbUploadedDocument.mime_type = downloadDocumentMessage.mimeType.length == 0 ? @"application/octet-stream" : downloadDocumentMessage.mimeType;
+                thumbUploadedDocument.thumb = thumbnailFileInfo[@"file"];
+                
+                uploadedDocument = thumbUploadedDocument;
+            }
+            else
+            {
+                TLInputMedia$inputMediaUploadedDocument *plainUploadedDocument = [[TLInputMedia$inputMediaUploadedDocument alloc] init];
+                plainUploadedDocument.file = documentFileInfo[@"file"];
+                plainUploadedDocument.file_name = downloadDocumentMessage.fileName;
+                plainUploadedDocument.mime_type = downloadDocumentMessage.mimeType.length == 0 ? @"application/octet-stream" : downloadDocumentMessage.mimeType;
+                
+                uploadedDocument = plainUploadedDocument;
+            }
+            
+            self.cancelToken = [TGTelegraphInstance doConversationSendMedia:_conversationId media:uploadedDocument messageGuid:nil tmpId:downloadDocumentMessage.randomId actor:self];
         }
         else
             [self _fail];
@@ -577,6 +971,51 @@
                             [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
                         }
                     });
+                }
+            }
+            else if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadImageMessage class]])
+            {
+                TGPreparedDownloadImageMessage *downloadImageMessage = (TGPreparedDownloadImageMessage *)self.preparedMessage;
+                
+                for (TGMediaAttachment *attachment in message.mediaAttachments)
+                {
+                    if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
+                    {
+                        TGImageMediaAttachment *imageAttachment = (TGImageMediaAttachment *)attachment;
+                        
+                        NSString *localImageUrl = [downloadImageMessage.imageInfo imageUrlForLargestSize:NULL];
+                        
+                        NSString *localImageDirectory = [[self filePathForLocalImageUrl:localImageUrl] stringByDeletingLastPathComponent];
+                        NSString *updatedImageDirectory = [[self filePathForRemoteImageId:imageAttachment.imageId] stringByDeletingLastPathComponent];
+                        [[NSFileManager defaultManager] moveItemAtPath:localImageDirectory toPath:updatedImageDirectory error:nil];
+                        
+                        [TGModernSendCommonMessageActor setRemoteImageForRemoteUrl:localImageUrl image:imageAttachment];
+                        
+                        [TGDatabaseInstance() updateLastUseDateForMediaType:2 mediaId:imageAttachment.imageId messageId:message.mid];
+                        
+                        break;
+                    }
+                }
+            }
+            else if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadDocumentMessage class]])
+            {
+                TGPreparedDownloadDocumentMessage *downloadDocumentMessage = (TGPreparedDownloadDocumentMessage *)self.preparedMessage;
+                
+                for (TGMediaAttachment *attachment in message.mediaAttachments)
+                {
+                    if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
+                    {
+                        TGDocumentMediaAttachment *documentAttachment = (TGDocumentMediaAttachment *)attachment;
+                        
+                        NSString *updatedDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:documentAttachment.documentId];
+                        
+                        NSString *localDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:downloadDocumentMessage.localDocumentId];
+                        [[NSFileManager defaultManager] moveItemAtPath:localDirectory toPath:updatedDocumentDirectory error:nil];
+                        
+                        [TGModernSendCommonMessageActor setRemoteDocumentForGiphyId:downloadDocumentMessage.giphyId document:documentAttachment];
+                        
+                        [TGDatabaseInstance() updateLastUseDateForMediaType:3 mediaId:documentAttachment.documentId messageId:message.mid];
+                    }
                 }
             }
             

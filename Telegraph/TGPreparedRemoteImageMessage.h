@@ -18,4 +18,6 @@
 
 - (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash imageInfo:(TGImageInfo *)imageInfo;
 
++ (NSString *)filePathForRemoteImageId:(int64_t)imageId;
+
 @end

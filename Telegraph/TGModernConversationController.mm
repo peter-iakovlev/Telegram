@@ -47,7 +47,7 @@
 
 #import "TGMapViewController.h"
 #import "TGImagePickerController.h"
-#import "TGImageSearchController.h"
+#import "TGWebSearchController.h"
 #import "TGLegacyCameraController.h"
 #import "TGMapViewController.h"
 #import "TGDocumentController.h"
@@ -77,6 +77,11 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 
 #import "TGVideoConverter.h"
+
+#import "TGGiphySearchResultItem.h"
+#import "TGBingSearchResultItem.h"
+#import "TGWebSearchInternalImageResult.h"
+#import "TGWebSearchInternalGifResult.h"
 
 #if TARGET_IPHONE_SIMULATOR
 NSInteger TGModernConversationControllerUnloadHistoryLimit = 500;
@@ -840,7 +845,7 @@ typedef enum {
         {
             [self.view addSubview:_currentInputPanel];
             [_currentInputPanel adjustForOrientation:self.interfaceOrientation keyboardHeight:_keyboardHeight duration:0.0 animationCurve:0];
-            _currentInputPanel.frame = CGRectMake(_currentInputPanel.frame.origin.x, [self collectionViewSizeForInterfaceOrientation:self.interfaceOrientation].height, _currentInputPanel.frame.size.width, _currentInputPanel.frame.size.height);
+            _currentInputPanel.frame = CGRectMake(_currentInputPanel.frame.origin.x, [self collectionViewSizeForInterfaceOrientation:self.interfaceOrientation].height - _currentInputPanel.frame.size.height, _currentInputPanel.frame.size.width, _currentInputPanel.frame.size.height);
             
             [self _adjustCollectionViewForOrientation:self.interfaceOrientation keyboardHeight:_keyboardHeight inputContainerHeight:_currentInputPanel.frame.size.height duration:0.0 animationCurve:0];
         }
@@ -2046,10 +2051,18 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
                         [self.navigationController pushViewController:documentController animated:true];
                     else
                     {
-                        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[documentController]];
-                        navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-                        navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-                        [self presentViewController:navigationController animated:true completion:nil];
+                        if (iosMajorVersion() >= 8)
+                        {
+                            documentController.modalPresentationStyle = UIModalPresentationFormSheet;
+                            [self presentViewController:documentController animated:false completion:nil];
+                        }
+                        else
+                        {
+                            TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[documentController]];
+                            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
+                            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
+                            [self presentViewController:navigationController animated:true completion:nil];
+                        }
                     }
                     
                     [_companion updateMediaAccessTimeForMessageId:messageId];
@@ -3069,8 +3082,8 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
 {
     NSMutableArray *actions = [[NSMutableArray alloc] initWithArray:@[
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.ChoosePhoto") action:@"choosePhoto"],
-        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.SearchWebImages") action:@"searchWeb"],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.ChooseVideo") action:@"chooseVideo"],
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.SearchWebImages") action:@"searchWeb"],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.Location") action:@"chooseLocation"],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.Document") action:@"document"]
     ]];
@@ -3233,30 +3246,82 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
 
 - (void)_displayImagePicker:(bool)webImages
 {
-    NSMutableArray *controllerList = [[NSMutableArray alloc] init];
-    
-    TGImageSearchController *searchController = [[TGImageSearchController alloc] init];
-    searchController.autoActivateSearch = webImages;
-    searchController.delegate = self;
-    [controllerList addObject:searchController];
-    
-    if (!webImages)
+    if (webImages)
     {
+        NSMutableArray *controllerList = [[NSMutableArray alloc] init];
+        
+        TGWebSearchController *searchController = [[TGWebSearchController alloc] init];
+        
+        __weak TGModernConversationController *weakSelf = self;
+        searchController.completion = ^(NSArray *items)
+        {
+            __strong TGModernConversationController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                NSMutableArray *imageDescriptions = [[NSMutableArray alloc] init];
+                
+                for (id item in items)
+                {
+                    if ([item isKindOfClass:[TGBingSearchResultItem class]])
+                    {
+                        id imageDescription = [strongSelf.companion imageDescriptionFromBingSearchResult:item];
+                        if (imageDescription != nil)
+                            [imageDescriptions addObject:imageDescription];
+                    }
+                    else if ([item isKindOfClass:[TGGiphySearchResultItem class]])
+                    {
+                        id documentDescription = [strongSelf.companion documentDescriptionFromGiphySearchResult:item];
+                        if (documentDescription != nil)
+                            [imageDescriptions addObject:documentDescription];
+                    }
+                    else if ([item isKindOfClass:[TGWebSearchInternalImageResult class]])
+                    {
+                        id imageDescription = [strongSelf.companion imageDescriptionFromInternalSearchImageResult:item];
+                        if (imageDescription != nil)
+                            [imageDescriptions addObject:imageDescription];
+                    }
+                    else if ([item isKindOfClass:[TGWebSearchInternalGifResult class]])
+                    {
+                        id documentDescription = [strongSelf.companion documentDescriptionFromInternalSearchResult:item];
+                        if (documentDescription != nil)
+                            [imageDescriptions addObject:documentDescription];
+                    }
+                }
+                
+                if (imageDescriptions.count != 0)
+                    [strongSelf.companion controllerWantsToSendImagesWithDescriptions:imageDescriptions];
+            }
+        };
+        [controllerList addObject:searchController];
+        
+        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:controllerList];
+        
+        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+        {
+            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
+            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
+        }
+        
+        [self presentViewController:navigationController animated:true completion:nil];
+    }
+    else
+    {
+        NSMutableArray *controllerList = [[NSMutableArray alloc] init];
+        
         TGImagePickerController *imagePicker = [[TGImagePickerController alloc] initWithGroupUrl:nil groupTitle:nil avatarSelection:false];
         imagePicker.delegate = self;
-        
         [controllerList addObject:imagePicker];
+        
+        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:controllerList];
+        
+        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+        {
+            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
+            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
+        }
+        
+        [self presentViewController:navigationController animated:true completion:nil];
     }
-    
-    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:controllerList];
-    
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
-    {
-        navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-        navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-    }
-    
-    [self presentViewController:navigationController animated:true completion:nil];
 }
 
 - (void)imagePickerController:(TGImagePickerController *)__unused imagePicker didFinishPickingWithAssets:(NSArray *)assets

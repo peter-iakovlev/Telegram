@@ -9,6 +9,7 @@
 
 @interface TGGenericPeerMediaGalleryImageItem ()
 {
+    int64_t _imageId;
     TGImageInfo *_legacyImageInfo;
 }
 
@@ -33,7 +34,7 @@
     if (imageId != 0)
         [imageUri appendFormat:@"&id=%" PRId64 "", imageId];
     else if (localId != 0)
-        [imageUri appendFormat:@"&local-id=%" PRId64 "", imageId];
+        [imageUri appendFormat:@"&local-id=%" PRId64 "", localId];
     [imageUri appendFormat:@"&legacy-file-path=%@", legacyFilePath];
     
     NSString *escapedLegacyThumbnailCacheUrl = (__bridge_transfer NSString *)CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (__bridge CFStringRef)legacyThumbnailCacheUrl, (__bridge CFStringRef)@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-", (__bridge CFStringRef)@"&?= ", kCFStringEncodingUTF8);
@@ -53,6 +54,7 @@
     self = [super initWithUri:imageUri imageSize:imageSize];
     if (self != nil)
     {
+        _imageId = imageId;
         _legacyImageInfo = legacyImageInfo;
     }
     return self;
@@ -71,8 +73,28 @@
     return false;
 }
 
+- (NSString *)filePathForRemoteImageId:(int64_t)remoteImageId
+{
+    static NSString *filesDirectory = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        filesDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"files"];
+    });
+    
+    NSString *photoDirectoryName = [[NSString alloc] initWithFormat:@"image-remote-%" PRIx64 "", remoteImageId];
+    NSString *photoDirectory = [filesDirectory stringByAppendingPathComponent:photoDirectoryName];
+    
+    NSString *imagePath = [photoDirectory stringByAppendingPathComponent:@"image.jpg"];
+    return imagePath;
+}
+
 - (NSString *)filePath
 {
+    NSString *localPath = [self filePathForRemoteImageId:_imageId];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:localPath])
+        return localPath;
+    
     NSString *legacyCacheUrl = [_legacyImageInfo closestImageUrlWithSize:CGSizeMake(1000.0f, 1000.0f) resultingSize:NULL];
     
     NSString *legacyFilePath = nil;

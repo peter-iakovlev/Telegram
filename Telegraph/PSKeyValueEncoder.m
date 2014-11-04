@@ -168,9 +168,9 @@ static inline void writeLength(PSKeyValueEncoder *self, uint32_t value)
     
     NSString *className = NSStringFromClass([object class]);
     NSData *classNameData = [className dataUsingEncoding:NSUTF8StringEncoding];
-    uint16_t classNameLength = (uint16_t)classNameData.length;
-    [_data appendBytes:&classNameLength length:2];
     [_data appendData:classNameData];
+    uint8_t zero = 0;
+    [_data appendBytes:&zero length:1];
     
     [object encodeWithKeyValueCoder:self];
     

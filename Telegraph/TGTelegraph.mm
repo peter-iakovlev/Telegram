@@ -5,8 +5,6 @@
 #import <MTProtoKit/MTProto.h>
 
 #import "TGAppDelegate.h"
-#import "TGGlobalContext.h"
-#import "TGContactsContext.h"
 
 #import "UIDevice+PlatformInfo.h"
 
@@ -141,6 +139,9 @@
 
 #import "TGUpdateConfigActor.h"
 #import "TGDownloadMessagesActor.h"
+
+#import "TGWebSearchController.h"
+#import "TGModernSendCommonMessageActor.h"
 
 #import "TGTimer.h"
 
@@ -890,6 +891,9 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         [TGSuggestedContactsRequestActor clearCache];
         
         [[TGInterfaceAssets instance] clearColorMapping];
+        
+        [TGWebSearchController clearRecents];
+        [TGModernSendCommonMessageActor clearRemoteMediaMapping];
         
         self.clientUserId = 0;
         self.clientIsActivated = false;

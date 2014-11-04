@@ -10,4 +10,6 @@
 - (void)prepareForReuse;
 - (void)updateItem;
 
+- (void)setItem:(id<TGModernMediaListItem>)item synchronously:(bool)synchronously;
+
 @end

@@ -942,6 +942,8 @@ ActionStage *ActionStageInstance()
         {
             ASHandle *actionHandle = it->first;
             NSString *path = it->second;
+            if (path == nil)
+                continue;
             
             {
                 NSMutableDictionary *requestInfo = [_activeRequests objectForKey:path];

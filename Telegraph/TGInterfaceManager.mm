@@ -11,8 +11,6 @@
 
 #import "TGMessageNotificationView.h"
 
-#import "TGPhotoGridController.h"
-
 #import "TGNavigationBar.h"
 
 #import "TGLinearProgressView.h"

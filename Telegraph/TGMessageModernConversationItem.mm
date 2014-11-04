@@ -14,6 +14,7 @@
 #import "TGAudioMessageViewModel.h"
 #import "TGAnimatedImageMessageViewModel.h"
 #import "TGYoutubeMessageViewModel.h"
+#import "TGInstagramMessageViewModel.h"
 
 #import "TGPreparedLocalDocumentMessage.h"
 
@@ -491,12 +492,94 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
         return model;
     }
     
-    /*if ([message.text hasPrefix:@"http://youtu.be/"])
+    
+    if ([message.text hasPrefix:@"http://youtu.be/"])
     {
         TGYoutubeMessageViewModel *model = [[TGYoutubeMessageViewModel alloc] initWithVideoId:[message.text substringFromIndex:@"http://youtu.be/".length] message:message author:useAuthor ? _author : nil context:_context];
+        if (useAuthor)
+            [model setAuthorAvatarUrl:_author.photoUrlSmall];
         model.collapseFlags = _collapseFlags;
         [model layoutForContainerSize:containerSize];
         return model;
+    }
+    
+    if ([message.text hasPrefix:@"http://www.youtube.com/watch?v="] || [message.text hasPrefix:@"https://www.youtube.com/watch?v="])
+    {
+        NSRange range1 = [message.text rangeOfString:@"?v="];
+        bool match = true;
+        for (NSInteger i = range1.location + range1.length; i < (NSInteger)message.text.length; i++)
+        {
+            unichar c = [message.text characterAtIndex:i];
+            if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '=' || c == '&' || c == '#'))
+            {
+                match = false;
+                break;
+            }
+        }
+        
+        if (match)
+        {
+            NSString *videoId = nil;
+            NSRange ampRange = [message.text rangeOfString:@"&"];
+            NSRange hashRange = [message.text rangeOfString:@"#"];
+            if (ampRange.location != NSNotFound || hashRange.location != NSNotFound)
+            {
+                NSInteger location = MIN(ampRange.location, hashRange.location);
+                videoId = [message.text substringWithRange:NSMakeRange(range1.location + range1.length, location - range1.location - range1.length)];
+            }
+            else
+                videoId = [message.text substringFromIndex:range1.location + range1.length];
+            
+            if (videoId.length != 0)
+            {
+                TGYoutubeMessageViewModel *model = [[TGYoutubeMessageViewModel alloc] initWithVideoId:videoId message:message author:useAuthor ? _author : nil context:_context];
+                if (useAuthor)
+                    [model setAuthorAvatarUrl:_author.photoUrlSmall];
+                model.collapseFlags = _collapseFlags;
+                [model layoutForContainerSize:containerSize];
+                return model;
+            }
+        }
+    }
+    
+    if ([message.text hasPrefix:@"http://instagram.com/p/"])
+    {
+        NSString *shortcode = [message.text substringFromIndex:@"http://instagram.com/p/".length];
+        if ([shortcode hasSuffix:@"/"])
+            shortcode = [shortcode substringToIndex:shortcode.length - 1];
+        
+        TGInstagramMessageViewModel *model = [[TGInstagramMessageViewModel alloc] initWithShortcode:shortcode message:message author:useAuthor ? _author : nil context:_context];
+        if (useAuthor)
+            [model setAuthorAvatarUrl:_author.photoUrlSmall];
+        model.collapseFlags = _collapseFlags;
+        [model layoutForContainerSize:containerSize];
+        return model;
+    }
+    
+    /*if ([message.text hasPrefix:@"https://twitter.com/"])
+    {
+        NSRange range1 = [message.text rangeOfString:@"/status/"];
+        if (range1.location != NSNotFound)
+        {
+            bool match = true;
+            for (NSInteger i = range1.location + range1.length; i < (NSInteger)message.text.length; i++)
+            {
+                unichar c = [message.text characterAtIndex:i];
+                if (!(c >= '0' && c <= '9'))
+                {
+                    match = false;
+                    break;
+                }
+            }
+            
+            if (match)
+            {
+                NSRange range0 = [message.text rangeOfString:@"twitter.com/"];
+                NSString *userName = [message.text substringWithRange:NSMakeRange(range0.location + range0.length, range1.location - range0.location - range0.length)];
+                NSString *statusId = [message.text substringFromIndex:range1.location + range1.length];
+                
+            }
+        }
     }*/
     
     TGTextMessageModernViewModel *model = [[TGTextMessageModernViewModel alloc] initWithMessage:message author:useAuthor ? _author : nil context:_context];

@@ -10,11 +10,25 @@
 #import "TGUserDataRequestBuilder.h"
 #import "TGUser+Telegraph.h"
 
+#import "TGTimer.h"
+
+@interface TGContactListSearchActor ()
+{
+    TGTimer *_timer;
+}
+
+@end
+
 @implementation TGContactListSearchActor
 
 + (NSString *)genericPath
 {
     return @"/tg/contacts/search/@";
+}
+
+- (void)dealloc
+{
+    [_timer invalidate];
 }
 
 - (void)execute:(NSDictionary *)options
@@ -30,21 +44,29 @@
     
     __weak TGContactListSearchActor *weakSelf = self;
     
+    NSTimeInterval delayStart = CFAbsoluteTimeGetCurrent();
     [TGDatabaseInstance() searchContacts:query ignoreUid:ignoreUid searchPhonebook:[[options objectForKey:@"searchPhonebook"] boolValue] completion:^(NSDictionary *result)
     {
         [ActionStageInstance() dispatchOnStageQueue:^
         {
             [ActionStageInstance() dispatchMessageToWatchers:self.path messageType:@"localResults" message:result];
             
-            if (query.length < 3)
+            if (query.length < 5)
                 [ActionStageInstance() actionCompleted:self.path result:nil];
             else
             {
-                self.cancelToken = [TGTelegraphInstance doSearchContactsByName:query limit:256 completion:^(TLcontacts_Found *result)
-                {
+                _timer = [[TGTimer alloc] initWithTimeout:MAX(0.0, CFAbsoluteTimeGetCurrent() - delayStart - 150) repeat:false completion:^{
                     __strong TGContactListSearchActor *strongSelf = weakSelf;
-                    [strongSelf _processRemoteResults:result];
-                }];
+                    if (strongSelf != nil)
+                    {
+                        strongSelf.cancelToken = [TGTelegraphInstance doSearchContactsByName:query limit:256 completion:^(TLcontacts_Found *result)
+                        {
+                            __strong TGContactListSearchActor *strongSelf = weakSelf;
+                            [strongSelf _processRemoteResults:result];
+                        }];
+                    }
+                } queue:[ActionStageInstance() globalStageDispatchQueue]];
+                [_timer start];
             }
         }];
     }];
