@@ -54,7 +54,7 @@
 - (void)setDrawsFullSeparator:(bool)drawsFullSeparator
 {
     _drawsFullSeparator = drawsFullSeparator;
-    self.separatorInset = drawsFullSeparator ? 0.0f : 44.0f;
+    self.separatorInset = drawsFullSeparator ? 0.0f : (_alignToRight ? 15.0f : 44.0f);
 }
 
 - (void)layoutSubviews
@@ -66,13 +66,23 @@
     if (_drawsFullSeparator)
     {
         CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
-        _topStripeLayer.frame = CGRectMake(self.separatorInset, 0.0f, self.frame.size.width - self.separatorInset, separatorHeight * 2.0f);
+        _topStripeView.frame = CGRectMake(self.separatorInset, 0.0f, self.frame.size.width - self.separatorInset, separatorHeight * 2.0f);
     }
     
-    _label.frame = CGRectMake(44.0f, floorf((bounds.size.height - 26) / 2), bounds.size.width - 44.0f - 16.0f, 26);
-    
-    CGSize checkSize = _checkView.frame.size;
-    _checkView.frame = CGRectMake(15.0f, 16.0f, checkSize.width, checkSize.height);
+    if (_alignToRight)
+    {
+        _label.frame = CGRectMake(15.0f, floorf((bounds.size.height - 26) / 2), bounds.size.width - 44.0f - 16.0f, 26);
+        
+        CGSize checkSize = _checkView.frame.size;
+        _checkView.frame = CGRectMake(bounds.size.width - 15.0f - checkSize.width, 16.0f, checkSize.width, checkSize.height);
+    }
+    else
+    {
+        _label.frame = CGRectMake(44.0f, floorf((bounds.size.height - 26) / 2), bounds.size.width - 44.0f - 16.0f, 26);
+        
+        CGSize checkSize = _checkView.frame.size;
+        _checkView.frame = CGRectMake(15.0f, 16.0f, checkSize.width, checkSize.height);
+    }
 }
 
 @end

@@ -20,6 +20,7 @@
     TGModernButton *_doneButton;
 }
 
+@property (nonatomic, strong) NSString *emptyValue;
 @property (nonatomic, copy) void (^onDismiss)();
 @property (nonatomic, copy) void (^onDone)(id item);
 @property (nonatomic, strong) NSArray *timerValues;
@@ -58,70 +59,6 @@
 - (void)loadView
 {
     [super loadView];
-    
-    /*static UIImage *buttonBackgroundImage = nil;
-    static UIImage *buttonBackgroundImageHighlighted = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        int radius = 6;
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius * 2, radius * 2), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius * 2, radius * 2));
-        buttonBackgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:radius topCapHeight:radius];
-        
-        CGContextClearRect(context, CGRectMake(0.0f, 0.0f, radius * 2, radius * 2));
-        CGContextSetFillColorWithColor(context, [UIColor colorWithWhite:0.95f alpha:1.0f].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius * 2, radius * 2));
-        buttonBackgroundImageHighlighted = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:radius topCapHeight:radius];
-        
-        UIGraphicsEndImageContext();
-    });
-    
-    _backgroundView = [[UIView alloc] initWithFrame:self.view.bounds];
-    _backgroundView.backgroundColor = UIColorRGBA(0x000000, 0.4f);
-    _backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    [_backgroundView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(backgroundTapped:)]];
-    [self.view addSubview:_backgroundView];
-    
-    _containerView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - 281.0f, self.view.frame.size.width, 281.0f)];
-    _containerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
-    
-    _containerBackgroundView = [[UIImageView alloc] initWithFrame:CGRectMake(8.0f, 0.0f, _containerView.frame.size.width - 16.0f, 221.0f)];
-    _containerBackgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    _containerBackgroundView.image = buttonBackgroundImage;
-    [_containerView addSubview:_containerBackgroundView];
-    
-    _cancelButton = [[UIButton alloc] initWithFrame:CGRectMake(8.0f, _containerView.frame.size.height - 44.0f - 8.0f, _containerView.frame.size.width - 16.0f, 44.0f)];
-    [_cancelButton setBackgroundImage:buttonBackgroundImage forState:UIControlStateNormal];
-    [_cancelButton setBackgroundImage:buttonBackgroundImageHighlighted forState:UIControlStateHighlighted];
-    _cancelButton.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    [_cancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
-    [_cancelButton setTitleColor:TGAccentColor() forState:UIControlStateNormal];
-    _cancelButton.titleLabel.font = TGMediumSystemFontOfSize(21.0f);
-    [_cancelButton addTarget:self action:@selector(cancelButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-    [_containerView addSubview:_cancelButton];
-    
-    _pickerView = [[UIPickerView alloc] initWithFrame:CGRectMake(8.0f, CGFloor((221.0f - 216.0f) / 2.0f), _containerView.frame.size.width - 16.0f, 216.0)];
-    _pickerView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    _pickerView.dataSource = self;
-    _pickerView.delegate = self;
-    [_pickerView reloadAllComponents];
-    [_containerView addSubview:_pickerView];
-    
-    _doneButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 74.0f, 40.0f)];
-    [_doneButton setTitleColor:TGAccentColor()];
-    [_doneButton setTitle:TGLocalized(@"Common.OK") forState:UIControlStateNormal];
-    [_doneButton setTitleEdgeInsets:UIEdgeInsetsMake(8.0f, 8.0f, 8.0f, 16.0f)];
-    _doneButton.titleLabel.font = TGMediumSystemFontOfSize(16.0f);
-    _doneButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
-    _doneButton.frame = CGRectMake(_containerView.frame.size.width - 8.0f - _doneButton.frame.size.width, CGFloor((221.0f - _doneButton.frame.size.height) / 2.0f), _doneButton.frame.size.width, _doneButton.frame.size.height);
-    _doneButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
-    [_doneButton addTarget:self action:@selector(doneButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-    [_containerView addSubview:_doneButton];
-    
-    [self.view addSubview:_containerView];*/
     
     _backgroundView = [[UIView alloc] initWithFrame:self.view.bounds];
     _backgroundView.backgroundColor = UIColorRGBA(0x000000, 0.4f);
@@ -213,11 +150,13 @@
 {
     if (view != nil)
     {
+        view.emptyValue = _emptyValue;
         view.seconds = [_timerValues[row] intValue];
         return view;
     }
     
     TGSecretTimerValueControllerItemView *newView = [[TGSecretTimerValueControllerItemView alloc] init];
+    newView.emptyValue = _emptyValue;
     newView.seconds = [_timerValues[row] intValue];
     return newView;
 }
@@ -254,6 +193,7 @@
     UIPickerView *_pickerView;
 }
 
+@property (nonatomic, strong) NSString *emptyValue;
 @property (nonatomic, copy) void (^onDismiss)();
 @property (nonatomic, copy) void (^onDone)(id item);
 @property (nonatomic, strong) NSArray *timerValues;
@@ -346,11 +286,13 @@
 {
     if (view != nil)
     {
+        view.emptyValue = _emptyValue;
         view.seconds = [_timerValues[row] intValue];
         return view;
     }
     
     TGSecretTimerValueControllerItemView *newView = [[TGSecretTimerValueControllerItemView alloc] init];
+    newView.emptyValue = _emptyValue;
     newView.seconds = [_timerValues[row] intValue];
     return newView;
 }
@@ -363,10 +305,10 @@
 
 @implementation TGPickerSheetPopoverController
 
-- (instancetype)init
+- (instancetype)initWithEmptyValue:(NSString *)emptyValue
 {
     TGPickerSheetPopoverContentController *contentController = [[TGPickerSheetPopoverContentController alloc] init];
-    
+    contentController.emptyValue = emptyValue;
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[contentController]];
     navigationController.presentationStyle = TGNavigationControllerPresentationStyleRootInPopover;
     self = [super initWithContentViewController:navigationController];
@@ -422,6 +364,7 @@
         _controllerWindow.hidden = false;
         _controllerWindow.rootViewController = [[TGPickerSheetOverlayController alloc] init];
         __weak TGPickerSheet *weakSelf = self;
+        ((TGPickerSheetOverlayController *)_controllerWindow.rootViewController).emptyValue = _emptyValue;
         ((TGPickerSheetOverlayController *)_controllerWindow.rootViewController).timerValues = _items;
         ((TGPickerSheetOverlayController *)_controllerWindow.rootViewController).selectedIndex = _selectedIndex;
         
@@ -452,7 +395,7 @@
 {
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
     {
-        _popoverController = [[TGPickerSheetPopoverController alloc] init];
+        _popoverController = [[TGPickerSheetPopoverController alloc] initWithEmptyValue:_emptyValue];
         
         __weak TGPickerSheet *weakSelf = self;
         _popoverController.pickerSheetContentController.timerValues = _items;

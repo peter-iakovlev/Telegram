@@ -25,7 +25,6 @@
     _customPlaceholderLabel = [[UILabel alloc] init];
     _customPlaceholderLabel.backgroundColor = [UIColor clearColor];
     _customPlaceholderLabel.font = [UIFont systemFontOfSize:15];
-    _customPlaceholderLabel.text = TGLocalized(@"Compose.TokenListPlaceholder");
     [_customPlaceholderLabel sizeToFit];
     _customPlaceholderLabel.userInteractionEnabled = false;
     _customPlaceholderLabel.textColor = UIColorRGB(0x8e8e93);

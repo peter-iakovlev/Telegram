@@ -25,6 +25,7 @@
 
 - (id)initWithForwardMessages:(NSArray *)forwardMessages sendMessages:(NSArray *)sendMessages;
 - (id)initWithSelectBlockTarget;
+- (id)initWithSelectPrivacyTarget:(NSString *)title placeholder:(NSString *)placeholder;
 - (id)initWithSelectTarget;
 - (id)initWithDocumentFile:(NSURL *)fileUrl size:(int)size;
 - (id)initWithDocumentFiles:(NSArray *)fileDescs;

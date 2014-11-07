@@ -122,18 +122,6 @@
             [self.menuSections addSection:languageSection];
         }
         
-        TGButtonCollectionItem *terminateSessionsItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.ClearOtherSessions") action:@selector(terminateSessionsPressed)];
-        terminateSessionsItem.titleColor = TGDestructiveAccentColor();
-        terminateSessionsItem.deselectAutomatically = true;
-        
-        TGCommentCollectionItem *clearOtherSessionsHelpItem = [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"ChatSettings.ClearOtherSessionsHelp")];
-        TGCollectionMenuSection *securitySection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Security")],
-            terminateSessionsItem,
-            clearOtherSessionsHelpItem
-        ]];
-        [self.menuSections addSection:securitySection];
-        
         if (TGIsCustomLocalizationActive())
         {
             TGButtonCollectionItem *resetLanguageItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.RevertLanguage") action:@selector(resetLanguagePressed)];
@@ -177,27 +165,6 @@
     TGBaseFontSize = textSize;
     _textSizeItem.variant = [[NSString alloc] initWithFormat:@"%d%@", TGBaseFontSize, TGLocalized(@"ChatSettings.TextSizeUnits")];
     [TGAppDelegateInstance saveSettings];
-}
-
-- (void)terminateSessionsPressed
-{
-    __weak TGChatSettingsController *weakSelf = self;
-    [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"ChatSettings.ClearOtherSessionsConfirmation") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
-    {
-        if (okButtonPressed)
-        {
-            TGChatSettingsController *strongSelf = weakSelf;
-            [strongSelf _commitTerminateSessions];
-        }
-    }] show];
-}
-
-- (void)_commitTerminateSessions
-{
-    _progressWindow = [[TGProgressWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    [_progressWindow show:true];
-    
-    [ActionStageInstance() requestActor:@"/tg/service/revokesessions" options:nil watcher:self];
 }
 
 #pragma mark -
@@ -244,24 +211,6 @@
 
 - (void)actorCompleted:(int)status path:(NSString *)path result:(id)__unused result
 {
-    if ([path isEqualToString:@"/tg/service/revokesessions"])
-    {
-        TGDispatchOnMainThread(^
-        {
-            if (status == ASStatusSuccess)
-            {
-                [_progressWindow dismissWithSuccess];
-                _progressWindow = nil;
-            }
-            else
-            {
-                [_progressWindow dismiss:true];
-                _progressWindow = nil;
-                
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"ChatSettings.ClearOtherSessionsFailed") cancelButtonTitle:nil okButtonTitle:TGLocalized(@"Common.OK") completionBlock:nil] show];
-            }
-        });
-    }
 }
 
 - (void)resetLanguagePressed

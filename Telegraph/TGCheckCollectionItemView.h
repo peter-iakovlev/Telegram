@@ -11,6 +11,7 @@
 @interface TGCheckCollectionItemView : TGCollectionItemView
 
 @property (nonatomic) bool drawsFullSeparator;
+@property (nonatomic) bool alignToRight;
 
 - (void)setTitle:(NSString *)title;
 - (void)setIsChecked:(bool)isChecked;

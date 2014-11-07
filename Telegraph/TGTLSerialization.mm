@@ -126,9 +126,9 @@
         
         return [[NSString alloc] initWithFormat:@"%@ (%" PRId64 "/%" PRId32 ") for (%@)", NSStringFromClass([messageBody class]), messageId, messageSeqNo, idsString];
     }
-    else if ([messageBody isKindOfClass:[TLInvokeWithLayer18 class]])
+    else if ([messageBody isKindOfClass:[TLInvokeWithLayer class]])
     {
-        id subBody = ((TLInvokeWithLayer18 *)messageBody).query;
+        id subBody = ((TLInvokeWithLayer *)messageBody).query;
         if ([subBody isKindOfClass:[TLInitConnection class]])
             return [[NSString alloc] initWithFormat:@"%@ (I, L, %" PRId64 "/%" PRId32 ")", NSStringFromClass([((TLInitConnection *)subBody).query class]), messageId, messageSeqNo];
         else
@@ -508,37 +508,12 @@
 
 - (id)wrapInLayer:(id)message
 {
-    static int maxLayerVersion = 18;
-    
-    static NSMutableDictionary *layerClassesByVersion = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        layerClassesByVersion = [[NSMutableDictionary alloc] init];
-        
-        for (int i = maxLayerVersion + 1; i < maxLayerVersion + 10; i++)
-        {
-            if (NSClassFromString([[NSString alloc] initWithFormat:@"TLInvokeWithLayer%d$invokeWithLayer%d", i, i]) != nil)
-                maxLayerVersion = i;
-        }
-    });
-    
-    Class layerClass = layerClassesByVersion[@(maxLayerVersion)];
-    if (layerClass == nil)
-    {
-        layerClass = NSClassFromString([[NSString alloc] initWithFormat:@"TLInvokeWithLayer%d$invokeWithLayer%d", maxLayerVersion, maxLayerVersion]);
-        
-        if (layerClass != nil)
-            layerClassesByVersion[@(maxLayerVersion)] = layerClass;
-    }
-    
-    if (layerClass == nil)
-        TGLog(@"[MTRequestMessageService#%p layer version %d class not found]", self, maxLayerVersion);
-    
-    id layerObject = [[layerClass alloc] init];
-    [layerObject setQuery:message];
-    
-    return layerObject;
+    static int maxLayerVersion = 19;
+
+    TLInvokeWithLayer$invokeWithLayer *invokeWithLayer = [[TLInvokeWithLayer$invokeWithLayer alloc] init];
+    invokeWithLayer.layer = maxLayerVersion;
+    invokeWithLayer.query = message;
+    return invokeWithLayer;
 }
 
 - (id)dropAnswerToMessageId:(int64_t)messageId

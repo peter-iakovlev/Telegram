@@ -8,7 +8,7 @@
 
 #import "TGNotificationSettingsController.h"
 #import "TGChatSettingsController.h"
-#import "TGBlockedController.h"
+#import "TGPrivacySettingsController.h"
 
 #import "TGAccountInfoCollectionItem.h"
 #import "TGDisclosureActionCollectionItem.h"
@@ -49,6 +49,8 @@
 
 #import "TGAlertView.h"
 
+#import "TGAccountSettingsActor.h"
+
 @interface TGAccountSettingsController () <TGImagePickerControllerDelegate, TGLegacyCameraControllerDelegate, TGWallpaperControllerDelegate>
 {
     int32_t _uid;
@@ -65,7 +67,7 @@
     TGVariantCollectionItem *_usernameItem;
     
     TGDisclosureActionCollectionItem *_notificationsItem;
-    TGDisclosureActionCollectionItem *_blockedUsersItem;
+    TGDisclosureActionCollectionItem *_privacySettingsItem;
     TGDisclosureActionCollectionItem *_chatSettingsItem;
     TGDisclosureActionCollectionItem *_supportItem;
     TGDisclosureActionCollectionItem *_faqItem;
@@ -112,7 +114,7 @@
         
         TGCollectionMenuSection *settingsSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             (_notificationsItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.NotificationsAndSounds") action:@selector(notificationsAndSoundsPressed)]),
-            (_blockedUsersItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.BlockedUsers") action:@selector(blockedUsersPressed)]),
+            (_privacySettingsItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.PrivacySettings") action:@selector(privacySettingsPressed)]),
             (_chatSettingsItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.ChatSettings") action:@selector(chatSettingsPressed)]),
             _wallpapersItem
         ]];
@@ -197,6 +199,9 @@
                 });
             }
         }
+        
+        if ([TGAccountSettingsActor accountSettingsFotCurrentStateId] == nil)
+            [ActionStageInstance() requestActor:@"/accountSettings" options:@{} flags:0 watcher:self];
     }];
 }
 
@@ -496,9 +501,9 @@
     [self.navigationController pushViewController:[[TGNotificationSettingsController alloc] init] animated:true];
 }
 
-- (void)blockedUsersPressed
+- (void)privacySettingsPressed
 {
-    [self.navigationController pushViewController:[[TGBlockedController alloc] init] animated:true];
+    [self.navigationController pushViewController:[[TGPrivacySettingsController alloc] init] animated:true];
 }
 
 - (void)chatSettingsPressed
@@ -883,7 +888,7 @@
     }
     
     _notificationsItem.title = TGLocalized(@"Settings.NotificationsAndSounds");
-    _blockedUsersItem.title = TGLocalized(@"Settings.BlockedUsers");
+    _privacySettingsItem.title = TGLocalized(@"Settings.PrivacySettings");
     _chatSettingsItem.title = TGLocalized(@"Settings.ChatSettings");
     
     _setProfilePhotoItem.title = TGLocalized(@"Settings.SetProfilePhoto");

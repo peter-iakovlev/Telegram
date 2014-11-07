@@ -39,6 +39,7 @@
 {
     [super bindView:view];
     
+    [(TGCheckCollectionItemView *)view setAlignToRight:_alignToRight];
     ((TGCheckCollectionItemView *)view).drawsFullSeparator = _requiresFullSeparator;
     
     [(TGCheckCollectionItemView *)view setTitle:_title];

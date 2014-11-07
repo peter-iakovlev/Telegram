@@ -2,6 +2,8 @@
 
 @interface TGPickerSheet : NSObject
 
+@property (nonatomic, strong) NSString *emptyValue;
+
 - (instancetype)initWithItems:(NSArray *)items selectedIndex:(NSUInteger)selectedIndex action:(void (^)(id item))action;
 
 - (void)show;

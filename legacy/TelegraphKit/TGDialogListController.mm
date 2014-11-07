@@ -365,7 +365,7 @@ NSString *authorNameYou = @"  __TGLocalized__YOU";
     _searchMixin.searchBar = _searchBar;
     _searchMixin.delegate = self;
     
-    if (!_dialogListCompanion.forwardMode)
+    if (!_dialogListCompanion.forwardMode && !_dialogListCompanion.privacyMode)
         _searchBar.customScopeButtonTitles = @[TGLocalized(@"DialogList.Conversations"), TGLocalized(@"DialogList.Messages")];
     
     _tableView.tableHeaderView = _searchBar;
@@ -419,7 +419,7 @@ NSString *authorNameYou = @"  __TGLocalized__YOU";
     
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
     {
-        if (lastAppearedConversationId != 0 && !_debugDoNotJump && !_dialogListCompanion.forwardMode)
+        if (lastAppearedConversationId != 0 && !_debugDoNotJump && !_dialogListCompanion.forwardMode && !_dialogListCompanion.privacyMode)
         {
             int64_t conversationId = lastAppearedConversationId;
             lastAppearedConversationId = 0;
@@ -902,6 +902,9 @@ NSString *authorNameYou = @"  __TGLocalized__YOU";
             {
                 [_dialogListCompanion conversationSelected:conversation];
             }
+            
+            if (_dialogListCompanion.forwardMode || _dialogListCompanion.privacyMode)
+                [_tableView deselectRowAtIndexPath:indexPath animated:true];
         }
     }
     else
@@ -1131,7 +1134,7 @@ NSString *authorNameYou = @"  __TGLocalized__YOU";
                 {
                     cell = [[TGDialogListCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:MessageCellIdentifier assetsSource:[_dialogListCompanion dialogListCellAssetsSource]];
                     cell.watcherHandle = _actionHandle;
-                    cell.enableEditing = ![_dialogListCompanion forwardMode];
+                    cell.enableEditing = ![_dialogListCompanion forwardMode] && !_dialogListCompanion.privacyMode;
                 }
             }
             
@@ -1499,7 +1502,7 @@ NSString *authorNameYou = @"  __TGLocalized__YOU";
     
     if (conversation != nil)
     {
-        if (conversation.isChat)
+        if (true || conversation.isChat)
         {
             _conversationIdToDelete = conversation.conversationId;
             
@@ -1507,7 +1510,7 @@ NSString *authorNameYou = @"  __TGLocalized__YOU";
             
             _currentActionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:nil destructiveButtonTitle:nil otherButtonTitles:nil];
             [_currentActionSheet addButtonWithTitle:TGLocalized(@"DialogList.ClearHistoryConfirmation")];
-            _currentActionSheet.destructiveButtonIndex = [_currentActionSheet addButtonWithTitle:conversation.isBroadcast ? TGLocalized(@"Common.Delete") : TGLocalized(@"DialogList.DeleteConversationConfirmation")];
+            _currentActionSheet.destructiveButtonIndex = [_currentActionSheet addButtonWithTitle:(conversation.isBroadcast || !conversation.isChat) ? TGLocalized(@"Common.Delete") : TGLocalized(@"DialogList.DeleteConversationConfirmation")];
             _currentActionSheet.cancelButtonIndex = [_currentActionSheet addButtonWithTitle:TGLocalized(@"Common.Cancel")];
             
             [_currentActionSheet showInView:self.navigationController.view];
@@ -1529,7 +1532,7 @@ NSString *authorNameYou = @"  __TGLocalized__YOU";
     [_titleLabel sizeToFit];
     [self _layoutTitleViews:self.interfaceOrientation];
     
-    if (!_dialogListCompanion.forwardMode)
+    if (!_dialogListCompanion.forwardMode && !_dialogListCompanion.privacyMode)
         _searchBar.customScopeButtonTitles = @[TGLocalized(@"DialogList.Conversations"), TGLocalized(@"DialogList.Messages")];
     
     for (id cell in _tableView.visibleCells)

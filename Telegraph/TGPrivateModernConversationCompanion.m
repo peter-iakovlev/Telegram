@@ -308,8 +308,6 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
             *accentColored = true;
         return TGLocalizedStatic(@"Presence.online");
     }
-    else if (user.presence.lastSeen < 0)
-        return TGLocalizedStatic(@"Presence.invisible");
     else if (user.presence.lastSeen != 0)
         return [TGDateUtils stringForRelativeLastSeen:user.presence.lastSeen];
     

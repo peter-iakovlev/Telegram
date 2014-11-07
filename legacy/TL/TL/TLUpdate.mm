@@ -18,6 +18,7 @@
 #import "TLPeerNotifySettings.h"
 #import "TLSendMessageAction.h"
 #import "TLMessageMedia.h"
+#import "TLPrivacyKey.h"
 
 @implementation TLUpdate
 
@@ -1291,6 +1292,46 @@
         value.type = TLConstructedValueTypePrimitiveBool;
         value.primitive.boolValue = self.popup;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xba229289, value));
+    }
+}
+
+
+@end
+
+@implementation TLUpdate$updatePrivacy : TLUpdate
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xee3b272a;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x80d0afbd;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLUpdate$updatePrivacy *object = [[TLUpdate$updatePrivacy alloc] init];
+    object.key = metaObject->getObject((int32_t)0x6d6f838d);
+    object.rules = metaObject->getArray((int32_t)0x2aa6cca);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.key;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x6d6f838d, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.rules;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x2aa6cca, value));
     }
 }
 

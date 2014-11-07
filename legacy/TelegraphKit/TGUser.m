@@ -5,6 +5,9 @@
 
 #import "NSObject+TGLock.h"
 
+#import "TGNotificationPrivacyAccountSetting.h"
+#import "TGDatabase.h"
+
 @interface TGUser ()
 {
     bool _contactIdInitialized;
@@ -246,6 +249,62 @@
         difference |= TGUserFieldPresenceOnline;
     
     return difference;
+}
+
++ (TGUserPresence)approximatePresenceFromPresence:(TGUserPresence)presence currentTime:(NSTimeInterval)currentTime
+{
+    if (presence.lastSeen <= 0)
+        return presence;
+    
+    if (presence.lastSeen >= (int)(currentTime - 60 * 60 * 24 * 4))
+        return (TGUserPresence){.online = false, .lastSeen = TGUserPresenceValueLately, .temporaryLastSeen = 0};
+    else if (presence.lastSeen >= (int)(currentTime - 60 * 60 * 24 * 4))
+        return (TGUserPresence){.online = false, .lastSeen = TGUserPresenceValueWithinAWeek, .temporaryLastSeen = 0};
+    else if (presence.lastSeen >= (int)(currentTime - 60 * 60 * 24 * 31))
+        return (TGUserPresence){.online = false, .lastSeen = TGUserPresenceValueWithinAMonth, .temporaryLastSeen = 0};
+    
+    return (TGUserPresence){.online = false, .lastSeen = TGUserPresenceValueALongTimeAgo, .temporaryLastSeen = 0};
+}
+
+- (TGUser *)applyPrivacyRules:(TGNotificationPrivacyAccountSetting *)privacyRules currentTime:(NSTimeInterval)currentTime
+{
+    if (privacyRules == nil)
+        return self;
+    
+    bool approximatePresenceRequired = false;
+    
+    switch (privacyRules.lastSeenPrimarySetting)
+    {
+        case TGPrivacySettingsLastSeenPrimarySettingEverybody:
+            if ([privacyRules.neverShareWithUserIds containsObject:@(_uid)])
+                approximatePresenceRequired = true;
+            break;
+        case TGPrivacySettingsLastSeenPrimarySettingContacts:
+            if ([TGDatabaseInstance() uidIsRemoteContact:_uid])
+            {
+                if ([privacyRules.neverShareWithUserIds containsObject:@(_uid)])
+                    approximatePresenceRequired = true;
+            }
+            else
+            {
+                if (![privacyRules.alwaysShareWithUserIds containsObject:@(_uid)])
+                    approximatePresenceRequired = true;
+            }
+            break;
+        case TGPrivacySettingsLastSeenPrimarySettingNobody:
+            if (![privacyRules.alwaysShareWithUserIds containsObject:@(_uid)])
+                approximatePresenceRequired = true;
+            break;
+    }
+    
+    if (approximatePresenceRequired)
+    {
+        TGUser *user = [self copy];
+        user.presence = [TGUser approximatePresenceFromPresence:self.presence currentTime:currentTime];
+        return user;
+    }
+    
+    return self;
 }
 
 @end

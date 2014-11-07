@@ -21,8 +21,8 @@ typedef enum {
 
 @interface TGCollectionItemView : UICollectionViewCell
 {
-    CALayer *_topStripeLayer;
-    CALayer *_bottomStripeLayer;
+    UIView *_topStripeView;
+    UIView *_bottomStripeView;
     
     int _itemPosition;
 }

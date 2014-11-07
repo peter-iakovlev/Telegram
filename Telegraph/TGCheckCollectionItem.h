@@ -13,6 +13,7 @@
 @property (nonatomic, strong) NSString *title;
 @property (nonatomic) bool isChecked;
 @property (nonatomic) SEL action;
+@property (nonatomic) bool alignToRight;
 
 @property (nonatomic) bool requiresFullSeparator;
 

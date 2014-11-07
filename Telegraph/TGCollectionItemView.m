@@ -49,30 +49,30 @@
 
 - (void)_updateStripes
 {
-    static CGColorRef stripeColor = nil;
+    static UIColor *stripeColor = nil;
     
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        stripeColor = CGColorRetain(TGSeparatorColor().CGColor);
+        stripeColor = TGSeparatorColor();
     });
     
-    if (_topStripeLayer == nil)
+    if (_topStripeView == nil)
     {
-        _topStripeLayer = [[CALayer alloc] init];
-        _topStripeLayer.backgroundColor = stripeColor;
-        [self.backgroundView.layer addSublayer:_topStripeLayer];
+        _topStripeView = [[UIView alloc] init];
+        _topStripeView.backgroundColor = stripeColor;
+        [self.backgroundView addSubview:_topStripeView];
     }
     
-    if (_bottomStripeLayer == nil)
+    if (_bottomStripeView == nil)
     {
-        _bottomStripeLayer = [[CALayer alloc] init];
-        _bottomStripeLayer.backgroundColor = stripeColor;
-        [self.backgroundView.layer addSublayer:_bottomStripeLayer];
+        _bottomStripeView = [[UIView alloc] init];
+        _bottomStripeView.backgroundColor = stripeColor;
+        [self.backgroundView addSubview:_bottomStripeView];
     }
     
-    _topStripeLayer.hidden = (_itemPosition & (TGCollectionItemViewPositionFirstInBlock | TGCollectionItemViewPositionLastInBlock | TGCollectionItemViewPositionMiddleInBlock)) == 0;
-    _bottomStripeLayer.hidden = (_itemPosition & (TGCollectionItemViewPositionLastInBlock | TGCollectionItemViewPositionIncludeNextSeparator)) == 0;
+    _topStripeView.hidden = (_itemPosition & (TGCollectionItemViewPositionFirstInBlock | TGCollectionItemViewPositionLastInBlock | TGCollectionItemViewPositionMiddleInBlock)) == 0;
+    _bottomStripeView.hidden = (_itemPosition & (TGCollectionItemViewPositionLastInBlock | TGCollectionItemViewPositionIncludeNextSeparator)) == 0;
     self.backgroundView.backgroundColor = _itemPosition == 0 ? [UIColor clearColor] : [UIColor whiteColor];
 }
 
@@ -174,14 +174,14 @@ static void adjustSelectedBackgroundViewFrame(CGSize viewSize, int positionMask,
     });
     
     if (_itemPosition & TGCollectionItemViewPositionFirstInBlock)
-        _topStripeLayer.frame = CGRectMake(0, 0, viewSize.width, stripeHeight);
+        _topStripeView.frame = CGRectMake(0, 0, viewSize.width, stripeHeight);
     else
-        _topStripeLayer.frame = CGRectMake(_separatorInset, 0, viewSize.width - _separatorInset, stripeHeight);
+        _topStripeView.frame = CGRectMake(_separatorInset, 0, viewSize.width - _separatorInset, stripeHeight);
     
     if (_itemPosition & TGCollectionItemViewPositionLastInBlock)
-        _bottomStripeLayer.frame = CGRectMake(0, viewSize.height - stripeHeight, viewSize.width, stripeHeight);
+        _bottomStripeView.frame = CGRectMake(0, viewSize.height - stripeHeight, viewSize.width, stripeHeight);
     else if (_itemPosition & TGCollectionItemViewPositionIncludeNextSeparator)
-        _bottomStripeLayer.frame = CGRectMake(_separatorInset, viewSize.height - stripeHeight, viewSize.width - _separatorInset, stripeHeight);
+        _bottomStripeView.frame = CGRectMake(_separatorInset, viewSize.height - stripeHeight, viewSize.width - _separatorInset, stripeHeight);
 }
 
 @end

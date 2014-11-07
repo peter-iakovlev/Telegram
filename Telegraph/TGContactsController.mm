@@ -505,6 +505,7 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
     if ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose)
     {
         _tokenFieldView = [[TGTokenFieldView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 44)];
+        _tokenFieldView.placeholder = _composePlaceholder;
         _tokenFieldView.frame = CGRectMake(0, [self tokenFieldOffset], self.view.frame.size.width, [_tokenFieldView preferredHeight]);
         _tokenFieldView.delegate = self;
         [self.view addSubview:_tokenFieldView];
@@ -1470,17 +1471,11 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
         int lastSeen = user.presence.lastSeen;
         if (user.presence.online)
         {
-            subtitleText = TGLocalizedStatic(@"Presence.online");
             localSubtitleActive = true;
+            subtitleText = TGLocalized(@"Presence.online");
         }
-        else if (lastSeen == 0)
-            subtitleText = TGLocalizedStatic(@"Presence.offline");
-        else if (lastSeen < 0)
-            subtitleText = TGLocalizedStatic(@"Presence.invisible");
         else
-        {
             subtitleText = [TGDateUtils stringForRelativeLastSeen:lastSeen];
-        }
     }
     else
     {

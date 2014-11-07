@@ -15,6 +15,8 @@
 
 #import "TGAlertView.h"
 
+#import "TGAppDelegate.h"
+
 @interface TGForwardContactsController : TGContactsController
 
 @property (nonatomic, strong) ASHandle *watcher;
@@ -38,6 +40,7 @@
 {
     NSString *_confirmationCustomFormat;
     bool _targetMode;
+    bool _privacyMode;
 }
 
 @property (nonatomic) bool blockMode;
@@ -114,6 +117,32 @@
         _confirmationDefaultPersonFormat = _confirmationDefaultGroupFormat = TGLocalized(@"BlockedUsers.BlockFormat");
         _controllerTitle = TGLocalized(@"BlockedUsers.BlockTitle");
         _blockMode = true;
+    }
+    return self;
+}
+
+- (id)initWithSelectPrivacyTarget:(NSString *)title placeholder:(NSString *)placeholder
+{
+    self = [super init];
+    if (self)
+    {
+        _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
+        
+        _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
+        _dialogListCompanion.privacyMode = true;
+        _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
+        _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.customParentViewController = self;
+        _dialogListController.doNotHideSearchAutomatically = true;
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
+        
+        _contactsController = [[TGForwardContactsController alloc] initWithContactsMode:TGContactsModeRegistered | TGContactsModeClearSelectionImmediately | TGContactsModeCompose];
+        _contactsController.watcher = _actionHandle;
+        _contactsController.customParentViewController = self;
+        _contactsController.composePlaceholder = placeholder;
+        
+        _controllerTitle = title;
+        _privacyMode = true;
     }
     return self;
 }
@@ -291,7 +320,7 @@
     if (TGBackdropEnabled())
     {
         UIView *backgroundView = [[UIToolbar alloc] initWithFrame:_toolbarContainerView.bounds];
-        _toolbarContainerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [_toolbarContainerView addSubview:backgroundView];
     }
     else
@@ -320,7 +349,7 @@
     [_segmentedControl setDividerImage:dividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
     
     _segmentedControl.frame = CGRectMake(floorf((_toolbarContainerView.frame.size.width - 182.0f) / 2), 8, 182.0f, 29.0f);
-    _segmentedControl.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
+    _segmentedControl.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin;
     
     [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: TGAccentColor(), UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
     [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: [UIColor whiteColor], UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
@@ -330,7 +359,13 @@
     
     [_toolbarContainerView addSubview:_segmentedControl];
     
-    [self setCurrentViewController:_dialogListController];
+    if (_privacyMode)
+    {
+        [self setCurrentViewController:_contactsController];
+        [_segmentedControl setSelectedSegmentIndex:1];
+    }
+    else
+        [self setCurrentViewController:_dialogListController];
     
     [self.view addSubview:_toolbarContainerView];
 }
@@ -374,6 +409,24 @@
         [self.view insertSubview:_currentViewController.view atIndex:0];
         [self addChildViewController:_currentViewController];
         [_currentViewController didMoveToParentViewController:self];
+    }
+    
+    if (_privacyMode)
+    {
+        if (currentViewController == _contactsController)
+        {
+            [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(donePressed)]];
+        }
+        else
+            [self setRightBarButtonItem:nil];
+    }
+}
+
+- (void)donePressed
+{
+    if (_privacyMode)
+    {
+        [_watcherHandle requestAction:@"multipleUsersSelected" options:_contactsController.selectedComposeUsers];
     }
 }
 
@@ -433,7 +486,7 @@
         TGUser *user = [options objectForKey:@"user"];
         if (user != nil)
         {
-            if (_blockMode)
+            if (_blockMode || _privacyMode)
             {
                 [_watcherHandle requestAction:@"blockUser" options:user];
             }
@@ -488,15 +541,33 @@
                     _currentAlert.delegate = nil;
                     
                     NSString *alertText = nil;
-                    if (_blockMode)
-                        alertText = [NSString stringWithFormat:@"%@\"%@\"?", TGLocalized(@"BlockedUsers.LeavePrefix"), conversation.chatTitle];
-                    else if (_confirmationCustomFormat != nil)
-                        alertText = [[NSString alloc] initWithFormat:_confirmationCustomFormat, conversation.chatTitle];
+                    if (_privacyMode)
+                    {
+                        NSString *formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_any");
+                        if (conversation.chatParticipants.chatParticipantUids.count == 1)
+                            formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_1");
+                        else if (conversation.chatParticipants.chatParticipantUids.count == 2)
+                            formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_2");
+                        else if (conversation.chatParticipants.chatParticipantUids.count >= 3 && conversation.chatParticipants.chatParticipantUids.count <= 10)
+                            formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_3_10");
+                        
+                        alertText = [NSString stringWithFormat:formatString, @(conversation.chatParticipants.chatParticipantUids.count)];
+                        
+                        _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                        [_currentAlert show];
+                    }
                     else
-                        alertText = [NSString stringWithFormat:_confirmationDefaultGroupFormat, conversation.chatTitle];
-                    
-                    _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
-                    [_currentAlert show];
+                    {
+                        if (_blockMode)
+                            alertText = [NSString stringWithFormat:@"%@\"%@\"?", TGLocalized(@"BlockedUsers.LeavePrefix"), conversation.chatTitle];
+                        else if (_confirmationCustomFormat != nil)
+                            alertText = [[NSString alloc] initWithFormat:_confirmationCustomFormat, conversation.chatTitle];
+                        else
+                            alertText = [NSString stringWithFormat:_confirmationDefaultGroupFormat, conversation.chatTitle];
+                        
+                        _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                        [_currentAlert show];
+                    }
                 }
                 else
                 {
@@ -513,7 +584,7 @@
                     TGUser *user = [TGDatabaseInstance() loadUser:uid];
                     if (user != nil)
                     {
-                        if (_blockMode)
+                        if (_blockMode || _privacyMode)
                         {
                             [_watcherHandle requestAction:@"blockUser" options:user];
                         }
@@ -543,7 +614,7 @@
 {
     if (buttonIndex != alertView.cancelButtonIndex && _selectedTarget != nil)
     {
-        if (_blockMode)
+        if (_blockMode || _privacyMode)
         {
             if ([_selectedTarget isKindOfClass:[TGUser class]])
                 [_watcherHandle requestAction:@"blockUser" options:_selectedTarget];
@@ -555,6 +626,9 @@
             id<ASWatcher> watcher = _watcherHandle.delegate;
             if (watcher != nil && [watcher respondsToSelector:@selector(actionStageActionRequested:options:)])
                 [watcher actionStageActionRequested:@"willForwardMessages" options:[[NSDictionary alloc] initWithObjectsAndKeys:self, @"controller", _selectedTarget, @"target", nil]];
+            
+            if (watcher == nil)
+                [self dismissSelf];
             
             if (_documentFileDescs != nil)
             {
@@ -582,12 +656,9 @@
                     [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}]} animated:false];
                 }
             }
-            
-            if (watcher == nil)
-                [self dismissSelf];
         }
     }
-    
+
     _currentAlert.delegate = nil;
     _currentAlert = nil;
 }

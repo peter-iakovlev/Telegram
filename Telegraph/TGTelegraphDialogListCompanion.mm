@@ -217,7 +217,7 @@ typedef enum {
 
 - (void)conversationSelected:(TGConversation *)conversation
 {
-    if (self.forwardMode)
+    if (self.forwardMode || self.privacyMode)
     {
         [_conversatioSelectedWatcher requestAction:@"conversationSelected" options:[[NSDictionary alloc] initWithObjectsAndKeys:conversation, @"conversation", nil]];
     }
@@ -255,7 +255,7 @@ typedef enum {
 
 - (void)searchResultSelectedConversation:(TGConversation *)conversation atMessageId:(int)messageId
 {
-    if (!self.forwardMode)
+    if (!self.forwardMode && !self.privacyMode)
     {
         if ([TGDatabaseInstance() loadMessageWithMid:messageId] != nil)
         {
@@ -484,7 +484,7 @@ typedef enum {
 
 - (void)searchResultSelectedUser:(TGUser *)user
 {
-    if (self.forwardMode)
+    if (self.forwardMode || self.privacyMode)
     {
         [_conversatioSelectedWatcher requestAction:@"userSelected" options:[[NSDictionary alloc] initWithObjectsAndKeys:user, @"user", nil]];
     }
@@ -731,6 +731,7 @@ typedef enum {
             TGUser *selfUser = [[TGDatabase instance] loadUser:TGTelegraphInstance.clientUserId];
             
             bool forwardMode = self.forwardMode;
+            bool privacyMode = self.privacyMode;
             bool showSecretInForwardMode = self.showSecretInForwardMode;
             
             for (id object in chats)
@@ -738,10 +739,10 @@ typedef enum {
                 if ([object isKindOfClass:[TGConversation class]])
                 {
                     TGConversation *conversation = (TGConversation *)object;
-                    if ((forwardMode && conversation.conversationId <= INT_MIN) && !showSecretInForwardMode)
+                    if (((forwardMode || privacyMode) && conversation.conversationId <= INT_MIN) && !showSecretInForwardMode)
                         continue;
                     
-                    if (forwardMode && conversation.isBroadcast)
+                    if ((forwardMode || privacyMode) && conversation.isBroadcast)
                         continue;
                     
                     [self initializeDialogListData:conversation customUser:nil selfUser:selfUser];
@@ -776,11 +777,12 @@ typedef enum {
             NSMutableArray *loadedItems = [[listNode items] mutableCopy];
             bool canLoadMore = false;
             bool forwardMode = self.forwardMode;
+            bool privacyMode = self.privacyMode;
             bool showSecretInForwardMode = self.showSecretInForwardMode;
             
             TGUser *selfUser = [[TGDatabase instance] loadUser:TGTelegraphInstance.clientUserId];
             
-            if (forwardMode && !showSecretInForwardMode)
+            if ((forwardMode || privacyMode) && !showSecretInForwardMode)
             {
                 for (int i = 0; i < (int)loadedItems.count; i++)
                 {
@@ -792,7 +794,7 @@ typedef enum {
                 }
             }
             
-            if (forwardMode)
+            if (forwardMode || privacyMode)
             {
                 for (int i = 0; i < (int)loadedItems.count; i++)
                 {
@@ -953,7 +955,7 @@ typedef enum {
         
         TGUser *selfUser = [[TGDatabase instance] loadUser:TGTelegraphInstance.clientUserId];
         
-        if (self.forwardMode && !self.showSecretInForwardMode)
+        if ((self.forwardMode || self.privacyMode) && !self.showSecretInForwardMode)
         {
             for (int i = 0; i < (int)conversations.count; i++)
             {
@@ -965,7 +967,7 @@ typedef enum {
             }
         }
         
-        if (self.forwardMode)
+        if (self.forwardMode || self.privacyMode)
         {
             for (int i = 0; i < (int)conversations.count; i++)
             {
@@ -1086,7 +1088,7 @@ typedef enum {
             {
                 [controller dialogListFullyReloaded:items];
                 
-                if (TGAppDelegateInstance.tabletMainViewController != nil && !self.forwardMode)
+                if (TGAppDelegateInstance.tabletMainViewController != nil && !self.forwardMode && !self.privacyMode)
                 {
                     if ([((UINavigationController *)TGAppDelegateInstance.tabletMainViewController.detailViewController).topViewController isKindOfClass:[TGModernConversationController class]])
                     {
@@ -1172,7 +1174,10 @@ typedef enum {
                     [userNames appendString:user.displayFirstName];
                 }
                 
-                typingString = userNames;
+                if (typingUsers.count == 1)
+                    typingString = [[NSString alloc] initWithFormat:TGLocalized(@"DialogList.SingleTypingSuffix"), userNames];
+                else
+                    typingString = userNames;
             }
             else if (typingUsers.count != 0)
             {

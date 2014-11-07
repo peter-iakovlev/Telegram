@@ -14,9 +14,17 @@ typedef enum {
     TGUserSexFemale = 2
 } TGUserSex;
 
+typedef enum {
+    TGUserPresenceValueLately = -2,
+    TGUserPresenceValueWithinAWeek = -3,
+    TGUserPresenceValueWithinAMonth = -4,
+    TGUserPresenceValueALongTimeAgo = -5
+} TGUserPresenceValue;
+
 typedef struct {
     bool online;
     int lastSeen;
+    int temporaryLastSeen;
 } TGUserPresence;
 
 typedef enum {
@@ -44,6 +52,8 @@ typedef enum {
     TGUserFieldPresenceOnline = 4096,
     TGUserFieldUsername = 8192
 } TGUserFields;
+
+@class TGNotificationPrivacyAccountSetting;
 
 #define TGUserFieldsAllButPresenceMask (TGUserFieldUid | TGUserFieldPhoneNumber | TGUserFieldPhoneNumberHash | TGUserFieldFirstName| TGUserFieldLastName | TGUserFieldPhonebookFirstName | TGUserFieldPhonebookLastName | TGUserFieldSex | TGUserFieldPhotoUrlSmall | TGUserFieldPhotoUrlMedium | TGUserFieldPhotoUrlBig)
 
@@ -84,5 +94,8 @@ typedef enum {
 
 - (bool)isEqualToUser:(TGUser *)anotherUser;
 - (int)differenceFromUser:(TGUser *)anotherUser;
+
++ (TGUserPresence)approximatePresenceFromPresence:(TGUserPresence)presence currentTime:(NSTimeInterval)currentTime;
+- (TGUser *)applyPrivacyRules:(TGNotificationPrivacyAccountSetting *)privacyRules currentTime:(NSTimeInterval)currentTime;
 
 @end

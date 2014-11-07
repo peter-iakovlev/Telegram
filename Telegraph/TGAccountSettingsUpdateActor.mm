@@ -1,0 +1,233 @@
+#import "TGAccountSettingsUpdateActor.h"
+
+#import "ActionStage.h"
+#import "TGTelegramNetworking.h"
+#import "TL/TLMetaScheme.h"
+
+#import <MtProtoKit/MTRequest.h>
+
+#import "TGAccountSettings.h"
+
+#import "TGDatabase.h"
+
+#import "TGUserDataRequestBuilder.h"
+#import "TGTelegraph.h"
+
+@interface TGAccountSettingsUpdateActor ()
+{
+    NSMutableSet *_remainingSettingKeys;
+    
+    TGNotificationPrivacyAccountSetting *_privacySettings;
+}
+
+@end
+
+@implementation TGAccountSettingsUpdateActor
+
++ (void)load
+{
+    [ASActor registerActorClass:self];
+}
+
++ (NSString *)genericPath
+{
+    return @"/updateAccountSettings";
+}
+
+- (void)prepare:(NSDictionary *)options
+{
+    [super prepare:options];
+    
+    self.requestQueueName = @"accountSettings";
+}
+
+- (void)_maybeComplete
+{
+    if (_remainingSettingKeys.count == 0)
+        [ActionStageInstance() actionCompleted:self.path result:nil];
+}
+
+- (void)execute:(NSDictionary *)options
+{
+    _remainingSettingKeys = [[NSMutableSet alloc] init];
+    [self updateOptions:options];
+}
+
+- (void)watcherJoined:(ASHandle *)watcherHandle options:(NSDictionary *)options waitingInActorQueue:(bool)waitingInActorQueue
+{
+    [super watcherJoined:watcherHandle options:options waitingInActorQueue:waitingInActorQueue];
+    
+    [self updateOptions:options];
+}
+
+- (NSArray *)inputUsersFromUserIds:(NSArray *)userIds
+{
+    NSMutableArray *array = [[NSMutableArray alloc] init];
+    for (NSNumber *nUserId in userIds)
+    {
+        TGUser *user = [TGDatabaseInstance() loadUser:[nUserId intValue]];
+        if (user.phoneNumberHash != 0)
+        {
+            TLInputUser$inputUserForeign *inputUser = [[TLInputUser$inputUserForeign alloc] init];
+            inputUser.user_id = [nUserId intValue];
+            inputUser.access_hash = user.phoneNumberHash;
+            [array addObject:inputUser];
+        }
+    }
+    return array;
+}
+
+- (void)updateOptions:(NSDictionary *)options
+{
+    if (self.cancelToken != nil)
+        [[TGTelegramNetworking instance] cancelRpc:self.cancelToken];
+    
+    NSMutableArray *requestList = [[NSMutableArray alloc] init];
+    for (id<TGAccountSetting> setting in options[@"settingList"])
+    {
+        if ([setting isKindOfClass:[TGNotificationPrivacyAccountSetting class]])
+        {
+            TGNotificationPrivacyAccountSetting *privacySettings = (TGNotificationPrivacyAccountSetting *)setting;
+            _privacySettings = privacySettings;
+            [_remainingSettingKeys addObject:@"notificationPrivacySettings"];
+            
+            MTRequest *request = [[MTRequest alloc] init];
+            
+            TLRPCaccount_setPrivacy$account_setPrivacy *setPrivacy = [[TLRPCaccount_setPrivacy$account_setPrivacy alloc] init];
+            setPrivacy.key = [[TLInputPrivacyKey$inputPrivacyKeyStatusTimestamp alloc] init];
+            
+            NSMutableArray *rules = [[NSMutableArray alloc] init];
+            
+            if (privacySettings.alwaysShareWithUserIds.count != 0)
+            {
+                if (privacySettings.lastSeenPrimarySetting != TGPrivacySettingsLastSeenPrimarySettingEverybody)
+                {
+                    TLInputPrivacyRule$inputPrivacyValueAllowUsers *allowUsers = [[TLInputPrivacyRule$inputPrivacyValueAllowUsers alloc] init];
+                    allowUsers.users = [self inputUsersFromUserIds:privacySettings.alwaysShareWithUserIds];
+                    [rules addObject:allowUsers];
+                }
+            }
+            if (privacySettings.neverShareWithUserIds.count != 0)
+            {
+                if (privacySettings.lastSeenPrimarySetting != TGPrivacySettingsLastSeenPrimarySettingNobody)
+                {
+                    TLInputPrivacyRule$inputPrivacyValueDisallowUsers *disallowUsers = [[TLInputPrivacyRule$inputPrivacyValueDisallowUsers alloc] init];
+                    disallowUsers.users = [self inputUsersFromUserIds:privacySettings.neverShareWithUserIds];
+                    [rules addObject:disallowUsers];
+                }
+            }
+            switch (privacySettings.lastSeenPrimarySetting)
+            {
+                case TGPrivacySettingsLastSeenPrimarySettingContacts:
+                {
+                    [rules addObject:[[TLInputPrivacyRule$inputPrivacyValueAllowContacts alloc] init]];
+                    break;
+                }
+                case TGPrivacySettingsLastSeenPrimarySettingEverybody:
+                {
+                    [rules addObject:[[TLInputPrivacyRule$inputPrivacyValueAllowAll alloc] init]];
+                    break;
+                }
+                case TGPrivacySettingsLastSeenPrimarySettingNobody:
+                {
+                    [rules addObject:[[TLInputPrivacyRule$inputPrivacyValueDisallowAll alloc] init]];
+                    break;
+                }
+            }
+            
+            setPrivacy.rules = rules;
+            request.body = setPrivacy;
+            
+            __weak TGAccountSettingsUpdateActor *weakSelf = self;
+            [request setCompleted:^(__unused id result, __unused NSTimeInterval timestamp, id error)
+             {
+                 __strong TGAccountSettingsUpdateActor *strongSelf = weakSelf;
+                 if (strongSelf != nil)
+                 {
+                     [ActionStageInstance() dispatchOnStageQueue:^
+                      {
+                          if (error == nil)
+                              [strongSelf setPrivacySuccess];
+                          else
+                              [strongSelf setPrivacyFailed];
+                      }];
+                 }
+             }];
+            
+            [requestList addObject:request];
+        }
+        else if ([setting isKindOfClass:[TGAccountTTLSetting class]])
+        {
+            TGAccountTTLSetting *accountTTLSetting = (TGAccountTTLSetting *)setting;
+            [_remainingSettingKeys addObject:@"accountTTLSetting"];
+            
+            MTRequest *request = [[MTRequest alloc] init];
+            
+            TLRPCaccount_setAccountTTL$account_setAccountTTL *setAccountTTL = [[TLRPCaccount_setAccountTTL$account_setAccountTTL alloc] init];
+            TLAccountDaysTTL$accountDaysTTL *daysTTL = [[TLAccountDaysTTL$accountDaysTTL alloc] init];
+            daysTTL.days = (int)(ceilf([accountTTLSetting.accountTTL intValue] / (60 * 60 * 24.0f)));
+            setAccountTTL.ttl = daysTTL;
+            
+            request.body = setAccountTTL;
+            
+            __weak TGAccountSettingsUpdateActor *weakSelf = self;
+            [request setCompleted:^(__unused id result, __unused NSTimeInterval timestamp, id error)
+            {
+                __strong TGAccountSettingsUpdateActor *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    [ActionStageInstance() dispatchOnStageQueue:^
+                    {
+                        if (error == nil)
+                            [strongSelf setAccountTtlSuccess];
+                        else
+                            [strongSelf setAccountTtlFailed];
+                    }];
+                }
+            }];
+            
+            [requestList addObject:request];
+        }
+    }
+    
+    for (MTRequest *request in requestList)
+    {
+        [[TGTelegramNetworking instance] addRequest:request];
+    }
+}
+
+- (void)setPrivacySuccess
+{
+    [TGDatabaseInstance() setLocalUserStatusPrivacyRules:_privacySettings changedLoadedUsers:^(NSArray *users)
+    {
+        std::tr1::shared_ptr<std::map<int, TGUserPresence> > pMap(new std::map<int, TGUserPresence>());
+        for (TGUser *user in users)
+        {
+            pMap->insert(std::pair<int, TGUserPresence>(user.uid, user.presence));
+        }
+        [TGTelegraphInstance dispatchMultipleUserPresenceChanges:pMap];
+    }];
+    
+    [_remainingSettingKeys removeObject:@"notificationPrivacySettings"];
+    [self _maybeComplete];
+}
+
+- (void)setPrivacyFailed
+{
+    [_remainingSettingKeys removeObject:@"notificationPrivacySettings"];
+    [self _maybeComplete];
+}
+
+- (void)setAccountTtlSuccess
+{
+    [_remainingSettingKeys removeObject:@"accountTTLSetting"];
+    [self _maybeComplete];
+}
+
+- (void)setAccountTtlFailed
+{
+    [_remainingSettingKeys removeObject:@"accountTTLSetting"];
+    [self _maybeComplete];
+}
+
+@end

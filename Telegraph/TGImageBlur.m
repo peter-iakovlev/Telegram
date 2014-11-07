@@ -1648,7 +1648,6 @@ UIImage *TGRoundImage(UIImage *source, CGSize size)
     CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
     
     const struct { int width, height; } targetContextSize = { (int)(size.width * scale), (int)(size.height * scale) };
-    
     size_t targetBytesPerRow = ((4 * (int)targetContextSize.width) + 15) & (~15);
     
     void *targetMemory = malloc((int)(targetBytesPerRow * targetContextSize.height));

@@ -125,6 +125,10 @@
 "LastSeen.YesterdayAt" = "ultimo accesso ieri alle %@";
 "LastSeen.AtWeekday" = "ultimo accesso %@";
 "LastSeen.AtDate" = "ultimo accesso %@";
+"LastSeen.Lately" = "ultimo accesso di recente";
+"LastSeen.WithinAWeek" = "ultimo accesso entro una settimana";
+"LastSeen.WithinAMonth" = "ultimo accesso entro un mese";
+"LastSeen.ALongTimeAgo" = "ultimo accesso molto tempo fa";
 
 "Date.DialogDateFormat" = "{day} {month}";
 
@@ -391,7 +395,7 @@
 "Conversation.DownloadProgressMegabytes" = "%1$.1fMb / %2$.1fMb";
 "Conversation.DownloadProgressKilobytes" = "%1$dKb / %2$dKb";
 "Conversation.ViewLocation" = "Visualizza posizione";
-"Conversation.SearchWebImages" = "Cerca immagini sul Web";
+"Conversation.SearchWebImages" = "Cerca Immagini";
 "Conversation.ShareMyContactInfo" = "Condividi informazioni contatto";
 "Conversation.AddContact" = "Aggiungi contatto";
 "Conversation.SendMessage" = "Invia messaggio";
@@ -588,7 +592,7 @@
 "ChatSettings.TextSizeUnits" = "pt";
 "ChatSettings.AutomaticPhotoDownload" = "SCARICAMENTO AUTOMATICO FOTO";
 "ChatSettings.AutomaticAudioDownload" = "SCARICAMENTO AUDIO AUTOMATICO";
-"ChatSettings.PrivateChats" = "Chat private";
+"ChatSettings.PrivateChats" = "Chat segrete";
 "ChatSettings.Groups" = "Gruppi";
 "ChatSettings.Security" = "PROTEZIONE";
 "ChatSettings.ClearOtherSessions" = "Termina tutte le sessioni";
@@ -685,6 +689,10 @@
 "MessageTimer.Months_2" = "%@ mesi";
 "MessageTimer.Months_3_10" = "%@ mesi";
 "MessageTimer.Months_any" = "%@ mesi";
+"MessageTimer.Years_1" = "%@ anno";
+"MessageTimer.Years_2" = "%@ anni";
+"MessageTimer.Years_3_10" = "%@ anni";
+"MessageTimer.Years_any" = "%@ anni";
 
 "MessageTimer.ShortSeconds_1" = "%@s";
 "MessageTimer.ShortSeconds_2" = "%@s";
@@ -723,7 +731,7 @@
 "Settings.UsernameEmpty" = "Nessuno";
 
 "Username.Title" = "Nome Utente";
-"Username.Placeholder" = "Il Tuo Nome Utente";
+"Username.Placeholder" = "Il tuo Nome Utente";
 "Username.Help" = "Puoi scegliere un nome utente su **Telegram**. Se lo fai, le altre persone potranno trovarti tramite questo nome utente e contattarti senza conoscere il tuo numero di telefono.\n\nPuoi usare **a-z**, **0-9** e underscore.\nLa lunghezza minima è di **5** caratteri.";
 "Username.InvalidTooShort" = "Il minimo per un nome utente è 5 caratteri.";
 "Username.InvalidStartsWithNumber" = "Un nome utente non può iniziare con numeri.";
@@ -732,3 +740,55 @@
 
 "Username.CheckingUsername" = "Controllando il nome utente...";
 "Username.UsernameIsAvailable" = "%@ è disponibile";
+
+"WebSearch.Images" = "Immagini";
+"WebSearch.GIFs" = "GIF";
+"WebSearch.RecentSectionTitle" = "Recente";
+"WebSearch.RecentSectionClear" = "Pulisci";
+
+"Settings.PrivacySettings" = "Privacy e Sicurezza";
+
+"UserCount_1" = "1 utente";
+"UserCount_2" = "2 utenti";
+"UserCount_3_10" = "%@ utenti";
+"UserCount_any" = "%@ utenti";
+
+"PrivacySettings.Title" = "Privacy e Sicurezza";
+
+"PrivacySettings.PrivacyTitle" = "PRIVACY";
+"PrivacySettings.LastSeen" = "Ultimo Accesso";
+"PrivacySettings.LastSeenEverybody" = "Tutti";
+"PrivacySettings.LastSeenContacts" = "I miei Contatti";
+"PrivacySettings.LastSeenNobody" = "Nessuno";
+
+"PrivacySettings.LastSeenEverybodyMinus" = "Tutti (-%@)";
+"PrivacySettings.LastSeenContactsPlus" = "I miei Contatti (+%@)";
+"PrivacySettings.LastSeenContactsMinus" = "I miei Contatti (-%@)";
+"PrivacySettings.LastSeenContactsMinusPlus" = "I miei Contatti (-%@, +%@)";
+"PrivacySettings.LastSeenNobodyPlus" = "Nessuno (+%@)";
+
+"PrivacySettings.SecurityTitle" = "SICUREZZA";
+
+"PrivacySettings.DeleteAccountTitle" = "ELIMINA IL MIO ACCOUNT";
+"PrivacySettings.DeleteAccountIfAwayFor" = "Se lontano per";
+"PrivacySettings.DeleteAccountHelp" = "Se non ti connetti almeno una volta in questo periodo, il tuo account verrà eliminato insieme a tutti i dati, messaggi e contatti.";
+"PrivacySettings.DeleteAccountNowConfirmation" = "Eliminare il tuo account?";
+"PrivacySettings.DeleteAccountNever" = "Mai";
+
+"PrivacyLastSeenSettings.Title" = "Ultimo Accesso";
+"PrivacyLastSeenSettings.LastSeenHelp" = "Cambia chi può vedere il tuo Ultimo Accesso.";
+"PrivacyLastSeenSettings.CustomHelp" = "Importante: non sarai in grado di vedere l'Ultimo Accesso delle persone con le quali non condividi l'Ultimo Accesso. Verrà mostrato un orario approssimativo (di recente, entro una settimana, entro un mese).";
+"PrivacyLastSeenSettings.AlwaysShareWith" = "Condividi con";
+"PrivacyLastSeenSettings.NeverShareWith" = "Non condividere con";
+"PrivacyLastSeenSettings.CustomShareSettingsHelp" = "Questa impostazione sovrascriverà i valori precedenti.";
+
+"PrivacyLastSeenSettings.CustomShareSettings.Delete" = "Elimina";
+"PrivacyLastSeenSettings.AlwaysShareWith.Title" = "Condividi";
+"PrivacyLastSeenSettings.AlwaysShareWith.Placeholder" = "Condividi con gli utenti...";
+"PrivacyLastSeenSettings.NeverShareWith.Title" = "Non condividere";
+"PrivacyLastSeenSettings.NeverShareWith.Placeholder" = "Non condividere con gli utenti...";
+"PrivacyLastSeenSettings.EmpryUsersPlaceholder" = "Aggiungi utenti";
+"PrivacyLastSeenSettings.AddUsers_1" = "Aggiungere 1 utente alla lista?";
+"PrivacyLastSeenSettings.AddUsers_2" = "Aggiungere 2 utenti alla lista?";
+"PrivacyLastSeenSettings.AddUsers_3_10" = "Aggiungere %@ utenti alla lista?";
+"PrivacyLastSeenSettings.AddUsers_any" = "Aggiungere %@ utenti alla lista?";

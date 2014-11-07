@@ -43,6 +43,7 @@ bool TGIsLocaleArabic();
 + (NSString *)stringForMessageTimerSeconds:(NSUInteger)seconds;
 + (NSString *)stringForShortMessageTimerSeconds:(NSUInteger)seconds;
 + (NSArray *)stringComponentsForMessageTimerSeconds:(NSUInteger)seconds;
++ (NSString *)stringForUserCount:(NSUInteger)userCount;
 
 @end
 

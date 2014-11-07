@@ -2,6 +2,7 @@
 #include <time.h>
 
 #import "TGStringUtils.h"
+#import "TGUser.h"
 
 static time_t midnightOnDay(time_t t)
 {
@@ -435,6 +436,19 @@ static inline NSString *dialogTimeFormat()
 
 + (NSString *)stringForRelativeLastSeen:(int)date
 {
+    if (date == -1)
+        return TGLocalized(@"Presence.invisible");
+    else if (date == TGUserPresenceValueLately)
+        return TGLocalized(@"LastSeen.Lately");
+    else if (date == TGUserPresenceValueWithinAWeek)
+        return TGLocalized(@"LastSeen.WithinAWeek");
+    else if (date == TGUserPresenceValueWithinAMonth)
+        return TGLocalized(@"LastSeen.WithinAMonth");
+    else if (date == TGUserPresenceValueALongTimeAgo)
+        return TGLocalized(@"LastSeen.ALongTimeAgo");
+    else if (date <= 0)
+        return TGLocalized(@"Presence.offline");
+    
     time_t t = date;
     struct tm timeinfo;
     localtime_r(&t, &timeinfo);

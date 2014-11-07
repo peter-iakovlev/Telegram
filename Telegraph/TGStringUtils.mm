@@ -631,9 +631,9 @@ static int EscapeMapCompare(const void *ucharVoid, const void *mapVoid) {
         
         return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
     }
-    else
+    else if (seconds < 60 * 60 * 24 * 365)
     {
-        int number = seconds / (60 * 60 * 24 * 7 * 4);
+        int number = MAX(1, (int)ceilf((int)(seconds / (60 * 60 * 24 * 29))));
         
         NSString *format = TGLocalized(@"MessageTimer.Months_any");
         if (number == 1)
@@ -642,6 +642,20 @@ static int EscapeMapCompare(const void *ucharVoid, const void *mapVoid) {
             format = TGLocalized(@"MessageTimer.Months_2");
         else if (number == 4)
             format = TGLocalized(@"MessageTimer.Months_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else
+    {
+        int number = seconds / (60 * 60 * 24 * 365);
+        
+        NSString *format = TGLocalized(@"MessageTimer.Years_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Years_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Years_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Years_3_10");
         
         return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
     }
@@ -806,7 +820,7 @@ static int EscapeMapCompare(const void *ucharVoid, const void *mapVoid) {
             second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         }
     }
-    else
+    else if (seconds < 60 * 60 * 24 * 30)
     {
         int number = seconds / (60 * 60 * 24 * 7);
         
@@ -825,8 +839,61 @@ static int EscapeMapCompare(const void *ucharVoid, const void *mapVoid) {
             second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         }
     }
+    else if (seconds < 60 * 60 * 24 * 365)
+    {
+        int number = (int)ceilf((seconds / (60 * 60 * 24 * 30.5f)));
+        
+        NSString *format = TGLocalized(@"MessageTimer.Months_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Months_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Months_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Months_3_10");
+        
+        NSRange range = [format rangeOfString:@"%@"];
+        if (range.location != NSNotFound)
+        {
+            first = [[NSString alloc] initWithFormat:@"%d", number];
+            second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        }
+    }
+    else
+    {
+        int number = seconds / (60 * 60 * 24 * 365);
+        
+        NSString *format = TGLocalized(@"MessageTimer.Years_any");
+        if (number == 1)
+            format = TGLocalized(@"MessageTimer.Years_1");
+        else if (number == 2)
+            format = TGLocalized(@"MessageTimer.Years_2");
+        else if (number == 4)
+            format = TGLocalized(@"MessageTimer.Years_3_10");
+        
+        NSRange range = [format rangeOfString:@"%@"];
+        if (range.location != NSNotFound)
+        {
+            first = [[NSString alloc] initWithFormat:@"%d", number];
+            second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        }
+    }
     
     return @[first, second];
+}
+
++ (NSString *)stringForUserCount:(NSUInteger)userCount
+{
+    NSUInteger number = userCount;
+    
+    NSString *format = TGLocalized(@"UserCount_any");
+    if (number == 1)
+        format = TGLocalized(@"UserCount_1");
+    else if (number == 2)
+        format = TGLocalized(@"UserCount_2");
+    else if (number == 4)
+        format = TGLocalized(@"UserCount_3_10");
+    
+    return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
 }
 
 @end

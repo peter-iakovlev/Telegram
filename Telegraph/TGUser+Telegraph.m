@@ -34,6 +34,7 @@ TGUserPresence extractUserPresence(TLUserStatus *status)
         TGUserPresence presence;
         presence.online = true;
         presence.lastSeen = ((TLUserStatus$userStatusOnline *)status).expires;
+        presence.temporaryLastSeen = 0;
         return presence;
     }
     else if ([status isKindOfClass:[TLUserStatus$userStatusOffline class]])
@@ -41,6 +42,31 @@ TGUserPresence extractUserPresence(TLUserStatus *status)
         TGUserPresence presence;
         presence.online = false;
         presence.lastSeen = ((TLUserStatus$userStatusOffline *)status).was_online;
+        presence.temporaryLastSeen = 0;
+        return presence;
+    }
+    else if ([status isKindOfClass:[TLUserStatus$userStatusLately class]])
+    {
+        TGUserPresence presence;
+        presence.online = false;
+        presence.lastSeen = TGUserPresenceValueLately;
+        presence.temporaryLastSeen = 0;
+        return presence;
+    }
+    else if ([status isKindOfClass:[TLUserStatus$userStatusLastWeek class]])
+    {
+        TGUserPresence presence;
+        presence.online = false;
+        presence.lastSeen = TGUserPresenceValueWithinAWeek;
+        presence.temporaryLastSeen = 0;
+        return presence;
+    }
+    else if ([status isKindOfClass:[TLUserStatus$userStatusLastMonth class]])
+    {
+        TGUserPresence presence;
+        presence.online = false;
+        presence.lastSeen = TGUserPresenceValueWithinAMonth;
+        presence.temporaryLastSeen = 0;
         return presence;
     }
     else
@@ -48,6 +74,7 @@ TGUserPresence extractUserPresence(TLUserStatus *status)
         TGUserPresence presence;
         presence.online = false;
         presence.lastSeen = 0;
+        presence.temporaryLastSeen = 0;
         return presence;
     }
 }
@@ -163,6 +190,7 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
             TGUserPresence presence;
             presence.online = false;
             presence.lastSeen = 0;
+            presence.temporaryLastSeen = 0;
             self.presence = presence;
             self.userName = concreteUser.username;
         }

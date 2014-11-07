@@ -125,3 +125,81 @@
 
 @end
 
+@implementation TLUserStatus$userStatusLately : TLUserStatus
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xfd704e70;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xbf12027f;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLUserStatus$userStatusLately *object = [[TLUserStatus$userStatusLately alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLUserStatus$userStatusLastWeek : TLUserStatus
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x7bf09fc;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xa4dc11f5;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLUserStatus$userStatusLastWeek *object = [[TLUserStatus$userStatusLastWeek alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLUserStatus$userStatusLastMonth : TLUserStatus
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x77ebc742;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xd9c9a73a;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLUserStatus$userStatusLastMonth *object = [[TLUserStatus$userStatusLastMonth alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+

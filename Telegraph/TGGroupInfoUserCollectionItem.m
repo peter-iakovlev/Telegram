@@ -95,8 +95,6 @@
             *active = true;
         return TGLocalizedStatic(@"Presence.online");
     }
-    else if (presence.lastSeen < 0)
-        return TGLocalizedStatic(@"Presence.invisible");
     else if (presence.lastSeen != 0)
         return [TGDateUtils stringForRelativeLastSeen:presence.lastSeen];
     

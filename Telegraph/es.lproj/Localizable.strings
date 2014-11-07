@@ -125,6 +125,10 @@
 "LastSeen.YesterdayAt" = "últ. vez ayer a las %@";
 "LastSeen.AtWeekday" = "últ. vez el %@";
 "LastSeen.AtDate" = "últ. vez el %@";
+"LastSeen.Lately" = "últ. vez recientemente";
+"LastSeen.WithinAWeek" = "últ. vez hace unos días";
+"LastSeen.WithinAMonth" = "últ. vez hace unas semanas";
+"LastSeen.ALongTimeAgo" = "últ. vez hace mucho tiempo";
 
 "Date.DialogDateFormat" = "{day} de {month}";
 
@@ -172,7 +176,7 @@
 "Login.CodeFloodError" = "Límite excedido. Por favor, reinténtalo más tarde.";
 "Login.InvalidPhoneError" = "Número de teléfono inválido. Por favor, reinténtalo.";
 "Login.InvalidFirstNameError" = "Nombre inválido. Por favor, reinténtalo.";
-"Login.InvalidLastNameError" = "Apellido inválido. Por favor, reinténtalo.";
+"Login.InvalidLastNameError" = "Apellidos inválidos. Por favor, reinténtalo.";
 "Login.InactiveHelp" = "Ninguno de tus contactos\nusa Telegram todavía.\nTe notificaremos cuando se unan.\nTambién puedes invitar a algún amigo ahora mismo.";
 "Login.InviteButton" = "Invitar a chatear a un amigo";
 
@@ -187,7 +191,7 @@
 "Login.InfoAvatarAdd" = "añadir";
 "Login.InfoAvatarPhoto" = "foto";
 "Login.InfoFirstNamePlaceholder" = "Nombre";
-"Login.InfoLastNamePlaceholder" = "Apellido";
+"Login.InfoLastNamePlaceholder" = "Apellidos";
 "Login.InfoUpdatePhoto" = "Actualizar foto";
 "Login.InfoDeletePhoto" = "Eliminar foto";
 "Login.InfoHelp" = "Inserta tu nombre y añade una foto de perfil.";
@@ -391,7 +395,7 @@
 "Conversation.DownloadProgressMegabytes" = "%1$.1fMb / %2$.1fMb";
 "Conversation.DownloadProgressKilobytes" = "%1$dKb / %2$dKb";
 "Conversation.ViewLocation" = "Ver ubicación";
-"Conversation.SearchWebImages" = "Buscar imágenes en la web";
+"Conversation.SearchWebImages" = "Buscar imágenes";
 "Conversation.ShareMyContactInfo" = "Compartir mi número";
 "Conversation.AddContact" = "Añadir contacto";
 "Conversation.SendMessage" = "Enviar mensaje";
@@ -445,7 +449,7 @@
 // User Info
 "UserInfo.Title" = "Información";
 "UserInfo.FirstNamePlaceholder" = "Nombre";
-"UserInfo.LastNamePlaceholder" = "Apellido";
+"UserInfo.LastNamePlaceholder" = "Apellidos";
 "UserInfo.GenericPhoneLabel" = "móvil";
 "UserInfo.SendMessage" = "Enviar mensaje";
 "UserInfo.AddContact" = "Añadir contacto";
@@ -613,7 +617,7 @@
 "BlockedUsers.BlockFormat" = "¿Bloquear a %@?";
 "BlockedUsers.BlockTitle" = "Bloquear";
 "BlockedUsers.LeavePrefix" = "Dejar";
-"BlockedUsers.Info" = "Los usuarios bloqueados no te pueden enviar mensajes o añadir a grupos. No verán tus fotos de perfil, estado en línea o última conexión.";
+"BlockedUsers.Info" = "Los usuarios bloqueados no pueden enviarte mensajes o añadirte a grupos. No verán tus fotos de perfil ni estados de conexión.";
 "BlockedUsers.AddNew" = "Añadir...";
 "BlockedUsers.Unblock" = "Quitar";
 
@@ -685,6 +689,10 @@
 "MessageTimer.Months_2" = "%@ meses";
 "MessageTimer.Months_3_10" = "%@ meses";
 "MessageTimer.Months_any" = "%@ meses";
+"MessageTimer.Years_1" = "%@ año";
+"MessageTimer.Years_2" = "%@ años";
+"MessageTimer.Years_3_10" = "%@ años";
+"MessageTimer.Years_any" = "%@ años";
 
 "MessageTimer.ShortSeconds_1" = "%@s";
 "MessageTimer.ShortSeconds_2" = "%@s";
@@ -732,3 +740,55 @@
 
 "Username.CheckingUsername" = "Verificando apodo...";
 "Username.UsernameIsAvailable" = "%@ está disponible.";
+
+"WebSearch.Images" = "Imágenes";
+"WebSearch.GIFs" = "GIFs";
+"WebSearch.RecentSectionTitle" = "Recientes";
+"WebSearch.RecentSectionClear" = "Borrar";
+
+"Settings.PrivacySettings" = "Privacidad y seguridad";
+
+"UserCount_1" = "1 usuario";
+"UserCount_2" = "2 usuarios";
+"UserCount_3_10" = "%@ usuarios";
+"UserCount_any" = "%@ usuarios";
+
+"PrivacySettings.Title" = "Privacidad y seguridad";
+
+"PrivacySettings.PrivacyTitle" = "PRIVACIDAD";
+"PrivacySettings.LastSeen" = "Última conexión";
+"PrivacySettings.LastSeenEverybody" = "Todos";
+"PrivacySettings.LastSeenContacts" = "Mis contactos";
+"PrivacySettings.LastSeenNobody" = "Nadie";
+
+"PrivacySettings.LastSeenEverybodyMinus" = "Todos (-%@)";
+"PrivacySettings.LastSeenContactsPlus" = "Mis contactos (+%@)";
+"PrivacySettings.LastSeenContactsMinus" = "Mis contactos (-%@)";
+"PrivacySettings.LastSeenContactsMinusPlus" = "Mis contactos (-%@, +%@)";
+"PrivacySettings.LastSeenNobodyPlus" = "Nadie (+%@)";
+
+"PrivacySettings.SecurityTitle" = "SEGURIDAD";
+
+"PrivacySettings.DeleteAccountTitle" = "ELIMINAR MI CUENTA";
+"PrivacySettings.DeleteAccountIfAwayFor" = "Si estoy fuera";
+"PrivacySettings.DeleteAccountHelp" = "Si no inicias sesión durante este tiempo, al menos una vez, tu cuenta se eliminará con todos tus grupos, mensajes y contactos.";
+"PrivacySettings.DeleteAccountNowConfirmation" = "¿Eliminar tu cuenta?";
+"PrivacySettings.DeleteAccountNever" = "Nunca";
+
+"PrivacyLastSeenSettings.Title" = "Última conexión";
+"PrivacyLastSeenSettings.LastSeenHelp" = "Elige quién puede ver tu última conexión.";
+"PrivacyLastSeenSettings.CustomHelp" = "Importante: no podrás ver la última conexión de las personas con las que no compartes la tuya. En su lugar, se mostrarán conexiones aproximadas (hace poco, hace una semana, hace un mes).";
+"PrivacyLastSeenSettings.AlwaysShareWith" = "Compartir siempre con";
+"PrivacyLastSeenSettings.NeverShareWith" = "Nunca compartir con";
+"PrivacyLastSeenSettings.CustomShareSettingsHelp" = "Estos ajustes anularán los valores de arriba.";
+
+"PrivacyLastSeenSettings.CustomShareSettings.Delete" = "Eliminar";
+"PrivacyLastSeenSettings.AlwaysShareWith.Title" = "Siempre compartir";
+"PrivacyLastSeenSettings.AlwaysShareWith.Placeholder" = "Siempre compartir con usuarios...";
+"PrivacyLastSeenSettings.NeverShareWith.Title" = "Nunca compartir";
+"PrivacyLastSeenSettings.NeverShareWith.Placeholder" = "Nunca compartir con usuarios...";
+"PrivacyLastSeenSettings.EmpryUsersPlaceholder" = "Añadir";
+"PrivacyLastSeenSettings.AddUsers_1" = "¿Añadir 1 usuario a esta lista?";
+"PrivacyLastSeenSettings.AddUsers_2" = "¿Añadir 2 usuarios a esta lista?";
+"PrivacyLastSeenSettings.AddUsers_3_10" = "¿Añadir %@ usuarios a esta lista?";
+"PrivacyLastSeenSettings.AddUsers_any" = "¿Añadir %@ usuarios a esta lista?";

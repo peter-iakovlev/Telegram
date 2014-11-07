@@ -96,10 +96,19 @@
     _textField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
     [_scrollView addSubview:_textField];
     
+    _textField.customPlaceholderLabel.text = _placeholder;
+    [_textField.customPlaceholderLabel sizeToFit];
     _textField.customPlaceholderLabel.frame = CGRectOffset(_textField.customPlaceholderLabel.frame, 9 + 5, 9 + 4);
     [_scrollView addSubview:_textField.customPlaceholderLabel];
     
     _tokenList = [[NSMutableArray alloc] init];
+}
+
+- (void)setPlaceholder:(NSString *)placeholder
+{
+    _placeholder = placeholder;
+    _textField.customPlaceholderLabel.text = _placeholder;
+    [_textField.customPlaceholderLabel sizeToFit];
 }
 
 - (void)addToken:(NSString *)title tokenId:(id)tokenId animated:(bool)animated

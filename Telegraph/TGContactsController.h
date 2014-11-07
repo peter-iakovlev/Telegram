@@ -52,6 +52,8 @@ typedef enum {
 
 @property (nonatomic, strong) UITableView *tableView;
 
+@property (nonatomic, strong) NSString *composePlaceholder;
+
 - (id)initWithContactsMode:(int)contactsMode;
 
 - (void)clearData;

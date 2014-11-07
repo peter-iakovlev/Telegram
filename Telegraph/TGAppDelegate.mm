@@ -1691,7 +1691,15 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                     navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
                     navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
                 }
-                [_mainTabsController presentViewController:navigationController animated:false completion:nil];
+                else
+                {
+                    [_mainNavigationController popToRootViewControllerAnimated:false];
+                }
+                
+                dispatch_async(dispatch_get_main_queue(), ^
+                {
+                    [_mainTabsController presentViewController:navigationController animated:false completion:nil]; 
+                });
             }
         }
         else if ([url.scheme isEqualToString:@"telegram"] || [url.scheme isEqualToString:@"tg"])

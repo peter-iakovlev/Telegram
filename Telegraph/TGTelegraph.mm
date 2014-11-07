@@ -1089,6 +1089,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
                 {
                     presence.online = true;
                     presence.lastSeen = INT_MAX;
+                    presence.temporaryLastSeen = INT_MAX;
                 }
                 
                 user.presence = presence;
@@ -1096,7 +1097,10 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
                 if (user.presence.online)
                 {
                     updatedPresenceExpiration = true;
-                    _userPresenceExpiration[user.uid] = user.presence.lastSeen;
+                    if (user.presence.temporaryLastSeen != 0)
+                        _userPresenceExpiration[user.uid] = user.presence.temporaryLastSeen;
+                    else
+                        _userPresenceExpiration[user.uid] = user.presence.lastSeen;
                 }
                 else
                     _userPresenceExpiration.erase(user.uid);
@@ -1188,6 +1192,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             TGUserPresence presence;
             presence.online = false;
             presence.lastSeen = it->second;
+            presence.temporaryLastSeen = 0;
             expired.push_back(std::pair<int, TGUserPresence>(it->first, presence));
             
 #ifdef DEBUG
@@ -1342,6 +1347,13 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             
             if (typingUserRecords.count == 0)
                 [_typingUserRecordsByConversation removeObjectForKey:key];
+        }
+        
+        TGUser *user = [TGDatabaseInstance() loadUser:uid];
+        if (user.presence.online == false)
+        {
+            TGUserPresence presence = (TGUserPresence){.online = true, .lastSeen = user.presence.lastSeen, .temporaryLastSeen = (int)([[TGTelegramNetworking instance] globalTime] + 60)};
+            [self dispatchUserPresenceChanges:uid presence:presence];
         }
         
         [self updateUserTypingStatuses];
@@ -1536,6 +1548,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
                 TGUserPresence presence;
                 presence.online = true;
                 presence.lastSeen = (int)(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970);
+                presence.temporaryLastSeen = 0;
                 user.presence = presence;
                 [[TGDatabase instance] storeUsers:[NSArray arrayWithObject:user]];
             }
@@ -2246,6 +2259,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         TGUserPresence presence;
         presence.online = true;
         presence.lastSeen = currentUnixTime + 5 * 60;
+        presence.temporaryLastSeen = 0;
         [TGTelegraphInstance dispatchUserPresenceChanges:TGTelegraphInstance.clientUserId presence:presence];
     }
     

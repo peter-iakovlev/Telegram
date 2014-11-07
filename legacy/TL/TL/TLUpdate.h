@@ -18,6 +18,7 @@
 @class TLPeerNotifySettings;
 @class TLSendMessageAction;
 @class TLMessageMedia;
+@class TLPrivacyKey;
 
 @interface TLUpdate : NSObject <TLObject>
 
@@ -238,6 +239,13 @@
 @property (nonatomic, retain) NSString *message;
 @property (nonatomic, retain) TLMessageMedia *media;
 @property (nonatomic) bool popup;
+
+@end
+
+@interface TLUpdate$updatePrivacy : TLUpdate
+
+@property (nonatomic, retain) TLPrivacyKey *key;
+@property (nonatomic, retain) NSArray *rules;
 
 @end
 

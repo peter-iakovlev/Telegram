@@ -22,6 +22,7 @@
 
 @property (nonatomic) bool showListEditingControl;
 @property (nonatomic) bool forwardMode;
+@property (nonatomic) bool privacyMode;
 @property (nonatomic) bool showBroadcastsMenu;
 @property (nonatomic) bool showSecretInForwardMode;
 

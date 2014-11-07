@@ -40,7 +40,7 @@
     
     if (_seconds == 0)
     {
-        _numberLabel.text = TGLocalized(@"Profile.MessageLifetimeForever");
+        _numberLabel.text = _emptyValue == nil ? TGLocalized(@"Profile.MessageLifetimeForever") : _emptyValue;
         _unitLabel.text = @"";
     }
     else

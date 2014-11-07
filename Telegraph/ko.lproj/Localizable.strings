@@ -1,5 +1,5 @@
 // Notifications
-"MESSAGE_TEXT" = "%1$@: %2$@";
+"MESSAGE_TEXT" = "%1$@: %2$@ ";
 "MESSAGE_NOTEXT" = "%1$@님이 메시지를 보냈습니다";
 "MESSAGE_PHOTO" = "%1$@님이 사진을 보냈습니다";
 "MESSAGE_VIDEO" = "%1$@님이 동영상을 보냈습니다";
@@ -125,6 +125,10 @@
 "LastSeen.YesterdayAt" = "마지막 접속: 어제 %@";
 "LastSeen.AtWeekday" = "마지막 접속: %@";
 "LastSeen.AtDate" = "마지막 접속: %@";
+"LastSeen.Lately" = "최근에 접속";
+"LastSeen.WithinAWeek" = "일주일 이내 마지막으로 접속";
+"LastSeen.WithinAMonth" = "한 달 이내 마지막 접속";
+"LastSeen.ALongTimeAgo" = "마지막으로 접속한지 오래됨";
 
 "Date.DialogDateFormat" = "{month} {day}";
 
@@ -200,7 +204,7 @@
 "WelcomeScreen.Logout" = "로그아웃";
 "WelcomeScreen.Greeting" = "%@님 환영합니다!";
 "WelcomeScreen.ContactsAccessDisabled" = "연락처를 동기화할 수 없습니다.";
-"WelcomeScreen.ContactsAccessHelp" = "Telegram에서는 기존 연락처 목록을 토대로 메시지를 보냅니다. %@의 '설정' - '개인 정보 보호' - '연락처'로 가서 Telegram을 활성화하세요.";
+"WelcomeScreen.ContactsAccessHelp" = "텔레그램은 친구에게 메시지를 보내기 위해 연락처를 참조합니다. %@의 '설정' — '개인 정보 보호' — '연락처'로 이동하여 텔레그램을 활성화하세요.";
 "WelcomeScreen.ContactsAccessSettings" = "설정";
 "WelcomeScreen.UpdatingTitle" = "업데이트 중";
 
@@ -246,8 +250,8 @@
 "Contacts.InvitationText" = "텔레그램으로 갈아타세요! http://telegram.org/dl";
 "Contacts.FailedToSendInvitesMessage" = "오류가 발생했습니다.";
 "Contacts.AccessDeniedError" = "텔레그램이 연락처에 접근할 수 없습니다.";
-"Contacts.AccessDeniedHelpLandscape" = "%@의 '설정' - '개인 정보 보호' - '연락처'로 가서\nTelegram을 활성화하세요.";
-"Contacts.AccessDeniedHelpPortrait" = "%@의 '설정' - '개인 정보 보호' - '연락처'로 가서 Telegram을 활성화하세요.";
+"Contacts.AccessDeniedHelpLandscape" = "%@의 '설정' — '개인 정보 보호' — '연락처'로 이동하여\n텔레그램을 활성화하세요.";
+"Contacts.AccessDeniedHelpPortrait" = "%@의 '설정' — '개인 정보 보호' — '연락처'로 이동하여 텔레그램을 활성화하세요.";
 "Contacts.AccessDeniedHelpON" = "활성화";
 "Contacts.InviteToTelegram" = "텔레그램으로 초대";
 "Contacts.InviteFriends" = "친구 초대";
@@ -345,7 +349,7 @@
 "Notification.CreatedChatWithTitle" = "%@님이 \"%@\" 그룹을 만들었습니다";
 "Notification.Joined" = "%@님이 텔레그램에 가입했습니다";
 "Notification.ChangedGroupName" = "%@님이 그룹 이름을 \"%@\" 그룹으로 바꿨습니다";
-"Notification.NewAuthDetected" = "%1$@님,\n%3$@, %2$@, %4$@에 새 기기에서 회원님의 계정에 로그인하였습니다.\n\n기기: %5$@\n위치: %6$@ \n\n본인의 접속이 아니라면 '설정'에서  '채팅방 설정'을 선택하시고 '다른 모든 세션 종료'를 실행하세요.\n\n감사합니다.\n텔레그램 팀 드림";
+"Notification.NewAuthDetected" = "%1$@님,\n%3$@ %2$@ %4$@에 새 기기에서 회원님의 계정에 로그인하였습니다. \n\n기기: %5$@\n위치: %6$@ \n\n본인의 접속이 아니라면 '설정'에서  '채팅방 설정'을 선택하시고 '다른 모든 세션 종료'를 실행하세요.\n\n감사합니다.\n텔레그램 팀 드림";
 "Notification.EncryptedChatRequested" = "비밀대화를 요청했습니다";
 "Notification.EncryptedChatAccepted" = "비밀대화를 시작했습니다";
 "Notification.MessageLifetimeChanged" = "%1$@님이 자동삭제를 %2$@ 후로 설정했습니다";
@@ -391,7 +395,7 @@
 "Conversation.DownloadProgressMegabytes" = "%1$.1fMb / %2$.1fMb";
 "Conversation.DownloadProgressKilobytes" = "%1$dKb / %2$dKb";
 "Conversation.ViewLocation" = "위치 보기";
-"Conversation.SearchWebImages" = "웹 이미지 검색";
+"Conversation.SearchWebImages" = "이미지 찾기 ";
 "Conversation.ShareMyContactInfo" = "내 연락처 정보 공유";
 "Conversation.AddContact" = "대화상대 추가";
 "Conversation.SendMessage" = "메시지 전송";
@@ -403,7 +407,7 @@
 "Conversation.SlideToCancel" = "밀어서 취소";
 "Conversation.ApplyLocalization" = "언어 파일 적용";
 "Conversation.OpenFile" = "파일 열기";
-"Conversation.MicrophoneAccessDisabled" = "Telegram이 음성 메시지를 보내기 위해 마이크에 대한 접근 권한을 필요로 합니다. '설정' - '개인 정보 보호' - '마이크'로 가서 Telegram을 활성화하세요.";
+"Conversation.MicrophoneAccessDisabled" = "텔레그램에서 음성메시지를 보내기 위해 마이크에 대한 접근 권한을 필요로 합니다. '설정' — '개인 정보 보호' — '마이크'로 이동하여 텔레그램을 활성화하세요.";
 
 // Media Picker
 "MediaPicker.Send" = "전송";
@@ -413,7 +417,7 @@
 "MediaPicker.CameraRoll" = "카메라 롤";
 "SearchImages.NoImagesFound" = "이미지가 없음";
 "MediaPicker.AccessDeniedError" = "텔레그램이 사진에 접근할 수 없습니다";
-"MediaPicker.AccessDeniedHelp" = "%@의 '설정' - '개인 정보 보호' - 사진으로 가서 Telegram을 활성화하세요.";
+"MediaPicker.AccessDeniedHelp" = "%@의 '설정' — '개인 정보 보호' — '사진'으로 이동하여\n텔레그램을 활성화하세요.";
 "SearchImages.Downloading#Kb" = "%d Kb 다운로드 중";
 "SearchImages.Downloading#Mb" = "%d Mb 다운로드 중";
 "SearchImages.ImageNofM" = "이미지: %1$@ / %2$@";
@@ -424,7 +428,7 @@
 
 // User Profile
 "Profile.ImageUploadError" = "오류가 발생했습니다. 나중에 다시 시도해 주세요.";
-"Profile.PhonebookAccessDisabled" = "이 기능을 이용하려면 iPhone의 '설정' - '개인 정보 보호' - '연락처'로 가서 Telegram을 활성화하세요.";
+"Profile.PhonebookAccessDisabled" = "이 기능을 이용하려면 iPhone의 '설정' — '개인 정보 보호' — '연락처'로 이동하여 텔레그램을 활성화하세요.";
 "Profile.CreateEncryptedChatError" = "오류가 발생했습니다.";
 "Profile.CreateEncryptedChatOutdatedError" = "%@님의 텔레그램 버전이 낮아 비밀대화를 시작할 수 없습니다.\n비밀대화를 시작하려면 %@님이 텔레그램을 업데이트해야 합니다.";
 "Profile.CreateNewContact" = "새 대화상대 생성";
@@ -551,7 +555,7 @@
 "Settings.FAQ_Intro" = "텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다. 일반적인 문제와 해결방법에 대해서는 '자주 묻는 질문'을 확인해 보세요.";
 "Settings.FAQ_Button" = "자주 묻는 질문";
 "Settings.SaveIncomingPhotos" = "받은 사진 저장";
-"Settings.SaveIncomingPhotosHelp" = "받은 사진을 카메라 롤에 저장.";
+"Settings.SaveIncomingPhotosHelp" = "받은 사진을 카메라 롤에 저장";
 "Settings.LogoutError" = "오류가 발생했습니다. 나중에 다시 시도해 주세요.";
 
 // Notifications and Sounds
@@ -560,13 +564,13 @@
 "Notifications.MessageNotificationsAlert" = "알림창";
 "Notifications.MessageNotificationsPreview" = "메시지 미리보기";
 "Notifications.MessageNotificationsSound" = "소리";
-"Notifications.MessageNotificationsHelp" = "사용자 정보에서 특정 사용자에 대한 알림을 설정할 수 있습니다.";
+"Notifications.MessageNotificationsHelp" = "사용자 정보에서 특정 사용자에 대한 알림을 설정할 수 있습니다";
 
 "Notifications.GroupNotifications" = "그룹 알림";
 "Notifications.GroupNotificationsAlert" = "알림창";
 "Notifications.GroupNotificationsPreview" = "메시지 미리보기";
 "Notifications.GroupNotificationsSound" = "소리";
-"Notifications.GroupNotificationsHelp" = "그룹 정보에서 특정 그룹에 대한 알림을 설정할 수 있습니다.";
+"Notifications.GroupNotificationsHelp" = "그룹 정보에서 특정 그룹에 대한 알림을 설정할 수 있습니다";
 
 "Notifications.TextTone" = "입력 효과음";
 "Notifications.AlertTones" = "알림창 효과음";
@@ -579,7 +583,7 @@
 
 "Notifications.Reset" = "초기화";
 "Notifications.ResetAllNotifications" = "모든 알림 설정 초기화";
-"Notifications.ResetAllNotificationsHelp" = "그룹과 주소록에 대한 모든 사용자 알림 설정 되돌리기.";
+"Notifications.ResetAllNotificationsHelp" = "연락처와 그룹에 대한 모든 알림 설정을 처음 상태로";
 
 // Chat Settings
 "ChatSettings.Title" = "채팅방 설정";
@@ -592,7 +596,7 @@
 "ChatSettings.Groups" = "그룹";
 "ChatSettings.Security" = "보안";
 "ChatSettings.ClearOtherSessions" = "다른 모든 세션 종료";
-"ChatSettings.ClearOtherSessionsHelp" = "현재 기기를 제외한 다른 모든 기기에서 로그아웃합니다.";
+"ChatSettings.ClearOtherSessionsHelp" = "다른 기기에 로그인된 세션을 모두 종료";
 "ChatSettings.ClearOtherSessionsConfirmation" = "현재 기기를 제외하고 다른 기기에 로그인된 세션을 모두 종료시킬까요?";
 "ChatSettings.ClearOtherSessionsFailed" = "오류가 발생했습니다.";
 "ChatSettings.Language" = "언어";
@@ -631,7 +635,7 @@
 "Service.ApplyLocalization" = "언어를 적용할까요?";
 "Service.ApplyLocalizationWithWarnings" = "%@\n\n언어를 적용할까요?";
 
-"Notification.SecretChatMessageScreenshot" = "%@님이 스크린샷을 찍었습니다!";
+"Notification.SecretChatMessageScreenshot" = "%@님이 화면을 캡처했습니다!";
 "Notification.SecretChatScreenshot" = "화면을 캡처했습니다!";
 
 // Broadcast Lists
@@ -653,7 +657,7 @@
 "Settings.LogoutConfirmationTitle" = "로그아웃하시겠습니까?";
 "Settings.LogoutConfirmationText" = "텔레그램은 모든 기기에서 동시에 사용할 수 있습니다.\n\n비밀대화는 로그아웃하면 사라지니 주의하세요.";
 
-"Login.PadPhoneHelp" = "\n휴대전화 번호를 이용해 모든 기기에서 Telegram에 로그인할 수 있습니다.\n이곳에 iPad의 SIM 번호를 입력하지 마세요. SMS를 보내드리겠습니다.\n\n이 번호가 맞습니까?\n{number}";
+"Login.PadPhoneHelp" = "\n하나의 휴대전화 번호를 이용해 모든 기기에서 텔레그램에 로그인할 수 있습니다.\n텔레그램이 SMS를 보낼 예정이니 이곳에 iPad의 SIM 번호를 입력하지 마세요.\n\n이 번호가 맞나요?\n{number}";
 "Login.PadPhoneHelpTitle" = "전화번호";
 
 "MessageTimer.Custom" = "사용자 지정";
@@ -685,6 +689,10 @@
 "MessageTimer.Months_2" = "%@개월";
 "MessageTimer.Months_3_10" = "%@개월";
 "MessageTimer.Months_any" = "%@개월";
+"MessageTimer.Years_1" = "%@ 년";
+"MessageTimer.Years_2" = "%@ 년";
+"MessageTimer.Years_3_10" = "%@ 년";
+"MessageTimer.Years_any" = "%@ 년";
 
 "MessageTimer.ShortSeconds_1" = "%@초";
 "MessageTimer.ShortSeconds_2" = "%@초";
@@ -715,7 +723,7 @@
 
 "Service.NetworkConfigurationUpdatedMessage" = "연결 설정을 업데이트했습니다.";
 
-"Compatibility.SecretMediaVersionTooLow" = "%@님의 텔레그램 버전이 낮아 비밀 사진을 호환성 모드로 표시합니다.\n\n%@님이 텔레그램을 업데이트하고 나면, 자동삭제 시간이 1분 이하인 사진은 \"탭하고 누르고 있어야 보임\" 상태가 되며, 상대방이 스크린샷을 찍을 때마다 알림을 받습니다.";
+"Compatibility.SecretMediaVersionTooLow" = "%@님의 텔레그램 버전이 낮아 비밀 사진을 호환성 모드로 표시합니다.\n\n%@님이 텔레그램을 업데이트하고 나면, 자동삭제 시간이 1분 이하인 사진은 \"탭하고 누르고 있어야 보임\" 상태가 되며, 상대방이 화면을 캡처할 때 마다 알림을 받습니다.";
 
 "Contacts.GlobalSearch" = "전체 검색";
 "Profile.Username" = "아이디";
@@ -732,3 +740,55 @@
 
 "Username.CheckingUsername" = "아이디 확인 중...";
 "Username.UsernameIsAvailable" = "%@: 사용 가능합니다.";
+
+"WebSearch.Images" = "이미지";
+"WebSearch.GIFs" = "GIF";
+"WebSearch.RecentSectionTitle" = "최근 ";
+"WebSearch.RecentSectionClear" = "지우기 ";
+
+"Settings.PrivacySettings" = "개인정보와 보안";
+
+"UserCount_1" = "이용자 1명";
+"UserCount_2" = "이용자 2명";
+"UserCount_3_10" = "%@ 명의 이용자";
+"UserCount_any" = "%@명의 이용자";
+
+"PrivacySettings.Title" = "개인정보와 보안";
+
+"PrivacySettings.PrivacyTitle" = "개인정보";
+"PrivacySettings.LastSeen" = "마지막 접속";
+"PrivacySettings.LastSeenEverybody" = "모든사람";
+"PrivacySettings.LastSeenContacts" = "나의 대화상대";
+"PrivacySettings.LastSeenNobody" = "아무도 없음";
+
+"PrivacySettings.LastSeenEverybodyMinus" = "모든사람 (-%@)";
+"PrivacySettings.LastSeenContactsPlus" = "나의 대화상대 (+%@)";
+"PrivacySettings.LastSeenContactsMinus" = "나의 대화상대 (-%@)";
+"PrivacySettings.LastSeenContactsMinusPlus" = "나의 대화상대 (-%@, +%@)";
+"PrivacySettings.LastSeenNobodyPlus" = "아무도 없음 (+%@)";
+
+"PrivacySettings.SecurityTitle" = "보안";
+
+"PrivacySettings.DeleteAccountTitle" = "계정삭제";
+"PrivacySettings.DeleteAccountIfAwayFor" = "접속하지 않은 기간";
+"PrivacySettings.DeleteAccountHelp" = "이 기간 동안 최소 한번의 로그인도 하지 않았다면 모든 데이터, 메시지와 연락처가 계정과 함께 삭제될 것입니다. ";
+"PrivacySettings.DeleteAccountNowConfirmation" = "계정을 삭제할까요?";
+"PrivacySettings.DeleteAccountNever" = "절대 하지 않음";
+
+"PrivacyLastSeenSettings.Title" = "마지막 접속";
+"PrivacyLastSeenSettings.LastSeenHelp" = "누가 마지막 접속시간을 볼 수 있는지 변경";
+"PrivacyLastSeenSettings.CustomHelp" = "중요: 당신의 마지막 접속시간을 공유하지 않은 사람들의 마지막 접속시간을 볼 수 없습니다. 대략의 마지막 접속이 보여질 것입니다. (최근, 일주일 이내, 한달 이내)";
+"PrivacyLastSeenSettings.AlwaysShareWith" = "항상 공유";
+"PrivacyLastSeenSettings.NeverShareWith" = "절대 공유하지 않음";
+"PrivacyLastSeenSettings.CustomShareSettingsHelp" = "이 설정은 위의 입력값을 무효로 합니다. ";
+
+"PrivacyLastSeenSettings.CustomShareSettings.Delete" = "삭제";
+"PrivacyLastSeenSettings.AlwaysShareWith.Title" = "항상 공유";
+"PrivacyLastSeenSettings.AlwaysShareWith.Placeholder" = "항상 이용자들과 공유...";
+"PrivacyLastSeenSettings.NeverShareWith.Title" = "절대 공유하지 않음";
+"PrivacyLastSeenSettings.NeverShareWith.Placeholder" = "절대 이용자들과 공유하지 않음...";
+"PrivacyLastSeenSettings.EmpryUsersPlaceholder" = "이용자 추가";
+"PrivacyLastSeenSettings.AddUsers_1" = "1명의 이용자를 리스트에 추가할까요?";
+"PrivacyLastSeenSettings.AddUsers_2" = "2명의 이용자를 리스트에 추가할까요?";
+"PrivacyLastSeenSettings.AddUsers_3_10" = "%@ 명의 이용자를 리스트에 추가할까요?";
+"PrivacyLastSeenSettings.AddUsers_any" = "%@ 명의 이용자를 리스트에 추가할까요?";

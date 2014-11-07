@@ -1,11 +1,26 @@
-#import "TLInvokeWithLayer18.h"
+#import "TLRPCaccount_deleteAccount.h"
 
 #import "../NSInputStream+TL.h"
 #import "../NSOutputStream+TL.h"
 
 
-@implementation TLInvokeWithLayer18
+@implementation TLRPCaccount_deleteAccount
 
+
+- (Class)responseClass
+{
+    return [NSNumber class];
+}
+
+- (int)impliedResponseSignature
+{
+    return 0;
+}
+
+- (int)layerVersion
+{
+    return 19;
+}
 
 - (int32_t)TLconstructorSignature
 {
@@ -33,23 +48,23 @@
 
 @end
 
-@implementation TLInvokeWithLayer18$invokeWithLayer18 : TLInvokeWithLayer18
+@implementation TLRPCaccount_deleteAccount$account_deleteAccount : TLRPCaccount_deleteAccount
 
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x1c900537;
+    return (int32_t)0x418d4e0b;
 }
 
 - (int32_t)TLconstructorName
 {
-    return (int32_t)0x4e9cb73e;
+    return (int32_t)0x980b9e1b;
 }
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
-    TLInvokeWithLayer18$invokeWithLayer18 *object = [[TLInvokeWithLayer18$invokeWithLayer18 alloc] init];
-    object.query = metaObject->getObject((int32_t)0x5de9dcb1);
+    TLRPCaccount_deleteAccount$account_deleteAccount *object = [[TLRPCaccount_deleteAccount$account_deleteAccount alloc] init];
+    object.reason = metaObject->getString((int32_t)0x3405f57);
     return object;
 }
 
@@ -57,9 +72,9 @@
 {
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.query;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x5de9dcb1, value));
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.reason;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x3405f57, value));
     }
 }
 

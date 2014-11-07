@@ -26,3 +26,18 @@
 
 @end
 
+@interface TLUserStatus$userStatusLately : TLUserStatus
+
+
+@end
+
+@interface TLUserStatus$userStatusLastWeek : TLUserStatus
+
+
+@end
+
+@interface TLUserStatus$userStatusLastMonth : TLUserStatus
+
+
+@end
+

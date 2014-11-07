@@ -11,6 +11,9 @@
 
 #import "TGContactListRequestBuilder.h"
 
+#import "TGAccountSettings.h"
+#import "TGAccountSettingsActor.h"
+
 @implementation TGUserDataRequestBuilder
 
 + (NSString *)genericPath

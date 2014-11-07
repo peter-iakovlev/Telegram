@@ -337,6 +337,7 @@ static TGFutureAction *futureActionDeserializer(int type)
 @property (nonatomic) int nextLocalMid;
 
 @property (nonatomic) int localUserId;
+@property (nonatomic, strong) TGNotificationPrivacyAccountSetting *privacySettings;
 @property (nonatomic) bool contactListPreloaded;
 
 @property (nonatomic) int userLinksVersion;
@@ -1414,6 +1415,7 @@ inline static TGUser *loadUserFromDatabase(FMResultSet *result)
     TGUserPresence presence;
     presence.online = false;
     presence.lastSeen = [result intForColumn:@"last_seen"];
+    presence.temporaryLastSeen = 0;
     user.presence = presence;
     user.userName = [result stringForColumn:@"username"];
     
@@ -1519,16 +1521,42 @@ inline static TGUser *loadUserFromDatabase(FMResultSet *result)
     } synchronous:false];
 }
 
+- (void)setLocalUserStatusPrivacyRules:(TGNotificationPrivacyAccountSetting *)privacyRules changedLoadedUsers:(void (^)(NSArray *))changedLoadedUsers
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        _privacySettings = privacyRules;
+    } synchronous:false];
+    
+    NSMutableArray *users = [[NSMutableArray alloc] init];
+    TG_SYNCHRONIZED_BEGIN(_userByUid);
+    {
+        NSTimeInterval currentTime = (CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970 + _timeDifferenceFromUTC);
+        for (auto it : _userByUid)
+        {
+            TGUser *user = [it.second applyPrivacyRules:privacyRules currentTime:currentTime];
+            if (![user isEqualToUser:it.second])
+                [users addObject:user];
+        }
+    }
+    TG_SYNCHRONIZED_END(_userByUid);
+    
+    if (changedLoadedUsers)
+        changedLoadedUsers(users);
+}
+
 - (TGUser *)loadUser:(int)uid
 {
     __block TGUser *user = nil;
     
     TG_SYNCHRONIZED_BEGIN(_userByUid);
     {
+        //NSTimeInterval currentTime = (CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970 + _timeDifferenceFromUTC);
+        
         std::tr1::unordered_map<int, TGUser *>::iterator it = _userByUid.find(uid);
         if (it != _userByUid.end())
         {
-            user = [it->second copy];
+            user = [it->second copy];//[[it->second copy] applyPrivacyRules:_privacySettings currentTime:currentTime];
         }
     }
     TG_SYNCHRONIZED_END(_userByUid);
@@ -1546,6 +1574,9 @@ inline static TGUser *loadUserFromDatabase(FMResultSet *result)
         
         if (user != nil)
         {
+            NSTimeInterval currentTime = (CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970 + _timeDifferenceFromUTC);
+            user = [user applyPrivacyRules:_privacySettings currentTime:currentTime];
+            
             TG_SYNCHRONIZED_BEGIN(_userByUid);
             {
                 _userByUid[user.uid] = user;

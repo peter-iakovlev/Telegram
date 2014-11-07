@@ -10,7 +10,7 @@
 "ENCRYPTED_MESSAGE" = "لديك رسالة جديدة%1$@";
 "ENCRYPTION_REQUEST" = "طلب تشفير جديد%1$@";
 "ENCRYPTION_ACCEPT" = "تم قبول طلب التشفير%1$@";
-"DC_UPDATE" = "إضغط هنا لتحديث إعدادات التطبيق";
+"DC_UPDATE" = "اضغط هنا لتحديث إعدادات التطبيق";
 
 "CHAT_MESSAGE_TEXT" = "%1$@@%2$@: %3$@";
 "CHAT_MESSAGE_NOTEXT" = "%1$@ قام بإرسال رسالة %2$@";
@@ -125,6 +125,10 @@
 "LastSeen.YesterdayAt" = "آخر ظهور أمس الساعة %@";
 "LastSeen.AtWeekday" = "آخر ظهور %@";
 "LastSeen.AtDate" = "آخر ظهور %@";
+"LastSeen.Lately" = "آخر ظهور كان قريب";
+"LastSeen.WithinAWeek" = "آخر ظهور خلال أسبوع";
+"LastSeen.WithinAMonth" = "آخر ظهور خلال شهر";
+"LastSeen.ALongTimeAgo" = "آخر ظهور خلال فترة طويلة";
 
 "Date.DialogDateFormat" = "{day} {month}";
 
@@ -311,7 +315,7 @@
 "Conversation.ContextMenuMore" = "أكثر...";
 
 "Conversation.StatusMembers_1" = "عضو واحد";
-"Conversation.StatusMembers_2" = "عضوين";
+"Conversation.StatusMembers_2" = "عضوان";
 "Conversation.StatusMembers_3_10" = "%@ أعضاء";
 "Conversation.StatusMembers_any" = "%@ عضو";
 
@@ -391,7 +395,7 @@
 "Conversation.DownloadProgressMegabytes" = "%1$.1fMb / %2$.1fMb";
 "Conversation.DownloadProgressKilobytes" = "%1$dKb / %2$dKb";
 "Conversation.ViewLocation" = "اعرض الموقع";
-"Conversation.SearchWebImages" = "ابحث عن صور في الإنترنت";
+"Conversation.SearchWebImages" = "ابحث عن صور";
 "Conversation.ShareMyContactInfo" = "قم بمشاركة معلومات جهة الاتصال الخاصة بك";
 "Conversation.AddContact" = "قم بإضافة جهة اتصال";
 "Conversation.SendMessage" = "أرسل رسالة";
@@ -685,6 +689,10 @@
 "MessageTimer.Months_2" = "%@ شهران";
 "MessageTimer.Months_3_10" = "%@ أشهر";
 "MessageTimer.Months_any" = "%@ شهر";
+"MessageTimer.Years_1" = "%@ سنة";
+"MessageTimer.Years_2" = "%@ سنتان";
+"MessageTimer.Years_3_10" = "%@ سنوات";
+"MessageTimer.Years_any" = "%@ دقيقة";
 
 "MessageTimer.ShortSeconds_1" = "%@ث";
 "MessageTimer.ShortSeconds_2" = "%@ث";
@@ -725,10 +733,62 @@
 "Username.Title" = "اسم المستخدم";
 "Username.Placeholder" = "معرّفك";
 "Username.Help" = "يمكنك اختيار اسم مستخدم في تيليجرام. إذا قمت بذلك، سيستطيع الناس إيجادك باستخدام الاسم المستخدم والتواصل معك من دون معرفة رقمك.\n\nتستطيع استخدام حروف اللغة الإنجليزية وأرقامها وكذلك الخط. لا بد من استخدام ٥ حروف على الأقل.";
-"Username.InvalidTooShort" = "سم المستخدم يجب أن يتكوّن من ٥ حروف على الأقل.";
+"Username.InvalidTooShort" = "اسم المستخدم يجب أن يتكوّن من ٥ حروف على الأقل.";
 "Username.InvalidStartsWithNumber" = "المعذرة، اسم المستخدم لا يمكن أن يبدأ برقم.";
 "Username.InvalidCharacters" = "المعذرة، اسم المستخدم غير مقبول.";
 "Username.InvalidTaken" = "المعذرة، اسم المستخدم تم اختياره مسبقًا.";
 
 "Username.CheckingUsername" = "جاري مراجعة اسم المستخدم...";
 "Username.UsernameIsAvailable" = "%@ متاح.";
+
+"WebSearch.Images" = "صور";
+"WebSearch.GIFs" = "الصور المتحركة";
+"WebSearch.RecentSectionTitle" = "حديثة";
+"WebSearch.RecentSectionClear" = "مسح";
+
+"Settings.PrivacySettings" = "الخصوصية والأمان";
+
+"UserCount_1" = "مستخدم واحد";
+"UserCount_2" = "مستخدمين";
+"UserCount_3_10" = "%@ مستخدمين";
+"UserCount_any" = "%@ مستخدم";
+
+"PrivacySettings.Title" = "الخصوصية والأمان";
+
+"PrivacySettings.PrivacyTitle" = "الخصوصية";
+"PrivacySettings.LastSeen" = "آخر ظهور";
+"PrivacySettings.LastSeenEverybody" = "الجميع";
+"PrivacySettings.LastSeenContacts" = "جهات الاتصال الخاصة بي";
+"PrivacySettings.LastSeenNobody" = "لا أحد";
+
+"PrivacySettings.LastSeenEverybodyMinus" = "الجميع (-%@)";
+"PrivacySettings.LastSeenContactsPlus" = "جهات الاتصال الخاصة بي (+%@)";
+"PrivacySettings.LastSeenContactsMinus" = "جهات الاتصال الخاصة بي (+%@)";
+"PrivacySettings.LastSeenContactsMinusPlus" = "جهات الاتصال الخاصة بي (-%@, +%@)";
+"PrivacySettings.LastSeenNobodyPlus" = "لا أحد (+%@)";
+
+"PrivacySettings.SecurityTitle" = "الأمان";
+
+"PrivacySettings.DeleteAccountTitle" = "حذف حسابي";
+"PrivacySettings.DeleteAccountIfAwayFor" = "إذا كنت غائب لمدة";
+"PrivacySettings.DeleteAccountHelp" = "إذا لم تقم بتسجيل الدخول خلال هذه الفترة، سيتم حذف حسابك بالإضافة إلى بياناتك في تيليجرام، رسائلك، وجهات الاتصال الخاصة بك.";
+"PrivacySettings.DeleteAccountNowConfirmation" = "هل ترغب في حذف حسابك؟";
+"PrivacySettings.DeleteAccountNever" = "للأبد";
+
+"PrivacyLastSeenSettings.Title" = "آخر ظهور";
+"PrivacyLastSeenSettings.LastSeenHelp" = "قم بتغيير من يستطيع رؤية آخر ظهور خاص بك.";
+"PrivacyLastSeenSettings.CustomHelp" = "هام: لن تستطيع رؤية آخر ظهور للأشخاص اللذين اخترت ألا يروا آخر ظهور لك. سيتم عرض آخر ظهور تقريبي كبديل (قريبًا، خلال أسبوع، خلال شهر).";
+"PrivacyLastSeenSettings.AlwaysShareWith" = "دائمًا شارك معه";
+"PrivacyLastSeenSettings.NeverShareWith" = "لا تشارك أبدًا مع";
+"PrivacyLastSeenSettings.CustomShareSettingsHelp" = "هذه الإعدادات ستستبدل الإعدادات المختارة أعلاه.";
+
+"PrivacyLastSeenSettings.CustomShareSettings.Delete" = "حذف";
+"PrivacyLastSeenSettings.AlwaysShareWith.Title" = "دائمُا شارك";
+"PrivacyLastSeenSettings.AlwaysShareWith.Placeholder" = "دائمًا شارك مع المستخدمين...";
+"PrivacyLastSeenSettings.NeverShareWith.Title" = "لا تشارك أبدًا";
+"PrivacyLastSeenSettings.NeverShareWith.Placeholder" = "لا تشارك أبدًا مع المستخدمين...";
+"PrivacyLastSeenSettings.EmpryUsersPlaceholder" = "إضافة مستخدمون";
+"PrivacyLastSeenSettings.AddUsers_1" = "هل ترغب في إضافة مستخدم لهذه القائمة؟";
+"PrivacyLastSeenSettings.AddUsers_2" = "هل ترغب في إضافة مستخدمين لهذه القائمة؟";
+"PrivacyLastSeenSettings.AddUsers_3_10" = "هل ترغب في إضافة %@ مستخدمين لهذه القائمة؟";
+"PrivacyLastSeenSettings.AddUsers_any" = "هل ترغب في إضافة %@ مستخدم لهذه القائمة؟";

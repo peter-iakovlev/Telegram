@@ -30,6 +30,8 @@
 
 #import "TGStoredSecretAction.h"
 
+#import "TGAccountSettings.h"
+
 typedef struct {
     int pts;
     int date;
@@ -184,6 +186,7 @@ typedef void (^TGDatabaseCleanupEverythingBlock)();
 - (void)searchMessages:(NSString *)query completion:(void (^)(NSArray *, NSSet *))completion;
 
 - (void)setLocalUserId:(int)localUserId;
+- (void)setLocalUserStatusPrivacyRules:(TGNotificationPrivacyAccountSetting *)privacyRules changedLoadedUsers:(void (^)(NSArray *))changedLoadedUsers;
 - (TGUser *)loadUser:(int)uid;
 - (int)loadCachedPhoneIdByUid:(int)uid;
 - (void)storeUsers:(NSArray *)userList;
