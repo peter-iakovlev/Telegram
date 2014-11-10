@@ -29,7 +29,7 @@
     
     [_messageIds addObject:options[@"messageId"]];
     
-    self.cancelToken = [TGTelegraphInstance doRequestRawHttp:[[NSString alloc] initWithFormat:@"https://api.instagram.com/v1/media/shortcode/%@?client_id=3e96d133791f4e46aa192bf1d2a0a58f", options[@"shortcode"]] maxRetryCount:-1 acceptCodes:@[@200] actor:self];
+    self.cancelToken = [TGTelegraphInstance doRequestRawHttp:[[NSString alloc] initWithFormat:@"http://api.instagram.com/oembed?url=http://instagram.com/p/%@/&maxwidth=400", options[@"shortcode"]] maxRetryCount:-1 acceptCodes:@[@200] actor:self];
 }
 
 - (void)watcherJoined:(ASHandle *)watcherHandle options:(NSDictionary *)options waitingInActorQueue:(bool)waitingInActorQueue
@@ -62,11 +62,11 @@
         NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:response options:0 error:nil];
         if ([dict respondsToSelector:@selector(objectForKey:)])
         {
-            NSString *dictImageUrl = [self objectAtDictionaryPath:@"data.images.low_resolution.url" dictionary:dict];
+            NSString *dictImageUrl = [self objectAtDictionaryPath:@"url" dictionary:dict];
             if ([dictImageUrl respondsToSelector:@selector(characterAtIndex:)])
                 imageUrl = dictImageUrl;
             
-            NSString *dictMediaId = [self objectAtDictionaryPath:@"data.id" dictionary:dict];
+            NSString *dictMediaId = [self objectAtDictionaryPath:@"media_id" dictionary:dict];
             if ([dictMediaId respondsToSelector:@selector(characterAtIndex:)])
                 mediaId = dictMediaId;
         }

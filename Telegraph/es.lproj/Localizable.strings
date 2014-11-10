@@ -607,7 +607,7 @@
 "Cache.Title" = "Ajustes de caché";
 "Cache.ClearCache" = "Borrar caché";
 "Cache.KeepMedia" = "Conservar multimedia";
-"Cache.Help" = "Las fotos, vídeos y otros archivos de los chats en la nube, a los que **no hayas accedido** durante este periodo, se eliminarán del dispositivo para ahorrar almacenamiento.\n\nToda la multimedia quedará en la nube de Telegram y podrás descargarla si la necesitas de nuevo.";
+"Cache.Help" = "Las fotos, vídeos y archivos de los chats en la nube, a los que **no ingreses** durante este periodo, se eliminarán del dispositivo para ahorrar almacenamiento.\n\nToda la multimedia permanecerá en la nube de Telegram y podrás volver a descargarla si la necesitas.";
 
 // Blocked Users
 "BlockedUsers.Title" = "Usuarios bloqueados";
@@ -777,7 +777,7 @@
 
 "PrivacyLastSeenSettings.Title" = "Última conexión";
 "PrivacyLastSeenSettings.LastSeenHelp" = "Elige quién puede ver tu última conexión.";
-"PrivacyLastSeenSettings.CustomHelp" = "Importante: no podrás ver la última conexión de las personas con las que no compartes la tuya. En su lugar, se mostrarán conexiones aproximadas (hace poco, hace una semana, hace un mes).";
+"PrivacyLastSeenSettings.CustomHelp" = "Importante: no podrás ver la última conexión de las personas con las que no compartes la tuya. En su lugar, se mostrarán conexiones indeterminadas (recientemente, hace unos días, hace unas semanas).";
 "PrivacyLastSeenSettings.AlwaysShareWith" = "Compartir siempre con";
 "PrivacyLastSeenSettings.NeverShareWith" = "Nunca compartir con";
 "PrivacyLastSeenSettings.CustomShareSettingsHelp" = "Estos ajustes anularán los valores de arriba.";
@@ -792,3 +792,5 @@
 "PrivacyLastSeenSettings.AddUsers_2" = "¿Añadir 2 usuarios a esta lista?";
 "PrivacyLastSeenSettings.AddUsers_3_10" = "¿Añadir %@ usuarios a esta lista?";
 "PrivacyLastSeenSettings.AddUsers_any" = "¿Añadir %@ usuarios a esta lista?";
+
+"PrivacySettings.FloodControlError" = "Lo siento, hay demasiadas solicitudes. No es posible cambiar los ajustes de privacidad ahora. Por favor, espera.";

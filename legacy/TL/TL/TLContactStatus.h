@@ -3,11 +3,12 @@
 #import "TLObject.h"
 #import "TLMetaRpc.h"
 
+@class TLUserStatus;
 
 @interface TLContactStatus : NSObject <TLObject>
 
 @property (nonatomic) int32_t user_id;
-@property (nonatomic) int32_t expires;
+@property (nonatomic, retain) TLUserStatus *status;
 
 @end
 

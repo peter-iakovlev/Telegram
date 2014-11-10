@@ -3,6 +3,7 @@
 #import "../NSInputStream+TL.h"
 #import "../NSOutputStream+TL.h"
 
+#import "TLUserStatus.h"
 
 @implementation TLContactStatus
 
@@ -38,7 +39,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xaa77b873;
+    return (int32_t)0xd3680c61;
 }
 
 - (int32_t)TLconstructorName
@@ -50,7 +51,7 @@
 {
     TLContactStatus$contactStatus *object = [[TLContactStatus$contactStatus alloc] init];
     object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
-    object.expires = metaObject->getInt32((int32_t)0x4743fb6b);
+    object.status = metaObject->getObject((int32_t)0xab757700);
     return object;
 }
 
@@ -64,9 +65,9 @@
     }
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.expires;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x4743fb6b, value));
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.status;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xab757700, value));
     }
 }
 

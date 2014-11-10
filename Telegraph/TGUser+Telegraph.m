@@ -43,9 +43,14 @@ TGUserPresence extractUserPresence(TLUserStatus *status)
         presence.online = false;
         presence.lastSeen = ((TLUserStatus$userStatusOffline *)status).was_online;
         presence.temporaryLastSeen = 0;
+        
+#if TARGET_IPHONE_SIMULATOR
+        TGLog(@"parsing status %d", ((TLUserStatus$userStatusOffline *)status).was_online);
+#endif
+        
         return presence;
     }
-    else if ([status isKindOfClass:[TLUserStatus$userStatusLately class]])
+    else if ([status isKindOfClass:[TLUserStatus$userStatusRecently class]])
     {
         TGUserPresence presence;
         presence.online = false;
@@ -73,7 +78,7 @@ TGUserPresence extractUserPresence(TLUserStatus *status)
     {
         TGUserPresence presence;
         presence.online = false;
-        presence.lastSeen = 0;
+        presence.lastSeen = TGUserPresenceValueALongTimeAgo;
         presence.temporaryLastSeen = 0;
         return presence;
     }

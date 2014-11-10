@@ -201,7 +201,6 @@
             [strongSelf->_progressWindow show:true];
             
             TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:privacySettings accountTTLSetting:strongSelf->_accountSettings.accountTTLSetting];
-            [TGAccountSettingsActor setAccountSettingsForCurrentStateId:accountSettings];
             [strongSelf setAccountSettings:accountSettings];
             [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[privacySettings]} flags:0 watcher:strongSelf];
         }
@@ -258,7 +257,6 @@
                 [strongSelf->_progressWindow show:true];
                 
                 [strongSelf setAccountSettings:accountSettings];
-                [TGAccountSettingsActor setAccountSettingsForCurrentStateId:accountSettings];
                 [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[accountTTLSetting]} flags:0 watcher:strongSelf];
             }
         }
@@ -340,6 +338,20 @@
         {
             [_progressWindow dismiss:true];
             _progressWindow = nil;
+            
+            if (status == ASStatusSuccess)
+            {
+                
+            }
+            else
+            {
+                TGAccountSettings *accountSettings = [TGAccountSettingsActor accountSettingsFotCurrentStateId];
+                if (accountSettings == nil)
+                    accountSettings = [[TGAccountSettings alloc] initWithDefaultValues];
+                [self setAccountSettings:accountSettings];
+                
+                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"PrivacySettings.FloodControlError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            }
         });
     }
     else if ([path isEqualToString:@"/tg/service/revokesessions"])

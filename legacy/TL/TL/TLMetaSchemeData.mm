@@ -3083,7 +3083,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLContactStatus$contactStatus
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0xaa77b873;
+        constructor.n_id = (int32_t)0xd3680c61;
         constructor.predicate = @"contactStatus";
         constructor.type = @"ContactStatus";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -3095,8 +3095,8 @@ TLScheme *TLgetMetaScheme()
         }
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"expires";
-            arg.type = @"int";
+            arg.name = @"status";
+            arg.type = @"UserStatus";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -4217,10 +4217,10 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
-        //TLUserStatus$userStatusLately
+        //TLUserStatus$userStatusRecently
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0xfd704e70;
-        constructor.predicate = @"userStatusLately";
+        constructor.n_id = (int32_t)0xe26f42f1;
+        constructor.predicate = @"userStatusRecently";
         constructor.type = @"UserStatus";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
         constructor.params = fields;

@@ -9,7 +9,8 @@
 typedef enum {
     TGModernCacheKeyspaceGlobalProperties = 1,
     TGModernCacheKeyspaceLastUsageByPath = 2,
-    TGModernCacheKeyspacePathAndSizeByLastUsage = 3
+    TGModernCacheKeyspacePathAndSizeByLastUsage = 3,
+    TGModernCacheKeyspaceLastUsageSortingValue = 4
 } TGModernCacheKeyspace;
 
 typedef enum {
@@ -27,6 +28,24 @@ typedef enum {
 @end
 
 @implementation TGModernCache
+
++ (void)load
+{
+/*#if TARGET_IPHONE_SIMULATOR
+    NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"tmpteststore"];
+    
+    TGModernCache *cache = [[TGModernCache alloc] initWithPath:path size:10];
+    [cache cleanup];
+    
+    for (int32_t i = 0; i < 20; i++)
+    {
+        uint8_t one = 1;
+        [cache setValue:[NSData dataWithBytes:&one length:1] forKey:[NSData dataWithBytes:&i length:4]];
+    }
+    
+    TGLog(@"test end");
+#endif*/
+}
 
 - (instancetype)initWithPath:(NSString *)path size:(NSUInteger)size
 {
@@ -48,6 +67,19 @@ typedef enum {
     [_queue dispatch:^
     {
         [keyValueStore close];
+    }];
+}
+
+- (void)cleanup
+{
+    [_queue dispatch:^
+    {
+        [_keyValueStore close];
+        
+        [[NSFileManager defaultManager] removeItemAtPath:_path error:nil];
+        
+        [[NSFileManager defaultManager] createDirectoryAtPath:[_path stringByAppendingPathComponent:@"store"] withIntermediateDirectories:true attributes:nil error:nil];
+        _keyValueStore = [PSLMDBKeyValueStore storeWithPath:[_path stringByAppendingPathComponent:@"meta"] size:1 * 1024 * 1024];
     }];
 }
 
@@ -113,6 +145,13 @@ typedef enum {
 
     [readerWriter enumerateKeysAndValuesBetweenLowerBoundKey:&lowerBoundKey upperBoundKey:&upperBoundKey options:PSKeyValueReaderEnumerationUpperBoundExclusive withBlock:^(PSConstData *key, PSConstData *value, __unused bool *stop)
     {
+        if (key->length == 9)
+        {
+            int32_t sortingValue = 0;
+            memcpy(&sortingValue, key->data + 1 + 4, 4);
+            TGLog(@"removing %d", sortingValue);
+        }
+        
         [keysToRemove addObject:[[NSData alloc] initWithBytes:key->data length:key->length]];
         
         int32_t size = 0;
@@ -154,6 +193,23 @@ typedef enum {
 
 - (void)_updateLastAccessDateForKey:(NSData *)key size:(NSUInteger)size readerWriter:(id<PSKeyValueReader,PSKeyValueWriter>)readerWriter
 {
+    int32_t nextInvertedSortingValue = 1;
+    {
+        NSMutableData *keyData = [[NSMutableData alloc] init];
+        int8_t keyspace = TGModernCacheKeyspaceLastUsageSortingValue;
+        [keyData appendBytes:&keyspace length:1];
+        PSData k = {.data = (void *)keyData.bytes, .length = keyData.length};
+        PSData value;
+        if ([readerWriter readValueForRawKey:&k value:&value] && value.length == 4)
+        {
+            memcpy(&nextInvertedSortingValue, value.data, 4);
+        }
+        
+        int32_t storedSortingValue = nextInvertedSortingValue + 1;
+        [readerWriter writeValueForRawKey:k.data keyLength:k.length value:(uint8_t *)&storedSortingValue valueLength:4];
+    }
+    int32_t nextSortingValue = CFSwapInt32(nextInvertedSortingValue);
+    
     NSMutableData *keyData = [[NSMutableData alloc] init];
     int8_t keyspace = TGModernCacheKeyspaceLastUsageByPath;
     [keyData appendBytes:&keyspace length:1];
@@ -162,30 +218,27 @@ typedef enum {
     PSData value;
     if ([readerWriter readValueForRawKey:&k value:&value])
     {
-        int32_t lastUsage = 0;
-        memcpy(&lastUsage, value.data, 4);
+        int32_t sortingValue = 0;
+        memcpy(&sortingValue, value.data, 4);
         
         [readerWriter deleteValueForRawKey:&k];
         
         NSMutableData *indexData = [[NSMutableData alloc] init];
         keyspace = TGModernCacheKeyspacePathAndSizeByLastUsage;
         [indexData appendBytes:&keyspace length:1];
-        [indexData appendBytes:&lastUsage length:4];
+        [indexData appendBytes:&sortingValue length:4];
         [indexData appendData:key];
         
         PSData indexKey = {.data = (void *)indexData.bytes, .length = indexData.length};
         [readerWriter deleteValueForRawKey:&indexKey];
     }
     
-    int32_t lastAccessDate = (int32_t)CFAbsoluteTimeGetCurrent();
-    lastAccessDate = CFSwapInt32(lastAccessDate);
-    
-    [readerWriter writeValueForRawKey:k.data keyLength:k.length value:(void *)&lastAccessDate valueLength:4];
+    [readerWriter writeValueForRawKey:k.data keyLength:k.length value:(void *)&nextSortingValue valueLength:4];
     
     NSMutableData *indexKey = [[NSMutableData alloc] init];
     keyspace = TGModernCacheKeyspacePathAndSizeByLastUsage;
     [indexKey appendBytes:&keyspace length:1];
-    [indexKey appendBytes:&lastAccessDate length:4];
+    [indexKey appendBytes:&nextSortingValue length:4];
     [indexKey appendData:key];
     
     NSMutableData *indexValue = [[NSMutableData alloc] init];

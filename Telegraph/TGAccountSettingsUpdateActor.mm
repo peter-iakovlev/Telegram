@@ -13,11 +13,14 @@
 #import "TGUserDataRequestBuilder.h"
 #import "TGTelegraph.h"
 
+#import "TGUpdateStateRequestBuilder.h"
+#import "TGAccountSettingsActor.h"
+
 @interface TGAccountSettingsUpdateActor ()
 {
     NSMutableSet *_remainingSettingKeys;
     
-    TGNotificationPrivacyAccountSetting *_privacySettings;
+    TGAccountSettings *_accountSettings;
 }
 
 @end
@@ -41,14 +44,25 @@
     self.requestQueueName = @"accountSettings";
 }
 
-- (void)_maybeComplete
+- (void)_maybeComplete:(bool)success
 {
     if (_remainingSettingKeys.count == 0)
-        [ActionStageInstance() actionCompleted:self.path result:nil];
+    {
+        if (success)
+            [TGAccountSettingsActor setAccountSettingsForCurrentStateId:_accountSettings];
+        if (success)
+            [ActionStageInstance() actionCompleted:self.path result:nil];
+        else
+            [ActionStageInstance() actionFailed:self.path reason:-1];
+    }
 }
 
 - (void)execute:(NSDictionary *)options
 {
+    _accountSettings = [TGAccountSettingsActor accountSettingsFotCurrentStateId];
+    if (_accountSettings == nil)
+        _accountSettings = [[TGAccountSettings alloc] initWithDefaultValues];
+    
     _remainingSettingKeys = [[NSMutableSet alloc] init];
     [self updateOptions:options];
 }
@@ -88,7 +102,7 @@
         if ([setting isKindOfClass:[TGNotificationPrivacyAccountSetting class]])
         {
             TGNotificationPrivacyAccountSetting *privacySettings = (TGNotificationPrivacyAccountSetting *)setting;
-            _privacySettings = privacySettings;
+            _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:privacySettings accountTTLSetting:_accountSettings.accountTTLSetting];
             [_remainingSettingKeys addObject:@"notificationPrivacySettings"];
             
             MTRequest *request = [[MTRequest alloc] init];
@@ -154,11 +168,17 @@
                  }
              }];
             
+            [request setShouldContinueExecutionWithErrorContext:^bool(__unused MTRequestErrorContext *context)
+            {
+                return false;
+            }];
+            
             [requestList addObject:request];
         }
         else if ([setting isKindOfClass:[TGAccountTTLSetting class]])
         {
             TGAccountTTLSetting *accountTTLSetting = (TGAccountTTLSetting *)setting;
+            _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:_accountSettings.notificationSettings accountTTLSetting:accountTTLSetting];
             [_remainingSettingKeys addObject:@"accountTTLSetting"];
             
             MTRequest *request = [[MTRequest alloc] init];
@@ -186,6 +206,11 @@
                 }
             }];
             
+            [request setShouldContinueExecutionWithErrorContext:^bool(__unused MTRequestErrorContext *context)
+            {
+                return false;
+            }];
+            
             [requestList addObject:request];
         }
     }
@@ -198,7 +223,7 @@
 
 - (void)setPrivacySuccess
 {
-    [TGDatabaseInstance() setLocalUserStatusPrivacyRules:_privacySettings changedLoadedUsers:^(NSArray *users)
+    [TGDatabaseInstance() setLocalUserStatusPrivacyRules:_accountSettings.notificationSettings changedLoadedUsers:^(NSArray *users)
     {
         std::tr1::shared_ptr<std::map<int, TGUserPresence> > pMap(new std::map<int, TGUserPresence>());
         for (TGUser *user in users)
@@ -209,25 +234,28 @@
     }];
     
     [_remainingSettingKeys removeObject:@"notificationPrivacySettings"];
-    [self _maybeComplete];
+    [self _maybeComplete:true];
+    
+    [ActionStageInstance() requestActor:@"/tg/updateUserStatuses" options:nil flags:0 watcher:TGTelegraphInstance];
+    [TGUpdateStateRequestBuilder invalidateStateVersion];
 }
 
 - (void)setPrivacyFailed
 {
     [_remainingSettingKeys removeObject:@"notificationPrivacySettings"];
-    [self _maybeComplete];
+    [self _maybeComplete:false];
 }
 
 - (void)setAccountTtlSuccess
 {
     [_remainingSettingKeys removeObject:@"accountTTLSetting"];
-    [self _maybeComplete];
+    [self _maybeComplete:true];
 }
 
 - (void)setAccountTtlFailed
 {
     [_remainingSettingKeys removeObject:@"accountTTLSetting"];
-    [self _maybeComplete];
+    [self _maybeComplete:false];
 }
 
 @end

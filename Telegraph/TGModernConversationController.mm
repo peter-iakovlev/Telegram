@@ -48,6 +48,7 @@
 #import "TGMapViewController.h"
 #import "TGImagePickerController.h"
 #import "TGWebSearchController.h"
+#import "TGImageSearchController.h"
 #import "TGLegacyCameraController.h"
 #import "TGMapViewController.h"
 #import "TGDocumentController.h"
@@ -3307,6 +3308,11 @@ static CGPoint locationForKeyboardWindowWithOffset(CGFloat offset, UIInterfaceOr
     else
     {
         NSMutableArray *controllerList = [[NSMutableArray alloc] init];
+        
+        TGImageSearchController *searchController = [[TGImageSearchController alloc] initWithAvatarSelection:false];
+        searchController.delegate = self;
+        searchController.hideSearchControls = true;
+        [controllerList addObject:searchController];
         
         TGImagePickerController *imagePicker = [[TGImagePickerController alloc] initWithGroupUrl:nil groupTitle:nil avatarSelection:false];
         imagePicker.delegate = self;

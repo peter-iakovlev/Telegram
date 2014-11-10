@@ -185,7 +185,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLUserStatus$userStatusEmpty new]);
     TLMetaClassStore::registerObjectClass([TLUserStatus$userStatusOnline new]);
     TLMetaClassStore::registerObjectClass([TLUserStatus$userStatusOffline new]);
-    TLMetaClassStore::registerObjectClass([TLUserStatus$userStatusLately new]);
+    TLMetaClassStore::registerObjectClass([TLUserStatus$userStatusRecently new]);
     TLMetaClassStore::registerObjectClass([TLUserStatus$userStatusLastWeek new]);
     TLMetaClassStore::registerObjectClass([TLUserStatus$userStatusLastMonth new]);
     TLMetaClassStore::registerVectorClass([NSArray_Dialog new]);

@@ -803,7 +803,7 @@ You can use **a-z**, **0-9** and underscores. Minimum length is **5** characters
 "PrivacyLastSeenSettings.CustomHelp" = "Important: you won't be able to see Last Seen times for people with whom you don't share your Last Seen time. Approximate last seen will be shown instead (recently, within a week, witin a month).";
 "PrivacyLastSeenSettings.AlwaysShareWith" = "Always Share With";
 "PrivacyLastSeenSettings.NeverShareWith" = "Never Share With";
-"PrivacyLastSeenSettings.CustomShareSettingsHelp" = "This settings will override the values above.";
+"PrivacyLastSeenSettings.CustomShareSettingsHelp" = "These settings will override the values above.";
 
 "PrivacyLastSeenSettings.CustomShareSettings.Delete" = "Delete";
 "PrivacyLastSeenSettings.AlwaysShareWith.Title" = "Always Share";
@@ -815,3 +815,5 @@ You can use **a-z**, **0-9** and underscores. Minimum length is **5** characters
 "PrivacyLastSeenSettings.AddUsers_2" = "Add 2 users to this list?";
 "PrivacyLastSeenSettings.AddUsers_3_10" = "Add %@ users to this list?";
 "PrivacyLastSeenSettings.AddUsers_any" = "Add %@ users to this list?";
+
+"PrivacySettings.FloodControlError" = "Sorry, too many requests. Unable to change privacy settings now, please wait.";

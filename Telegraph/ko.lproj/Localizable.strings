@@ -748,47 +748,49 @@
 
 "Settings.PrivacySettings" = "개인정보와 보안";
 
-"UserCount_1" = "이용자 1명";
-"UserCount_2" = "이용자 2명";
-"UserCount_3_10" = "%@ 명의 이용자";
-"UserCount_any" = "%@명의 이용자";
+"UserCount_1" = "대화상대 1명";
+"UserCount_2" = "대화상대 2명";
+"UserCount_3_10" = "%@ 명의 대화상대";
+"UserCount_any" = "%@명의 대화상대";
 
 "PrivacySettings.Title" = "개인정보와 보안";
 
 "PrivacySettings.PrivacyTitle" = "개인정보";
 "PrivacySettings.LastSeen" = "마지막 접속";
-"PrivacySettings.LastSeenEverybody" = "모든사람";
-"PrivacySettings.LastSeenContacts" = "나의 대화상대";
-"PrivacySettings.LastSeenNobody" = "아무도 없음";
+"PrivacySettings.LastSeenEverybody" = "전체공개";
+"PrivacySettings.LastSeenContacts" = "내 연락처";
+"PrivacySettings.LastSeenNobody" = "비공개";
 
-"PrivacySettings.LastSeenEverybodyMinus" = "모든사람 (-%@)";
-"PrivacySettings.LastSeenContactsPlus" = "나의 대화상대 (+%@)";
-"PrivacySettings.LastSeenContactsMinus" = "나의 대화상대 (-%@)";
-"PrivacySettings.LastSeenContactsMinusPlus" = "나의 대화상대 (-%@, +%@)";
-"PrivacySettings.LastSeenNobodyPlus" = "아무도 없음 (+%@)";
+"PrivacySettings.LastSeenEverybodyMinus" = "전체공개 (-%@)";
+"PrivacySettings.LastSeenContactsPlus" = "내 연락처 (+%@)";
+"PrivacySettings.LastSeenContactsMinus" = "내 연락처 (-%@)";
+"PrivacySettings.LastSeenContactsMinusPlus" = "내 연락처 (-%@, +%@)";
+"PrivacySettings.LastSeenNobodyPlus" = "비공개 (+%@)";
 
 "PrivacySettings.SecurityTitle" = "보안";
 
-"PrivacySettings.DeleteAccountTitle" = "계정삭제";
-"PrivacySettings.DeleteAccountIfAwayFor" = "접속하지 않은 기간";
-"PrivacySettings.DeleteAccountHelp" = "이 기간 동안 최소 한번의 로그인도 하지 않았다면 모든 데이터, 메시지와 연락처가 계정과 함께 삭제될 것입니다. ";
-"PrivacySettings.DeleteAccountNowConfirmation" = "계정을 삭제할까요?";
-"PrivacySettings.DeleteAccountNever" = "절대 하지 않음";
+"PrivacySettings.DeleteAccountTitle" = "회원 탈퇴";
+"PrivacySettings.DeleteAccountIfAwayFor" = "자동 회원 탈퇴";
+"PrivacySettings.DeleteAccountHelp" = "이 기간 동안 최소 한번 이상 로그인을 하지 않으면 자동으로 모든 메시지와 연락처를 삭제하고 텔레그램을 탈퇴합니다.";
+"PrivacySettings.DeleteAccountNowConfirmation" = "텔레그램을 탈퇴할까요?";
+"PrivacySettings.DeleteAccountNever" = "사용 안함";
 
 "PrivacyLastSeenSettings.Title" = "마지막 접속";
 "PrivacyLastSeenSettings.LastSeenHelp" = "누가 마지막 접속시간을 볼 수 있는지 변경";
-"PrivacyLastSeenSettings.CustomHelp" = "중요: 당신의 마지막 접속시간을 공유하지 않은 사람들의 마지막 접속시간을 볼 수 없습니다. 대략의 마지막 접속이 보여질 것입니다. (최근, 일주일 이내, 한달 이내)";
-"PrivacyLastSeenSettings.AlwaysShareWith" = "항상 공유";
-"PrivacyLastSeenSettings.NeverShareWith" = "절대 공유하지 않음";
-"PrivacyLastSeenSettings.CustomShareSettingsHelp" = "이 설정은 위의 입력값을 무효로 합니다. ";
+"PrivacyLastSeenSettings.CustomHelp" = "회원님의 마지막 접속시간을 공유하지 않으면 마지막 접속이 일주일 이내, 한달 이내등으로 표시 되고 친구들의 마지막 접속시간도 확인 할 수 없습니다.";
+"PrivacyLastSeenSettings.AlwaysShareWith" = "공유할 대상";
+"PrivacyLastSeenSettings.NeverShareWith" = "공유하지 않을 대상";
+"PrivacyLastSeenSettings.CustomShareSettingsHelp" = "이 설정은 위의 입력값을 무효로 합니다.";
 
 "PrivacyLastSeenSettings.CustomShareSettings.Delete" = "삭제";
 "PrivacyLastSeenSettings.AlwaysShareWith.Title" = "항상 공유";
-"PrivacyLastSeenSettings.AlwaysShareWith.Placeholder" = "항상 이용자들과 공유...";
+"PrivacyLastSeenSettings.AlwaysShareWith.Placeholder" = "항상 대화상대와 공유...";
 "PrivacyLastSeenSettings.NeverShareWith.Title" = "절대 공유하지 않음";
-"PrivacyLastSeenSettings.NeverShareWith.Placeholder" = "절대 이용자들과 공유하지 않음...";
-"PrivacyLastSeenSettings.EmpryUsersPlaceholder" = "이용자 추가";
-"PrivacyLastSeenSettings.AddUsers_1" = "1명의 이용자를 리스트에 추가할까요?";
-"PrivacyLastSeenSettings.AddUsers_2" = "2명의 이용자를 리스트에 추가할까요?";
-"PrivacyLastSeenSettings.AddUsers_3_10" = "%@ 명의 이용자를 리스트에 추가할까요?";
-"PrivacyLastSeenSettings.AddUsers_any" = "%@ 명의 이용자를 리스트에 추가할까요?";
+"PrivacyLastSeenSettings.NeverShareWith.Placeholder" = "절대 대화상대와 공유하지 않음...";
+"PrivacyLastSeenSettings.EmpryUsersPlaceholder" = "대화상대 추가";
+"PrivacyLastSeenSettings.AddUsers_1" = "1명의 대화상대를 리스트에 추가할까요?";
+"PrivacyLastSeenSettings.AddUsers_2" = "2명의 대화상대를 리스트에 추가할까요?";
+"PrivacyLastSeenSettings.AddUsers_3_10" = "%@명의 대화상대를 리스트에 추가할까요?";
+"PrivacyLastSeenSettings.AddUsers_any" = "%@명의 대화상대를 리스트에 추가할까요?";
+
+"PrivacySettings.FloodControlError" = "죄송합니다. 너무 많이 변경하셨습니다. 개인정보 설정을 변경할 수 없으니 잠시 기다려 주세요.";

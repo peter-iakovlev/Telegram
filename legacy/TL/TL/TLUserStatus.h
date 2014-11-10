@@ -26,7 +26,7 @@
 
 @end
 
-@interface TLUserStatus$userStatusLately : TLUserStatus
+@interface TLUserStatus$userStatusRecently : TLUserStatus
 
 
 @end

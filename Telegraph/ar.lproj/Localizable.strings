@@ -771,7 +771,7 @@
 
 "PrivacySettings.DeleteAccountTitle" = "حذف حسابي";
 "PrivacySettings.DeleteAccountIfAwayFor" = "إذا كنت غائب لمدة";
-"PrivacySettings.DeleteAccountHelp" = "إذا لم تقم بتسجيل الدخول خلال هذه الفترة، سيتم حذف حسابك بالإضافة إلى بياناتك في تيليجرام، رسائلك، وجهات الاتصال الخاصة بك.";
+"PrivacySettings.DeleteAccountHelp" = "إذا لم تقم بتسجيل الدخول خلال هذه الفترة، سيتم حذف حسابك بالإضافة إلى مجموعاتك، رسائلك، وجهات الاتصال الخاصة بك في تيليجرام.";
 "PrivacySettings.DeleteAccountNowConfirmation" = "هل ترغب في حذف حسابك؟";
 "PrivacySettings.DeleteAccountNever" = "للأبد";
 
@@ -792,3 +792,5 @@
 "PrivacyLastSeenSettings.AddUsers_2" = "هل ترغب في إضافة مستخدمين لهذه القائمة؟";
 "PrivacyLastSeenSettings.AddUsers_3_10" = "هل ترغب في إضافة %@ مستخدمين لهذه القائمة؟";
 "PrivacyLastSeenSettings.AddUsers_any" = "هل ترغب في إضافة %@ مستخدم لهذه القائمة؟";
+
+"PrivacySettings.FloodControlError" = "المعذرة، يوجد الكثير من الطلبات حاليًا. لا نستطيع تغيير إعدادات الخصوصية الآن، يرجى الإنتظار.";

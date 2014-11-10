@@ -222,6 +222,7 @@
         _avatarSelectionMode = avatarSelection;
         
         self.titleText = TGLocalized(@"SearchImages.Title");
+        [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelButtonPressed)]];
     }
     return self;
 }
@@ -242,6 +243,13 @@
         [assetsLibrary description];
     });
     _assetsLibrary = nil;
+}
+
+- (void)setHideSearchControls:(bool)hideSearchControls
+{
+    _hideSearchControls = hideSearchControls;
+    
+    self.navigationBarShouldBeHidden = !hideSearchControls;
 }
 
 - (int)assetsInRowForWidth:(CGFloat)width widescreenWidth:(CGFloat)widescreenWidth
@@ -406,7 +414,8 @@
     
     self.view.backgroundColor = [UIColor whiteColor];
     
-    [self setExplicitTableInset:UIEdgeInsetsMake(42, 0, 44, 0) scrollIndicatorInset:UIEdgeInsetsMake(44, 0, 44, 0)];
+    if (!_hideSearchControls)
+        [self setExplicitTableInset:UIEdgeInsetsMake(42, 0, 44, 0) scrollIndicatorInset:UIEdgeInsetsMake(44, 0, 44, 0)];
     
     _listTableView = [[UITableView alloc] initWithFrame:self.view.bounds];
     _listTableView.backgroundColor = [UIColor whiteColor];
@@ -470,7 +479,9 @@
     _searchBar.placeholder = TGLocalized(@"SearchImages.SearchImages");
     
     [_navigationBarContainer addSubview:_searchBar];
-    [self.view addSubview:_navigationBarContainer];
+    
+    if (!_hideSearchControls)
+        [self.view addSubview:_navigationBarContainer];
     
     _backgroundView = [[UIView alloc] initWithFrame:self.view.bounds];
     _backgroundView.hidden = true;
@@ -522,7 +533,8 @@
         [_panelView addSubview:stripeView];
     }
     
-    [self.view addSubview:_panelView];
+    if (!_hideSearchControls)
+        [self.view addSubview:_panelView];
     
     [self.view addSubview:_backgroundView];
     

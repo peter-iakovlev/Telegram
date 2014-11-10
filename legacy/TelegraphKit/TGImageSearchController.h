@@ -20,6 +20,7 @@
 @property (nonatomic, strong) ASHandle *watcherHandle;
 
 @property (nonatomic) bool autoActivateSearch;
+@property (nonatomic) bool hideSearchControls;
 
 - (id)initWithAvatarSelection:(bool)avatarSelection;
 

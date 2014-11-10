@@ -464,7 +464,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
-        if ((![TGDatabaseInstance() uidIsRemoteContact:_uid] || [TGDatabaseInstance() loadUser:_uid].presence.online))
+        if ((![TGDatabaseInstance() uidIsRemoteContact:_uid] || [TGDatabaseInstance() loadUser:_uid].presence.online || [TGDatabaseInstance() loadUser:_uid].presence.lastSeen <= 0))
         {
             [[TGTelegraphInstance activityManagerForConversationId:_conversationId] addActivityWithType:@"typing" priority:10 timeout:5.0];
         }

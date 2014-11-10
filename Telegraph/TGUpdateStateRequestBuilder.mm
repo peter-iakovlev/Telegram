@@ -719,6 +719,11 @@ static bool _initialUpdatesScheduled = false;
                 }
             }
         }
+        else if ([update isKindOfClass:[TLUpdate$updatePrivacy class]])
+        {
+            TLUpdate$updatePrivacy *updatePrivacy = (TLUpdate$updatePrivacy *)update;
+
+        }
     }
     
     NSMutableArray *dispatchPeerPhotoListUpdatesArray = nil;

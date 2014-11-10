@@ -20,6 +20,7 @@
 
 + (void)clearStateHistory;
 + (int)stateVersion;
++ (void)invalidateStateVersion;
 
 + (void)applyDelayedOutgoingMessages:(int64_t)conversationId;
 

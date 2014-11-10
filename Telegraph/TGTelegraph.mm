@@ -1189,9 +1189,10 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     {
         if (it->second <= currentUnixTime + 1)
         {
+            TGUser *user = [TGDatabaseInstance() loadUser:it->first];
             TGUserPresence presence;
             presence.online = false;
-            presence.lastSeen = it->second;
+            presence.lastSeen = user.presence.lastSeen > 0 ? it->second : user.presence.lastSeen;
             presence.temporaryLastSeen = 0;
             expired.push_back(std::pair<int, TGUserPresence>(it->first, presence));
             
@@ -1352,7 +1353,11 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         TGUser *user = [TGDatabaseInstance() loadUser:uid];
         if (user.presence.online == false)
         {
-            TGUserPresence presence = (TGUserPresence){.online = true, .lastSeen = user.presence.lastSeen, .temporaryLastSeen = (int)([[TGTelegramNetworking instance] globalTime] + 60)};
+            int timeout = 60;
+#if TARGET_IPHONE_SIMULATOR
+            timeout = 10;
+#endif
+            TGUserPresence presence = (TGUserPresence){.online = true, .lastSeen = user.presence.lastSeen, .temporaryLastSeen = (int)([[TGTelegramNetworking instance] globalTime] + timeout)};
             [self dispatchUserPresenceChanges:uid presence:presence];
         }
         

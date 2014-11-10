@@ -125,22 +125,22 @@
 
 @end
 
-@implementation TLUserStatus$userStatusLately : TLUserStatus
+@implementation TLUserStatus$userStatusRecently : TLUserStatus
 
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xfd704e70;
+    return (int32_t)0xe26f42f1;
 }
 
 - (int32_t)TLconstructorName
 {
-    return (int32_t)0xbf12027f;
+    return (int32_t)0x87ba0780;
 }
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
 {
-    TLUserStatus$userStatusLately *object = [[TLUserStatus$userStatusLately alloc] init];
+    TLUserStatus$userStatusRecently *object = [[TLUserStatus$userStatusRecently alloc] init];
     return object;
 }
 

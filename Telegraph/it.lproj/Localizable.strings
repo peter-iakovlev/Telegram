@@ -771,7 +771,7 @@
 
 "PrivacySettings.DeleteAccountTitle" = "ELIMINA IL MIO ACCOUNT";
 "PrivacySettings.DeleteAccountIfAwayFor" = "Se lontano per";
-"PrivacySettings.DeleteAccountHelp" = "Se non ti connetti almeno una volta in questo periodo, il tuo account verrà eliminato insieme a tutti i dati, messaggi e contatti.";
+"PrivacySettings.DeleteAccountHelp" = "Se non ti connetti almeno una volta in questo periodo, il tuo account verrà eliminato insieme a tutti i gruppi, messaggi e contatti.";
 "PrivacySettings.DeleteAccountNowConfirmation" = "Eliminare il tuo account?";
 "PrivacySettings.DeleteAccountNever" = "Mai";
 
@@ -780,7 +780,7 @@
 "PrivacyLastSeenSettings.CustomHelp" = "Importante: non sarai in grado di vedere l'Ultimo Accesso delle persone con le quali non condividi l'Ultimo Accesso. Verrà mostrato un orario approssimativo (di recente, entro una settimana, entro un mese).";
 "PrivacyLastSeenSettings.AlwaysShareWith" = "Condividi con";
 "PrivacyLastSeenSettings.NeverShareWith" = "Non condividere con";
-"PrivacyLastSeenSettings.CustomShareSettingsHelp" = "Questa impostazione sovrascriverà i valori precedenti.";
+"PrivacyLastSeenSettings.CustomShareSettingsHelp" = "Queste impostazioni annulleranno i valori precedenti.";
 
 "PrivacyLastSeenSettings.CustomShareSettings.Delete" = "Elimina";
 "PrivacyLastSeenSettings.AlwaysShareWith.Title" = "Condividi";
@@ -792,3 +792,5 @@
 "PrivacyLastSeenSettings.AddUsers_2" = "Aggiungere 2 utenti alla lista?";
 "PrivacyLastSeenSettings.AddUsers_3_10" = "Aggiungere %@ utenti alla lista?";
 "PrivacyLastSeenSettings.AddUsers_any" = "Aggiungere %@ utenti alla lista?";
+
+"PrivacySettings.FloodControlError" = "Ci spiace, troppe richieste. Impossibile cambiare le impostazioni di privacy ora, attendi.";
