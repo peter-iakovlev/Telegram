@@ -1,1 +1,1 @@
-#define LOGGING_ON 1
+#define LOGGING_ON 0

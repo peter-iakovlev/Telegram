@@ -13,6 +13,7 @@
 @interface TGSwitchCollectionItem : TGCollectionItem
 
 @property (nonatomic, strong) ASHandle *interfaceHandle;
+@property (nonatomic, copy) void (^toggled)(bool value);
 
 @property (nonatomic, strong) NSString *title;
 @property (nonatomic) bool isOn;

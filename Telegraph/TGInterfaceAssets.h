@@ -25,6 +25,7 @@
 - (UIColor *)footerBackground;
 
 - (UIColor *)userColor:(int)uid;
+- (UIColor *)groupColor:(int64_t)groupId;
 - (int)userColorIndex:(int)uid;
 - (int)groupColorIndex:(int64_t)groupId;
 

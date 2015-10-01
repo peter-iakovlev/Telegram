@@ -17,10 +17,11 @@ typedef void (^TGRawHttpRequestCompletionBlock)(NSData *response);
 @property (nonatomic) bool cancelled;
 @property (nonatomic, strong) NSString *url;
 @property (nonatomic, strong) NSArray *acceptCodes;
-@property (nonatomic, strong) NSData *httpAuth;
+@property (nonatomic, strong) NSString *httpAuth;
 @property (nonatomic, strong) AFHTTPRequestOperation *operation;
 @property (nonatomic, copy) TGRawHttpRequestCompletionBlock completionBlock;
 @property (nonatomic, copy) void (^progressBlock)(float progress);
+@property (nonatomic, assign) NSInteger expectedFileSize;
 @property (nonatomic) int retryCount;
 @property (nonatomic) int maxRetryCount;
 

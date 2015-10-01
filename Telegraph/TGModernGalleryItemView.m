@@ -8,17 +8,10 @@
 
 #import "TGModernGalleryItemView.h"
 
-@implementation TGModernGalleryItemView
+#import "TGModernGalleryDefaultFooterView.h"
+#import "TGModernGalleryDefaultFooterAccessoryView.h"
 
-- (instancetype)initWithItem:(id<TGModernGalleryItem>)item
-{
-    self = [super init];
-    if (self != nil)
-    {
-        _item = item;
-    }
-    return self;
-}
+@implementation TGModernGalleryItemView
 
 - (void)prepareForRecycle
 {
@@ -28,14 +21,23 @@
 {
 }
 
-- (bool)wantsHeader
+- (void)setIsVisible:(bool)__unused isVisible
 {
-    return true;
 }
 
-- (bool)wantsFooter
+- (void)setIsCurrent:(bool)__unused isCurrent
 {
-    return true;
+}
+
+- (void)setFocused:(bool)isFocused
+{
+    if (isFocused)
+    {
+        if ([[self defaultFooterView] respondsToSelector:@selector(setContentHidden:)])
+            [[self defaultFooterView] setContentHidden:false];
+        else
+            [self defaultFooterView].hidden = false;
+    }
 }
 
 - (UIView *)headerView
@@ -48,9 +50,41 @@
     return nil;
 }
 
+- (UIView *)transitionView
+{
+    return nil;
+}
+
+- (CGRect)transitionViewContentRect
+{
+    return [self transitionView].bounds;
+}
+
 - (bool)dismissControllerNowOrSchedule
 {
     return true;
+}
+
+- (void)setItem:(id<TGModernGalleryItem>)item
+{
+    [self setItem:item synchronously:false];
+}
+
+- (void)setItem:(id<TGModernGalleryItem>)item synchronously:(bool)__unused synchronously
+{
+    _item = item;
+    [self.defaultFooterAccessoryLeftView setItem:item];
+    [self.defaultFooterAccessoryRightView setItem:item];
+}
+
+- (bool)allowsScrollingAtPoint:(CGPoint)__unused point
+{
+    return true;
+}
+
+- (SSignal *)contentAvailabilityStateSignal
+{
+    return nil;
 }
 
 @end

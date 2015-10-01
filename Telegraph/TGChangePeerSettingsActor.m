@@ -44,6 +44,8 @@
         [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/peerSettings/(%lld)", peerId] resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithInt:nSoundId != nil ? [nSoundId intValue] : currentSoundId], @"soundId", [[NSNumber alloc] initWithInt:nMuteUntil != nil ? [nMuteUntil intValue] : currentMuteUntil], @"muteUntil", [[NSNumber alloc] initWithBool:nPreviewText != nil ? [nPreviewText boolValue] : currentPreviewText], @"previewText", [[NSNumber alloc] initWithBool:nPhotoNotificationsEnabled != nil ? [nPhotoNotificationsEnabled boolValue] : currentPhotoNotificationsEnabled], @"photoNotificationsEnabled", nil]]];
 
         [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
+        
+        [TGDatabaseInstance() processAndScheduleMute];
     }
     
     [ActionStageInstance() actionCompleted:self.path result:nil];

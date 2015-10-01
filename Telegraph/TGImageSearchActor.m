@@ -9,6 +9,8 @@
 
 #import "TGViewController.h"
 
+#import "TGAppDelegate.h"
+
 @interface TGImageSearchActor ()
 
 @property (nonatomic) int offset;
@@ -31,7 +33,7 @@
     _currentQuery = [options objectForKey:@"query"];
     _offset = [[options objectForKey:@"offset"] intValue];
     
-    NSString *authKey = TGEncodeText(@"rdO,D9[52JGcfJtRtEkr:1sjoJoFLbOKfx,z:DCByeN", -1);
+    NSString *authKey = @"dKYt6BjhkmFnJABZI/nWs++mx7owYEKZLcdA3DTOO1s";
     NSData *authData = [[[NSString alloc] initWithFormat:@"%@:%@", authKey, authKey] dataUsingEncoding:NSUTF8StringEncoding];
     
     _currentArguments = [[NSString alloc] initWithFormat:@"$skip=%d&$top=%d", [[options objectForKey:@"offset"] intValue], [TGViewController isWidescreen] ? 56 : 48];
@@ -41,7 +43,7 @@
         [self httpRequestSuccess:nil response:cachedData];
     else
     {
-        self.cancelToken = [TGTelegraphInstance doRequestRawHttp:[[NSString alloc] initWithFormat:@"https://api.datamarket.azure.com/Bing/Search/v1/Image?Query='%@'&$skip=%d&$top=%d&$format=json&Adult='Off'", [TGStringUtils stringByEscapingForURL:_currentQuery], [[options objectForKey:@"offset"] intValue], [TGViewController isWidescreen] ? 56 : 48] maxRetryCount:0 acceptCodes:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:400], [[NSNumber alloc] initWithInt:403], nil] httpAuth:authData actor:self];
+        self.cancelToken = [TGTelegraphInstance doRequestRawHttp:[[NSString alloc] initWithFormat:@"https://api.datamarket.azure.com/Bing/Search/v1/Image?Query='%@'&$skip=%d&$top=%d&$format=json&Adult='Off'", [TGStringUtils stringByEscapingForURL:_currentQuery], [[options objectForKey:@"offset"] intValue], [TGViewController isWidescreen] ? 56 : 48] maxRetryCount:0 acceptCodes:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:400], [[NSNumber alloc] initWithInt:403], nil] httpAuth:(NSString *)authData actor:self];
     }
 }
 
@@ -72,8 +74,7 @@
 
 - (NSString *)cachePath
 {
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
-    NSString *cachesPath = [paths objectAtIndex:0];
+    NSString *cachesPath = [TGAppDelegate cachePath];
     
     NSString *diskCachePath = [cachesPath stringByAppendingPathComponent:@"websearch"];
     

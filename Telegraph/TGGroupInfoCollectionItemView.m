@@ -27,6 +27,8 @@
     UIImageView *_avatarOverlay;
     UIActivityIndicatorView *_activityIndicator;
     
+    UIImageView *_verifiedIcon;
+    
     UILabel *_titleLabel;
     TGTextField *_titleField;
     UIView *_editingSeparator;
@@ -56,7 +58,7 @@
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.backgroundColor = [UIColor clearColor];
         _titleLabel.textColor = [UIColor blackColor];
-        _titleLabel.font = TGSystemFontOfSize(20);
+        _titleLabel.font = TGBoldSystemFontOfSize(20);
         _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
         _titleLabel.numberOfLines = 1;
         [self addSubview:_titleLabel];
@@ -78,6 +80,25 @@
 - (void)setGroupId:(int64_t)groupId
 {
     _groupId = groupId;
+}
+
+- (void)setIsVerified:(bool)isVerified {
+    if (_isVerified != isVerified) {
+        _isVerified = isVerified;
+        
+        if (_isVerified) {
+            if (_verifiedIcon == nil) {
+                _verifiedIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ChannelVerifiedIconMedium.png"]];
+            }
+            if (_verifiedIcon.superview == nil) {
+                [self.contentView addSubview:_verifiedIcon];
+            }
+        } else if (_verifiedIcon.superview != nil) {
+            [_verifiedIcon removeFromSuperview];
+        }
+        
+        [self setNeedsLayout];
+    }
 }
 
 - (void)setAvatarUri:(NSString *)avatarUri animated:(bool)animated
@@ -115,7 +136,23 @@
 
 - (void)setAvatarImage:(UIImage *)avatarImage animated:(bool)__unused animated
 {
-    [_avatarView loadImage:avatarImage];
+    if (avatarImage == nil) {
+        static UIImage *placeholder = nil;
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^ {
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(64.0f, 64.0f), false, 0.0f);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetFillColorWithColor(context, UIColorRGB(0xd8d8d8).CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0.0, 0.0, 64.0f, 64.0f));
+            UIImage *iconImage = [UIImage imageNamed:@"CreateGroupAvatarPlaceholderIcon.png"];
+            [iconImage drawAtPoint:CGPointMake(CGFloor((64.0f - iconImage.size.width) / 2.0f) + TGRetinaPixel, CGFloor((64.0f - iconImage.size.height) / 2.0f))];
+            placeholder = UIGraphicsGetImageFromCurrentImageContext();
+            UIGraphicsEndImageContext();
+        });
+        [_avatarView loadImage:placeholder];
+    } else {
+        [_avatarView loadImage:avatarImage];
+    }
 }
 
 - (void)setTitle:(NSString *)title
@@ -126,7 +163,8 @@
     if (!_editing && !TGStringCompare(title, _titleField.text))
         _titleField.text = title;
     
-    [_avatarView setTitle:title];
+    if (!_isBroadcast && _groupId != 0)
+        [_avatarView setTitle:title];
     
     [self setNeedsLayout];
 }
@@ -245,7 +283,13 @@
                 _titleField.font = TGSystemFontOfSize(20);
                 _titleField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
                 _titleField.enabled = !_updatingTitle;
-                _titleField.placeholder = _isBroadcast ? TGLocalized(@"GroupInfo.BroadcastListNamePlaceholder") : TGLocalized(@"GroupInfo.GroupNamePlaceholder");
+                if (_isBroadcast) {
+                    _titleField.placeholder = TGLocalized(@"GroupInfo.BroadcastListNamePlaceholder");
+                } else if (_isChannel) {
+                    _titleField.placeholder = TGLocalized(@"GroupInfo.ChannelListNamePlaceholder");
+                } else {
+                    _titleField.placeholder = TGLocalized(@"GroupInfo.GroupNamePlaceholder");
+                }
                 _titleField.placeholderColor = UIColorRGB(0xc7c7cd);
                 _titleField.placeholderFont = _titleField.font;
                 if (TGIsRTL())
@@ -323,7 +367,8 @@
                 [_titleField removeFromSuperview];
             }
             
-            [_avatarView setTitle:_titleLabel.text];
+            if (!_isBroadcast && _groupId != 0)
+                [_avatarView setTitle:_titleLabel.text];
         }
     }
 }
@@ -339,7 +384,7 @@
     if ([delegate respondsToSelector:@selector(groupInfoViewHasChangedEditedTitle:title:)])
         [delegate groupInfoViewHasChangedEditedTitle:self title:textField.text];
     
-    if (_editing)
+    if (_editing && !_isBroadcast && _groupId != 0)
         [_avatarView setTitle:textField.text];
 }
 
@@ -356,7 +401,12 @@
     
     CGFloat maxTitleWidth = bounds.size.width - 92 - 14;
     
+    if (_verifiedIcon.superview != nil) {
+        maxTitleWidth -= _verifiedIcon.bounds.size.width + 5.0f;
+    }
+    
     CGSize titleSize = [_titleLabel sizeThatFits:CGSizeMake(maxTitleWidth, CGFLOAT_MAX)];
+    titleSize.width = MIN(titleSize.width, maxTitleWidth);
     if (titleSize.height < FLT_EPSILON)
     {
         NSString *currentText = _titleLabel.text;
@@ -370,6 +420,10 @@
     
     _titleLabel.frame = titleLabelFrame;
     _titleField.frame = CGRectMake(titleLabelFrame.origin.x, titleLabelFrame.origin.y - 10, maxTitleWidth, titleLabelFrame.size.height + 20);
+    
+    if (_verifiedIcon.superview != nil) {
+        _verifiedIcon.frame = CGRectOffset(_verifiedIcon.bounds, titleLabelFrame.origin.x + titleSize.width + 4.0f, titleLabelFrame.origin.y + 5.0f + TGRetinaPixel);
+    }
     
     _editingSeparator.frame = CGRectMake(92.0f, 62.0f, bounds.size.width - 92.0f, TGIsRetina() ? 0.5f : 1.0f);
 }

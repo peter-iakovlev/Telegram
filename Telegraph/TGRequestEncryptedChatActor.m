@@ -5,6 +5,7 @@
 #import "TGTelegraph.h"
 
 #import <CommonCrypto/CommonCrypto.h>
+#import <MTProtoKit/MTProtoKit.h>
 #import <MTProtoKit/MTEncryption.h>
 #import <MTProtoKit/MTKeychain.h>
 
@@ -13,6 +14,8 @@
 #import "TGConversationAddMessagesActor.h"
 
 #import "TGStringUtils.h"
+
+#import "TGAppDelegate.h"
 
 @interface TGRequestEncryptedChatActor ()
 {
@@ -55,13 +58,13 @@
             return;
         }
         
-        if (!MTCheckMod(concreteConfig.p, concreteConfig.g, [MTKeychain keychainWithName:@"legacyPrimes"]))
+        if (!MTCheckMod(concreteConfig.p, concreteConfig.g, [MTFileBasedKeychain keychainWithName:@"legacyPrimes" documentsPath:[TGAppDelegate documentsPath]]))
         {
             [ActionStageInstance() actionFailed:self.path reason:-1];
             return;
         }
         
-        if (!MTCheckIsSafePrime(concreteConfig.p, [MTKeychain keychainWithName:@"legacyPrimes"]))
+        if (!MTCheckIsSafePrime(concreteConfig.p, [MTFileBasedKeychain keychainWithName:@"legacyPrimes" documentsPath:[TGAppDelegate documentsPath]]))
         {
             [ActionStageInstance() actionFailed:self.path reason:-1];
             return;
@@ -189,7 +192,7 @@
     int32_t g = config.g;
     [data appendBytes:&g length:4];
     
-    int32_t length = config.p.length;
+    int32_t length = (int32_t)config.p.length;
     [data appendBytes:&length length:4];
     if (config.p != nil)
         [data appendData:config.p];

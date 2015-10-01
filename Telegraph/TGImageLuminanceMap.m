@@ -55,7 +55,7 @@
         free(_luminance);
 }
 
-- (float)averageLuminanceForArea:(CGRect)area maxWeightedDeviation:(float *)maxWeightedDeviation
+- (float)averageLuminanceForArea:(CGRect)area maxWeightedDeviation:(float *)__unused maxWeightedDeviation
 {
     uint32_t sum = 0;
     

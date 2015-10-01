@@ -11,6 +11,7 @@
 @interface TGButtonCollectionItemView : TGCollectionItemView
 
 @property (nonatomic) CGFloat leftInset;
+@property (nonatomic) CGFloat additionalSeparatorInset;
 
 - (void)setTitle:(NSString *)title;
 - (void)setTitleColor:(UIColor *)titleColor;

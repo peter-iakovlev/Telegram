@@ -12,6 +12,8 @@
 #import "TGLetteredAvatarView.h"
 #import "TGViewController.h"
 
+#import "TGAppDelegate.h"
+
 @interface TGModernConversationAvatarButton ()
 {
     UIInterfaceOrientation _orientation;
@@ -144,13 +146,28 @@
     CGFloat scaling = 1.0f;
     if (UIInterfaceOrientationIsPortrait(_orientation))
     {
-        _avatarView.frame = CGRectMake(-23 - TGRetinaPixel + _horizontalOffset, -17, 37, 37);
+        CGFloat rtlOffset = -23.0f - TGRetinaPixel;
+        if (TGAppDelegateInstance.rootController.isRTL) {
+            rtlOffset = 10.0f;
+        }
+        
+        _avatarView.frame = CGRectMake(rtlOffset + _horizontalOffset, -17, 37, 37);
+        
+        if (TGAppDelegateInstance.rootController.isRTL) {
+            CGRect frame = _avatarView.frame;
+            frame.origin.x = -frame.origin.x;
+            _avatarView.frame = frame;
+        }
     }
     else
     {
+        CGFloat rtlOffset = 11.0f;
+        if (TGAppDelegateInstance.rootController.isRTL) {
+            rtlOffset = -12.0f;
+        }
         scaling = 0.7f;
         
-        _avatarView.frame = CGRectMake(-11 + _horizontalOffset, -12, 26, 26);
+        _avatarView.frame = CGRectMake(rtlOffset + _horizontalOffset, -12, 26, 26);
     }
     
     CGSize iconSize = _iconView.image.size;

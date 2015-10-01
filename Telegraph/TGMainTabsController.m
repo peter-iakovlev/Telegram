@@ -20,6 +20,8 @@
 #import "TGImageUtils.h"
 #import "TGFont.h"
 
+#import "TGNavigationController.h"
+
 @protocol TGTabBarDelegate <NSObject>
 
 - (void)tabBarSelectedItem:(int)index;
@@ -435,6 +437,11 @@
     self.tabBar.hidden = true;
 }
 
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+}
+
 - (void)viewDidUnload
 {
     [super viewDidUnload];
@@ -505,7 +512,7 @@
     
     [self _updateNavigationItemOverride:selectedIndex];
     
-    [_customTabBar setSelectedIndex:selectedIndex];
+    [_customTabBar setSelectedIndex:(int)selectedIndex];
 }
 
 - (void)setViewControllers:(NSArray *)viewControllers animated:(BOOL)animated
@@ -558,13 +565,19 @@
     _customTabBar.tabDelegate = self;
     [self.view insertSubview:_customTabBar aboveSubview:self.tabBar];
     
-    [_customTabBar setSelectedIndex:self.selectedIndex];
+    [_customTabBar setSelectedIndex:(int)self.selectedIndex];
     [_customTabBar setUnreadCount:_unreadCount];
     
     for (TGViewController *controller in self.viewControllers)
     {
         [controller localizationUpdated];
     }
+}
+
+- (void)dismissViewControllerAnimated:(BOOL)flag completion:(void (^)(void))completion
+{
+    [super dismissViewControllerAnimated:flag completion:completion];
+    [self.navigationController setToolbarHidden:true animated:false];
 }
 
 @end

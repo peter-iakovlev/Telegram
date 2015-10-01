@@ -21,8 +21,8 @@ typedef enum {
 
 @interface TGCollectionItemView : UICollectionViewCell
 {
-    CALayer *_topStripeLayer;
-    CALayer *_bottomStripeLayer;
+    UIView *_topStripeView;
+    UIView *_bottomStripeView;
     
     int _itemPosition;
 }
@@ -33,5 +33,6 @@ typedef enum {
 @property (nonatomic, strong) TGCollectionItem *boundItem;
 
 - (void)setItemPosition:(int)itemPosition;
+- (void)setItemPosition:(int)itemPosition animated:(bool)animated;
 
 @end

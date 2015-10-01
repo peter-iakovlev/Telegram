@@ -33,12 +33,11 @@
         color = CGColorRetain(UIColorRGB(0x86868d).CGColor);
     });
     
-#warning localize
     NSString *text = TGLocalizedStatic(@"Conversation.UnreadMessages");
     CGSize textSize = [text sizeWithFont:font];
     
     CGContextSetFillColorWithColor(context, color);
-    CGPoint textOrigin = CGPointMake(floorf((containerWidth - textSize.width) / 2) + 1, 7.0f + TGRetinaPixel);
+    CGPoint textOrigin = CGPointMake(CGFloor((containerWidth - textSize.width) / 2) + 1, 7.0f + TGRetinaPixel);
     [text drawAtPoint:textOrigin withFont:font];
 }
 

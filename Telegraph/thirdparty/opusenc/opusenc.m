@@ -11,19 +11,21 @@ static bool comment_init(char **comments, int* length, const char *vendor_string
 static bool comment_add(char **comments, int* length, char *tag, char *val);
 static bool comment_pad(char **comments, int* length, int amount);
 
-static inline int writeOggPage(ogg_page *page, NSFileHandle *fileHandle)
+static inline int writeOggPage(ogg_page *page, TGDataItem *fileItem)
 {
-    int written = page->header_len + page->body_len;
+    int written = (int)(page->header_len + page->body_len);
     
-    [fileHandle writeData:[[NSData alloc] initWithBytesNoCopy:page->header length:page->header_len freeWhenDone:false]];
-    [fileHandle writeData:[[NSData alloc] initWithBytesNoCopy:page->body length:page->body_len freeWhenDone:false]];
+    NSMutableData *data = [[NSMutableData alloc] init];
+    [data appendBytes:page->header length:page->header_len];
+    [data appendBytes:page->body length:page->body_len];
+    [fileItem appendData:data];
     
     return MAX(0, written);
 }
 
 @interface TGOggOpusWriter ()
 {
-    NSFileHandle *_fileHandle;
+    TGDataItem *_dataItem;
     
     OpusEncoder *_encoder;
     uint8_t *_packet;
@@ -102,9 +104,9 @@ static inline int writeOggPage(ogg_page *page, NSFileHandle *fileHandle)
     }
 }
 
-- (bool)begin:(NSFileHandle *)fileHandle
+- (bool)beginWithDataItem:(TGDataItem *)dataItem
 {
-    _fileHandle = fileHandle;
+    _dataItem = dataItem;
     
     inopt.channels = 1;
     inopt.rate = coding_rate=rate;
@@ -128,7 +130,7 @@ static inline int writeOggPage(ogg_page *page, NSFileHandle *fileHandle)
     inopt.rate = 16000;
     inopt.channels = 1;
     
-    rate = inopt.rate;
+    rate = (opus_int32)inopt.rate;
     inopt.skip = 0;
     
     // In order to code the complete length we'll need to do a little padding
@@ -250,7 +252,7 @@ static inline int writeOggPage(ogg_page *page, NSFileHandle *fileHandle)
             if (!result)
                 break;
             
-            int pageBytesWritten = writeOggPage(&og, _fileHandle);
+            int pageBytesWritten = writeOggPage(&og, _dataItem);
             if (pageBytesWritten != og.header_len + og.body_len)
             {
                 NSLog(@"Error: failed writing header to output stream");
@@ -276,7 +278,7 @@ static inline int writeOggPage(ogg_page *page, NSFileHandle *fileHandle)
         if (result == 0)
             break;
         
-        int writtenPageBytes = writeOggPage(&og, _fileHandle);
+        int writtenPageBytes = writeOggPage(&og, _dataItem);
         if (writtenPageBytes != og.header_len + og.body_len)
         {
             NSLog(@"Error: failed writing header to output stream");
@@ -302,7 +304,7 @@ static inline int writeOggPage(ogg_page *page, NSFileHandle *fileHandle)
     
     if (nb_samples < 0)
     {
-        nb_samples = frameByteCount / 2;
+        nb_samples = (opus_int32)(frameByteCount / 2);
         total_samples += nb_samples;
         if (nb_samples < frame_size)
             op.e_o_s = 1;
@@ -358,7 +360,7 @@ static inline int writeOggPage(ogg_page *page, NSFileHandle *fileHandle)
             last_granulepos = ogg_page_granulepos(&og);
         
         last_segments -= og.header[26];
-        int writtenPageBytes = writeOggPage(&og, _fileHandle);
+        int writtenPageBytes = writeOggPage(&og, _dataItem);
         if (writtenPageBytes != og.header_len + og.body_len)
         {
             NSLog(@"Error: failed writing data to output stream");
@@ -409,7 +411,7 @@ static inline int writeOggPage(ogg_page *page, NSFileHandle *fileHandle)
         if (ogg_page_packets(&og) != 0)
             last_granulepos = ogg_page_granulepos(&og);
         last_segments -= og.header[26];
-        int writtenPageBytes = writeOggPage(&og, _fileHandle);
+        int writtenPageBytes = writeOggPage(&og, _dataItem);
         if (writtenPageBytes != og.header_len + og.body_len)
         {
             NSLog(@"Error: failed writing data to output stream");
@@ -465,7 +467,7 @@ The comment header is decoded as follows:
 static bool comment_init(char **comments, int *length, const char *vendor_string)
 {
     // The 'vendor' field should be the actual encoding library used
-    int vendor_length = strlen(vendor_string);
+    int vendor_length = (int)strlen(vendor_string);
     int user_comment_list_length = 0;
     int len = 8 + 4 + vendor_length + 4;
     char *p = (char *)malloc(len);
@@ -479,13 +481,13 @@ static bool comment_init(char **comments, int *length, const char *vendor_string
     return true;
 }
 
-bool comment_add(char **comments, int* length, char *tag, char *val)
+__unused bool comment_add(char **comments, int* length, char *tag, char *val)
 {
     char *p = *comments;
     int vendor_length = readint(p, 8);
     int user_comment_list_length = readint(p, 8 + 4 + vendor_length);
-    int tag_len = (tag ? strlen(tag) + 1 : 0);
-    int val_len = strlen(val);
+    int tag_len = (tag ? (int)strlen(tag) + 1 : 0);
+    int val_len = (int)strlen(val);
     int len = (*length) + 4 + tag_len + val_len;
     
     p = (char *)realloc(p, len);

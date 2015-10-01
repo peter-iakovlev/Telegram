@@ -9,7 +9,7 @@ static const char *AMQueueSpecific = "AMQueueSpecific";
     dispatch_queue_t _nativeQueue;
     bool _isMainQueue;
     
-    //RACScheduler *_scheduler;
+    int32_t _noop;
 }
 
 @end
@@ -37,7 +37,30 @@ static const char *AMQueueSpecific = "AMQueueSpecific";
         queue = [[ATQueue alloc] init];
         queue->_nativeQueue = dispatch_get_main_queue();
         queue->_isMainQueue = true;
-        //queue->_scheduler = [RACScheduler mainThreadScheduler];
+    });
+    
+    return queue;
+}
+
++ (ATQueue *)concurrentDefaultQueue
+{
+    static ATQueue *queue = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        queue = [[ATQueue alloc] initWithNativeQueue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)];
+    });
+    
+    return queue;
+}
+
++ (ATQueue *)concurrentBackgroundQueue
+{
+    static ATQueue *queue = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        queue = [[ATQueue alloc] initWithNativeQueue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0)];
     });
     
     return queue;
@@ -48,6 +71,8 @@ static const char *AMQueueSpecific = "AMQueueSpecific";
     return [self initWithName:[[ATQueue applicationPrefix] stringByAppendingFormat:@".%ld", lrand48()]];
 }
 
+static int32_t numQueues = 0;
+
 - (instancetype)initWithName:(NSString *)name
 {
     self = [super init];
@@ -56,7 +81,33 @@ static const char *AMQueueSpecific = "AMQueueSpecific";
         _nativeQueue = dispatch_queue_create([name UTF8String], DISPATCH_QUEUE_SERIAL);
         dispatch_queue_set_specific(_nativeQueue, AMQueueSpecific, (__bridge void *)self, NULL);
         
-        //_scheduler = [[RACTargetQueueScheduler alloc] initWithName:[[NSString alloc] initWithFormat:@"%@_scheduler", name] targetQueue:_nativeQueue];
+        numQueues++;
+        TGLog(@"ATQueue count = %d", numQueues);
+    }
+    return self;
+}
+
+- (instancetype)initWithPriority:(ATQueuePriority)priority
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _nativeQueue = dispatch_queue_create([[[ATQueue applicationPrefix] stringByAppendingFormat:@".%ld", lrand48()] UTF8String], DISPATCH_QUEUE_SERIAL);
+        long targetQueueIdentifier = DISPATCH_QUEUE_PRIORITY_DEFAULT;
+        switch (priority)
+        {
+            case ATQueuePriorityLow:
+                targetQueueIdentifier = DISPATCH_QUEUE_PRIORITY_LOW;
+                break;
+            case ATQueuePriorityDefault:
+                targetQueueIdentifier = DISPATCH_QUEUE_PRIORITY_DEFAULT;
+                break;
+            case ATQueuePriorityHigh:
+                targetQueueIdentifier = DISPATCH_QUEUE_PRIORITY_HIGH;
+                break;
+        }
+        dispatch_set_target_queue(_nativeQueue, dispatch_get_global_queue(targetQueueIdentifier, 0));
+        dispatch_queue_set_specific(_nativeQueue, AMQueueSpecific, (__bridge void *)self, NULL);
     }
     return self;
 }
@@ -93,23 +144,30 @@ static const char *AMQueueSpecific = "AMQueueSpecific";
 
 - (void)dispatch:(dispatch_block_t)block synchronous:(bool)synchronous
 {
+    ATQueue *strongSelf = self;
+    dispatch_block_t blockWithSelf = ^
+    {
+        block();
+        [strongSelf noop];
+    };
+    
     if (_isMainQueue)
     {
         if ([NSThread isMainThread])
-            block();
+            blockWithSelf();
         else if (synchronous)
-            dispatch_sync(_nativeQueue, block);
+            dispatch_sync(_nativeQueue, blockWithSelf);
         else
-            dispatch_async(_nativeQueue, block);
+            dispatch_async(_nativeQueue, blockWithSelf);
     }
     else
     {
         if (dispatch_get_specific(AMQueueSpecific) == (__bridge void *)self)
             block();
         else if (synchronous)
-            dispatch_sync(_nativeQueue, block);
+            dispatch_sync(_nativeQueue, blockWithSelf);
         else
-            dispatch_async(_nativeQueue, block);
+            dispatch_async(_nativeQueue, blockWithSelf);
     }
 }
 
@@ -123,9 +181,8 @@ static const char *AMQueueSpecific = "AMQueueSpecific";
     return _nativeQueue;
 }
 
-/*- (RACScheduler *)scheduler
+- (void)noop
 {
-    return _scheduler;
-}*/
+}
 
 @end

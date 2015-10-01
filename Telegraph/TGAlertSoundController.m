@@ -112,7 +112,7 @@
 
 - (int)soundIdFromItemIndexPath:(NSIndexPath *)indexPath
 {
-    return indexPath.section == 0 ? (indexPath.row - 1) : (indexPath.row - 1 + ((TGCollectionMenuSection *)self.menuSections.sections[0]).items.count - 1);
+    return (int)(indexPath.section == 0 ? (indexPath.row - 1) : (indexPath.row - 1 + ((TGCollectionMenuSection *)self.menuSections.sections[0]).items.count - 1));
 }
 
 - (int)_selectedSoundId

@@ -12,7 +12,7 @@
 
 @interface TGConversationAddMemberRequestActor : TGActor
 
-- (void)addMemberSuccess:(TLmessages_StatedMessage *)statedMessage;
+- (void)addMemberSuccess:(TLUpdates *)statedMessage;
 - (void)addMemberFailed:(int)reason;
 
 @end

@@ -12,10 +12,7 @@
 
 @interface TGInstantPreviewTouchAreaModel : TGModernViewModel
 
-@property (nonatomic, strong) ASHandle *notificationHandle;
-@property (nonatomic, strong) NSString *touchesBeganAction;
-@property (nonatomic, strong) NSDictionary *touchesBeganOptions;
-@property (nonatomic, strong) NSString *touchesCompletedAction;
-@property (nonatomic, strong) NSDictionary *touchesCompletedOptions;
+@property (nonatomic, copy) void (^touchesBeganAction)();
+@property (nonatomic, copy) void (^touchesCompletedAction)();
 
 @end

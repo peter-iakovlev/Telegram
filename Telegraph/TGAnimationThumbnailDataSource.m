@@ -28,6 +28,8 @@
 
 #import <AVFoundation/AVFoundation.h>
 
+#import "TGAppDelegate.h"
+
 static TGWorkerPool *workerPool()
 {
     static TGWorkerPool *instance = nil;
@@ -72,8 +74,9 @@ static ASQueue *taskManagementQueue()
     return [uri hasPrefix:@"animation-thumbnail://"];
 }
 
-- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float))progress completion:(void (^)(TGDataResource *))completion
+- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float))progress partialCompletion:(void (^)(TGDataResource *resource))__unused partialCompletion completion:(void (^)(TGDataResource *))completion
 {
+    NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"animation-thumbnail://?".length]];
     TGMediaPreviewTask *previewTask = [[TGMediaPreviewTask alloc] init];
     
     [taskManagementQueue() dispatchOnQueue:^
@@ -89,7 +92,7 @@ static ASQueue *taskManagementQueue()
                 return;
             
             if (completion != nil)
-                completion(result != nil ? result : [TGAnimationThumbnailDataSource resultForUnavailableImage]);
+                completion(result != nil ? result : [TGAnimationThumbnailDataSource resultForUnavailableImage:[args[@"flat"] boolValue]]);
         }];
         
         if ([TGAnimationThumbnailDataSource _isDataLocallyAvailableForUri:uri])
@@ -98,15 +101,13 @@ static ASQueue *taskManagementQueue()
         }
         else
         {
-            NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"animation-thumbnail://?".length]];
-            
             if ([args[@"legacy-thumbnail-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
             {
                 static NSString *filesDirectory = nil;
                 static dispatch_once_t onceToken;
                 dispatch_once(&onceToken, ^
                 {
-                    filesDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"files"];
+                    filesDirectory = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"files"];
                 });
                 
                 NSString *fileDirectoryName = nil;
@@ -123,18 +124,23 @@ static ASQueue *taskManagementQueue()
                 [previewTask executeWithTargetFilePath:temporaryThumbnailImagePath uri:args[@"legacy-thumbnail-cache-url"] completion:^(bool success)
                 {
                     if (success)
-                        [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
+                    {
+                        dispatch_async([TGCache diskCacheQueue], ^
+                        {
+                            [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
+                        });
+                    }
                     else
                     {
                         if (completion != nil)
-                            completion([TGAnimationThumbnailDataSource resultForUnavailableImage]);
+                            completion([TGAnimationThumbnailDataSource resultForUnavailableImage:[args[@"flat"] boolValue]]);
                     }
                 } workerTask:workerTask];
             }
             else
             {
                 if (completion != nil)
-                    completion([TGAnimationThumbnailDataSource resultForUnavailableImage]);
+                    completion([TGAnimationThumbnailDataSource resultForUnavailableImage:[args[@"flat"] boolValue]]);
             }
         }
     }];
@@ -146,7 +152,16 @@ static ASQueue *taskManagementQueue()
 {
     NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"animation-thumbnail://?".length]];
     
-    if ((![args[@"id"] respondsToSelector:@selector(longLongValue)] && [args[@"local-id"] respondsToSelector:@selector(longLongValue)]) || ![args[@"width"] respondsToSelector:@selector(intValue)] || ![args[@"height"] respondsToSelector:@selector(intValue)] || ![args[@"renderWidth"] respondsToSelector:@selector(intValue)] || ![args[@"renderHeight"] respondsToSelector:@selector(intValue)] || ![args[@"file-name"] respondsToSelector:@selector(characterAtIndex:)])
+    NSString *imageUrl = args[@"legacy-thumbnail-cache-url"];
+    if (imageUrl.length != 0)
+    {
+        if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
+        {
+            return [[[TGMediaStoreContext instance] temporaryFilesCache] containsValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+    }
+    
+    if ((![args[@"id"] respondsToSelector:@selector(longLongValue)] && ![args[@"local-id"] respondsToSelector:@selector(longLongValue)]) || ![args[@"width"] respondsToSelector:@selector(intValue)] || ![args[@"height"] respondsToSelector:@selector(intValue)] || ![args[@"renderWidth"] respondsToSelector:@selector(intValue)] || ![args[@"renderHeight"] respondsToSelector:@selector(intValue)] || ![args[@"file-name"] respondsToSelector:@selector(characterAtIndex:)])
     {
         return false;
     }
@@ -155,7 +170,7 @@ static ASQueue *taskManagementQueue()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        filesDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"files"];
+        filesDirectory = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"files"];
     });
     
     NSString *fileDirectoryName = nil;
@@ -203,22 +218,27 @@ static ASQueue *taskManagementQueue()
     }];
 }
 
-+ (TGDataResource *)resultForUnavailableImage
++ (TGDataResource *)resultForUnavailableImage:(bool)isFlat
 {
-    static TGDataResource *imageData = nil;
+    static TGDataResource *normalImageData = nil;
+    static TGDataResource *flatImageData = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        imageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor]) decoded:true];
+        normalImageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true) decoded:true];
+        flatImageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true) decoded:true];
     });
     
-    return imageData;
+    return isFlat ? flatImageData : normalImageData;
 }
 
 - (id)loadAttributeSyncForUri:(NSString *)uri attribute:(NSString *)attribute
 {
     if ([attribute isEqualToString:@"placeholder"])
     {
+        NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"animation-thumbnail://?".length]];
+        bool isFlat = [args[@"flat"] boolValue];
+        
         UIImage *reducedImage = [[TGMediaStoreContext instance] mediaReducedImage:uri attributes:nil];
         
         if (reducedImage != nil)
@@ -227,24 +247,26 @@ static ASQueue *taskManagementQueue()
         NSNumber *averageColor = [[TGMediaStoreContext instance] mediaImageAverageColor:uri];
         if (averageColor != nil)
         {
-            UIImage *image = TGAverageColorAttachmentImage(UIColorRGB([averageColor intValue]));
+            UIImage *image = TGAverageColorAttachmentImage(UIColorRGB([averageColor intValue]), !isFlat);
             return image;
         }
         
-        static UIImage *placeholder = nil;
+        static UIImage *normalPlaceholder = nil;
+        static UIImage *flatPlaceholder = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            placeholder = TGAverageColorAttachmentImage([UIColor whiteColor]);
+            normalPlaceholder = TGAverageColorAttachmentImage([UIColor whiteColor], true);
+            flatPlaceholder = TGAverageColorAttachmentImage([UIColor whiteColor], false);
         });
         
-        return placeholder;
+        return isFlat ? flatPlaceholder : normalPlaceholder;
     }
     
     return nil;
 }
 
-- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait
+- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait acceptPartialData:(bool)__unused acceptPartialData asyncTaskId:(__autoreleasing id *)__unused asyncTaskId progress:(void (^)(float))__unused progress partialCompletion:(void (^)(TGDataResource *))__unused partialCompletion completion:(void (^)(TGDataResource *))__unused completion
 {
     if (uri == nil)
         return nil;
@@ -278,7 +300,7 @@ static ASQueue *taskManagementQueue()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        filesDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"files"];
+        filesDirectory = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"files"];
     });
     
     NSString *fileDirectoryName = nil;
@@ -324,14 +346,29 @@ static ASQueue *taskManagementQueue()
                 }
             }
             
-            lowQualityThumbnail = true;
+            if (image == nil)
+            {
+                NSString *imageUrl = args[@"legacy-thumbnail-cache-url"];
+                if (imageUrl.length != 0)
+                {
+                    if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
+                    {
+                        NSData *imageData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+                        if (imageData != nil)
+                            image = [[UIImage alloc] initWithData:imageData];
+                    }
+                }
+            }
+            
+            if (image != nil)
+                lowQualityThumbnail = true;
         }
         
         if (image != nil)
         {
             const float cacheFactor = 0.85f;
-            CGSize cachedImageSize = CGSizeMake(ceilf(size.width * cacheFactor), ceilf(size.height * cacheFactor));
-            CGSize cachedRenderSize = CGSizeMake(ceilf(renderSize.width * cacheFactor), ceilf(renderSize.height * cacheFactor));
+            CGSize cachedImageSize = CGSizeMake(CGCeil(size.width * cacheFactor), CGCeil(size.height * cacheFactor));
+            CGSize cachedRenderSize = CGSizeMake(CGCeil(renderSize.width * cacheFactor), CGCeil(renderSize.height * cacheFactor));
             UIGraphicsBeginImageContextWithOptions(cachedImageSize, true, 2.0f);
             
             CGRect imageRect = CGRectMake((cachedImageSize.width - cachedRenderSize.width) / 2.0f, (cachedImageSize.height - cachedRenderSize.height) / 2.0f, cachedRenderSize.width, cachedRenderSize.height);
@@ -358,6 +395,8 @@ static ASQueue *taskManagementQueue()
         UIGraphicsEndImageContext();
     }
     
+    bool isFlat = [args[@"flat"] boolValue];
+    
     if (thumbnailSourceImage != nil)
     {
         UIImage *thumbnailImage = nil;
@@ -367,9 +406,9 @@ static ASQueue *taskManagementQueue()
         uint32_t averageColorValue = [averageColor intValue];
         
         if (lowQualityThumbnail)
-            thumbnailImage = TGBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+            thumbnailImage = TGBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, !isFlat);
         else
-            thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+            thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, !isFlat);
         
         if (thumbnailImage != nil)
         {
@@ -387,7 +426,7 @@ static ASQueue *taskManagementQueue()
                 
                 if (!alreadyCached || (cachedLowQualityThumbnail && !lowQualityThumbnail))
                 {
-                    UIImage *cachedImage = TGReducedAttachmentImage(thumbnailImage, size);
+                    UIImage *cachedImage = TGReducedAttachmentImage(thumbnailImage, size, !isFlat);
                     [cachedImage setAttachmentsFromDictionary:imageAttachments];
                     
                     if (cachedImage != nil)

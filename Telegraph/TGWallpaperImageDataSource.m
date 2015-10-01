@@ -25,7 +25,7 @@
     return [uri hasPrefix:@"builtin-wallpaper://"];
 }
 
-- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait
+- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait acceptPartialData:(bool)__unused acceptPartialData asyncTaskId:(__autoreleasing id *)__unused asyncTaskId progress:(void (^)(float))__unused progress partialCompletion:(void (^)(TGDataResource *))__unused partialCompletion completion:(void (^)(TGDataResource *))__unused completion
 {
     if (![uri hasPrefix:@"builtin-wallpaper://?"])
         return nil;
@@ -47,7 +47,7 @@
     return [[TGDataResource alloc] initWithData:data];
 }
 
-- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float progress))progress completion:(void (^)(TGDataResource *resource))completion
+- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float progress))progress partialCompletion:(void (^)(TGDataResource *resource))__unused partialCompletion completion:(void (^)(TGDataResource *resource))completion
 {
     if ([uri hasPrefix:@"builtin-wallpaper://?"])
     {

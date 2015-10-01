@@ -89,12 +89,11 @@
     return self;
 }
 
-- (void)adjustLayoutForOrientation:(UIInterfaceOrientation)orientation contentInsets:(UIEdgeInsets)contentInsets duration:(NSTimeInterval)duration curve:(int)curve
+- (void)adjustLayoutForSize:(CGSize)size contentInsets:(UIEdgeInsets)contentInsets duration:(NSTimeInterval)duration curve:(int)curve
 {
-    [super adjustLayoutForOrientation:orientation contentInsets:contentInsets duration:duration curve:curve];
+    [super adjustLayoutForSize:size contentInsets:contentInsets duration:duration curve:curve];
     
-    id<TGModernConversationEmptyListPlaceholderViewDelegate> delegate = self.delegate;
-    CGSize messageAreaSize = [delegate messageAreaSizeForInterfaceOrientation:orientation];
+    CGSize messageAreaSize = size;
     
     CGRect frame = CGRectMake(CGFloor((messageAreaSize.width - self.frame.size.width) / 2.0f), contentInsets.top + CGFloor((messageAreaSize.height - self.frame.size.height - contentInsets.top - contentInsets.bottom) / 2.0f), self.frame.size.width, self.frame.size.height);;
     CGFloat alpha = messageAreaSize.height - contentInsets.top - contentInsets.bottom < 110 ? 0.0f : 1.0f;

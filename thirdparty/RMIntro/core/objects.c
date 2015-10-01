@@ -18,8 +18,12 @@
 
 #include "platform_log.h"
 #include <math.h>
+#include <stdlib.h>
 #include "animations.h"
 
+float scale_factor;
+int width, height;
+int y_offset_absolute;
 
 static TextureProgram texture_program;
 static TextureProgram texture_program_one;
@@ -39,7 +43,9 @@ static float y_offset;
 
 void set_y_offset_objects(float a)
 {
-    y_offset=a;
+    y_offset = a;
+
+
     
 }
 
@@ -64,7 +70,7 @@ void setup_shaders()
     "   gl_FragColor.w*=u_Alpha;"
     "}";
     
-    color_program = get_color_program(build_program(vshader, strlen(vshader), fshader, strlen(fshader)));
+    color_program = get_color_program(build_program(vshader, (GLint)strlen(vshader), fshader, (GLint)strlen(fshader)));
     
     
     char *vertex_gradient_shader =
@@ -87,7 +93,7 @@ void setup_shaders()
     //"   gl_FragColor = vec4(0,1,0,1);"
     "}";
     
-    gradient_program = get_gradient_program(build_program(vertex_gradient_shader, strlen(vertex_gradient_shader), fragment_gradient_shader, strlen(fragment_gradient_shader)));
+    gradient_program = get_gradient_program(build_program(vertex_gradient_shader, (GLint)strlen(vertex_gradient_shader), fragment_gradient_shader, (GLint)strlen(fragment_gradient_shader)));
     
     
     
@@ -111,7 +117,7 @@ void setup_shaders()
     "    gl_FragColor.w *= u_Alpha;"
     "}";
     
-    texture_program = get_texture_program(build_program(vshader_texture, strlen(vshader_texture), fshader_texture, strlen(fshader_texture)));
+    texture_program = get_texture_program(build_program(vshader_texture, (GLint)strlen(vshader_texture), fshader_texture, (GLint)strlen(fshader_texture)));
     
     
     
@@ -135,11 +141,13 @@ void setup_shaders()
     "uniform float u_Alpha;"
     "void main(){"
     "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
-    "   float p = u_Alpha*gl_FragColor.w*0.4;"
-    "   gl_FragColor = vec4(0,0.353,0.761,p);"
+    //"   float p = u_Alpha*gl_FragColor.w*0.4;"
+    //"   gl_FragColor = vec4(0,0.353,0.761,p);"
+    "   float p = u_Alpha*gl_FragColor.w;"
+    "   gl_FragColor = vec4(0,0.6,0.898,p);"
     "}";
     
-    texture_program_blue = get_texture_program(build_program(vshader_texture_blue, strlen(vshader_texture_blue), fshader_texture_blue, strlen(fshader_texture_blue)));
+    texture_program_blue = get_texture_program(build_program(vshader_texture_blue, (GLint)strlen(vshader_texture_blue), fshader_texture_blue, (GLint)strlen(fshader_texture_blue)));
     
     
     
@@ -162,11 +170,13 @@ void setup_shaders()
     "uniform float u_Alpha;"
     "void main(){"
     "   gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
-    "   float p = gl_FragColor.w*0.45*u_Alpha;"
-    "   gl_FragColor = vec4(0.722,0.035,0,p);"
+    //"   float p = gl_FragColor.w*0.45*u_Alpha;"
+    //"   gl_FragColor = vec4(0.722,0.035,0,p);"
+    "   float p = gl_FragColor.w*u_Alpha;"
+    "   gl_FragColor = vec4(210./255.,57./255.,41./255.,p);"
     "}";
     
-    texture_program_red = get_texture_program(build_program(vshader_texture_red, strlen(vshader_texture_red), fshader_texture_red, strlen(fshader_texture_red)));
+    texture_program_red = get_texture_program(build_program(vshader_texture_red, (GLint)strlen(vshader_texture_red), fshader_texture_red, (GLint)strlen(fshader_texture_red)));
     
     
     
@@ -188,11 +198,13 @@ void setup_shaders()
     "uniform float u_Alpha;"
     "void main(){"
     "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
+    //"    float p = u_Alpha*gl_FragColor.w;"
+    //"    gl_FragColor = vec4(237./255., 64./255., 27./255., p);"
     "    float p = u_Alpha*gl_FragColor.w;"
-    "    gl_FragColor = vec4(237./255., 64./255., 27./255., p);"
+    "    gl_FragColor = vec4(246./255., 73./255., 55./255., p);"
     "}";
     
-    texture_program_light_red = get_texture_program(build_program(vshader, strlen(vshader), fshader, strlen(fshader)));
+    texture_program_light_red = get_texture_program(build_program(vshader, (GLint)strlen(vshader), fshader, (GLint)strlen(fshader)));
     
     
     
@@ -214,10 +226,11 @@ void setup_shaders()
     "void main(){"
     "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
     "   float p = u_Alpha*gl_FragColor.w;"
-    "    gl_FragColor = vec4(100./255.,182./255.,248./255.,p);"
+    //"    gl_FragColor = vec4(100./255.,182./255.,248./255.,p);"
+    "    gl_FragColor = vec4(42./255.,180./255.,247./255.,p);"
     "}";
     
-    texture_program_light_blue = get_texture_program(build_program(vshader, strlen(vshader), fshader, strlen(fshader)));
+    texture_program_light_blue = get_texture_program(build_program(vshader, (GLint)strlen(vshader), fshader, (GLint)strlen(fshader)));
     
     
     
@@ -246,7 +259,7 @@ void setup_shaders()
     "    gl_FragColor *= u_Alpha;"
     "}";
     
-    texture_program_one = get_texture_program(build_program(vshader, strlen(vshader), fshader, strlen(fshader)));
+    texture_program_one = get_texture_program(build_program(vshader, (GLint)strlen(vshader), fshader, (GLint)strlen(fshader)));
 }
 
 
@@ -346,17 +359,11 @@ void mat4x4_translate_independed(mat4x4 m, float x, float y, float z)
 }
 
 
-//static int tt;
-
-
 
 
 static inline void mvp_matrix(mat4x4 model_view_projection_matrix, Params params, mat4x4 view_projection_matrix)
 {
-    //y_offset = -50;
-    
-    //tt++;
-    
+
     mat4x4 model_matrix;
     mat4x4_identity(model_matrix);
     
@@ -397,116 +404,21 @@ static inline void mvp_matrix(mat4x4 model_view_projection_matrix, Params params
     mat4x4_identity(model_matrix3);
     
     
-    
-    
-    
+
     mat4x4 mm;
     
     mat4x4_mul(mm, model_matrix3, view_projection_matrix);
-    
-    mat4x4_translate_independed(mm, 0, -y_offset/view_projection_matrix[3][3], 0);
-    
+
     mat4x4_mul(model_view_projection_matrix, mm, model_matrix);
-    
-}
 
-
-
-
-
-
-
-
-
-static inline int size_of_rounded_rectangle_in_vertices(int round_count) {
-    return 4*(2+round_count)+2;
-}
-
-static inline void gen_rounded_rectangle(CPoint* out, CSize size, float radius, int round_count)
-{
-    
-    //printf("gen_rounded_rectangle> %d \n", round_count);
-    int offset=0;
-    
-    out[offset++] = CPointMake(0, 0);
-    
-    float k = M_PI/2/(round_count+1);
-    
-    int i=0;
-    int n=0;
-    
-    
-    for (i=(round_count+2)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
-    }
-    n++;
-    
-    for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
-    }
-    n++;
-    
-    for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*radius, -size.height/2+radius + sin(i*k)*radius);
-    }
-    n++;
-    
-    for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, -size.height/2+radius + sin(i*k)*radius);
-    }
-    n++;
-    
-    out[offset++] = CPointMake(size.width/2, size.height/2-radius);
-    
-}
-
-
-Shape create_rounded_rectangle(CSize size, float radius, int round_count, vec4 color)
-{
-    int real_vertex_count = size_of_rounded_rectangle_in_vertices(round_count);
-    
-    CPoint *data = malloc(sizeof(CPoint)*real_vertex_count*2);
-    
-    Params params = default_params();
-    params.const_params.round_count=round_count;
-    
-    params.var_params.size=size;
-    params.var_params.radius=radius;
-    
-    gen_rounded_rectangle(data, params.var_params.size, params.var_params.radius, params.const_params.round_count);
-    
-    params.const_params.triangle_mode = GL_TRIANGLE_FAN;
-    return (Shape) {{color[0], color[1], color[2], color[3]},
-        data,
-        create_vbo(sizeof(data), data, GL_DYNAMIC_DRAW),
-        real_vertex_count,
-        params};
-}
-
-void change_rounded_rectangle(Shape* shape, CSize size, float radius)
-{
-    
-    if ((*shape).params.var_params.size.width != size.width || (*shape).params.var_params.size.height != size.height || (*shape).params.var_params.radius != radius )
-    {
-        //DEBUG_LOG_WRITE_D("fps","change_rounded_rectangle");
-        
-        (*shape).params.var_params.size.width = size.width;
-        (*shape).params.var_params.size.height = size.height;
-        (*shape).params.var_params.radius = radius;
-        
-        gen_rounded_rectangle((*shape).data, (*shape).params.var_params.size, (*shape).params.var_params.radius, (*shape).params.const_params.round_count);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, shape->buffer);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->num_points*sizeof(CPoint), shape->data);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
-    
+    mat4x4_translate_independed(model_view_projection_matrix, 0, -y_offset/view_projection_matrix[3][3], 0);
 }
 
 
 
 void mat4x4_log(mat4x4 M)
 {
+    /*
     printf("\n\n");
     
     int i, j;
@@ -520,10 +432,12 @@ void mat4x4_log(mat4x4 M)
     }
     
     printf("\n\n");
+    */
 }
 
 void vec4_log(vec4 M)
 {
+    /*
     printf("\n\n");
     
     int i;
@@ -535,6 +449,7 @@ void vec4_log(vec4 M)
     }
     
     printf("\n\n");
+    */
 }
 
 void draw_shape(const Shape* shape, mat4x4 view_projection_matrix)
@@ -545,23 +460,7 @@ void draw_shape(const Shape* shape, mat4x4 view_projection_matrix)
         mat4x4 model_view_projection_matrix;
         mvp_matrix(model_view_projection_matrix, shape->params, view_projection_matrix);
         
-        
-        if (shape->params.const_params.is_star==1) {
-            vec4 pos;
-            vec4 vertex = {0,0,0,1};
-            mat4x4_mul_vec4(pos, model_view_projection_matrix, vertex);
-            
-            vec4 p_NDC = {pos[0]/pos[3], pos[1]/pos[3], pos[2]/pos[3], pos[3]/pos[3]};
-            
-            vec4 p_window={p_NDC[0]*200, -p_NDC[1]*200, 0, 0};
-            
-            if (fabs(p_window[0])>155 || p_window[1]>140 || p_window[1]<-130) {
-                return;
-            }
-            //inc_stars_rendered();
-        }
-        
-        
+
         glUseProgram(color_program.program);
         
         
@@ -598,7 +497,26 @@ void draw_textured_shape(const TexturedShape* shape, mat4x4 view_projection_matr
         
         mat4x4 model_view_projection_matrix;
         mvp_matrix(model_view_projection_matrix, shape->params, view_projection_matrix);
-        
+
+        if (shape->params.const_params.is_star==1) {
+            vec4 pos;
+            vec4 vertex = {0,0,0,1};
+            mat4x4_mul_vec4(pos, model_view_projection_matrix, vertex);
+
+            vec4 p_NDC = {pos[0]/pos[3], pos[1]/pos[3], pos[2]/pos[3], pos[3]/pos[3]};
+
+            // p_window = (p_NDC + 1)/2 * viewport.{width, height} + viewport{x, y}
+            //vec4 p_window={p_NDC[0]*width, -p_NDC[1]*height, 0, 0};
+            vec4 p_window={p_NDC[0]*width, -p_NDC[1]*height, 0, 0};
+
+            int d = 160;
+            if (fabs(p_window[0])>d || p_window[1] > y_offset_absolute*2 + d || p_window[1] < y_offset_absolute*2 - d) {
+                return;
+            }
+
+        }
+
+
         if (program_type==RED) {
             texture_program_temp=&texture_program_red;
         }
@@ -649,6 +567,103 @@ void draw_textured_shape(const TexturedShape* shape, mat4x4 view_projection_matr
 
 
 
+// Rounded rectangle
+
+static inline int size_of_rounded_rectangle_in_vertices(int round_count) {
+    return 4*(2+round_count)+2;
+}
+
+static inline void gen_rounded_rectangle(CPoint* out, CSize size, float radius, int round_count)
+{
+    //printf("gen_rounded_rectangle> %d \n", round_count);
+    int offset=0;
+
+    out[offset++] = CPointMake(0, 0);
+
+    float k = M_PI/2/(round_count+1);
+
+    int i=0;
+    int n=0;
+
+
+    for (i=(round_count+2)*n; i<=round_count+1 + (round_count+1)*n; i++) {
+        out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
+    }
+    n++;
+
+    for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
+        out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
+    }
+    n++;
+
+    for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
+        out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*radius, -size.height/2+radius + sin(i*k)*radius);
+    }
+    n++;
+
+    for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
+        out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, -size.height/2+radius + sin(i*k)*radius);
+    }
+    n++;
+
+    out[offset++] = CPointMake(size.width/2, size.height/2-radius);
+}
+
+Shape create_rounded_rectangle(CSize size, float radius, int round_count, const vec4 color)
+{
+    int real_vertex_count = size_of_rounded_rectangle_in_vertices(round_count);
+
+    Params params = default_params();
+    params.const_params.datasize = sizeof(CPoint)*real_vertex_count*2;
+    params.const_params.round_count=round_count;
+    params.const_params.triangle_mode = GL_TRIANGLE_FAN;
+
+    params.var_params.size=size;
+    params.var_params.radius=radius;
+
+
+    CPoint *data = malloc(params.const_params.datasize);
+    gen_rounded_rectangle(data, params.var_params.size, params.var_params.radius, params.const_params.round_count);
+
+    /*
+    char str[150];
+    sprintf(str, "rounded_rectangle_data_size(%d) = %d", real_vertex_count, rounded_rectangle_data_size(real_vertex_count));
+    DEBUG_LOG_WRITE_D("fps>",str);
+    */
+
+    return (Shape) {{color[0], color[1], color[2], color[3]},
+        data,
+        create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW),
+        real_vertex_count,
+        params};
+
+}
+
+void change_rounded_rectangle(Shape* shape, CSize size, float radius)
+{
+
+    if ((*shape).params.var_params.size.width != size.width || (*shape).params.var_params.size.height != size.height || (*shape).params.var_params.radius != radius )
+    {
+        //DEBUG_LOG_WRITE_D("fps","change_rounded_rectangle");
+
+        (*shape).params.var_params.size.width = size.width;
+        (*shape).params.var_params.size.height = size.height;
+        (*shape).params.var_params.radius = radius;
+
+        gen_rounded_rectangle((*shape).data, (*shape).params.var_params.size, (*shape).params.var_params.radius, (*shape).params.const_params.round_count);
+
+        glBindBuffer(GL_ARRAY_BUFFER, shape->buffer);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->params.const_params.datasize, shape->data); // proved
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+}
+
+
+
+
+// Segmented square
+
 static inline int size_of_segmented_square_in_vertices() {
     return 7;
 }
@@ -677,21 +692,13 @@ static inline CPoint square_point(float angle, float radius)
     return p;
 }
 
-
-
-
-
 static inline CPoint square_texture_point(CPoint p, float side_length)
 {
     return CPointMake((-p.x/side_length*.5 +.5), -p.y/side_length*.5 +.5);
 }
 
-
 static inline void gen_segmented_square(CPoint* out, float side_length, float start_angle, float end_angle)
 {
-    
-    //CGPathRef p = [self circlePathForPoint:CGPointMake(self.bounds.size.width/2 + sin(self.endAngle)*6, self.bounds.size.height/2 - cos(self.endAngle)*6) radius:self.bounds.size.height/2 startAngle:self.startAngle endAngle:self.endAngle];
-    
     CPoint p;
     
     float radius = side_length;
@@ -702,7 +709,7 @@ static inline void gen_segmented_square(CPoint* out, float side_length, float st
     
     float da=D2R(-2.6*2)*k;
     
-    //0
+
     p = CPointMake(sin(start_angle+end_angle)*6*k, - cos(start_angle+end_angle)*6*k);
     //p = CPointMake(0, 0);
     
@@ -722,7 +729,7 @@ static inline void gen_segmented_square(CPoint* out, float side_length, float st
     
     
     int i;
-    for (i=start_angle; i<floor(R2D(start_angle+end_angle)); i++) {
+    for (i=start_angle; i<floor(R2D(start_angle+end_angle+da)); i++) {
         if ((i+45)%90==0) {
             p = square_point(D2R(i), radius);
             out[offset++] = p;
@@ -730,19 +737,15 @@ static inline void gen_segmented_square(CPoint* out, float side_length, float st
             q++;
         }
     }
-    
-    
-    
-    //float da=D2R(-2.6)*k;
-    
-    
+
+
     p = square_point(start_angle + end_angle+da, radius);
     //p.x = p.x + sin(end_angle)*6*k;
     //p.y = p.y - cos(end_angle)*6*k;
     out[offset++] = p;
     out[offset++] = square_texture_point(p, side_length);
     
-    
+
     for (i=0; i<4-q; i++) {
         p = square_point(start_angle +end_angle+da, radius);
         //p.x = p.x + sin(end_angle)*6*k;
@@ -750,58 +753,53 @@ static inline void gen_segmented_square(CPoint* out, float side_length, float st
         out[offset++] = p;
         out[offset++] = square_texture_point(p, side_length);
     }
-    
+
 }
-
-
 
 TexturedShape create_segmented_square(float side_length, float start_angle, float end_angle, GLuint texture)
 {
     int real_vertex_count = size_of_segmented_square_in_vertices();
-    
-    CPoint data[real_vertex_count * 2 * 2];
-    
-    gen_segmented_square(data, side_length, start_angle, end_angle);
-    
-    
+
     Params params = default_params();
-    
-    
+    params.const_params.datasize = sizeof(CPoint) * real_vertex_count * 2 * 2;
     params.const_params.triangle_mode = GL_TRIANGLE_FAN;
+
+    CPoint *data = malloc(params.const_params.datasize);
+    gen_segmented_square(data, side_length, start_angle, end_angle);
+
     return (TexturedShape) {texture,
         data,
-        create_vbo(sizeof(data), data, GL_DYNAMIC_DRAW),
+        create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW),
         real_vertex_count,
         params};
 }
 
 void change_segmented_square(TexturedShape* shape, float side_length, float start_angle, float end_angle)
 {
-    
-    if ((*shape).params.var_params.side_length != side_length
-        || (*shape).params.var_params.start_angle != start_angle
-        || (*shape).params.var_params.end_angle != end_angle )
+    if ((*shape).params.var_params.side_length != side_length ||
+        (*shape).params.var_params.start_angle != start_angle ||
+        (*shape).params.var_params.end_angle != end_angle )
     {
-        
         //DEBUG_LOG_WRITE_D("fps","change_segmented_square");
         
         (*shape).params.var_params.side_length = side_length;
         (*shape).params.var_params.start_angle = start_angle;
         (*shape).params.var_params.end_angle = end_angle;
-        
-        
-        
+
         gen_segmented_square((*shape).data, side_length, start_angle, end_angle);
         
         glBindBuffer(GL_ARRAY_BUFFER, shape->buffer);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->num_points*sizeof(CPoint)*2, shape->data);
-        //glBufferData(GL_ARRAY_BUFFER, textured_shape->num_points*sizeof(CPoint)*2, textured_shape->data, GL_DYNAMIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->params.const_params.datasize, shape->data); // proved
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-    
 }
 
 
+
+
+
+// ok
+// Rectangle
 
 static inline void gen_rectangle(CPoint* out, CSize size)
 {
@@ -814,27 +812,30 @@ static inline void gen_rectangle(CPoint* out, CSize size)
     
 }
 
-
-Shape create_rectangle(CSize size, vec4 color)
+Shape create_rectangle(CSize size, const vec4 color)
 {
     int real_vertex_count = 4;
     
-    CPoint *data = malloc(sizeof(CPoint)*real_vertex_count);
-    //CPoint data[real_vertex_count];
-    
+    Params params = default_params();
+    params.const_params.datasize = sizeof(CPoint)*real_vertex_count;
+    params.const_params.triangle_mode = GL_TRIANGLE_STRIP;
+
+    CPoint *data = malloc(params.const_params.datasize);
     gen_rectangle(data, size);
-    
-    Params params=default_params();
-    params.const_params.triangle_mode=GL_TRIANGLE_STRIP;
     
     return (Shape) {{color[0], color[1], color[2], color[3]},
         data,
-        create_vbo(sizeof(data), data, GL_DYNAMIC_DRAW),
+        create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW),
         real_vertex_count,
         params};
 }
 
 
+
+
+
+// ok
+// Textured rectangle
 
 static inline CPoint rectangle_texture_point(CPoint p, CSize size)
 {
@@ -844,124 +845,91 @@ static inline CPoint rectangle_texture_point(CPoint p, CSize size)
 static inline void gen_textured_rectangle(CPoint* out, CSize size)
 {
     int offset=0;
-    
+
     out[offset++] = CPointMake(-size.width/2, -size.height/2);
     out[offset++] = rectangle_texture_point(CPointMake(-size.width/2, -size.height/2), size);
-    
+
     out[offset++] = CPointMake(size.width/2, -size.height/2);
     out[offset++] = rectangle_texture_point(CPointMake(size.width/2, -size.height/2), size);
-    
+
     out[offset++] = CPointMake(-size.width/2, size.height/2);
     out[offset++] = rectangle_texture_point(CPointMake(-size.width/2, size.height/2), size);
-    
+
     out[offset++] = CPointMake(size.width/2, size.height/2);
     out[offset++] = rectangle_texture_point(CPointMake(size.width/2, size.height/2), size);
-    
-}
-
-
-void change_textured_rectangle(TexturedShape* shape, CSize size)
-{
-    //DEBUG_LOG_WRITE_D("fps","change_textured_rectangle");
-    
-    gen_textured_rectangle((*shape).data, size);
-    
-    glBindBuffer(GL_ARRAY_BUFFER, shape->buffer);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, shape->num_points*sizeof(CPoint)*2, shape->data);
-    //glBufferData(GL_ARRAY_BUFFER, shape->num_points*sizeof(CPoint)*2, shape->data, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    
 }
 
 TexturedShape create_textured_rectangle(CSize size, GLuint texture)
 {
     int real_vertex_count = 4;
     
-    CPoint data[real_vertex_count*2*2];
-    
-    gen_textured_rectangle(data, size);
-    
-    Params params=default_params();
-    
-    
+    Params params = default_params();
+    params.const_params.datasize = sizeof(CPoint) * real_vertex_count * 2;
     params.const_params.triangle_mode = GL_TRIANGLE_STRIP;
+
+    CPoint *data = malloc(params.const_params.datasize);
+    gen_textured_rectangle(data, size);
+
     return (TexturedShape) {texture,
-        &data,
-        create_vbo(sizeof(data), data, GL_STATIC_DRAW),
+        data,
+        create_vbo(params.const_params.datasize, data, GL_STATIC_DRAW),
         real_vertex_count,
         params};
 }
 
-
-
-GradientQuad create_gradient_quad(vec4 top_color, vec4 bottom_color)
+void change_textured_rectangle(TexturedShape* shape, CSize size)
 {
-    
-    float data[] = {
-        -160, -160, top_color[0], top_color[1], top_color[2], top_color[3],
-        160, -160, top_color[0], top_color[1], top_color[2], top_color[3],
-        -160, 160, bottom_color[0], bottom_color[1], bottom_color[2], bottom_color[3],
-        160, 160, bottom_color[0], bottom_color[1], bottom_color[2], bottom_color[3],
-    };
-    
-    int real_vertex_count = sizeof(data)/(sizeof(float)*6);
-    
-    Params params=default_params();
-    
-    params.const_params.triangle_mode=GL_TRIANGLE_STRIP;
-    return (GradientQuad) {
-        create_vbo(sizeof(data), data, GL_STATIC_DRAW),
-        real_vertex_count,
-        params};
-}
+    //DEBUG_LOG_WRITE_D("fps","change_textured_rectangle");
 
+    gen_textured_rectangle((*shape).data, size);
 
-void draw_gradient_quad(const GradientQuad* shape, mat4x4 view_projection_matrix)
-{
-    if (shape->params.alpha>0 && (fabs(shape->params.scale.x)>0 && fabs(shape->params.scale.y)>0 && fabs(shape->params.scale.z)>0))
-    {
-        
-        mat4x4 model_view_projection_matrix;
-        mvp_matrix(model_view_projection_matrix, shape->params, view_projection_matrix);
-        
-        glUseProgram(gradient_program.program);
-        
-        glUniformMatrix4fv(gradient_program.u_mvp_matrix_location, 1, GL_FALSE, (GLfloat*)model_view_projection_matrix);
-        glUniform1f(gradient_program.u_alpha_loaction, shape->params.alpha);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, shape->buffer);
-        // glVertexAttribPointer (GLuint indx, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* ptr)
-        glVertexAttribPointer(gradient_program.a_position_location, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), BUFFER_OFFSET(0));
-        glVertexAttribPointer(gradient_program.a_color_location, 4, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), BUFFER_OFFSET(2 * sizeof(GL_FLOAT)));
-        glEnableVertexAttribArray(gradient_program.a_position_location);
-        glEnableVertexAttribArray(gradient_program.a_color_location);
-        glDrawArrays(shape->params.const_params.triangle_mode, 0, shape->num_points);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        
-    }
+    glBindBuffer(GL_ARRAY_BUFFER, shape->buffer);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, shape->params.const_params.datasize, shape->data); // proved
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 
 
+
+
+// ok
+// Ribbon
 
 static inline void gen_ribbon(CPoint* out, float length)
 {
     int offset=0;
-    
+
     out[offset++] = CPointMake(-MAXf(length-5.5, 0), -5.5);
     out[offset++] = CPointMake(0, -5.5);
     out[offset++] = CPointMake(-MAXf(length, 0), 5.5);
     out[offset++] = CPointMake(0, 5.5);
-    
+
 }
 
+Shape create_ribbon(float length, const vec4 color)
+{
+    int real_vertex_count = 4;
+
+    Params params=default_params();
+    params.const_params.datasize = sizeof(CPoint)*real_vertex_count;
+    params.const_params.triangle_mode = GL_TRIANGLE_STRIP;
+
+    params.var_params.side_length=length;
+
+    CPoint *data = malloc(params.const_params.datasize);
+    gen_ribbon(data, length);
+
+    return (Shape) {{color[0], color[1], color[2], color[3]},
+        data,
+        create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW),
+        real_vertex_count,
+        params};
+}
 
 void change_ribbon(Shape* shape, float length)
 {
     if ((*shape).params.var_params.side_length != length)
     {
-        
         //DEBUG_LOG_WRITE_D("fps","change_segmented_square");
         
         (*shape).params.var_params.side_length = length;
@@ -969,36 +937,17 @@ void change_ribbon(Shape* shape, float length)
         gen_ribbon((*shape).data, length);
         
         glBindBuffer(GL_ARRAY_BUFFER, shape->buffer);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->num_points*sizeof(CPoint), shape->data);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->params.const_params.datasize, shape->data); // proved
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 }
 
-Shape create_ribbon(float length, vec4 color)
-{
-    
-    int real_vertex_count = 4;
-    
-    CPoint *data = malloc(sizeof(CPoint)*real_vertex_count);
-    
-    gen_ribbon(data, length);
-    
-    
-    Params params=default_params();
-    params.var_params.side_length=length;
-    
-    params.const_params.triangle_mode = GL_TRIANGLE_STRIP;
-    return (Shape) {{color[0], color[1], color[2], color[3]},
-        data,
-        create_vbo(sizeof(data), data, GL_DYNAMIC_DRAW),
-        real_vertex_count,
-        params};
-}
 
 
 
 
-
+// ok
+// Segmented circle
 
 static inline int size_of_segmented_circle_in_vertices(int num_points) {
     return 1 + (num_points + 1);
@@ -1013,57 +962,45 @@ static inline void gen_segmented_circle(CPoint* out, float radius, float start_a
     int i;
     for (i = 0; i <= vertex_count; i++) {
         out[offset++] = CPointMake(radius*cos(start_angle+(i/(float)vertex_count)*angle), radius*sin(start_angle+(i/(float)vertex_count)*angle));
-        //out[offset++] = CPointMake(10,10);
-        
-        int o=offset-1;
-        //printf("seg>%f %f\n", out[o].x, out[o].y);
+        //int o=offset-1;
     }
-    
 }
 
-
-
-
-Shape create_segmented_circle(float radius, int vertex_count, float start_angle, float angle, vec4 color)
+Shape create_segmented_circle(float radius, int vertex_count, float start_angle, float angle, const vec4 color)
 {
     int real_vertex_count = size_of_segmented_circle_in_vertices(vertex_count);
     
-    //CPoint data[real_vertex_count];
-    CPoint *data = malloc(sizeof(CPoint)*real_vertex_count);
-    
-    gen_segmented_circle(data, radius, start_angle, angle, vertex_count);
-    
     Params params=default_params();
+    params.const_params.datasize = sizeof(CPoint)*real_vertex_count;
     params.const_params.triangle_mode=GL_TRIANGLE_FAN;
-    
     params.const_params.round_count=vertex_count;
-    
+
+    CPoint *data = malloc(params.const_params.datasize);
+    gen_segmented_circle(data, radius, start_angle, angle, vertex_count);
+
     return (Shape) {{color[0], color[1], color[2], color[3]},
         data,
-        create_vbo(sizeof(data), data, GL_DYNAMIC_DRAW),
+        create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW),
         real_vertex_count,
         params};
 }
 
 void change_segmented_circle(Shape* shape, float radius, float start_angle, float angle)
 {
-    if ((*shape).params.var_params.radius != radius
-        || (*shape).params.var_params.start_angle != start_angle
-        || (*shape).params.var_params.angle != angle )
+    if ((*shape).params.var_params.radius != radius ||
+        (*shape).params.var_params.start_angle != start_angle ||
+        (*shape).params.var_params.angle != angle )
     {
-        
         //DEBUG_LOG_WRITE_D("fps","change_segmented_square");
         
         (*shape).params.var_params.radius = radius;
         (*shape).params.var_params.start_angle = start_angle;
         (*shape).params.var_params.angle = angle;
-        
-        
-        
+
         gen_segmented_circle((*shape).data, radius, start_angle, angle, (*shape).params.const_params.round_count);
         
         glBindBuffer(GL_ARRAY_BUFFER, shape->buffer);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->num_points*sizeof(CPoint), shape->data);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->params.const_params.datasize, shape->data); // proved
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 }
@@ -1071,7 +1008,8 @@ void change_segmented_circle(Shape* shape, float radius, float start_angle, floa
 
 
 
-
+// ok
+// Circle
 
 static inline int size_of_circle_in_vertices(int num_points) {
     return 1 + (num_points + 1);
@@ -1090,26 +1028,21 @@ static inline void gen_circle(CPoint* out, float radius, int vertex_count)
     
 }
 
-
-
-
-Shape create_circle(float radius, int vertex_count, vec4 color)
+Shape create_circle(float radius, int vertex_count, const vec4 color)
 {
     int real_vertex_count = size_of_segmented_circle_in_vertices(vertex_count);
     
-    //CPoint data[real_vertex_count];
-    CPoint *data = malloc(sizeof(CPoint)*real_vertex_count);
-    
-    gen_circle(data, radius, vertex_count);
-    
     Params params=default_params();
+    params.const_params.datasize = sizeof(CPoint)*real_vertex_count;
     params.const_params.triangle_mode=GL_TRIANGLE_FAN;
-    
     params.const_params.round_count=vertex_count;
+
+    CPoint *data = malloc(params.const_params.datasize);
+    gen_circle(data, radius, vertex_count);
     
     return (Shape) {{color[0], color[1], color[2], color[3]},
         data,
-        create_vbo(sizeof(data), data, GL_STATIC_DRAW),
+        create_vbo(params.const_params.datasize, data, GL_STATIC_DRAW),
         real_vertex_count,
         params};
 }
@@ -1118,7 +1051,6 @@ void change_circle(Shape* shape, float radius)
 {
     if ((*shape).params.var_params.radius != radius)
     {
-        
         //DEBUG_LOG_WRITE_D("fps","change_segmented_square");
         
         (*shape).params.var_params.radius = radius;
@@ -1126,16 +1058,19 @@ void change_circle(Shape* shape, float radius)
         gen_circle((*shape).data, radius, (*shape).params.const_params.round_count);
         
         glBindBuffer(GL_ARRAY_BUFFER, shape->buffer);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->num_points*sizeof(CPoint), shape->data);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->params.const_params.datasize, shape->data); // proved
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 }
 
 
 
+
+// ok
+// Infinity
+
 int size_of_infinity_in_vertices(int segment_count)
 {
-    //printf("size_of_infinity_in_vertices>%d", (segment_count+1)*2);
     return (segment_count+1)*2;
 }
 
@@ -1215,73 +1150,54 @@ static inline void gen_infinity(CPoint* out, float width, float angle, int segme
         
         out[offset] = CPointMake(v[0], v[1]);
         offset++;
-        
-        
-        
     }
-    
-    
     //printf("infinity_q>%d", offset);
-    
+}
+
+Shape create_infinity(float width, float angle, int segment_count, const vec4 color)
+{
+    int real_vertex_count = size_of_infinity_in_vertices(segment_count);
+
+    Params params=default_params();
+
+    params.const_params.datasize = sizeof(CPoint)*real_vertex_count;
+    params.const_params.triangle_mode=GL_TRIANGLE_STRIP;
+    params.const_params.round_count=segment_count;
+
+    params.var_params.width = width;
+    params.var_params.angle = angle;
+
+
+    CPoint *data = malloc(params.const_params.datasize);
+    gen_infinity(data, width, angle, segment_count);
+
+    return (Shape) {{color[0], color[1], color[2], color[3]},
+        data,
+        create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW),
+        real_vertex_count,
+        params};
 }
 
 void change_infinity(Shape* shape, float angle)
 {
     if ( (*shape).params.var_params.angle != angle )
     {
-        
         (*shape).params.var_params.angle = angle;
-        
+
         gen_infinity(shape->data, (*shape).params.var_params.width, (*shape).params.var_params.angle, (*shape).params.const_params.round_count);
-        
+
         glBindBuffer(GL_ARRAY_BUFFER, shape->buffer);
-        
-        glBufferData(GL_ARRAY_BUFFER, shape->num_points*sizeof(CPoint), shape->data, GL_DYNAMIC_DRAW);
-        
+
+        glBufferData(GL_ARRAY_BUFFER, shape->params.const_params.datasize, shape->data, GL_DYNAMIC_DRAW); // proved
+
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        
     }
 }
 
-Shape create_infinity(float width, float angle, int segment_count, vec4 color)
-{
-    int real_vertex_count = size_of_infinity_in_vertices(segment_count);
-    
-    CPoint *data = malloc(sizeof(CPoint)*real_vertex_count);
-    
-    gen_infinity(data, width, angle, segment_count);
-    
-    Params params=default_params();
-    params.const_params.triangle_mode=GL_TRIANGLE_STRIP;
-    
-    params.const_params.round_count=segment_count;
-    
-    
-    
-    params.var_params.width = width;
-    params.var_params.angle = angle;
-    
-    
-    
-    return (Shape) {{color[0], color[1], color[2], color[3]},
-        data,
-        create_vbo(sizeof(data), data, GL_DYNAMIC_DRAW),
-        real_vertex_count,
-        params};
-    
-    
-}
-
-
-
-
-
 void draw_infinity(const Shape* shape, mat4x4 view_projection_matrix)
 {
-    
     if (shape->params.alpha>0 && (fabs(shape->params.scale.x)>0 && fabs(shape->params.scale.y)>0 && fabs(shape->params.scale.z)>0))
     {
-        
         mat4x4 model_view_projection_matrix;
         mvp_matrix(model_view_projection_matrix, shape->params, view_projection_matrix);
         
@@ -1294,123 +1210,85 @@ void draw_infinity(const Shape* shape, mat4x4 view_projection_matrix)
         glVertexAttribPointer(color_program.a_position_location, 2, GL_FLOAT, GL_FALSE, sizeof(CPoint), &shape->data[0].x);
         glEnableVertexAttribArray(color_program.a_position_location);
         glDrawArrays(shape->params.const_params.triangle_mode, 0, shape->num_points);
-        
     }
-    
 }
 
 
 
 
 
-
-
+// ok
+// Rounded rectangle stroked
 
 static inline int size_of_rounded_rectangle_stroked_in_vertices(int round_count) {
-    //return 4*(2+round_count)+2;
-    
-    //printf("size_of_rounded_rectangle_stroked_in_vertices>%d\n", (2+round_count)*2);
     return 4*(2+round_count)*2+2;
 }
 
 static inline void gen_rounded_rectangle_stroked(CPoint* out, CSize size, float radius, float stroke_width, int round_count)
 {
-    
-    //printf("gen_rounded_rectangle> %d \n", round_count);
     int offset=0;
-    
-    //out[offset++] = CPointMake(0, 0);
-    
+
     float k = M_PI/2/(round_count+1);
     float inner_radius = radius - stroke_width;
     
     int i=0;
+
     int n=0;
-    
-    
-    int r;
-    
     for (i=(round_count+2)*n; i<=round_count+1 + (round_count+1)*n; i++) {
         out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
-        
-        //r++;
         out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*inner_radius, size.height/2-radius + sin(i*k)*inner_radius);
-        //r++;
-        //out[offset++] = CPointMake(0, 0);
-        //out[offset++] = CPointMake(size.width/2-inner_radius + cos(i*k)*inner_radius, size.height/2-inner_radius + sin(i*k)*inner_radius);
     }
-    
-    
-    //printf("n>%d\n", r);
     n++;
-    
+
     for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
         out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
-        
-        //out[offset++] = CPointMake(0, 0);
         out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*inner_radius, size.height/2-radius + sin(i*k)*inner_radius);
     }
     n++;
     
     for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
         out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*radius, -size.height/2+radius + sin(i*k)*radius);
-        
-        //out[offset++] = CPointMake(0, 0);
         out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*inner_radius, -size.height/2+radius + sin(i*k)*inner_radius);
     }
     n++;
     
     for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
         out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, -size.height/2+radius + sin(i*k)*radius);
-        
-        //out[offset++] = CPointMake(0, 0);
         out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*inner_radius, -size.height/2+radius + sin(i*k)*inner_radius);
     }
     n++;
     
     i=0;
     out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
-    
     out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*inner_radius, size.height/2-radius + sin(i*k)*inner_radius);
-    
-    
-    
-    //out[offset++] = CPointMake(size.width/2, size.height/2-radius);
-    
 }
 
-
-Shape create_rounded_rectangle_stroked(CSize size, float radius, float stroke_width, int round_count, vec4 color)
+Shape create_rounded_rectangle_stroked(CSize size, float radius, float stroke_width, int round_count, const vec4 color)
 {
-    //round_count==10 выпадают полигоны
+    // round_count == 10 : polygons fall out
     int real_vertex_count = size_of_rounded_rectangle_stroked_in_vertices(round_count);
-    
-    CPoint *data = malloc(sizeof(CPoint)*real_vertex_count*2);
-    //CPoint data[real_vertex_count * 2];
-    
+
     Params params = default_params();
     params.const_params.round_count=round_count;
+    params.const_params.datasize = sizeof(CPoint)*real_vertex_count*2;
     
     params.var_params.size=size;
     params.var_params.radius=radius;
     params.var_params.width=stroke_width;
-    
-    //gen_rounded_rectangle(data, size, radius, round_count);
+
+    CPoint *data = malloc(params.const_params.datasize);
     gen_rounded_rectangle_stroked(data, params.var_params.size, params.var_params.radius, params.var_params.width, params.const_params.round_count);
-    
-    //gen_rounded_rectangle_stroked(data, params.var_params.size, params.var_params.radius, params.var_params.width, params.const_params.round_count);
-    
+
     params.const_params.triangle_mode = GL_TRIANGLE_STRIP;
     return (Shape) {{color[0], color[1], color[2], color[3]},
         data,
-        create_vbo(sizeof(data), data, GL_DYNAMIC_DRAW),
+        create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW),
         real_vertex_count,
         params};
 }
 
 void change_rounded_rectangle_stroked(Shape* shape, CSize size, float radius, float stroke_width)
 {
-    
     if ((*shape).params.var_params.size.width != size.width || (*shape).params.var_params.size.height != size.height || (*shape).params.var_params.radius != radius )
     {
         //DEBUG_LOG_WRITE_D("fps","change_rounded_rectangle");
@@ -1420,11 +1298,9 @@ void change_rounded_rectangle_stroked(Shape* shape, CSize size, float radius, fl
         (*shape).params.var_params.radius = radius;
         
         gen_rounded_rectangle_stroked((*shape).data, (*shape).params.var_params.size, (*shape).params.var_params.radius, (*shape).params.var_params.width, (*shape).params.const_params.round_count);
-        //gen_rounded_rectangle(shape->data, (*shape).params.var_params.size, (*shape).params.var_params.radius*0+21, (*shape).params.const_params.round_count);
-        
+
         glBindBuffer(GL_ARRAY_BUFFER, shape->buffer);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->num_points*sizeof(CPoint), shape->data);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, shape->params.const_params.datasize, shape->data); //
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-    
 }

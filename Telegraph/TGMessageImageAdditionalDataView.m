@@ -35,7 +35,7 @@ static const float luminanceThreshold = 0.8f;
     return self;
 }
 
-- (void)setBackdropArea:(TGStaticBackdropAreaData *)backdropArea transitionDuration:(NSTimeInterval)transitionDuration
+- (void)setBackdropArea:(TGStaticBackdropAreaData *)backdropArea transitionDuration:(NSTimeInterval)__unused transitionDuration
 {
     if (_backdropArea != backdropArea)
     {
@@ -71,7 +71,8 @@ static const float luminanceThreshold = 0.8f;
     if (!_textSizeInitialized)
     {
         _textSizeInitialized = true;
-        _textSize = [_text sizeWithFont:[self textFont]];
+        CGSize textSize = [_text sizeWithFont:[self textFont]];
+        _textSize = CGSizeMake(CGCeil(textSize.width), CGCeil(textSize.height));
     }
     
     return _textSize;
@@ -84,7 +85,7 @@ static const float luminanceThreshold = 0.8f;
     
     CGContextRef context = UIGraphicsGetCurrentContext();
     
-    CGFloat contentWidth = [self textSize].width + 11.0f;
+    CGFloat contentWidth = MIN([self textSize].width + 11.0f, self.frame.size.width);
     
     CGRect backgroundRect = CGRectMake(0.0f, 0.0f, contentWidth, 18.0f);
     
@@ -118,7 +119,7 @@ static const float luminanceThreshold = 0.8f;
 
     UIColor *textColor = luminance > luminanceThreshold ? UIColorRGBA(0x525252, 0.6f) : [UIColor whiteColor];
     CGContextSetFillColorWithColor(context, textColor.CGColor);
-    [_text drawAtPoint:CGPointMake(6.0f, 2.5f) withFont:[self textFont]];
+    [_text drawInRect:CGRectMake(6.0f, 2.5f, contentWidth - 11.0f, [self textSize].height) withFont:[self textFont] lineBreakMode:NSLineBreakByTruncatingTail];
 }
 
 @end

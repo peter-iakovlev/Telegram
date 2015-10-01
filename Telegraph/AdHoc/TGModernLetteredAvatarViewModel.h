@@ -14,5 +14,6 @@
 
 - (void)setAvatarUri:(NSString *)avatarUri;
 - (void)setAvatarFirstName:(NSString *)firstName lastName:(NSString *)lastName uid:(int32_t)uid;
+- (void)setAvatarTitle:(NSString *)title groupId:(int64_t)groupId;
 
 @end

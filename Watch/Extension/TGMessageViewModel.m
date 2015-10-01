@@ -1,0 +1,429 @@
+#import "TGMessageViewModel.h"
+
+#import "TGStringUtils.h"
+#import "TGGeometry.h"
+
+#import "WKInterfaceImage+Signals.h"
+#import "WKInterfaceGroup+Signals.h"
+
+#import "TGBridgeUser.h"
+#import "TGBridgeMessage.h"
+#import "TGBridgeUserCache.h"
+
+#import "TGBridgeContext.h"
+
+#import "TGBridgeMediaSignals.h"
+
+@implementation TGMessageViewModel
+
++ (void)imageBubbleSizeForImageSize:(CGSize)imageSize minSize:(CGSize)minSize maxSize:(CGSize)maxSize thumbnailSize:(out CGSize *)thumbnailSize renderSize:(out CGSize *)renderSize
+{
+    CGSize imageTargetMaxSize = maxSize;
+    CGSize imageScalingMaxSize = CGSizeMake(imageTargetMaxSize.width - 18.0f, imageTargetMaxSize.height - 18.0f);
+    CGSize imageTargetMinSize = minSize;
+    
+    CGFloat imageAspect = 1.0f;
+    if (imageSize.width > 1.0f - FLT_EPSILON && imageSize.height > 1.0f - FLT_EPSILON)
+        imageAspect = imageSize.width / imageSize.height;
+    
+    if (imageSize.width < imageScalingMaxSize.width || imageSize.height < imageScalingMaxSize.height)
+    {
+        if (imageSize.width <= FLT_EPSILON || imageSize.height <= FLT_EPSILON)
+            imageSize = imageTargetMinSize;
+    }
+    else
+    {
+        if (imageSize.width > imageTargetMaxSize.width)
+        {
+            imageSize.width = imageTargetMaxSize.width;
+            imageSize.height = floorf(imageTargetMaxSize.width / imageAspect);
+        }
+        
+        if (imageSize.height > imageTargetMaxSize.height)
+        {
+            imageSize.width = floorf(imageTargetMaxSize.height * imageAspect);
+            imageSize.height = imageTargetMaxSize.height;
+        }
+    }
+    
+    if (renderSize != NULL)
+        *renderSize = imageSize;
+    
+    imageSize.width = MIN(imageTargetMaxSize.width, imageSize.width);
+    imageSize.height = MIN(imageTargetMaxSize.height, imageSize.height);
+    
+    imageSize.width = MAX(imageTargetMinSize.width, imageSize.width);
+    imageSize.height = MAX(imageTargetMinSize.height, imageSize.height);
+    
+    if (thumbnailSize != NULL)
+        *thumbnailSize = imageSize;
+}
+
++ (void)updateAuthorLabel:(WKInterfaceLabel *)authorLabel isOutgoing:(bool)isOutgoing isGroup:(bool)isGroup user:(TGBridgeUser *)user ownUserId:(int32_t)ownUserId
+{
+    if (isGroup && !isOutgoing)
+    {
+        authorLabel.hidden = false;
+        authorLabel.text = user.displayName;
+        authorLabel.textColor = [TGColor colorForUserId:user.identifier myUserId:ownUserId];
+    }
+    else
+    {
+        authorLabel.hidden = true;
+    }
+}
+
++ (void)updateMediaGroup:(WKInterfaceGroup *)mediaGroup activityIndicator:(WKInterfaceImage *)activityIndicator mediaAttachment:(TGBridgeMediaAttachment *)mediaAttachment currentPhoto:(int64_t *)currentPhoto standalone:(bool)standalone margin:(CGFloat)margin imageSize:(CGSize *)imageSize isVisible:(bool (^)(void))isVisible completion:(void (^)(void))completion
+{
+    CGSize targetImageSize = CGSizeZero;
+    
+    if ([mediaAttachment isKindOfClass:[TGBridgeImageMediaAttachment class]])
+        [((TGBridgeImageMediaAttachment *)mediaAttachment).imageInfo imageUrlForLargestSize:&targetImageSize];
+    else if ([mediaAttachment isKindOfClass:[TGBridgeVideoMediaAttachment class]])
+        targetImageSize = ((TGBridgeVideoMediaAttachment *)mediaAttachment).dimensions;
+    
+    CGSize screenSize = TGWatchScreenSize();
+    
+    CGSize mediaGroupSize = CGSizeZero;
+    if (standalone)
+    {
+        mediaGroupSize = TGFitSize(targetImageSize, CGSizeMake(screenSize.width - margin * 2, FLT_MAX));
+    }
+    else
+    {
+        CGSize maxSize = CGSizeMake(screenSize.width - 15, screenSize.width);
+        CGSize minSize = CGSizeMake(screenSize.width / 1.25f, screenSize.width / 2);
+        [self imageBubbleSizeForImageSize:targetImageSize minSize:minSize maxSize:maxSize thumbnailSize:&mediaGroupSize renderSize:NULL];
+    }
+    
+    mediaGroupSize = CGSizeMake(ceilf(mediaGroupSize.width), ceilf(mediaGroupSize.height));
+    
+    if (imageSize != NULL)
+        *imageSize = CGSizeMake(mediaGroupSize.width, mediaGroupSize.height);
+    
+    if ([mediaAttachment isKindOfClass:[TGBridgeImageMediaAttachment class]])
+    {
+        TGBridgeImageMediaAttachment *imageAttachment = (TGBridgeImageMediaAttachment *)mediaAttachment;
+        
+        if (currentPhoto == NULL || imageAttachment.imageId != *currentPhoto)
+        {
+            if (currentPhoto != NULL)
+                *currentPhoto = imageAttachment.imageId;
+            
+            [mediaGroup setBackgroundImageSignal:[[[TGBridgeMediaSignals previewWithImageAttachment:imageAttachment size:mediaGroupSize] onNext:^(id next)
+            {
+                if (next != nil)
+                    activityIndicator.hidden = true;
+                
+                if (completion != nil)
+                    completion();
+            }] onError:^(id error)
+            {
+                if (currentPhoto != NULL)
+                    *currentPhoto = 0;
+                
+                if (completion != nil)
+                    completion();
+            }] isVisible:isVisible];
+        }
+    }
+    else if ([mediaAttachment isKindOfClass:[TGBridgeVideoMediaAttachment class]])
+    {
+        activityIndicator.hidden = true;
+        
+        TGBridgeVideoMediaAttachment *videoAttachment = (TGBridgeVideoMediaAttachment *)mediaAttachment;
+        
+        if (currentPhoto == NULL || videoAttachment.videoId != *currentPhoto)
+        {
+            if (currentPhoto != NULL)
+                *currentPhoto = videoAttachment.videoId;
+            
+            [mediaGroup setBackgroundImageSignal:[[[TGBridgeMediaSignals previewWithVideoAttachment:videoAttachment size:mediaGroupSize] onNext:^(id next)
+            {
+                if (next != nil)
+                    activityIndicator.hidden = true;
+                
+                if (completion != nil)
+                    completion();
+            }] onError:^(id error)
+            {
+                if (currentPhoto != NULL)
+                    *currentPhoto = 0;
+                
+                if (completion != nil)
+                    completion();
+            }] isVisible:isVisible];
+        }
+    }
+}
+
++ (void)updateForwardHeaderGroup:(WKInterfaceGroup *)forwardHeaderGroup titleLabel:(WKInterfaceLabel *)titleLabel fromLabel:(WKInterfaceLabel *)fromLabel forwardAttachment:(TGBridgeForwardedMessageMediaAttachment *)forwardAttachment textColor:(UIColor *)textColor
+{
+    forwardHeaderGroup.hidden = (forwardAttachment == nil);
+    if (forwardHeaderGroup.hidden)
+        return;
+    
+    titleLabel.text = TGLocalized(@"Message.ForwardedMessage");
+    
+    TGBridgeUser *author = [[TGBridgeUserCache instance] userWithId:forwardAttachment.uid];
+    NSString *authorName = author.displayName;
+    NSString *formatString = TGLocalized(@"Message.ForwardedFrom");
+    
+    NSMutableAttributedString *forwardAttributedText = [[NSMutableAttributedString alloc] initWithString:[[NSString alloc] initWithFormat:formatString, authorName] attributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:12], NSForegroundColorAttributeName:textColor }];
+    
+    NSRange formatNameRange = [formatString rangeOfString:@"%@"];
+    if (formatNameRange.location != NSNotFound)
+    {
+        [forwardAttributedText addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:12 weight:UIFontWeightMedium] range:NSMakeRange(formatNameRange.location, authorName.length)];
+    }
+    
+    fromLabel.attributedText = forwardAttributedText;
+}
+
++ (void)updateReplyHeaderGroup:(WKInterfaceGroup *)replyHeaderGroup authorLabel:(WKInterfaceLabel *)authorLabel imageGroup:(WKInterfaceGroup *)imageGroup textLabel:(WKInterfaceLabel *)textLabel titleColor:(UIColor *)titleColor subtitleColor:(UIColor *)subtitleColor replyAttachment:(TGBridgeReplyMessageMediaAttachment *)replyAttachment currentReplyPhoto:(int64_t *)currentReplyPhoto isVisible:(bool (^)(void))isVisible completion:(void (^)(void))completion
+{
+    TGBridgeMessage *message = replyAttachment.message;
+    replyHeaderGroup.hidden = (message == nil);
+    if (replyHeaderGroup.hidden)
+        return;
+    
+    bool hasAttachment = false;
+    bool hasImagePreview = false;
+    NSString *messageText = nil;
+    UIColor *textColor = nil;
+    TGBridgeImageMediaAttachment *imageAttachment = nil;
+    TGBridgeVideoMediaAttachment *videoAttachment = nil;
+    
+    for (TGBridgeMediaAttachment *attachment in message.media)
+    {
+        if ([attachment isKindOfClass:[TGBridgeImageMediaAttachment class]])
+        {
+            hasAttachment = true;
+            hasImagePreview = true;
+            messageText = TGLocalized(@"Message.Photo");
+            imageAttachment = (TGBridgeImageMediaAttachment *)attachment;
+        }
+        else if ([attachment isKindOfClass:[TGBridgeVideoMediaAttachment class]])
+        {
+            hasAttachment = true;
+            hasImagePreview = true;
+            messageText = TGLocalized(@"Message.Video");
+            videoAttachment = (TGBridgeVideoMediaAttachment *)attachment;
+        }
+        else if ([attachment isKindOfClass:[TGBridgeAudioMediaAttachment class]])
+        {
+            hasAttachment = true;
+            messageText = TGLocalized(@"Message.Audio");
+        }
+        else if ([attachment isKindOfClass:[TGBridgeDocumentMediaAttachment class]])
+        {
+            hasAttachment = true;
+            TGBridgeDocumentMediaAttachment *documentAttachment = (TGBridgeDocumentMediaAttachment *)attachment;
+            
+            if (documentAttachment.isSticker)
+            {
+                if (documentAttachment.stickerAlt.length > 0)
+                    messageText = [NSString stringWithFormat:@"%@ %@", documentAttachment.stickerAlt, TGLocalized(@"Message.Sticker")];
+                else
+                    messageText = TGLocalized(@"Message.Sticker");
+            }
+            else
+            {
+                if (documentAttachment.fileName.length > 0)
+                    messageText = documentAttachment.fileName;
+                else
+                    messageText = TGLocalized(@"Message.File");
+            }
+        }
+        else if ([attachment isKindOfClass:[TGBridgeLocationMediaAttachment class]])
+        {
+            hasAttachment = true;
+            messageText = TGLocalized(@"Message.Location");
+        }
+        else if ([attachment isKindOfClass:[TGBridgeContactMediaAttachment class]])
+        {
+            hasAttachment = true;
+            messageText = TGLocalized(@"Message.Contact");
+        }
+        else if ([attachment isKindOfClass:[TGBridgeActionMediaAttachment class]])
+        {
+            hasAttachment = true;
+            
+            TGBridgeActionMediaAttachment *actionAttachment = (TGBridgeActionMediaAttachment *)attachment;
+            
+            TGBridgeUser *author = [[TGBridgeUserCache instance] userWithId:(int32_t)message.fromUid];
+            
+            switch (actionAttachment.actionType)
+            {
+                case TGBridgeMessageActionChatEditTitle:
+                {
+                    NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
+                    NSString *formatString = TGLocalized(@"Notification.RenamedChat");
+                    
+                    messageText = [NSString stringWithFormat:formatString, authorName];
+                }
+                    break;
+                    
+                case TGBridgeMessageActionChatEditPhoto:
+                {
+                    NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
+                    bool changed = actionAttachment.actionData[@"photo"];
+                    
+                    NSString *formatString = changed ? TGLocalized(@"Notification.ChangedGroupPhoto") : TGLocalized(@"Notification.RemovedGroupPhoto");
+                    
+                    messageText = [NSString stringWithFormat:formatString, authorName];
+                }
+                    break;
+                    
+                case TGBridgeMessageActionUserChangedPhoto:
+                {
+                    
+                }
+                    break;
+                    
+                case TGBridgeMessageActionChatAddMember:
+                case TGBridgeMessageActionChatDeleteMember:
+                {
+                    NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
+                    TGBridgeUser *user = [[TGBridgeUserCache instance] userWithId:[actionAttachment.actionData[@"uid"] int32Value]];
+                    
+                    if (user.identifier == author.identifier)
+                    {
+                        NSString *formatString = (actionAttachment.actionType == TGBridgeMessageActionChatAddMember) ? TGLocalized(@"Notification.JoinedChat") : TGLocalized(@"Notification.LeftChat");
+                        messageText = [[NSString alloc] initWithFormat:formatString, authorName];
+                    }
+                    else
+                    {
+                        NSString *userName = [TGStringUtils initialsForFirstName:user.firstName lastName:user.lastName single:false];
+                        NSString *formatString = (actionAttachment.actionType == TGBridgeMessageActionChatAddMember) ? TGLocalized(@"Notification.Invited") : TGLocalized(@"Notification.Kicked");
+                        messageText = [[NSString alloc] initWithFormat:formatString, authorName, userName];
+                    }
+                }
+                    break;
+                    
+                case TGBridgeMessageActionJoinedByLink:
+                {
+                    NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
+                    NSString *formatString = TGLocalizedStatic(@"Notification.JoinedGroupByLink");
+                    messageText = [[NSString alloc] initWithFormat:formatString, authorName, actionAttachment.actionData[@"title"]];
+                }
+                    break;
+                    
+                case TGBridgeMessageActionCreateChat:
+                {
+                    NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
+                    NSString *formatString = TGLocalizedStatic(@"Notification.CreatedChatWithTitle");
+                    messageText = [[NSString alloc] initWithFormat:formatString, authorName, actionAttachment.actionData[@"title"]];
+                }
+                    break;
+                    
+                case TGBridgeMessageActionContactRegistered:
+                {
+                    messageText = TGLocalized(@"Notification.Joined");
+                }
+                    break;
+                    
+                default:
+                    break;
+            }
+        }
+    }
+    
+    if (!hasAttachment)
+    {
+        messageText = message.text;
+        textColor = titleColor;
+    }
+    else
+    {
+        textColor = subtitleColor;
+    }
+    
+    authorLabel.text = [[[TGBridgeUserCache instance] userWithId:(int32_t)message.fromUid] displayName];
+    imageGroup.hidden = !hasImagePreview;
+    textLabel.text = messageText;
+    textLabel.textColor = textColor;
+    
+    if (imageAttachment != nil)
+    {
+        if (currentReplyPhoto == NULL || imageAttachment.imageId != *currentReplyPhoto)
+        {
+            if (currentReplyPhoto != NULL)
+                *currentReplyPhoto = imageAttachment.imageId;
+            
+            [imageGroup setBackgroundImageSignal:[[[TGBridgeMediaSignals previewWithImageAttachment:imageAttachment size:CGSizeMake(26, 26)] onNext:^(id next)
+            {
+                if (completion != nil)
+                    completion();
+            }] onError:^(id error)
+            {
+                if (currentReplyPhoto != NULL)
+                    *currentReplyPhoto = 0;
+                
+                if (completion != nil)
+                    completion();
+            }] isVisible:isVisible];
+        }
+    }
+    else if (videoAttachment != nil)
+    {
+        if (currentReplyPhoto == NULL || videoAttachment.videoId != *currentReplyPhoto)
+        {
+            if (currentReplyPhoto != NULL)
+                *currentReplyPhoto = videoAttachment.videoId;
+            
+            [imageGroup setBackgroundImageSignal:[[[TGBridgeMediaSignals previewWithVideoAttachment:videoAttachment size:CGSizeMake(26, 26)] onNext:^(id next)
+            {
+                if (completion != nil)
+                    completion();
+            }] onError:^(id error)
+            {
+                if (currentReplyPhoto != NULL)
+                    *currentReplyPhoto = 0;
+                
+                if (completion != nil)
+                    completion();
+            }] isVisible:isVisible];
+        }
+    }
+    else
+    {
+        if (completion != nil)
+            completion();
+    }
+}
+
+@end
+
+@implementation TGStickerViewModel
+
++ (void)updateWithMessage:(TGBridgeMessage *)message isGroup:(bool)isGroup context:(TGBridgeContext *)context currentDocumentId:(int64_t *)currentDocumentId authorLabel:(WKInterfaceLabel *)authorLabel imageGroup:(WKInterfaceGroup *)imageGroup isVisible:(bool (^)(void))isVisible completion:(void (^)(void))completion
+{
+    [TGMessageViewModel updateAuthorLabel:authorLabel isOutgoing:message.outgoing isGroup:isGroup user:[[TGBridgeUserCache instance] userWithId:(int32_t)message.fromUid] ownUserId:context.userId];
+    
+    for (TGBridgeMediaAttachment *attachment in message.media)
+    {
+        if ([attachment isKindOfClass:[TGBridgeDocumentMediaAttachment class]])
+        {
+            TGBridgeDocumentMediaAttachment *documentAttachment = (TGBridgeDocumentMediaAttachment *)attachment;
+            
+            if (*currentDocumentId != documentAttachment.documentId)
+            {
+                *currentDocumentId = documentAttachment.documentId;
+                [imageGroup setBackgroundImageSignal:[[[TGBridgeMediaSignals stickerWithDocumentAttachment:documentAttachment type:TGMediaStickerImageTypeNormal] onNext:^(id next)
+                {
+                    if (completion != nil)
+                        completion();
+                }] onError:^(id error)
+                {
+                    *currentDocumentId = 0;
+                    
+                    if (completion != nil)
+                        completion();
+                }] isVisible:isVisible];
+            }
+        }
+    }
+}
+
+@end

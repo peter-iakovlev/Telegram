@@ -14,6 +14,8 @@
 #import "TGAudioSliderButton.h"
 #import "TGAudioSliderArea.h"
 
+#import "TGImageUtils.h"
+
 @interface TGAudioSliderView () <TGAudioSliderAreaDelegate>
 {
     UIImageView *_sliderBackgroundView;
@@ -27,14 +29,18 @@
     
     UILabel *_durationLabel;
     
+    UIImageView *_statusIconView;
+    
     bool _isScrubbing;
-    float _scrubbingPosition;
+    
+    CGFloat _scrubbingPosition;
     
     bool _isPlaying;
     float _audioPosition;
     MTAbsoluteTime _audioPositionTimestamp;
     
     bool _immediatePositionOnLayout;
+    CGFloat _previousWidth;
 }
 
 @property (nonatomic, strong) NSString *viewIdentifier;
@@ -144,6 +150,30 @@
     return incoming ? incomingColor : outgoingColor;
 }
 
+- (UIImage *)circleImageWithColor:(UIColor *)color radius:(CGFloat)radius
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius, radius), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, [color CGColor]);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius, radius));
+    UIImage *result = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return result;
+}
+
+- (UIImage *)listenedStatusImageForIncoming:(bool)incoming
+{
+    static UIImage *incomingImage = nil;
+    static UIImage *outgoingImage = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        incomingImage = [self circleImageWithColor:UIColorRGB(0x1581e2) radius:3.0f];
+        outgoingImage = [self circleImageWithColor:UIColorRGB(0x19c700) radius:3.0f];
+    });
+    return incoming ? incomingImage : outgoingImage;
+}
+
 - (id)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
@@ -168,10 +198,14 @@
         [self addSubview:_sliderArea];
         
         _durationLabel = [[UILabel alloc] init];
+        _durationLabel.textAlignment = NSTextAlignmentLeft;
         _durationLabel.backgroundColor = [UIColor clearColor];
         _durationLabel.textColor = [self durationColor:_incoming];
-        _durationLabel.font = TGSystemFontOfSize(13.0f);
+        _durationLabel.font = TGSystemFontOfSize(11.0f);
         [self addSubview:_durationLabel];
+        
+        _statusIconView = [[UIImageView alloc] initWithImage:[self listenedStatusImageForIncoming:_incoming]];
+        [self addSubview:_statusIconView];
     }
     return self;
 }
@@ -196,6 +230,8 @@
         [_sliderButton setColor:_incoming ? TGAccentColor() : UIColorRGB(0x3fc33b)];
         
         _durationLabel.textColor = [self durationColor:_incoming];
+        
+        _statusIconView.image = [self listenedStatusImageForIncoming:_incoming];
     }
 }
 
@@ -205,7 +241,7 @@
     {
         _audioDurationText = audioDurationText;
         
-        if (!_isScrubbing)
+        if (!_isScrubbing || _duration < DBL_EPSILON)
         {
             _durationLabel.text = _audioDurationText;
             [_durationLabel sizeToFit];
@@ -283,9 +319,9 @@
 {
     if (_isPlaying && !_isScrubbing && _preciseDuration > 0.1)
     {
-        CGPoint handleStartPosition = ((CALayer *)_sliderButton.layer.presentationLayer).position;
-        CGPoint foregroundStartPosition = ((CALayer *)_sliderForegroundContainer.layer.presentationLayer).position;
-        CGRect foregroundStartBounds = ((CALayer *)_sliderForegroundContainer.layer.presentationLayer).bounds;
+        CGPoint handleStartPosition = (_sliderButton.layer.presentationLayer == nil ? _sliderButton.layer : ((CALayer *)_sliderButton.layer.presentationLayer)).position;
+        CGPoint foregroundStartPosition = (_sliderForegroundContainer.layer.presentationLayer == nil ? _sliderForegroundContainer.layer : ((CALayer *)_sliderForegroundContainer.layer.presentationLayer)).position;
+        CGRect foregroundStartBounds = (_sliderForegroundContainer.layer.presentationLayer == nil ? _sliderForegroundContainer.layer : ((CALayer *)_sliderForegroundContainer.layer.presentationLayer)).bounds;
         [_sliderButton.layer removeAnimationForKey:@"position"];
         [_sliderForegroundContainer.layer removeAnimationForKey:@"position"];
         [_sliderForegroundContainer.layer removeAnimationForKey:@"bounds"];
@@ -321,7 +357,7 @@
     }
     else
     {
-        float progressValue = _isScrubbing ? _scrubbingPosition : _audioPosition;
+        CGFloat progressValue = _isScrubbing ? _scrubbingPosition : _audioPosition;
         
         [_sliderButton.layer removeAnimationForKey:@"position"];
         CGRect handleCurrentFrame = [self sliderButtonFrameForProgress:progressValue];
@@ -352,12 +388,12 @@
     }
 }
 
-- (CGRect)sliderButtonFrameForProgress:(float)progress
+- (CGRect)sliderButtonFrameForProgress:(CGFloat)progress
 {
     return CGRectMake(_sliderBackgroundView.frame.origin.x + CGFloor((_sliderBackgroundView.frame.size.width - 1.0f) * progress) - 0.5f, CGFloor((self.bounds.size.height - _sliderButton.frame.size.height) / 2.0f), _sliderButton.frame.size.width, _sliderButton.frame.size.height);
 }
 
-- (CGRect)foregdoundFrameForProgress:(float)progress
+- (CGRect)foregdoundFrameForProgress:(CGFloat)progress
 {
     return CGRectMake(_sliderBackgroundView.frame.origin.x, _sliderBackgroundView.frame.origin.y, CGFloor(_sliderBackgroundView.frame.size.width * progress), _sliderBackgroundView.frame.size.height);
 }
@@ -373,9 +409,9 @@
     
     CGRect bounds = self.bounds;
     
-    float progressValue = _isScrubbing ? _scrubbingPosition : _audioPosition;
+    CGFloat progressValue = _isScrubbing ? _scrubbingPosition : _audioPosition;
     
-    CGRect sliderFrame = CGRectMake(_durationLabel.frame.size.width + 2.0f, CGFloor((bounds.size.height - _sliderBackgroundView.frame.size.height) / 2.0f), bounds.size.width - _durationLabel.frame.size.width - 2.0f, 2.0f);
+    CGRect sliderFrame = CGRectMake(2.0f, CGFloor((bounds.size.height - _sliderBackgroundView.frame.size.height) / 2.0f), bounds.size.width - 2.0f, 2.0f);
     _sliderBackgroundView.frame = sliderFrame;
     _sliderForegroundView.frame = CGRectMake(0.0f, 0.0f, sliderFrame.size.width, sliderFrame.size.height);
     _sliderForegroundContainer.frame = [self foregdoundFrameForProgress:progressValue];
@@ -390,16 +426,27 @@
     }
 }
 
+- (void)setListenedStatus:(bool)listenedStatus
+{
+    _listenedStatus = listenedStatus;
+    
+    _statusIconView.hidden = listenedStatus;
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
     
     CGRect bounds = self.bounds;
+    bool previousImmediatePositionOnLayout = _immediatePositionOnLayout;
+    _previousWidth = bounds.size.width;
     
     CGSize durationSize = _durationLabel.frame.size;
-    _durationLabel.frame = CGRectMake(0.0f, CGFloor((bounds.size.height - durationSize.height) / 2.0f), durationSize.width, durationSize.height);
+    _durationLabel.frame = CGRectMake(0.0f, CGFloor((bounds.size.height - durationSize.height) / 2.0f) + 20.0f, durationSize.width, durationSize.height);
+    _statusIconView.frame = CGRectMake(CGRectGetMaxX(_durationLabel.frame) + 2.0f + TGRetinaPixel, _durationLabel.frame.origin.y + 5.0f + TGRetinaPixel, _statusIconView.frame.size.width, _statusIconView.frame.size.height);
     
     [self layoutProgress];
+    _immediatePositionOnLayout = previousImmediatePositionOnLayout;
 }
 
 - (void)audioSliderDidBeginDragging:(TGAudioSliderArea *)__unused sliderArea withTouch:(UITouch *)touch
@@ -449,10 +496,11 @@
     {
         CGFloat positionDistance = [touch locationInView:self].x - _sliderButtonStartLocation.x;
         
-        float newValue = MAX(0.0f, MIN(1.0f, _sliderButtonStartValue + positionDistance / _sliderBackgroundView.frame.size.width));
+        CGFloat newValue = MAX(0.0f, MIN(1.0f, _sliderButtonStartValue + positionDistance / _sliderBackgroundView.frame.size.width));
         _scrubbingPosition = newValue;
         int currentPosition = (int)(_duration * _scrubbingPosition);
-        _durationLabel.text = [[NSString alloc] initWithFormat:@"%d:%02d", currentPosition / 60, currentPosition % 60];
+        if (_duration > DBL_EPSILON)
+            _durationLabel.text = [[NSString alloc] initWithFormat:@"%d:%02d", currentPosition / 60, currentPosition % 60];
         [_durationLabel sizeToFit];
 
         [self updatePositionAnimations:false];

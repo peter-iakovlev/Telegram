@@ -10,12 +10,13 @@
 
 #import "TGImageUtils.h"
 #import "TGStringUtils.h"
-#import "TGRemoteImageView.h"
+#import "TGLocationUtils.h"
 
 #import "TGImageBlur.h"
 #import "UIImage+TG.h"
 #import "NSObject+TGLock.h"
 
+#import "TGMapSnapshotterActor.h"
 #import "TGMediaStoreContext.h"
 
 static TGWorkerPool *workerPool()
@@ -42,12 +43,6 @@ static ASQueue *taskManagementQueue()
     return queue;
 }
 
-@interface TGLocationThumbnailDataSource ()
-{
-}
-
-@end
-
 @implementation TGLocationThumbnailDataSource
 
 + (void)load
@@ -68,6 +63,24 @@ static ASQueue *taskManagementQueue()
     return [uri hasPrefix:@"map-thumbnail://"];
 }
 
++ (TGMapSnapshotOptions *)snapshotOptionsForUri:(NSString *)uri size:(out CGSize *)size
+{
+    NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"map-thumbnail://?".length]];
+    
+    CGSize imageSize = CGSizeMake([args[@"width"] intValue], [args[@"height"] intValue]);
+    
+    if (size != NULL)
+        *size = imageSize;
+    
+    TGMapSnapshotOptions *options = [[TGMapSnapshotOptions alloc] init];
+
+    CLLocationDegrees latitude = [TGLocationUtils adjustGMapLatitude:[args[@"latitude"] doubleValue] withPixelOffset:-10 zoom:15];
+    options.region = MKCoordinateRegionMake(CLLocationCoordinate2DMake(latitude, [args[@"longitude"] doubleValue]), MKCoordinateSpanMake(0.003, 0.003));
+    options.imageSize = CGSizeMake(imageSize.width + 1, imageSize.height + 24);
+    
+    return options;
+}
+
 + (NSString *)mapAddressForUri:(NSString *)uri size:(out CGSize *)size
 {
     NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"map-thumbnail://?".length]];
@@ -77,12 +90,25 @@ static ASQueue *taskManagementQueue()
     if (size != NULL)
         *size = imageSize;
     
-    return [[NSString alloc] initWithFormat:@"https://maps.googleapis.com/maps/api/staticmap?center=%.5f,%.5f&zoom=15&size=%dx%d&sensor=false&scale=%d&format=jpg&mobile=true", [args[@"latitude"] doubleValue], [args[@"longitude"] doubleValue], (int)(imageSize.width), (int)(imageSize.height + 24), 2];
+    CLLocationDegrees latitude = [TGLocationUtils adjustGMapLatitude:[args[@"latitude"] doubleValue] withPixelOffset:-10 zoom:15];
+    
+    return [[NSString alloc] initWithFormat:@"https://maps.googleapis.com/maps/api/staticmap?center=%.5f,%.5f&zoom=15&size=%dx%d&sensor=false&scale=%d&format=jpg&mobile=true", latitude, [args[@"longitude"] doubleValue], (int)(imageSize.width), (int)(imageSize.height + 24), 2];
 }
 
-- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float))progress completion:(void (^)(TGDataResource *))completion
++ (NSString *)sourceMapIdentifierForUri:(NSString *)uri size:(out CGSize *)size
+{
+    if (iosMajorVersion() >= 7)
+        return [[self snapshotOptionsForUri:uri size:size] uniqueIdentifier];
+    else
+        return [self mapAddressForUri:uri size:size];
+}
+
+- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float))progress partialCompletion:(void (^)(TGDataResource *resource))__unused partialCompletion completion:(void (^)(TGDataResource *))completion
 {
     TGMediaPreviewTask *previewTask = [[TGMediaPreviewTask alloc] init];
+    
+    NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"map-thumbnail://?".length]];
+    bool isFlat = [args[@"flat"] boolValue];
     
     [taskManagementQueue() dispatchOnQueue:^
     {
@@ -97,7 +123,7 @@ static ASQueue *taskManagementQueue()
                 return;
             
             if (completion != nil)
-                completion(result != nil ? result : [TGLocationThumbnailDataSource resultForUnavailableImage]);
+                completion(result != nil ? result : [TGLocationThumbnailDataSource resultForUnavailableImage:isFlat]);
         }];
         
         if ([TGLocationThumbnailDataSource _isDataLocallyAvailableForUri:uri])
@@ -106,16 +132,51 @@ static ASQueue *taskManagementQueue()
         }
         else
         {
-            [previewTask executeWithTargetFilePath:nil uri:[TGLocationThumbnailDataSource mapAddressForUri:uri size:NULL] completion:^(bool success)
+            if (iosMajorVersion() >= 7)
             {
-                if (success)
-                    [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
-                else
+                CGSize size = CGSizeZero;
+                [previewTask executeWithMapSnapshotOptions:[TGLocationThumbnailDataSource snapshotOptionsForUri:uri size:&size] completionWithImage:^(UIImage *image)
                 {
-                    if (completion != nil)
-                        completion([TGLocationThumbnailDataSource resultForUnavailableImage]);
-                }
-            } workerTask:workerTask];
+                    if (image != nil)
+                    {
+                        TGWorkerTask *modernWorkerTask = [[TGWorkerTask alloc] initWithBlock:^(bool (^isCancelled)())
+                        {
+                            TGDataResource *result = [TGLocationThumbnailDataSource _performLoad:uri image:image size:size isCancelled:isCancelled];
+                            
+                            if (result != nil && progress != nil)
+                                progress(1.0f);
+                            
+                            if (isCancelled != nil && isCancelled())
+                                return;
+                            
+                            if (completion != nil)
+                                completion(result != nil ? result : [TGLocationThumbnailDataSource resultForUnavailableImage:isFlat]);
+                        }];
+                        
+                        [previewTask executeWithWorkerTask:modernWorkerTask workerPool:workerPool()];
+                    }
+                    else
+                    {
+                        if (completion != nil)
+                            completion([TGLocationThumbnailDataSource resultForUnavailableImage:isFlat]);
+                    }
+                } workerTask:workerTask];
+            }
+            else
+            {
+                [previewTask executeWithTargetFilePath:nil uri:[TGLocationThumbnailDataSource mapAddressForUri:uri size:NULL] completion:^(bool success)
+                {
+                    if (success)
+                    {
+                        [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
+                    }
+                    else
+                    {
+                        if (completion != nil)
+                            completion([TGLocationThumbnailDataSource resultForUnavailableImage:isFlat]);
+                    }
+                } workerTask:workerTask];
+            }
         }
     }];
     
@@ -134,28 +195,50 @@ static ASQueue *taskManagementQueue()
     }];
 }
 
-+ (TGDataResource *)resultForUnavailableImage
++ (TGDataResource *)resultForUnavailableImage:(bool)isFlat
 {
-    static TGDataResource *imageData = nil;
+    static TGDataResource *normalData = nil;
+    static TGDataResource *flatData = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        imageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor]) decoded:true];
+        normalData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true) decoded:true];
+        flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], false) decoded:true];
     });
     
-    return imageData;
+    return isFlat ? flatData : normalData;
 }
 
-- (id)loadAttributeSyncForUri:(NSString *)__unused uri attribute:(NSString *)attribute
+- (id)loadAttributeSyncForUri:(NSString *)uri attribute:(NSString *)attribute
 {
     if ([attribute isEqualToString:@"placeholder"])
     {
-        static UIImage *placeholder = nil;
+        NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"map-thumbnail://?".length]];
+        bool isFlat = [args[@"flat"] boolValue];
+        
+        static NSMutableDictionary *placeholderBySize = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            placeholder = TGAverageColorAttachmentImage([UIColor whiteColor]);
+            placeholderBySize = [[NSMutableDictionary alloc] init];
         });
+        
+        CGSize size = CGSizeZero;
+        [TGLocationThumbnailDataSource mapAddressForUri:uri size:&size];
+        NSString *sizeString = [[NSString alloc] initWithFormat:@"%@-%@", NSStringFromCGSize(size), isFlat ? @"flat" : @"normal"];
+        UIImage *placeholder = placeholderBySize[sizeString];
+        if (placeholder != nil)
+            return placeholder;
+        
+        UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
+        [TGAverageColorAttachmentImage([UIColor whiteColor], !isFlat) drawInRect:CGRectMake(0.0f, 0.0f, size.width, size.height) blendMode:kCGBlendModeCopy alpha:1.0f];
+        CGRect imageRect = CGRectMake(0.0f, 0.0f, size.width, size.height);
+        UIImage *pinImage = [UIImage imageNamed:@"ModernMessageLocationPin.png"];
+        [pinImage drawInRect:CGRectMake(imageRect.origin.x + CGFloor((imageRect.size.width - pinImage.size.width) / 2.0f) + 1.0f, imageRect.origin.y + CGFloor((imageRect.size.height - pinImage.size.height) / 2.0f) + 6, pinImage.size.width, pinImage.size.height)];
+        placeholder = UIGraphicsGetImageFromCurrentImageContext();
+        if (placeholder != nil)
+            placeholderBySize[sizeString] = placeholder;
+        UIGraphicsEndImageContext();
         
         return placeholder;
     }
@@ -163,11 +246,11 @@ static ASQueue *taskManagementQueue()
     return nil;
 }
 
-- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait
+- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait acceptPartialData:(bool)__unused acceptPartialData asyncTaskId:(__autoreleasing id *)__unused asyncTaskId progress:(void (^)(float))__unused progress partialCompletion:(void (^)(TGDataResource *))__unused partialCompletion completion:(void (^)(TGDataResource *))__unused completion
 {
     if (uri == nil)
         return nil;
-    
+        
     UIImage *cachedImage = [[TGMediaStoreContext instance] mediaImage:uri attributes:nil];
     if (cachedImage != nil)
         return [[TGDataResource alloc] initWithImage:cachedImage decoded:true];
@@ -180,13 +263,8 @@ static ASQueue *taskManagementQueue()
 
 + (bool)_isDataLocallyAvailableForUri:(NSString *)uri
 {
-    NSString *mapAddress = [self mapAddressForUri:uri size:NULL];
-    
-    NSString *filePath = [[TGRemoteImageView sharedCache] pathForCachedData:mapAddress];
-    if ([[NSFileManager defaultManager] fileExistsAtPath:filePath])
-        return true;
-    
-    return false;
+    NSString *mapAddress = [self sourceMapIdentifierForUri:uri size:NULL];
+    return [[[TGMediaStoreContext instance] temporaryFilesCache] containsValueForKey:[mapAddress dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
 + (TGDataResource *)_performLoad:(NSString *)uri isCancelled:(bool (^)())isCancelled
@@ -194,27 +272,36 @@ static ASQueue *taskManagementQueue()
     if (isCancelled && isCancelled())
         return nil;
     
-    static NSString *filesDirectory = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        filesDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"files"];
-    });
-    
     CGSize size = CGSizeZero;
-    NSString *thumbnailPath = [[TGRemoteImageView sharedCache] pathForCachedData:[TGLocationThumbnailDataSource mapAddressForUri:uri size:&size]];
+    NSString *imageUrl = [TGLocationThumbnailDataSource sourceMapIdentifierForUri:uri size:&size];
     
-    UIImage *thumbnailSourceImage = [[UIImage alloc] initWithContentsOfFile:thumbnailPath];
+    NSData *thumbnailSourceData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+    UIImage *image = [[UIImage alloc] initWithData:thumbnailSourceData];
+    
+    return [self _performLoad:uri image:image size:size isCancelled:isCancelled];
+}
+
++ (TGDataResource *)_performLoad:(NSString *)uri image:(UIImage *)image size:(CGSize)size isCancelled:(bool (^)())isCancelled
+{
+    if (isCancelled && isCancelled())
+        return nil;
+    
+    NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"map-thumbnail://?".length]];
     
     UIGraphicsBeginImageContextWithOptions(size, true, 0.0f);
     
-    CGRect imageRect = CGRectMake(0.0f, -12.0f, size.width, size.height + 24.0f);
-    [thumbnailSourceImage drawInRect:imageRect blendMode:kCGBlendModeCopy alpha:1.0f];
+    CGRect imageRect = CGRectMake(0.0f, -12.0f, size.width + 1.0f, size.height + 24.0f);
+    [image drawInRect:imageRect blendMode:kCGBlendModeCopy alpha:1.0f];
     
-    thumbnailSourceImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIImage *pinImage = [UIImage imageNamed:@"ModernMessageLocationPin.png"];
+    [pinImage drawInRect:CGRectMake(imageRect.origin.x + CGFloor((imageRect.size.width - pinImage.size.width) / 2.0f) + 1.0f, imageRect.origin.y + CGFloor((imageRect.size.height - pinImage.size.height) / 2.0f) + 6, pinImage.size.width, pinImage.size.height)];
+    
+    image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     
-    if (thumbnailSourceImage != nil)
+    bool isFlat = [args[@"flat"] boolValue];
+    
+    if (image != nil)
     {
         UIImage *thumbnailImage = nil;
         
@@ -222,12 +309,12 @@ static ASQueue *taskManagementQueue()
         bool needsAverageColor = averageColor == nil;
         uint32_t averageColorValue = [averageColor intValue];
         
-        thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+        thumbnailImage = TGLoadedAttachmentImage(image, size, needsAverageColor ? &averageColorValue : NULL, !isFlat);
         
         if (thumbnailImage != nil)
         {
             [[TGMediaStoreContext instance] setMediaImageAverageColorForKey:uri averageColor:@(averageColorValue)];
-            [[TGMediaStoreContext instance] setMediaImageForKey:uri image:thumbnailImage attributes:@{}];
+            [[TGMediaStoreContext instance] setMediaImageForKey:uri image:thumbnailImage attributes:nil];
             
             return [[TGDataResource alloc] initWithImage:thumbnailImage decoded:true];
         }

@@ -16,7 +16,11 @@
 
 @property (nonatomic, strong) ASHandle *actionHandle;
 
-- (id)initWithShowKeyboard:(bool)showKeyboard phoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash phoneTimeout:(NSTimeInterval)phoneTimeout;
+@property (nonatomic, strong) NSString *phoneNumber;
+@property (nonatomic, strong) NSString *phoneCodeHash;
+@property (nonatomic, strong) NSString *phoneCode;
+
+- (id)initWithShowKeyboard:(bool)showKeyboard phoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash phoneTimeout:(NSTimeInterval)phoneTimeout messageSentToTelegram:(bool)messageSentToTelegram;
 
 - (void)applyCode:(NSString *)code;
 

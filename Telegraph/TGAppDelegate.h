@@ -13,10 +13,11 @@
 #import "TGDialogListController.h"
 #import "TGContactsController.h"
 #import "TGAccountSettingsController.h"
+#import "TGRootController.h"
 
 #import "ActionStage.h"
 
-#import "TGAppManager.h"
+#import "TGHolderSet.h"
 
 extern CFAbsoluteTime applicationStartupTimestamp;
 extern CFAbsoluteTime mainLaunchTimestamp;
@@ -26,8 +27,9 @@ extern TGAppDelegate *TGAppDelegateInstance;
 
 @class TGGlobalContext;
 
-@class TGPhoneMainViewController;
-@class TGTabletMainViewController;
+@class TGStickerPack;
+
+extern NSString *TGDeviceProximityStateChangedNotification;
 
 @protocol TGDeviceTokenListener <NSObject>
 
@@ -37,19 +39,19 @@ extern TGAppDelegate *TGAppDelegateInstance;
 
 @end
 
-@interface TGAppDelegate : UIResponder <UIApplicationDelegate, ASWatcher, TGAppManager>
-
-+ (void)beginEarlyInitialization;
+@interface TGAppDelegate : UIResponder <UIApplicationDelegate, ASWatcher>
 
 @property (nonatomic, strong, readonly) ASHandle *actionHandle;
 
-@property (nonatomic, strong) TGGlobalContext *globalContext;
-
-@property (nonatomic, strong) TGPhoneMainViewController *phoneMainViewController;
-@property (nonatomic, strong) TGTabletMainViewController *tabletMainViewController;
-
 @property (nonatomic, strong) UIWindow *window;
 @property (nonatomic, strong) UIWindow *contentWindow;
+
+@property (nonatomic) bool isManuallyLocked;
+@property (nonatomic) int32_t automaticLockTimeout;
+
+- (bool)isCurrentlyLocked;
+- (void)resetRemoteDeviceLocked;
+- (bool)isDisplayingPasscodeWindow;
 
 // Settings
 @property (nonatomic) bool soundEnabled;
@@ -68,20 +70,24 @@ extern TGAppDelegate *TGAppDelegateInstance;
 @property (nonatomic) bool autoDownloadAudioInGroups;
 @property (nonatomic) bool autoDownloadAudioInPrivateChats;
 
+@property (nonatomic) bool autoPlayAudio;
+
+@property (nonatomic) int alwaysShowStickersMode;
+
 @property (nonatomic) bool useDifferentBackend;
 
 @property (nonatomic, strong) TGNavigationController *loginNavigationController;
-@property (nonatomic, strong) TGNavigationController *mainNavigationController;
 
-@property (nonatomic, strong) TGMainTabsController *mainTabsController;
+@property (nonatomic, strong) TGRootController *rootController;
 
-@property (nonatomic, strong) TGDialogListController *dialogListController;
-@property (nonatomic, strong) TGContactsController *contactsController;
-@property (nonatomic, strong) TGAccountSettingsController *settingsController;
+@property (nonatomic) bool deviceProximityState;
+@property (nonatomic) TGHolderSet *deviceProximityListeners;
 
 @property (nonatomic) CFAbsoluteTime enteredBackgroundTime;
 
 @property (nonatomic) bool disableBackgroundMode;
+@property (nonatomic, readonly) bool inBackground;
+@property (nonatomic, readonly) bool backgroundTaskOngoing;
 
 - (void)resetLocalization;
 
@@ -89,7 +95,7 @@ extern TGAppDelegate *TGAppDelegateInstance;
 
 - (void)presentMainController;
 
-- (void)presentLoginController:(bool)clearControllerStates showWelcomeScreen:(bool)showWelcomeScreen phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash profileFirstName:(NSString *)profileFirstName profileLastName:(NSString *)profileLastName;
+- (void)presentLoginController:(bool)clearControllerStates showWelcomeScreen:(bool)showWelcomeScreen phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram profileFirstName:(NSString *)profileFirstName profileLastName:(NSString *)profileLastName;
 - (void)presentContentController:(UIViewController *)controller;
 - (void)dismissContentController;
 
@@ -98,7 +104,7 @@ extern TGAppDelegate *TGAppDelegateInstance;
 
 - (NSDictionary *)loadLoginState;
 - (void)resetLoginState;
-- (void)saveLoginStateWithDate:(int)date phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash firstName:(NSString *)firstName lastName:(NSString *)lastName photo:(NSData *)photo;
+- (void)saveLoginStateWithDate:(int)date phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram firstName:(NSString *)firstName lastName:(NSString *)lastName photo:(NSData *)photo;
 
 - (NSArray *)classicAlertSoundTitles;
 - (NSArray *)modernAlertSoundTitles;
@@ -116,5 +122,19 @@ extern TGAppDelegate *TGAppDelegateInstance;
 - (void)readyToApplyLocalizationFromFile:(NSString *)filePath warnings:(NSString *)warnings;
 
 - (void)resetControllerStack;
+
+- (void)handleOpenDocument:(NSURL *)url animated:(bool)animated;
+
+- (void)previewStickerPack:(TGStickerPack *)stickerPack currentStickerPacks:(NSArray *)currentStickerPacks;
+
+- (void)inviteBotToGroup:(TGUser *)user payload:(NSString *)payload;
+
++ (NSString *)documentsPath;
++ (NSString *)cachePath;
+
+- (bool)enableLogging;
+- (void)setEnableLogging:(bool)enableLogging;
+
+- (void)setupShortcutItems;
 
 @end

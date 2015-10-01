@@ -15,6 +15,7 @@
 @optional
 
 - (void)selectContactControllerDidSelectUser:(TGUser *)user;
+- (void)selectContactControllerDidSelectCreateLink;
 
 @end
 

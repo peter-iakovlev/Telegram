@@ -79,4 +79,88 @@ NSMutableDictionary *classNameCache()
     return nil;
 }
 
+- (void)encodeString:(NSString *)__unused string forCKey:(const char *)__unused key
+{
+}
+
+- (void)encodeInt32:(int32_t)__unused number forCKey:(const char *)__unused key
+{
+}
+
+- (void)encodeInt64:(int64_t)__unused number forCKey:(const char *)__unused key
+{
+}
+
+- (void)encodeObject:(id<PSCoding>)__unused object forCKey:(const char *)__unused key
+{
+}
+
+- (void)encodeArray:(NSArray *)__unused array forKey:(NSString *)__unused key
+{
+}
+
+- (void)encodeArray:(NSArray *)__unused array forCKey:(const char *)__unused key
+{
+}
+
+- (void)encodeData:(NSData *)__unused data forCKey:(const char *)__unused key
+{
+}
+
+- (void)encodeBytes:(uint8_t const *)__unused value length:(NSUInteger)__unused length forCKey:(const char *)__unused key
+{
+}
+
+- (void)encodeInt32Array:(NSArray *)__unused value forCKey:(const char *)__unused key
+{
+}
+
+- (NSString *)decodeStringForCKey:(const char *)__unused key
+{
+    return nil;
+}
+
+- (int32_t)decodeInt32ForCKey:(const char *)__unused key
+{
+    return 0;
+}
+
+- (int64_t)decodeInt64ForCKey:(const char *)__unused key
+{
+    return 0;
+}
+
+- (id<PSCoding>)decodeObjectForCKey:(const char *)__unused key
+{
+    return nil;
+}
+
+- (NSArray *)decodeArrayForKey:(NSString *)__unused key
+{
+    return nil;
+}
+
+- (NSArray *)decodeArrayForCKey:(const char *)__unused key
+{
+    return nil;
+}
+
+- (NSData *)decodeDataCorCKey:(const char *)__unused key
+{
+    return nil;
+}
+
+- (void)decodeBytesForCKey:(const char *)__unused key value:(uint8_t *)__unused value length:(NSUInteger)__unused length
+{
+}
+
+- (NSDictionary *)decodeObjectsByKeys
+{
+    return nil;
+}
+
+- (NSArray *)decodeInt32ArrayForCKey:(const char *)__unused key {
+    return nil;
+}
+
 @end

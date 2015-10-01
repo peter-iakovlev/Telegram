@@ -12,6 +12,6 @@
 
 @interface TGVideoMessageViewModel : TGImageMessageViewModel
 
-- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo video:(TGVideoMediaAttachment *)video author:(TGUser *)author context:(TGModernViewContext *)context;
+- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo video:(TGVideoMediaAttachment *)video authorPeer:(id)authorPeer context:(TGModernViewContext *)context replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor;
 
 @end

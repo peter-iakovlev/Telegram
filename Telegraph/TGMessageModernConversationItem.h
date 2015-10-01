@@ -27,6 +27,7 @@ extern int32_t TGMessageModernConversationItemLocalUserId;
     @public TGMessage *_message;
     TGUser *_author;
     NSArray *_additionalUsers;
+    NSArray *_additionalConversations;
     int32_t _additionalDate;
     
     bool _mediaAvailabilityStatus;
@@ -37,16 +38,20 @@ extern int32_t TGMessageModernConversationItemLocalUserId;
 
 - (void)updateAssets;
 - (void)refreshMetrics;
-- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage;
+- (void)updateSearchText:(bool)animated;
+- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated;
 - (void)updateMediaVisibility;
 - (void)updateMessageAttributes;
 - (void)updateEditingState:(TGModernViewStorage *)viewStorage animationDelay:(NSTimeInterval)animationDelay;
 - (void)imageDataInvalidated:(NSString *)imageUrl;
 - (void)setTemporaryHighlighted:(bool)temporaryHighlighted viewStorage:(TGModernViewStorage *)viewStorage;
+- (void)clearHighlights;
 
 - (CGRect)effectiveContentFrame;
-- (CGRect)effectiveContentImageFrame;
-- (UIImage *)effectiveContentImage;
 - (UIView *)referenceViewForImageTransition;
+
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict;
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict ifPresentInDict:(NSMutableDictionary *)anotherDict;
+- (void)restoreBoundModelViewFramesRecursively:(NSMutableDictionary *)dict;
 
 @end

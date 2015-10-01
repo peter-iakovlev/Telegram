@@ -6,12 +6,19 @@
 #import "TGTimer.h"
 
 #import "TGPreparedMessage.h"
+#import "TGPreparedLocalImageMessage.h"
+#import "TGPreparedLocalVideoMessage.h"
+#import "TGPreparedLocalDocumentMessage.h"
 
 #import "TGUpdateStateRequestBuilder.h"
 
 #import "TGNetworkWorker.h"
 
 #import "TGLiveUploadActor.h"
+
+#import "TGTelegraph.h"
+
+#import "TGAppDelegate.h"
 
 @interface TGModernSendMessageActor ()
 {
@@ -23,6 +30,8 @@
     NSMutableDictionary *_uploadingActorPathToFileUrl;
     NSMutableDictionary *_uploadingProgressActorPaths;
     NSMutableDictionary *_completedUploads;
+    
+    id _activityHolder;
 }
 
 @end
@@ -111,7 +120,7 @@
     if ([path hasPrefix:@"upload/"])
     {
         NSString *localFileUrl = [path substringFromIndex:7];
-        NSString *imagePath = [[[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0] stringByAppendingPathComponent:@"upload"] stringByAppendingPathComponent:localFileUrl];
+        NSString *imagePath = [[[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"upload"] stringByAppendingPathComponent:localFileUrl];
         
         return imagePath;
     }
@@ -178,10 +187,32 @@
 
 #pragma mark -
 
+- (int64_t)conversationIdForActivity
+{
+    return 0;
+}
+
+- (NSString *)activityType
+{
+    if ([_preparedMessage isKindOfClass:[TGPreparedLocalImageMessage class]])
+        return @"uploadingPhoto";
+    else if ([_preparedMessage isKindOfClass:[TGPreparedLocalVideoMessage class]])
+        return @"uploadingVideo";
+    else if ([_preparedMessage isKindOfClass:[TGPreparedLocalDocumentMessage class]])
+        return @"uploadingDocument";
+    
+    return nil;
+}
+
 - (void)uploadFilesWithExtensions:(NSArray *)filePathsAndExtensions
 {
     if (filePathsAndExtensions.count == 0)
         return;
+    
+    if (_activityHolder == nil && [self conversationIdForActivity] != 0 && [self activityType] != nil)
+    {
+        _activityHolder = [[TGTelegraphInstance activityManagerForConversationId:[self conversationIdForActivity]] addActivityWithType:[self activityType] priority:2];
+    }
     
     _notifiedUploadsStarted = false;
     
@@ -229,7 +260,12 @@
         
         [ActionStageInstance() requestActor:actorPath options:options watcher:self];
     }
-    
+
+    [self beginUploadProgress];
+}
+
+- (void)beginUploadProgress
+{
     if (_uploadProgress < 0.0f) // it may already be set by a file upload actor
     {
         _uploadProgress = 0.0f;
@@ -262,11 +298,24 @@
     }
 }
 
+- (void)updatePreDownloadsProgress:(float)preDownloadsProgress
+{
+    if (_uploadProgressContainsPreDownloads)
+    {
+        _uploadProgress = preDownloadsProgress / 2.0f;
+        
+        [ActionStageInstance() dispatchMessageToWatchers:self.path messageType:@"messageProgress" message:@{@"mid": @(_preparedMessage.mid), @"progress": @(_uploadProgress)}];
+    }
+}
+
 - (void)actorReportedProgress:(NSString *)path progress:(float)progress
 {
     if ([_uploadingProgressActorPaths[path] boolValue])
     {
-        _uploadProgress = progress;
+        if (_uploadProgressContainsPreDownloads)
+            _uploadProgress = 0.5f + progress / 2.0f;
+        else
+            _uploadProgress = progress;
         
         if (!_notifiedUploadsStarted)
         {
@@ -299,6 +348,10 @@
             [self _fail];
         }
     }
+}
+
+- (void)acquireMediaUploadActivityHolderForPreparedMessage:(TGPreparedMessage *)__unused preparedMessage
+{
 }
 
 @end

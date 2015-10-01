@@ -23,6 +23,18 @@
 
 #import "TGModernConversationTitleIcon.h"
 
+#import "TGModernConversationTitleView.h"
+
+#import "TGProgressWindow.h"
+
+#import "TGBotUserInfoController.h"
+
+#import "TGBotSignals.h"
+
+#import "TGBotConversationHeaderView.h"
+
+#import "TGModernViewContext.h"
+
 typedef enum {
     TGPhoneSharingStatusUnknown = 0,
     TGPhoneSharingStatusNotShared = 1,
@@ -42,8 +54,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 
 @interface TGPrivateModernConversationCompanion () <TGModernConversationContactLinkTitlePanelDelegate>
 {
-    bool _initialTyping;
-    NSTimeInterval _lastTypingActivity;
+    NSString *_initialActivity;
     
     NSString *_cachedPhone;
     
@@ -57,26 +68,44 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     NSArray *_additionalTitleIcons; // Main Thread
     
     TGPhoneSharingStatus _phoneSharingStatus; // Main Thread
+    
+    TGBotConversationHeaderView *_botHeaderView; // Main Thread
+    
+    bool _isBot;
+    id<SDisposable> _botInfoDisposable;
+    TGBotInfo *_botInfo;
+    
+    TGModernConversationActionInputPanel *_unblockPanel;
+    TGModernConversationActionInputPanel *_botStartPanel; // Main Thread
+    bool _botStartPanelDismissed;
+    
+    SMetaDisposable *_botStartDisposable;
 }
 
 @end
 
 @implementation TGPrivateModernConversationCompanion
 
-- (instancetype)initWithUid:(int)uid typing:(bool)typing mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
+- (instancetype)initWithUid:(int)uid activity:(NSString *)activity mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
 {
-    return [self initWithConversationId:uid uid:uid typing:typing mayHaveUnreadMessages:mayHaveUnreadMessages];
+    return [self initWithConversationId:uid uid:uid activity:activity mayHaveUnreadMessages:mayHaveUnreadMessages];
 }
 
-- (instancetype)initWithConversationId:(int64_t)conversationId uid:(int)uid typing:(bool)typing mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
+- (instancetype)initWithConversationId:(int64_t)conversationId uid:(int)uid activity:(NSString *)activity mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
 {
     self = [super initWithConversationId:conversationId mayHaveUnreadMessages:mayHaveUnreadMessages];
     if (self != nil)
     {
         _uid = uid;
-        _initialTyping = typing;
+        _initialActivity = activity;
     }
     return self;
+}
+
+- (void)dealloc
+{
+    [_botInfoDisposable dispose];
+    [_botStartDisposable dispose];
 }
 
 - (void)setAdditionalTitleIcons:(NSArray *)additionalTitleIcons
@@ -90,6 +119,8 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 
 - (bool)shouldDisplayContactLinkPanel
 {
+    if (_conversationId == [TGTelegraphInstance serviceUserUid])
+        return false;
     return true;
 }
 
@@ -160,22 +191,23 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 {
     TGDispatchOnMainThread(^
     {
+        if (![self shouldDisplayContactLinkPanel])
+            return;
+        
         TGModernConversationController *controller = self.controller;
         
         TGModernConversationContactLinkTitlePanel *panel = [controller.secondaryTitlePanel isKindOfClass:[TGModernConversationContactLinkTitlePanel class]] ? (TGModernConversationContactLinkTitlePanel *)controller.secondaryTitlePanel : nil;
         TGUser *user = [TGDatabaseInstance() loadUser:_uid];
         
-        if ([self shouldDisplayContactLinkPanel] && (_phoneSharingStatus == TGPhoneSharingStatusNotShared || (!_isContact && user.phoneNumber.length != 0)))
+        if (!_isContact && user.phoneNumber.length != 0)
         {
-            bool shareContact = _isContact || _phoneSharingStatus == TGPhoneSharingStatusNotShared;
-            
             NSMutableDictionary *dict = dismissedContactLinkPanelsByUserId()[@(TGTelegraphInstance.clientUserId)];
             if (dict == nil)
             {
                 dict = [[NSMutableDictionary alloc] init];
                 dismissedContactLinkPanelsByUserId()[@(TGTelegraphInstance.clientUserId)] = dict;
             }
-            if (![dict[[[NSString alloc] initWithFormat:@"%" PRId32 "_%@", _uid, shareContact ? @"share" : @"add"]] boolValue])
+            if (![dict[[[NSString alloc] initWithFormat:@"%" PRId32 "_%@", _uid, @"add"]] boolValue])
             {
                 if (panel == nil)
                 {
@@ -183,7 +215,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
                     panel.delegate = self;
                 }
                 
-                [panel setShareContact:shareContact];
+                [panel setShareContact:false];
             }
         }
         else
@@ -257,20 +289,79 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 
 - (void)_controllerAvatarPressed
 {
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        [[TGInterfaceManager instance] navigateToProfileOfUser:_uid];
+    __weak TGPrivateModernConversationCompanion *weakSelf = self;
+    void (^shareVCard)() = ^
+    {
+        __strong TGPrivateModernConversationCompanion *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            [strongSelf shareVCard];
+            TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+            [progressWindow show:false];
+            [progressWindow dismissWithSuccess];
+        }
+    };
+    
+    TGModernConversationController *controller = self.controller;
+    
+    if (controller.currentSizeClass == UIUserInterfaceSizeClassCompact)
+    {
+        TGUser *user = [TGDatabaseInstance() loadUser:_uid];
+        
+        TGCollectionMenuController *userInfoController = nil;
+        
+        if (user.kind == TGUserKindBot || user.kind == TGUserKindSmartBot)
+        {
+            __weak TGPrivateModernConversationCompanion *weakSelf = self;
+            userInfoController = [[TGBotUserInfoController alloc] initWithUid:_uid sendCommand:^(NSString *command)
+            {
+                __strong TGPrivateModernConversationCompanion *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    [strongSelf controllerWantsToSendTextMessage:command asReplyToMessageId:0 withAttachedMessages:nil disableLinkPreviews:false];
+                }
+            }];
+        }
+        else
+        {
+            userInfoController = [[TGTelegraphUserInfoController alloc] initWithUid:_uid];
+            ((TGTelegraphUserInfoController *)userInfoController).shareVCard = shareVCard;
+        }
+        
+        [controller.navigationController pushViewController:userInfoController animated:true];
+    }
     else
     {
-        TGModernConversationController *controller = self.controller;
         if (controller != nil)
         {
-            TGTelegraphUserInfoController *userInfoController = [[TGTelegraphUserInfoController alloc] initWithUid:_uid];
+            TGUser *user = [TGDatabaseInstance() loadUser:_uid];
+            
+            TGCollectionMenuController *userInfoController = nil;
+            
+            if (user.kind == TGUserKindBot || user.kind == TGUserKindSmartBot)
+            {
+                __weak TGPrivateModernConversationCompanion *weakSelf = self;
+                userInfoController = [[TGBotUserInfoController alloc] initWithUid:_uid sendCommand:^(NSString *command)
+                {
+                    __strong TGPrivateModernConversationCompanion *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        [strongSelf controllerWantsToSendTextMessage:command asReplyToMessageId:0 withAttachedMessages:nil disableLinkPreviews:false];
+                    }
+                }];
+            }
+            else
+            {
+                userInfoController = [[TGTelegraphUserInfoController alloc] initWithUid:_uid];
+                ((TGTelegraphUserInfoController *)userInfoController).shareVCard = shareVCard;
+            }
             
             TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[userInfoController] navigationBarClass:[TGWhiteNavigationBar class]];
             navigationController.presentationStyle = TGNavigationControllerPresentationStyleRootInPopover;
             TGPopoverController *popoverController = [[TGPopoverController alloc] initWithContentViewController:navigationController];
             navigationController.parentPopoverController = popoverController;
-            [popoverController setPopoverContentSize:CGSizeMake(320.0f, 528.0f) animated:false];
+            navigationController.detachFromPresentingControllerInCompactMode = true;
+            [popoverController setContentSize:CGSizeMake(320.0f, 528.0f)];
 
             controller.associatedPopoverController = popoverController;
             [popoverController presentPopoverFromBarButtonItem:controller.navigationItem.rightBarButtonItem permittedArrowDirections:UIPopoverArrowDirectionAny animated:true];
@@ -281,6 +372,9 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 
 - (NSString *)stringForTitle:(TGUser *)user isContact:(bool)isContact
 {
+    if (user.uid == [TGTelegraphInstance serviceUserUid])
+        return @"Telegram";
+    
     if (isContact || user.phoneNumber.length == 0)
         return user.displayName;
     
@@ -290,40 +384,166 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     return _cachedPhone;
 }
 
-- (NSString *)stringForPresence:(TGUserPresence)presence accentColored:(bool *)accentColored
+- (NSString *)statusStringForUser:(TGUser *)user accentColored:(bool *)accentColored
 {
-    if (presence.online)
+    if (user.kind == TGUserKindBot || user.kind == TGUserKindSmartBot)
+        return TGLocalized(@"Bot.GenericBotStatus");
+    
+    if (user.uid == [TGTelegraphInstance serviceUserUid])
+        return TGLocalized(@"Core.ServiceUserStatus");
+    
+    if (user.presence.online)
     {
         if (accentColored != NULL)
             *accentColored = true;
         return TGLocalizedStatic(@"Presence.online");
     }
-    else if (presence.lastSeen < 0)
-        return TGLocalizedStatic(@"Presence.invisible");
-    else if (presence.lastSeen != 0)
-        return [TGDateUtils stringForRelativeLastSeen:presence.lastSeen];
+    else if (user.presence.lastSeen != 0)
+        return [TGDateUtils stringForRelativeLastSeen:user.presence.lastSeen];
     
     return TGLocalized(@"Presence.offline");
 }
 
+- (NSString *)stringForActivity:(NSString *)activity
+{
+    if ([activity isEqualToString:@"recordingAudio"])
+        return TGLocalized(@"Activity.RecordingAudio");
+    else if ([activity isEqualToString:@"uploadingPhoto"])
+        return TGLocalized(@"Activity.UploadingPhoto");
+    else if ([activity isEqualToString:@"uploadingVideo"])
+        return TGLocalized(@"Activity.UploadingVideo");
+    else if ([activity isEqualToString:@"uploadingDocument"])
+        return TGLocalized(@"Activity.UploadingDocument");
+    else if ([activity isEqualToString:@"pickingLocation"])
+        return nil;
+        
+    return TGLocalized(@"Conversation.typing");
+}
+
+- (int)activityTypeForActivity:(NSString *)activity
+{
+    if ([activity isEqualToString:@"recordingAudio"])
+        return TGModernConversationTitleViewActivityAudioRecording;
+    else if ([activity isEqualToString:@"uploadingPhoto"])
+        return TGModernConversationTitleViewActivityUploading;
+    else if ([activity isEqualToString:@"uploadingVideo"])
+        return TGModernConversationTitleViewActivityUploading;
+    else if ([activity isEqualToString:@"uploadingDocument"])
+        return TGModernConversationTitleViewActivityUploading;
+    else if ([activity isEqualToString:@"pickingLocation"])
+        return 0;
+    
+    return TGModernConversationTitleViewActivityTyping;
+}
+
 - (void)loadInitialState
 {
+    TGUser *user = [TGDatabaseInstance() loadUser:_uid];
+    if (user.kind == TGUserKindBot || user.kind == TGUserKindSmartBot)
+        _isBot = true;
+    
+    self.viewContext.commandsEnabled = _isBot;
+    
     [super loadInitialState];
     
-    TGUser *user = [TGDatabaseInstance() loadUser:_uid];
     _isContact = [TGDatabaseInstance() uidIsRemoteContact:_uid];
     [self _setTitle:[self stringForTitle:user isContact:_isContact]];
     [self _setAvatarConversationId:_uid firstName:user.firstName lastName:user.lastName];
     [self _setAvatarUrl:user.photoUrlSmall];
     bool accentColored = false;
-    NSString *statusString = [self stringForPresence:user.presence accentColored:&accentColored];
-    [self _setStatus:statusString accentColored:accentColored allowAnimation:false];
+    NSString *statusString = [self statusStringForUser:user accentColored:&accentColored];
+    [self _setStatus:statusString accentColored:accentColored allowAnimation:false toggleMode:TGModernConversationControllerTitleToggleNone];
     
-    if (_initialTyping)
-        [self _setTypingStatus:TGLocalized(@"Conversation.typing")];
+    if (_initialActivity != nil)
+        [self _setTypingStatus:[self stringForActivity:_initialActivity] activity:[self activityTypeForActivity:_initialActivity]];
+    
+    if (_isBot)
+    {
+        __weak TGPrivateModernConversationCompanion *weakSelf = self;
+        _botInfoDisposable = [[[TGBotSignals botInfoForUserId:_uid] deliverOn:[SQueue mainQueue]] startWithNext:^(TGBotInfo *botInfo)
+        {
+            __strong TGPrivateModernConversationCompanion *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                strongSelf->_botInfo = botInfo;
+                TGModernConversationController *controller = strongSelf.controller;
+                if (strongSelf->_botHeaderView == nil)
+                    [controller setConversationHeader:[strongSelf _conversationHeader]];
+            }
+        }];
+        
+        TGDispatchOnMainThread(^
+        {
+            TGModernConversationController *controller = self.controller;
+            [controller setHasBots:true];
+        });
+    }
 }
 
 #pragma mark -
+
+- (TGModernConversationEmptyListPlaceholderView *)_conversationEmptyListPlaceholder
+{
+    if (_isBot)
+        return nil;
+    else
+        return [super _conversationEmptyListPlaceholder];
+}
+
+- (TGModernConversationInputPanel *)_conversationEmptyListInputPanel
+{
+    if (_unblockPanel != nil)
+        return _unblockPanel;
+    
+    if (_isBot)
+    {
+        if (_botStartPanel == nil && !_botStartPanelDismissed)
+        {
+            TGModernConversationController *controller = self.controller;
+            _botStartPanel = [[TGModernConversationActionInputPanel alloc] init];
+            [_botStartPanel setActionWithTitle:TGLocalized(@"Bot.Start") action:@"botstart" color:TGAccentColor()];
+            _botStartPanel.companionHandle = self.actionHandle;
+            _botStartPanel.delegate = controller;
+        }
+        return _botStartPanel;
+    }
+    else
+        return _unblockPanel;
+}
+
+- (TGModernConversationInputPanel *)_conversationGenericInputPanel
+{
+    if (_unblockPanel != nil)
+        return _unblockPanel;
+    
+    if (_isBot && _botStartPayload != nil && !_botStartPanelDismissed)
+    {
+        if (_botStartPanel == nil)
+        {
+            TGModernConversationController *controller = self.controller;
+            _botStartPanel = [[TGModernConversationActionInputPanel alloc] init];
+            [_botStartPanel setActionWithTitle:TGLocalized(@"Bot.Start") action:@"botstart" color:TGAccentColor()];
+            _botStartPanel.companionHandle = self.actionHandle;
+            _botStartPanel.delegate = controller;
+        }
+        return _botStartPanel;
+    }
+    return _unblockPanel;
+}
+
+- (UIView *)_conversationHeader
+{
+    if (_botInfo != nil && _botInfo.botDescription.length != 0)
+    {
+        if (_botHeaderView == nil)
+        {
+            _botHeaderView = [[TGBotConversationHeaderView alloc] initWithContext:self.viewContext botInfo:_botInfo];
+            [_botHeaderView sizeToFit];
+        }
+        return _botHeaderView;
+    }
+    return nil;
+}
 
 - (bool)imageDownloadsShouldAutosavePhotos
 {
@@ -394,7 +614,8 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         if (_isContact)
         {
             [privateTitlePanel setButtonsWithTitlesAndActions:@[
-                @{@"title": TGLocalized(@"Conversation.Call"), @"action": @"call"},
+                @{@"title": TGLocalized(@"Conversation.Search"), @"action": @"search"},
+                //@{@"title": TGLocalized(@"Conversation.Call"), @"action": @"call"},
                 @{@"title": TGLocalized(@"Common.Edit"), @"action": @"edit"},
                 @{@"title": TGLocalized(@"Conversation.Info"), @"action": @"info"},
             ]];
@@ -402,10 +623,11 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         else
         {
             NSMutableArray *actions = [[NSMutableArray alloc] init];
-            if (_isBlocked)
+            /*if (_isBlocked)
                 [actions addObject:@{@"title": TGLocalized(@"Conversation.Unblock"), @"action": @"unblock"}];
             else
-                [actions addObject:@{@"title": TGLocalized(@"Conversation.Block"), @"action": @"block"}];
+                [actions addObject:@{@"title": TGLocalized(@"Conversation.Block"), @"action": @"block"}];*/
+            [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"action": @"search"}];
             [actions addObject:@{@"title": TGLocalized(@"Common.Edit"), @"action": @"edit"}];
             [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"action": @"info"}];
             [privateTitlePanel setButtonsWithTitlesAndActions:actions];
@@ -424,12 +646,18 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
-        CFAbsoluteTime currentTime = CFAbsoluteTimeGetCurrent();
-        if (ABS(currentTime - _lastTypingActivity) >= 4.0 && (![TGDatabaseInstance() uidIsRemoteContact:_uid] || [TGDatabaseInstance() loadUser:_uid].presence.online))
+        if ((![TGDatabaseInstance() uidIsRemoteContact:_uid] || [TGDatabaseInstance() loadUser:_uid].presence.online || [TGDatabaseInstance() loadUser:_uid].presence.lastSeen <= 0))
         {
-            _lastTypingActivity = currentTime;
-            [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%d)/activity/(typing)", _uid] options:nil watcher:self];
+            [[TGTelegraphInstance activityManagerForConversationId:_conversationId] addActivityWithType:@"typing" priority:10 timeout:5.0];
         }
+    }];
+}
+
+- (void)controllerDidCancelTypingActivity
+{
+    [ActionStageInstance() dispatchOnStageQueue:^
+    {
+        [[TGTelegraphInstance activityManagerForConversationId:_conversationId] removeActivityWithType:@"typing"];
     }];
 }
 
@@ -440,11 +668,56 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         _hasUnblockPanel = blocked;
         
         static int actionId = 0;
-        
         [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/changePeerBlockedStatus/(cb%d)", actionId++] options:@{@"peerId": @(_uid), @"block": @(blocked)} watcher:TGTelegraphInstance];
+        
+        if (!blocked && _isBot)
+        {
+            TGDispatchOnMainThread(^
+            {
+                [self requestBotStart];
+            });
+        }
     }];
     
     [self updateUserBlocked:blocked];
+}
+
+- (void)requestBotStart
+{
+    if (_botStartPayload != nil)
+    {
+        TGDispatchOnMainThread(^
+        {
+            [_botStartPanel setActivity:true];
+            if (_botStartDisposable == nil)
+                _botStartDisposable = [[SMetaDisposable alloc] init];
+            __weak TGPrivateModernConversationCompanion *weakSelf = self;
+            [_botStartDisposable setDisposable:[[[[TGBotSignals botStartForUserId:_uid payload:_botStartPayload] deliverOn:[SQueue mainQueue]] onDispose:^
+            {
+                TGDispatchOnMainThread(^
+                {
+                    __strong TGPrivateModernConversationCompanion *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        [strongSelf->_botStartPanel setActivity:false];
+                    }
+                });
+            }] startWithNext:nil completed:^
+            {
+                __strong TGPrivateModernConversationCompanion *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    strongSelf->_botStartPanel = nil;
+                    strongSelf->_botStartPanelDismissed = true;
+                    [strongSelf _updateInputPanel];
+                }
+            }]];
+        });
+    }
+    else
+    {
+        [self controllerWantsToSendTextMessage:@"/start" asReplyToMessageId:0 withAttachedMessages:nil disableLinkPreviews:false];
+    }
 }
 
 - (void)updateUserBlocked:(bool)blocked
@@ -462,14 +735,18 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
             TGModernConversationController *controller = self.controller;
             if (blocked)
             {
-                TGModernConversationActionInputPanel *unblockPanel = [[TGModernConversationActionInputPanel alloc] init];
-                [unblockPanel setActionWithTitle:TGLocalized(@"Conversation.Unblock") action:@"unblock"];
-                unblockPanel.delegate = controller;
-                unblockPanel.companionHandle = actionHandle;
-                [controller setCustomInputPanel:unblockPanel];
+                if (_unblockPanel == nil)
+                {
+                    _unblockPanel = [[TGModernConversationActionInputPanel alloc] init];
+                    [_unblockPanel setActionWithTitle:_isBot ? TGLocalized(@"Bot.Unblock") : TGLocalized(@"Conversation.Unblock") action:@"unblock"];
+                    _unblockPanel.delegate = controller;
+                    _unblockPanel.companionHandle = actionHandle;
+                }
             }
             else
-                [controller setCustomInputPanel:nil];
+                _unblockPanel = nil;
+                
+            [self _updateInputPanel];
         });
     }
 }
@@ -477,6 +754,22 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 - (NSString *)_controllerInfoButtonText
 {
     return TGLocalized(@"Conversation.InfoPrivate");
+}
+
+- (NSDictionary *)userActivityData
+{
+    NSMutableDictionary *peerDict = [[NSMutableDictionary alloc] init];
+    peerDict[@"type"] = @"user";
+    peerDict[@"id"] = @((int32_t)_conversationId);
+    TGUser *user = [TGDatabaseInstance() loadUser:(int32_t)_conversationId];
+    if (user.userName.length != 0)
+        peerDict[@"username"] = user.userName;
+    return @{@"user_id": @(TGTelegraphInstance.clientUserId), @"peer": peerDict};
+}
+
+- (TGApplicationFeaturePeerType)applicationFeaturePeerType
+{
+    return TGApplicationFeaturePeerPrivate;
 }
 
 #pragma mark -
@@ -488,6 +781,8 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         NSString *panelAction = options[@"action"];
         if ([panelAction isEqualToString:@"unblock"])
             [self requestUserBlocked:false];
+        else if ([panelAction isEqualToString:@"botstart"])
+            [self requestBotStart];
     }
     else if ([action isEqualToString:@"titlePanelAction"])
     {
@@ -542,6 +837,8 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         }
         else if ([panelAction isEqualToString:@"info"])
             [self _controllerAvatarPressed];
+        else if ([panelAction isEqualToString:@"search"])
+            [self navigateToMessageSearch];
     }
     
     [super actionStageActionRequested:action options:options];
@@ -558,8 +855,8 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
             if (user.uid == _uid)
             {
                 bool accentColored = false;
-                NSString *statusString = [self stringForPresence:user.presence accentColored:&accentColored];
-                [self _setTitle:[self stringForTitle:user isContact:[TGDatabaseInstance() uidIsRemoteContact:_uid]] andStatus:statusString accentColored:accentColored allowAnimatioon:true];
+                NSString *statusString = [self statusStringForUser:user accentColored:&accentColored];
+                [self _setTitle:[self stringForTitle:user isContact:[TGDatabaseInstance() uidIsRemoteContact:_uid]] andStatus:statusString accentColored:accentColored allowAnimatioon:true toggleMode:TGModernConversationControllerTitleToggleNone];
                 [self _setAvatarConversationId:_uid firstName:user.firstName lastName:user.lastName];
                 [self _setAvatarUrl:user.photoUrlSmall];
                 
@@ -572,18 +869,21 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         TGUser *user = [TGDatabaseInstance() loadUser:_uid];
         
         bool accentColored = false;
-        NSString *statusString = [self stringForPresence:user.presence accentColored:&accentColored];
-        [self _setTitle:[self stringForTitle:user isContact:[TGDatabaseInstance() uidIsRemoteContact:_uid]] andStatus:statusString accentColored:accentColored allowAnimatioon:false];
+        NSString *statusString = [self statusStringForUser:user accentColored:&accentColored];
+        [self _setTitle:[self stringForTitle:user isContact:[TGDatabaseInstance() uidIsRemoteContact:_uid]] andStatus:statusString accentColored:accentColored allowAnimatioon:false toggleMode:TGModernConversationControllerTitleToggleNone];
         [self _setAvatarConversationId:_uid firstName:user.firstName lastName:user.lastName];
         [self _setAvatarUrl:user.photoUrlSmall];
     }
     else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", _conversationId]])
     {
-        NSArray *typingUsers = ((SGraphObjectNode *)resource).object;
-        if (typingUsers.count == 0)
-            [self _setTypingStatus:nil];
+        NSDictionary *userActivities = ((SGraphObjectNode *)resource).object;
+        if (userActivities.count == 0)
+            [self _setTypingStatus:nil activity:0];
         else
-            [self _setTypingStatus:TGLocalized(@"Conversation.typing")];
+        {
+            NSString *activity = userActivities[userActivities.allKeys.firstObject];
+            [self _setTypingStatus:[self stringForActivity:activity] activity:[self activityTypeForActivity:activity]];
+        }
     }
     else if ([path hasPrefix:@"/tg/blockedUsers"])
     {
@@ -650,6 +950,50 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     }
     
     [super actorCompleted:status path:path result:result];
+}
+
+- (bool)allowReplies
+{
+    return true;
+}
+
+- (bool)isASingleBotGroup
+{
+    return _isBot;
+}
+
+- (SSignal *)commandListForCommand:(NSString *)command
+{
+    if (_isBot)
+    {
+        TGUser *user = [TGDatabaseInstance() loadUser:_uid];
+        if (user == nil)
+            return nil;
+        
+        NSString *normalizedCommand = [command lowercaseString];
+        if ([normalizedCommand hasPrefix:@"/"])
+            normalizedCommand = [normalizedCommand substringFromIndex:1];
+        return [[TGBotSignals botInfoForUserId:_uid] map:^id(TGBotInfo *botInfo)
+        {
+            NSMutableArray *commands = [[NSMutableArray alloc] init];
+            for (TGBotComandInfo *commandInfo in botInfo.commandList)
+            {
+                if (normalizedCommand.length == 0 || [[commandInfo.command lowercaseString] hasPrefix:normalizedCommand])
+                    [commands addObject:commandInfo];
+            }
+            if (commands.count == 1 && [[((TGBotComandInfo *)commands[0]).command lowercaseString] isEqualToString:normalizedCommand])
+                [commands removeAllObjects];
+            return @[@[user, commands]];
+        }];
+    }
+    return nil;
+}
+
+
+- (void)standaloneSendBotStartPayload:(NSString *)payload
+{
+    _botStartPayload = payload;
+    [self requestBotStart];
 }
 
 @end

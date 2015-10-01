@@ -55,6 +55,23 @@
         {
             self.actionType = TGMessageActionAcceptContactRequest;
         }
+        else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionChatJoinedByLink class]])
+        {
+            TLMessageAction$messageActionChatJoinedByLink *concreteAction = (TLMessageAction$messageActionChatJoinedByLink *)actionDesc;
+            self.actionType = TGMessageActionJoinedByLink;
+            self.actionData = [NSDictionary dictionaryWithObject:[NSNumber numberWithInt:concreteAction.inviter_id] forKey:@"invitedBy"];
+        }
+        else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionChannelCreate class]])
+        {
+            TLMessageAction$messageActionChannelCreate *concreteAction = (TLMessageAction$messageActionChannelCreate *)actionDesc;
+            self.actionType = TGMessageActionChannelCreated;
+            self.actionData = [[NSDictionary alloc] initWithObjectsAndKeys:concreteAction.title, @"title", nil];
+        }
+        else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionChannelToggleComments class]]) {
+            TLMessageAction$messageActionChannelToggleComments *concreteAction = (TLMessageAction$messageActionChannelToggleComments *)actionDesc;
+            self.actionType = TGMessageActionChannelCommentsStatusChanged;
+            self.actionData = [[NSDictionary alloc] initWithObjectsAndKeys:@(concreteAction.enabled), @"enabled", nil];
+        }
     }
     return self;
 }

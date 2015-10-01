@@ -14,6 +14,7 @@
 @interface TGSendCodeRequestBuilder ()
 {
     NSString *_phone;
+    NSString *_phoneHash;
 }
 
 @property (nonatomic, strong) TGTimer *timer;
@@ -58,6 +59,7 @@
 - (void)execute:(NSDictionary *)options
 {
     _phone = [options objectForKey:@"phoneNumber"];
+    _phoneHash = [options objectForKey:@"phoneHash"];
     
     if ([[options objectForKey:@"requestCall"] boolValue])
     {
@@ -79,7 +81,12 @@
             } queue:[ActionStageInstance() globalStageDispatchQueue]];
             [_timer start];
             
-            self.cancelToken = [TGTelegraphInstance doSendConfirmationCode:_phone requestBuilder:self];
+            if ([options[@"requestSms"] boolValue])
+            {
+                self.cancelToken = [TGTelegraphInstance doSendConfirmationSms:_phone phoneHash:_phoneHash requestBuilder:self];
+            }
+            else
+                self.cancelToken = [TGTelegraphInstance doSendConfirmationCode:_phone requestBuilder:self];
         }
     }
 }
@@ -92,12 +99,25 @@
         _timer = nil;
     }
     
-    TLauth_SentCode$auth_sentCode *concreteCode = (TLauth_SentCode$auth_sentCode *)sendCode;
-    
     NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-    [dict setObject:concreteCode.phone_code_hash forKey:@"phoneCodeHash"];
-    [dict setObject:[NSNumber numberWithBool:concreteCode.phone_registered] forKey:@"phoneRegistered"];
-    dict[@"callTimeout"] = @(concreteCode.send_call_timeout);
+    
+    if ([sendCode isKindOfClass:[TLauth_SentCode$auth_sentAppCode class]])
+    {
+        TLauth_SentCode$auth_sentAppCode *concreteCode = (TLauth_SentCode$auth_sentAppCode *)sendCode;
+        
+        [dict setObject:concreteCode.phone_code_hash forKey:@"phoneCodeHash"];
+        [dict setObject:[NSNumber numberWithBool:concreteCode.phone_registered] forKey:@"phoneRegistered"];
+        dict[@"callTimeout"] = @(concreteCode.send_call_timeout);
+        dict[@"messageSentToTelegram"] = @true;
+    }
+    else
+    {
+        TLauth_SentCode$auth_sentCode *concreteCode = (TLauth_SentCode$auth_sentCode *)sendCode;
+        
+        [dict setObject:concreteCode.phone_code_hash forKey:@"phoneCodeHash"];
+        [dict setObject:[NSNumber numberWithBool:concreteCode.phone_registered] forKey:@"phoneRegistered"];
+        dict[@"callTimeout"] = @(concreteCode.send_call_timeout);
+    }
     
     [ActionStageInstance() actionCompleted:self.path result:[[SGraphObjectNode alloc] initWithObject:dict]];
 }
@@ -131,6 +151,53 @@
     [[TGTelegramNetworking instance] moveToDatacenterId:datacenterId];
     
     self.cancelToken = [TGTelegraphInstance doSendConfirmationCode:_phone requestBuilder:self];
+}
+
+- (void)sendSmsRequestSuccess:(bool)success
+{
+    if (_timer != nil)
+    {
+        [_timer invalidate];
+        _timer = nil;
+    }
+    
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+    
+    if (success)
+        [ActionStageInstance() actionCompleted:self.path result:[[SGraphObjectNode alloc] initWithObject:dict]];
+    else
+        [ActionStageInstance() actionFailed:self.path reason:TGSendCodeErrorUnknown];
+}
+
+- (void)sendSmsRequestFailed:(TGSendCodeError)errorCode
+{
+    if (_timer != nil)
+    {
+        [_timer invalidate];
+        _timer = nil;
+    }
+    
+    [ActionStageInstance() actionFailed:self.path reason:errorCode];
+}
+
+- (void)sendSmsRedirect:(NSInteger)datacenterId
+{
+    if (_timer != nil)
+    {
+        [_timer invalidate];
+        _timer = nil;
+    }
+    
+    ASHandle *actionHandle = _actionHandle;
+    _timer = [[TGTimer alloc] initWithTimeout:15.0 repeat:false completion:^
+    {
+        [actionHandle requestAction:@"networkTimeout" options:nil];
+    } queue:[ActionStageInstance() globalStageDispatchQueue]];
+    [_timer start];
+    
+    [[TGTelegramNetworking instance] moveToDatacenterId:datacenterId];
+    
+    self.cancelToken = [TGTelegraphInstance doSendConfirmationSms:_phone phoneHash:_phoneHash requestBuilder:self];
 }
 
 - (void)sendCallRequestSuccess

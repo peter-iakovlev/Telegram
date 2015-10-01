@@ -84,10 +84,10 @@
     [super loadInitialState];
     
     [self _setTitle:_conversation.chatTitle.length == 0 ? [self stringForMemberCount:_conversation.chatParticipantCount] :  _conversation.chatTitle];
-    [self _setAvatarConversationId:_conversationId title:@"" icon:[UIImage imageNamed:@"BroadcastAvatarIcon.png"]];
+    [self _setAvatarConversationId:_conversationId title:nil icon:[UIImage imageNamed:@"BroadcastAvatarIcon.png"]];
     [self _setAvatarUrl:_conversation.chatPhotoSmall];
     
-    [self _setStatus:[self stringForUserNames] accentColored:false allowAnimation:false];
+    [self _setStatus:[self stringForUserNames] accentColored:false allowAnimation:false toggleMode:TGModernConversationControllerTitleToggleNone];
 }
 
 - (void)_controllerWillAppearAnimated:(bool)animated firstTime:(bool)firstTime
@@ -102,16 +102,15 @@
 
 - (void)_controllerAvatarPressed
 {
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+    TGModernConversationController *controller = self.controller;
+    if (controller.currentSizeClass == UIUserInterfaceSizeClassCompact)
     {
         TGBroadcastListInfoController *groupInfoController = [[TGBroadcastListInfoController alloc] initWithConversationId:_conversationId];
         
-        TGModernConversationController *controller = self.controller;
         [controller.navigationController pushViewController:groupInfoController animated:true];
     }
     else
     {
-        TGModernConversationController *controller = self.controller;
         if (controller != nil)
         {
             TGBroadcastListInfoController *groupInfoController = [[TGBroadcastListInfoController alloc] initWithConversationId:_conversationId];
@@ -120,13 +119,24 @@
             navigationController.presentationStyle = TGNavigationControllerPresentationStyleRootInPopover;
             TGPopoverController *popoverController = [[TGPopoverController alloc] initWithContentViewController:navigationController];
             navigationController.parentPopoverController = popoverController;
-            [popoverController setPopoverContentSize:CGSizeMake(320.0f, 528.0f) animated:false];
+            navigationController.detachFromPresentingControllerInCompactMode = true;
+            [popoverController setContentSize:CGSizeMake(320.0f, 528.0f)];
             
             controller.associatedPopoverController = popoverController;
             [popoverController presentPopoverFromBarButtonItem:controller.navigationItem.rightBarButtonItem permittedArrowDirections:UIPopoverArrowDirectionAny animated:true];
             groupInfoController.collectionView.contentOffset = CGPointMake(0.0f, -groupInfoController.collectionView.contentInset.top);
         }
     }
+}
+
+- (NSDictionary *)userActivityData
+{
+    return nil;
+}
+
+- (TGApplicationFeaturePeerType)applicationFeaturePeerType
+{
+    return TGApplicationFeaturePeerGroup;
 }
 
 #pragma mark -
@@ -154,6 +164,7 @@
         NSMutableArray *actions = [[NSMutableArray alloc] init];
         [actions addObject:@{@"title": TGLocalized(@"Common.Edit"), @"action": @"edit"}];
         [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"action": @"info"}];
+        //[actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"action": @"search"}];
         
         [groupTitlePanel setButtonsWithTitlesAndActions:actions];
         
@@ -205,7 +216,7 @@
 
 - (NSDictionary *)_optionsForMessageActions
 {
-    return @{@"conversationId": @(_conversationId), @"isBroadcast": @true, @"userIds": [[NSArray alloc] initWithArray:_conversation.chatParticipants.chatParticipantUids]};
+    return @{@"conversationId": @(_conversationId), @"isBroadcast": @true, @"userIds": [[NSArray alloc] initWithArray:_conversation.chatParticipants.chatParticipantUids], @"secretChatConversationIds": [[NSArray alloc] initWithArray:_conversation.chatParticipants.chatParticipantSecretChatPeerIds], @"chatConversationIds": [[NSArray alloc] initWithArray:_conversation.chatParticipants.chatParticipantChatPeerIds]};
 }
 
 - (void)subscribeToUpdates
@@ -232,6 +243,8 @@
         }
         else if ([panelAction isEqualToString:@"info"])
             [self _controllerAvatarPressed];
+        else if ([panelAction isEqualToString:@"search"])
+            [self navigateToMessageSearch];
     }
     
     [super actionStageActionRequested:action options:options];
@@ -262,7 +275,7 @@
         
         if (needsUpdate)
         {
-            [self _setStatus:[self stringForUserNames] accentColored:false allowAnimation:false];
+            [self _setStatus:[self stringForUserNames] accentColored:false allowAnimation:false toggleMode:TGModernConversationControllerTitleToggleNone];
         }
     }
     else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId]])
@@ -270,12 +283,17 @@
         _conversation = ((SGraphObjectNode *)resource).object;
         
         [self _setTitle:_conversation.chatTitle.length == 0 ? [self stringForMemberCount:_conversation.chatParticipantCount] : _conversation.chatTitle];
-        [self _setAvatarConversationId:_conversationId title:_conversation.chatTitle icon:[UIImage imageNamed:@"BroadcastAvatarIcon.png"]];
+        [self _setAvatarConversationId:_conversationId title:nil icon:[UIImage imageNamed:@"BroadcastAvatarIcon.png"]];
         [self _setAvatarUrl:_conversation.chatPhotoSmall];
-        [self _setStatus:[self stringForUserNames] accentColored:false allowAnimation:false];
+        [self _setStatus:[self stringForUserNames] accentColored:false allowAnimation:false toggleMode:TGModernConversationControllerTitleToggleNone];
     }
     
     [super actionStageResourceDispatched:path resource:resource arguments:arguments];
+}
+
+- (bool)allowMessageForwarding
+{
+    return false;
 }
 
 @end

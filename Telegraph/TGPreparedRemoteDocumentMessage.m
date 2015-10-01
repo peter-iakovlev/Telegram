@@ -14,7 +14,7 @@
 
 @implementation TGPreparedRemoteDocumentMessage
 
-- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia
+- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia replyMessage:(TGMessage *)replyMessage
 {
     self = [super init];
     if (self != nil)
@@ -24,10 +24,12 @@
         _datacenterId = documentMedia.datacenterId;
         _userId = documentMedia.userId;
         _documentDate = documentMedia.date;
-        _fileName = documentMedia.fileName;
         _mimeType = documentMedia.mimeType;
         _size = documentMedia.size;
         _thumbnailInfo = documentMedia.thumbnailInfo;
+        _attributes = documentMedia.attributes;
+        
+        _replyMessage = replyMessage;
     }
     return self;
 }
@@ -37,6 +39,10 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
+    message.messageLifetime = self.messageLifetime;
+    
+    NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
     TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
     documentAttachment.documentId = _documentId;
@@ -44,12 +50,21 @@
     documentAttachment.datacenterId = _datacenterId;
     documentAttachment.userId = _userId;
     documentAttachment.date = _documentDate;
-    documentAttachment.fileName = _fileName;
+    documentAttachment.attributes = _attributes;
     documentAttachment.mimeType = _mimeType;
     documentAttachment.size = _size;
     documentAttachment.thumbnailInfo = _thumbnailInfo;
+    [attachments addObject:documentAttachment];
     
-    message.mediaAttachments = @[documentAttachment];
+    if (_replyMessage != nil)
+    {
+        TGReplyMessageMediaAttachment *replyMedia = [[TGReplyMessageMediaAttachment alloc] init];
+        replyMedia.replyMessageId = _replyMessage.mid;
+        replyMedia.replyMessage = _replyMessage;
+        [attachments addObject:replyMedia];
+    }
+    
+    message.mediaAttachments = attachments;
     
     return message;
 }

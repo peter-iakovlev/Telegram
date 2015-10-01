@@ -12,6 +12,6 @@
 
 @interface TGAudioMessageViewModel : TGContentBubbleViewModel
 
-- (instancetype)initWithMessage:(TGMessage *)message audio:(TGAudioMediaAttachment *)audio author:(TGUser *)author context:(TGModernViewContext *)context;
+- (instancetype)initWithMessage:(TGMessage *)message duration:(int32_t)duration size:(int32_t)size fileType:(NSString *)fileType authorPeer:(id)authorPeer context:(TGModernViewContext *)context;
 
 @end

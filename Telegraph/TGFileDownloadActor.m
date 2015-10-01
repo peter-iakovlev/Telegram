@@ -16,6 +16,8 @@
 
 #import <MTProtoKit/MTEncryption.h>
 
+#import "TGAppDelegate.h"
+
 @interface TGFileDownloadActor () <TGRawHttpActor>
 {
     NSData *_encryptionKey;
@@ -63,7 +65,7 @@
     if ([url hasPrefix:@"upload/"])
     {
         NSString *localFileUrl = [url substringFromIndex:7];
-        NSString *imagePath = [[[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0] stringByAppendingPathComponent:@"upload"] stringByAppendingPathComponent:localFileUrl];
+        NSString *imagePath = [[[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"upload"] stringByAppendingPathComponent:localFileUrl];
         
         NSData *data = [[NSData alloc] initWithContentsOfFile:imagePath];
         
@@ -164,7 +166,7 @@
                             [ActionStageInstance() dispatchOnStageQueue:^
                             {
                                 __strong TGFileDownloadActor *strongSelf = weakSelf;
-                                [strongSelf filePartDownloadProgress:location offset:0 length:(int)size packetLength:packetLength progress:progress];
+                                [strongSelf filePartDownloadProgress:location offset:0 length:(int)size packetLength:(int)packetLength progress:progress];
                             }];
                         }];
                         

@@ -47,7 +47,7 @@
 
 - (CGSize)itemSizeForContainerSize:(CGSize)containerSize
 {
-    return CGSizeMake(containerSize.width, 63.0f);
+    return CGSizeMake(containerSize.width, 60.0f);
 }
 
 - (void)itemSelected:(id)actionTarget

@@ -9,13 +9,14 @@
 #import <Foundation/Foundation.h>
 
 @class TGLiveUploadActorData;
+@class TGDataItem;
 
 @interface TGOpusAudioRecorder : NSObject
 
 - (instancetype)initWithFileEncryption:(bool)fileEncryption;
 
 - (void)record;
-- (NSString *)stop:(NSTimeInterval *)recordedDuration liveData:(__autoreleasing TGLiveUploadActorData **)liveData;
+- (TGDataItem *)stopRecording:(NSTimeInterval *)recordedDuration liveData:(__autoreleasing TGLiveUploadActorData **)liveData;
 - (NSTimeInterval)currentDuration;
 
 @end

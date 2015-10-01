@@ -16,6 +16,7 @@
 @property (nonatomic) bool selectable;
 @property (nonatomic) bool deselectAutomatically;
 @property (nonatomic) bool transparent;
+@property (nonatomic, copy) bool (^canBeMovedToSectionAtIndex)(NSUInteger, NSUInteger);
 
 @property (nonatomic) TGCollectionItemView *view;
 

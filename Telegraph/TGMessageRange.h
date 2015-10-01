@@ -23,6 +23,11 @@ inline TGMessageRange TGMessageRangeEmpty()
 {
     return (TGMessageRange){ .firstMessageId = INT32_MAX, .firstLocalMessageId = INT32_MAX, .firstDate = INT_MAX, .lastMessageId = INT32_MIN, .lastLocalMessageId = INT32_MIN, .lastDate = INT_MIN};
 }
+    
+inline bool TGMessageRangeEquals(TGMessageRange range1, TGMessageRange range2)
+{
+    return range1.firstDate == range2.firstDate && range1.lastDate == range2.lastDate && range1.firstMessageId == range2.firstMessageId && range1.firstLocalMessageId == range1.firstLocalMessageId && range1.lastMessageId == range2.lastMessageId && range1.lastLocalMessageId == range2.lastLocalMessageId;
+}
 
 #ifndef __cplusplus
 bool TGMessageRangeContains(TGMessageRange range, int32_t messageId, int date);

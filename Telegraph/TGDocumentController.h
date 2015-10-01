@@ -12,6 +12,6 @@
 
 @interface TGDocumentController : QLPreviewController
 
-- (instancetype)initWithURL:(NSURL *)url;
+- (instancetype)initWithURL:(NSURL *)url messageId:(int32_t)messageId;
 
 @end

@@ -1,0 +1,15 @@
+[submodule "thirdparty/ActionSheetPicker"]
+	path = thirdparty/ActionSheetPicker
+	url = https://github.com/skywinder/ActionSheetPicker-3.0.git
+[submodule "thirdparty/SSignalKit"]
+	path = thirdparty/SSignalKit
+url=https://ilaktyushin@bitbucket.org/iakovlevpeterp/ssignalkit.git
+[submodule "thirdparty/sqlcipher"]
+	path = thirdparty/sqlcipher
+	url = https://github.com/sqlcipher/sqlcipher.git
+[submodule "Share/submodules/lmdb"]
+	path = Share/submodules/lmdb
+	url = https://gitorious.org/mdb/mdb.git
+[submodule "submodules/elements"]
+	path = submodules/elements
+	url = git@bitbucket.org:iakovlevpeterp/elements.git

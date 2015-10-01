@@ -21,6 +21,10 @@
 #import "opus.h"
 #import "opusenc.h"
 
+#import "TGDataItem.h"
+
+#import "TGAudioSessionManager.h"
+
 static const int TGOpusAudioRecorderSampleRate = 16000;
 
 typedef struct
@@ -39,14 +43,15 @@ static dispatch_semaphore_t playSoundSemaphore = nil;
 
 @interface TGOpusAudioRecorder () <ASWatcher>
 {
-    NSString *_tempFilePath;
+    TGDataItem *_tempFileItem;
     
     TGOggOpusWriter *_oggWriter;
     
     NSMutableData *_audioBuffer;
-    NSFileHandle *_fileHandle;
     
     NSString *_liveUploadPath;
+    
+    SMetaDisposable *_currentAudioSession;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -64,9 +69,9 @@ static dispatch_semaphore_t playSoundSemaphore = nil;
     {
         _actionHandle = [[ASHandle alloc] initWithDelegate:self];
         
-        int64_t randomId = 0;
-        arc4random_buf(&randomId, 8);
-        _tempFilePath = [NSTemporaryDirectory() stringByAppendingString:[[NSString alloc] initWithFormat:@"%" PRIx64 ".m4a", randomId]];
+        _tempFileItem = [[TGDataItem alloc] initWithTempFile];
+        
+        _currentAudioSession = [[SMetaDisposable alloc] init];
         
         [[TGOpusAudioRecorder processingQueue] dispatchOnQueue:^
         {
@@ -79,8 +84,9 @@ static dispatch_semaphore_t playSoundSemaphore = nil;
             static int nextActionId = 0;
             int actionId = nextActionId++;
             _liveUploadPath = [[NSString alloc] initWithFormat:@"/tg/liveUpload/(%d)", actionId];
+            
             [ActionStageInstance() requestActor:_liveUploadPath options:@{
-                @"filePath": _tempFilePath,
+                @"fileItem": _tempFileItem,
                 @"encryptFile": @(fileEncryption)
             } flags:0 watcher:self];
         }];
@@ -112,17 +118,12 @@ static dispatch_semaphore_t playSoundSemaphore = nil;
     intptr_t objectId = (intptr_t)self;
     int recorderId = _recorderId;
     
-    NSFileHandle *fileHandle = _fileHandle;
-    _fileHandle = nil;
-    
     globalRecorder = nil;
     
     _oggWriter = nil;
     
     [[TGOpusAudioRecorder processingQueue] dispatchOnQueue:^
     {
-        [fileHandle closeFile];
-        
         if (globalRecorderContext.globalAudioRecorderId == recorderId)
         {
             globalRecorderContext.globalAudioRecorderId++;
@@ -152,32 +153,28 @@ static dispatch_semaphore_t playSoundSemaphore = nil;
     [self _endAudioSession];
 }
 
-- (void)_beginAudioSession:(bool)begin
+- (void)_beginAudioSession
 {
     [[TGOpusAudioRecorder processingQueue] dispatchOnQueue:^
     {
-        __autoreleasing NSError *error = nil;
-        AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-        if (![audioSession setCategory:AVAudioSessionCategoryPlayAndRecord error:&error])
-            TGLog(@"[TGAudioRecorder audio session set category failed: %@]", error);
-        if (begin)
+        __weak TGOpusAudioRecorder *weakSelf = self;
+        [_currentAudioSession setDisposable:[[TGAudioSessionManager instance] requestSessionWithType:TGAudioSessionTypePlayAndRecord interrupted:^
         {
-            if (![audioSession setActive:true error:&error])
-                TGLog(@"[TGAudioRecorder audio session activation failed: %@]", error);
-        }
+            __strong TGOpusAudioRecorder *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                
+            }
+        }]];
     }];
 }
 
 - (void)_endAudioSession
 {
+    id<SDisposable> currentAudioSession = _currentAudioSession;
     [[TGOpusAudioRecorder processingQueue] dispatchOnQueue:^
     {
-        __autoreleasing NSError *error = nil;
-        AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-        if (![audioSession setCategory:AVAudioSessionCategoryPlayback error:&error])
-            TGLog(@"[TGAudioRecorder audio session set category failed: %@]", error);
-        if (![audioSession setActive:false error:&error])
-            TGLog(@"[TGAudioRecorder audio session deactivation failed: %@]", error);
+        [currentAudioSession dispose];
     }];
 }
 
@@ -185,7 +182,7 @@ static dispatch_semaphore_t playSoundSemaphore = nil;
 {
     [[TGOpusAudioRecorder processingQueue] dispatchOnQueue:^
     {
-        [self _beginAudioSession:true];
+        [self _beginAudioSession];
         
         AudioComponentDescription desc;
         desc.componentType = kAudioUnitType_Output;
@@ -246,7 +243,7 @@ static dispatch_semaphore_t playSoundSemaphore = nil;
         
         AURenderCallbackStruct callbackStruct;
         callbackStruct.inputProc = &TGOpusRecordingCallback;
-        callbackStruct.inputProcRefCon = (void *)_recorderId;
+        callbackStruct.inputProcRefCon = (void *)(intptr_t)_recorderId;
         if (AudioUnitSetProperty(globalRecorderContext.audioUnit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 0, &callbackStruct, sizeof(callbackStruct)) != noErr)
         {
             TGLog(@"[TGOpusAudioRecorder#%x AudioUnitSetProperty kAudioOutputUnitProperty_SetInputCallback failed]", self);
@@ -264,11 +261,8 @@ static dispatch_semaphore_t playSoundSemaphore = nil;
             return;
         }
         
-        [[NSFileManager defaultManager] createFileAtPath:_tempFilePath contents:nil attributes:nil];
-        _fileHandle = [NSFileHandle fileHandleForWritingAtPath:_tempFilePath];
-        
         _oggWriter = [[TGOggOpusWriter alloc] init];
-        if (![_oggWriter begin:_fileHandle])
+        if (![_oggWriter beginWithDataItem:_tempFileItem])
         {
             TGLog(@"[TGOpusAudioRecorder#%x error initializing ogg opus writer]", self);
             [self cleanup];
@@ -330,7 +324,7 @@ static OSStatus TGOpusRecordingCallback(void *inRefCon, AudioUnitRenderActionFla
             [[TGOpusAudioRecorder processingQueue] dispatchOnQueue:^
             {
                 TGOpusAudioRecorder *recorder = globalRecorder;
-                if (recorder != nil && recorder.recorderId == (int)inRefCon)
+                if (recorder != nil && recorder.recorderId == (int)(intptr_t)inRefCon)
                     [recorder _processBuffer:&buffer];
                 
                 free(buffer.mData);
@@ -400,8 +394,6 @@ static OSStatus TGOpusRecordingCallback(void *inRefCon, AudioUnitRenderActionFla
                 NSUInteger currentBytesWritten = [_oggWriter encodedBytes];
                 if (currentBytesWritten != previousBytesWritten)
                 {
-                    [_fileHandle synchronizeFile];
-                    
                     [ActionStageInstance() dispatchOnStageQueue:^
                     {
                         TGLiveUploadActor *actor = (TGLiveUploadActor *)[ActionStageInstance() executingActorWithPath:_liveUploadPath];
@@ -413,9 +405,9 @@ static OSStatus TGOpusRecordingCallback(void *inRefCon, AudioUnitRenderActionFla
     }
 }
 
-- (NSString *)stop:(NSTimeInterval *)recordedDuration liveData:(__autoreleasing TGLiveUploadActorData **)liveData
+- (TGDataItem *)stopRecording:(NSTimeInterval *)recordedDuration liveData:(__autoreleasing TGLiveUploadActorData **)liveData
 {
-    __block NSString *pathResult = nil;
+    __block TGDataItem *dataItemResult = nil;
     __block NSTimeInterval durationResult = 0.0;
     
     __block NSUInteger totalBytes = 0;
@@ -424,7 +416,7 @@ static OSStatus TGOpusRecordingCallback(void *inRefCon, AudioUnitRenderActionFla
     {
         if (_oggWriter != nil && [_oggWriter writeFrame:NULL frameByteCount:0])
         {
-            pathResult = _tempFilePath;
+            dataItemResult = _tempFileItem;
             durationResult = [_oggWriter encodedDuration];
             totalBytes = [_oggWriter encodedBytes];
         }
@@ -444,7 +436,7 @@ static OSStatus TGOpusRecordingCallback(void *inRefCon, AudioUnitRenderActionFla
         });
     }
     
-    return pathResult;
+    return dataItemResult;
 }
 
 - (NSTimeInterval)currentDuration

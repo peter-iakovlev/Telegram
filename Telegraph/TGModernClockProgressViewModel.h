@@ -10,7 +10,8 @@
 
 typedef enum {
     TGModernClockProgressTypeOutgoingClock = 0,
-    TGModernClockProgressTypeOutgoingMediaClock = 1
+    TGModernClockProgressTypeOutgoingMediaClock = 1,
+    TGModernClockProgressTypeIncomingClock = 2
 } TGModernClockProgressType;
 
 @interface TGModernClockProgressViewModel : TGModernViewModel

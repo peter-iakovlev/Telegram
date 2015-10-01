@@ -89,7 +89,7 @@
     
     if (_buttons.count != 0)
     {
-        CGSize buttonSize = CGSizeMake(floorf(self.frame.size.width / _buttons.count), self.frame.size.height);
+        CGSize buttonSize = CGSizeMake(CGFloor(self.frame.size.width / _buttons.count), self.frame.size.height);
         
         int index = -1;
         for (UIView *view in _buttons)

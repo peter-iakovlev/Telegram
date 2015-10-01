@@ -11,6 +11,8 @@
 @interface TGUserInfoButtonCollectionItem : TGCollectionItem
 
 @property (nonatomic, strong) UIColor *titleColor;
+@property (nonatomic, strong) NSString *title;
+@property (nonatomic) bool editing;
 
 - (instancetype)initWithTitle:(NSString *)title action:(SEL)action;
 

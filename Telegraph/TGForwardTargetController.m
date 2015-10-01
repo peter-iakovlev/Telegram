@@ -13,6 +13,10 @@
 #import "TGImageUtils.h"
 #import "TGBackdropView.h"
 
+#import "TGAlertView.h"
+
+#import "TGAppDelegate.h"
+
 @interface TGForwardContactsController : TGContactsController
 
 @property (nonatomic, strong) ASHandle *watcher;
@@ -34,7 +38,10 @@
 
 @interface TGForwardTargetController () <UIAlertViewDelegate>
 {
-    NSString *_confirmationFormat;
+    NSString *_confirmationCustomFormat;
+    bool _targetMode;
+    bool _privacyMode;
+    bool _groupMode;
 }
 
 @property (nonatomic) bool blockMode;
@@ -61,17 +68,19 @@
 
 @implementation TGForwardTargetController
 
-- (id)initWithForwardMessages:(NSArray *)forwardMessages sendMessages:(NSArray *)sendMessages
+- (id)initWithForwardMessages:(NSArray *)forwardMessages sendMessages:(NSArray *)sendMessages showSecretChats:(bool)showSecretChats
 {
     self = [super init];
     if (self)
     {
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
-        _confirmationPrefix = TGLocalized(@"Conversation.ForwardToPrefix");
+        _confirmationDefaultPersonFormat = TGLocalized(@"Conversation.ForwardToPersonFormat");
+        _confirmationDefaultGroupFormat = TGLocalized(@"Conversation.ForwardToGroupFormat");
         
         _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
         _dialogListCompanion.forwardMode = true;
+        _dialogListCompanion.showSecretInForwardMode = showSecretChats;
         _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
         _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
         _dialogListController.customParentViewController = self;
@@ -107,9 +116,84 @@
         _contactsController.watcher = _actionHandle;
         _contactsController.customParentViewController = self;
         
-        _confirmationPrefix = TGLocalized(@"BlockedUsers.BlockPrefix");
+        _confirmationDefaultPersonFormat = _confirmationDefaultGroupFormat = TGLocalized(@"BlockedUsers.BlockFormat");
         _controllerTitle = TGLocalized(@"BlockedUsers.BlockTitle");
         _blockMode = true;
+    }
+    return self;
+}
+
+- (id)initWithSelectPrivacyTarget:(NSString *)title placeholder:(NSString *)placeholder
+{
+    self = [super init];
+    if (self)
+    {
+        _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
+        
+        _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
+        _dialogListCompanion.privacyMode = true;
+        _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
+        _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.customParentViewController = self;
+        _dialogListController.doNotHideSearchAutomatically = true;
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
+        
+        _contactsController = [[TGForwardContactsController alloc] initWithContactsMode:TGContactsModeRegistered | TGContactsModeClearSelectionImmediately | TGContactsModeCompose];
+        _contactsController.watcher = _actionHandle;
+        _contactsController.customParentViewController = self;
+        _contactsController.composePlaceholder = placeholder;
+        
+        _controllerTitle = title;
+        _privacyMode = true;
+    }
+    return self;
+}
+
+- (id)initWithSelectTarget
+{
+    self = [super init];
+    if (self)
+    {
+        _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
+        
+        _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
+        _dialogListCompanion.forwardMode = true;
+        _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
+        _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.customParentViewController = self;
+        _dialogListController.doNotHideSearchAutomatically = true;
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
+        
+        _contactsController = [[TGForwardContactsController alloc] initWithContactsMode:TGContactsModeRegistered | TGContactsModeClearSelectionImmediately];
+        _contactsController.watcher = _actionHandle;
+        _contactsController.customParentViewController = self;
+        
+        _controllerTitle = TGLocalized(@"BroadcastListInfo.AddRecipient");
+        _targetMode = true;
+    }
+    return self;
+}
+
+- (id)initWithSelectGroup
+{
+    self = [super init];
+    if (self)
+    {
+        _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
+        _groupMode = true;
+        
+        _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
+        _dialogListCompanion.forwardMode = true;
+        _dialogListCompanion.showGroupsOnly = true;
+        _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
+        _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.customParentViewController = self;
+        _dialogListController.doNotHideSearchAutomatically = true;
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
+        
+        _controllerTitle = TGLocalized(@"Target.SelectGroup");
+        
+        _confirmationDefaultPersonFormat = _confirmationDefaultGroupFormat = TGLocalized(@"Target.InviteToGroupConfirmation");
     }
     return self;
 }
@@ -138,12 +222,13 @@
             if (targetRange.location != NSNotFound)
                 genericFormat = [genericFormat stringByReplacingCharactersInRange:targetRange withString:@"%@"];
             
-            _confirmationFormat = genericFormat;
+            _confirmationCustomFormat = genericFormat;
         }
         
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
-        _confirmationPrefix = TGLocalized(@"Conversation.ForwardToPrefix");
+        _confirmationDefaultPersonFormat = TGLocalized(@"Conversation.ForwardToPersonFormat");
+        _confirmationDefaultGroupFormat = TGLocalized(@"Conversation.ForwardToGroupFormat");
         
         _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
         _dialogListCompanion.forwardMode = true;
@@ -163,38 +248,36 @@
     return self;
 }
 
+- (NSString *)stringForMultipleFilesConfirmation:(NSUInteger)count
+{
+    NSString *formatString = TGLocalized(@"Forward.ConfirmMultipleFiles_any");
+    if (count == 1)
+        formatString = TGLocalized(@"Forward.ConfirmMultipleFiles_1");
+    else if (count == 2)
+        formatString = TGLocalized(@"Forward.ConfirmMultipleFiles_2");
+    else if (count >= 3 && count <= 10)
+        formatString = TGLocalized(@"Forward.ConfirmMultipleFiles_3_10");
+    
+    return [[NSString alloc] initWithFormat:formatString, [[NSString alloc] initWithFormat:@"%d", (int)count]];
+}
+
 - (id)initWithDocumentFiles:(NSArray *)fileDescs
 {
     self = [super init];
     if (self != nil)
     {
-        NSString *genericFormat = TGLocalized(@"Document.TargetConfirmationFormat");
-        NSRange range = [genericFormat rangeOfString:@"{size}"];
-        if (range.location != 0)
-        {
-            NSString *sizeString = nil;
+        NSString *genericFormat = [self stringForMultipleFilesConfirmation:fileDescs.count];
             
-            int size = 1;
+        NSRange targetRange = [genericFormat rangeOfString:@"{target}"];
+        if (targetRange.location != NSNotFound)
+            genericFormat = [genericFormat stringByReplacingCharactersInRange:targetRange withString:@"%@"];
             
-            if (size < 1024)
-                sizeString = [[NSString alloc] initWithFormat:@"%dB", size];
-            else if (size < 1024 * 1024)
-                sizeString = [[NSString alloc] initWithFormat:@"%dKB", size / 1024];
-            else
-                sizeString = [[NSString alloc] initWithFormat:@"%.2fMB", size / (1024.0f * 1024.0f)];
-            
-            genericFormat = [genericFormat stringByReplacingCharactersInRange:range withString:sizeString];
-            
-            NSRange targetRange = [genericFormat rangeOfString:@"{target}"];
-            if (targetRange.location != NSNotFound)
-                genericFormat = [genericFormat stringByReplacingCharactersInRange:targetRange withString:@"%@"];
-            
-            _confirmationFormat = genericFormat;
-        }
+        _confirmationCustomFormat = genericFormat;
         
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
-        _confirmationPrefix = TGLocalized(@"Conversation.ForwardToPrefix");
+        _confirmationDefaultPersonFormat = TGLocalized(@"Conversation.ForwardToPersonFormat");
+        _confirmationDefaultGroupFormat = TGLocalized(@"Conversation.ForwardToGroupFormat");
         
         _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
         _dialogListCompanion.forwardMode = true;
@@ -254,62 +337,80 @@
     
     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(doneButtonPressed)];
     
-    _toolbarContainerView = [[UIView alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height - 44, self.view.frame.size.width, 44)];
-    _toolbarContainerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
-
-    if (TGBackdropEnabled())
+    if (_contactsController != nil)
     {
-        UIView *backgroundView = [[UIToolbar alloc] initWithFrame:_toolbarContainerView.bounds];
-        _toolbarContainerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        [_toolbarContainerView addSubview:backgroundView];
+        _toolbarContainerView = [[UIView alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height - 44, self.view.frame.size.width, 44)];
+        _toolbarContainerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
+
+        if (TGBackdropEnabled())
+        {
+            UIView *backgroundView = [[UIToolbar alloc] initWithFrame:_toolbarContainerView.bounds];
+            backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            [_toolbarContainerView addSubview:backgroundView];
+        }
+        else
+        {
+            UIView *backgroundView = [TGBackdropView viewWithLightNavigationBarStyle];
+            backgroundView.frame = _toolbarContainerView.bounds;
+            backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            [_toolbarContainerView addSubview:backgroundView];
+            
+            UIView *stripeView = [[UIView alloc] init];
+            stripeView.frame = CGRectMake(0.0f, 0.0f, _toolbarContainerView.frame.size.width, TGIsRetina() ? 0.5f : 1.0f);
+            stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
+            stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+            [_toolbarContainerView addSubview:stripeView];
+        }
+        
+        _segmentedControl = [[UISegmentedControl alloc] initWithItems:@[TGLocalized(@"DialogList.TabTitle"), TGLocalized(@"Contacts.TabTitle")]];
+        
+        [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlBackground.png"] forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+        [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlSelected.png"] forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
+        [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlSelected.png"] forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+        [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlHighlighted.png"] forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+        UIImage *dividerImage = [UIImage imageNamed:@"ModernSegmentedControlDivider.png"];
+        [_segmentedControl setDividerImage:dividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+        _segmentedControl.frame = CGRectMake(CGFloor((_toolbarContainerView.frame.size.width - 182.0f) / 2), 8, 182.0f, 29.0f);
+        _segmentedControl.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin;
+        
+        [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: TGAccentColor(), UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
+        [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: [UIColor whiteColor], UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
+        
+        [_segmentedControl setSelectedSegmentIndex:0];
+        [_segmentedControl addTarget:self action:@selector(segmentedControlChanged) forControlEvents:UIControlEventValueChanged];
+        
+        [_toolbarContainerView addSubview:_segmentedControl];
+        
+        if (_privacyMode)
+        {
+            [self setCurrentViewController:_contactsController];
+            [_segmentedControl setSelectedSegmentIndex:1];
+        }
+        else
+            [self setCurrentViewController:_dialogListController];
+        
+        [self.view addSubview:_toolbarContainerView];
     }
     else
     {
-        UIView *backgroundView = [TGBackdropView viewWithLightNavigationBarStyle];
-        backgroundView.frame = _toolbarContainerView.bounds;
-        backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        [_toolbarContainerView addSubview:backgroundView];
-        
-        UIView *stripeView = [[UIView alloc] init];
-        stripeView.frame = CGRectMake(0.0f, 0.0f, _toolbarContainerView.frame.size.width, TGIsRetina() ? 0.5f : 1.0f);
-        stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
-        stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-        [_toolbarContainerView addSubview:stripeView];
+        [self setCurrentViewController:_dialogListController];
     }
-    
-    _segmentedControl = [[UISegmentedControl alloc] initWithItems:@[TGLocalized(@"DialogList.TabTitle"), TGLocalized(@"Contacts.TabTitle")]];
-    
-    [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlBackground.png"] forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
-    [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlSelected.png"] forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
-    [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlSelected.png"] forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-    [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlHighlighted.png"] forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-    UIImage *dividerImage = [UIImage imageNamed:@"ModernSegmentedControlSeparator.png"];
-    [_segmentedControl setDividerImage:dividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
-    [_segmentedControl setDividerImage:dividerImage forLeftSegmentState:UIControlStateHighlighted rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
-    [_segmentedControl setDividerImage:dividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-    
-    _segmentedControl.frame = CGRectMake(floorf((_toolbarContainerView.frame.size.width - 182.0f) / 2), 8, 182.0f, 29.0f);
-    _segmentedControl.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
-    
-    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: TGAccentColor(), UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
-    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: [UIColor whiteColor], UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
-    
-    [_segmentedControl setSelectedSegmentIndex:0];
-    [_segmentedControl addTarget:self action:@selector(segmentedControlChanged) forControlEvents:UIControlEventValueChanged];
-    
-    [_toolbarContainerView addSubview:_segmentedControl];
-    
-    [self setCurrentViewController:_dialogListController];
-    
-    [self.view addSubview:_toolbarContainerView];
 }
 
 - (void)viewWillAppear:(BOOL)animated
 {
     _toolbarContainerView.frame = CGRectMake(0, self.view.frame.size.height - 44, self.view.frame.size.width, 44);
-    _segmentedControl.frame = CGRectMake(floorf((_toolbarContainerView.frame.size.width - 182.0f) / 2), 8, 182.0f, 29.0f);
+    _segmentedControl.frame = CGRectMake(CGFloor((_toolbarContainerView.frame.size.width - 182.0f) / 2), 8, 182.0f, 29.0f);
     
     [super viewWillAppear:animated];
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    
+    if (iosMajorVersion() < 7)
+        [self.view.window makeKeyWindow];
 }
 
 - (void)doUnloadView
@@ -343,6 +444,24 @@
         [self.view insertSubview:_currentViewController.view atIndex:0];
         [self addChildViewController:_currentViewController];
         [_currentViewController didMoveToParentViewController:self];
+    }
+    
+    if (_privacyMode)
+    {
+        if (currentViewController == _contactsController)
+        {
+            [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(donePressed)]];
+        }
+        else
+            [self setRightBarButtonItem:nil];
+    }
+}
+
+- (void)donePressed
+{
+    if (_privacyMode)
+    {
+        [_watcherHandle requestAction:@"multipleUsersSelected" options:_contactsController.selectedComposeUsers];
     }
 }
 
@@ -379,7 +498,7 @@
 
 - (void)segmentedControlChanged
 {
-    int index = _segmentedControl.selectedSegmentIndex;
+    int index = (int)_segmentedControl.selectedSegmentIndex;
     
     if (index == 0)
     {
@@ -402,7 +521,7 @@
         TGUser *user = [options objectForKey:@"user"];
         if (user != nil)
         {
-            if (_blockMode)
+            if (_blockMode || _privacyMode)
             {
                 [_watcherHandle requestAction:@"blockUser" options:user];
             }
@@ -410,16 +529,30 @@
             {
                 _selectedTarget = user;
                 
-                _currentAlert.delegate = nil;
-                
-                NSString *alertText = nil;
-                if (_confirmationFormat != nil)
-                    alertText = [[NSString alloc] initWithFormat:_confirmationFormat, user.displayName];
+                if (_targetMode)
+                {
+                    [_watcherHandle requestAction:@"userSelected" options:user];
+                }
                 else
-                    alertText = [NSString stringWithFormat:@"%@%@?", _confirmationPrefix, user.displayName];
-                
-                _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
-                [_currentAlert show];
+                {
+                    if (!_skipConfirmation)
+                    {
+                        _currentAlert.delegate = nil;
+                        
+                        NSString *alertText = nil;
+                        if (_confirmationCustomFormat != nil)
+                            alertText = [[NSString alloc] initWithFormat:_confirmationCustomFormat, user.displayName];
+                        else
+                            alertText = [NSString stringWithFormat:_confirmationDefaultPersonFormat, user.displayName];
+                        
+                        _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                        [_currentAlert show];
+                    }
+                    else
+                    {
+                        [self confirmAction];
+                    }
+                }
             }
         }
     }
@@ -430,59 +563,101 @@
         {
             _selectedTarget = conversation;
             
-            if (conversation.isChat && conversation.conversationId > INT_MIN)
+            if (_targetMode)
             {
-                _selectedTarget = conversation;
-                
-                _currentAlert.delegate = nil;
-                
-                NSString *alertText = nil;
-                if (_blockMode)
-                    alertText = [NSString stringWithFormat:@"%@\"%@\"?", TGLocalized(@"BlockedUsers.LeavePrefix"), conversation.chatTitle];
-                else if (_confirmationFormat != nil)
-                    alertText = [[NSString alloc] initWithFormat:_confirmationFormat, conversation.chatTitle];
+                if (conversation.isChat)
+                    [_watcherHandle requestAction:@"conversationSelected" options:conversation];
                 else
-                    alertText = [NSString stringWithFormat:@"%@\"%@\"?", _confirmationPrefix, conversation.chatTitle];
-                
-                _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
-                [_currentAlert show];
+                {
+                    TGUser *user = [TGDatabaseInstance() loadUser:(int32_t)conversation.conversationId];
+                    if (user != nil)
+                        [_watcherHandle requestAction:@"userSelected" options:user];
+                }
             }
             else
             {
-                int uid = 0;
-                
-                if (conversation.isChat)
+                if ((conversation.isChat && conversation.conversationId > INT_MIN) || conversation.isChannel)
                 {
-                    if (conversation.chatParticipants.chatParticipantUids.count != 0)
-                        uid = [conversation.chatParticipants.chatParticipantUids[0] intValue];
-                }
-                else
-                    uid = (int)conversation.conversationId;
-                
-                TGUser *user = [TGDatabaseInstance() loadUser:uid];
-                if (user != nil)
-                {
-                    if (_blockMode)
+                    _selectedTarget = conversation;
+                    
+                    if (!_skipConfirmation)
                     {
-                        [_watcherHandle requestAction:@"blockUser" options:user];
-                    }
-                    else
-                    {
-                        _selectedTarget = conversation.isChat ? conversation : user;
-                        
                         _currentAlert.delegate = nil;
                         
                         NSString *alertText = nil;
-                        if (_confirmationFormat != nil)
-                            alertText = [[NSString alloc] initWithFormat:_confirmationFormat, user.displayName];
+                        if (_privacyMode)
+                        {
+                            NSString *formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_any");
+                            if (conversation.chatParticipants.chatParticipantUids.count == 1)
+                                formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_1");
+                            else if (conversation.chatParticipants.chatParticipantUids.count == 2)
+                                formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_2");
+                            else if (conversation.chatParticipants.chatParticipantUids.count >= 3 && conversation.chatParticipants.chatParticipantUids.count <= 10)
+                                formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_3_10");
+                            
+                            alertText = [NSString stringWithFormat:formatString, @(conversation.chatParticipants.chatParticipantUids.count)];
+                            
+                            _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                            [_currentAlert show];
+                        }
                         else
-                            alertText = [NSString stringWithFormat:@"%@%@?", _confirmationPrefix, user.displayName];
-                        
-                        _currentAlert = [[UIAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
-                        [_currentAlert show];
+                        {
+                            if (_blockMode)
+                                alertText = [NSString stringWithFormat:@"%@\"%@\"?", TGLocalized(@"BlockedUsers.LeavePrefix"), conversation.chatTitle];
+                            else if (_confirmationCustomFormat != nil)
+                                alertText = [[NSString alloc] initWithFormat:_confirmationCustomFormat, conversation.chatTitle];
+                            else
+                                alertText = [NSString stringWithFormat:_confirmationDefaultGroupFormat, conversation.chatTitle];
+                            
+                            _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                            [_currentAlert show];
+                        }
+                    }
+                    else
+                        [self confirmAction];
+                }
+                else
+                {
+                    int uid = 0;
+                    
+                    if (conversation.isChat)
+                    {
+                        if (conversation.chatParticipants.chatParticipantUids.count != 0)
+                            uid = [conversation.chatParticipants.chatParticipantUids[0] intValue];
+                    }
+                    else
+                        uid = (int)conversation.conversationId;
+                    
+                    TGUser *user = [TGDatabaseInstance() loadUser:uid];
+                    if (user != nil)
+                    {
+                        if (_blockMode || _privacyMode)
+                        {
+                            [_watcherHandle requestAction:@"blockUser" options:user];
+                        }
+                        else
+                        {
+                            _selectedTarget = conversation.isChat ? conversation : user;
+                            
+                            if (!_skipConfirmation)
+                            {
+                                _currentAlert.delegate = nil;
+                                
+                                NSString *alertText = nil;
+                                if (_confirmationCustomFormat != nil)
+                                    alertText = [[NSString alloc] initWithFormat:_confirmationCustomFormat, user.displayName];
+                                else
+                                    alertText = [NSString stringWithFormat:_confirmationDefaultPersonFormat, user.displayName];
+                                
+                                _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
+                                [_currentAlert show];
+                            }
+                            else
+                                [self confirmAction];
+                        }
                     }
                 }
-            }   
+            }
         }
     }
 }
@@ -491,7 +666,7 @@
 {
     if (buttonIndex != alertView.cancelButtonIndex && _selectedTarget != nil)
     {
-        if (_blockMode)
+        if (_blockMode || _privacyMode)
         {
             if ([_selectedTarget isKindOfClass:[TGUser class]])
                 [_watcherHandle requestAction:@"blockUser" options:_selectedTarget];
@@ -500,44 +675,66 @@
         }
         else
         {
-            id<ASWatcher> watcher = _watcherHandle.delegate;
-            if (watcher != nil && [watcher respondsToSelector:@selector(actionStageActionRequested:options:)])
-                [watcher actionStageActionRequested:@"willForwardMessages" options:[[NSDictionary alloc] initWithObjectsAndKeys:self, @"controller", _selectedTarget, @"target", nil]];
-            
-            if (_documentFileDescs != nil)
-            {
-                if ([_selectedTarget isKindOfClass:[TGUser class]])
-                {
-                    TGUser *user = (TGUser *)_selectedTarget;
-                    [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendFiles": _documentFileDescs} animated:false];
-                }
-                else if ([_selectedTarget isKindOfClass:[TGConversation class]])
-                {
-                    TGConversation *conversation = (TGConversation *)_selectedTarget;
-                    [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendFiles": _documentFileDescs} animated:false];
-                }
-            }
-            else
-            {
-                if ([_selectedTarget isKindOfClass:[TGUser class]])
-                {
-                    TGUser *user = (TGUser *)_selectedTarget;
-                    [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}]} animated:false];
-                }
-                else if ([_selectedTarget isKindOfClass:[TGConversation class]])
-                {
-                    TGConversation *conversation = (TGConversation *)_selectedTarget;
-                    [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}]} animated:false];
-                }
-            }
-            
-            if (watcher == nil)
-                [self dismissSelf];
+            [self confirmAction];
+        }
+    }
+
+    _currentAlert.delegate = nil;
+    _currentAlert = nil;
+}
+
+- (void)confirmAction
+{
+    if ([_selectedTarget isKindOfClass:[TGConversation class]])
+    {
+        TGConversation *conversation = (TGConversation *)_selectedTarget;
+        if (conversation.isChannel && !conversation.currentUserCanSendMessages) {
+            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Forward.ChannelReadOnly") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            return;
         }
     }
     
-    _currentAlert.delegate = nil;
-    _currentAlert = nil;
+    id<ASWatcher> watcher = _watcherHandle.delegate;
+    if (watcher != nil && [watcher respondsToSelector:@selector(actionStageActionRequested:options:)])
+        [watcher actionStageActionRequested:@"willForwardMessages" options:[[NSDictionary alloc] initWithObjectsAndKeys:self, @"controller", _selectedTarget, @"target", nil]];
+    
+    if (watcher == nil)
+        [self dismissSelf];
+ 
+    if (!_groupMode)
+    {
+        if (_documentFileDescs != nil)
+        {
+            if ([_selectedTarget isKindOfClass:[TGUser class]])
+            {
+                TGUser *user = (TGUser *)_selectedTarget;
+                [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendFiles": _documentFileDescs} animated:false];
+            }
+            else if ([_selectedTarget isKindOfClass:[TGConversation class]])
+            {
+                TGConversation *conversation = (TGConversation *)_selectedTarget;
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendFiles": _documentFileDescs} animated:false];
+            }
+        }
+        else
+        {
+            if ([_selectedTarget isKindOfClass:[TGUser class]])
+            {
+                TGUser *user = (TGUser *)_selectedTarget;
+                [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}]} animated:false];
+            }
+            else if ([_selectedTarget isKindOfClass:[TGConversation class]])
+            {
+                TGConversation *conversation = (TGConversation *)_selectedTarget;
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}]} animated:false];
+            }
+        }
+    }
+}
+
+- (TGContactsController *)contactsController
+{
+    return _contactsController;
 }
 
 @end

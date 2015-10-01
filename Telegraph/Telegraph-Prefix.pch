@@ -8,5 +8,6 @@
     #import <UIKit/UIKit.h>
     #import <Foundation/Foundation.h>
 
+#import <MTProtoKit/MTLogging.h>
     #import "TGCommon.h"
 #endif

@@ -43,7 +43,7 @@
     {
         bool foundDifference = false;
         
-        int count = buttons.count;
+        int count = (int)buttons.count;
         for (int i = 0; i < count; i++)
         {
             NSDictionary *dict1 = [_buttons objectAtIndex:i];
@@ -142,7 +142,7 @@
     
     if (!_rightButton.hidden && !_leftButton.hidden)
     {
-        float buttonWidth = floorf((self.contentView.frame.size.width - 10) / 2);
+        CGFloat buttonWidth = CGFloor((self.contentView.frame.size.width - 10) / 2);
         _leftButton.frame = CGRectMake(0, 0, buttonWidth, _leftButton.frame.size.height);
         _rightButton.frame = CGRectMake(self.contentView.frame.size.width - buttonWidth, 0, buttonWidth, _rightButton.frame.size.height);
     }

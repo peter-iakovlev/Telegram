@@ -20,23 +20,8 @@
             self.date = concretePhoto.date;
             
             self.imageInfo = [[TGImageInfo alloc] initWithTelegraphSizesDescription:concretePhoto.sizes];
-            
-            if ([concretePhoto.geo isKindOfClass:[TLGeoPoint$geoPoint class]])
-            {
-                self.hasLocation = true;
-                self.locationLatitude = ((TLGeoPoint$geoPoint *)concretePhoto.geo).lat;
-                self.locationLongitude = ((TLGeoPoint$geoPoint *)concretePhoto.geo).n_long;
-            }
-            else if ([concretePhoto.geo isKindOfClass:[TLGeoPoint$geoPlace class]])
-            {
-                self.hasLocation = true;
-                self.locationLatitude = ((TLGeoPoint$geoPlace *)concretePhoto.geo).lat;
-                self.locationLongitude = ((TLGeoPoint$geoPlace *)concretePhoto.geo).n_long;
-            }
-            else
-            {
-                self.hasLocation = false;
-            }
+
+            self.hasLocation = false;
         }
         else if ([desc isKindOfClass:[TLPhoto$wallPhoto class]])
         {

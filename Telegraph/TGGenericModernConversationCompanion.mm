@@ -6,6 +6,7 @@
 #import "TGImageUtils.h"
 #import "TGStringUtils.h"
 #import "TGPhoneUtils.h"
+#import "TGPeerIdAdapter.h"
 
 #import "TGAppDelegate.h"
 #import "TGDownloadManager.h"
@@ -14,9 +15,12 @@
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"
 
+#import "TGStringUtils.h"
+
 #import "TGViewController.h"
 #import "TGInterfaceManager.h"
 #import "TGDialogListController.h"
+#import "TGAlertView.h"
 
 #import "TGMessageModernConversationItem.h"
 
@@ -37,6 +41,9 @@
 #import "TGPreparedRemoteDocumentMessage.h"
 #import "TGPreparedLocalAudioMessage.h"
 #import "TGPreparedRemoteAudioMessage.h"
+#import "TGPreparedDownloadImageMessage.h"
+#import "TGPreparedDownloadDocumentMessage.h"
+#import "TGPreparedCloudDocumentMessage.h"
 
 #import "TGForwardTargetController.h"
 
@@ -56,8 +63,48 @@
 
 #import "TGProgressWindow.h"
 
+#import "TGBingSearchResultItem.h"
+#import "TGGiphySearchResultItem.h"
+#import "TGWebSearchInternalImageResult.h"
+#import "TGWebSearchInternalGifResult.h"
+
+#import "TGMediaStoreContext.h"
+#import "TGModernSendCommonMessageActor.h"
+#import "TGWebSearchController.h"
+#import "TGWebSearchInternalImageResult.h"
+
+#import "TGHashtagSearchController.h"
+#import "TGRecentHashtagsSignal.h"
+#import "TGTextCheckingResult.h"
+
+#import "TGICloudItem.h"
+#import "TGDropboxItem.h"
+#import "TGGoogleDriveItem.h"
+#import "TGFileUtils.h"
+
+#import "TGRecentHashtagsSignal.h"
+
+#import "TGLinkPreviewsContentProperty.h"
+
+#import "TGModernConversationInputTextPanel.h"
+
+#import "TGUpdateStateRequestBuilder.h"
+
+#import "TGMessageViewedContentProperty.h"
+
+#import "TGStickersSignals.h"
+#import "TGStickerAssociation.h"
+
 #import <map>
 #import <vector>
+
+#import <WebP/decode.h>
+
+#import "TGChatSearchController.h"
+
+#import "TGModernViewContext.h"
+
+#import "TGChannelManagementSignals.h"
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 60000 // iOS 6.0 or later
 #define NEEDS_DISPATCH_RETAIN_RELEASE 0
@@ -74,10 +121,10 @@ typedef enum {
 @interface TGGenericModernConversationCompanion () <TGCreateContactControllerDelegate, TGAddToExistingContactControllerDelegate>
 {
     bool _initialMayHaveUnreadMessages;
-    int32_t _preferredInitialPositionedMessageId;
     int _initialUnreadCount;
     
     NSArray *_initialForwardMessagePayload;
+    NSArray *_initialAttachMessagePayload;
     NSArray *_initialSendMessagePayload;
     NSArray *_initialSendFilePayload;
     
@@ -96,7 +143,16 @@ typedef enum {
     std::set<int32_t> _processingDownloadMids;
     TG_SYNCHRONIZED_DEFINE(_processingDownloadMids);
     
-    id _dynamicTypeObserver;
+    NSUInteger _layer;
+    
+    SMetaDisposable *_stickerPacksDisposable;
+    
+    TGProgressWindow *_progressWindow;
+    int32_t _loadingMessageForSearch;
+    int32_t _sourceMessageForSearch;
+    bool _animatedTransitionInSearch;
+    
+    id<SDisposable> _botReplyMarkupDisposable;
 }
 
 @end
@@ -107,7 +163,7 @@ typedef enum {
 {
     self = [super init];
     if (self != nil)
-    {
+    {        
         _conversationId = conversationId;
         
         TGMessageModernConversationItemLocalUserId = TGTelegraphInstance.clientUserId;
@@ -123,27 +179,20 @@ typedef enum {
         [[TGTelegraphConversationMessageAssetsSource instance] setProgressAlpha:wallpaper.progressAlpha];
         
         TG_SYNCHRONIZED_INIT(_processingDownloadMids);
-        
-        __weak TGGenericModernConversationCompanion *weakSelf = self;
-        TGDispatchOnMainThread(^
-        {
-            if (iosMajorVersion() >= 7)
-            {
-                _dynamicTypeObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIContentSizeCategoryDidChangeNotification object:nil queue:nil usingBlock:^(__unused NSNotification *notification)
-                {
-                    __strong TGGenericModernConversationCompanion *strongSelf = weakSelf;
-                    [strongSelf _dynamicTypeUpdated];
-                }];
-            }
-        });
     }
     return self;
 }
 
 - (void)dealloc
 {
-    if (_dynamicTypeObserver != nil)
-        [[NSNotificationCenter defaultCenter] removeObserver:_dynamicTypeObserver];
+    TGProgressWindow *progressWindow = _progressWindow;
+    TGDispatchOnMainThread(^
+    {
+        [progressWindow dismiss:false];
+    });
+    
+    [_stickerPacksDisposable dispose];
+    [_botReplyMarkupDisposable dispose];
 }
 
 - (void)setOthersUnreadCount:(int)unreadCount
@@ -158,7 +207,8 @@ typedef enum {
 
 - (void)setInitialMessagePayloadWithForwardMessages:(NSArray *)initialForwardMessagePayload sendMessages:(NSArray *)initialSendMessagePayload sendFiles:(NSArray *)initialSendFilePayload
 {
-    _initialForwardMessagePayload = initialForwardMessagePayload;
+    //_initialForwardMessagePayload = initialForwardMessagePayload;
+    _initialAttachMessagePayload = initialForwardMessagePayload;
     _initialSendMessagePayload = initialSendMessagePayload;
     _initialSendFilePayload = initialSendFilePayload;
 }
@@ -166,6 +216,11 @@ typedef enum {
 - (int64_t)conversationId
 {
     return _conversationId;
+}
+
+- (int64_t)messageAuthorPeerId
+{
+    return TGTelegraphInstance.clientUserId;
 }
 
 - (bool)imageDownloadsShouldAutosavePhotos
@@ -193,9 +248,25 @@ typedef enum {
     return 0;
 }
 
+- (NSUInteger)layer
+{
+    if (_layer < 1)
+        return 1;
+    return _layer;
+}
+
+- (void)setLayer:(NSUInteger)layer
+{
+    _layer = layer;
+}
+
 - (NSDictionary *)_optionsForMessageActions
 {
     return nil;
+}
+
+- (void)_setupOutgoingMessage:(TGMessage *)__unused message {
+    
 }
 
 - (bool)_messagesNeedRandomId
@@ -215,7 +286,7 @@ typedef enum {
 {
     [TGModernConversationCompanion dispatchOnMessageQueue:^
     {
-        [self _sendPreparedMessages:[self _createPreparedMessagesFromFiles:files] automaticallyAddToList:false withIntent:TGSendMessageIntentOther];
+        [self _sendPreparedMessages:[self _createPreparedMessagesFromFiles:files asReplyToMessageId:0] automaticallyAddToList:false withIntent:TGSendMessageIntentOther];
     }];
 }
 
@@ -226,21 +297,63 @@ typedef enum {
         TGUser *user = [TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId];
         if (user != nil)
         {
-            TGPreparedContactMessage *contactMessage = [[TGPreparedContactMessage alloc] initWithUid:user.uid firstName:user.firstName lastName:user.lastName phoneNumber:user.phoneNumber];
+            TGPreparedContactMessage *contactMessage = [[TGPreparedContactMessage alloc] initWithUid:user.uid firstName:user.firstName lastName:user.lastName phoneNumber:user.phoneNumber replyMessage:nil];
             [self _sendPreparedMessages:@[contactMessage] automaticallyAddToList:true withIntent:TGSendMessageIntentOther];
         }
     }];
+}
+
+- (void)_addMediaRecentsFromMessages:(NSArray *)messages
+{
+    for (TGMessage *message in messages)
+    {
+        if (message.outgoing)
+            continue;
+        
+        for (id attachment in message.mediaAttachments)
+        {
+            if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
+            {
+                TGImageMediaAttachment *imageAttachment = attachment;
+                if (imageAttachment.imageId != 0)
+                {
+                    [TGWebSearchController addRecentSelectedItems:@[[[TGWebSearchInternalImageResult alloc] initWithImageId:imageAttachment.imageId accessHash:imageAttachment.accessHash imageInfo:imageAttachment.imageInfo]]];
+                }
+            }
+            else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
+            {
+                TGDocumentMediaAttachment *documentAttachment = attachment;
+                if ([documentAttachment.mimeType isEqualToString:@"image/gif"] && documentAttachment.thumbnailInfo != nil && documentAttachment.documentId != 0)
+                {
+                    [TGWebSearchController addRecentSelectedItems:@[[[TGWebSearchInternalGifResult alloc] initWithDocumentId:documentAttachment.documentId accessHash:documentAttachment.accessHash size:documentAttachment.size fileName:documentAttachment.fileName mimeType:documentAttachment.mimeType thumbnailInfo:documentAttachment.thumbnailInfo]]];
+                }
+            }
+        }
+    }
 }
 
 - (void)standaloneForwardMessages:(NSArray *)messages
 {
     [TGModernConversationCompanion dispatchOnMessageQueue:^
     {
-        [self _sendPreparedMessages:[self _createPreparedForwardMessagesFromMessages:messages] automaticallyAddToList:true withIntent:TGSendMessageIntentSendOther];
+        TGDispatchOnMainThread(^
+        {
+            TGModernConversationController *controller = self.controller;
+            [controller setForwardMessages:messages animated:false];
+        });
+        
+        /*[self _sendPreparedMessages:[self _createPreparedForwardMessagesFromMessages:messages] automaticallyAddToList:true withIntent:TGSendMessageIntentSendOther];
+        
+        [self _addMediaRecentsFromMessages:messages];*/
     }];
 }
 
 - (void)loadInitialState
+{
+    [self loadInitialState:true];
+}
+
+- (void)loadInitialState:(bool)loadMessages
 {
     if (_initialForwardMessagePayload != 0 || _initialSendMessagePayload.count != 0 || _initialSendFilePayload.count != 0)
     {
@@ -256,13 +369,15 @@ typedef enum {
             
             if (_initialSendFilePayload.count != 0)
             {
-                [self _sendPreparedMessages:[self _createPreparedMessagesFromFiles:_initialSendFilePayload] automaticallyAddToList:false withIntent:TGSendMessageIntentOther];
+                [self _sendPreparedMessages:[self _createPreparedMessagesFromFiles:_initialSendFilePayload asReplyToMessageId:0] automaticallyAddToList:false withIntent:TGSendMessageIntentOther];
             }
             _initialSendFilePayload = nil;
             
             if (_initialForwardMessagePayload.count != 0)
             {
                 [self _sendPreparedMessages:[self _createPreparedForwardMessagesFromMessages:_initialForwardMessagePayload] automaticallyAddToList:false withIntent:TGSendMessageIntentOther];
+                
+                [self _addMediaRecentsFromMessages:_initialForwardMessagePayload];
             }
             _initialForwardMessagePayload = nil;
             
@@ -277,154 +392,188 @@ typedef enum {
 #endif
     }
     
-    __block NSArray *topMessages = nil;
-    __block bool blockIsAtBottom = true;
-    
-    NSUInteger initialMessageCount = 24;
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        initialMessageCount = [TGViewController isWidescreen] ? 20 : 14;
-    else
-        initialMessageCount = 34;
-    
-    [TGDatabaseInstance() dispatchOnDatabaseThread:^
+    if (loadMessages)
     {
+        __block NSArray *topMessages = nil;
+        __block bool blockIsAtBottom = true;
+        
+        NSUInteger initialMessageCount = 24;
+        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+            initialMessageCount = [TGViewController isWidescreen] ? 20 : 14;
+        else
+            initialMessageCount = 34;
+        
+        [TGDatabaseInstance() dispatchOnDatabaseThread:^
+        {
+            if (_preferredInitialPositionedMessageId != 0)
+            {
+                [TGDatabaseInstance() loadMessagesFromConversation:_conversationId maxMid:INT_MAX maxDate:INT_MAX maxLocalMid:INT_MAX atMessageId:_preferredInitialPositionedMessageId limit:20 extraUnread:false completion:^(NSArray *messages, bool historyExistsBelow)
+                {
+                    topMessages = messages;
+                    blockIsAtBottom = !historyExistsBelow;
+                }];
+            }
+            else if (_initialMayHaveUnreadMessages)
+            {
+                [TGDatabaseInstance() loadUnreadMessagesHeadFromConversation:_conversationId limit:(int)initialMessageCount completion:^(NSArray *messages, bool isAtBottom)
+                {
+                    topMessages = messages;
+                    blockIsAtBottom = isAtBottom;
+                }];
+            }
+            else
+            {
+                [TGDatabaseInstance() loadMessagesFromConversation:_conversationId maxMid:INT_MAX maxDate:INT_MAX maxLocalMid:INT_MAX atMessageId:0 limit:[TGViewController isWidescreen] ? 20 : 14 extraUnread:false completion:^(NSArray *messages, __unused bool historyExistsBelow)
+                {
+                    topMessages = messages;
+                }];
+            }
+            
+            int minRemoteMid = INT_MAX;
+            int maxRemoteMid = INT_MIN;
+            for (TGMessage *message in topMessages)
+            {
+                if (message.mid < TGMessageLocalMidBaseline)
+                {
+                    minRemoteMid = MIN(message.mid, minRemoteMid);
+                    maxRemoteMid = MAX(message.mid, maxRemoteMid);
+                }
+            }
+            
+            if (minRemoteMid <= maxRemoteMid)
+            {
+                topMessages = [TGDatabaseInstance() excludeMessagesWithHolesFromArray:topMessages peerId:_conversationId aroundMessageId:_preferredInitialPositionedMessageId];
+            }
+        } synchronous:true];
+        
+        NSMutableArray *sortedTopMessages = [[NSMutableArray alloc] initWithArray:topMessages];
+        [sortedTopMessages sortUsingComparator:^NSComparisonResult(TGMessage *message1, TGMessage *message2)
+        {
+            NSTimeInterval date1 = message1.date;
+            NSTimeInterval date2 = message2.date;
+            
+            if (ABS(date1 - date2) < DBL_EPSILON)
+            {
+                if (message1.mid > message2.mid)
+                    return NSOrderedAscending;
+                else
+                    return NSOrderedDescending;
+            }
+            
+            return date1 > date2 ? NSOrderedAscending : NSOrderedDescending;
+        }];
+        
         if (_preferredInitialPositionedMessageId != 0)
         {
-            [TGDatabaseInstance() loadMessagesFromConversation:_conversationId maxMid:INT_MAX maxDate:INT_MAX maxLocalMid:INT_MAX atMessageId:_preferredInitialPositionedMessageId limit:20 extraUnread:false completion:^(NSArray *messages, bool historyExistsBelow)
+            for (TGMessage *message in sortedTopMessages.reverseObjectEnumerator)
             {
-                topMessages = messages;
-                blockIsAtBottom = !historyExistsBelow;
-            }];
-        }
-        else if (_initialMayHaveUnreadMessages)
-        {
-            [TGDatabaseInstance() loadUnreadMessagesHeadFromConversation:_conversationId limit:initialMessageCount completion:^(NSArray *messages, bool isAtBottom)
-            {
-                topMessages = messages;
-                blockIsAtBottom = isAtBottom;
-            }];
+                if (message.mid == _preferredInitialPositionedMessageId)
+                {
+                    [self setInitialMessagePositioning:message.mid position:TGInitialScrollPositionCenter];
+                    break;
+                }
+            }
         }
         else
         {
-            [TGDatabaseInstance() loadMessagesFromConversation:_conversationId maxMid:INT_MAX maxDate:INT_MAX maxLocalMid:INT_MAX atMessageId:0 limit:[TGViewController isWidescreen] ? 20 : 14 extraUnread:false completion:^(NSArray *messages, __unused bool historyExistsBelow)
+            int lastUnreadIndex = -1;
+            int index = (int)sortedTopMessages.count;
+            for (TGMessage *message in sortedTopMessages.reverseObjectEnumerator)
             {
-                topMessages = messages;
-            }];
-        }
-    } synchronous:true];
-    
-    NSMutableArray *sortedTopMessages = [[NSMutableArray alloc] initWithArray:topMessages];
-    [sortedTopMessages sortUsingComparator:^NSComparisonResult(TGMessage *message1, TGMessage *message2)
-    {
-        NSTimeInterval date1 = message1.date;
-        NSTimeInterval date2 = message2.date;
-        
-        if (ABS(date1 - date2) < DBL_EPSILON)
-        {
-            if (message1.mid > message2.mid)
-                return NSOrderedAscending;
-            else
-                return NSOrderedDescending;
-        }
-        
-        return date1 > date2 ? NSOrderedAscending : NSOrderedDescending;
-    }];
-    
-    if (_preferredInitialPositionedMessageId != 0)
-    {
-        for (TGMessage *message in sortedTopMessages.reverseObjectEnumerator)
-        {
-            if (message.mid == _preferredInitialPositionedMessageId)
-            {
-                [self setInitialMessagePositioning:message.mid position:TGInitialScrollPositionCenter];
-                break;
-            }
-        }
-    }
-    else
-    {
-        int lastUnreadIndex = -1;
-        int index = sortedTopMessages.count;
-        for (TGMessage *message in sortedTopMessages.reverseObjectEnumerator)
-        {
-            index--;
-            
-            if (!message.outgoing && message.unread)
-            {
-                lastUnreadIndex = index;
-                [self setInitialMessagePositioning:message.mid position:TGInitialScrollPositionTop];
-                break;
-            }
-        }
-        
-        if (lastUnreadIndex != -1)
-        {
-            TGMessageRange unreadRange = TGMessageRangeEmpty();
-            
-            unreadRange.firstDate = (int)((TGMessage *)sortedTopMessages[lastUnreadIndex]).date;
-            unreadRange.lastDate = (int)((TGMessage *)sortedTopMessages[0]).date;
-            
-            bool setFirstMessageId = false;
-            bool setFirstLocalMessageId = false;
-            for (int i = lastUnreadIndex; i >= 0 && (!setFirstMessageId || !setFirstLocalMessageId); i--)
-            {
-                TGMessage *message = sortedTopMessages[i];
+                index--;
                 
-                if (message.mid < TGMessageLocalMidBaseline)
+                if (!message.outgoing && message.unread)
                 {
-                    if (!setFirstMessageId)
-                    {
-                        unreadRange.firstMessageId = message.mid;
-                        setFirstMessageId = true;
-                    }
-                }
-                else
-                {
-                    if (!setFirstLocalMessageId)
-                    {
-                        unreadRange.firstLocalMessageId = message.mid;
-                        setFirstLocalMessageId = true;
-                    }
+                    lastUnreadIndex = index;
+                    [self setInitialMessagePositioning:message.mid position:TGInitialScrollPositionTop];
+                    break;
                 }
             }
             
-            bool setLastMessageId = false;
-            bool setLastLocalMessageId = false;
-            for (int i = 0; i <= lastUnreadIndex && (!setLastMessageId || !setLastLocalMessageId); i++)
+            if (lastUnreadIndex != -1)
             {
-                TGMessage *message = sortedTopMessages[i];
+                TGMessageRange unreadRange = TGMessageRangeEmpty();
                 
-                if (message.mid < TGMessageLocalMidBaseline)
+                unreadRange.firstDate = (int)((TGMessage *)sortedTopMessages[lastUnreadIndex]).date;
+                unreadRange.lastDate = (int)((TGMessage *)sortedTopMessages[0]).date;
+                
+                bool setFirstMessageId = false;
+                bool setFirstLocalMessageId = false;
+                for (int i = lastUnreadIndex; i >= 0 && (!setFirstMessageId || !setFirstLocalMessageId); i--)
                 {
-                    if (!setLastMessageId)
+                    TGMessage *message = sortedTopMessages[i];
+                    
+                    if (message.mid < TGMessageLocalMidBaseline)
                     {
-                        unreadRange.lastMessageId = message.mid;
-                        setLastMessageId = true;
+                        if (!setFirstMessageId)
+                        {
+                            unreadRange.firstMessageId = message.mid;
+                            setFirstMessageId = true;
+                        }
+                    }
+                    else
+                    {
+                        if (!setFirstLocalMessageId)
+                        {
+                            unreadRange.firstLocalMessageId = message.mid;
+                            setFirstLocalMessageId = true;
+                        }
                     }
                 }
-                else
+                
+                bool setLastMessageId = false;
+                bool setLastLocalMessageId = false;
+                for (int i = 0; i <= lastUnreadIndex && (!setLastMessageId || !setLastLocalMessageId); i++)
                 {
-                    if (!setLastLocalMessageId)
+                    TGMessage *message = sortedTopMessages[i];
+                    
+                    if (message.mid < TGMessageLocalMidBaseline)
                     {
-                        unreadRange.lastLocalMessageId = message.mid;
-                        setLastLocalMessageId = true;
+                        if (!setLastMessageId)
+                        {
+                            unreadRange.lastMessageId = message.mid;
+                            setLastMessageId = true;
+                        }
+                    }
+                    else
+                    {
+                        if (!setLastLocalMessageId)
+                        {
+                            unreadRange.lastLocalMessageId = message.mid;
+                            setLastLocalMessageId = true;
+                        }
                     }
                 }
+                
+                [self setUnreadMessageRange:unreadRange];
             }
-            
-            [self setUnreadMessageRange:unreadRange];
         }
+        
+        _moreMessagesAvailableBelow = !blockIsAtBottom;
+        
+        [self _replaceMessages:sortedTopMessages];
     }
-    
-    _moreMessagesAvailableBelow = !blockIsAtBottom;
-    
-    [self _replaceMessages:sortedTopMessages];
+
+    TGModernConversationController *controller = self.controller;
     
     if (_initialUnreadCount != 0)
-    {
-        TGModernConversationController *controller = self.controller;
         [controller setGlobalUnreadCount:_initialUnreadCount];
-    }
+    
+    if (_initialAttachMessagePayload.count != 0)
+        [controller setForwardMessages:_initialAttachMessagePayload animated:false];
+    
+    [self _updateInputPanel];
+    
+    __weak TGGenericModernConversationCompanion *weakSelf = self;
+    _botReplyMarkupDisposable = [[[TGDatabaseInstance() signalBotReplyMarkupForPeerId:_conversationId] deliverOn:[SQueue mainQueue]] startWithNext:^(TGBotReplyMarkup *markup)
+    {
+        __strong TGGenericModernConversationCompanion *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            TGModernConversationController *controller = strongSelf.controller;
+            [controller setReplyMarkup:markup];
+        }
+    }];
 }
 
 - (void)_controllerWillAppearAnimated:(bool)animated firstTime:(bool)firstTime
@@ -452,12 +601,39 @@ typedef enum {
                 [[TGDownloadManager instance] requestState:self.actionHandle];
         }];
         
-        NSString *inputText = [TGDatabaseInstance() loadConversationState:_conversationId];
+        TGModernConversationController *controller = self.controller;
+        
+        int32_t replyMessageId = 0;
+        __autoreleasing NSArray *forwardMessageDescs = nil;
+        NSString *inputText = [TGDatabaseInstance() loadConversationState:_conversationId replyMessageId:&replyMessageId forwardMessageDescs:&forwardMessageDescs];
         if (inputText.length != 0)
         {
-            TGModernConversationController *controller = self.controller;
             [controller setInputText:inputText replace:true];
         }
+        if (replyMessageId != 0)
+        {
+            TGMessage *replyMessage = [TGDatabaseInstance() loadMessageWithMid:replyMessageId peerId:_conversationId];
+            if (replyMessage != nil)
+            {
+                [controller setReplyMessage:replyMessage animated:false];
+            }
+        }
+        else if (forwardMessageDescs.count != 0)
+        {
+            NSMutableArray *forwardMessages = [[NSMutableArray alloc] init];
+            for (NSDictionary *desc in forwardMessageDescs)
+            {
+                TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:[desc[@"messageId"] intValue] peerId:[desc[@"peerId"] longLongValue]];
+                if (message != nil)
+                    [forwardMessages addObject:message];
+            }
+            TGModernConversationController *controller = self.controller;
+            if (forwardMessages.count != 0)
+                [controller setForwardMessages:forwardMessages animated:false];
+        }
+        
+        if (_preferredInitialPositionedMessageId != 0)
+            [controller temporaryHighlightMessage:_preferredInitialPositionedMessageId automatically:false];
     }
 }
 
@@ -474,15 +650,31 @@ typedef enum {
         
         [[TGDownloadManager instance] requestState:self.actionHandle];
         
-        [TGConversationReadHistoryActor executeStandalone:_conversationId];
+        TGModernConversationController *controller = self.controller;
+        if ([controller canReadHistory])
+        {
+            [TGModernConversationCompanion dispatchOnMessageQueue:^
+            {
+                [self _markIncomingMessagesAsReadSilent];
+            }];
+            
+            [TGConversationReadHistoryActor executeStandalone:_conversationId];
+        }
+        
+        if (_preferredInitialPositionedMessageId != 0)
+            [controller temporaryHighlightMessage:_preferredInitialPositionedMessageId automatically:true];
     }
 }
 
 - (void)updateControllerInputText:(NSString *)inputText
 {
+    TGModernConversationController *controller = self.controller;
+    int32_t currentReplyMessageId = [controller _currentReplyMessageId];
+    NSArray *currentForwardMessageDescs = [controller _currentForwardMessageDescs];
+    
     [TGDatabaseInstance() dispatchOnDatabaseThread:^
     {
-        [TGDatabaseInstance() storeConversationState:_conversationId state:inputText];
+        [TGDatabaseInstance() storeConversationState:_conversationId state:inputText replyMessageId:currentReplyMessageId forwardMessageDescs:currentForwardMessageDescs];
     } synchronous:false];
 }
 
@@ -498,17 +690,95 @@ typedef enum {
     });
 }
 
-#pragma mark -
-
-- (void)_dynamicTypeUpdated
+- (void)controllerDidChangeInputText:(NSString *)inputText
 {
-    TGDispatchOnMainThread(^
+    if (![inputText containsSingleEmoji])
     {
-        TGUpdateMessageViewModelLayoutConstants();
-        
         TGModernConversationController *controller = self.controller;
-        [controller refreshMetrics];
-    });
+        [controller setInlineStickerList:nil];
+    }
+    
+    [ActionStageInstance() dispatchOnStageQueue:^
+    {
+        if (![inputText containsSingleEmoji])
+        {
+            [_stickerPacksDisposable setDisposable:nil];
+            TGDispatchOnMainThread(^
+            {
+                TGModernConversationController *controller = self.controller;
+                if ([controller.inputText isEqualToString:inputText])
+                    [controller setInlineStickerList:nil];
+            });
+        }
+        else
+        {
+            NSString *keyString = [inputText getEmojiFromString:true].firstObject;
+            __weak TGGenericModernConversationCompanion *weakSelf = self;
+            [_stickerPacksDisposable setDisposable:[[[[[[TGStickersSignals stickerPacks] filter:^bool(NSDictionary *dict)
+            {
+                return ((NSArray *)dict[@"packs"]).count != 0;
+            }] take:1] mapToSignal:^SSignal *(NSDictionary *dict)
+            {
+                NSMutableArray *matchedDocuments = [[NSMutableArray alloc] init];
+                
+                NSDictionary *packUseCount = dict[@"packUseCount"];
+                
+                NSArray *sortedStickerPacks = [dict[@"packs"] sortedArrayUsingComparator:^NSComparisonResult(TGStickerPack *pack1, TGStickerPack *pack2)
+                {
+                    NSNumber *id1 = @(((TGStickerPackIdReference *)pack1.packReference).packId);
+                    NSNumber *id2 = @(((TGStickerPackIdReference *)pack2.packReference).packId);
+                    NSNumber *useCount1 = packUseCount[id1];
+                    NSNumber *useCount2 = packUseCount[id2];
+                    if (useCount1 != nil && useCount2 != nil)
+                    {
+                        NSComparisonResult result = [useCount1 compare:useCount2];
+                        if (result == NSOrderedSame)
+                            return [id1 compare:id2];
+                        return result;
+                    }
+                    else if (useCount1 != nil)
+                        return NSOrderedDescending;
+                    else if (useCount2 != nil)
+                        return NSOrderedAscending;
+                    else
+                        return [id1 compare:id2];
+                }];
+                
+                for (TGStickerPack *stickerPack in sortedStickerPacks.reverseObjectEnumerator)
+                {
+                    NSMutableArray *documentIds = [[NSMutableArray alloc] init];
+                    for (TGStickerAssociation *association in stickerPack.stickerAssociations)
+                    {
+                        if ([association.key isEqual:keyString])
+                            [documentIds addObjectsFromArray:association.documentIds];
+                    }
+                    
+                    for (NSNumber *nDocumentId in documentIds)
+                    {
+                        for (TGDocumentMediaAttachment *document in stickerPack.documents)
+                        {
+                            if (document.documentId == [nDocumentId longLongValue])
+                            {
+                                [matchedDocuments addObject:document];
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                return [TGStickersSignals preloadedStickerPreviews:matchedDocuments count:6];
+            }] deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *matchedDocuments)
+            {
+                __strong TGGenericModernConversationCompanion *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    TGModernConversationController *controller = strongSelf.controller;
+                    if ([controller.inputText isEqualToString:inputText])
+                        [controller setInlineStickerList:matchedDocuments];
+                }
+            }]];
+        }
+    }];
 }
 
 #pragma mark -
@@ -533,12 +803,17 @@ typedef enum {
 
 - (void)subscribeToUpdates
 {
+    [super subscribeToUpdates];
+    
     [ActionStageInstance() watchForPaths:@[
         [[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/messages", [self _conversationIdPathComponent]],
         @"/tg/conversation/*/readmessages",
+        [[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/readmessages", [self _conversationIdPathComponent]],
         @"/tg/conversation/*/failmessages",
         [[NSString alloc] initWithFormat:@"/tg/conversationReadApplied/(%@)", [self _conversationIdPathComponent]],
         [[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/messagesDeleted", [self _conversationIdPathComponent]],
+        [[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/messagesChanged", [self _conversationIdPathComponent]],
+        [[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/messageViews", [self _conversationIdPathComponent]],
         @"/tg/userdatachanges",
         @"/tg/userpresencechanges",
         @"/tg/contactlist",
@@ -547,7 +822,10 @@ typedef enum {
         @"/as/media/imageThumbnailUpdated",
         @"/tg/service/synchronizationstate",
         @"/tg/unreadCount",
-        @"/tg/assets/currentWallpaperInfo"
+        @"/tg/assets/currentWallpaperInfo",
+        @"/tg/conversation/historyCleared",
+        @"/tg/removedMediasForMessageIds",
+        @"/tg/conversation/*/readmessageContents"
     ] watcher:self];
     
     int networkState = [ActionStageInstance() requestActorStateNow:@"/tg/service/updatestate"] ? 1 : 0;
@@ -581,7 +859,7 @@ typedef enum {
                 _messageUploadProgress[(int32_t)[nMid intValue]] = [nProgress floatValue];
             }];
             
-            [self _updateProgressForItemsInIndexSet:[[NSIndexSet alloc] initWithIndexesInRange:NSMakeRange(0, _items.count)]];
+            [self _updateProgressForItemsInIndexSet:[[NSIndexSet alloc] initWithIndexesInRange:NSMakeRange(0, _items.count)] animated:false];
         }];
     }
 }
@@ -592,6 +870,8 @@ typedef enum {
     
     std::vector<int> requiredUsers;
     std::vector<int> requiredUsersItemIndices;
+    
+    NSMutableArray *requiredChannelPeerIds = [[NSMutableArray alloc] init];
     
     Class TGMessageModernConversationItemClass = [TGMessageModernConversationItem class];
     int index = -1;
@@ -614,7 +894,29 @@ typedef enum {
                     {
                         case TGForwardedMessageMediaAttachmentType:
                         {
-                            requiredUsers.push_back(((TGForwardedMessageMediaAttachment *)attachment).forwardUid);
+                            int64_t forwardPeerId = ((TGForwardedMessageMediaAttachment *)attachment).forwardPeerId;
+                            if (TGPeerIdIsChannel(forwardPeerId)) {
+                                [requiredChannelPeerIds addObject:@(forwardPeerId)];
+                            } else {
+                                requiredUsers.push_back((int32_t)forwardPeerId);
+                            }
+                            
+                            if (!didAddToQueue) {
+                                requiredUsersItemIndices.push_back(index);
+                                didAddToQueue = true;
+                            }
+                            
+                            break;
+                        }
+                        case TGReplyMessageMediaAttachmentType:
+                        {
+                            int64_t replyPeerId = ((TGReplyMessageMediaAttachment *)attachment).replyMessage.fromUid;
+                            
+                            if (TGPeerIdIsChannel(replyPeerId)) {
+                                [requiredChannelPeerIds addObject:@(replyPeerId)];
+                            } else {
+                                requiredUsers.push_back((int32_t)replyPeerId);
+                            }
                             
                             if (!didAddToQueue)
                             {
@@ -662,6 +964,7 @@ typedef enum {
                                 }
                                 case TGMessageActionChatEditTitle:
                                 case TGMessageActionCreateChat:
+                                case TGMessageActionChannelCreated:
                                 case TGMessageActionCreateBroadcastList:
                                 case TGMessageActionChatEditPhoto:
                                 case TGMessageActionContactRegistered:
@@ -699,6 +1002,7 @@ typedef enum {
     }
     
     std::tr1::shared_ptr<std::map<int, TGUser *> > pUsers = [TGDatabaseInstance() loadUsers:requiredUsers];
+    NSDictionary *channels = requiredChannelPeerIds.count == 0 ? nil : [TGDatabaseInstance() loadChannels:requiredChannelPeerIds];
     
     for (int itemIndex : requiredUsersItemIndices)
     {
@@ -710,6 +1014,7 @@ typedef enum {
         if (messageItem->_message.mediaAttachments.count != 0)
         {
             NSMutableArray *additionalUsers = [[NSMutableArray alloc] initWithCapacity:1];
+            NSMutableArray *additionalConversations = [[NSMutableArray alloc] init];
             
             for (TGMediaAttachment *attachment in messageItem->_message.mediaAttachments)
             {
@@ -717,9 +1022,33 @@ typedef enum {
                 {
                     case TGForwardedMessageMediaAttachmentType:
                     {
-                        it = pUsers->find(((TGForwardedMessageMediaAttachment *)attachment).forwardUid);
-                        if (it != pUsers->end())
-                            [additionalUsers addObject:it->second];
+                        int64_t forwardPeerId = ((TGForwardedMessageMediaAttachment *)attachment).forwardPeerId;
+                        if (TGPeerIdIsChannel(forwardPeerId)) {
+                            TGConversation *conversation = channels[@(forwardPeerId)];
+                            if (conversation != nil) {
+                                [additionalConversations addObject:conversation];
+                            }
+                        } else {
+                            it = pUsers->find((int32_t)forwardPeerId);
+                            if (it != pUsers->end())
+                                [additionalUsers addObject:it->second];
+                        }
+                        break;
+                    }
+                    case TGReplyMessageMediaAttachmentType:
+                    {
+                        int64_t replyPeerId = ((TGReplyMessageMediaAttachment *)attachment).replyMessage.fromUid;
+                        
+                        if (TGPeerIdIsChannel(replyPeerId)) {
+                            TGConversation *conversation = channels[@(replyPeerId)];
+                            if (conversation != nil) {
+                                [additionalConversations addObject:conversation];
+                            }
+                        } else {
+                            it = pUsers->find((int32_t)replyPeerId);
+                            if (it != pUsers->end())
+                                [additionalUsers addObject:it->second];
+                        }
                         break;
                     }
                     case TGContactMediaAttachmentType:
@@ -770,6 +1099,7 @@ typedef enum {
                                 break;
                             }
                             case TGMessageActionChatEditTitle:
+                            case TGMessageActionChannelCreated:
                             case TGMessageActionCreateChat:
                             case TGMessageActionCreateBroadcastList:
                             case TGMessageActionChatEditPhoto:
@@ -794,9 +1124,11 @@ typedef enum {
         
             if (additionalUsers.count != 0)
                 messageItem->_additionalUsers = additionalUsers;
+            if (additionalConversations.count != 0)
+                messageItem->_additionalConversations = additionalConversations;
         }
         
-        if (needsAuthor)
+        if (needsAuthor && messageItem->_message.fromUid != 0)
         {
             it = pUsers->find((int)messageItem->_message.fromUid);
             if (it != pUsers->end())
@@ -834,17 +1166,35 @@ typedef enum {
                     
                     NSString *url = [imageAttachment.imageInfo closestImageUrlWithSize:(CGSizeMake(1136, 1136)) resultingSize:NULL pickLargest:true];
                     
-                    NSString *path = [cache pathForCachedData:url];
-                    if (path != nil)
+                    bool imageDownloaded = false;
+                    
+                    if ([url hasPrefix:@"http://"] || [url hasPrefix:@"https://"])
                     {
-                        bool imageDownloaded = ([url hasPrefix:@"upload/"] || [url hasPrefix:@"file://"]) ? true : [fileManager fileExistsAtPath:path];
-                        
-                        if (item->_mediaAvailabilityStatus != imageDownloaded)
+                        imageDownloaded = [[[TGMediaStoreContext instance] temporaryFilesCache] containsValueForKey:[url dataUsingEncoding:NSUTF8StringEncoding]];
+                    }
+                    else
+                    {
+                        if (imageAttachment.imageId != 0)
                         {
-                            TGMessageModernConversationItem *updatedItem = [item copy];
-                            updatedItem->_mediaAvailabilityStatus = imageDownloaded;
-                            return updatedItem;
+                            NSString *path = [TGPreparedRemoteImageMessage filePathForRemoteImageId:imageAttachment.imageId];
+                            imageDownloaded = [fileManager fileExistsAtPath:path];
                         }
+                        
+                        if (!imageDownloaded)
+                        {
+                            NSString *path = [cache pathForCachedData:url];
+                            if (path != nil)
+                            {
+                                imageDownloaded = ([url hasPrefix:@"upload/"] || [url hasPrefix:@"file://"]) ? true : [fileManager fileExistsAtPath:path];
+                            }
+                        }
+                    }
+                    
+                    if (item->_mediaAvailabilityStatus != imageDownloaded)
+                    {
+                        TGMessageModernConversationItem *updatedItem = [item copy];
+                        updatedItem->_mediaAvailabilityStatus = imageDownloaded;
+                        return updatedItem;
                     }
                     
                     break;
@@ -956,7 +1306,7 @@ typedef enum {
                         TGMessageModernConversationItem *updatedItem = [item copy];
                         updatedItem->_mediaAvailabilityStatus = isContact;
                         
-                        [item updateToItem:updatedItem viewStorage:nil];
+                        [item updateToItem:updatedItem viewStorage:nil sizeChanged:NULL];
                     }
                     
                     break;
@@ -970,20 +1320,43 @@ typedef enum {
 
 #pragma mark -
 
-- (void)controllerWantsToSendTextMessage:(NSString *)text
+- (void)controllerWantsToSendTextMessage:(NSString *)text asReplyToMessageId:(int32_t)replyMessageId withAttachedMessages:(NSArray *)withAttachedMessages disableLinkPreviews:(bool)disableLinkPreviews
 {
     static const NSInteger messagePartLimit = 4096;
     NSMutableArray *preparedMessages = [[NSMutableArray alloc] init];
     
-    if (text.length <= messagePartLimit)
-        [preparedMessages addObject:[[TGPreparedTextMessage alloc] initWithText:text]];
-    else
+    TGMessage *replyMessage = nil;
+    if (replyMessageId != 0)
+        replyMessage = [TGDatabaseInstance() loadMessageWithMid:replyMessageId peerId:_conversationId];
+    
+    TGWebPageMediaAttachment *parsedWebpage = nil;
+    if (!disableLinkPreviews && [self allowMessageForwarding])
     {
-        for (NSUInteger i = 0; i < text.length; i += messagePartLimit)
+        NSString *link = [TGModernConversationInputTextPanel linkCandidateInText:text];
+        if (link != nil)
+            parsedWebpage = [TGUpdateStateRequestBuilder webPageWithLink:link];
+    }
+    
+    if (text.length != 0)
+    {
+        if (text.length <= messagePartLimit)
         {
-            NSString *substring = [text substringWithRange:NSMakeRange(i, MIN(messagePartLimit, text.length - i))];
-            if (substring.length != 0)
-                [preparedMessages addObject:[[TGPreparedTextMessage alloc] initWithText:substring]];
+            TGPreparedTextMessage *preparedMessage = [[TGPreparedTextMessage alloc] initWithText:text replyMessage:replyMessage disableLinkPreviews:disableLinkPreviews parsedWebpage:parsedWebpage];
+            preparedMessage.messageLifetime = [self messageLifetime];
+            [preparedMessages addObject:preparedMessage];
+        }
+        else
+        {
+            for (NSUInteger i = 0; i < text.length; i += messagePartLimit)
+            {
+                NSString *substring = [text substringWithRange:NSMakeRange(i, MIN(messagePartLimit, text.length - i))];
+                if (substring.length != 0)
+                {
+                    TGPreparedTextMessage *preparedMessage = [[TGPreparedTextMessage alloc] initWithText:substring replyMessage:replyMessage disableLinkPreviews:disableLinkPreviews parsedWebpage:i == 0 ?parsedWebpage : nil];
+                    preparedMessage.messageLifetime = [self messageLifetime];
+                    [preparedMessages addObject:preparedMessage];
+                }
+            }
         }
     }
     
@@ -992,17 +1365,33 @@ typedef enum {
     
     [TGModernConversationCompanion dispatchOnMessageQueue:^
     {
+        if (withAttachedMessages.count != 0)
+        {
+            [preparedMessages addObjectsFromArray:[self _createPreparedForwardMessagesFromMessages:withAttachedMessages]];
+        }
+        
         [self _sendPreparedMessages:preparedMessages automaticallyAddToList:true withIntent:TGSendMessageIntentSendText];
         
-        [TGDatabaseInstance() storeConversationState:_conversationId state:nil];
+        [TGDatabaseInstance() storeConversationState:_conversationId state:nil replyMessageId:0 forwardMessageDescs:@[]];
+        
+        TGDispatchOnMainThread(^
+        {
+            [TGRecentHashtagsSignal addRecentHashtagsFromText:text space:TGHashtagSpaceEntered];
+        });
     }];
 }
 
-- (void)controllerWantsToSendMapWithLatitude:(double)latitude longitude:(double)longitude
+- (void)controllerWantsToSendMapWithLatitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue asReplyToMessageId:(int32_t)replyMessageId
 {
     [TGModernConversationCompanion dispatchOnMessageQueue:^
     {
-        [self _sendPreparedMessages:@[[[TGPreparedMapMessage alloc] initWithLatitude:latitude longitude:longitude]] automaticallyAddToList:true withIntent:TGSendMessageIntentOther];
+        TGMessage *replyMessage = nil;
+        if (replyMessageId != 0)
+            replyMessage = [TGDatabaseInstance() loadMessageWithMid:replyMessageId peerId:_conversationId];
+        
+        TGPreparedMapMessage *preparedMessage = [[TGPreparedMapMessage alloc] initWithLatitude:latitude longitude:longitude venue:venue replyMessage:replyMessage];
+        preparedMessage.messageLifetime = [self messageLifetime];
+        [self _sendPreparedMessages:@[preparedMessage] automaticallyAddToList:true withIntent:TGSendMessageIntentSendOther];
     }];
 }
 
@@ -1018,7 +1407,7 @@ typedef enum {
     return [NSURL fileURLWithPath:path];
 }
 
-- (NSDictionary *)imageDescriptionFromImage:(UIImage *)image optionalAssetUrl:(NSString *)assetUrl
+- (NSDictionary *)imageDescriptionFromImage:(UIImage *)image caption:(NSString *)caption optionalAssetUrl:(NSString *)assetUrl
 {
     if (image == nil)
         return nil;
@@ -1031,13 +1420,16 @@ typedef enum {
             TGImageMediaAttachment *imageAttachment = [serverData objectForKey:@"imageAttachment"];
             if (imageAttachment != nil && imageAttachment.imageInfo != nil)
             {
-                return @{
-                    @"remoteImage": @{
-                        @"imageId": @(imageAttachment.imageId),
-                        @"accessHash": @(imageAttachment.accessHash),
-                        @"imageInfo": imageAttachment.imageInfo
-                    }
-                };
+                NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:@{
+                    @"imageId": @(imageAttachment.imageId),
+                    @"accessHash": @(imageAttachment.accessHash),
+                    @"imageInfo": imageAttachment.imageInfo
+                }];
+                
+                if (caption != nil)
+                    dict[@"caption"] = caption;
+                
+                return @{@"remoteImage": dict};
             }
         }
     }
@@ -1047,11 +1439,11 @@ typedef enum {
         originalSize.width *= image.scale;
         originalSize.height *= image.scale;
         
-        CGSize imageSize = TGFitSize(originalSize, CGSizeMake(800, 800));
+        CGSize imageSize = TGFitSize(originalSize, CGSizeMake(1280, 1280));
         CGSize thumbnailSize = TGFitSize(originalSize, CGSizeMake(90, 90));
         
         UIImage *fullImage = TGScaleImageToPixelSize(image, imageSize);
-        NSData *imageData = UIImageJPEGRepresentation(fullImage, 0.87f);
+        NSData *imageData = UIImageJPEGRepresentation(fullImage, 0.52f);
         
         UIImage *previewImage = TGScaleImageToPixelSize(fullImage, TGFitSize(originalSize, [TGGenericModernConversationCompanion preferredInlineThumbnailSize]));
         NSData *thumbnailData = UIImageJPEGRepresentation(previewImage, 0.9f);
@@ -1068,6 +1460,9 @@ typedef enum {
                 @"thumbnailData": thumbnailData
             }];
             
+            if (caption != nil)
+                dict[@"caption"] = caption;
+            
             if (assetUrl != nil)
                 dict[@"assetUrl"] = assetUrl;
             
@@ -1078,10 +1473,190 @@ typedef enum {
     return nil;
 }
 
-- (void)controllerWantsToSendImagesWithDescriptions:(NSArray *)imageDescriptions
+- (NSDictionary *)imageDescriptionFromBingSearchResult:(TGBingSearchResultItem *)item caption:(NSString *)caption
+{
+    if (item != nil)
+    {
+        TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
+        [imageInfo addImageWithSize:item.imageSize url:item.imageUrl];
+        [imageInfo addImageWithSize:item.previewSize url:item.previewUrl];
+        
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:@{@"imageInfo": imageInfo}];
+        if (caption != nil)
+            dict[@"caption"] = caption;
+        
+        return @{@"downloadImage": dict};
+    }
+    
+    return nil;
+}
+
+- (NSDictionary *)documentDescriptionFromGiphySearchResult:(TGGiphySearchResultItem *)item
+{
+    if (item != nil && item.gifId.length != 0)
+    {
+        TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
+        [imageInfo addImageWithSize:item.previewSize url:item.previewUrl];
+        return @{@"downloadDocument": @{
+                @"id": item.gifId,
+                @"thumbnailInfo": imageInfo,
+                @"url": item.gifUrl,
+                @"fileSize": @(item.gifFileSize),
+                @"attributes": @[[[TGDocumentAttributeFilename alloc] initWithFilename:@"animation.gif"]]
+            }
+        };
+    }
+    
+    return nil;
+}
+
+- (NSDictionary *)documentDescriptionFromICloudDriveItem:(TGICloudItem *)item
+{
+    if (item == nil || item.fileUrl == nil)
+        return nil;
+    
+    NSMutableArray *documentAttributes = [[NSMutableArray alloc] init];
+    [documentAttributes addObject:[[TGDocumentAttributeFilename alloc] initWithFilename:item.fileName]];
+    
+    //if ([item.fileName hasSuffix:@".webp"])
+    //    [documentAttributes addObject:[[TGDocumentAttributeSticker alloc] init]];
+    
+    NSDictionary *description =
+    @{
+      @"cloudDocument": @{
+        @"id": item.fileId,
+        @"url": item.fileUrl,
+        @"fileSize": @(item.fileSize),
+        @"mimeType": TGMimeTypeForFileExtension(item.fileName.pathExtension),
+        @"attributes": documentAttributes
+        }
+    };
+    
+    return description;
+}
+
+- (NSDictionary *)documentDescriptionFromDropboxItem:(TGDropboxItem *)item
+{
+    if (item == nil || item.fileUrl == nil)
+        return nil;
+    
+    NSMutableArray *documentAttributes = [[NSMutableArray alloc] init];
+    [documentAttributes addObject:[[TGDocumentAttributeFilename alloc] initWithFilename:item.fileName]];
+    
+    //if ([item.fileName hasSuffix:@".webp"])
+    //    [documentAttributes addObject:[[TGDocumentAttributeSticker alloc] init]];
+    
+    NSMutableDictionary *downloadDocument = [NSMutableDictionary dictionaryWithDictionary:@
+    {
+        @"id": @"", //item.fileId,
+        @"url": [item.fileUrl absoluteString],
+        @"fileSize": @(item.fileSize),
+        @"mimeType": TGMimeTypeForFileExtension(item.fileName.pathExtension),
+        @"attributes": documentAttributes
+    }];
+    
+    if (item.previewUrl != nil)
+    {
+        TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
+        [imageInfo addImageWithSize:item.previewSize url:item.previewUrl.absoluteString];
+        downloadDocument[@"thumbnailInfo"] = imageInfo;
+    }
+    
+    return @{ @"downloadDocument": downloadDocument };
+}
+
+- (NSDictionary *)documentDescriptionFromGoogleDriveItem:(TGGoogleDriveItem *)item
+{
+    if (item == nil || item.fileUrl == nil)
+        return nil;
+    
+    NSMutableArray *documentAttributes = [[NSMutableArray alloc] init];
+    [documentAttributes addObject:[[TGDocumentAttributeFilename alloc] initWithFilename:item.fileName]];
+    
+//    if ([item.fileName hasSuffix:@".webp"] && !CGSizeEqualToSize(item.imageSize, CGSizeZero))
+//    {
+//        [documentAttributes addObject:[[TGDocumentAttributeSticker alloc] init]];
+//        [documentAttributes addObject:[[TGDocumentAttributeImageSize alloc] initWithSize:item.imageSize]];
+//    }
+    
+    NSMutableDictionary *downloadDocument = [NSMutableDictionary dictionaryWithDictionary:@
+    {
+        @"id": item.fileId,
+        @"url": [item.fileUrl absoluteString],
+        @"fileSize": @(item.fileSize),
+        @"mimeType": item.mimeType.length > 0 ? item.mimeType : TGMimeTypeForFileExtension(item.fileName.pathExtension),
+        @"attributes": documentAttributes
+    }];
+    
+    if (item.previewUrl != nil)
+    {
+        TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
+        [imageInfo addImageWithSize:item.previewSize url:item.previewUrl.absoluteString];
+        downloadDocument[@"thumbnailInfo"] = imageInfo;
+    }
+    
+    return @{ @"downloadDocument": downloadDocument };
+}
+
+- (NSDictionary *)imageDescriptionFromInternalSearchImageResult:(TGWebSearchInternalImageResult *)item caption:(NSString *)caption
+{
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:@{ @"imageId": @(item.imageId),
+                                                                                   @"accessHash": @(item.accessHash),
+                                                                                   @"imageInfo": item.imageInfo}];
+    if (caption != nil)
+        dict[@"caption"] = caption;
+    
+    return @{ @"remoteImage": dict };
+}
+
+- (NSDictionary *)documentDescriptionFromInternalSearchResult:(TGWebSearchInternalGifResult *)item
+{
+    return @{
+        @"remoteDocument": @{
+            @"documentId": @(item.documentId),
+            @"accessHash": @(item.accessHash),
+            @"size": @(item.size),
+            @"attributes": @[[[TGDocumentAttributeFilename alloc] initWithFilename:item.fileName]],
+            @"mimeType": item.mimeType,
+            @"thumbnailInfo": item.thumbnailInfo
+        }
+    };
+}
+
+- (NSDictionary *)documentDescriptionFromFileAtTempUrl:(NSURL *)url fileName:(NSString *)fileName mimeType:(NSString *)mimeType
+{
+    NSMutableDictionary *desc = [[NSMutableDictionary alloc] init];
+    desc[@"url"] = url;
+    if (fileName.length != 0)
+        desc[@"fileName"] = fileName;
+    
+    if (mimeType.length != 0)
+        desc[@"mimeType"] = mimeType;
+    
+    desc[@"forceAsFile"] = @true;
+    
+    return desc;
+}
+
+- (void)_addRecentHashtagsFromText:(NSString *)text
+{
+    if (text.length == 0)
+        return;
+    
+    TGDispatchOnMainThread(^
+    {
+        [TGRecentHashtagsSignal addRecentHashtagsFromText:text space:TGHashtagSpaceEntered];
+    });
+}
+
+- (void)controllerWantsToSendImagesWithDescriptions:(NSArray *)imageDescriptions asReplyToMessageId:(int32_t)replyMessageId
 {
     [TGModernConversationCompanion dispatchOnMessageQueue:^
     {
+        TGMessage *replyMessage = nil;
+        if (replyMessageId != 0)
+            replyMessage = [TGDatabaseInstance() loadMessageWithMid:replyMessageId peerId:_conversationId];
+        
         NSMutableArray *preparedMessages = [[NSMutableArray alloc] init];
         
         for (NSDictionary *imageDescription in imageDescriptions)
@@ -1089,16 +1664,74 @@ typedef enum {
             if (imageDescription[@"localImage"] != nil)
             {
                 NSDictionary *localImage = imageDescription[@"localImage"];
-                TGPreparedLocalImageMessage *imageMessage = [TGPreparedLocalImageMessage messageWithImageData:localImage[@"imageData"] imageSize:[localImage[@"imageSize"] CGSizeValue] thumbnailData:localImage[@"thumbnailData"] thumbnailSize:[localImage[@"thumbnailSize"] CGSizeValue] assetUrl:localImage[@"assetUrl"]];
+                TGPreparedLocalImageMessage *imageMessage = [TGPreparedLocalImageMessage messageWithImageData:localImage[@"imageData"] imageSize:[localImage[@"imageSize"] CGSizeValue] thumbnailData:localImage[@"thumbnailData"] thumbnailSize:[localImage[@"thumbnailSize"] CGSizeValue] assetUrl:localImage[@"assetUrl"] caption:localImage[@"caption"] replyMessage:replyMessage];
                 
                 [preparedMessages addObject:imageMessage];
+                
+                [self _addRecentHashtagsFromText:localImage[@"caption"]];
             }
             else if (imageDescription[@"remoteImage"] != nil)
             {
                 NSDictionary *remoteImage = imageDescription[@"remoteImage"];
-                TGPreparedRemoteImageMessage *imageMessage = [[TGPreparedRemoteImageMessage alloc] initWithImageId:[remoteImage[@"imageId"] longLongValue] accessHash:[remoteImage[@"accessHash"] longLongValue] imageInfo:remoteImage[@"imageInfo"]];
+                TGPreparedRemoteImageMessage *imageMessage = [[TGPreparedRemoteImageMessage alloc] initWithImageId:[remoteImage[@"imageId"] longLongValue] accessHash:[remoteImage[@"accessHash"] longLongValue] imageInfo:remoteImage[@"imageInfo"] caption:remoteImage[@"caption"] replyMessage:replyMessage];
                 
                 [preparedMessages addObject:imageMessage];
+                
+                [self _addRecentHashtagsFromText:remoteImage[@"caption"]];
+            }
+            else if (imageDescription[@"downloadImage"] != nil)
+            {
+                NSDictionary *downloadImage = imageDescription[@"downloadImage"];
+                TGImageInfo *imageInfo = downloadImage[@"imageInfo"];
+                
+                TGImageMediaAttachment *imageAttachment = [TGModernSendCommonMessageActor remoteImageByRemoteUrl:[imageInfo imageUrlForLargestSize:NULL]];
+                if ([self controllerShouldCacheServerAssets] && imageAttachment != nil)
+                {
+                    TGPreparedRemoteImageMessage *remoteImageMessage = [[TGPreparedRemoteImageMessage alloc] initWithImageId:imageAttachment.imageId accessHash:imageAttachment.accessHash imageInfo:imageAttachment.imageInfo caption:downloadImage[@"caption"] replyMessage:replyMessage];
+                    
+                    [preparedMessages addObject:remoteImageMessage];
+                }
+                else
+                {
+                    TGPreparedDownloadImageMessage *downloadImageMessage = [[TGPreparedDownloadImageMessage alloc] initWithImageInfo:imageInfo caption:downloadImage[@"caption"] replyMessage:replyMessage];
+                    
+                    [preparedMessages addObject:downloadImageMessage];
+                }
+                
+                [self _addRecentHashtagsFromText:downloadImage[@"caption"]];
+            }
+            else if (imageDescription[@"downloadDocument"] != nil)
+            {
+                NSDictionary *downloadDocument = imageDescription[@"downloadDocument"];
+                
+                TGDocumentMediaAttachment *documentAttachment = [TGModernSendCommonMessageActor remoteDocumentByGiphyId:downloadDocument[@"id"]];
+                if ([self controllerShouldCacheServerAssets] && documentAttachment != nil)
+                {
+                    TGPreparedRemoteDocumentMessage *remoteDocumentMessage = [[TGPreparedRemoteDocumentMessage alloc] initWithDocumentMedia:documentAttachment replyMessage:replyMessage];
+                    [preparedMessages addObject:remoteDocumentMessage];
+                }
+                else
+                {
+                    int64_t localDocumentId = 0;
+                    arc4random_buf(&localDocumentId, 8);
+                    TGPreparedDownloadDocumentMessage *downloadDocumentMessage = [[TGPreparedDownloadDocumentMessage alloc] initWithGiphyId:downloadDocument[@"id"] documentUrl:downloadDocument[@"url"] localDocumentId:localDocumentId mimeType:@"image/gif" size:[downloadDocument[@"fileSize"] intValue] thumbnailInfo:downloadDocument[@"thumbnailInfo"] attributes:downloadDocument[@"attributes"] replyMessage:replyMessage];
+                    
+                    [preparedMessages addObject:downloadDocumentMessage];
+                }
+            }
+            else if (imageDescription[@"remoteDocument"] != nil)
+            {
+                NSDictionary *remoteDocument = imageDescription[@"remoteDocument"];
+                TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
+                documentAttachment.documentId = [remoteDocument[@"documentId"] longLongValue];
+                documentAttachment.accessHash = [remoteDocument[@"accessHash"] longLongValue];
+                documentAttachment.size = [remoteDocument[@"size"] intValue];
+                documentAttachment.attributes = remoteDocument[@"attributes"];
+                documentAttachment.mimeType = remoteDocument[@"mimeType"];
+                documentAttachment.thumbnailInfo = remoteDocument[@"thumbnailInfo"];
+                
+                TGPreparedRemoteDocumentMessage *remoteDocumentMessage = [[TGPreparedRemoteDocumentMessage alloc] initWithDocumentMedia:documentAttachment replyMessage:replyMessage];
+                [preparedMessages addObject:remoteDocumentMessage];
             }
         }
         
@@ -1107,14 +1740,20 @@ typedef enum {
     }];
 }
 
-- (void)controllerWantsToSendLocalVideoWithTempFilePath:(NSString *)tempVideoFilePath fileSize:(int32_t)fileSize previewImage:(UIImage *)previewImage duration:(NSTimeInterval)duration dimensions:(CGSize)dimenstions assetUrl:(NSString *)assetUrl liveUploadData:(TGLiveUploadActorData *)liveUploadData
+- (void)controllerWantsToSendLocalVideoWithTempFilePath:(NSString *)tempVideoFilePath fileSize:(int32_t)fileSize previewImage:(UIImage *)previewImage duration:(NSTimeInterval)duration dimensions:(CGSize)dimenstions caption:(NSString *)caption assetUrl:(NSString *)assetUrl liveUploadData:(TGLiveUploadActorData *)liveUploadData asReplyToMessageId:(int32_t)replyMessageId
 {
-    TGPreparedLocalVideoMessage *videoMessage = [TGPreparedLocalVideoMessage messageWithTempVideoPath:tempVideoFilePath videoSize:dimenstions size:fileSize duration:duration previewImage:previewImage thumbnailSize:TGFitSize(CGSizeMake(previewImage.size.width * previewImage.scale, previewImage.size.height * previewImage.scale), [TGGenericModernConversationCompanion preferredInlineThumbnailSize]) assetUrl:assetUrl];
+    TGMessage *replyMessage = nil;
+    if (replyMessageId != 0)
+        replyMessage = [TGDatabaseInstance() loadMessageWithMid:replyMessageId peerId:_conversationId];
+    
+    TGPreparedLocalVideoMessage *videoMessage = [TGPreparedLocalVideoMessage messageWithTempVideoPath:tempVideoFilePath videoSize:dimenstions size:fileSize duration:duration previewImage:previewImage thumbnailSize:TGFitSize(CGSizeMake(previewImage.size.width * previewImage.scale, previewImage.size.height * previewImage.scale), [TGGenericModernConversationCompanion preferredInlineThumbnailSize]) assetUrl:assetUrl caption:caption replyMessage:replyMessage];
     videoMessage.liveData = liveUploadData;
     
     [TGModernConversationCompanion dispatchOnMessageQueue:^
     {
         [self _sendPreparedMessages:@[videoMessage] automaticallyAddToList:true withIntent:TGSendMessageIntentSendOther];
+        
+        [self _addRecentHashtagsFromText:caption];
     }];
 }
 
@@ -1123,7 +1762,7 @@ typedef enum {
     return [TGImageDownloadActor serverMediaDataForAssetUrl:assetId][@"videoAttachment"];
 }
 
-- (void)controllerWantsToSendDocumentWithTempFileUrl:(NSURL *)tempFileUrl fileName:(NSString *)fileName mimeType:(NSString *)mimeType
+- (void)controllerWantsToSendDocumentWithTempFileUrl:(NSURL *)tempFileUrl fileName:(NSString *)fileName mimeType:(NSString *)mimeType asReplyToMessageId:(int32_t)replyMessageId
 {
     [TGModernConversationCompanion dispatchOnMessageQueue:^
     {
@@ -1135,17 +1774,112 @@ typedef enum {
         if (mimeType.length != 0)
             desc[@"mimeType"] = mimeType;
         
-        [self _sendPreparedMessages:[self _createPreparedMessagesFromFiles:@[desc]] automaticallyAddToList:true withIntent:TGSendMessageIntentSendOther];
+        desc[@"forceAsFile"] = @true;
+        
+        [self _sendPreparedMessages:[self _createPreparedMessagesFromFiles:@[desc] asReplyToMessageId:replyMessageId] automaticallyAddToList:true withIntent:TGSendMessageIntentSendOther];
     }];
 }
 
-- (void)controllerWantsToSendLocalAudioWithTempFileUrl:(NSURL *)tempFileUrl duration:(NSTimeInterval)duration liveData:(TGLiveUploadActorData *)liveData
+- (void)controllerWantsToSendDocumentsWithDescriptions:(NSArray *)descriptions asReplyToMessageId:(int32_t)replyMessageId
 {
     [TGModernConversationCompanion dispatchOnMessageQueue:^
     {
-        NSString *filePath = [tempFileUrl path];
+        [self _sendPreparedMessages:[self _createPreparedMessagesFromFiles:descriptions asReplyToMessageId:replyMessageId] automaticallyAddToList:true withIntent:TGSendMessageIntentSendOther];
+    }];
+}
+
+- (void)controllerWantsToSendRemoteDocument:(TGDocumentMediaAttachment *)document asReplyToMessageId:(int32_t)replyMessageId
+{
+    [TGModernConversationCompanion dispatchOnMessageQueue:^
+    {
+        NSMutableArray *attachments = [[NSMutableArray alloc] init];
         
-        TGPreparedLocalAudioMessage *audioMessage = [TGPreparedLocalAudioMessage messageWithTempAudioPath:filePath duration:(int32_t)duration];
+        TGMessage *replyMessage = nil;
+        if (replyMessageId != 0)
+            replyMessage = [TGDatabaseInstance() loadMessageWithMid:replyMessageId peerId:_conversationId];
+        if (replyMessage != nil)
+        {
+            TGReplyMessageMediaAttachment *replyMedia = [[TGReplyMessageMediaAttachment alloc] init];
+            replyMedia.replyMessageId = replyMessage.mid;
+            replyMedia.replyMessage = replyMessage;
+            [attachments addObject:replyMedia];
+        }
+        
+        [attachments addObject:document];
+        
+        TGMessage *message = [[TGMessage alloc] init];
+        message.mediaAttachments = attachments;
+        [self _sendPreparedMessages:[self _createPreparedMessagesFromMessages:@[message] copyAssetsData:true] automaticallyAddToList:true withIntent:TGSendMessageIntentSendOther];
+    }];
+}
+
+- (void)controllerWantsToSendCloudDocumentsWithDescriptions:(NSArray *)descriptions asReplyToMessageId:(int32_t)replyMessageId
+{
+    [TGModernConversationCompanion dispatchOnMessageQueue:^
+    {
+        TGMessage *replyMessage = nil;
+        if (replyMessageId != 0)
+            replyMessage = [TGDatabaseInstance() loadMessageWithMid:replyMessageId peerId:_conversationId];
+        
+        NSMutableArray *preparedMessages = [[NSMutableArray alloc] init];
+        
+        for (NSDictionary *documentDescription in descriptions)
+        {
+            if (documentDescription[@"downloadDocument"] != nil)
+            {
+                NSDictionary *downloadDocument = documentDescription[@"downloadDocument"];
+                
+                TGDocumentMediaAttachment *documentAttachment = [TGModernSendCommonMessageActor remoteDocumentByGiphyId:downloadDocument[@"id"]];
+                if ([self controllerShouldCacheServerAssets] && documentAttachment != nil)
+                {
+                    TGPreparedRemoteDocumentMessage *remoteDocumentMessage = [[TGPreparedRemoteDocumentMessage alloc] initWithDocumentMedia:documentAttachment replyMessage:replyMessage];
+                    [preparedMessages addObject:remoteDocumentMessage];
+                }
+                else
+                {
+                    int64_t localDocumentId = 0;
+                    arc4random_buf(&localDocumentId, 8);
+                    
+                    TGPreparedDownloadDocumentMessage *downloadDocumentMessage = [[TGPreparedDownloadDocumentMessage alloc] initWithGiphyId:downloadDocument[@"id"] documentUrl:downloadDocument[@"url"] localDocumentId:localDocumentId mimeType:downloadDocument[@"mimeType"] size:[downloadDocument[@"fileSize"] intValue] thumbnailInfo:downloadDocument[@"thumbnailInfo"] attributes:downloadDocument[@"attributes"] replyMessage:replyMessage];
+                    
+                    [preparedMessages addObject:downloadDocumentMessage];
+                }
+            }
+            else if (documentDescription[@"cloudDocument"] != nil)
+            {
+                NSDictionary *cloudDocument = documentDescription[@"cloudDocument"];
+                
+                TGDocumentMediaAttachment *documentAttachment = [TGModernSendCommonMessageActor remoteDocumentByGiphyId:cloudDocument[@"id"]];
+                if ([self controllerShouldCacheServerAssets] && documentAttachment != nil)
+                {
+                    TGPreparedRemoteDocumentMessage *remoteDocumentMessage = [[TGPreparedRemoteDocumentMessage alloc] initWithDocumentMedia:documentAttachment replyMessage:replyMessage];
+                    [preparedMessages addObject:remoteDocumentMessage];
+                }
+                else
+                {
+                    int64_t localDocumentId = 0;
+                    arc4random_buf(&localDocumentId, 8);
+                    
+                    TGPreparedCloudDocumentMessage *cloudDocumentMessage = [[TGPreparedCloudDocumentMessage alloc] initWithDocumentUrl:cloudDocument[@"url"] localDocumentId:localDocumentId mimeType:cloudDocument[@"mimeType"] size:[cloudDocument[@"fileSize"] intValue] thumbnailInfo:cloudDocument[@"thumbnailInfo"] attributes:cloudDocument[@"attributes"] replyMessage:replyMessage];
+                    
+                    [preparedMessages addObject:cloudDocumentMessage];
+                }
+            }
+        }
+        
+        [self _sendPreparedMessages:preparedMessages automaticallyAddToList:true withIntent:TGSendMessageIntentSendOther];
+    }];
+}
+
+- (void)controllerWantsToSendLocalAudioWithDataItem:(TGDataItem *)dataItem duration:(NSTimeInterval)duration liveData:(TGLiveUploadActorData *)liveData asReplyToMessageId:(int32_t)replyMessageId
+{
+    [TGModernConversationCompanion dispatchOnMessageQueue:^
+    {
+        TGMessage *replyMessage = nil;
+        if (replyMessageId != 0)
+            replyMessage = [TGDatabaseInstance() loadMessageWithMid:replyMessageId peerId:_conversationId];
+        
+        TGPreparedLocalAudioMessage *audioMessage = [TGPreparedLocalAudioMessage messageWithTempDataItem:dataItem duration:(int32_t)duration replyMessage:replyMessage];
         if (audioMessage != nil)
         {
             audioMessage.liveData = liveData;
@@ -1154,14 +1888,18 @@ typedef enum {
     }];
 }
 
-- (void)controllerWantsToSendRemoteVideoWithMedia:(TGVideoMediaAttachment *)media
+- (void)controllerWantsToSendRemoteVideoWithMedia:(TGVideoMediaAttachment *)media asReplyToMessageId:(int32_t)replyMessageId
 {
     if (media.videoId != 0)
     {
+        TGMessage *replyMessage = nil;
+        if (replyMessageId != 0)
+            replyMessage = [TGDatabaseInstance() loadMessageWithMid:replyMessageId peerId:_conversationId];
+        
         int32_t fileSize = 0;
         if ([media.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:&fileSize] != nil)
         {
-            TGPreparedRemoteVideoMessage *videoMessage = [[TGPreparedRemoteVideoMessage alloc] initWithVideoId:media.videoId accessHash:media.accessHash videoSize:media.dimensions size:fileSize duration:media.duration videoInfo:media.videoInfo thumbnailInfo:media.thumbnailInfo];
+            TGPreparedRemoteVideoMessage *videoMessage = [[TGPreparedRemoteVideoMessage alloc] initWithVideoId:media.videoId accessHash:media.accessHash videoSize:media.dimensions size:fileSize duration:media.duration videoInfo:media.videoInfo thumbnailInfo:media.thumbnailInfo caption:media.caption replyMessage:replyMessage];
             
             [TGModernConversationCompanion dispatchOnMessageQueue:^
             {
@@ -1171,20 +1909,24 @@ typedef enum {
     }
 }
 
-- (void)controllerWantsToSendContact:(TGUser *)contactUser
+- (void)controllerWantsToSendContact:(TGUser *)contactUser asReplyToMessageId:(int32_t)replyMessageId
 {
     if (contactUser.phoneNumber.length == 0)
         return;
+    
+    TGMessage *replyMessage = nil;
+    if (replyMessageId != 0)
+        replyMessage = [TGDatabaseInstance() loadMessageWithMid:replyMessageId peerId:_conversationId];
     
     TGPreparedContactMessage *contactMessage = nil;
     
     if (contactUser.uid > 0)
     {
-        contactMessage = [[TGPreparedContactMessage alloc] initWithUid:contactUser.uid firstName:contactUser.firstName lastName:contactUser.lastName phoneNumber:[TGPhoneUtils cleanInternationalPhone:contactUser.phoneNumber forceInternational:false]];
+        contactMessage = [[TGPreparedContactMessage alloc] initWithUid:contactUser.uid firstName:contactUser.firstName lastName:contactUser.lastName phoneNumber:[TGPhoneUtils cleanInternationalPhone:contactUser.phoneNumber forceInternational:false] replyMessage:replyMessage];
     }
     else
     {
-        contactMessage = [[TGPreparedContactMessage alloc] initWithFirstName:contactUser.firstName lastName:contactUser.lastName phoneNumber:[TGPhoneUtils cleanInternationalPhone:contactUser.phoneNumber forceInternational:false]];
+        contactMessage = [[TGPreparedContactMessage alloc] initWithFirstName:contactUser.firstName lastName:contactUser.lastName phoneNumber:[TGPhoneUtils cleanInternationalPhone:contactUser.phoneNumber forceInternational:false] replyMessage:replyMessage];
     }
     
     if (contactMessage != nil)
@@ -1245,25 +1987,35 @@ typedef enum {
             if (index < (int)resentMessages.count)
                 updatedItem->_message = resentMessages[index];
             [updatedItems addObject:updatedItem];
-            NSUInteger arrayIndex = [_items indexOfObject:messageItem];
+            
+            NSUInteger arrayIndex = NSNotFound;
+            for (NSUInteger i = 0; i < _items.count; i++) {
+                if (((TGMessageModernConversationItem *)_items[i])->_message.mid == messageItem->_message.mid) {
+                    arrayIndex = i;
+                    break;
+                }
+            }
+            
 #ifdef DEBUG
             NSAssert(arrayIndex != NSNotFound, @"Item should be present in array");
 #endif
-            [updatedItemIndices addObject:@(arrayIndex)];
-            [_items replaceObjectAtIndex:arrayIndex withObject:updatedItem];
-            [movingItems replaceObjectAtIndex:index withObject:updatedItem];
+            if (arrayIndex != NSNotFound) {
+                [updatedItemIndices addObject:@(arrayIndex)];
+                [(NSMutableArray *)_items replaceObjectAtIndex:arrayIndex withObject:updatedItem];
+                [movingItems replaceObjectAtIndex:index withObject:updatedItem];
+            }
         }
         
         int index = -1;
         for (id item in movingItems.reverseObjectEnumerator)
         {
             index++;
-            [_items insertObject:item atIndex:index];
+            [(NSMutableArray *)_items insertObject:item atIndex:index];
             [moveIndexToIndex insertObject:@(index) atIndex:0];
         }
         
         [removeAtIndices shiftIndexesStartingAtIndex:[removeAtIndices firstIndex] by:movingItems.count];
-        [_items removeObjectsAtIndexes:removeAtIndices];
+        [(NSMutableArray *)_items removeObjectsAtIndexes:removeAtIndices];
         
         NSMutableArray *indexPairs = [[NSMutableArray alloc] init];
         for (NSUInteger i = 0; i < moveIndexFromIndex.count; i++)
@@ -1311,7 +2063,7 @@ typedef enum {
         
         for (int32_t mid : messageIdSet)
         {
-            TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:mid];
+            TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:mid peerId:_conversationId];
             if (message != nil)
             {
                 [messages addObject:message];
@@ -1336,7 +2088,8 @@ typedef enum {
         
         TGDispatchOnMainThread(^
         {
-            TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:messages sendMessages:nil];
+            TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:messages sendMessages:nil showSecretChats:true];
+            forwardController.skipConfirmation = true;
             forwardController.watcherHandle = self.actionHandle;
             TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:forwardController];
             
@@ -1379,6 +2132,16 @@ typedef enum {
         }
         if (messageAdded)
             continue;
+
+        TGMessage *replyMessage = nil;
+        for (TGMediaAttachment *attachment in message.mediaAttachments)
+        {
+            if ([attachment isKindOfClass:[TGReplyMessageMediaAttachment class]])
+            {
+                replyMessage = ((TGReplyMessageMediaAttachment *)attachment).replyMessage;
+                break;
+            }
+        }
         
         for (TGMediaAttachment *attachment in message.mediaAttachments)
         {
@@ -1387,7 +2150,7 @@ typedef enum {
                 case TGLocationMediaAttachmentType:
                 {
                     TGLocationMediaAttachment *locationAttachment = (TGLocationMediaAttachment *)attachment;
-                    TGPreparedMapMessage *mapMessage = [[TGPreparedMapMessage alloc] initWithLatitude:locationAttachment.latitude longitude:locationAttachment.longitude];
+                    TGPreparedMapMessage *mapMessage = [[TGPreparedMapMessage alloc] initWithLatitude:locationAttachment.latitude longitude:locationAttachment.longitude venue:locationAttachment.venue replyMessage:replyMessage];
                     if (!copyAssetsData)
                         mapMessage.replacingMid = message.mid;
                     [preparedMessages addObject:mapMessage];
@@ -1399,7 +2162,7 @@ typedef enum {
                     TGImageMediaAttachment *imageAttachment = (TGImageMediaAttachment *)attachment;
                     if (imageAttachment.imageId != 0)
                     {
-                        TGPreparedRemoteImageMessage *remoteImageMessage = [[TGPreparedRemoteImageMessage alloc] initWithImageId:imageAttachment.imageId accessHash:imageAttachment.accessHash imageInfo:imageAttachment.imageInfo];
+                        TGPreparedRemoteImageMessage *remoteImageMessage = [[TGPreparedRemoteImageMessage alloc] initWithImageId:imageAttachment.imageId accessHash:imageAttachment.accessHash imageInfo:imageAttachment.imageInfo caption:imageAttachment.caption replyMessage:replyMessage];
                         if (!copyAssetsData)
                             remoteImageMessage.replacingMid = message.mid;
                         [preparedMessages addObject:remoteImageMessage];
@@ -1413,8 +2176,15 @@ typedef enum {
                             NSString *thumbnailUrl = [imageAttachment.imageInfo closestImageUrlWithSize:thumbnailSize resultingSize:&thumbnailSize];
                             CGSize imageSize = CGSizeZero;
                             NSString *imageUrl = [imageAttachment.imageInfo closestImageUrlWithSize:CGSizeMake(1136, 1146) resultingSize:&imageSize];
-                            
-                            if (thumbnailUrl != nil && imageUrl != nil)
+                         
+                            if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
+                            {
+                                TGPreparedDownloadImageMessage *downloadImageMessage = [[TGPreparedDownloadImageMessage alloc] initWithImageInfo:imageAttachment.imageInfo caption:imageAttachment.caption replyMessage:replyMessage];
+                                if (!copyAssetsData)
+                                    downloadImageMessage.replacingMid = message.mid;
+                                [preparedMessages addObject:downloadImageMessage];
+                            }
+                            else if (thumbnailUrl != nil && imageUrl != nil)
                             {
                                 if (copyAssetsData)
                                 {
@@ -1432,7 +2202,7 @@ typedef enum {
                                     
                                     if (imageData != nil && thumbnailData != nil)
                                     {
-                                        TGPreparedLocalImageMessage *localImageMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil];
+                                        TGPreparedLocalImageMessage *localImageMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:imageAttachment.caption replyMessage:replyMessage];
                                         if (!copyAssetsData)
                                             localImageMessage.replacingMid = message.mid;
                                         [preparedMessages addObject:localImageMessage];
@@ -1440,7 +2210,7 @@ typedef enum {
                                 }
                                 else
                                 {
-                                    TGPreparedLocalImageMessage *localImageMessage = [TGPreparedLocalImageMessage messageWithLocalImageDataPath:imageUrl imageSize:imageSize localThumbnailDataPath:thumbnailUrl thumbnailSize:thumbnailSize assetUrl:nil];
+                                    TGPreparedLocalImageMessage *localImageMessage = [TGPreparedLocalImageMessage messageWithLocalImageDataPath:imageUrl imageSize:imageSize localThumbnailDataPath:thumbnailUrl thumbnailSize:thumbnailSize assetUrl:nil caption:imageAttachment.caption replyMessage:replyMessage];
                                     if (!copyAssetsData)
                                         localImageMessage.replacingMid = message.mid;
                                     [preparedMessages addObject:localImageMessage];
@@ -1460,7 +2230,7 @@ typedef enum {
                         int32_t fileSize = 0;
                         if ([videoAttachment.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:&fileSize] != nil)
                         {
-                            TGPreparedRemoteVideoMessage *remoteVideoMessage = [[TGPreparedRemoteVideoMessage alloc] initWithVideoId:videoAttachment.videoId accessHash:videoAttachment.accessHash videoSize:videoAttachment.dimensions size:fileSize duration:videoAttachment.duration videoInfo:videoAttachment.videoInfo thumbnailInfo:videoAttachment.thumbnailInfo];
+                            TGPreparedRemoteVideoMessage *remoteVideoMessage = [[TGPreparedRemoteVideoMessage alloc] initWithVideoId:videoAttachment.videoId accessHash:videoAttachment.accessHash videoSize:videoAttachment.dimensions size:fileSize duration:videoAttachment.duration videoInfo:videoAttachment.videoInfo thumbnailInfo:videoAttachment.thumbnailInfo caption:videoAttachment.caption replyMessage:replyMessage];
                             if (!copyAssetsData)
                                 remoteVideoMessage.replacingMid = message.mid;
                             [preparedMessages addObject:remoteVideoMessage];
@@ -1484,14 +2254,16 @@ typedef enum {
                         {
                             if (copyAssetsData)
                             {
-                                TGPreparedLocalVideoMessage *localVideoMessage = [TGPreparedLocalVideoMessage messageByCopyingDataFromMedia:videoAttachment];
+                                TGPreparedLocalVideoMessage *localVideoMessage = [TGPreparedLocalVideoMessage messageByCopyingDataFromMedia:videoAttachment replyMessage:replyMessage];
+                                localVideoMessage.caption = videoAttachment.caption;
                                 if (!copyAssetsData)
                                     localVideoMessage.replacingMid = message.mid;
                                 [preparedMessages addObject:localVideoMessage];
                             }
                             else
                             {
-                                TGPreparedLocalVideoMessage *localVideoMessage = [TGPreparedLocalVideoMessage messageWithLocalVideoId:videoAttachment.localVideoId videoSize:videoAttachment.dimensions size:fileSize duration:videoAttachment.duration localThumbnailDataPath:thumbnailUrl thumbnailSize:thumbnailSize assetUrl:nil];
+                                TGPreparedLocalVideoMessage *localVideoMessage = [TGPreparedLocalVideoMessage messageWithLocalVideoId:videoAttachment.localVideoId videoSize:videoAttachment.dimensions size:fileSize duration:videoAttachment.duration localThumbnailDataPath:thumbnailUrl thumbnailSize:thumbnailSize assetUrl:nil caption:videoAttachment.caption replyMessage:replyMessage];
+                                localVideoMessage.caption = videoAttachment.caption;
                                 if (!copyAssetsData)
                                     localVideoMessage.replacingMid = message.mid;
                                 [preparedMessages addObject:localVideoMessage];
@@ -1507,37 +2279,56 @@ typedef enum {
                     TGDocumentMediaAttachment *documentAttachment = (TGDocumentMediaAttachment *)attachment;
                     if (documentAttachment.documentId != 0)
                     {
-                        TGPreparedRemoteDocumentMessage *remoteDocumentMessage = [[TGPreparedRemoteDocumentMessage alloc] initWithDocumentMedia:documentAttachment];
+                        TGPreparedRemoteDocumentMessage *remoteDocumentMessage = [[TGPreparedRemoteDocumentMessage alloc] initWithDocumentMedia:documentAttachment replyMessage:replyMessage];
                         if (!copyAssetsData)
                             remoteDocumentMessage.replacingMid = message.mid;
-                        [preparedMessages addObject:documentAttachment];
+                        [preparedMessages addObject:remoteDocumentMessage];
                     }
                     else if (documentAttachment.localDocumentId != 0)
                     {
-                        CGSize thumbnailSize = CGSizeZero;
-                        NSString *thumbnailUrl = nil;
-                        CGSize largestSize = CGSizeZero;
-                        if ([documentAttachment.thumbnailInfo imageUrlForLargestSize:&largestSize] != nil)
-                        {
-                            thumbnailSize = TGFitSize(largestSize, CGSizeMake(90, 90));
-                            thumbnailUrl = [documentAttachment.thumbnailInfo closestImageUrlWithSize:thumbnailSize resultingSize:&thumbnailSize];
+                        if (message.contentProperties[@"downloadDocumentUrl"] != nil)
+                        {                            
+                            TGDownloadDocumentUrl *documentUrl = message.contentProperties[@"downloadDocumentUrl"];
+                            TGPreparedDownloadDocumentMessage *downloadDocumentMessage = [[TGPreparedDownloadDocumentMessage alloc] initWithGiphyId:documentUrl.giphyId documentUrl:documentUrl.documentUrl localDocumentId:documentAttachment.localDocumentId mimeType:documentAttachment.mimeType size:documentAttachment.size thumbnailInfo:documentAttachment.thumbnailInfo attributes:documentAttachment.attributes replyMessage:replyMessage];
+                            if (!copyAssetsData)
+                                downloadDocumentMessage.replacingMid = message.mid;
+                            [preparedMessages addObject:downloadDocumentMessage];
                         }
-                        
-                        if (documentAttachment.thumbnailInfo == nil || thumbnailUrl != nil)
+                        else if (message.contentProperties[@"cloudDocumentUrl"] != nil)
                         {
-                            if (copyAssetsData)
+                            TGCloudDocumentUrlBookmark *documentUrlBookmark = message.contentProperties[@"cloudDocumentUrl"];
+                            TGPreparedCloudDocumentMessage *cloudDocumentMessage = [[TGPreparedCloudDocumentMessage alloc] initWithDocumentUrl:documentUrlBookmark.documentUrl localDocumentId:documentAttachment.localDocumentId mimeType:documentAttachment.mimeType size:documentAttachment.size thumbnailInfo:documentAttachment.thumbnailInfo attributes:documentAttachment.attributes replyMessage:replyMessage];
+                            if (!copyAssetsData)
+                                cloudDocumentMessage.replacingMid = message.mid;
+                            [preparedMessages addObject:cloudDocumentMessage];
+                        }
+                        else
+                        {
+                            CGSize thumbnailSize = CGSizeZero;
+                            NSString *thumbnailUrl = nil;
+                            CGSize largestSize = CGSizeZero;
+                            if ([documentAttachment.thumbnailInfo imageUrlForLargestSize:&largestSize] != nil)
                             {
-                                TGPreparedLocalDocumentMessage *localDocumentMessage = [TGPreparedLocalDocumentMessage messageByCopyingDataFromMedia:documentAttachment];
-                                if (!copyAssetsData)
-                                    localDocumentMessage.replacingMid = message.mid;
-                                [preparedMessages addObject:localDocumentMessage];
+                                thumbnailSize = TGFitSize(largestSize, CGSizeMake(90, 90));
+                                thumbnailUrl = [documentAttachment.thumbnailInfo closestImageUrlWithSize:thumbnailSize resultingSize:&thumbnailSize];
                             }
-                            else
+                            
+                            if (documentAttachment.thumbnailInfo == nil || thumbnailUrl != nil)
                             {
-                                TGPreparedLocalDocumentMessage *localDocumentMessage = [TGPreparedLocalDocumentMessage messageWithLocalDocumentId:documentAttachment.localDocumentId size:documentAttachment.size fileName:documentAttachment.fileName mimeType:documentAttachment.mimeType localThumbnailDataPath:thumbnailUrl thumbnailSize:thumbnailSize];
-                                if (!copyAssetsData)
-                                    localDocumentMessage.replacingMid = message.mid;
-                                [preparedMessages addObject:localDocumentMessage];
+                                if (copyAssetsData)
+                                {
+                                    TGPreparedLocalDocumentMessage *localDocumentMessage = [TGPreparedLocalDocumentMessage messageByCopyingDataFromMedia:documentAttachment replyMessage: replyMessage];
+                                    if (!copyAssetsData)
+                                        localDocumentMessage.replacingMid = message.mid;
+                                    [preparedMessages addObject:localDocumentMessage];
+                                }
+                                else
+                                {
+                                    TGPreparedLocalDocumentMessage *localDocumentMessage = [TGPreparedLocalDocumentMessage messageWithLocalDocumentId:documentAttachment.localDocumentId size:documentAttachment.size mimeType:documentAttachment.mimeType localThumbnailDataPath:thumbnailUrl thumbnailSize:thumbnailSize attributes:documentAttachment.attributes];
+                                    if (!copyAssetsData)
+                                        localDocumentMessage.replacingMid = message.mid;
+                                    [preparedMessages addObject:localDocumentMessage];
+                                }
                             }
                         }
                     }
@@ -1560,14 +2351,14 @@ typedef enum {
                     {
                         if (copyAssetsData)
                         {
-                            TGPreparedLocalAudioMessage *localAudioMessage = [TGPreparedLocalAudioMessage messageByCopyingDataFromMedia:audioAttachment];
+                            TGPreparedLocalAudioMessage *localAudioMessage = [TGPreparedLocalAudioMessage messageByCopyingDataFromMedia:audioAttachment replyMessage:replyMessage];
                             if (!copyAssetsData)
                                 localAudioMessage.replacingMid = message.mid;
                             [preparedMessages addObject:localAudioMessage];
                         }
                         else
                         {
-                            TGPreparedLocalAudioMessage *localAudioMessage = [TGPreparedLocalAudioMessage messageWithLocalAudioId:audioAttachment.localAudioId duration:audioAttachment.duration fileSize:audioAttachment.fileSize];
+                            TGPreparedLocalAudioMessage *localAudioMessage = [TGPreparedLocalAudioMessage messageWithLocalAudioId:audioAttachment.localAudioId duration:audioAttachment.duration fileSize:audioAttachment.fileSize replyMessage:replyMessage];
                             if (!copyAssetsData)
                                 localAudioMessage.replacingMid = message.mid;
                             [preparedMessages addObject:localAudioMessage];
@@ -1581,7 +2372,7 @@ typedef enum {
                 {
                     TGContactMediaAttachment *contactAttachment = (TGContactMediaAttachment *)attachment;
                     
-                    TGPreparedContactMessage *contactMessage = [[TGPreparedContactMessage alloc] initWithUid:contactAttachment.uid firstName:contactAttachment.firstName lastName:contactAttachment.lastName phoneNumber:contactAttachment.phoneNumber];
+                    TGPreparedContactMessage *contactMessage = [[TGPreparedContactMessage alloc] initWithUid:contactAttachment.uid firstName:contactAttachment.firstName lastName:contactAttachment.lastName phoneNumber:contactAttachment.phoneNumber replyMessage:replyMessage];
                     if (!copyAssetsData)
                         contactMessage.replacingMid = message.mid;
                     [preparedMessages addObject:contactMessage];
@@ -1599,7 +2390,8 @@ typedef enum {
         
         if (message.text.length != 0)
         {
-            TGPreparedTextMessage *textMessage = [[TGPreparedTextMessage alloc] initWithText:message.text];
+            TGPreparedTextMessage *textMessage = [[TGPreparedTextMessage alloc] initWithText:message.text replyMessage:replyMessage disableLinkPreviews:((TGLinkPreviewsContentProperty *)message.contentProperties[@"linkPreviews"]).disableLinkPreviews parsedWebpage:nil];
+            textMessage.messageLifetime = [self messageLifetime];
             if (!copyAssetsData)
                 textMessage.replacingMid = message.mid;
             [preparedMessages addObject:textMessage];
@@ -1617,7 +2409,37 @@ typedef enum {
     {
         if (message.mid < TGMessageLocalMidBaseline)
         {
-            TGPreparedForwardedMessage *preparedMessage = [[TGPreparedForwardedMessage alloc] initWithInnerMessage:message];
+            TGMessage *innerMessage = [message copy];
+            if (innerMessage.contentProperties != nil)
+            {
+                NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:innerMessage.contentProperties];
+                [contentProperties removeObjectForKey:@"contentsRead"];
+                innerMessage.contentProperties = contentProperties;
+            }
+            NSMutableArray *mediaAttachments = [[NSMutableArray alloc] init];
+            for (id attachment in innerMessage.mediaAttachments)
+            {
+                if (![self allowMessageForwarding])
+                {
+                    if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
+                    {
+                        TGImageMediaAttachment *imageAttachment = [attachment copy];
+                        imageAttachment.caption = nil;
+                        [mediaAttachments addObject:imageAttachment];
+                        continue;
+                    }
+                    else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
+                    {
+                        TGVideoMediaAttachment *videoAttachment = [attachment copy];
+                        videoAttachment.caption = nil;
+                        [mediaAttachments addObject:videoAttachment];
+                        continue;
+                    }
+                }
+                [mediaAttachments addObject:attachment];
+            }
+            innerMessage.mediaAttachments = mediaAttachments;
+            TGPreparedForwardedMessage *preparedMessage = [[TGPreparedForwardedMessage alloc] initWithInnerMessage:innerMessage keepForwarded:[self allowMessageForwarding]];
             [preparedMessages addObject:preparedMessage];
         }
         else
@@ -1627,7 +2449,7 @@ typedef enum {
     return preparedMessages;
 }
 
-- (bool)isFileImage:(NSString *)fileName mimeType:(NSString *)mimeType
+- (bool)isFileImage:(NSString *)fileName mimeType:(NSString *)mimeType outAnimated:(bool *)outAnimated
 {
     NSArray *imageFileExtensions = @[@"gif", @"png", @"jpg", @"jpeg"];
     NSArray *imageMimeTypes = @[@"image/gif"];
@@ -1636,20 +2458,38 @@ typedef enum {
     for (NSString *sampleExtension in imageFileExtensions)
     {
         if ([[extension lowercaseString] isEqualToString:sampleExtension])
+        {
+            if ([sampleExtension isEqualToString:@"gif"])
+            {
+                if (outAnimated)
+                    *outAnimated = true;
+            }
             return true;
+        }
     }
     
     for (NSString *sampleMimeType in imageMimeTypes)
     {
         if ([mimeType isEqualToString:sampleMimeType])
+        {
+            if ([sampleMimeType isEqualToString:@"image/gif"])
+            {
+                if (outAnimated)
+                    *outAnimated = true;
+            }
             return true;
+        }
     }
     
     return false;
 }
 
-- (NSArray *)_createPreparedMessagesFromFiles:(NSArray *)files
+- (NSArray *)_createPreparedMessagesFromFiles:(NSArray *)files asReplyToMessageId:(int32_t)replyMessageId
 {
+    TGMessage *replyMessage = nil;
+    if (replyMessageId != 0)
+        replyMessage = [TGDatabaseInstance() loadMessageWithMid:replyMessageId peerId:_conversationId];
+    
     NSMutableArray *preparedMessages = [[NSMutableArray alloc] init];
     
     for (NSDictionary *desc in files)
@@ -1662,27 +2502,124 @@ typedef enum {
         if (attributes[NSFileSize] == nil)
             continue;
         
-        NSString *fileName = desc[@"fileName"];
-        if (fileName == nil)
-            fileName = [[fileUrl lastPathComponent] stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
-        
-        int size = [attributes[NSFileSize] intValue];
-        
-        UIImage *thumbnailImage = nil;
-        CGSize thumbnailSize = CGSizeZero;
-        
-        if ([self isFileImage:fileName mimeType:desc[@"mimeType"]])
+        if ([desc[@"type"] isEqualToString:@"image"])
         {
             UIImage *image = [[UIImage alloc] initWithContentsOfFile:[fileUrl path]];
-            if (image != nil && image.size.width * image.size.height <= 8096 * 8096)
+            if (image != nil)
             {
-                thumbnailSize = TGFitSize(image.size, [TGGenericModernConversationCompanion preferredInlineThumbnailSize]);
-                thumbnailImage = TGScaleImageToPixelSize(image, thumbnailSize);
+                CGSize originalSize = image.size;
+                originalSize.width *= image.scale;
+                originalSize.height *= image.scale;
+                
+                CGSize imageSize = TGFitSize(originalSize, CGSizeMake(1280, 1280));
+                CGSize thumbnailSize = TGFitSize(originalSize, CGSizeMake(90, 90));
+                
+                UIImage *fullImage = TGScaleImageToPixelSize(image, imageSize);
+                NSData *imageData = UIImageJPEGRepresentation(fullImage, 0.54f);
+                
+                UIImage *previewImage = TGScaleImageToPixelSize(fullImage, TGFitSize(originalSize, [TGGenericModernConversationCompanion preferredInlineThumbnailSize]));
+                NSData *thumbnailData = UIImageJPEGRepresentation(previewImage, 0.9f);
+                
+                previewImage = nil;
+                fullImage = nil;
+                
+                TGPreparedLocalImageMessage *imageMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:nil replyMessage:replyMessage];
+                [preparedMessages addObject:imageMessage];
             }
         }
+        else if ([desc[@"type"] isEqualToString:@"video"])
+        {
+            
+            
+            /*TGPreparedLocalVideoMessage *videoMessage = [TGPreparedLocalVideoMessage messageWithTempVideoPath:[fileUrl pathExtension] videoSize:dimenstions size:fileSize duration:duration previewImage:previewImage thumbnailSize:TGFitSize(CGSizeMake(previewImage.size.width * previewImage.scale, previewImage.size.height * previewImage.scale), [TGGenericModernConversationCompanion preferredInlineThumbnailSize]) assetUrl:assetUrl];
+            [preparedMessages addObject:videoMessage];*/
+        }
+        else
+        {
+            NSString *fileName = desc[@"fileName"];
+            if (fileName == nil)
+                fileName = [[fileUrl lastPathComponent] stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+            
+            int size = [attributes[NSFileSize] intValue];
+            
+            UIImage *thumbnailImage = nil;
+            CGSize thumbnailSize = CGSizeZero;
+            CGSize imageSize = CGSizeZero;
+            bool sendAsFile = true;
         
-        TGPreparedLocalDocumentMessage *preparedMessage = [TGPreparedLocalDocumentMessage messageWithTempDocumentPath:[fileUrl path] size:(int32_t)size fileName:fileName mimeType:desc[@"mimeType"] thumbnailImage:thumbnailImage thumbnailSize:thumbnailSize];
-        [preparedMessages addObject:preparedMessage];
+            bool isAnimatedImage = false;
+            if ([self isFileImage:fileName mimeType:desc[@"mimeType"] outAnimated:&isAnimatedImage])
+            {
+                UIImage *image = [[UIImage alloc] initWithContentsOfFile:[fileUrl path]];
+                imageSize = image.size;
+                if (image != nil && image.size.width * image.size.height <= 8096 * 8096)
+                {
+                    thumbnailSize = TGFitSize(image.size, [TGGenericModernConversationCompanion preferredInlineThumbnailSize]);
+                    thumbnailImage = TGScaleImageToPixelSize(image, thumbnailSize);
+                }
+                
+                if (isAnimatedImage)
+                {
+                }
+                else
+                {
+                    if (![desc[@"forceAsFile"] boolValue])
+                    {
+                        sendAsFile = false;
+                        
+                        NSData *imageData = UIImageJPEGRepresentation(image, 0.54f);
+                        UIImage *previewImage = TGScaleImageToPixelSize(image, TGFitSize(imageSize, [TGGenericModernConversationCompanion preferredInlineThumbnailSize]));
+                        NSData *thumbnailData = UIImageJPEGRepresentation(previewImage, 0.9f);
+                        
+                        TGPreparedLocalImageMessage *imageMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:nil replyMessage:replyMessage];
+                        [preparedMessages addObject:imageMessage];
+                    }
+                }
+            }
+            
+            if (sendAsFile)
+            {
+                if ([fileName hasSuffix:@".webp"])
+                {
+                    NSError *dataError = nil;;
+                    NSData *imgData = [NSData dataWithContentsOfFile:[fileUrl path] options:NSDataReadingMappedIfSafe error:&dataError];
+                    if(dataError != nil) {
+                        NSLog(@"imageFromWebP: error: %@", dataError.localizedDescription);
+                    }
+                    else
+                    {
+                        // `WebPGetInfo` weill return image width and height
+                        int width = 0, height = 0;
+                        if(WebPGetInfo((uint8_t const *)[imgData bytes], [imgData length], &width, &height))
+                        {
+                            imageSize = CGSizeMake(width, height);
+                        }
+                    }
+                }
+                
+                NSMutableArray *documentAttributes = [[NSMutableArray alloc] init];
+                NSString *documentFileName = fileName;
+                if (documentFileName.length == 0)
+                    documentFileName = @"file";
+                NSString *documentMimeType = desc[@"mimeType"];
+                if (isAnimatedImage && documentFileName.pathExtension.length == 0)
+                    documentFileName = [documentFileName stringByAppendingString:@".gif"];
+                if (isAnimatedImage && documentMimeType.length == 0)
+                    documentMimeType = @"image/gif";
+                
+                [documentAttributes addObject:[[TGDocumentAttributeFilename alloc] initWithFilename:documentFileName]];
+                if (imageSize.width > FLT_EPSILON && imageSize.height > FLT_EPSILON)
+                    [documentAttributes addObject:[[TGDocumentAttributeImageSize alloc] initWithSize:imageSize]];
+                if (isAnimatedImage)
+                    [documentAttributes addObject:[[TGDocumentAttributeAnimated alloc] init]];
+                if ([fileName hasSuffix:@".webp"])
+                {
+                    [documentAttributes addObject:[[TGDocumentAttributeSticker alloc] init]];
+                }
+                TGPreparedLocalDocumentMessage *preparedMessage = [TGPreparedLocalDocumentMessage messageWithTempDocumentPath:[fileUrl path] size:(int32_t)size mimeType:documentMimeType thumbnailImage:thumbnailImage thumbnailSize:thumbnailSize attributes:documentAttributes replyMessage:replyMessage];
+                [preparedMessages addObject:preparedMessage];
+            }
+        }
     }
     
     return preparedMessages;
@@ -1700,7 +2637,88 @@ typedef enum {
     NSMutableArray *addToDatabaseMessages = [[NSMutableArray alloc] init];
     NSMutableArray *replaceInDatabaseMessages = [[NSMutableArray alloc] init];
     
+    NSMutableArray *forwardedMessages = [[NSMutableArray alloc] init];
+    
     for (TGPreparedMessage *preparedMessage in preparedMessages)
+    {
+        int32_t minLifetime = 0;
+        
+        if ([preparedMessage isKindOfClass:[TGPreparedLocalAudioMessage class]])
+            minLifetime = ((TGPreparedLocalAudioMessage *)preparedMessage).duration;
+        else if ([preparedMessage isKindOfClass:[TGPreparedRemoteAudioMessage class]])
+            minLifetime = ((TGPreparedRemoteAudioMessage *)preparedMessage).duration;
+        else if ([preparedMessage isKindOfClass:[TGPreparedLocalVideoMessage class]])
+            minLifetime = (int32_t)((TGPreparedLocalVideoMessage *)preparedMessage).duration;
+        else if ([preparedMessage isKindOfClass:[TGPreparedRemoteVideoMessage class]])
+            minLifetime = (int32_t)((TGPreparedRemoteVideoMessage *)preparedMessage).duration;
+        
+        if (false && [preparedMessage isKindOfClass:[TGPreparedForwardedMessage class]] && ((TGPreparedForwardedMessage *)preparedMessage).forwardMid > 0 && ((TGPreparedForwardedMessage *)preparedMessage).forwardMid < TGMessageLocalMidBaseline)
+        {
+            [forwardedMessages addObject:preparedMessage];
+        }
+        else
+        {
+            preparedMessage.messageLifetime = [self messageLifetime] == 0 ? 0 : MAX([self messageLifetime], minLifetime);
+            
+            if (preparedMessage.randomId == 0)
+            {
+                int64_t randomId = 0;
+                arc4random_buf(&randomId, sizeof(randomId));
+                preparedMessage.randomId = randomId;
+            }
+            
+            if (preparedMessage.mid == 0)
+                preparedMessage.mid = [[TGDatabaseInstance() generateLocalMids:1][0] intValue];
+            
+            preparedMessage.date = (int)[[TGTelegramNetworking instance] approximateRemoteTime];
+            
+            TGMessage *message = [preparedMessage message];
+            if (message == nil)
+            {
+                TGLog(@"***** Failed to generate message from prepared message");
+                continue;
+            }
+            
+            message.layer = [self layer];
+            
+            message.outgoing = true;
+            message.unread = true;
+            message.fromUid = self.messageAuthorPeerId;
+            message.toUid = self.conversationId;
+            message.deliveryState = TGMessageDeliveryStatePending;
+            message.sortKey = TGMessageSortKeyMake(_conversationId, TGMessageSpaceImportant, (int32_t)message.date, message.mid);
+            message.cid = _conversationId;
+            [self _setupOutgoingMessage:message];
+            
+            if ([self _messagesNeedRandomId])
+                message.randomId = preparedMessage.randomId;
+            
+            if (TGPeerIdIsChannel(_conversationId)) {
+                NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
+                contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
+                message.contentProperties = contentProperties;
+            }
+            
+            NSMutableDictionary *options = [[NSMutableDictionary alloc] initWithDictionary:@{
+                @"preparedMessage": preparedMessage
+            }];
+            [options addEntriesFromDictionary:[self _optionsForMessageActions]];
+            
+            [preparedActions addObject:@{
+                @"action": [self _sendMessagePathForMessageId:preparedMessage.mid],
+                @"options": options
+            }];
+            
+            [addedMessages addObject:message];
+            
+            if (preparedMessage.replacingMid != 0)
+                [replaceInDatabaseMessages addObject:@[@(preparedMessage.replacingMid), message]];
+            else
+                [addToDatabaseMessages addObject:message];
+        }
+    }
+    
+    for (TGPreparedMessage *preparedMessage in forwardedMessages)
     {
         if (preparedMessage.randomId == 0)
         {
@@ -1721,26 +2739,35 @@ typedef enum {
             continue;
         }
         
-        message.messageLifetime = [self messageLifetime];
+        message.layer = [self layer];
         
         message.outgoing = true;
         message.unread = true;
-        message.fromUid = TGTelegraphInstance.clientUserId;
+        message.fromUid = self.messageAuthorPeerId;
         message.toUid = self.conversationId;
         message.deliveryState = TGMessageDeliveryStatePending;
+        message.sortKey = TGMessageSortKeyMake(_conversationId, TGMessageSpaceImportant, (int32_t)message.date, message.mid);
+        message.cid = _conversationId;
+        [self _setupOutgoingMessage:message];
         
         if ([self _messagesNeedRandomId])
             message.randomId = preparedMessage.randomId;
         
+        if (TGPeerIdIsChannel(_conversationId)) {
+            NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
+            contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
+            message.contentProperties = contentProperties;
+        }
+        
         NSMutableDictionary *options = [[NSMutableDictionary alloc] initWithDictionary:@{
-            @"preparedMessage": preparedMessage
-        }];
+                                                                                         @"preparedMessage": preparedMessage
+                                                                                         }];
         [options addEntriesFromDictionary:[self _optionsForMessageActions]];
         
         [preparedActions addObject:@{
-            @"action": [self _sendMessagePathForMessageId:preparedMessage.mid],
-            @"options": options
-        }];
+                                     @"action": [self _sendMessagePathForMessageId:preparedMessage.mid],
+                                     @"options": options
+                                     }];
         
         [addedMessages addObject:message];
         
@@ -1752,7 +2779,13 @@ typedef enum {
     
     if (addToDatabaseMessages.count != 0)
     {
-        [TGDatabaseInstance() addMessagesToConversation:addToDatabaseMessages conversationId:_conversationId updateConversation:nil dispatch:true countUnread:false];
+        if (TGPeerIdIsChannel(_conversationId)) {
+            [TGDatabaseInstance() addMessagesToChannel:_conversationId messages:addToDatabaseMessages deleteMessages:nil unimportantGroups:nil addedHoles:nil removedHoles:nil removedUnimportantHoles:nil updatedMessageSortKeys:nil returnGroups:nil changedMessages:nil];
+        } else {
+            [TGDatabaseInstance() addMessagesToConversation:addToDatabaseMessages conversationId:_conversationId updateConversation:nil dispatch:true countUnread:false];
+        }
+        
+        [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/messages", [self _conversationIdPathComponent]] resource:[[SGraphObjectNode alloc] initWithObject:addToDatabaseMessages]];
     }
     
     if (replaceInDatabaseMessages.count != 0)
@@ -1769,7 +2802,7 @@ typedef enum {
                 flags.push_back((TGDatabaseMessageFlagValue){ .flag = TGDatabaseMessageFlagDeliveryState, .value = updatedMessage.deliveryState });
                 flags.push_back((TGDatabaseMessageFlagValue){ .flag = TGDatabaseMessageFlagDate, .value = (int)updatedMessage.date });
                 
-                [TGDatabaseInstance() updateMessage:[pair[0] intValue] flags:flags media:nil dispatch:true];
+                [TGDatabaseInstance() updateMessage:[pair[0] intValue] peerId:_conversationId flags:flags media:nil dispatch:true];
             }
         } synchronous:false];
     }
@@ -1842,7 +2875,7 @@ typedef enum {
                 _moreMessagesAvailableBelow = false;
                 _moreMessagesAvailableAbove = true;
                 
-                [self _replaceMessagesWithFastScroll:sortedTopMessages intent:becauseOfSendTextAction ? TGModernConversationAddMessageIntentSendTextMessage : TGModernConversationAddMessageIntentSendOtherMessage];
+                [self _replaceMessagesWithFastScroll:sortedTopMessages intent:becauseOfSendTextAction ? TGModernConversationAddMessageIntentSendTextMessage : TGModernConversationAddMessageIntentSendOtherMessage scrollToMessageId:0 scrollBackMessageId:0 animated:true];
             }];
         }];
     } synchronous:false];
@@ -1867,13 +2900,36 @@ typedef enum {
         static int uniqueId = 0;
         [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/clearHistory/(%s%d)", _conversationId, __PRETTY_FUNCTION__, uniqueId++] options:@{@"conversationId": @(_conversationId)} watcher:TGTelegraphInstance];
         
-        [_items removeAllObjects];
+        [(NSMutableArray *)_items removeAllObjects];
         
         [self updateControllerEmptyState];
+        [self _itemsUpdated];
     }];
 }
 
-- (void)controllerDeletedMessages:(NSArray *)messageIds
+- (void)systemClearedConversation
+{
+    [TGModernConversationCompanion dispatchOnMessageQueue:^
+    {
+        _moreMessagesAvailableAbove = false;
+        _moreMessagesAvailableBelow = false;
+        
+        _messageUploadProgress.clear();
+        
+        [(NSMutableArray *)_items removeAllObjects];
+        
+        TGDispatchOnMainThread(^
+        {
+            TGModernConversationController *controller = self.controller;
+            [controller replaceItems:@[]];
+        });
+        
+        [self updateControllerEmptyState];
+        [self _itemsUpdated];
+    }];
+}
+
+- (void)controllerDeletedMessages:(NSArray *)messageIds completion:(void (^)())completion
 {
     if (messageIds.count == 0)
         return;
@@ -1898,7 +2954,16 @@ typedef enum {
             }
         }
         
-        [_items removeObjectsAtIndexes:indexSet];
+        [(NSMutableArray *)_items removeObjectsAtIndexes:indexSet];
+        [self _itemsUpdated];
+        
+        TGDispatchOnMainThread(^
+        {
+            TGModernConversationController *controller = self.controller;
+            [controller deleteItemsAtIndices:indexSet animated:true];
+            if (completion)
+                completion();
+        });
         
         static int uniqueId = 0;
         [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/deleteMessages/(%s%d)", _conversationId, __PRETTY_FUNCTION__, uniqueId++] options:@{@"mids": messageIds} watcher:TGTelegraphInstance];
@@ -1908,6 +2973,21 @@ typedef enum {
 - (void)controllerRequestedNavigationToConversationWithUser:(int32_t)uid
 {
     [[TGInterfaceManager instance] navigateToConversationWithId:uid conversation:nil];
+}
+
+- (void)_markIncomingMessagesAsReadSilent
+{
+    NSUInteger count = _items.count;
+    for (NSUInteger i = 0; i < count; i++)
+    {
+        TGMessageModernConversationItem *item = _items[i];
+        if (!item->_message.outgoing && item->_message.unread)
+        {
+            item = [item deepCopy];
+            item->_message.unread = false;
+            [(NSMutableArray *)_items replaceObjectAtIndex:i withObject:item];
+        }
+    }
 }
 
 - (void)controllerCanReadHistoryUpdated
@@ -1921,10 +3001,47 @@ typedef enum {
             if (_needsToReadHistory)
             {
                 _needsToReadHistory = false;
+                
+                [self _markIncomingMessagesAsReadSilent];
+                
                 [TGConversationReadHistoryActor executeStandalone:_conversationId];
             }
         }];
     }
+}
+
+- (void)controllerCanRegroupUnreadIncomingMessages
+{
+    [TGModernConversationCompanion dispatchOnMessageQueue:^
+    {
+        TGMessageRange unreadRange = TGMessageRangeEmpty();
+        
+        for (TGMessageModernConversationItem *item in _items)
+        {
+            if (!item->_message.outgoing && item->_message.unread)
+            {
+                if (unreadRange.firstMessageId == INT32_MAX || unreadRange.firstMessageId > item->_message.mid)
+                {
+                    unreadRange.firstMessageId = item->_message.mid;
+                    unreadRange.firstDate = (int32_t)item->_message.date;
+                }
+                if (unreadRange.lastMessageId == INT32_MAX || unreadRange.lastMessageId < item->_message.mid)
+                {
+                    unreadRange.lastMessageId = item->_message.mid;
+                    unreadRange.lastDate = (int32_t)item->_message.date;
+                }
+            }
+        }
+        
+        if (unreadRange.firstMessageId != INT32_MAX && unreadRange.lastMessageId != INT32_MAX)
+        {
+            TGDispatchOnMainThread(^
+            {
+                TGModernConversationController *controller = self.controller;
+                [controller setUnreadMessageRangeIfAppropriate:unreadRange];
+            });
+        }
+    }];
 }
 
 #pragma mark -
@@ -1981,6 +3098,9 @@ typedef enum {
 
 - (void)loadMoreMessagesAbove
 {
+    if (_manualMessageManagement)
+        return;
+    
     TGDispatchOnMainThread(^
     {
         TGModernConversationController *controller = self.controller;
@@ -1998,8 +3118,8 @@ typedef enum {
             int index = 0;
             int minDate = INT_MAX;
             
-            NSMutableArray *items = _items;
-            for (int i = items.count - 1; i >= 0; i--)
+            NSArray *items = _items;
+            for (int i = (int)items.count - 1; i >= 0; i--)
             {
                 TGModernConversationItem *item = items[i];
                 if ([item isKindOfClass:[TGMessageModernConversationItem class]])
@@ -2046,6 +3166,9 @@ typedef enum {
 
 - (void)loadMoreMessagesBelow
 {
+    if (_manualMessageManagement)
+        return;
+    
     TGDispatchOnMainThread(^
     {
         TGModernConversationController *controller = self.controller;
@@ -2062,7 +3185,7 @@ typedef enum {
             int maxLocalMid = INT_MIN;
             int maxDate = INT_MIN;
             
-            int count = _items.count;
+            int count = (int)_items.count;
             
             for (int i = 0; i < count; i++)
             {
@@ -2131,7 +3254,7 @@ typedef enum {
             if (above)
             {
                 indexSet = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(TGModernConversationControllerUnloadHistoryLimit, _items.count - TGModernConversationControllerUnloadHistoryLimit)];
-                [_items removeObjectsAtIndexes:indexSet];
+                [(NSMutableArray *)_items removeObjectsAtIndexes:indexSet];
                 
                 TGLog(@"Unloaded %d items above (%d now)", indexSet.count, _items.count);
                 
@@ -2140,12 +3263,14 @@ typedef enum {
             else
             {
                 indexSet = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, _items.count - TGModernConversationControllerUnloadHistoryLimit)];
-                [_items removeObjectsAtIndexes:indexSet];
+                [(NSMutableArray *)_items removeObjectsAtIndexes:indexSet];
                 
                 TGLog(@"Unloaded %d items below (%d now)", indexSet.count, _items.count);
                 
                 _moreMessagesAvailableBelow = true;
             }
+            
+            [self _itemsUpdated];
             
             TGDispatchOnMainThread(^
             {
@@ -2177,6 +3302,36 @@ typedef enum {
     {
         if ([options[@"uid"] intValue] > 0)
             [[TGInterfaceManager instance] navigateToProfileOfUser:[options[@"uid"] intValue]];
+        else {
+            [self _controllerAvatarPressed];
+        }
+    }
+    else if ([action isEqualToString:@"peerAvatarTapped"])
+    {
+        int64_t peerId = [options[@"peerId"] longLongValue];
+        int32_t messageId = [options[@"messageId"] intValue];
+        if (peerId != 0) {
+            if (TGPeerIdIsChannel(peerId)) {
+                if (peerId == _conversationId) {
+                    [self _controllerAvatarPressed];
+                } else {
+                    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                    [progressWindow show:true];
+                    [[[[TGChannelManagementSignals preloadedChannelAtMessage:peerId messageId:messageId] deliverOn:[SQueue mainQueue]] onDispose:^{
+                        TGDispatchOnMainThread(^{
+                            [progressWindow dismiss:true];
+                        });
+                    }] startWithNext:^(TGConversation *conversation) {
+                        [[TGInterfaceManager instance] navigateToConversationWithId:peerId conversation:conversation performActions:@{} atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false animated:true];
+                    } error:^(id error) {
+                        NSString *errorType = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                        if ([errorType isEqualToString:@"PEER_ID_INVALID"]) {
+                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Channel.ErrorAccessDenied") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                        }
+                    } completed:nil];
+                }
+            }
+        }
     }
     else if ([action isEqualToString:@"openContact"])
     {
@@ -2191,6 +3346,61 @@ typedef enum {
             int32_t uid = (int32_t)[[options[@"url"] substringFromIndex:@"tg-user://".length] intValue];
             if (uid != 0)
                 [[TGInterfaceManager instance] navigateToProfileOfUser:uid];
+            
+            return;
+        }
+        else if ([options[@"url"] hasPrefix:@"mention://"])
+        {   
+            NSString *domain = [options[@"url"] substringFromIndex:@"mention://".length];
+            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/resolveDomain/(%@,profile)", domain] options:@{@"domain": domain, @"profile": @true} flags:0 watcher:TGTelegraphInstance];
+            return;
+        }
+        else if ([options[@"url"] hasPrefix:@"hashtag://"])
+        {
+            NSString *hashtag = [options[@"url"] substringFromIndex:@"hashtag://".length];
+            
+            TGHashtagSearchController *hashtagController = [[TGHashtagSearchController alloc] initWithQuery:[@"#" stringByAppendingString:hashtag] peerId:[self requestPeerId] accessHash:[self requestAccessHash]];
+            __weak TGGenericModernConversationCompanion *weakSelf = self;
+            hashtagController.customResultBlock = ^(int32_t messageId) {
+                __strong TGGenericModernConversationCompanion *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    [strongSelf navigateToMessageId:messageId scrollBackMessageId:0 animated:true];
+                    TGModernConversationController *controller = strongSelf.controller;
+                    [controller.navigationController popToViewController:controller animated:true];
+                }
+            };
+            
+            TGModernConversationController *controller = self.controller;
+            [controller.navigationController pushViewController:hashtagController animated:true];
+            
+            return;
+        }
+        else if ([options[@"url"] hasPrefix:@"command://"])
+        {
+            int32_t mid = [options[@"mid"] intValue];
+            NSString *command = [options[@"url"] substringFromIndex:@"command://".length];
+            
+            if ([command rangeOfString:@"@"].location == NSNotFound)
+            {
+                TGModernConversationController *controller = self.controller;
+                for (TGMessageModernConversationItem *item in [controller _items])
+                {
+                    if (item->_message.mid == mid)
+                    {
+                        TGUser *user = [TGDatabaseInstance() loadUser:(int)(item->_message.fromUid)];
+                        if (![self isASingleBotGroup] && user.uid != self.conversationId && user.userName.length != 0 && (user.kind == TGUserKindBot || user.kind == TGUserKindSmartBot))
+                        {
+                            command = [command stringByAppendingFormat:@"@%@", user.userName];
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            [self controllerWantsToSendTextMessage:command asReplyToMessageId:0 withAttachedMessages:nil disableLinkPreviews:false];
+            
+            //TGModernConversationController *controller = self.controller;
+            //[controller appendCommand:command];
             
             return;
         }
@@ -2291,7 +3501,7 @@ typedef enum {
                 if (_messageUploadProgress.find(mid) != _messageUploadProgress.end())
                 {
                     [self _deleteMessages:@[@(mid)] animated:true];
-                    [self controllerDeletedMessages:@[@(mid)]];
+                    [self controllerDeletedMessages:@[@(mid)] completion:nil];
                 }
                 
                 TG_SYNCHRONIZED_BEGIN(_processingDownloadMids);
@@ -2330,8 +3540,94 @@ typedef enum {
         TGModernConversationController *controller = self.controller;
         [controller dismissViewControllerAnimated:true completion:nil];
     }
+    else if ([action isEqualToString:@"navigateToMessage"])
+    {
+        [self navigateToMessageId:[options[@"mid"] intValue] scrollBackMessageId:[options[@"sourceMid"] intValue] animated:true];
+    }
     
     [super actionStageActionRequested:action options:options];
+}
+
+- (void)navigateToMessageId:(int32_t)messageId scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated
+{
+    [TGModernConversationCompanion dispatchOnMessageQueue:^
+    {
+        bool found = false;
+        for (TGMessageModernConversationItem *item in _items)
+        {
+            if (item->_message.mid == messageId)
+            {
+                found = true;
+                break;
+            }
+        }
+        
+        int32_t sourceMid = scrollBackMessageId;
+        
+        if (found)
+        {
+            TGDispatchOnMainThread(^
+            {
+                TGModernConversationController *controller = self.controller;
+                [controller scrollToMessage:messageId sourceMessageId:sourceMid animated:animated];
+            });
+        }
+        else
+        {
+            if (![self _tryToScrollToMessageId:messageId scrollBackMessageId:sourceMid animated:animated])
+            {
+                _progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                [_progressWindow show:true];
+                _loadingMessageForSearch = messageId;
+                _sourceMessageForSearch = sourceMid;
+                _animatedTransitionInSearch = animated;
+                
+                [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/loadConversationAndMessageForSearch/(%" PRId64 ", %" PRId32 ")", _conversationId, messageId] options:@{@"peerId": @(_conversationId), @"messageId": @(messageId)} flags:0 watcher:self];
+            }
+        }
+    }];
+}
+
+- (bool)_tryToScrollToMessageId:(int32_t)messageId scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated
+{
+    if ([TGDatabaseInstance() loadMessageWithMid:messageId peerId:_conversationId] != 0)
+    {
+        [TGDatabaseInstance() loadMessagesFromConversation:_conversationId maxMid:INT_MAX maxDate:INT_MAX maxLocalMid:INT_MAX atMessageId:messageId limit:20 extraUnread:false completion:^(NSArray *messages, bool historyExistsBelow)
+        {
+            NSMutableArray *sortedTopMessages = [[NSMutableArray alloc] initWithArray:messages];
+            [sortedTopMessages sortUsingComparator:^NSComparisonResult(TGMessage *message1, TGMessage *message2)
+            {
+                NSTimeInterval date1 = message1.date;
+                NSTimeInterval date2 = message2.date;
+                
+                if (ABS(date1 - date2) < DBL_EPSILON)
+                {
+                    if (message1.mid > message2.mid)
+                        return NSOrderedAscending;
+                    else
+                        return NSOrderedDescending;
+                }
+                
+                return date1 > date2 ? NSOrderedAscending : NSOrderedDescending;
+            }];
+            
+            [TGModernConversationCompanion dispatchOnMessageQueue:^
+            {
+                _moreMessagesAvailableBelow = historyExistsBelow;
+                [self _replaceMessagesWithFastScroll:sortedTopMessages intent:TGModernConversationAddMessageIntentGeneric scrollToMessageId:messageId scrollBackMessageId:scrollBackMessageId animated:animated];
+                
+                TGDispatchOnMainThread(^
+                {
+                    TGModernConversationController *controller = self.controller;
+                    [controller setEnableBelowHistoryRequests:true];
+                });
+            }];
+        }];
+        
+        return true;
+    }
+    
+    return false;
 }
 
 - (void)actionStageResourceDispatched:(NSString *)path resource:(id)resource arguments:(id)arguments
@@ -2340,33 +3636,19 @@ typedef enum {
     {
         NSArray *messages = ((SGraphObjectNode *)resource).object;
         bool hadIncomingUnread = false;
+        bool treatIncomingAsUnread = [arguments[@"treatIncomingAsUnread"] boolValue];
         
         for (TGMessage *message in messages)
         {
-            if (!message.outgoing && message.unread)
+            if (!message.outgoing && (treatIncomingAsUnread || message.unread))
             {
                 hadIncomingUnread = true;
                 
-                TGDispatchOnMainThread(^
-                {
-                    TGModernConversationController *controller = self.controller;
-                    if ([controller canReadHistory])
-                    {
-                        [TGDatabaseInstance() dispatchOnDatabaseThread:^
-                        {
-                            [TGConversationReadHistoryActor executeStandalone:_conversationId];
-                        } synchronous:false];
-                    }
-                    else
-                    {
-                        [TGModernConversationCompanion dispatchOnMessageQueue:^
-                        {
-                            _needsToReadHistory = true;
-                        }];
-                    }
-                });
-                
                 break;
+            }
+            
+            if (treatIncomingAsUnread && message.group != nil) {
+                hadIncomingUnread = true;
             }
         }
         
@@ -2382,12 +3664,43 @@ typedef enum {
             }
         }
         else
-            [self _addMessages:messages animated:true intent:TGModernConversationAddMessageIntentGeneric];
+        {
+            [TGModernConversationCompanion dispatchOnMessageQueue:^
+            {
+                TGModernConversationAddMessageIntent intent = TGModernConversationAddMessageIntentGeneric;
+                bool animated = true;
+                if (arguments[@"animated"] != nil && ![arguments[@"animated"] boolValue]) {
+                    intent = TGModernConversationAddMessageIntentLoadMoreMessagesAbove;
+                    animated = false;
+                }
+                [self _addMessages:messages animated:animated intent:intent];
+            }];
+        }
+        
+        [self scheduleReadHistory];
     }
     else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/messagesDeleted", [self _conversationIdPathComponent]]])
     {
         NSArray *messageIds = ((SGraphObjectNode *)resource).object;
-        [self _deleteMessages:messageIds animated:true];
+        bool animated = true;
+        if (arguments[@"animated"] != nil && ![arguments[@"animated"] boolValue]) {
+            animated = false;
+        }
+        [self _deleteMessages:messageIds animated:animated];
+    }
+    else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/messagesChanged", [self _conversationIdPathComponent]]])
+    {
+        NSArray *midMessagePairs = ((SGraphObjectNode *)resource).object;
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+        for (NSUInteger i = 0; i < midMessagePairs.count; i += 2)
+        {
+            dict[midMessagePairs[0]] = midMessagePairs[1];
+        }
+        
+        [self _updateMessages:dict];
+    }
+    else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/messageViews", [self _conversationIdPathComponent]]]) {
+        [self updateMessageViews:resource markAsSeen:false];
     }
     else if ([path isEqualToString:@"/tg/conversation/*/readmessages"])
     {
@@ -2411,8 +3724,33 @@ typedef enum {
             }];
         }
     }
+    else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/readmessages", [self _conversationIdPathComponent]]])
+    {
+        bool isOutbox = [resource[@"outbox"] boolValue];
+        int32_t maxMessageId = [resource[@"maxMessageId"] intValue];
+        
+        [TGModernConversationCompanion dispatchOnMessageQueue:^
+        {
+            NSMutableArray *markedMessageIds = [[NSMutableArray alloc] init];
+            
+            for (TGMessageModernConversationItem *item in _items)
+            {
+                if (item->_message.outgoing == isOutbox)
+                {
+                    if (item->_message.mid <= maxMessageId)
+                    {
+                        [markedMessageIds addObject:@(item->_message.mid)];
+                    }
+                }
+            }
+            
+            [self _updateMessagesRead:markedMessageIds];
+        }];
+    }
     else if ([path isEqualToString:@"downloadManagerStateChanged"])
     {
+        bool animated = ![arguments[@"requested"] boolValue];
+        
         NSDictionary *mediaList = resource;
         
         NSMutableDictionary *messageDownloadProgress = [[NSMutableDictionary alloc] init];
@@ -2439,15 +3777,18 @@ typedef enum {
             for (TGMessageModernConversationItem *messageItem in _items)
             {
                 index++;
-                
-                id mediaId = mediaIdForMessage(messageItem->_message);
-                if (mediaId != nil)
+             
+                if (messageItem->_message.mid < TGMessageLocalMidBaseline || messageItem->_message.deliveryState != TGMessageDeliveryStatePending)
                 {
-                    NSNumber *nProgress = messageDownloadProgress[mediaId];
-                    if (nProgress != nil)
+                    id mediaId = mediaIdForMessage(messageItem->_message);
+                    if (mediaId != nil)
                     {
-                        [changedProgresses addObject:nProgress];
-                        [atIndices addObject:[[NSNumber alloc] initWithInt:index]];
+                        NSNumber *nProgress = messageDownloadProgress[mediaId];
+                        if (nProgress != nil)
+                        {
+                            [changedProgresses addObject:nProgress];
+                            [atIndices addObject:[[NSNumber alloc] initWithInt:index]];
+                        }
                     }
                 }
             }
@@ -2461,7 +3802,7 @@ typedef enum {
                     for (NSNumber *nProgress in changedProgresses)
                     {
                         index++;
-                        [controller updateItemProgressAtIndex:[atIndices[index] intValue] toProgress:[nProgress floatValue]];
+                        [controller updateItemProgressAtIndex:[atIndices[index] intValue] toProgress:[nProgress floatValue] animated:animated];
                     }
                 });
             }
@@ -2484,10 +3825,11 @@ typedef enum {
                 NSMutableArray *updatedItemIndices = [[NSMutableArray alloc] init];
                 NSMutableArray *resetProgressIndices = [[NSMutableArray alloc] init];
                 
-                int itemCount = _items.count;
+                int itemCount = (int)_items.count;
                 for (int index = 0; index < itemCount; index++)
                 {
                     TGMessageModernConversationItem *messageItem = _items[index];
+                    
                     id mediaId = mediaIdForMessage(messageItem->_message);
                     if (mediaId != nil)
                     {
@@ -2498,13 +3840,16 @@ typedef enum {
                             {
                                 messageItem = [messageItem copy];
                                 messageItem->_mediaAvailabilityStatus = [nStatus boolValue];
-                                [_items replaceObjectAtIndex:index withObject:messageItem];
+                                [(NSMutableArray *)_items replaceObjectAtIndex:index withObject:messageItem];
                                 
                                 [updatedItems addObject:messageItem];
                                 [updatedItemIndices addObject:@(index)];
                             }
                             
-                            [resetProgressIndices addObject:@(index)];
+                            if (messageItem->_message.mid < TGMessageLocalMidBaseline || messageItem->_message.deliveryState != TGMessageDeliveryStatePending)
+                            {
+                                [resetProgressIndices addObject:@(index)];
+                            }
                         }
                     }
                 }
@@ -2523,7 +3868,7 @@ typedef enum {
                         
                         for (NSNumber *nIndex in resetProgressIndices)
                         {
-                            [controller updateItemProgressAtIndex:[nIndex unsignedIntegerValue] toProgress:-1.0f];
+                            [controller updateItemProgressAtIndex:[nIndex unsignedIntegerValue] toProgress:-1.0f animated:animated];
                         }
                     });
                 }
@@ -2565,7 +3910,7 @@ typedef enum {
             }
             
             if (indexSet.count != 0)
-                [self _updateMediaStatusDataForItemsInIndexSet:indexSet];
+                [self _updateMediaStatusDataForItemsInIndexSet:indexSet animated:false];
         }];
     }
     else if ([path isEqualToString:@"/tg/service/synchronizationstate"])
@@ -2618,6 +3963,70 @@ typedef enum {
             [controller reloadBackground];
         });
     }
+    else if ([path isEqualToString:@"/tg/conversation/historyCleared"])
+    {
+        [TGModernConversationCompanion dispatchOnMessageQueue:^
+        {
+            if (_conversationId == [resource longLongValue])
+            {
+                [self systemClearedConversation];
+            }
+        }];
+    }
+    else if ([path isEqualToString:@"/tg/removedMediasForMessageIds"])
+    {
+        [TGModernConversationCompanion dispatchOnMessageQueue:^
+        {
+            [self _updateMediaStatusDataForItemsWithMessageIdsInSet:resource];
+        }];
+    }
+    else if ([path isEqualToString:@"/tg/conversation/*/readmessageContents"])
+    {
+        [TGModernConversationCompanion dispatchOnMessageQueue:^
+        {
+            std::set<int32_t> messageIds;
+            for (NSNumber *nMessageId in resource[@"messageIds"])
+            {
+                messageIds.insert((int32_t)[nMessageId intValue]);
+            }
+            
+            NSMutableArray *updatedItems = [[NSMutableArray alloc] init];
+            NSMutableArray *updatedIndices = [[NSMutableArray alloc] init];
+            
+            NSUInteger count = _items.count;
+            for (NSUInteger i = 0; i < count; i++)
+            {
+                TGMessageModernConversationItem *item = _items[i];
+                if (messageIds.find(item->_message.mid) != messageIds.end())
+                {
+                    if (item->_message.contentProperties[@"contentsRead"] == nil)
+                    {
+                        item = [item deepCopy];
+                        NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:item->_message.contentProperties];
+                        contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
+                        item->_message.contentProperties = contentProperties;
+                        [(NSMutableArray *)_items replaceObjectAtIndex:i withObject:item];
+                        [updatedItems addObject:item];
+                        [updatedIndices addObject:@(i)];
+                    }
+                }
+            }
+            
+            if (updatedItems.count != 0)
+            {
+                TGDispatchOnMainThread(^
+                {
+                    TGModernConversationController *controller = self.controller;
+                    int index = -1;
+                    for (NSNumber *nIndex in updatedIndices)
+                    {
+                        index++;
+                        [controller updateItemAtIndex:[nIndex intValue] toItem:updatedItems[index]];
+                    }
+                });
+            }
+        }];
+    }
     
     [super actionStageResourceDispatched:path resource:resource arguments:arguments];
 }
@@ -2644,7 +4053,7 @@ typedef enum {
                 [self _updateMessageDeliveryFailed:mid];
                 
                 _messageUploadProgress.erase(mid);
-                [self _updateItemProgress:mid];
+                [self _updateItemProgress:mid animated:false];
             }];
         }
         else if ([messageType isEqualToString:@"messageProgress"])
@@ -2655,13 +4064,13 @@ typedef enum {
                 float progress = [message[@"progress"] floatValue];
                 
                 _messageUploadProgress[mid] = progress;
-                [self _updateItemProgress:mid];
+                [self _updateItemProgress:mid animated:true];
             }];
         }
     }
 }
 
-- (void)_updateItemProgress:(int32_t)mid
+- (void)_updateItemProgress:(int32_t)mid animated:(bool)animated
 {
 #ifdef DEBUG
     NSAssert([TGModernConversationCompanion isMessageQueue], @"Should be called on message queue");
@@ -2682,7 +4091,7 @@ typedef enum {
             TGDispatchOnMainThread(^
             {
                 TGModernConversationController *controller = self.controller;
-                [controller updateItemProgressAtIndex:index toProgress:progress];
+                [controller updateItemProgressAtIndex:index toProgress:progress animated:animated];
             });
             
             break;
@@ -2690,7 +4099,7 @@ typedef enum {
     }
 }
 
-- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)indexSet
+- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated
 {
     if (_messageUploadProgress.empty() || indexSet.count == 0)
         return;
@@ -2698,7 +4107,7 @@ typedef enum {
     NSMutableArray *updatedProgresses = [[NSMutableArray alloc] init];
     NSMutableArray *updatedIndices = [[NSMutableArray alloc] init];
     
-    int indexCount = indexSet.count;
+    int indexCount = (int)indexSet.count;
     NSUInteger indices[indexCount];
     [indexSet getIndexes:indices maxCount:indexSet.count inIndexRange:nil];
     
@@ -2724,7 +4133,7 @@ typedef enum {
             for (NSNumber *nProgress in updatedProgresses)
             {
                 index++;
-                [controller updateItemProgressAtIndex:[updatedIndices[index] unsignedIntegerValue] toProgress:[nProgress floatValue]];
+                [controller updateItemProgressAtIndex:[updatedIndices[index] unsignedIntegerValue] toProgress:[nProgress floatValue] animated:animated];
             }
         });
     }
@@ -2785,11 +4194,26 @@ typedef enum {
             {
                 int32_t previousMid = (int32_t)[result[@"previousMid"] intValue];
                 _messageUploadProgress.erase(previousMid);
-                [self _updateItemProgress:previousMid];
                 
-                [self _updateMessageDelivered:previousMid mid:[result[@"mid"] intValue] date:[result[@"date"] intValue] message:result[@"message"]];
+                [self _updateMessageDelivered:previousMid mid:[result[@"mid"] intValue] date:[result[@"date"] intValue] message:result[@"message"] unread:result[@"unread"]];
+                
+                [self _updateItemProgress:[result[@"mid"] intValue] animated:true];
             }
         }];
+    }
+    else if ([path hasPrefix:@"/tg/loadConversationAndMessageForSearch/"])
+    {
+        TGDispatchOnMainThread(^
+        {
+            [_progressWindow dismiss:true];
+            
+            int32_t messageId = _loadingMessageForSearch;
+            int32_t scrollBackMessageId = _sourceMessageForSearch;
+            _loadingMessageForSearch = 0;
+            _sourceMessageForSearch = 0;
+            
+            [self _tryToScrollToMessageId:messageId scrollBackMessageId:scrollBackMessageId animated:_animatedTransitionInSearch];
+        });
     }
     
     [super actorCompleted:status path:path result:result];
@@ -2907,6 +4331,175 @@ static id mediaIdForMessage(TGMessage *message)
             }
         }
     }];
+}
+
+- (void)updateMediaAccessTimeForMessageId:(int32_t)messageId
+{
+    [TGModernConversationCompanion dispatchOnMessageQueue:^
+    {
+        for (NSUInteger index = 0; index < _items.count; index++)
+        {
+            TGMessageModernConversationItem *item = _items[index];
+            
+            if (item->_message.mid == messageId)
+            {
+                TGMediaId *mediaId = mediaIdForMessage(item->_message);
+                if (mediaId != 0)
+                {
+                    [TGDatabaseInstance() updateLastUseDateForMediaType:mediaId.type mediaId:mediaId.itemId messageId:messageId];
+                }
+                
+                bool maybeReadContents = false;
+                for (id attachment in item->_message.mediaAttachments)
+                {
+                    if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
+                    {
+                        maybeReadContents = true;
+                        break;
+                    }
+                }
+                
+                if (maybeReadContents && [self allowMessageForwarding] && !TGPeerIdIsChannel(_conversationId))
+                {
+                    if (!item->_message.outgoing)
+                    {
+                        bool found = item->_message.contentProperties[@"contentsRead"] != nil;
+                        
+                        if (!found)
+                        {
+                            NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:item->_message.contentProperties];
+                            contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
+                            TGMessageModernConversationItem *updatedItem = [item deepCopy];
+                            updatedItem->_message.contentProperties = contentProperties;
+                            ((NSMutableArray *)_items)[index] = updatedItem;
+                            
+                            TGDatabaseAction action = { .type = TGDatabaseActionReadMessageContents, .subject = item->_message.mid, .arg0 = 0, .arg1 = 0};
+                            [TGDatabaseInstance() storeQueuedActions:[NSArray arrayWithObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]]];
+                            [ActionStageInstance() requestActor:@"/tg/service/synchronizeactionqueue/(global)" options:nil watcher:TGTelegraphInstance];
+                            
+                            [TGDatabaseInstance() updateMessage:updatedItem->_message.mid peerId:_conversationId withMessage:updatedItem->_message];
+                            
+                            TGDispatchOnMainThread(^
+                            {
+                                TGModernConversationController *controller = self.controller;
+                                [controller updateItemAtIndex:index toItem:updatedItem];
+                            });
+                        }
+                    }
+                }
+                
+                break;
+            }
+        }
+    }];
+}
+
+- (id)acquireAudioRecordingActivityHolder
+{
+    return [[TGTelegraphInstance activityManagerForConversationId:_conversationId] addActivityWithType:@"recordingAudio" priority:0];
+}
+
+- (id)acquireLocationPickingActivityHolder
+{
+    return [[TGTelegraphInstance activityManagerForConversationId:_conversationId] addActivityWithType:@"pickingLocation" priority:0];
+}
+
+- (SSignal *)hashtagListForHashtag:(NSString *)hashtag
+{
+    //TGModernConversationController *controller = self.controller;
+    
+    NSMutableArray *hashtagsFromCurrentMessages = [[NSMutableArray alloc] init];
+    /*for (TGMessageModernConversationItem *item in [controller _items])
+    {
+        for (id result in [item->_message textCheckingResults])
+        {
+            if ([result isKindOfClass:[TGTextCheckingResult class]] && ((TGTextCheckingResult *)result).type == TGTextCheckingResultTypeHashtag)
+            {
+                if (![hashtagsFromCurrentMessages containsObject:((TGTextCheckingResult *)result).contents])
+                    [hashtagsFromCurrentMessages addObject:((TGTextCheckingResult *)result).contents];
+            }
+        }
+    }*/
+    
+    return [[TGRecentHashtagsSignal recentHashtagsFromSpaces:TGHashtagSpaceEntered | TGHashtagSpaceSearchedBy] map:^id (NSArray *recentHashtags)
+    {
+        [hashtagsFromCurrentMessages removeObjectsInArray:recentHashtags];
+        NSArray *combinedHashtags = [recentHashtags arrayByAddingObjectsFromArray:hashtagsFromCurrentMessages];
+        
+        if (hashtag.length == 0)
+            return combinedHashtags;
+        
+        NSMutableArray *filteredHashtags = [[NSMutableArray alloc] init];
+        for (NSString *listHashtag in combinedHashtags)
+        {
+            if ([listHashtag hasPrefix:hashtag])
+                [filteredHashtags addObject:listHashtag];
+        }
+        
+        return filteredHashtags;
+    }];
+}
+
+- (void)navigateToMessageSearch
+{
+    TGModernConversationController *controller = self.controller;
+    [controller activateSearch];
+    
+    /*__weak TGGenericModernConversationCompanion *weakSelf = self;
+    TGChatSearchController *searchController = [[TGChatSearchController alloc] initWithPeerId:_conversationId messageSelected:^(int32_t messageId, NSString *query, NSArray *messageIds)
+    {
+        __strong TGGenericModernConversationCompanion *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            [strongSelf navigateToMessageId:messageId scrollBackMessageId:0 animated:false];
+            TGModernConversationController *controller = strongSelf.controller;
+            [controller dismissViewControllerAnimated:true completion:nil];
+        }
+    }];
+    TGModernConversationController *controller = self.controller;
+    [controller hideTitlePanel];
+    [controller presentViewController:searchController animated:true completion:nil];*/
+    
+}
+
+- (void)_replaceMessages:(NSArray *)newMessages atMessageId:(int32_t)atMessageId expandFrom:(int32_t)expandMessageId jump:(bool)jump {
+    [super _replaceMessages:newMessages atMessageId:atMessageId expandFrom:expandMessageId jump:jump];
+    
+    [[TGDownloadManager instance] requestState:self.actionHandle];
+}
+
+- (int64_t)requestPeerId {
+    return _conversationId;
+}
+
+- (int64_t)requestAccessHash {
+    return 0;
+}
+
+- (void)scheduleReadHistory {
+    TGDispatchOnMainThread(^
+    {
+        TGModernConversationController *controller = self.controller;
+        if ([controller canReadHistory])
+        {
+            [TGModernConversationCompanion dispatchOnMessageQueue:^
+            {
+                [self _markIncomingMessagesAsReadSilent];
+            }];
+            
+            [TGDatabaseInstance() dispatchOnDatabaseThread:^
+            {
+                [TGConversationReadHistoryActor executeStandalone:_conversationId];
+            } synchronous:false];
+        }
+        else
+        {
+            [TGModernConversationCompanion dispatchOnMessageQueue:^
+            {
+                _needsToReadHistory = true;
+            }];
+        }
+    });
 }
 
 @end

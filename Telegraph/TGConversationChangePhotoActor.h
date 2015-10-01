@@ -18,7 +18,7 @@
 
 @property (nonatomic, strong) id currentImage;
 
-- (void)conversationUpdateAvatarSuccess:(TLmessages_StatedMessage *)result;
+- (void)conversationUpdateAvatarSuccess:(TLUpdates *)result;
 - (void)conversationUpdateAvatarFailed;
 
 @end

@@ -12,6 +12,6 @@
 
 @interface TGNotificationMessageViewModel : TGMessageViewModel
 
-- (instancetype)initWithMessage:(TGMessage *)message actionMedia:(TGActionMediaAttachment *)actionMedia author:(TGUser *)author additionalUsers:(NSArray *)additionalUsers context:(TGModernViewContext *)context;
+- (instancetype)initWithMessage:(TGMessage *)message actionMedia:(TGActionMediaAttachment *)actionMedia authorPeer:(id)authorPeer additionalUsers:(NSArray *)additionalUsers context:(TGModernViewContext *)context;
 
 @end

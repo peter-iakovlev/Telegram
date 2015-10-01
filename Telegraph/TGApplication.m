@@ -1,10 +1,13 @@
 #import "TGApplication.h"
 
 #import "TGAppDelegate.h"
-#import "TGWebController.h"
 #import "TGViewController.h"
 
 #import "TGHacks.h"
+
+#import "TGStringUtils.h"
+
+#import <SafariServices/SafariServices.h>
 
 @interface TGApplication ()
 {
@@ -23,33 +26,99 @@
     return self;
 }
 
-- (BOOL)openURL:(NSURL *)url forceNative:(BOOL)forceNative
+- (NSString *)telegramMeLinkFromText:(NSString *)text startPrivatePayload:(__autoreleasing NSString **)startPrivatePayload startGroupPayload:(__autoreleasing NSString **)startGroupPayload
 {
-    NSString *absoluteString = [url.absoluteString lowercaseString];
-    if ([absoluteString hasPrefix:@"tel:"] || [absoluteString hasPrefix:@"facetime:"])
+    NSString *pattern = @"https?:\\/\\/telegram\\.me\\/([a-zA-Z0-9_]+)(\\?.*)?";
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:NULL];
+    NSTextCheckingResult *match = [regex firstMatchInString:text options:0 range:NSMakeRange(0, [text length])];
+    if (match != nil)
+    {
+        NSString *arguments = ([match numberOfRanges] >= 2 && [match rangeAtIndex:2].location != NSNotFound) ? [[text substringWithRange:[match rangeAtIndex:2]] substringFromIndex:1] : nil;
+        if (arguments.length != 0)
+        {
+            NSDictionary *dict = [TGStringUtils argumentDictionaryInUrlString:arguments];
+            if (dict.count == 1 && (dict[@"start"] != nil || dict[@"startgroup"]))
+            {
+                if (startPrivatePayload)
+                    *startPrivatePayload = dict[@"start"];
+                if (startGroupPayload)
+                    *startGroupPayload = dict[@"startgroup"];
+            }
+            else
+                return nil;
+        }
+        return [text substringWithRange:[match rangeAtIndex:1]];
+    }
+    return nil;
+}
+
+- (BOOL)openURL:(NSURL *)url forceNative:(BOOL)__unused forceNative
+{
+    NSString *rawAbsoluteString = url.absoluteString;
+    NSString *absolutePrefixString = [url.absoluteString lowercaseString];
+    if ([absolutePrefixString hasPrefix:@"tel:"] || [absolutePrefixString hasPrefix:@"facetime:"])
     {
         [TGAppDelegateInstance performPhoneCall:url];
         
         return true;
     }
     
-    bool useNative = forceNative;
-    if (![absoluteString hasPrefix:@"http://"] && ![absoluteString hasPrefix:@"https://"])
-        useNative = true;
-    
-    useNative = true;
-    
-    if (useNative)
-        return [super openURL:url];
-    
-    if ([self.delegate isKindOfClass:[TGAppDelegate class]])
+    if ([absolutePrefixString hasPrefix:@"http://telegram.me/addstickers/"])
     {
-        TGWebController *webController = [[TGWebController alloc] initWithUrl:[url absoluteString]];
-        [TGAppDelegateInstance.mainNavigationController pushViewController:webController animated:true];
+        NSString *stickerPackHash = [rawAbsoluteString substringFromIndex:@"http://telegram.me/addstickers/".length];
+        NSString *internalUrl = [[NSString alloc] initWithFormat:@"tg://addstickers?set=%@", stickerPackHash];
+        [(TGAppDelegate *)self.delegate handleOpenDocument:[NSURL URLWithString:internalUrl] animated:true];
         return true;
     }
     
-    return false;
+    if ([absolutePrefixString hasPrefix:@"https://telegram.me/addstickers/"])
+    {
+        NSString *stickerPackHash = [rawAbsoluteString substringFromIndex:@"https://telegram.me/addstickers/".length];
+        NSString *internalUrl = [[NSString alloc] initWithFormat:@"tg://addstickers?set=%@", stickerPackHash];
+        [(TGAppDelegate *)self.delegate handleOpenDocument:[NSURL URLWithString:internalUrl] animated:true];
+        return true;
+    }
+    
+    if ([absolutePrefixString hasPrefix:@"http://telegram.me/joinchat/"])
+    {
+        NSString *groupHash = [rawAbsoluteString substringFromIndex:@"http://telegram.me/joinchat/".length];
+        NSString *internalUrl = [[NSString alloc] initWithFormat:@"tg://join?invite=%@", groupHash];
+        [(TGAppDelegate *)self.delegate handleOpenDocument:[NSURL URLWithString:internalUrl] animated:true];
+        return true;
+    }
+    
+    if ([absolutePrefixString hasPrefix:@"https://telegram.me/joinchat/"])
+    {
+        NSString *groupHash = [rawAbsoluteString substringFromIndex:@"https://telegram.me/joinchat/".length];
+        NSString *internalUrl = [[NSString alloc] initWithFormat:@"tg://join?invite=%@", groupHash];
+        [(TGAppDelegate *)self.delegate handleOpenDocument:[NSURL URLWithString:internalUrl] animated:true];
+        return true;
+    }
+    
+    NSString *startPrivatePayload = nil;
+    NSString *startGroupPayload = nil;
+    NSString *telegramMeLink = [self telegramMeLinkFromText:rawAbsoluteString startPrivatePayload:&startPrivatePayload startGroupPayload:&startGroupPayload];
+    if (telegramMeLink.length != 0)
+    {
+        NSMutableString *internalUrl = [[NSMutableString alloc] initWithFormat:@"tg://resolve?domain=%@", telegramMeLink];
+        if (startPrivatePayload.length != 0 || startGroupPayload.length != 0)
+        {
+            if (startPrivatePayload.length != 0)
+                [internalUrl appendFormat:@"&start=%@", startPrivatePayload];
+            if (startGroupPayload.length != 0)
+                [internalUrl appendFormat:@"&startgroup=%@", startGroupPayload];
+        }
+        [(TGAppDelegate *)self.delegate handleOpenDocument:[NSURL URLWithString:internalUrl] animated:true];
+        return true;
+    }
+    
+    if (iosMajorVersion() >= 9 && ([url.scheme isEqual:@"http"] || [url.scheme isEqual:@"https"])) {
+        SFSafariViewController *controller = [[SFSafariViewController alloc] initWithURL:url entersReaderIfAvailable:false];
+        [TGAppDelegateInstance.window.rootViewController presentViewController:controller animated:true completion:nil];
+        return true;
+    }
+    
+    return [super openURL:url];
 }
 
 - (BOOL)openURL:(NSURL *)url

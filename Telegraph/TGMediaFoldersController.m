@@ -1,8 +1,5 @@
 #import "TGMediaFoldersController.h"
 
-#import "ATQueue.h"
-#import <AssetsLibrary/AssetsLibrary.h>
-
 #import "TGMediaPickerAsset.h"
 #import "TGMediaPickerAssetsGroup.h"
 
@@ -11,17 +8,22 @@
 
 #import "TGModernMediaPickerController.h"
 
+#import "TGAppDelegate.h"
+
 @interface TGMediaFoldersController () <UICollectionViewDelegateFlowLayout, UICollectionViewDataSource>
 {
-    ALAssetsLibrary *_assetsLibrary;
-    ATQueue *_assetsQueue;
+    TGMediaPickerAssetsLibrary *_assetsLibrary;
+    
+    NSArray *_items;
+    NSArray *_loadedItems;
+    
+    NSString *_currentGroupId;
     
     UICollectionView *_collectionView;
     CGFloat _collectionViewWidth;
     TGMediaFoldersLayout *_collectionLayout;
     
-    NSArray *_assetGroupList;
-    NSArray *_loadedAssetGroupList;
+    TGModernMediaPickerControllerIntent _intent;
     
     dispatch_semaphore_t _waitSemaphore;
     bool _usedSemaphore;
@@ -33,26 +35,41 @@
 
 - (instancetype)init
 {
+    return [self initWithIntent:TGModernMediaPickerControllerDefaultIntent];
+}
+
+- (instancetype)initWithIntent:(TGModernMediaPickerControllerIntent)intent
+{
     self = [super init];
     if (self != nil)
     {
+        _intent = intent;
+        
         self.title = TGLocalized(@"SearchImages.Title");
-        [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelPressed)]];
+        
+        [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelPressed)]];
         
         _waitSemaphore = dispatch_semaphore_create(0);
         
-        _assetsQueue = [[ATQueue alloc] init];
-        [_assetsQueue dispatch:^
+        __weak TGMediaFoldersController *weakSelf = self;
+        _assetsLibrary = [[TGMediaPickerAssetsLibrary alloc] initForAssetType:[TGModernMediaPickerController assetTypeForIntent:intent]];
+        _assetsLibrary.libraryChanged = ^
         {
-            _assetsLibrary = [[ALAssetsLibrary alloc] init];
-        }];
+            __strong TGMediaFoldersController *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if (strongSelf->_items)
+                [strongSelf reloadData];
+        };
     }
     return self;
 }
 
 - (void)cancelPressed
 {
-    [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
+    if (self.dismiss != nil)
+        self.dismiss();
 }
 
 - (void)loadView
@@ -61,7 +78,7 @@
     
     self.view.backgroundColor = [UIColor whiteColor];
     
-    CGSize frameSize = [self referenceViewSizeForOrientation:self.interfaceOrientation];
+    CGSize frameSize = TGAppDelegateInstance.rootController.view.bounds.size;
     
     _collectionLayout = [[TGMediaFoldersLayout alloc] init];
     _collectionView = [[UICollectionView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frameSize.width, frameSize.height) collectionViewLayout:_collectionLayout];
@@ -82,23 +99,25 @@
     if (_waitSemaphore != nil && !_usedSemaphore)
     {
         _usedSemaphore = true;
-        [self loadAssets];
+        [self reloadData];
         
-        dispatch_semaphore_wait(_waitSemaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)));
+        dispatch_semaphore_wait(_waitSemaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC)));
         
         @synchronized (self)
         {
-            if (_loadedAssetGroupList != nil)
+            if (_loadedItems != nil)
             {
-                _assetGroupList = _loadedAssetGroupList;
-                _loadedAssetGroupList = nil;
+                _items = _loadedItems;
+                _loadedItems = nil;
             }
         }
     }
     
     [super viewWillAppear:animated];
     
-    CGSize frameSize = [self referenceViewSizeForOrientation:self.interfaceOrientation];
+    _currentGroupId = nil;
+    
+    CGSize frameSize = TGAppDelegateInstance.rootController.view.bounds.size;
     CGRect collectionViewFrame = CGRectMake(0.0f, 0.0f, frameSize.width, frameSize.height);
     _collectionViewWidth = collectionViewFrame.size.width;
     _collectionView.frame = collectionViewFrame;
@@ -108,21 +127,18 @@
         [_collectionView deselectItemAtIndexPath:[_collectionView indexPathsForSelectedItems][0] animated:animated];
 }
 
-- (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
-{
-    CGSize screenSize = [self referenceViewSizeForOrientation:toInterfaceOrientation];
+- (void)layoutControllerForSize:(CGSize)size duration:(NSTimeInterval)__unused duration {
+    [super layoutControllerForSize:size duration:duration];
     
-    CGRect tableFrame = CGRectMake(0, 0, screenSize.width, screenSize.height);
+    CGRect tableFrame = CGRectMake(0, 0, size.width, size.height);
     _collectionViewWidth = tableFrame.size.width;
     _collectionView.frame = tableFrame;
     [_collectionLayout invalidateLayout];
-    
-    [super willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
 }
 
-- (void)_replaceAssetGroupList:(NSArray *)assetGroupList
+- (void)_replaceAssetGroupList:(NSArray *)items
 {
-    _assetGroupList = assetGroupList;
+    _items = items;
     [_collectionView reloadData];
 }
 
@@ -148,96 +164,74 @@
 
 - (NSInteger)collectionView:(UICollectionView *)__unused collectionView numberOfItemsInSection:(NSInteger)__unused section
 {
-    return _assetGroupList.count;
+    return _items.count;
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     TGMediaFoldersCell *cell = (TGMediaFoldersCell *)[collectionView dequeueReusableCellWithReuseIdentifier:@"TGMediaFoldersCell" forIndexPath:indexPath];
-    [cell setAssetsGroup:_assetGroupList[indexPath.item]];
+    [cell setAssetsGroup:_items[indexPath.item]];
     
     return cell;
 }
 
-- (void)loadAssets
+- (void)reloadData
 {
-    [_assetsQueue dispatch:^
+    [_assetsLibrary fetchAssetsGroupsWithCompletionBlock:^(NSArray *groups, TGMediaPickerAuthorizationStatus status, __unused NSError *error)
     {
-        if ([ALAssetsLibrary authorizationStatus] != ALAuthorizationStatusAuthorized)
+        if (status == TGMediaPickerAuthorizationStatusAuthorized)
         {
-            if (_waitSemaphore != nil)
-                dispatch_semaphore_signal(_waitSemaphore);
+            @synchronized(self)
+            {
+                _loadedItems = groups;
+            }
+            
+            TGDispatchOnMainThread(^
+            {
+                [self _replaceAssetGroupList:groups];
+                
+                if (_currentGroupId != nil)
+                {
+                    bool currentGroupStillExists = false;
+                    for (TGMediaPickerAssetsGroup *group in groups)
+                    {
+                        if ([group.persistentId isEqualToString:_currentGroupId])
+                        {
+                            currentGroupStillExists = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!currentGroupStillExists)
+                    {
+                        _currentGroupId = nil;
+                        [self.navigationController popToRootViewControllerAnimated:true];
+                    }
+                }
+            });
         }
         
-        NSMutableArray *assetGroups = [[NSMutableArray alloc] init];
-        
-        [_assetsLibrary enumerateGroupsWithTypes:ALAssetsGroupAll usingBlock:^(ALAssetsGroup *group, __unused BOOL *stop)
-        {
-            if (group != nil)
-            {
-                [group setAssetsFilter:[ALAssetsFilter allVideos]];
-                
-                NSMutableArray *groupAssetList = [[NSMutableArray alloc] init];
-                [group enumerateAssetsWithOptions:NSEnumerationReverse usingBlock:^(ALAsset *asset, __unused NSUInteger index, BOOL *stop)
-                {
-                    if (asset != nil)
-                    {
-                        [groupAssetList addObject:[[TGMediaPickerAsset alloc] initWithAssetsLibrary:_assetsLibrary asset:asset]];
-                    }
-                    if (groupAssetList.count == 3 && stop != NULL)
-                        *stop = true;
-                }];
-                
-                [assetGroups addObject:[[TGMediaPickerAssetsGroup alloc] initWithLatestAssets:groupAssetList groupThumbnail:[[UIImage alloc] initWithCGImage:[group posterImage]] persistentId:[group valueForProperty:ALAssetsGroupPropertyPersistentID] title:[group valueForProperty:ALAssetsGroupPropertyName] assetCount:group.numberOfAssets]];
-            }
-            else
-            {
-                [assetGroups sortUsingComparator:^NSComparisonResult(TGMediaPickerAssetsGroup *group1, TGMediaPickerAssetsGroup *group2)
-                {
-                    NSDate *date1 = [group1 latestAssets].count == 0 ? nil : ((TGMediaPickerAsset *)[group1 latestAssets][0]).date;
-                    NSDate *date2 = [group2 latestAssets].count == 0 ? nil : ((TGMediaPickerAsset *)[group2 latestAssets][0]).date;
-                    
-                    if (date1 != nil && date2 == nil)
-                        return NSOrderedAscending;
-                    else if (date1 == nil && date2 != nil)
-                        return NSOrderedDescending;
-                    else if (date1 != nil && date2 != nil)
-                        return [date1 compare:date2] == NSOrderedAscending ? NSOrderedDescending : NSOrderedAscending;
-                    
-                    return [group1.title compare:group2.title];
-                }];
-                
-                @synchronized(self)
-                {
-                    _loadedAssetGroupList = assetGroups;
-                }
-                
-                TGDispatchOnMainThread(^
-                {
-                    [self _replaceAssetGroupList:assetGroups];
-                });
-                
-                if (_waitSemaphore != nil)
-                    dispatch_semaphore_signal(_waitSemaphore);
-            }
-        } failureBlock:^(NSError *error)
-        {
-            if (_waitSemaphore != nil)
-                dispatch_semaphore_signal(_waitSemaphore);
-            
-            NSLog(@"error enumerating AssetLibrary groups %@\n", error);
-        }];
+        if (_waitSemaphore != nil)
+            dispatch_semaphore_signal(_waitSemaphore);
     }];
 }
 
 - (void)collectionView:(UICollectionView *)__unused collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    TGMediaPickerAssetsGroup *assetsGroup = _assetGroupList[indexPath.row];
-    TGModernMediaPickerController *mediaPickerController = [[TGModernMediaPickerController alloc] initWithAssetsGroupPersistentId:[assetsGroup persistentId] title:[assetsGroup title]];
-    mediaPickerController.videoPicked = _videoPicked;
-    mediaPickerController.liveUpload = _liveUpload;
-    mediaPickerController.enableServerAssetCache = _enableServerAssetCache;
-    [self.navigationController pushViewController:mediaPickerController animated:true];
+    TGMediaPickerAssetsGroup *assetsGroup = _items[indexPath.row];
+    _currentGroupId = assetsGroup.persistentId;
+    
+    TGModernMediaPickerController *controller = [[TGModernMediaPickerController alloc] initWithAssetsGroup:assetsGroup intent:_intent];
+    controller.photosPicked = self.photosPicked;
+    controller.videoPicked = self.videoPicked;
+    controller.liveUploadEnabled = self.liveUpload;
+    controller.serverAssetCacheEnabled = self.enableServerAssetCache;
+    controller.avatarCreated = self.avatarCreated;
+    controller.dismiss = self.dismiss;
+    controller.userListSignal = self.userListSignal;
+    controller.hashtagListSignal = self.hashtagListSignal;
+    controller.disallowCaptions = self.disallowCaptions;
+    [self.navigationController pushViewController:controller animated:true];
 }
 
 @end

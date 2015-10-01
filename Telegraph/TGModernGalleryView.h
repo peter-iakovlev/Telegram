@@ -8,6 +8,34 @@
 
 #import <UIKit/UIKit.h>
 
+#import "TGModernGalleryInterfaceView.h"
+
+@class TGModernGalleryScrollView;
+
 @interface TGModernGalleryView : UIView
+
+@property (nonatomic, copy) bool (^transitionOut)(CGFloat velocity);
+
+@property (nonatomic, strong, readonly) UIView<TGModernGalleryInterfaceView> *interfaceView;
+@property (nonatomic, strong, readonly) TGModernGalleryScrollView *scrollView;
+
+- (instancetype)initWithFrame:(CGRect)frame itemPadding:(CGFloat)itemPadding interfaceView:(UIView<TGModernGalleryInterfaceView> *)interfaceView;
+
+- (bool)shouldAutorotate;
+
+- (void)showHideInterface;
+- (void)hideInterfaceAnimated;
+- (void)updateInterfaceVisibility;
+
+- (void)addItemHeaderView:(UIView *)itemHeaderView;
+- (void)removeItemHeaderView:(UIView *)itemHeaderView;
+- (void)addItemFooterView:(UIView *)itemFooterView;
+- (void)removeItemFooterView:(UIView *)itemFooterView;
+
+- (void)simpleTransitionOutWithVelocity:(CGFloat)velocity completion:(void (^)())completion;
+- (void)transitionInWithDuration:(NSTimeInterval)duration;
+- (void)transitionOutWithDuration:(NSTimeInterval)duration;
+
+- (void)fadeOutWithDuration:(NSTimeInterval)duration completion:(void (^)(void))completion;
 
 @end

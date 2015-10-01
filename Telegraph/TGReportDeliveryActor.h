@@ -10,7 +10,7 @@
 
 @interface TGReportDeliveryActor : TGActor
 
-- (void)reportDeliverySuccess:(int)maxMid mids:(NSArray *)mids;
+- (void)reportDeliverySuccess:(int)maxMid deliveredMessages:(NSArray *)deliveredMessages;
 - (void)reportDeliveryFailed:(int)maxMid;
 
 - (void)reportQtsSuccess:(int32_t)qts randomIds:(NSArray *)randomIds;

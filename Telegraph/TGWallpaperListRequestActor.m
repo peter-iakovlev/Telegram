@@ -6,6 +6,8 @@
 
 #import "TGImageInfo+Telegraph.h"
 
+#import "TGAppDelegate.h"
+
 #define TGWallpaperListVersion 2
 
 @implementation TGWallpaperListRequestActor
@@ -46,7 +48,7 @@
     int version = 2;
     [data appendBytes:&version length:4];
     
-    int count = wallpaperList.count;
+    int count = (int)wallpaperList.count;
     [data appendBytes:&count length:4];
     
     for (NSDictionary *dict in wallpaperList)
@@ -66,7 +68,7 @@
 
 + (NSArray *)cachedList
 {
-    NSString *wallpapersPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0] stringByAppendingPathComponent:@"wallpapers"];
+    NSString *wallpapersPath = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"wallpapers"];
     NSData *wallpapersData = [[NSData alloc] initWithContentsOfFile:[wallpapersPath stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"_remote-list_v%d", TGWallpaperListVersion]]];
     
     if (wallpapersData != nil)
@@ -79,7 +81,7 @@
 {
     static bool didRequestWallpaperList = false;
     
-    NSString *wallpapersPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0] stringByAppendingPathComponent:@"wallpapers"];
+    NSString *wallpapersPath = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"wallpapers"];
     NSData *wallpapersData = [[NSData alloc] initWithContentsOfFile:[wallpapersPath stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"_remote-list_v%d", TGWallpaperListVersion]]];
     
     if (wallpapersData == nil || [self.path hasSuffix:@"force)"])
@@ -124,7 +126,7 @@
     
     if (data != nil)
     {
-        NSString *wallpapersPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0] stringByAppendingPathComponent:@"wallpapers"];
+        NSString *wallpapersPath = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"wallpapers"];
         [[ActionStageInstance() globalFileManager] createDirectoryAtPath:wallpapersPath withIntermediateDirectories:true attributes:nil error:nil];
         [data writeToFile:[wallpapersPath stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"_remote-list_v%d", TGWallpaperListVersion]] atomically:false];
         

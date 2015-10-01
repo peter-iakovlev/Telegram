@@ -3,6 +3,8 @@
 #import "TGAppDelegate.h"
 #import "TGApplication.h"
 
+#import "TGDatabase.h"
+
 int main(int argc, char *argv[])
 {
     mainLaunchTimestamp = CFAbsoluteTimeGetCurrent();
@@ -10,8 +12,7 @@ int main(int argc, char *argv[])
     
     @autoreleasepool
     {
-        [TGAppDelegate beginEarlyInitialization];
-        
+        [TGDatabase setDatabaseName:@"tgdata"];
         return UIApplicationMain(argc, argv, @"TGApplication", @"TGAppDelegate");
     }
 }

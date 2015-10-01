@@ -13,6 +13,7 @@
 + (void)drawDate:(int)date forContainerWidth:(CGFloat)containerWidth inContext:(CGContextRef)context andBindBackgroundToContainer:(UIView *)backgroundContainer atPosition:(CGPoint)position;
 
 - (void)setDate:(int)date;
+- (int)date;
 - (void)updateAssets;
 
 @end

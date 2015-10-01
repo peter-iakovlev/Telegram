@@ -6,6 +6,8 @@
 
 #import "ActionStage.h"
 
+#import "TGUser+Telegraph.h"
+
 @interface TGUpdateUserStatusesActor ()
 
 @end
@@ -22,16 +24,13 @@
     self.cancelToken = [TGTelegraphInstance doRequestContactStatuses:self];
 }
 
-- (void)contactStatusesRequestSuccess:(NSArray *)contactStatuses currentDate:(int)currentDate
+- (void)contactStatusesRequestSuccess:(NSArray *)contactStatuses currentDate:(int)__unused currentDate
 {
     std::tr1::shared_ptr<std::map<int, TGUserPresence> > presenceMap(new std::map<int, TGUserPresence>());
     
     for (TLContactStatus *statusDesc in contactStatuses)
     {
-        TGUserPresence presence;
-        presence.online = statusDesc.expires >= currentDate;
-        presence.lastSeen = statusDesc.expires;
-        (*presenceMap)[statusDesc.user_id] = presence;
+        (*presenceMap)[statusDesc.user_id] = extractUserPresence(statusDesc.status);
     }
     
     [TGTelegraphInstance dispatchMultipleUserPresenceChanges:presenceMap];

@@ -19,11 +19,15 @@
     return self;
 }
 
-- (void)adjustForOrientation:(UIInterfaceOrientation)__unused orientation keyboardHeight:(float)__unused keyboardHeight duration:(NSTimeInterval)__unused duration animationCurve:(int)__unused animationCurve
+- (void)setAvailableSpaceAbove:(CGFloat)__unused availableSpaceAbove
 {
 }
 
-- (void)changeOrientationToOrientation:(UIInterfaceOrientation)__unused orientation keyboardHeight:(float)__unused keyboardHeight duration:(NSTimeInterval)__unused duration
+- (void)adjustForOrientation:(UIInterfaceOrientation)__unused orientation keyboardHeight:(CGFloat)__unused keyboardHeight duration:(NSTimeInterval)__unused duration animationCurve:(int)__unused animationCurve
+{
+}
+
+- (void)changeOrientationToOrientation:(UIInterfaceOrientation)__unused orientation keyboardHeight:(CGFloat)__unused keyboardHeight duration:(NSTimeInterval)__unused duration
 {
 }
 

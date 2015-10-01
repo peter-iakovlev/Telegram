@@ -70,6 +70,8 @@
 
 - (void)setColor:(UIColor *)color
 {
+    _color = color;
+    
     _labelView.textColor = color == nil ? UIColorRGB(0x516691) : color;
 }
 

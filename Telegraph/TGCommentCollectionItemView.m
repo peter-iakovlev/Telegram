@@ -12,6 +12,7 @@
 @interface TGCommentCollectionItemView ()
 {
     UILabel *_label;
+    UIActivityIndicatorView *_activityIndicator;
 }
 
 @end
@@ -25,27 +26,92 @@
     {
         _label = [[UILabel alloc] init];
         _label.backgroundColor = [UIColor clearColor];
-        _label.textColor = UIColorRGB(0x6d6d72);
-        _label.font = TGSystemFontOfSize(14.0f);
-        if (iosMajorVersion() >= 7)
-            _label.textAlignment = NSTextAlignmentNatural;
-        _label.lineBreakMode = NSLineBreakByWordWrapping;
         _label.numberOfLines = 0;
         [self addSubview:_label];
+        
+        [_label addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapGesture:)]];
     }
     return self;
 }
 
-- (void)setText:(NSString *)text
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
-    _label.text = text;
+    if (CGRectContainsPoint(_label.frame, point))
+        return _label;
+    
+    return [super hitTest:point withEvent:event];
+}
+
+- (void)tapGesture:(UITapGestureRecognizer *)recognizer
+{
+    if (recognizer.state == UIGestureRecognizerStateRecognized)
+    {
+        if (_action)
+            _action();
+    }
+}
+
+- (void)setTextColor:(UIColor *)textColor
+{
+    _label.textColor = textColor;
+}
+
+- (void)setLabelAlpha:(CGFloat)labelAlpha
+{
+    _labelAlpha = labelAlpha;
+    _label.alpha = labelAlpha;
+    _activityIndicator.alpha = labelAlpha;
+}
+
+- (void)setAttributedText:(NSAttributedString *)text
+{
+    _label.attributedText = text;
+    [self setNeedsLayout];
+}
+
+- (void)setTopInset:(CGFloat)topInset
+{
+    _topInset = topInset;
+    [self setNeedsLayout];
+}
+
+- (void)setCalculatedSize:(CGSize)calculatedSize
+{
+    _calculatedSize = calculatedSize;
+    [self setNeedsLayout];
+}
+
+- (void)setShowProgress:(bool)showProgress
+{
+    _showProgress = showProgress;
+    
+    if (_showProgress && _activityIndicator == nil)
+    {
+        _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+        _activityIndicator.hidden = true;
+        _activityIndicator.alpha = _label.alpha;
+        [self addSubview:_activityIndicator];
+        [self setNeedsLayout];
+    }
+    
+    if (_showProgress)
+    {
+        _activityIndicator.hidden = false;
+        [_activityIndicator startAnimating];
+    }
+    else
+    {
+        _activityIndicator.hidden = true;
+        [_activityIndicator stopAnimating];
+    }
 }
 
 - (void)layoutSubviews
 {
     [super layoutSubviews];
     
-    _label.frame = CGRectMake(15.0f, 7.0f, self.bounds.size.width - 30.0f, self.bounds.size.height - 7.0f - 7.0f);
+    _label.frame = CGRectMake(15.0f, 7.0f + _topInset, self.bounds.size.width - 30.0f, _calculatedSize.height - 7.0f - 7.0f);
+    _activityIndicator.frame = CGRectMake(15.0f, 14.0f, _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
 }
 
 @end

@@ -49,10 +49,6 @@
 
 - (void (^)())forwardTouchToCollectionWithCompletion
 {
-    ASHandle *notificationHanle = _notificationHandle;
-    NSString *touchesCompletedAction = _touchesCompletedAction;
-    NSDictionary *touchesCompletedOptions = _touchesCompletedOptions;
-    
     [self invalidateTimer];
     
     _timer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(timerEvent) interval:0.1 repeat:false];
@@ -61,11 +57,14 @@
     return [^
     {
         __strong TGInstantPreviewTouchAreaView *strongSelf = weakSelf;
-        [strongSelf invalidateTimer];
-        strongSelf.activated = false;
-        
-        if (touchesCompletedAction != nil)
-            [notificationHanle requestAction:touchesCompletedAction options:touchesCompletedOptions];
+        if (strongSelf != nil)
+        {
+            [strongSelf invalidateTimer];
+            strongSelf.activated = false;
+            
+            if (strongSelf.touchesCompletedAction)
+                strongSelf.touchesCompletedAction();
+        }
     } copy];
 }
 
@@ -92,17 +91,20 @@
 
 - (void)timerEvent
 {
+    TGLog(@"activate %p", self);
+    
     [self invalidateTimer];
     
     _activated = true;
     
-    ASHandle *notificationHanle = _notificationHandle;
-    
-    if (notificationHanle != nil)
-    {
-        if (_touchesBeganAction != nil)
-            [notificationHanle requestAction:_touchesBeganAction options:_touchesBeganOptions];
-    }
+    if (_touchesBeganAction)
+        _touchesBeganAction();
+}
+
+- (void)cancel
+{
+    [self invalidateTimer];
+    _activated = false;
 }
 
 @end

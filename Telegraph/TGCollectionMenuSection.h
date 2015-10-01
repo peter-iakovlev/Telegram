@@ -18,4 +18,10 @@
 
 - (instancetype)initWithItems:(NSArray *)items;
 
+- (void)insertItem:(TGCollectionItem *)item atIndex:(NSUInteger)index;
+- (void)deleteItemAtIndex:(NSUInteger)index;
+- (bool)deleteItem:(TGCollectionItem *)item;
+- (NSUInteger)indexOfItem:(TGCollectionItem *)item;
+- (void)addItem:(TGCollectionItem *)item;
+
 @end

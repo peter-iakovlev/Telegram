@@ -19,6 +19,7 @@
 
 @property (nonatomic, strong) TGCollectionMenuView *collectionView;
 @property (nonatomic, strong) TGCollectionMenuLayout *collectionLayout;
+@property (nonatomic) bool enableItemReorderingGestures;
 
 - (void)_resetCollectionView;
 - (NSIndexPath *)indexPathForItem:(TGCollectionItem *)item;
@@ -29,5 +30,9 @@
 
 - (void)didEnterEditingMode:(bool)animated;
 - (void)didLeaveEditingMode:(bool)animated;
+
+- (void)updateItemPositions;
+
+- (void)animateCollectionCrossfade;
 
 @end

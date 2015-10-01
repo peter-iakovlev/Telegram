@@ -11,8 +11,6 @@
 
 #import "TGTelegraph.h"
 
-#import "TGSession.h"
-
 #import "TGInterfaceAssets.h"
 
 #import "TGRemoteImageView.h"
@@ -20,6 +18,12 @@
 #import <MessageUI/MessageUI.h>
 
 #import "TGForwardTargetController.h"
+
+#import "TGContentBubbleViewModel.h"
+
+#import "TGAppDelegate.h"
+
+#import "TGAlertView.h"
 
 @interface TGSettingsController () <UITableViewDataSource, UITableViewDelegate, MFMailComposeViewControllerDelegate>
 
@@ -45,33 +49,13 @@
         sessionSection.title = @"Security";
         [_sectionList addObject:sessionSection];
         
-        TGActionMenuItem *currentSession = [[TGActionMenuItem alloc] initWithTitle:[[NSString alloc] initWithFormat:@"Session: 0x%llx", [[TGSession instance] currentDatacenterGenericSessionId]]];
-        currentSession.tag = 1;
-        [sessionSection.items addObject:currentSession];
-        
-        TGSwitchItem *debugSession = [[TGSwitchItem alloc] initWithTitle:@"Debug session"];
-        debugSession.isOn = (([[TGSession instance] currentDatacenterGenericSessionId] >> 48) & 0xffff) == 0xabcd;
-        debugSession.action = @selector(switchDebugSession);
-        [sessionSection.items addObject:debugSession];
-        
         TGMenuSection *accountSection = [[TGMenuSection alloc] init];
         accountSection.title = @"Account";
         [_sectionList addObject:accountSection];
         
-        /*TGSwitchItem *displayMids = [[TGSwitchItem alloc] initWithTitle:@"Show message IDs"];
-        displayMids.isOn = [TGConversationMessageItemView displayMids];
-        displayMids.action = @selector(switchDisplayMids);
+        TGActionMenuItem *displayMids = [[TGActionMenuItem alloc] initWithTitle:@"Show message IDs"];
+        displayMids.action = @selector(displayMidsPressed);
         [accountSection.items addObject:displayMids];
-        
-#ifndef DEBUG
-        if (TGTelegraphInstance.clientUserId == 333000)
-#endif
-        {
-            TGSwitchItem *doNotRead = [[TGSwitchItem alloc] initWithTitle:@"Don't read"];
-            doNotRead.isOn = [TGTelegraphConversationCompanion doNotRead];
-            doNotRead.action = @selector(switchDoNotRead);
-            [accountSection.items addObject:doNotRead];
-        }*/
         
         TGSwitchItem *doNotJump = [[TGSwitchItem alloc] initWithTitle:@"Don't jump in dialogs"];
         doNotJump.isOn = [TGDialogListController debugDoNotJump];
@@ -82,20 +66,6 @@
         disableBackgroundItem.isOn = TGAppDelegateInstance.disableBackgroundMode;
         disableBackgroundItem.action = @selector(switchDisableBackground);
         [accountSection.items addObject:disableBackgroundItem];
-        
-        /*TGActionMenuItem *logoutItem = [[TGActionMenuItem alloc] initWithTitle:@"Logout"];
-        logoutItem.action = @selector(logoutButtonPressed);
-        [accountSection.items addObject:logoutItem];*/
-        
-        TGActionMenuItem *infoItem = [[TGActionMenuItem alloc] initWithTitle:[[NSString alloc] initWithFormat:@"State update fails: %d", [TGSession instance].stateConsistencyFails]];
-        [accountSection.items addObject:infoItem];
-        
-        TGActionMenuItem *infoSaltsItem = [[TGActionMenuItem alloc] initWithTitle:[[NSString alloc] initWithFormat:@"Salt fails: %d", [TGSession instance].saltFails]];
-        [accountSection.items addObject:infoSaltsItem];
-        
-        TGActionMenuItem *revokeItem = [[TGActionMenuItem alloc] initWithTitle:@"Clear other sessions"];
-        revokeItem.action = @selector(revokeButtonPressed);
-        [accountSection.items addObject:revokeItem];
 #endif
         
         TGMenuSection *miscSection = [[TGMenuSection alloc] init];
@@ -103,6 +73,10 @@
         [_sectionList addObject:miscSection];
         
 #ifndef EXTERNAL_INTERNAL_RELEASE
+        TGActionMenuItem *clearChannelsItem = [[TGActionMenuItem alloc] initWithTitle:@"Clear channels"];
+        clearChannelsItem.action = @selector(clearChannelsButtonPressed);
+        [miscSection.items addObject:clearChannelsItem];
+        
         TGActionMenuItem *clearItemUriCacheItem = [[TGActionMenuItem alloc] initWithTitle:@"Clear item uri cache"];
         clearItemUriCacheItem.action = @selector(clearItemUriButtonPressed);
         [miscSection.items addObject:clearItemUriCacheItem];
@@ -131,6 +105,14 @@
         TGActionMenuItem *sendLogsItem = [[TGActionMenuItem alloc] initWithTitle:@"Send logs"];
         sendLogsItem.action = @selector(sendLogsButtonPressed);
         [miscSection.items addObject:sendLogsItem];
+        
+        TGActionMenuItem *sendMoreLogsItem = [[TGActionMenuItem alloc] initWithTitle:@"Send more logs"];
+        sendMoreLogsItem.action = @selector(sendMoreLogsButtonPressed);
+        [miscSection.items addObject:sendMoreLogsItem];
+        
+        TGActionMenuItem *sendDataItem = [[TGActionMenuItem alloc] initWithTitle:@"Send data"];
+        sendDataItem.action = @selector(sendDataButtonPressed);
+        [miscSection.items addObject:sendDataItem];
     }
     return self;
 }
@@ -145,9 +127,10 @@
 {
     [super loadView];
     
+    self.view.backgroundColor = [UIColor whiteColor];
+    
     self.titleText = TGLocalized(@"Settings.Title");
     
-    self.view.backgroundColor = [[TGInterfaceAssets instance] linesBackground];
     self.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     
     _tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
@@ -388,7 +371,7 @@
 
 - (void)clearAssetCacheButtonPressed
 {
-    NSArray *documentsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+    NSString *documentsPath = [TGAppDelegate documentsPath];
     NSString *assetsPath = [[NSString alloc] initWithFormat:@"%@/assets", documentsPath];
     [[NSFileManager defaultManager] removeItemAtPath:assetsPath error:nil];
 }
@@ -398,21 +381,42 @@
     [TGDatabaseInstance() clearPeerProfilePhotos];
 }
 
+- (void)clearChannelsButtonPressed {
+    [[[TGAlertView alloc] initWithTitle:nil message:@"Application will be force closed" cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
+        if (okButtonPressed) {
+            [TGDatabaseInstance() _dropChannels];
+            TGDispatchAfter(1.0, dispatch_get_main_queue(), ^{
+                exit(0);
+            });
+        }
+    }] show];
+}
+
 - (void)clearCacheButtonPressed
 {
+    [TGDatabaseInstance() setCustomProperty:@"cachedStickersByQuery" value:nil];
+    
     [[TGRemoteImageView sharedCache] clearCache:TGCacheBoth];
+    
+    NSString *documentsPath = [TGAppDelegate documentsPath];
+    
+    NSString *filesPath = [[NSString alloc] initWithFormat:@"%@/files", documentsPath];
+    [[NSFileManager defaultManager] removeItemAtPath:filesPath error:nil];
+
+    NSString *stickerCachePath = [[NSString alloc] initWithFormat:@"%@/sticker-cache", documentsPath];
+    [[NSFileManager defaultManager] removeItemAtPath:stickerCachePath error:nil];
 }
 
 - (void)clearMemoryCacheButtonPressed
 {
-    [[TGRemoteImageView sharedCache] clearCache:TGCacheMemory];
+    [TGDatabaseInstance() clearCachedMedia];
 }
 
 - (void)clearVideoCacheButtonPressed
 {
     dispatch_async([TGCache diskCacheQueue], ^
     {
-        NSString *videosPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0] stringByAppendingPathComponent:@"video"];
+        NSString *videosPath = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"video"];
         
         for (NSString *fileName in [[TGCache diskFileManager] contentsOfDirectoryAtPath:videosPath error:nil])
         {
@@ -426,7 +430,7 @@
 {
     NSMutableArray *uploadFileArray = [[NSMutableArray alloc] init];
     
-    for (NSString *filePath in TGGetLogFilePaths())
+    for (NSString *filePath in TGGetLogFilePaths(4))
     {
         int64_t randomId = 0;
         arc4random_buf(&randomId, 8);
@@ -439,7 +443,7 @@
         }
     }
     
-    [TGAppDelegateInstance.mainNavigationController popToRootViewControllerAnimated:false];
+    [TGAppDelegateInstance.rootController clearContentControllers];
     
     TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithDocumentFiles:uploadFileArray];
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[forwardController]];
@@ -448,74 +452,70 @@
         navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
         navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
     }
-    [TGAppDelegateInstance.mainTabsController presentViewController:navigationController animated:false completion:nil];
+    [TGAppDelegateInstance.rootController presentViewController:navigationController animated:false completion:nil];
+}
+
+- (void)sendMoreLogsButtonPressed
+{
+    NSMutableArray *uploadFileArray = [[NSMutableArray alloc] init];
     
-    /*if ([MFMailComposeViewController canSendMail])
+    for (NSString *filePath in TGGetLogFilePaths(100))
     {
-        NSArray *logsData = TGGetPackedLogs();
+        int64_t randomId = 0;
+        arc4random_buf(&randomId, 8);
         
-        MFMailComposeViewController *mailViewController = [[MFMailComposeViewController alloc] init];
-        mailViewController.mailComposeDelegate = self;
+        NSString *tempFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@_%" PRId64 ".txt", [filePath lastPathComponent], ABS(randomId)]];
         
-        [mailViewController setSubject:[NSString stringWithFormat:@"Logs from %@ (%@)", [TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId].displayName, [NSDate date]]];
-        [mailViewController setMessageBody:@"Application logs" isHTML:false];
-        
-        int index = 0;
-        for (NSData *data in logsData)
+        if ([[NSFileManager defaultManager] copyItemAtPath:filePath toPath:tempFilePath error:NULL])
         {
-            [mailViewController addAttachmentData:data mimeType:@"text/plain" fileName:[NSString stringWithFormat:@"application-%d.log", index++]];
+            [uploadFileArray addObject:@{@"url": [NSURL fileURLWithPath:tempFilePath]}];
         }
-        
-        [mailViewController setToRecipients:[NSArray arrayWithObject:@"logs@telegram.org"]];
-        
-        [self presentViewController:mailViewController animated:true completion:nil];
     }
-    else
+    
+    [TGAppDelegateInstance.rootController clearContentControllers];
+    
+    TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithDocumentFiles:uploadFileArray];
+    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[forwardController]];
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
     {
-        [[[UIAlertView alloc] initWithTitle:nil message:@"Please configure at least one email account" delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
-    }*/
+        navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
+        navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
+    }
+    [TGAppDelegateInstance.rootController presentViewController:navigationController animated:false completion:nil];
+}
+
+- (void)sendDataButtonPressed
+{
+    NSMutableArray *uploadFileArray = [[NSMutableArray alloc] init];
+    
+    for (NSString *filePath in [TGDatabaseInstance() backedUpDatabasePaths])
+    {
+        int64_t randomId = 0;
+        arc4random_buf(&randomId, 8);
+        
+        NSString *tempFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@_%" PRIx64 "", [filePath lastPathComponent], ABS(randomId)]];
+        
+        if ([[NSFileManager defaultManager] copyItemAtPath:filePath toPath:tempFilePath error:NULL])
+        {
+            [uploadFileArray addObject:@{@"url": [NSURL fileURLWithPath:tempFilePath]}];
+        }
+    }
+    
+    [TGAppDelegateInstance.rootController clearContentControllers];
+    
+    TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithDocumentFiles:uploadFileArray];
+    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[forwardController]];
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+    {
+        navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
+        navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
+    }
+    [TGAppDelegateInstance.rootController presentViewController:navigationController animated:false completion:nil];
 }
 
 - (void)mailComposeController:(MFMailComposeViewController *)__unused controller didFinishWithResult:(MFMailComposeResult)__unused result error:(NSError *)__unused error
 {
     [self dismissViewControllerAnimated:true completion:nil];
-}
-
-- (void)switchDebugSession
-{
-    [ActionStageInstance() dispatchOnStageQueue:^
-    {
-        int64_t currentSessionId = [[TGSession instance] switchToDebugSession:(([[TGSession instance] currentDatacenterGenericSessionId] >> 48) & 0xffff) != 0xabcd];
-        
-        dispatch_async(dispatch_get_main_queue(), ^
-        {
-            int sectionIndex = -1;
-            for (TGMenuSection *section in _sectionList)
-            {
-                sectionIndex++;
-                if (section.tag == 1)
-                {
-                    int itemIndex = -1;
-                    for (TGMenuItem *item in section.items)
-                    {
-                        itemIndex++;
-                        
-                        if (item.tag == 1)
-                        {
-                            ((TGActionMenuItem *)item).title = [[NSString alloc] initWithFormat:@"Session: 0x%llx", currentSessionId];
-                            
-                            TGActionMenuItemCell *actionCell = (TGActionMenuItemCell *)[_tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:itemIndex inSection:sectionIndex]];
-                            if (actionCell != nil)
-                                [actionCell setTitle:((TGActionMenuItem *)item).title];
-                            break;
-                        }
-                    }
-                    
-                    break;
-                }
-            }
-        });
-    }];
 }
 
 /*- (void)switchDisplayMids
@@ -574,6 +574,11 @@
             [self performSelector:switchItem.action];
 #pragma clang diagnostic pop
     }
+}
+
+- (void)displayMidsPressed
+{
+    [TGContentBubbleViewModel debugEnableShowMessageIds];
 }
 
 @end

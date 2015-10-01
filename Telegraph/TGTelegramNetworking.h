@@ -8,7 +8,27 @@
 
 #import <Foundation/Foundation.h>
 
+#import <SSignalKit/SSignalKit.h>
+
+typedef enum {
+    TGRequestClassGeneric = 1,
+    TGRequestClassDownloadMedia = 2,
+    TGRequestClassUploadMedia = 4,
+    TGRequestClassEnableUnauthorized = 8,
+    TGRequestClassEnableMerging = 16,
+    TGRequestClassHidesActivityIndicator = 64,
+    TGRequestClassLargeMedia = 128,
+    TGRequestClassFailOnServerErrors = 256,
+    TGRequestClassFailOnFloodErrors = 512,
+    TGRequestClassPassthroughPasswordNeeded = 1024,
+    TGRequestClassIgnorePasswordEntryRequired = 2048
+} TGRequestClass;
+
+#define TG_DEFAULT_DATACENTER_ID INT_MAX
+
 #define TGUseModernNetworking true//defined(DEBUG)
+
+#import <MTProtoKit/MTRequest.h>
 
 @class MTContext;
 @class MTProto;
@@ -24,10 +44,16 @@
 
 + (TGTelegramNetworking *)instance;
 
-- (void)updatePts:(int)pts date:(int)date seq:(int)seq;
+- (SMulticastSignalManager *)genericTasksSignalManager;
+
+- (void)updatePts:(int)pts ptsCount:(int)ptsCount seq:(int)seq;
+- (void)addUpdates:(id)updates;
 
 - (MTContext *)context;
 - (MTProto *)mtProto;
+
+- (void)removeCredentialsForExtensions;
+- (void)exportCredentialsForExtensions;
 
 - (NSTimeInterval)globalTime;
 - (NSTimeInterval)timeOffset;
@@ -55,9 +81,9 @@
 // legacy
 - (void)switchBackends;
 
-- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, TLError *error))completionBlock progressBlock:(void (^)(int length, float progress))progressBlock requiresCompletion:(bool)requiresCompletion requestClass:(int)requestClass;
-- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, TLError *error))completionBlock progressBlock:(void (^)(int length, float progress))progressBlock requiresCompletion:(bool)requiresCompletion requestClass:(int)requestClass datacenterId:(int)datacenterId;
-- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, TLError *error))completionBlock progressBlock:(void (^)(int length, float progress))progressBlock quickAckBlock:(void (^)())quickAckBlock requiresCompletion:(bool)requiresCompletion requestClass:(int)requestClass datacenterId:(int)datacenterId;
+- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, MTRpcError *error))completionBlock progressBlock:(void (^)(int length, float progress))progressBlock requiresCompletion:(bool)requiresCompletion requestClass:(int)requestClass;
+- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, MTRpcError *error))completionBlock progressBlock:(void (^)(int length, float progress))progressBlock requiresCompletion:(bool)requiresCompletion requestClass:(int)requestClass datacenterId:(int)datacenterId;
+- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, MTRpcError *error))completionBlock progressBlock:(void (^)(int length, float progress))progressBlock quickAckBlock:(void (^)())quickAckBlock requiresCompletion:(bool)requiresCompletion requestClass:(int)requestClass datacenterId:(int)datacenterId;
 
 - (void)cancelRpc:(id)token;
 
@@ -65,6 +91,22 @@
 - (bool)isConnecting;
 - (bool)isUpdating;
 
+- (bool)_isReadyToBeSuspended;
+
 - (void)wakeUpWithCompletion:(void (^)())completion;
+
+- (SSignal *)downloadWorkerForDatacenterId:(NSInteger)datacenterId;
+- (SSignal *)requestSignal:(TLMetaRpc *)rpc;
+- (SSignal *)requestSignal:(TLMetaRpc *)rpc continueOnServerErrors:(bool)continueOnServerErrors;
+- (SSignal *)requestSignal:(TLMetaRpc *)rpc requestClass:(int)requestClass;
+- (SSignal *)requestSignal:(TLMetaRpc *)rpc worker:(TGNetworkWorkerGuard *)worker;
+
+- (NSString *)extractNetworkErrorType:(id)error;
+
+@end
+
+@interface MTRequest (LegacyTL)
+
+- (void)setBody:(TLMetaRpc *)body;
 
 @end

@@ -13,7 +13,6 @@
 @protocol TGModernConversationInputPanelDelegate <NSObject>
 
 - (void)inputPanelWillChangeHeight:(TGModernConversationInputPanel *)inputPanel height:(CGFloat)height duration:(NSTimeInterval)duration animationCurve:(int)animationCurve;
-- (CGSize)messageAreaSizeForInterfaceOrientation:(UIInterfaceOrientation)orientation;
 
 @end
 
@@ -21,7 +20,8 @@
 
 @property (nonatomic, weak) id<TGModernConversationInputPanelDelegate> delegate;
 
-- (void)adjustForOrientation:(UIInterfaceOrientation)orientation keyboardHeight:(float)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve;
-- (void)changeOrientationToOrientation:(UIInterfaceOrientation)orientation keyboardHeight:(float)keyboardHeight duration:(NSTimeInterval)duration;
+- (void)setAvailableSpaceAbove:(CGFloat)availableSpaceAbove;
+- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve;
+- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration;
 
 @end

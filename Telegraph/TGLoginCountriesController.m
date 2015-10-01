@@ -66,7 +66,7 @@ static NSArray *countryCodes()
             [array addObject:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:countryCode], countryId, countryName, nil]];
             //TGLog(@"%d, %@, %@", countryCode, countryId, countryName);
             
-            currentLocation = nameRange.location + nameRange.length;
+            currentLocation = (int)(nameRange.location + nameRange.length);
             if (nameRange.length > 1)
                 break;
         }
@@ -344,7 +344,7 @@ static NSArray *countryCodes()
     return nil;
 }
 
-- (int)tableView:(UITableView *)tableView sectionForSectionIndexTitle:(NSString *)__unused title atIndex:(NSInteger)index
+- (NSInteger)tableView:(UITableView *)tableView sectionForSectionIndexTitle:(NSString *)__unused title atIndex:(NSInteger)index
 {
     if (tableView == _tableView)
     {
@@ -399,11 +399,17 @@ static NSArray *countryCodes()
     
     if (item != nil)
     {
+        if (_countrySelected)
+            _countrySelected([item[0] intValue], item[2]);
+        
         id<ASWatcher> watcher = _watcherHandle.delegate;
         if (watcher != nil && [watcher respondsToSelector:@selector(actionStageActionRequested:options:)])
         {
             [watcher actionStageActionRequested:@"countryCodeSelected" options:[NSDictionary dictionaryWithObjectsAndKeys:[item objectAtIndex:0], @"code", [item objectAtIndex:2], @"name", nil]];
         }
+        
+        if (watcher == nil)
+            [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
     }
 }
 
@@ -496,6 +502,9 @@ static NSArray *countryCodes()
     {
         [watcher actionStageActionRequested:@"countryCodeSelected" options:[NSDictionary dictionary]];
     }
+    
+    if (watcher == nil)
+        [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
 }
 
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView

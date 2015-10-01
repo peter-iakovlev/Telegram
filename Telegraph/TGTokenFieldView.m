@@ -25,6 +25,9 @@
 @end
 
 @interface TGTokenFieldView () <UITextFieldDelegate, UIKeyInput>
+{
+    bool _wasEmpty;
+}
 
 @property (nonatomic, strong) NSMutableDictionary *tokenAnimations;
 
@@ -94,12 +97,22 @@
     _textField.backgroundColor = UIColorRGB(0xf8f8f8);
     _textField.font = [UIFont systemFontOfSize:15];
     _textField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
+    [_textField addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
     [_scrollView addSubview:_textField];
     
+    _textField.customPlaceholderLabel.text = _placeholder;
+    [_textField.customPlaceholderLabel sizeToFit];
     _textField.customPlaceholderLabel.frame = CGRectOffset(_textField.customPlaceholderLabel.frame, 9 + 5, 9 + 4);
     [_scrollView addSubview:_textField.customPlaceholderLabel];
     
     _tokenList = [[NSMutableArray alloc] init];
+}
+
+- (void)setPlaceholder:(NSString *)placeholder
+{
+    _placeholder = placeholder;
+    _textField.customPlaceholderLabel.text = _placeholder;
+    [_textField.customPlaceholderLabel sizeToFit];
 }
 
 - (void)addToken:(NSString *)title tokenId:(id)tokenId animated:(bool)animated
@@ -252,7 +265,7 @@
     {
         index++;
         
-        float tokenWidth = [tokenView preferredWidth];
+        CGFloat tokenWidth = [tokenView preferredWidth];
         
         if (width - padding - currentX - additionalPadding < MAX(tokenWidth, textFieldMinWidth) && currentX > padding + FLT_EPSILON)
         {
@@ -394,26 +407,28 @@
     return false;
 }
 
-- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
+- (void)textFieldDidChange:(UITextField *)textField
+{
+    _textField.customPlaceholderLabel.hidden = (textField.text.length != 0);
+    
+    [self scrollToTextField:true];
+    
+    id <TGTokenFieldViewDelegate> delegate = _delegate;
+    
+    if (delegate != nil)
+    {
+        [delegate tokenFieldView:self didChangeText:textField.text];
+        if (_wasEmpty != (textField.text.length == 0))
+            [delegate tokenFieldView:self didChangeSearchStatus:[self searchIsActive] byClearingTextField:true];
+    }
+}
+
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)__unused range replacementString:(NSString *)__unused string
 {
     if (textField == _textField)
-    {
-        bool wasEmpty = textField.text.length == 0;
-        textField.text = [textField.text stringByReplacingCharactersInRange:range withString:string];
-        
-        [self scrollToTextField:true];
-        
-        id <TGTokenFieldViewDelegate> delegate = _delegate;
-        
-        if (delegate != nil)
-        {
-            [delegate tokenFieldView:self didChangeText:textField.text];
-            if (wasEmpty != textField.text.length == 0)
-                [delegate tokenFieldView:self didChangeSearchStatus:[self searchIsActive] byClearingTextField:true];
-        }
-    }
+        _wasEmpty = textField.text.length == 0;
     
-    return false;
+    return true;
 }
 
 - (void)textFieldDidHitLastBackspace

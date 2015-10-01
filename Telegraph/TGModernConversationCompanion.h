@@ -8,9 +8,15 @@
 
 #import <Foundation/Foundation.h>
 
+#import <SSignalKit/SSignalKit.h>
+
 #import "ASWatcher.h"
 
 #import "TGMessageRange.h"
+
+#import "TGApplicationFeatures.h"
+
+#import "TGVisibleMessageHole.h"
 
 @class TGModernConversationController;
 @class TGModernViewContext;
@@ -19,10 +25,22 @@
 @class TGVideoMediaAttachment;
 @class TGDocumentMediaAttachment;
 @class TGUser;
+@class TGVenueAttachment;
 
 @class TGModernConversationEmptyListPlaceholderView;
+@class TGModernConversationInputPanel;
 @class TGModernViewInlineMediaContext;
 @class TGLiveUploadActorData;
+@class TGDataItem;
+
+@class TGBingSearchResultItem;
+@class TGGiphySearchResultItem;
+@class TGWebSearchInternalImageResult;
+@class TGWebSearchInternalGifResult;
+
+@class TGICloudItem;
+@class TGDropboxItem;
+@class TGGoogleDriveItem;
 
 typedef enum {
     TGInitialScrollPositionTop = 0,
@@ -38,9 +56,15 @@ typedef enum {
     TGModernConversationAddMessageIntentLoadMoreMessagesBelow = 4
 } TGModernConversationAddMessageIntent;
 
+typedef enum {
+    TGModernConversationControllerTitleToggleNone,
+    TGModernConversationControllerTitleToggleShowDiscussion,
+    TGModernConversationControllerTitleToggleHideDiscussion
+} TGModernConversationControllerTitleToggle;
+
 @interface TGModernConversationCompanion : NSObject <ASWatcher>
 {
-    NSMutableArray *_items;
+    NSArray *_items;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -54,6 +78,7 @@ typedef enum {
 
 + (bool)isMessageQueue;
 + (void)dispatchOnMessageQueue:(dispatch_block_t)block;
++ (SQueue *)messageQueue;
 - (void)lockSendMessageSemaphore;
 - (void)unlockSendMessageSemaphore;
 
@@ -74,9 +99,9 @@ typedef enum {
 - (void)_setAvatarConversationId:(int64_t)conversationId firstName:(NSString *)firstName lastName:(NSString *)lastName;
 - (void)_setTitleIcons:(NSArray *)titleIcons;
 - (void)_setAvatarUrl:(NSString *)avatarUrl;
-- (void)_setStatus:(NSString *)status accentColored:(bool)accentColored allowAnimation:(bool)allowAnimation;
-- (void)_setTitle:(NSString *)title andStatus:(NSString *)status accentColored:(bool)accentColored allowAnimatioon:(bool)allowAnimation;
-- (void)_setTypingStatus:(NSString *)typingStatus;
+- (void)_setStatus:(NSString *)status accentColored:(bool)accentColored allowAnimation:(bool)allowAnimation toggleMode:(TGModernConversationControllerTitleToggle)toggleMode;
+- (void)_setTitle:(NSString *)title andStatus:(NSString *)status accentColored:(bool)accentColored allowAnimatioon:(bool)allowAnimation toggleMode:(TGModernConversationControllerTitleToggle)toggleMode;
+- (void)_setTypingStatus:(NSString *)typingStatus activity:(int)activity;
 
 - (void)_controllerWillAppearAnimated:(bool)animated firstTime:(bool)firstTime;
 - (void)_controllerDidAppear:(bool)firstTime;
@@ -85,29 +110,48 @@ typedef enum {
 - (void)_setControllerWidthForItemCalculation:(CGFloat)width;
 - (void)_loadControllerPrimaryTitlePanel;
 - (TGModernConversationEmptyListPlaceholderView *)_conversationEmptyListPlaceholder;
+- (TGModernConversationInputPanel *)_conversationGenericInputPanel;
+- (TGModernConversationInputPanel *)_conversationEmptyListInputPanel;
+- (void)_updateInputPanel;
+- (UIView *)_conversationHeader;
 - (UIView *)_controllerInputTextPanelAccessoryView;
 - (NSString *)_controllerInfoButtonText;
 - (void)updateControllerInputText:(NSString *)inputText;
 - (void)controllerDidUpdateTypingActivity;
-- (void)controllerWantsToSendTextMessage:(NSString *)text;
-- (void)controllerWantsToSendMapWithLatitude:(double)latitude longitude:(double)longitude;
+- (void)controllerDidCancelTypingActivity;
+- (void)controllerDidChangeInputText:(NSString *)inputText;
+- (void)controllerWantsToSendTextMessage:(NSString *)text asReplyToMessageId:(int32_t)replyMessageId withAttachedMessages:(NSArray *)withAttachedMessages disableLinkPreviews:(bool)disableLinkPreviews;
+- (void)controllerWantsToSendMapWithLatitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue asReplyToMessageId:(int32_t)replyMessageId;
 - (NSURL *)fileUrlForDocumentMedia:(TGDocumentMediaAttachment *)documentMedia;
-- (NSDictionary *)imageDescriptionFromImage:(UIImage *)image optionalAssetUrl:(NSString *)assetUrl;
-- (void)controllerWantsToSendImagesWithDescriptions:(NSArray *)imageDescriptions;
-- (void)controllerWantsToSendLocalVideoWithTempFilePath:(NSString *)tempVideoFilePath fileSize:(int32_t)fileSize previewImage:(UIImage *)previewImage duration:(NSTimeInterval)duration dimensions:(CGSize)dimenstions assetUrl:(NSString *)assetUrl liveUploadData:(TGLiveUploadActorData *)liveUploadData;
+- (NSDictionary *)imageDescriptionFromImage:(UIImage *)image caption:(NSString *)caption optionalAssetUrl:(NSString *)assetUrl;
+- (NSDictionary *)imageDescriptionFromBingSearchResult:(TGBingSearchResultItem *)item caption:(NSString *)caption;
+- (NSDictionary *)documentDescriptionFromGiphySearchResult:(TGGiphySearchResultItem *)item;
+- (NSDictionary *)documentDescriptionFromICloudDriveItem:(TGICloudItem *)item;
+- (NSDictionary *)documentDescriptionFromDropboxItem:(TGDropboxItem *)item;
+- (NSDictionary *)documentDescriptionFromGoogleDriveItem:(TGGoogleDriveItem *)item;
+- (NSDictionary *)imageDescriptionFromInternalSearchImageResult:(TGWebSearchInternalImageResult *)item caption:(NSString *)caption;
+- (NSDictionary *)documentDescriptionFromInternalSearchResult:(TGWebSearchInternalGifResult *)item;
+- (NSDictionary *)documentDescriptionFromFileAtTempUrl:(NSURL *)url fileName:(NSString *)fileName mimeType:(NSString *)mimeType;
+- (void)controllerWantsToSendImagesWithDescriptions:(NSArray *)imageDescriptions asReplyToMessageId:(int32_t)replyMessageId;
+- (void)controllerWantsToSendLocalVideoWithTempFilePath:(NSString *)tempVideoFilePath fileSize:(int32_t)fileSize previewImage:(UIImage *)previewImage duration:(NSTimeInterval)duration dimensions:(CGSize)dimenstions caption:(NSString *)caption assetUrl:(NSString *)assetUrl liveUploadData:(TGLiveUploadActorData *)liveUploadData asReplyToMessageId:(int32_t)replyMessageId;
 - (TGVideoMediaAttachment *)serverCachedAssetWithId:(NSString *)assetId;
-- (void)controllerWantsToSendDocumentWithTempFileUrl:(NSURL *)tempFileUrl fileName:(NSString *)fileName mimeType:(NSString *)mimeType;
-- (void)controllerWantsToSendLocalAudioWithTempFileUrl:(NSURL *)tempFileUrl duration:(NSTimeInterval)duration liveData:(TGLiveUploadActorData *)liveData;
-- (void)controllerWantsToSendRemoteVideoWithMedia:(TGVideoMediaAttachment *)media;
-- (void)controllerWantsToSendContact:(TGUser *)contactUser;
+- (void)controllerWantsToSendDocumentWithTempFileUrl:(NSURL *)tempFileUrl fileName:(NSString *)fileName mimeType:(NSString *)mimeType asReplyToMessageId:(int32_t)replyMessageId;
+- (void)controllerWantsToSendDocumentsWithDescriptions:(NSArray *)descriptions asReplyToMessageId:(int32_t)replyMessageId;
+- (void)controllerWantsToSendRemoteDocument:(TGDocumentMediaAttachment *)document asReplyToMessageId:(int32_t)replyMessageId;
+- (void)controllerWantsToSendCloudDocumentsWithDescriptions:(NSArray *)descriptions asReplyToMessageId:(int32_t)replyMessageId;
+- (void)controllerWantsToSendLocalAudioWithDataItem:(TGDataItem *)dataItem duration:(NSTimeInterval)duration liveData:(TGLiveUploadActorData *)liveData asReplyToMessageId:(int32_t)replyMessageId;
+- (void)controllerWantsToSendRemoteVideoWithMedia:(TGVideoMediaAttachment *)media asReplyToMessageId:(int32_t)replyMessageId;
+- (void)controllerWantsToSendContact:(TGUser *)contactUser asReplyToMessageId:(int32_t)replyMessageId;
 - (void)controllerWantsToResendMessages:(NSArray *)messageIds;
 - (void)controllerWantsToForwardMessages:(NSArray *)messageIds;
 - (void)controllerWantsToCreateContact:(int32_t)uid firstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber;
 - (void)controllerWantsToAddContactToExisting:(int32_t)uid phoneNumber:(NSString *)phoneNumber;
 - (void)controllerWantsToApplyLocalization:(NSString *)filePath;
 - (void)controllerClearedConversation;
-- (void)controllerDeletedMessages:(NSArray *)messageIds;
+- (void)systemClearedConversation;
+- (void)controllerDeletedMessages:(NSArray *)messageIds completion:(void (^)())completion;
 - (void)controllerCanReadHistoryUpdated;
+- (void)controllerCanRegroupUnreadIncomingMessages;
 - (void)controllerRequestedNavigationToConversationWithUser:(int32_t)uid;
 - (bool)controllerShouldStoreCapturedAssets;
 - (bool)controllerShouldCacheServerAssets;
@@ -115,8 +159,13 @@ typedef enum {
 - (bool)imageDownloadsShouldAutosavePhotos;
 - (bool)shouldAutomaticallyDownloadPhotos;
 - (bool)allowMessageForwarding;
+- (bool)allowReplies;
 - (bool)allowContactSharing;
+- (bool)allowVenueSharing;
+- (bool)allowCaptionedMedia;
 - (bool)encryptUploads;
+- (NSDictionary *)userActivityData;
+- (TGApplicationFeaturePeerType)applicationFeaturePeerType;
 
 - (void)updateControllerEmptyState;
 - (void)clearCheckedMessages;
@@ -126,18 +175,24 @@ typedef enum {
 - (bool)_isMessageChecked:(int32_t)messageId;
 
 - (void)_setMessageFlags:(int32_t)messageId flags:(int)flags;
+- (void)_setMessageViewDate:(int32_t)messageId viewDate:(NSTimeInterval)viewDate;
+- (void)_setMessageFlagsAndViewDate:(int32_t)messageId flags:(int)flags viewDate:(NSTimeInterval)viewDate;
 - (bool)_isSecretMessageViewed:(int32_t)messageId;
 - (bool)_isSecretMessageScreenshotted:(int32_t)messageId;
+- (NSTimeInterval)_secretMessageViewDate:(int32_t)messageId;
 
 - (TGModernViewInlineMediaContext *)_inlineMediaContext:(int32_t)messageId;
 
 - (void)_updateMessageItemsWithData:(NSArray *)items;
 - (void)_updateMediaStatusDataForCurrentItems;
-- (void)_updateMediaStatusDataForItemsInIndexSet:(NSIndexSet *)indexSet;
+- (void)_updateMediaStatusDataForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated;
+- (void)_updateMediaStatusDataForItemsWithMessageIdsInSet:(NSMutableSet *)messageIds;
 - (void)_downloadMediaInMessage:(TGMessage *)message highPriority:(bool)highPriority;
-- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)indexSet;
+- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated;
 - (TGMessageModernConversationItem *)_updateMediaStatusData:(TGMessageModernConversationItem *)item;
 - (void)_updateImportantMediaStatusDataInplace:(TGMessageModernConversationItem *)item;
+
+- (void)_itemsUpdated;
 
 - (void)loadMoreMessagesAbove;
 - (void)loadMoreMessagesBelow;
@@ -146,12 +201,48 @@ typedef enum {
 
 - (void)_performFastScrollDown:(bool)becauseOfSendTextAction;
 - (void)_replaceMessages:(NSArray *)newMessages;
-- (void)_replaceMessagesWithFastScroll:(NSArray *)newMessages intent:(TGModernConversationAddMessageIntent)intent;
+- (void)_replaceMessages:(NSArray *)newMessages atMessageId:(int32_t)atMessageId expandFrom:(int32_t)expandMessageId jump:(bool)jump;
+- (void)_replaceMessagesWithFastScroll:(NSArray *)newMessages intent:(TGModernConversationAddMessageIntent)intent scrollToMessageId:(int32_t)scrollToMessageId scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated;
 - (void)_addMessages:(NSArray *)addedMessages animated:(bool)animated intent:(TGModernConversationAddMessageIntent)intent;
+- (void)_addMessages:(NSArray *)addedMessages animated:(bool)animated intent:(TGModernConversationAddMessageIntent)intent deletedMessageIds:(NSArray *)deletedMessageIds;
 - (void)_deleteMessages:(NSArray *)messageIds animated:(bool)animated;
 - (void)_updateMessagesRead:(NSArray *)messageIds;
 - (void)_updateMessageDelivered:(int32_t)previousMid;
-- (void)_updateMessageDelivered:(int32_t)previousMid mid:(int32_t)mid date:(int32_t)date message:(TGMessage *)message;
+- (void)_updateMessageDelivered:(int32_t)previousMid mid:(int32_t)mid date:(int32_t)date message:(TGMessage *)message unread:(NSNumber *)unread;
 - (void)_updateMessageDeliveryFailed:(int32_t)previousMid;
+- (void)_updateMessages:(NSDictionary *)messagesByIds;
+
+- (void)updateMediaAccessTimeForMessageId:(int32_t)messageId;
+
+- (id)acquireAudioRecordingActivityHolder;
+- (id)acquireLocationPickingActivityHolder;
+
+- (void)serviceNotificationsForMessageIds:(NSArray *)messageIds;
+- (void)markMessagesAsViewed:(NSArray *)messageIds;
+
+- (SSignal *)userListForMention:(NSString *)mention;
+- (SSignal *)hashtagListForHashtag:(NSString *)hashtag;
+- (SSignal *)commandListForCommand:(NSString *)command;
+
+- (void)navigateToMessageId:(int32_t)messageId scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated;
+
+- (void)navigateToMessageSearch;
+
+- (bool)isASingleBotGroup;
+
+- (void)_controllerDidUpdateVisibleHoles:(NSArray *)holes;
+- (void)_controllerDidUpdateVisibleUnseenMessageIds:(NSArray *)unseenMessageIds;
+- (bool)_controllerShouldHideInputTextByDefault;
+- (bool)canDeleteMessage:(TGMessage *)message;
+- (bool)canDeleteMessages;
+- (bool)canDeleteAllMessages;
+
+- (int64_t)requestPeerId;
+- (int64_t)requestAccessHash;
+
+- (void)_toggleBroadcastMode;
+
+- (void)updateMessageViews:(NSDictionary *)messageIdToViews markAsSeen:(bool)markAsSeen;
+- (void)_toggleTitleMode;
 
 @end

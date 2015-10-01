@@ -6,7 +6,15 @@
 #import "TGCollectionMenuView.h"
 #import "TGCollectionMenuLayout.h"
 
-@interface TGCollectionMenuController () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, TGCollectionMenuViewDelegate>
+@interface TGCollectionMenuSection ()
+
+- (void)insertItem:(TGCollectionItem *)item atIndex:(NSUInteger)index;
+- (void)deleteItemAtIndex:(NSUInteger)index;
+- (void)replaceItemAtIndex:(NSUInteger)index withItem:(TGCollectionItem *)item;
+
+@end
+
+@interface TGCollectionMenuController () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, TGCollectionMenuViewDelegate, TGCollectionMenuLayoutDataSource, TGCollectionMenuLayoutDelegateFlowLayout>
 {
     bool _editingMode;
     
@@ -94,6 +102,17 @@
     
     [_collectionView registerClass:[TGCollectionItemView class] forCellWithReuseIdentifier:@"_empty"];
     
+    __weak TGCollectionMenuController *weakSelf = self;
+    _collectionView.layoutForSize = ^(CGSize size) {
+        __strong TGCollectionMenuController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            strongSelf->_currentLayoutWidth = size.width;
+            [strongSelf->_collectionLayout invalidateLayout];
+            [strongSelf->_collectionView setNeedsLayout];
+            [strongSelf->_collectionView layoutSubviews];
+        }
+    };
+    
     [self.view insertSubview:_collectionView aboveSubview:_headerBackgroundView];
 }
 
@@ -159,6 +178,9 @@
 {
     [super loadView];
     
+    if (TGIsPad()) {
+        self.view.frame = self.navigationController.view.bounds;
+    }
     self.view.backgroundColor = [TGInterfaceAssets listsBackgroundColor];
     
     _headerBackgroundView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.view.frame.size.width, self.controllerInset.top)];
@@ -184,13 +206,6 @@
 
 - (void)viewWillAppear:(BOOL)animated
 {
-    float currentLayoutWidth = [self inPopover] ? self.view.frame.size.width : [TGViewController screenSizeForInterfaceOrientation:self.interfaceOrientation].width;
-    if (ABS(currentLayoutWidth - _currentLayoutWidth) > FLT_EPSILON)
-    {
-        _currentLayoutWidth = currentLayoutWidth;
-        [_collectionLayout invalidateLayout];
-    }
-    
     for (NSIndexPath *indexPath in [_collectionView indexPathsForSelectedItems])
     {
         [_collectionView deselectItemAtIndexPath:indexPath animated:animated];
@@ -199,10 +214,10 @@
     [super viewWillAppear:animated];
 }
 
-- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+/*- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
 {
-    //CGFloat currentLayoutWidth = [self inPopover] ? self.view.frame.size.width : [TGViewController screenSizeForInterfaceOrientation:toInterfaceOrientation].width;
-    //if (ABS(_currentLayoutWidth - currentLayoutWidth) > FLT_EPSILON)
+    CGFloat currentLayoutWidth = [self inPopover] ? self.view.frame.size.width : [TGViewController screenSizeForInterfaceOrientation:toInterfaceOrientation].width;
+    _currentLayoutWidth = currentLayoutWidth;
     [_collectionLayout invalidateLayout];
     
     [super willRotateToInterfaceOrientation:toInterfaceOrientation duration:duration];
@@ -211,7 +226,7 @@
 - (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
 {
     [super willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
-}
+}*/
 
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView
 {
@@ -228,6 +243,42 @@
     return 0;
 }
 
+- (void)updateItem:(TGCollectionItem *)item itemView:(TGCollectionItemView *)itemView positionAtIndexPath:(NSIndexPath *)indexPath ignoreDragging:(bool)ignoreDragging animated:(bool)animated
+{
+    TGCollectionItem *previousItem = nil;
+    if (indexPath.item > 0)
+    {
+        if (ignoreDragging || _collectionLayout.selectedItemIndexPath == nil || ![_collectionLayout.selectedItemIndexPath isEqual:[NSIndexPath indexPathForItem:indexPath.item - 1 inSection:indexPath.section]])
+        {
+            previousItem = ((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items[indexPath.item - 1];
+        }
+    }
+    
+    TGCollectionItem *nextItem = nil;
+    if (indexPath.item < (NSInteger)((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items.count - 1)
+    {
+        if (ignoreDragging || _collectionLayout.selectedItemIndexPath == nil || ![_collectionLayout.selectedItemIndexPath isEqual:[NSIndexPath indexPathForItem:indexPath.item + 1 inSection:indexPath.section]])
+        {
+            nextItem = ((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items[indexPath.item + 1];
+        }
+    }
+    
+    int itemPositionMask = 0;
+    if (!item.transparent)
+    {
+        if (previousItem == nil || previousItem.transparent)
+            itemPositionMask |= TGCollectionItemViewPositionFirstInBlock;
+        
+        if (nextItem == nil || nextItem.transparent)
+            itemPositionMask |= TGCollectionItemViewPositionLastInBlock;
+        
+        if (itemPositionMask == 0)
+            itemPositionMask = TGCollectionItemViewPositionMiddleInBlock;
+    }
+    
+    [itemView setItemPosition:itemPositionMask animated:animated];
+}
+
 - (UICollectionViewCell *)collectionView:(TGCollectionMenuView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     TGCollectionItem *item = indexPath.section < (NSInteger)_menuSections.sections.count && indexPath.row < (NSInteger)((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items.count ? ((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items[indexPath.item] : nil;
@@ -238,28 +289,8 @@
         if (itemView.boundItem != nil)
             [itemView.boundItem unbindView];
         
-        TGCollectionItem *previousItem = nil;
-        if (indexPath.item > 0)
-            previousItem = ((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items[indexPath.item - 1];
+        [self updateItem:item itemView:itemView positionAtIndexPath:indexPath ignoreDragging:false animated:false];
         
-        TGCollectionItem *nextItem = nil;
-        if (indexPath.item < (NSInteger)((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items.count - 1)
-            nextItem = ((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items[indexPath.item + 1];
-        
-        int itemPositionMask = 0;
-        if (!item.transparent)
-        {
-            if (previousItem == nil || previousItem.transparent)
-                itemPositionMask |= TGCollectionItemViewPositionFirstInBlock;
-            
-            if (nextItem == nil || nextItem.transparent)
-                itemPositionMask |= TGCollectionItemViewPositionLastInBlock;
-            
-            if (itemPositionMask == 0)
-                itemPositionMask = TGCollectionItemViewPositionMiddleInBlock;
-        }
-        
-        [itemView setItemPosition:itemPositionMask];
         [item bindView:itemView];
         
         [collectionView setupCellForEditing:itemView];
@@ -280,10 +311,6 @@
     TGCollectionItem *item = indexPath.section < (NSInteger)_menuSections.sections.count && indexPath.row < (NSInteger)((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items.count ? ((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items[indexPath.item] : nil;
     
     CGSize layoutSize = collectionView.frame.size;
-    if ([self inPopover])
-        layoutSize.width = 320.0f;
-    else if ([self inFormSheet])
-        layoutSize.width = 540.0f;
     
     if (item != nil)
         return [item itemSizeForContainerSize:layoutSize];
@@ -338,10 +365,10 @@
         TGCollectionItem *item = indexPath.section < (NSInteger)_menuSections.sections.count && indexPath.row < (NSInteger)((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items.count ? ((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items[indexPath.item] : nil;
         if (item != nil)
         {
+            [item itemSelected:self];
+            
             if (item.deselectAutomatically)
                 [collectionView deselectItemAtIndexPath:indexPath animated:true];
-            
-            [item itemSelected:self];
         }
     }
 }
@@ -384,6 +411,102 @@
             return [item itemPerformAction:action];
         }
     }
+}
+
+- (void)collectionView:(UICollectionView *)__unused collectionView itemAtIndexPath:(NSIndexPath *)fromIndexPath willMoveToIndexPath:(NSIndexPath *)toIndexPath
+{
+    TGCollectionMenuSection *fromSection = _menuSections.sections[fromIndexPath.section];
+    TGCollectionMenuSection *toSection = _menuSections.sections[toIndexPath.section];
+    if (fromSection == toSection)
+    {
+        NSInteger fromIndex = fromIndexPath.item;
+        id item = fromSection.items[fromIndex];
+        
+        NSInteger toIndex = toIndexPath.item;
+        
+        [fromSection deleteItemAtIndex:fromIndex];
+        [fromSection insertItem:item atIndex:toIndex];
+    }
+    else
+    {
+        id item = fromSection.items[fromIndexPath.item];
+        [fromSection deleteItemAtIndex:fromIndexPath.item];
+        [toSection insertItem:item atIndex:toIndexPath.item];
+    }
+}
+
+- (void)animateCollectionCrossfade
+{
+    UIView *snapshotView = [self.collectionView snapshotViewAfterScreenUpdates:false];
+    [self.view insertSubview:snapshotView aboveSubview:self.collectionView];
+    
+    [UIView animateWithDuration:0.3 animations:^
+    {
+        snapshotView.alpha = 0.0f;
+    } completion:^(__unused BOOL finished)
+    {
+        [snapshotView removeFromSuperview];
+    }];
+}
+
+- (void)updateItemPositions
+{
+    [self updateItemPositions:false];
+}
+
+- (void)updateItemPositions:(bool)ignoreDragging
+{
+    for (NSIndexPath *indexPath in [_collectionView indexPathsForVisibleItems])
+    {
+        TGCollectionMenuSection *section = _menuSections.sections[indexPath.section];
+        TGCollectionItem *item = section.items[indexPath.item];
+        TGCollectionItemView *itemView = (TGCollectionItemView *)[_collectionView cellForItemAtIndexPath:indexPath];
+        [self updateItem:item itemView:itemView positionAtIndexPath:indexPath ignoreDragging:ignoreDragging animated:true];
+    }
+}
+
+- (void)collectionView:(UICollectionView *)__unused collectionView itemAtIndexPath:(NSIndexPath *)__unused fromIndexPath willBeginMovingToIndexPath:(NSIndexPath *)__unused toIndexPath
+{
+    [self updateItemPositions:false];
+}
+
+- (void)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout willEndDraggingItemAtIndexPath:(NSIndexPath *)__unused indexPath
+{
+    [self updateItemPositions:true];
+}
+
+- (void)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout willBeginDraggingItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    TGCollectionItemView *itemView = (TGCollectionItemView *)[collectionView cellForItemAtIndexPath:indexPath];
+    [itemView setItemPosition:TGCollectionItemViewPositionFirstInBlock | TGCollectionItemViewPositionLastInBlock];
+}
+
+- (void)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout didBeginDraggingItemAtIndexPath:(NSIndexPath *)__unused indexPath
+{
+    [self updateItemPositions:false];
+}
+
+- (void)collectionView:(UICollectionView *)__unused collectionView itemAtIndexPath:(NSIndexPath *)__unused fromIndexPath didMoveToIndexPath:(NSIndexPath *)__unused toIndexPath
+{
+}
+
+- (BOOL)collectionView:(UICollectionView *)__unused collectionView canMoveItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    TGCollectionMenuSection *section = _menuSections.sections[indexPath.section];
+    TGCollectionItem *item = section.items[indexPath.item];
+    return _editingMode && item.canBeMovedToSectionAtIndex != nil;
+}
+
+- (BOOL)collectionView:(UICollectionView *)__unused collectionView itemAtIndexPath:(NSIndexPath *) fromIndexPath canMoveToIndexPath:(NSIndexPath *)toIndexPath
+{
+    TGCollectionMenuSection *section = _menuSections.sections[fromIndexPath.section];
+    TGCollectionItem *item = section.items[fromIndexPath.item];
+    return item.canBeMovedToSectionAtIndex != nil && item.canBeMovedToSectionAtIndex(toIndexPath.section, toIndexPath.item);
+}
+
+- (BOOL)collectionViewCanMoveItems:(UICollectionView *)__unused collectionView
+{
+    return _enableItemReorderingGestures;
 }
 
 @end

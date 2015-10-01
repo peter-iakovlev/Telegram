@@ -15,4 +15,6 @@
 @property (nonatomic, strong) TGModernViewStorage *viewStorage;
 @property (nonatomic, strong) NSArray *boundItems;
 
+- (void)unbindItems;
+
 @end

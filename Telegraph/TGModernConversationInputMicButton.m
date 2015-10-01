@@ -17,6 +17,7 @@
     
     bool _processCurrentTouch;
     CFAbsoluteTime _lastTouchTime;
+    bool _acceptTouchDownAsTouchUp;
 }
 
 @end
@@ -42,24 +43,34 @@
 {
     if ([super beginTrackingWithTouch:touch withEvent:event])
     {
-        _lastVelocity = 0.0;
-        
-        if (ABS(CFAbsoluteTimeGetCurrent() - _lastTouchTime) < 1.0)
+        if (_acceptTouchDownAsTouchUp)
         {
+            _acceptTouchDownAsTouchUp = false;
             _processCurrentTouch = false;
             
-            return false;
+            [self _commitCompleted];
         }
         else
         {
-            _processCurrentTouch = true;
-            _lastTouchTime = CFAbsoluteTimeGetCurrent();
-        
-            id<TGModernConversationInputMicButtonDelegate> delegate = _delegate;
-            if ([delegate respondsToSelector:@selector(micButtonInteractionBegan)])
-                [delegate micButtonInteractionBegan];
+            _lastVelocity = 0.0;
             
-            _touchLocation = [touch locationInView:self];
+            if (ABS(CFAbsoluteTimeGetCurrent() - _lastTouchTime) < 1.0)
+            {
+                _processCurrentTouch = false;
+                
+                return false;
+            }
+            else
+            {
+                _processCurrentTouch = true;
+                _lastTouchTime = CFAbsoluteTimeGetCurrent();
+            
+                id<TGModernConversationInputMicButtonDelegate> delegate = _delegate;
+                if ([delegate respondsToSelector:@selector(micButtonInteractionBegan)])
+                    [delegate micButtonInteractionBegan];
+                
+                _touchLocation = [touch locationInView:self];
+            }
         }
         
         return true;
@@ -78,7 +89,7 @@
         {
             CGFloat distance = [touch locationInView:self].x - _touchLocation.x;
             
-            float value = (-distance) / 100.0f;
+            CGFloat value = (-distance) / 100.0f;
             value = MAX(0.0f, MIN(1.0f, value));
             
             CGFloat velocity = [_panRecognizer velocityInView:self].x;
@@ -119,6 +130,11 @@
 {
     if (_processCurrentTouch)
     {
+#if TARGET_IPHONE_SIMULATOR
+        _acceptTouchDownAsTouchUp = true;
+        return;
+#endif
+        
         CGFloat velocity = _lastVelocity;
         
         id<TGModernConversationInputMicButtonDelegate> delegate = _delegate;
@@ -129,12 +145,18 @@
         }
         else
         {
-            if ([delegate respondsToSelector:@selector(micButtonInteractionCompleted:)])
-                [delegate micButtonInteractionCompleted:_lastVelocity];
+            [self _commitCompleted];
         }
     }
     
     [super endTrackingWithTouch:touch withEvent:event];
+}
+
+- (void)_commitCompleted
+{
+    id<TGModernConversationInputMicButtonDelegate> delegate = _delegate;
+    if ([delegate respondsToSelector:@selector(micButtonInteractionCompleted:)])
+        [delegate micButtonInteractionCompleted:_lastVelocity];
 }
 
 - (void)panGesture:(UIPanGestureRecognizer *)__unused recognizer

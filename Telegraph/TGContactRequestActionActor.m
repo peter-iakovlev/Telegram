@@ -12,6 +12,10 @@
 
 #import "TGConversationAddMessagesActor.h"
 
+#import "TLMessage$modernMessage.h"
+
+#import "TLUser$modernUser.h"
+
 @interface TGContactRequestActionActor ()
 
 @property (nonatomic) int uid;
@@ -70,9 +74,9 @@
     [TGUserDataRequestBuilder executeUserObjectsUpdate:[NSArray arrayWithObject:user]];
     
     int userLink = extractUserLink(link.link);
-    [TGUserDataRequestBuilder executeUserLinkUpdates:[[NSArray alloc] initWithObjects:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:link.link.user.n_id], [[NSNumber alloc] initWithInt:userLink], nil], nil]];
+    [TGUserDataRequestBuilder executeUserLinkUpdates:[[NSArray alloc] initWithObjects:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:((TLUser$modernUser *)link.link.user).n_id], [[NSNumber alloc] initWithInt:userLink], nil], nil]];
     
-    if ([link.message isKindOfClass:[TLMessage$message class]])
+    if ([link.message isKindOfClass:[TLMessage$modernMessage class]])
     {
         TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:(TLMessage$message *)link.message];
         if (message.mid != 0)
@@ -96,7 +100,7 @@
     [TGUserDataRequestBuilder executeUserObjectsUpdate:[NSArray arrayWithObject:user]];
     
     int userLink = extractUserLink(link);
-    [TGUserDataRequestBuilder executeUserLinkUpdates:[[NSArray alloc] initWithObjects:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:link.user.n_id], [[NSNumber alloc] initWithInt:userLink], nil], nil]];
+    [TGUserDataRequestBuilder executeUserLinkUpdates:[[NSArray alloc] initWithObjects:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:((TLUser$modernUser *)link.user).n_id], [[NSNumber alloc] initWithInt:userLink], nil], nil]];
     
     [ActionStageInstance() actionCompleted:self.path result:nil];
 }
@@ -112,7 +116,7 @@
     [TGUserDataRequestBuilder executeUserObjectsUpdate:[NSArray arrayWithObject:user]];
     
     int userLink = extractUserLink(link);
-    [TGUserDataRequestBuilder executeUserLinkUpdates:[[NSArray alloc] initWithObjects:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:link.user.n_id], [[NSNumber alloc] initWithInt:userLink], nil], nil]];
+    [TGUserDataRequestBuilder executeUserLinkUpdates:[[NSArray alloc] initWithObjects:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:((TLUser$modernUser *)link.user).n_id], [[NSNumber alloc] initWithInt:userLink], nil], nil]];
     
     [ActionStageInstance() actionCompleted:self.path result:nil];
 }

@@ -15,7 +15,7 @@
 @optional
 
 - (void)audioSliderViewDidBeginPositionAdjustment:(TGAudioSliderView *)audioSliderView;
-- (void)audioSliderViewDidEndPositionAdjustment:(TGAudioSliderView *)audioSliderView atPosition:(float)position;
+- (void)audioSliderViewDidEndPositionAdjustment:(TGAudioSliderView *)audioSliderView atPosition:(CGFloat)position;
 - (void)audioSliderViewDidCancelPositionAdjustment:(TGAudioSliderView *)audioSliderView;
 
 @end
@@ -30,6 +30,7 @@
 @property (nonatomic) bool manualPositionAdjustmentEnabled;
 @property (nonatomic) bool progressMode;
 @property (nonatomic) NSTimeInterval preciseDuration;
+@property (nonatomic) bool listenedStatus;
 
 - (void)setAudioPosition:(float)audioPosition animated:(bool)animated timestamp:(NSTimeInterval)timestamp isPlaying:(bool)isPlaying immediate:(bool)immediate;
 - (void)stopAnimations;

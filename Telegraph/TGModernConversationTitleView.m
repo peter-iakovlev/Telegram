@@ -7,8 +7,10 @@
 #import "TGTimerTarget.h"
 
 #import "TGModernConversationTitleIcon.h"
+#import "TGModernConversationTitleActivityIndicator.h"
 
 #import "TGViewController.h"
+#import "TGAppDelegate.h"
 
 const NSTimeInterval typingIntervalFirst = 0.16;
 const NSTimeInterval typingIntervalSecond = 0.14;
@@ -22,11 +24,9 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     UIActivityIndicatorView *_titleModalProgressIndicator;
     NSString *_modalProgressStatus;
     
-    NSArray *_typingDots;
-    NSTimer *_typingDotTimer;
-    int _typingDotState;
-    bool _typingAnimation;
     bool _animationsAreSuspended;
+    
+    TGModernConversationTitleActivityIndicator *_activityIndicator;
     
     id _status;
     
@@ -40,6 +40,11 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     UIImageView *_unreadBackground;
     UILabel *_unreadLabel;
     int _unreadCount;
+    
+    NSString *_backButtonTitle;
+    
+    UIImageView *_toggleIcon;
+    UILabel *_toggleLabel;
 }
 
 @end
@@ -88,156 +93,34 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     return _statusLabel;
 }
 
-- (CALayer *)_createTypingDot:(bool)large
-{
-    static CGImageRef dotImage1 = NULL;
-    static CGImageRef dotImage2 = NULL;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        dotImage1 = CGImageRetain([UIImage imageNamed:@"ModernTypingDot1"].CGImage);
-        dotImage2 = CGImageRetain([UIImage imageNamed:@"ModernTypingDot2"].CGImage);
-    });
-    
-    CALayer *layer = [[CALayer alloc] init];
-    layer.bounds = CGRectMake(0, 0, 4, 4);
-    layer.actions = @{@"content": [NSNull null], @"position": [NSNull null]};
-    layer.contents = (__bridge id)(large ? dotImage2 : dotImage1);
-    layer.opacity = large ? 0.0f : 1.0f;
-    return layer;
+- (UILabel *)toggleLabel {
+    if (_toggleLabel == nil) {
+        _toggleLabel = [[UILabel alloc] init];
+        _toggleLabel.backgroundColor = [UIColor clearColor];
+        _toggleLabel.textColor = UIColorRGB(0x787878);
+        _toggleLabel.font = TGSystemFontOfSize(13.0f);
+        [self addSubview:_toggleLabel];
+    }
+    return _toggleLabel;
 }
 
-- (NSArray *)typingDots
-{
-    if (_typingDots == nil)
-    {
-        _typingDots = @[[self _createTypingDot:false], [self _createTypingDot:false], [self _createTypingDot:false],
-                        [self _createTypingDot:true], [self _createTypingDot:true], [self _createTypingDot:true]];
+- (UIImageView *)toggleIcon {
+    if (_toggleIcon == nil) {
+        _toggleIcon = [[UIImageView alloc] init];
+        [self addSubview:_toggleIcon];
     }
     
-    return _typingDots;
-}
-
-- (CAAnimation *)_animationFromOpacity:(CGFloat)fromOpacity to:(CGFloat)toOpacity duration:(NSTimeInterval)duration
-{
-    CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"opacity"];
-    animation.fromValue = @(fromOpacity);
-    animation.toValue = @(toOpacity);
-    animation.duration = duration;
-    animation.removedOnCompletion = true;
-    
-    return animation;
-}
-
-- (void)_beginTypingAnimation:(bool)animated
-{
-    if (_typingAnimation)
-        return;
-    
-    for (CALayer *layer in [self typingDots])
-    {
-        CAAnimation *animation = [layer animationForKey:@"opacity"];
-        if ([animation.delegate isKindOfClass:[TGAnimationBlockDelegate class]])
-            ((TGAnimationBlockDelegate *)animation.delegate).removeLayerOnCompletion = false;
-        [layer removeAllAnimations];
-        [self.layer addSublayer:layer];
-    }
-    [self setNeedsLayout];
-    
-    if (!_animationsAreSuspended)
-    {
-        _typingDotState = 0;
-        [self _typingAnimationEvent];
-        _typingDotTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(_typingAnimationEvent) interval:typingIntervalFirst repeat:true];
-        [[NSRunLoop mainRunLoop] addTimer:_typingDotTimer forMode:NSRunLoopCommonModes];
-        
-        if (animated)
-        {
-            [self typingDots];
-            for (int i = 0; i < 3; i++)
-            {
-                CALayer *layer = _typingDots[i];
-                [layer addAnimation:[self _animationFromOpacity:0.0f to:1.0f duration:0.12] forKey:@"opacity"];
-            }
-        }
-    }
-    
-    _typingAnimation = true;
-}
-
-- (void)_endTypingAnimation:(bool)animated
-{
-    if (!_typingAnimation)
-        return;
-    
-    if (animated)
-    {
-        for (CALayer *layer in [self typingDots])
-        {
-            CAAnimation *animation = [self _animationFromOpacity:layer.opacity to:0.0f duration:0.12];
-            TGAnimationBlockDelegate *delegate = [[TGAnimationBlockDelegate alloc] initWithLayer:layer];
-            delegate.removeLayerOnCompletion = true;
-            animation.delegate = delegate;
-            [layer addAnimation:animation forKey:@"opacity"];
-        }
-    }
-    else
-    {
-        for (CALayer *layer in [self typingDots])
-        {
-            [layer removeFromSuperlayer];
-        }
-    }
-    
-    [_typingDotTimer invalidate];
-    _typingDotTimer = nil;
-    
-    _typingAnimation = false;
+    return _toggleIcon;
 }
 
 - (void)suspendAnimations
 {
     _animationsAreSuspended = true;
-    
-    if (_typingAnimation)
-    {
-        [_typingDotTimer invalidate];
-        _typingDotTimer = nil;
-    }
 }
 
 - (void)resumeAnimations
 {
     _animationsAreSuspended = false;
-    
-    if (_typingAnimation)
-    {
-        [_typingDotTimer invalidate];
-        _typingDotTimer = nil;
-        
-        [self _typingAnimationEvent];
-        _typingDotTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(_typingAnimationEvent) interval:typingIntervalFirst repeat:true];
-        [[NSRunLoop mainRunLoop] addTimer:_typingDotTimer forMode:NSRunLoopCommonModes];
-    }
-}
-
-- (void)_typingAnimationEvent
-{
-    if (_typingDots.count == 0)
-        return;
-    
-    int focusIndex = (_typingDotState++) % (_typingDots.count / 2);
-    for (int index = 0; index < 3; index++)
-    {
-        CALayer *layer = _typingDots[3 + index];
-        if (index == focusIndex)
-        {
-            CAAnimation *animation = [self _animationFromOpacity:0.0f to:1.0f duration:typingIntervalSecond];
-            animation.autoreverses = true;
-            [layer addAnimation:animation forKey:@"opacity"];
-        }
-    }
 }
 
 - (void)setTitle:(NSString *)title
@@ -274,7 +157,7 @@ const NSTimeInterval typingIntervalSecond = 0.14;
         if (_typingStatus == nil)
         {
             if ([status isKindOfClass:[NSAttributedString class]])
-                [self statusLabel].attributedText = status;
+                [self statusLabel].text = ((NSAttributedString *)status).string;
             else
                 [self statusLabel].text = status;
             
@@ -297,12 +180,53 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     }
 }
 
-- (void)setTypingStatus:(NSString *)typingStatus
-{
-    [self setTypingStatus:typingStatus animated:false];
+- (void)setToggleMode:(TGModernConversationControllerTitleToggle)toggleMode {
+    if (_toggleMode != toggleMode) {
+        _toggleMode = toggleMode;
+        
+        switch (toggleMode) {
+            case TGModernConversationControllerTitleToggleNone: {
+                break;
+            }
+            case TGModernConversationControllerTitleToggleShowDiscussion: {
+                self.toggleIcon.image = [UIImage imageNamed:@"ConversationTitleSwitchOff.png"];
+                self.toggleLabel.text = TGLocalized(@"Channel.TitleShowDiscussion");
+                break;
+            }
+            case TGModernConversationControllerTitleToggleHideDiscussion: {
+                self.toggleIcon.image = [UIImage imageNamed:@"ConversationTitleSwitchOn.png"];
+                self.toggleLabel.text = TGLocalized(@"Channel.TitleShowDiscussion");
+                break;
+            }
+        }
+        
+        [self updateHiddenStatuses];
+        
+        [self.toggleIcon sizeToFit];
+        [self.toggleLabel sizeToFit];
+        
+        [self setNeedsLayout];
+    }
 }
 
-- (void)setTypingStatus:(NSString *)typingStatus animated:(bool)animated
+- (void)updateHiddenStatuses {
+    _titleLabel.hidden = [self normalTitleHidden];
+    _statusLabel.hidden = [self normalStatusHidden];
+    for (UIView *view in _iconViews) {
+        view.hidden = [self normalStatusHidden];
+    }
+    _activityIndicator.hidden = [self normalStatusHidden];
+    
+    _toggleIcon.hidden = [self toggleHidden];
+    _toggleLabel.hidden = [self toggleHidden];
+}
+
+- (void)setTypingStatus:(NSString *)typingStatus
+{
+    [self setTypingStatus:typingStatus activity:TGModernConversationTitleViewActivityTyping animated:false];
+}
+
+- (void)setTypingStatus:(NSString *)typingStatus activity:(TGModernConversationTitleViewActivity)activity animated:(bool)animated
 {
     if (!TGStringCompare(typingStatus, _typingStatus))
     {
@@ -312,17 +236,70 @@ const NSTimeInterval typingIntervalSecond = 0.14;
         
         if (typingStatus == nil)
         {
-            [self statusLabel].text = _status;
+            [self statusLabel].attributedText = [[NSAttributedString alloc] initWithString:_status];
             _statusLabel.textColor = _statusHasAccentColor ? UIColorRGB(0x007bff) : UIColorRGB(0x86868d);
-            
-            [self _endTypingAnimation:reallyAnimated];
         }
         else
         {
-            [self statusLabel].text = typingStatus;
+            [self statusLabel].attributedText = [[NSAttributedString alloc] initWithString:typingStatus];
             _statusLabel.textColor = UIColorRGB(0x007bff);
+        }
+        
+        if (typingStatus == nil)
+        {
+            if (reallyAnimated)
+            {
+                [UIView animateWithDuration:0.12 animations:^
+                {
+                    _activityIndicator.alpha = 0.0f;
+                } completion:^(BOOL finished)
+                {
+                    if (finished)
+                    {
+                        [_activityIndicator setNone];
+                        [_activityIndicator removeFromSuperview];
+                    }
+                }];
+            }
+            else
+            {
+                [_activityIndicator setNone];
+                [_activityIndicator removeFromSuperview];
+            }
+        }
+        else
+        {
+            if (_activityIndicator == nil)
+            {
+                _activityIndicator = [[TGModernConversationTitleActivityIndicator alloc] init];
+                _activityIndicator.alpha = 0.0f;
+            }
             
-            [self _beginTypingAnimation:reallyAnimated];
+            if (_activityIndicator.superview != self)
+                [self addSubview:_activityIndicator];
+            
+            switch (activity)
+            {
+                case TGModernConversationTitleViewActivityAudioRecording:
+                    [_activityIndicator setAudioRecording];
+                    break;
+                case TGModernConversationTitleViewActivityUploading:
+                    [_activityIndicator setUploading];
+                    break;
+                default:
+                    [_activityIndicator setTyping];
+                    break;
+            }
+            
+            if (reallyAnimated)
+            {
+                [UIView animateWithDuration:0.12 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
+                {
+                    _activityIndicator.alpha = 1.0f;
+                } completion:nil];
+            }
+            else
+                _activityIndicator.alpha = 1.0f;
         }
         
         if (reallyAnimated)
@@ -351,7 +328,7 @@ const NSTimeInterval typingIntervalSecond = 0.14;
             iconView = [[UIImageView alloc] initWithImage:icon.image];
             [self addSubview:iconView];
             
-            iconView.hidden = _modalProgressStatus != nil;
+            iconView.hidden = [self normalStatusHidden];
         }
         [currentIconViews addObject:iconView];
     }
@@ -407,19 +384,21 @@ const NSTimeInterval typingIntervalSecond = 0.14;
             [_titleModalProgressIndicator removeFromSuperview];
         }
         
-        for (CALayer *layer in _typingDots)
-        {
-            layer.hidden = modalProgressStatus != nil;
-        }
         
-        _titleLabel.hidden = modalProgressStatus != nil;
-        _statusLabel.hidden = modalProgressStatus != nil;
-        
-        for (UIView *iconView in _iconViews)
-        {
-            iconView.hidden = modalProgressStatus != nil;
-        }
+        [self updateHiddenStatuses];
     }
+}
+
+- (bool)normalTitleHidden {
+    return _modalProgressStatus != nil;
+}
+
+- (bool)normalStatusHidden {
+    return _modalProgressStatus != nil || _toggleMode != TGModernConversationControllerTitleToggleNone;
+}
+
+- (bool)toggleHidden {
+    return _modalProgressStatus != nil || _toggleMode == TGModernConversationControllerTitleToggleNone;
 }
 
 static UIView *findNavigationBar(UIView *view)
@@ -459,6 +438,10 @@ static UIView *findNavigationBar(UIView *view)
                 });
                 
                 _unreadContainer = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 10.0f, 10.0f)];
+                if (iosMajorVersion() >= 9 && TGAppDelegateInstance.rootController.isRTL) {
+                    _unreadContainer.frame = CGRectMake(findNavigationBar(self.superview).frame.size.width - 10.0f, 0.0f, 10.0f, 10.0f);
+                    _unreadContainer.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
+                }
                 _unreadContainer.userInteractionEnabled = false;
                 _unreadContainer.layer.zPosition = 1000;
                 if (self.superview != nil)
@@ -487,7 +470,12 @@ static UIView *findNavigationBar(UIView *view)
             CGPoint offset = CGPointMake(14.0f, UIInterfaceOrientationIsPortrait(_orientation) ? 2.0f : 0.0f);
             
             _unreadBackground.frame = CGRectMake(offset.x, offset.y, MAX(_unreadLabel.frame.size.width + 8.0f, 17.0f), 17.0f);
-            _unreadLabel.frame = CGRectMake(offset.x + TGRetinaFloor((_unreadBackground.frame.size.width - _unreadLabel.frame.size.width) / 2.0f), offset.y + 1.0f + (TGIsLocaleArabic() ? 1.0f : 0.0f), _unreadLabel.frame.size.width, _unreadLabel.frame.size.height);
+            if (TGAppDelegateInstance.rootController.isRTL) {
+                CGRect frame = _unreadBackground.frame;
+                frame.origin.x = 10.0f - _unreadBackground.frame.size.width;
+                _unreadBackground.frame = frame;
+            }
+            _unreadLabel.frame = CGRectMake(_unreadBackground.frame.origin.x + TGRetinaFloor((_unreadBackground.frame.size.width - _unreadLabel.frame.size.width) / 2.0f), offset.y + 1.0f + (TGIsLocaleArabic() ? 1.0f : 0.0f), _unreadLabel.frame.size.width, _unreadLabel.frame.size.height);
         }
         else if (_unreadContainer != nil)
         {
@@ -510,6 +498,10 @@ static UIView *findNavigationBar(UIView *view)
     
     if (_unreadContainer != nil && self.superview != nil)
     {
+        if (iosMajorVersion() >= 9 && TGAppDelegateInstance.rootController.isRTL) {
+            _unreadContainer.frame = CGRectMake(findNavigationBar(self.superview).frame.size.width - 20.0f, 0.0f, 10.0f, 10.0f);
+        }
+        
         [findNavigationBar(self.superview) addSubview:_unreadContainer];
     }
 }
@@ -571,13 +563,20 @@ static UIView *findNavigationBar(UIView *view)
             
             CGRect unreadBackgroundFrame = _unreadBackground.frame;
             unreadBackgroundFrame.origin.y = offset.y;
+            if (TGAppDelegateInstance.rootController.isRTL) {
+                unreadBackgroundFrame.origin.x = 10.0f - unreadBackgroundFrame.size.width;
+            }
             _unreadBackground.frame = unreadBackgroundFrame;
             
-            CGRect unreadLabelFrame = _unreadLabel.frame;
-            unreadLabelFrame.origin.y = offset.y + 1.0f;
-            _unreadLabel.frame = unreadLabelFrame;
+            _unreadLabel.frame = CGRectMake(_unreadBackground.frame.origin.x + TGRetinaFloor((_unreadBackground.frame.size.width - _unreadLabel.frame.size.width) / 2.0f), offset.y + 1.0f + (TGIsLocaleArabic() ? 1.0f : 0.0f), _unreadLabel.frame.size.width, _unreadLabel.frame.size.height);
         }
     }
+}
+
+- (void)setBackButtonTitle:(NSString *)backButtonTitle
+{
+    _backButtonTitle = backButtonTitle;
+    [self setNeedsLayout];
 }
 
 - (void)setEditingMode:(bool)editingMode animated:(bool)animated
@@ -662,12 +661,12 @@ static UIView *findNavigationBar(UIView *view)
     
     if (_titleLabel != nil && _statusLabel != nil)
     {
-        CGFloat portraitScreenWidth = [TGViewController screenSizeForInterfaceOrientation:UIInterfaceOrientationPortrait].width;
+        CGFloat portraitScreenWidth = [TGViewController screenSizeForInterfaceOrientation:UIInterfaceOrientationPortrait].width - 12.0f;
         CGFloat landscapeScreenWidth = [TGViewController screenSizeForInterfaceOrientation:UIInterfaceOrientationLandscapeLeft].width;
         
         if (TGIsPad())
         {
-            portraitScreenWidth = 447.0f;
+            portraitScreenWidth = 367.0f;
             landscapeScreenWidth = 1267.0f;
         }
         
@@ -677,17 +676,12 @@ static UIView *findNavigationBar(UIView *view)
         static CGFloat clearAllButtonSize = 0.0f;
         static CGFloat cancelButtonSize = 0.0f;
         
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            UIFont *buttonFont = TGSystemFontOfSize(16.0f);
-            
-#warning TODO take back title as an argument
-            backButtonSize = [TGLocalized(@"DialogList.Title") sizeWithFont:buttonFont].width + 27.0f + 8.0f;
-            
-            clearAllButtonSize = [TGLocalized(@"Conversation.ClearAll") sizeWithFont:buttonFont].width + 16.0f;
-            cancelButtonSize = [TGLocalized(@"Common.Cancel") sizeWithFont:buttonFont].width + 16.0f;
-        });
+        UIFont *buttonFont = TGSystemFontOfSize(16.0f);
+        
+        backButtonSize = [_backButtonTitle sizeWithFont:buttonFont].width + 27.0f + 8.0f;
+        
+        clearAllButtonSize = [TGLocalized(@"Conversation.ClearAll") sizeWithFont:buttonFont].width + 16.0f;
+        cancelButtonSize = [TGLocalized(@"Common.Cancel") sizeWithFont:buttonFont].width + 16.0f;
         
         CGFloat buttonsWidth = _editingMode ? (clearAllButtonSize + cancelButtonSize) : (backButtonSize + avatarButtonSize);
         
@@ -708,7 +702,7 @@ static UIView *findNavigationBar(UIView *view)
         {
             if (icon.iconPosition == TGModernConversationTitleIconPositionBeforeTitle)
                 titleHorizontalOffset += icon.bounds.size.width;
-            iconsWeightedWidth += floorf(icon.bounds.size.width * icon.offsetWeight);
+            iconsWeightedWidth += CGFloor(icon.bounds.size.width * icon.offsetWeight);
             iconsTotalWidth += icon.bounds.size.width;
             maxTitleWidth -= icon.bounds.size.width;
         }
@@ -733,10 +727,30 @@ static UIView *findNavigationBar(UIView *view)
                 statusHorizontalAdjustment = -statusHorizontalAdjustment;
             }
             
-            CGPoint titleOrigin = CGPointMake(titleHorizontalAdjustment + floorf((bounds.size.width - titleTotalWidth) / 2.0f), -17.0f + titlePortraitOffset);
+            CGPoint titleOrigin = CGPointMake(titleHorizontalAdjustment + CGFloor((bounds.size.width - titleTotalWidth) / 2.0f), -17.0f + titlePortraitOffset);
+            
+            
+            for (TGModernConversationTitleIcon *icon in _icons)
+            {
+                if (icon.iconPosition == TGModernConversationTitleIconPositionBeforeTitle)
+                {
+                    titleOrigin.x -= CGFloor(icon.image.size.width / 2.0f);
+                }
+                else
+                {
+                    titleOrigin.x += CGFloor(icon.image.size.width / 2.0f);
+                }
+            }
             
             _titleLabel.frame = CGRectMake(titleOrigin.x + titleHorizontalOffset, titleOrigin.y, titleLabelSize.width, titleLabelSize.height);
-            _statusLabel.frame = CGRectMake(statusHorizontalAdjustment + (_typingStatus == nil ? 0.0f : 10.0f) + floorf((bounds.size.width - statusLabelSize.width) / 2.0f), 2.0f + statusPortraitOffset, statusLabelSize.width, statusLabelSize.height);
+            _statusLabel.frame = CGRectMake(statusHorizontalAdjustment + (_typingStatus == nil ? 0.0f : 10.0f) + CGFloor((bounds.size.width - statusLabelSize.width) / 2.0f), 2.0f + statusPortraitOffset, statusLabelSize.width, statusLabelSize.height);
+            
+            if (_toggleIcon != nil) {
+                CGSize toggleIconSize = _toggleIcon.bounds.size;
+                CGSize toggleLabelSize = _toggleLabel.bounds.size;
+                _toggleLabel.frame = CGRectOffset(_toggleLabel.bounds, CGFloor((bounds.size.width - toggleLabelSize.width + toggleIconSize.width + 2.0f) / 2.0f), 2.0f + statusPortraitOffset);
+                _toggleIcon.frame = CGRectOffset(_toggleIcon.bounds, _toggleLabel.frame.origin.x - toggleIconSize.width - 5.0f, 5.0f + statusPortraitOffset);
+            }
             
             int index = -1;
             CGPoint currentLeftIconOrigin = titleOrigin;
@@ -762,13 +776,7 @@ static UIView *findNavigationBar(UIView *view)
             
             if (_typingStatus != nil)
             {
-                CGPoint dotPosition = CGPointMake(_statusLabel.frame.origin.x - 16, _statusLabel.frame.origin.y + 9);
-                int index = -1;
-                for (CALayer *layer in _typingDots)
-                {
-                    index++;
-                    layer.position = CGPointMake(dotPosition.x + 5.0f * (index % 3), dotPosition.y);
-                }
+                _activityIndicator.frame = CGRectMake(_statusLabel.frame.origin.x - 24.0f, _statusLabel.frame.origin.y, 24.0f, 16.0f);
             }
         }
         else
@@ -781,14 +789,20 @@ static UIView *findNavigationBar(UIView *view)
             CGFloat totalTitleWidth = titleLabelSize.width + iconsTotalWidth;
             CGFloat commonWidth = totalTitleWidth + spacing + statusLabelSize.width;
             
-            CGPoint titleOrigin = CGPointMake(floorf((bounds.size.width - commonWidth) / 2.0f), -12.0f + titleLandscapeOffset);
+            CGPoint titleOrigin = CGPointMake(CGFloor((bounds.size.width - commonWidth) / 2.0f), -12.0f + titleLandscapeOffset);
             
             _titleLabel.frame = CGRectMake(titleOrigin.x + titleHorizontalOffset, titleOrigin.y, titleLabelSize.width, titleLabelSize.height);
-            _statusLabel.frame = CGRectMake(floorf((bounds.size.width - commonWidth) / 2.0f) + totalTitleWidth + spacing, -9.0f + TGRetinaPixel + statusLandscapeOffset, statusLabelSize.width, statusLabelSize.height);
+            _statusLabel.frame = CGRectMake(CGFloor((bounds.size.width - commonWidth) / 2.0f) + totalTitleWidth + spacing, -9.0f + TGRetinaPixel + statusLandscapeOffset, statusLabelSize.width, statusLabelSize.height);
+            
+            if (_toggleIcon != nil) {
+                _toggleIcon.frame = CGRectOffset(_toggleIcon.bounds, CGFloor((bounds.size.width - commonWidth) / 2.0f) + totalTitleWidth + spacing, -9.0f + TGRetinaPixel + statusLandscapeOffset + 3.0f);
+                _toggleLabel.frame = CGRectOffset(_toggleLabel.bounds, CGRectGetMaxX(_toggleIcon.frame) + 5.0f, -9.0f + TGRetinaPixel + statusLandscapeOffset);
+            }
             
             int index = -1;
             CGPoint currentLeftIconOrigin = titleOrigin;
             CGPoint currentRightIconOrigin = CGPointMake(titleOrigin.x + titleHorizontalOffset + titleLabelSize.width, titleOrigin.y);
+            
             for (TGModernConversationTitleIcon *icon in _icons)
             {
                 index++;
@@ -810,13 +824,7 @@ static UIView *findNavigationBar(UIView *view)
             
             if (_typingStatus != nil)
             {
-                CGPoint dotPosition = CGPointMake(_statusLabel.frame.origin.x - 16, _statusLabel.frame.origin.y + 9);
-                int index = -1;
-                for (CALayer *layer in _typingDots)
-                {
-                    index++;
-                    layer.position = CGPointMake(dotPosition.x + 5.0f * (index % 3), dotPosition.y);
-                }
+                _activityIndicator.frame = CGRectMake(_statusLabel.frame.origin.x - 24.0f, _statusLabel.frame.origin.y, 24.0f, 16.0f);
             }
         }
     }

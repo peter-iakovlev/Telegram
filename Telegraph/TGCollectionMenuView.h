@@ -24,6 +24,8 @@
 @property (nonatomic) bool editing;
 @property (nonatomic) bool allowEditingCells;
 
+@property (nonatomic, copy) void (^layoutForSize)(CGSize size);
+
 - (void)setEditing:(bool)editing animated:(bool)animated;
 - (void)setAllowEditingCells:(bool)allowEditingCells animated:(bool)animated;
 

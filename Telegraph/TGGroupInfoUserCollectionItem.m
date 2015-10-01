@@ -12,8 +12,11 @@
 
 #import "TGDateUtils.h"
 #import "TGUser.h"
+#import "TGConversation.h"
 
 #import "ASHandle.h"
+
+#import "TGStringUtils.h"
 
 @interface TGGroupInfoUserCollectionItem () <TGGroupInfoUserCollectionItemViewDelegate>
 {
@@ -52,11 +55,48 @@
     view.delegate = self;
     
     [view setFirstName:_user.firstName lastName:_user.lastName uidForPlaceholderCalculation:_user.uid];
-    bool active = false;
-    NSString *status = [self _statusStringFromUserPresence:_user.presence active:&active];
-    [view setStatus:status active:active];
+    if (_customStatus != nil) {
+        [view setStatus:_customStatus active:false];
+    } else {
+        if (_user.kind == TGUserKindBot || _user.kind == TGUserKindSmartBot)
+        {
+            NSString *botStatus = nil;
+            if (_user.kind == TGUserKindBot)
+                botStatus = TGLocalized(@"Bot.GroupStatusDoesNotReadHistory");
+            else
+                botStatus = TGLocalized(@"Bot.GroupStatusReadsHistory");
+            [view setStatus:botStatus active:false];
+        }
+        else
+        {
+            bool active = false;
+            NSString *status = [self _statusStringFromUserPresence:_user.presence active:&active];
+            [view setStatus:status active:active];
+        }
+    }
     [view setAvatarUri:_user.photoUrlSmall];
     [view setEnableEditing:_canEdit animated:false];
+    
+    if (_conversation == nil)
+    {
+        [view setIsSecretChat:false];
+    }
+    else
+    {
+        [view setIsSecretChat:_conversation.isEncrypted];
+        
+        if (_user == nil)
+        {
+            [view setFirstName:_conversation.chatTitle lastName:@"" uidForPlaceholderCalculation:(int32_t)_conversation.conversationId];
+            [view setStatus:[self stringForMemberCount:_conversation.chatParticipantCount] active:false];
+            [view setAvatarUri:_conversation.chatPhotoSmall];
+        }
+    }
+    
+    if (_optionTitle != nil) {
+        view.optionText = _optionTitle;
+    }
+    
     [(TGGroupInfoUserCollectionItemView *)[self boundView] setDisabled:_disabled animated:false];
 }
 
@@ -75,8 +115,6 @@
             *active = true;
         return TGLocalizedStatic(@"Presence.online");
     }
-    else if (presence.lastSeen < 0)
-        return TGLocalizedStatic(@"Presence.invisible");
     else if (presence.lastSeen != 0)
         return [TGDateUtils stringForRelativeLastSeen:presence.lastSeen];
     
@@ -91,10 +129,64 @@
     {
         TGGroupInfoUserCollectionItemView *view = (TGGroupInfoUserCollectionItemView *)[self boundView];
         [view setFirstName:user.firstName lastName:user.lastName uidForPlaceholderCalculation:_user.uid];
-        bool active = false;
-        NSString *status = [self _statusStringFromUserPresence:_user.presence active:&active];
-        [view setStatus:status active:active];
+        if (_customStatus != nil) {
+            [view setStatus:_customStatus active:false];
+        } else {
+            if (_user.kind == TGUserKindBot || _user.kind == TGUserKindSmartBot)
+            {
+                NSString *botStatus = nil;
+                if (_user.kind == TGUserKindBot)
+                    botStatus = TGLocalized(@"Bot.GroupStatusDoesNotReadHistory");
+                else
+                    botStatus = TGLocalized(@"Bot.GroupStatusReadsHistory");
+                [view setStatus:botStatus active:false];
+            }
+            else
+            {
+                bool active = false;
+                NSString *status = [self _statusStringFromUserPresence:_user.presence active:&active];
+                [view setStatus:status active:active];
+            }
+        }
         [view setAvatarUri:_user.photoUrlSmall];
+    }
+}
+
+- (NSString *)stringForMemberCount:(int)memberCount
+{
+    if (memberCount == 1)
+        return TGLocalizedStatic(@"Conversation.StatusMembers_1");
+    else if (memberCount == 2)
+        return TGLocalizedStatic(@"Conversation.StatusMembers_2");
+    else if (memberCount >= 3 && memberCount <= 10)
+        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusMembers_3_10"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
+    else
+        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusMembers_any"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
+}
+
+- (void)setConversation:(TGConversation *)conversation
+{
+    _conversation = conversation;
+    
+    if ([self boundView] != nil)
+    {
+        TGGroupInfoUserCollectionItemView *view = (TGGroupInfoUserCollectionItemView *)[self boundView];
+        
+        if (_conversation == nil)
+        {
+            [view setIsSecretChat:false];
+        }
+        else
+        {
+            [view setIsSecretChat:_conversation.isEncrypted];
+        }
+        
+        if (_user == nil)
+        {
+            [view setFirstName:_conversation.chatTitle lastName:@"" uidForPlaceholderCalculation:(int32_t)_conversation.conversationId];
+            [view setStatus:[self stringForMemberCount:_conversation.chatParticipantCount] active:false];
+            [view setAvatarUri:_conversation.chatPhotoSmall];
+        }
     }
 }
 
@@ -123,20 +215,31 @@
 
 - (void)updateTimestamp
 {
-    bool active = false;
-    NSString *status = [self _statusStringFromUserPresence:_user.presence active:&active];
-    [(TGGroupInfoUserCollectionItemView *)[self boundView] setStatus:status active:active];
+    if (_user != nil && _user.kind == TGUserKindGeneric && _customStatus == nil)
+    {
+        bool active = false;
+        NSString *status = [self _statusStringFromUserPresence:_user.presence active:&active];
+        [(TGGroupInfoUserCollectionItemView *)[self boundView] setStatus:status active:active];
+    }
 }
 
 - (void)itemSelected:(id)__unused actionTarget
 {
-    [_interfaceHandle requestAction:@"openUser" options:@{@"uid": @(_user.uid)}];
+    if (_conversation == nil)
+        [_interfaceHandle requestAction:@"openUser" options:@{@"uid": @(_user.uid)}];
+    else
+        [_interfaceHandle requestAction:@"openConversation" options:@{@"conversationId": @(_conversation.conversationId)}];
 }
 
 - (void)groupInfoUserItemViewRequestedDeleteAction:(TGGroupInfoUserCollectionItemView *)groupInfoUserItemView
 {
-    if (groupInfoUserItemView == [self boundView] && _user.uid != 0)
-        [_interfaceHandle requestAction:@"deleteUser" options:@{@"uid": @(_user.uid)}];
+    if (groupInfoUserItemView == [self boundView] && (_user.uid != 0 || _conversation.conversationId != 0))
+    {
+        if (_conversation == nil)
+            [_interfaceHandle requestAction:@"deleteUser" options:@{@"uid": @(_user.uid)}];
+        else
+            [_interfaceHandle requestAction:@"deleteConversation" options:@{@"conversationId": @(_conversation.conversationId)}];
+    }
 }
 
 @end

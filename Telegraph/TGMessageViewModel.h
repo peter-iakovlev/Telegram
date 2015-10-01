@@ -29,6 +29,9 @@ typedef struct {
     CGFloat textBubblePaddingTop;
     CGFloat textBubblePaddingBottom;
     CGFloat textBubbleTextOffsetTop;
+    
+    CGFloat topPostInset;
+    CGFloat bottomPostInset;
 } TGMessageViewModelLayoutConstants;
 
 #ifdef __cplusplus
@@ -37,7 +40,7 @@ extern "C" {
     
 void TGMessageViewModelLayoutSetPreferredTextFontSize(CGFloat fontSize);
 const TGMessageViewModelLayoutConstants *TGGetMessageViewModelLayoutConstants();
-void TGUpdateMessageViewModelLayoutConstants();
+void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize);
     
 #ifdef __cplusplus
 }
@@ -46,6 +49,7 @@ void TGUpdateMessageViewModelLayoutConstants();
 @interface TGMessageViewModel : TGModernViewModel
 {
     TGModernViewContext *_context;
+    id _authorPeer;
     
     int32_t _mid;
     
@@ -60,22 +64,24 @@ void TGUpdateMessageViewModelLayoutConstants();
 
 @property (nonatomic) int collapseFlags;
 
-- (instancetype)initWithAuthor:(TGUser *)author context:(TGModernViewContext *)context;
+- (instancetype)initWithAuthorPeer:(id)authorPeer context:(TGModernViewContext *)context;
 
+- (void)setAuthorAvatarUrl:(NSString *)authorAvatarUrl groupId:(int64_t)groupId;
 - (void)setAuthorAvatarUrl:(NSString *)authorAvatarUrl;
+- (void)setAuthorNameColor:(UIColor *)authorNameColor;
 
 - (void)updateAssets;
 - (void)refreshMetrics;
-- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage;
+- (void)updateSearchText:(bool)animated;
+- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated;
 - (void)relativeBoundsUpdated:(CGRect)bounds;
 - (void)imageDataInvalidated:(NSString *)imageUrl;
 - (CGRect)effectiveContentFrame;
-- (CGRect)effectiveContentImageFrame;
-- (UIImage *)effectiveContentImage;
 - (UIView *)referenceViewForImageTransition;
 - (void)setTemporaryHighlighted:(bool)temporaryHighlighted viewStorage:(TGModernViewStorage *)viewStorage;
+- (void)clearHighlights;
 
-- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage;
+- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated;
 - (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)viewStorage;
 - (void)updateMediaVisibility;
 - (void)updateMessageAttributes;
@@ -83,6 +89,8 @@ void TGUpdateMessageViewModelLayoutConstants();
 - (void)updateInlineMediaContext;
 - (void)updateAnimationsEnabled;
 - (void)stopInlineMedia;
+
+- (NSString *)linkAtPoint:(CGPoint)point;
 
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition;
 

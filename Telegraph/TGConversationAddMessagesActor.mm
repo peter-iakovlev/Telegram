@@ -14,6 +14,8 @@
 
 #import "TGInterfaceManager.h"
 
+#import "TGPeerIdAdapter.h"
+
 #include <set>
 
 @interface TGConversationAddMessagesActor ()
@@ -42,27 +44,31 @@
 {
     NSArray *messages = [options objectForKey:@"messages"];
     NSMutableDictionary *chats = [options objectForKey:@"chats"];
+    bool doNotModifyDates = [options[@"doNotModifyDates"] boolValue];
+    bool doNotAdd = [options[@"doNotAdd"] boolValue];
     
-    if (messages == nil && chats.count != 0)
-    {
-        if ([chats respondsToSelector:@selector(allKeys)])
+    if (!doNotAdd) {
+        if (messages == nil && chats.count != 0)
         {
-            [chats enumerateKeysAndObjectsUsingBlock:^(__unused id key, TGConversation *conversation, __unused BOOL *stop)
+            if ([chats respondsToSelector:@selector(allKeys)])
             {
-                [[TGDatabase instance] addMessagesToConversation:nil conversationId:conversation.conversationId updateConversation:conversation dispatch:true countUnread:false];
-            }];
-        }
-        else
-        {
-            for (TGConversation *conversation in chats)
-            {
-                [[TGDatabase instance] addMessagesToConversation:nil conversationId:conversation.conversationId updateConversation:conversation dispatch:true countUnread:false];
+                [chats enumerateKeysAndObjectsUsingBlock:^(__unused id key, TGConversation *conversation, __unused BOOL *stop)
+                {
+                    [[TGDatabase instance] addMessagesToConversation:nil conversationId:conversation.conversationId updateConversation:conversation dispatch:true countUnread:false];
+                }];
             }
+            else
+            {
+                for (TGConversation *conversation in chats)
+                {
+                    [[TGDatabase instance] addMessagesToConversation:nil conversationId:conversation.conversationId updateConversation:conversation dispatch:true countUnread:false];
+                }
+            }
+            
+            [ActionStageInstance() actionCompleted:self.path result:nil];
+            
+            return;
         }
-        
-        [ActionStageInstance() actionCompleted:self.path result:nil];
-        
-        return;
     }
     
     int currentTime = (int)[[TGTelegramNetworking instance] globalTime];
@@ -81,9 +87,13 @@
     
     for (TGMessage *message in messages)
     {
+        if (TGPeerIdIsChannel(message.cid) && TGMessageSortKeySpace(message.sortKey) != TGMessageSpaceImportant) {
+            continue;
+        }
+        
         TGMessage *storeMessage = message;
         
-        if (!message.outgoing && message.unread && message.toUid != message.fromUid)
+        if (!message.outgoing && (message.unread || TGPeerIdIsChannel(message.cid)) && (message.toUid != message.fromUid || TGPeerIdIsChannel(message.cid)))
         {
             if (message.mid < TGMessageLocalMidBaseline && message.actionInfo == nil)
             {
@@ -151,23 +161,35 @@
                 }
             }
             
-            if (!message.outgoing && messageLifetimeByConversation[conversationId] != 0)
+            if (!message.outgoing && messageLifetimeByConversation[conversationId] != 0 && message.layer < 17)
             {
                 storeMessage = [message copy];
-                storeMessage.messageLifetime = messageLifetimeByConversation[conversationId];
+                NSTimeInterval minLifetime = 0.0;
+                for (id attachment in storeMessage.mediaAttachments)
+                {
+                    if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
+                    {
+                        minLifetime = ((TGVideoMediaAttachment *)attachment).duration;
+                    }
+                    else if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
+                    {
+                        minLifetime = ((TGAudioMediaAttachment *)attachment).duration;
+                    }
+                }
+                storeMessage.messageLifetime = (int)MAX(minLifetime, (NSTimeInterval)messageLifetimeByConversation[conversationId]);
             }
         }
         
         int mid = message.mid;
-        if (!message.outgoing && mid < TGMessageLocalMidBaseline && mid > maxMid)
+        if (!message.outgoing && mid < TGMessageLocalMidBaseline && mid > maxMid && !TGPeerIdIsChannel(conversationId))
             maxMid = mid;
         
         [array addObject:storeMessage];
     }
     
     NSMutableArray *lastMessages = [[NSMutableArray alloc] init];
-    TGMessage *lastIncomingMessage = nil;
-    NSTimeInterval lastIncomingMessageDate = 0;
+    
+    NSMutableDictionary *lastIncomingMessageByConversation = [[NSMutableDictionary alloc] init];
     
     for (NSNumber *nConversationId in messagesByConversation)
     {
@@ -175,6 +197,8 @@
         
         TGMessage *lastMessage = nil;
         NSTimeInterval lastMessageDate = 0;
+        int minRemoteMid = INT_MAX;
+        int maxRemoteMid = 0;
         for (TGMessage *message in conversationMessages)
         {
             NSTimeInterval messageDate = message.date;
@@ -185,22 +209,42 @@
                 lastMessageDate = messageDate;
             }
             
-            if (!message.outgoing && (lastIncomingMessage == nil || messageDate > lastIncomingMessageDate || ((int)(lastIncomingMessageDate) == (int)(messageDate) && message.mid > lastIncomingMessage.mid)))
+            if (message.mid < TGMessageLocalMidBaseline)
             {
-                lastIncomingMessage = message;
-                lastIncomingMessageDate = messageDate;
+                minRemoteMid = MIN(minRemoteMid, message.mid);
+                maxRemoteMid = MAX(maxRemoteMid, message.mid);
             }
         }
         if (lastMessage != nil)
             [lastMessages addObject:lastMessage];
         
-        TGConversation *conversation = [chats objectForKey:nConversationId];
-        [[TGDatabase instance] addMessagesToConversation:conversationMessages conversationId:[nConversationId longLongValue] updateConversation:conversation dispatch:true countUnread:true];
+        if (lastMessage != nil && !lastMessage.outgoing)
+            lastIncomingMessageByConversation[nConversationId] = lastMessage;
         
-        [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/conversation/(%lld)/messages", [nConversationId longLongValue]] resource:[[SGraphObjectNode alloc] initWithObject:conversationMessages]];
+        if (!doNotAdd) {
+            TGConversation *conversation = [chats objectForKey:nConversationId];
+            if (TGPeerIdIsChannel([nConversationId longLongValue])) {
+                if (conversation != nil) {
+                    [TGDatabaseInstance() updateChannels:@[conversation]];
+                }
+            } else {
+                [[TGDatabase instance] addMessagesToConversation:conversationMessages conversationId:[nConversationId longLongValue] updateConversation:conversation dispatch:true countUnread:true updateDates:!doNotModifyDates];
+            }
+        
+            if (minRemoteMid > 0 && maxRemoteMid > 0 && (minRemoteMid != 0 || maxRemoteMid != 0) && minRemoteMid <= maxRemoteMid)
+            {
+                [TGDatabaseInstance() fillConversationHistoryHole:[nConversationId longLongValue] indexSet:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(minRemoteMid, maxRemoteMid - minRemoteMid)]];
+            }
+            
+            if (TGPeerIdIsChannel([nConversationId longLongValue])) {
+            } else {
+                [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/conversation/(%lld)/messages", [nConversationId longLongValue]] resource:[[SGraphObjectNode alloc] initWithObject:conversationMessages]];
+            }
+        }
     }
     
     bool playChatSound = false;
+    TGMessage *messageForNotification = nil;
     
     if (playNotification)
     {
@@ -209,9 +253,25 @@
         needsSound = false;
         for (std::set<int64_t>::iterator it = conversationsWithNotification.begin(); it != conversationsWithNotification.end(); it++)
         {
-            int64_t notificationPeerId = *it <= INT_MIN ? [TGDatabaseInstance() encryptedParticipantIdForConversationId:*it] : *it;
-            if (![TGDatabaseInstance() isPeerMuted:notificationPeerId])
+            int64_t notificationPeerId = (!TGPeerIdIsChannel(*it) && *it <= INT_MIN) ? [TGDatabaseInstance() encryptedParticipantIdForConversationId:*it] : *it;
+            int64_t mutePeerId = notificationPeerId;
+            if (!TGPeerIdIsChannel(notificationPeerId) && notificationPeerId < 0)
             {
+                TGMessage *message = lastIncomingMessageByConversation[@(*it)];
+                if (message.containsMention)
+                    mutePeerId = message.fromUid;
+            }
+            if (![TGDatabaseInstance() isPeerMuted:mutePeerId])
+            {
+                TGMessage *lastMessage = lastIncomingMessageByConversation[@(*it)];
+                if (lastMessage != nil)
+                {
+                    if (messageForNotification == nil || messageForNotification.date < lastMessage.date || (messageForNotification.date == lastMessage.date && messageForNotification.mid < lastMessage.mid))
+                    {
+                        messageForNotification = lastMessage;
+                    }
+                }
+                
                 if (notificationPeerId < 0)
                     playChatSound = true;
                 playNotification = true;
@@ -224,10 +284,13 @@
     if (playNotification)
     {
         if (needsSound)
-            [TGAppDelegateInstance playSound:TGAppDelegateInstance.soundEnabled ? (playChatSound ? @"notification.caf" : @"notification.caf") : nil vibrate:true];
-        if (lastIncomingMessage != nil)
         {
-            [[TGInterfaceManager instance] displayBannerIfNeeded:lastIncomingMessage conversationId:lastIncomingMessage.cid];
+            [TGAppDelegateInstance playSound:TGAppDelegateInstance.soundEnabled ? (playChatSound ? @"notification.caf" : @"notification.caf") : nil vibrate:true];
+        }
+        
+        if (messageForNotification != nil)
+        {
+            [[TGInterfaceManager instance] displayBannerIfNeeded:messageForNotification conversationId:messageForNotification.cid];
         }
     }
     
@@ -239,13 +302,13 @@
             {
                 for (std::set<int>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
                 {
-                    [TGTelegraphInstance dispatchUserTyping:*it2 inConversation:it->first typing:false];
+                    [TGTelegraphInstance dispatchUserActivity:*it2 inConversation:it->first type:nil];
                 }
             }
         }
     });
     
-    if (maxMid > 0)
+    if (maxMid > 0 && !doNotAdd)
     {
         [TGDatabaseInstance() updateLatestMessageId:maxMid applied:false completion:^(int greaterMidForSynchronization)
         {

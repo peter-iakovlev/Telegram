@@ -14,7 +14,8 @@
     [super bindViewToContainer:container viewStorage:viewStorage];
     
     TGDocumentMessageIconView *view = (TGDocumentMessageIconView *)[self boundView];
-    view.fileExtension = _fileExtension;
+    view.fileName = _fileName;
+    [view setIncoming:_incoming];
     [view setProgress:_progress animated:false];
     [view setOverlayType:_overlayType animated:false];
 }

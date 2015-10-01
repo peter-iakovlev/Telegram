@@ -4,8 +4,11 @@
 
 #import "TGImageUtils.h"
 
+#import "TGHacks.h"
+
 #import "TGModernCollectionCell.h"
 #import "TGModernConversationViewLayout.h"
+#import "TGMessageModernConversationItem.h"
 
 #import "TGModernViewStorage.h"
 #import "TGModernDateHeaderView.h"
@@ -27,10 +30,10 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
 
 @interface TGModernConversationCollectionView () <UIGestureRecognizerDelegate, TGModernConversationCollectionViewInstantPreviewRecognizerDelegate>
 {
-    float _indicatorInset;
+    CGFloat _indicatorInset;
     
     bool _delayVisibleItemsUpdate;
-    float _lastRelativeBoundsReport;
+    CGFloat _lastRelativeBoundsReport;
     
     bool _disableDecorationViewUpdates;
     std::map<NSInteger, UIView<TGModernView> *> _currentVisibleDecorationViews;
@@ -61,18 +64,19 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
         TGModernConversationCollectionViewInstantPreviewRecognizer *previewRecognizer = [[TGModernConversationCollectionViewInstantPreviewRecognizer alloc] initWithTarget:self action:@selector(instantPreviewGesture:)];
         previewRecognizer.delegate = self;
         [self addGestureRecognizer:previewRecognizer];
+        
+        self.exclusiveTouch = true;
     }
     return self;
 }
 
-+ (void)initialize
++ (void)load
 {
-    static bool initialized = false;
-    if (!initialized)
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
     {
-        initialized = true;
-        
-        if (iosMajorVersion() < 7)
+        freedomInit();
+        if (iosMajorVersion() < 7 || iosMajorVersion() >= 8)
         {
             FreedomDecoration instanceDecorations[] = {
                 { .name = 0xfe9aa61dU,
@@ -84,7 +88,7 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
             
             freedomClassAutoDecorate(0xdbbc992fU, NULL, 0, instanceDecorations, sizeof(instanceDecorations) / sizeof(instanceDecorations[0]));
         }
-    };
+    });
 }
 
 - (BOOL)touchesShouldCancelInContentView:(UIView *)view
@@ -108,6 +112,29 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
 {
 }
 
+- (void)instantPreviewGestureDidBegin
+{
+    id<TGModernConversationCollectionTouchBehaviour> touchBehaviour = _currentInstantPreviewTarget;
+    if (touchBehaviour != nil)
+    {
+        //TGLog(@"begin with %p", touchBehaviour);
+        
+        void (^touchCompletion)() = [touchBehaviour forwardTouchToCollectionWithCompletion];
+        if (touchCompletion != nil)
+        {
+            __weak TGModernConversationCollectionView *weakSelf = self;
+            self.touchCompletion = ^
+            {
+                __strong TGModernConversationCollectionView *strongSelf = weakSelf;
+                
+                touchCompletion();
+                
+                strongSelf.touchCompletion = nil;
+            };
+        }
+    }
+}
+
 - (void)instantPreviewGestureDidEnd
 {
     [self endInstantPreviewGesture];
@@ -127,12 +154,16 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
 
 - (void)endInstantPreviewGesture
 {
+    //TGLog(@"end with %p", _currentInstantPreviewTarget);
+    
     if (self.touchCompletion != nil)
     {
         self.touchCompletion();
         self.touchCompletion = nil;
         self.scrollEnabled = true;
     }
+    
+    _currentInstantPreviewTarget = nil;
 }
 
 - (id<TGModernConversationCollectionTouchBehaviour>)touchBehaviourForViewOrSuperviews:(UIView *)view
@@ -153,22 +184,15 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
     id<TGModernConversationCollectionTouchBehaviour> touchBehaviour = [self touchBehaviourForViewOrSuperviews:result];
     if (touchBehaviour != nil)
     {
-        void (^touchCompletion)() = [touchBehaviour forwardTouchToCollectionWithCompletion];
-        if (touchCompletion != nil)
+        id<TGModernConversationCollectionTouchBehaviour> currentTouchBehaviour = _currentInstantPreviewTarget;
+        if (currentTouchBehaviour != touchBehaviour)
         {
-            __weak TGModernConversationCollectionView *weakSelf = self;
-            self.touchCompletion = ^
-            {
-                __strong TGModernConversationCollectionView *strongSelf = weakSelf;
-                
-                touchCompletion();
-                
-                strongSelf.touchCompletion = nil;
-            };
-            _currentInstantPreviewTarget = touchBehaviour;
-            
-            return self;
+            [self endInstantPreviewGesture];
         }
+        
+        _currentInstantPreviewTarget = touchBehaviour;
+        
+        return self;
     }
     
     return result;
@@ -202,6 +226,9 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
 {
     [super touchesCancelled:touches withEvent:event];
+    
+    if (self.delegate != nil && [self.delegate respondsToSelector:@selector(tableTouchesCancelled)])
+        [self.delegate performSelector:@selector(tableTouchesCancelled)];
 }
 
 - (void)setDelayVisibleItemsUpdate:(bool)delay
@@ -260,11 +287,6 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
     [super setContentOffset:contentOffset animated:animated];
 }
 
-/*- (float)_rubberBandOffsetForOffset:(float)arg1 maxOffset:(float)arg2 minOffset:(float)arg3 range:(float)arg4 outside:(BOOL*)arg5
-{
-    return arg1;
-}*/
-
 - (void)setDisableDecorationViewUpdates:(bool)disableDecorationViewUpdates
 {
     _disableDecorationViewUpdates = disableDecorationViewUpdates;
@@ -303,12 +325,26 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
     [_viewStorage clear];
 }
 
+- (CGFloat)implicitTopInset
+{
+    return _headerView.frame.size.height;
+}
+
+- (CGRect)headerViewFrame
+{
+    CGRect frame = _headerView.frame;
+    frame.origin.x = CGFloor((self.frame.size.width - frame.size.width) / 2.0f);
+    frame.origin.y = ((TGModernConversationViewLayout *)self.collectionViewLayout).collectionViewContentSize.height;
+    frame.origin.y = MAX(frame.origin.y,  CGFloor((self.frame.size.height - self.contentInset.top - self.contentInset.bottom) / 2.0f));
+    return frame;
+}
+
 - (void)updateVisibleDecorationViews
 {
     if (_disableDecorationViewUpdates || _delayVisibleItemsUpdate)
         return;
     
-    std::set<int> currentIndices;
+    std::set<NSInteger> currentIndices;
     
     std::vector<TGDecorationViewAttrubutes> *pAttributes = [(TGModernConversationViewLayout *)self.collectionViewLayout allDecorationViewAttributes];
     if (pAttributes == NULL)
@@ -375,8 +411,33 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
             ++it;
     }
     
+    [self updateHeaderView];
+    
     //if (_currentVisibleDecorationViews.size() != previousCount)
     //    TGLog(@"new size: %ld", _currentVisibleDecorationViews.size());
+}
+
+- (void)setHeaderView:(UIView *)headerView
+{
+    [_headerView removeFromSuperview];
+    _headerView = headerView;
+    if (_headerView != nil)
+    {
+        _headerView.transform = CGAffineTransformMakeRotation((CGFloat)M_PI);
+        [self addSubview:_headerView];
+    }
+}
+
+- (void)updateHeaderView
+{
+    if (_headerView != nil)
+    {
+        CGRect headerViewFrame = [self headerViewFrame];
+        if (!CGRectEqualToRect(_headerView.frame, headerViewFrame))
+        {
+            _headerView.frame = headerViewFrame;
+        }
+    }
 }
 
 - (void)performBatchUpdates:(void (^)(void))updates completion:(void (^)(BOOL))completion
@@ -386,8 +447,10 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
 
 - (bool)performBatchUpdates:(void (^)(void))updates completion:(void (^)(BOOL))completion beforeDecorations:(void (^)())beforeDecorations animated:(bool)animated animationFactor:(float)animationFactor
 {
-    std::map<int, CGRect> previousDecorationViewFrames;
+    std::map<NSInteger, CGRect> previousDecorationViewFrames;
     NSMutableDictionary *removedViews = [[NSMutableDictionary alloc] init];
+    
+    CGRect previousHeaderViewFrame = _headerView.frame;
     
     if (animated)
     {
@@ -426,7 +489,7 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
     {
         [self updateVisibleDecorationViews];
         
-        std::map<int, CGRect> currentDecorationViewFrames;
+        std::map<NSInteger, CGRect> currentDecorationViewFrames;
         
         std::vector<TGDecorationViewAttrubutes> *pAttributes = [(TGModernConversationViewLayout *)self.collectionViewLayout allDecorationViewAttributes];
         if (pAttributes != NULL)
@@ -485,6 +548,8 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
             }
         }];
         
+        _headerView.frame = previousHeaderViewFrame;
+        
         [UIView animateWithDuration:iosMajorVersion() >= 7 ? 0.3 : 0.3 * animationFactor delay:0 options:0 animations:^
         {
             for (auto it = _currentVisibleDecorationViews.begin(); it != _currentVisibleDecorationViews.end(); it++)
@@ -509,6 +574,8 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
                 
                 [view layoutSubviews];
             }];
+            
+            [self updateHeaderView];
         } completion:^(__unused BOOL finished)
         {
             [removedViews enumerateKeysAndObjectsUsingBlock:^(__unused id key, UIView *view, __unused BOOL *stop)
@@ -529,26 +596,29 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
     CGRect bounds = self.bounds;
     if (ABS(bounds.origin.y - _lastRelativeBoundsReport) > 5.0f)
     {
-        _lastRelativeBoundsReport = bounds.origin.y;
-        
-        [self updateRelativeBounds];
+        if ([self updateRelativeBounds])
+            _lastRelativeBoundsReport = bounds.origin.y;
     }
     
     [self updateVisibleDecorationViews];
 }
 
-- (void)updateRelativeBounds
+- (bool)updateRelativeBounds
 {
+    bool anyUpdated = false;
     Class cellClass = [TGModernCollectionCell class];
     CGRect bounds = self.bounds;
     for (UIView *subview in self.subviews)
     {
         if ([subview isKindOfClass:cellClass] && ((TGModernCollectionCell *)subview)->_needsRelativeBoundsUpdateNotifications)
         {
+            anyUpdated = true;
             CGPoint subviewPosition = subview.frame.origin;
             [(TGModernCollectionCell *)subview relativeBoundsUpdated:CGRectOffset(bounds, -subviewPosition.x, -subviewPosition.y)];
         }
     }
+    
+    return anyUpdated;
 }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)__unused otherGestureRecognizer

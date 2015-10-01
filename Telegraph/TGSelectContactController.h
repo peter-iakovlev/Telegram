@@ -10,14 +10,19 @@
 
 #import "TGNavigationController.h"
 
+@class TGConversation;
+
 @interface TGSelectContactController : TGContactsController <TGNavigationControllerItem>
 
 @property (nonatomic) bool shouldBeRemovedFromNavigationAfterHiding;
 
 @property (nonatomic, strong) ASHandle *actionsHandle;
 
-@property (nonatomic, copy) void (^onCreateBroadcastList)(NSString *listName, NSArray *userIds);
+@property (nonatomic, strong) TGConversation *channelConversation;
+@property (nonatomic, strong) NSString *channelLink;
 
-- (id)initWithCreateGroup:(bool)createGroup createEncrypted:(bool)createEncrypted createBroadcast:(bool)createBroadcast;
+@property (nonatomic, copy) void (^onChannelMembersInvited)(NSArray *users);
+
+- (id)initWithCreateGroup:(bool)createGroup createEncrypted:(bool)createEncrypted createBroadcast:(bool)createBroadcast createChannel:(bool)createChannel inviteToChannel:(bool)inviteToChannel;
 
 @end

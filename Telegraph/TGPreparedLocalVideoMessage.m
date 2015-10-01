@@ -13,9 +13,11 @@
 #import "TGImageUtils.h"
 #import "TGRemoteImageView.h"
 
+#import "TGAppDelegate.h"
+
 @implementation TGPreparedLocalVideoMessage
 
-+ (instancetype)messageWithTempVideoPath:(NSString *)tempVideoPath videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration previewImage:(UIImage *)previewImage thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl
++ (instancetype)messageWithTempVideoPath:(NSString *)tempVideoPath videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration previewImage:(UIImage *)previewImage thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage
 {
 #ifdef DEBUG
     NSAssert(tempVideoPath != nil, @"tempVideoPath should not be nil");
@@ -24,7 +26,7 @@
     
     TGPreparedLocalVideoMessage *message = [[TGPreparedLocalVideoMessage alloc] init];
     
-    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+    NSString *documentsDirectory = [TGAppDelegate documentsPath];
     NSString *videosDirectory = [documentsDirectory stringByAppendingPathComponent:@"video"];
     if (![[NSFileManager defaultManager] fileExistsAtPath:videosDirectory])
         [[NSFileManager defaultManager] createDirectoryAtPath:videosDirectory withIntermediateDirectories:true attributes:nil error:nil];
@@ -52,10 +54,14 @@
     
     message.assetUrl = assetUrl;
     
+    message.caption = caption;
+    
+    message.replyMessage = replyMessage;
+    
     return message;
 }
 
-+ (instancetype)messageWithLocalVideoId:(int64_t)localVideoId videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl
++ (instancetype)messageWithLocalVideoId:(int64_t)localVideoId videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage
 {
 #ifdef DEBUG
     NSAssert(localThumbnailDataPath != nil, @"localThumbnailDataPath should not be nil");
@@ -70,11 +76,35 @@
     message.localThumbnailDataPath = localThumbnailDataPath;
     message.thumbnailSize = thumbnailSize;
     message.assetUrl = assetUrl;
+    message.caption = caption;
+    message.replyMessage = replyMessage;
     
     return message;
 }
 
-+ (instancetype)messageByCopyingDataFromMedia:(TGVideoMediaAttachment *)videoAttachment
++ (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalVideoMessage *)source
+{
+    TGMessage *replyMessage = nil;
+    for (id mediaAttachment in source.message.mediaAttachments)
+    {
+        if ([mediaAttachment isKindOfClass:[TGReplyMessageMediaAttachment class]])
+        {
+            replyMessage = ((TGReplyMessageMediaAttachment *)mediaAttachment).replyMessage;
+        }
+    }
+    
+    for (id mediaAttachment in source.message.mediaAttachments)
+    {
+        if ([mediaAttachment isKindOfClass:[TGVideoMediaAttachment class]])
+        {
+            return [self messageByCopyingDataFromMedia:mediaAttachment replyMessage:replyMessage];
+        }
+    }
+    
+    return nil;
+}
+
++ (instancetype)messageByCopyingDataFromMedia:(TGVideoMediaAttachment *)videoAttachment replyMessage:(TGMessage *)replyMessage
 {
 #ifdef DEBUG
     NSAssert(videoAttachment != nil, @"videoAttachment should not be nil");
@@ -87,7 +117,7 @@
     
     TGPreparedLocalVideoMessage *message = [[TGPreparedLocalVideoMessage alloc] init];
     
-    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+    NSString *documentsDirectory = [TGAppDelegate documentsPath];
     NSString *videosDirectory = [documentsDirectory stringByAppendingPathComponent:@"video"];
     if (![[NSFileManager defaultManager] fileExistsAtPath:videosDirectory])
         [[NSFileManager defaultManager] createDirectoryAtPath:videosDirectory withIntermediateDirectories:true attributes:nil error:nil];
@@ -95,7 +125,7 @@
     int64_t localVideoId = 0;
     arc4random_buf(&localVideoId, sizeof(localVideoId));
     
-    NSString *currentVideoFile = [documentsDirectory stringByAppendingPathComponent:currentUrl];
+    NSString *currentVideoFile = [videosDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"local%llx.mov", videoAttachment.localVideoId]];
     NSString *uploadVideoFile = [videosDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"local%llx.mov", localVideoId]];
     [[NSFileManager defaultManager] copyItemAtPath:currentVideoFile toPath:uploadVideoFile error:nil];
     
@@ -120,12 +150,16 @@
     
     message.thumbnailSize = thumbnailSize;
     
+    message.caption = videoAttachment.caption;
+    
+    message.replyMessage = replyMessage;
+    
     return message;
 }
 
 + (NSString *)_fileUrlForMovedTempFile:(NSString *)tempFilePath
 {
-    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+    NSString *documentsDirectory = [TGAppDelegate documentsPath];
     NSString *videoDirectory = [documentsDirectory stringByAppendingPathComponent:@"video"];
     if (![[NSFileManager defaultManager] fileExistsAtPath:videoDirectory])
         [[NSFileManager defaultManager] createDirectoryAtPath:videoDirectory withIntermediateDirectories:true attributes:nil error:nil];
@@ -142,7 +176,7 @@
 
 + (NSString *)_fileUrlForStoredData:(NSData *)data
 {
-    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+    NSString *documentsDirectory = [TGAppDelegate documentsPath];
     NSString *uploadDirectory = [documentsDirectory stringByAppendingPathComponent:@"upload"];
     if (![[NSFileManager defaultManager] fileExistsAtPath:uploadDirectory])
         [[NSFileManager defaultManager] createDirectoryAtPath:uploadDirectory withIntermediateDirectories:true attributes:nil error:nil];
@@ -158,7 +192,7 @@
 
 - (NSString *)localVideoPath
 {
-    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+    NSString *documentsDirectory = [TGAppDelegate documentsPath];
     NSString *videosDirectory = [documentsDirectory stringByAppendingPathComponent:@"video"];
     if (![[NSFileManager defaultManager] fileExistsAtPath:videosDirectory])
         [[NSFileManager defaultManager] createDirectoryAtPath:videosDirectory withIntermediateDirectories:true attributes:nil error:nil];
@@ -171,6 +205,10 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
+    message.messageLifetime = self.messageLifetime;
+    
+    NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
     TGVideoMediaAttachment *videoAttachment = [[TGVideoMediaAttachment alloc] init];
     videoAttachment.localVideoId = _localVideoId;
@@ -184,11 +222,22 @@
     TGVideoInfo *videoInfo = [[TGVideoInfo alloc] init];
     [videoInfo addVideoWithQuality:1 url:[[NSString alloc] initWithFormat:@"local-video:local%llx.mov", _localVideoId] size:_size];
     videoAttachment.videoInfo = videoInfo;
+    videoAttachment.caption = self.caption;
+    [attachments addObject:videoAttachment];
     
     TGLocalMessageMetaMediaAttachment *mediaMeta = [[TGLocalMessageMetaMediaAttachment alloc] init];
     mediaMeta.imageUrlToDataFile[_localThumbnailDataPath] = _localThumbnailDataPath;
+    [attachments addObject:mediaMeta];
     
-    message.mediaAttachments = @[videoAttachment, mediaMeta];
+    if (_replyMessage != nil)
+    {
+        TGReplyMessageMediaAttachment *replyMedia = [[TGReplyMessageMediaAttachment alloc] init];
+        replyMedia.replyMessageId = _replyMessage.mid;
+        replyMedia.replyMessage = _replyMessage;
+        [attachments addObject:replyMedia];
+    }
+    
+    message.mediaAttachments = attachments;
     
     return message;
 }

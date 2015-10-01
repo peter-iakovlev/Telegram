@@ -10,14 +10,10 @@
 
 #import "ASWatcher.h"
 
-@interface TGCreateGroupController : TGCollectionMenuController <ASWatcher>
-
-@property (nonatomic, strong) ASHandle *actionHandle;
-
-@property (nonatomic, copy) void (^onCreateBroadcastList)(NSString *listName, NSArray *userIds);
+@interface TGCreateGroupController : TGCollectionMenuController
 
 - (void)setUserIds:(NSArray *)userIds;
 
-- (instancetype)initWithCreateBroadcast:(bool)createBroadcast;
+- (instancetype)initWithCreateChannel:(bool)createChannel;
 
 @end

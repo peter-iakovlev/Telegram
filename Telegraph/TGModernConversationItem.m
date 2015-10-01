@@ -87,11 +87,11 @@
     return CGSizeMake(containerSize.width, 0.0f);
 }
 
-- (void)updateToItem:(TGModernConversationItem *)__unused updatedItem viewStorage:(TGModernViewStorage *)__unused viewStorage
+- (void)updateToItem:(TGModernConversationItem *)__unused updatedItem viewStorage:(TGModernViewStorage *)__unused viewStorage sizeChanged:(bool *)__unused sizeChanged
 {
 }
 
-- (void)updateProgress:(float)__unused progress viewStorage:(TGModernViewStorage *)__unused viewStorage
+- (void)updateProgress:(float)__unused progress viewStorage:(TGModernViewStorage *)__unused viewStorage animated:(bool)__unused animated
 {
 }
 

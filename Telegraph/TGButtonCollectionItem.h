@@ -15,6 +15,7 @@
 @property (nonatomic) NSTextAlignment alignment;
 @property (nonatomic) bool enabled;
 @property (nonatomic) CGFloat leftInset;
+@property (nonatomic) CGFloat additionalSeparatorInset;
 
 @property (nonatomic) SEL action;
 

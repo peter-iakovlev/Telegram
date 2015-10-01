@@ -1,6 +1,7 @@
 #import "TGDocumentMessageViewModel.h"
 
 #import "TGMessage.h"
+#import "TGPeerIdAdapter.h"
 
 #import "TGModernRemoteImageViewModel.h"
 #import "TGMessageImageViewModel.h"
@@ -18,10 +19,17 @@
 #import "TGDocumentMessageIconView.h"
 
 #import "TGImageUtils.h"
+#import "TGStringUtils.h"
 #import "TGFont.h"
 
 #import "TGTelegraphConversationMessageAssetsSource.h"
 #import "TGDoubleTapGestureRecognizer.h"
+
+#import "TGReplyHeaderModel.h"
+
+#import "TGSharedMediaFileThumbnailView.h"
+
+#import "TGAppDelegate.h"
 
 @interface TGDocumentMessageViewModel () <TGMessageImageViewDelegate>
 {
@@ -34,6 +42,9 @@
     TGModernLabelViewModel *_documentSizeModel;
     TGMessageImageViewModel *_imageModel;
     TGDocumentMessageIconModel *_iconModel;
+    
+    NSString *_titleText;
+    NSString *_sizeText;
 }
 
 @end
@@ -46,7 +57,7 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+        NSString *documentsDirectory = [TGAppDelegate documentsPath];
         filesDirectory = [documentsDirectory stringByAppendingPathComponent:@"file"];
         if (![[NSFileManager defaultManager] fileExistsAtPath:filesDirectory])
             [[NSFileManager defaultManager] createDirectoryAtPath:filesDirectory withIntermediateDirectories:true attributes:nil error:nil];
@@ -55,13 +66,11 @@
     return [filesDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@%" PRIx64 ".mov", local ? @"local" : @"remote", documentId]];
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message document:(TGDocumentMediaAttachment *)document author:(TGUser *)author context:(TGModernViewContext *)context
+- (instancetype)initWithMessage:(TGMessage *)message document:(TGDocumentMediaAttachment *)document authorPeer:(id)authorPeer context:(TGModernViewContext *)context
 {
-    self = [super initWithMessage:message author:author context:context];
+    self = [super initWithMessage:message authorPeer:authorPeer context:context];
     if (self != nil)
     {
-        CGSize imageSize = CGSizeMake(86.0f, 86.0f);
-        
         CGSize dimensions = CGSizeZero;
         _legacyThumbnailCacheUri = [document.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:&dimensions];
         dimensions.width *= 10.0f;
@@ -83,19 +92,21 @@
             CGSize renderSize = CGSizeZero;
             if (dimensions.width < dimensions.height)
             {
-                renderSize.height = floorf((dimensions.height * thumbnailSize.width / dimensions.width));
+                renderSize.height = CGFloor((dimensions.height * thumbnailSize.width / dimensions.width));
                 renderSize.width = thumbnailSize.width;
             }
             else
             {
-                renderSize.width = floorf((dimensions.width * thumbnailSize.height / dimensions.height));
+                renderSize.width = CGFloor((dimensions.width * thumbnailSize.height / dimensions.height));
                 renderSize.height = thumbnailSize.height;
             }
             
             [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)thumbnailSize.width, (int)thumbnailSize.height, (int)renderSize.width, (int)renderSize.height];
             
+            [previewUri appendString:@"&rounded=1"];
+            
             if (_legacyThumbnailCacheUri != nil)
-                [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", _legacyThumbnailCacheUri];
+                [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", [TGStringUtils stringByEscapingForURL:_legacyThumbnailCacheUri]];
             
             filePreviewUri = previewUri;
         }
@@ -107,26 +118,34 @@
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            incomingNameColor = TGAccentColor();
-            outgoingNameColor = UIColorRGB(0x279d28);
-            incomingSizeColor = UIColorRGBA(0x525252, 0.6f);
+            incomingNameColor = UIColorRGB(0x0b8bed);
+            outgoingNameColor = UIColorRGB(0x3faa3c);
+            incomingSizeColor = UIColorRGB(0x999999);
             outgoingSizeColor = UIColorRGB(0x6fb26a);
         });
         
-        _documentNameModel = [[TGModernLabelViewModel alloc] initWithText:document.fileName textColor:_incoming ? incomingNameColor : outgoingNameColor font:TGCoreTextSystemFontOfSize(16.0f) maxWidth:135.0f];
+        _titleText = document.fileName;
+        
+        _documentNameModel = [[TGModernLabelViewModel alloc] initWithText:@"" textColor:_incomingAppearance ? incomingNameColor : outgoingNameColor font:TGCoreTextSystemFontOfSize(16.0f) maxWidth:145.0f truncateInTheMiddle:true];
         [_contentModel addSubmodel:_documentNameModel];
         
         NSString *sizeString = @"";
-        if (document.size < 1024 * 1024)
+        if (document.size >= 1024 * 1024)
+        {
+            sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Megabytes"), (float)(float)document.size / (1024 * 1024)];
+        }
+        else if (document.size >= 1024)
         {
             sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Kilobytes"), (int)(int)(document.size / 1024)];
         }
         else
         {
-            sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Megabytes"), (float)(float)document.size / (1024 * 1024)];
+            sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Bytes"), (int)(int)(document.size)];
         }
         
-        _documentSizeModel = [[TGModernLabelViewModel alloc] initWithText:sizeString textColor:message.outgoing ? outgoingSizeColor : incomingSizeColor font:TGCoreTextSystemFontOfSize(13.0f) maxWidth:135.0f];
+        _sizeText = sizeString;
+        
+        _documentSizeModel = [[TGModernLabelViewModel alloc] initWithText:@"" textColor:!_incomingAppearance ? outgoingSizeColor : incomingSizeColor font:TGCoreTextSystemFontOfSize(13.0f) maxWidth:145.0f];
         [_contentModel addSubmodel:_documentSizeModel];
         
         if (filePreviewUri.length != 0)
@@ -134,15 +153,17 @@
             _imageModel = [[TGMessageImageViewModel alloc] initWithUri:filePreviewUri];
             _imageModel.skipDrawInContext = true;
             _imageModel.timestampHidden = true;
-            _imageModel.frame = CGRectMake(0.0f, 0.0f, imageSize.width, imageSize.height);
+            _imageModel.overlayDiameter = 44.0f;
+            _imageModel.frame = CGRectMake(0.0f, 0.0f, 74.0f, 74.0f);
             [self addSubmodel:_imageModel];
         }
         else
         {
             _iconModel = [[TGDocumentMessageIconModel alloc] init];
             _iconModel.skipDrawInContext = true;
-            _iconModel.frame = CGRectMake(0.0f, 0.0f, 80.0f, 90.0f);
-            _iconModel.fileExtension = [[document.fileName pathExtension] lowercaseString];
+            _iconModel.frame = CGRectMake(0.0f, 0.0f, 60.0f, 60.0f);
+            _iconModel.fileName = document.fileName;
+            _iconModel.incoming = _incomingAppearance;
             [self addSubmodel:_iconModel];
         }
     }
@@ -158,15 +179,17 @@
     [self updateImageOverlay:false];
 }
 
-- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)__unused viewStorage
+- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated
 {
+    [super updateProgress:progressVisible progress:progress viewStorage:viewStorage animated:animated];
+    
     bool progressWasVisible = _progressVisible;
     float previousProgress = _progress;
     
     _progress = progress;
     _progressVisible = progressVisible;
     
-    [self updateImageOverlay:(progressWasVisible && !_progressVisible) || (_progressVisible && ABS(_progress - previousProgress) > FLT_EPSILON)];
+    [self updateImageOverlay:((progressWasVisible && !_progressVisible) || (_progressVisible && ABS(_progress - previousProgress) > FLT_EPSILON)) && animated];
 }
 
 - (void)updateImageOverlay:(bool)animated
@@ -194,7 +217,7 @@
     {
         [_imageModel setOverlayType:TGMessageImageViewOverlayNone animated:animated];
         
-        [_iconModel setOverlayType:TGMessageImageViewOverlayNone animated:animated];
+        [_iconModel setOverlayType:TGMessageImageViewOverlayPlay animated:animated];
     }
 }
 
@@ -212,7 +235,7 @@
     
     [_imageModel bindViewToContainer:container viewStorage:viewStorage];
     [_imageModel boundView].frame = CGRectOffset([_imageModel boundView].frame, itemPosition.x, itemPosition.y);
-    ((TGMessageImageView *)[_imageModel boundView]).delegate = self;
+    (((TGMessageImageViewContainer *)[_imageModel boundView])).imageView.delegate = self;
     
     [_iconModel bindViewToContainer:container viewStorage:viewStorage];
     [_iconModel boundView].frame = CGRectOffset([_iconModel boundView].frame, itemPosition.x, itemPosition.y);
@@ -223,16 +246,16 @@
 {
     [super bindViewToContainer:container viewStorage:viewStorage];
     
-    ((TGMessageImageView *)[_imageModel boundView]).delegate = self;
+    (((TGMessageImageViewContainer *)[_imageModel boundView])).imageView.delegate = self;
     ((TGDocumentMessageIconView *)[_iconModel boundView]).delegate = self;
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
 {
     UIView *imageView = [_imageModel boundView];
-    ((TGMessageImageView *)imageView).delegate = nil;
+    ((TGMessageImageViewContainer *)imageView).imageView.delegate = nil;
     
-    UIView *iconView = [_imageModel boundView];
+    UIView *iconView = [_iconModel boundView];
     ((TGDocumentMessageIconView *)iconView).delegate = nil;
     
     [super unbindView:viewStorage];
@@ -250,34 +273,49 @@
         previewSize.height -= 4.0f;
     }
     
-    _documentNameModel.frame = CGRectMake(previewSize.width + 14.0f, headerHeight + 28.0f, _documentNameModel.frame.size.width, _documentNameModel.frame.size.height);
-    _documentSizeModel.frame = CGRectMake(previewSize.width + 14.0f, headerHeight + 49.0f, _documentSizeModel.frame.size.width, _documentSizeModel.frame.size.height);
+    if (_imageModel != nil)
+    {
+        _documentNameModel.frame = CGRectMake(previewSize.width + 14.0f, headerHeight + 22.0f, _documentNameModel.frame.size.width, _documentNameModel.frame.size.height);
+        _documentSizeModel.frame = CGRectMake(previewSize.width + 14.0f, headerHeight + 45.0f, _documentSizeModel.frame.size.width, _documentSizeModel.frame.size.height);
+    }
+    else
+    {
+        _documentNameModel.frame = CGRectMake(previewSize.width + 1.0f, headerHeight + 10.0f - TGRetinaPixel, _documentNameModel.frame.size.width, _documentNameModel.frame.size.height);
+        _documentSizeModel.frame = CGRectMake(previewSize.width + 1.0f, headerHeight + 32.0f - TGRetinaPixel, _documentSizeModel.frame.size.width, _documentSizeModel.frame.size.height);
+    }
     
-    _imageModel.frame = CGRectMake(_backgroundModel.frame.origin.x + 10.0f + (_incoming ? 5.0f : 0.0f), _backgroundModel.frame.origin.y + 10.0f + headerHeight, _imageModel.frame.size.width, _imageModel.frame.size.height);
-    _iconModel.frame = CGRectMake(_backgroundModel.frame.origin.x + 8.0f + (_incoming ? 5.0f : 0.0f), _backgroundModel.frame.origin.y + 8.0f + headerHeight, _iconModel.frame.size.width, _iconModel.frame.size.height);
+    _imageModel.frame = CGRectMake(_backgroundModel.frame.origin.x + 9.0f + (_incomingAppearance ? 5.0f : 0.0f), _backgroundModel.frame.origin.y + 9.0f + headerHeight, _imageModel.frame.size.width, _imageModel.frame.size.height);
+    _iconModel.frame = CGRectMake(_backgroundModel.frame.origin.x + 4.0f + (_incomingAppearance ? 5.0f : 0.0f), _backgroundModel.frame.origin.y + 4.0f + headerHeight, _iconModel.frame.size.width, _iconModel.frame.size.height);
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)__unused needsContentsUpdate
+- (CGSize)contentSizeForContainerSize:(CGSize)containerSize needsContentsUpdate:(bool *)needsContentsUpdate hasDate:(bool)__unused hasDate hasViews:(bool)__unused hasViews
 {
-    CGFloat nameWidth = _documentNameModel.frame.size.width;
-    CGFloat sizeWidth = _documentSizeModel.frame.size.width;
-    
     CGSize previewSize = CGSizeZero;
     if (_imageModel != nil)
+    {
         previewSize = _imageModel.frame.size;
+        previewSize.width -= 2.0f;
+        previewSize.height -= 2.0f;
+    }
     else
     {
         previewSize = _iconModel.frame.size;
-        previewSize.width -= 4.0f;
-        previewSize.height -= 4.0f;
+        previewSize.width -= 4.0f + 8.0f;
+        previewSize.height -= 4.0f + 8.0f;
     }
+    
+    [_documentNameModel setText:_titleText maxWidth:containerSize.width - previewSize.width - 16.0f needsContentUpdate:needsContentsUpdate];
+    [_documentSizeModel setText:_sizeText maxWidth:containerSize.width - previewSize.width - 16.0f needsContentUpdate:needsContentsUpdate];
+    
+    CGFloat nameWidth = _documentNameModel.frame.size.width;
+    CGFloat sizeWidth = _documentSizeModel.frame.size.width;
     
     return CGSizeMake(MAX(nameWidth, sizeWidth) + previewSize.width + 14.0f, previewSize.height + 10.0f);
 }
 
 - (void)messageImageViewActionButtonPressed:(TGMessageImageView *)messageImageView withAction:(TGMessageImageViewActionType)action
 {
-    if (messageImageView == [_imageModel boundView] || messageImageView == [_iconModel boundView])
+    if (messageImageView == ((TGMessageImageViewContainer *)[_imageModel boundView]).imageView || messageImageView == [_iconModel boundView])
     {
         if (action == TGMessageImageViewActionCancelDownload)
             [self cancelMediaDownload];
@@ -323,8 +361,15 @@
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
             else if (recognizer.doubleTapped)
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
-            else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point))
-                [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @(_forwardedUid)}];
+            else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
+                if (TGPeerIdIsChannel(_forwardedPeerId)) {
+                    [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+                } else {
+                    [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                }
+            }
+            else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
+                [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
             else
                 [self activateMedia];
         }

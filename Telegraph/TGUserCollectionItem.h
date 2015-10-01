@@ -15,6 +15,8 @@
 
 @property (nonatomic, strong) ASHandle *interfaceHandle;
 
+@property (nonatomic, strong) NSString *deleteActionTitle;
+@property (nonatomic) bool showAvatar;
 @property (nonatomic, strong) TGUser *user;
 
 @end

@@ -6,6 +6,8 @@
 
 #import "TGDatabase.h"
 
+#import "TGPeerIdAdapter.h"
+
 @implementation TGConversationReadHistoryActor
 
 + (NSString *)genericPath
@@ -44,11 +46,15 @@
 
 + (void)executeStandalone:(int64_t)conversationId
 {
-    [TGDatabaseInstance() readHistory:conversationId includeOutgoing:conversationId == TGTelegraphInstance.clientUserId populateActionQueue:true minRemoteMid:0 completion:^(bool hasItemsOnActionQueue)
-    {
-        if (hasItemsOnActionQueue)
-            [ActionStageInstance() requestActor:@"/tg/service/synchronizeactionqueue/(global)" options:nil watcher:TGTelegraphInstance];
-    }];
+    if (TGPeerIdIsChannel(conversationId)) {
+        [TGDatabaseInstance() enqueueReadChannelHistory:conversationId];
+    } else {
+        [TGDatabaseInstance() readHistory:conversationId includeOutgoing:conversationId == TGTelegraphInstance.clientUserId populateActionQueue:true minRemoteMid:0 completion:^(bool hasItemsOnActionQueue)
+        {
+            if (hasItemsOnActionQueue)
+                [ActionStageInstance() requestActor:@"/tg/service/synchronizeactionqueue/(global)" options:nil watcher:TGTelegraphInstance];
+        }];
+    }
 }
 
 - (void)conversationReadHistoryRequestSuccess:(NSArray *)__unused readMessages

@@ -13,11 +13,23 @@
 #import "TGOpusAudioPlayerAU.h"
 #import "TGNativeAudioPlayer.h"
 
+#import "TGObserverProxy.h"
+#import "TGAppDelegate.h"
+
+#import <SSignalKit/SSignalKit.h>
+
 #import <AVFoundation/AVFoundation.h>
+
+#import "TGAudioSessionManager.h"
 
 @interface TGAudioPlayer ()
 {
-    bool _audioSessionIsActive;
+    bool _proximityState;
+    TGObserverProxy *_proximityChangedNotification;
+    TGHolder *_proximityChangeHolder;
+    
+    SMetaDisposable *_currentAudioSession;
+    bool _changingProximity;
 }
 
 @end
@@ -33,6 +45,25 @@
         return [[TGOpusAudioPlayerAU alloc] initWithPath:path];
     else
         return [[TGNativeAudioPlayer alloc] initWithPath:path];
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _currentAudioSession = [[SMetaDisposable alloc] init];
+        _proximityState = TGAppDelegateInstance.deviceProximityState;
+        _proximityChangedNotification = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(proximityChanged:) name:TGDeviceProximityStateChangedNotification object:nil];
+        _proximityChangeHolder = [[TGHolder alloc] init];
+        [TGAppDelegateInstance.deviceProximityListeners addHolder:_proximityChangeHolder];
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    [TGAppDelegateInstance.deviceProximityListeners removeHolder:_proximityChangeHolder];
 }
 
 - (void)play
@@ -74,21 +105,43 @@
     return queue;
 }
 
+- (void)proximityChanged:(NSNotification *)__unused notification
+{
+    bool proximityState = TGAppDelegateInstance.deviceProximityState;
+    [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
+    {
+        _proximityState = proximityState;
+        bool overridePort = _proximityState && ![TGAudioPlayer isHeadsetPluggedIn];
+        __weak TGAudioPlayer *weakSelf = self;
+        _changingProximity = true;
+        [_currentAudioSession setDisposable:[[TGAudioSessionManager instance] requestSessionWithType:overridePort ? TGAudioSessionTypePlayAndRecordHeadphones : TGAudioSessionTypePlayVoice interrupted:^
+        {
+            __strong TGAudioPlayer *strongSelf = weakSelf;
+            if (strongSelf != nil && !strongSelf->_changingProximity)
+            {
+                [strongSelf stop];
+                [strongSelf _notifyFinished];
+            }
+        }]];
+        _changingProximity = false;
+    }];
+}
+
 - (void)_beginAudioSession
 {
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
-        if (!_audioSessionIsActive)
+        bool overridePort = _proximityState && ![TGAudioPlayer isHeadsetPluggedIn];
+        __weak TGAudioPlayer *weakSelf = self;
+        [_currentAudioSession setDisposable:[[TGAudioSessionManager instance] requestSessionWithType:overridePort ? TGAudioSessionTypePlayAndRecordHeadphones : TGAudioSessionTypePlayVoice interrupted:^
         {
-            __autoreleasing NSError *error = nil;
-            AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-            if (![audioSession setCategory:AVAudioSessionCategoryPlayback error:&error])
-                TGLog(@"[TGAudioPlayer audio session set category failed: %@]", error);
-            else if (![audioSession setActive:true error:&error])
-                TGLog(@"[TGAudioPlayer audio session activation failed: %@]", error);
-            else
-                _audioSessionIsActive = true;
-        }
+            __strong TGAudioPlayer *strongSelf = weakSelf;
+            if (strongSelf != nil && !strongSelf->_changingProximity)
+            {
+                [strongSelf stop];
+                [strongSelf _notifyFinished];
+            }
+        }]];
     }];
 }
 
@@ -96,32 +149,17 @@
 {
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
-        if (_audioSessionIsActive)
-        {
-            __autoreleasing NSError *error = nil;
-            AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-            if (![audioSession setActive:false error:&error])
-                TGLog(@"[TGAudioPlayer audio session deactivation failed: %@]", error);
-            
-            _audioSessionIsActive = false;
-        }
+        [_currentAudioSession setDisposable:nil];
     }];
 }
 
 - (void)_endAudioSessionFinal
 {
-    bool audioSessionIsActive = _audioSessionIsActive;
-    _audioSessionIsActive = false;
+    SMetaDisposable *currentAudioSession = _currentAudioSession;
     
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
-        if (audioSessionIsActive)
-        {
-            __autoreleasing NSError *error = nil;
-            AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-            if (![audioSession setActive:false error:&error])
-                TGLog(@"[TGAudioPlayer audio session deactivation failed: %@]", error);
-        }
+        [currentAudioSession setDisposable:nil];
     }];
 }
 
@@ -130,6 +168,17 @@
     id<TGAudioPlayerDelegate> delegate = _delegate;
     if ([delegate respondsToSelector:@selector(audioPlayerDidFinishPlaying:)])
         [delegate audioPlayerDidFinishPlaying:self];
+}
+
++ (bool)isHeadsetPluggedIn
+{
+    AVAudioSessionRouteDescription* route = [[AVAudioSession sharedInstance] currentRoute];
+    for (AVAudioSessionPortDescription *desc in [route outputs])
+    {
+        if ([[desc portType] isEqualToString:AVAudioSessionPortHeadphones])
+            return true;
+    }
+    return false;
 }
 
 @end

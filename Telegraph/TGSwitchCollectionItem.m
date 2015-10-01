@@ -94,6 +94,8 @@
     {
         _isOn = isOn;
         
+        if (_toggled)
+            _toggled(isOn);
         [_interfaceHandle requestAction:@"switchItemChanged" options:@{@"item": self, @"value": @(_isOn)}];
     }
 }

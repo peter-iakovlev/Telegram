@@ -1,7 +1,7 @@
 #import "TGSelectContactController.h"
 
 #import "TGAppDelegate.h"
-#import "TGTabletMainViewController.h"
+#import "TGRootController.h"
 
 #import "TGToolbarButton.h"
 
@@ -22,6 +22,13 @@
 #import "TGImageUtils.h"
 #import "TGFont.h"
 
+#import "TGAlertView.h"
+#import "TGApplicationFeatures.h"
+
+#import "TGChannelManagementSignals.h"
+
+#import "TGTelegramNetworking.h"
+
 @interface TGSelectContactController ()
 {
     UIView *_titleContainer;
@@ -33,6 +40,8 @@
 
 @property (nonatomic) bool createEncrypted;
 @property (nonatomic) bool createBroadcast;
+@property (nonatomic) bool createChannel;
+@property (nonatomic) bool inviteToChannel;
 
 @property (nonatomic, strong) TGProgressWindow *progressWindow;
 
@@ -42,7 +51,7 @@
 
 @implementation TGSelectContactController
 
-- (id)initWithCreateGroup:(bool)createGroup createEncrypted:(bool)createEncrypted createBroadcast:(bool)createBroadcast
+- (id)initWithCreateGroup:(bool)createGroup createEncrypted:(bool)createEncrypted createBroadcast:(bool)createBroadcast createChannel:(bool)createChannel inviteToChannel:(bool)inviteToChannel
 {
     int contactsMode = TGContactsModeRegistered;
     if (createEncrypted)
@@ -52,28 +61,51 @@
     else
     {
         _createBroadcast = createBroadcast;
+        _createChannel = createChannel;
+        _inviteToChannel = inviteToChannel;
         
         if (createGroup)
             contactsMode |= TGContactsModeCompose;
+        else if (createChannel || inviteToChannel) {
+            contactsMode |= TGContactsModeCompose;
+        }
         else
         {
-            if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
-            {
-                [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Close") style:UIBarButtonItemStylePlain target:self action:@selector(closePressed)]];
-            }
-            
             contactsMode |= TGContactsModeCreateGroupOption;
+        }
+        
+        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+        {
+            [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Close") style:UIBarButtonItemStylePlain target:self action:@selector(closePressed)]];
         }
     }
     
     self = [super initWithContactsMode:contactsMode];
     if (self)
     {
-#if TARGET_IPHONE_SIMULATOR
-        self.usersSelectedLimit = 10;
-#else
-        self.usersSelectedLimit = 199;
-#endif
+        if (createChannel || inviteToChannel) {
+            self.usersSelectedLimit = 0;
+            self.composePlaceholder = TGLocalized(@"Compose.ChannelTokenListPlaceholder");
+        } else {
+    #if TARGET_IPHONE_SIMULATOR
+            self.usersSelectedLimit = 10;
+    #else
+            self.usersSelectedLimit = 199;
+    #endif
+            
+            NSData *data = [TGDatabaseInstance() customProperty:@"maxChatParticipants"];
+            if (data.length >= 4)
+            {
+                int32_t maxChatParticipants = 0;
+                [data getBytes:&maxChatParticipants length:4];
+                if (maxChatParticipants == 0)
+                    self.usersSelectedLimit = 99;
+                else
+                    self.usersSelectedLimit = MAX(0, maxChatParticipants - 1);
+            }
+            
+            self.composePlaceholder = TGLocalized(@"Compose.TokenListPlaceholder");
+        }
     }
     return self;
 }
@@ -82,7 +114,7 @@
 {
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
     {
-        TGAppDelegateInstance.tabletMainViewController.detailViewController = nil;
+        [TGAppDelegateInstance.rootController clearContentControllers];
     }
 }
 
@@ -91,20 +123,104 @@
     [self.navigationController popViewControllerAnimated:true];
 }
 
+- (void)channelNextPressed {
+    NSArray *users = [self selectedComposeUsers];
+    if (users.count == 0) {
+        [[TGInterfaceManager instance] navigateToConversationWithId:_channelConversation.conversationId conversation:_channelConversation];
+    } else {
+        TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+        [progressWindow show:true];
+        
+        [[[[TGChannelManagementSignals inviteUsers:_channelConversation.conversationId accessHash:_channelConversation.accessHash users:users] deliverOn:[SQueue mainQueue]] onDispose:^{
+            TGDispatchOnMainThread(^{
+                [progressWindow dismiss:true];
+                
+                TGConversation *conversation = [TGDatabaseInstance() loadChannels:@[@(_channelConversation.conversationId)]][@(_channelConversation.conversationId)];
+                
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:conversation];
+            });
+        }] startWithNext:nil completed:nil];
+    }
+}
+
+- (void)cancelPressed {
+    [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
+}
+
+- (void)inviteChannelNextPressed {
+    NSArray *users = [self selectedComposeUsers];
+    if (users.count == 0) {
+        [self cancelPressed];
+    } else {
+        TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+        [progressWindow show:true];
+
+        TGConversation *conversation = _channelConversation;
+        __weak TGSelectContactController *weakSelf = self;
+        [[[[[[TGChannelManagementSignals inviteUsers:_channelConversation.conversationId accessHash:_channelConversation.accessHash users:users] onCompletion:^ {
+            [TGDatabaseInstance() updateChannelCachedData:conversation.conversationId block:^TGCachedConversationData *(TGCachedConversationData *data) {
+                if (data == nil) {
+                    data = [[TGCachedConversationData alloc] init];
+                }
+                
+                NSMutableArray *userIds = [[NSMutableArray alloc] init];
+                for (TGUser *user in users) {
+                    [userIds addObject:@(user.uid)];
+                }
+                
+                return [data addMembers:userIds timestamp:(int32_t)[[TGTelegramNetworking instance] approximateRemoteTime]];
+            }];
+        }] deliverOn:[SQueue mainQueue]] onDispose:^{
+            TGDispatchOnMainThread(^{
+                [progressWindow dismiss:true];
+            });
+        }] onCompletion:^{
+            __strong TGSelectContactController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                if (strongSelf->_onChannelMembersInvited) {
+                    strongSelf->_onChannelMembersInvited(users);
+                }
+                [strongSelf cancelPressed];
+            }
+        }] startWithNext:nil error:^(id error) {
+            NSString *errorType = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+            NSString *errorText = TGLocalized(@"Profile.CreateEncryptedChatError");
+            if ([errorType isEqual:@"USER_BLOCKED"]) {
+                errorText = TGLocalized(@"Channel.ErrorAddBlocked");
+            } else if ([errorType isEqual:@"USERS_TOO_MUCH"]) {
+                errorText = TGLocalized(@"Channel.ErrorAddTooMuch");
+            }
+            [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        } completed:nil];
+    }
+}
+
 - (void)actionItemSelected
 {
-    TGSelectContactController *createGroupController = [[TGSelectContactController alloc] initWithCreateGroup:true createEncrypted:false createBroadcast:false];
+    __autoreleasing NSString *disabledMessage = nil;
+    if (![TGApplicationFeatures isGroupCreationEnabled:&disabledMessage])
+    {
+        if ([self.tableView indexPathForSelectedRow])
+            [self.tableView deselectRowAtIndexPath:[self.tableView indexPathForSelectedRow] animated:true];
+        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"FeatureDisabled.Oops") message:disabledMessage cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        return;
+    }
+    
+    TGSelectContactController *createGroupController = [[TGSelectContactController alloc] initWithCreateGroup:true createEncrypted:false createBroadcast:false createChannel:false inviteToChannel:false];
     [self.navigationController pushViewController:createGroupController animated:true];
 }
 
 - (void)encryptionItemSelected
 {
-    TGSelectContactController *selectContactController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:true createBroadcast:false];
+    TGSelectContactController *selectContactController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:true createBroadcast:false createChannel:false inviteToChannel:false];
     [self.navigationController pushViewController:selectContactController animated:true];
 }
 
 - (NSString *)baseTitle
 {
+    if (_createChannel || _inviteToChannel) {
+        return TGLocalized(@"Compose.ChannelMembers");
+    }
     return _createBroadcast ? TGLocalized(@"Compose.NewBroadcast") : TGLocalized(@"Compose.NewGroup");
 }
 
@@ -114,8 +230,18 @@
     
     if ((self.contactsMode & TGContactsModeCompose) == TGContactsModeCompose)
     {
-        [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Next") style:UIBarButtonItemStylePlain target:self action:@selector(createButtonPressed:)]];
-        self.navigationItem.rightBarButtonItem.enabled = [self selectedContactsCount] != 0;
+        if (!_createChannel && !_inviteToChannel) {
+            [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Next") style:UIBarButtonItemStylePlain target:self action:@selector(createButtonPressed:)]];
+        } else if (_createChannel){
+            [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Next") style:UIBarButtonItemStyleDone target:self action:@selector(channelNextPressed)]];
+        } else if (_inviteToChannel) {
+            [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStyleDone target:self action:@selector(cancelPressed)]];
+            [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(inviteChannelNextPressed)]];
+        }
+        
+        if (!self.createChannel) {
+            self.navigationItem.rightBarButtonItem.enabled = [self selectedContactsCount] != 0;
+        }
         
         self.titleText = [self baseTitle];
         
@@ -134,7 +260,9 @@
         _counterLabel.textColor = UIColorRGB(0x8e8e93);
         _counterLabel.font = TGSystemFontOfSize(15.0f);
         _counterLabel.text = @"0/199";
-        [_titleContainer addSubview:_counterLabel];
+        if (!_createChannel && !_inviteToChannel) {
+            [_titleContainer addSubview:_counterLabel];
+        }
         
         [self setTitleView:_titleContainer];
     }
@@ -189,10 +317,16 @@
     CGSize counterSize = _counterLabel.frame.size;
     
     CGRect titleLabelFrame = _titleLabel.frame;
-    titleLabelFrame.origin = CGPointMake(CGFloor((_titleContainer.frame.size.width - titleLabelFrame.size.width) / 2.0f - counterSize.width / 2.0f), CGFloor((_titleContainer.frame.size.height - titleLabelFrame.size.height) / 2.0f) + (UIInterfaceOrientationIsPortrait(orientation) ? portraitOffset : landscapeOffset));
-    _titleLabel.frame = titleLabelFrame;
     
-    _counterLabel.frame = CGRectMake(CGRectGetMaxX(titleLabelFrame) + 4, titleLabelFrame.origin.y + 2 - TGRetinaPixel, counterSize.width, counterSize.height);
+    if (_createChannel) {
+        titleLabelFrame.origin = CGPointMake(CGFloor((_titleContainer.frame.size.width - titleLabelFrame.size.width) / 2.0f), CGFloor((_titleContainer.frame.size.height - titleLabelFrame.size.height) / 2.0f) + (UIInterfaceOrientationIsPortrait(orientation) ? portraitOffset : landscapeOffset));
+        _titleLabel.frame = titleLabelFrame;
+    } else {
+        titleLabelFrame.origin = CGPointMake(CGFloor((_titleContainer.frame.size.width - titleLabelFrame.size.width) / 2.0f - counterSize.width / 2.0f), CGFloor((_titleContainer.frame.size.height - titleLabelFrame.size.height) / 2.0f) + (UIInterfaceOrientationIsPortrait(orientation) ? portraitOffset : landscapeOffset));
+        _titleLabel.frame = titleLabelFrame;
+        
+        _counterLabel.frame = CGRectMake(CGRectGetMaxX(titleLabelFrame) + 4, titleLabelFrame.origin.y + 2 - TGRetinaPixel, counterSize.width, counterSize.height);
+    }
 }
 
 - (void)createButtonPressed:(id)__unused sender
@@ -204,8 +338,7 @@
     {
         if (_createGroupController == nil)
         {
-            _createGroupController = [[TGCreateGroupController alloc] initWithCreateBroadcast:_createBroadcast];
-            _createGroupController.onCreateBroadcastList = _onCreateBroadcastList;
+            _createGroupController = [[TGCreateGroupController alloc] initWithCreateChannel:false];
         }
         
         NSMutableArray *userIds = [[NSMutableArray alloc] init];
@@ -222,7 +355,10 @@
 - (void)contactSelected:(TGUser *)user
 {
     int count = [self selectedContactsCount];
-    self.navigationItem.rightBarButtonItem.enabled = count != 0;
+    
+    if (!_createChannel) {
+        self.navigationItem.rightBarButtonItem.enabled = count != 0;
+    }
     
     [super contactSelected:user];
     
@@ -259,7 +395,10 @@
 - (void)contactDeselected:(TGUser *)user
 {
     int count = [self selectedContactsCount];
-    self.navigationItem.rightBarButtonItem.enabled = count != 0;
+    
+    if (!_createChannel) {
+        self.navigationItem.rightBarButtonItem.enabled = count != 0;
+    }
     
     [super contactDeselected:user];
     
@@ -295,7 +434,7 @@
             }
             else
             {
-                [[[UIAlertView alloc] initWithTitle:nil message:status == -2 ? [[NSString alloc] initWithFormat:TGLocalized(@"Profile.CreateEncryptedChatOutdatedError"), _currentEncryptedUser.displayFirstName, _currentEncryptedUser.displayFirstName] : TGLocalized(@"Profile.CreateEncryptedChatError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:status == -2 ? [[NSString alloc] initWithFormat:TGLocalized(@"Profile.CreateEncryptedChatOutdatedError"), _currentEncryptedUser.displayFirstName, _currentEncryptedUser.displayFirstName] : TGLocalized(@"Profile.CreateEncryptedChatError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
             }
         });
     }

@@ -36,31 +36,31 @@ typedef struct
 
 - (void)insertSectionAtIndex:(NSUInteger)index
 {
-    TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateInsertSection, .section = index, .index = 0};
+    TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateInsertSection, .section = (int)index, .index = 0};
     [_updates addObject:[NSValue valueWithBytes:&update objCType:@encode(TGCollectionViewUpdateContextUpdate)]];
 }
 
 - (void)deleteSectionAtIndex:(NSUInteger)index
 {
-    TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateDeleteSection, .section = index, .index = 0};
+    TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateDeleteSection, .section = (int)index, .index = 0};
     [_updates addObject:[NSValue valueWithBytes:&update objCType:@encode(TGCollectionViewUpdateContextUpdate)]];
 }
 
 - (void)insertItemAtIndex:(NSUInteger)index inSection:(NSUInteger)section
 {
-    TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateInsertItem, .section = section, .index = index};
+    TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateInsertItem, .section = (int)section, .index = (int)index};
     [_updates addObject:[NSValue valueWithBytes:&update objCType:@encode(TGCollectionViewUpdateContextUpdate)]];
 }
 
 - (void)deleteItemAtIndex:(NSUInteger)index inSection:(NSUInteger)section
 {
-    TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateDeleteItem, .section = section, .index = index};
+    TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateDeleteItem, .section = (int)section, .index = (int)index};
     [_updates addObject:[NSValue valueWithBytes:&update objCType:@encode(TGCollectionViewUpdateContextUpdate)]];
 }
 
 - (void)replaceItemAtIndex:(NSUInteger)index inSection:(NSUInteger)section
 {
-    TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateReplaceItem, .section = section, .index = index};
+    TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateReplaceItem, .section = (int)section, .index = (int)index};
     [_updates addObject:[NSValue valueWithBytes:&update objCType:@encode(TGCollectionViewUpdateContextUpdate)]];
 }
 

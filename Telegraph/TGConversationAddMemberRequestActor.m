@@ -12,6 +12,8 @@
 
 #import "TGConversationAddMessagesActor.h"
 
+#import "TLUpdates+TG.h"
+
 @interface TGConversationAddMemberRequestActor ()
 
 @property (nonatomic) int uid;
@@ -41,19 +43,19 @@
     self.cancelToken = [TGTelegraphInstance doAddConversationMember:[nConversationId longLongValue] uid:[nUid intValue] actor:self];
 }
 
-- (void)addMemberSuccess:(TLmessages_StatedMessage *)statedMessage
+- (void)addMemberSuccess:(TLUpdates *)updates
 {
-    [TGUserDataRequestBuilder executeUserDataUpdate:statedMessage.users];
+    [TGUserDataRequestBuilder executeUserDataUpdate:updates.users];
     
     TGConversation *chatConversation = nil;
     
-    if (statedMessage.chats.count != 0)
+    if (updates.chats.count != 0)
     {
         NSMutableDictionary *chats = [[NSMutableDictionary alloc] init];
         
-        TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:statedMessage.message];
+        TGMessage *message = updates.messages.count == 0 ? nil : [[TGMessage alloc] initWithTelegraphMessageDesc:updates.messages.firstObject];
         
-        for (TLChat *chatDesc in statedMessage.chats)
+        for (TLChat *chatDesc in updates.chats)
         {
             TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:chatDesc];
             if (conversation != nil)
@@ -94,10 +96,10 @@
         }
         
         static int actionId = 0;
-        [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(addMember%d)", actionId++] ] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", @[message], @"messages", nil]];
+        [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(addMember%d)", actionId++] ] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", message == nil ? @[] : @[message], @"messages", nil]];
     }
     
-    [[TGTelegramNetworking instance] updatePts:statedMessage.pts date:0 seq:statedMessage.seq];
+    [[TGTelegramNetworking instance] addUpdates:updates];
     
     int version = chatConversation.chatVersion;
     

@@ -20,6 +20,8 @@
 
 #import <AVFoundation/AVFoundation.h>
 
+#import "TGAppDelegate.h"
+
 static TGWorkerPool *workerPool()
 {
     static TGWorkerPool *instance = nil;
@@ -64,7 +66,7 @@ static ASQueue *taskManagementQueue()
     return [uri hasPrefix:@"file-thumbnail://"];
 }
 
-- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float))progress completion:(void (^)(TGDataResource *))completion
+- (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float))progress partialCompletion:(void (^)(TGDataResource *resource))__unused partialCompletion completion:(void (^)(TGDataResource *))completion
 {
     TGMediaPreviewTask *previewTask = [[TGMediaPreviewTask alloc] init];
     
@@ -98,7 +100,7 @@ static ASQueue *taskManagementQueue()
                 static dispatch_once_t onceToken;
                 dispatch_once(&onceToken, ^
                 {
-                    filesDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"files"];
+                    filesDirectory = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"files"];
                 });
                 
                 NSString *fileDirectoryName = nil;
@@ -115,7 +117,12 @@ static ASQueue *taskManagementQueue()
                 [previewTask executeWithTargetFilePath:temporaryThumbnailImagePath uri:args[@"legacy-thumbnail-cache-url"] completion:^(bool success)
                 {
                     if (success)
-                        [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
+                    {
+                        dispatch_async([TGCache diskCacheQueue], ^
+                        {
+                            [previewTask executeWithWorkerTask:workerTask workerPool:workerPool()];
+                        });
+                    }
                     else
                     {
                         if (completion != nil)
@@ -138,7 +145,7 @@ static ASQueue *taskManagementQueue()
 {
     NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"file-thumbnail://?".length]];
     
-    if ((![args[@"id"] respondsToSelector:@selector(longLongValue)] && [args[@"local-id"] respondsToSelector:@selector(longLongValue)]) || ![args[@"width"] respondsToSelector:@selector(intValue)] || ![args[@"height"] respondsToSelector:@selector(intValue)] || ![args[@"renderWidth"] respondsToSelector:@selector(intValue)] || ![args[@"renderHeight"] respondsToSelector:@selector(intValue)] || ![args[@"file-name"] respondsToSelector:@selector(characterAtIndex:)])
+    if ((![args[@"id"] respondsToSelector:@selector(longLongValue)] && ![args[@"local-id"] respondsToSelector:@selector(longLongValue)]) || ![args[@"width"] respondsToSelector:@selector(intValue)] || ![args[@"height"] respondsToSelector:@selector(intValue)] || ![args[@"renderWidth"] respondsToSelector:@selector(intValue)] || ![args[@"renderHeight"] respondsToSelector:@selector(intValue)] || ![args[@"file-name"] respondsToSelector:@selector(characterAtIndex:)])
     {
         return false;
     }
@@ -147,7 +154,7 @@ static ASQueue *taskManagementQueue()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        filesDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"files"];
+        filesDirectory = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"files"];
     });
     
     NSString *fileDirectoryName = nil;
@@ -178,6 +185,12 @@ static ASQueue *taskManagementQueue()
         NSString *legacyThumbnailImagePath = [[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]];
         if ([[NSFileManager defaultManager] fileExistsAtPath:legacyThumbnailImagePath isDirectory:NULL])
             return true;
+        
+        NSString *imageUrl = args[@"legacy-thumbnail-cache-url"];
+        if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
+        {
+            return [[[TGMediaStoreContext instance] temporaryFilesCache] containsValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+        }
     }
     
     return false;
@@ -236,7 +249,7 @@ static ASQueue *taskManagementQueue()
     return nil;
 }
 
-- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait
+- (TGDataResource *)loadDataSyncWithUri:(NSString *)uri canWait:(bool)canWait acceptPartialData:(bool)__unused acceptPartialData asyncTaskId:(__autoreleasing id *)__unused asyncTaskId progress:(void (^)(float))__unused progress partialCompletion:(void (^)(TGDataResource *))__unused partialCompletion completion:(void (^)(TGDataResource *))__unused completion
 {
     if (uri == nil)
         return nil;
@@ -267,7 +280,7 @@ static ASQueue *taskManagementQueue()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        filesDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"files"];
+        filesDirectory = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"files"];
     });
     
     NSString *fileDirectoryName = nil;
@@ -320,15 +333,36 @@ static ASQueue *taskManagementQueue()
             lowQualityThumbnail = true;
         }
         
+        if (image == nil)
+        {
+            NSString *imageUrl = args[@"legacy-thumbnail-cache-url"];
+            if (imageUrl.length != 0)
+            {
+                if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
+                {
+                    NSData *imageData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+                    if (imageData != nil)
+                    {
+                        image = [[UIImage alloc] initWithData:imageData];
+                        if (image != nil)
+                            lowQualityThumbnail = true;
+                    }
+                }
+            }
+        }
+        
         if (image != nil)
         {
             const float cacheFactor = 0.85f;
-            CGSize cachedImageSize = CGSizeMake(ceilf(size.width * cacheFactor), ceilf(size.height * cacheFactor));
-            CGSize cachedRenderSize = CGSizeMake(ceilf(renderSize.width * cacheFactor), ceilf(renderSize.height * cacheFactor));
+            CGSize cachedImageSize = CGSizeMake(CGCeil(size.width * cacheFactor), CGCeil(size.height * cacheFactor));
+            CGSize cachedRenderSize = CGSizeMake(CGCeil(renderSize.width * cacheFactor), CGCeil(renderSize.height * cacheFactor));
             UIGraphicsBeginImageContextWithOptions(cachedImageSize, true, 2.0f);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
+            CGContextFillRect(context, CGRectMake(0.0f, 0.0f, cachedImageSize.width, cachedImageSize.height));
             
             CGRect imageRect = CGRectMake((cachedImageSize.width - cachedRenderSize.width) / 2.0f, (cachedImageSize.height - cachedRenderSize.height) / 2.0f, cachedRenderSize.width, cachedRenderSize.height);
-            [image drawInRect:imageRect blendMode:kCGBlendModeCopy alpha:1.0f];
+            [image drawInRect:imageRect blendMode:kCGBlendModeNormal alpha:1.0f];
             
             thumbnailSourceImage = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
@@ -351,6 +385,8 @@ static ASQueue *taskManagementQueue()
         UIGraphicsEndImageContext();
     }
     
+    bool isRounded = [args[@"rounded"] boolValue];
+    
     if (thumbnailSourceImage != nil)
     {
         UIImage *thumbnailImage = nil;
@@ -360,9 +396,9 @@ static ASQueue *taskManagementQueue()
         uint32_t averageColorValue = [averageColor intValue];
         
         if (lowQualityThumbnail)
-            thumbnailImage = TGBlurredFileImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+            thumbnailImage = TGBlurredFileImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, isRounded ? 8 : 0);
         else
-            thumbnailImage = TGLoadedFileImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+            thumbnailImage = TGLoadedFileImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, isRounded ? 8 : 0);
         
         if (thumbnailImage != nil)
         {

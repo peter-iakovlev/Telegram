@@ -12,6 +12,6 @@
 
 @interface TGAnimatedImageMessageViewModel : TGImageMessageViewModel
 
-- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo document:(TGDocumentMediaAttachment *)document author:(TGUser *)author context:(TGModernViewContext *)context;
+- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo document:(TGDocumentMediaAttachment *)document authorPeer:(id)authorPeer context:(TGModernViewContext *)context replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor;
 
 @end

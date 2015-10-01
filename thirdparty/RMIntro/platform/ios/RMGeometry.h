@@ -18,14 +18,14 @@
 
 static inline CGFloat DtoR(CGFloat a)
 {
-    return a*M_PI/180.0;
+    return (CGFloat)(a*M_PI/180.0);
 }
 
 
 static inline CGFloat rnd(CGFloat a, CGFloat b)
 {
     //return rand()%10000/10000.0*(b-a)+a;
-    return arc4random()%10000/10000.0*(b-a)+a;
+    return (CGFloat)(arc4random()%10000/10000.0*(b-a)+a);
 }
 
 static inline NSInteger intRnd(NSInteger a, NSInteger b)
@@ -165,11 +165,11 @@ static inline CGRect  CGRectChangedOriginY(CGRect rect, CGFloat originY) {
 }
 
 static inline CGRect  CGRectChangedCenterY(CGRect rect, CGFloat centerY) {
-    return CGRectMake(rect.origin.x, centerY - rect.size.height / 2., rect.size.width, rect.size.height);
+    return CGRectMake(rect.origin.x, centerY - rect.size.height / 2.0f, rect.size.width, rect.size.height);
 }
 
 static inline CGRect  CGRectChangedCenterX(CGRect rect, CGFloat centerX) {
-    return CGRectMake(centerX - rect.size.width / 2., rect.origin.y, rect.size.width, rect.size.height);
+    return CGRectMake(centerX - rect.size.width / 2.0f, rect.origin.y, rect.size.width, rect.size.height);
 }
 
 

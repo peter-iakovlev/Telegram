@@ -1,0 +1,13 @@
+"Share.Cancel" = "Annuleren";
+"Share.Next" = "Volgende";
+"Share.OK" = "OK";
+"Share.Search" = "Zoeken";
+
+"Share.Title" = "Delen";
+"Share.ShareWithPerson" = "Delen met %@?";
+"Share.ShareWithGroup" = "Delen met %@?";
+"Share.Sharing" = "Delen";
+
+"Share.PasscodeTitle" = "Toegangscode";
+"Share.EnterPasscode" = "Toegangscode invoeren";
+"Share.ErrorInvalidPasscode" = "Ongeldige toegangscode";

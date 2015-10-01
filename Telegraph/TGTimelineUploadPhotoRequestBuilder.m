@@ -20,7 +20,11 @@
 
 #import "TGDatabase.h"
 
+#import "TLUser$modernUser.h"
+
 #import <Security/Security.h>
+
+#import "TGAppDelegate.h"
 
 #define FILE_CHUNK_SIZE (16 * 1024)
 
@@ -65,7 +69,7 @@
 {
     _originalFileUrl = [options objectForKey:@"originalFileUrl"];
     
-    NSString *tmpImagesPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0] stringByAppendingPathComponent:@"upload"];
+    NSString *tmpImagesPath = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"upload"];
     static NSFileManager *fileManager = nil;
     if (fileManager == nil)
         fileManager = [[NSFileManager alloc] init];
@@ -129,7 +133,7 @@
     
     for (TLUser *userDesc in photo.users)
     {
-        if (userDesc.n_id == TGTelegraphInstance.clientUserId)
+        if (((TLUser$modernUser *)userDesc).n_id == TGTelegraphInstance.clientUserId)
         {
             TGUser *user = [[TGUser alloc] initWithTelegraphUserDesc:userDesc];
             if (user.photoUrlSmall != nil)
@@ -148,9 +152,7 @@
     }
     [TGUserDataRequestBuilder executeUserDataUpdate:photo.users];
     
-    TGImageMediaAttachment *imageAttachment = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:photo.photo];
-    if (imageAttachment != nil)
-        [TGDatabaseInstance() storePeerProfilePhotos:TGTelegraphInstance.clientUserId photosArray:@[imageAttachment] append:true];
+    [TGDatabaseInstance() clearPeerProfilePhotos:TGTelegraphInstance.clientUserId];
     
     [ActionStageInstance() actionCompleted:self.path result:[[SGraphObjectNode alloc] initWithObject:createdItem]];
 }

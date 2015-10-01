@@ -4,7 +4,7 @@
 
 @interface TGModernSendBroadcastMessageActor : TGModernSendMessageActor
 
-- (void)sendBroadcastSuccess:(TLmessages_StatedMessages *)statedMessages;
+- (void)sendBroadcastSuccess:(TLUpdates *)statedMessages;
 - (void)sendBroadcastFailed;
 
 @end

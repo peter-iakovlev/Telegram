@@ -184,6 +184,12 @@ static int workerCount = 0;
 {
 }
 
+- (void)requestMessageServiceAuthorizationRequired:(MTRequestMessageService *)__unused requestMessageService
+{
+    [_context updateAuthTokenForDatacenterWithId:_datacenterId authToken:nil];
+    [_context authTokenForDatacenterWithIdRequired:_datacenterId authToken:_mtProto.requiredAuthToken masterDatacenterId:_mtProto.authTokenMasterDatacenterId];
+}
+
 @end
 
 @implementation TGNetworkWorkerGuard

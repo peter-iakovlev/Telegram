@@ -16,6 +16,6 @@
 
 - (id)initWithComment:(NSString *)comment;
 
-- (float)heightForWidth:(float)width;
+- (CGFloat)heightForWidth:(float)width;
 
 @end

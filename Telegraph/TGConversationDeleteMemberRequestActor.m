@@ -42,19 +42,42 @@
     self.cancelToken = [TGTelegraphInstance doDeleteConversationMember:[nConversationId longLongValue] uid:[nUid intValue] actor:self];
 }
 
-- (void)deleteMemberSuccess:(TLmessages_StatedMessage *)statedMessage
+- (void)extractStatedMessageFromUpdates:(TLUpdates *)updates message:(__autoreleasing TLMessage **)message chats:(__autoreleasing NSArray **)chats users:(__autoreleasing NSArray **)users
+{
+    if ([updates isKindOfClass:[TLUpdates$updates class]])
+    {
+        if (chats)
+            *chats = ((TLUpdates$updates *)updates).chats;
+        if (users)
+            *users = ((TLUpdates$updates *)updates).users;
+        
+        for (id update in ((TLUpdates$updates *)updates).updates)
+        {
+            if ([update isKindOfClass:[TLUpdate$updateNewMessage class]])
+            {
+                if (message)
+                    *message = ((TLUpdate$updateNewMessage *)update).message;
+                break;
+            }
+        }
+    }
+}
+
+- (void)deleteMemberSuccess:(TLUpdates *)updates
 {
     TGConversation *chatConversation = nil;
     
-    [TGUserDataRequestBuilder executeUserDataUpdate:statedMessage.users];
-    
-    if (statedMessage.chats.count != 0)
+    NSArray *chats = nil;
+    NSArray *users = nil;
+    TLMessage *messageDesc = nil;
+
+    [self extractStatedMessageFromUpdates:updates message:&messageDesc chats:&chats users:&users];
+
+    if (chats.count != 0 && messageDesc != nil)
     {
-        TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:statedMessage.message];
-        
         NSMutableDictionary *chats = [[NSMutableDictionary alloc] init];
         
-        for (TLChat *chatDesc in statedMessage.chats)
+        for (TLChat *chatDesc in chats)
         {
             TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:chatDesc];
             if (conversation != nil)
@@ -94,11 +117,15 @@
             }
         }
         
-        static int actionId = 0;
-        [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(deleteMember%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", @[message], @"messages", nil]];
+        if (messageDesc != nil)
+        {
+            TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:messageDesc];
+            static int actionId = 0;
+            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(deleteMember%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", @[message], @"messages", nil]];
+        }
     }
     
-    [[TGTelegramNetworking instance] updatePts:statedMessage.pts date:0 seq:statedMessage.seq];
+    [[TGTelegramNetworking instance] addUpdates:updates];
     
     int version = chatConversation.chatVersion;
     

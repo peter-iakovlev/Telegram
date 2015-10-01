@@ -9,6 +9,8 @@
 
 #import "TGUpdateStateRequestBuilder.h"
 
+#import "TGTelegramNetworking.h"
+
 int cachedMessageSettingsVersion = -1;
 int cachedGroupSettingsVersion = -1;
 
@@ -57,13 +59,11 @@ int cachedGroupSettingsVersion = -1;
     bool previewText = true;
     bool photoNotificationsEnabled = true;
     
-#warning make async
-    
     [TGDatabaseInstance() loadPeerNotificationSettings:_peerId soundId:&soundId muteUntil:&muteUntil previewText:&previewText photoNotificationsEnabled:&photoNotificationsEnabled notFound:&notFound];
     
     if ((notFound || _force) && !cachedOnly)
     {
-        self.cancelToken = [TGTelegraphInstance doRequestPeerNotificationSettings:_peerId actor:self];
+        self.cancelToken = [TGTelegraphInstance doRequestPeerNotificationSettings:_peerId accessHash:[options[@"accessHash"] longLongValue] actor:self];
     }
     else
     {
@@ -89,6 +89,8 @@ int cachedGroupSettingsVersion = -1;
     {
         TLPeerNotifySettings$peerNotifySettings *concreteSettings = (TLPeerNotifySettings$peerNotifySettings *)settings;
         muteUntil = concreteSettings.mute_until;
+        if (muteUntil <= [[TGTelegramNetworking instance] approximateRemoteTime])
+            muteUntil = 0;
         
         if (concreteSettings.sound.length == 0)
             peerSoundId = 0;

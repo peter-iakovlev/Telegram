@@ -8,6 +8,14 @@
 
 #import <UIKit/UIKit.h>
 
+#import "TGModernConversationCompanion.h"
+
+typedef enum {
+    TGModernConversationTitleViewActivityTyping,
+    TGModernConversationTitleViewActivityAudioRecording,
+    TGModernConversationTitleViewActivityUploading
+} TGModernConversationTitleViewActivity;
+
 @class TGModernConversationTitleView;
 
 @protocol TGModernConversationTitleViewDelegate <NSObject>
@@ -25,14 +33,16 @@
 @property (nonatomic, strong) NSString *title;
 @property (nonatomic, strong) NSString *status;
 @property (nonatomic) bool statusHasAccentColor;
+@property (nonatomic) TGModernConversationControllerTitleToggle toggleMode;
 @property (nonatomic, strong) NSString *typingStatus;
 
+- (void)setBackButtonTitle:(NSString *)backButtonTitle;
 - (void)setOrientation:(UIInterfaceOrientation)orientation;
 - (void)setEditingMode:(bool)editingMode animated:(bool)animated;
 
 - (void)setStatus:(NSString *)status animated:(bool)animated;
 - (void)setAttributedStatus:(NSAttributedString *)attributedStatus animated:(bool)animated;
-- (void)setTypingStatus:(NSString *)typingStatus animated:(bool)animated;
+- (void)setTypingStatus:(NSString *)typingStatus activity:(TGModernConversationTitleViewActivity)activity animated:(bool)animated;
 - (void)setIcons:(NSArray *)icons;
 - (void)setModalProgressStatus:(NSString *)modalProgressStatus;
 - (void)setUnreadCount:(int)unreadCount;

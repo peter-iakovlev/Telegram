@@ -13,4 +13,6 @@
 - (instancetype)initWithBuiltinId:(int)builtinId;
 - (instancetype)initWithBuiltinId:(int)builtinId tintColor:(int)tintColor systemAlpha:(CGFloat)systemAlpha buttonsAlpha:(CGFloat)buttonsAlpha highlightedButtonAlpha:(CGFloat)highlightedButtonAlpha progressAlpha:(CGFloat)progressAlpha;
 
+- (BOOL)isDefault;
+
 @end

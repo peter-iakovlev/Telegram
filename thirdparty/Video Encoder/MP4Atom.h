@@ -18,8 +18,8 @@
     OSType _type;
     int64_t _nextChild;
 }
-@property OSType type;
-@property int64_t length;
+@property (nonatomic) OSType type;
+@property (nonatomic) int64_t length;
 
 + (MP4Atom*) atomAt:(int64_t) offset size:(int) length type:(OSType) fourcc inFile:(NSFileHandle*) handle;
 - (BOOL) init:(int64_t) offset size:(int) length type:(OSType) fourcc inFile:(NSFileHandle*) handle;

@@ -1,5 +1,6 @@
 #import "TGMessageViewModel.h"
 
+#import "TGAppDelegate.h"
 #import "TGImageUtils.h"
 
 #import "TGUser.h"
@@ -35,6 +36,10 @@ const TGMessageViewModelLayoutConstants *TGGetMessageViewModelLayoutConstants()
         CGFloat maxTextFontSize = 0.0f;
         CGFloat defaultTextFontSize = 0.0f;
         
+        CGSize screenSize = TGScreenSize();
+        CGFloat screenSide = MAX(screenSize.width, screenSize.height);
+        bool isLargeScreen = screenSide >= 667.0f - FLT_EPSILON;
+        
         if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
         {
             constants.topInset = 2.0f;
@@ -54,9 +59,16 @@ const TGMessageViewModelLayoutConstants *TGGetMessageViewModelLayoutConstants()
             constants.textBubblePaddingBottom = 5.0f;
             constants.textBubbleTextOffsetTop = 1.0f;
             
+            constants.topPostInset = 2.0f;
+            constants.bottomPostInset = 2.0f;
+            
             minTextFontSize = 12.0f;
             maxTextFontSize = 24.0f;
-            defaultTextFontSize = 16.0f;
+            
+            if (isLargeScreen)
+                defaultTextFontSize = 17.0f;
+            else
+                defaultTextFontSize = 16.0f;
         }
         else
         {
@@ -73,6 +85,9 @@ const TGMessageViewModelLayoutConstants *TGGetMessageViewModelLayoutConstants()
             
             constants.avatarInset = 11.0f;
             
+            constants.topPostInset = 3.0f;
+            constants.bottomPostInset = 3.0f;
+            
             constants.textBubblePaddingTop = 5.0f;
             constants.textBubblePaddingBottom = 6.0f;
             constants.textBubbleTextOffsetTop = 1.0f + TGRetinaPixel;
@@ -84,7 +99,7 @@ const TGMessageViewModelLayoutConstants *TGGetMessageViewModelLayoutConstants()
         
         if (iosMajorVersion() >= 7 && [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
         {
-            CGFloat fontSize = [UIFont preferredFontForTextStyle:UIFontTextStyleBody].pointSize - 1.0f;
+            CGFloat fontSize = [UIFont preferredFontForTextStyle:UIFontTextStyleBody].pointSize - (isLargeScreen ? 0 : 1.0f);
             constants.textFontSize = MAX(minTextFontSize, MIN(maxTextFontSize, fontSize));
         }
         else
@@ -101,7 +116,7 @@ const TGMessageViewModelLayoutConstants *TGGetMessageViewModelLayoutConstants()
     return &currentMessageViewModelLayoutConstants;
 }
 
-void TGUpdateMessageViewModelLayoutConstants()
+void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
 {
     CGFloat minTextFontSize = 0.0f;
     CGFloat maxTextFontSize = 0.0f;
@@ -117,7 +132,11 @@ void TGUpdateMessageViewModelLayoutConstants()
         maxTextFontSize = 25.0f;
     }
     
-    CGFloat fontSize = [UIFont preferredFontForTextStyle:UIFontTextStyleBody].pointSize - 1.0f;
+    CGSize screenSize = TGScreenSize();
+    CGFloat screenSide = MAX(screenSize.width, screenSize.height);
+    bool isLargeScreen = screenSide >= 667.0f - FLT_EPSILON;
+    
+    CGFloat fontSize = baseFontPointSize - (isLargeScreen ? 0 : 1.0f);
     currentMessageViewModelLayoutConstants.textFontSize = MAX(minTextFontSize, MIN(maxTextFontSize, fontSize));
 }
 
@@ -138,16 +157,18 @@ void TGUpdateMessageViewModelLayoutConstants()
 
 @implementation TGMessageViewModel
 
-- (instancetype)initWithAuthor:(TGUser *)author context:(TGModernViewContext *)context
+- (instancetype)initWithAuthorPeer:(id)authorPeer context:(TGModernViewContext *)context
 {
     self = [super init];
     if (self != nil)
     {
         self.hasNoView = true;
         _context = context;
+        _authorPeer = authorPeer;
         
-        if (author != nil)
+        if (authorPeer != nil && [authorPeer isKindOfClass:[TGUser class]])
         {
+            TGUser *author = authorPeer;
             _uid = author.uid;
             _firstName = author.firstName;
             _lastName = author.lastName;
@@ -178,12 +199,24 @@ void TGUpdateMessageViewModelLayoutConstants()
     return self;
 }
 
+- (void)setAuthorAvatarUrl:(NSString *)authorAvatarUrl groupId:(int64_t)groupId
+{
+    if (authorAvatarUrl.length == 0)
+        [_avatarModel setAvatarTitle:_firstName groupId:groupId];
+    else
+        [_avatarModel setAvatarUri:authorAvatarUrl];
+}
+
 - (void)setAuthorAvatarUrl:(NSString *)authorAvatarUrl
 {
     if (authorAvatarUrl.length == 0)
         [_avatarModel setAvatarFirstName:_firstName lastName:_lastName uid:_uid];
     else
         [_avatarModel setAvatarUri:authorAvatarUrl];
+}
+
+- (void)setAuthorNameColor:(UIColor *)__unused authorNameColor
+{
 }
 
 - (void)updateAssets
@@ -194,7 +227,11 @@ void TGUpdateMessageViewModelLayoutConstants()
 {
 }
 
-- (void)updateMessage:(TGMessage *)__unused message viewStorage:(TGModernViewStorage *)__unused viewStorage
+- (void)updateSearchText:(bool)__unused animated
+{
+}
+
+- (void)updateMessage:(TGMessage *)__unused message viewStorage:(TGModernViewStorage *)__unused viewStorage sizeUpdated:(bool *)__unused sizeUpdated
 {
 }
 
@@ -211,16 +248,6 @@ void TGUpdateMessageViewModelLayoutConstants()
     return CGRectZero;
 }
 
-- (CGRect)effectiveContentImageFrame
-{
-    return CGRectZero;
-}
-
-- (UIImage *)effectiveContentImage
-{
-    return nil;
-}
-
 - (UIView *)referenceViewForImageTransition
 {
     return nil;
@@ -230,7 +257,11 @@ void TGUpdateMessageViewModelLayoutConstants()
 {
 }
 
-- (void)updateProgress:(bool)__unused progressVisible progress:(float)__unused progress viewStorage:(TGModernViewStorage *)__unused viewStorage
+- (void)clearHighlights
+{
+}
+
+- (void)updateProgress:(bool)__unused progressVisible progress:(float)__unused progress viewStorage:(TGModernViewStorage *)__unused viewStorage animated:(bool)__unused animated
 {
 }
 
@@ -256,6 +287,10 @@ void TGUpdateMessageViewModelLayoutConstants()
 
 - (void)stopInlineMedia
 {
+}
+
+- (NSString *)linkAtPoint:(CGPoint)__unused point {
+    return nil;
 }
 
 - (void)updateEditingState:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage animationDelay:(NSTimeInterval)animationDelay
@@ -305,7 +340,7 @@ void TGUpdateMessageViewModelLayoutConstants()
             {
                 if (_checkButtonModel == nil)
                 {
-                    _checkButtonModel = [[TGModernCheckButtonViewModel alloc] initWithFrame:CGRectMake(11.0f, floorf((self.frame.size.height - 30.0f) / 2.0f), 30.0f, 30.0f)];
+                    _checkButtonModel = [[TGModernCheckButtonViewModel alloc] initWithFrame:CGRectMake(11.0f, CGFloor((self.frame.size.height - 30.0f) / 2.0f), 30.0f, 30.0f)];
                     _checkButtonModel.isChecked = [_context isMessageChecked:_mid];
                     [self addSubmodel:_checkButtonModel];
                     
@@ -360,7 +395,7 @@ void TGUpdateMessageViewModelLayoutConstants()
             {
                 if (_checkButtonModel == nil)
                 {
-                    _checkButtonModel = [[TGModernCheckButtonViewModel alloc] initWithFrame:CGRectMake(11.0f, floorf((self.frame.size.height - 30.0f) / 2.0f), 30.0f, 30.0f)];
+                    _checkButtonModel = [[TGModernCheckButtonViewModel alloc] initWithFrame:CGRectMake(11.0f, CGFloor((self.frame.size.height - 30.0f) / 2.0f), 30.0f, 30.0f)];
                     _checkButtonModel.isChecked = [_context isMessageChecked:_mid];
                     [self addSubmodel:_checkButtonModel];
                 
@@ -455,7 +490,7 @@ void TGUpdateMessageViewModelLayoutConstants()
     }
     
     if (_checkButtonModel != nil)
-        _checkButtonModel.frame = CGRectMake(11.0f, floorf((self.frame.size.height - 30.0f) / 2.0f), 30.0f, 30.0f);
+        _checkButtonModel.frame = CGRectMake(11.0f, CGFloor((self.frame.size.height - 30.0f) / 2.0f), 30.0f, 30.0f);
     
     if (_checkAreaModel != nil)
         _checkAreaModel.frame = self.bounds;

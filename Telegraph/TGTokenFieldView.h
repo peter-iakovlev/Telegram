@@ -24,6 +24,7 @@
 @property (nonatomic, weak) id<TGTokenFieldViewDelegate> delegate;
 
 @property (nonatomic, strong) UIScrollView *scrollView;
+@property (nonatomic, strong) NSString *placeholder;
 
 - (float)preferredHeight;
 - (void)scrollToTextField:(bool)animated;

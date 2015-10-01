@@ -3,7 +3,6 @@
 #import "TGImageUtils.h"
 
 #import "TGAppDelegate.h"
-#import "TGTabletMainViewController.h"
 #import "TGModernConversationController.h"
 #import "TGGenericModernConversationCompanion.h"
 
@@ -27,13 +26,24 @@
 
 #import "TGModernConversationCompanion.h"
 
-#import "TGBroadcastListsController.h"
-#import "TGAlternateBroadcastListsController.h"
+#import "TGBroadcastModernConversationCompanion.h"
+
+#import "TGStringUtils.h"
+
+#import "TGProgressWindow.h"
 
 #include <map>
 #include <set>
 
 #import <libkern/OSAtomic.h>
+
+#import "TGAlertView.h"
+
+#import "TGChannelManagementSignals.h"
+
+#import "TGCreateGroupController.h"
+
+#import "TGPeerIdAdapter.h"
 
 typedef enum {
     TGDialogListStateNormal = 0,
@@ -45,6 +55,12 @@ typedef enum {
 @interface TGTelegraphDialogListCompanion ()
 {
     volatile int32_t _conversationsUpdateTaskId;
+    
+    TGProgressWindow *_progressWindow;
+    
+    SMetaDisposable *_channelsDisposable;
+    
+    bool _canLoadMore;
 }
 
 @property (nonatomic, strong) NSMutableArray *conversationList;
@@ -57,16 +73,6 @@ typedef enum {
 
 @implementation TGTelegraphDialogListCompanion
 
-@synthesize actionHandle = _actionHandle;
-
-@synthesize conversatioSelectedWatcher = _conversatioSelectedWatcher;
-
-@synthesize conversationList = _conversationList;
-
-@synthesize searchString = _searchString;
-
-@synthesize state = _state;
-
 - (id)init
 {
     self = [super init];
@@ -76,9 +82,12 @@ typedef enum {
         
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:false];
         
+        self.showSecretInForwardMode = true;
         self.showListEditingControl = true;
 
         [self resetWatchedNodePaths];
+        
+        _channelsDisposable = [[SMetaDisposable alloc] init];
     }
     return self;
 }
@@ -87,6 +96,13 @@ typedef enum {
 {
     [_actionHandle reset];
     [ActionStageInstance() removeWatcher:self];
+    [_channelsDisposable dispose];
+    
+    TGProgressWindow *progressWindow = _progressWindow;
+    TGDispatchOnMainThread(^
+    {
+        [progressWindow dismiss:false];
+    });
 }
 
 - (id<TGDialogListCellAssetsSource>)dialogListCellAssetsSource
@@ -106,11 +122,14 @@ typedef enum {
         [ActionStageInstance() removeWatcher:self];
 
         [ActionStageInstance() watchForPath:@"/tg/conversations" watcher:self];
+        [ActionStageInstance() watchForPath:@"/tg/broadcastConversations" watcher:self];
+        [ActionStageInstance() watchForPath:@"/tg/channelListSyncrhonized" watcher:self];
         [ActionStageInstance() watchForGenericPath:@"/tg/dialoglist/@" watcher:self];
         [ActionStageInstance() watchForPath:@"/tg/userdatachanges" watcher:self];
         [ActionStageInstance() watchForPath:@"/tg/unreadCount" watcher:self];
         [ActionStageInstance() watchForPath:@"/tg/conversation/*/typing" watcher:self];
         [ActionStageInstance() watchForPath:@"/tg/contactlist" watcher:self];
+        [ActionStageInstance() watchForPath:@"/databasePasswordChanged" watcher:self];
         
         [ActionStageInstance() watchForGenericPath:@"/tg/peerSettings/@" watcher:self];
         
@@ -118,7 +137,7 @@ typedef enum {
         [ActionStageInstance() requestActor:@"/tg/service/synchronizationstate" options:nil watcher:self];
         
         int unreadCount = [TGDatabaseInstance() databaseState].unreadCount;
-        [self actionStageResourceDispatched:@"/tg/unreadCount" resource:[[SGraphObjectNode alloc] initWithObject:[NSNumber numberWithInt:unreadCount]] arguments:nil];
+        [self actionStageResourceDispatched:@"/tg/unreadCount" resource:[[SGraphObjectNode alloc] initWithObject:[NSNumber numberWithInt:unreadCount]] arguments:@{@"previous": @true}];
     }];
 }
 
@@ -126,9 +145,13 @@ typedef enum {
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
+        [_channelsDisposable setDisposable:nil];
+        
         [_conversationList removeAllObjects];
         
         [self resetWatchedNodePaths];
+        
+        _canLoadMore = false;
         
         dispatch_async(dispatch_get_main_queue(), ^
         {
@@ -145,71 +168,72 @@ typedef enum {
 
 - (void)composeMessage
 {
+    if ([TGAppDelegateInstance isDisplayingPasscodeWindow])
+        return;
+    
     TGDialogListController *controller = self.dialogListController;
     [controller selectConversationWithId:0];
     
-    TGSelectContactController *selectController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:false createBroadcast:false];
-    if (!TGIsPad())
-    {
-        [TGAppDelegateInstance.mainNavigationController pushViewController:selectController animated:true];
-    }
-    else
-    {
-        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[selectController]];
-        TGAppDelegateInstance.tabletMainViewController.detailViewController = navigationController;
-    }
+    TGSelectContactController *selectController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:false createBroadcast:false createChannel:false inviteToChannel:false];
+    [TGAppDelegateInstance.rootController pushContentController:selectController];
 }
 
 - (void)navigateToBroadcastLists
 {
-    TGDialogListController *controller = self.dialogListController;
-    [controller selectConversationWithId:0];
-    
-    UIViewController *broadcastListsController = [[TGAlternateBroadcastListsController alloc] init];
-    
-    if (!TGIsPad())
-    {
-        NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:TGAppDelegateInstance.mainNavigationController.viewControllers];
-        [viewControllers addObject:broadcastListsController];
-        [TGAppDelegateInstance.mainNavigationController setViewControllers:viewControllers animated:true];
-    }
-    else
-    {
-        NSMutableArray *viewControllers = [[NSMutableArray alloc] init];
-        [viewControllers addObject:broadcastListsController];
-        
-        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:viewControllers];
-        TGAppDelegateInstance.tabletMainViewController.detailViewController = navigationController;
-    }
+    TGCreateGroupController *controller = [[TGCreateGroupController alloc] initWithCreateChannel:true];
+    [TGAppDelegateInstance.rootController pushContentController:controller];
 }
 
 - (void)navigateToNewGroup
 {
+    __autoreleasing NSString *disabledMessage = nil;
+    if (![TGApplicationFeatures isGroupCreationEnabled:&disabledMessage])
+    {
+        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"FeatureDisabled.Oops") message:disabledMessage cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        return;
+    }
+    
     TGDialogListController *controller = self.dialogListController;
     [controller selectConversationWithId:0];
     
-    TGSelectContactController *selectController = [[TGSelectContactController alloc] initWithCreateGroup:true createEncrypted:false createBroadcast:false];
-    if (!TGIsPad())
-    {
-        [TGAppDelegateInstance.mainNavigationController pushViewController:selectController animated:true];
-    }
-    else
-    {
-        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[selectController]];
-        TGAppDelegateInstance.tabletMainViewController.detailViewController = navigationController;
-    }
+    TGSelectContactController *selectController = [[TGSelectContactController alloc] initWithCreateGroup:true createEncrypted:false createBroadcast:false createChannel:false inviteToChannel:false];
+    [TGAppDelegateInstance.rootController pushContentController:selectController];
 }
 
 - (void)conversationSelected:(TGConversation *)conversation
 {
-    if (self.forwardMode)
+    if (self.forwardMode || self.privacyMode)
     {
         [_conversatioSelectedWatcher requestAction:@"conversationSelected" options:[[NSDictionary alloc] initWithObjectsAndKeys:conversation, @"conversation", nil]];
     }
     else
     {
-        int64_t conversationId = conversation.conversationId;
-        [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation];
+        if (conversation.isBroadcast)
+        {
+            TGBroadcastModernConversationCompanion *broadcastCompanion = [[TGBroadcastModernConversationCompanion alloc] initWithConversationId:conversation.conversationId conversation:conversation];
+            TGModernConversationController *conversationController = [[TGModernConversationController alloc] init];
+            conversationController.companion = broadcastCompanion;
+            [broadcastCompanion bindController:conversationController];
+            
+            [TGAppDelegateInstance.rootController replaceContentController:conversationController];
+        }
+        else
+        {
+            int64_t conversationId = conversation.conversationId;
+            if (TGPeerIdIsChannel(conversationId) && conversation.kind == TGConversationKindTemporaryChannel) {
+                TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+                [progressWindow showWithDelay:0.1];
+                [[[[TGChannelManagementSignals preloadedChannel:conversationId] deliverOn:[SQueue mainQueue]] onDispose:^{
+                    TGDispatchOnMainThread(^{
+                        [progressWindow dismiss:true];
+                    });
+                }] startWithNext:nil completed:^{
+                    [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation];                    
+                }];
+            } else {
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation];
+            }
+        }
     }
 }
 
@@ -220,10 +244,20 @@ typedef enum {
 
 - (void)searchResultSelectedConversation:(TGConversation *)conversation atMessageId:(int)messageId
 {
-    if (!self.forwardMode)
+    if (!self.forwardMode && !self.privacyMode)
     {
-        int64_t conversationId = conversation.conversationId;
-        [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false animated:true];
+        if ([TGDatabaseInstance() loadMessageWithMid:messageId peerId:conversation.conversationId] != nil)
+        {
+            int64_t conversationId = conversation.conversationId;
+            [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false animated:true];
+        }
+        else
+        {
+            _progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+            [_progressWindow show:true];
+            
+            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/loadConversationAndMessageForSearch/(%" PRId64 ", %" PRId32 ")", conversation.conversationId, messageId] options:@{@"peerId": @(conversation.conversationId), @"messageId": @(messageId)} flags:0 watcher:self];
+        }
     }
 }
 
@@ -239,21 +273,6 @@ typedef enum {
 
 - (void)wakeUp
 {
-    /*TGMessage *incomingMessage = [[TGMessage alloc] init];
-    incomingMessage.text = @"test";
-    incomingMessage.fromUid = TGTelegraphInstance.clientUserId;
-    incomingMessage.outgoing = false;
-    
-    TGMessage *outgoingMessage = [[TGMessage alloc] init];
-    outgoingMessage.text = @"test";
-    outgoingMessage.fromUid = TGTelegraphInstance.clientUserId;
-    outgoingMessage.outgoing = false;
-    
-    TGConversationMessageItem *incomingMessageItem = [[TGConversationMessageItem alloc] initWithMessage:incomingMessage];
-    sizeForConversationMessage(incomingMessageItem, TGConversationMessageMetricsPortrait, [TGTelegraphConversationMessageAssetsSource instance]);
-
-    TGConversationMessageItem *outgoingMessageItem = [[TGConversationMessageItem alloc] initWithMessage:outgoingMessage];
-    sizeForConversationMessage(outgoingMessageItem, TGConversationMessageMetricsPortrait, [TGTelegraphConversationMessageAssetsSource instance]);*/
 }
 
 - (void)resetLocalization
@@ -261,14 +280,25 @@ typedef enum {
     
 }
 
+- (int64_t)openedConversationId
+{
+    UIViewController *topViewController = [TGAppDelegateInstance.rootController.viewControllers lastObject];
+
+    if ([topViewController isKindOfClass:[TGModernConversationController class]])
+    {
+        return ((TGGenericModernConversationCompanion *)((TGModernConversationController *)(topViewController)).companion).conversationId;
+    }
+    
+    return 0;
+}
+
 - (bool)isConversationOpened:(int64_t)conversationId
 {
-    if (TGIsPad())
+    UIViewController *topViewController = [TGAppDelegateInstance.rootController.viewControllers lastObject];
+    
+    if ([topViewController isKindOfClass:[TGModernConversationController class]])
     {
-        if ([((UINavigationController *)TGAppDelegateInstance.tabletMainViewController.detailViewController).topViewController isKindOfClass:[TGModernConversationController class]])
-        {
-            return ((TGGenericModernConversationCompanion *)((TGModernConversationController *)(((UINavigationController *)TGAppDelegateInstance.tabletMainViewController.detailViewController).topViewController)).companion).conversationId == conversationId;
-        }
+        return ((TGGenericModernConversationCompanion *)((TGModernConversationController *)(topViewController)).companion).conversationId == conversationId;
     }
     
     return false;
@@ -278,16 +308,8 @@ typedef enum {
 {
     TGDispatchOnMainThread(^
     {
-        if (TGAppDelegateInstance.tabletMainViewController != nil)
-        {
-            if ([((UINavigationController *)TGAppDelegateInstance.tabletMainViewController.detailViewController).topViewController isKindOfClass:[TGModernConversationController class]])
-            {
-                TGModernConversationController *conversationController = (TGModernConversationController *)(((UINavigationController *)TGAppDelegateInstance.tabletMainViewController.detailViewController).topViewController);
-                if (((TGGenericModernConversationCompanion *)conversationController.companion).conversationId == conversation.conversationId)
-                {
-                    TGAppDelegateInstance.tabletMainViewController.detailViewController = nil;
-                }
-            }
+        if ([self isConversationOpened:conversation.conversationId]) {
+            [TGAppDelegateInstance.rootController clearContentControllers];
         }
     });
     
@@ -295,16 +317,18 @@ typedef enum {
     
     [ActionStageInstance() dispatchOnStageQueue:^
     {
+        bool found = false;
         for (int i = 0; i < (int)self.conversationList.count; i++)
         {
             TGConversation *conversation = [self.conversationList objectAtIndex:i];
             if (conversation.conversationId == conversationId)
             {
+                found = true;
                 [self.conversationList removeObjectAtIndex:i];
                 
                 NSNumber *removedIndex = [[NSNumber alloc] initWithInt:i];
                 
-                [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/delete", conversationId] options:[NSDictionary dictionaryWithObject:[NSNumber numberWithLongLong:conversationId] forKey:@"conversationId"] watcher:self];
+                [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/delete", conversationId] options:@{@"conversationId": @(conversationId), @"block": @true} watcher:self];
                 
                 dispatch_async(dispatch_get_main_queue(), ^
                 {
@@ -318,6 +342,11 @@ typedef enum {
                 
                 break;
             }
+        }
+        
+        if (!found)
+        {
+            [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/delete", conversationId] options:[NSDictionary dictionaryWithObject:[NSNumber numberWithLongLong:conversationId] forKey:@"conversationId"] watcher:self];
         }
     }];
 }
@@ -335,44 +364,56 @@ typedef enum {
             {
                 [self.conversationList removeObjectAtIndex:i];
                 
-                int actionId = 0;
-                [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/clearHistory/(dialogList%d)", conversationId, actionId++] options:[NSDictionary dictionaryWithObject:[NSNumber numberWithLongLong:conversationId] forKey:@"conversationId"] watcher:self];
-                
-                conversation = [conversation copy];
-
-                conversation.outgoing = false;
-                conversation.text = nil;
-                conversation.media = nil;
-                conversation.unread = false;
-                conversation.unreadCount = 0;
-                conversation.fromUid = 0;
-                conversation.deliveryError = false;
-                conversation.deliveryState = TGMessageDeliveryStateDelivered;
-                
-                NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:conversation.dialogListData];
-                dict[@"authorName"] = @"";
-                
-                dispatch_async(dispatch_get_main_queue(), ^
+                TGUser *user = conversation.conversationId > 0 ? [TGDatabaseInstance() loadUser:(int)conversation.conversationId] : nil;
+                if (user != nil && (user.kind == TGUserKindBot || user.kind == TGUserKindSmartBot))
                 {
-                    if (!animated)
-                        [UIView setAnimationsEnabled:false];
-                    TGDialogListController *dialogListController = self.dialogListController;
-                    [dialogListController dialogListItemsChanged:nil insertedItems:nil updatedIndices:@[@(i)] updatedItems:@[conversation] removedIndices:nil];
-                    if (!animated)
-                        [UIView setAnimationsEnabled:true];
-                });
+                    NSNumber *removedIndex = [[NSNumber alloc] initWithInt:i];
+                    
+                    [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/delete", conversationId] options:@{@"conversationId": @(conversationId), @"block": @false} watcher:self];
+                    
+                    dispatch_async(dispatch_get_main_queue(), ^
+                    {
+                        if (!animated)
+                            [UIView setAnimationsEnabled:false];
+                        TGDialogListController *dialogListController = self.dialogListController;
+                        [dialogListController dialogListItemsChanged:nil insertedItems:nil updatedIndices:nil updatedItems:nil removedIndices:[NSArray arrayWithObject:removedIndex]];
+                        if (!animated)
+                            [UIView setAnimationsEnabled:true];
+                    });
+                }
+                else
+                {
+                    int actionId = 0;
+                    [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/clearHistory/(dialogList%d)", conversationId, actionId++] options:[NSDictionary dictionaryWithObject:[NSNumber numberWithLongLong:conversationId] forKey:@"conversationId"] watcher:self];
+                    
+                    conversation = [conversation copy];
+
+                    conversation.outgoing = false;
+                    conversation.text = nil;
+                    conversation.media = nil;
+                    conversation.unread = false;
+                    conversation.unreadCount = 0;
+                    conversation.fromUid = 0;
+                    conversation.deliveryError = false;
+                    conversation.deliveryState = TGMessageDeliveryStateDelivered;
+                    
+                    NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:conversation.dialogListData];
+                    dict[@"authorName"] = @"";
+                    
+                    dispatch_async(dispatch_get_main_queue(), ^
+                    {
+                        if (!animated)
+                            [UIView setAnimationsEnabled:false];
+                        TGDialogListController *dialogListController = self.dialogListController;
+                        [dialogListController dialogListItemsChanged:nil insertedItems:nil updatedIndices:@[@(i)] updatedItems:@[conversation] removedIndices:nil];
+                        if (!animated)
+                            [UIView setAnimationsEnabled:true];
+                    });
+                }
                 
                 break;
             }
         }
-    }];
-}
-
-- (void)loadItems
-{
-    [ActionStageInstance() dispatchOnStageQueue:^
-    {
-        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:24], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", @[], @"excludeConversationIds", nil] watcher:self];
     }];
 }
 
@@ -385,7 +426,7 @@ typedef enum {
         int minDate = INT_MAX;
         for (TGConversation *conversation in _conversationList)
         {
-            if (conversation.date < minDate)
+            if (conversation.date < minDate && !conversation.isBroadcast)
                 minDate = conversation.date;
             
             [currentConversationIds addObject:[[NSNumber alloc] initWithLongLong:conversation.conversationId]];
@@ -397,6 +438,8 @@ typedef enum {
         }
         else
         {
+            _canLoadMore = false;
+            
             dispatch_async(dispatch_get_main_queue(), ^
             {
                 TGDialogListController *dialogListController = self.dialogListController;
@@ -427,11 +470,11 @@ typedef enum {
         {
             if (inMessages)
             {
-                [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/search/messages/(%d)", [self.searchString hash]] options:[NSDictionary dictionaryWithObject:self.searchString forKey:@"query"] watcher:self];
+                [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/search/messages/(%lu)", (unsigned long)[self.searchString hash]] options:[NSDictionary dictionaryWithObject:self.searchString forKey:@"query"] watcher:self];
             }
             else
             {
-                [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/search/dialogs/(%d)", [self.searchString hash]] options:[NSDictionary dictionaryWithObject:self.searchString forKey:@"query"] watcher:self];
+                [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/search/dialogs/(%lu)", (unsigned long)[self.searchString hash]] options:[NSDictionary dictionaryWithObject:self.searchString forKey:@"query"] watcher:self];
             }
         }
     }];
@@ -439,7 +482,7 @@ typedef enum {
 
 - (void)searchResultSelectedUser:(TGUser *)user
 {
-    if (self.forwardMode)
+    if (self.forwardMode || self.privacyMode)
     {
         [_conversatioSelectedWatcher requestAction:@"userSelected" options:[[NSDictionary alloc] initWithObjectsAndKeys:user, @"user", nil]];
     }
@@ -450,20 +493,77 @@ typedef enum {
     }
 }
 
+- (NSString *)stringForMemberCount:(int)memberCount
+{
+    if (memberCount == 1)
+        return TGLocalizedStatic(@"Conversation.StatusRecipients_1");
+    else if (memberCount == 2)
+        return TGLocalizedStatic(@"Conversation.StatusRecipients_2");
+    else if (memberCount >= 3 && memberCount <= 10)
+        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusRecipients_3_10"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
+    else
+        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusRecipients_any"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
+}
+
 - (void)initializeDialogListData:(TGConversation *)conversation customUser:(TGUser *)customUser selfUser:(TGUser *)selfUser
 {
     NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
     
-    if (!conversation.isChat || conversation.isEncrypted)
+    int64_t mutePeerId = conversation.conversationId;
+    
+    if (conversation.isChannel) {
+        dict[@"isChannel"] = @true;
+        
+        [dict setObject:(conversation.chatTitle == nil ? @"" : conversation.chatTitle) forKey:@"title"];
+        
+        if (conversation.chatPhotoSmall.length != 0)
+            [dict setObject:conversation.chatPhotoSmall forKey:@"avatarUrl"];
+        
+        [dict setObject:[NSNumber numberWithBool:true] forKey:@"isChat"];
+        [dict setObject:[NSNumber numberWithBool:conversation.isVerified] forKey:@"isVerified"];
+        
+        NSString *authorName = nil;
+        NSString *authorAvatarUrl = nil;
+        if (conversation.fromUid == selfUser.uid)
+        {
+            authorAvatarUrl = selfUser.photoUrlSmall;
+            
+            static NSString *youString = nil;
+            if (youString == nil)
+                youString = authorNameYou;
+            
+            if (conversation.text.length != 0 || conversation.media.count != 0)
+                authorName = youString;
+        }
+        else
+        {
+            if (conversation.fromUid != 0)
+            {
+                TGUser *authorUser = [[TGDatabase instance] loadUser:conversation.fromUid];
+                if (authorUser != nil)
+                {
+                    authorAvatarUrl = authorUser.photoUrlSmall;
+                    authorName = authorUser.displayName;
+                }
+            }
+        }
+        
+        if (authorAvatarUrl != nil)
+            [dict setObject:authorAvatarUrl forKey:@"authorAvatarUrl"];
+        if (authorName != nil)
+            [dict setObject:authorName forKey:@"authorName"];
+    }
+    else if (!conversation.isChat || conversation.isEncrypted)
     {
         int32_t userId = 0;
         if (conversation.isEncrypted)
         {
             if (conversation.chatParticipants.chatParticipantUids.count != 0)
-                userId = [conversation.chatParticipants.chatParticipantUids[0] intValue];       
+                userId = [conversation.chatParticipants.chatParticipantUids[0] intValue];
         }
         else
             userId = (int)conversation.conversationId;
+        mutePeerId = userId;
         
         TGUser *user = nil;
         if (customUser != nil && customUser.uid == userId)
@@ -474,17 +574,19 @@ typedef enum {
         NSString *title = nil;
         NSArray *titleLetters = nil;
         
-        if ((user.phoneNumber.length != 0 && ![TGDatabaseInstance() uidIsRemoteContact:user.uid]) && user.uid != 333000)
+        if (user.uid == [TGTelegraphInstance serviceUserUid])
+            title = [user displayName];
+        else if ((user.phoneNumber.length != 0 && ![TGDatabaseInstance() uidIsRemoteContact:user.uid]))
             title = user.formattedPhoneNumber;
         else
             title = [user displayName];
         
         if (user.firstName.length != 0 && user.lastName.length != 0)
-            titleLetters = [[NSArray alloc] initWithObjects:[user.firstName substringToIndex:1], [user.lastName substringToIndex:1], nil];
+            titleLetters = [[NSArray alloc] initWithObjects:user.firstName, user.lastName, nil];
         else if (user.firstName.length != 0)
-            titleLetters = [[NSArray alloc] initWithObjects:[user.firstName substringToIndex:1], nil];
+            titleLetters = [[NSArray alloc] initWithObjects:user.firstName, nil];
         else if (user.lastName.length != 0)
-            titleLetters = [[NSArray alloc] initWithObjects:[user.lastName substringToIndex:1], nil];
+            titleLetters = [[NSArray alloc] initWithObjects:user.lastName, nil];
         
         if (title != nil)
             [dict setObject:title forKey:@"title"];
@@ -547,7 +649,12 @@ typedef enum {
     }
     else
     {
-        [dict setObject:(conversation.chatTitle == nil ? @"" : conversation.chatTitle) forKey:@"title"];
+        dict[@"isBroadcast"] = @(conversation.isBroadcast);
+        
+        if (conversation.isBroadcast && conversation.chatTitle.length == 0)
+            dict[@"title"] = [self stringForMemberCount:conversation.chatParticipantCount];
+        else
+            [dict setObject:(conversation.chatTitle == nil ? @"" : conversation.chatTitle) forKey:@"title"];
         
         if (conversation.chatPhotoSmall.length != 0)
             [dict setObject:conversation.chatPhotoSmall forKey:@"avatarUrl"];
@@ -612,15 +719,85 @@ typedef enum {
         }
     }
     
-    [dict setObject:[[NSNumber alloc] initWithBool:[TGDatabaseInstance() isPeerMuted:conversation.conversationId]] forKey:@"mute"];
+    
+    [dict setObject:[[NSNumber alloc] initWithBool:[TGDatabaseInstance() isPeerMuted:mutePeerId]] forKey:@"mute"];
     
     [dict setObject:messageUsers forKey:@"users"];
     conversation.dialogListData = dict;
 }
 
+- (void)actorMessageReceived:(NSString *)path messageType:(NSString *)messageType message:(id)message
+{
+    if ([path isEqualToString:[NSString stringWithFormat:@"/tg/search/messages/(%lu)", (unsigned long)[_searchString hash]]])
+    {
+        if ([messageType isEqualToString:@"searchResultsUpdated"])
+        {
+            NSArray *conversations = [((SGraphObjectNode *)message[@"dialogs"]).object sortedArrayUsingComparator:^NSComparisonResult(TGConversation *conversation1, TGConversation *conversation2)
+            {
+                return conversation1.date > conversation2.date ? NSOrderedAscending : NSOrderedDescending;
+            }];
+            
+            NSMutableArray *result = [[NSMutableArray alloc] init];
+            
+            TGUser *selfUser = [[TGDatabase instance] loadUser:TGTelegraphInstance.clientUserId];
+            
+            CFAbsoluteTime dialogListDataStartTime = CFAbsoluteTimeGetCurrent();
+            
+            for (TGConversation *conversation in conversations)
+            {
+                [self initializeDialogListData:conversation customUser:nil selfUser:selfUser];
+                [result addObject:conversation];
+            }
+            
+            NSString *searchString = _searchString;
+            
+            TGLog(@"Dialog list data parsing time: %f s", CFAbsoluteTimeGetCurrent() - dialogListDataStartTime);
+            
+            dispatch_async(dispatch_get_main_queue(), ^
+            {
+                TGDialogListController *dialogListController = self.dialogListController;
+                [dialogListController searchResultsReloaded:@{@"dialogs": result} searchString:searchString];
+            });
+        }
+    }
+}
+
+- (id)processSearchResultItem:(id)item
+{
+    bool forwardMode = self.forwardMode;
+    bool privacyMode = self.privacyMode;
+    bool showGroupsOnly = self.showGroupsOnly;
+    bool showSecretInForwardMode = self.showSecretInForwardMode;
+    
+    if ([item isKindOfClass:[TGConversation class]])
+    {
+        TGConversation *conversation = (TGConversation *)item;
+        if (((forwardMode || privacyMode) && conversation.conversationId <= INT_MIN) && !showSecretInForwardMode)
+            return nil;
+        
+        if ((forwardMode || privacyMode) && conversation.isBroadcast)
+            return nil;
+        
+        if (showGroupsOnly && (conversation.conversationId > 0 || conversation.conversationId <= INT_MIN))
+            return nil;
+        
+        [self initializeDialogListData:conversation customUser:nil selfUser:[TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId]];
+        return conversation;
+    }
+    else if ([item isKindOfClass:[TGUser class]])
+    {
+        if (showGroupsOnly)
+            return nil;
+        
+        return item;
+    }
+    
+    return nil;
+}
+
 - (void)actorCompleted:(int)resultCode path:(NSString *)path result:(id)result
 {
-    if ([path isEqualToString:[NSString stringWithFormat:@"/tg/search/dialogs/(%d)", [_searchString hash]]])
+    if ([path isEqualToString:[NSString stringWithFormat:@"/tg/search/dialogs/(%lu)", (unsigned long)[_searchString hash]]])
     {
         NSDictionary *dict = ((SGraphObjectNode *)result).object;
         
@@ -630,9 +807,9 @@ typedef enum {
         NSMutableArray *result = [[NSMutableArray alloc] init];
         if (chats != nil)
         {
-            TGUser *selfUser = [[TGDatabase instance] loadUser:TGTelegraphInstance.clientUserId];
-            
             bool forwardMode = self.forwardMode;
+            bool privacyMode = self.privacyMode;
+            bool showGroupsOnly = self.showGroupsOnly;
             bool showSecretInForwardMode = self.showSecretInForwardMode;
             
             for (id object in chats)
@@ -640,10 +817,16 @@ typedef enum {
                 if ([object isKindOfClass:[TGConversation class]])
                 {
                     TGConversation *conversation = (TGConversation *)object;
-                    if ((forwardMode && conversation.conversationId <= INT_MIN) && !showSecretInForwardMode)
+                    if (((forwardMode || privacyMode) && conversation.conversationId <= INT_MIN) && !showSecretInForwardMode)
                         continue;
                     
-                    [self initializeDialogListData:conversation customUser:nil selfUser:selfUser];
+                    if ((forwardMode || privacyMode) && conversation.isBroadcast)
+                        continue;
+                    
+                    if (showGroupsOnly && (conversation.conversationId <= INT_MIN || conversation.conversationId > 0))
+                        continue;
+                    
+                    [self initializeDialogListData:conversation customUser:nil selfUser:[TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId]];
                     [result addObject:conversation];
                 }
                 else
@@ -660,52 +843,61 @@ typedef enum {
         dispatch_async(dispatch_get_main_queue(), ^
         {
             TGDialogListController *dialogListController = self.dialogListController;
-            [dialogListController searchResultsReloaded:result searchString:searchString];
+            [dialogListController searchResultsReloaded:@{@"dialogs": result} searchString:searchString];
         });
     }
-    else if ([path isEqualToString:[NSString stringWithFormat:@"/tg/search/messages/(%d)", [_searchString hash]]])
+    else if ([path isEqualToString:[NSString stringWithFormat:@"/tg/search/messages/(%lu)", (unsigned long)[_searchString hash]]])
     {
-        NSArray *conversations = ((SGraphObjectNode *)result).object;
-        
-        NSMutableArray *result = [[NSMutableArray alloc] init];
-        
-        TGUser *selfUser = [[TGDatabase instance] loadUser:TGTelegraphInstance.clientUserId];
-        
-        CFAbsoluteTime dialogListDataStartTime = CFAbsoluteTimeGetCurrent();
-        
-        for (TGConversation *conversation in conversations)
-        {
-            [self initializeDialogListData:conversation customUser:nil selfUser:selfUser];
-            [result addObject:conversation];
-        }
-        
-        NSString *searchString = _searchString;
-        
-        TGLog(@"Dialog list data parsing time: %f s", CFAbsoluteTimeGetCurrent() - dialogListDataStartTime);
-        
-        dispatch_async(dispatch_get_main_queue(), ^
-        {
-            TGDialogListController *dialogListController = self.dialogListController;
-            [dialogListController searchResultsReloaded:result searchString:searchString];
-        });
+        [self actorMessageReceived:path messageType:@"searchResultsUpdated" message:result];
     }
     else if ([path hasPrefix:@"/tg/dialoglist"])
     {
         if (resultCode == 0)
         {
+            if (TGTelegraphInstance.clientUserId != 0) {
+                [_channelsDisposable setDisposable:[[TGChannelManagementSignals synchronizedChannelList] startWithNext:nil]];
+            }
+            
             SGraphListNode *listNode = (SGraphListNode *)result;
             NSMutableArray *loadedItems = [[listNode items] mutableCopy];
             bool canLoadMore = false;
             bool forwardMode = self.forwardMode;
+            bool privacyMode = self.privacyMode;
+            bool showGroupsOnly = self.showGroupsOnly;
             bool showSecretInForwardMode = self.showSecretInForwardMode;
             
             TGUser *selfUser = [[TGDatabase instance] loadUser:TGTelegraphInstance.clientUserId];
             
-            if (forwardMode && !showSecretInForwardMode)
+            if ((forwardMode || privacyMode) && !showSecretInForwardMode)
             {
                 for (int i = 0; i < (int)loadedItems.count; i++)
                 {
                     if (((TGConversation *)loadedItems[i]).conversationId <= INT_MIN)
+                    {
+                        [loadedItems removeObjectAtIndex:i];
+                        i--;
+                    }
+                }
+            }
+            
+            if (forwardMode || privacyMode)
+            {
+                for (int i = 0; i < (int)loadedItems.count; i++)
+                {
+                    if (((TGConversation *)loadedItems[i]).isBroadcast)
+                    {
+                        [loadedItems removeObjectAtIndex:i];
+                        i--;
+                    }
+                }
+            }
+            
+            if (showGroupsOnly)
+            {
+                for (int i = 0; i < (int)loadedItems.count; i++)
+                {
+                    TGConversation *conversation = loadedItems[i];
+                    if (conversation.conversationId <= INT_MIN || conversation.conversationId > 0)
                     {
                         [loadedItems removeObjectAtIndex:i];
                         i--;
@@ -761,6 +953,8 @@ typedef enum {
             
             NSArray *items = [NSArray arrayWithArray:_conversationList];
             
+            _canLoadMore = canLoadMore;
+            
             dispatch_async(dispatch_get_main_queue(), ^
             {
                 TGDialogListController *controller = self.dialogListController;
@@ -787,7 +981,7 @@ typedef enum {
                     
                     [TGModernConversationCompanion warmupResources];
                     
-                    [TGDatabaseInstance() preloadConversationStates:conversationIds];
+                    //[TGDatabaseInstance() preloadConversationStates:conversationIds];
                 });
             });
         }
@@ -831,25 +1025,91 @@ typedef enum {
             });
         }
     }
+    else if ([path hasPrefix:@"/tg/loadConversationAndMessageForSearch/"])
+    {
+        TGDispatchOnMainThread(^
+        {
+            [_progressWindow dismiss:true];
+            _progressWindow = nil;
+            
+            if (resultCode == ASStatusSuccess)
+            {
+                int64_t conversationId = [result[@"peerId"] longLongValue];
+                TGConversation *conversation = result[@"conversation"];
+                int32_t messageId = [result[@"messageId"] intValue];
+                
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false animated:true];
+            }
+        });
+    }
 }
 
-- (void)actionStageResourceDispatched:(NSString *)path resource:(id)resource arguments:(id)__unused arguments
+- (void)actionStageResourceDispatched:(NSString *)path resource:(id)resource arguments:(id)arguments
 {
     if ([path hasPrefix:@"/tg/dialoglist"])
     {
         [self actorCompleted:ASStatusSuccess path:path result:resource];
     }
-    else if ([path isEqualToString:@"/tg/conversations"])
+    else if ([path isEqualToString:@"/tg/conversations"] || [path isEqualToString:@"/tg/broadcastConversations"])
     {
         NSMutableArray *conversations = [((SGraphObjectNode *)resource).object mutableCopy];
         
+        for (NSInteger i = 0; i < (NSInteger)conversations.count; i++) {
+            TGConversation *conversation = conversations[i];
+            if (conversation.isChannel && conversation.kind != TGConversationKindPersistentChannel) {
+                [conversations removeObjectAtIndex:i];
+                i--;
+            }
+        }
+        
         TGUser *selfUser = [[TGDatabase instance] loadUser:TGTelegraphInstance.clientUserId];
         
-        if (self.forwardMode && !self.showSecretInForwardMode)
+        TGDialogListController *controller = self.dialogListController;
+        if (controller.isDisplayingSearch)
+        {
+            NSMutableArray *searchConversations = [[NSMutableArray alloc] init];
+            for (TGConversation *conversation in ((SGraphObjectNode *)resource).object)
+            {
+                TGConversation *copyConversation = [conversation copy];
+                [self initializeDialogListData:copyConversation customUser:nil selfUser:selfUser];
+                [searchConversations addObject:copyConversation];
+            }
+            TGDispatchOnMainThread(^
+            {
+                [controller updateSearchConversations:searchConversations];
+            });
+        }
+        
+        if ((self.forwardMode || self.privacyMode) && !self.showSecretInForwardMode)
         {
             for (int i = 0; i < (int)conversations.count; i++)
             {
                 if (((TGConversation *)conversations[i]).conversationId <= INT_MIN)
+                {
+                    [conversations removeObjectAtIndex:i];
+                    i--;
+                }
+            }
+        }
+        
+        if (self.forwardMode || self.privacyMode)
+        {
+            for (int i = 0; i < (int)conversations.count; i++)
+            {
+                if (((TGConversation *)conversations[i]).isBroadcast)
+                {
+                    [conversations removeObjectAtIndex:i];
+                    i--;
+                }
+            }
+        }
+        
+        if (self.showGroupsOnly)
+        {
+            for (int i = 0; i < (int)conversations.count; i++)
+            {
+                TGConversation *conversation = conversations[i];
+                if (conversation.conversationId <= INT_MIN || conversation.conversationId > 0)
                 {
                     [conversations removeObjectAtIndex:i];
                     i--;
@@ -919,8 +1179,6 @@ typedef enum {
             }
         }
         
-#warning optimize
-        
         for (int i = 0; i < (int)_conversationList.count; i++)
         {
             TGConversation *conversation = [_conversationList objectAtIndex:i];
@@ -957,6 +1215,17 @@ typedef enum {
                  return NSOrderedSame;
          }];
         
+        if ([arguments[@"filterEarliest"] boolValue] && _canLoadMore) {
+            while (_conversationList.count != 0) {
+                TGConversation *conversation = [_conversationList lastObject];
+                if (conversation.isChannel) {
+                    [_conversationList removeLastObject];
+                } else {
+                    break;
+                }
+            }
+        }
+        
         NSArray *items = [NSArray arrayWithArray:_conversationList];
         
         dispatch_async(dispatch_get_main_queue(), ^
@@ -965,15 +1234,8 @@ typedef enum {
             if (controller != nil)
             {
                 [controller dialogListFullyReloaded:items];
-                
-                if (TGAppDelegateInstance.tabletMainViewController != nil && !self.forwardMode)
-                {
-                    if ([((UINavigationController *)TGAppDelegateInstance.tabletMainViewController.detailViewController).topViewController isKindOfClass:[TGModernConversationController class]])
-                    {
-                        TGModernConversationController *conversationController = (TGModernConversationController *)(((UINavigationController *)TGAppDelegateInstance.tabletMainViewController.detailViewController).topViewController);
-                        int64_t selectedConversationId = ((TGGenericModernConversationCompanion *)conversationController.companion).conversationId;
-                        [controller selectConversationWithId:selectedConversationId];
-                    }
+                if (!self.forwardMode && !self.privacyMode) {
+                    [controller selectConversationWithId:[self openedConversationId]];
                 }
             }
         });
@@ -1038,23 +1300,51 @@ typedef enum {
         int64_t conversationId = [[dict objectForKey:@"conversationId"] longLongValue];
         if (conversationId != 0)
         {
-            NSArray *typingUsers = [dict objectForKey:@"typingUsers"];
+            NSDictionary *userActivities = [dict objectForKey:@"typingUsers"];
             NSString *typingString = nil;
-            if (conversationId < 0)
+            NSArray *typingUsers = userActivities.allKeys;
+            if (conversationId < 0 && conversationId > INT_MIN && typingUsers.count != 0)
             {
-                if (typingUsers.count == 1)
+                NSMutableString *userNames = [[NSMutableString alloc] init];
+                NSMutableArray *userNamesArray = [[NSMutableArray alloc] init];
+                for (NSNumber *nUid in typingUsers)
                 {
-                    TGUser *user = [TGDatabaseInstance() loadUser:[(NSNumber *)[typingUsers objectAtIndex:0] intValue]];
-                    NSString *firstName = user.firstName;
-                    if (firstName.length == 0)
-                        firstName = user.lastName;
-                    typingString = [[NSString alloc] initWithFormat:TGLocalized(@"DialogList.SingleTypingSuffix"), firstName];
+                    TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                    if (userNames.length != 0)
+                        [userNames appendString:@", "];
+                    [userNames appendString:user.displayFirstName == nil ? @"" : user.displayFirstName];
+                    if (user.displayFirstName != nil)
+                        [userNamesArray addObject:user.displayFirstName];
                 }
-                else if (typingUsers.count > 1)
-                    typingString = [[NSString alloc] initWithFormat:TGLocalized(@"DialogList.MultipleTypingSuffix"), typingUsers.count];
+                
+                if (userNamesArray.count == 1)
+                {
+                    typingString = [[NSString alloc] initWithFormat:[self formatForGroupActivity:userActivities[typingUsers[0]]], userNames];
+                }
+                else if (userNamesArray.count != 0)
+                {
+                    NSString *format = [TGStringUtils integerValueFormat:@"ForwardedAuthorsOthers_" value:userNamesArray.count - 1];
+                    typingString = [[NSString alloc] initWithFormat:TGLocalized(format), userNamesArray[0], [[NSString alloc] initWithFormat:@"%d", (int)userNamesArray.count - 1]];
+                }
             }
             else if (typingUsers.count != 0)
-                typingString = TGLocalized(@"DialogList.Typing");
+            {
+                NSMutableString *userNames = [[NSMutableString alloc] init];
+                for (NSNumber *nUid in typingUsers)
+                {
+                    TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                    if (userNames.length != 0)
+                        [userNames appendString:@", "];
+                    [userNames appendString:user.displayFirstName];
+                }
+                
+                if (typingUsers.count == 1)
+                {
+                    typingString = [[NSString alloc] initWithFormat:[self formatForUserActivity:userActivities[typingUsers[0]]], userNames];
+                }
+                else
+                    typingString = userNames;
+            }
             
             dispatch_async(dispatch_get_main_queue(), ^
             {
@@ -1077,12 +1367,14 @@ typedef enum {
                 int unreadCount = [TGDatabaseInstance() databaseState].unreadCount;
                 TGDispatchOnMainThread(^
                 {
-                    [[UIApplication sharedApplication] setApplicationIconBadgeNumber:unreadCount];
+                    if (![arguments[@"previous"] boolValue]) {
+                        [[UIApplication sharedApplication] setApplicationIconBadgeNumber:unreadCount];
+                    }
                     if (unreadCount == 0)
                         [[UIApplication sharedApplication] cancelAllLocalNotifications];
                     
                     self.unreadCount = unreadCount;
-                    [TGAppDelegateInstance.mainTabsController setUnreadCount:unreadCount];
+                    [TGAppDelegateInstance.rootController.mainTabsController setUnreadCount:unreadCount];
                     
                     TGDialogListController *dialogListController = self.dialogListController;
                     dialogListController.tabBarItem.badgeValue = unreadCount == 0 ? nil : [[NSString alloc] initWithFormat:@"%d", unreadCount];
@@ -1099,11 +1391,18 @@ typedef enum {
         
         int64_t peerId = [[path substringWithRange:NSMakeRange(18, path.length - 1 - 18)] longLongValue];
         
-        int count = _conversationList.count;
+        int count = (int)_conversationList.count;
         for (int i = 0; i < count; i++)
         {
             TGConversation *conversation = [_conversationList objectAtIndex:i];
-            if (conversation.conversationId == peerId)
+            int64_t mutePeerId = conversation.conversationId;
+            if (conversation.isEncrypted)
+            {
+                if (conversation.chatParticipants.chatParticipantUids.count != 0)
+                    mutePeerId = [conversation.chatParticipants.chatParticipantUids[0] intValue];
+            }
+            
+            if (mutePeerId == peerId)
             {
                 TGConversation *newConversation = [conversation copy];
                 NSMutableDictionary *newData = [conversation.dialogListData mutableCopy];
@@ -1134,7 +1433,7 @@ typedef enum {
         NSMutableArray *updatedItems = [[NSMutableArray alloc] init];
         
         int index = -1;
-        int count = _conversationList.count;
+        int count = (int)_conversationList.count;
         for (int i = 0; i < count; i++)
         {
             index++;
@@ -1149,7 +1448,9 @@ typedef enum {
                 
                 NSString *title = nil;
                 
-                if (user.phoneNumber.length != 0 && ![TGDatabaseInstance() uidIsRemoteContact:user.uid] && user.uid != 333000)
+                if (user.uid == [TGTelegraphInstance serviceUserUid])
+                    title = [user displayName];
+                else if (user.phoneNumber.length != 0 && ![TGDatabaseInstance() uidIsRemoteContact:user.uid])
                     title = user.formattedPhoneNumber;
                 else
                     title = [user displayName];
@@ -1178,6 +1479,45 @@ typedef enum {
             });
         }
     }
+    else if ([path isEqualToString:@"/databasePasswordChanged"])
+    {
+        TGDispatchOnMainThread(^
+        {
+            TGDialogListController *controller = self.dialogListController;
+            [controller updateDatabasePassword];
+        });
+    }
+    else if ([path isEqualToString:@"/tg/channelListSyncrhonized"]) {
+        [self actionStageResourceDispatched:@"/tg/conversations" resource:[[SGraphObjectNode alloc] initWithObject:resource] arguments:@{@"filterEarliest": @true}];
+    }
+}
+
+- (NSString *)formatForGroupActivity:(NSString *)activity
+{
+    if ([activity isEqualToString:@"recordingAudio"])
+        return TGLocalized(@"DialogList.SingleRecordingAudioSuffix");
+    else if ([activity isEqualToString:@"uploadingPhoto"])
+        return TGLocalized(@"DialogList.SingleUploadingPhotoSuffix");
+    else if ([activity isEqualToString:@"uploadingVideo"])
+        return TGLocalized(@"DialogList.SingleUploadingVideoSuffix");
+    else if ([activity isEqualToString:@"uploadingDocument"])
+        return TGLocalized(@"DialogList.SingleUploadingFileSuffix");
+    
+    return TGLocalized(@"DialogList.SingleTypingSuffix");
+}
+
+- (NSString *)formatForUserActivity:(NSString *)activity
+{
+    if ([activity isEqualToString:@"recordingAudio"])
+        return TGLocalized(@"Activity.RecordingAudio");
+    else if ([activity isEqualToString:@"uploadingPhoto"])
+        return TGLocalized(@"Activity.UploadingPhoto");
+    else if ([activity isEqualToString:@"uploadingVideo"])
+        return TGLocalized(@"Activity.UploadingVideo");
+    else if ([activity isEqualToString:@"uploadingDocument"])
+        return TGLocalized(@"Activity.UploadingDocument");
+    
+    return TGLocalized(@"DialogList.Typing");
 }
 
 @end

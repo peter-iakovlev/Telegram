@@ -10,6 +10,8 @@
 
 #import "TGInterfaceAssets.h"
 
+#import "TGPeerIdAdapter.h"
+
 #import "TGImageUtils.h"
 #import "TGStringUtils.h"
 
@@ -183,6 +185,20 @@
                         
                         break;
                     }
+                    case TGMessageActionChannelCreated:
+                    {
+                        messageText = TGLocalized(@"Notification.CreatedChannel");
+                        attachmentFound = true;
+                        
+                        break;
+                    }
+                    case TGMessageActionChannelCommentsStatusChanged:
+                    {
+                        messageText = [actionAttachment.actionData[@"enabled"] boolValue] ? TGLocalized(@"Channel.NotificationCommentsEnabled") : TGLocalized(@"Channel.NotificationCommentsDisabled");;
+                        attachmentFound = true;
+                        
+                        break;
+                    }
                     case TGMessageActionContactRegistered:
                     {
                         TGUser *user = [_users objectForKey:@"author"];
@@ -242,7 +258,32 @@
             }
             else if (attachment.type == TGDocumentMediaAttachmentType)
             {
-                messageText = TGLocalized(@"Message.File");
+                TGDocumentMediaAttachment *documentAttachment = (TGDocumentMediaAttachment *)attachment;
+                
+                bool isAnimated = false;
+                CGSize imageSize = CGSizeZero;
+                bool isSticker = false;
+                for (id attribute in documentAttachment.attributes)
+                {
+                    if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]])
+                    {
+                        isAnimated = true;
+                    }
+                    else if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]])
+                    {
+                        imageSize = ((TGDocumentAttributeImageSize *)attribute).size;
+                    }
+                    else if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
+                    {
+                        isSticker = true;
+                    }
+                }
+                
+                if (isSticker)
+                    messageText = TGLocalized(@"Message.Sticker");
+                else
+                    messageText = TGLocalized(@"Message.File");
+                
                 attachmentFound = true;
                 break;
             }
@@ -298,8 +339,11 @@
         
         if (_avatarUrl != nil)
             [_avatarView loadImage:_avatarUrl filter:@"circle:44x44" placeholder:placeholder];
-        else
+        else if (_authorUid < 0 && TGPeerIdIsChannel(_conversationId)) {
+            [_avatarView loadGroupPlaceholderWithSize:CGSizeMake(44.0f, 44.0f) conversationId:_conversationId title:_firstName placeholder:placeholder];
+        } else {
             [_avatarView loadUserPlaceholderWithSize:CGSizeMake(44.0f, 44.0f) uid:_authorUid firstName:_firstName lastName:_lastName placeholder:placeholder];
+        }
     }
 }
 

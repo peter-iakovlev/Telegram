@@ -10,6 +10,8 @@
 
 #import "TGMessage.h"
 #import "TGUser.h"
+#import "TGConversation.h"
+#import "TGPeerIdAdapter.h"
 
 #import "TGImageUtils.h"
 #import "TGDateUtils.h"
@@ -29,19 +31,44 @@
 
 #import "TGDoubleTapGestureRecognizer.h"
 
+#import "TGReplyHeaderTextModel.h"
+#import "TGReplyHeaderPhotoModel.h"
+#import "TGReplyHeaderVideoModel.h"
+#import "TGReplyHeaderAudioModel.h"
+#import "TGReplyHeaderFileModel.h"
+#import "TGReplyHeaderContactModel.h"
+#import "TGReplyHeaderLocationModel.h"
+#import "TGReplyHeaderStickerModel.h"
+#import "TGReplyHeaderActionModel.h"
+
+#import "TGPendingWebpageFooterModel.h"
+#import "TGArticleWebpageFooterModel.h"
+
+#import "TGMessageViewsViewModel.h"
+
+bool debugShowMessageIds = false;
+
 @interface TGContentBubbleViewModel () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate>
 {
     UITapGestureRecognizer *_unsentButtonTapRecognizer;
     TGDoubleTapGestureRecognizer *_boundDoubleTapRecognizer;
+    
+    TGModernImageViewModel *_broadcastIconModel;
+    CGPoint _itemPosition;
 }
 
 @end
 
 @implementation TGContentBubbleViewModel
 
-- (instancetype)initWithMessage:(TGMessage *)message author:(TGUser *)author context:(TGModernViewContext *)context
++ (void)debugEnableShowMessageIds
 {
-    self = [super initWithAuthor:author context:context];
+    debugShowMessageIds = true;
+}
+
+- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer context:(TGModernViewContext *)context
+{
+    self = [super initWithAuthorPeer:authorPeer context:context];
     if (self != nil)
     {
         static TGTelegraphConversationMessageAssetsSource *assetsSource = nil;
@@ -60,13 +87,17 @@
         
         _needsEditingCheckButton = true;
         
+        bool isChannel = [authorPeer isKindOfClass:[TGConversation class]];
+        
         _mid = message.mid;
         _incoming = !message.outgoing;
+        _incomingAppearance = _incoming || isChannel;
         _deliveryState = message.deliveryState;
         _read = !message.unread;
         _date = (int32_t)message.date;
+        _messageViews = message.viewCount;
         
-        _backgroundModel = [[TGTextMessageBackgroundViewModel alloc] initWithType:_incoming ? TGTextMessageBackgroundIncoming : TGTextMessageBackgroundOutgoing];
+        _backgroundModel = [[TGTextMessageBackgroundViewModel alloc] initWithType:_incomingAppearance ? TGTextMessageBackgroundIncoming : TGTextMessageBackgroundOutgoing];
         _backgroundModel.blendMode = kCGBlendModeCopy;
         _backgroundModel.skipDrawInContext = true;
         [self addSubmodel:_backgroundModel];
@@ -75,18 +106,39 @@
         _contentModel.viewUserInteractionDisabled = true;
         [self addSubmodel:_contentModel];
         
-        if (author != nil)
+        if (authorPeer != nil)
         {
-            _authorNameModel = [[TGModernTextViewModel alloc] initWithText:author.displayName font:[assetsSource messageAuthorNameFont]];
+            NSString *title = @"";
+            if ([authorPeer isKindOfClass:[TGUser class]]) {
+                title = ((TGUser *)authorPeer).displayName;
+            } else if ([authorPeer isKindOfClass:[TGConversation class]]) {
+                title = ((TGConversation *)authorPeer).chatTitle;
+            }
+            _authorNameModel = [[TGModernTextViewModel alloc] initWithText:title font:[assetsSource messageAuthorNameFont]];
             [_contentModel addSubmodel:_authorNameModel];
             
-            _hasAvatar = true;
+            if ([authorPeer isKindOfClass:[TGUser class]]) {
+                _hasAvatar = true;
+            }
+        }
+        
+        if (isChannel) {
+            [_backgroundModel setPartialMode:false];
         }
         
         int daytimeVariant = 0;
         NSString *dateText = [TGDateUtils stringForShortTime:(int)message.date daytimeVariant:&daytimeVariant];
-        _dateModel = [[TGModernDateViewModel alloc] initWithText:dateText textColor:_incoming ? incomingDateColor : outgoingDateColor daytimeVariant:daytimeVariant];
+        if (debugShowMessageIds)
+            dateText = [[NSString alloc] initWithFormat:@"%d", message.mid];
+        _dateModel = [[TGModernDateViewModel alloc] initWithText:dateText textColor:_incomingAppearance ? incomingDateColor : outgoingDateColor daytimeVariant:daytimeVariant];
         [_contentModel addSubmodel:_dateModel];
+        
+        if (message.isBroadcast)
+        {
+            _broadcastIconModel = [[TGModernImageViewModel alloc] initWithImage:[UIImage imageNamed:@"ModernMessageBroadcastIcon.png"]];
+            [_broadcastIconModel sizeToFit];
+            [_contentModel addSubmodel:_broadcastIconModel];
+        }
         
         if (!_incoming)
         {
@@ -105,11 +157,13 @@
             
             if (_deliveryState == TGMessageDeliveryStatePending)
             {
-                _progressModel = [[TGModernClockProgressViewModel alloc] initWithType:TGModernClockProgressTypeOutgoingClock];
+                _progressModel = [[TGModernClockProgressViewModel alloc] initWithType:_incomingAppearance ? TGModernClockProgressTypeIncomingClock : TGModernClockProgressTypeOutgoingClock];
                 [self addSubmodel:_progressModel];
                 
-                [self addSubmodel:_checkFirstModel];
-                [self addSubmodel:_checkSecondModel];
+                if (!_incomingAppearance) {
+                    [self addSubmodel:_checkFirstModel];
+                    [self addSubmodel:_checkSecondModel];
+                }
                 _checkFirstModel.alpha = 0.0f;
                 _checkSecondModel.alpha = 0.0f;
             }
@@ -119,20 +173,34 @@
             }
             else if (_deliveryState == TGMessageDeliveryStateDelivered)
             {
-                [_contentModel addSubmodel:_checkFirstModel];
+                if (!_incomingAppearance) {
+                    [_contentModel addSubmodel:_checkFirstModel];
+                }
                 _checkFirstEmbeddedInContent = true;
                 
                 if (_read)
                 {
-                    [_contentModel addSubmodel:_checkSecondModel];
+                    if (!_incomingAppearance) {
+                        [_contentModel addSubmodel:_checkSecondModel];
+                    }
                     _checkSecondEmbeddedInContent = true;
                 }
                 else
                 {
-                    [self addSubmodel:_checkSecondModel];
+                    if (!_incomingAppearance) {
+                        [self addSubmodel:_checkSecondModel];
+                    }
                     _checkSecondModel.alpha = 0.0f;
                 }
             }
+        }
+        
+        if (_messageViews != nil) {
+            _messageViewsModel = [[TGMessageViewsViewModel alloc] init];
+            _messageViewsModel.type = _incomingAppearance ? TGMessageViewsViewTypeIncoming : TGMessageViewsViewTypeOutgoing;
+            _messageViewsModel.count = _messageViews.viewCount;
+            [self addSubmodel:_messageViewsModel];
+            _messageViewsModel.hidden = _deliveryState != TGMessageDeliveryStateDelivered;
         }
     }
     return self;
@@ -151,7 +219,7 @@
     _authorNameModel.textColor = authorNameColor;
 }
 
-- (void)setForwardHeader:(TGUser *)forwardUser
+- (void)setForwardHeader:(id)forwardPeer messageId:(int32_t)messageId
 {
     if (_forwardedHeaderModel == nil)
     {
@@ -170,14 +238,21 @@
         static int localizationVersion = -1;
         if (localizationVersion != TGLocalizedStaticVersion)
             formatNameRange = [TGLocalized(@"Message.ForwardedMessage") rangeOfString:@"%@"];
-        
-        _forwardedUid = forwardUser.uid;
-        
-        NSString *authorName = forwardUser.displayName;
+
+        _forwardedMessageId = messageId;
+        NSString *authorName = @"";
+        if ([forwardPeer isKindOfClass:[TGUser class]]) {
+            _forwardedPeerId = ((TGUser *)forwardPeer).uid;
+            authorName = ((TGUser *)forwardPeer).displayName;
+        } else if ([forwardPeer isKindOfClass:[TGConversation class]]) {
+            _forwardedPeerId = ((TGConversation *)forwardPeer).conversationId;
+            authorName = ((TGConversation *)forwardPeer).chatTitle;
+        }
+
         NSString *text = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Message.ForwardedMessage"), authorName];
         
         _forwardedHeaderModel = [[TGModernTextViewModel alloc] initWithText:text font:[[TGTelegraphConversationMessageAssetsSource instance] messageForwardTitleFont]];
-        _forwardedHeaderModel.textColor = _incoming ? incomingForwardColor : outgoingForwardColor;
+        _forwardedHeaderModel.textColor = _incomingAppearance ? incomingForwardColor : outgoingForwardColor;
         _forwardedHeaderModel.layoutFlags = TGReusableLabelLayoutMultiline;
         if (formatNameRange.location != NSNotFound && authorName.length != 0)
         {
@@ -188,6 +263,100 @@
         
         [_contentModel addSubmodel:_forwardedHeaderModel];
     }
+}
+
++ (TGReplyHeaderModel *)replyHeaderModelFromMessage:(TGMessage *)replyHeader peer:(id)peer incoming:(bool)incoming system:(bool)system
+{
+    for (id attachment in replyHeader.mediaAttachments)
+    {
+        if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
+        {
+            return [[TGReplyHeaderPhotoModel alloc] initWithPeer:peer imageMedia:(TGImageMediaAttachment *)attachment incoming:incoming system:system];
+        }
+        else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
+        {
+            return [[TGReplyHeaderVideoModel alloc] initWithPeer:peer videoMedia:(TGVideoMediaAttachment *)attachment incoming:incoming system:system];
+        }
+        else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
+        {
+            bool isSticker = false;
+            for (id attribute in ((TGDocumentMediaAttachment *)attachment).attributes)
+            {
+                if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
+                {
+                    isSticker = true;
+                    break;
+                }
+            }
+            
+            if (isSticker)
+            {
+                return [[TGReplyHeaderStickerModel alloc] initWithPeer:peer fileMedia:(TGDocumentMediaAttachment *)attachment incoming:incoming system:system];
+            }
+            else
+            {
+                return [[TGReplyHeaderFileModel alloc] initWithPeer:peer fileMedia:(TGDocumentMediaAttachment *)attachment incoming:incoming system:system];
+            }
+        }
+        else if ([attachment isKindOfClass:[TGLocationMediaAttachment class]])
+        {
+            return [[TGReplyHeaderLocationModel alloc] initWithPeer:peer latitude:((TGLocationMediaAttachment *)attachment).latitude longitude:((TGLocationMediaAttachment *)attachment).longitude incoming:incoming system:system];
+        }
+        else if ([attachment isKindOfClass:[TGContactMediaAttachment class]])
+        {
+            return [[TGReplyHeaderContactModel alloc] initWithPeer:peer incoming:incoming system:system];
+        }
+        else if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
+        {
+            return [[TGReplyHeaderAudioModel alloc] initWithPeer:peer audioMedia:(TGAudioMediaAttachment *)attachment incoming:incoming system:system];
+        }
+        else if ([attachment isKindOfClass:[TGActionMediaAttachment class]])
+        {
+            return [[TGReplyHeaderActionModel alloc] initWithPeer:peer actionMedia:(TGActionMediaAttachment *)attachment incoming:incoming system:system];
+        }
+    }
+    
+    return [[TGReplyHeaderTextModel alloc] initWithPeer:peer text:replyHeader.text incoming:incoming system:system];
+}
+
+- (void)setReplyHeader:(TGMessage *)replyHeader peer:(id)peer
+{
+    _replyHeaderModel = [TGContentBubbleViewModel replyHeaderModelFromMessage:replyHeader peer:peer incoming:_incomingAppearance system:false];
+    if (_replyHeaderModel != nil)
+        [_contentModel addSubmodel:_replyHeaderModel];
+    _replyMessageId = replyHeader.mid;
+}
+
+- (void)setWebPageFooter:(TGWebPageMediaAttachment *)webPage viewStorage:(TGModernViewStorage *)viewStorage
+{
+    _webPage = webPage;
+    if (webPage.url.length == 0)
+    {
+    }
+    else
+    {
+        bool imageInText = true;
+        if ([webPage.pageType isEqualToString:@"photo"] || [webPage.pageType isEqualToString:@"video"])
+            imageInText = false;
+        
+        _webPageFooterModel = [[TGArticleWebpageFooterModel alloc] initWithWithIncoming:_incomingAppearance webPage:webPage imageInText:imageInText hasViews:_messageViews != nil];
+        [_contentModel addSubmodel:_webPageFooterModel];
+    }
+    
+    if ([_contentModel boundView] != nil)
+    {
+        [_webPageFooterModel bindSpecialViewsToContainer:_contentModel.boundView viewStorage:viewStorage atItemPosition:CGPointMake(_itemPosition.x + _webPageFooterModel.frame.origin.x, _itemPosition.y + _webPageFooterModel.frame.origin.y)];
+    }
+}
+
+- (UIView *)referenceViewForImageTransition
+{
+    return [_webPageFooterModel referenceViewForImageTransition];
+}
+
+- (void)updateMediaVisibility
+{
+    [_webPageFooterModel setMediaVisible:[_context isMediaVisibleInMessage:_mid]];
 }
 
 - (TGModernImageViewModel *)unsentButtonModel
@@ -209,11 +378,41 @@
     return _unsentButtonModel;
 }
 
-- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage
+- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
 {
-    [super updateMessage:message viewStorage:viewStorage];
+    [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
     
     _mid = message.mid;
+    
+    if (_messageViewsModel != nil) {
+        _messageViewsModel.count = message.viewCount.viewCount;
+    }
+    
+    for (id attachment in message.mediaAttachments)
+    {
+        if ([attachment isKindOfClass:[TGWebPageMediaAttachment class]])
+        {
+            if (_webPageFooterModel == nil)
+            {
+                if (![_webPage isEqual:attachment])
+                {
+                    [self setWebPageFooter:attachment viewStorage:viewStorage];
+                    if (sizeUpdated)
+                        *sizeUpdated = true;
+                }
+            }
+            else if (![_webPage isEqual:attachment])
+            {
+                [_contentModel removeSubmodel:_webPageFooterModel viewStorage:viewStorage];
+                _webPageFooterModel = nil;
+                
+                [self setWebPageFooter:attachment viewStorage:viewStorage];
+                if (sizeUpdated)
+                    *sizeUpdated = true;
+            }
+            break;
+        }
+    }
     
     if (_deliveryState != message.deliveryState || (!_incoming && _read != !message.unread))
     {
@@ -222,10 +421,14 @@
         TGMessageDeliveryState previousDeliveryState = _deliveryState;
         _deliveryState = message.deliveryState;
         
+        if (_messageViewsModel != nil) {
+            _messageViewsModel.hidden = _deliveryState != TGMessageDeliveryStateDelivered;
+        }
+        
         bool previousRead = _read;
         _read = !message.unread;
         
-        if (_date != (int32_t)message.date)
+        if (_date != (int32_t)message.date && !debugShowMessageIds)
         {
             _date = (int32_t)message.date;
             
@@ -338,11 +541,15 @@
             if (_progressModel == nil)
             {
                 CGFloat unsentOffset = 0.0f;
-                if (!_incoming && previousDeliveryState == TGMessageDeliveryStateFailed)
+                if (!_incomingAppearance && previousDeliveryState == TGMessageDeliveryStateFailed)
                     unsentOffset = 29.0f;
                 
                 _progressModel = [[TGModernClockProgressViewModel alloc] initWithType:TGModernClockProgressTypeOutgoingClock];
-                _progressModel.frame = CGRectMake(self.frame.size.width - 28 - layoutConstants->rightInset - unsentOffset, _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
+                if (_incomingAppearance) {
+                    _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 27.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
+                } else {
+                    _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - 23.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
+                }
                 [self addSubmodel:_progressModel];
                 
                 if ([_contentModel boundView] != nil)
@@ -356,19 +563,21 @@
             _checkFirstEmbeddedInContent = false;
             _checkSecondEmbeddedInContent = false;
             
-            if (![self containsSubmodel:_checkFirstModel])
-            {
-                [self addSubmodel:_checkFirstModel];
-                
-                if ([_contentModel boundView] != nil)
-                    [_checkFirstModel bindViewToContainer:[_contentModel boundView].superview viewStorage:viewStorage];
-            }
-            if (![self containsSubmodel:_checkSecondModel])
-            {
-                [self addSubmodel:_checkSecondModel];
-                
-                if ([_contentModel boundView] != nil)
-                    [_checkSecondModel bindViewToContainer:[_contentModel boundView].superview viewStorage:viewStorage];
+            if (!_incomingAppearance) {
+                if (![self containsSubmodel:_checkFirstModel])
+                {
+                    [self addSubmodel:_checkFirstModel];
+                    
+                    if ([_contentModel boundView] != nil)
+                        [_checkFirstModel bindViewToContainer:[_contentModel boundView].superview viewStorage:viewStorage];
+                }
+                if (![self containsSubmodel:_checkSecondModel])
+                {
+                    [self addSubmodel:_checkSecondModel];
+                    
+                    if ([_contentModel boundView] != nil)
+                        [_checkSecondModel bindViewToContainer:[_contentModel boundView].superview viewStorage:viewStorage];
+                }
             }
             
             _checkFirstModel.alpha = 0.0f;
@@ -444,7 +653,7 @@
 
 - (void)_maybeRestructureStateModels:(TGModernViewStorage *)viewStorage
 {
-    if (!_incoming && [_contentModel boundView] == nil)
+    if (!_incoming && [_contentModel boundView] == nil && !_incomingAppearance)
     {
         if (_deliveryState == TGMessageDeliveryStateDelivered)
         {
@@ -479,19 +688,32 @@
 {
     [super bindSpecialViewsToContainer:container viewStorage:viewStorage atItemPosition:itemPosition];
     
+    _itemPosition = itemPosition;
+    
     [_backgroundModel bindViewToContainer:container viewStorage:viewStorage];
     [_backgroundModel boundView].frame = CGRectOffset([_backgroundModel boundView].frame, itemPosition.x, itemPosition.y);
+    
+    [_replyHeaderModel bindSpecialViewsToContainer:container viewStorage:viewStorage atItemPosition:CGPointMake(itemPosition.x + _contentModel.frame.origin.x + _replyHeaderModel.frame.origin.x, itemPosition.y + _contentModel.frame.origin.y + _replyHeaderModel.frame.origin.y)];
+    
+    [_webPageFooterModel bindSpecialViewsToContainer:container viewStorage:viewStorage atItemPosition:CGPointMake(itemPosition.x + _contentModel.frame.origin.x + _webPageFooterModel.frame.origin.x, itemPosition.y + _contentModel.frame.origin.y + _webPageFooterModel.frame.origin.y)];
 }
 
 - (void)bindViewToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage
 {
     [self _maybeRestructureStateModels:viewStorage];
     
+    _itemPosition = CGPointZero;
+    
     [self updateEditingState:nil viewStorage:nil animationDelay:-1.0];
     
     [super bindViewToContainer:container viewStorage:viewStorage];
     
+    [_replyHeaderModel bindSpecialViewsToContainer:_contentModel.boundView viewStorage:viewStorage atItemPosition:CGPointMake(_replyHeaderModel.frame.origin.x, _replyHeaderModel.frame.origin.y)];
+    
+    [_webPageFooterModel bindSpecialViewsToContainer:_contentModel.boundView viewStorage:viewStorage atItemPosition:CGPointMake(_webPageFooterModel.frame.origin.x, _webPageFooterModel.frame.origin.y)];
+    
     _boundDoubleTapRecognizer = [[TGDoubleTapGestureRecognizer alloc] initWithTarget:self action:@selector(messageDoubleTapGesture:)];
+    _boundDoubleTapRecognizer.cancelsTouchesInView = true;
     _boundDoubleTapRecognizer.delegate = self;
     
     UIView *backgroundView = [_backgroundModel boundView];
@@ -544,8 +766,15 @@
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
             else if (recognizer.doubleTapped)
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
-            else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point))
-                [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @(_forwardedUid)}];
+            else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
+                if (TGPeerIdIsChannel(_forwardedPeerId)) {
+                    [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+                } else {
+                    [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                }
+            }
+            else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
+                [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
         }
     }
 }
@@ -585,7 +814,11 @@
     if (_collapseFlags != collapseFlags)
     {
         _collapseFlags = collapseFlags;
-        [_backgroundModel setPartialMode:collapseFlags & TGModernConversationItemCollapseBottom];
+        if ([_authorPeer isKindOfClass:[TGConversation class]]) {
+            [_backgroundModel setPartialMode:false];
+        } else {
+            [_backgroundModel setPartialMode:collapseFlags & TGModernConversationItemCollapseBottom];
+        }
     }
 }
 
@@ -593,13 +826,15 @@
 {
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)__unused needsContentsUpdate
+- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)__unused needsContentsUpdate hasDate:(bool)__unused hasDate hasViews:(bool)__unused hasViews
 {
     return CGSizeZero;
 }
 
 - (void)layoutForContainerSize:(CGSize)containerSize
 {
+    bool isPost = _authorPeer != nil && [_authorPeer isKindOfClass:[TGConversation class]];
+    
     TGMessageViewModelLayoutConstants const *layoutConstants = TGGetMessageViewModelLayoutConstants();
     
     bool isRTL = TGIsRTL();
@@ -607,10 +842,14 @@
     CGFloat topSpacing = (_collapseFlags & TGModernConversationItemCollapseTop) ? layoutConstants->topInsetCollapsed : layoutConstants->topInset;
     CGFloat bottomSpacing = (_collapseFlags & TGModernConversationItemCollapseBottom) ? layoutConstants->bottomInsetCollapsed : layoutConstants->bottomInset;
     
+    if (isPost) {
+        topSpacing = layoutConstants->topPostInset;
+        bottomSpacing = layoutConstants->bottomPostInset;
+    }
+    
     CGSize contentContainerSize = CGSizeMake(MIN(420.0f, containerSize.width - 80.0f - (_hasAvatar ? 38.0f : 0.0f)), containerSize.height);
     
     bool updateContents = false;
-    CGSize contentSize = [self contentSizeForContainerSize:contentContainerSize needsContentsUpdate:&updateContents];
     
     CGSize headerSize = CGSizeZero;
     if (_authorNameModel != nil)
@@ -636,21 +875,81 @@
         headerSize.width = MAX(headerSize.width, forwardedHeaderFrame.size.width);
     }
     
+    if (_replyHeaderModel != nil)
+    {
+        bool updateContent = false;
+        [_replyHeaderModel layoutForContainerSize:CGSizeMake(containerSize.width - 80.0f - (_hasAvatar ? 38.0f : 0.0f), containerSize.height) updateContent:&updateContent];
+        if (updateContent)
+            updateContents = true;
+        CGRect replyHeaderFrame = _replyHeaderModel.frame;
+        replyHeaderFrame.origin = CGPointMake(1.0f, headerSize.height + 1.0f);
+        _replyHeaderModel.frame = replyHeaderFrame;
+        
+        headerSize.height += replyHeaderFrame.size.height - 1.0f;
+        headerSize.width = MAX(headerSize.width, replyHeaderFrame.size.width);
+    }
+    
+    CGFloat contentContainerWidth = contentContainerSize.width;
+    CGSize contentSize = CGSizeZero;
+    
+    CGSize webPageSize = CGSizeZero;
+    if (_webPageFooterModel != nil)
+    {
+        if ([_webPageFooterModel preferWebpageSize])
+        {
+            [_webPageFooterModel layoutForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) contentSize:CGSizeZero needsContentUpdate:&updateContents];
+            contentContainerWidth = _webPageFooterModel.frame.size.width;
+            
+            contentSize = [self contentSizeForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) needsContentsUpdate:&updateContents hasDate:_webPageFooterModel == nil hasViews:_messageViews != nil];
+        }
+        else
+        {
+            contentSize = [self contentSizeForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) needsContentsUpdate:&updateContents hasDate:_webPageFooterModel == nil hasViews:_messageViews != nil];
+            
+            [_webPageFooterModel layoutForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) contentSize:contentSize needsContentUpdate:&updateContents];
+        }
+        
+        webPageSize = _webPageFooterModel.frame.size;
+        if ([_webPageFooterModel preferWebpageSize])
+            contentContainerWidth = webPageSize.width;
+        
+        headerSize.width = MAX(headerSize.width, webPageSize.width);
+    }
+    else
+    {
+        contentSize = [self contentSizeForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) needsContentsUpdate:&updateContents hasDate:_webPageFooterModel == nil hasViews:_messageViews != nil];
+    }
+    
     CGFloat avatarOffset = 0.0f;
     if (_hasAvatar)
         avatarOffset = 38.0f;
     
     CGFloat unsentOffset = 0.0f;
-    if (!_incoming && _deliveryState == TGMessageDeliveryStateFailed)
+    if (!_incomingAppearance && _deliveryState == TGMessageDeliveryStateFailed)
         unsentOffset = 29.0f;
     
     CGFloat backgroundWidth = MAX(60.0f, MAX(headerSize.width, contentSize.width) + 25.0f);
-    CGRect backgroundFrame = CGRectMake(_incoming ? (avatarOffset + layoutConstants->leftInset) : (containerSize.width - backgroundWidth - layoutConstants->rightInset - unsentOffset), topSpacing, backgroundWidth, MAX((_hasAvatar ? 44.0f : 30.0f), headerSize.height + contentSize.height + layoutConstants->textBubblePaddingTop + layoutConstants->textBubblePaddingBottom));
-    if (_incoming && _editing)
+    CGRect backgroundFrame = CGRectMake(_incomingAppearance ? (avatarOffset + layoutConstants->leftInset) : (containerSize.width - backgroundWidth - layoutConstants->rightInset - unsentOffset), topSpacing, backgroundWidth, MAX((_hasAvatar ? 44.0f : 30.0f), headerSize.height + contentSize.height + layoutConstants->textBubblePaddingTop + layoutConstants->textBubblePaddingBottom));
+    if (_incomingAppearance && _editing)
         backgroundFrame.origin.x += 42.0f;
+    
+    if (_webPageFooterModel != nil)
+    {
+        backgroundFrame.size.height += webPageSize.height;
+    }
+    
+    _contentModel.frame = CGRectMake(backgroundFrame.origin.x + (_incomingAppearance ? 14 : 8), topSpacing + 2.0f, MAX(32.0f, MAX(headerSize.width, contentSize.width) + 2 + (_incomingAppearance ? 0.0f : 5.0f)), MAX(headerSize.height + contentSize.height + 5, _hasAvatar ? 30.0f : 14.0f) + webPageSize.height);
+    
     _backgroundModel.frame = backgroundFrame;
     
-    _contentModel.frame = CGRectMake(backgroundFrame.origin.x + (_incoming ? 14 : 8), topSpacing + 2.0f, MAX(32.0f, MAX(headerSize.width, contentSize.width) + 2 + (_incoming ? 0.0f : 5.0f)), MAX(headerSize.height + contentSize.height + 5, _hasAvatar ? 30.0f : 14.0f));
+    if (_webPageFooterModel != nil)
+    {
+        [_webPageFooterModel updateSpecialViewsPositions:CGPointMake(_itemPosition.x + _webPageFooterModel.frame.origin.x, _itemPosition.y + headerSize.height + contentSize.height)];
+        
+        [_webPageFooterModel layoutForContainerSize:contentContainerSize contentSize:contentSize needsContentUpdate:&updateContents];
+        
+        _webPageFooterModel.frame = CGRectMake(0.0f, headerSize.height + contentSize.height, _webPageFooterModel.frame.size.width, _webPageFooterModel.frame.size.height);
+    }
     
     if (_authorNameModel != nil)
     {
@@ -666,12 +965,33 @@
         _forwardedHeaderModel.frame = forwardedHeaderFrame;
     }
     
+    if (_replyHeaderModel != nil)
+    {
+        CGRect replyHeaderFrame = _replyHeaderModel.frame;
+        replyHeaderFrame.origin.x = isRTL ? (_contentModel.frame.size.width - replyHeaderFrame.size.width - 1.0f) : 1.0f;
+        _replyHeaderModel.frame = replyHeaderFrame;
+    }
+    
     [self layoutContentForHeaderHeight:headerSize.height];
     
-    _dateModel.frame = CGRectMake(_contentModel.frame.size.width - (_incoming ? (3 + TGRetinaPixel) : 20.0f) - _dateModel.frame.size.width, _contentModel.frame.size.height - 18.0f - (TGIsLocaleArabic() ? 1.0f : 0.0f), _dateModel.frame.size.width, _dateModel.frame.size.height);
+    _dateModel.frame = CGRectMake(_contentModel.frame.size.width - (_incomingAppearance ? (3 + TGRetinaPixel) : 20.0f) - _dateModel.frame.size.width, _contentModel.frame.size.height - 18.0f - (TGIsLocaleArabic() ? 1.0f : 0.0f), _dateModel.frame.size.width, _dateModel.frame.size.height);
     
-    if (_progressModel != nil)
-        _progressModel.frame = CGRectMake(containerSize.width - 28 - layoutConstants->rightInset - unsentOffset, _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
+    if (_broadcastIconModel != nil)
+    {
+        _broadcastIconModel.frame = (CGRect){{_dateModel.frame.origin.x - 5.0f - _broadcastIconModel.frame.size.width, _dateModel.frame.origin.y + 3.0f + TGRetinaPixel}, _broadcastIconModel.frame.size};
+    }
+    
+    if (_progressModel != nil) {
+        if (_incomingAppearance) {
+            _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 27.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
+        } else {
+            _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - 23.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
+        }
+    }
+    
+    if (_messageViewsModel != nil) {
+        _messageViewsModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 22.0f - (_incomingAppearance ? 0.0f : 14.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f + TGRetinaPixel, 1.0f, 1.0f);
+    }
     
     CGPoint stateOffset = _contentModel.frame.origin;
     if (_checkFirstModel != nil)

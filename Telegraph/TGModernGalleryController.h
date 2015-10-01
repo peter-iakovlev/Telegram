@@ -8,10 +8,39 @@
 
 #import "TGOverlayController.h"
 
+@class TGModernGalleryModel;
+@protocol TGModernGalleryItem;
+@class TGModernGalleryItemView;
+
+typedef enum {
+    TGModernGalleryScrollAnimationDirectionDefault,
+    TGModernGalleryScrollAnimationDirectionLeft,
+    TGModernGalleryScrollAnimationDirectionRight
+} TGModernGalleryScrollAnimationDirection;
+
 @interface TGModernGalleryController : TGOverlayController
 
-@property (nonatomic, strong) NSArray *items;
+@property (nonatomic, strong) TGModernGalleryModel *model;
+@property (nonatomic, assign) bool animateTransition;
+@property (nonatomic, assign) bool showInterface;
+@property (nonatomic, assign) bool adjustsStatusBarVisibility;
+@property (nonatomic, assign) bool hasFadeOutTransition;
+
+@property (nonatomic, copy) void (^itemFocused)(id<TGModernGalleryItem>);
+@property (nonatomic, copy) UIView *(^beginTransitionIn)(id<TGModernGalleryItem>, TGModernGalleryItemView *);
+@property (nonatomic, copy) void (^finishedTransitionIn)(id<TGModernGalleryItem>, TGModernGalleryItemView *);
+@property (nonatomic, copy) UIView *(^beginTransitionOut)(id<TGModernGalleryItem>);
+@property (nonatomic, copy) void (^completedTransitionOut)();
+
+- (NSArray *)visibleItemViews;
+- (TGModernGalleryItemView *)itemViewForItem:(id<TGModernGalleryItem>)item;
+- (id<TGModernGalleryItem>)currentItem;
+
+- (void)setCurrentItemIndex:(NSUInteger)index animated:(bool)animated;
+- (void)setCurrentItemIndex:(NSUInteger)index direction:(TGModernGalleryScrollAnimationDirection)direction animated:(bool)animated;
 
 - (void)dismissWhenReady;
+
+- (bool)isFullyOpaque;
 
 @end

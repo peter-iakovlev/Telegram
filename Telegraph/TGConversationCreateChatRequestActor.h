@@ -12,7 +12,7 @@
 
 @interface TGConversationCreateChatRequestActor : TGActor
 
-- (void)createChatSuccess:(TLmessages_StatedMessage *)statedMessage;
+- (void)createChatSuccess:(TLUpdates *)statedMessage;
 - (void)createChatFailed;
 
 @end

@@ -14,8 +14,6 @@
 
 #import "TGFileDownloadActor.h"
 
-#import "TGImagePickerController.h"
-
 #import "TGGenericModernConversationCompanion.h"
 
 #import "TGDownloadManager.h"
@@ -25,6 +23,8 @@
 #import "TGInterfaceAssets.h"
 
 #import "TGImageManager.h"
+
+#import "TGImagePickerController.h"
 
 static NSMutableDictionary *urlRewrites()
 {
@@ -51,6 +51,11 @@ static NSMutableDictionary *serverAssetData()
 typedef void (^TGRemoteImageDownloadCompletionBlock)(NSData *data);
 
 @interface TGImageDownloadActor ()
+{
+    bool _updateMediaAccessTimeOnRelease;
+    int32_t _messageId;
+    int64_t _imageId;
+}
 
 @property (nonatomic, copy) TGRemoteImageDownloadCompletionBlock downloadCompletionBlock;
 
@@ -247,8 +252,6 @@ static inline double imageProcessingPriority()
     if ([actualPath hasPrefix:@"/img/(download:"])
         actualPath = [actualPath stringByReplacingOccurrencesOfString:@"/img/(download:" withString:@"/img/("];
     
-    bool blurIfRemote = [options[@"blurIfRemote"] boolValue];
-    
     NSString *url = nil;
     TGImageProcessor processor = nil;
     NSString *processorName = nil;
@@ -310,7 +313,7 @@ static inline double imageProcessingPriority()
         return;
     }
     
-    UIImage *imageManagerImage = [[TGImageManager instance] loadImageSyncWithUri:url canWait:true decode:processor == nil];
+    UIImage *imageManagerImage = [[TGImageManager instance] loadImageSyncWithUri:url canWait:true decode:processor == nil acceptPartialData:false asyncTaskId:NULL progress:nil partialCompletion:nil completion:nil];
     if (imageManagerImage != nil)
     {
         UIImage *image = processor != nil ? processor(imageManagerImage) : imageManagerImage;
@@ -486,13 +489,8 @@ static inline double imageProcessingPriority()
                                     UIImage *image = nil;
                                     NSData *data = nil;
                                     
-                                    if (TGEnableBlur() && blurIfRemote && cpuCoreCount() > 1 && ![url1 hasPrefix:@"file://"] && ![url1 hasPrefix:@"upload/"])
-                                        image = TGScaleAndBlurImage(imageData, CGSizeZero, &data);
-                                    else
-                                    {
-                                        image = [[UIImage alloc] initWithData:imageData];
-                                        data = imageData;
-                                    }
+                                    image = [[UIImage alloc] initWithData:imageData];
+                                    data = imageData;
                                     
                                     if (image == nil || data == nil)
                                         [ActionStageInstance() actionFailed:path reason:-1];
@@ -607,7 +605,7 @@ static inline double imageProcessingPriority()
                                                     
                                                     if (shouldSave)
                                                     {
-                                                        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/checkImageStored/(%d)", [url hash]] options:[[NSDictionary alloc] initWithObjectsAndKeys:url, @"url", nil] watcher:TGTelegraphInstance];
+                                                        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/checkImageStored/(%lu)", (unsigned long)[url hash]] options:[[NSDictionary alloc] initWithObjectsAndKeys:url, @"url", nil] watcher:TGTelegraphInstance];
                                                     }
                                                 }
                                             }];
@@ -632,7 +630,13 @@ static inline double imageProcessingPriority()
                     if (contentHints & TGRemoteImageContentHintLargeFile && userProperties != nil && [[userProperties objectForKey:@"messageId"] intValue] != 0 && [userProperties objectForKey:@"mediaId"] != nil)
                     {
                         int64_t conversationId = [userProperties[@"conversationId"] longLongValue];
+                        int32_t messageId = [[userProperties objectForKey:@"messageId"] intValue];
                         [[TGDownloadManager instance] enqueueItem:self.path messageId:[[userProperties objectForKey:@"messageId"] intValue] itemId:[userProperties objectForKey:@"mediaId"] groupId:conversationId itemClass:TGDownloadItemClassImage];
+                        
+                        _updateMediaAccessTimeOnRelease = true;
+                        _messageId = messageId;
+                        TGMediaId *mediaId = [userProperties objectForKey:@"mediaId"];
+                        _imageId = mediaId.itemId;
                     }
                     
                     _requestedActors = true;

@@ -17,7 +17,7 @@
 - (void)micButtonInteractionBegan;
 - (void)micButtonInteractionCancelled:(CGFloat)velocity;
 - (void)micButtonInteractionCompleted:(CGFloat)velocity;
-- (void)micButtonInteractionUpdate:(float)value;
+- (void)micButtonInteractionUpdate:(CGFloat)value;
 
 @end
 

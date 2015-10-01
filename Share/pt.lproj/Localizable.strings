@@ -1,0 +1,13 @@
+"Share.Cancel" = "Cancelar";
+"Share.Next" = "Próximo";
+"Share.OK" = "OK";
+"Share.Search" = "Buscar";
+
+"Share.Title" = "Compartilhar";
+"Share.ShareWithPerson" = "Compartilhar com %@?";
+"Share.ShareWithGroup" = "Compartilhar com %@?";
+"Share.Sharing" = "Compartilhando...";
+
+"Share.PasscodeTitle" = "Senha";
+"Share.EnterPasscode" = "Inserir senha";
+"Share.ErrorInvalidPasscode" = "Senha inválida";

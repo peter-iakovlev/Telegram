@@ -10,16 +10,26 @@
 
 typedef enum {
     TGMessageImageViewOverlayStyleDefault = 0,
-    TGMessageImageViewOverlayStyleAccent = 1
+    TGMessageImageViewOverlayStyleAccent = 1,
+    TGMessageImageViewOverlayStyleList = 2,
+    TGMessageImageViewOverlayStyleIncoming = 3,
+    TGMessageImageViewOverlayStyleOutgoing = 4
 } TGMessageImageViewOverlayStyle;
 
 @interface TGMessageImageViewOverlayView : UIView
 
+- (void)setRadius:(CGFloat)radius;
+- (void)setOverlayBackgroundColorHint:(UIColor *)overlayBackgroundColorHint;
 - (void)setOverlayStyle:(TGMessageImageViewOverlayStyle)overlayStyle;
 - (void)setBlurredBackgroundImage:(UIImage *)blurredBackgroundImage;
-- (void)setImageBackgroundColor:(UIColor *)imageBackgroundColor;
 - (void)setDownload;
-- (void)setProgress:(float)progress animated:(bool)animated;
+- (void)setProgress:(CGFloat)progress animated:(bool)animated;
+- (void)setSecretProgress:(CGFloat)progress completeDuration:(NSTimeInterval)completeDuration animated:(bool)animated;
+- (void)setProgress:(CGFloat)progress cancelEnabled:(bool)cancelEnabled animated:(bool)animated;
 - (void)setPlay;
+- (void)setPlayMedia;
+- (void)setPauseMedia;
+- (void)setSecret:(bool)isViewed;
+- (void)setNone;
 
 @end

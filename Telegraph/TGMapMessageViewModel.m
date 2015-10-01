@@ -13,7 +13,7 @@
 
 @implementation TGMapMessageViewModel
 
-- (instancetype)initWithLatitude:(double)latitude longitude:(double)longitude message:(TGMessage *)message author:(TGUser *)author context:(TGModernViewContext *)context
+- (instancetype)initWithLatitude:(double)latitude longitude:(double)longitude message:(TGMessage *)message authorPeer:(id)authorPeer context:(TGModernViewContext *)context replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor
 {
     TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
     
@@ -21,7 +21,7 @@
     
     [imageInfo addImageWithSize:CGSizeMake(140, 120) url:[[NSString alloc] initWithFormat:@"map-thumbnail://?latitude=%f&longitude=%f&width=%d&height=%d", latitude, longitude, (int)size.width, (int)size.height]];
     
-    self = [super initWithMessage:message imageInfo:imageInfo author:author context:context];
+    self = [super initWithMessage:message imageInfo:imageInfo authorPeer:authorPeer context:context forwardPeer:nil forwardMessageId:0 replyHeader:replyHeader replyAuthor:replyAuthor];
     if (self != nil)
     {
         self.imageModel.frame = CGRectMake(0, 0, 160, 110);

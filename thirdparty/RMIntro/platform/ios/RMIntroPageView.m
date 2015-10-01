@@ -8,22 +8,9 @@
 
 #import "RMIntroPageView.h"
 
-#import "RMGeometry.h"
-
-#define IPAD     UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad
-
-#define dDeviceOrientation [[UIDevice currentDevice] orientation]
-#define isPortrait  UIDeviceOrientationIsPortrait(dDeviceOrientation)
-#define isLandscape UIDeviceOrientationIsLandscape(dDeviceOrientation)
-
-//#define STATUS_HEIGHT [[UIDevice currentDevice] systemVersion]>=7 ? 0 : 10;
-
-#define UIColorFromRGB(rgbValue) [UIColor colorWithRed:((float)((rgbValue & 0xFF0000) >> 16))/255.0 green:((float)((rgbValue & 0xFF00) >> 8))/255.0 blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
-
-#define _(n) NSLocalizedString(n, nil)
-
 @implementation RMIntroPageView
 
+#define IPAD ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
 
 - (id)initWithFrame:(CGRect)frame headline:(NSString*)headline description:(NSString*)description
 {
@@ -86,16 +73,11 @@
         [_description addAttribute:NSParagraphStyleAttributeName
                              value:style
                              range:NSMakeRange(0, _description.length)];
-        int padding=10;
-        UILabel *descriptionLabel = [[UILabel alloc]initWithFrame:CGRectMake(padding, 45+ 25 + (IPAD ? 22 : 0), frame.size.width-padding*2, 120+8+5)];
-        //descriptionLabel.backgroundColor = [UIColor lightGrayColor];
-
+        
+        UILabel *descriptionLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 25 + (IPAD ? 22 : 0), frame.size.width, 120+8+5)];
         descriptionLabel.font = [UIFont fontWithName:@"HelveticaNeue" size:IPAD ? 44/2 : 17];
         descriptionLabel.attributedText = _description;
         descriptionLabel.numberOfLines=0;
-        [descriptionLabel sizeToFit];
-        descriptionLabel.frame = CGRectChangedWidth(descriptionLabel.frame, frame.size.width-padding*2);
-        
         descriptionLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleWidth;
         [self addSubview:descriptionLabel];
         

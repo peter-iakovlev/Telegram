@@ -50,6 +50,7 @@
 		<dict>
 			<key>CFBundleIconFiles</key>
 			<array>
+				<string>Icon-72</string>
 				<string>Icon-76</string>
 				<string>Icon-Small</string>
 				<string>Icon-40</string>
@@ -62,7 +63,7 @@
 		</dict>
 	</dict>
 	<key>CFBundleIdentifier</key>
-	<string>${TELEGRAPH_BUNDLE_ID}</string>
+	<string>$(TELEGRAPH_BUNDLE_ID)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -70,7 +71,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.5</string>
+	<string>3.2.1</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -79,24 +80,53 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>CFBundleURLName</key>
-			<string>ph.telegra.Telegraph</string>
+			<string>org.telegram.TelegramHD</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>telegram</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>org.telegram.TelegramHD.compatibility</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tg</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLName</key>
+			<string>org.telegram.TelegramHD.dropbox</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>db-pa9wtoz9l514anx</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>34374</string>
+	<string>50712</string>
+	<key>LSApplicationCategoryType</key>
+	<string></string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>UIAppFonts</key>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSUserActivityTypes</key>
 	<array>
-		<string>MyriadPro-Regular.otf</string>
-		<string>MyriadPro-Bold.otf</string>
+		<string>org.telegram.conversation</string>
 	</array>
+	<key>UIAppFonts</key>
+	<array/>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>audio</string>
 		<string>remote-notification</string>
 	</array>
 	<key>UIFileSharingEnabled</key>
@@ -124,12 +154,16 @@
 			<string>{768, 1024}</string>
 		</dict>
 	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
 	<key>UIPrerenderedIcon</key>
 	<true/>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>
 	</array>
+	<key>UIRequiresFullScreen</key>
+	<false/>
 	<key>UIRequiresPersistentWiFi</key>
 	<true/>
 	<key>UIStatusBarStyle</key>
@@ -149,5 +183,25 @@
 	</array>
 	<key>UIViewGroupOpacity</key>
 	<false/>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>WebP File</string>
+			<key>UTTypeIdentifier</key>
+			<string>org.telegram.Telegram.webp</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>webp</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

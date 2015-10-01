@@ -77,7 +77,7 @@
     
     if (image != nil)
     {
-        _variantImageView.frame = CGRectMake(self.contentView.frame.size.width - 30 - image.size.width, floorf((self.contentView.frame.size.height - image.size.height) / 2), image.size.width, image.size.height);
+        _variantImageView.frame = CGRectMake(self.contentView.frame.size.width - 30 - image.size.width, CGFloor((self.contentView.frame.size.height - image.size.height) / 2), image.size.width, image.size.height);
     }
 }
 

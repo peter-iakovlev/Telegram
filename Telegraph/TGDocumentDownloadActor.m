@@ -23,6 +23,8 @@
 
 #import <CommonCrypto/CommonDigest.h>
 
+#import "TGAppDelegate.h"
+
 @interface TGDocumentDownloadActor ()
 {
     TGDocumentMediaAttachment *_documentAttachment;
@@ -74,7 +76,7 @@
         int decryptedSize = documentAttachment.size;
         NSDictionary *encryptionArgs = @{};
         
-        NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+        NSString *documentsDirectory = [TGAppDelegate documentsPath];
         NSString *currentDocumentDirectory = nil;
         if (documentAttachment.documentId != 0)
         {

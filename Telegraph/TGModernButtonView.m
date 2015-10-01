@@ -36,6 +36,10 @@
 
 - (NSString *)viewStateIdentifier
 {
+    if (_viewStateIdentifier)
+    {
+    }
+    
     return [[NSString alloc] initWithFormat:@"TGModernButtonView/%lx/%lx/%@/%lx/%lx", _backgroundImageFingerprint, _highightedBackgroundImageFingerprint, _title, (long)_titleFontFingerprint, (long)_imageFingerprint];
 }
 

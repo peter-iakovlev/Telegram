@@ -22,6 +22,11 @@
     return false;
 }
 
+- (NSTimeInterval)secretMessageViewDate:(int32_t)__unused messageId
+{
+    return 0.0;
+}
+
 - (TGModernViewInlineMediaContext *)inlineMediaContext:(int32_t)__unused messageId
 {
     return nil;

@@ -8,10 +8,15 @@
 
 #import "TGPreparedMessage.h"
 
+@class TGWebPageMediaAttachment;
+
 @interface TGPreparedTextMessage : TGPreparedMessage
 
 @property (nonatomic, strong) NSString *text;
+@property (nonatomic, strong) TGMessage *replyMessage;
+@property (nonatomic) bool disableLinkPreviews;
+@property (nonatomic, strong) TGWebPageMediaAttachment *parsedWebpage;
 
-- (instancetype)initWithText:(NSString *)text;
+- (instancetype)initWithText:(NSString *)text replyMessage:(TGMessage *)replyMessage disableLinkPreviews:(bool)disableLinkPreviews parsedWebpage:(TGWebPageMediaAttachment *)parsedWebpage;
 
 @end

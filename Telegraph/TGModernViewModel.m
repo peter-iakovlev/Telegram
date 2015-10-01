@@ -2,6 +2,19 @@
 
 #import "TGModernView.h"
 
+@interface TGModernViewModelId : NSObject <NSCopying>
+
+@end
+
+@implementation TGModernViewModelId
+
+- (instancetype)copyWithZone:(NSZone *)__unused zone
+{
+    return self;
+}
+
+@end
+
 @interface TGModernViewModel ()
 {
     UIView<TGModernView> *_view;
@@ -20,6 +33,7 @@
     if (self != nil)
     {
         _alpha = 1.0f;
+        _modelId = [[TGModernViewModelId alloc] init];
     }
     return self;
 }
@@ -104,31 +118,31 @@
         {
             [container addSubview:_view];
         
-            [_view setFrame:_frame];
+            [_view setFrame:CGRectOffset(_frame, _parentOffset.x, _parentOffset.y)];
             [_view setAlpha:_alpha];
             [_view setHidden:_hidden];
             
             _view.userInteractionEnabled = !_modelFlags.viewUserInteractionDisabled;
         }
+
+        bool disableSubmodelAutomaticBinding = _modelFlags.disableSubmodelAutomaticBinding;
         
-        if (!_modelFlags.disableSubmodelAutomaticBinding)
+        for (TGModernViewModel *submodel in self.submodels)
         {
-            for (TGModernViewModel *submodel in self.submodels)
-            {
+            if (!disableSubmodelAutomaticBinding || submodel.skipDrawInContext)
                 [submodel bindViewToContainer:_modelFlags.hasNoView ? container : _view viewStorage:viewStorage];
-            }
         }
     }
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
 {
-    if (!_modelFlags.disableSubmodelAutomaticBinding)
+    if (_unbindAction)
+        _unbindAction();
+    
+    for (TGModernViewModel *submodel in self.submodels)
     {
-        for (TGModernViewModel *submodel in self.submodels)
-        {
-            [submodel unbindView:viewStorage];
-        }
+        [submodel unbindView:viewStorage];
     }
     
     if (_view != nil)
@@ -148,12 +162,12 @@
     }
     else
     {
-        if (!_modelFlags.disableSubmodelAutomaticBinding)
+        bool disableSubmodelAutomaticBinding = _modelFlags.disableSubmodelAutomaticBinding;
+        
+        for (TGModernViewModel *submodel in self.submodels)
         {
-            for (TGModernViewModel *submodel in self.submodels)
-            {
+            if (!disableSubmodelAutomaticBinding || submodel.skipDrawInContext)
                 [submodel moveViewToContainer:container];
-            }
         }
     }
 }
@@ -165,11 +179,14 @@
         if (_view != nil)
             _view.frame = CGRectOffset(_view.frame, offset.width, offset.height);
     }
-    else if (!_modelFlags.disableSubmodelAutomaticBinding)
+    else
     {
+        bool disableSubmodelAutomaticBinding = _modelFlags.disableSubmodelAutomaticBinding;
+        
         for (TGModernViewModel *submodel in self.submodels)
         {
-            [submodel _offsetBoundViews:offset];
+            if (!disableSubmodelAutomaticBinding || submodel.skipDrawInContext)
+                [submodel _offsetBoundViews:offset];
         }
     }
 }
@@ -179,7 +196,12 @@
     _frame = frame;
     
     if (_view != nil)
-        [_view setFrame:_frame];
+        [_view setFrame:CGRectOffset(_frame, _parentOffset.x, _parentOffset.y)];
+}
+
+- (void)setParentOffset:(CGPoint)parentOffset
+{
+    _parentOffset = parentOffset;
 }
 
 - (void)setAlpha:(float)alpha
@@ -200,7 +222,7 @@
 
 - (void)drawInContext:(CGContextRef)context
 {
-    if (_modelFlags.skipDrawInContext || _hidden)
+    if (_modelFlags.skipDrawInContext || _hidden || _alpha < FLT_EPSILON)
         return;
     
     [self drawSubmodelsInContext:context];
@@ -269,14 +291,50 @@
     
     if ([_submodels containsObject:model])
     {
-        if (!_modelFlags.disableSubmodelAutomaticBinding)
-            [model unbindView:viewStorage];
+        [model unbindView:viewStorage];
         [_submodels removeObject:model];
     }
 }
 
 - (void)layoutForContainerSize:(CGSize)__unused containerSize
 {
+}
+
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict
+{
+    if (_modelId != nil && _view != nil)
+        dict[_modelId] = [NSValue valueWithCGRect:_view.frame];
+    
+    for (TGModernViewModel *submodel in _submodels)
+    {
+        [submodel collectBoundModelViewFramesRecursively:dict];
+    }
+}
+
+- (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict ifPresentInDict:(NSMutableDictionary *)anotherDict
+{
+    if (_modelId != nil && _view != nil && anotherDict[_modelId] != nil)
+        dict[_modelId] = [NSValue valueWithCGRect:_view.frame];
+    
+    for (TGModernViewModel *submodel in _submodels)
+    {
+        [submodel collectBoundModelViewFramesRecursively:dict];
+    }
+}
+
+- (void)restoreBoundModelViewFramesRecursively:(NSMutableDictionary *)dict
+{
+    if (_modelId != nil && _view != nil)
+    {
+        NSValue *value = dict[_modelId];
+        if (value != nil)
+            _view.frame = [value CGRectValue];
+    }
+    
+    for (TGModernViewModel *submodel in _submodels)
+    {
+        [submodel restoreBoundModelViewFramesRecursively:dict];
+    }
 }
 
 @end

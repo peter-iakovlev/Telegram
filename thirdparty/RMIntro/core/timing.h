@@ -15,6 +15,7 @@ typedef enum
     EaseInEaseOut=3,
     Linear=4,
     Sin=5,
+    EaseOutBounce,
     TIMING_NUM
 } timing_type;
 

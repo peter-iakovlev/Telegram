@@ -35,11 +35,15 @@
     NSString *presence = [self.path substringWithRange:NSMakeRange(28, self.path.length - 1 - 28)];
     if ([presence isEqualToString:@"timeout"])
     {
+        __weak TGUpdatePresenceActor *weakSelf = self;
         _timeoutTimer = [[TGTimer alloc] initWithTimeout:5.0 repeat:false completion:^
         {
-            _timeoutTimer = nil;
-            
-            self.cancelToken = [TGTelegraphInstance doSetPresence:false actor:self];
+            __strong TGUpdatePresenceActor *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                strongSelf->_timeoutTimer = nil;
+                strongSelf.cancelToken = [TGTelegraphInstance doSetPresence:false actor:strongSelf];
+            }
         } queue:[ActionStageInstance() globalStageDispatchQueue]];
         [_timeoutTimer start];
     }

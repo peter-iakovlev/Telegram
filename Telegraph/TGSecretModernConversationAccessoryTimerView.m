@@ -9,6 +9,7 @@
 #import "TGSecretModernConversationAccessoryTimerView.h"
 
 #import "TGImageUtils.h"
+#import "TGStringUtils.h"
 #import "TGFont.h"
 #import "TGModernButton.h"
 
@@ -30,23 +31,23 @@
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
     {
         height = 27.0f;
-        offset = 0.0f;
+        offset = -1.0f;
     }
     else
     {
         height = 32.0f;
-        offset = 2.0f;
+        offset = 1.0f;
     }
-    self = [super initWithFrame:CGRectMake(0.0f, 0.0f, 27.0f, height)];
+    self = [super initWithFrame:CGRectMake(0.0f, 0.0f, 24.0f, height)];
     if (self)
     {
-        _timerButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, offset, 27.0f, height)];
+        _timerButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, offset, 24.0f, height)];
         _timerButton.modernHighlight = true;
         [_timerButton addTarget:self action:@selector(timerButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_timerButton];
         
         _timerIconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernConversationSecretAccessoryTimer.png"]];
-        _timerIconView.frame = CGRectOffset(_timerIconView.frame, CGFloor((_timerButton.frame.size.width - _timerIconView.frame.size.width) / 2.0f), 5.0f + TGRetinaPixel);
+        _timerIconView.frame = CGRectOffset(_timerIconView.frame, CGFloor((_timerButton.frame.size.width - _timerIconView.frame.size.width) / 2.0f) - 6.0f - TGRetinaPixel, 5.0f + TGRetinaPixel);
         [_timerButton addSubview:_timerIconView];
         
         _timeLabel = [[UILabel alloc] init];
@@ -57,6 +58,25 @@
         [_timerButton addSubview:_timeLabel];
     }
     return self;
+}
+
+- (void)sizeToFit
+{
+    CGFloat height = 0.0f;
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+        height = 27.0f;
+    else
+        height = 32.0f;
+    
+    CGSize size = CGSizeMake(27.0f, height);
+    if (_timerValue == 0)
+    {
+    }
+    else
+    {
+        [_timeLabel sizeToFit];
+        size.width = MAX(size.width, _timeLabel.frame.size.width);
+    }
 }
 
 - (void)setTimerValue:(NSInteger)timerValue
@@ -85,18 +105,8 @@
 {
     if (value == 0)
         return @"";
-    else if (value <= 2)
-        return TGLocalized(@"Profile.MessageLifetime2s");
-    else if (value <= 5)
-        return TGLocalized(@"Profile.MessageLifetime5s");
-    else if (value <= 1 * 60)
-        return TGLocalized(@"Profile.MessageLifetime1m");
-    else if (value <= 60 * 60)
-        return TGLocalized(@"Profile.MessageLifetime1h");
-    else if (value <= 24 * 60 * 60)
-        return TGLocalized(@"Profile.MessageLifetime1d");
-    else if (value <= 7 * 24 * 60 * 60)
-        return TGLocalized(@"Profile.MessageLifetime1w");
+    else
+        return [TGStringUtils stringForShortMessageTimerSeconds:value];
     
     return [[NSString alloc] initWithFormat:@"%ds", (int)value];
 }

@@ -14,13 +14,20 @@ typedef enum {
     TGMessageImageViewOverlayNone = 0,
     TGMessageImageViewOverlayProgress = 1,
     TGMessageImageViewOverlayDownload = 2,
-    TGMessageImageViewOverlayPlay = 3
+    TGMessageImageViewOverlayPlay = 3,
+    TGMessageImageViewOverlaySecret = 4,
+    TGMessageImageViewOverlaySecretViewed = 5,
+    TGMessageImageViewOverlaySecretProgress = 6,
+    TGMessageImageViewOverlayProgressNoCancel = 7,
+    TGMessageImageViewOverlayPlayMedia = 8,
+    TGMessageImageViewOverlayPauseMedia = 9
 } TGMessageImageViewOverlay;
 
 typedef enum {
     TGMessageImageViewActionDownload = 0,
     TGMessageImageViewActionCancelDownload = 1,
-    TGMessageImageViewActionPlay = 2
+    TGMessageImageViewActionPlay = 2,
+    TGMessageImageViewActionSecret = 3
 } TGMessageImageViewActionType;
 
 @class TGMessageImageView;
@@ -33,18 +40,35 @@ typedef enum {
 
 @end
 
+@interface TGMessageImageViewContainer : UIView <TGModernView>
+
+@property (nonatomic, strong) TGMessageImageView *imageView;
+
+@end
+
 @interface TGMessageImageView : TGImageView <TGModernView>
 
 @property (nonatomic, weak) id<TGMessageImageViewDelegate> delegate;
 
 @property (nonatomic) int overlayType;
-@property (nonatomic) float progress;
+@property (nonatomic) CGFloat progress;
+@property (nonatomic) NSTimeInterval completeDuration;
+@property (nonatomic, strong) UIColor *overlayBackgroundColorHint;
 
+@property (nonatomic, copy) void (^progressBlock)(TGImageView *, CGFloat);
+@property (nonatomic, copy) void (^completionBlock)(TGImageView *);
+
+- (void)setOverlayDiameter:(CGFloat)overlayDiameter;
 - (void)setOverlayType:(int)overlayType animated:(bool)animated;
-- (void)setProgress:(float)progress animated:(bool)animated;
+- (void)setProgress:(CGFloat)progress animated:(bool)animated;
+- (void)setSecretProgress:(CGFloat)progress completeDuration:(NSTimeInterval)completeDuration animated:(bool)animated;
+- (void)setTimestampColor:(UIColor *)color;
 - (void)setTimestampHidden:(bool)timestampHidden;
-- (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue animated:(bool)animated;
-- (void)setAdditionalDataString:(NSString *)additionalDataString;
+- (void)setTimestampPosition:(int)timestampPosition;
+- (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated;
+- (void)setAdditionalDataString:(NSString *)additionalDataString animated:(bool)animated;
 - (void)setDisplayTimestampProgress:(bool)displayTimestampProgress;
+- (void)setIsBroadcast:(bool)isBroadcast;
+- (void)setDetailStrings:(NSArray *)detailStrings detailStringsEdgeInsets:(UIEdgeInsets)detailStringsEdgeInsets animated:(bool)animated;
 
 @end

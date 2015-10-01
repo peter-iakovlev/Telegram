@@ -55,7 +55,7 @@
     
     CGRect bounds = self.bounds;
     
-    _label.frame = CGRectMake(15.0f, floorf((bounds.size.height - 26) / 2), bounds.size.width - 44.0f - 15.0f, 26);
+    _label.frame = CGRectMake(15.0f, CGFloor((bounds.size.height - 26) / 2), bounds.size.width - 44.0f - 15.0f, 26);
     
     CGSize checkSize = _checkView.frame.size;
     _checkView.frame = CGRectMake(bounds.size.width - 27.0f, 16.0f, checkSize.width, checkSize.height);

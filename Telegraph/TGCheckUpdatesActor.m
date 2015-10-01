@@ -7,6 +7,8 @@
 #import "TGApplication.h"
 #import "TGAppDelegate.h"
 
+#import "TGAlertView.h"
+
 @interface TGUpdateInterface : NSObject <UIAlertViewDelegate>
 
 @property (nonatomic, strong) NSString *updateUrl;
@@ -63,7 +65,7 @@
         {
             TLhelp_AppUpdate$help_appUpdate *concreteUpdate = (TLhelp_AppUpdate$help_appUpdate *)updateDesc;
             
-            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:concreteUpdate.text delegate:[TGUpdateInterface instance] cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:TGLocalized(@"Update.Update"), nil];
+            TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:concreteUpdate.text delegate:[TGUpdateInterface instance] cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:TGLocalized(@"Update.Update"), nil];
             [TGUpdateInterface instance].updateUrl = concreteUpdate.url;
             [alertView show];
         });

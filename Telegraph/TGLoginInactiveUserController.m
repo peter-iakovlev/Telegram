@@ -27,6 +27,8 @@
 
 #import "TGBackdropView.h"
 
+#import "TGAlertView.h"
+
 @interface TGLoginInactiveUserController ()
 {
     UIView *_navigationBarBackgroundView;
@@ -335,7 +337,7 @@
     
         titleLabel.text = TGLocalized(@"WelcomeScreen.ContactsAccessDisabled");
         [titleLabel sizeToFit];
-        titleLabel.frame = CGRectOffset(titleLabel.frame, floorf((_accessDisabledContainer.frame.size.width - titleLabel.frame.size.width) / 2), titleY);
+        titleLabel.frame = CGRectOffset(titleLabel.frame, CGFloor((_accessDisabledContainer.frame.size.width - titleLabel.frame.size.width) / 2), titleY);
         
         UILabel *noticeLabel = [[UILabel alloc] init];
         noticeLabel.font = TGSystemFontOfSize(16);
@@ -374,7 +376,7 @@
             noticeLabel.text = baseText;
         }
         CGSize size = [noticeLabel sizeThatFits:CGSizeMake(270, 1024)];
-        noticeLabel.frame = CGRectMake(floorf((_accessDisabledContainer.frame.size.width - size.width) / 2), titleY + 34, size.width, size.height);
+        noticeLabel.frame = CGRectMake(CGFloor((_accessDisabledContainer.frame.size.width - size.width) / 2), titleY + 34, size.width, size.height);
         [_accessDisabledContainer addSubview:noticeLabel];
         
         [self updateInterface:self.interfaceOrientation];
@@ -495,7 +497,7 @@
             
             if (resultCode != ASStatusSuccess)
             {
-                [[[UIAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:@"An error occured" delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
             }
             
             [self.navigationController popToRootViewControllerAnimated:true];

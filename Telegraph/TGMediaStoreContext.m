@@ -5,6 +5,8 @@
 
 #import <pthread.h>
 
+#import "TGAppDelegate.h"
+
 @interface TGMediaStoreContext ()
 {
     NSMutableDictionary *_mediaImageAverageColorCache;
@@ -16,6 +18,8 @@
     pthread_rwlock_t _mediaReducedImageCacheLock;
     
     ATQueue *_mediaReducedImageGenerationQueue;
+    
+    TGModernCache *_temporaryFilesCache;
 }
 
 @end
@@ -37,9 +41,17 @@
         pthread_rwlock_init(&_mediaImageCacheLock, NULL);
         pthread_rwlock_init(&_mediaReducedImageCacheLock, NULL);
         
+        NSString *tempCachePath = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"tempcache_v1"];
+        _temporaryFilesCache = [[TGModernCache alloc] initWithPath:tempCachePath size:16 * 1024 * 1024];
+        
         _mediaReducedImageGenerationQueue = [[ATQueue alloc] init];
     }
     return self;
+}
+
+- (TGModernCache *)temporaryFilesCache
+{
+    return _temporaryFilesCache;
 }
 
 + (TGMediaStoreContext *)instance

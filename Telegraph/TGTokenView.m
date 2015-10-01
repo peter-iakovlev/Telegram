@@ -72,7 +72,7 @@ static UIImage *tokenBackgroundHighlightedImage()
     _preferredWidth = [label sizeWithFont:self.titleLabel.font].width + 10;
 }
 
-- (float)preferredWidth
+- (CGFloat)preferredWidth
 {
     return MAX(_preferredWidth, 10);
 }

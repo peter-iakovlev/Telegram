@@ -168,13 +168,13 @@ static inline void writeLength(PSKeyValueEncoder *self, uint32_t value)
     
     NSString *className = NSStringFromClass([object class]);
     NSData *classNameData = [className dataUsingEncoding:NSUTF8StringEncoding];
-    uint16_t classNameLength = (uint16_t)classNameData.length;
-    [_data appendBytes:&classNameLength length:2];
     [_data appendData:classNameData];
+    uint8_t zero = 0;
+    [_data appendBytes:&zero length:1];
     
     [object encodeWithKeyValueCoder:self];
     
-    objectLength = [_data length] - objectLengthPosition - 4;
+    objectLength = (int)([_data length] - objectLengthPosition - 4);
     [_data replaceBytesInRange:NSMakeRange(objectLengthPosition, 4) withBytes:&objectLength];
 }
 
@@ -190,7 +190,7 @@ static void encodeObjectValue(PSKeyValueEncoder *self, id<PSCoding> object)
     
     [object encodeWithKeyValueCoder:self];
     
-    objectLength = [self->_data length] - objectLengthPosition - 4;
+    objectLength = (int)([self->_data length] - objectLengthPosition - 4);
     [self->_data replaceBytesInRange:NSMakeRange(objectLengthPosition, 4) withBytes:&objectLength];
 }
 
@@ -233,7 +233,7 @@ static void encodeObjectValue(PSKeyValueEncoder *self, id<PSCoding> object)
         encodeObjectValue(self, array[i]);
     }
     
-    objectLength = [_data length] - objectLengthPosition - 4;
+    objectLength = (int)([_data length] - objectLengthPosition - 4);
     [_data replaceBytesInRange:NSMakeRange(objectLengthPosition, 4) withBytes:&objectLength];
 }
 
@@ -261,8 +261,61 @@ static void encodeObjectValue(PSKeyValueEncoder *self, id<PSCoding> object)
         encodeObjectValue(self, array[i]);
     }
     
-    objectLength = [_data length] - objectLengthPosition - 4;
+    objectLength = (int)([_data length] - objectLengthPosition - 4);
     [_data replaceBytesInRange:NSMakeRange(objectLengthPosition, 4) withBytes:&objectLength];
+}
+
+- (void)encodeData:(NSData *)data forCKey:(const char *)key
+{
+    if (key == nil || data == nil)
+        return;
+    
+    uint32_t keyLength = (uint32_t)strlen(key);
+    writeLength(self, keyLength);
+    [_data appendBytes:key length:keyLength];
+    
+    uint8_t fieldType = PSKeyValueCoderFieldTypeData;
+    [_data appendBytes:&fieldType length:1];
+    
+    writeLength(self, (uint32_t)data.length);
+    [_data appendData:data];
+}
+
+- (void)encodeBytes:(uint8_t const *)value length:(NSUInteger)length forCKey:(const char *)key
+{
+    if (key == nil)
+        return;
+    
+    uint32_t keyLength = (uint32_t)strlen(key);
+    writeLength(self, keyLength);
+    [_data appendBytes:key length:keyLength];
+    
+    uint8_t fieldType = PSKeyValueCoderFieldTypeData;
+    [_data appendBytes:&fieldType length:1];
+    
+    writeLength(self, (uint32_t)length);
+    [_data appendBytes:value length:length];
+}
+
+- (void)encodeInt32Array:(NSArray *)value forCKey:(const char *)key {
+    if (key == NULL) {
+        return;
+    }
+    
+    uint32_t keyLength = (uint32_t)strlen(key);
+    writeLength(self, keyLength);
+    [_data appendBytes:key length:keyLength];
+    
+    uint8_t fieldType = PSKeyValueCoderFieldTypeInt32Array;
+    [_data appendBytes:&fieldType length:1];
+    
+    int32_t count = (int32_t)value.count;
+    [_data appendBytes:&count length:4];
+    
+    for (NSNumber *nNumber in value) {
+        int32_t number = [nNumber intValue];
+        [_data appendBytes:&number length:4];
+    }
 }
 
 - (void)reset

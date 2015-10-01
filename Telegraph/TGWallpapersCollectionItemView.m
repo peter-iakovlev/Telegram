@@ -91,12 +91,37 @@
         else
             imageSize = CGSizeMake(91.0f, 121.0f);
     }
+    else
+    {
+        CGSize screenSize = TGScreenSize();
+        CGFloat widescreenWidth = MAX(screenSize.width, screenSize.height);
+        
+        if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
+        {
+            if (widescreenWidth >= 736.0f - FLT_EPSILON)
+            {
+                imageSize = CGSizeMake(122.0f, 216.0f);
+            }
+            else if (widescreenWidth >= 667.0f - FLT_EPSILON)
+            {
+                imageSize = CGSizeMake(108.0f, 163.0f);
+            }
+            else
+            {
+                imageSize = CGSizeMake(91.0f, 162.0f);
+            }
+        }
+        else
+        {
+            imageSize = CGSizeMake(91.0f, 162.0f);
+        }
+    }
     
     CGFloat padding = 15.0f;
     CGFloat minSpacing = 7.0f;
     
     int imageCount = (int)((bounds.size.width - padding * 2.0f + minSpacing) / (imageSize.width + minSpacing));
-    CGFloat spacing = floorf((bounds.size.width - padding * 2.0f - imageCount * imageSize.width) / (imageCount - 1));
+    CGFloat spacing = CGFloor((bounds.size.width - padding * 2.0f - imageCount * imageSize.width) / (imageCount - 1));
     
     for (int i = 0; i < imageCount && i < (int)_wallpaperInfos.count; i++)
     {

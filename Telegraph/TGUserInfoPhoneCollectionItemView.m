@@ -83,10 +83,10 @@
     CGFloat leftPadding = 35.0f + TGRetinaPixel;
     
     CGSize labelSize = [_labelView sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - 10.0f, CGFLOAT_MAX)];
-    _labelView.frame = CGRectMake(leftPadding, 13.0f, labelSize.width, labelSize.height);
+    _labelView.frame = CGRectMake(leftPadding, 11.0f, labelSize.width, labelSize.height);
     
     CGSize phoneSize = [_phoneLabel sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - 10.0f, CGFLOAT_MAX)];
-    _phoneLabel.frame = CGRectMake(leftPadding, 32.0f, phoneSize.width, phoneSize.height);
+    _phoneLabel.frame = CGRectMake(leftPadding, 30.0f, phoneSize.width, phoneSize.height);
 }
 
 @end

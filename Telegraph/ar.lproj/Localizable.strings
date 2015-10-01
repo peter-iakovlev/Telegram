@@ -5,12 +5,15 @@
 "MESSAGE_VIDEO" = "%1$@ قام بإرسال مقطع مرئي";
 "MESSAGE_CONTACT" = "%1$@ قام بإرسال جهة اتصال";
 "MESSAGE_GEO" = "%1$@ شارك موقعه معك";
-"MESSAGE_DOC" = "%1$@ قام بإرسال مستند";
+"MESSAGE_DOC" = "%1$@ قام بإرسال ملف لك";
 "MESSAGE_AUDIO" = "%1$@ قام بإرسال مقطع صوتي";
 "ENCRYPTED_MESSAGE" = "لديك رسالة جديدة%1$@";
+"LOCKED_MESSAGE" = "لديك رسالة جديدة%1$@";
 "ENCRYPTION_REQUEST" = "طلب تشفير جديد%1$@";
 "ENCRYPTION_ACCEPT" = "تم قبول طلب التشفير%1$@";
-"DC_UPDATE" = "Open this notification to update app settings";
+"DC_UPDATE" = "اضغط هنا لتحديث إعدادات التطبيق";
+
+"CHAT_JOINED" = "%1$@ قام بالدخول للمجموعة %2$@";
 
 "CHAT_MESSAGE_TEXT" = "%1$@@%2$@: %3$@";
 "CHAT_MESSAGE_NOTEXT" = "%1$@ قام بإرسال رسالة %2$@";
@@ -18,24 +21,40 @@
 "CHAT_MESSAGE_VIDEO" = "%1$@ قام بإرسال مقطع مرئي %2$@";
 "CHAT_MESSAGE_CONTACT" = "%1$@ قام بإرسال جهة إتصال %2$@";
 "CHAT_MESSAGE_GEO" = "%1$@ شارك موقعه معك %2$@";
-"CHAT_MESSAGE_DOC" = "%1$@ قام بإرسال مستند للمجموعة %2$@";
+"CHAT_MESSAGE_DOC" = "%1$@ قام بإرسال ملف للمجموعة %2$@";
 "CHAT_MESSAGE_AUDIO" = "%1$@ قام بإرسال مقطع صوتي للمجموعة %2$@";
 "CHAT_CREATED" = "%1$@ قام بدعوتك للمجموعة %2$@";
 "CHAT_TITLE_EDITED" = "%1$@ قام بتعديل عنوان المجموعة %2$@";
 "CHAT_PHOTO_EDITED" = "%1$@ قام تغيير صورة المجموعة %2$@";
 "CHAT_ADD_MEMBER" = "%1$@ قام بدعوة %3$@ للمجموعة %2$@";
 "CHAT_ADD_YOU" = "%1$@ قام بدعوتك للمجموعة %2$@";
-"CHAT_DELETE_YOU" = "%1$@ قام بإخراجك من المجموعة %2$@";
-"CHAT_DELETE_MEMBER" = "%1$@ قام بإخراج %3$@ من المجموعة %2$@";
+"CHAT_DELETE_YOU" = "%1$@ قام بإزالتك من المجموعة %2$@";
+"CHAT_DELETE_MEMBER" = "%1$@ قام بإزالة %3$@ من المجموعة %2$@";
 "CHAT_LEFT" = "%1$@ غادر المجموعة %2$@";
 "CHAT_RETURNED" = "%1$@ عاد إلى المجموعة %2$@";
 
+"MESSAGE_STICKER" = "%1$@ قام بإرسال ملصق";
+"CHAT_MESSAGE_STICKER" = "%1$@ قام بإرسال ملصق للمجموعة %2$@";
+
 "CONTACT_JOINED" = "%1$@ قام بالتسجيل في تيليجرام!";
 "CONTACT_ACTIVATED" = "%1$@ ساعدك في تفعيل حسابك!";
-"CONTACT_PHOTO" = "%1$@ قام بإضافة صورة شخصية";
 
 "AUTH_UNKNOWN" = "تم تسجيل الدخول لحسابك من جهاز جديد%1$@";
 "AUTH_REGION" = "تم تسجيل الدخول لحسابك من جهاز جديد %1$@, الموقع: %2$@";
+
+"MESSAGE_FWDS" = "%1$@ قام بإعادة إرسال %2$@ رسائل لك";
+"CHAT_MESSAGE_FWDS" = "%1$@ قام بإعادة إرسال %3$@ رسائل للمجموعة %2$@";
+
+"CHANNEL_MESSAGE_TEXT" = "%1$@: %2$@";
+"CHANNEL_MESSAGE_NOTEXT" = "%1$@ أرسل رسالة";
+"CHANNEL_MESSAGE_PHOTO" = "%1$@ أرسل صورة";
+"CHANNEL_MESSAGE_VIDEO" = "%1$@ أرسل مقطع مرئي";
+"CHANNEL_MESSAGE_DOC" = "%1$@ أرسل مستند";
+"CHANNEL_MESSAGE_STICKER" = "%1$@ أرسل ملصق";
+"CHANNEL_MESSAGE_AUDIO" = "%1$@ أرسل رسالة صوتية";
+"CHANNEL_MESSAGE_CONTACT" = "%1$@ أرسل جهة اتصال";
+"CHANNEL_MESSAGE_GEO" = "%1$@ أرسل خريطة";
+"CHANNEL_MESSAGE_FWDS" = "%1$@ أرسل %2$@ رسائل معاد إرسالها";
 
 // Common
 "Common.OK" = "موافق";
@@ -55,6 +74,9 @@
 "Common.ChoosePhoto" = "اختر صورة";
 "Common.ChooseVideo" = "اختر مقطع مرئي";
 "Common.of" = "من";
+"Common.Search" = "بحث";
+"Common.More" = "أكثر...";
+"Common.Select" = "اختر";
 
 // State
 "State.connecting" = "جاري الإتصال";
@@ -124,6 +146,10 @@
 "LastSeen.YesterdayAt" = "آخر ظهور أمس الساعة %@";
 "LastSeen.AtWeekday" = "آخر ظهور %@";
 "LastSeen.AtDate" = "آخر ظهور %@";
+"LastSeen.Lately" = "آخر ظهور كان قريب";
+"LastSeen.WithinAWeek" = "آخر ظهور خلال أسبوع";
+"LastSeen.WithinAMonth" = "آخر ظهور خلال شهر";
+"LastSeen.ALongTimeAgo" = "آخر ظهور خلال فترة طويلة";
 
 "Date.DialogDateFormat" = "{day} {month}";
 
@@ -154,10 +180,16 @@
 // Login
 "Login.PhoneAndCountryHelp" = "يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول.";
 "Login.CodeHelp" = "تم إرسال رسالة قصيرة تحتوي على رمز التفعيل الخاص بك للرقم %@";
+"Login.CodeSentInternal" = "يرجى إدخال الرمز الذي استقبلته للتو على تطبيق **تيليجرام** السابق الخاص بك";
+"Login.HaveNotReceivedCodeInternal" = "لم تستقبل رمز التفعيل بعد؟";
+"Login.CodeSentSms" = "تم إرسال رسالة قصيرة تحتوي على رمز التفعيل";
 "Login.Code" = "الرمز";
 "Login.CallRequestState1" = "تيليجرام سيتصل بك خلال %d:%.2d";
 "Login.CallRequestState2" = "جاري طلب اتصال من تيليجرام...";
 "Login.CallRequestState3" = "تيليجرام اتصل برقمك";
+"Login.EmailNotConfiguredError" = "فضلًا، قم بإعداد حساب بريدك الإلكتروني";
+"Login.EmailCodeSubject" = "%@, لا يوجد رمز تفعيل";
+"Login.EmailCodeBody" = "رقم هاتفي هو:\n%@\nلم استطع الحصول على رمز التفعيل الخاص بتيليجرام.";
 "Login.UnknownError" = "حدث خطأ. يرجى المحاولة لاحقًا";
 "Login.InvalidCodeError" = "لقد قمت بإدخال رمز غير صحيح، حاول مرة أخرى.";
 "Login.NetworkError" = "يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.";
@@ -200,10 +232,17 @@
 // Dialog List
 "DialogList.TabTitle" = "الرسائل";
 "DialogList.Title" = "الرسائل";
-"DialogList.SearchLabel" = "بحث";
+"DialogList.SearchLabel" = "ابحث عن رسائل ومستخدمين";
+"DialogList.SelectContact" = "اختر جهة اتصال";
+"DialogList.SelectContacts" = "اختر جهات اتصال";
+"DialogList.Create" = "إنشاء";
 "DialogList.NoMessagesTitle" = "لا توجد محادثات بعد";
 "DialogList.NoMessagesText" = "إبدأ المراسلة بالضغط على أيقونة القلم في أعلى الشاشة على اليمين أو اذهب لقائمة جهات الاتصال.";
 "DialogList.SingleTypingSuffix" = "%@ يكتب";
+"DialogList.SingleRecordingAudioSuffix" = "%@ يقوم بتسجيل مقطع صوتي";
+"DialogList.SingleUploadingPhotoSuffix" = "%@ يقوم بإرسال صورة";
+"DialogList.SingleUploadingVideoSuffix" = "%@ يقوم بإرسال مقطع مرئي";
+"DialogList.SingleUploadingFileSuffix" = "%@ يقوم بإرسال ملف";
 "DialogList.MultipleTypingSuffix" = "%d يكتبون";
 "DialogList.Typing" = "جاري الكتابة";
 "DialogList.ClearHistoryConfirmation" = "مسح سجل التاريخ";
@@ -221,12 +260,18 @@
 "Compose.NewMessage" = "رسالة جديدة";
 "Compose.NewGroup" = "مجموعة جديدة";
 "Compose.NewEncryptedChat" = "محادثة سرية جديدة";
+"Compose.NewBroadcast" = "قائمة رسائل جماعية";
+"Compose.NewBroadcastButton" = "رسالة جماعية جديدة";
+"Compose.Recipients" = "المستقبلون";
 "Compose.Create" = "إنشاء";
 
 // Contacts
 "Contacts.TabTitle" = "جهات الاتصال";
 "Contacts.Title" = "جهات الاتصال";
 "Contacts.Invite" = "قم بدعوة";
+"Contacts.contact" = "جهة اتصال";
+"Contacts.contacts" = "جهة اتصال";
+"Contacts.contactsvar" = "جهة اتصال";
 "Contacts.InvitationText" = "مرحبا! هيا نستخدم تيليجرام http://telegram.org/dl";
 "Contacts.FailedToSendInvitesMessage" = "حدث خطأ.";
 "Contacts.AccessDeniedError" = "تيليجرام لا يستطيع الدخول لجهات الاتصال الخاصة بك";
@@ -248,24 +293,36 @@
 "Conversation.MessageDialogDelete" = "حذف";
 "Conversation.LinkDialogOpen" = "فتح الرابط";
 "Conversation.LinkDialogCopy" = "نسخ";
-"Conversation.ForwardToPrefix" = "تحويل لـ ";
+"Conversation.EditDelete" = "احذف";
+"Conversation.EditForward" = "أعد التوجيه";
+"Conversation.ForwardToPersonFormat" = "تحويل إلى %@؟";
+"Conversation.ForwardToGroupFormat" = "تحويل إلى %@؟";
 "Conversation.ForwardTitle" = "تحويل";
-"Conversation.StatusKickedFromGroup" = "تم إخراجك من المجموعة";
+"Conversation.ForwardChats" = "المحادثات";
+"Conversation.ForwardContacts" = "جهات الاتصال";
+"Conversation.StatusKickedFromGroup" = "لقد تمت إزالتك من المجموعة";
 "Conversation.StatusLeftGroup" = "قمت بمغادرة المجموعة";
 "Conversation.StatusTyping" = "جاري الكتابة";
+"Conversation.BroadcastTitle" = "رسالة جماعية";
 "Conversation.Call" = "اتصل";
 "Conversation.Mute" = "كتم الصوت";
 "Conversation.Unmute" = "إزالة كتم الصوت";
+"Conversation.Edit" = "تعديل";
 "Conversation.Info" = "معلومات";
+"Conversation.Search" = "بحث";
 "Conversation.Block" = "حظر";
 "Conversation.Unblock" = "إلغاء الحظر";
 "Conversation.ClearAll" = "مسح الكل";
 "Conversation.Location" = "الموقع";
-"Conversation.Document" = "مستند";
+"Conversation.Document" = "أرسل ملف";
 "Conversation.Contact" = "جهة اتصال";
+"Conversation.BlockUser" = "حظر المستخدم";
+"Conversation.UnblockUser" = "إلغاء حظر المستخدم";
+"Conversation.DeleteGroup" = "حذف المجموعة";
+"Conversation.DeleteChat" = "حذف هذه الدردشة";
 "Conversation.ClearAllConfirmation" = "مسح الدردشة";
 "Conversation.SearchImages" = "ابحث عن صور";
-"Conversation.UnsupportedMedia" = "نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة view:\nhttp://telegram.org/update";
+"Conversation.UnsupportedMedia" = "نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة لاستعراضها:\nhttp://telegram.org/update";
 "Conversation.EncryptionWaiting" = "في انتظار %@ ليصبح متصل...";
 "Conversation.EncryptionProcessing" = "جاري مبادلة مفاتيح التشفير...";
 "Conversation.SupportPlaceholder" = "هل لديك سؤال عن تيليجرام؟";
@@ -284,9 +341,14 @@
 "Conversation.ContextMenuMore" = "أكثر...";
 
 "Conversation.StatusMembers_1" = "عضو واحد";
-"Conversation.StatusMembers_2" = "عضوين";
+"Conversation.StatusMembers_2" = "عضوان";
 "Conversation.StatusMembers_3_10" = "%@ أعضاء";
 "Conversation.StatusMembers_any" = "%@ عضو";
+
+"Conversation.StatusRecipients_1" = "مستقبل";
+"Conversation.StatusRecipients_2" = "مستقبلان";
+"Conversation.StatusRecipients_3_10" = "%@ مستقبلون";
+"Conversation.StatusRecipients_any" = "%@ مستقبل";
 
 "Conversation.StatusOnline_1" = "١ متصل";
 "Conversation.StatusOnline_2" = "٢ متصلان";
@@ -294,9 +356,13 @@
 "Conversation.StatusOnline_any" = "%@ متصل";
 
 "Conversation.UnreadMessages" = "رسائل غير مقروءة";
+"Conversation.InfoGroup" = "مجموعة";
+"Conversation.InfoPrivate" = "جهة اتصال";
+"Conversation.InfoBroadcastList" = "قائمة";
 
 // Notification
 "Notification.RenamedChat" = "%@ قام بإعادة تسمية المجموعة";
+"Notification.RenamedChannel" = "تم تغيير اسم القناة";
 "Notification.ChangedGroupPhoto" = "%@ قام بتغيير صورة المجموعة";
 "Notification.RemovedGroupPhoto" = "%@ قام بحذف صورة المجموعة";
 "Notification.ChangedUserPhoto" = "%@ قام بإضافة صورة شخصية جديدة";
@@ -304,28 +370,20 @@
 "Notification.JoinedChat" = "%@ انضم للمجموعة";
 "Notification.Invited" = "%@ قام بدعوة %@";
 "Notification.LeftChat" = "%@ غادر المجموعة";
-"Notification.Kicked" = "%@ قام بإخراج %@ من المجموعة";
+"Notification.Kicked" = "%@ أزال %@";
 "Notification.CreatedChat" = "%@ قام بإنشاء مجموعة";
+"Notification.CreatedChannel" = "تم إنشاء القناة";
+"Notification.CreatedBroadcastList" = "لقد قمت بإنشاء قائمة رسائل جماعية";
 "Notification.CreatedChatWithTitle" = "%@ قام بإنشاء المجموعة \"%@\"";
 "Notification.Joined" = "%@ انضم لتيليجرام";
 "Notification.ChangedGroupName" = "%@ قام بتغيير اسم المجموعة لـ \"%@\"";
-
-"Notification.NewAuthDetected" = "%1$@,\
-تم تسجيل الدخول لحسابك من جهاز جديد يوم %2$@, %3$@ الساعة %4$@\
-\
-الجهاز: %5$@\
-المكان: %6$@\
-\
-إذا لم تسجل الدخول، بإمكانك الذهاب إلى إعدادات – إعدادات المحادثة – سجل الخروج من كافة الأجهزة الأخرى.
-\
-شكرًا،\
-فريق تيليجرام";
-
+"Notification.NewAuthDetected" = "%1$@,\nتم تسجيل الدخول لحسابك من جهاز جديد يوم %2$@, %3$@ الساعة %4$@\n\nالجهاز: %5$@\nالمكان: %6$@\n\nإذا لم تسجل الدخول، بإمكانك الذهاب إلى إعدادات – إعدادات المحادثة – سجل الخروج من كافة الأجهزة الأخرى. كما يمكنك تفعيل التحقق بخطوتين في حال رغبت بذلك عن طريق إعدادات الخصوصية.\n\nشكرًا،\nفريق تيليجرام";
 "Notification.EncryptedChatRequested" = "تم طلب محادثة سرية";
 "Notification.EncryptedChatAccepted" = "تم قبول المحادثة السرية";
 "Notification.MessageLifetimeChanged" = "%1$@ قام بتعيين عداد التدمير الذاتي إلى %2$@";
 "Notification.MessageLifetimeChangedOutgoing" = "لقد قمت بتعيين عداد التدمير الذاتي إلى %1$@";
 "Notification.MessageLifetimeRemoved" = "%1$@ قام بإيقاف عداد التدمير الذاتي";
+"Notification.MessageLifetimeRemovedOutgoing" = "لقد قمت بتعطيل عداد التدمير الذاتي";
 "Notification.MessageLifetime2s" = "ثانيتان";
 "Notification.MessageLifetime5s" = "٥ ثوانٍ";
 "Notification.MessageLifetime1m" = "دقيقة";
@@ -338,8 +396,9 @@
 "Message.Video" = "مقطع مرئي";
 "Message.Location" = "موقع";
 "Message.Contact" = "جهة اتصال";
-"Message.File" = "File";
-"Message.Audio" = "Audio";
+"Message.File" = "ملف";
+"Message.Sticker" = "ملصق";
+"Message.Audio" = "مقطع صوتي";
 "Message.ForwardedMessage" = "رسالة محولة\nمن %@";
 "Message.SharedContact" = "جهات الاتصال المرسلة";
 
@@ -348,18 +407,25 @@
 "ConversationProfile.UserLeftChatError" = "المعذرة, %@ قرر مغادرة المجموعة, لا يمكنك دعوته مرة أخرى للمجموعة.";
 "ConversationProfile.UnknownAddMemberError" = "حدث خطأ غير متوقع. لقد تم إخبار فريق العمل وسيعملون على إصلاحه قريبًا. نعتذر.";
 "ConversationProfile.UsersTooMuchError" = "المعذرة, هذه المجموعة ممتلئة. لا تستطيع إضافة أعضاء جدد.";
+
 "ConversationProfile.LeaveDeleteAndExit" = "خروج وحذف";
+
+"Conversation.DownloadPhoto" = "تنزيل الصورة";
 "Conversation.ViewPhoto" = "اعرض الصورة";
-"Conversation.ViewFile" = "View File";
-"Conversation.Play" = "Play";
 "Conversation.PlayVideo" = "اعرض المقطع المرئي";
+"Conversation.Play" = "تشغيل";
+"Conversation.Stop" = "إيقاف";
+"Conversation.ViewFile" = "عرض الملف";
 "Conversation.Download" = "تنزيل";
 "Conversation.DownloadMegabytes" = "تنزيل %.1fMb";
 "Conversation.DownloadKilobytes" = "تنزيل %dKb";
+"Conversation.Megabytes" = "%.1fMb";
+"Conversation.Kilobytes" = "%dKb";
+"Conversation.Bytes" = "%db";
 "Conversation.DownloadProgressMegabytes" = "%1$.1fMb / %2$.1fMb";
 "Conversation.DownloadProgressKilobytes" = "%1$dKb / %2$dKb";
 "Conversation.ViewLocation" = "اعرض الموقع";
-"Conversation.SearchWebImages" = "ابحث عن صور في الإنترنت";
+"Conversation.SearchWebImages" = "ابحث عن صور";
 "Conversation.ShareMyContactInfo" = "قم بمشاركة معلومات جهة الاتصال الخاصة بك";
 "Conversation.AddContact" = "قم بإضافة جهة اتصال";
 "Conversation.SendMessage" = "أرسل رسالة";
@@ -368,34 +434,35 @@
 "Conversation.DeleteManyMessages" = "حذف الرسائل";
 "Conversation.View" = "عرض";
 "Conversation.Download" = "تنزيل";
-"Conversation.SlideToCancel" = "Slide to cancel";
+"Conversation.SlideToCancel" = "قم بالسحب للإلغاء";
+"Conversation.ApplyLocalization" = "تطبيق واجهة اللغة";
+"Conversation.OpenFile" = "فتح الملف";
+"Conversation.MicrophoneAccessDisabled" = "يحتاج تيليجرام للسماع له باستخدام الميكروفون لتسجيل الرسائل الصوتية. يرجى الذهاب إلى إعدادات — الخصوصية — الميكروفون ثم قم بتفعيل تيليجرام.";
 
 // Media Picker
 "MediaPicker.Send" = "أرسل";
 "MediaPicker.Choose" = "اختر";
 "SearchImages.SearchImages" = "ابحث عن صور";
 "SearchImages.Title" = "ألبوم";
-"SearchImages.NoImagesFound" = "المعذرة، لم يتم العثور على صور.";
 "MediaPicker.CameraRoll" = "البوم الصور";
+"SearchImages.NoImagesFound" = "المعذرة، لم يتم العثور على صور.";
 "MediaPicker.AccessDeniedError" = "تيليجرام لا يستطيع الدخول للألبوم الخاص بك";
 "MediaPicker.AccessDeniedHelp" = "الرجاء الذهاب إلى إعدادات الـ %@ — الخصوصية — الصور.\nثم قم بتفعيل تيليجرام.";
 "SearchImages.Downloading#Kb" = "جاري تنزيل %d Kb";
 "SearchImages.Downloading#Mb" = "جاري تنزيل %d Mb";
-"SearchImages.ImageNofM" = "صورة %1$@ من @2$@";
+"SearchImages.ImageNofM" = "صورة %1$@ من %2$@";
 "SearchImages.DownloadCancelled" = "تم إلغاء التنزيل";
 "SearchImages.ErrorDownloadingImage" = "خطأ في تنزيل الصورة";
 "SearchImages.SkipImage" = "تخطى الصورة";
 "SearchImages.RetryDownload" = "إعادة التنزيل";
 
 // User Profile
-"Profile.ShareContactButton" = "قم بمشاركة جهة الاتصال";
-"Profile.ShareContactPrefix" = "أرسل جهة الاتصال لـ ";
 "Profile.ImageUploadError" = "حدث خطأ. الرجاء المحاولة في وقت لاحق.";
-"Profile.CreateNewContact" = "إنشاء جهة اتصال جديدة";
-"Profile.AddToExisting" = "إضافة إلى جهة اتصال موجودة";
 "Profile.PhonebookAccessDisabled" = "لجعل هذه الخاصية تعمل, الرجاء الذهاب إلى إعدادات الآيفون — الخصوصية— جهات الاتصال ثم قم بتفعيل تيليجرام.";
 "Profile.CreateEncryptedChatError" = "حدث خطأ.";
 "Profile.CreateEncryptedChatOutdatedError" = "لا يمكن إنشاء محادثة سرية مع %@.\n%@ يستخدم إصدار قديم من تيليجرام ولا بد أن يقوم بالتحديث أولًا.";
+"Profile.CreateNewContact" = "إنشاء جهة اتصال جديدة";
+"Profile.AddToExisting" = "إضافة إلى جهة اتصال موجودة";
 "Profile.EncryptionKey" = "مفتاح التشفير";
 "Profile.MessageLifetime" = "عداد التدمير الذاتي";
 "Profile.MessageLifetimeForever" = "إيقاف";
@@ -405,6 +472,9 @@
 "Profile.MessageLifetime1h" = "ساعة";
 "Profile.MessageLifetime1d" = "يوم";
 "Profile.MessageLifetime1w" = "أسبوع";
+"Profile.ShareContactButton" = "قم بمشاركة جهة الاتصال";
+"Profile.ShareContactPersonFormat" = "أرسل جهة الاتصال إلى %@؟";
+"Profile.ShareContactGroupFormat" = "أرسل جهة الاتصال إلى %@؟";
 
 // User Info
 "UserInfo.Title" = "معلومات";
@@ -437,6 +507,7 @@
 // Group Info
 "GroupInfo.Title" = "معلومات المجموعة";
 "GroupInfo.GroupNamePlaceholder" = "اسم المجموعة";
+"GroupInfo.BroadcastListNamePlaceholder" = "اسم القائمة";
 "GroupInfo.SetGroupPhoto" = "تعيين صورة للمجموعة";
 "GroupInfo.SetGroupPhotoStop" = "إيقاف";
 "GroupInfo.SetGroupPhotoDelete" = "حذف الصورة";
@@ -447,13 +518,13 @@
 "GroupInfo.DeleteAndExit" = "خروج وحذف";
 "GroupInfo.DeleteAndExitConfirmation" = "لن تستطيع الدخول لهذه المجموعة مرة أخرى.";
 "GroupInfo.ParticipantCount_1" = "عضو واحد";
-"GroupInfo.ParticipantCount_2" = "عضوان"; //two
-"GroupInfo.ParticipantCount_3_10" = "%@ أعضاء"; //three to ten
-"GroupInfo.ParticipantCount_any" = "%@ عضو"; //more than ten
+"GroupInfo.ParticipantCount_2" = "عضوان";
+"GroupInfo.ParticipantCount_3_10" = "%@ أعضاء";
+"GroupInfo.ParticipantCount_any" = "%@ عضو";
 "GroupInfo.AddParticipant" = "إضافة عضو...";
 "GroupInfo.AddParticipantTitle" = "جهات الاتصال";
 "GroupInfo.AddParticipantConfirmation" = "إضافة %@ للمجموعة؟";
-"GroupInfo.KickedStatus" = "تم حذفك من المجموعة";
+"GroupInfo.KickedStatus" = "لقد تمت إزالتك من المجموعة";
 "GroupInfo.LeftStatus" = "لقد قمت بمغادرة المجموعة";
 
 // Encryption Key
@@ -509,8 +580,12 @@
 "Settings.BlockedUsers" = "جهات الاتصال المحظورة";
 "Settings.ChatBackground" = "خلفية الدردشة";
 "Settings.Support" = "اسأل سؤالًا";
+"Settings.FAQ" = "الأسئلة الشائعة عن تيليجرام";
+"Settings.FAQ_URL" = "https://telegram.org/faq/ar";
+"Settings.FAQ_Intro" = "نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحن نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت. يرجى الإطلاع على صفحة الأسئلة الأكثر شيوعًا: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.";
+"Settings.FAQ_Button" = "الأسئلة الشائعة";
 "Settings.SaveIncomingPhotos" = "احفظ الصور الواردة";
-"Settings.SaveIncomingPhotosHelp" = "قم بحفظ الصور الواردة في ألبوم الكاميرا";
+"Settings.SaveIncomingPhotosHelp" = "حفظ الصور الواردة في ألبوم الكاميرا";
 "Settings.LogoutError" = "حدث خطأ. الرجاء المحاولة في وقت لاحق.";
 
 // Notifications and Sounds
@@ -519,7 +594,7 @@
 "Notifications.MessageNotificationsAlert" = "التنبيه";
 "Notifications.MessageNotificationsPreview" = "معاينة الرسائل";
 "Notifications.MessageNotificationsSound" = "الصوت";
-"Notifications.MessageNotificationsHelp" = "تستطيع تعيين إشعارات مخصصة لكل جهة اتصال عن طريق معلومات جهة الاتصال";
+"Notifications.MessageNotificationsHelp" = "تستطيع تعيين إشعارات مخصصة لكل جهة اتصال عن طريق صفحة المعلومات الخاصة بها";
 
 "Notifications.GroupNotifications" = "إشعارات المجموعات";
 "Notifications.GroupNotificationsAlert" = "التنبيه";
@@ -550,17 +625,26 @@
 "ChatSettings.PrivateChats" = "المحادثات الخاصة";
 "ChatSettings.Groups" = "المجموعات";
 "ChatSettings.Security" = "الأمان";
-"ChatSettings.ClearOtherSessions" = "سجل الخروج من كافة الأجهزة الأخرى";
-"ChatSettings.ClearOtherSessionsHelp" = "قم بتسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز";
-"ChatSettings.ClearOtherSessionsConfirmation" = "هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟";
-"ChatSettings.ClearOtherSessionsFailed" = "حدث خطأ.";
+"ChatSettings.Language" = "اللغة";
+"ChatSettings.RevertLanguage" = "استرجاع واجهة اللغة الأصلية";
+"ChatSettings.Cache" = "الذاكرة المخبئية";
+
+// Usage
+"Cache.Title" = "إعدادات الذاكرة المخبئية";
+"Cache.ClearCache" = "مسح الملفات المنزلة";
+"Cache.ClearCacheAlert" = "الصور، المقاطع المرئية، وجميع الملفات المحفوظة في خوادمنا التي لم **تستخدمها** خلال هذه المدة سيتم حذفها لتوفير المساحة.\n\nملفات الوسائط ستبقى في خوادم تيليجرام ويمكنك إعادة تنزيلها متى ما احتجتها مرة أخرى.";
+"Cache.KeepMedia" = "الإحتفاظ بالوسائط";
+"Cache.Help" = "الصور، المقاطع المرئية، وجميع الملفات المحفوظة في خوادمنا التي لم **تستخدمها** خلال هذه المدة سيتم حذفها لتوفير المساحة. ملفات الوسائط ستبقى في خوادم تيليجرام ويمكنك إعادة تنزيلها متى ما احتجتها مرة أخرى.";
 
 // Blocked Users
 "BlockedUsers.Title" = "جهات الاتصال المحظورة";
-"BlockedUsers.BlockPrefix" = "حظر ";
+"BlockedUsers.SelectUserTitle" = "حظر المستخدم";
+"BlockedUsers.AlreadyBlocked" = "هذا المستخدم محظور مسبقًا";
+"BlockedUsers.BlockUser" = "حظر المستخدم";
+"BlockedUsers.BlockFormat" = "هل ترغب بحظر %@؟";
 "BlockedUsers.BlockTitle" = "حظر";
 "BlockedUsers.LeavePrefix" = "مغادرة ";
-"BlockedUsers.Info" = "لن تستقبل رسائل من جهات الاتصال التي في قائمة جهات الاتصال المحظورة";
+"BlockedUsers.Info" = "المستخدمون المحظورون لن يستطيعوا مراسلتك أو إضافتك للمجموعات. لن يتمكنوا من رؤية صورتك الشخصية أو حتى معرفة ما إذا كنت متصل أو آخر تواجد لك.";
 "BlockedUsers.AddNew" = "إضافة ...";
 "BlockedUsers.Unblock" = "إلغاء الحظر";
 
@@ -573,3 +657,889 @@
 // Update
 "Update.Update" = "تحديث";
 
+// Service
+"Service.LocalizationDownloadError" = "لم يتمكن تيليجرام من تنزيل ملف واجهة اللغة. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.";
+"Service.ApplyLocalization" = "هل تريد تطبيق واجهة اللغة؟";
+"Service.ApplyLocalizationWithWarnings" = "%@\n\nهل تريد تطبيق واجهة اللغة؟";
+
+"Notification.SecretChatMessageScreenshot" = "%@ took a screenshot!";
+"Notification.SecretChatScreenshot" = "لقط تم أخذ لقطة من الشاشة!";
+
+// Broadcast Lists
+"DialogList.Broadcast" = "رسالة جماعية";
+"BroadcastLists.Title" = "قوائم الرسائل الجماعية";
+"BroadcastLists.NoListsYet" = "لا توجد قوائم بعد";
+"BroadcastLists.NoListsText" = "يمكنك إرسال رسائل لعدة مستخدمين مرة واحدة بشكل سهل من خلال قوائم الرسائل الجماعية.";
+
+// Broadcast List
+"BroadcastListInfo.Title" = "قائمة رسائل جماعية";
+"BroadcastListInfo.AddRecipient" = "إضافة مستقبل";
+
+// Video
+"VideoPreview.OptionSD" = "الحجم الطبيعي (%@)";
+"VideoPreview.OptionHD" = "عالي الدقة (%@)";
+
+"ChatSettings.AutoPlayAudio" = "تشغيل تلقائي للمقاطع الصوتية";
+
+"Settings.LogoutConfirmationTitle" = "هل تريد تسجيل الخروج؟";
+"Settings.LogoutConfirmationText" = "\nنرجو الأخذ بالعلم أنه يمكنك استخدام تيليجرام على أجهزتك المتعددة بسهولة تامة وفي وقت واحد.\n\nوتذكر، تسجيل الخروج يحذف كافة محادثاتك السرية.";
+
+"Login.PadPhoneHelp" = "\nتستطيع استخدام رقم هاتفك الرئيسي لتسجيل الدخول في تيليجرام على كافة أجهزتك.\nلا تستخدم شريحة الآيباد الخاص بك هنا – سنحتاج لأن نرسل لك رسالة قصيرة للتفعيل.\n\nهل هذا الرقم صحيح؟\n{number}";
+"Login.PadPhoneHelpTitle" = "رقمك";
+
+"MessageTimer.Custom" = "مخصص";
+"MessageTimer.Title" = "عداد مخصص";
+
+"MessageTimer.Forever" = "إلى الأبد";
+
+"MessageTimer.Seconds_1" = "%@ second";
+"MessageTimer.Seconds_2" = "%@ ثانيتان";
+"MessageTimer.Seconds_3_10" = "%@ ثوانٍ";
+"MessageTimer.Seconds_any" = "%@ ثانية";
+"MessageTimer.Minutes_1" = "%@ دقيقة";
+"MessageTimer.Minutes_2" = "%@ دقيقتان";
+"MessageTimer.Minutes_3_10" = "%@ دقائق";
+"MessageTimer.Minutes_any" = "%@ دقيقة";
+"MessageTimer.Hours_1" = "%@ ساعة";
+"MessageTimer.Hours_2" = "%@ ساعتان";
+"MessageTimer.Hours_3_10" = "%@ ساعات";
+"MessageTimer.Hours_any" = "%@ ساعة";
+"MessageTimer.Days_1" = "%@ يوم";
+"MessageTimer.Days_2" = "%@ يومان";
+"MessageTimer.Days_3_10" = "%@ أيام";
+"MessageTimer.Days_any" = "%@ يوم";
+"MessageTimer.Weeks_1" = "%@ أسبوع";
+"MessageTimer.Weeks_2" = "%@ أسبوعان";
+"MessageTimer.Weeks_3_10" = "%@ أسابيع";
+"MessageTimer.Weeks_any" = "%@ أسبوع";
+"MessageTimer.Months_1" = "%@ شهر";
+"MessageTimer.Months_2" = "%@ شهران";
+"MessageTimer.Months_3_10" = "%@ أشهر";
+"MessageTimer.Months_any" = "%@ شهر";
+"MessageTimer.Years_1" = "%@ سنة";
+"MessageTimer.Years_2" = "%@ سنتان";
+"MessageTimer.Years_3_10" = "%@ سنوات";
+"MessageTimer.Years_any" = "%@ دقيقة";
+
+"MessageTimer.ShortSeconds_1" = "%@ث";
+"MessageTimer.ShortSeconds_2" = "%@ث";
+"MessageTimer.ShortSeconds_3_10" = "%@ث";
+"MessageTimer.ShortSeconds_any" = "%@ث";
+"MessageTimer.ShortMinutes_1" = "%@د";
+"MessageTimer.ShortMinutes_2" = "%@د";
+"MessageTimer.ShortMinutes_3_10" = "%@د";
+"MessageTimer.ShortMinutes_any" = "%@د";
+"MessageTimer.ShortHours_1" = "%@س";
+"MessageTimer.ShortHours_2" = "%@س";
+"MessageTimer.ShortHours_3_10" = "%@س";
+"MessageTimer.ShortHours_any" = "%@س";
+"MessageTimer.ShortDays_1" = "%@ي";
+"MessageTimer.ShortDays_2" = "%@ي";
+"MessageTimer.ShortDays_3_10" = "%@ي";
+"MessageTimer.ShortDays_any" = "%@ي";
+"MessageTimer.ShortWeeks_1" = "%@أ";
+"MessageTimer.ShortWeeks_2" = "%@أ";
+"MessageTimer.ShortWeeks_3_10" = "%@أ";
+"MessageTimer.ShortWeeks_any" = "%@أ";
+
+"Activity.UploadingPhoto" = "جاري إرسال الصورة...";
+"Activity.UploadingVideo" = "جاري إرسال المقطع المرئي...";
+"Activity.UploadingDocument" = "جاري إرسال الملف...";
+"Activity.RecordingAudio" = "جاري تسجيل المقطع الصوتي...";
+"Activity.Location" = "جاري اختيار المكان...";
+
+"Service.NetworkConfigurationUpdatedMessage" = "تم تحديث إعدادات الاتصال بشكل ناجح.";
+
+"Compatibility.SecretMediaVersionTooLow" = "%@ يستخدم إصدار قديم من تيليجرام، لذلك، الصور السرية ستظهر في وضع الموافقة.\n\nعندما يقوم %@ بتحديث تيليجرام، الصور التي بها عداد دقيقة أو أقل ستعمل بطريقة \"الاستمرار بالضغط للإستعراض\"، وسيتم إخبارك عندما يلتقط المستقبل صورة من شاشته.";
+
+"Contacts.GlobalSearch" = "بحث شامل";
+"Profile.Username" = "اسم المستخدم";
+"Settings.Username" = "اسم المستخدم";
+"Settings.UsernameEmpty" = "لا يوجد";
+
+"Username.Title" = "اسم المستخدم";
+"Username.Placeholder" = "معرّفك";
+"Username.Help" = "يمكنك اختيار اسم مستخدم في تيليجرام. إذا قمت بذلك، سيستطيع الناس إيجادك باستخدام الاسم المستخدم والتواصل معك من دون معرفة رقمك.\n\nتستطيع استخدام حروف اللغة الإنجليزية وأرقامها وكذلك الخط. لا بد من استخدام ٥ حروف على الأقل.";
+"Username.InvalidTooShort" = "اسم المستخدم يجب أن يتكوّن من ٥ حروف على الأقل.";
+"Username.InvalidStartsWithNumber" = "المعذرة، اسم المستخدم لا يمكن أن يبدأ برقم.";
+"Username.InvalidCharacters" = "المعذرة، اسم المستخدم غير مقبول.";
+"Username.InvalidTaken" = "المعذرة، اسم المستخدم تم اختياره مسبقًا.";
+
+"Username.CheckingUsername" = "جاري مراجعة اسم المستخدم...";
+"Username.UsernameIsAvailable" = "%@ متاح.";
+
+"WebSearch.Images" = "صور";
+"WebSearch.GIFs" = "الصور المتحركة";
+"WebSearch.RecentSectionTitle" = "حديثة";
+"WebSearch.RecentSectionClear" = "مسح";
+
+"Settings.PrivacySettings" = "الخصوصية والأمان";
+
+"UserCount_1" = "مستخدم واحد";
+"UserCount_2" = "مستخدمين";
+"UserCount_3_10" = "%@ مستخدمين";
+"UserCount_any" = "%@ مستخدم";
+
+"PrivacySettings.Title" = "الخصوصية والأمان";
+
+"PrivacySettings.PrivacyTitle" = "الخصوصية";
+"PrivacySettings.LastSeen" = "آخر ظهور";
+"PrivacySettings.LastSeenEverybody" = "الجميع";
+"PrivacySettings.LastSeenContacts" = "جهات الاتصال الخاصة بي";
+"PrivacySettings.LastSeenNobody" = "لا أحد";
+
+"PrivacySettings.LastSeenEverybodyMinus" = "الجميع (-%@)";
+"PrivacySettings.LastSeenContactsPlus" = "جهات الاتصال الخاصة بي (+%@)";
+"PrivacySettings.LastSeenContactsMinus" = "جهات الاتصال الخاصة بي (+%@)";
+"PrivacySettings.LastSeenContactsMinusPlus" = "جهات الاتصال الخاصة بي (-%@, +%@)";
+"PrivacySettings.LastSeenNobodyPlus" = "لا أحد (+%@)";
+
+"PrivacySettings.SecurityTitle" = "الأمان";
+
+"PrivacySettings.DeleteAccountTitle" = "حذف حسابي";
+"PrivacySettings.DeleteAccountIfAwayFor" = "إذا كنت غائب لمدة";
+"PrivacySettings.DeleteAccountHelp" = "إذا لم تقم بتسجيل الدخول خلال هذه الفترة، سيتم حذف حسابك بالإضافة إلى مجموعاتك، رسائلك، وجهات الاتصال الخاصة بك في تيليجرام.";
+"PrivacySettings.DeleteAccountNowConfirmation" = "هل ترغب في حذف حسابك؟";
+"PrivacySettings.DeleteAccountNever" = "للأبد";
+
+"PrivacyLastSeenSettings.Title" = "آخر ظهور";
+"PrivacyLastSeenSettings.LastSeenHelp" = "قم بتغيير من يستطيع رؤية آخر ظهور خاص بك.";
+"PrivacyLastSeenSettings.CustomHelp" = "هام: لن تستطيع رؤية آخر ظهور للأشخاص اللذين اخترت ألا يروا آخر ظهور لك. سيتم عرض آخر ظهور تقريبي كبديل (قريبًا، خلال أسبوع، خلال شهر).";
+"PrivacyLastSeenSettings.AlwaysShareWith" = "دائمًا شارك معه";
+"PrivacyLastSeenSettings.NeverShareWith" = "لا تشارك أبدًا مع";
+"PrivacyLastSeenSettings.CustomShareSettingsHelp" = "هذه الإعدادات ستستبدل الإعدادات المختارة أعلاه.";
+
+"PrivacyLastSeenSettings.CustomShareSettings.Delete" = "حذف";
+"PrivacyLastSeenSettings.AlwaysShareWith.Title" = "دائمُا شارك";
+"PrivacyLastSeenSettings.AlwaysShareWith.Placeholder" = "دائمًا شارك مع المستخدمين...";
+"PrivacyLastSeenSettings.NeverShareWith.Title" = "لا تشارك أبدًا";
+"PrivacyLastSeenSettings.NeverShareWith.Placeholder" = "لا تشارك أبدًا مع المستخدمين...";
+"PrivacyLastSeenSettings.EmpryUsersPlaceholder" = "إضافة مستخدمون";
+"PrivacyLastSeenSettings.AddUsers_1" = "هل ترغب في إضافة مستخدم لهذه القائمة؟";
+"PrivacyLastSeenSettings.AddUsers_2" = "هل ترغب في إضافة مستخدمين لهذه القائمة؟";
+"PrivacyLastSeenSettings.AddUsers_3_10" = "هل ترغب في إضافة %@ مستخدمين لهذه القائمة؟";
+"PrivacyLastSeenSettings.AddUsers_any" = "هل ترغب في إضافة %@ مستخدم لهذه القائمة؟";
+
+"PrivacySettings.FloodControlError" = "المعذرة، يوجد الكثير من الطلبات حاليًا. لا نستطيع تغيير إعدادات الخصوصية الآن، يرجى الإنتظار.";
+
+
+"ImagePicker.NoPhotos" = "لا توجد صور";
+"ImagePicker.NoVideos" = "لا توجد مقاطع مرئية";
+
+"Settings.OpenSystemPrivacySettings" = "افتح %@ الإعدادات";
+
+// Photo Editor
+"PhotoEditor.DiscardChanges" = "تجاهل التغييرات";
+"PhotoEditor.RevertToOriginal" = "استرجع للأصل";
+"PhotoEditor.RevertMessage" = "الاسترجاع للأصل سيحذف كافة التعديلات على هذه الصورة. لا يمكن الرجوع عن ذلك.";
+
+"PhotoEditor.Original" = "الأصل";
+"PhotoEditor.Current" = "الحالي";
+
+"PhotoEditor.CropReset" = "إعادة تعيين";
+"PhotoEditor.CropAuto" = "تلقائي";
+"PhotoEditor.CropAspectRatioOriginal" = "الأصل";
+"PhotoEditor.CropAspectRatioSquare" = "مربع";
+
+"PhotoEditor.EnhanceTool" = "تحسين";
+"PhotoEditor.ExposureTool" = "التعريض";
+"PhotoEditor.ContrastTool" = "التباين";
+"PhotoEditor.WarmthTool" = "الدفء";
+"PhotoEditor.SaturationTool" = "التشبع";
+"PhotoEditor.HighlightsTool" = "التفتيح";
+"PhotoEditor.ShadowsTool" = "الظل";
+"PhotoEditor.VignetteTool" = "النقش";
+"PhotoEditor.GrainTool" = "الحبوب";
+"PhotoEditor.BlurTool" = "الطمس";
+"PhotoEditor.SharpenTool" = "زيادة الحدة";
+
+"PhotoEditor.BlurToolOff" = "إيقاف";
+"PhotoEditor.BlurToolRadial" = "قطري";
+"PhotoEditor.BlurToolLinear" = "طولي";
+
+"PhotoEditor.Set" = "تعيين";
+"PhotoEditor.Skip" = "تخطّي";
+
+// Camera
+"Camera.PhotoMode" = "صورة";
+"Camera.VideoMode" = "مقطع مرئي";
+"Camera.SquareMode" = "مربع";
+"Camera.FlashOff" = "إيقاف";
+"Camera.FlashOn" = "تشغيل";
+"Camera.FlashAuto" = "تلقائي";
+"Camera.Retake" = "أعد الإلتقاط";
+
+"Settings.PhoneNumber" = "رقم الهاتف";
+
+"PhoneNumberHelp.Help" = "يمكنك تغيير رقم تيليجرام الخاص بك هنا. حسابك وجميع بياناتك التي في السحاب بما فيها رسائلك، الوسائط، جهات الاتصال وغيرها سيتم نقلها للرقم الجديد.\n\n**هام:** جميع جهات الاتصال الخاصة بك في تيليجرام سيضاف لها **رقمك الجديد**، في حال تواجد بها رقمك القديم ولم تقم بحظره في تيليجرام.";
+"PhoneNumberHelp.Alert" = "جميع جهات الاتصال الخاصة بك في تيليجرام سيضاف لها رقمك الجديد، في حال تواجد بها رقمك القديم ولم تقم بحظره في تيليجرام.";
+"PhoneNumberHelp.ChangeNumber" = "غيّر رقمك";
+
+"ChangePhoneNumberNumber.Title" = "غيّر رقمك";
+"ChangePhoneNumberNumber.NewNumber" = "الرقم الجديد";
+"ChangePhoneNumberNumber.Help" = "سيتم إرسال رسالة قصيرة تحتوي على رمز التفعيل الخاص إلى رقمك الجديد.";
+"ChangePhoneNumberNumber.NumberPlaceholder" = "أدخل رقمك الجديد";
+
+"ChangePhoneNumberCode.Code" = "الرمز الخاص بك";
+"ChangePhoneNumberCode.CodePlaceholder" = "رمز التفعيل";
+"ChangePhoneNumberCode.Help" = "تم إرسال رسالة قصيرة تحتوي على رمز التفعيل";
+"ChangePhoneNumberCode.CallTimer" = "تيليجرام سيتصل بك خلال %@";
+"ChangePhoneNumberCode.RequestingACall" = "جاري طلب اتصال من تيليجرام...";
+"ChangePhoneNumberCode.Called" = "تيليجرام اتصل برقمك";
+
+"LoginPassword.Title" = "كلمة المرور الخاصة بك";
+"LoginPassword.PasswordPlaceholder" = "كلمة المرور";
+"LoginPassword.InvalidPasswordError" = "كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.";
+"LoginPassword.FloodError" = "تم استهلاك عدد المحاولات. فضلًا حاول مرة أخرى لاحقًا.";
+"LoginPassword.ForgotPassword" = "هل نسيت كلمة المرور؟";
+"LoginPassword.PasswordHelp" = "تم تفعيل التحقق بخطوتين. حسابك محميّ بكلمة مرور إضافية.";
+"LoginPassword.ResetAccount" = "إعادة تعيين الحساب";
+
+"QuickSend.Photos_1" = "أرسل صورة واحدة";
+"QuickSend.Photos_2" = "أرسل صورتين";
+"QuickSend.Photos_3_10" = "أرسل %@ صور";
+"QuickSend.Photos_any" = "أرسل %@ صورة";
+
+"Share.Title" = "مشاركة";
+"Forward.ConfirmMultipleFiles_1" = "هل ترغب في إرسال ملف واحد إلى {target}؟";
+"Forward.ConfirmMultipleFiles_2" = "هل ترغب في إرسال ملفين واحد إلى {target}؟";
+"Forward.ConfirmMultipleFiles_3_10" = "هل ترغب في إرسال %@ ملفات إلى {target}؟";
+"Forward.ConfirmMultipleFiles_any" = "هل ترغب في إرسال %@ ملف إلى {target}؟";
+
+"PrivacySettings.TouchIdTitle" = "بصمة";
+"PrivacySettings.TouchIdEnable" = "تفعيل";
+
+"Notification.Reply" = "الرد";
+"Notification.Mute1h" = "ضعه على الصامت لمدة ساعة";
+"Notification.Mute1hMin" = "ضعه على الصامت لمدة ساعة";
+"Conversation.ContextMenuShare" = "شارك";
+
+"SharedMedia.TitleAll" = "الوسائط المشتركة";
+"SharedMedia.TitlePhoto" = "الصور المشاركة";
+"SharedMedia.TitleVideo" = "المقاطع المرئية المشاركة";
+"SharedMedia.TitleFile" = "الملفات المشاركة";
+
+"SharedMedia.All" = "الكل";
+"SharedMedia.Incoming" = "الوارد";
+"SharedMedia.Outgoing" = "الصادر";
+
+"SharedMedia.Photo_1" = "صورة واحدة";
+"SharedMedia.Photo_2" = "صورتان";
+"SharedMedia.Photo_3_10" = "%@ صور";
+"SharedMedia.Photo_any" = "%@ صورة";
+
+"SharedMedia.Video_1" = "مقطع مرئي واحد";
+"SharedMedia.Video_2" = "مقطعان مرئيان";
+"SharedMedia.Video_3_10" = "%@ مقاطع مرئية";
+"SharedMedia.Video_any" = "%@ مقطع مرئي";
+
+"SharedMedia.File_1" = "ملف واحد";
+"SharedMedia.File_2" = "ملفان";
+"SharedMedia.File_3_10" = "%@ ملفات";
+"SharedMedia.File_any" = "%@ ملف";
+
+"SharedMedia.Generic_1" = "ملف وسائط واحد";
+"SharedMedia.Generic_2" = "ملفان وسائط";
+"SharedMedia.Generic_3_10" = "%@ ملفات وسائط";
+"SharedMedia.Generic_any" = "%@ ملف وسائط";
+
+"FileSize.B" = "%@ ب";
+"FileSize.KB" = "%@ ك.ب";
+"FileSize.MB" = "%@ م.ب";
+
+"DownloadingStatus" = "جاري تنزيل %@ من %@";
+
+"Time.MonthOfYear_1" = "يناير %@";
+"Time.MonthOfYear_2" = "فبراير %@";
+"Time.MonthOfYear_3" = "مارس %@";
+"Time.MonthOfYear_4" = "أبريل %@";
+"Time.MonthOfYear_5" = "مايو %@";
+"Time.MonthOfYear_6" = "يونيو %@";
+"Time.MonthOfYear_7" = "يوليو %@";
+"Time.MonthOfYear_8" = "أغسطس %@";
+"Time.MonthOfYear_9" = "سبتمبر %@";
+"Time.MonthOfYear_10" = "أكتوبر %@";
+"Time.MonthOfYear_11" = "نوڤمبر %@";
+"Time.MonthOfYear_12" = "ديسمبر %@";
+
+"Time.PreciseDate_1" = "يناير %1$@, %2$@ في %3$@";
+"Time.PreciseDate_2" = "فبراير %1$@, %2$@ في %3$@";
+"Time.PreciseDate_3" = "مارس %1$@, %2$@ في %3$@";
+"Time.PreciseDate_4" = "أبريل %1$@, %2$@ في %3$@";
+"Time.PreciseDate_5" = "مايو %1$@, %2$@ في %3$@";
+"Time.PreciseDate_6" = "يونيو %1$@, %2$@ في %3$@";
+"Time.PreciseDate_7" = "يوليو %1$@, %2$@ في %3$@";
+"Time.PreciseDate_8" = "أغسطس %1$@, %2$@ في %3$@";
+"Time.PreciseDate_9" = "سبتمبر %1$@, %2$@ في %3$@";
+"Time.PreciseDate_10" = "أكتوبر %1$@, %2$@ في %3$@";
+"Time.PreciseDate_11" = "نوڤمبر %1$@, %2$@ في %3$@";
+"Time.PreciseDate_12" = "ديسمبر %1$@, %2$@ في %3$@";
+
+"MuteFor.Minutes_1" = "ضعه على الصامت لمدة دقيقة واحدة";
+"MuteFor.Minutes_2" = "ضعه على الصامت لمدة دقيقتين";
+"MuteFor.Minutes_3_10" = "ضعه على الصامت لمدة %@ دقائق";
+"MuteFor.Minutes_any" = "ضعه على الصامت لمدة %@ دقيقة";
+
+"MuteFor.Hours_1" = "ضعه على الصامت لمدة ساعة واحدة";
+"MuteFor.Hours_2" = "ضعه على الصامت لمدة ساعتين";
+"MuteFor.Hours_3_10" = "ضعه على الصامت لمدة %@ ساعات";
+"MuteFor.Hours_any" = "ضعه على الصامت لمدة %@ ساعة";
+
+"MuteFor.Days_1" = "ضعه على الصامت لمدة يوم واحد";
+"MuteFor.Days_2" = "ضعه على الصامت لمدة يومين";
+"MuteFor.Days_3_10" = "ضعه على الصامت لمدة %@ أيام";
+"MuteFor.Days_any" = "ضعه على الصامت لمدة %@ يوم";
+
+"MuteFor.Weeks_1" = "ضعه على الصامت لمدة أسبوع";
+"MuteFor.Weeks_2" = "ضعه على الصامت لمدة أسبوعين";
+"MuteFor.Weeks_3_10" = "ضعه على الصامت لمدة %@ أسابيع";
+"MuteFor.Weeks_any" = "ضعه على الصامت لمدة %@ أسبوع";
+
+"MuteExpires.Minutes_1" = "خلال دقيقة واحدة";
+"MuteExpires.Minutes_2" = "خلال دقيقتين";
+"MuteExpires.Minutes_3_10" = "خلال %@ دقائق";
+"MuteExpires.Minutes_any" = "خلال %@ دقيقة";
+
+"MuteExpires.Hours_1" = "خلال ساعة واحدة";
+"MuteExpires.Hours_2" = "خلال ساعتين";
+"MuteExpires.Hours_3_10" = "خلال %@ ساعات";
+"MuteExpires.Hours_any" = "خلال %@ ساعة";
+
+"MuteExpires.Days_1" = "خلال يوم واحد";
+"MuteExpires.Days_2" = "خلال يومين";
+"MuteExpires.Days_3_10" = "خلال %@ أيام";
+"MuteExpires.Days_any" = "خلال %@ يوم";
+
+"SharedMedia.EmptyTitle" = "لا توجد ملفات وسائط بعد";
+"SharedMedia.EmptyText" = "شارك صور ومقاطع مرئية في هذه المحادثة\n— وإلا سيصبح هذا المشبك غير سعيد.";
+"SharedMedia.EmptyFilesText" = "تستطيع إرسال واستقبال\nملفات من أي نوع إلى ١.٥ جيجابايت للواحد\nوالحصول عليها من أي مكان.";
+
+"ShareFileTip.Title" = "مشاركة الملفات";
+"ShareFileTip.Text" = "يمكنك مشاركة ملفات وسائط **غير مضغوطة** من ألبوم الكاميرا هنا.\n\nلإرسال أية ملفات من نوع آخر، افتح أية ملف من خلال الـ %@ الخاص بك (في المتصفح مثلًا)، ثم اختر\n**افتح في...** ثم قم باختيار تيليجرام.";
+"ShareFileTip.CloseTip" = "أغلق التلميحة";
+
+"DialogList.SearchSectionDialogs" = "المحادثات وجهات الاتصال";
+"DialogList.SearchSectionGlobal" = "بحث شامل";
+"DialogList.SearchSectionMessages" = "الرسائل";
+
+"Username.LinkHint" = "هذا الرابط يقوم بفتح محادثة معك في تيليجرام:[\nhttp://telegram.me/%@]";
+"Username.LinkCopied" = "تم نسخ الرابط إلى الحافظة";
+
+"SharedMedia.ItemsSelected_1" = "١ محدد";
+"SharedMedia.ItemsSelected_2" = "٢ محددين";
+"SharedMedia.ItemsSelected_3_10" = "%@ محددين";
+"SharedMedia.ItemsSelected_any" = "%@ محدد";
+
+"SharedMedia.DeleteItemsConfirmation_1" = "هل ترغب في حذف ملف الوسائط؟";
+"SharedMedia.DeleteItemsConfirmation_2" = "هل ترغب في حذف ملفي الوسائط؟";
+"SharedMedia.DeleteItemsConfirmation_3_10" = "هل ترغب في حذف %@ ملفات وسائط؟";
+"SharedMedia.DeleteItemsConfirmation_any" = "هل ترغب في حذف %@ ملف وسائط؟";
+
+"PrivacySettings.Passcode" = "قفل رمز المرور";
+"PasscodeSettings.Title" = "قفل رمز المرور";
+"PasscodeSettings.TurnPasscodeOn" = "تفعيل رمز المرور";
+"PasscodeSettings.TurnPasscodeOff" = "إيقاف رمز المرور";
+"PasscodeSettings.ChangePasscode" = "غيًر رمز المرور";
+"PasscodeSettings.Help" = "عندما تختار رمز مرور، ستظهر علامة قفل في صفحة المحادثات. اضغط عليها لقفل أو فتح تيليجرام.\n\nملاحظة: إذا نسيت رمز المرور، ستحتاج لحذف وإعادة تنزيل التطبيق. وستخسر كافة محادثاتك السرية وستعود المحادثات العادية فور إعادة تسجيل الدخول.";
+"PasscodeSettings.UnlockWithTouchId" = "افتح القفل باستخدام البصمة";
+"PasscodeSettings.SimplePasscode" = "رمز مرور بسيط";
+"PasscodeSettings.SimplePasscodeHelp" = "رمز المرور البسيط هو عبارة عن ٤ أرقام فقط.";
+"PasscodeSettings.EncryptData" = "شفّر قاعدة البيانات على الجهاز";
+"PasscodeSettings.EncryptDataHelp" = "هذه خاصية تجريبية، استخدمها مع الحذر. قم بتشفير بيانات تيليجرام على جهازك بإستخدام مشتق من رمز الدخول الخاص بك كمفتاح للتشفير.";
+
+"EnterPasscode.EnterTitle" = "قم بإدخال رمز مرور تيليجرام الخاص بك";
+"EnterPasscode.SetupTitle" = "رمز مرور جديد";
+"EnterPasscode.ChangeTitle" = "غيًر رمز المرور";
+"EnterPasscode.EnterPasscode" = "قم بإدخال رمز مرور تيليجرام الخاص بك";
+"EnterPasscode.EnterNewPasscodeNew" = "قم بإدخال رمز المرور";
+"EnterPasscode.EnterNewPasscodeChange" = "قم بإدخال رمز المرور الخاص بك الجديد";
+"EnterPasscode.RepeatNewPasscode" = "قم بإعادة إدخال رمز المرور الخاص بك الجديدة";
+"EnterPasscode.EnterCurrentPasscode" = "قم بإدخال رمز المرور الخاص بك الحالي";
+"EnterPasscode.TouchId" = "قم بإدخال رمز المرور الخاص بك";
+
+"DialogList.PasscodeLockHelp" = "اضغط لقفل تيليجرام";
+
+"PasscodeSettings.AutoLock" = "قفل تلقائي";
+"PasscodeSettings.AutoLock.Disabled" = "معطّل";
+"PasscodeSettings.AutoLock.IfAwayFor_1minute" = "إذا كنت غائب لمدة دقيقة";
+"PasscodeSettings.AutoLock.IfAwayFor_5minutes" = "إذا كنت غائب لمدة ٥ دقائق";
+"PasscodeSettings.AutoLock.IfAwayFor_1hour" = "إذا كنت غائب لمدة ساعة";
+"PasscodeSettings.AutoLock.IfAwayFor_5hours" = "إذا كنت غائب لمدة ٥ ساعات";
+
+"PasscodeSettings.FailedAttempts_1" = "محاولة واحدة فاشلة لإدخال رمز المرور";
+"PasscodeSettings.FailedAttempts_2" = "محاولتان فاشلتان لإدخال رمز المرور";
+"PasscodeSettings.FailedAttempts_3_10" = "%@ محاولات فاشلة لإدخال رمز المرور";
+"PasscodeSettings.FailedAttempts_any" = "%@ محاولة فاشلة لإدخال رمز المرور";
+"PasscodeSettings.TryAgainIn1Minute" = "حاول مرة أخرى بعد دقيقة";
+
+"AccessDenied.Title" = "يرجى إعطاء الإذن";
+
+"AccessDenied.Contacts" = "مراسلة تيليجرام مبنية على جهات الاتصال الخاص بك. \n\nيرجى الذهاب إلى إعدادات — الخصوصية — جهات الاتصال ثم قم بتفعيل تيليجرام.";
+
+"AccessDenied.VoiceMicrophone" = "يحتاج تيليجرام للسماح له باستخدام الميكروفون لتسجيل الرسائل الصوتية. \n\nيرجى الذهاب إلى إعدادات — الخصوصية — الميكروفون ثم قم بتفعيل تيليجرام.";
+
+"AccessDenied.VideoMicrophone" = "يحتاج تيليجرام للسماح له باستخدام الميكروفون لتسجيل الرسائل الصوتية.\n\nيرجى الذهاب إلى إعدادات — الخصوصية — الميكروفون ثم قم بتفعيل تيليجرام.";
+
+"AccessDenied.MicrophoneRestricted" = "لم يتم إعطاء تيليجرام صلاحية استخدام الميكروفون.\n\nيرجى الذهاب إلى إعدادات — القيود — الميكروفون ثم قم بتفعيل تيليجرام.";
+
+
+"AccessDenied.Camera" = "يحتاج تيليجرام للسماح له باستخدام الكاميرا لإلتقاط الصور والمقاطع المرئية.\n\nيرجى الذهاب إلى إعدادات — الخصوصية — الكاميرا ثم قم بتفعيل تيليجرام.";
+
+"AccessDenied.CameraRestricted" = "لم يتم إعطاء تيليجرام صلاحية استخدام الكاميرا.\n\nيرجى الذهاب إلى إعدادات — القيود — الكاميرا ثم قم بتفعيل تيليجرام.";
+
+"AccessDenied.CameraDisabled" = "لم يتم إعطاء الصلاحية باستخدام الكاميرا.\n\nيرجى الذهاب إلى إعدادات — القيود — الكاميرا ثم قم بتفعيل الكاميرا.";
+
+"AccessDenied.PhotosAndVideos" = "يحتاج تيليجرام للسماح له باستخدام الصور في الألبوم لتتمكن من إرسال الصور والمقاطع المرئية.\n\nيرجى الذهاب إلى إعدادات — الخصوصية — الصور ثم قم بتفعيل تيليجرام.";
+
+"AccessDenied.SaveMedia" = "يحتاج تيليجرام للسماح له باستخدام الصور في الألبوم لتتمكن من حفظ الصور والمقاطع المرئية.\n\nيرجى الذهاب إلى إعدادات — الخصوصية — الصور ثم قم بتفعيل تيليجرام.";
+
+"AccessDenied.PhotosRestricted" = "لم يتم إعطاء تيليجرام الصلاحية بإستخدام الصور.\n\nيرجى الذهاب إلى إعدادات — القيود — الصور ثم قم بتفعيل تيليجرام.";
+
+"AccessDenied.LocationDenied" = "يحتاج تيليجرام للسماح له بتحديد المكان لمشاركته مع جهات الاتصال إذا رغبت.\n\nيرجى الذهاب إلى إعدادات — الخصوصية — تحديد الأماكن ثم قم بتفعيل تيليجرام.";
+
+"AccessDenied.LocationDisabled" = "يحتاج تيليجرام للسماح له بتحديد المكان لمشاركته مع جهات الاتصال إذا رغبت.\n\nيرجى الذهاب إلى إعدادات — الخصوصية — تحديد الأماكن ثم قم بتفعيل تيليجرام.";
+
+"AccessDenied.LocationTracking" = "يحتاج تيليجرام للسماح له بتحديد المكان لإظهاره على الخريطة.\n\nيرجى الذهاب إلى إعدادات — الخصوصية — تحديد الأماكن ثم قم بتفعيل تيليجرام.";
+
+"AccessDenied.Settings" = "الإعدادات";
+
+"WebSearch.RecentClearConfirmation" = "هل أنت متأكد من رغبتك في حذف الصور الحديثة؟";
+
+"FeatureDisabled.Oops" = "عفوًا!";
+
+"Conversation.ContextMenuReply" = "الرد";
+
+"ForwardedMessages_1" = "رسالة معاد توجيهها";
+"ForwardedMessages_2" = "رسالتان معاد توجيههما";
+"ForwardedMessages_3_10" = "%@ رسائل معاد توجيهها";
+"ForwardedMessages_any" = "%@ رسالة معاد توجيهها";
+
+"ForwardedFiles_1" = "ملف معاد توجيهه";
+"ForwardedFiles_2" = "ملفان معاد توجيههما";
+"ForwardedFiles_3_10" = "%@ ملفات معاد توجيهها";
+"ForwardedFiles_any" = "%@ ملف معاد توجيهها";
+
+"ForwardedStickers_1" = "ملصق معاد توجيهه";
+"ForwardedStickers_2" = "ملصقان معاد توجيههما";
+"ForwardedStickers_3_10" = "%@ ملصقات معاد توجيهها";
+"ForwardedStickers_any" = "%@ ملصق معاد توجيهها";
+
+"ForwardedPhotos_1" = "صورة معاد توجيهها";
+"ForwardedPhotos_2" = "صورتان معاد توجيههما";
+"ForwardedPhotos_3_10" = "%@ صور معاد توجيهها";
+"ForwardedPhotos_any" = "%@ صورة معاد توجيهها";
+
+"ForwardedVideos_1" = "مقطع مرئي معاد توجيهه";
+"ForwardedVideos_2" = "المقطعان المرئيان المعاد توجيههما";
+"ForwardedVideos_3_10" = "%@ مقاطع مرئية معاد توجيهها";
+"ForwardedVideos_any" = "%@ مقطع مرئي معاد توجيهه";
+
+"ForwardedAudios_1" = "مقطع صوتي معاد توجيهه";
+"ForwardedAudios_2" = "مقطعان صوتيان معاد توجيههما";
+"ForwardedAudios_3_10" = "%@ مقاطع صوتية معاد توجيهها";
+"ForwardedAudios_any" = "%@ مقطع صوتي معاد توجيهها";
+
+"ForwardedLocations_1" = "موقع معاد توجيهه";
+"ForwardedLocations_2" = "موقعان معاد توجيههما";
+"ForwardedLocations_3_10" = "%@ مواقع معاد توجيهها";
+"ForwardedLocations_any" = "%@ موقع معاد توجيهها";
+
+"ForwardedContacts_1" = "جهة اتصال معاد توجيهها";
+"ForwardedContacts_2" = "جهتا اتصال معاد توجيههما";
+"ForwardedContacts_3_10" = "%@ جهات اتصال معاد توجيهها";
+"ForwardedContacts_any" = "%@ جهة اتصال معاد توجيهها";
+
+"ForwardedAuthors2" = "%@، %@";
+"ForwardedAuthorsOthers_1" = "%@ و واحد غيره";
+"ForwardedAuthorsOthers_2" = "%@ و اثنان غيره";
+"ForwardedAuthorsOthers_3_10" = "%@ و %@ غيرهم";
+"ForwardedAuthorsOthers_any" = "%@ و %@ غيرهم";
+
+"PrivacySettings.TwoStepAuth" = "التحقق بخطوتين";
+"TwoStepAuth.Title" = "التحقق بخطوتين";
+"TwoStepAuth.SetPassword" = "تعيين كلمة مرور إضافية";
+"TwoStepAuth.SetPasswordHelp" = "يمكنك تعيين كلمة مرور يتم طلبها عند محاولة تسجيل الدخول من جهاز جديد بالإضافة إلى الرمز الذي يأتيك في رسالة قصيرة.";
+"TwoStepAuth.SetupPasswordTitle" = "كلمة المرور الخاصة بك";
+
+"TwoStepAuth.SetupHintTitle" = "تلميحة كلمة المرور";
+"TwoStepAuth.SetupHint" = "فضلًا اختر تلميحة لكلمة المرور الخاصة بك:";
+
+"TwoStepAuth.ChangePassword" = "تغيير كلة المرور";
+"TwoStepAuth.RemovePassword" = "إيقاف كلمة المرور";
+"TwoStepAuth.SetupEmail" = "اختر بريد إلكتروني لإسترداد الحساب";
+"TwoStepAuth.ChangeEmail" = "غيّر البريد الإلكتروني لإسترداد الحساب";
+"TwoStepAuth.PendingEmailHelp" = "البريد الإلكتروني لإسترداد الحساب %@ غير فعّال بعد ويلزم تفعيله";
+"TwoStepAuth.GenericHelp" = "لقد قمت بتفعيل التحقق بخطوتين.\nعند محاولة تسجيل الدخول على حساب تيليجرام الخاص بك من جهاز جديد، سيتم طلب كلمة المرور التي اخترتها هنا منك.";
+
+"TwoStepAuth.ConfirmationTitle" = "التحقق بخطوتين";
+"TwoStepAuth.ConfirmationText" = "يرجى الذهاب لبريدك الإلكتروني والضغط على رابط التأكيد لإنهاء إعدادات التحقق بخطوتين. تأكد من الإطّلاع على مجلد الرسائل الغير مرغوب بها أيضًا.";
+"TwoStepAuth.ConfirmationChangeEmail" = "غيّر بريدك الإلكتروني";
+"TwoStepAuth.ConfirmationAbort" = "إنهاء عملية إعداد التحقق بخطوتين";
+
+"TwoStepAuth.SetupPasswordEnterPasswordNew" = "قم بإدخال كلمة المرور:";
+"TwoStepAuth.SetupPasswordEnterPasswordChange" = "يرجى إدخال كلمة المرور الجديدة الخاصة بك:";
+"TwoStepAuth.SetupPasswordConfirmPassword" = "يرجى إعادة إدخال كلمة المرور الخاصة بك:";
+"TwoStepAuth.SetupPasswordConfirmFailed" = "كلمتي المرور غير متطابقة. يرجى إعادة المحاولة.";
+
+"TwoStepAuth.EnterPasswordTitle" = "كلمة المرور";
+"TwoStepAuth.EnterPasswordPassword" = "كلمة المرور";
+"TwoStepAuth.EnterPasswordHint" = "تلميحة: %@";
+"TwoStepAuth.EnterPasswordHelp" = "تم تفعيل التحقق بخطوتين، لذلك حسابك محميّ بكلمة مرور إضافية.";
+"TwoStepAuth.EnterPasswordInvalid" = "كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.";
+"TwoStepAuth.EnterPasswordForgot" = "هل نسيت كلمة المرور؟";
+
+"TwoStepAuth.EmailTitle" = "بريد إسترداد الحساب";
+"TwoStepAuth.EmailSkip" = "تخطّي";
+"TwoStepAuth.EmailSkipAlert" = "الموضوع جدّيّ.\n\nإذا نسيت كلمة المرور الخاصة بك، لن تستطيع الدخول على حساب تيليجرام الخاص بك. لن يكون هناك طريقة لإستعادته.";
+"TwoStepAuth.Email" = "بريد إلكتروني";
+"TwoStepAuth.EmailPlaceholder" = "بريدك الإلكتروني";
+"TwoStepAuth.EmailHelp" = "فضلًا أضف بريد إلكتروني صحيح. هذه هي الطريقة الوحيدة لإستعادة كلمة المرور بعد نسيانها.";
+"TwoStepAuth.EmailInvalid" = "بريد إلكتروني غير صحيح. يرجى المحاولة مرة أخرى.";
+"TwoStepAuth.EmailSent" = "لقد قمنا بإرسال بريد إلكتروني لتفعيل بريدك.";
+"TwoStepAuth.PasswordSet" = "تم تفعيل كلمة المرور الخاصة بالتحقق بخطوتين.";
+"TwoStepAuth.PasswordRemoveConfirmation" = "هل أنت متأكد من رغبتك في تعطيل كلمة المرور؟";
+
+"TwoStepAuth.RecoveryUnavailable" = "لم تقم بإضافة بريد إلكتروني لإستعادة كلمة المرور عند اختيارها، لذلك خياراتك المتبقية هي تذكّر كلمة المرور أو إعادة تعيين حسابك.";
+"TwoStepAuth.RecoveryFailed" = "خياراتك المتبقية هي تذكّر كلمة المرور أو إعادة تعيين حسابك.";
+"TwoStepAuth.ResetAccount" = "إعادة تعيين حسابي";
+"TwoStepAuth.ResetAccountHelp" = "إذا قمت بإعادة تعيين حسابك، ستفقد كافّة محادثاتك ورسائلك، بالإضافة إلى الوسائط والملفات التي تمت مشاركتها.";
+"TwoStepAuth.ResetAccountConfirmation" = "إذا قمت بإعادة تعيين حسابك، ستفقد كافّة محادثاتك ورسائلك، بالإضافة إلى الوسائط والملفات التي تمت مشاركتها.";
+
+"TwoStepAuth.RecoveryTitle" = "رمز البريد الإلكتروني";
+"TwoStepAuth.RecoverySent" = "لقد قمنا بإرسال رمز الإستعادة إلى بريدك الإلكتروني الذي اخترته مسبقًا:\n\n%@";
+"TwoStepAuth.RecoveryCode" = "الرمز";
+"TwoStepAuth.RecoveryCodeHelp" = "يرجى الإطلاع على بريدك الإلكتروني وإدخال الرمز المكون من ٦ أرقام الذي قمنا بإرساله لتعطيل حسابك في السحاب.";
+"TwoStepAuth.RecoveryCodeInvalid" = "الرمز غير صحيح. يرجى المحاولة مرة أخرى.";
+"TwoStepAuth.RecoveryCodeExpired" = "لقد قمنا بإرسال رمز يحتوي على ٦ أرقام.";
+"TwoStepAuth.RecoveryEmailUnavailable" = "هل تواجه صعوبات في الدخول على بريدك الإلكتروني %@؟";
+
+"TwoStepAuth.FloodError" = "محاولات كثيرة خاطئة، يرجى المحاولة لاحقًا.";
+"TwoStepAuth.GenericError" = "حدث خطأ. الرجاء المحاولة في وقت لاحق.";
+
+"Conversation.FilePhotoOrVideo" = "صورة أو مقطع مرئي";
+"Conversation.FileICloudDrive" = "قرص الآي كلاود";
+"Conversation.FileDropbox" = "دروببوكس";
+"Conversation.FileGoogleDrive" = "چوچل درايڤ";
+
+"Conversation.FileHowTo" = "كيف ترغب في مشاركة ملفاتك؟";
+"Conversation.FileOpenIn" = "افتح باستخدام...";
+"Conversation.FileHowToText" = "لإرسال أية ملفات من نوع آخر، افتح أية ملف من خلال الـ %@ الخاص بك (في المتصفح مثلًا)، ثم اختر\n**افتح باستخدام...** ثم قم باختيار تيليجرام.";
+
+"Map.LocationTitle" = "موقع";
+"Map.OpenInMaps" = "فتح في تطبيق الخرائط";
+"Map.OpenInGooglePlus" = "افتح في Google Plus";
+"Map.OpenInFoursquare" = "فتح في فورسكوير";
+"Map.OpenInHereMaps" = "افتح في خرائط HERE";
+"Map.OpenInYandexMaps" = "افتح في خرائط Yandex";
+"Map.OpenInYandexNavigator" = "افتح في مستكشف Yandex";
+"Map.OpenIn" = "افتح باستخدام";
+"Map.More" = "زيادة...";
+
+"Map.SendThisLocation" = "أرسل هذا المكان";
+"Map.SendMyCurrentLocation" = "أرسل مكاني الحالي";
+"Map.Locating" = "جاري تحديد المكان...";
+"Map.ChooseAPlace" = "أو اختر مكان";
+"Map.AccurateTo" = "دقيق لدرجة %@";
+"Map.Search" = "ابحث عن أماكن قريبة";
+"Map.ShowPlaces" = "أظهر أماكن";
+"Map.LoadError" = "حدث خطأ. يرجى إعادة المحاولة.";
+"Map.LocatingError" = "فشل في تحديد المكان";
+"Map.Unknown" = "مكان غير معروف";
+
+"Map.DistanceAway" = "%@ يبعد";
+"Map.ETAMinutes_any" = "%@ دقيقة";
+"Map.ETAHours_1" = "%@ س";
+"Map.ETAHours_any" = "%@ س";
+
+"GoogleDrive.Title" = "چوچل درايڤ";
+"GoogleDrive.Logout" = "تسجيل خروج";
+"GoogleDrive.LogoutTitle" = "تسجيل خروج";
+"GoogleDrive.LogoutMessage" = "هل أنت متأكد من رغبتك في تسجيل الخروج من چوچل درايڤ؟";
+"GoogleDrive.LogoutLogout" = "تسجيل خروج";
+"GoogleDrive.FolderIsEmpty" = "المجلّد خالٍ.";
+"GoogleDrive.FolderLoadError" = "تعذّر تحميل المجلّد.";
+"GoogleDrive.LoadErrorTitle" = "تعذّر الاتصال";
+"GoogleDrive.LoadErrorMessage" = "يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.";
+
+"ChangePhone.ErrorOccupied" = "%@ لديه حساب تيليجرام مسبقًا. يرجى حذف هذا الحساب قبل محاولة تغيير رقمك.";
+
+"AccessDenied.LocationTracking" = "يحتاج تيليجرام للسماح له بتحديد المكان لإظهاره على الخريطة.\n\nيرجى الذهاب إلى إعدادات — الخصوصية — تحديد الأماكن ثم قم بتفعيل تيليجرام.";
+
+"PrivacySettings.AuthSessions" = "الأجهزة المسجّل دخول منها";
+"AuthSessions.Title" = "الأجهزة المسجّل دخول منها";
+"AuthSessions.CurrentSession" = "الجهاز الحالي";
+"AuthSessions.TerminateOtherSessions" = "سجل الخروج من كافة الأجهزة الأخرى";
+"AuthSessions.TerminateOtherSessionsHelp" = "سجل الخروج من كافة الأجهزة باستثناء هذا الجهاز.";
+"AuthSessions.TerminateSession" = "سجل الخروج من الأجهزة الأخرى";
+"AuthSessions.OtherSessions" = "الأجهزة المسجّل دخول منها";
+"AuthSessions.EmptyTitle" = "لم يتم تسجيل الدخول من أي جهاز آخر";
+"AuthSessions.EmptyText" = "يمكنك تسجيل الدخول لحسابك في تيليجرام من جوال آخر، جهاز لوحي، أو أجهزة الكمبيوتر، باستخدام نفس رقم الهاتف. تيليجرام سيقوم بمزامنة كافة بياناتك بشكل لحظي.";
+"AuthSessions.AppUnofficial" = "(المعرّف: %@)";
+
+"WebPreview.GettingLinkInfo" = "جاري جلب معلومات الرابط...";
+"WebPreview.LinkPreview" = "معاينة الرابط";
+
+"Preview.OpenInInstagram" = "فتح في انستقرام";
+
+"MediaPicker.AddCaption" = "أضف تعليق...";
+
+"GroupInfo.InviteByLink" = "قم بدعوة للمجموعة باستخدام رابط";
+
+"GroupInfo.InviteLink.Title" = "رابط دعوة";
+"GroupInfo.InviteLink.LinkSection" = "رابط";
+"GroupInfo.InviteLink.Help" = "أي شخص يمتلك تيليجرام على جهازه سيمكنه الدخول لمجموعتك باستخدام هذا الرابط.";
+"GroupInfo.InviteLink.CopyLink" = "نسخ الرابط";
+"GroupInfo.InviteLink.RevokeLink" = "إلغاء الرابط";
+"GroupInfo.InviteLink.ShareLink" = "شارك الرابط";
+"GroupInfo.InviteLink.RevokeAlert.Text" = "هل أنت متأكد من رغبتك في إلغاء الرابط؟ اذا قمت بذلك، لن يستطيح أحد الدخول في المجموعة باستخدامه.";
+"GroupInfo.InviteLink.RevokeAlert.Revoke" = "إلغاء الرابط";
+"GroupInfo.InviteLink.RevokeAlert.Success" = "رابط الدعوة السابق لا يعمل الآن. سيتم إنشاء رابط جديد.";
+"GroupInfo.InviteLink.CopyAlert.Success" = "تم نسخ الرابط للحافظة.";
+
+"UserInfo.ShareMyContactInfo" = "شارك معلومات جهة الاتصال الخاصة بي";
+
+"GroupInfo.InvitationLinkAccept" = "هل ترغب في الدخول للمحادثة \"%@\"؟";
+"GroupInfo.InvitationLinkAcceptChannel" = "هل ترغب في الدخول لقناة \"%@\"؟";
+"GroupInfo.InvitationLinkAlreadyAccepted" = "أنت عضو في هذه المجموعة.";
+"GroupInfo.InvitationLinkDoesNotExist" = "المعذرة، هذه المجموعة غير موجودة.";
+"GroupInfo.InvitationLinkGroupFull" = "المعذرة، هذه المجموعة ممتلئة.";
+
+"Core.CurrentUpdateText" = "تم تحديث تيليجرام. الجديد في نسخة %@:\n\n- دعم كامل لللآيفون 6s و 6s+\n- دعم للخصائص الجديدة في الآيباد كتقسيم الشاشة\n- دعم كامل لنظام تشغيل الساعة الجديد (تحسين في السرعة، الرد السريع، الملاحظات الصوتية، البوت، والقنوات).\n\nتم حل الكثير من المشاكل، بما فيها فتح الصور وإعادة الإرسال والرد على الآيفون 6s الجديد.";
+
+"Core.ServiceUserStatus" = "إشعارات الخدمة";
+
+"Notification.JoinedGroupByLink" = "%@ قام بالدخول للمجموعة باستخدام رابط الدعوة";
+
+"ChatSettings.Other" = "أخرى";
+"ChatSettings.Stickers" = "ملصقات";
+
+"StickerPacksSettings.Title" = "إعدادات الملصقات";
+"StickerPacksSettings.ShowStickersButton" = "أظهر شريط الملصقات";
+"StickerPacksSettings.ShowStickersButtonHelp" = "أيقونة الملصقات ستظهر في خانة الكتابة";
+
+"StickerPacksSettings.StickerPacksSection" = "حزم الملصقات";
+"StickerPacksSettings.ManagingHelp" = "الرسامون مرحب بهم ليصنعوا حزم ملصقات عن طريق مراسلة @stickers .\n\nيمكن إضافة هذه الحزم بالضغط مرتين على الملصق واختيار \"إضافة الملصقات\".";
+
+"StickerPack.RemovePrompt" = "هل ترغب في إزالة \"%@\"؟";
+"StickerPack.BuiltinPackName" = "العقول العظيمة";
+"StickerPack.StickerCount_1" = "ملصق واحد";
+"StickerPack.StickerCount_2" = "ملصقان";
+"StickerPack.StickerCount_3_10" = "%@ ملصقات";
+"StickerPack.StickerCount_any" = "%@ ملصق";
+
+"StickerPack.AddStickerCount_1" = "إضافة ملصق واحد";
+"StickerPack.AddStickerCount_2" = "إضافة ملصقين";
+"StickerPack.AddStickerCount_3_10" = "إضافة %@ ملصقات";
+"StickerPack.AddStickerCount_any" = "إضافة %@ ملصق";
+
+"StickerPack.ShareStickers" = "شارك الملصقات";
+
+"Conversation.ContextMenuStickerPackAdd" = "إضافة ملصقات";
+"Conversation.ContextMenuStickerPackInfo" = "معلومات";
+
+"MediaPicker.Processing" = "جاري معالجة %@";
+"MediaPicker.Nof" = "%@ من";
+
+"UserInfo.ShareBot" = "مشاركة";
+"UserInfo.InviteBotToGroup" = "إضافة إلى المجموعة";
+"Profile.BotInfo" = "حول";
+"Profile.ShareBotPersonFormat" = "هل ترغب في مشاركة البوت مع %@؟";
+"Profile.ShareBotGroupFormat" = "هل ترغب في مشاركة البوت مع %@؟";
+
+"Target.SelectGroup" = "اختر مجموعة";
+"Target.InviteToGroupConfirmation" = "هل ترغب في إضافة البوت إلى \"%@\"؟";
+"Target.InviteToGroupErrorAlreadyInvited" = "البوت عضو في هذه المجموعة.";
+"Bot.GenericBotStatus" = "البوت";
+"Bot.DescriptionTitle" = "ماذا يستطيع هذا البوت عمله؟";
+"Bot.GroupStatusReadsHistory" = "يستطيع الوصول للرسائل";
+"Bot.GroupStatusDoesNotReadHistory" = "لا يستطيع الوصول للرسائل";
+"Bot.Start" = "إبدأ";
+"UserInfo.BotSettings" = "الإعدادات";
+"UserInfo.BotHelp" = "مساعدة";
+
+"Contacts.SearchLabel" = "البحث عن جهات الاتصال والمعرفات";
+"ChatSearch.SearchPlaceholder" = "بحث";
+
+"WatchRemote.NotificationText" = "إفتح هذا الإشعار على جهازك حتى تتمكن من رؤيته من ساعة آبل الخاصة بك";
+"WatchRemote.AlertTitle" = "رسالة من ساعة آبل الخاصة بك";
+"WatchRemote.AlertText" = "هل ترغب في فتح الرسالة هنا؟";
+"WatchRemote.AlertOpen" = "فتح";
+
+"Conversation.SearchPlaceholder" = "ابحث داخل المحادثة";
+"Conversation.SearchNoResults" = "لا توجد نتائج";
+
+"GroupInfo.AddUserLeftError" = "المعذرة،  إذا غادر شخص المجموعة،  فقط من يمتلك رقمه يستطيع دعوته (لا بد أن تمتلك رقمه ويمتلك رقمك).";
+
+"DialogList.SearchSectionRecent" = "حديثة";
+
+"DialogList.DeleteBotConfirmation" = "حذف";
+"DialogList.DeleteBotConversationConfirmation" = "حذف وإيقاف";
+"Bot.Stop" = "إيقاف البوت";
+"Bot.Unblock" = "إعادة تعيين البوت";
+
+"Login.PhoneNumberHelp" = "مساعدة";
+"Login.EmailPhoneSubject" = "الرقم غير صحيح %@";
+"Login.EmailPhoneBody" = "أنا أحاول استخدام رقم الجوال الخاص بي: %@\nلكن تيليجرام يقول أنه غير صحيح. أرجو مساعدتي.";
+
+"SharedMedia.TitleLink" = "الروابط المشاركة";
+"SharedMedia.EmptyLinksText" = "كافة الروابط المرسلة في هذه المحادثة ستظهر هنا.";
+
+"SharedMedia.Link_1" = "رابط واحد";
+"SharedMedia.Link_2" = "رابطين";
+"SharedMedia.Link_3_10" = "%@ روابط";
+"SharedMedia.Link_any" = "%@ رابط";
+
+"Compose.NewChannelButton" = "قناة جديدة";
+"Channels.Title" = "قنوات";
+
+"Compose.NewChannel" = "قناة جديدة";
+"GroupInfo.ChannelListNamePlaceholder" = "اسم القناة";
+
+"Channel.MessagePhotoUpdated" = "تم تحديث صورة القناة";
+"Channel.MessagePhotoRemoved" = "تم حذف صورة القناة";
+"Channel.MessageTitleUpdated" = "تم تغيير اسم القناة إلى \"%@\"";
+"Channel.TitleInfo" = "معلومات القناة";
+
+"Channel.UpdatePhotoItem" = "تعيين صورة القناة";
+
+"Channel.AboutItem" = "حول";
+"Channel.LinkItem" = "شارك الرابط";
+"Channel.Edit.AboutItem" = "الوصف";
+"Channel.Edit.LinkItem" = "الرابط";
+
+"Channel.Username.Title" = "الرابط";
+"Channel.Username.Help" = "يمكنك اختيار اسم القناة في **تيليجرام**. إذا قمت بذلك، سيستطيع الناس إيجاد قناتك باستخدام هذا الاسم.\n\nتستطيع استخدام حروف اللغة الإنجليزية وأرقامها وكذلك الخط. لا بد من استخدام ٥ حروف على الأقل.";
+"Channel.Username.LinkHint" = "هذا الرابط سيفتح قناتك في تيليجرام:[\nhttp://telegram.me/%@]";
+"Channel.Username.InvalidTooShort" = "اسم القناة يجب أن يتكوّن من ٥ حروف على الأقل.";
+"Channel.Username.InvalidStartsWithNumber" = "أسماء القنوات لا يمكن أن تبدأ برقم.";
+"Channel.Username.InvalidCharacters" = "المعذرة، الاسم غير مقبول.";
+"Channel.Username.InvalidTaken" = "المعذرة، هذا الاسم تم اختياره مسبقًا.";
+"Channel.Username.CheckingUsername" = "جاري مراجعة الاسم...";
+"Channel.Username.UsernameIsAvailable" = "%@ متاح.";
+
+"Channel.Share" = "مشاركة";
+"Channel.LeaveChannel" = "غادر القناة";
+
+"Channel.About.Title" = "الوصف";
+
+"Channel.About.Placeholder" = "الوصف";
+"Channel.About.Help" = "يمكنك كتابة وصف اختياري لقناتك.";
+"Channel.About.Error" = "حدث خطأ.";
+"Channel.ShareNoLink" = "فضلًا اختر رابط لقناتك ليتمكن الناس من البحث عنها والدخول إليها.";
+
+"Channel.Status" = "قناة";
+
+"Compose.NewChannel.Members" = "أعضاء";
+"Compose.NewChannel.AddMember" = "إضافة عضو...";
+"Compose.NewChannel.AddMemberHelp" = "يمكنك دعوة جهات الاتصال الخاصة بك لقناتك الآن أو إضافتهم لاحقًا.";
+"Channel.NotificationSelfAdded" = "%@ قام بإضافتك لهذه القناة";
+
+"ChannelInfo.ConfirmLeave" = "غادر القناة";
+"Channel.JoinChannel" = "اشترك";
+"Forward.ChannelReadOnly" = "المعذرة، لا يمكنك النشر في هذه القناة.";
+
+"Conversation.InfoChannel" = "قناة";
+
+"Channel.ErrorAccessDenied" = "المعذرة، هذه القناة خاصة.";
+"Conversation.InputTextBroadcastPlaceholder" = "رسالة جماعية";
+
+"Channel.NotificationCommentsEnabled" = "التعليقات مفعلة";
+"Channel.NotificationCommentsDisabled" = "التعليقات معطلة";
+"Channel.Edit.EnableComments" = "التعليقات";
+
+"Channel.TitleShowDiscussion" = "إظهار التعليقات";
+"Channel.ShareChannel" = "مشاركة";
+
+"Channel.NotificationComments_1" = "تعليق";
+"Channel.NotificationComments_2" = "تعليقان";
+"Channel.NotificationComments_3_10" = "%@ تعليقات";
+"Channel.NotificationComments_any" = "%@ تعليق";
+"Channel.NotificationLoading" = "جاري التحميل ...";
+
+"Conversation.InputTextDisabledPlaceholder" = "التعليقات معطلة";
+"Compose.ChannelTokenListPlaceholder" = "إضافة جهات اتصال لقناتك";
+
+"Compose.ChannelMembers" = "الأعضاء";
+
+"Channel.Setup.TypeHeader" = "نوع القناة";
+"Channel.Setup.TypePrivate" = "خاصة";
+"Channel.Setup.TypePublic" = "عامة";
+"Channel.Setup.TypePublicHelp" = "القنوات العامة يمكن إيجادها من الخلال البحث، أي شخص يستطيع الدخول إليها.";
+"Channel.Setup.TypePrivateHelp" = "القنوات الخاصة يمكن الدخول إليها فقط عن طريق رابط الدعوة.";
+
+"Channel.Setup.Title" = "قناة";
+
+"Channel.Username.CreatePublicLinkHelp" = "يستطيع الناس مشاركة هذا الرابط مع غيرهم ويمكنهم إيجاد قناتك من خلال البحث في تيليجرام.";
+"Channel.Username.CreatePrivateLinkHelp" = "يستطيع الناس الدخول إلى قناتك فقط من خلال الرابط أدناه. يمكنك تعطيل هذا الرابط في أي وقت.";
+
+"Channel.Username.CreateCommentsEnabled" = "التعليقات";
+"Channel.Username.CreateCommentsHelp" = "إذا قمت بتفعيل التعليقات، الأعضاء سيتمكنون من مناقشة ما تنشره في قناتك.";
+
+"Channel.Setup.PublicNoLink" = "فضلًا اختر رابط لقناتك العامة ليتمكن الناس من إيجادها من خلال البحث ومشاركتها مع غيرهم.\n\nإلى لم ترغب بذلك، يفضّل إنشاء قناة خاصة بدلًا من العامة.";
+
+"Channel.Edit.PrivatePublicLinkAlert" = "يرجى ملاحظة أنه في حال اخترت رابط عام لقناتك، سيستطيع أي شخص إيجادها من خلال البحث والدخول إليها.\n\nلا تقم بإنشاء هذا الرابط إذا رغبت في أن تستمر قناتك خاصة.";
+
+"Channel.Info.Description" = "الوصف";
+
+"Channel.Info.Management" = "الإداريون";
+"Channel.Info.BlackList" = "قائمة المحظورين";
+"Channel.Info.Members" = "الأعضاء";
+
+"Channel.Members.AddMembers" = "إضافة أعضاء";
+"Channel.Members.AddMembersHelp" = "فقط الإداريّون يمكنهم مشاهدة هذه القائمة.";
+"Channel.Members.Title" = "الأعضاء";
+"Channel.BlackList.Title" = "قائمة المحظورين";
+"Channel.Management.Title" = "الإداريون";
+"Channel.Management.LabelCreator" = "المنشئ";
+"Channel.Management.LabelModerator" = "المراقب";
+"Channel.Management.LabelEditor" = "إداري";
+
+"Channel.Management.AddModerator" = "إضافة إداري";
+"Channel.Management.AddModeratorHelp" = "يمكنك إضافة إداريّون لمساعدتك في إدارة القناة.";
+
+"Channel.Members.Kick" = "حذف";
+"Channel.Management.Remove" = "حذف";
+
+"Conversation.InputTextCommentPlaceholder" = "تعليق";
+
+"Channel.Members.InviteLink" = "استخدم رابط دعوة";
+
+"Channel.Management.ErrorNotMember" = "%@ لم يقم بالدخول إلى القناة بعد. فضلًا، هل ترغب في دعوتهم؟";
+
+"Channel.Moderator.AccessLevelHeader" = "درجة الصلاحية";
+"Channel.Moderator.AccessLevelEditor" = "المحرر";
+"Channel.Moderator.AccessLevelModerator" = "المراقب";
+
+"Channel.Moderator.AccessLevelModeratorHelp" = "المراقبين يمكنهم حذف تعليقات المستخدمين وإدارة قائمة المحظورين.\n\nالمراقبين لا يمكنهم تغيير اسم القناة، رابطها، صورتها، أو وصفها.";
+"Channel.Moderator.AccessLevelEditorHelp" = "المحررين يمكنهم استخدام القناة لنشر المحتوى، إدارة قائمة المحظورين، وحذف ما يتم نشره.\n\nالمحررين لا يمكنهم تغيير اسم القناة، رابطها، صورتها، أو وصفها.";
+"Channel.Moderator.AccessLevelRevoke" = "أقل المراقب";
+
+"Channel.Moderator.Title" = "المراقب";
+
+"Notification.ChannelInviter" = "%@ قام بدعوتك لهذه القناة";
+"Notification.ChannelInviterSelf" = "لقد قمت بالإشتراك في لقناة.";
+
+"ChannelInfo.DeleteChannel" = "حذف القناة";
+"ChannelInfo.DeleteChannelConfirmation" = "لحظة! حذف هذه القناة سيزيل كافة الأعضاء والرسائل سيتم حذفها. هل أنت متأكد من رغبتك في حذف القناة؟";
+
+"Channel.Username.InvalidTooManyUsernames" = "المعذرة، قمت بإنشاء قنوات عامة كثيرة. يمكنك إنشاء قناة خاصة أو حذف أحد القنوات العامة أولًا.";
+
+"ChannelInfo.ChannelForbidden" = "المعذرة، هذه القناة لم تعد متاحة.";
+
+"PhotoEditor.FadeTool" = "تلاشي";
+"PhotoEditor.TintTool" = "تظليل";
+"PhotoEditor.TintIntensity" = "درجة التظليل";
+"PhotoEditor.ShadowsTint" = "الظل";
+"PhotoEditor.HighlightsTint" = "التفتيح";
+"PhotoEditor.CurvesTool" = "المنحنيات";
+"PhotoEditor.CurvesAll" = "الكل";
+"PhotoEditor.CurvesRed" = "أحمر";
+"PhotoEditor.CurvesGreen" = "أخضر";
+"PhotoEditor.CurvesBlue" = "أزرق";
+
+"Channel.ErrorAddBlocked" = "المعذرة، لا يمكنك إضافة هذا المستخدم للقنوات.";
+"Channel.ErrorAddTooMuch" = "المعذرة، يمكنك إضافة أول ٢٠٠ عضو للقناة فقط. يمكن لعدد غير محدود من الأعضاء الدخول للقناة عن طريق رابط القناة.";
+
+"ChannelIntro.Title" = "ما هي القنوات؟";
+"ChannelIntro.Text" = "القنوات هي أداة جديدة\nللرسائل الجماعية\nلمجموعة كبيرة من المستقبلين.";
+"ChannelIntro.CreateChannel" = "إنشاء قناة";

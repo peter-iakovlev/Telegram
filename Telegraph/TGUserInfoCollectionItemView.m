@@ -9,6 +9,21 @@
 
 #import "TGSynchronizeContactsActor.h"
 
+#import "TGModernGalleryTransitionView.h"
+
+@interface TGLetteredAvatarView (TGModernGalleryTransition) <TGModernGalleryTransitionView>
+
+@end
+
+@implementation TGLetteredAvatarView (TGModernGalleryTransition)
+
+- (UIImage *)transitionImage
+{
+    return self.image;
+}
+
+@end
+
 @interface TGUserInfoCollectionItemView () <UITextFieldDelegate>
 {
     TGLetteredAvatarView *_avatarView;

@@ -10,6 +10,7 @@
 
 #import "TGImageUtils.h"
 #import "TGMessage.h"
+#import "TGPeerIdAdapter.h"
 
 #import "TGFont.h"
 
@@ -29,6 +30,8 @@
 #import "TGModernViewInlineMediaContext.h"
 #import "TGDoubleTapGestureRecognizer.h"
 
+#import "TGReplyHeaderModel.h"
+
 typedef enum {
     TGAudioMessageButtonPlay = 0,
     TGAudioMessageButtonPause = 1,
@@ -43,10 +46,11 @@ typedef enum {
     float _progress;
     
     int32_t _duration;
+    int32_t _size;
+    NSString *_fileType;
     
     CGPoint _boundOffset;
     
-    TGAudioMediaAttachment *_audio;
     TGModernButtonViewModel *_playButtonModel;
     TGAudioMessageButtonType _playButtonType;
     
@@ -215,28 +219,32 @@ static UIImage *cancelImageWithColor(UIColor *color, bool incoming)
     return incoming ? incomingImage : outgoingImage;
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message audio:(TGAudioMediaAttachment *)audio author:(TGUser *)author context:(TGModernViewContext *)context
+- (instancetype)initWithMessage:(TGMessage *)message duration:(int32_t)duration size:(int32_t)size fileType:(NSString *)fileType authorPeer:(id)authorPeer context:(TGModernViewContext *)context
 {
-    self = [super initWithMessage:message author:author context:context];
+    self = [super initWithMessage:message authorPeer:authorPeer context:context];
     if (self != nil)
     {
-        _audio = audio;
-        
         _playButtonModel = [[TGModernButtonViewModel alloc] init];
-        [_playButtonModel setBackgroundImage:[self downloadImage:_incoming]];
+        [_playButtonModel setBackgroundImage:[self downloadImage:_incomingAppearance]];
         _playButtonModel.modernHighlight = true;
         _playButtonModel.skipDrawInContext = true;
+        _playButtonModel.extendedEdgeInsets = UIEdgeInsetsMake(6.0f, 6.0f, 6.0f, 6.0f);
         [self updateButtonText:false];
-        [self addSubmodel:_playButtonModel];
         
-        _duration = audio.duration;
+        _duration = duration;
+        _size = size;
+        _fileType = fileType;
         _isPaused = true;
         
         _sliderModel = [[TGAudioSliderViewModel alloc] init];
-        _sliderModel.incoming = _incoming;
+        _sliderModel.incoming = _incomingAppearance;
         _sliderModel.duration = _duration;
-        _sliderModel.audioDurationText = [[NSString alloc] initWithFormat:@"%d:%02d", (int)audio.duration / 60, (int)audio.duration % 60];
         [self addSubmodel:_sliderModel];
+        [self updateButtonText:false];
+        
+        [self addSubmodel:_playButtonModel];
+        
+        _sliderModel.listenedStatus = !_context.viewStatusEnabled || message.contentProperties[@"contentsRead"] != nil;
     }
     return self;
 }
@@ -253,7 +261,7 @@ static UIImage *cancelImageWithColor(UIColor *color, bool incoming)
         
         [_sliderModel setAudioPosition:_progress animated:animated timestamp:DBL_MAX isPlaying:false];
         
-        _sliderModel.audioDurationText = [[NSString alloc] initWithFormat:@"%d:%02d", (int)_audio.duration / 60, (int)_audio.duration % 60];
+        _sliderModel.audioDurationText = [[NSString alloc] initWithFormat:@"%d:%02d", (int)_duration / 60, (int)_duration % 60];
         
         _sliderModel.manualPositionAdjustmentEnabled = false;
     }
@@ -271,7 +279,25 @@ static UIImage *cancelImageWithColor(UIColor *color, bool incoming)
         [_sliderModel setAudioPosition:_audioPosition animated:animated timestamp:isPlaying ? _audioPositionTimestamp : DBL_MAX isPlaying:isPlaying];
         
         int currentDuration = _isPlayerActive ? (int)(_duration * _audioPosition) : (int)_duration;
-        _sliderModel.audioDurationText = [[NSString alloc] initWithFormat:@"%d:%02d", (int)currentDuration / 60, (int)currentDuration % 60];
+        if (_duration == 0 && _fileType.length != 0)
+        {
+            NSString *sizeString = @"";
+            if (_size < 1024 * 1024)
+            {
+                sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Kilobytes"), (int)(int)(_size / 1024)];
+            }
+            else
+            {
+                sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Megabytes"), (float)(float)_size / (1024 * 1024)];
+            }
+            if (_fileType.length != 0)
+                sizeString = [[NSString alloc] initWithFormat:@"%@, %@ ", _fileType, sizeString];
+            _sliderModel.audioDurationText = sizeString;
+        }
+        else
+        {
+            _sliderModel.audioDurationText = [[NSString alloc] initWithFormat:@"%d:%02d", (int)currentDuration / 60, (int)currentDuration % 60];
+        }
         
         _sliderModel.manualPositionAdjustmentEnabled = _isPlayerActive;
     }
@@ -283,60 +309,30 @@ static UIImage *cancelImageWithColor(UIColor *color, bool incoming)
         switch (_playButtonType)
         {
             case TGAudioMessageButtonPlay:
-                [_playButtonModel setBackgroundImage:[self playImage:_incoming]];
+                [_playButtonModel setBackgroundImage:[self playImage:_incomingAppearance]];
                 break;
             case TGAudioMessageButtonPause:
-                [_playButtonModel setBackgroundImage:[self pauseImage:_incoming]];
+                [_playButtonModel setBackgroundImage:[self pauseImage:_incomingAppearance]];
                 break;
             case TGAudioMessageButtonDownload:
-                [_playButtonModel setBackgroundImage:[self downloadImage:_incoming]];
+                [_playButtonModel setBackgroundImage:[self downloadImage:_incomingAppearance]];
                 break;
             case TGAudioMessageButtonCancel:
-                [_playButtonModel setBackgroundImage:[self cancelImage:_incoming]];
+                [_playButtonModel setBackgroundImage:[self cancelImage:_incomingAppearance]];
                 break;
             default:
                 break;
         }
     }
-    
-    return;
-    
-    NSMutableString *text = [[NSMutableString alloc] init];
-    
-    if (_progressVisible)
-    {
-        if (_deliveryState == TGMessageDeliveryStatePending)
-            [text appendFormat:@"Uploading %d%%", (int)(_progress * 100)];
-        else
-            [text appendFormat:@"Downloading %d%%", (int)(_progress * 100)];
-    }
-    else
-    {
-        if (_mediaIsAvailable)
-            [text appendFormat:@"Play %" PRId32 "s", _audio.duration];
-        else
-            [text appendFormat:@"Download %" PRId32 "kB", _audio.fileSize / 1024];
-    }
-    
-    [_playButtonModel setPossibleTitles:@[text]];
-    
-    if (self.frame.size.width > FLT_EPSILON)
-    {
-        [_playButtonModel layoutForContainerSize:CGSizeMake(200.0f, 0.0f)];
-        CGRect playButtonFrame = _playButtonModel.frame;
-        playButtonFrame.origin = CGPointMake(_backgroundModel.frame.origin.x + 4.0f, 4.0f);
-        _playButtonModel.frame = playButtonFrame;
-        
-        if ([_playButtonModel boundView] != nil)
-            [_playButtonModel boundView].frame = CGRectOffset([_playButtonModel boundView].frame, _boundOffset.x, _boundOffset.y);
-    }
 }
 
-- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage
+- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
 {
-    [super updateMessage:message viewStorage:viewStorage];
+    [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
     
     [self updateButtonText:false];
+    
+    _sliderModel.listenedStatus = !_context.viewStatusEnabled || message.contentProperties[@"contentsRead"] != nil;
 }
 
 - (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage
@@ -348,13 +344,14 @@ static UIImage *cancelImageWithColor(UIColor *color, bool incoming)
     [self updateButtonText:false];
 }
         
-- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage
+- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated
 {
-    [super updateProgress:progressVisible progress:progress viewStorage:viewStorage];
+    [super updateProgress:progressVisible progress:progress viewStorage:viewStorage animated:animated];
+    
     _progressVisible = progressVisible;
     _progress = progress;
     
-    [self updateButtonText:_progress < 0.01f ? false : true];
+    [self updateButtonText:animated && (_progress < 0.01f ? false : true)];
 }
 
 - (void)updateInlineMediaContext
@@ -460,19 +457,19 @@ static UIImage *cancelImageWithColor(UIColor *color, bool incoming)
     _headerHeight = headerHeight;
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)__unused needsContentsUpdate
+- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)__unused needsContentsUpdate hasDate:(bool)__unused hasDate hasViews:(bool)__unused hasViews
 {
-    return CGSizeMake(MAX(160, MIN(205, _duration * 30)), 41);
+    return CGSizeMake(MAX(160, MIN(205, _duration * 30)), 45);
 }
 
 - (void)layoutForContainerSize:(CGSize)containerSize
 {
     [super layoutForContainerSize:containerSize];
     
-    _playButtonModel.frame = CGRectMake(_backgroundModel.frame.origin.x + (_incoming ? 14.0f : 9.0f), _headerHeight + _backgroundModel.frame.origin.y + 11.0f, 28.0f, 28.0f);
+    _playButtonModel.frame = CGRectMake(_backgroundModel.frame.origin.x + (_incomingAppearance ? 14.0f : 9.0f), _headerHeight + _backgroundModel.frame.origin.y + 9.0f + TGRetinaPixel, 28.0f, 28.0f);
     
     CGFloat trackOriginX = CGRectGetMaxX(_playButtonModel.frame) + 5.0f;
-    CGRect sliderFrame = CGRectMake(trackOriginX, _playButtonModel.frame.origin.y + 7.0f, CGRectGetMaxX(_backgroundModel.frame) - trackOriginX - 13.0f + (_incoming ? 5.0f : 0.0f), 14.0f);
+    CGRect sliderFrame = CGRectMake(trackOriginX, _playButtonModel.frame.origin.y + 7.0f, CGRectGetMaxX(_backgroundModel.frame) - trackOriginX - 13.0f + (_incomingAppearance ? 5.0f : 0.0f), 14.0f);
     _sliderModel.frame = sliderFrame;
 }
 
@@ -491,9 +488,9 @@ static UIImage *cancelImageWithColor(UIColor *color, bool incoming)
     [_inlineMediaContext pause];
 }
 
-- (void)audioSliderViewDidEndPositionAdjustment:(TGAudioSliderView *)__unused audioSliderView atPosition:(float)position
+- (void)audioSliderViewDidEndPositionAdjustment:(TGAudioSliderView *)__unused audioSliderView atPosition:(CGFloat)position
 {
-    [_inlineMediaContext play:position];
+    [_inlineMediaContext play:(float)position];
 }
 
 - (void)audioSliderViewDidCancelPositionAdjustment:(TGAudioSliderView *)__unused audioSliderView
@@ -503,7 +500,10 @@ static UIImage *cancelImageWithColor(UIColor *color, bool incoming)
 
 - (int)gestureRecognizer:(TGDoubleTapGestureRecognizer *)__unused recognizer shouldFailTap:(CGPoint)__unused point
 {
-    return 3;
+    if ((_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point)) ||
+        (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)))
+        return 3;
+    return 0;
 }
 
 - (void)messageDoubleTapGesture:(TGDoubleTapGestureRecognizer *)recognizer
@@ -518,8 +518,15 @@ static UIImage *cancelImageWithColor(UIColor *color, bool incoming)
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
             else if (recognizer.doubleTapped)
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
-            else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point))
-                [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @(_forwardedUid)}];
+            else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
+                if (TGPeerIdIsChannel(_forwardedPeerId)) {
+                    [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+                } else {
+                    [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                }
+            }
+            else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
+                [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
             else if (!_isPlayerActive || _isPaused)
                 [self playButtonPressed];
         }

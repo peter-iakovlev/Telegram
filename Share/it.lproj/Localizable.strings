@@ -1,0 +1,13 @@
+"Share.Cancel" = "Annulla";
+"Share.Next" = "Avanti";
+"Share.OK" = "OK";
+"Share.Search" = "Cerca";
+
+"Share.Title" = "Condividi";
+"Share.ShareWithPerson" = "Condividi con %@?";
+"Share.ShareWithGroup" = "Condividi con %@?";
+"Share.Sharing" = "Condivisione...";
+
+"Share.PasscodeTitle" = "Codice";
+"Share.EnterPasscode" = "Inserisci codice";
+"Share.ErrorInvalidPasscode" = "Codice non valido";

@@ -13,6 +13,7 @@
 @interface TGModernConversationCollectionViewInstantPreviewRecognizer ()
 {
     CGPoint _touchLocation;
+    bool _alreadyBegan;
 }
 
 @end
@@ -29,14 +30,35 @@
     return self;
 }
 
+- (void)reset
+{
+    [super reset];
+    _alreadyBegan = false;
+}
+
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
     [super touchesBegan:touches withEvent:event];
     
-    UITouch *touch = [touches anyObject];
-    _touchLocation = [touch locationInView:self.view];
-    
-    self.state = UIGestureRecognizerStateBegan;
+    if (_alreadyBegan)
+    {
+        self.state = UIGestureRecognizerStateCancelled;
+        
+        id<TGModernConversationCollectionViewInstantPreviewRecognizerDelegate> delegate = (id<TGModernConversationCollectionViewInstantPreviewRecognizerDelegate>)self.delegate;
+        if ([delegate respondsToSelector:@selector(instantPreviewGestureDidEnd)])
+            [delegate instantPreviewGestureDidEnd];
+    }
+    else
+    {
+        UITouch *touch = [touches anyObject];
+        _touchLocation = [touch locationInView:self.view];
+        
+        self.state = UIGestureRecognizerStateBegan;
+        
+        id<TGModernConversationCollectionViewInstantPreviewRecognizerDelegate> delegate = (id<TGModernConversationCollectionViewInstantPreviewRecognizerDelegate>)self.delegate;
+        if ([delegate respondsToSelector:@selector(instantPreviewGestureDidBegin)])
+            [delegate instantPreviewGestureDidBegin];
+    }
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event

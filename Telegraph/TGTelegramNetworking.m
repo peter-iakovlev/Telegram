@@ -18,7 +18,9 @@
 #import "SGraphObjectNode.h"
 
 #import "TGTelegraph.h"
+#import "TGPeerIdAdapter.h"
 
+#import <MTProtoKit/MTProtoKit.h>
 #import <MTProtoKit/MTLogging.h>
 #import <MTProtoKit/MTKeychain.h>
 #import <MTProtoKit/MTContext.h>
@@ -30,23 +32,56 @@
 #import <MTProtoKit/MTRequestMessageService.h>
 #import <MTProtoKit/MTRequest.h>
 #import <MTProtoKit/MTRequestErrorContext.h>
+#import <MTProtoKit/MTEncryption.h>
+#import <MTProtoKit/MTDatacenterAuthInfo.h>
 #import "TGUpdateMessageService.h"
 
 #import <MTProtoKit/MTInternalId.h>
+
+#import <CommonCrypto/CommonKeyDerivation.h>
+#import <CommonCrypto/CommonCryptoError.h>
+
 #import "TGNetworkWorker.h"
 
 #import "TGTLSerialization.h"
 #import "TGKeychainImport.h"
 
+#import "TGNavigationBar.h"
+#import "TGLoginPasswordController.h"
+
+#import "TLUpdates+TG.h"
+
+#import "TLRPCmessages_sendMessage_manual.h"
+#import "TLRPCmessages_sendMedia_manual.h"
+
+#import "../../config.h"
+
 static const int TGMaxWorkerCount = 4;
 
 MTInternalIdClass(TGDownloadWorker)
 
-@interface TGTelegramNetworking () <ASWatcher, MTProtoDelegate, MTRequestMessageServiceDelegate, TGNetworkWorkerDelegate>
+@implementation MTRequest (LegacyTL)
+
+- (void)setBody:(TLMetaRpc *)body
+{
+    [self setPayload:[TGTLSerialization serializeMessage:body] metadata:body responseParser:^id(NSData *data)
+    {
+        return [TGTLSerialization parseResponse:data request:body];
+    }];
+}
+
+- (id)body
+{
+    return self.metadata;
+}
+
+@end
+
+@interface TGTelegramNetworking () <ASWatcher, MTProtoDelegate, MTRequestMessageServiceDelegate, TGNetworkWorkerDelegate, MTContextChangeListener>
 {
     bool _isTestingEnvironment;
-    MTKeychain *_settingsKeychain;
-    MTKeychain *_keychain;
+    id<MTKeychain> _settingsKeychain;
+    id<MTKeychain> _keychain;
     MTContext *_context;
     MTProto *_mtProto;
     MTRequestMessageService *_requestService;
@@ -68,6 +103,8 @@ MTInternalIdClass(TGDownloadWorker)
     NSMutableDictionary *_awaitingWorkerTokensByDatacenterId;
     
     NSMutableArray *_currentWakeUpCompletions;
+    
+    UIWindow *_currentPasswordEntryWindow;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -104,12 +141,12 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
         
         _currentWakeUpCompletions = [[NSMutableArray alloc] init];
         
-        _settingsKeychain = [MTKeychain keychainWithName:@"Telegram-Settings"];
+        _settingsKeychain = [MTFileBasedKeychain keychainWithName:@"Telegram-Settings" documentsPath:[TGAppDelegate documentsPath]];
         NSString *environmentId = [_settingsKeychain objectForKey:@"environmentId" group:@"environment"];
         _isTestingEnvironment = environmentId != nil && [environmentId isEqualToString:@"testing"];
         
         NSString *keychainName = _isTestingEnvironment ? @"Telegram-Testing" : @"Telegram";
-        _keychain = [MTKeychain keychainWithName:keychainName];
+        _keychain = [MTFileBasedKeychain keychainWithName:keychainName documentsPath:[TGAppDelegate documentsPath]];
         
 #if TGUseModernNetworking
         if (![[_keychain objectForKey:@"importedLegacyKeychain" group:@"meta"] boolValue])
@@ -122,12 +159,15 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
         MTApiEnvironment *apiEnvironment = [[MTApiEnvironment alloc] init];
         NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
         
-        if ([bundleIdentifier isEqualToString:@"org.telegram.TelegramEnterprise"])
-            apiEnvironment.apiId = 16352;
-        else if ([bundleIdentifier isEqualToString:@"org.telegram.TelegramHD"])
-            apiEnvironment.apiId = 7;
+        int32_t apiId = 0;
+        SETUP_API_ID(apiId)
+        
+        apiEnvironment.apiId = apiId;
+        
+        apiEnvironment.layer = @([[[TGTLSerialization alloc] init] currentLayer]);
         
         _context = [[MTContext alloc] initWithSerialization:[[TGTLSerialization alloc] init] apiEnvironment:apiEnvironment];
+        [_context addChangeListener:self];
         
         _workersByDatacenterId = [[NSMutableDictionary alloc] init];
         _awaitingWorkerTokensByDatacenterId = [[NSMutableDictionary alloc] init];
@@ -135,53 +175,63 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
         if (_isTestingEnvironment)
         {
             [_context setSeedAddressSetForDatacenterWithId:1 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                [[MTDatacenterAddress alloc] initWithIp:@"173.240.5.253" port:443]
+                [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.10" port:443 preferForMedia:false]
             ]]];
+            [_context setSeedAddressSetForDatacenterWithId:2 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
+                                                                                                                                  [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.40" port:443 preferForMedia:false]
+                                                                                                                                  ]]];
         }
         else
         {
             [_context performBatchUpdates:^
             {
                 [_context setSeedAddressSetForDatacenterWithId:1 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"173.240.5.1" port:443]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.50" port:443 preferForMedia:false]
                 ]]];
                 
                 [_context setSeedAddressSetForDatacenterWithId:2 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.50" port:443]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.51" port:443 preferForMedia:false]
                 ]]];
                 
                 [_context setSeedAddressSetForDatacenterWithId:3 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"174.140.142.6" port:443]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.100" port:443 preferForMedia:false]
                 ]]];
 
                 [_context setSeedAddressSetForDatacenterWithId:4 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"31.210.235.12" port:443]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.91" port:443 preferForMedia:false]
                 ]]];
 
                 [_context setSeedAddressSetForDatacenterWithId:5 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"116.51.22.2" port:443]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.171.5" port:443 preferForMedia:false]
                 ]]];
             }];
         }
         
         _context.keychain = _keychain;
         
-#if TARGET_IPHONE_SIMULATOR
-        /*[_context updateAddressSetForDatacenterWithId:2 addressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-            [[MTDatacenterAddress alloc] initWithIp:@"173.2.14.88" port:443]
-        ]]];*/
-#endif
+        bool foundAuthorizations = false;
+        for (NSInteger i = 0; i < 5; i++)
+        {
+            if ([_context authInfoForDatacenterWithId:i] != nil)
+            {
+                foundAuthorizations = true;
+                break;
+            }
+        }
         
         NSNumber *nDefaultDatacenterId = [_keychain objectForKey:@"defaultDatacenterId" group:@"persistent"];
-        [self resetMainMtProto:nDefaultDatacenterId == nil ? 1 : [nDefaultDatacenterId integerValue]];
+        if (nDefaultDatacenterId == nil)
+        {
+            if (foundAuthorizations)
+                nDefaultDatacenterId = @(1);
+            else
+                nDefaultDatacenterId = @(2);
+        }
+        [self moveToDatacenterId:[nDefaultDatacenterId integerValue]];
         
         [ActionStageInstance() requestActor:@"/tg/datacenterWatchdog" options:nil flags:0 watcher:self];
         
-#if TARGET_IPHONE_SIMULATOR
-        //[_context beginTransportSchemeDiscoveryForDatacenterId:3];
-#endif
-        
-#if TARGET_IPHONE_SIMULATOR && false
+#if TARGET_IPHONE_SIMULATOR && true
         MTRequest *getSchemeRequest = [[MTRequest alloc] init];
         getSchemeRequest.body = [[TLRPChelp_getScheme$help_getScheme alloc] init];
         [getSchemeRequest setCompleted:^(TLScheme$scheme *result, __unused NSTimeInterval timestamp, __unused id error)
@@ -189,9 +239,131 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
             TGLog(@"%@", result.scheme_raw);
         }];
         [_requestService addRequest:getSchemeRequest];
+        
+        //[_context transportSchemeForDatacenterWithIdRequired:1];
 #endif
     }
     return self;
+}
+
+- (SMulticastSignalManager *)genericTasksSignalManager
+{
+    return TGTelegraphInstance.genericTasksSignalManager;
+}
+
+- (NSURL *)sharedAuthInfoPath
+{
+    NSString *groupName = [@"group." stringByAppendingString:[[NSBundle mainBundle] bundleIdentifier]];
+    NSURL *groupURL = [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:groupName];
+    if (groupURL != nil)
+    {
+        NSURL *sharedAuthInfoPath = [groupURL URLByAppendingPathComponent:@"shared-auth-info" isDirectory:true];
+        return sharedAuthInfoPath;
+    }
+    
+    return nil;
+}
+
+- (void)removeCredentialsForExtensions
+{
+    if (iosMajorVersion() < 8)
+        return;
+    
+    if ([self sharedAuthInfoPath] != nil)
+        [[NSFileManager defaultManager] removeItemAtURL:[self sharedAuthInfoPath] error:nil];
+}
+
+- (NSData*)generateSalt256
+{
+    unsigned char salt[32];
+    for (int i = 0; i < 32; i++)
+    {
+        salt[i] = (unsigned char)arc4random();
+    }
+    return [NSData dataWithBytes:salt length:32];
+}
+
+- (void)exportCredentialsForExtensions
+{
+    if (iosMajorVersion() < 8)
+        return;
+    
+    [_context performBatchUpdates:^
+    {
+        bool isStrong = false;
+        NSString *password = nil;
+        if ([TGDatabaseInstance() isPasswordSet:&isStrong])
+        {
+            password = [TGDatabaseInstance() currentPassword];
+            if (password == nil)
+            {
+                [self removeCredentialsForExtensions];
+                return;
+            }
+        }
+        
+        MTDatacenterAuthInfo *authInfo = [_context authInfoForDatacenterWithId:_mtProto.datacenterId];
+        if (authInfo != nil)
+        {
+            MTDatacenterAuthInfo *sharedAuthInfo = [[MTDatacenterAuthInfo alloc] initWithAuthKey:authInfo.authKey authKeyId:authInfo.authKeyId saltSet:@[] authKeyAttributes:@{}];
+            NSString *versionString = [[NSString alloc] initWithFormat:@"%@ (%@)", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"], [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
+            NSData *data = [NSKeyedArchiver archivedDataWithRootObject:@{@"datacenterId":@(_mtProto.datacenterId), @"authInfo": sharedAuthInfo, @"version": versionString}];
+            
+            NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+            dict[@"protected"] = @(password != nil);
+            if (password != nil)
+            {
+                if (isStrong)
+                {
+                    NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
+                    NSData *salt = [self generateSalt256];
+                    
+                    NSMutableData *key = [[NSMutableData alloc] initWithBytesNoCopy:malloc(32) length:32 freeWhenDone:true];
+                    
+                    int result = CCKeyDerivationPBKDF(kCCPBKDF2, passwordData.bytes, passwordData.length, salt.bytes, salt.length, kCCPRFHmacAlgSHA256, 1000, key.mutableBytes, 32);
+                    if (result != kCCSuccess)
+                    {
+                        TGLog(@"Failed to derive keychain password");
+                        [self removeCredentialsForExtensions];
+                        
+                        return;
+                    }
+                    
+                    NSMutableData *iv = [[NSMutableData alloc] initWithBytesNoCopy:malloc(32) length:32 freeWhenDone:true];
+                    arc4random_buf(iv.mutableBytes, 32);
+                    
+                    NSMutableData *encryptedData = [[NSMutableData alloc] init];
+                    int32_t plainLength = (int32_t)data.length;
+                    [encryptedData appendBytes:&plainLength length:4];
+                    [encryptedData appendData:data];
+                    while (encryptedData.length % 16 != 0)
+                    {
+                        uint8_t random = 0;
+                        arc4random_buf(&random, 1);
+                        [encryptedData appendBytes:&random length:1];
+                    }
+                    MTAesEncryptInplace(encryptedData, key, iv);
+                    NSData *plainChecksum = MTSha1(data);
+                    
+                    dict[@"data"] = encryptedData;
+                    dict[@"iv"] = iv;
+                    dict[@"checksum"] = plainChecksum;
+                    dict[@"salt"] = salt;
+                }
+                else
+                {
+                    dict[@"data"] = data;
+                    dict[@"password"] = password;
+                }
+            }
+            else
+                dict[@"data"] = data;
+            
+            NSData *storedData = [NSKeyedArchiver archivedDataWithRootObject:dict];
+            if ([self sharedAuthInfoPath] != nil)
+                [storedData writeToURL:[self sharedAuthInfoPath] atomically:true];
+        }
+    }];
 }
 
 - (MTContext *)context
@@ -310,7 +482,7 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
 - (void)moveToDatacenterId:(NSInteger)datacenterId
 {
 #if TGUseModernNetworking
-    if (datacenterId != _mtProto.datacenterId)
+    if (_mtProto == nil || datacenterId != _mtProto.datacenterId)
     {
         _masterDatacenterId = datacenterId;
         [_keychain setObject:@(_masterDatacenterId) forKey:@"defaultDatacenterId" group:@"persistent"];
@@ -364,11 +536,11 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
     {
         [_context addAddressForDatacenterWithId:datacenterId address:address];
         
-        MTTransportScheme *scheme = [_context transportSchemeForDatacenterWithid:datacenterId];
+        MTTransportScheme *scheme = [_context transportSchemeForDatacenterWithid:datacenterId media:false];
         if (![scheme.address isEqualToAddress:address])
         {
-            scheme = [[MTTransportScheme alloc] initWithTransportClass:scheme.transportClass address:address];
-            [_context updateTransportSchemeForDatacenterWithId:datacenterId transportScheme:scheme];
+            scheme = [[MTTransportScheme alloc] initWithTransportClass:scheme.transportClass address:address media:false];
+            [_context updateTransportSchemeForDatacenterWithId:datacenterId transportScheme:scheme media:false];
         }
     }];
 #else
@@ -522,13 +694,18 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
     }];
 }
 
-- (void)updatePts:(int)pts date:(int)date seq:(int)seq
+- (void)updatePts:(int)pts ptsCount:(int)ptsCount seq:(int)seq
 {
 #if TGUseModernNetworking
-    [_updateService updatePts:pts date:date seq:seq];
+    [_updateService updatePts:pts ptsCount:ptsCount seq:seq];
 #else
     [[TGSession instance] _updatePts:pts date:date seq:seq];
 #endif
+}
+
+- (void)addUpdates:(id)updates
+{
+    [_updateService addUpdates:updates];
 }
 
 - (void)switchBackends
@@ -551,80 +728,271 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
     [_requestService addRequest:request];
 }
 
-- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, TLError *error))completionBlock progressBlock:(void (^)(int length, float progress))progressBlock requiresCompletion:(bool)requiresCompletion requestClass:(int)requestClass
+- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, MTRpcError *error))completionBlock progressBlock:(void (^)(int length, float progress))progressBlock requiresCompletion:(bool)requiresCompletion requestClass:(int)requestClass
 {
     return [self performRpc:rpc completionBlock:completionBlock progressBlock:progressBlock requiresCompletion:requiresCompletion requestClass:requestClass datacenterId:INT_MAX];
 }
 
-- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, TLError *error))completionBlock progressBlock:(void (^)(int length, float progress))progressBlock requiresCompletion:(bool)requiresCompletion requestClass:(int)requestClass datacenterId:(int)datacenterId
+- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, MTRpcError *error))completionBlock progressBlock:(void (^)(int length, float progress))progressBlock requiresCompletion:(bool)requiresCompletion requestClass:(int)requestClass datacenterId:(int)datacenterId
 {
     return [self performRpc:rpc completionBlock:completionBlock progressBlock:progressBlock quickAckBlock:nil requiresCompletion:requiresCompletion requestClass:requestClass datacenterId:datacenterId];
 }
 
-- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, TLError *error))completionBlock progressBlock:(void (^)(int length, float progress))progressBlock quickAckBlock:(void (^)())quickAckBlock requiresCompletion:(bool)requiresCompletion requestClass:(int)requestClass datacenterId:(int)datacenterId
+- (int64_t)peerIdFromInputPeer:(TLInputPeer *)peer {
+    if ([peer isKindOfClass:[TLInputPeer$inputPeerChannel class]]) {
+        return TGPeerIdFromChannelId(((TLInputPeer$inputPeerChannel *)peer).channel_id);
+    } else if ([peer isKindOfClass:[TLInputPeer$inputPeerChat class]]) {
+        return TGPeerIdFromGroupId(((TLInputPeer$inputPeerChat *)peer).chat_id);
+    } else if ([peer isKindOfClass:[TLInputPeer$inputPeerUser class]]) {
+        return ((TLInputPeer$inputPeerUser *)peer).user_id;
+    } else if ([peer isKindOfClass:[TLInputPeer$inputPeerSelf class]]) {
+        return TGTelegraphInstance.clientUserId;
+    }
+    
+    return 0;
+}
+
+- (NSObject *)performRpc:(TLMetaRpc *)rpc completionBlock:(void (^)(id<TLObject> response, int64_t responseTime, MTRpcError *error))completionBlock progressBlock:(void (^)(int length, float progress))__unused progressBlock quickAckBlock:(void (^)())quickAckBlock requiresCompletion:(bool)__unused requiresCompletion requestClass:(int)requestClass datacenterId:(int)datacenterId
 {
 #if TGUseModernNetworking
     if (datacenterId != INT_MAX && datacenterId != 1)
         return nil;
     
-    MTRequest *request = [[MTRequest alloc] init];
-    request.body = rpc;
-    [request setCompleted:^(id result, NSTimeInterval timestamp, id error)
+    static bool collectingForwardMessages = false;
+    static NSMutableDictionary *collectedForwardMessagesByPeerIdsString = nil;
+    static SDisposableSet *currentCollectedForwardMessagesDisposable = nil;
+    
+    if ([rpc isKindOfClass:[TLRPCmessages_forwardMessages class]])
     {
-        [ActionStageInstance() dispatchOnStageQueue:^
+        TLRPCmessages_forwardMessages *concreteRpc = (TLRPCmessages_forwardMessages *)rpc;
+        int64_t fromPeerId = [self peerIdFromInputPeer:concreteRpc.from_peer];
+        int64_t toPeerId = [self peerIdFromInputPeer:concreteRpc.to_peer];
+        NSString *key = [[NSString alloc] initWithFormat:@"%lld:%lld:%d", fromPeerId, toPeerId, concreteRpc.flags];
+        
+        NSDictionary *forwardMessages = @{@"rpc": rpc, @"completion": [completionBlock copy]};
+        
+        if (collectingForwardMessages)
         {
-            if (completionBlock != nil)
-                completionBlock(result, (int64_t)(timestamp * 4294967296.0), error);
-        }];
-    }];
-    
-    if (quickAckBlock != nil)
-        [request setAcknowledgementReceived:quickAckBlock];
-    
-    static NSArray *sequentialMessageClasses = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        sequentialMessageClasses = @[
-            [TLRPCmessages_sendMessage class],
-            [TLRPCmessages_sendMedia class],
-            [TLRPCmessages_forwardMessage class],
-            [TLRPCmessages_sendEncrypted class],
-            [TLRPCmessages_sendEncryptedFile class]
-        ];
-    });
-    
-    for (Class sequentialClass in sequentialMessageClasses)
-    {
-        if ([rpc isKindOfClass:sequentialClass])
-        {
-            [request setShouldDependOnRequest:^bool (MTRequest *anotherRequest)
-            {
-                for (Class sequentialClass in sequentialMessageClasses)
-                {
-                    if ([anotherRequest.body isKindOfClass:sequentialClass])
-                        return true;
-                }
-                
-                return false;
-            }];
+            NSMutableArray *collectedForwardMessages = collectedForwardMessagesByPeerIdsString[key];
+            if (collectedForwardMessages == nil) {
+                collectedForwardMessages = [[NSMutableArray alloc] init];
+                collectedForwardMessagesByPeerIdsString[key] = collectedForwardMessages;
+            }
             
-            break;
+            [collectedForwardMessages addObject:forwardMessages];
         }
+        else
+        {
+            collectingForwardMessages = true;
+            
+            collectedForwardMessagesByPeerIdsString = [[NSMutableDictionary alloc] init];
+            
+            collectedForwardMessagesByPeerIdsString[key] = [[NSMutableArray alloc] initWithArray:@[forwardMessages]];
+            
+            currentCollectedForwardMessagesDisposable = [[SDisposableSet alloc] init];
+            
+            dispatch_async([ActionStageInstance() globalStageDispatchQueue], ^
+            {
+                collectingForwardMessages = false;
+                [collectedForwardMessagesByPeerIdsString enumerateKeysAndObjectsUsingBlock:^(id key, NSArray *records, __unused BOOL *stop) {
+                    if (records.count == 0) {
+                        return;
+                    }
+                    
+                    id fromPeer = nil;
+                    id toPeer = nil;
+                    int32_t flags = 0;
+                    
+                    NSMutableDictionary *messageDescsByKey = [[NSMutableDictionary alloc] init];
+                    for (NSDictionary *desc in records)
+                    {
+                        TLRPCmessages_forwardMessages *rpc = desc[@"rpc"];
+
+                        if (fromPeer == nil) {
+                            fromPeer = rpc.from_peer;
+                            toPeer = rpc.to_peer;
+                            flags = rpc.flags;
+                        }
+                        
+                        NSMutableDictionary *messageDescs = messageDescsByKey[key];
+                        if (messageDescs == nil)
+                        {
+                            messageDescs = [[NSMutableDictionary alloc] init];
+                            messageDescsByKey[key] = messageDescs;
+                            messageDescs[@"to_peer"] = rpc.to_peer;
+                            messageDescs[@"from_peer"] = rpc.from_peer;
+                        }
+                        
+                        NSMutableArray *messageIds = messageDescs[@"messageIds"];
+                        if (messageIds == nil)
+                        {
+                            messageIds = [[NSMutableArray alloc] init];
+                            messageDescs[@"messageIds"] = messageIds;
+                        }
+                        NSMutableArray *messageRandomIds = messageDescs[@"messageRandomIds"];
+                        if (messageRandomIds == nil)
+                        {
+                            messageRandomIds = [[NSMutableArray alloc] init];
+                            messageDescs[@"messageRandomIds"] = messageRandomIds;
+                        }
+                        NSMutableArray *completions = messageDescs[@"completions"];
+                        if (completions == nil)
+                        {
+                            completions = [[NSMutableArray alloc] init];
+                            messageDescs[@"completions"] = completions;
+                        }
+                        [messageIds addObjectsFromArray:rpc.n_id];
+                        [messageRandomIds addObjectsFromArray:rpc.random_id];
+                        [completions addObject:desc[@"completion"]];
+                    }
+                    
+                    for (id key in messageDescsByKey.allKeys)
+                    {
+                        NSDictionary *messageDescs = messageDescsByKey[key];
+                        NSArray *messageIds = messageDescs[@"messageIds"];
+                        NSArray *messageRandomIds = messageDescs[@"messageRandomIds"];
+                        
+                        TLRPCmessages_forwardMessages$messages_forwardMessages *forwardMessages = [[TLRPCmessages_forwardMessages$messages_forwardMessages alloc] init];
+                        forwardMessages.n_id = messageIds;
+                        forwardMessages.from_peer = fromPeer;
+                        forwardMessages.to_peer = toPeer;
+                        forwardMessages.random_id = messageRandomIds;
+                        forwardMessages.flags = flags;
+                        
+                        MTRequest *request = [[MTRequest alloc] init];
+                        request.body = forwardMessages;
+                        [request setCompleted:^(TLUpdates *updates, NSTimeInterval timestamp, id error)
+                         {
+                             [ActionStageInstance() dispatchOnStageQueue:^
+                              {
+                                  NSUInteger index = 0;
+                                  for (void (^messageCompletionBlock)(id, int64_t, id) in messageDescs[@"completions"])
+                                  {
+                                      TLUpdates$updates *syntheticUpdates = nil;
+                                      
+                                      if ([updates isKindOfClass:[TLUpdates$updates class]])
+                                      {
+                                          TLUpdates$updates *concreteUpdates = (TLUpdates$updates *)updates;
+                                          
+                                          int32_t pts = 0;
+                                          int32_t pts_count = 0;
+                                          TLMessage *message = [concreteUpdates messageAtIndex:index pts:&pts pts_count:&pts_count];
+                                          
+                                          syntheticUpdates = [[TLUpdates$updates alloc] init];
+                                          if (message != nil)
+                                          {
+                                              syntheticUpdates.chats = concreteUpdates.chats;
+                                              syntheticUpdates.users = concreteUpdates.users;
+                                              
+                                              if ([toPeer isKindOfClass:[TLPeer$peerChannel class]]) {
+                                                  TLUpdate$updateNewChannelMessage *updateNewChannelMessage = [[TLUpdate$updateNewChannelMessage alloc] init];
+                                                  updateNewChannelMessage.message = message;
+                                                  updateNewChannelMessage.pts = pts;
+                                                  updateNewChannelMessage.pts_count = pts_count;
+                                                  syntheticUpdates.updates = @[updateNewChannelMessage];
+                                              } else {
+                                                  TLUpdate$updateNewMessage *updateNewMessage = [[TLUpdate$updateNewMessage alloc] init];
+                                                  updateNewMessage.message = message;
+                                                  updateNewMessage.pts = pts;
+                                                  updateNewMessage.pts_count = pts_count;
+                                                  syntheticUpdates.updates = @[updateNewMessage];
+                                              }
+                                          }
+                                      }
+                                      
+                                      messageCompletionBlock(error == nil ? syntheticUpdates : nil, (int64_t)(timestamp * 4294967296.0), error);
+                                      
+                                      index++;
+                                  }
+                              }];
+                         }];
+                        
+                        [_requestService addRequest:request];
+                        
+                        id internalId = request.internalId;
+                        [currentCollectedForwardMessagesDisposable add:[[SBlockDisposable alloc] initWithBlock:^
+                                                                        {
+                                                                            [_requestService removeRequestByInternalId:internalId];
+                                                                            
+                                                                            for (void (^messageCompletionBlock)(id, NSTimeInterval, id) in messageDescs[@"completions"])
+                                                                            {
+                                                                                messageCompletionBlock(nil, 0, [[TLRpcError$rpc_error alloc] init]);
+                                                                            }
+                                                                        }]];
+                        
+                        currentCollectedForwardMessagesDisposable = nil;
+                    }
+                }];
+                [collectedForwardMessagesByPeerIdsString removeAllObjects];
+            });
+        }
+        
+        return currentCollectedForwardMessagesDisposable;
     }
-    
-    if ([request.body isKindOfClass:[TLRPCmessages_sendMessage class]] || [request.body isKindOfClass:[TLRPCmessages_forwardMessage class]] || [request.body isKindOfClass:[TLRPCmessages_sendEncrypted class]])
-        request.hasHighPriority = true;
-    
-    [request setShouldContinueExecutionWithErrorContext:^bool(__unused MTRequestErrorContext *errorContext)
+    else
     {
-        if (requestClass & 256/*TGRequestClassFailOnServerErrors*/)
-            return errorContext.internalServerErrorCount < 5;
-        return true;
-    }];
-    
-    [_requestService addRequest:request];
-    return request.internalId;
+        MTRequest *request = [[MTRequest alloc] init];
+        request.passthroughPasswordEntryError = requestClass & TGRequestClassPassthroughPasswordNeeded;
+        request.body = rpc;
+        [request setCompleted:^(id result, NSTimeInterval timestamp, id error)
+        {
+            [ActionStageInstance() dispatchOnStageQueue:^
+            {
+                if (completionBlock != nil)
+                    completionBlock(result, (int64_t)(timestamp * 4294967296.0), error);
+            }];
+        }];
+        
+        if (quickAckBlock != nil)
+            [request setAcknowledgementReceived:quickAckBlock];
+        
+        static NSArray *sequentialMessageClasses = nil;
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^
+        {
+            sequentialMessageClasses = @[
+                [TLRPCmessages_sendMessage_manual class],
+                [TLRPCmessages_sendMedia_manual class],
+                [TLRPCmessages_forwardMessages class],
+                [TLRPCmessages_sendEncrypted class],
+                [TLRPCmessages_sendEncryptedFile class]
+            ];
+        });
+        
+        for (Class sequentialClass in sequentialMessageClasses)
+        {
+            if ([rpc isKindOfClass:sequentialClass])
+            {
+                [request setShouldDependOnRequest:^bool (MTRequest *anotherRequest)
+                {
+                    for (Class sequentialClass in sequentialMessageClasses)
+                    {
+                        if ([anotherRequest.body isKindOfClass:sequentialClass])
+                            return true;
+                    }
+                    
+                    return false;
+                }];
+                
+                break;
+            }
+        }
+        
+        if ([request.body isKindOfClass:[TLRPCmessages_sendMessage_manual class]] || [request.body isKindOfClass:[TLRPCmessages_forwardMessages class]] || [request.body isKindOfClass:[TLRPCmessages_sendEncrypted class]])
+            request.hasHighPriority = true;
+        
+        [request setShouldContinueExecutionWithErrorContext:^bool(__unused MTRequestErrorContext *errorContext)
+        {
+            if (requestClass & 256/*TGRequestClassFailOnServerErrors*/)
+                return errorContext.internalServerErrorCount < 5;
+            if (requestClass & 512)
+                return false;
+            return true;
+        }];
+        
+        [_requestService addRequest:request];
+        return request.internalId;
+    }
 #else
     return [[TGSession instance] performRpc:rpc completionBlock:completionBlock progressBlock:progressBlock quickAckBlock:quickAckBlock requiresCompletion:requiresCompletion requestClass:requestClass datacenterId:datacenterId];
 #endif
@@ -633,7 +1001,10 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
 - (void)cancelRpc:(id)token
 {
 #if TGUseModernNetworking
-    [_requestService removeRequestByInternalId:token];
+    if ([token conformsToProtocol:@protocol(SDisposable)])
+        [(id<SDisposable>)token dispose];
+    else
+        [_requestService removeRequestByInternalId:token];
 #else
     [[TGSession instance] cancelRpc:token notifyServer:true];
 #endif
@@ -829,6 +1200,247 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
         int state = [((SGraphObjectNode *)resource).object intValue];
         if (state == 0 && _isConnected && !_isUpdatingConnectionContext && !_isPerformingServiceTasks && _isNetworkAvailable)
             [self completeWakeUpIfAny:@"state 2 match"];
+    }
+}
+
+- (SSignal *)downloadWorkerForDatacenterId:(NSInteger)datacenterId
+{
+    return [[SSignal alloc] initWithGenerator:^(SSubscriber *subscriber)
+    {   
+        id token = [self requestDownloadWorkerForDatacenterId:datacenterId completion:^(TGNetworkWorkerGuard *worker)
+        {
+            [subscriber putNext:worker];
+            [subscriber putCompletion];
+        }];
+        
+        return [[SBlockDisposable alloc] initWithBlock:^
+        {
+            [self cancelDownloadWorkerRequestByToken:token];
+        }];
+    }];
+}
+
+- (SSignal *)requestSignal:(TLMetaRpc *)rpc
+{
+    return [self requestSignal:rpc continueOnServerErrors:false];
+}
+
+- (SSignal *)requestSignal:(TLMetaRpc *)rpc continueOnServerErrors:(bool)continueOnServerErrors
+{
+    return [self requestSignal:rpc requestClass:continueOnServerErrors ? 0 : TGRequestClassFailOnServerErrors];
+}
+
+- (SSignal *)requestSignal:(TLMetaRpc *)rpc requestClass:(int)requestClass
+{
+    return [[SSignal alloc] initWithGenerator:^(SSubscriber *subscriber)
+    {
+        MTRequest *request = [[MTRequest alloc] init];
+        request.body = rpc;
+        [request setCompleted:^(id result, __unused NSTimeInterval timestamp, id error)
+        {
+            if (error == nil)
+            {
+                [subscriber putNext:result];
+                [subscriber putCompletion];
+            }
+            else
+                [subscriber putError:error];
+        }];
+        
+        request.dependsOnPasswordEntry = (requestClass & TGRequestClassIgnorePasswordEntryRequired) == 0;
+        
+        static NSArray *sequentialMessageClasses = nil;
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^
+        {
+            sequentialMessageClasses = @[
+                [TLRPCmessages_sendMessage_manual class],
+                [TLRPCmessages_sendMedia_manual class],
+                [TLRPCmessages_forwardMessages class],
+                [TLRPCmessages_sendEncrypted class],
+                [TLRPCmessages_sendEncryptedFile class]
+            ];
+        });
+        
+        for (Class sequentialClass in sequentialMessageClasses)
+        {
+            if ([rpc isKindOfClass:sequentialClass])
+            {
+                [request setShouldDependOnRequest:^bool (MTRequest *anotherRequest)
+                {
+                    for (Class sequentialClass in sequentialMessageClasses)
+                    {
+                        if ([anotherRequest.body isKindOfClass:sequentialClass])
+                            return true;
+                    }
+                    
+                    return false;
+                }];
+                
+                break;
+            }
+        }
+        
+        if ([request.body isKindOfClass:[TLRPCmessages_sendMessage_manual class]] || [request.body isKindOfClass:[TLRPCmessages_forwardMessages class]] || [request.body isKindOfClass:[TLRPCmessages_sendEncrypted class]])
+            request.hasHighPriority = true;
+        
+        [request setShouldContinueExecutionWithErrorContext:^bool(__unused MTRequestErrorContext *errorContext)
+        {
+            if (errorContext.floodWaitSeconds > 0)
+            {
+                if (requestClass & TGRequestClassFailOnFloodErrors)
+                    return false;
+            }
+            
+            if (!(requestClass & TGRequestClassFailOnServerErrors))
+                return errorContext.internalServerErrorCount < 5;
+            return true;
+        }];
+        
+        [_requestService addRequest:request];
+        id requestToken = request.internalId;
+        
+        return [[SBlockDisposable alloc] initWithBlock:^
+        {
+            [_requestService removeRequestByInternalId:requestToken];
+        }];
+    }];
+}
+
+- (SSignal *)requestSignal:(TLMetaRpc *)rpc worker:(TGNetworkWorkerGuard *)worker
+{
+    return [[SSignal alloc] initWithGenerator:^(SSubscriber *subscriber)
+    {
+        MTRequest *request = [[MTRequest alloc] init];
+        request.body = rpc;
+        [request setCompleted:^(id result, __unused NSTimeInterval timestamp, id error)
+        {
+            if (error == nil)
+            {
+                [subscriber putNext:result];
+                [subscriber putCompletion];
+            }
+            else
+            {
+                [subscriber putError:error];
+            }
+        }];
+        
+        [request setProgressUpdated:^(float value, __unused NSUInteger completeSize)
+        {
+            [subscriber putNext:@(value)];
+        }];
+        
+        [request setShouldContinueExecutionWithErrorContext:^bool(__unused MTRequestErrorContext *errorContext)
+        {
+            return true;
+        }];
+        
+        [(TGNetworkWorker *)worker.worker addRequest:request];
+        id requestToken = request.internalId;
+        
+        return [[SBlockDisposable alloc] initWithBlock:^
+        {
+            [(TGNetworkWorker *)worker.worker cancelRequestById:requestToken];
+        }];
+    }];
+}
+
+- (NSString *)extractNetworkErrorType:(id)error
+{
+    if ([error isKindOfClass:[TLError$richError class]])
+    {
+        if (((TLError$richError *)error).type.length != 0)
+            return ((TLError$richError *)error).type;
+        
+        NSString *errorDescription = nil;
+        if ([error isKindOfClass:[TLError$error class]])
+            errorDescription = ((TLError$error *)error).text;
+        else if ([error isKindOfClass:[TLError$richError class]])
+            errorDescription = ((TLError$richError *)error).n_description;
+        
+        NSMutableString *errorString = [[NSMutableString alloc] init];
+        for (int i = 0; i < (int)errorDescription.length; i++)
+        {
+            unichar c = [errorDescription characterAtIndex:i];
+            if (c == ':')
+                break;
+            
+            [errorString appendString:[[NSString alloc] initWithCharacters:&c length:1]];
+        }
+        
+        if (errorString.length != 0)
+            return errorString;
+    }
+    else if ([error isKindOfClass:[MTRpcError class]])
+        return ((MTRpcError *)error).errorDescription;
+    
+    return nil;
+}
+
+- (void)contextIsPasswordRequiredUpdated:(MTContext *)context datacenterId:(NSInteger)datacenterId
+{
+    if (context == _context && datacenterId == _mtProto.datacenterId)
+    {
+        bool passwordRequired = [context isPasswordInputRequiredForDatacenterWithId:datacenterId];
+        TGDispatchOnMainThread(^
+        {
+            if (passwordRequired)
+            {
+                bool alreadyPresentedEntryController = false;
+                
+                if ([TGAppDelegateInstance.loginNavigationController.topViewController isKindOfClass:[TGLoginPasswordController class]])
+                {
+                    alreadyPresentedEntryController = true;
+                }
+                if (_currentPasswordEntryWindow != nil)
+                    alreadyPresentedEntryController = true;
+                
+                if (!alreadyPresentedEntryController)
+                {
+                    if (TGAppDelegateInstance.loginNavigationController.presentingViewController != nil)
+                    {
+                        NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:TGAppDelegateInstance.loginNavigationController.viewControllers];
+                        [viewControllers removeLastObject];
+                        [viewControllers addObject:[[TGLoginPasswordController alloc] init]];
+                        [TGAppDelegateInstance.loginNavigationController setViewControllers:viewControllers animated:true];
+                    }
+                    else if (_currentPasswordEntryWindow == nil)
+                    {
+                        _currentPasswordEntryWindow = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                        
+                        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[[[TGLoginPasswordController alloc] init]] navigationBarClass:[TGTransparentNavigationBar class]];
+                        
+                        _currentPasswordEntryWindow.rootViewController = navigationController;
+                        _currentPasswordEntryWindow.hidden = false;
+                        
+                        CGRect defaultFrame = _currentPasswordEntryWindow.rootViewController.view.frame;
+                        CGRect frame = defaultFrame;
+                        frame.origin.y = defaultFrame.size.height;
+                        _currentPasswordEntryWindow.rootViewController.view.frame = frame;
+                        [UIView animateWithDuration:0.3 delay:0.0 options:[TGViewController preferredAnimationCurve] << 16 animations:^
+                        {
+                            _currentPasswordEntryWindow.rootViewController.view.frame = defaultFrame;
+                        } completion:nil];
+                    }
+                }
+            }
+            else if (_currentPasswordEntryWindow != nil)
+            {
+                CGRect defaultFrame = _currentPasswordEntryWindow.rootViewController.view.frame;
+                CGRect frame = defaultFrame;
+                frame.origin.y = defaultFrame.size.height;
+                UIWindow *window = _currentPasswordEntryWindow;
+                _currentPasswordEntryWindow = nil;
+                [UIView animateWithDuration:0.3 delay:0.0 options:[TGViewController preferredAnimationCurve] << 16 animations:^
+                {
+                    window.rootViewController.view.frame = frame;
+                } completion:^(__unused BOOL finished)
+                {
+                    window.hidden = true;
+                }];
+            }
+        });
     }
 }
 

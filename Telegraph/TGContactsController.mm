@@ -7,7 +7,6 @@
 #import "TGDatabase.h"
 
 #import "TGAppDelegate.h"
-#import "TGTabletMainViewController.h"
 
 #import "TGPhoneUtils.h"
 
@@ -70,9 +69,9 @@
 #import "TGCreateContactController.h"
 #import "TGPhonebookUserInfoController.h"
 #import "TGCreateEncryptedChatController.h"
-#import "TGBroadcastListsController.h"
 #import "TGSelectContactController.h"
-#import "TGAlternateBroadcastListsController.h"
+
+#import "TGAlertView.h"
 
 #include <vector>
 #include <map>
@@ -82,15 +81,12 @@
 
 #import <objc/message.h>
 
-#pragma mark -
+#import "TGApplicationFeatures.h"
 
-static UIImage *searchBarBackgroundNormal()
-{
-    static UIImage *image = nil;
-    if (image == nil)
-        image = [UIImage imageNamed:@"SearchBarBackground.png"];
-    return image;
-}
+#import "TGCreateGroupController.h"
+#import "TGChannelIntroController.h"
+
+#pragma mark -
 
 static bool TGContactListItemSortByLastNameFunction(const TGUser *item1, const TGUser *item2)
 {
@@ -144,6 +140,18 @@ static bool TGContactListItemSortByFirstNameFunction(const TGUser *item1, const 
     }
     
     return result == NSOrderedAscending;
+}
+
+static bool TGContactListItemSortByLastSeenFunction(const TGUser *item1, const TGUser *item2)
+{
+    TGUserPresence presence1 = item1.presence;
+    TGUserPresence presence2 = item2.presence;
+    
+    if (presence1.online != presence2.online)
+        return presence1.online;
+    else if (presence2.lastSeen < presence1.lastSeen)
+        return true;
+    return false;
 }
 
 class TGContactListSection
@@ -206,6 +214,11 @@ public:
     {
         std::sort(items.begin(), items.end(), TGContactListItemSortByLastNameFunction);
     }
+    
+    void sortByLastSeen()
+    {
+        std::sort(items.begin(), items.end(), TGContactListItemSortByLastSeenFunction);
+    }
 };
 
 @interface TGContactListSectionListHolder : NSObject
@@ -251,6 +264,8 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
     
     UIView *_headerBackgroundView;
     UIView *_navigationBarBackgroundView;
+    
+    bool _updateContactListOnShow;
 }
 
 @property (nonatomic, strong) TGToolbarButton *doneButton;
@@ -266,7 +281,10 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
 @property (nonatomic, strong) TGTokenFieldView *tokenFieldView;
 
 @property (nonatomic, strong) NSString *searchString;
-@property (nonatomic, strong) NSArray *searchResults;
+@property (nonatomic, strong) NSString *uiSearchString;
+
+@property (nonatomic, strong) NSArray *localSearchResults;
+@property (nonatomic, strong) NSArray *globalSearchResults;
 
 @property (nonatomic, strong) UIView *searchTableViewBackground;
 @property (nonatomic, strong) UITableView *searchTableView;
@@ -414,11 +432,6 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
     [_tableView setContentOffset:CGPointMake(0, -_tableView.contentInset.top) animated:true];
 }
 
-static inline UIImage *buttonStretchableImage(UIImage *image)
-{
-    return [image stretchableImageWithLeftCapWidth:(int)(image.size.width / 2) topCapHeight:0];
-}
-
 - (void)loadView
 {
     [super loadView];
@@ -464,7 +477,7 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
         [(TGListsTableView *)_tableView adjustBehaviour];
         
         _searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-        _searchBar.placeholder = TGLocalized(@"DialogList.SearchLabel");
+        _searchBar.placeholder = TGLocalized(@"Contacts.SearchLabel");
         
         for (UIView *subview in [_searchBar subviews])
         {
@@ -489,7 +502,9 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
         {
             _tableView.tableHeaderView = _searchBar;
             
-            [self updateSelectionInterface];
+            if ((_contactsMode & TGContactsModeModalInvite) == TGContactsModeModalInvite) {
+                [self updateSelectionInterface];
+            }
             [self updateSelectionControls:false];
         }
         else
@@ -508,6 +523,7 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
     if ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose)
     {
         _tokenFieldView = [[TGTokenFieldView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 44)];
+        _tokenFieldView.placeholder = _composePlaceholder;
         _tokenFieldView.frame = CGRectMake(0, [self tokenFieldOffset], self.view.frame.size.width, [_tokenFieldView preferredHeight]);
         _tokenFieldView.delegate = self;
         [self.view addSubview:_tokenFieldView];
@@ -525,7 +541,7 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
         _searchTableViewBackground.backgroundColor = [UIColor whiteColor];
         _searchTableViewBackground.autoresizingMask = _searchTableView.autoresizingMask;
         
-        self.scrollViewsForAutomaticInsetsAdjustment = [[NSArray alloc] initWithObjects:_searchTableView, nil];
+        self.scrollViewsForAutomaticInsetsAdjustment = @[_tableView, _searchTableView];
         
         [self updateTableFrame:false collapseSearch:false];
     }
@@ -631,7 +647,7 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
         float additionalOffset = isPortrait ? ([TGViewController isWidescreen] ? -20 : -15) : 12;
         
         CGSize labelSize = [titleLabelView sizeThatFits:CGSizeMake(265, 1000)];
-        titleLabelView.frame = CGRectMake(floorf((container.frame.size.width - labelSize.width) / 2), -36 + additionalOffset, labelSize.width, labelSize.height);
+        titleLabelView.frame = CGRectMake(CGFloor((container.frame.size.width - labelSize.width) / 2), -36 + additionalOffset, labelSize.width, labelSize.height);
         
         NSString *model = @"iPhone";
         NSString *rawModel = [[[UIDevice currentDevice] model] lowercaseString];
@@ -659,7 +675,7 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
             subtitleLabelView.text = rawText;
         
         CGSize subtitleLabelSize = [subtitleLabelView sizeThatFits:CGSizeMake(isPortrait ? 210 : 480, 1000)];
-        subtitleLabelView.frame = CGRectMake(floorf((container.frame.size.width - subtitleLabelSize.width) / 2), 41 + additionalOffset, subtitleLabelSize.width, subtitleLabelSize.height);
+        subtitleLabelView.frame = CGRectMake(CGFloor((container.frame.size.width - subtitleLabelSize.width) / 2), 41 + additionalOffset, subtitleLabelSize.width, subtitleLabelSize.height);
     }
 }
 
@@ -843,6 +859,12 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
     }
     
     [self updatePhonebookAccessLayout:self.interfaceOrientation];
+    
+    if (_updateContactListOnShow)
+    {
+        _updateContactListOnShow = false;
+        [self updateContactList];
+    }
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -939,7 +961,7 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
                             {
                                 [_searchTableView removeFromSuperview];
                                 [_searchTableViewBackground removeFromSuperview];
-                                _searchResults = nil;
+                                _localSearchResults = nil;
                                 [_searchTableView reloadData];
                             }
                         }];
@@ -1174,7 +1196,7 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
         return _sectionList.size();
     }
     else
-        return 1;
+        return 2;
 }
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
@@ -1186,14 +1208,22 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
         
         if (section >= 0 && section < (int)_sectionList.size() && _sectionList[section]->letter != nil)
         {
-            return [self generateSectionHeader:_sectionList[section]->letter first:section == 0 && (!(_contactsMode & TGContactsModeSearchDisabled) || (_contactsMode & TGContactsModeCompose) == TGContactsModeCompose)];
+            return [self generateSectionHeader:_sectionList[section]->letter first:section == 0 && (!(_contactsMode & TGContactsModeSearchDisabled) || (_contactsMode & TGContactsModeCompose) == TGContactsModeCompose) wide:false];
         }
+    }
+    else if (section == 0)
+    {
+        return _localSearchResults.count == 0 ? nil : [self generateSectionHeader:TGLocalized(@"Contacts.Title") first:false wide:true];
+    }
+    else if (section == 1)
+    {
+        return _globalSearchResults.count == 0 ? nil : [self generateSectionHeader:TGLocalized(@"Contacts.GlobalSearch") first:false wide:true];
     }
     
     return nil;
 }
 
-- (UIView *)generateSectionHeader:(NSString *)title first:(bool)first
+- (UIView *)generateSectionHeader:(NSString *)title first:(bool)first wide:(bool)wide
 {
     UIView *sectionContainer = nil;
     
@@ -1228,24 +1258,27 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
         
         UILabel *sectionLabel = [[UILabel alloc] init];
         sectionLabel.tag = 100;
-        sectionLabel.font = TGBoldSystemFontOfSize(17);
         sectionLabel.backgroundColor = sectionView.backgroundColor;
         sectionLabel.textColor = [UIColor blackColor];
         sectionLabel.numberOfLines = 1;
-        
-        sectionLabel.text = title;
-        [sectionLabel sizeToFit];
-        sectionLabel.frame = CGRectOffset(sectionLabel.frame, 14, TGRetinaPixel);
         
         [sectionContainer addSubview:sectionLabel];
         
         [reusableList addObject:sectionContainer];
     }
+
+    UILabel *sectionLabel = (UILabel *)[sectionContainer viewWithTag:100];
+    sectionLabel.font = wide ? TGMediumSystemFontOfSize(14) : TGBoldSystemFontOfSize(17);
+    sectionLabel.text = title;
+    sectionLabel.textColor = wide ? UIColorRGB(0x8e8e93) : [UIColor blackColor];
+    [sectionLabel sizeToFit];
+    if (wide)
+    {
+        sectionLabel.frame = CGRectMake(8.0f, 4.0f + TGRetinaPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
+    }
     else
     {
-        UILabel *sectionLabel = (UILabel *)[sectionContainer viewWithTag:100];
-        sectionLabel.text = title;
-        [sectionLabel sizeToFit];
+        sectionLabel.frame = CGRectMake(14.0f, TGRetinaPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
     }
     
     return sectionContainer;
@@ -1262,6 +1295,16 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
         {
             return 22.0f;
         }
+    }
+    else if (section == 0)
+    {
+        if (_localSearchResults.count != 0)
+            return 28.0f;
+    }
+    else if (section == 1)
+    {
+        if (_globalSearchResults.count != 0)
+            return 28.0f;
     }
     
     return 0;
@@ -1306,9 +1349,13 @@ static inline UIImage *buttonStretchableImage(UIImage *image)
         if (section >= 0 && section < (int)_sectionList.size())
             return (int)(_sectionList[section]->items.size());
     }
-    else
+    else if (section == 0)
     {
-        return _searchResults.count;
+        return _localSearchResults.count;
+    }
+    else if (section == 1)
+    {
+        return _globalSearchResults.count;
     }
     
     return 0;
@@ -1362,7 +1409,7 @@ static void adjustCellForSelectionEnabled(TGContactCell *contactCell, bool selec
     [contactCell setSelectionEnabled:selectionEnabled animated:animated];
 }
 
-static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, int currentSortOrder, bool animated, std::map<int, TGUser *> const &selectedUsers, __unused bool showMessageBadge, bool isDisabled)
+static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, int currentSortOrder, bool animated, std::map<int, TGUser *> const &selectedUsers, __unused bool showMessageBadge, bool isDisabled, bool isSearch, bool isGlobalSearch, NSString *searchString)
 {
     contactCell.hideAvatar = user.uid <= 0;
     contactCell.itemId = user.uid;
@@ -1407,7 +1454,30 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, int curr
     }
     
     bool subtitleActive = false;
-    contactCell.subtitleText = subtitleStringForUser(user, subtitleActive);
+    
+    if (isGlobalSearch || (searchString.length != 0 && isSearch && [user.userName.lowercaseString hasPrefix:[searchString lowercaseString]]))
+    {
+        NSString *string = [[NSString alloc] initWithFormat:@"@%@", user.userName];
+        NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:string attributes:@{NSFontAttributeName: TGSystemFontOfSize(14.0f)}];
+        [attributedString addAttribute:NSForegroundColorAttributeName value:UIColorRGB(0x888888) range:NSMakeRange(0, string.length)];
+        if (searchString.length != 0)
+        {
+            NSRange range = [[string lowercaseString] rangeOfString:[searchString lowercaseString]];
+            if (range.location != NSNotFound)
+            {
+                if (range.location == 1)
+                {
+                    range.location = 0;
+                    range.length++;
+                }
+                [attributedString addAttribute:NSForegroundColorAttributeName value:TGAccentColor() range:range];
+            }
+        }
+        contactCell.subtitleAttributedText = attributedString;
+    }
+    else
+        contactCell.subtitleText = subtitleStringForUser(user, subtitleActive);
+    
     contactCell.subtitleActive = subtitleActive;
     
     [contactCell updateFlags:selectedUsers.find(contactCell.itemId) != selectedUsers.end() animated:false force:true];
@@ -1425,17 +1495,11 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
         int lastSeen = user.presence.lastSeen;
         if (user.presence.online)
         {
-            subtitleText = TGLocalizedStatic(@"Presence.online");
             localSubtitleActive = true;
+            subtitleText = TGLocalized(@"Presence.online");
         }
-        else if (lastSeen == 0)
-            subtitleText = TGLocalizedStatic(@"Presence.offline");
-        else if (lastSeen < 0)
-            subtitleText = TGLocalizedStatic(@"Presence.invisible");
         else
-        {
             subtitleText = [TGDateUtils stringForRelativeLastSeen:lastSeen];
-        }
     }
     else
     {
@@ -1478,6 +1542,8 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
     //TGLog(@"Cell for row");
     
     TGUser *user = nil;
+    bool isGlobalSearch = false;
+    bool isSearch = false;
     
     if (tableView == _tableView)
     {
@@ -1494,10 +1560,17 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             }
         }
     }
-    else
+    else if (indexPath.section == 0)
     {
-        if (indexPath.row < (int)_searchResults.count)
-            user = [_searchResults objectAtIndex:indexPath.row];
+        isSearch = true;
+        if (indexPath.row < (int)_localSearchResults.count)
+            user = [_localSearchResults objectAtIndex:indexPath.row];
+    }
+    else if (indexPath.section == 1)
+    {
+        isGlobalSearch = true;
+        if (indexPath.row < (int)_globalSearchResults.count)
+            user = [_globalSearchResults objectAtIndex:indexPath.row];
     }
     
     if (user != nil && (user.uid == INT_MAX || user.uid == INT_MAX - 1 || user.uid == INT_MAX - 2))
@@ -1521,7 +1594,12 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
         else if (user.uid == INT_MAX - 1)
             mode = TGFlatActionCellModeCreateEncrypted;
         else if (user.uid == INT_MAX - 2)
-            mode = TGFlatActionCellModeBroadcasts;
+        {
+            if (_contactsMode & TGContactsModeCreateGroupOption)
+                mode = TGFlatActionCellModeCreateChannel;
+            else
+                mode = TGFlatActionCellModeChannels;
+        }
         else
             mode = TGFlatActionCellModeCreateGroup;
 
@@ -1557,7 +1635,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
         
         adjustCellForSelectionEnabled(contactCell, cellSelectionEnabled, false);
         
-        adjustCellForUser(contactCell, user, _currentSortOrder, false, _selectedUsers, (_contactsMode & TGContactsModeMainContacts) == TGContactsModeMainContacts, _disabledUserIds.find(user.uid) != _disabledUserIds.end());
+        adjustCellForUser(contactCell, user, _currentSortOrder, false, _selectedUsers, (_contactsMode & TGContactsModeMainContacts) == TGContactsModeMainContacts, _disabledUserIds.find(user.uid) != _disabledUserIds.end(), isSearch, isGlobalSearch, _uiSearchString);
         
         //TGLog(@"Initializing cell");
         
@@ -1585,10 +1663,10 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    if (TGIsPad())
+    if (TGIsPad() || _deselectAutomatically)
         [tableView deselectRowAtIndexPath:indexPath animated:true];
     
-    if ((_contactsMode & TGContactsModeManualFirstSection) && indexPath.section == 0)
+    if (tableView == _tableView && (_contactsMode & TGContactsModeManualFirstSection) && indexPath.section == 0)
     {
         [self didSelectRowInFirstSection:indexPath.row];
         return;
@@ -1609,10 +1687,18 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             }
         }
     }
-    else
+    else if (indexPath.section == 0)
     {
-        if (indexPath.row < (int)_searchResults.count)
-            user = [_searchResults objectAtIndex:indexPath.row];
+        if (indexPath.row < (int)_localSearchResults.count)
+            user = [_localSearchResults objectAtIndex:indexPath.row];
+        
+        if (TGIsPad())
+            [_searchMixin.searchBar endEditing:true];
+    }
+    else if (indexPath.section == 1)
+    {
+        if (indexPath.row < (int)_globalSearchResults.count)
+            user = [_globalSearchResults objectAtIndex:indexPath.row];
         
         if (TGIsPad())
             [_searchMixin.searchBar endEditing:true];
@@ -1625,7 +1711,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             if (user.uid == INT_MAX - 1)
                 [self encryptionItemSelected];
             else if (user.uid == INT_MAX - 2)
-                [self broadcastsItemSelected];
+                [self channelsItemSelected];
             else
                 [self actionItemSelected];
         }
@@ -1657,36 +1743,23 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
 - (void)encryptionItemSelected
 {
     TGCreateEncryptedChatController *createEncryptedChatController = [[TGCreateEncryptedChatController alloc] init];
-    
-    if (!TGIsPad())
-    {
-        [TGAppDelegateInstance.mainNavigationController pushViewController:createEncryptedChatController animated:true];
-    }
-    else
-    {
-        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[createEncryptedChatController]];
-        TGAppDelegateInstance.tabletMainViewController.detailViewController = navigationController;
-    }
+    [TGAppDelegateInstance.rootController pushContentController:createEncryptedChatController];
 }
 
-- (void)broadcastsItemSelected
+- (void)channelsItemSelected
 {
-    UIViewController *broadcastListsController = [[TGAlternateBroadcastListsController alloc] init];
+    bool didShowIntro = [[[NSUserDefaults standardUserDefaults] objectForKey:@"didShowChannelIntro_v1"] boolValue];
+#ifdef INTERNAL_RELEASE
+    didShowIntro = false;
+#endif
     
-    if (!TGIsPad())
-    {
-        NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:TGAppDelegateInstance.mainNavigationController.viewControllers];
-        [viewControllers addObject:broadcastListsController];
-        [TGAppDelegateInstance.mainNavigationController setViewControllers:viewControllers animated:true];
-    }
+    TGViewController *controller = nil;
+    if (didShowIntro || TGIsPad())
+        controller = [[TGCreateGroupController alloc] initWithCreateChannel:true];
     else
-    {
-        NSMutableArray *viewControllers = [[NSMutableArray alloc] init];
-        [viewControllers addObject:broadcastListsController];
-        
-        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:viewControllers];
-        TGAppDelegateInstance.tabletMainViewController.detailViewController = navigationController;
-    }
+        controller = [[TGChannelIntroController alloc] init];
+    
+    [TGAppDelegateInstance.rootController pushContentController:controller];
 }
 
 - (void)singleUserSelected:(TGUser *)user
@@ -1850,7 +1923,8 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
                 
                 dispatch_async(dispatch_get_main_queue(), ^
                 {
-                    self.searchResults = searchResults;
+                    self.localSearchResults = searchResults;
+                    self.globalSearchResults = nil;
                     [searchMixin reloadSearchResults];
                     [searchMixin setSearchResultsTableViewHidden:false];
                 });
@@ -1862,14 +1936,21 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             {
                 [ActionStageInstance() removeWatcher:self fromPath:self.currentSearchPath];
                 self.currentSearchPath = nil;
+                TGDispatchOnMainThread(^
+                {
+                    _searchBar.showActivity = false;
+                });
             }
             
-            self.searchString = [[queryString stringByReplacingOccurrencesOfString:@" +" withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, queryString.length)] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            NSString *searchString = [[queryString stringByReplacingOccurrencesOfString:@" +" withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, queryString.length)] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            self.searchString = searchString;
             if (self.searchString.length == 0)
             {
                 dispatch_async(dispatch_get_main_queue(), ^
                 {
-                    self.searchResults = nil;
+                    _uiSearchString = searchString;
+                    self.localSearchResults = nil;
+                    self.globalSearchResults = nil;
                     if ((self.contactsMode & TGContactsModeCompose) == TGContactsModeCompose)
                         [self.searchTableView reloadData];
                     else
@@ -1882,6 +1963,35 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             else
             {
                 self.currentSearchPath = [NSString stringWithFormat:@"/tg/contacts/search/(%ld)", (long)[self.searchString hash]];
+                TGDispatchOnMainThread(^
+                {
+                    _uiSearchString = searchString;
+                    _searchBar.showActivity = true;
+                    
+                    if (_globalSearchResults.count != 0)
+                    {
+                        NSString *normalizedSearchString = [[searchString lowercaseString] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+                        NSMutableArray *filteredGlobalSearchResults = [[NSMutableArray alloc] init];
+                        for (TGUser *user in _globalSearchResults)
+                        {
+                            bool match = true;
+                            if ([[user.userName lowercaseString] rangeOfString:normalizedSearchString].location == NSNotFound)
+                            {
+                                match = false;
+                            }
+                            
+                            if (match && (_contactsMode & TGContactsModeIgnorePrivateBots))
+                            {
+                                match = user.botKind != TGBotKindPrivate;
+                            }
+                            
+                            if (match)
+                                [filteredGlobalSearchResults addObject:user];
+                        }
+                        _globalSearchResults = filteredGlobalSearchResults;
+                        [searchMixin reloadSearchResults];
+                    }
+                });
                 [ActionStageInstance() requestActor:self.currentSearchPath options:[NSDictionary dictionaryWithObjectsAndKeys:queryString, @"query", [[NSNumber alloc] initWithInt:(_contactsMode & TGContactsModeShowSelf) ? 0 : TGTelegraphInstance.clientUserId], @"ignoreUid", [[NSNumber alloc] initWithBool:(self.contactsMode & TGContactsModePhonebook) == TGContactsModePhonebook], @"searchPhonebook", nil] watcher:self];
             }
         }
@@ -1899,23 +2009,6 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             break;
         }
     }
-}
-
-static UIView *findControl(UIView *view)
-{
-    if ([view isMemberOfClass:[UIControl class]])
-    {
-        return view;
-    }
-    
-    for (UIView *subview in view.subviews)
-    {
-        UIView *result = findControl(subview);
-        if (result != nil)
-            return result;
-    }
-
-    return nil;
 }
 
 - (TGUser *)findUser:(int)uid
@@ -1957,6 +2050,8 @@ static UIView *findControl(UIView *view)
 
 - (void)setDisabledUsers:(NSArray *)disabledUsers
 {
+    _disabledUsers = disabledUsers;
+    
     _disabledUserIds.clear();
     for (NSNumber *nUid in disabledUsers)
     {
@@ -2208,7 +2303,6 @@ static UIView *findControl(UIView *view)
     {
         if (count == 0)
         {
-#warning TODO
         }
         else
         {
@@ -2388,7 +2482,7 @@ static UIView *findControl(UIView *view)
     
     if (result == MessageComposeResultFailed)
     {
-        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Contacts.FailedToSendInvitesMessage") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles: nil];
+        TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Contacts.FailedToSendInvitesMessage") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles: nil];
         [alertView show];
     }
     else if (result == MessageComposeResultSent)
@@ -2462,6 +2556,10 @@ static UIView *findControl(UIView *view)
     {
         int itemId = [[options objectForKey:@"itemId"] intValue];
         bool selected = [[options objectForKey:@"selected"] boolValue];
+        
+        if ([_disabledUsers containsObject:@(itemId)]) {
+            return;
+        }
         
         if (_usersSelectedLimit > 0 && !selected && [self selectedContactsCount] >= _usersSelectedLimit)
         {
@@ -2545,6 +2643,8 @@ static UIView *findControl(UIView *view)
             changedUidToIndex->insert(std::pair<int, int>(user.uid, index));
         }
         
+        bool changedAnyPresence = false;
+        
         NSMutableArray *newContactList = nil;
         index = -1;
         for (TGUser *user in _currentContactList)
@@ -2558,48 +2658,64 @@ static UIView *findControl(UIView *view)
                     newContactList = [[NSMutableArray alloc] initWithArray:_currentContactList];
                 
                 [newContactList replaceObjectAtIndex:index withObject:[users objectAtIndex:it->second]];
+                
+                TGUser *changedUser = users[it->second];
+                if (user.presence.lastSeen != changedUser.presence.lastSeen || user.presence.online != changedUser.presence.online)
+                {
+                    changedAnyPresence = true;
+                }
             }
         }
         if (newContactList != nil)
             _currentContactList = newContactList;
         
         dispatch_async(dispatch_get_main_queue(), ^
-        {   
-            int sectionIndex = -1;
-            for (std::vector<std::tr1::shared_ptr<TGContactListSection> >::iterator section = _sectionList.begin(); section != _sectionList.end(); section++)
+        {
+            if (!changedAnyPresence)
             {
-                sectionIndex++;
-                
-                int itemIndex = -1;
-                for (std::vector<TGUser *>::iterator item = (*section)->items.begin(); item != (*section)->items.end(); item++)
+                int sectionIndex = -1;
+                for (std::vector<std::tr1::shared_ptr<TGContactListSection> >::iterator section = _sectionList.begin(); section != _sectionList.end(); section++)
                 {
-                    itemIndex++;
+                    sectionIndex++;
                     
-                    std::map<int, int>::iterator it = changedUidToIndex->find((*item).uid);
-                    if (it != changedUidToIndex->end())
+                    int itemIndex = -1;
+                    for (std::vector<TGUser *>::iterator item = (*section)->items.begin(); item != (*section)->items.end(); item++)
                     {
-                        TGUser *user = [users objectAtIndex:it->second];
-                        *item = user;
+                        itemIndex++;
                         
-                        UITableViewCell *cell = [_tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:itemIndex inSection:sectionIndex]];
-                        if (cell != nil && [cell isKindOfClass:[TGContactCell class]])
+                        std::map<int, int>::iterator it = changedUidToIndex->find((*item).uid);
+                        if (it != changedUidToIndex->end())
                         {
-                            TGContactCell *contactCell = (TGContactCell *)cell;
+                            TGUser *user = [users objectAtIndex:it->second];
+                            *item = user;
                             
-                            adjustCellForUser(contactCell, user, _currentSortOrder, true, _selectedUsers, (_contactsMode & TGContactsModeMainContacts) == TGContactsModeMainContacts, _disabledUserIds.find(user.uid) != _disabledUserIds.end());
+                            UITableViewCell *cell = [_tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:itemIndex inSection:sectionIndex]];
+                            if (cell != nil && [cell isKindOfClass:[TGContactCell class]])
+                            {
+                                TGContactCell *contactCell = (TGContactCell *)cell;
+                                
+                                adjustCellForUser(contactCell, user, _currentSortOrder, true, _selectedUsers, (_contactsMode & TGContactsModeMainContacts) == TGContactsModeMainContacts, _disabledUserIds.find(user.uid) != _disabledUserIds.end(), false, false, nil);
+                            }
                         }
                     }
                 }
             }
+            else
+            {
+                if (self.isViewLoaded && self.view.window != nil)
+                    [self updateContactList];
+                else
+                    _updateContactListOnShow = true;
+            }
             
-            if (_searchResults.count != 0)
+            if (_localSearchResults.count != 0)
             {
                 NSMutableArray *newSearchResults = nil;
                 
-                int count = (int)_searchResults.count;
+                int count = (int)_localSearchResults.count;
                 for (int i = 0; i < count; i++)
                 {
-                    TGUser *user = [_searchResults objectAtIndex:i];
+                    TGUser *user = [_localSearchResults objectAtIndex:i];
                     if (user.uid < 0)
                         continue;
                     
@@ -2607,20 +2723,20 @@ static UIView *findControl(UIView *view)
                     if (it != changedUidToIndex->end())
                     {
                         if (newSearchResults == nil)
-                            newSearchResults = [[NSMutableArray alloc] initWithArray:_searchResults];
+                            newSearchResults = [[NSMutableArray alloc] initWithArray:_localSearchResults];
                         
                         TGUser *newUser = [users objectAtIndex:it->second];
                         [newSearchResults replaceObjectAtIndex:i withObject:newUser];
                         id cell = [_searchMixin.searchResultsTableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:0]];
                         if ([cell isKindOfClass:[TGContactCell class]])
                         {
-                            adjustCellForUser(cell, newUser, _currentSortOrder, true, _selectedUsers, false, _disabledUserIds.find(user.uid) != _disabledUserIds.end());
+                            adjustCellForUser(cell, newUser, _currentSortOrder, true, _selectedUsers, false, _disabledUserIds.find(user.uid) != _disabledUserIds.end(), false, false, nil);
                         }
                     }
                 }
                 
                 if (newSearchResults != nil)
-                   _searchResults = newSearchResults;
+                   _localSearchResults = newSearchResults;
             }
         });
     }
@@ -2680,14 +2796,45 @@ static UIView *findControl(UIView *view)
     {
         _currentSearchPath = nil;
         
-        if (resultCode == ASStatusSuccess)
+        TGDispatchOnMainThread(^
         {
-            NSDictionary *dict = ((SGraphObjectNode *)result).object;
-            NSArray *users = [dict objectForKey:@"users"];
+            _searchBar.showActivity = false;
+        });
+    }
+}
+
+- (void)actorMessageReceived:(NSString *)path messageType:(NSString *)messageType message:(id)message
+{
+    if ([path isEqualToString:_currentSearchPath])
+    {
+        if ([messageType isEqualToString:@"localResults"])
+        {
+            NSArray *users = [message objectForKey:@"users"];
             
             dispatch_async(dispatch_get_main_queue(), ^
             {
-                _searchResults = users;
+                _localSearchResults = users;
+                
+                if ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose)
+                {
+                    [_searchTableView reloadData];
+                }
+                else
+                {
+                    [_searchMixin reloadSearchResults];
+                    [_searchMixin setSearchResultsTableViewHidden:false];
+                }
+            });
+        }
+        else if ([messageType isEqualToString:@"globalResults"])
+        {
+            NSArray *users = [message objectForKey:@"users"];
+            if ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose)
+                users = @[];
+            
+            dispatch_async(dispatch_get_main_queue(), ^
+            {
+                _globalSearchResults = users;
                 
                 if ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose)
                 {
@@ -3070,7 +3217,9 @@ static UIView *findControl(UIView *view)
     
     for (std::vector<std::tr1::shared_ptr<TGContactListSection> >::iterator it = newSectionListTelegraph.begin(); it != newSectionListTelegraph.end(); it++)
     {
-        if (sortOrder & TGContactListSortOrderFirst)
+        if (_contactsMode & TGContactsModeSortByLastSeen)
+            it->get()->sortByLastSeen();
+        else if (sortOrder & TGContactListSortOrderFirst)
             it->get()->sortByFirstName();
         else
             it->get()->sortByLastName();
@@ -3105,9 +3254,11 @@ static UIView *findControl(UIView *view)
             serviceUser1.uid = INT_MAX - 1;
             serviceSection->addItem(serviceUser1);
             
-            TGUser *serviceUser2 = [[TGUser alloc] init];
-            serviceUser2.uid = INT_MAX - 2;
-            serviceSection->addItem(serviceUser2);
+            if ((_contactsMode & TGContactsModeCreateGroupOption) == TGContactsModeCreateGroupOption) {
+                TGUser *serviceUser2 = [[TGUser alloc] init];
+                serviceUser2.uid = INT_MAX - 2;
+                serviceSection->addItem(serviceUser2);
+            }
         }
     }
     
@@ -3147,7 +3298,9 @@ static UIView *findControl(UIView *view)
         {
             [_tableView reloadData];
             
-            [self updateSelectionInterface];
+            if ((_contactsMode & TGContactsModeModalInvite) == TGContactsModeModalInvite) {
+                [self updateSelectionInterface];
+            }
             
             if (selectedUid != 0)
             {

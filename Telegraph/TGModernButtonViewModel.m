@@ -28,6 +28,7 @@
         [view setTitle:_title];
         [view setTitleFont:_font];
         [view setImage:_image];
+        [view setExtendedEdgeInsets:_extendedEdgeInsets];
         
         [view setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     }
@@ -115,7 +116,7 @@
         {
             CGRect bounds = self.bounds;
             CGSize imageSize = _image.size;
-            [_image drawInRect:CGRectMake(floorf((bounds.size.width - imageSize.width) / 2.0f), floorf((bounds.size.height - imageSize.height) / 2.0f), imageSize.width, imageSize.height)];
+            [_image drawInRect:CGRectMake(CGFloor((bounds.size.width - imageSize.width) / 2.0f), CGFloor((bounds.size.height - imageSize.height) / 2.0f), imageSize.width, imageSize.height)];
         }
     }
 }

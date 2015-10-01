@@ -9,13 +9,14 @@
 #import "TGCreateEncryptedChatController.h"
 
 #import "TGAppDelegate.h"
-#import "TGTabletMainViewController.h"
 
 #import "TGProgressWindow.h"
 
 #import "TGInterfaceManager.h"
 
 #import "TGConversation.h"
+
+#import "TGAlertView.h"
 
 @interface TGCreateEncryptedChatController ()
 {
@@ -66,7 +67,7 @@
             }
             else
             {
-                [[[UIAlertView alloc] initWithTitle:nil message:status == -2 ? [[NSString alloc] initWithFormat:TGLocalized(@"Profile.CreateEncryptedChatOutdatedError"), _user.displayFirstName, _user.displayFirstName] : TGLocalized(@"Profile.CreateEncryptedChatError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:status == -2 ? [[NSString alloc] initWithFormat:TGLocalized(@"Profile.CreateEncryptedChatOutdatedError"), _user.displayFirstName, _user.displayFirstName] : TGLocalized(@"Profile.CreateEncryptedChatError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
             }
         });
     }
@@ -86,7 +87,7 @@
 
 - (void)closePressed
 {
-    TGAppDelegateInstance.tabletMainViewController.detailViewController = nil;
+    [TGAppDelegateInstance.rootController clearContentControllers];
 }
 
 @end

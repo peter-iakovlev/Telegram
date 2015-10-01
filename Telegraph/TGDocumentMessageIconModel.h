@@ -2,8 +2,9 @@
 
 @interface TGDocumentMessageIconModel : TGModernViewModel
 
-@property (nonatomic, strong) NSString *fileExtension;
+@property (nonatomic, strong) NSString *fileName;
 
+@property (nonatomic) bool incoming;
 @property (nonatomic) int overlayType;
 @property (nonatomic) float progress;
 

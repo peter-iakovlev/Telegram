@@ -13,7 +13,9 @@
 @interface TGModernGalleryVideoItem : NSObject <TGModernGalleryItem>
 
 @property (nonatomic, strong, readonly) TGVideoMediaAttachment *videoMedia;
+@property (nonatomic, strong, readonly) NSString *previewUri;
+@property (nonatomic, strong, readonly) id videoDownloadArguments;
 
-- (instancetype)initWithVideoMedia:(TGVideoMediaAttachment *)videoMedia;
+- (instancetype)initWithVideoMedia:(TGVideoMediaAttachment *)videoMedia previewUri:(NSString *)previewUri;
 
 @end

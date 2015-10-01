@@ -5,7 +5,7 @@
 @property (nonatomic) NSString *validTitleFirst;
 @property (nonatomic) NSString *validTitleSecond;
 @property (nonatomic) int validTitleBoldMode;
-@property (nonatomic) float validWidth;
+@property (nonatomic) CGFloat validWidth;
 @property (nonatomic) CGPoint validTitleOffset;
 @property (nonatomic) bool validHighlighted;
 

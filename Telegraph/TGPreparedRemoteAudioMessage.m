@@ -31,6 +31,8 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
+    message.messageLifetime = self.messageLifetime;
     
     TGAudioMediaAttachment *audioAttachment = [[TGAudioMediaAttachment alloc] init];
     audioAttachment.audioId = _audioId;

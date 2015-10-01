@@ -8,11 +8,11 @@
 
 #import <Foundation/Foundation.h>
 
-@class MTKeychain;
+@protocol MTKeychain;
 
 @interface TGKeychainImport : NSObject
 
-+ (void)importKeychain:(MTKeychain *)keychain clientUserId:(int32_t)clientUserId;
++ (void)importKeychain:(id<MTKeychain>)keychain clientUserId:(int32_t)clientUserId;
 + (void)clearLegacyKeychain;
 
 @end

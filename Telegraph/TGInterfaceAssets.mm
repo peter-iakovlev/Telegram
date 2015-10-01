@@ -32,7 +32,7 @@ static inline int colorIndexForUid(int64_t uid)
         char buf[16];
         snprintf(buf, 16, "%lld%d", uid, TGTelegraphInstance.clientUserId);
         unsigned char digest[CC_MD5_DIGEST_LENGTH];
-        CC_MD5(buf, strlen(buf), digest);
+        CC_MD5(buf, (CC_LONG)strlen(buf), digest);
         colorIndex = ABS(digest[ABS(uid % 16)]) % numColors;
         
         uidToColor.insert(std::pair<int64_t, int>(uid, colorIndex));
@@ -57,7 +57,7 @@ static inline int colorIndexForGroupId(int64_t groupId)
         char buf[16];
         snprintf(buf, 16, "%lld", groupId);
         unsigned char digest[CC_MD5_DIGEST_LENGTH];
-        CC_MD5(buf, strlen(buf), digest);
+        CC_MD5(buf, (CC_LONG)strlen(buf), digest);
         colorIndex = ABS(digest[ABS(groupId % 16)]) % numColors;
         
         gidToColor.insert(std::pair<int64_t, int>(groupId, colorIndex));
@@ -121,6 +121,26 @@ static inline int colorIndexForGroupId(int64_t groupId)
 - (int)groupColorIndex:(int64_t)groupId
 {
     return colorIndexForGroupId(groupId);
+}
+
+- (UIColor *)groupColor:(int64_t)groupId
+{
+    static __strong UIColor *userColors[8];
+    
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        userColors[0] = UIColorRGB(0xfc5c51);
+        userColors[1] = UIColorRGB(0xfa790f);
+        userColors[2] = UIColorRGB(0x0fb297);
+        userColors[3] = UIColorRGB(0x3ca5ec);
+        userColors[4] = UIColorRGB(0x3d72ed);
+        userColors[5] = UIColorRGB(0x895dd5);
+        //userColors[6] = UIColorRGB(0x00a1c4);
+        //userColors[7] = UIColorRGB(0xeb7002);
+    });
+    
+    return userColors[colorIndexForGroupId(groupId) % 6];
 }
 
 + (UIColor *)listsBackgroundColor
@@ -291,9 +311,6 @@ static inline int colorIndexForGroupId(int64_t groupId)
     if (uid <= 0)
         return [self avatarPlaceholderGeneric];
     
-    if (uid == 333000)
-        return [UIImage imageNamed:@"DialogListAvatarSystem.png"];
-    
     int colorIndex = colorIndexForUid(uid);
     
     return [UIImage imageNamed:[[NSString alloc] initWithFormat:@"DialogListAvatar%d.png", colorIndex + 1]];
@@ -331,9 +348,6 @@ static inline int colorIndexForGroupId(int64_t groupId)
 {
     if (uid <= 0)
         return [self smallAvatarPlaceholderGeneric];
-    
-    if (uid == 333000)
-        return [UIImage imageNamed:@"SmallAvatarSystem.png"];
     
     int colorIndex = colorIndexForUid(uid);
     return [UIImage imageNamed:[[NSString alloc] initWithFormat:@"SmallAvatar%d.png", colorIndex + 1]];
@@ -467,9 +481,6 @@ static inline int colorIndexForGroupId(int64_t groupId)
 {
     if (uid <= 0)
         return [TGInterfaceAssets profileAvatarPlaceholderGeneric];
-    
-    if (uid == 333000)
-        return [UIImage imageNamed:@"ProfileAvatarSystem.png"];
     
     int colorIndex = colorIndexForUid(uid);
     

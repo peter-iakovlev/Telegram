@@ -34,6 +34,7 @@
         _titleLabel.backgroundColor = [UIColor whiteColor];
         _titleLabel.textColor = [UIColor blackColor];
         _titleLabel.highlightedTextColor = [UIColor whiteColor];
+        _titleLabel.textAlignment = NSTextAlignmentLeft;
         [self.contentView addSubview:_titleLabel];
         
         _disclosureIndicator = [[UIImageView alloc] initWithImage:[TGInterfaceAssets groupedCellDisclosureArrow] highlightedImage:[TGInterfaceAssets groupedCellDisclosureArrowHighlighted]];

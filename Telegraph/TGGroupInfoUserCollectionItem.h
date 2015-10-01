@@ -9,12 +9,16 @@
 #import "TGCollectionItem.h"
 
 @class TGUser;
+@class TGConversation;
 @class ASHandle;
 
 @interface TGGroupInfoUserCollectionItem : TGCollectionItem
 
 @property (nonatomic, strong) ASHandle *interfaceHandle;
 @property (nonatomic, strong) TGUser *user;
+@property (nonatomic, strong) TGConversation *conversation;
+@property (nonatomic, strong) NSString *optionTitle;
+@property (nonatomic, strong) NSString *customStatus;
 
 - (void)setCanEdit:(bool)canEdit;
 - (void)setCanEdit:(bool)canEdit animated:(bool)animated;

@@ -3,9 +3,12 @@
 #import "ActionStage.h"
 #import "SGraphObjectNode.h"
 
+#import "TGPeerIdAdapter.h"
+
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"
+#import "TGAppDelegate.h"
 
 #import "TGUser+Telegraph.h"
 #import "TGMessage+Telegraph.h"
@@ -26,25 +29,65 @@
 
 #import "TLUpdate$updateChangePts.h"
 
+#import "TGUpdatesWithSeq.h"
+#import "TGUpdatesWithPts.h"
+#import "TGUpdatesWithQts.h"
+#import "TGUpdatesWithDate.h"
+
+#import "TLMessage$modernMessage.h"
+#import "TLMessage$modernMessageService.h"
+
+#import "TLUser$modernUser.h"
+#import "TLUpdates+TG.h"
+
 #import <set>
 #import <map>
 
-static inline void maybeProcessUser(TLUser *user, std::map<int, TLUser *> &processedUsers)
-{    
-    int uid = user.n_id;
-    
-    if (uid != 0)
+@protocol TGSyntheticUpdateWithPts <NSObject>
+
+- (int32_t)pts;
+- (int32_t)pts_count;
+
+@end
+
+@protocol TGSyntheticUpdateWithQts <NSObject>
+
+- (int32_t)qts;
+
+@end
+
+@interface TGWrappedUpdate : NSObject
+
+@property (nonatomic, strong, readonly) id update;
+@property (nonatomic, readonly) int32_t date;
+
+@end
+
+@implementation TGWrappedUpdate
+
+- (instancetype)initWithUpdate:(id)update date:(int32_t)date
+{
+    self = [super init];
+    if (self != nil)
     {
-        processedUsers[uid] = user;
+        _update = update;
+        _date = date;
     }
+    return self;
+}
+
+@end
+
+static inline void maybeProcessUser(TLUser *user, std::map<int, TLUser *> &processedUsers)
+{
+    if (((TLUser$modernUser *)user).n_id != 0)
+        processedUsers[((TLUser$modernUser *)user).n_id] = user;
 }
 
 static inline void maybeProcessChat(TLChat *chat, std::map<int, TLChat *> &processedChats)
 {
-    int chatId = chat.n_id;
-    
-    if (chatId != 0)
-        processedChats[chatId] = chat;
+    if (chat.n_id != 0)
+        processedChats[chat.n_id] = chat;
 }
 
 static NSMutableArray *delayedNotifications()
@@ -60,17 +103,17 @@ static NSMutableArray *delayedNotifications()
 
 @interface TGApplyUpdatesActor ()
 
-@property (nonatomic, strong) NSMutableArray *statefulUpdates;
-@property (nonatomic, strong) TGTimer *sequenceTimeoutTimer;
-@property (nonatomic) NSTimeInterval accumulatedTimeout;
+@property (nonatomic, strong) NSMutableArray *updateList;
+
+@property (nonatomic) bool waitingForApplyUpdates;
+@property (nonatomic, strong) NSMutableArray *waitingForApplyUpdatesQueue;
+
+@property (nonatomic, strong) TGTimer *timeoutTimer;
+@property (nonatomic) NSTimeInterval overallTimeout;
 
 @end
 
 @implementation TGApplyUpdatesActor
-
-@synthesize statefulUpdates = _statefulUpdates;
-@synthesize sequenceTimeoutTimer = _sequenceTimeoutTimer;
-@synthesize accumulatedTimeout = _accumulatedTimeout;
 
 + (NSString *)genericPath
 {
@@ -95,22 +138,31 @@ static NSMutableArray *delayedNotifications()
     self = [super initWithPath:path];
     if (self != nil)
     {
-        _statefulUpdates = [[NSMutableArray alloc] init];
+        _updateList = [[NSMutableArray alloc] init];
+        _waitingForApplyUpdatesQueue = [[NSMutableArray alloc] init];
     }
     return self;
 }
 
 - (void)dealloc
 {
-    [self cancelSequenceTimer];
+    [self cancelTimeoutTimer];
 }
 
-- (void)prepare:(NSDictionary *)options
+- (void)prepare:(NSDictionary *)__unused options
 {
     bool messagesQueue = false;
     
-    if ([[options objectForKey:@"stateful"] boolValue])
+    if ([self.path isEqualToString:@"/tg/service/tryupdates/(withPts)"])
         messagesQueue = true;
+    else if ([self.path isEqualToString:@"/tg/service/tryupdates/(withSeq)"])
+        messagesQueue = true;
+    else if ([self.path isEqualToString:@"/tg/service/tryupdates/(withQts)"])
+        messagesQueue = true;
+    else if ([self.path isEqualToString:@"/tg/service/tryupdates/(withDate)"])
+        messagesQueue = false;
+    else
+        NSAssert(false, ([NSString stringWithFormat:@"Invalid actor path %@", self.path]));
     
     if (messagesQueue)
         self.requestQueueName = @"messages";
@@ -118,176 +170,529 @@ static NSMutableArray *delayedNotifications()
 
 - (void)execute:(NSDictionary *)options
 {
-    if ([[options objectForKey:@"stateful"] boolValue])
+    [self dumpUpdates:[options objectForKey:@"updates"]];
+    
+    [_updateList addObjectsFromArray:[options objectForKey:@"updates"]];
+    
+    if ([self.path isEqualToString:@"/tg/service/tryupdates/(withPts)"])
+        [self checkPtsUpdates];
+    else if ([self.path isEqualToString:@"/tg/service/tryupdates/(withSeq)"])
+        [self checkSeqUpdates];
+    else if ([self.path isEqualToString:@"/tg/service/tryupdates/(withQts)"])
+        [self checkQtsUpdates];
+    else
     {
-        [_statefulUpdates addObjectsFromArray:[options objectForKey:@"multipleUpdates"]];
-        
-        if (_statefulUpdates.count == 0)
+        NSArray *sortedDateUpdates = [_updateList sortedArrayUsingComparator:^NSComparisonResult(TGUpdatesWithDate *updates1, TGUpdatesWithDate *updates2)
         {
-            [ActionStageInstance() actionCompleted:self.path result:nil];
-            
-            return;
+            return updates1.date < updates2.date ? NSOrderedAscending : NSOrderedDescending;
+        }];
+        NSMutableArray *users = [[NSMutableArray alloc] init];
+        NSMutableArray *chats = [[NSMutableArray alloc] init];
+        NSMutableArray *wrappedUpdates = [[NSMutableArray alloc] init];
+        
+        for (TGUpdatesWithDate *updates in sortedDateUpdates)
+        {
+            for (id update in updates.updates)
+            {
+                [wrappedUpdates addObject:[[TGWrappedUpdate alloc] initWithUpdate:update date:updates.date]];
+            }
+            [users addObjectsFromArray:updates.users];
+            [chats addObjectsFromArray:updates.chats];
+        }
+        if (wrappedUpdates.count != 0)
+        {
+            [self _tryApplyingUpdates:wrappedUpdates users:users chats:chats optionalFinalSeq:0 optionalFinalDate:((TGWrappedUpdate *)wrappedUpdates.lastObject).date completion:^(bool)
+            {
+            }];
         }
         
-        [self checkStatefulUpdates];
+        [self completeAction];
     }
-    else
-        [self processUpdates:[options objectForKey:@"multipleUpdates"] stateSeq:0 completeAction:true];
+}
+
+- (void)completeAction
+{
+    [ActionStageInstance() actionCompleted:self.path result:nil];
+}
+
+- (void)dumpUpdates:(NSArray *)updateList
+{
+    for (id updates in updateList)
+    {
+        if ([updates isKindOfClass:[TGUpdatesWithPts class]])
+        {
+            for (id<TGSyntheticUpdateWithPts> update in ((TGUpdatesWithPts *)updates).updates)
+                TGLog(@"enqueued update with pts: %d [+%d]", [update pts], [update pts_count]);
+        }
+        else if ([updates isKindOfClass:[TGUpdatesWithSeq class]])
+        {
+            TGLog(@"enqueued updates with seq: %d..%d", ((TGUpdatesWithSeq *)updates).seqStart, ((TGUpdatesWithSeq *)updates).seqEnd);
+        }
+        else if ([updates isKindOfClass:[TGUpdatesWithQts class]])
+        {
+            for (id<TGSyntheticUpdateWithQts> update in ((TGUpdatesWithQts *)updates).updates)
+                TGLog(@"enqueued update with qts: %d", [update qts]);
+        }
+    }
 }
 
 - (void)watcherJoined:(ASHandle *)watcherHandle options:(NSDictionary *)options waitingInActorQueue:(bool)waitingInActorQueue
 {
-    if ([self.path hasSuffix:@"stateful)"])
+    [self dumpUpdates:[options objectForKey:@"updates"]];
+    
+    if (_waitingForApplyUpdates)
+        [_waitingForApplyUpdatesQueue addObjectsFromArray:[options objectForKey:@"updates"]];
+    else
+        [_updateList addObjectsFromArray:[options objectForKey:@"updates"]];
+    
+    if ([self.path isEqualToString:@"/tg/service/tryupdates/(withPts)"])
     {
-        [_statefulUpdates addObjectsFromArray:[options objectForKey:@"multipleUpdates"]];
+        if (!waitingInActorQueue && !_waitingForApplyUpdates)
+            [self checkPtsUpdates];
+    }
+    else if ([self.path isEqualToString:@"/tg/service/tryupdates/(withSeq)"])
+    {
+        if (!waitingInActorQueue && !_waitingForApplyUpdates)
+            [self checkSeqUpdates];
+    }
+    else if ([self.path isEqualToString:@"/tg/service/tryupdates/(withQts)"])
+    {
+        if (!waitingInActorQueue && !_waitingForApplyUpdates)
+            [self checkQtsUpdates];
+    }
+    else
+    {
+        [_updateList removeAllObjects];
         
-        if (!waitingInActorQueue)
-            [self checkStatefulUpdates];
+        NSArray *sortedDateUpdates = [_updateList sortedArrayUsingComparator:^NSComparisonResult(TGUpdatesWithDate *updates1, TGUpdatesWithDate *updates2)
+        {
+            return updates1.date < updates2.date ? NSOrderedAscending : NSOrderedDescending;
+        }];
+        NSMutableArray *users = [[NSMutableArray alloc] init];
+        NSMutableArray *chats = [[NSMutableArray alloc] init];
+        NSMutableArray *wrappedUpdates = [[NSMutableArray alloc] init];
+        
+        for (TGUpdatesWithDate *updates in sortedDateUpdates)
+        {
+            for (id update in updates.updates)
+            {
+                [wrappedUpdates addObject:[[TGWrappedUpdate alloc] initWithUpdate:update date:updates.date]];
+            }
+            [users addObjectsFromArray:updates.users];
+            [chats addObjectsFromArray:updates.chats];
+        }
+        if (wrappedUpdates.count != 0)
+        {
+            [self _tryApplyingUpdates:wrappedUpdates users:users chats:chats optionalFinalSeq:0 optionalFinalDate:((TGWrappedUpdate *)wrappedUpdates.lastObject).date completion:^(bool)
+            {
+            }];
+        }
     }
     
     [super watcherJoined:watcherHandle options:options waitingInActorQueue:waitingInActorQueue];
 }
 
-- (void)cancelSequenceTimer
+- (void)cancelTimeoutTimer
 {
-    if (_sequenceTimeoutTimer != nil)
+    if (_timeoutTimer != nil)
     {
-        [_sequenceTimeoutTimer invalidate];
-        _sequenceTimeoutTimer = nil;
+        [_timeoutTimer invalidate];
+        _timeoutTimer = nil;
     }
 }
 
-- (void)checkStatefulUpdates
+- (void)startTimeoutTimer
 {
-    TGDatabaseState databaseState = [[TGDatabase instance] databaseState];
+    _overallTimeout += [_timeoutTimer remainingTime];
     
-    [_statefulUpdates sortUsingComparator:^NSComparisonResult(TGUpdate *updateSet1, TGUpdate *updateSet2)
-    {
-        if (updateSet1.beginSeq < updateSet2.beginSeq)
-            return NSOrderedAscending;
-        else
-            return NSOrderedDescending;
-    }];
+    [self cancelTimeoutTimer];
     
-    int count = _statefulUpdates.count;
-    for (int i = 0; i < count; i++)
+    __weak TGApplyUpdatesActor *weakSelf = self;
+    _timeoutTimer = [[TGTimer alloc] initWithTimeout:MAX(0.0, MIN(2.0, 5.0 - _overallTimeout)) repeat:false completion:^
     {
-        int currentSeq = ((TGUpdate *)[_statefulUpdates objectAtIndex:0]).beginSeq;
-        if (currentSeq <= databaseState.seq)
+        __strong TGApplyUpdatesActor *strongSelf = weakSelf;
+        if (strongSelf != nil)
         {
-#ifdef DEBUG
-            TGLog(@"Ignoring old update %d", currentSeq);
-#endif
-            
-            [_statefulUpdates removeObjectAtIndex:i];
-            i--;
-            count--;
+            strongSelf->_timeoutTimer = nil;
+            [strongSelf timeoutReached];
         }
-    }
-    
-    if (_statefulUpdates.count == 0)
+    } queue:[ActionStageInstance() globalStageDispatchQueue]];
+    [_timeoutTimer start];
+}
+
+- (void)timeoutReached
+{
+    if ([self.path isEqualToString:@"/tg/service/tryupdates/(withPts)"])
+        [self _failPts];
+    else if ([self.path isEqualToString:@"/tg/service/tryupdates/(withSeq)"])
+        [self _failSeq];
+    else if ([self.path isEqualToString:@"/tg/service/tryupdates/(withQts)"])
+        [self _failQts];
+}
+
+- (void)checkPtsUpdates
+{
+    if (_updateList.count == 0)
     {
-        [self cancelSequenceTimer];
-        [ActionStageInstance() actionCompleted:self.path result:nil];
-        
-        return;
-    }
-    
-    int stateMinSeq = ((TGUpdate *)[_statefulUpdates objectAtIndex:0]).beginSeq;
-    int stateMaxSeq = ((TGUpdate *)[_statefulUpdates lastObject]).endSeq;
-    
-    if (stateMinSeq != databaseState.seq + 1)
-    {
-        TGLog(@"***** Invalid update sequence (starting seq = %d, should be %d)! Waiting for the rest.", stateMinSeq, databaseState.seq + 1);
-        
-        if (_sequenceTimeoutTimer == nil)
-        {
-            _sequenceTimeoutTimer = [[TGTimer alloc] initWithTimeout:2.0 repeat:false completion:^
-            {
-                [self failSequence];
-            } queue:[ActionStageInstance() globalStageDispatchQueue]];
-            [_sequenceTimeoutTimer start];
-        }
+        [self completeAction];
     }
     else
     {
-        bool chainError = false;
-        
-        int correctUpdatesChainLength = 0;
-        
-        int lastSeq = stateMinSeq - 1;
-        count = _statefulUpdates.count;
-        for (int i = 0; i < count; i++)
+        NSMutableArray *ptsUpdates = [[NSMutableArray alloc] init];
+        for (TGUpdatesWithPts *update in _updateList)
         {
-            int currentSeq = ((TGUpdate *)[_statefulUpdates objectAtIndex:i]).beginSeq;
-            if (currentSeq != lastSeq + 1)
-            {
-                TGLog(@"***** Update seq chain error: missing %d before %d", lastSeq + 1, currentSeq);
-                
-                chainError = true;
-                
-                break;
-            }
-            else
-                correctUpdatesChainLength++;
-            
-            lastSeq = ((TGUpdate *)[_statefulUpdates objectAtIndex:i]).endSeq;
+            [ptsUpdates addObjectsFromArray:update.updates];
         }
         
-        if (chainError)
+        [ptsUpdates sortUsingComparator:^NSComparisonResult(id<TGSyntheticUpdateWithPts> update1, id<TGSyntheticUpdateWithPts> update2)
         {
-            if (correctUpdatesChainLength != 0)
+            if ([update1 pts] == [update2 pts])
+                return [update1 pts_count] > [update2 pts_count] ? NSOrderedAscending : NSOrderedDescending;
+            return [update1 pts] < [update2 pts] ? NSOrderedAscending : NSOrderedDescending;
+        }];
+        
+        int32_t databasePts = [[TGDatabase instance] databaseState].pts;
+        int32_t currentPts = databasePts;
+        
+        NSMutableArray *inOrderUpdates = [[NSMutableArray alloc] init];
+        NSMutableArray *expiredUpdates = [[NSMutableArray alloc] init];
+        
+        for (id<TGSyntheticUpdateWithPts> update in ptsUpdates)
+        {
+            if ([update pts] <= databasePts)
+                [expiredUpdates addObject:update];
+            else
             {
-                NSMutableArray *completeUpdates = [[NSMutableArray alloc] init];
-                
-                for (int i = 0; i < correctUpdatesChainLength; i++)
+                if (currentPts + [update pts_count] == [update pts])
                 {
-                    TGUpdate *update = [_statefulUpdates objectAtIndex:0];
-                    [completeUpdates addObject:update];
-                    [_statefulUpdates removeObjectAtIndex:0];
+                    [inOrderUpdates addObject:update];
+                    
+                    currentPts = [update pts];
                 }
-                
-                if (completeUpdates.count != 0)
+                else
                 {
-                    int maxValidSeq = ((TGUpdate *)[completeUpdates lastObject]).endSeq;
-                    TGLog(@"Processing updates from %d to %d", ((TGUpdate *)[completeUpdates objectAtIndex:0]).beginSeq, maxValidSeq);
-                    [self processUpdates:completeUpdates stateSeq:maxValidSeq completeAction:false];
+                    TGLog(@"***** Missing updates: %d + %d != %d", (int)currentPts, (int)[update pts_count], (int)[update pts]);
+                    [self startTimeoutTimer];
+                    break;
+                }
+            }
+        }
+        
+        if (expiredUpdates.count != 0)
+        {
+            NSMutableArray *affectedGroups = [[NSMutableArray alloc] init];
+            
+            for (TGUpdatesWithPts *updates in _updateList)
+            {
+                for (id update in expiredUpdates)
+                {
+                    if ([updates.updates containsObject:update])
+                    {
+                        if (![affectedGroups containsObject:updates])
+                            [affectedGroups addObject:updates];
+                    }
                 }
             }
             
-            if (_sequenceTimeoutTimer == nil)
+            for (TGUpdatesWithPts *updates in affectedGroups)
             {
-                _sequenceTimeoutTimer = [[TGTimer alloc] initWithTimeout:2.0 repeat:false completion:^
+                NSMutableArray *filteredUpdates = [[NSMutableArray alloc] initWithArray:updates.updates];
+                for (id update in expiredUpdates)
                 {
-                    [self failSequence];
-                } queue:[ActionStageInstance() globalStageDispatchQueue]];
-                [_sequenceTimeoutTimer start];
+                    [filteredUpdates removeObject:update];
+                }
+                
+                if (filteredUpdates.count == 0)
+                    [_updateList removeObject:updates];
             }
+        }
+        
+        if (inOrderUpdates.count != 0)
+        {
+            NSMutableArray *affectedGroups = [[NSMutableArray alloc] init];
+            
+            for (TGUpdatesWithPts *updates in _updateList)
+            {
+                for (id update in inOrderUpdates)
+                {
+                    if ([updates.updates containsObject:update])
+                    {
+                        if (![affectedGroups containsObject:updates])
+                            [affectedGroups addObject:updates];
+                    }
+                }
+            }
+            
+            NSMutableArray *users = [[NSMutableArray alloc] init];
+            NSMutableArray *chats = [[NSMutableArray alloc] init];
+            for (TGUpdatesWithPts *updates in affectedGroups)
+            {
+                [users addObjectsFromArray:updates.users];
+                [chats addObjectsFromArray:updates.chats];
+                
+                NSMutableArray *filteredUpdates = [[NSMutableArray alloc] initWithArray:updates.updates];
+                for (id update in inOrderUpdates)
+                {
+                    [filteredUpdates removeObject:update];
+                }
+                
+                if (filteredUpdates.count == 0)
+                    [_updateList removeObject:updates];
+            }
+            
+            NSMutableArray *wrappedUpdates = [[NSMutableArray alloc] init];
+            for (id update in inOrderUpdates)
+            {
+                [wrappedUpdates addObject:[[TGWrappedUpdate alloc] initWithUpdate:update date:0]];
+            }
+            
+            [self _tryApplyingUpdates:wrappedUpdates users:users chats:chats optionalFinalSeq:0 optionalFinalDate:0 completion:^(bool success)
+            {
+                if (!success)
+                    [self _failPts];
+                else
+                    [self checkPtsUpdates];
+            }];
         }
         else
         {
-            [self cancelSequenceTimer];
-            [self processUpdates:_statefulUpdates stateSeq:stateMaxSeq completeAction:true];
+            if (_updateList.count == 0)
+                [self completeAction];
         }
     }
 }
 
-- (void)failSequence
+- (void)checkQtsUpdates
 {
-    TGLog(@"***** Inconsistent state! Synchronization required.");
+    if (_updateList.count == 0)
+    {
+        [self completeAction];
+    }
+    else
+    {
+        NSMutableArray *qtsUpdates = [[NSMutableArray alloc] init];
+        for (TGUpdatesWithQts *update in _updateList)
+        {
+            [qtsUpdates addObjectsFromArray:update.updates];
+        }
+        
+        [qtsUpdates sortUsingComparator:^NSComparisonResult(id<TGSyntheticUpdateWithQts> update1, id<TGSyntheticUpdateWithQts> update2)
+        {
+            return [update1 qts] < [update2 qts] ? NSOrderedAscending : NSOrderedDescending;
+        }];
+        
+        int32_t databaseQts = [[TGDatabase instance] databaseState].qts;
+        int32_t currentQts = databaseQts;
+        
+        NSMutableArray *inOrderUpdates = [[NSMutableArray alloc] init];
+        NSMutableArray *expiredUpdates = [[NSMutableArray alloc] init];
+        
+        for (id<TGSyntheticUpdateWithQts> update in qtsUpdates)
+        {
+            if ([update qts] <= databaseQts)
+                [expiredUpdates addObject:update];
+            else
+            {
+                if (currentQts + 1 == [update qts])
+                {
+                    [inOrderUpdates addObject:update];
+                    
+                    currentQts = [update qts];
+                }
+                else
+                {
+                    TGLog(@"***** Missing updates: qts %d + 1 != %d", (int)currentQts, (int)[update qts]);
+                    [self startTimeoutTimer];
+                    break;
+                }
+            }
+        }
+        
+        if (expiredUpdates.count != 0)
+        {
+            NSMutableArray *affectedGroups = [[NSMutableArray alloc] init];
+            
+            for (TGUpdatesWithQts *updates in _updateList)
+            {
+                for (id update in expiredUpdates)
+                {
+                    if ([updates.updates containsObject:update])
+                    {
+                        if (![affectedGroups containsObject:updates])
+                            [affectedGroups addObject:updates];
+                    }
+                }
+            }
+            
+            for (TGUpdatesWithQts *updates in affectedGroups)
+            {
+                NSMutableArray *filteredUpdates = [[NSMutableArray alloc] initWithArray:updates.updates];
+                for (id update in expiredUpdates)
+                {
+                    [filteredUpdates removeObject:update];
+                }
+                
+                if (filteredUpdates.count == 0)
+                    [_updateList removeObject:updates];
+            }
+        }
+        
+        if (inOrderUpdates.count != 0)
+        {
+            NSMutableArray *affectedGroups = [[NSMutableArray alloc] init];
+            
+            for (TGUpdatesWithQts *updates in _updateList)
+            {
+                for (id update in inOrderUpdates)
+                {
+                    if ([updates.updates containsObject:update])
+                    {
+                        if (![affectedGroups containsObject:updates])
+                            [affectedGroups addObject:updates];
+                    }
+                }
+            }
+            
+            NSMutableArray *users = [[NSMutableArray alloc] init];
+            NSMutableArray *chats = [[NSMutableArray alloc] init];
+            for (TGUpdatesWithQts *updates in affectedGroups)
+            {
+                [users addObjectsFromArray:updates.users];
+                [chats addObjectsFromArray:updates.chats];
+                
+                NSMutableArray *filteredUpdates = [[NSMutableArray alloc] initWithArray:updates.updates];
+                for (id update in inOrderUpdates)
+                {
+                    [filteredUpdates removeObject:update];
+                }
+                
+                if (filteredUpdates.count == 0)
+                    [_updateList removeObject:updates];
+            }
+            
+            NSMutableArray *wrappedUpdates = [[NSMutableArray alloc] init];
+            for (id update in inOrderUpdates)
+            {
+                [wrappedUpdates addObject:[[TGWrappedUpdate alloc] initWithUpdate:update date:0]];
+            }
+            
+            [self _tryApplyingUpdates:wrappedUpdates users:users chats:chats optionalFinalSeq:0 optionalFinalDate:0 completion:^(bool success)
+            {
+                if (!success)
+                    [self _failQts];
+                else
+                    [self checkQtsUpdates];
+            }];
+        }
+        else
+        {
+            if (_updateList.count == 0)
+                [self completeAction];
+        }
+    }
+}
+
+- (void)checkSeqUpdates
+{
+    if (_updateList.count == 0)
+    {
+        [self completeAction];
+    }
+    else
+    {
+        NSArray *seqUpdates = [_updateList sortedArrayUsingComparator:^NSComparisonResult(TGUpdatesWithSeq *updates1, TGUpdatesWithSeq *updates2)
+        {
+            return updates1.seqEnd < updates2.seqEnd ? NSOrderedAscending : NSOrderedDescending;
+        }];
+        
+        int32_t currentSeq = [[TGDatabase instance] databaseState].seq;
+        
+        NSMutableArray *inOrderUpdates = [[NSMutableArray alloc] init];
+        for (TGUpdatesWithSeq *updates in seqUpdates)
+        {
+            if (updates.seqStart == currentSeq + 1)
+            {
+                [inOrderUpdates addObject:updates];
+                currentSeq = updates.seqEnd;
+            }
+            else
+            {
+                TGLog(@"***** Missing updates: seq %d", (int)currentSeq + 1);
+                [self startTimeoutTimer];
+            }
+        }
+        
+        if (inOrderUpdates.count != 0)
+        {
+            NSMutableArray *wrappedUpdates = [[NSMutableArray alloc] init];
+            NSMutableArray *users = [[NSMutableArray alloc] init];
+            NSMutableArray *chats = [[NSMutableArray alloc] init];
+            
+            for (TGUpdatesWithSeq *updates in inOrderUpdates)
+            {
+                for (id update in updates.updates)
+                {
+                    [wrappedUpdates addObject:[[TGWrappedUpdate alloc] initWithUpdate:update date:updates.date]];
+                }
+                [users addObjectsFromArray:updates.users];
+                [chats addObjectsFromArray:updates.chats];
+                
+                [_updateList removeObject:updates];
+            }
+            
+            [self _tryApplyingUpdates:wrappedUpdates users:users chats:chats optionalFinalSeq:((TGUpdatesWithSeq *)inOrderUpdates.lastObject).seqEnd optionalFinalDate:((TGWrappedUpdate *)wrappedUpdates.lastObject).date completion:^(bool success)
+            {
+                if (!success)
+                    [self _failSeq];
+                else
+                    [self checkSeqUpdates];
+            }];
+        }
+        else if (_updateList.count == 0)
+        {
+            [self completeAction];
+        }
+    }
+}
+
+- (void)_failPts
+{
+    TGLog(@"***** Inconsistent state by (pts, pts_count)! Synchronization required.");
     
-    [self cancelSequenceTimer];
+    [self cancelTimeoutTimer];
     
     [TGTelegraphInstance stateUpdateRequired];
     
-    [ActionStageInstance() actionCompleted:self.path result:nil];
+    [self completeAction];
+}
+
+- (void)_failSeq
+{
+    TGLog(@"***** Inconsistent state by seq! Synchronization required.");
+    
+    [self cancelTimeoutTimer];
+    
+    [TGTelegraphInstance stateUpdateRequired];
+    
+    [self completeAction];
+}
+
+- (void)_failQts
+{
+    TGLog(@"***** Inconsistent state by qts! Synchronization required.");
+    
+    [self cancelTimeoutTimer];
+    
+    [TGTelegraphInstance stateUpdateRequired];
+    
+    [self completeAction];
 }
 
 template<typename T>
 static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
 {
     int64_t fromUid = concreteMessage.from_id;
-    bool outgoing = concreteMessage.out;
+    bool outgoing = concreteMessage.flags & 2;
     
     if (!outgoing)
         outFromUid = (int)fromUid;
@@ -306,15 +711,20 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
         int64_t toUid = -toChat.chat_id;
         return toUid;
     }
+    else if ([concreteMessage.to_id isKindOfClass:[TLPeer$peerChannel class]])
+    {
+        TLPeer$peerChannel *toChannel = (TLPeer$peerChannel *)concreteMessage.to_id;
+        int64_t toUid = TGPeerIdFromChannelId(toChannel.channel_id);
+        return toUid;
+    }
     
     return 0;
 }
 
-- (void)processUpdates:(NSArray *)updatesArray stateSeq:(int)stateSeq completeAction:(bool)completeAction
+- (bool)_tryApplyingUpdates:(NSArray *)updates users:(NSArray *)users chats:(NSArray *)chats optionalFinalSeq:(int32_t)optionalFinalSeq optionalFinalDate:(int32_t)optionalFinalDate completion:(void (^)(bool))completion
 {
     static Class updateNewMessageClass = nil;
     static Class updateNewEncryptedMessageClass = nil;
-    static Class updateReadMessagesClass = nil;
     static Class updateDeleteMessagesClass = nil;
     static Class updateRestoreMessagesClass = nil;
     static Class updateChangePtsClass = nil;
@@ -327,14 +737,12 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
     
     static Class messageClass = nil;
     static Class messageServiceClass = nil;
-    static Class messageForwardedClass = nil;
     
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
         updateNewMessageClass = [TLUpdate$updateNewMessage class];
         updateNewEncryptedMessageClass = [TLUpdate$updateNewEncryptedMessage class];
-        updateReadMessagesClass = [TLUpdate$updateReadMessages class];
         updateDeleteMessagesClass = [TLUpdate$updateDeleteMessages class];
         updateRestoreMessagesClass = [TLUpdate$updateRestoreMessages class];
         updateChangePtsClass = [TLUpdate$updateChangePts class];
@@ -345,62 +753,21 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
         updateChatParticipantDeleteClass = [TLUpdate$updateChatParticipantDelete class];
         updateContactLocatedClass = [TLUpdate$updateContactLocated class];
         
-        messageClass = [TLMessage$message class];
-        messageServiceClass = [TLMessage$messageService class];
-        messageForwardedClass = [TLMessage$messageForwarded class];
+        messageClass = [TLMessage$modernMessage class];
+        messageServiceClass = [TLMessage$modernMessageService class];
     });
     
-    int statePts = 0;
-    int stateDate = 0;
-    int stateQts = 0;
+    int32_t statePts = 0;
+    int32_t stateQts = 0;
     
     TGDatabaseState databaseState = [[TGDatabase instance] databaseState];
     
-    for (TGUpdate *updateSet in updatesArray)
+    for (TGWrappedUpdate *update in updates)
     {
-        int date = updateSet.date;
-        if (date > stateDate)
-            stateDate = date;
-        
-        for (TLUpdate *update in updateSet.updates)
-        {
-            if ([update isKindOfClass:updateNewMessageClass])
-            {
-                int updatePts = ((TLUpdate$updateNewMessage *)update).pts;
-                if (updatePts > statePts)
-                    statePts = updatePts;
-            }
-            else if ([update isKindOfClass:updateReadMessagesClass])
-            {
-                int updatePts = ((TLUpdate$updateReadMessages *)update).pts;
-                if (updatePts > statePts)
-                    statePts = updatePts;
-            }
-            else if ([update isKindOfClass:updateDeleteMessagesClass])
-            {
-                int updatePts = ((TLUpdate$updateDeleteMessages *)update).pts;
-                if (updatePts > statePts)
-                    statePts = updatePts;
-            }
-            else if ([update isKindOfClass:updateRestoreMessagesClass])
-            {
-                int updatePts = ((TLUpdate$updateRestoreMessages *)update).pts;
-                if (updatePts > statePts)
-                    statePts = updatePts;
-            }
-            else if ([update isKindOfClass:updateChangePtsClass])
-            {
-                int updatePts = ((TLUpdate$updateChangePts *)update).pts;
-                if (updatePts > statePts)
-                    statePts = updatePts;
-            }
-            else if ([update isKindOfClass:updateNewEncryptedMessageClass])
-            {
-                TLUpdate$updateNewEncryptedMessage *encryptedMessageUpdate = (TLUpdate$updateNewEncryptedMessage *)update;
-                if (encryptedMessageUpdate.qts > stateQts)
-                    stateQts = encryptedMessageUpdate.qts;
-            }
-        }
+        if ([update.update hasPts])
+            statePts = MAX(statePts, [(id<TGSyntheticUpdateWithPts>)update.update pts]);
+        if ([update.update respondsToSelector:@selector(qts)])
+            stateQts = MAX(stateQts, [(id<TGSyntheticUpdateWithQts>)update.update qts]);
     }
     
     std::map<int, TLUser *> processedUsers;
@@ -421,202 +788,310 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
     bool failedProcessing = false;
     bool updatesTooLong = false;
     
-    for (TGUpdate *updateSet in updatesArray)
+    for (TLUser *userDesc in users)
     {
-        int date = updateSet.date;
-        
-        if (updateSet.usersDesc != nil)
+        maybeProcessUser(userDesc, processedUsers);
+    }
+    
+    for (TLChat *chatDesc in chats)
+    {
+        maybeProcessChat(chatDesc, processedChats);
+    }
+    
+    std::map<int64_t, int32_t> maxInboxReadMessageIdByPeerId;
+    std::map<int64_t, int32_t> maxOutboxReadMessageIdByPeerId;
+
+    for (TGWrappedUpdate *wrappedUpdate in updates)
+    {
+        if ([wrappedUpdate.update isKindOfClass:[TLUpdate$updateReadHistoryInbox class]])
         {
-            for (TLUser *userDesc in updateSet.usersDesc)
-            {
-                maybeProcessUser(userDesc, processedUsers);
-            }
+            TLUpdate$updateReadHistoryInbox *concreteUpdate = wrappedUpdate.update;
+            
+            int64_t peerId = 0;
+            if ([concreteUpdate.peer isKindOfClass:[TLPeer$peerUser class]])
+                peerId = ((TLPeer$peerUser *)concreteUpdate.peer).user_id;
+            else if ([concreteUpdate.peer isKindOfClass:[TLPeer$peerChat class]])
+                peerId = -((TLPeer$peerChat *)concreteUpdate.peer).chat_id;
+            else if ([concreteUpdate.peer isKindOfClass:[TLPeer$peerChannel class]])
+                peerId = TGPeerIdFromChannelId(((TLPeer$peerChannel *)concreteUpdate.peer).channel_id);
+            
+            auto it = maxInboxReadMessageIdByPeerId.find(peerId);
+            if (it == maxInboxReadMessageIdByPeerId.end())
+                maxInboxReadMessageIdByPeerId[peerId] = concreteUpdate.max_id;
+            else
+                maxInboxReadMessageIdByPeerId[peerId] = MAX(it->second, concreteUpdate.max_id);
         }
-        
-        if (updateSet.chatsDesc != nil)
+        else if ([wrappedUpdate.update isKindOfClass:[TLUpdate$updateReadHistoryOutbox class]])
         {
-            for (TLChat *chatDesc in updateSet.chatsDesc)
-            {
-                maybeProcessChat(chatDesc, processedChats);
-            }
+            TLUpdate$updateReadHistoryOutbox *concreteUpdate = wrappedUpdate.update;
+            
+            int64_t peerId = 0;
+            if ([concreteUpdate.peer isKindOfClass:[TLPeer$peerUser class]])
+                peerId = ((TLPeer$peerUser *)concreteUpdate.peer).user_id;
+            else if ([concreteUpdate.peer isKindOfClass:[TLPeer$peerChat class]])
+                peerId = -((TLPeer$peerChat *)concreteUpdate.peer).chat_id;
+            else if ([concreteUpdate.peer isKindOfClass:[TLPeer$peerChannel class]])
+                peerId = TGPeerIdFromChannelId(((TLPeer$peerChannel *)concreteUpdate.peer).channel_id);
+            
+            auto it = maxOutboxReadMessageIdByPeerId.find(peerId);
+            if (it == maxOutboxReadMessageIdByPeerId.end())
+                maxOutboxReadMessageIdByPeerId[peerId] = concreteUpdate.max_id;
+            else
+                maxOutboxReadMessageIdByPeerId[peerId] = MAX(it->second, concreteUpdate.max_id);
         }
+    }
+    
+    for (TGWrappedUpdate *wrappedUpdate in updates)
+    {
+        id update = wrappedUpdate.update;
+        int32_t date = wrappedUpdate.date;
         
-        for (TLUpdate *update in updateSet.updates)
+        if ([update isKindOfClass:updateNewMessageClass])
         {
-            if ([update isKindOfClass:updateNewMessageClass])
+            TLUpdate$updateNewMessage *newMessage = (TLUpdate$updateNewMessage *)update;
+            
+            TLMessage *message = newMessage.message;
+            
+            if (([message isKindOfClass:[TLMessage$modernMessage class]] || [message isKindOfClass:[TLMessage$modernMessageService class]]) && !(((TLMessage$modernMessage *)message).flags & 2))
             {
-                TLUpdate$updateNewMessage *newMessage = (TLUpdate$updateNewMessage *)update;
-                
-                TLMessage *message = newMessage.message;
-                
-                if (updateSet.messageDate != 0 && updateSet.messageDate - date < 4 && ([message isKindOfClass:[TLMessage$message class]] || [message isKindOfClass:[TLMessage$messageService class]]) && !((TLMessage$message *)message).out)
-                    [messagesForLocalNotification addObject:newMessage.message];
+                TGMessage *parsedMessage = [[TGMessage alloc] initWithTelegraphMessageDesc:message];
+                if (parsedMessage.unread)
+                {
+                    auto maxIt = maxInboxReadMessageIdByPeerId.find(parsedMessage.cid);
+                    if (!(maxIt != maxInboxReadMessageIdByPeerId.end() && parsedMessage.mid <= maxIt->second))
+                        [messagesForLocalNotification addObject:newMessage.message];
+                }
+            }
+            else
+                TGLog(@"Message %d does not match for local notification", (int)message.n_id);
+            
+            int64_t conversationId = 0;
+            int fromUid = 0;
+            
+            if ([message isKindOfClass:messageClass])
+                conversationId = extractMessageConversationId((TLMessage$message *)message, fromUid);
+            else if ([message isKindOfClass:messageServiceClass])
+                conversationId = extractMessageConversationId((TLMessage$modernMessageService *)message, fromUid);
+            
+            if (conversationId != 0)
+            {
+                if (conversationId < 0)
+                {
+                    if (knownChats.find(conversationId) == knownChats.end() && processedChats.find(-(int)conversationId) == processedChats.end())
+                    {
+                        bool contains = [TGDatabaseInstance() containsConversationWithId:conversationId];
+                        if (contains)
+                            knownChats.insert(conversationId);
+                        else
+                        {
+                            TGLog(@"Unknown chat %" PRId64 "", conversationId);
+                            failedProcessing = true;
+                        }
+                    }
+                }
                 else
                 {
-                    //TGLog(@"Message is too old, skipping local notification");
-                }
-                
-                int64_t conversationId = 0;
-                int fromUid = 0;
-                
-                if ([message isKindOfClass:messageClass])
-                    conversationId = extractMessageConversationId((TLMessage$message *)message, fromUid);
-                else if ([message isKindOfClass:messageServiceClass])
-                    conversationId = extractMessageConversationId((TLMessage$messageService *)message, fromUid);
-                else if ([message isKindOfClass:messageForwardedClass])
-                    conversationId = extractMessageConversationId((TLMessage$messageForwarded *)message, fromUid);
-                
-                if (conversationId != 0)
-                {
-                    if (conversationId < 0)
+                    if (knownUsers.find((int)conversationId) == knownUsers.end() && processedUsers.find((int)conversationId) == processedUsers.end())
                     {
-                        if (knownChats.find(conversationId) == knownChats.end() && processedChats.find(-(int)conversationId) == processedChats.end())
+                        bool contains = [TGDatabaseInstance() loadUser:(int)conversationId];
+                        if (contains)
+                            knownUsers.insert((int)conversationId);
+                        else
                         {
-                            bool contains = [TGDatabaseInstance() containsConversationWithId:conversationId];
-                            if (contains)
-                                knownChats.insert(conversationId);
-                            else
-                                failedProcessing = true;
+                            TGLog(@"Unknown user %" PRId64 "", conversationId);
+                            failedProcessing = true;
                         }
                     }
+                }
+            }
+            
+            if (!failedProcessing && fromUid != 0 && fromUid != conversationId)
+            {
+                if (knownUsers.find(fromUid) == knownUsers.end() && processedUsers.find(fromUid) == processedUsers.end())
+                {
+                    bool contains = [TGDatabaseInstance() loadUser:fromUid];
+                    if (contains)
+                        knownUsers.insert(fromUid);
                     else
                     {
-                        if (knownUsers.find((int)conversationId) == knownUsers.end() && processedUsers.find((int)conversationId) == processedUsers.end())
+                        TGLog(@"Unknown user %" PRId32 "", fromUid);
+                        failedProcessing = true;
+                    }
+                }
+            }
+            
+            if (!failedProcessing)
+            {
+                if ([message isKindOfClass:[TLMessage$modernMessage class]])
+                {
+                    TLPeer *fwd_from_id = ((TLMessage$modernMessage *)message).fwd_from_id;
+                    if ([fwd_from_id isKindOfClass:[TLPeer$peerUser class]]) {
+                        int32_t forwardUid = ((TLPeer$peerUser *)fwd_from_id).user_id;
+                        if (forwardUid != 0)
                         {
-                            bool contains = [TGDatabaseInstance() loadUser:(int)conversationId];
-                            if (contains)
-                                knownUsers.insert((int)conversationId);
-                            else
-                                failedProcessing = true;
+                            if (knownUsers.find(forwardUid) == knownUsers.end() && processedUsers.find(forwardUid) == processedUsers.end())
+                            {
+                                bool contains = [TGDatabaseInstance() loadUser:forwardUid];
+                                if (contains)
+                                    knownUsers.insert(forwardUid);
+                                else
+                                {
+                                    TGLog(@"Unknown user %" PRId32 "", forwardUid);
+                                    failedProcessing = true;
+                                }
+                            }
+                        }
+                    } else if ([fwd_from_id isKindOfClass:[TLPeer$peerChannel class]]) {
+                        int64_t peerId = TGPeerIdFromChannelId(((TLPeer$peerChannel *)fwd_from_id).channel_id);
+                        if (peerId != 0) {
+                            if (knownChats.find(peerId) == knownChats.end() && processedChats.find(TGChannelIdFromPeerId(peerId)) == processedChats.end()) {
+                                bool contains = [TGDatabaseInstance() _channelExists:peerId];
+                                if (contains)
+                                    knownChats.insert(TGChannelIdFromPeerId(peerId));
+                                else
+                                {
+                                    TGLog(@"Unknown channel %" PRId64 "", peerId);
+                                    failedProcessing = true;
+                                }
+                            }
                         }
                     }
                 }
-                
-                if (!failedProcessing && fromUid != 0 && fromUid != conversationId)
-                {
-                    if (knownUsers.find(fromUid) == knownUsers.end() && processedUsers.find(fromUid) == processedUsers.end())
-                    {
-                        bool contains = [TGDatabaseInstance() loadUser:fromUid];
-                        if (contains)
-                            knownUsers.insert(fromUid);
-                        else
-                            failedProcessing = true;
-                    }
-                }
-                
-                if (failedProcessing)
-                    break;
-                
-                [addedMessages addObject:message];
             }
-            else if ([update isKindOfClass:updateUserTypingClass])
-            {
-                if (date > currentTime - 20)
-                    [allUpdates addObject:update];
-            }
-            else if ([update isKindOfClass:updateChatUserTypingClass])
-            {
-                if (date > currentTime - 20)
-                    [allUpdates addObject:update];
-            }
-            else if ([update isKindOfClass:[TLUpdate$updateEncryptedChatTyping class]])
-            {
-                if (date > currentTime - 20)
-                    [allUpdates addObject:update];
-            }
-            else if ([update isKindOfClass:updateContactLocatedClass])
-            {   
-                if (date > currentTime - 5 * 60)
-                    [allUpdates addObject:update];
-            }
-            else if ([update isKindOfClass:updateChatParticipantsClass])
-            {
-                TLUpdate$updateChatParticipants *updateChatParticipants = (TLUpdate$updateChatParticipants *)update;
-                
-                int64_t conversationId = -updateChatParticipants.participants.chat_id;
-                
-                if (conversationId < 0)
-                {
-                    if (knownChats.find(conversationId) == knownChats.end() && processedChats.find(-(int)conversationId) == processedChats.end())
-                    {
-                        bool contains = [TGDatabaseInstance() containsConversationWithId:conversationId];
-                        if (contains)
-                            knownChats.insert(conversationId);
-                        else
-                            failedProcessing = true;
-                    }
-                }
-                
+            
+            if (failedProcessing)
+                break;
+            
+            [addedMessages addObject:message];
+        }
+        else if ([update isKindOfClass:updateUserTypingClass])
+        {
+            if (date > currentTime - 20)
                 [allUpdates addObject:update];
-            }
-            else if ([update isKindOfClass:updateChatParticipantAddClass] || [update isKindOfClass:updateChatParticipantDeleteClass])
+        }
+        else if ([update isKindOfClass:updateChatUserTypingClass])
+        {
+            if (date > currentTime - 20)
+                [allUpdates addObject:update];
+        }
+        else if ([update isKindOfClass:[TLUpdate$updateEncryptedChatTyping class]])
+        {
+            if (date > currentTime - 20)
+                [allUpdates addObject:update];
+        }
+        else if ([update isKindOfClass:updateContactLocatedClass])
+        {   
+            if (date > currentTime - 5 * 60)
+                [allUpdates addObject:update];
+        }
+        else if ([update isKindOfClass:updateChatParticipantsClass])
+        {
+            TLUpdate$updateChatParticipants *updateChatParticipants = (TLUpdate$updateChatParticipants *)update;
+            
+            int64_t conversationId = -updateChatParticipants.participants.chat_id;
+            
+            if (conversationId < 0)
             {
-                int64_t conversationId = 0;
-                if ([update isKindOfClass:updateChatParticipantAddClass])
-                    conversationId = -((TLUpdate$updateChatParticipantAdd *)update).chat_id;
-                if ([update isKindOfClass:updateChatParticipantDeleteClass])
-                    conversationId = -((TLUpdate$updateChatParticipantDelete *)update).chat_id;
-                
-                if (conversationId < 0)
+                if (knownChats.find(conversationId) == knownChats.end() && processedChats.find(-(int)conversationId) == processedChats.end())
                 {
-                    if (knownChats.find(conversationId) == knownChats.end() && processedChats.find(-(int)conversationId) == processedChats.end())
+                    bool contains = [TGDatabaseInstance() containsConversationWithId:conversationId];
+                    if (contains)
+                        knownChats.insert(conversationId);
+                    else
+                        failedProcessing = true;
+                }
+            }
+            
+            [allUpdates addObject:update];
+        }
+        else if ([update isKindOfClass:updateChatParticipantAddClass] || [update isKindOfClass:updateChatParticipantDeleteClass])
+        {
+            int64_t conversationId = 0;
+            int32_t userId = 0;
+            if ([update isKindOfClass:updateChatParticipantAddClass])
+            {
+                conversationId = -((TLUpdate$updateChatParticipantAdd *)update).chat_id;
+                userId = ((TLUpdate$updateChatParticipantAdd *)update).user_id;
+            }
+            if ([update isKindOfClass:updateChatParticipantDeleteClass])
+            {
+                conversationId = -((TLUpdate$updateChatParticipantDelete *)update).chat_id;
+                userId = ((TLUpdate$updateChatParticipantDelete *)update).user_id;
+            }
+            
+            if (conversationId < 0)
+            {
+                if (knownChats.find(conversationId) == knownChats.end() && processedChats.find(-(int)conversationId) == processedChats.end())
+                {
+                    bool contains = [TGDatabaseInstance() containsConversationWithId:conversationId];
+                    if (contains)
+                        knownChats.insert(conversationId);
+                    else
+                        failedProcessing = true;
+                }
+            }
+            
+            if (userId != 0)
+            {
+                if (knownUsers.find(userId) == knownUsers.end() && processedUsers.find(userId) == processedUsers.end())
+                {
+                    bool contains = [TGDatabaseInstance() loadUser:userId];
+                    if (contains)
+                        knownUsers.insert(userId);
+                    else
                     {
-                        bool contains = [TGDatabaseInstance() containsConversationWithId:conversationId];
-                        if (contains)
-                            knownChats.insert(conversationId);
-                        else
-                            failedProcessing = true;
+                        TGLog(@"Unknown user %" PRId32 "", userId);
+                        failedProcessing = true;
                     }
                 }
-                
-                [updatesWithDates addObject:@[update, @(date)]];
-                [allUpdates addObject:update];
             }
-            else if ([update isKindOfClass:[TLUpdate$updateEncryption class]])
+            
+            [updatesWithDates addObject:@[update, @(date)]];
+            [allUpdates addObject:update];
+        }
+        else if ([update isKindOfClass:[TLUpdate$updateEncryption class]])
+        {
+            TLUpdate$updateEncryption *updateEncryption = (TLUpdate$updateEncryption *)update;
+            
+            TGConversation *conversation = [[TGConversation alloc] initWithTelegraphEncryptedChatDesc:updateEncryption.chat];
+            
+            if (conversation.conversationId != 0)
             {
-                TLUpdate$updateEncryption *updateEncryption = (TLUpdate$updateEncryption *)update;
-                
-                TGConversation *conversation = [[TGConversation alloc] initWithTelegraphEncryptedChatDesc:updateEncryption.chat];
-#if TARGET_IPHONE_SIMULATOR
-                if (conversation.conversationId != 0)
-#else
-                if (conversation.conversationId != 0)
-#endif
+                if (conversation.chatParticipants.chatParticipantUids.count != 0)
                 {
-                    if (conversation.chatParticipants.chatParticipantUids.count != 0)
-                    {
-                        int userId = [conversation.chatParticipants.chatParticipantUids[0] intValue];
-                        if ([TGDatabaseInstance() loadUser:userId] != nil)
-                            [allUpdates addObject:update];
-                        else
-                            failedProcessing = true;
-                    }
+                    int userId = [conversation.chatParticipants.chatParticipantUids[0] intValue];
+                    if ([TGDatabaseInstance() loadUser:userId] != nil)
+                        [allUpdates addObject:update];
                     else
                         failedProcessing = true;
                 }
                 else
                     failedProcessing = true;
             }
-            else if ([update isKindOfClass:updateNewEncryptedMessageClass])
-            {
-                TLUpdate$updateNewEncryptedMessage *updateNewEncryptedMessage = (TLUpdate$updateNewEncryptedMessage *)update;
-                
-                if (![updateNewEncryptedMessage.message isKindOfClass:[TLEncryptedMessage$encryptedMessageService class]] && updateSet.messageDate != 0 && updateSet.messageDate - date < 4 && updateNewEncryptedMessage.message != nil && stateQts != 0)
-                    [messagesForLocalNotification addObject:@{@"message": updateNewEncryptedMessage.message, @"qts": @(stateQts)}];
-                
-                [allUpdates addObject:update];
-            }
-            else if ([update isKindOfClass:[TLUpdates$updatesTooLong class]])
-            {
-                failedProcessing = true;
-                updatesTooLong = true;
-                
-                break;
-            }
             else
+                failedProcessing = true;
+        }
+        else if ([update isKindOfClass:updateNewEncryptedMessageClass])
+        {
+            TLUpdate$updateNewEncryptedMessage *updateNewEncryptedMessage = (TLUpdate$updateNewEncryptedMessage *)update;
+            
+            if (![updateNewEncryptedMessage.message isKindOfClass:[TLEncryptedMessage$encryptedMessageService class]] && updateNewEncryptedMessage.message != nil && stateQts != 0)
             {
-                [allUpdates addObject:update];
+                [messagesForLocalNotification addObject:@{@"message": updateNewEncryptedMessage.message, @"qts": @(stateQts)}];
             }
+            
+            [allUpdates addObject:update];
+        }
+        else if ([update isKindOfClass:[TLUpdates$updatesTooLong class]])
+        {
+            failedProcessing = true;
+            updatesTooLong = true;
+            
+            break;
+        }
+        else
+        {
+            [allUpdates addObject:update];
         }
     }
     
@@ -636,65 +1111,75 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
             [chatsToProcess addObject:it->second];
         }
         
-        [TGUpdateStateRequestBuilder applyUpdates:addedMessages addedParsedMessages:nil otherUpdates:allUpdates addedEncryptedActions:nil usersDesc:usersToProcess chatsDesc:chatsToProcess chatParticipantsDesc:nil updatesWithDates:updatesWithDates];
-        
-        [delayedNotifications() addObjectsFromArray:messagesForLocalNotification];
-        
-        if (self.requestQueueName.length != 0 && stateSeq != 0)
+        _waitingForApplyUpdates = true;
+        [TGUpdateStateRequestBuilder applyUpdates:addedMessages otherUpdates:allUpdates usersDesc:usersToProcess chatsDesc:chatsToProcess chatParticipantsDesc:nil updatesWithDates:updatesWithDates addedEncryptedActionsByPeerId:nil addedEncryptedUnparsedActionsByPeerId:nil completion:^(__unused bool applied)
         {
-            if (stateSeq == 0)
-                stateSeq = databaseState.seq;
+            _waitingForApplyUpdates = false;
+            [_updateList addObjectsFromArray:_waitingForApplyUpdatesQueue];
+            [_waitingForApplyUpdatesQueue removeAllObjects];
             
-            if (stateDate == 0)
-                stateDate = databaseState.date;
+            [delayedNotifications() addObjectsFromArray:messagesForLocalNotification];
             
-            if (statePts == 0)
-                statePts = databaseState.pts;
-            
-            if (stateQts == 0)
-                stateQts = databaseState.qts;
-            
-            if (stateQts > 0)
+            if (stateQts != 0)
             {
                 [TGDatabaseInstance() updateLatestQts:stateQts applied:false completion:^(int greaterQtsForSynchronization)
-                {
-                    if (greaterQtsForSynchronization > 0)
-                    {
-                        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/messages/reportDelivery/(qts)"] options:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithInt:stateQts], @"qts", nil] watcher:TGTelegraphInstance];
-                    }
-                }];
+                 {
+                     if (greaterQtsForSynchronization > 0)
+                     {
+                         [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/messages/reportDelivery/(qts)"] options:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithInt:stateQts], @"qts", nil] watcher:TGTelegraphInstance];
+                     }
+                 }];
             }
             
-            static int applyStateCounter = 0;
-            [[[TGApplyStateRequestBuilder alloc] initWithPath:[NSString stringWithFormat:@"/tg/service/applystate/(a%d)", applyStateCounter++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:statePts], @"pts", [NSNumber numberWithInt:stateDate], @"date", [NSNumber numberWithInt:stateSeq], @"seq", @(stateQts), @"qts", [NSNumber numberWithInt:-1], @"unreadCount", nil]];
-        }
+            if ([self.path isEqualToString:@"/tg/service/tryupdates/(withPts)"] || [self.path isEqualToString:@"/tg/service/tryupdates/(withSeq)"] || [self.path isEqualToString:@"/tg/service/tryupdates/(withQts)"])
+            {
+                if (statePts != 0)
+                    TGLog(@"=== pts: %d", statePts);
+                if (optionalFinalSeq != 0)
+                    TGLog(@"=== seq: %d", optionalFinalSeq);
+                if (stateQts != 0)
+                    TGLog(@"=== qts: %d", stateQts);
+                
+                [[TGDatabase instance] applyPts:statePts date:optionalFinalDate seq:optionalFinalSeq qts:stateQts unreadCount:-1];
+            }
+            else if (optionalFinalDate > databaseState.date)
+            {
+                [[TGDatabase instance] applyPts:0 date:optionalFinalDate seq:0 qts:0 unreadCount:-1];
+            }
+            
+            if (completion)
+                completion(true);
+        }];
     }
-    
-    if (completeAction)
-        [ActionStageInstance() actionCompleted:self.path result:nil];
-    
-    if (failedProcessing)
+    else
     {
         if (updatesTooLong)
             TGLog(@"===== Updates too long, requesting complete difference");
         else
             TGLog(@"***** Unknown chat or user found, requesting complete difference");
-        [TGTelegraphInstance stateUpdateRequired];
+        
+        if (completion)
+            completion(false);
     }
+    
+    return !failedProcessing;
 }
 
 - (void)cancel
 {
-    [self cancelSequenceTimer];
+    [self cancelTimeoutTimer];
     
     [super cancel];
 }
 
-+ (void)applyDelayedNotifications:(int)maxMid mids:(NSArray *)mids maxQts:(int)maxQts randomIds:(NSArray *)randomIds
++ (void)applyDelayedNotifications:(int)maxMid mids:(NSArray *)mids midsWithoutSound:(NSSet *)midsWithoutSound maxQts:(int)maxQts randomIds:(NSArray *)randomIds
 {
     dispatch_async(dispatch_get_main_queue(), ^
     {
-        UIApplicationState applicationState = [[UIApplication sharedApplication] applicationState];
+        UIApplicationState applicationState = [UIApplication sharedApplication].applicationState;
+        if ([UIApplication sharedApplication] == nil)
+            applicationState = UIApplicationStateBackground;
+        
         [ActionStageInstance() dispatchOnStageQueue:^
         {
             if (applicationState != UIApplicationStateActive)
@@ -729,16 +1214,19 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                         midsSet.insert([nMid intValue]);
                     }
                     
+                    std::set<int> processedMidsSet;
+                    
                     std::set<int64_t> randomIdsSet;
                     for (NSNumber *nRandomId in randomIds)
                     {
                         randomIdsSet.insert([nRandomId longLongValue]);
                     }
                     
-                    int count = delayedNotifications().count;
+                    int count = (int)delayedNotifications().count;
                     for (int i = 0; i < count; i++)
                     {
                         TGMessage *message = nil;
+                        NSUInteger multiforwardCount = 0;
                         
                         int messageQts = 0;
                         
@@ -767,7 +1255,56 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             if (midsSet.find(mid) == midsSet.end())
                                 continue;
                             
+                            if (processedMidsSet.find(mid) != processedMidsSet.end())
+                                continue;
+                            processedMidsSet.insert(mid);
+                            
                             message = [[TGMessage alloc] initWithTelegraphMessageDesc:messageDesc];
+                            bool foundForward = false;
+                            
+                            for (id media in message.mediaAttachments)
+                            {
+                                if ([media isKindOfClass:[TGForwardedMessageMediaAttachment class]])
+                                {
+                                    foundForward = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (foundForward)
+                            {
+                                for (int j = i + 1; j >= 0 && j < count; j++)
+                                {
+                                    if ([delayedNotifications()[j] isKindOfClass:[TLMessage class]])
+                                    {
+                                        TGMessage *nextMessage = [[TGMessage alloc] initWithTelegraphMessageDesc:delayedNotifications()[j]];
+                                        
+                                        if (processedMidsSet.find(nextMessage.mid) != processedMidsSet.end())
+                                            continue;
+                                        processedMidsSet.insert(nextMessage.mid);
+                                        
+                                        bool nextIsForward = false;
+                                        for (id media in nextMessage.mediaAttachments)
+                                        {
+                                            if ([media isKindOfClass:[TGForwardedMessageMediaAttachment class]])
+                                            {
+                                                nextIsForward = true;
+                                                break;
+                                            }
+                                        }
+                                        
+                                        if (nextIsForward)
+                                        {
+                                            if (multiforwardCount == 0)
+                                                multiforwardCount = 1;
+                                            multiforwardCount++;
+                                            [delayedNotifications() removeObjectAtIndex:j];
+                                            j--;
+                                            count--;
+                                        }
+                                    }
+                                }
+                            }
                         }
                         else if ([abstractDesc isKindOfClass:[TLEncryptedMessage class]])
                         {
@@ -796,8 +1333,17 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             continue;
                         }
                         
-                        if ([TGDatabaseInstance() isPeerMuted:message.cid])
-                            continue;
+                        if (message.containsMention)
+                        {
+                            if ([TGDatabaseInstance() isPeerMuted:message.fromUid])
+                                continue;
+                        }
+                        else
+                        {
+                            if ([TGDatabaseInstance() isPeerMuted:message.cid])
+                                continue;
+                        }
+                        
                         
                         if (message.cid > 0 || message.cid <= INT_MIN)
                         {
@@ -830,10 +1376,16 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                         }
                         else
                         {
+                            if (message.containsMention)
+                                notificationPeerId = message.fromUid;
+                            else
+                                notificationPeerId = message.cid;
                             user = [TGDatabaseInstance() loadUser:(int)message.fromUid];
-                            notificationPeerId = message.cid;
-#warning optimize
-                            chatName = [TGDatabaseInstance() loadConversationWithId:message.cid].chatTitle;
+                            TGConversation *conversation = [TGDatabaseInstance() loadConversationWithIdCached:message.cid];
+                            if (conversation != nil)
+                                chatName = conversation.chatTitle;
+                            else
+                                chatName = [TGDatabaseInstance() loadConversationWithId:message.cid].chatTitle;
                         }
                         
                         if ([TGDatabaseInstance() isPeerMuted:notificationPeerId])
@@ -907,6 +1459,26 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                         
                                         break;
                                     }
+                                    case TGMessageActionChannelCreated:
+                                    {
+                                        text = @"";
+                                        attachmentFound = true;
+                                        
+                                        break;
+                                    }
+                                    case TGMessageActionChannelCommentsStatusChanged:
+                                    {
+                                        text = [actionAttachment.actionData[@"enabled"] boolValue] ? TGLocalized(@"Channel.NotificationCommentsEnabled") : TGLocalized(@"Channel.NotificationCommentsDisabled");
+                                        attachmentFound = true;
+                                        
+                                        break;
+                                    }
+                                    case TGMessageActionJoinedByLink:
+                                    {
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.JoinedGroupByLink"), user.displayName];
+                                        
+                                        break;
+                                    }
                                     default:
                                         break;
                                 }
@@ -957,10 +1529,39 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             }
                             else if (attachment.type == TGDocumentMediaAttachmentType)
                             {
-                                if (message.cid > 0)
-                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_DOC"), user.displayName];
+                                bool isAnimated = false;
+                                CGSize imageSize = CGSizeZero;
+                                bool isSticker = false;
+                                for (id attribute in ((TGDocumentMediaAttachment *)attachment).attributes)
+                                {
+                                    if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]])
+                                    {
+                                        isAnimated = true;
+                                    }
+                                    else if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]])
+                                    {
+                                        imageSize = ((TGDocumentAttributeImageSize *)attribute).size;
+                                    }
+                                    else if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
+                                    {
+                                        isSticker = true;
+                                    }
+                                }
+                                
+                                if (isSticker)
+                                {
+                                    if (message.cid > 0)
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_STICKER"), user.displayName];
+                                    else
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_STICKER"), user.displayName, chatName];
+                                }
                                 else
-                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_DOC"), user.displayName, chatName];
+                                {
+                                    if (message.cid > 0)
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_DOC"), user.displayName];
+                                    else
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_DOC"), user.displayName, chatName];
+                                }
                                 
                                 attachmentFound = true;
                                 
@@ -990,33 +1591,67 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                         if (soundId == 1)
                             soundId = (message.cid > 0 || message.cid <= INT_MIN) ? globalMessageSoundId : globalGroupSoundId;
                         
-                        if (soundId > 0)
+                        if (soundId > 0 && ![midsWithoutSound containsObject:@(message.mid)])
                             localNotification.soundName = [[NSString alloc] initWithFormat:@"%d.m4a", soundId];
 
-                        if (message.cid <= INT_MIN)
+                        if (multiforwardCount != 0)
                         {
-                            text = [[NSString alloc] initWithFormat:TGLocalized(@"ENCRYPTED_MESSAGE"), @""];
-                        }
-                        else if (message.cid > 0)
-                        {
-                            if (globalMessagePreviewText && !attachmentFound)
-                                text = [[NSString alloc] initWithFormat:@"%@: %@", user.displayName, message.text];
+                            if (message.cid > 0)
+                            {
+                                text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_FWDS"), user.displayName, [[NSString alloc] initWithFormat:@"%d", (int)multiforwardCount]];
+                            }
                             else
-                                text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_NOTEXT"), user.displayName];
+                            {
+                                text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_FWDS"), user.displayName, chatName, [[NSString alloc] initWithFormat:@"%d", (int)multiforwardCount]];
+                            }
                         }
                         else
                         {
-                            if (globalGroupPreviewText && !attachmentFound)
-                                text = [[NSString alloc] initWithFormat:@"%@@%@: %@", user.displayName, chatName, message.text];
+                            if (message.cid <= INT_MIN)
+                            {
+                                text = [[NSString alloc] initWithFormat:TGLocalized(@"ENCRYPTED_MESSAGE"), @""];
+                            }
+                            else if (message.cid > 0)
+                            {
+                                if (globalMessagePreviewText && !attachmentFound)
+                                    text = [[NSString alloc] initWithFormat:@"%@: %@", user.displayName, message.text];
+                                else if (!attachmentFound)
+                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_NOTEXT"), user.displayName];
+                            }
                             else
-                                text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_NOTEXT"), user.displayName, chatName];
+                            {
+                                if (globalGroupPreviewText && !attachmentFound)
+                                    text = [[NSString alloc] initWithFormat:@"%@@%@: %@", user.displayName, chatName, message.text];
+                                else if (!attachmentFound)
+                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_NOTEXT"), user.displayName, chatName];
+                            }
+                        }
+                        
+                        if ([TGAppDelegateInstance isCurrentlyLocked])
+                        {
+                            text = [[NSString alloc] initWithFormat:TGLocalized(@"LOCKED_MESSAGE"), @""];
                         }
                         
                         if (text.length > 256)
                             text = [text substringToIndex:256];
                         
+                        text = [text stringByReplacingOccurrencesOfString:@"%" withString:@"%%"];
+                        
+#ifdef INTERNAL_RELEASE
+                        text = [@"[L] " stringByAppendingString:text];
+#endif
                         localNotification.alertBody = text;
-                        localNotification.userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:message.cid], @"cid", nil];
+                        localNotification.userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:message.cid], @"cid", @(message.mid), @"mid", nil];
+                        
+                        if (iosMajorVersion() >= 8)
+                        {
+                            if (TGPeerIdIsGroup(message.cid))
+                                localNotification.category = @"m";
+                            else if (TGPeerIdIsChannel(message.cid))
+                                localNotification.category = @"c";
+                            else if (message.cid > INT_MIN)
+                                localNotification.category = @"r";
+                        }
                         
                         if (text != nil)
                             [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
@@ -1029,100 +1664,11 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
             }
             else
             {
+                TGLog(@"Not showing local notifications (applicationState = %d)", (int)applicationState);
                 [TGApplyUpdatesActor clearDelayedNotifications];
             }
         }];
     });
-}
-
-+ (NSArray *)filterStatelessUpdates:(TLUpdates *)updates
-{
-    static Class updateUserTypingClass = nil;
-    static Class updateChatUserTypingClass = nil;
-    static Class updateUserStatusClass = nil;
-    static Class updateUserNameClass = nil;
-    static Class updateUserPhotoClass = nil;
-    static Class updateEncryptedChatTypingClass = nil;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        updateUserTypingClass = [TLUpdate$updateUserTyping class];
-        updateChatUserTypingClass = [TLUpdate$updateChatUserTyping class];
-        updateUserStatusClass = [TLUpdate$updateUserStatus class];
-        updateUserNameClass = [TLUpdate$updateUserName class];
-        updateUserPhotoClass = [TLUpdate$updateUserPhoto class];
-        updateEncryptedChatTypingClass = [TLUpdate$updateEncryptedChatTyping class];
-    });
-    
-    NSMutableArray *array = nil;
-    
-    if ([updates isKindOfClass:[TLUpdates$updates class]] || [updates isKindOfClass:[TLUpdates$updatesCombined class]])
-    {
-        NSMutableArray *replacedArray = nil;
-        
-        int index = -1;
-        int date = ((TLUpdates$updates *)updates).date;
-        
-        for (TLUpdate *update in ((TLUpdates$updates *)updates).updates)
-        {
-            index++;
-            
-            if ([update isKindOfClass:updateUserTypingClass] ||
-                [update isKindOfClass:updateChatUserTypingClass] ||
-                [update isKindOfClass:updateEncryptedChatTypingClass] ||
-                [update isKindOfClass:updateUserStatusClass] ||
-                [update isKindOfClass:updateUserNameClass] ||
-                [update isKindOfClass:updateUserPhotoClass])
-            {
-                if (array == nil)
-                    array = [[NSMutableArray alloc] init];
-                
-                TLUpdates$updateShort *shortUpdate = [[TLUpdates$updateShort alloc] init];
-                shortUpdate.date = date;
-                shortUpdate.update = update;
-                
-                [array addObject:shortUpdate];
-                
-                if (replacedArray == nil)
-                {
-                    replacedArray = [[NSMutableArray alloc] initWithArray:((TLUpdates$updates *)updates).updates];
-                    ((TLUpdates$updates *)updates).updates = replacedArray;
-                }
-                
-                [replacedArray removeObjectAtIndex:index];
-                index--;
-            }
-        }
-        
-        if (replacedArray != nil)
-            TGLog(@"(modified updates: %@ (%d items)", replacedArray, replacedArray.count);
-    }
-    
-    return array;
-}
-
-+ (NSArray *)makeStatelessUpdates:(TLUpdates *)updates
-{
-    NSMutableArray *array = [[NSMutableArray alloc] init];
-    
-    if ([updates isKindOfClass:[TLUpdates$updates class]] || [updates isKindOfClass:[TLUpdates$updatesCombined class]])
-    {
-        int date = ((TLUpdates$updates *)updates).date;
-        
-        for (TLUpdate *update in ((TLUpdates$updates *)updates).updates)
-        {
-            TLUpdates$updateShort *shortUpdate = [[TLUpdates$updateShort alloc] init];
-            shortUpdate.date = date;
-            shortUpdate.update = update;
-            
-            [array addObject:shortUpdate];
-        }
-        
-        TGLog(@"(converted %d updates to stateless", array.count);
-    }
-    
-    return array;
 }
 
 @end

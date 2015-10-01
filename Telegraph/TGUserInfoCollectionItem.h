@@ -22,6 +22,7 @@
 @property (nonatomic) CGFloat additinalHeight;
 @property (nonatomic) CGSize avatarOffset;
 @property (nonatomic) CGSize nameOffset;
+@property (nonatomic, strong) NSString *customStatus;
 
 - (void)setUser:(TGUser *)user animated:(bool)animated;
 - (void)setEditing:(bool)editing animated:(bool)animated;

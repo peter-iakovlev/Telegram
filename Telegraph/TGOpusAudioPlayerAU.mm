@@ -28,7 +28,7 @@
 static const int TGOpusAudioPlayerBufferCount = 3;
 static const int TGOpusAudioPlayerSampleRate = 48000; // libopusfile is bound to use 48 kHz
 
-static std::map<int, __weak TGOpusAudioPlayerAU *> activeAudioPlayers;
+static std::map<intptr_t, __weak TGOpusAudioPlayerAU *> activeAudioPlayers;
 
 static TG_SYNCHRONIZED_DEFINE(filledBuffersLock) = PTHREAD_MUTEX_INITIALIZER;
 
@@ -37,7 +37,7 @@ static volatile OSSpinLock audioPositionLock = OS_SPINLOCK_INIT;
 @interface TGOpusAudioPlayerAU ()
 {
 @public
-    int _playerId;
+    intptr_t _playerId;
     
     NSString *_filePath;
     NSInteger _fileSize;
@@ -83,7 +83,7 @@ static volatile OSSpinLock audioPositionLock = OS_SPINLOCK_INIT;
     {
         _filePath = path;
         
-        static int nextPlayerId = 1;
+        static intptr_t nextPlayerId = 1;
         _playerId = nextPlayerId++;
         
         _isPaused = true;
@@ -161,7 +161,7 @@ static volatile OSSpinLock audioPositionLock = OS_SPINLOCK_INIT;
 
 static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRenderActionFlags *ioActionFlags, __unused const AudioTimeStamp *inTimeStamp, __unused UInt32 inBusNumber, __unused UInt32 inNumberFrames, AudioBufferList *ioData)
 {
-    int playerId = (int)inRefCon;
+    intptr_t playerId = (intptr_t)inRefCon;
     
     TG_SYNCHRONIZED_BEGIN(filledBuffersLock);
     

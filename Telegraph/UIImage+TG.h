@@ -19,4 +19,7 @@
 - (TGStaticBackdropImageData *)staticBackdropImageData;
 - (void)setStaticBackdropImageData:(TGStaticBackdropImageData *)staticBackdropImageData;
 
+- (UIEdgeInsets)extendedEdgeInsets;
+- (void)setExtendedEdgeInsets:(UIEdgeInsets)edgeInsets;
+
 @end

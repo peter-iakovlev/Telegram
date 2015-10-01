@@ -13,7 +13,9 @@
 @property (nonatomic, strong) TGMessage *innerMessage;
 
 @property (nonatomic) int32_t forwardMid;
+@property (nonatomic) int64_t forwardPeerId;
 
 - (instancetype)initWithInnerMessage:(TGMessage *)innerMessage;
+- (instancetype)initWithInnerMessage:(TGMessage *)innerMessage keepForwarded:(bool)keepForwarded;
 
 @end

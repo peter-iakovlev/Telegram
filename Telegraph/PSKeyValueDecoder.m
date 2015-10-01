@@ -16,7 +16,7 @@
 
 @end
 
-static inline uint32_t readLength(uint8_t const **currentPtr)
+static  uint32_t readLength(uint8_t const **currentPtr)
 {
     uint32_t result = 0;
     
@@ -51,7 +51,7 @@ static inline uint32_t readLength(uint8_t const **currentPtr)
     return result;
 }
 
-static inline NSString *readString(uint8_t const **currentPtr)
+static  NSString *readString(uint8_t const **currentPtr)
 {
     uint32_t stringLength = readLength(currentPtr);
     
@@ -60,43 +60,46 @@ static inline NSString *readString(uint8_t const **currentPtr)
     return string;
 }
 
-static inline void skipString(uint8_t const **currentPtr)
+static  void skipString(uint8_t const **currentPtr)
 {
     uint32_t stringLength = readLength(currentPtr);
     (*currentPtr) += stringLength;
 }
 
-static inline int32_t readInt32(uint8_t const **currentPtr)
+static  int32_t readInt32(uint8_t const **currentPtr)
 {
     int32_t number = *((int32_t *)(*currentPtr));
     (*currentPtr) += 4;
     return number;
 }
 
-static inline void skipInt32(uint8_t const **currentPtr)
+static  void skipInt32(uint8_t const **currentPtr)
 {
     (*currentPtr) += 4;
 }
 
-static inline int64_t readInt64(uint8_t const **currentPtr)
+static  int64_t readInt64(uint8_t const **currentPtr)
 {
-    int64_t number = *((int64_t *)(*currentPtr));
+    int64_t number;
+    memcpy(&number, *currentPtr, 8);
+    
     (*currentPtr) += 8;
     return number;
 }
 
-static inline void skipInt64(uint8_t const **currentPtr)
+static void skipInt64(uint8_t const **currentPtr)
 {
     (*currentPtr) += 8;
 }
 
-static inline id<PSCoding> readObject(uint8_t const **currentPtr, PSKeyValueDecoder *tempCoder)
+static id<PSCoding> readObject(uint8_t const **currentPtr, PSKeyValueDecoder *tempCoder)
 {
     uint32_t objectLength = *((uint32_t *)(*currentPtr));
     (*currentPtr) += 4;
     
     uint8_t const *objectEnd = (*currentPtr) + objectLength;
 
+    
     const char *className = (const char *)(*currentPtr);
     NSUInteger classNameLength = strlen(className) + 1;
     (*currentPtr) += classNameLength;
@@ -118,13 +121,13 @@ static inline id<PSCoding> readObject(uint8_t const **currentPtr, PSKeyValueDeco
     return object;
 }
 
-static inline void skipObject(uint8_t const **currentPtr)
+static  void skipObject(uint8_t const **currentPtr)
 {
     uint32_t objectLength = *((uint32_t *)currentPtr);
     (*currentPtr) += 4 + objectLength;
 }
 
-static inline NSArray *readArray(uint8_t const **currentPtr, PSKeyValueDecoder *tempCoder)
+static  NSArray *readArray(uint8_t const **currentPtr, PSKeyValueDecoder *tempCoder)
 {
     uint32_t objectLength = *((uint32_t *)(*currentPtr));
     (*currentPtr) += 4;
@@ -153,7 +156,33 @@ static void skipArray(uint8_t const **currentPtr)
     (*currentPtr) += 4 + objectLength;
 }
 
-static inline void skipField(uint8_t const **currentPtr)
+static NSData *readData(uint8_t const **currentPtr)
+{
+    uint32_t length = readLength(currentPtr);
+    
+    NSData *data = [[NSData alloc] initWithBytes:*currentPtr length:length];
+    
+    *currentPtr += length;
+    
+    return data;
+}
+
+static void readBytes(uint8_t const **currentPtr, uint8_t *value, NSUInteger maxLength)
+{
+    uint32_t length = readLength(currentPtr);
+    
+    memcpy(value, *currentPtr, MIN((uint32_t)maxLength, length));
+    
+    *currentPtr += length;
+}
+
+static void skipData(uint8_t const **currentPtr)
+{
+    uint32_t length = readLength(currentPtr);
+    (*currentPtr) += length;
+}
+
+static  void skipField(uint8_t const **currentPtr)
 {
     uint8_t fieldType = *(*currentPtr);
     (*currentPtr)++;
@@ -183,6 +212,11 @@ static inline void skipField(uint8_t const **currentPtr)
         case PSKeyValueCoderFieldTypeArray:
         {
             skipArray(currentPtr);
+            break;
+        }
+        case PSKeyValueCoderFieldTypeData:
+        {
+            skipData(currentPtr);
             break;
         }
         default:
@@ -231,6 +265,12 @@ static inline void skipField(uint8_t const **currentPtr)
     
     _begin = bytes;
     _end = _begin + length;
+    _currentPtr = _begin;
+}
+
+- (void)rewind {
+    _begin = (uint8_t const *)[_data bytes];
+    _end = _begin + [_data length];
     _currentPtr = _begin;
 }
 
@@ -441,6 +481,119 @@ static NSArray *decodeArrayForRawKey(PSKeyValueDecoder *self, uint8_t const *key
 - (NSArray *)decodeArrayForCKey:(const char *)key
 {
     return decodeArrayForRawKey(self, (uint8_t const *)key, strlen(key));
+}
+
+static NSData *decodeDataForRawKey(PSKeyValueDecoder *self, uint8_t const *key, NSUInteger keyLength)
+{
+    if (skipToValueForRawKey(self, key, keyLength))
+    {
+        uint8_t fieldType = *self->_currentPtr;
+        self->_currentPtr++;
+        
+        if (fieldType == PSKeyValueCoderFieldTypeData)
+        {
+            return readData(&self->_currentPtr);
+        }
+        else
+        {
+            skipField(&self->_currentPtr);
+            
+            return nil;
+        }
+    }
+    
+    return nil;
+}
+
+static void decodeBytesForRawKey(PSKeyValueDecoder *self, uint8_t const *key, NSUInteger keyLength, uint8_t *value, NSUInteger maxLength)
+{
+    if (skipToValueForRawKey(self, key, keyLength))
+    {
+        uint8_t fieldType = *self->_currentPtr;
+        self->_currentPtr++;
+        
+        if (fieldType == PSKeyValueCoderFieldTypeData)
+        {
+            readBytes(&self->_currentPtr, value, maxLength);
+        }
+        else
+        {
+            skipField(&self->_currentPtr);
+        }
+    }
+}
+
+- (NSData *)decodeDataCorCKey:(const char *)key
+{
+    return decodeDataForRawKey(self, (uint8_t const *)key, strlen(key));
+}
+
+- (void)decodeBytesForCKey:(const char *)key value:(uint8_t *)value length:(NSUInteger)length
+{
+    decodeBytesForRawKey(self, (uint8_t const *)key, strlen(key), value, length);
+}
+
+- (NSDictionary *)decodeObjectsByKeys
+{
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+    
+    if (self->_tempCoder == nil)
+        self->_tempCoder = [[PSKeyValueDecoder alloc] init];
+    
+    self->_currentPtr = self->_begin;
+    while (self->_currentPtr < self->_end)
+    {
+        uint32_t keyLength = readLength(&self->_currentPtr);
+        NSString *key = [[NSString alloc] initWithBytes:self->_currentPtr length:keyLength encoding:NSUTF8StringEncoding];
+        self->_currentPtr += keyLength;
+        
+        uint8_t fieldType = *self->_currentPtr;
+        self->_currentPtr++;
+        
+        if (fieldType == PSKeyValueCoderFieldTypeCustomClass)
+        {
+            id<PSCoding> value = readObject(&self->_currentPtr, self->_tempCoder);
+            if (value == nil)
+                continue;
+            
+            dict[key] = value;
+        }
+        else
+            break;
+    }
+    
+    self->_currentPtr = self->_begin;
+    
+    return dict;
+}
+
+- (NSArray *)decodeInt32ArrayForCKey:(const char *)key {
+    if (skipToValueForRawKey(self, (void *)key, strlen(key))) {
+        uint8_t fieldType = *self->_currentPtr;
+        self->_currentPtr++;
+        
+        if (fieldType == PSKeyValueCoderFieldTypeInt32Array) {
+            int32_t count = 0;
+            memcpy(&count, self->_currentPtr, 4);
+            self->_currentPtr += 4;
+            NSMutableArray *array = [[NSMutableArray alloc] init];
+            
+            for (int32_t i = 0; i < count; i++) {
+                int32_t number = 0;
+                memcpy(&number, self->_currentPtr, 4);
+                self->_currentPtr += 4;
+                [array addObject:@(number)];
+            }
+            
+            return array;
+        } else {
+            self->_currentPtr--;
+            skipField(&self->_currentPtr);
+            return nil;
+        }
+    } else {
+        return nil;
+    }
 }
 
 @end

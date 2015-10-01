@@ -52,6 +52,7 @@
     [view setEnabled:_enabled];
     
     view.leftInset = _leftInset;
+    [view setAdditionalSeparatorInset:_additionalSeparatorInset];
 }
 
 - (void)setTitle:(NSString *)title
@@ -71,6 +72,19 @@
         
         [(TGButtonCollectionItemView *)[self boundView] setEnabled:_enabled];
     }
+}
+
+- (void)setLeftInset:(CGFloat)leftInset
+{
+    _leftInset = leftInset;
+    
+    [(TGButtonCollectionItemView *)[self boundView] setLeftInset:_leftInset];
+}
+
+- (void)setAdditionalSeparatorInset:(CGFloat)additionalSeparatorInset {
+    _additionalSeparatorInset = additionalSeparatorInset;
+    
+    [(TGButtonCollectionItemView *)[self boundView] setAdditionalSeparatorInset:_additionalSeparatorInset];
 }
 
 @end

@@ -15,6 +15,7 @@
 @interface TGModernConversationCollectionView : UICollectionView
 
 @property (nonatomic) TGMessageRange unreadMessageRange;
+@property (nonatomic, strong) UIView *headerView;
 
 - (void)scrollToTopIfNeeded;
 
@@ -22,13 +23,16 @@
 - (void)updateVisibleItemsNow;
 - (bool)disableDecorationViewUpdates;
 - (void)setDisableDecorationViewUpdates:(bool)disableDecorationViewUpdates;
-- (void)updateRelativeBounds;
+- (bool)updateRelativeBounds;
 
 - (UIView *)viewForDecorationAtIndex:(int)index;
 - (NSArray *)visibleDecorations;
 - (void)updateDecorationAssets;
 
 - (bool)performBatchUpdates:(void (^)(void))updates completion:(void (^)(BOOL))completion beforeDecorations:(void (^)())beforeDecorations animated:(bool)animated animationFactor:(float)animationFactor;
+
+- (CGFloat)implicitTopInset;
+- (void)updateHeaderView;
 
 @end
 

@@ -61,17 +61,16 @@
     [self setNeedsLayout];
 }
 
-- (void)adjustForOrientation:(UIInterfaceOrientation)orientation keyboardHeight:(float)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve
+- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve
 {
-    [self _adjustForOrientation:orientation keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve];
+    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve];
 }
 
-- (void)_adjustForOrientation:(UIInterfaceOrientation)orientation keyboardHeight:(float)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve
+- (void)_adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve
 {
     dispatch_block_t block = ^
     {
-        id<TGModernConversationInputPanelDelegate> delegate = self.delegate;
-        CGSize messageAreaSize = [delegate messageAreaSizeForInterfaceOrientation:orientation];
+        CGSize messageAreaSize = size;
         
         self.frame = CGRectMake(0, messageAreaSize.height - keyboardHeight - [self baseHeight], messageAreaSize.width, [self baseHeight]);
         [self layoutSubviews];
@@ -83,9 +82,9 @@
         block();
 }
 
-- (void)changeOrientationToOrientation:(UIInterfaceOrientation)orientation keyboardHeight:(float)keyboardHeight duration:(NSTimeInterval)duration
+- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration
 {
-    [self _adjustForOrientation:orientation keyboardHeight:keyboardHeight duration:duration animationCurve:0];
+    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:0];
 }
 
 - (void)layoutSubviews

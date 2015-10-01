@@ -21,6 +21,7 @@ extern CGFloat TGModernFlatteningViewModelTilingLimit;
 - (void)animateWithSnapshot;
 
 - (void)setNeedsSubmodelContentsUpdate;
+- (bool)needsSubmodelContentsUpdate;
 - (void)updateSubmodelContentsIfNeeded;
 - (void)updateSubmodelContentsForVisibleRect:(CGRect)rect;
 

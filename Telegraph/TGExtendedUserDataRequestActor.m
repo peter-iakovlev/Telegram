@@ -10,6 +10,12 @@
 
 #import "TGUser+Telegraph.h"
 
+#import "TGTelegramNetworking.h"
+
+#import "TLUser$modernUser.h"
+
+#import "TGBotSignals.h"
+
 @implementation TGExtendedUserDataRequestActor
 
 + (NSString *)genericPath
@@ -26,7 +32,6 @@
         return;
     }
     
-#warning make async
     bool outdated = false;
     int userLink = [TGDatabaseInstance() loadUserLink:uid outdated:&outdated];
     
@@ -53,7 +58,7 @@
     [TGUserDataRequestBuilder executeUserObjectsUpdate:[NSArray arrayWithObject:user]];
     
     int userLink = extractUserLink(userDesc.link);
-    [TGUserDataRequestBuilder executeUserLinkUpdates:[[NSArray alloc] initWithObjects:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:userDesc.link.user.n_id], [[NSNumber alloc] initWithInt:userLink], nil], nil]];
+    [TGUserDataRequestBuilder executeUserLinkUpdates:[[NSArray alloc] initWithObjects:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:((TLUser$modernUser *)userDesc.link.user).n_id], [[NSNumber alloc] initWithInt:userLink], nil], nil]];
     
     int peerSoundId = 0;
     int peerMuteUntil = 0;
@@ -71,6 +76,8 @@
             peerSoundId = [concreteSettings.sound intValue];
         
         peerMuteUntil = concreteSettings.mute_until;
+        if (peerMuteUntil <= [[TGTelegramNetworking instance] approximateRemoteTime])
+            peerMuteUntil = 0;
         
         peerPreviewText = concreteSettings.show_previews;
         
@@ -85,6 +92,10 @@
             [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/peerSettings/(%d)", user.uid] resource:[[SGraphObjectNode alloc] initWithObject:dict]];
         }
     }];
+    
+    TGBotInfo *botInfo = [TGBotSignals botInfoForInfo:userDesc.bot_info];
+    if (botInfo != nil)
+        [TGDatabaseInstance() storeBotInfo:botInfo forUserId:user.uid];
     
     NSMutableDictionary *resultDict = [[NSMutableDictionary alloc] init];
     [resultDict setObject:[[NSNumber alloc] initWithInt:userLink] forKey:@"userLink"];

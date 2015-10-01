@@ -7,11 +7,8 @@
 #import "TGMessageImageViewOverlayView.h"
 #import "TGModernButton.h"
 
-static const CGFloat circleDiameter = 50.0f;
-
 @interface TGDocumentMessageIconView ()
 {
-    UIImageView *_backgroundView;
     UILabel *_extensionLabel;
     
     TGModernButton *_buttonView;
@@ -40,10 +37,6 @@ static const CGFloat circleDiameter = 50.0f;
             backgroundImage = [rawImage stretchableImageWithLeftCapWidth:(int)(rawImage.size.width / 2) topCapHeight:(int)(rawImage.size.height / 2)];
         });
         
-        _backgroundView = [[UIImageView alloc] initWithImage:backgroundImage];
-        _backgroundView.frame = CGRectMake(0.0f, 0.0f, frame.size.width, frame.size.height);
-        [self addSubview:_backgroundView];
-        
         _extensionLabel = [[UILabel alloc] init];
         _extensionLabel.backgroundColor = [UIColor clearColor];
         _extensionLabel.opaque = false;
@@ -51,13 +44,15 @@ static const CGFloat circleDiameter = 50.0f;
         _extensionLabel.font = TGSystemFontOfSize(19.0f);
         [self addSubview:_extensionLabel];
         
-        _buttonView = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, circleDiameter, circleDiameter)];
+        CGFloat diameter = 44.0f;
+        
+        _buttonView = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, diameter, diameter)];
         _buttonView.exclusiveTouch = true;
         _buttonView.modernHighlight = true;
         [_buttonView addTarget:self action:@selector(actionButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         
-        _overlayView = [[TGMessageImageViewOverlayView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, circleDiameter, circleDiameter)];
-        [_overlayView setOverlayStyle:TGMessageImageViewOverlayStyleAccent];
+        _overlayView = [[TGMessageImageViewOverlayView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, diameter, diameter)];
+        [_overlayView setRadius:diameter];
         _overlayView.userInteractionEnabled = false;
         [_buttonView addSubview:_overlayView];
         
@@ -65,10 +60,10 @@ static const CGFloat circleDiameter = 50.0f;
         static dispatch_once_t onceToken2;
         dispatch_once(&onceToken2, ^
         {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(circleDiameter, circleDiameter), false, 0.0f);
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
             CGContextRef context = UIGraphicsGetCurrentContext();
             CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.4f).CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, circleDiameter, circleDiameter));
+            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             highlightImage = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
         });
@@ -86,7 +81,6 @@ static const CGFloat circleDiameter = 50.0f;
 {
     [super setFrame:frame];
     
-    _backgroundView.frame = CGRectMake(0.0f, 0.0f, frame.size.width, frame.size.height);
     _extensionLabel.frame = CGRectMake(CGFloor((frame.size.width - _extensionLabel.bounds.size.width) / 2.0f), CGFloor((frame.size.height - _extensionLabel.bounds.size.height) / 2.0f), _extensionLabel.bounds.size.width, _extensionLabel.bounds.size.height);
     
     CGRect buttonFrame = _buttonView.frame;
@@ -97,12 +91,20 @@ static const CGFloat circleDiameter = 50.0f;
     }
 }
 
-- (void)setFileExtension:(NSString *)fileExtension
+- (void)setIncoming:(bool)incoming
 {
-    if (!TGStringCompare(_fileExtension, fileExtension))
+    _incoming = incoming;
+    
+    [_overlayView setOverlayStyle:incoming ? TGMessageImageViewOverlayStyleIncoming : TGMessageImageViewOverlayStyleOutgoing];
+}
+
+- (void)setFileName:(NSString *)fileName
+{
+    if (!TGStringCompare(_fileName, fileName))
     {
-        _fileExtension = fileExtension;
-        _extensionLabel.text = fileExtension;
+        _fileName = fileName;
+        
+        _extensionLabel.text = [fileName pathExtension];
         CGSize labelSize = [_extensionLabel sizeThatFits:CGSizeMake(65.0f, 1000.0f)];
         _extensionLabel.frame = CGRectMake(CGFloor((self.frame.size.width - labelSize.width) / 2.0f), CGFloor((self.frame.size.height - labelSize.height) / 2.0f), labelSize.width, labelSize.height);
     }
@@ -146,6 +148,34 @@ static const CGFloat circleDiameter = 50.0f;
                 _extensionLabel.alpha = 0.0f;
                 
                 [_overlayView setPlay];
+                
+                break;
+            }
+            case TGMessageImageViewOverlayPlayMedia:
+            {
+                if (_buttonView.superview == nil)
+                {
+                    [self addSubview:_buttonView];
+                }
+                
+                _buttonView.alpha = 1.0f;
+                _extensionLabel.alpha = 0.0f;
+                
+                [_overlayView setPlayMedia];
+                
+                break;
+            }
+            case TGMessageImageViewOverlayPauseMedia:
+            {
+                if (_buttonView.superview == nil)
+                {
+                    [self addSubview:_buttonView];
+                }
+                
+                _buttonView.alpha = 1.0f;
+                _extensionLabel.alpha = 0.0f;
+                
+                [_overlayView setPauseMedia];
                 
                 break;
             }
@@ -193,14 +223,18 @@ static const CGFloat circleDiameter = 50.0f;
             }
         }
     }
+    else if (_overlayType == TGMessageImageViewOverlayProgress)
+    {
+        [_overlayView setProgress:_progress animated:false];
+    }
 }
 
-- (void)setProgress:(float)progress
+- (void)setProgress:(CGFloat)progress
 {
     [self setProgress:progress animated:false];
 }
 
-- (void)setProgress:(float)progress animated:(bool)animated
+- (void)setProgress:(CGFloat)progress animated:(bool)animated
 {
     if (ABS(_progress - progress) > FLT_EPSILON)
     {
@@ -228,6 +262,8 @@ static const CGFloat circleDiameter = 50.0f;
             break;
         }
         case TGMessageImageViewOverlayPlay:
+        case TGMessageImageViewOverlayPlayMedia:
+        case TGMessageImageViewOverlayPauseMedia:
         {
             action = TGMessageImageViewActionPlay;
             break;

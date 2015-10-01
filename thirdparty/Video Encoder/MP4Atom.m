@@ -15,9 +15,6 @@ static unsigned int to_host(unsigned char* p)
 
 @implementation MP4Atom
 
-@synthesize type = _type;
-@synthesize length = _length;
-
 + (MP4Atom*) atomAt:(int64_t) offset size:(int) length type:(OSType) fourcc inFile:(NSFileHandle*) handle
 {
     MP4Atom* atom = [MP4Atom alloc];

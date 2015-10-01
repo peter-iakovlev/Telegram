@@ -36,39 +36,7 @@
             
             _imageInfo = [[TGImageInfo alloc] initWithTelegraphSizesDescription:concretePhoto.sizes];
             
-            if ([concretePhoto.geo isKindOfClass:[TLGeoPoint$geoPoint class]])
-            {
-                _hasLocation = true;
-                _locationLatitude = ((TLGeoPoint$geoPoint *)concretePhoto.geo).lat;
-                _locationLongitude = ((TLGeoPoint$geoPoint *)concretePhoto.geo).n_long;
-            }
-            else if ([concretePhoto.geo isKindOfClass:[TLGeoPoint$geoPlace class]])
-            {
-                _hasLocation = true;
-                _locationLatitude = ((TLGeoPoint$geoPlace *)concretePhoto.geo).lat;
-                _locationLongitude = ((TLGeoPoint$geoPlace *)concretePhoto.geo).n_long;
-                
-                TLGeoPlaceName *geoPlaceName = ((TLGeoPoint$geoPlace *)concretePhoto.geo).name;
-                if ([geoPlaceName isKindOfClass:[TLGeoPlaceName$geoPlaceName class]])
-                {
-                    NSMutableDictionary *components = [[NSMutableDictionary alloc] init];
-                    if (geoPlaceName.country != nil)
-                        [components setObject:[TGStringUtils stringByUnescapingFromHTML:geoPlaceName.country] forKey:@"country"];
-                    if (geoPlaceName.state != nil)
-                        [components setObject:[TGStringUtils stringByUnescapingFromHTML:geoPlaceName.state] forKey:@"state"];
-                    if (geoPlaceName.city != nil)
-                        [components setObject:[TGStringUtils stringByUnescapingFromHTML:geoPlaceName.city] forKey:@"city"];
-                    if (geoPlaceName.district != nil)
-                        [components setObject:[TGStringUtils stringByUnescapingFromHTML:geoPlaceName.district] forKey:@"district"];
-                    if (geoPlaceName.street != nil)
-                        [components setObject:[TGStringUtils stringByUnescapingFromHTML:geoPlaceName.street] forKey:@"street"];
-                    _locationComponents = components;
-                }
-            }
-            else
-            {
-                _hasLocation = false;
-            }
+            _hasLocation = false;
         }
     }
     return self;

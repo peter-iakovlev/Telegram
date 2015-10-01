@@ -58,8 +58,19 @@
             
             return image;
         }
-        default:
-            break;
+        case TGModernClockProgressTypeIncomingClock:
+        {
+            static CGImageRef image = NULL;
+            
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^
+            {
+                UIImage *rawImage =[UIImage imageNamed:@"ClockIncomingFrame.png"];
+                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
+            });
+            
+            return image;
+        }
     }
     
     return nil;
@@ -93,6 +104,19 @@
                 image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
             });
             
+            return image;
+        }
+        case TGModernClockProgressTypeIncomingClock:
+        {
+            static CGImageRef image = NULL;
+            
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^
+            {
+                UIImage *rawImage =[UIImage imageNamed:@"ClockIncomingMin.png"];
+                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
+            });
+
             return image;
         }
         default:
@@ -130,8 +154,19 @@
             
             return image;
         }
-        default:
-            break;
+        case TGModernClockProgressTypeIncomingClock:
+        {
+            static CGImageRef image = NULL;
+            
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^
+            {
+                UIImage *rawImage = [UIImage imageNamed:@"ClockIncomingHour.png"];
+                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
+            });
+            
+            return image;
+        }
     }
 }
 

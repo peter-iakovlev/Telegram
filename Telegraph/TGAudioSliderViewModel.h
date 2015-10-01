@@ -16,6 +16,7 @@
 @property (nonatomic) NSTimeInterval preciseDuration;
 @property (nonatomic) bool manualPositionAdjustmentEnabled;
 @property (nonatomic) bool progressMode;
+@property (nonatomic) bool listenedStatus;
 
 - (void)setAudioPosition:(float)audioPosition animated:(bool)animated timestamp:(NSTimeInterval)timestamp isPlaying:(bool)isPlaying;
 

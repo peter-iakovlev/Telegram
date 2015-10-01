@@ -58,6 +58,10 @@
 {
     [super setFrame:frame];
     
+    [self layoutForFrame:frame];
+}
+
+- (void)layoutForFrame:(CGRect)frame {
     CGRect masterViewContainerFrame = [self rectForMasterViewForFrame:frame];
     _masterViewContainer.frame = masterViewContainerFrame;
     
@@ -71,7 +75,7 @@
     _fakeNavigationBarView.frame = CGRectMake(detailViewContainerFrame.origin.x, 0.0f, detailViewContainerFrame.size.width, 64.0f);
     
     _blankLogoView.frame = CGRectMake(CGFloor(CGRectGetMidX(detailViewContainerFrame) - _blankLogoView.frame.size.width / 2.0f), CGFloor(CGRectGetMidY(detailViewContainerFrame) - _blankLogoView.frame.size.height / 2.0f) + 9.0f, _blankLogoView.frame.size.width, _blankLogoView.frame.size.height);
-
+    
     CGFloat separatorHeight = [[UIScreen mainScreen] scale] > 1.0f + FLT_EPSILON ? 0.5f : 1.0f;
     _fakeNavigationBarSeparatorView.frame = CGRectMake(detailViewContainerFrame.origin.x, 64.0f - separatorHeight, detailViewContainerFrame.size.width, separatorHeight);
     
@@ -81,6 +85,28 @@
     _detailView.frame = detailViewContainerFrame;
 }
 
+- (void)setFullScreenDetail:(bool)fullScreenDetail {
+    if (fullScreenDetail != _fullScreenDetail) {
+        _fullScreenDetail = fullScreenDetail;
+        
+        if (fullScreenDetail) {
+            [_fakeNavigationBarView removeFromSuperview];
+            [_fakeNavigationBarSeparatorView removeFromSuperview];
+            [_blankLogoView removeFromSuperview];
+            [_masterViewContainer removeFromSuperview];
+            [_stripeView removeFromSuperview];
+        } else {
+            [self insertSubview:_fakeNavigationBarView atIndex:0];
+            [self insertSubview:_fakeNavigationBarSeparatorView atIndex:1];
+            [self insertSubview:_blankLogoView atIndex:2];
+            [self insertSubview:_masterViewContainer aboveSubview:_detailViewContainer];
+            [self addSubview:_stripeView];
+        }
+        
+        [self layoutForFrame:self.frame];
+    }
+}
+
 - (CGRect)rectForMasterViewForFrame:(CGRect)frame
 {
     return CGRectMake(0.0f, 0.0f, frame.size.width >= (1024.0f - FLT_EPSILON) ? 389.0f : 320.0f, frame.size.height);
@@ -88,8 +114,12 @@
 
 - (CGRect)rectForDetailViewForFrame:(CGRect)frame
 {
-    CGRect dialogListViewFrame = [self rectForMasterViewForFrame:frame];
-    return CGRectMake(dialogListViewFrame.size.width, 0.0f, MAX(0.0f, frame.size.width - dialogListViewFrame.size.width + 1.0f), frame.size.height);
+    if (_fullScreenDetail) {
+        return CGRectMake(0.0f, 0.0f, frame.size.width, frame.size.height);
+    } else {
+        CGRect dialogListViewFrame = [self rectForMasterViewForFrame:frame];
+        return CGRectMake(dialogListViewFrame.size.width, 0.0f, MAX(0.0f, frame.size.width - dialogListViewFrame.size.width + 1.0f), frame.size.height);
+    }
 }
 
 - (void)setMasterView:(UIView *)masterView
@@ -105,13 +135,20 @@
 
 - (void)setDetailView:(UIView *)detailView
 {
-    [_detailView removeFromSuperview];
-    
-    _detailView = detailView;
-    CGRect detailViewContainerFrame = [self rectForDetailViewForFrame:self.frame];
-    detailViewContainerFrame.origin = CGPointZero;
-    _detailView.frame = detailViewContainerFrame;
-    [_detailViewContainer addSubview:_detailView];
+    if (detailView == _detailView) {
+        CGRect detailViewContainerFrame = [self rectForDetailViewForFrame:self.frame];
+        detailViewContainerFrame.origin = CGPointZero;
+        _detailView.frame = detailViewContainerFrame;
+        [_detailViewContainer addSubview:_detailView];
+    } else {
+        [_detailView removeFromSuperview];
+        
+        _detailView = detailView;
+        CGRect detailViewContainerFrame = [self rectForDetailViewForFrame:self.frame];
+        detailViewContainerFrame.origin = CGPointZero;
+        _detailView.frame = detailViewContainerFrame;
+        [_detailViewContainer addSubview:_detailView];
+    }
 }
 
 @end

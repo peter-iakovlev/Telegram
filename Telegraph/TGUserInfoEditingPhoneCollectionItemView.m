@@ -91,7 +91,7 @@
     
     CGRect bounds = self.bounds;
     CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
-    _separatorLayer.frame = CGRectMake(46.0f, bounds.size.height - separatorHeight, bounds.size.width + 256.0f, separatorHeight);
+    _separatorLayer.frame = CGRectMake(15.0f, bounds.size.height - separatorHeight, bounds.size.width + 256.0f, separatorHeight);
     
     _phoneField.frame = CGRectMake(122.0f, TGRetinaPixel, bounds.size.width - 122.0f - 8.0f, bounds.size.height);
 }

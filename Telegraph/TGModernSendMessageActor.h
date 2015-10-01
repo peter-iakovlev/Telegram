@@ -18,21 +18,24 @@
 
 @property (nonatomic, readonly) TGPreparedMessage *preparedMessage;
 @property (nonatomic) float uploadProgress;
-
-+ (NSArray *)conversationIdsWithSendMessageInProcess;
+@property (nonatomic) bool uploadProgressContainsPreDownloads;
 
 + (NSTimeInterval)defaultTimeoutInterval;
 
 - (void)setupFailTimeout:(NSTimeInterval)timeout;
 - (void)restartFailTimeoutIfRunning;
 - (NSString *)pathForLocalImagePath:(NSString *)path;
+- (int64_t)conversationIdForActivity;
 
 - (bool)_encryptUploads;
 - (void)_commitSend;
 - (void)_fail;
 - (void)_success:(id)result;
 
+- (void)updatePreDownloadsProgress:(float)preDownloadsProgress;
+- (void)acquireMediaUploadActivityHolderForPreparedMessage:(TGPreparedMessage *)preparedMessage;
 - (void)uploadFilesWithExtensions:(NSArray *)filePathsAndExtensions;
+- (void)beginUploadProgress;
 - (void)uploadsStarted;
 - (void)uploadProgressChanged;
 - (void)uploadsCompleted:(NSDictionary *)filePathToUploadedFile;

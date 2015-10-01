@@ -1,5 +1,7 @@
 #import "TGTextMessageBackgroundViewModel.h"
 
+#import "TGImageUtils.h"
+
 #define TGTextMessageBackgroundImageDef(name, incoming, filePhone, filePad) \
     static UIImage *name() \
     { \
@@ -7,7 +9,11 @@
         static dispatch_once_t onceToken; \
         dispatch_once(&onceToken, ^ \
         { \
-            image = [[UIImage imageNamed:[[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone ? filePhone : filePad] stretchableImageWithLeftCapWidth:incoming ? 23 : (40 - 23) topCapHeight:16]; \
+            CGSize screenSize = TGScreenSize(); \
+            CGFloat screenSide = MAX(screenSize.width, screenSize.height); \
+            bool isLarge = (TGIsPad() || (screenSide >= 667.0f - FLT_EPSILON)); \
+TGLog(@"%d", isLarge ? 1 : 0);\
+            image = [[UIImage imageNamed:!isLarge ? filePhone : filePad] stretchableImageWithLeftCapWidth:incoming ? 23 : (40 - 23) topCapHeight:16]; \
         }); \
         return image; \
     }
@@ -28,6 +34,7 @@ TGTextMessageBackgroundImageDef(outgoingPartialImageHighlighted, false, @"Modern
     bool _imageIsValid;
     
     bool _highlighted;
+    UIView *_animatingHighligtedView;
 }
 
 @end
@@ -154,6 +161,13 @@ TGTextMessageBackgroundImageDef(outgoingPartialImageHighlighted, false, @"Modern
     [layer addAnimation:animation forKey:@"transform"];
 }
 
+- (void)setFrame:(CGRect)frame
+{
+    [super setFrame:frame];
+    
+    _animatingHighligtedView.frame = frame;
+}
+
 - (void)clearHighlight
 {
     if (_highlighted)
@@ -172,20 +186,30 @@ TGTextMessageBackgroundImageDef(outgoingPartialImageHighlighted, false, @"Modern
             
             if (previousImage != nil && iosMajorVersion() >= 7)
             {
+                [_animatingHighligtedView removeFromSuperview];
+                
                 UIImageView *overlayImageView = [[UIImageView alloc] initWithFrame:[self boundView].frame];
                 overlayImageView.image = previousImage;
+                _animatingHighligtedView = overlayImageView;
                 
                 [[self boundView].superview insertSubview:overlayImageView aboveSubview:[self boundView]];
                 
                 CGSize frameSize = [self boundView].frame.size;
                 [self addScaleAnimationToLayer:[self boundView].layer from:CGSizeMake((frameSize.width - 2.0f) / frameSize.width, (frameSize.height - 2.0f) / frameSize.height) to:CGSizeMake(1.0f, 1.0f) duration:0.2];
                 
+                __weak TGTextMessageBackgroundViewModel *weakSelf = self;
                 [UIView animateWithDuration:0.4 animations:^
                 {
                     overlayImageView.alpha = 0.0f;
                 } completion:^(__unused BOOL finished)
                 {
                     [overlayImageView removeFromSuperview];
+                    __strong TGTextMessageBackgroundViewModel *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        if (strongSelf->_animatingHighligtedView == overlayImageView)
+                            strongSelf->_animatingHighligtedView = nil;
+                    }
                 }];
             }
         }

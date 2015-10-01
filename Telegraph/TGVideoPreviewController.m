@@ -1,5 +1,7 @@
 #import "TGVideoPreviewController.h"
 
+#import <objc/runtime.h>
+
 #import "TGVideoConverter.h"
 
 #import "TGProgressWindow.h"
@@ -7,6 +9,10 @@
 #import <AVFoundation/AVFoundation.h>
 
 #import <pop/POP.h>
+
+#import "TGMediaPickerAsset.h"
+#import "TGAssetImageView.h"
+#import "TGAssetImageManager.h"
 
 #import "TGObserverProxy.h"
 #import "TGModernButton.h"
@@ -22,6 +28,8 @@
 #import "TGImageBlur.h"
 #import "TGImageUtils.h"
 
+#import "TGFullscreenContainerView.h"
+
 #import "TGVibrantActionSheet.h"
 
 #import "TGImageDownloadActor.h"
@@ -29,14 +37,17 @@
 #import <AssetsLibrary/AssetsLibrary.h>
 #import <CommonCrypto/CommonDigest.h>
 
+#import "TGAudioSessionManager.h"
+
 @interface TGVideoPreviewController ()
 {
     NSURL *_assetUrl;
-    UIImage *_thumbnail;
-    NSTimeInterval _duration;
+    AVURLAsset *_urlAsset;
+    UIImage *_thumbnailImage;
     bool _enableServerAssetCache;
     
-    UIImageView *_thumbnailView;
+    CGAffineTransform _videoTransform;
+    TGAssetImageView *_thumbnailView;
     
     UIView *_panelView;
     TGModernButton *_cancelButton;
@@ -63,20 +74,22 @@
     
     NSString *_cachedVideoAssetIdForHD;
     NSString *_cachedVideoAssetIdForSD;
+    
+    SMetaDisposable *_currentAudioSession;
 }
 
 @end
 
 @implementation TGVideoPreviewController
 
-- (instancetype)initWithAssetUrl:(NSURL *)assetUrl thumbnail:(UIImage *)thumbnail duration:(NSTimeInterval)duration enableServerAssetCache:(bool)enableServerAssetCache
+- (instancetype)initWithAsset:(TGMediaPickerAsset *)asset enableServerAssetCache:(bool)enableServerAssetCache
 {
     self = [super init];
     if (self != nil)
     {
-        _assetUrl = assetUrl;
-        _thumbnail = thumbnail;
-        _duration = duration;
+        _currentAudioSession = [[SMetaDisposable alloc] init];
+        
+        _asset = asset;
         _enableServerAssetCache = enableServerAssetCache;
         
         self.navigationBarShouldBeHidden = true;
@@ -88,14 +101,34 @@
     return self;
 }
 
+- (instancetype)initWithItemAtURL:(NSURL *)url thumbnailImage:(UIImage *)thumbnailImage videoTransform:(CGAffineTransform)videoTransform enableServerAssetCached:(bool)enableServerAssetCache
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _currentAudioSession = [[SMetaDisposable alloc] init];
+        
+        _assetUrl = url;
+        _thumbnailImage = thumbnailImage;
+        _videoTransform = videoTransform;
+        _enableServerAssetCache = enableServerAssetCache;
+        
+        self.navigationBarShouldBeHidden = true;
+    }
+    return self;
+}
+
 - (void)dealloc
 {
+    AVPlayerLayer *playerLayer = _playerLayer;
+    [_currentAudioSession dispose];
+    
     TGDispatchOnMainThread(^
     {
-        if (_playerLayer != nil)
+        if (playerLayer != nil)
         {
-            [_playerLayer removeFromSuperlayer];
-            [_playerLayer.player pause];
+            [playerLayer removeFromSuperlayer];
+            [playerLayer.player pause];
         }
     });
 }
@@ -103,6 +136,41 @@
 - (BOOL)shouldAutorotate
 {
     return [super shouldAutorotate] && _converter == nil && _snapshotDimmingView == nil;
+}
+
+- (void)transitionInAnimated:(bool)animated completion:(void (^)(void))completion
+{
+    if (animated)
+    {
+        self.view.alpha = 0.0f;
+        
+        [UIView animateWithDuration:0.3f delay:0.1f options:UIViewAnimationOptionCurveLinear animations:^
+        {
+            self.view.alpha = 1.0f;
+        } completion:^(__unused BOOL finished)
+        {
+            if (completion != nil)
+                completion();
+        }];
+    }
+}
+
+- (void)transitionOutAnimated:(bool)animated
+{
+    if (animated)
+    {
+        [UIView animateWithDuration:0.3f delay:0.1f options:UIViewAnimationOptionCurveLinear animations:^
+        {
+            self.view.alpha = 0.0f;
+        } completion:^(__unused BOOL finished)
+        {
+            [self dismiss];
+        }];
+    }
+    else
+    {
+        [self dismiss];
+    }
 }
 
 - (UIImage *)playImage
@@ -158,12 +226,21 @@
 {
     [super loadView];
     
+    if (_assetUrl != nil)
+        object_setClass(self.view, [TGFullscreenContainerView class]);
+    
     self.view.backgroundColor = [UIColor blackColor];
     
-    _thumbnailView = [[UIImageView alloc] initWithFrame:self.view.bounds];
+    _thumbnailView = [[TGAssetImageView alloc] init];
     _thumbnailView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    if (_assetUrl != nil)
+        _thumbnailView.transform = CGAffineTransformRotate(_videoTransform, (CGFloat)-M_PI_2);
+    _thumbnailView.frame = self.view.bounds;
     _thumbnailView.contentMode = UIViewContentModeScaleAspectFit;
-    _thumbnailView.image = _thumbnail;
+    if (_thumbnailImage != nil)
+        [_thumbnailView loadWithImage:_thumbnailImage];
+    else if (_asset != nil)
+        [_thumbnailView loadWithAsset:_asset imageType:TGAssetImageTypeAspectRatioThumbnail size:CGSizeMake(138, 138)];
     [self.view addSubview:_thumbnailView];
     
     _panelView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - 72.0f, self.view.frame.size.width, 72.0f)];
@@ -174,7 +251,10 @@
     _cancelButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 100.0f, 72.0f)];
     _cancelButton.exclusiveTouch = true;
     _cancelButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
-    [_cancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
+    if (_assetUrl != nil)
+        [_cancelButton setTitle:TGLocalized(@"Camera.Retake") forState:UIControlStateNormal];
+    else
+        [_cancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
     [_cancelButton setTitleColor:[UIColor whiteColor]];
     _cancelButton.titleLabel.font = TGSystemFontOfSize(18.0f);
     [_cancelButton addTarget:self action:@selector(cancelPressed) forControlEvents:UIControlEventTouchUpInside];
@@ -250,9 +330,17 @@
     
     if (_playerLayer == nil)
     {
-        _player = [[AVPlayer alloc] initWithURL:_assetUrl];
-        _player.actionAtItemEnd = AVPlayerActionAtItemEndPause;
+        if (_asset != nil)
+        {
+            _player = [[AVPlayer alloc] initWithPlayerItem:[TGAssetImageManager playerItemForVideoAsset:_asset]];
+        }
+        else if (_assetUrl != nil)
+        {
+            _urlAsset = [AVURLAsset URLAssetWithURL:_assetUrl options:nil];
+            _player = [[AVPlayer alloc] initWithPlayerItem:[AVPlayerItem playerItemWithAsset:_urlAsset]];
+        }
         
+        _player.actionAtItemEnd = AVPlayerActionAtItemEndPause;
         _pauseProxy = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(playerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:[_player currentItem]];
         
         _playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player];
@@ -267,11 +355,16 @@
         
         _isPlaying = false;
         [_playPauseButton setImage:[self playImage] forState:UIControlStateNormal];
-        
+
         _playerLayer.opacity = 0.0f;
-        TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+        TGDispatchAfter(0.25f, dispatch_get_main_queue(), ^
         {
             _playerLayer.opacity = 1.0f;
+        });
+        
+        TGDispatchAfter(1.0f, dispatch_get_main_queue(), ^
+        {
+            _thumbnailView.hidden = true;
         });
     }
 }
@@ -288,10 +381,13 @@
         _converter = nil;
     }
     
-    [UIView animateWithDuration:0.3 animations:^
+    if (!self.fromCamera)
     {
-        [TGHacks setApplicationStatusBarAlpha:1.0f];
-    }];
+        [UIView animateWithDuration:0.3 animations:^
+        {
+            [TGHacks setApplicationStatusBarAlpha:1.0f];
+        }];
+    }
 }
 
 - (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
@@ -301,7 +397,8 @@
 
 - (void)cancelPressed
 {
-    [self.navigationController popViewControllerAnimated:true];
+    if (self.dismissBlock != nil)
+        self.dismissBlock(true);
 }
 
 - (NSString *)formatFileSize:(NSUInteger)fileSize
@@ -315,103 +412,205 @@
 - (void)computeVideoAssetId:(void (^)(NSString *))completion highDefinition:(bool)highDefinition
 {
     if (highDefinition && _cachedVideoAssetIdForHD != nil)
+    {
         completion(_cachedVideoAssetIdForHD);
+    }
     else if (!highDefinition && _cachedVideoAssetIdForSD != nil)
+    {
         completion(_cachedVideoAssetIdForSD);
+    }
     else
     {
         CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
-        __block __volatile bool enableInteraction = true;
-        
-        self.view.userInteractionEnabled = false;
-        TGDispatchAfter(2.0, dispatch_get_main_queue(), ^
+        NSString *(^readAssetWithURL)(NSURL *, NSData *) = ^NSString *(NSURL *url, NSData *timingData)
         {
-            if (enableInteraction)
+            if (url == nil)
+                return nil;
+            
+            NSError *error;
+            NSData *fileData = [NSData dataWithContentsOfURL:url
+                                                     options:NSDataReadingMappedIfSafe
+                                                       error:&error];
+            if (error != nil)
+                return nil;
+            
+            return [self hashForVideoWithSize:fileData.length
+                               highDefinition:highDefinition
+                                   timingData:timingData
+                                dataReadBlock:^(uint8_t *buffer, NSUInteger offset, NSUInteger length)
             {
-                enableInteraction = false;
-                self.view.userInteractionEnabled = true;
+                [fileData getBytes:buffer range:NSMakeRange(offset, length)];
+            }];
+        };
+        
+        NSString *hash = nil;
+        if (_urlAsset != nil)
+        {
+            hash = readAssetWithURL(_urlAsset.URL, nil);
+        }
+        else if (_asset.backingAsset != nil)
+        {
+            AVAsset *asset = _player.currentItem.asset;
+            if ([asset isKindOfClass:[AVURLAsset class]])
+            {
+                AVURLAsset *urlAsset = (AVURLAsset *)_player.currentItem.asset;
+                
+                hash = readAssetWithURL(urlAsset.URL, nil);
             }
-        });
+            else if ([asset isKindOfClass:[AVComposition class]])
+            {
+                AVComposition *composition = (AVComposition *)asset;
+                AVCompositionTrack *videoTrack = nil;
+                for (AVCompositionTrack *track in composition.tracks)
+                {
+                    if ([track.mediaType isEqualToString:AVMediaTypeVideo])
+                    {
+                        videoTrack = track;
+                        break;
+                    }
+                }
+                
+                if (videoTrack != nil)
+                {
+                    AVCompositionTrackSegment *firstSegment = videoTrack.segments.firstObject;
+                    
+                    NSMutableData *timingData = [[NSMutableData alloc] init];
+                    for (AVCompositionTrackSegment *segment in videoTrack.segments)
+                    {
+                        CMTimeRange targetRange = segment.timeMapping.target;
+                        CMTimeValue startTime = targetRange.start.value / targetRange.start.timescale;
+                        CMTimeValue duration = targetRange.duration.value / targetRange.duration.timescale;
+                        [timingData appendBytes:&startTime length:sizeof(startTime)];
+                        [timingData appendBytes:&duration length:sizeof(duration)];
+                    }
+                    
+                    hash = readAssetWithURL(firstSegment.sourceURL, timingData);
+                }
+            }
+        }
+        else if (_asset.backingLegacyAsset != nil)
+        {
+            ALAsset *asset = _asset.backingLegacyAsset;
+            ALAssetRepresentation *representation = asset.defaultRepresentation;
+            
+            hash = [self hashForVideoWithSize:(NSUInteger)representation.size
+                               highDefinition:highDefinition
+                                   timingData:nil
+                                dataReadBlock:^(uint8_t *buffer, NSUInteger offset, NSUInteger length)
+            {
+                [representation getBytes:buffer fromOffset:offset length:length error:nil];
+            }];
+        }
         
-        ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
-        [library assetForURL:_assetUrl resultBlock:^(ALAsset *asset)
+        if (hash != nil)
         {
-            TGDispatchOnMainThread(^
-            {
-                if (enableInteraction)
-                {
-                    enableInteraction = false;
-                    self.view.userInteractionEnabled = true;
-                }
-                
-                ALAssetRepresentation *representation = asset.defaultRepresentation;
-                NSUInteger size = (NSUInteger)representation.size;
-                const NSUInteger bufSize = 1024;
-                const NSUInteger numberOfBuffersToRead = 32;
-                uint8_t buf[bufSize];
-                
-                CC_MD5_CTX md5;
-                CC_MD5_Init(&md5);
-                
-                CC_MD5_Update(&md5, &size, sizeof(size));
-                const char *SDString = "SD";
-                const char *HDString = "HD";
-                if (highDefinition)
-                    CC_MD5_Update(&md5, HDString, strlen(HDString));
-                else
-                    CC_MD5_Update(&md5, SDString, strlen(SDString));
-                
-                for (NSUInteger i = 0; (i < size) && (i < bufSize * numberOfBuffersToRead); i += bufSize)
-                {
-                    NSUInteger returnedBytes = [representation getBytes:buf fromOffset:i length:bufSize error:nil];
-                    CC_MD5_Update(&md5, buf, returnedBytes);
-                }
-                
-                for (NSUInteger i = size - MIN(size, bufSize * numberOfBuffersToRead); i < size; i += bufSize)
-                {
-                    NSUInteger returnedBytes = [representation getBytes:buf fromOffset:i length:bufSize error:nil];
-                    CC_MD5_Update(&md5, buf, returnedBytes);
-                }
-                
-                unsigned char md5Buffer[16];
-                CC_MD5_Final(md5Buffer, &md5);
-                NSString *hash = [[NSString alloc] initWithFormat:@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", md5Buffer[0], md5Buffer[1], md5Buffer[2], md5Buffer[3], md5Buffer[4], md5Buffer[5], md5Buffer[6], md5Buffer[7], md5Buffer[8], md5Buffer[9], md5Buffer[10], md5Buffer[11], md5Buffer[12], md5Buffer[13], md5Buffer[14], md5Buffer[15]];
-                
-                TGLog(@"Computed video hash in %f ms", (CFAbsoluteTimeGetCurrent() - startTime) * 1000.0);
-                
-                if (highDefinition)
-                    _cachedVideoAssetIdForHD = hash;
-                else
-                    _cachedVideoAssetIdForSD = hash;
-                
-                if (completion != nil)
-                    completion(hash);
-            });
-        } failureBlock:^(__unused NSError *error)
-        {
-            TGDispatchOnMainThread(^
-            {
-                if (enableInteraction)
-                {
-                    enableInteraction = false;
-                    self.view.userInteractionEnabled = true;
-                }
-                
-                if (completion != nil)
-                    completion(nil);
-            });
-        }];
+            TGLog(@"Computed video hash in %f ms", (CFAbsoluteTimeGetCurrent() - startTime) * 1000.0);
+            
+            if (highDefinition)
+                _cachedVideoAssetIdForHD = hash;
+            else
+                _cachedVideoAssetIdForSD = hash;
+            
+            if (completion != nil)
+                completion(hash);
+        }
+        else {
+            if (completion != nil)
+                completion(nil);
+        }
     }
+}
+
+- (NSString *)hashForVideoWithSize:(NSUInteger)size highDefinition:(BOOL)highDefinition timingData:(NSData *)timingData dataReadBlock:(void (^)(uint8_t *buffer, NSUInteger offset, NSUInteger length))dataReadBlock
+{
+    const NSUInteger bufSize = 1024;
+    const NSUInteger numberOfBuffersToRead = 32;
+    uint8_t buf[bufSize];
+    
+    CC_MD5_CTX md5;
+    CC_MD5_Init(&md5);
+    
+    CC_MD5_Update(&md5, &size, sizeof(size));
+    const char *SDString = "SD";
+    const char *HDString = "HD";
+    if (highDefinition)
+        CC_MD5_Update(&md5, HDString, (CC_LONG)strlen(HDString));
+    else
+        CC_MD5_Update(&md5, SDString, (CC_LONG)strlen(SDString));
+    
+    if (timingData != nil)
+        CC_MD5_Update(&md5, timingData.bytes, (CC_LONG)timingData.length);
+    
+    for (NSUInteger i = 0; (i < size) && (i < bufSize * numberOfBuffersToRead); i += bufSize)
+    {
+        dataReadBlock(buf, i, bufSize);
+        CC_MD5_Update(&md5, buf, bufSize);
+    }
+    
+    for (NSUInteger i = size - MIN(size, bufSize * numberOfBuffersToRead); i < size; i += bufSize)
+    {
+        dataReadBlock(buf, i, bufSize);
+        CC_MD5_Update(&md5, buf, bufSize);
+    }
+    
+    unsigned char md5Buffer[16];
+    CC_MD5_Final(md5Buffer, &md5);
+    NSString *hash = [[NSString alloc] initWithFormat:@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", md5Buffer[0], md5Buffer[1], md5Buffer[2], md5Buffer[3], md5Buffer[4], md5Buffer[5], md5Buffer[6], md5Buffer[7], md5Buffer[8], md5Buffer[9], md5Buffer[10], md5Buffer[11], md5Buffer[12], md5Buffer[13], md5Buffer[14], md5Buffer[15]];
+
+    return hash;
 }
 
 - (void)sendPressed
 {
-    if (_converter != nil)
-        return;
-    
     _isPlaying = false;
     [_player pause];
     [_playPauseButton setImage:[self playImage] forState:UIControlStateNormal];
+
+    if (self.fromCamera)
+    {
+        void (^sendBlock)(void) = ^
+        {
+            AVAssetTrack *track = [[_urlAsset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
+            
+            CGSize trackNaturalSize = track.naturalSize;
+            CGSize naturalSize = CGRectApplyAffineTransform(CGRectMake(0, 0, trackNaturalSize.width, trackNaturalSize.height), track.preferredTransform).size;
+            
+            NSTimeInterval duration = CMTimeGetSeconds(_urlAsset.duration);
+            
+            if (self.videoPicked != nil)
+                self.videoPicked(_cachedVideoAssetIdForSD, _assetUrl.path, naturalSize, duration, _thumbnailView.image, nil);
+        };
+        
+        if (_enableServerAssetCache)
+        {
+            [self computeVideoAssetId:^(NSString *videoAssetId)
+            {
+                if ([TGImageDownloadActor serverMediaDataForAssetUrl:videoAssetId] != nil)
+                {
+                    if (_videoPicked != nil)
+                        _videoPicked(videoAssetId, nil, CGSizeZero, 0.0, nil, nil);
+                }
+                else
+                {
+                    sendBlock();
+                }
+            } highDefinition:false];
+        }
+        else
+        {
+            sendBlock();
+        }
+    }
+    else
+    {
+        [self convertAndSend];
+    }
+}
+
+- (void)convertAndSend
+{
+    if (_converter != nil)
+        return;
     
     UIImage *image = nil;
     
@@ -433,36 +632,19 @@
     _snapshotView.alpha = 0.0f;
     _snapshotDimmingView.alpha = 0.0f;
     [UIView animateWithDuration:0.2 delay:0.0 options:[TGViewController preferredAnimationCurve] << 16 animations:^
-    {
-        _snapshotView.alpha = 1.0f;
-        _snapshotDimmingView.alpha = 1.0f;
-        
-        _panelView.frame = CGRectMake(0.0f, self.view.frame.size.height, self.view.frame.size.width, _panelView.frame.size.height);
-    } completion:nil];
+     {
+         _snapshotView.alpha = 1.0f;
+         _snapshotDimmingView.alpha = 1.0f;
+         
+         _panelView.frame = CGRectMake(0.0f, self.view.frame.size.height, self.view.frame.size.width, _panelView.frame.size.height);
+     } completion:nil];
     
-    NSUInteger sizeSD = (NSUInteger)(_duration * 1024 * 1024 / 10);
-    //NSUInteger sizeHD = (NSUInteger)(_duration * 1024 * 1024 / 5.4);
+    NSUInteger sizeSD = (NSUInteger)(_asset.videoDuration * 1024 * 1024 / 10);
     
-    [self commitSend:false expectedFielSize:sizeSD];
-    
-    /*__weak TGVideoPreviewController *weakSelf = self;
-    [[[TGVibrantActionSheet alloc] initWithTitle:TGLocalized(@"VideoPreview.QualityOptionTitle") actions:@[
-                                                                                                           [[TGVibrantActionSheetAction alloc] initWithTitle:[[NSString alloc] initWithFormat:TGLocalized(@"VideoPreview.OptionSD"), [self formatFileSize:sizeSD]] action:@"sendSD"],
-                                                                                                           [[TGVibrantActionSheetAction alloc] initWithTitle:[[NSString alloc] initWithFormat:TGLocalized(@"VideoPreview.OptionHD"), [self formatFileSize:sizeHD]] action:@"sendHD"],
-                                                                                                           [[TGVibrantActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel"]
-                                                                                                           ] actionActivated:^(NSString *action)
-    {
-        __strong TGVideoPreviewController *strongSelf = weakSelf;
-        if ([action isEqualToString:@"sendSD"])
-            [strongSelf commitSend:false expectedFielSize:sizeSD];
-        else if ([action isEqualToString:@"sendHD"])
-            [strongSelf commitSend:true expectedFielSize:sizeHD];
-        else if ([action isEqualToString:@"cancel"])
-            [strongSelf progressCancelPressed];
-    }] showInView:self.view];*/
+    [self commitSend:false expectedFileSize:sizeSD];
 }
 
-- (void)commitSend:(bool)highDefinition expectedFielSize:(NSUInteger)expectedFileSize
+- (void)commitSend:(bool)highDefinition expectedFileSize:(NSUInteger)expectedFileSize
 {
     [_playerLayer.player pause];
     
@@ -479,8 +661,8 @@
     #endif
         
         __weak TGVideoPreviewController *weakSelf = self;
-        _converter = [[TGVideoConverter alloc] initWithAssetUrl:_assetUrl liveUpload:_liveUpload && expectedFileSize < 20 * 1024 * 1024 highDefinition:highDefinition];
-        [_converter convertWithCompletion:^(NSString *tempFilePath, CGSize dimensions, NSTimeInterval duration, TGLiveUploadActorData *liveUploadData)
+        _converter = [[TGVideoConverter alloc] initForConvertationWithAsset:_asset liveUpload:enableLiveUpload && _liveUpload && expectedFileSize < 20 * 1024 * 1024 highDefinition:highDefinition];
+        [_converter processWithCompletion:^(NSString *tempFilePath, CGSize dimensions, NSTimeInterval duration, __unused UIImage *previewImage, TGLiveUploadActorData *liveUploadData)
         {
             if (tempFilePath != nil)
             {
@@ -511,7 +693,9 @@
         } highDefinition:highDefinition];
     }
     else
+    {
         convertBlock();
+    }
 }
 
 - (void)updateProgress:(float)progress
@@ -527,7 +711,7 @@
         _converter = nil;
    
         if (_videoPicked != nil)
-            _videoPicked(highDefinition ? _cachedVideoAssetIdForHD : _cachedVideoAssetIdForSD, tempFilePath, dimensions, duration, _thumbnail, liveUploadData);
+            _videoPicked(highDefinition ? _cachedVideoAssetIdForHD : _cachedVideoAssetIdForSD, tempFilePath, dimensions, duration, _thumbnailView.image, liveUploadData);
     });
 }
 
@@ -541,6 +725,18 @@
     }
     else
     {
+        __weak TGVideoPreviewController *weakSelf = self;
+        [_currentAudioSession setDisposable:[[TGAudioSessionManager instance] requestSessionWithType:TGAudioSessionTypePlayVideo interrupted:^
+        {
+            TGDispatchOnMainThread(^
+            {
+                __strong TGVideoPreviewController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf->_player pause];
+            });
+        }]];
+        [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:nil];
+        
         _isPlaying = true;
         [_player play];
         [_playPauseButton setImage:[self pauseImage] forState:UIControlStateNormal];
@@ -581,6 +777,14 @@
         [snapshotView removeFromSuperview];
         [snapshotDimmingView removeFromSuperview];
     }];
+}
+
+- (void)dismissAnimated:(bool)animated
+{
+    [self progressCancelPressed];
+    
+    if (self.dismissBlock != nil)
+        self.dismissBlock(animated);
 }
 
 @end

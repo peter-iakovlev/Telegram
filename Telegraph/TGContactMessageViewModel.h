@@ -8,11 +8,13 @@
 
 #import "TGMessageViewModel.h"
 
+#import "TGContentBubbleViewModel.h"
+
 @interface TGContactMessageViewModel : TGMessageViewModel
 
-- (instancetype)initWithMessage:(TGMessage *)message contact:(TGUser *)contact author:(TGUser *)author context:(TGModernViewContext *)context;
+- (instancetype)initWithMessage:(TGMessage *)message contact:(TGUser *)contact authorPeer:(id)authorPeer context:(TGModernViewContext *)context;
 
-- (void)setAuthorNameColor:(UIColor *)authorNameColor;
-- (void)setForwardHeader:(TGUser *)forwardUser;
+- (void)setForwardHeader:(id)forwardPeer;
+- (void)setReplyHeader:(TGMessage *)replyHeader peer:(id)peer;
 
 @end

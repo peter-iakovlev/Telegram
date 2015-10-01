@@ -47,6 +47,11 @@
     _scrollView.delegate = nil;
 }
 
+- (bool)shouldBeRemovedFromNavigationAfterHiding
+{
+    return false;
+}
+
 - (void)loadView
 {
     [super loadView];

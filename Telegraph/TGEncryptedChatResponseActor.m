@@ -2,6 +2,7 @@
 
 #import "TGTelegraph.h"
 #import "TGDatabase.h"
+#import <MTProtoKit/MTProtoKit.h>
 #import <MTProtoKit/MTEncryption.h>
 #import <MTProtoKit/MTKeychain.h>
 #import "TGStringUtils.h"
@@ -11,6 +12,8 @@
 #import "TGRequestEncryptedChatActor.h"
 
 #import "TGConversationAddMessagesActor.h"
+
+#import "TGAppDelegate.h"
 
 @interface TGEncryptedChatResponseActor ()
 {
@@ -57,13 +60,13 @@
             return;
         }
         
-        if (!MTCheckMod(concreteConfig.p, concreteConfig.g, [MTKeychain keychainWithName:@"legacyPrimes"]))
+        if (!MTCheckMod(concreteConfig.p, concreteConfig.g, [MTFileBasedKeychain keychainWithName:@"legacyPrimes" documentsPath:[TGAppDelegate documentsPath]]))
         {
             [ActionStageInstance() actionFailed:self.path reason:-1];
             return;
         }
         
-        if (!MTCheckIsSafePrime(concreteConfig.p, [MTKeychain keychainWithName:@"legacyPrimes"]))
+        if (!MTCheckIsSafePrime(concreteConfig.p, [MTFileBasedKeychain keychainWithName:@"legacyPrimes" documentsPath:[TGAppDelegate documentsPath]]))
         {
             [ActionStageInstance() actionFailed:self.path reason:-1];
             return;
@@ -127,7 +130,7 @@
     
     if (conversation != nil && conversation.conversationId != 0)
     {
-        [TGDatabaseInstance() storeEncryptionKeyForConversationId:[TGDatabaseInstance() peerIdForEncryptedConversationId:_encryptedConversationId] key:_key keyFingerprint:_keyId];
+        [TGDatabaseInstance() storeEncryptionKeyForConversationId:[TGDatabaseInstance() peerIdForEncryptedConversationId:_encryptedConversationId] key:_key keyFingerprint:_keyId firstSeqOut:0];
         
         conversation.date = date;
         conversation.encryptedData.handshakeState = 4;

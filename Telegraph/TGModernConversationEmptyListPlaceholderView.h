@@ -10,16 +10,8 @@
 
 @class TGModernConversationEmptyListPlaceholderView;
 
-@protocol TGModernConversationEmptyListPlaceholderViewDelegate <NSObject>
-
-- (CGSize)messageAreaSizeForInterfaceOrientation:(UIInterfaceOrientation)orientation;
-
-@end
-
 @interface TGModernConversationEmptyListPlaceholderView : UIView
 
-@property (nonatomic, weak) id<TGModernConversationEmptyListPlaceholderViewDelegate> delegate;
-
-- (void)adjustLayoutForOrientation:(UIInterfaceOrientation)orientation contentInsets:(UIEdgeInsets)contentInsets duration:(NSTimeInterval)duration curve:(int)curve;
+- (void)adjustLayoutForSize:(CGSize)size contentInsets:(UIEdgeInsets)contentInsets duration:(NSTimeInterval)duration curve:(int)curve;
 
 @end

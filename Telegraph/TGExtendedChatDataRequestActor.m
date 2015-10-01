@@ -15,6 +15,10 @@
 
 #import "TGConversationAddMessagesActor.h"
 
+#import "TGTelegramNetworking.h"
+
+#import "TGBotSignals.h"
+
 static NSMutableDictionary *extendedChatDataDictionary()
 {
     static NSMutableDictionary *dict = nil;
@@ -53,8 +57,9 @@ static NSMutableDictionary *extendedChatDataDictionary()
 {
     _conversationId = [[options objectForKey:@"conversationId"] longLongValue];
     
+    TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:_conversationId];
     NSDictionary *resultDict = [extendedChatDataDictionary() objectForKey:[[NSNumber alloc] initWithLongLong:_conversationId]];
-    if (resultDict != nil)
+    if (resultDict != nil && conversation.chatVersion == [resultDict[@"version"] intValue])
     {
         [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphObjectNode alloc] initWithObject:resultDict]];
     }
@@ -79,6 +84,9 @@ static NSMutableDictionary *extendedChatDataDictionary()
     {
         TLPeerNotifySettings$peerNotifySettings *concreteSettings = (TLPeerNotifySettings$peerNotifySettings *)settings;
         peerMuteUntil = concreteSettings.mute_until;
+        
+        if (peerMuteUntil <= [[TGTelegramNetworking instance] approximateRemoteTime])
+            peerMuteUntil = 0;
 
         if (concreteSettings.sound.length == 0)
             peerSoundId = 0;
@@ -107,10 +115,20 @@ static NSMutableDictionary *extendedChatDataDictionary()
         }
     }];
     
-    NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:peerMuteUntil], @"muteUntil", [NSNumber numberWithInt:peerSoundId], @"soundId", nil];
+    TGConversationParticipantsData *participantsData = nil;
+    if ([chatFull.full_chat isKindOfClass:[TLChatFull$chatFull class]])
+    {
+        TLChatFull$chatFull *concreteChatFull = (TLChatFull$chatFull *)chatFull.full_chat;
+        participantsData = [[TGConversationParticipantsData alloc] initWithTelegraphParticipantsDesc:concreteChatFull.participants];
+    }
+    
+    NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:peerMuteUntil], @"muteUntil", [NSNumber numberWithInt:peerSoundId], @"soundId", @(participantsData.version), @"version", nil];
     [extendedChatDataDictionary() setObject:dict forKey:[[NSNumber alloc] initWithLongLong:_conversationId]];
     
-    TGConversationParticipantsData *participantsData = [[TGConversationParticipantsData alloc] initWithTelegraphParticipantsDesc:chatFull.full_chat.participants];
+    if ([chatFull.full_chat.exported_invite isKindOfClass:[TLExportedChatInvite$chatInviteExported class]])
+    {
+        participantsData.exportedChatInviteString = ((TLExportedChatInvite$chatInviteExported *)chatFull.full_chat.exported_invite).link;
+    }
     [TGDatabaseInstance() storeConversationParticipantData:-chatFull.full_chat.n_id participantData:participantsData];
     
     if (chatFull.chats.count != 0)
@@ -119,6 +137,23 @@ static NSMutableDictionary *extendedChatDataDictionary()
         
         static int actionId = 0;
         [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(chatData%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSArray alloc] initWithObjects:conversation, nil], @"chats", nil]];
+    }
+    
+    if ([chatFull.full_chat isKindOfClass:[TLChatFull$chatFull class]])
+    {
+        TLChatFull$chatFull *concreteChatFull = (TLChatFull$chatFull *)chatFull.full_chat;
+        if (concreteChatFull.bot_info.count != 0)
+        {
+            for (TLBotInfo *info in concreteChatFull.bot_info)
+            {
+                if ([info isKindOfClass:[TLBotInfo$botInfo class]])
+                {
+                    TGBotInfo *botInfo = [TGBotSignals botInfoForInfo:info];
+                    if (botInfo != nil)
+                        [TGDatabaseInstance() storeBotInfo:botInfo forUserId:((TLBotInfo$botInfo *)info).user_id];
+                }
+            }
+        }
     }
     
     [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphObjectNode alloc] initWithObject:dict]];

@@ -1,0 +1,13 @@
+"Share.Cancel" = "Abbrechen";
+"Share.Next" = "Weiter";
+"Share.OK" = "OK";
+"Share.Search" = "Suchen";
+
+"Share.Title" = "Teilen";
+"Share.ShareWithPerson" = "Mit %@ teilen?";
+"Share.ShareWithGroup" = "Mit %@ teilen?";
+"Share.Sharing" = "Teile...";
+
+"Share.PasscodeTitle" = "Pincode";
+"Share.EnterPasscode" = "Pincode eingeben";
+"Share.ErrorInvalidPasscode" = "Ungültiger Pincode";

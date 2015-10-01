@@ -21,6 +21,7 @@
 @property (nonatomic, strong) NSString *lastName;
 @property (nonatomic, strong) NSString *status;
 @property (nonatomic) bool statusIsActive;
+@property (nonatomic) bool isSecretChat;
 
 @end
 
@@ -42,6 +43,7 @@
     static UIFont *regularNameFont = nil;
     static UIFont *boldNameFont = nil;
     static CGColorRef nameColor = NULL;
+    static CGColorRef secretNameColor = NULL;
     
     static UIFont *statusFont = nil;
     static dispatch_once_t onceToken;
@@ -54,6 +56,7 @@
         statusFont = TGSystemFontOfSize(13.0f);
         
         nameColor = CGColorRetain([UIColor blackColor].CGColor);
+        secretNameColor = CGColorRetain(UIColorRGB(0x00a629).CGColor);
         activeStatusColor = CGColorRetain(TGAccentColor().CGColor);
         regularStatusColor = CGColorRetain(UIColorRGB(0xb3b3b3).CGColor);
     });
@@ -69,7 +72,7 @@
     firstNameSize.width = MIN(firstNameSize.width, availableWidth - 30.0f);
     lastNameSize.width = MIN(lastNameSize.width, availableWidth - nameSpacing - firstNameSize.width);
     
-    CGContextSetFillColorWithColor(context, nameColor);
+    CGContextSetFillColorWithColor(context, _isSecretChat ? secretNameColor : nameColor);
     [_firstName drawInRect:CGRectMake(1.0f, 1.0f, firstNameSize.width, firstNameSize.height) withFont:regularNameFont lineBreakMode:NSLineBreakByTruncatingTail];
     [_lastName drawInRect:CGRectMake(1.0f + firstNameSize.width + nameSpacing, TGRetinaPixel, lastNameSize.width, lastNameSize.height) withFont:boldNameFont lineBreakMode:NSLineBreakByTruncatingTail];
     
@@ -165,6 +168,15 @@
         [_avatarView loadImage:avatarUri filter:@"circle:40x40" placeholder:placeholder];
 }
 
+- (void)setIsSecretChat:(bool)isSecretChat
+{
+    if (_content.isSecretChat != isSecretChat)
+    {
+        _content.isSecretChat = isSecretChat;
+        [_content setNeedsDisplay];
+    }
+}
+
 - (void)setDisabled:(bool)disabled animated:(bool)animated
 {
     if (disabled)
@@ -214,10 +226,12 @@
 
 - (void)layoutSubviews
 {
+    CGFloat leftInset = self.showsDeleteIndicator ? 38.0f : 0.0f;
+    self.separatorInset = 65.0f + leftInset;
+    
     [super layoutSubviews];
     
     CGRect bounds = self.bounds;
-    CGFloat leftInset = self.showsDeleteIndicator ? 38.0f : 0.0f;
     
     if (_disabledOverlayView != nil)
         [_disabledOverlayView setFrame:CGRectInset(bounds, 0.0f, 1.0f)];

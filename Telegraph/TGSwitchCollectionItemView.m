@@ -29,6 +29,7 @@
         _titleLabel.textColor = [UIColor blackColor];
         _titleLabel.backgroundColor = [UIColor clearColor];
         _titleLabel.font = TGSystemFontOfSize(17);
+        _titleLabel.textAlignment = NSTextAlignmentLeft;
         [self addSubview:_titleLabel];
         
         _switchView = [[UISwitch alloc] init];

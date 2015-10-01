@@ -11,6 +11,7 @@
     UIImageView *_backgroundImageView;
     
     int _date;
+    CGSize _textSize;
 }
 
 @property (nonatomic, strong) NSString *viewIdentifier;
@@ -34,7 +35,11 @@
     
     NSString *text = [TGDateUtils stringForDialogTime:date * 24 * 60 * 60];
     CGSize textSize = [text sizeWithFont:font];
-    CGPoint textOrigin = CGPointMake(TGRetinaFloor((containerWidth - textSize.width) / 2), TGRetinaFloor((27.0f - textSize.height) / 2) + TGRetinaPixel);
+    textSize.width = CGOdd(CGCeil(textSize.width));
+    textSize.height = CGOdd(CGCeil(textSize.height));
+    
+    CGPoint textOrigin = CGPointMake(CGFloor((containerWidth - textSize.width) / 2), CGFloor((27.0f - textSize.height) / 2) + TGRetinaPixel);
+    textOrigin.x = CGEven(textOrigin.x);
     
     UIImage *backgroundImage = [[TGTelegraphConversationMessageAssetsSource instance] systemMessageBackground];
     CGRect backgroundFrame = CGRectMake(textOrigin.x - 10, textOrigin.y - 2, textSize.width + 20, backgroundImage.size.height);
@@ -79,13 +84,19 @@
         
         _dateLabel.text = [TGDateUtils stringForDialogTime:_date * 24 * 60 * 60];
         CGRect dateFrame = _dateLabel.frame;
-        dateFrame.size = [_dateLabel.text sizeWithFont:_dateLabel.font];
+        _textSize = dateFrame.size = [_dateLabel.text sizeWithFont:_dateLabel.font];
+        dateFrame.size.width = CGOdd(CGCeil(dateFrame.size.width));
+        dateFrame.size.height = CGOdd(CGCeil(dateFrame.size.height));
         _dateLabel.frame = dateFrame;
         
         _viewStateIdentifier = [[NSString alloc] initWithFormat:@"date/%d", _date];
         
         [self setNeedsLayout];
     }
+}
+
+- (int)date {
+    return _date;
 }
 
 - (void)updateAssets
@@ -99,10 +110,15 @@
     
     CGFloat dateOffset = iosMajorVersion() >= 7 ? -1.0f : -TGRetinaPixel;
     CGRect dateFrame = _dateLabel.frame;
-    dateFrame.origin = CGPointMake(TGRetinaFloor((bounds.size.width - dateFrame.size.width) / 2), TGRetinaFloor((bounds.size.height - dateFrame.size.height) / 2) + TGRetinaPixel + dateOffset);
+    dateFrame.size = _textSize;
+    dateFrame.size.width = CGOdd(CGCeil(dateFrame.size.width));
+    dateFrame.size.height = CGOdd(CGCeil(dateFrame.size.height));
+    dateFrame.origin = CGPointMake(CGFloor((bounds.size.width - dateFrame.size.width) / 2), CGFloor((bounds.size.height - dateFrame.size.height) / 2) + 1.0f + dateOffset);
+    dateFrame.origin.x = CGEven(dateFrame.origin.x);
     _dateLabel.frame = dateFrame;
     
-    _backgroundImageView.frame = CGRectMake(dateFrame.origin.x - 10, dateFrame.origin.y - 2 + (iosMajorVersion() >= 7 ? 0.0f : TGRetinaPixel), dateFrame.size.width + 20, _backgroundImageView.frame.size.height);
+    CGRect backgroundFrame = CGRectMake(dateFrame.origin.x - 10, dateFrame.origin.y - 2 + (iosMajorVersion() >= 7 ? 0.0f : TGRetinaPixel), dateFrame.size.width + 20, _backgroundImageView.frame.size.height);
+    _backgroundImageView.frame = backgroundFrame;
 }
 
 @end

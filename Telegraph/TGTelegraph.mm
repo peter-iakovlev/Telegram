@@ -4,11 +4,9 @@
 #import <MTProtoKit/MTContext.h>
 #import <MTProtoKit/MTProto.h>
 
-#import "TGAppDelegate.h"
-#import "TGGlobalContext.h"
-#import "TGContactsContext.h"
+#import "TGPeerIdAdapter.h"
 
-#import "TGTransport.h"
+#import "TGAppDelegate.h"
 
 #import "UIDevice+PlatformInfo.h"
 
@@ -28,10 +26,7 @@
 
 #import "TGUser+Telegraph.h"
 
-#import "TGDatacenterHandshakeActor.h"
-#import "TGExportDatacenterAuthorizationActor.h"
-#import "TGUpdateDatacenterDataActor.h"
-#import "TGFutureSaltsRequestActor.h"
+#import "NSObject+TGLock.h"
 
 #import "TGLogoutRequestBuilder.h"
 #import "TGSendCodeRequestBuilder.h"
@@ -54,7 +49,6 @@
 #import "TGBlockListRequestActor.h"
 #import "TGChangePeerBlockStatusActor.h"
 #import "TGChangeNameActor.h"
-#import "TGPrivacySettingsRequestActor.h"
 #import "TGChangePrivacySettingsActor.h"
 #import "TGUpdateUserStatusesActor.h"
 
@@ -74,7 +68,6 @@
 
 #import "TGConversationHistoryAsyncRequestActor.h"
 #import "TGConversationHistoryRequestActor.h"
-#import "TGConversationMediaHistoryRequestActor.h"
 #import "TGConversationChatInfoRequestActor.h"
 #import "TGConversationReadHistoryActor.h"
 #import "TGReportDeliveryActor.h"
@@ -87,7 +80,6 @@
 #import "TGConversationDeleteMessagesActor.h"
 #import "TGConversationDeleteActor.h"
 #import "TGConversationClearHistoryActor.h"
-#import "TGConversationUsersTypingActor.h"
 
 #import "TGTimelineHistoryRequestBuilder.h"
 #import "TGTimelineUploadPhotoRequestBuilder.h"
@@ -120,7 +112,6 @@
 #import "TGCheckImageStoredActor.h"
 
 #import "TGVideoDownloadActor.h"
-#import "TGHttpServerActor.h"
 
 #import "TGCheckUpdatesActor.h"
 #import "TGWallpaperListRequestActor.h"
@@ -134,15 +125,14 @@
 
 #import "TGModernRemoteWallpaperListActor.h"
 
+#import "TGICloudFileDownloadActor.h"
+
 #import "TGRemoteImageView.h"
 #import "TGImageUtils.h"
 #import "TGStringUtils.h"
 #import "TGInterfaceAssets.h"
 
 #import "TGInterfaceManager.h"
-
-#import "TGSession.h"
-#import "TGTcpTransport.h"
 
 #import "TGModernSendCommonMessageActor.h"
 #import "TGModernSendSecretMessageActor.h"
@@ -151,61 +141,56 @@
 #import "TGUpdateConfigActor.h"
 #import "TGDownloadMessagesActor.h"
 
+#import "TGWebSearchController.h"
+#import "TGModernSendCommonMessageActor.h"
+
+#import "TGUpdateMediaHistoryActor.h"
+
+#import "TGRecentHashtagsSignal.h"
+
 #import "TGTimer.h"
+
+#import "TGGoogleDriveController.h"
+
+#import "TLRPCmessages_sendMessage_manual.h"
+#import "TLRPCmessages_sendMedia_manual.h"
+
+#import "TGStickersSignals.h"
 
 #import <libkern/OSAtomic.h>
 
 #include <set>
 #include <map>
 
-static CGSize extractSize(NSString *string, NSString *prefix)
+#import "TGBridgeServer.h"
+
+#import "TGGlobalMessageSearchSignals.h"
+#import "TGChannelManagementSignals.h"
+#import "TGChannelStateSignals.h"
+
+#import "../../config.h"
+
+@interface TGTypingRecord : NSObject
+
+@property (nonatomic) NSTimeInterval date;
+@property (nonatomic) NSString *type;
+
+@end
+
+@implementation TGTypingRecord
+
+- (instancetype)initWithDate:(NSTimeInterval)date type:(NSString *)type
 {
-    CGSize size = CGSizeZero;
-    int n = (int)prefix.length;
-    bool invalid = false;
-    for (int i = n; i < (int)string.length; i++)
+    self = [super init];
+    if (self != nil)
     {
-        unichar c = [string characterAtIndex:i];
-        if (c == 'x')
-        {
-            if (i == n)
-                invalid = true;
-            else
-            {
-                size.width = [[string substringWithRange:NSMakeRange(n, i - n)] intValue];
-                n = i + 1;
-            }
-            break;
-        }
-        else if (c < '0' || c > '9')
-        {
-            invalid = true;
-            break;
-        }
+        _date = date;
+        _type = type;
     }
-    if (!invalid)
-    {
-        for (int i = n; i < (int)string.length; i++)
-        {
-            unichar c = [string characterAtIndex:i];
-            if (c < '0' || c > '9')
-            {
-                invalid = true;
-                break;
-            }
-            else if (i == (int)string.length - 1)
-            {
-                size.height = [[string substringFromIndex:n] intValue];
-            }
-        }
-    }
-    if (!invalid)
-    {
-        return size;
-    }
-    
-    return CGSizeZero;
+    return self;
 }
+
+@end
 
 static bool readIntFromString(NSString *string, int &offset, unichar delimiter, int *pResult)
 {
@@ -273,7 +258,7 @@ TGTelegraph *TGTelegraphInstance = nil;
 
 typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIterator;
 
-@interface TGTelegraph () <TGSessionDelegate>
+@interface TGTelegraph ()
 {
     std::map<int, TGUserPresence> _userPresenceToDispatch;
     std::map<int, std::pair<TGUser *, int> > _userDataToDispatch;
@@ -281,6 +266,11 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     std::map<int, int> _userPresenceExpiration;
     
     std::map<int, int> _userLinksToDispatch;
+    
+    TG_SYNCHRONIZED_DEFINE(_activityManagerByConversationId);
+    NSMutableDictionary *_activityManagerByConversationId;
+    
+    SDisposableSet *_channelTasksDisposable;
 }
 
 @property (nonatomic, strong) NSMutableArray *runningRequests;
@@ -297,8 +287,8 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 @property (nonatomic, strong) TGTimer *userPresenceExpirationTimer;
 
 @property (nonatomic, strong) TGTimer *usersTypingServiceTimer;
-@property (nonatomic, strong) NSMutableDictionary *typingUsersByConversation;
-@property (nonatomic, strong) NSMutableDictionary *typingUsersByConversationMainThread;
+@property (nonatomic, strong) NSMutableDictionary *typingUserRecordsByConversation;
+@property (nonatomic, strong) NSMutableDictionary *typingUserRecordsByConversationMainThread;
 
 @end
 
@@ -311,9 +301,9 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     {
         TGTelegraphInstance = self;
         
-#if !TGUseModernNetworking
-        [TGSession instance].delegate = self;
-#endif
+        TG_SYNCHRONIZED_INIT(_activityManagerByConversationId);
+        
+        _musicPlayer = [[TGMusicPlayer alloc] init];
         
         self.stringEncoding = NSUTF8StringEncoding;
         
@@ -327,21 +317,16 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
             TGLog(@"Running with %@ (version %@)", bundleIdentifier, [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]);
             
-            if ([bundleIdentifier isEqualToString:@"org.telegram.TelegramEnterprise"])
-            {
-                _apiId = @"16352";
-                _apiHash = @"29b4e98931587cd195cd4549ba9c8fe0";
-            }
-            else if ([bundleIdentifier isEqualToString:@"org.telegram.TelegramHD"])
-            {
-                _apiId = @"7";
-                _apiHash = @"26ea037cb6e839d606a50ab46b807a90";
-            }
-            else
-            {
-                _apiId = @"1";
-                _apiHash = @"b6b154c3707471f5339bd661645ed3d6";
-            }
+            int32_t apiId = 0;
+            NSString *apiHash = @"";
+            SETUP_API_ID(apiId)
+            SETUP_API_HASH(apiHash)
+            
+            assert(apiId != 0);
+            assert(apiHash.length != 0);
+            
+            _apiId = [[NSString alloc] initWithFormat:@"%d", apiId];
+            _apiHash = apiHash;
             
             _runningRequests = [[NSMutableArray alloc] init];
             
@@ -367,7 +352,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 
             [TGDatabaseInstance() setCleanupEverythingBlock:^
             {
-                NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+                NSString *documentsDirectory = [TGAppDelegate documentsPath];
                 NSFileManager *fileManager = [[NSFileManager alloc] init];
                 
                 NSString *videosPath = [documentsDirectory stringByAppendingPathComponent:@"video"];
@@ -399,10 +384,10 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             {
                 [ActionStageInstance() dispatchResource:@"/as/updateRelativeTimestamps" resource:nil];
             } queue:[ActionStageInstance() globalStageDispatchQueue]];
-            if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateBackground)
+            if ([UIApplication sharedApplication] != nil && [[UIApplication sharedApplication] applicationState] != UIApplicationStateBackground)
                 [_updateRelativeTimestampsTimer start];
             
-            _typingUsersByConversation = [[NSMutableDictionary alloc] init];
+            _typingUserRecordsByConversation = [[NSMutableDictionary alloc] init];
             _usersTypingServiceTimer = [[TGTimer alloc] initWithTimeout:1.0 repeat:false completion:^
             {
                 [self updateUserTypingStatuses];
@@ -419,11 +404,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             NSURLCache *sharedCache = [[NSURLCache alloc] initWithMemoryCapacity:(256) diskCapacity:0 diskPath:nil];
             [NSURLCache setSharedURLCache:sharedCache];
 
-            [ASActor registerActorClass:[TGDatacenterHandshakeActor class]];
-            [ASActor registerActorClass:[TGExportDatacenterAuthorizationActor class]];
-            [ASActor registerActorClass:[TGUpdateDatacenterDataActor class]];
-            [ASActor registerActorClass:[TGFutureSaltsRequestActor class]];
-            
             [ASActor registerActorClass:[TGLogoutRequestBuilder class]];
             [ASActor registerActorClass:[TGSendCodeRequestBuilder class]];
             [ASActor registerActorClass:[TGSignInRequestBuilder class]];
@@ -458,7 +438,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             [ASActor registerActorClass:[TGBlockListRequestActor class]];
             [ASActor registerActorClass:[TGChangePeerBlockStatusActor class]];
             [ASActor registerActorClass:[TGChangeNameActor class]];
-            [ASActor registerActorClass:[TGPrivacySettingsRequestActor class]];
             [ASActor registerActorClass:[TGChangePrivacySettingsActor class]];
             [ASActor registerActorClass:[TGUpdateUserStatusesActor class]];
             
@@ -478,7 +457,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             
             [ASActor registerActorClass:[TGConversationHistoryAsyncRequestActor class]];
             [ASActor registerActorClass:[TGConversationHistoryRequestActor class]];
-            [ASActor registerActorClass:[TGConversationMediaHistoryRequestActor class]];
             [ASActor registerActorClass:[TGConversationChatInfoRequestActor class]];
             [ASActor registerActorClass:[TGConversationReadHistoryActor class]];
             [ASActor registerActorClass:[TGReportDeliveryActor class]];
@@ -491,7 +469,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             [ASActor registerActorClass:[TGConversationDeleteMessagesActor class]];
             [ASActor registerActorClass:[TGConversationDeleteActor class]];
             [ASActor registerActorClass:[TGConversationClearHistoryActor class]];
-            [ASActor registerActorClass:[TGConversationUsersTypingActor class]];
             
             [ASActor registerActorClass:[TGProfilePhotoListActor class]];
             [ASActor registerActorClass:[TGDeleteProfilePhotoActor class]];
@@ -510,7 +487,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             [ASActor registerActorClass:[TGSaveGeocodingResultActor class]];
             
             [ASActor registerActorClass:[TGVideoDownloadActor class]];
-            [ASActor registerActorClass:[TGHttpServerActor class]];
             
             [ASActor registerActorClass:[TGCheckUpdatesActor class]];
             [ASActor registerActorClass:[TGWallpaperListRequestActor class]];
@@ -528,6 +504,8 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             [ASActor registerActorClass:[TGModernRemoteWallpaperListActor class]];
             [ASActor registerActorClass:[TGUpdateConfigActor class]];
             [ASActor registerActorClass:[TGDownloadMessagesActor class]];
+            
+            [ASActor registerActorClass:[TGICloudFileDownloadActor class]];
         }];
         
         [TGRemoteImageView registerImageProcessor:^UIImage *(UIImage *source)
@@ -839,11 +817,41 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         {
             return TGAttachmentImage(source, CGSizeMake(100, 106), CGSizeMake(100, 100), false, true);
         } withName:@"attachmentLocationOutgoing"];
+        
+        _genericTasksSignalManager = [[SMulticastSignalManager alloc] init];
+        _channelStatesSignalManager = [[SMulticastSignalManager alloc] init];
+        _channelTasksDisposable = [[SDisposableSet alloc] init];
+        _disposeOnLogout = [[SDisposableSet alloc] init];
     }
     return self;
 }
 
+- (TGModernConversationActivityManager *)activityManagerForConversationId:(int64_t)conversationId
+{
+    TG_SYNCHRONIZED_BEGIN(_activityManagerByConversationId);
+    if (_activityManagerByConversationId == nil)
+        _activityManagerByConversationId = [[NSMutableDictionary alloc] init];
+    TGModernConversationActivityManager *activityManager = _activityManagerByConversationId[@(conversationId)];
+    if (activityManager == nil)
+    {
+        activityManager = [[TGModernConversationActivityManager alloc] init];
+        activityManager.sendActivityUpdate = ^(NSString *type)
+        {
+            [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/activity/(%@)", conversationId, type] options:nil watcher:self];
+        };
+        _activityManagerByConversationId[@(conversationId)] = activityManager;
+    }
+    TG_SYNCHRONIZED_END(_activityManagerByConversationId);
+    
+    return activityManager;
+}
+
 - (void)doLogout
+{
+    [self doLogout:nil];
+}
+
+- (void)doLogout:(NSString *)presetPhoneNumber
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
@@ -859,24 +867,58 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         
         [[TGInterfaceAssets instance] clearColorMapping];
         
+        [TGWebSearchController clearRecents];
+        [TGRecentHashtagsSignal clearRecentHashtags];
+        
+        [TGGlobalMessageSearchSignals clearRecentResults];
+        
+        [TGModernSendCommonMessageActor clearRemoteMediaMapping];
+        
+        [TGGoogleDriveController unlinkCurrentSession];
+        
+        [[TGTelegramNetworking instance] removeCredentialsForExtensions];
+        
+        [TGStickersSignals clearCache];
+        TGAppDelegateInstance.alwaysShowStickersMode = 0;
+        
+        _genericTasksSignalManager = [[SMulticastSignalManager alloc] init];
+        _channelStatesSignalManager = [[SMulticastSignalManager alloc] init];
+        
         self.clientUserId = 0;
         self.clientIsActivated = false;
         [TGAppDelegateInstance saveSettings];
         
         [[TGDatabase instance] dropDatabase];
         [[TGTelegramNetworking instance] restartWithCleanCredentials];
+        [TGAppDelegateInstance setIsManuallyLocked:false];
         
         _userLinksToDispatch.clear();
         _userDataToDispatch.clear();
         _userPresenceToDispatch.clear();
+        
+        TG_SYNCHRONIZED_BEGIN(_activityManagerByConversationId);
+        [_activityManagerByConversationId removeAllObjects];
+        TG_SYNCHRONIZED_END(_activityManagerByConversationId);
         
         dispatch_async(dispatch_get_main_queue(), ^
         {
             [[UIApplication sharedApplication] setApplicationIconBadgeNumber:0];
             [[UIApplication sharedApplication] cancelAllLocalNotifications];
             
-            [TGAppDelegateInstance presentLoginController:true showWelcomeScreen:false phoneNumber:nil phoneCode:nil phoneCodeHash:nil profileFirstName:nil profileLastName:nil];
+            [TGAppDelegateInstance presentLoginController:true showWelcomeScreen:false phoneNumber:presetPhoneNumber phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false profileFirstName:nil profileLastName:nil];
         });
+        
+        [_channelTasksDisposable dispose];
+        _channelTasksDisposable = [[SDisposableSet alloc] init];
+        
+        [_disposeOnLogout dispose];
+        _disposeOnLogout = [[SDisposableSet alloc] init];
+        
+        [TGChannelStateSignals clearChannelStates];
+        
+        [[TGBridgeServer instance] setAuthorized:false userId:0];
+        
+        [_musicPlayer setPlaylist:nil initialItemKey:nil];
     }];
 }
 
@@ -1049,6 +1091,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
                 {
                     presence.online = true;
                     presence.lastSeen = INT_MAX;
+                    presence.temporaryLastSeen = INT_MAX;
                 }
                 
                 user.presence = presence;
@@ -1056,7 +1099,10 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
                 if (user.presence.online)
                 {
                     updatedPresenceExpiration = true;
-                    _userPresenceExpiration[user.uid] = user.presence.lastSeen;
+                    if (user.presence.temporaryLastSeen != 0)
+                        _userPresenceExpiration[user.uid] = user.presence.temporaryLastSeen;
+                    else
+                        _userPresenceExpiration[user.uid] = user.presence.lastSeen;
                 }
                 else
                     _userPresenceExpiration.erase(user.uid);
@@ -1145,9 +1191,11 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     {
         if (it->second <= currentUnixTime + 1)
         {
+            TGUser *user = [TGDatabaseInstance() loadUser:it->first];
             TGUserPresence presence;
             presence.online = false;
-            presence.lastSeen = it->second;
+            presence.lastSeen = user.presence.lastSeen > 0 ? it->second : user.presence.lastSeen;
+            presence.temporaryLastSeen = 0;
             expired.push_back(std::pair<int, TGUserPresence>(it->first, presence));
             
 #ifdef DEBUG
@@ -1183,64 +1231,64 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         
         __block NSTimeInterval nextTypingUpdate = DBL_MAX;
         
-        [_typingUsersByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSMutableDictionary *typingUsers, __unused BOOL *stop)
+        [_typingUserRecordsByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSMutableDictionary *typingUserRecords, __unused BOOL *stop)
         {
             int64_t conversationId = [nConversationId longLongValue];
             
             std::set<int> usersStoppedTyping;
             std::set<int> *pUsersStoppedTyping = &usersStoppedTyping;
             
-            [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, NSNumber *startedTypingDate, __unused BOOL *stop)
+            [typingUserRecords enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, TGTypingRecord *record, __unused BOOL *stop)
             {
-                if (ABS(currentTime - [startedTypingDate doubleValue]) > 6.0)
+                if (ABS(currentTime - record.date) > 6.0)
                 {
                     pUsersStoppedTyping->insert([nUid intValue]);
                 }
-                else if ([startedTypingDate longLongValue] + 6.0 < nextTypingUpdate)
-                    nextTypingUpdate = [startedTypingDate doubleValue] + 6.0;
+                else if (record.date + 6.0 < nextTypingUpdate)
+                    nextTypingUpdate = record.date + 6.0;
             }];
             
             if (!usersStoppedTyping.empty())
             {
                 for (std::set<int>::iterator it = usersStoppedTyping.begin(); it != usersStoppedTyping.end(); it++)
                 {
-                    [typingUsers removeObjectForKey:[NSNumber numberWithInt:*it]];
+                    [typingUserRecords removeObjectForKey:[NSNumber numberWithInt:*it]];
                 }
                 
-                NSMutableArray *typingUsersArray = [[NSMutableArray alloc] init];
-                [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, __unused id obj, __unused BOOL *stop)
+                NSMutableDictionary *typingUsersActivitiesDict = [[NSMutableDictionary alloc] init];
+                [typingUserRecords enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, TGTypingRecord *record, __unused BOOL *stop)
                 {
-                    [typingUsersArray addObject:nUid];
+                    typingUsersActivitiesDict[nUid] = record.type;
                 }];
                 
-                if (typingUsers.count == 0)
+                if (typingUserRecords.count == 0)
                     pConversationsWithoutTypingUsers->insert(conversationId);
                 
-                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersArray]];
-                [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersArray, @"typingUsers", nil]]];
+                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersActivitiesDict]];
+                [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersActivitiesDict, @"typingUsers", nil]]];
             }
         }];
         
         for (std::set<int64_t>::iterator it = conversationsWithoutTypingUsers.begin(); it != conversationsWithoutTypingUsers.end(); it++)
         {
-            [_typingUsersByConversation removeObjectForKey:[NSNumber numberWithLongLong:*it]];
+            [_typingUserRecordsByConversation removeObjectForKey:[NSNumber numberWithLongLong:*it]];
         }
         
         NSMutableDictionary *dictForMainThread = [[NSMutableDictionary alloc] init];
-        [_typingUsersByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSMutableDictionary *typingUsers, __unused BOOL *stop)
+        [_typingUserRecordsByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSMutableDictionary *typingUsers, __unused BOOL *stop)
         {
-            NSMutableArray *array = [[NSMutableArray alloc] initWithCapacity:typingUsers.count];
-            for (NSNumber *nUid in typingUsers)
+            NSMutableDictionary *typingUsersActivitiesDict = [[NSMutableDictionary alloc] init];
+            [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, TGTypingRecord *record, __unused BOOL *stop)
             {
-                [array addObject:nUid];
-            }
+                typingUsersActivitiesDict[nUid] = record.type;
+            }];
             
-            dictForMainThread[nConversationId] = array;
+            dictForMainThread[nConversationId] = typingUsersActivitiesDict;
         }];
         
         TGDispatchOnMainThread(^
         {
-            _typingUsersByConversationMainThread = dictForMainThread;
+            _typingUserRecordsByConversationMainThread = dictForMainThread;
         });
         
         if (nextTypingUpdate < DBL_MAX - DBL_EPSILON && nextTypingUpdate - CFAbsoluteTimeGetCurrent() > 0)
@@ -1250,74 +1298,85 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     }];
 }
 
-- (void)dispatchUserTyping:(int)uid inConversation:(int64_t)conversationId typing:(bool)typing
+- (void)dispatchUserActivity:(int)uid inConversation:(int64_t)conversationId type:(NSString *)type
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
         NSNumber *key = [[NSNumber alloc] initWithLongLong:conversationId];
-        NSMutableDictionary *typingUsers = [_typingUsersByConversation objectForKey:key];
+        NSMutableDictionary *typingUserRecords = [_typingUserRecordsByConversation objectForKey:key];
         NSNumber *userKey = [[NSNumber alloc] initWithInt:uid];
         
-        if (typing)
+        if (type != nil)
         {
-            if (typingUsers == nil)
+            if (typingUserRecords == nil)
             {
-                typingUsers = [[NSMutableDictionary alloc] init];
-                [_typingUsersByConversation setObject:typingUsers forKey:key];
+                typingUserRecords = [[NSMutableDictionary alloc] init];
+                [_typingUserRecordsByConversation setObject:typingUserRecords forKey:key];
             }
             
             bool updated = false;
-            if ([typingUsers objectForKey:userKey] == nil)
+            if ([typingUserRecords objectForKey:userKey] == nil || !TGStringCompare(((TGTypingRecord *)typingUserRecords[userKey]).type, type))
                 updated = true;
             
-            [typingUsers setObject:[NSNumber numberWithDouble:CFAbsoluteTimeGetCurrent()] forKey:userKey];
+            [typingUserRecords setObject:[[TGTypingRecord alloc] initWithDate:CFAbsoluteTimeGetCurrent() type:type] forKey:userKey];
             
             if (updated)
             {
-                NSMutableArray *typingUsersArray = [[NSMutableArray alloc] init];
-                [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, __unused id obj, __unused BOOL *stop)
+                NSMutableDictionary *typingUsersActivitiesDict = [[NSMutableDictionary alloc] init];
+                [typingUserRecords enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, TGTypingRecord *record, __unused BOOL *stop)
                 {
-                    [typingUsersArray addObject:nUid];
+                    typingUsersActivitiesDict[nUid] = record.type;
                 }];
                 
-                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersArray]];
-                [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersArray, @"typingUsers", nil]]];
+                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersActivitiesDict]];
+                [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersActivitiesDict, @"typingUsers", nil]]];
             }
         }
         else
         {
-            if (typingUsers != nil && [typingUsers objectForKey:userKey] != nil)
+            if (typingUserRecords != nil && [typingUserRecords objectForKey:userKey] != nil)
             {
-                [typingUsers removeObjectForKey:userKey];
+                [typingUserRecords removeObjectForKey:userKey];
             }
             
-            NSMutableArray *typingUsersArray = [[NSMutableArray alloc] init];
-            [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, __unused id obj, __unused BOOL *stop)
+            NSMutableDictionary *typingUsersActivitiesDict = [[NSMutableDictionary alloc] init];
+            [typingUserRecords enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, TGTypingRecord *record, __unused BOOL *stop)
             {
-                [typingUsersArray addObject:nUid];
+                typingUsersActivitiesDict[nUid] = record.type;
             }];
             
-            [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersArray]];
-            [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersArray, @"typingUsers", nil]]];
+            [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:typingUsersActivitiesDict]];
+            [ActionStageInstance() dispatchResource:@"/tg/conversation/*/typing" resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:conversationId], @"conversationId", typingUsersActivitiesDict, @"typingUsers", nil]]];
             
-            if (typingUsers.count == 0)
-                [_typingUsersByConversation removeObjectForKey:key];
+            if (typingUserRecords.count == 0)
+                [_typingUserRecordsByConversation removeObjectForKey:key];
+        }
+        
+        TGUser *user = [TGDatabaseInstance() loadUser:uid];
+        if (user.presence.online == false)
+        {
+            int timeout = 60;
+#if TARGET_IPHONE_SIMULATOR
+            timeout = 10;
+#endif
+            TGUserPresence presence = (TGUserPresence){.online = true, .lastSeen = user.presence.lastSeen, .temporaryLastSeen = (int)([[TGTelegramNetworking instance] globalTime] + timeout)};
+            [self dispatchUserPresenceChanges:uid presence:presence];
         }
         
         [self updateUserTypingStatuses];
     }];
 }
 
-- (NSArray *)typingUsersInConversationFromMainThread:(int64_t)conversationId
+- (NSDictionary *)typingUserActivitiesInConversationFromMainThread:(int64_t)conversationId
 {
-    return _typingUsersByConversationMainThread[@(conversationId)];
+    return _typingUserRecordsByConversationMainThread[@(conversationId)];
 }
 
 - (void)updatePresenceNow
 {
     dispatch_async(dispatch_get_main_queue(), ^
     {
-        bool online = [[UIApplication sharedApplication] applicationState] == UIApplicationStateActive;
+        bool online = [UIApplication sharedApplication] != nil && [[UIApplication sharedApplication] applicationState] == UIApplicationStateActive;
         
         [ActionStageInstance() dispatchOnStageQueue:^
         {
@@ -1378,24 +1437,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     }];
 }
 
-- (NSArray *)userIdsTypingInConversation:(int64_t)conversationId
-{
-    NSNumber *key = [[NSNumber alloc] initWithLongLong:conversationId];
-    NSMutableDictionary *typingUsers = [_typingUsersByConversation objectForKey:key];
-    if (typingUsers == nil)
-    {
-        return [[NSArray alloc] init];
-    }
-    
-    NSMutableArray *typingUsersArray = [[NSMutableArray alloc] init];
-    [typingUsers enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, __unused id obj, __unused BOOL *stop)
-    {
-        [typingUsersArray addObject:nUid];
-    }];
-    
-    return typingUsersArray;
-}
-
 - (void)dispatchUserLinkChanged:(int)uid link:(int)link
 {
     [ActionStageInstance() dispatchOnStageQueue:^
@@ -1418,7 +1459,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
-        if (![_userDataUpdatesSubscribers containsObject:watcherHandle]);
+        if (![_userDataUpdatesSubscribers containsObject:watcherHandle])
             [_userDataUpdatesSubscribers addObject:watcherHandle];
     }];
 }
@@ -1486,6 +1527,12 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     _clientIsActivated = clientIsActivated;
 }
 
+- (void)processEncryptedPasscode
+{
+//    TGAuthorizedContext *authorizedContext = [[TGAuthorizedContext alloc] initWithUserId:(int32_t)uid];
+//    _authorizedContextPipe.sink(authorizedContext);
+}
+
 - (void)processAuthorizedWithUserId:(int)uid clientIsActivated:(bool)clientIsActivated
 {
     [ActionStageInstance() dispatchOnStageQueue:^
@@ -1498,6 +1545,8 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 #endif
         
         TGLog(@"Starting with user id %d activated: %d", uid, clientIsActivated ? 1 : 0);
+        
+        [[TGTelegramNetworking instance] exportCredentialsForExtensions];
         
         self.clientUserId = uid;
         self.clientIsActivated = clientIsActivated;
@@ -1514,6 +1563,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
                 TGUserPresence presence;
                 presence.online = true;
                 presence.lastSeen = (int)(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970);
+                presence.temporaryLastSeen = 0;
                 user.presence = presence;
                 [[TGDatabase instance] storeUsers:[NSArray arrayWithObject:user]];
             }
@@ -1524,14 +1574,50 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             
             [ActionStageInstance() requestActor:@"/tg/synchronizeContacts/(sync)" options:nil watcher:TGTelegraphInstance];
             
-            [TGAppDelegateInstance reloadSettingsController:uid];
+            TGDispatchOnMainThread(^
+            {
+                [TGAppDelegateInstance reloadSettingsController:uid];
+                
+                [TGAppDelegateInstance setupShortcutItems];
+            });
             
             if (TGAppDelegateInstance.locationTranslationEnabled)
                 [ActionStageInstance() requestActor:@"/tg/liveNearby" options:nil watcher:self];
             
             [TGDatabaseInstance() processAndScheduleSelfDestruct];
+            [TGDatabaseInstance() processAndScheduleMediaCleanup];
+            [TGDatabaseInstance() processAndScheduleMute];
+            
+            if (iosMajorVersion() >= 7 && user.phoneNumber.length != 0)
+            {
+                TGDispatchOnMainThread(^
+                {
+                    NSUbiquitousKeyValueStore *store = [NSUbiquitousKeyValueStore defaultStore];
+                    if (!TGStringCompare(user.phoneNumber, [store objectForKey:@"telegram_currentPhoneNumber"]))
+                    {
+                        [store setObject:user.phoneNumber forKey:@"telegram_currentPhoneNumber"];
+                        [store synchronize];
+                    }
+                });
+            }
+            
+            [[TGBridgeServer instance] setAuthorized:true userId:uid];
+            
+            [_channelTasksDisposable add:[[TGChannelManagementSignals deleteChannelMessages] startWithNext:nil]];
+            [_channelTasksDisposable add:[[TGChannelManagementSignals readChannelMessages] startWithNext:nil]];
+            [_channelTasksDisposable add:[[TGChannelManagementSignals leaveChannels] startWithNext:nil]];
         }
     }];
+}
+
+- (void)processUnauthorized
+{
+    TGDispatchOnMainThread(^
+    {
+        [TGAppDelegateInstance setupShortcutItems];
+    });
+    
+    [[TGBridgeServer instance] setAuthorized:false userId:0];
 }
 
 #pragma mark - Protocol
@@ -1625,32 +1711,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     }];
 }
 
-- (NSString *)extractErrorType:(TLError *)error
-{
-    if ([error isKindOfClass:[TLError$richError class]])
-    {
-        if (((TLError$richError *)error).type.length != 0)
-            return ((TLError$richError *)error).type;
-        
-        NSString *errorDescription = ((TLError$richError *)error).description;
-        
-        NSMutableString *errorString = [[NSMutableString alloc] init];
-        for (int i = 0; i < (int)errorDescription.length; i++)
-        {
-            unichar c = [errorDescription characterAtIndex:i];
-            if (c == ':')
-                break;
-            
-            [errorString appendString:[[NSString alloc] initWithCharacters:&c length:1]];
-        }
-        
-        if (errorString.length != 0)
-            return errorString;
-    }
-    
-    return nil;
-}
-
 #pragma mark - Requests
 
 - (void)rawHttpRequestCompleted:(TGRawHttpRequest *)request response:(NSData *)response error:(NSError *)error
@@ -1695,9 +1755,13 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 {
     NSMutableURLRequest *urlRequest = nil;
     urlRequest = [self requestWithMethod:@"GET" path:request.url parameters:nil];
-    if (request.httpAuth != nil)
+    if (request.httpAuth.length > 0)
     {
-        NSString *authValue = [[NSString alloc] initWithFormat:@"Basic %@", [TGStringUtils stringByEncodingInBase64:request.httpAuth]];
+        [urlRequest setValue:request.httpAuth forHTTPHeaderField:@"Authorization"];
+    }
+    else if ([request.url rangeOfString:@"googleusercontent.com/docs/securesc"].location != NSNotFound)
+    {
+        NSString *authValue = [[NSString alloc] initWithFormat:@"Bearer %@", [TGGoogleDriveController accessToken]];
         [urlRequest setValue:authValue forHTTPHeaderField:@"Authorization"];
     }
     
@@ -1716,10 +1780,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     [httpOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, __unused id responseObject)
     {
         NSData *receivedData = [operation responseData];
-
-        //NSString *receivedString = [[NSString alloc] initWithBytes:receivedData.bytes length:receivedData.length encoding:NSASCIIStringEncoding];
-        //TGLog(@"Response: %@", receivedString);
-
         [self rawHttpRequestCompleted:request response:receivedData error:nil];
     } failure:^(__unused AFHTTPRequestOperation *operation, NSError *error)
     {
@@ -1730,6 +1790,9 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     {
         [httpOperation setDownloadProgressBlock:^(__unused NSInteger bytesRead, NSInteger totalBytesRead, NSInteger totalBytesExpectedToRead)
         {
+            if (totalBytesExpectedToRead <= 0 && request.expectedFileSize > 0)
+                totalBytesExpectedToRead = request.expectedFileSize;
+
             if (totalBytesExpectedToRead > 0 && totalBytesRead > 0)
             {
                 request.progressBlock(((float)totalBytesRead) / ((float)totalBytesExpectedToRead));
@@ -1747,7 +1810,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     getAppPrefs.api_id = [_apiId intValue];
     getAppPrefs.api_hash = _apiHash;
     
-    return [[TGTelegramNetworking instance] performRpc:getAppPrefs completionBlock:^(TLhelp_AppPrefs *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getAppPrefs completionBlock:^(TLhelp_AppPrefs *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -1765,13 +1828,19 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     return [self doRequestRawHttp:url maxRetryCount:maxRetryCount acceptCodes:acceptCodes httpAuth:nil actor:actor];
 }
 
-- (NSObject *)doRequestRawHttp:(NSString *)url maxRetryCount:(int)maxRetryCount acceptCodes:(NSArray *)acceptCodes httpAuth:(NSData *)httpAuth actor:(id<TGRawHttpActor>)actor
+- (NSObject *)doRequestRawHttp:(NSString *)url maxRetryCount:(int)maxRetryCount acceptCodes:(NSArray *)acceptCodes httpAuth:(NSString *)httpAuth actor:(id<TGRawHttpActor>)actor
+{
+    return [self doRequestRawHttp:url maxRetryCount:maxRetryCount acceptCodes:acceptCodes httpAuth:httpAuth expectedFileSize:-1 actor:actor];
+}
+
+- (NSObject *)doRequestRawHttp:(NSString *)url maxRetryCount:(int)maxRetryCount acceptCodes:(NSArray *)acceptCodes httpAuth:(NSString *)httpAuth expectedFileSize:(NSInteger)expectedFileSize actor:(id<TGRawHttpActor>)actor
 {
     TGRawHttpRequest *request = [[TGRawHttpRequest alloc] init];
     request.url = url;
     request.acceptCodes = acceptCodes;
     request.httpAuth = httpAuth;
     request.maxRetryCount = maxRetryCount;
+    request.expectedFileSize = expectedFileSize;
     request.completionBlock = ^(NSData *response)
     {
         if (response != nil)
@@ -1791,6 +1860,37 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
             [actor httpRequestProgress:url progress:progress];
         };
     }
+    
+    [self enqueueRawHttpRequest:request];
+    
+    void (^progressBlock)(float) = nil;
+    if ([actor respondsToSelector:@selector(httpRequestProgress:progress:)])
+    {
+        progressBlock = ^(float progress)
+        {
+            [actor httpRequestProgress:url progress:progress];
+        };
+    }
+    
+    return [self doRequestRawHttp:url maxRetryCount:maxRetryCount acceptCodes:acceptCodes httpAuth:httpAuth expectedFileSize:expectedFileSize progressBlock:progressBlock completionBlock:^(NSData *response)
+    {
+        if (response != nil)
+            [actor httpRequestSuccess:url response:response];
+        else
+            [actor httpRequestFailed:url];
+    }];
+}
+
+- (NSObject *)doRequestRawHttp:(NSString *)url maxRetryCount:(int)maxRetryCount acceptCodes:(NSArray *)acceptCodes httpAuth:(NSString *)httpAuth expectedFileSize:(NSInteger)expectedFileSize progressBlock:(void (^)(float progress))progressBlock completionBlock:(void (^)(NSData *response))completionBlock
+{
+    TGRawHttpRequest *request = [[TGRawHttpRequest alloc] init];
+    request.url = url;
+    request.acceptCodes = acceptCodes;
+    request.httpAuth = httpAuth;
+    request.maxRetryCount = maxRetryCount;
+    request.expectedFileSize = expectedFileSize;
+    request.completionBlock = completionBlock;
+    request.progressBlock = progressBlock;
     
     [self enqueueRawHttpRequest:request];
     
@@ -1828,7 +1928,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     saveFilePart.file_part = partId;
     saveFilePart.bytes = data;
     
-    return [[TGTelegramNetworking instance] performRpc:saveFilePart completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:saveFilePart completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil && [((NSNumber *)response) boolValue])
         {
@@ -1849,7 +1949,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     saveBigFilePart.file_total_parts = totalParts;
     saveBigFilePart.bytes = data;
     
-    return [[TGTelegramNetworking instance] performRpc:saveBigFilePart completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:saveBigFilePart completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil && [((NSNumber *)response) boolValue])
         {
@@ -1873,7 +1973,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     
     getFile.location = location;
     
-    return [[TGTelegramNetworking instance] performRpc:getFile completionBlock:^(TLupload_File *response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getFile completionBlock:^(TLupload_File *response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -1897,7 +1997,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     getFile.offset = offset;
     getFile.limit = length;
     
-    return [[TGTelegramNetworking instance] performRpc:getFile completionBlock:^(TLupload_File *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getFile completionBlock:^(TLupload_File *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -1949,15 +2049,13 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 {
     TLRPCauth_sendCode$auth_sendCode *sendCode = [[TLRPCauth_sendCode$auth_sendCode alloc] init];
     sendCode.phone_number = phoneNumber;
-    sendCode.sms_type = 1;
+    sendCode.sms_type = 5;
     sendCode.api_id = [_apiId intValue];
     sendCode.api_hash = _apiHash;
     
-    NSArray *preferredLocalizations = [[NSBundle mainBundle] preferredLocalizations];
-    if (preferredLocalizations.count != 0)
-        sendCode.lang_code = [preferredLocalizations objectAtIndex:0];
+    sendCode.lang_code = [[NSLocale preferredLanguages] objectAtIndex:0];
     
-    return [[TGTelegramNetworking instance] performRpc:sendCode completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:sendCode completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -1967,7 +2065,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         {
             TGSendCodeError errorCode = TGSendCodeErrorUnknown;
             
-            NSString *errorType = [self extractErrorType:error];
+            NSString *errorType = error.errorDescription;
             if ([errorType isEqualToString:@"PHONE_NUMBER_INVALID"])
                 errorCode = TGSendCodeErrorInvalidPhone;
             else if ([errorType hasPrefix:@"FLOOD_WAIT"])
@@ -1984,7 +2082,43 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 
             [requestBuilder sendCodeRequestFailed:errorCode];
         }
-    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors];
+    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors | TGRequestClassFailOnFloodErrors];
+}
+
+- (NSObject *)doSendConfirmationSms:(NSString *)phoneNumber phoneHash:(NSString *)phoneHash requestBuilder:(TGSendCodeRequestBuilder *)requestBuilder
+{
+    TLRPCauth_sendSms$auth_sendSms *sendSms = [[TLRPCauth_sendSms$auth_sendSms alloc] init];
+    sendSms.phone_number = phoneNumber;
+    sendSms.phone_code_hash = phoneHash;
+    
+    return [[TGTelegramNetworking instance] performRpc:sendSms completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
+    {
+        if (error == nil)
+        {
+            [requestBuilder sendSmsRequestSuccess:((NSNumber *)response).boolValue];
+        }
+        else
+        {
+            TGSendCodeError errorCode = TGSendCodeErrorUnknown;
+            
+            NSString *errorType = error.errorDescription;
+            if ([errorType isEqualToString:@"PHONE_NUMBER_INVALID"])
+                errorCode = TGSendCodeErrorInvalidPhone;
+            else if ([errorType hasPrefix:@"FLOOD_WAIT"])
+                errorCode = TGSendCodeErrorFloodWait;
+            else
+            {
+                NSInteger datacenterId = 0;
+                if ([self isMigrateToDatacenterError:errorType datacenterId:&datacenterId] && datacenterId != 0)
+                {
+                    [requestBuilder sendCodeRedirect:datacenterId];
+                    return;
+                }
+            }
+            
+            [requestBuilder sendCodeRequestFailed:errorCode];
+        }
+    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors | TGRequestClassFailOnFloodErrors];
 }
 
 - (NSObject *)doSendPhoneCall:(NSString *)phoneNumber phoneHash:(NSString *)phoneHash requestBuilder:(TGSendCodeRequestBuilder *)requestBuilder
@@ -1993,13 +2127,13 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     sendCall.phone_number = phoneNumber;
     sendCall.phone_code_hash = phoneHash;
     
-    return [[TGTelegramNetworking instance] performRpc:sendCall completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:sendCall completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
             [requestBuilder sendCallRequestSuccess];
         else
         {
-            NSString *errorType = [self extractErrorType:error];
+            NSString *errorType = error.errorDescription;
             
             NSInteger datacenterId = 0;
             if ([self isMigrateToDatacenterError:errorType datacenterId:&datacenterId] && datacenterId != 0)
@@ -2019,7 +2153,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     signUp.first_name = firstName;
     signUp.last_name = lastName;
     
-    return [[TGTelegramNetworking instance] performRpc:signUp completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:signUp completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2027,7 +2161,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         }
         else
         {
-            NSString *errorType = [self extractErrorType:error];
+            NSString *errorType = error.errorDescription;
             
             TGSignUpResult result = TGSignUpResultInternalError;
             
@@ -2063,7 +2197,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     signIn.phone_code_hash = phoneHash;
     signIn.phone_code = phoneCode;
     
-    return [[TGTelegramNetworking instance] performRpc:signIn completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:signIn completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2071,7 +2205,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         }
         else
         {
-            NSString *errorType = [self extractErrorType:error];
+            NSString *errorType = error.errorDescription;
             if ([errorType isEqualToString:@"PHONE_CODE_INVALID"])
                 [requestBuilder signInFailed:TGSignInResultInvalidToken];
             else if ([errorType isEqualToString:@"PHONE_CODE_EXPIRED"])
@@ -2080,6 +2214,8 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
                 [requestBuilder signInFailed:TGSignInResultNotRegistered];
             else if ([errorType hasPrefix:@"FLOOD_WAIT"])
                 [requestBuilder signInFailed:TGSignInResultFloodWait];
+            else if ([errorType hasPrefix:@"SESSION_PASSWORD_NEEDED"])
+                [requestBuilder signInFailed:TGSignInResultPasswordRequired];
             else
             {
                 NSInteger datacenterId = 0;
@@ -2089,14 +2225,14 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
                     [requestBuilder signInFailed:TGSignInResultInvalidToken];
             }
         }
-    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors];
+    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors | TGRequestClassFailOnFloodErrors | TGRequestClassPassthroughPasswordNeeded];
 }
 
 - (NSObject *)doRequestLogout:(TGLogoutRequestBuilder *)actor
 {
     TLRPCauth_logOut$auth_logOut *logout = [[TLRPCauth_logOut$auth_logOut alloc] init];
     
-    return [[TGTelegramNetworking instance] performRpc:logout completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:logout completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2115,7 +2251,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     sendInvites.phone_numbers = phones;
     sendInvites.message = text;
     
-    return [[TGTelegramNetworking instance] performRpc:sendInvites completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:sendInvites completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2139,12 +2275,11 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     
     getAppUpdate.device_model = [self currentDeviceModel];
     getAppUpdate.system_version = [[UIDevice currentDevice] systemVersion];
-    getAppUpdate.app_version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
-    NSArray *preferredLocalizations = [[NSBundle mainBundle] preferredLocalizations];
-    if (preferredLocalizations.count != 0)
-        getAppUpdate.lang_code = [preferredLocalizations objectAtIndex:0];
+    NSString *versionString = [[NSString alloc] initWithFormat:@"%@ (%@)", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"], [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
+    getAppUpdate.app_version = versionString;
+    getAppUpdate.lang_code = [[NSLocale preferredLanguages] objectAtIndex:0];
     
-    return [[TGTelegramNetworking instance] performRpc:getAppUpdate completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getAppUpdate completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2162,7 +2297,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     if (TGTelegraphInstance.clientUserId == 0)
         return nil;
     
-    //TGLog(@"===== Setting presence: %s", online ? "online" : "offline");
+    TGLog(@"===== Setting presence: %s", online ? "online" : "offline");
     TLRPCaccount_updateStatus$account_updateStatus *updateStatus = [[TLRPCaccount_updateStatus$account_updateStatus alloc] init];
     updateStatus.offline = !online;
     
@@ -2173,10 +2308,11 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         TGUserPresence presence;
         presence.online = true;
         presence.lastSeen = currentUnixTime + 5 * 60;
+        presence.temporaryLastSeen = 0;
         [TGTelegraphInstance dispatchUserPresenceChanges:TGTelegraphInstance.clientUserId presence:presence];
     }
     
-    return [[TGTelegramNetworking instance] performRpc:updateStatus completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:updateStatus completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2193,7 +2329,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 {
     TLRPCauth_resetAuthorizations$auth_resetAuthorizations *resetAuthorizations = [[TLRPCauth_resetAuthorizations$auth_resetAuthorizations alloc] init];
     
-    return [[TGTelegramNetworking instance] performRpc:resetAuthorizations completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:resetAuthorizations completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2219,7 +2355,8 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         
         registerDevice.device_model = [self currentDeviceModel];
         registerDevice.system_version = [[UIDevice currentDevice] systemVersion];
-        registerDevice.app_version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+        NSString *versionString = [[NSString alloc] initWithFormat:@"%@ (%@)", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"], [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
+        registerDevice.app_version = versionString;
 #ifdef DEBUG
         registerDevice.app_sandbox = true;
 #else
@@ -2238,7 +2375,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         rpcRequest = unregisterDevice;
     }
     
-    return [[TGTelegramNetworking instance] performRpc:rpcRequest completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:rpcRequest completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2256,7 +2393,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCusers_getUsers$users_getUsers *getUsers = [[TLRPCusers_getUsers$users_getUsers alloc] init];
     getUsers.n_id = [NSArray arrayWithObject:[self createInputUserForUid:uid]];
     
-    return [[TGTelegramNetworking instance] performRpc:getUsers completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getUsers completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2274,7 +2411,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCusers_getFullUser$users_getFullUser *getFullUser = [[TLRPCusers_getFullUser$users_getFullUser alloc] init];
     getFullUser.n_id = [self createInputUserForUid:uid];
     
-    return [[TGTelegramNetworking instance] performRpc:getFullUser completionBlock:^(TLUserFull *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getFullUser completionBlock:^(TLUserFull *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2306,7 +2443,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 {
     TLRPCupdates_getState$updates_getState *getState = [[TLRPCupdates_getState$updates_getState alloc] init];
     
-    return [[TGTelegramNetworking instance] performRpc:getState completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getState completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2331,7 +2468,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         TGLog(@"Something bad happens...");
     }
     
-    return [[TGTelegramNetworking instance] performRpc:getDifference completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getDifference completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2350,7 +2487,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     getDialogs.offset = offset;
     getDialogs.limit = limit;
     
-    return [[TGTelegramNetworking instance] performRpc:getDialogs completionBlock:^(TLmessages_Dialogs *dialogs, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getDialogs completionBlock:^(TLmessages_Dialogs *dialogs, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2389,7 +2526,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     
     importContacts.contacts = contactsArray;
     
-    return [[TGTelegramNetworking instance] performRpc:importContacts completionBlock:^(TLcontacts_ImportedContacts *importedContacts, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:importContacts completionBlock:^(TLcontacts_ImportedContacts *importedContacts, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2426,9 +2563,9 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 - (NSObject *)doRequestContactList:(NSString *)hash actor:(TGSynchronizeContactsActor *)actor
 {
     TLRPCcontacts_getContacts$contacts_getContacts *getContacts = [[TLRPCcontacts_getContacts$contacts_getContacts alloc] init];
-    getContacts.hash = hash;
+    getContacts.n_hash = hash;
     
-    return [[TGTelegramNetworking instance] performRpc:getContacts completionBlock:^(TLcontacts_Contacts *contacts, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getContacts completionBlock:^(TLcontacts_Contacts *contacts, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2445,7 +2582,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 {
     TLRPCcontacts_getContactIDs$contacts_getContactIDs *getContactIds = [[TLRPCcontacts_getContactIDs$contacts_getContactIDs alloc] init];
     
-    return [[TGTelegramNetworking instance] performRpc:getContactIds completionBlock:^(id<TLObject> result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getContactIds completionBlock:^(id<TLObject> result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2463,7 +2600,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCcontacts_getSuggested$contacts_getSuggested *getSuggested = [[TLRPCcontacts_getSuggested$contacts_getSuggested alloc] init];
     getSuggested.limit = limit;
     
-    return [[TGTelegramNetworking instance] performRpc:getSuggested completionBlock:^(TLcontacts_Suggested *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getSuggested completionBlock:^(TLcontacts_Suggested *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2487,7 +2624,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     getLocated.limit = 100;
     getLocated.hidden = !discloseLocation;
     
-    return [[TGTelegramNetworking instance] performRpc:getLocated completionBlock:^(TLcontacts_Located *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getLocated completionBlock:^(TLcontacts_Located *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2506,7 +2643,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     search.q = query;
     search.limit = limit;
     
-    return [[TGTelegramNetworking instance] performRpc:search completionBlock:^(TLcontacts_Found *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:search completionBlock:^(TLcontacts_Found *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2519,12 +2656,31 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
 }
 
+- (NSObject *)doSearchContactsByName:(NSString *)query limit:(int)limit completion:(void (^)(TLcontacts_Found *))completion
+{
+    TLRPCcontacts_search$contacts_search *search = [[TLRPCcontacts_search$contacts_search alloc] init];
+    search.q = query;
+    search.limit = limit;
+    
+    return [[TGTelegramNetworking instance] performRpc:search completionBlock:^(TLcontacts_Found *result, __unused int64_t responseTime, MTRpcError *error)
+    {
+        if (error == nil)
+        {
+            completion(result);
+        }
+        else
+        {
+            completion(nil);
+        }
+    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
+}
+
 - (NSObject *)doSendContactRequest:(int)uid actor:(TGContactRequestActionActor *)actor
 {
     TLRPCcontacts_sendRequest$contacts_sendRequest *sendRequest = [[TLRPCcontacts_sendRequest$contacts_sendRequest alloc] init];
     sendRequest.n_id = [self createInputUserForUid:uid];
     
-    return [[TGTelegramNetworking instance] performRpc:sendRequest completionBlock:^(TLcontacts_SentLink *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:sendRequest completionBlock:^(TLcontacts_SentLink *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2542,7 +2698,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCcontacts_acceptRequest$contacts_acceptRequest *acceptRequest = [[TLRPCcontacts_acceptRequest$contacts_acceptRequest alloc] init];
     acceptRequest.n_id = [self createInputUserForUid:uid];
     
-    return [[TGTelegramNetworking instance] performRpc:acceptRequest completionBlock:^(TLcontacts_Link *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:acceptRequest completionBlock:^(TLcontacts_Link *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2560,7 +2716,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCcontacts_declineRequest$contacts_declineRequest *declineRequest = [[TLRPCcontacts_declineRequest$contacts_declineRequest alloc] init];
     declineRequest.n_id = [self createInputUserForUid:uid];
     
-    return [[TGTelegramNetworking instance] performRpc:declineRequest completionBlock:^(TLcontacts_Link *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:declineRequest completionBlock:^(TLcontacts_Link *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2595,22 +2751,10 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     concreteRpc = clearContact;
 #endif*/
 
-    return [[TGTelegramNetworking instance] performRpc:concreteRpc completionBlock:^(__unused id<TLObject> result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:concreteRpc completionBlock:^(__unused id<TLObject> result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
-/*#if defined(DEBUG)
-            if ([concreteRpc isKindOfClass:[TLRPCcontacts_clearContact class]])
-            {
-                TLcontacts_Link *link = result;
-                TGUser *user = [[TGUser alloc] initWithTelegraphUserDesc:link.user];
-                [TGUserDataRequestBuilder executeUserObjectsUpdate:[NSArray arrayWithObject:user]];
-                
-                int userLink = extractUserLink(link);
-                [TGUserDataRequestBuilder executeUserLinkUpdates:[[NSArray alloc] initWithObjects:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:link.user.n_id], [[NSNumber alloc] initWithInt:userLink], nil], nil]];
-            }
-#endif*/
-            
             [actor deleteContactsSuccess:uids];
         }
         else
@@ -2620,9 +2764,16 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
 }
 
-- (TLInputPeer *)createInputPeerForConversation:(int64_t)conversationId
+- (TLInputPeer *)createInputPeerForConversation:(int64_t)conversationId accessHash:(int64_t)accessHash
 {
-    if (conversationId < 0)
+    if (TGPeerIdIsChannel(conversationId))
+    {
+        TLInputPeer$inputPeerChannel *channelPeer = [[TLInputPeer$inputPeerChannel alloc] init];
+        channelPeer.channel_id = TGChannelIdFromPeerId(conversationId);
+        channelPeer.access_hash = accessHash;
+        return channelPeer;
+    }
+    else if (conversationId < 0)
     {
         TLInputPeer$inputPeerChat *chatPeer = [[TLInputPeer$inputPeerChat alloc] init];
         chatPeer.chat_id = -(int)conversationId;
@@ -2638,24 +2789,13 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         TGUser *user = [TGDatabaseInstance() loadUser:(int)conversationId];
         if (user != nil)
         {
-            if (user.phoneNumberHash != 0)
-            {
-                TLInputPeer$inputPeerForeign *foreignPeer = [[TLInputPeer$inputPeerForeign alloc] init];
-                foreignPeer.user_id = (int)conversationId;
-                foreignPeer.access_hash = user.phoneNumberHash;
-                return foreignPeer;
-            }
-            else if (user.phoneNumber != nil && user.phoneNumber.length != 0)
-            {
-                TLInputPeer$inputPeerContact *contactPeer = [[TLInputPeer$inputPeerContact alloc] init];
-                contactPeer.user_id = (int)conversationId;
-                return contactPeer;
-            }
+            TLInputPeer$inputPeerUser *foreignPeer = [[TLInputPeer$inputPeerUser alloc] init];
+            foreignPeer.user_id = (int)conversationId;
+            foreignPeer.access_hash = user.phoneNumberHash;
+            return foreignPeer;
         }
 
-        TLInputPeer$inputPeerContact *contactPeer = [[TLInputPeer$inputPeerContact alloc] init];
-        contactPeer.user_id = (int)conversationId;
-        return contactPeer;
+        return [[TLInputPeer$inputPeerEmpty alloc] init];
     }
 }
 
@@ -2671,37 +2811,26 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         TGUser *user = [TGDatabaseInstance() loadUser:uid];
         if (user != nil)
         {
-            if (user.phoneNumberHash != 0)
-            {
-                TLInputUser$inputUserForeign *foreignUser = [[TLInputUser$inputUserForeign alloc] init];
-                foreignUser.user_id = uid;
-                foreignUser.access_hash = user.phoneNumberHash;
-                return foreignUser;
-            }
-            else if (user.phoneNumber != nil && user.phoneNumber.length != 0)
-            {
-                TLInputUser$inputUserContact *contactUser = [[TLInputUser$inputUserContact alloc] init];
-                contactUser.user_id = uid;
-                return contactUser;
-            }
+            TLInputUser$inputUser *foreignUser = [[TLInputUser$inputUser alloc] init];
+            foreignUser.user_id = uid;
+            foreignUser.access_hash = user.phoneNumberHash;
+            return foreignUser;
         }
         
-        TLInputUser$inputUserContact *contactUser = [[TLInputUser$inputUserContact alloc] init];
-        contactUser.user_id = uid;
-        return contactUser;
+        return nil;
     }
 }
 
-- (NSObject *)doRequestConversationHistory:(int64_t)conversationId maxMid:(int)maxMid orOffset:(int)offset limit:(int)limit actor:(TGConversationHistoryAsyncRequestActor *)actor
+- (NSObject *)doRequestConversationHistory:(int64_t)conversationId accessHash:(int64_t)accessHash maxMid:(int)maxMid orOffset:(int)offset limit:(int)limit actor:(TGConversationHistoryAsyncRequestActor *)actor
 {
     TLRPCmessages_getHistory$messages_getHistory *getHistory = [[TLRPCmessages_getHistory$messages_getHistory alloc] init];
-    getHistory.peer = [self createInputPeerForConversation:conversationId];
+    getHistory.peer = [self createInputPeerForConversation:conversationId accessHash:accessHash];
     if (maxMid >= 0)
-        getHistory.max_id = maxMid;
-    getHistory.offset = offset;
+        getHistory.offset_id = maxMid;
+    getHistory.add_offset = offset;
     getHistory.limit = limit;
     
-    return [[TGTelegramNetworking instance] performRpc:getHistory completionBlock:^(TLmessages_Messages *messages, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getHistory completionBlock:^(TLmessages_Messages *messages, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2714,10 +2843,10 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
 }
 
-- (NSObject *)doRequestConversationMediaHistory:(int64_t)conversationId maxMid:(int)maxMid maxDate:(int)maxDate limit:(int)limit actor:(TGConversationMediaHistoryRequestActor *)actor
+- (NSObject *)doRequestConversationMediaHistory:(int64_t)conversationId accessHash:(int64_t)accessHash maxMid:(int)maxMid maxDate:(int)maxDate limit:(int)limit actor:(TGUpdateMediaHistoryActor *)actor
 {
     TLRPCmessages_search$messages_search *search = [[TLRPCmessages_search$messages_search alloc] init];
-    search.peer = [self createInputPeerForConversation:conversationId];
+    search.peer = [self createInputPeerForConversation:conversationId accessHash:accessHash];
     search.q = @"";
     search.min_date = 0;
     search.max_date = maxDate;
@@ -2726,7 +2855,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     search.limit = limit;
     search.filter = [[TLMessagesFilter$inputMessagesFilterPhotoVideo alloc] init];
     
-    return [[TGTelegramNetworking instance] performRpc:search completionBlock:^(TLmessages_Messages *messages, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:search completionBlock:^(TLmessages_Messages *messages, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2739,45 +2868,80 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
 }
 
-- (NSObject *)doConversationSendMessage:(int64_t)conversationId messageText:(NSString *)messageText geo:(TLInputGeoPoint *)geo messageGuid:(NSString *)__unused messageGuid tmpId:(int64_t)tmpId actor:(TGModernSendCommonMessageActor *)actor
+- (NSObject *)doConversationSendMessage:(int64_t)conversationId accessHash:(int64_t)accessHash messageText:(NSString *)messageText messageGuid:(NSString *)__unused messageGuid tmpId:(int64_t)tmpId replyMessageId:(int32_t)replyMessageId disableLinkPreviews:(bool)disableLinkPreviews postAsChannel:(bool)postAsChannel actor:(TGModernSendCommonMessageActor *)actor
 {
-    if (geo != nil && [geo isKindOfClass:[TLInputGeoPoint$inputGeoPoint class]])
+    TLRPCmessages_sendMessage_manual *sendMessage = [[TLRPCmessages_sendMessage_manual alloc] init];
+    sendMessage.flags |= replyMessageId != 0 ? (1 << 0) : 0;
+    if (disableLinkPreviews)
+        sendMessage.flags |= (1 << 1);
+    if (TGPeerIdIsChannel(conversationId) && postAsChannel) {
+        sendMessage.flags |= 16;
+    }
+    sendMessage.peer = [self createInputPeerForConversation:conversationId accessHash:accessHash];
+    sendMessage.message = messageText;
+    sendMessage.random_id = tmpId;
+    sendMessage.reply_to_msg_id = replyMessageId;
+    
+    return [[TGTelegramNetworking instance] performRpc:sendMessage completionBlock:^(id result, __unused int64_t responseTime, MTRpcError *error)
     {
-        TLInputMedia$inputMediaGeoPoint *geoMedia = [[TLInputMedia$inputMediaGeoPoint alloc] init];
-        geoMedia.geo_point = geo;
-        
-        return [self doConversationSendMedia:conversationId media:geoMedia messageGuid:messageGuid tmpId:tmpId actor:actor];
+        if (error == nil)
+        {
+            [actor conversationSendMessageRequestSuccess:result];
+        }
+        else
+        {
+            [actor conversationSendMessageRequestFailed];
+        }
+    } progressBlock:nil quickAckBlock:^
+    {
+        [actor conversationSendMessageQuickAck];
+    } requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors datacenterId:TG_DEFAULT_DATACENTER_ID];
+}
+
+- (NSObject *)doConversationSendLocation:(int64_t)conversationId accessHash:(int64_t)accessHash latitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue messageGuid:(NSString *)messageGuid tmpId:(int64_t)tmpId replyMessageId:(int32_t)replyMessageId postAsChannel:(bool)postAsChannel actor:(TGModernSendCommonMessageActor *)actor
+{
+    TLInputMedia *media = nil;
+    
+    TLInputGeoPoint$inputGeoPoint *geoPoint = [[TLInputGeoPoint$inputGeoPoint alloc] init];
+    geoPoint.lat = latitude;
+    geoPoint.n_long = longitude;
+    
+    if (venue != nil)
+    {
+        TLInputMedia$inputMediaVenue *venueMedia = [[TLInputMedia$inputMediaVenue alloc] init];
+        venueMedia.geo_point = geoPoint;
+        venueMedia.title = venue.title;
+        venueMedia.address = venue.address;
+        venueMedia.provider = venue.provider;
+        venueMedia.venue_id = venue.venueId;
+        media = venueMedia;
     }
     else
     {
-        TLRPCmessages_sendMessage$messages_sendMessage *sendMessage = [[TLRPCmessages_sendMessage$messages_sendMessage alloc] init];
-        sendMessage.peer = [self createInputPeerForConversation:conversationId];
-        sendMessage.message = messageText;
-        sendMessage.random_id = tmpId;
-        
-        return [[TGTelegramNetworking instance] performRpc:sendMessage completionBlock:^(TLmessages_SentMessage *sentMessage, __unused int64_t responseTime, TLError *error)
-        {
-            if (error == nil)
-            {
-                [actor conversationSendMessageRequestSuccess:sentMessage];
-            }
-            else
-            {
-                [actor conversationSendMessageRequestFailed];
-            }
-        } progressBlock:nil quickAckBlock:^
-        {
-            [actor conversationSendMessageQuickAck];
-        } requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors datacenterId:TG_DEFAULT_DATACENTER_ID];
+        TLInputMedia$inputMediaGeoPoint *geoMedia = [[TLInputMedia$inputMediaGeoPoint alloc] init];
+        geoMedia.geo_point = geoPoint;
+        media = geoMedia;
     }
+    
+    if (media != nil)
+    {
+        return [self doConversationSendMedia:conversationId accessHash:accessHash media:media messageGuid:messageGuid tmpId:tmpId replyMessageId:replyMessageId postAsChannel:postAsChannel actor:actor];
+    }
+    
+    return nil;
 }
 
-- (NSObject *)doConversationSendMedia:(int64_t)conversationId media:(TLInputMedia *)media messageGuid:(NSString *)__unused messageGuid tmpId:(int64_t)tmpId actor:(TGModernSendCommonMessageActor *)actor
+- (NSObject *)doConversationSendMedia:(int64_t)conversationId accessHash:(int64_t)accessHash media:(TLInputMedia *)media messageGuid:(NSString *)__unused messageGuid tmpId:(int64_t)tmpId replyMessageId:(int32_t)replyMessageId postAsChannel:(bool)postAsChannel actor:(TGModernSendCommonMessageActor *)actor
 {
-    TLRPCmessages_sendMedia$messages_sendMedia *sendMedia = [[TLRPCmessages_sendMedia$messages_sendMedia alloc] init];
-    sendMedia.peer = [self createInputPeerForConversation:conversationId];
+    TLRPCmessages_sendMedia_manual *sendMedia = [[TLRPCmessages_sendMedia_manual alloc] init];
+    sendMedia.flags |= replyMessageId != 0 ? (1 << 0) : 0;
+    if (TGPeerIdIsChannel(conversationId) && postAsChannel) {
+        sendMedia.flags |= 16;
+    }
+    sendMedia.peer = [self createInputPeerForConversation:conversationId accessHash:accessHash];
     sendMedia.media = media;
     sendMedia.random_id = tmpId;
+    sendMedia.reply_to_msg_id = replyMessageId;
     
     return [[TGTelegramNetworking instance] performRpc:sendMedia completionBlock:^(id message, __unused int64_t responseTime, TLError *error)
     {
@@ -2820,12 +2984,20 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         TLRPCmessages_sendBroadcast$messages_sendBroadcast *sendBroadcast = [[TLRPCmessages_sendBroadcast$messages_sendBroadcast alloc] init];
         sendBroadcast.contacts = [self broadcastPeerIdsFromUserIds:userIds];
         sendBroadcast.message = messageText;
+        NSMutableArray *randomIds = [[NSMutableArray alloc] init];
+        for (NSUInteger i = 0; i < sendBroadcast.contacts.count; i++)
+        {
+            int64_t randomId = 0;
+            arc4random_buf(&randomId, 8);
+            [randomIds addObject:@(randomId)];
+        }
+        sendBroadcast.random_id = randomIds;
         
-        return [[TGTelegramNetworking instance] performRpc:sendBroadcast completionBlock:^(TLmessages_StatedMessages *statedMessages, __unused int64_t responseTime, TLError *error)
+        return [[TGTelegramNetworking instance] performRpc:sendBroadcast completionBlock:^(TLUpdates *updates, __unused int64_t responseTime, MTRpcError *error)
         {
             if (error == nil)
             {
-                [actor sendBroadcastSuccess:statedMessages];
+                [actor sendBroadcastSuccess:updates];
             }
             else
             {
@@ -2840,12 +3012,20 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCmessages_sendBroadcast$messages_sendBroadcast *sendBroadcast = [[TLRPCmessages_sendBroadcast$messages_sendBroadcast alloc] init];
     sendBroadcast.contacts = [self broadcastPeerIdsFromUserIds:userIds];
     sendBroadcast.media = media;
+    NSMutableArray *randomIds = [[NSMutableArray alloc] init];
+    for (NSUInteger i = 0; i < sendBroadcast.contacts.count; i++)
+    {
+        int64_t randomId = 0;
+        arc4random_buf(&randomId, 8);
+        [randomIds addObject:@(randomId)];
+    }
+    sendBroadcast.random_id = randomIds;
     
-    return [[TGTelegramNetworking instance] performRpc:sendBroadcast completionBlock:^(TLmessages_StatedMessages *statedMessages, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:sendBroadcast completionBlock:^(TLUpdates *updates, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
-            [actor sendBroadcastSuccess:statedMessages];
+            [actor sendBroadcastSuccess:updates];
         }
         else
         {
@@ -2854,18 +3034,22 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors];
 }
 
-- (NSObject *)doConversationForwardMessage:(int64_t)conversationId messageId:(int)messageId tmpId:(int64_t)tmpId actor:(TGModernSendCommonMessageActor *)actor
+- (NSObject *)doConversationForwardMessage:(int64_t)conversationId accessHash:(int64_t)accessHash messageId:(int)messageId fromPeer:(int64_t)fromPeer fromPeerAccessHash:(int64_t)fromPeerAccessHash postAsChannel:(bool)postAsChannel tmpId:(int64_t)tmpId actor:(TGModernSendCommonMessageActor *)actor
 {
-    TLRPCmessages_forwardMessage$messages_forwardMessage *forwardMessage = [[TLRPCmessages_forwardMessage$messages_forwardMessage alloc] init];
-    forwardMessage.peer = [self createInputPeerForConversation:conversationId];
-    forwardMessage.n_id = messageId;
-    forwardMessage.random_id = tmpId;
+    TLRPCmessages_forwardMessages$messages_forwardMessages *forwardMessages = [[TLRPCmessages_forwardMessages$messages_forwardMessages alloc] init];
+    forwardMessages.to_peer = [self createInputPeerForConversation:conversationId accessHash:accessHash];
+    forwardMessages.from_peer = [self createInputPeerForConversation:fromPeer accessHash:fromPeerAccessHash];
+    forwardMessages.n_id = @[@(messageId)];
+    forwardMessages.random_id = @[@(tmpId)];
+    if (TGPeerIdIsChannel(conversationId) && postAsChannel) {
+        forwardMessages.flags |= 16;
+    }
     
-    return [[TGTelegramNetworking instance] performRpc:forwardMessage completionBlock:^(TLmessages_StatedMessage *message, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:forwardMessages completionBlock:^(TLUpdates *updates, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
-            [actor conversationSendMessageRequestSuccess:message];
+            [actor conversationSendMessageRequestSuccess:updates];
         }
         else
         {
@@ -2874,14 +3058,14 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors];
 }
 
-- (NSObject *)doConversationReadHistory:(int64_t)conversationId maxMid:(int)maxMid offset:(int)offset actor:(TGSynchronizeActionQueueActor *)actor
+- (NSObject *)doConversationReadHistory:(int64_t)conversationId accessHash:(int64_t)accessHash maxMid:(int)maxMid offset:(int)offset actor:(TGSynchronizeActionQueueActor *)actor
 {
     TLRPCmessages_readHistory$messages_readHistory *readHistory = [[TLRPCmessages_readHistory$messages_readHistory alloc] init];
-    readHistory.peer = [self createInputPeerForConversation:conversationId];
+    readHistory.peer = [self createInputPeerForConversation:conversationId accessHash:accessHash];
     readHistory.max_id = maxMid;
     readHistory.offset = offset;
     
-    return [[TGTelegramNetworking instance] performRpc:readHistory completionBlock:^(TLmessages_AffectedHistory *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:readHistory completionBlock:^(TLmessages_AffectedHistory *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -2899,11 +3083,11 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCmessages_receivedMessages$messages_receivedMessages *receivedMessages = [[TLRPCmessages_receivedMessages$messages_receivedMessages alloc] init];
     receivedMessages.max_id = maxMid;
     
-    return [[TGTelegramNetworking instance] performRpc:receivedMessages completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:receivedMessages completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
-            [actor reportDeliverySuccess:maxMid mids:(NSArray *)response];
+            [actor reportDeliverySuccess:maxMid deliveredMessages:(NSArray *)response];
         }
         else
         {
@@ -2912,61 +3096,103 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassHidesActivityIndicator];
 }
 
-- (NSObject *)doReportConversationTypingActivity:(int64_t)conversationId requestBuilder:(TGConversationActivityRequestBuilder *)requestActor
+- (NSObject *)doReportConversationActivity:(int64_t)conversationId accessHash:(int64_t)accessHash activity:(id)activity actor:(TGConversationActivityRequestBuilder *)actor
 {
     TLRPCmessages_setTyping$messages_setTyping *setTyping = [[TLRPCmessages_setTyping$messages_setTyping alloc] init];
-    setTyping.peer = [self createInputPeerForConversation:conversationId];
-    setTyping.typing = true;
+    setTyping.peer = [self createInputPeerForConversation:conversationId accessHash:accessHash];
+    setTyping.action = activity;
     
-    return [[TGTelegramNetworking instance] performRpc:setTyping completionBlock:^(__unused id<TLObject> result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:setTyping completionBlock:^(__unused id<TLObject> result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
-            [requestActor reportTypingActivitySuccess];
+            [actor reportTypingActivitySuccess];
         }
         else
         {
-            [requestActor reportTypingActivityFailed];
+            [actor reportTypingActivityFailed];
         }
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassHidesActivityIndicator | TGRequestClassFailOnServerErrors];
 }
 
-- (NSObject *)doChangeConversationTitle:(int64_t)conversationId title:(NSString *)title actor:(TGConversationChangeTitleRequestActor *)requestActor
+- (NSObject *)doChangeConversationTitle:(int64_t)conversationId accessHash:(int64_t)accessHash title:(NSString *)title actor:(TGConversationChangeTitleRequestActor *)requestActor
 {
-    TLRPCmessages_editChatTitle$messages_editChatTitle *editChatTitle = [[TLRPCmessages_editChatTitle$messages_editChatTitle alloc] init];
-    editChatTitle.chat_id = -conversationId;
-    editChatTitle.title = title;
-    
-    return [[TGTelegramNetworking instance] performRpc:editChatTitle completionBlock:^(TLmessages_StatedMessage *message, __unused int64_t responseTime, TLError *error)
-    {
-        if (error == nil)
+    if (TGPeerIdIsChannel(conversationId)) {
+        TLRPCchannels_editTitle$channels_editTitle *editTitle = [[TLRPCchannels_editTitle$channels_editTitle alloc] init];
+        TLInputChannel$inputChannel *inputChannel = [[TLInputChannel$inputChannel alloc] init];
+        inputChannel.channel_id = TGChannelIdFromPeerId(conversationId);
+        inputChannel.access_hash = accessHash;
+        editTitle.channel = inputChannel;
+        editTitle.title = title;
+        
+        return [[TGTelegramNetworking instance] performRpc:editTitle completionBlock:^(TLUpdates *updates, __unused int64_t responseTime, MTRpcError *error)
         {
-            [requestActor conversationTitleChangeSuccess:message];
-        }
-        else
+            if (error == nil)
+            {
+                [requestActor conversationTitleChangeSuccess:updates];
+            }
+            else
+            {
+                [requestActor conversationTitleChangeFailed];
+            }
+        } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
+    } else {
+        TLRPCmessages_editChatTitle$messages_editChatTitle *editChatTitle = [[TLRPCmessages_editChatTitle$messages_editChatTitle alloc] init];
+        editChatTitle.chat_id = TGGroupIdFromPeerId(conversationId);
+        editChatTitle.title = title;
+        
+        return [[TGTelegramNetworking instance] performRpc:editChatTitle completionBlock:^(TLUpdates *updates, __unused int64_t responseTime, MTRpcError *error)
         {
-            [requestActor conversationTitleChangeFailed];
-        }
-    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
+            if (error == nil)
+            {
+                [requestActor conversationTitleChangeSuccess:updates];
+            }
+            else
+            {
+                [requestActor conversationTitleChangeFailed];
+            }
+        } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
+    }
 }
 
-- (NSObject *)doChangeConversationPhoto:(int64_t)conversationId photo:(TLInputChatPhoto *)photo actor:(TGConversationChangePhotoActor *)actor
+- (NSObject *)doChangeConversationPhoto:(int64_t)conversationId accessHash:(int64_t)accessHash photo:(TLInputChatPhoto *)photo actor:(TGConversationChangePhotoActor *)actor
 {
-    TLRPCmessages_editChatPhoto$messages_editChatPhoto *editChatPhoto = [[TLRPCmessages_editChatPhoto$messages_editChatPhoto alloc] init];
-    editChatPhoto.chat_id = -conversationId;
-    editChatPhoto.photo = photo;
-    
-    return [[TGTelegramNetworking instance] performRpc:editChatPhoto completionBlock:^(TLmessages_StatedMessage *message, __unused int64_t responseTime, TLError *error)
-    {
-        if (error == nil)
+    if (TGPeerIdIsChannel(conversationId)) {
+        TLRPCchannels_editPhoto$channels_editPhoto *editPhoto = [[TLRPCchannels_editPhoto$channels_editPhoto alloc] init];
+        TLInputChannel$inputChannel *inputChannel = [[TLInputChannel$inputChannel alloc] init];
+        inputChannel.channel_id = TGChannelIdFromPeerId(conversationId);
+        inputChannel.access_hash = accessHash;
+        editPhoto.channel = inputChannel;
+        editPhoto.photo = photo;
+        
+        return [[TGTelegramNetworking instance] performRpc:editPhoto completionBlock:^(TLUpdates *updates, __unused int64_t responseTime, MTRpcError *error)
         {
-            [actor conversationUpdateAvatarSuccess:message];
-        }
-        else
+            if (error == nil)
+            {
+                [actor conversationUpdateAvatarSuccess:updates];
+            }
+            else
+            {
+                [actor conversationUpdateAvatarFailed];
+            }
+        } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors];
+    } else {
+        TLRPCmessages_editChatPhoto$messages_editChatPhoto *editChatPhoto = [[TLRPCmessages_editChatPhoto$messages_editChatPhoto alloc] init];
+        editChatPhoto.chat_id = TGGroupIdFromPeerId(conversationId);
+        editChatPhoto.photo = photo;
+        
+        return [[TGTelegramNetworking instance] performRpc:editChatPhoto completionBlock:^(TLUpdates *updates, __unused int64_t responseTime, MTRpcError *error)
         {
-            [actor conversationUpdateAvatarFailed];
-        }
-    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors];
+            if (error == nil)
+            {
+                [actor conversationUpdateAvatarSuccess:updates];
+            }
+            else
+            {
+                [actor conversationUpdateAvatarFailed];
+            }
+        } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors];
+    }
 }
 
 - (NSObject *)doCreateChat:(NSArray *)uidList title:(NSString *)title actor:(TGConversationCreateChatRequestActor *)actor
@@ -2982,11 +3208,11 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     }
     createChat.users = inputUsers;
     
-    return [[TGTelegramNetworking instance] performRpc:createChat completionBlock:^(TLmessages_StatedMessage *message, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:createChat completionBlock:^(TLUpdates *updates, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
-            [actor createChatSuccess:message];
+            [actor createChatSuccess:updates];
         }
         else
         {
@@ -2998,24 +3224,26 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 - (NSObject *)doAddConversationMember:(int64_t)conversationId uid:(int)uid actor:(TGConversationAddMemberRequestActor *)actor
 {
     TLRPCmessages_addChatUser$messages_addChatUser *addChatUser = [[TLRPCmessages_addChatUser$messages_addChatUser alloc] init];
-    addChatUser.chat_id = -(int)conversationId;
+    addChatUser.chat_id = TGGroupIdFromPeerId(conversationId);
     
     addChatUser.user_id = [self createInputUserForUid:uid];
-    addChatUser.fwd_limit = 120;
+    addChatUser.fwd_limit = 100;
     
-    return [[TGTelegramNetworking instance] performRpc:addChatUser completionBlock:^(TLmessages_StatedMessage *message, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:addChatUser completionBlock:^(TLUpdates *updates, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
-            [actor addMemberSuccess:message];
+            [actor addMemberSuccess:updates];
         }
         else
         {
             int reason = -1;
-            if ([error.description rangeOfString:@"USER_LEFT_CHAT"].location != NSNotFound)
+            if ([error.errorDescription rangeOfString:@"USER_LEFT_CHAT"].location != NSNotFound)
                 reason = -2;
-            else if ([error.description rangeOfString:@"USERS_TOO_MUCH"].location != NSNotFound)
+            else if ([error.errorDescription rangeOfString:@"USERS_TOO_MUCH"].location != NSNotFound)
                 reason = -3;
+            else if ([error.errorDescription rangeOfString:@"USER_NOT_MUTUAL_CONTACT"].location != NSNotFound)
+                reason = -4;
             [actor addMemberFailed:reason];
         }
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
@@ -3024,15 +3252,15 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 - (NSObject *)doDeleteConversationMember:(int64_t)conversationId uid:(int)uid actor:(id<TGDeleteChatMemberProtocol>)actor
 {
     TLRPCmessages_deleteChatUser$messages_deleteChatUser *deleteChatUser = [[TLRPCmessages_deleteChatUser$messages_deleteChatUser alloc] init];
-    deleteChatUser.chat_id = -(int)conversationId;
+    deleteChatUser.chat_id = TGGroupIdFromPeerId(conversationId);
     
     deleteChatUser.user_id = [self createInputUserForUid:uid];
     
-    return [[TGTelegramNetworking instance] performRpc:deleteChatUser completionBlock:^(TLmessages_StatedMessage *message, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:deleteChatUser completionBlock:^(TLUpdates *updates, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
-            [actor deleteMemberSuccess:message];
+            [actor deleteMemberSuccess:updates];
         }
         else
         {
@@ -3046,11 +3274,11 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCmessages_deleteMessages$messages_deleteMessages *deleteMessages = [[TLRPCmessages_deleteMessages$messages_deleteMessages alloc] init];
     deleteMessages.n_id = messageIds;
     
-    return [[TGTelegramNetworking instance] performRpc:deleteMessages completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:deleteMessages completionBlock:^(TLmessages_AffectedMessages *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
-            [actor deleteMessagesSuccess:(NSArray *)response];
+            [actor deleteMessagesSuccess:result];
         }
         else
         {
@@ -3059,13 +3287,13 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric | TGRequestClassFailOnServerErrors];
 }
 
-- (NSObject *)doDeleteConversation:(int64_t)conversationId offset:(int)offset actor:(TGSynchronizeActionQueueActor *)actor
+- (NSObject *)doDeleteConversation:(int64_t)conversationId accessHash:(int64_t)accessHash offset:(int)offset actor:(TGSynchronizeActionQueueActor *)actor
 {
     TLRPCmessages_deleteHistory$messages_deleteHistory *deleteHistory = [[TLRPCmessages_deleteHistory$messages_deleteHistory alloc] init];
-    deleteHistory.peer = [self createInputPeerForConversation:conversationId];
+    deleteHistory.peer = [self createInputPeerForConversation:conversationId accessHash:accessHash];
     deleteHistory.offset = offset;
     
-    return [[TGTelegramNetworking instance] performRpc:deleteHistory completionBlock:^(TLmessages_AffectedHistory *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:deleteHistory completionBlock:^(TLmessages_AffectedHistory *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3085,9 +3313,9 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     getWall.user_id = [self createInputUserForUid:timelineId];
     
     getWall.limit = limit;
-    getWall.max_id = maxItemId;
+    getWall.max_id = (int32_t)maxItemId;
     
-    return [[TGTelegramNetworking instance] performRpc:getWall completionBlock:^(TLphotos_Photos *photos, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getWall completionBlock:^(TLphotos_Photos *photos, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3121,7 +3349,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     uploadProfilePhoto.caption = @"";
     uploadProfilePhoto.crop = [[TLInputPhotoCrop$inputPhotoCropAuto alloc] init];
     
-    return [[TGTelegramNetworking instance] performRpc:uploadProfilePhoto completionBlock:^(TLphotos_Photo *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:uploadProfilePhoto completionBlock:^(TLphotos_Photo *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3148,7 +3376,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     }
     deletePhotos.n_id = idsArray;
     
-    return [[TGTelegramNetworking instance] performRpc:deletePhotos completionBlock:^(__unused id<TLObject> result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:deletePhotos completionBlock:^(__unused id<TLObject> result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3170,7 +3398,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     updateProfilePhoto.n_id = inputPhoto;
     updateProfilePhoto.crop = [[TLInputPhotoCrop$inputPhotoCropAuto alloc] init];
     
-    return [[TGTelegramNetworking instance] performRpc:updateProfilePhoto completionBlock:^(TLUserProfilePhoto *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:updateProfilePhoto completionBlock:^(TLUserProfilePhoto *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3201,7 +3429,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     placeName.street = [components objectForKey:@"street"];
     savePlace.place_name = placeName;
     
-    return [[TGTelegramNetworking instance] performRpc:savePlace completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:savePlace completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3214,7 +3442,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
 }
 
-- (NSObject *)doRequestPeerNotificationSettings:(int64_t)peerId actor:(id<TGPeerSettingsActorProtocol>)actor
+- (NSObject *)doRequestPeerNotificationSettings:(int64_t)peerId accessHash:(int64_t)accessHash actor:(id<TGPeerSettingsActorProtocol>)actor
 {
     TLRPCaccount_getNotifySettings$account_getNotifySettings *getPeerNotifySettings = [[TLRPCaccount_getNotifySettings$account_getNotifySettings alloc] init];
     
@@ -3229,11 +3457,11 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     else
     {
         TLInputNotifyPeer$inputNotifyPeer *inputPeer = [[TLInputNotifyPeer$inputNotifyPeer alloc] init];
-        inputPeer.peer = [self createInputPeerForConversation:peerId];
+        inputPeer.peer = [self createInputPeerForConversation:peerId accessHash:accessHash];
         getPeerNotifySettings.peer = inputPeer;
     }
     
-    return [[TGTelegramNetworking instance] performRpc:getPeerNotifySettings completionBlock:^(TLPeerNotifySettings *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getPeerNotifySettings completionBlock:^(TLPeerNotifySettings *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3249,9 +3477,9 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 - (NSObject *)doRequestConversationData:(int64_t)conversationId actor:(TGExtendedChatDataRequestActor *)actor
 {
     TLRPCmessages_getFullChat$messages_getFullChat *getFullChat = [[TLRPCmessages_getFullChat$messages_getFullChat alloc] init];
-    getFullChat.chat_id = (int)(-conversationId);
+    getFullChat.chat_id = TGGroupIdFromPeerId(conversationId);
     
-    return [[TGTelegramNetworking instance] performRpc:getFullChat completionBlock:^(TLmessages_ChatFull *chatFull, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getFullChat completionBlock:^(TLmessages_ChatFull *chatFull, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3273,7 +3501,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     getPhotos.limit = 80;
     getPhotos.max_id = 0;
     
-    return [[TGTelegramNetworking instance] performRpc:getPhotos completionBlock:^(TLphotos_Photos *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getPhotos completionBlock:^(TLphotos_Photos *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3286,7 +3514,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil quickAckBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric datacenterId:TG_DEFAULT_DATACENTER_ID];
 }
 
-- (NSObject *)doChangePeerNotificationSettings:(int64_t)peerId muteUntil:(int)muteUntil soundId:(int)soundId previewText:(bool)previewText photoNotificationsEnabled:(bool)photoNotificationsEnabled actor:(TGSynchronizeServiceActionsActor *)actor
+- (NSObject *)doChangePeerNotificationSettings:(int64_t)peerId accessHash:(int64_t)accessHash muteUntil:(int)muteUntil soundId:(int)soundId previewText:(bool)previewText photoNotificationsEnabled:(bool)photoNotificationsEnabled actor:(TGSynchronizeServiceActionsActor *)actor
 {
     TLRPCaccount_updateNotifySettings$account_updateNotifySettings *updatePeerNotifySettings = [[TLRPCaccount_updateNotifySettings$account_updateNotifySettings alloc] init];
     
@@ -3301,7 +3529,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     else
     {
         TLInputNotifyPeer$inputNotifyPeer *inputPeer = [[TLInputNotifyPeer$inputNotifyPeer alloc] init];
-        inputPeer.peer = [self createInputPeerForConversation:peerId];
+        inputPeer.peer = [self createInputPeerForConversation:peerId accessHash:accessHash];
         updatePeerNotifySettings.peer = inputPeer;
     }
     
@@ -3322,7 +3550,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     
     updatePeerNotifySettings.settings = peerNotifySettings;
     
-    return [[TGTelegramNetworking instance] performRpc:updatePeerNotifySettings completionBlock:^(TLPeerNotifySettings *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:updatePeerNotifySettings completionBlock:^(TLPeerNotifySettings *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3339,7 +3567,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 {
     TLRPCaccount_resetNotifySettings$account_resetNotifySettings *resetPeerNotifySettings = [[TLRPCaccount_resetNotifySettings$account_resetNotifySettings alloc] init];
     
-    return [[TGTelegramNetworking instance] performRpc:resetPeerNotifySettings completionBlock:^(id<TLObject> __unused response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:resetPeerNotifySettings completionBlock:^(id<TLObject> __unused response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3358,7 +3586,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     getBlocked.offset = 0;
     getBlocked.limit = 10000;
     
-    return [[TGTelegramNetworking instance] performRpc:getBlocked completionBlock:^(TLcontacts_Blocked *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getBlocked completionBlock:^(TLcontacts_Blocked *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3388,7 +3616,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         method = unblockMethod;
     }
     
-    return [[TGTelegramNetworking instance] performRpc:method completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:method completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3407,7 +3635,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     updateProfile.first_name = firstName;
     updateProfile.last_name = lastName;
     
-    return [[TGTelegramNetworking instance] performRpc:updateProfile completionBlock:^(TLUser *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:updateProfile completionBlock:^(TLUser *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3420,48 +3648,10 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
 }
 
-- (NSObject *)doRequestPrivacySettings:(TGPrivacySettingsRequestActor *)actor
-{
-    TLRPCaccount_getGlobalPrivacySettings$account_getGlobalPrivacySettings *getGlobalPrivacySettings = [[TLRPCaccount_getGlobalPrivacySettings$account_getGlobalPrivacySettings alloc] init];
-    
-    return [[TGTelegramNetworking instance] performRpc:getGlobalPrivacySettings completionBlock:^(TLGlobalPrivacySettings *result, __unused int64_t responseTime, TLError *error)
-    {
-        if (error == nil)
-        {
-            [actor privacySettingsRequestSuccess:result];
-        }
-        else
-        {
-            [actor privacySettingsRequestFailed];
-        }
-    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
-}
-
-- (NSObject *)doChangePrivacySettings:(bool)disableSuggestions hideContacts:(bool)hideContacts hideLastVisit:(bool)hideLastVisit hideLocation:(bool)hideLocation actor:(TGSynchronizeServiceActionsActor *)actor
-{
-    TLRPCaccount_updateGlobalPrivacySettings$account_updateGlobalPrivacySettings *updateGlobalPrivacySettings = [[TLRPCaccount_updateGlobalPrivacySettings$account_updateGlobalPrivacySettings alloc] init];
-    updateGlobalPrivacySettings.no_suggestions = disableSuggestions;
-    updateGlobalPrivacySettings.hide_contacts = hideContacts;
-    updateGlobalPrivacySettings.hide_last_visit = hideLastVisit;
-    updateGlobalPrivacySettings.hide_located = hideLocation;
-    
-    return [[TGTelegramNetworking instance] performRpc:updateGlobalPrivacySettings completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, TLError *error)
-    {
-        if (error == nil)
-        {
-            [actor changePrivacySettingsSuccess];
-        }
-        else
-        {
-            [actor changePrivacySettingsFailed];
-        }
-    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric];
-}
-
 - (id)doRequestWallpaperList:(TGWallpaperListRequestActor *)actor
 {
     TLRPCaccount_getWallPapers$account_getWallPapers *getWallpapers = [[TLRPCaccount_getWallPapers$account_getWallPapers alloc] init];
-    return [[TGTelegramNetworking instance] performRpc:getWallpapers completionBlock:^(id<TLObject> result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getWallpapers completionBlock:^(id<TLObject> result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3480,7 +3670,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     getDhConfig.version = version;
     getDhConfig.random_length = 256;
     
-    return [[TGTelegramNetworking instance] performRpc:getDhConfig completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getDhConfig completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3497,10 +3687,10 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 {
     TLRPCmessages_requestEncryption$messages_requestEncryption *requestEncryption = [[TLRPCmessages_requestEncryption$messages_requestEncryption alloc] init];
     requestEncryption.user_id = [self createInputUserForUid:uid];
-    requestEncryption.random_id = randomId;
+    requestEncryption.random_id = (int32_t)randomId;
     requestEncryption.g_a = gABytes;
     
-    return [[TGTelegramNetworking instance] performRpc:requestEncryption completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:requestEncryption completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3508,7 +3698,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         }
         else
         {
-            NSString *errorType = [self extractErrorType:error];
+            NSString *errorType = error.errorDescription;
             
             bool versionOutdated = false;
             if ([errorType isEqualToString:@"PARTICIPANT_VERSION_OUTDATED"])
@@ -3524,14 +3714,14 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCmessages_acceptEncryption$messages_acceptEncryption *acceptEncryption = [[TLRPCmessages_acceptEncryption$messages_acceptEncryption alloc] init];
     
     TLInputEncryptedChat$inputEncryptedChat *inputEncryptedChat = [[TLInputEncryptedChat$inputEncryptedChat alloc] init];
-    inputEncryptedChat.chat_id = encryptedChatId;
+    inputEncryptedChat.chat_id = (int32_t)encryptedChatId;
     inputEncryptedChat.access_hash = accessHash;
     
     acceptEncryption.peer = inputEncryptedChat;
     acceptEncryption.g_b = gBBytes;
     acceptEncryption.key_fingerprint = keyFingerprint;
     
-    return [[TGTelegramNetworking instance] performRpc:acceptEncryption completionBlock:^(id<TLObject> response, int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:acceptEncryption completionBlock:^(id<TLObject> response, int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3549,7 +3739,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCmessages_discardEncryption$messages_discardEncryption *discardEncryption = [[TLRPCmessages_discardEncryption$messages_discardEncryption alloc] init];
     discardEncryption.chat_id = (int32_t)encryptedConversationId;
     
-    return [[TGTelegramNetworking instance] performRpc:discardEncryption completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:discardEncryption completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3568,11 +3758,11 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     setEncryptedTyping.typing = true;
     
     TLInputEncryptedChat$inputEncryptedChat *inputEncryptedChat = [[TLInputEncryptedChat$inputEncryptedChat alloc] init];
-    inputEncryptedChat.chat_id = encryptedConversationId;
+    inputEncryptedChat.chat_id = (int32_t)encryptedConversationId;
     inputEncryptedChat.access_hash = accessHash;
     setEncryptedTyping.peer = inputEncryptedChat;
     
-    return [[TGTelegramNetworking instance] performRpc:setEncryptedTyping completionBlock:^(__unused id<TLObject> result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:setEncryptedTyping completionBlock:^(__unused id<TLObject> result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3592,14 +3782,14 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         TLRPCmessages_sendEncrypted$messages_sendEncrypted *sendEncrypted = [[TLRPCmessages_sendEncrypted$messages_sendEncrypted alloc] init];
 
         TLInputEncryptedChat$inputEncryptedChat *inputEncryptedChat = [[TLInputEncryptedChat$inputEncryptedChat alloc] init];
-        inputEncryptedChat.chat_id = encryptedChatId;
+        inputEncryptedChat.chat_id = (int32_t)encryptedChatId;
         inputEncryptedChat.access_hash = accessHash;
         sendEncrypted.peer = inputEncryptedChat;
         
         sendEncrypted.random_id = randomId;
         sendEncrypted.data = data;
         
-        return [[TGTelegramNetworking instance] performRpc:sendEncrypted completionBlock:^(TLmessages_SentEncryptedMessage *result, __unused int64_t responseTime, TLError *error)
+        return [[TGTelegramNetworking instance] performRpc:sendEncrypted completionBlock:^(TLmessages_SentEncryptedMessage *result, __unused int64_t responseTime, MTRpcError *error)
         {
             if (error == nil)
             {
@@ -3616,7 +3806,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         TLRPCmessages_sendEncryptedFile$messages_sendEncryptedFile *sendEncrypted = [[TLRPCmessages_sendEncryptedFile$messages_sendEncryptedFile alloc] init];
         
         TLInputEncryptedChat$inputEncryptedChat *inputEncryptedChat = [[TLInputEncryptedChat$inputEncryptedChat alloc] init];
-        inputEncryptedChat.chat_id = encryptedChatId;
+        inputEncryptedChat.chat_id = (int32_t)encryptedChatId;
         inputEncryptedChat.access_hash = accessHash;
         sendEncrypted.peer = inputEncryptedChat;
         
@@ -3625,7 +3815,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
         
         sendEncrypted.file = encryptedFile;
         
-        return [[TGTelegramNetworking instance] performRpc:sendEncrypted completionBlock:^(TLmessages_SentEncryptedMessage *result, __unused int64_t responseTime, TLError *error)
+        return [[TGTelegramNetworking instance] performRpc:sendEncrypted completionBlock:^(TLmessages_SentEncryptedMessage *result, __unused int64_t responseTime, MTRpcError *error)
         {
             if (error == nil)
             {
@@ -3644,14 +3834,14 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCmessages_sendEncryptedService$messages_sendEncryptedService *sendEncryptedService = [[TLRPCmessages_sendEncryptedService$messages_sendEncryptedService alloc] init];
     
     TLInputEncryptedChat$inputEncryptedChat *inputEncryptedChat = [[TLInputEncryptedChat$inputEncryptedChat alloc] init];
-    inputEncryptedChat.chat_id = encryptedChatId;
+    inputEncryptedChat.chat_id = (int32_t)encryptedChatId;
     inputEncryptedChat.access_hash = accessHash;
     sendEncryptedService.peer = inputEncryptedChat;
     
     sendEncryptedService.random_id = randomId;
     sendEncryptedService.data = data;
     
-    return [[TGTelegramNetworking instance] performRpc:sendEncryptedService completionBlock:^(TLmessages_SentEncryptedMessage *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:sendEncryptedService completionBlock:^(TLmessages_SentEncryptedMessage *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3669,13 +3859,13 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCmessages_readEncryptedHistory$messages_readEncryptedHistory *readEncryptedHistory = [[TLRPCmessages_readEncryptedHistory$messages_readEncryptedHistory alloc] init];
 
     TLInputEncryptedChat$inputEncryptedChat *inputEncryptedChat = [[TLInputEncryptedChat$inputEncryptedChat alloc] init];
-    inputEncryptedChat.chat_id = encryptedConversationId;
+    inputEncryptedChat.chat_id = (int32_t)encryptedConversationId;
     inputEncryptedChat.access_hash = accessHash;
     readEncryptedHistory.peer = inputEncryptedChat;
     
     readEncryptedHistory.max_date = maxDate;
     
-    return [[TGTelegramNetworking instance] performRpc:readEncryptedHistory completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:readEncryptedHistory completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3693,7 +3883,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCmessages_receivedQueue$messages_receivedQueue *receivedQueue = [[TLRPCmessages_receivedQueue$messages_receivedQueue alloc] init];
     receivedQueue.max_qts = qts;
     
-    return [[TGTelegramNetworking instance] performRpc:receivedQueue completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:receivedQueue completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3711,7 +3901,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPChelp_getInviteText$help_getInviteText *getInviteText = [[TLRPChelp_getInviteText$help_getInviteText alloc] init];
     getInviteText.lang_code = [self langCode];
     
-    return [[TGTelegramNetworking instance] performRpc:getInviteText completionBlock:^(id<TLObject> response, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getInviteText completionBlock:^(id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3727,7 +3917,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TLRPCmessages_getMessages$messages_getMessages *getMessages = [[TLRPCmessages_getMessages$messages_getMessages alloc] init];
     getMessages.n_id = mids;
     
-    return [[TGTelegramNetworking instance] performRpc:getMessages completionBlock:^(TLmessages_Messages *result, __unused int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getMessages completionBlock:^(TLmessages_Messages *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
             [actor messagesRequestSuccess:result];
@@ -3739,7 +3929,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 - (id)doRequestPrefferredSuportPeer:(void (^)(TLhelp_Support *supportDesc))completion fail:(void (^)())fail
 {
     TLRPChelp_getSupport$help_getSupport *getSupport = [[TLRPChelp_getSupport$help_getSupport alloc] init];
-    return [[TGTelegramNetworking instance] performRpc:getSupport completionBlock:^(TLhelp_Support *result, int64_t responseTime, TLError *error)
+    return [[TGTelegramNetworking instance] performRpc:getSupport completionBlock:^(TLhelp_Support *result, __unused int64_t responseTime, MTRpcError *error)
     {
         if (error == nil)
         {
@@ -3754,12 +3944,27 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     } progressBlock:nil quickAckBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric datacenterId:TG_DEFAULT_DATACENTER_ID];
 }
 
+- (id)doChangePasslockSettings:(bool)passlockEnabled completion:(void (^)(bool))completion
+{
+    TLRPCaccount_updateDeviceLocked$account_updateDeviceLocked *updateDeviceLocked = [[TLRPCaccount_updateDeviceLocked$account_updateDeviceLocked alloc] init];
+    updateDeviceLocked.period = passlockEnabled ? 0 : -1;
+    return [[TGTelegramNetworking instance] performRpc:updateDeviceLocked completionBlock:^(__unused id<TLObject> response, __unused int64_t responseTime, MTRpcError *error)
+    {
+        if (completion)
+            completion(error == nil);
+    } progressBlock:nil requiresCompletion:true requestClass:TGRequestClassGeneric datacenterId:TG_DEFAULT_DATACENTER_ID];
+}
+
 - (void)timeDifferenceChanged:(NSTimeInterval)timeDifference majorChange:(bool)majorChange
 {
     [TGDatabaseInstance() setTimeDifferenceFromUTC:timeDifference];
     
     if (majorChange)
+    {
         [TGDatabaseInstance() processAndScheduleSelfDestruct];
+        [TGDatabaseInstance() processAndScheduleMediaCleanup];
+        [TGDatabaseInstance() processAndScheduleMute];
+    }
 }
 
 - (bool)useDifferentBackend
@@ -3772,7 +3977,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     [TGAppDelegateInstance saveSettings];
 }
 
-- (void)setNetworkActivity:(bool)networkActivity
+- (void)setNetworkActivity:(__unused bool)networkActivity
 {
     //[[AFNetworkActivityIndicatorManager sharedManager] setActivityCount:networkActivity ? 1 : 0];
 }
@@ -3799,11 +4004,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 
 - (NSString *)langCode
 {
-    NSArray *preferredLocalizations = [[NSBundle mainBundle] preferredLocalizations];
-    if (preferredLocalizations.count != 0)
-        return [preferredLocalizations objectAtIndex:0];
-    
-    return @"en";
+    return [[NSLocale preferredLanguages] objectAtIndex:0];
 }
 
 - (void)willSwitchBackends
@@ -3814,16 +4015,6 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
     TGTelegraphInstance.clientUserId = 0;
     TGTelegraphInstance.clientIsActivated = false;
     [TGAppDelegateInstance saveSettings];
-}
-
-- (NSArray *)filterStatelessUpdates:(TLUpdates *)updates
-{
-    return [TGApplyUpdatesActor filterStatelessUpdates:updates];
-}
-
-- (NSArray *)makeStatelessUpdates:(TLUpdates *)updates
-{
-    return [TGApplyUpdatesActor makeStatelessUpdates:updates];
 }
 
 @end

@@ -31,6 +31,9 @@
     int unreadCount = [[options objectForKey:@"unreadCount"] intValue];
     int qts = [[options objectForKey:@"qts"] intValue];
     
+    if (pts != 0)
+        TGLog(@"===== pts: %d", pts);
+    
     if (seq != 0)
         TGLog(@"===== seq: %d", seq);
     

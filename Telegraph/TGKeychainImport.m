@@ -9,6 +9,7 @@
 #import "TGKeychainImport.h"
 
 #import <MTProtoKit/MTContext.h>
+#import <MTProtoKit/MTProtoKit.h>
 #import <MTProtoKit/MTDatacenterAddressSet.h>
 #import <MTProtoKit/MTDatacenterAddress.h>
 #import <MTProtoKit/MTDatacenterAuthInfo.h>
@@ -50,7 +51,7 @@
     return value;
 }
 
-+ (void)importKeychain:(MTKeychain *)keychain clientUserId:(int32_t)clientUserId
++ (void)importKeychain:(id<MTKeychain>)keychain clientUserId:(int32_t)clientUserId
 {
     NSMutableDictionary *datacenterAddressSets = [[NSMutableDictionary alloc] init];
     NSInteger currentDatacenterId = 0;
@@ -97,7 +98,7 @@
                         if (address.length != 0 && port != 0)
                         {
                             datacenterAddressSets[@(datacenter.datacenterId)] = [[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                [[MTDatacenterAddress alloc] initWithIp:address port:port]
+                                [[MTDatacenterAddress alloc] initWithIp:address port:port preferForMedia:false]
                             ]];
                         }
                     }

@@ -176,18 +176,32 @@ struct FilePart
         }
         else
         {
-            _fileSize = data.length;
+            _fileSize = (int)data.length;
             
-            int length = data.length;
+            int partSize = PHOTO_PART_SIZE;
+            
+            if (_fileSize >= 10 * 1024 * 1024)
+            {
+                _useBigFileParts = true;
+                partSize = _fileSize / 3000;
+                while ((1024 * 1024) % partSize != 0)
+                {
+                    partSize++;
+                }
+                
+                partSize = MAX(partSize, VIDEO_PART_SIZE);
+            }
+            
+            int length = (int)data.length;
             int index = -1;
-            for (int i = 0; i < length; i += PHOTO_PART_SIZE)
+            for (int i = 0; i < length; i += partSize)
             {
                 index++;
-                int blockSize = MIN(PHOTO_PART_SIZE, length - i);
+                int blockSize = MIN(partSize, length - i);
                 _partsToUpload.push_back(FilePart(index, blockSize));
             }
             
-            _partCount = _partsToUpload.size();
+            _partCount = (int)_partsToUpload.size();
             
             TGLog(@"Uploading %d kbytes (%d parts)", length / 1024, _partCount);
             
@@ -257,7 +271,7 @@ struct FilePart
                 i += partSize;
             }
             
-            _partCount = _partsToUpload.size();
+            _partCount = (int)_partsToUpload.size();
             
             _is = [[NSInputStream alloc] initWithFileAtPath:fileName];
             [_is open];
@@ -455,7 +469,7 @@ struct FilePart
                         partData = tmpData;
                     }
                     
-                    CC_MD5_Update(&_md5, [partData bytes], [partData length]);
+                    CC_MD5_Update(&_md5, [partData bytes], (CC_LONG)[partData length]);
                     
                     it->uploading = true;
                     id token = nil;
@@ -587,7 +601,7 @@ struct FilePart
                 {
                     TLInputEncryptedFile$inputEncryptedFileUploaded *inputEncryptedFile = [[TLInputEncryptedFile$inputEncryptedFileUploaded alloc] init];
                     inputEncryptedFile.parts = [result[@"partCount"] intValue];
-                    inputEncryptedFile.md5_checksum = @"";
+                    //inputEncryptedFile.md5_checksum = result[@"md5"] == nil ? @"" : result[@"md5"];
                     inputEncryptedFile.n_id = [result[@"fileId"] longLongValue];
                     inputEncryptedFile.key_fingerprint = [result[@"aesKeyFingerprint"] intValue];
                     
@@ -610,7 +624,7 @@ struct FilePart
                 {
                     TLInputFile$inputFile *inputFileSmall = [[TLInputFile$inputFile alloc] init];
                     inputFileSmall.parts = [result[@"partCount"] intValue];
-                    inputFileSmall.md5_checksum = @"";
+                    inputFileSmall.md5_checksum = result[@"md5"] == nil ? @"" : result[@"md5"];
                     inputFileSmall.n_id = [result[@"fileId"] longLongValue];
                     inputFileSmall.name = [[NSString alloc] initWithFormat:@"file.%@", _fileExtension];
                     

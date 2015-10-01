@@ -14,7 +14,7 @@
 
 @property (nonatomic, strong) NSString *currentTitle;
 
-- (void)conversationTitleChangeSuccess:(TLmessages_StatedMessage *)result;
+- (void)conversationTitleChangeSuccess:(TLUpdates *)result;
 - (void)conversationTitleChangeFailed;
 
 @end

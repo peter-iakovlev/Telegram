@@ -111,7 +111,7 @@ static UIImage *contactCellCheckedImage()
         {
             [UIView animateWithDuration:0.12 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^
             {
-                _checkView.transform = CGAffineTransformMakeScale(1.16, 1.16f);
+                _checkView.transform = CGAffineTransformMakeScale(1.16f, 1.16f);
             } completion:^(BOOL finished)
             {
                 if (finished)
@@ -233,6 +233,18 @@ static UIImage *contactCellCheckedImage()
     return self;
 }
 
+- (void)setSubtitleText:(NSString *)subtitleText
+{
+    _subtitleAttributedText = nil;
+    _subtitleText = subtitleText;
+}
+
+- (void)setSubtitleAttributedText:(NSAttributedString *)subtitleAttributedText
+{
+    _subtitleAttributedText = subtitleAttributedText;
+    _subtitleText = nil;
+}
+
 - (void)viewTapped:(UITapGestureRecognizer *)recognizer
 {
     if (recognizer.state == UIGestureRecognizerStateEnded)
@@ -285,10 +297,20 @@ static UIImage *contactCellCheckedImage()
         _contactContentsView.titleFirst = _titleTextFirst;
         _contactContentsView.titleSecond = _titleTextSecond;
     }
-    _subtitleLabel.dateText = _subtitleText;
-    [_subtitleLabel measureTextSize];
-    
-    _subtitleLabel.hidden = _subtitleText == nil || _subtitleText.length == 0;
+    if (_subtitleAttributedText != nil)
+    {
+        _subtitleLabel.attributedText = _subtitleAttributedText;
+        [_subtitleLabel measureTextSize];
+        
+        _subtitleLabel.hidden = _subtitleAttributedText.length == 0;
+    }
+    else
+    {
+        _subtitleLabel.dateText = _subtitleText;
+        [_subtitleLabel measureTextSize];
+        
+        _subtitleLabel.hidden = _subtitleText == nil || _subtitleText.length == 0;
+    }
     
     if (_hideAvatar)
     {
@@ -440,6 +462,8 @@ static UIImage *contactCellCheckedImage()
     
     CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
     CGFloat separatorInset = _selectionEnabled ? (_hideAvatar ? 49 : 98) : (TGIsPad() ? 74.0f : 65.0f);
+    if (TGIsPad() && _selectionEnabled)
+        separatorInset += 21.0f;
     _separatorLayer.frame = CGRectMake(separatorInset, self.frame.size.height - separatorHeight, self.frame.size.width - separatorInset, separatorHeight);
     
     CGRect frame = self.selectedBackgroundView.frame;

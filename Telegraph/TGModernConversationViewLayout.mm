@@ -43,6 +43,11 @@
     return self;
 }
 
+- (CGFloat)contentHeight
+{
+    return _contentSize.height;
+}
+
 - (void)prepareForCollectionViewUpdates:(NSArray *)updateItems
 {
     // Keep track of insert and delete index paths
@@ -162,7 +167,7 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
     CGFloat currentHeight = bottomInset;
     int lastMessageDay = INT_MIN;
     
-    int count = items.count;
+    int count = (int)items.count;
     int index = 0;
     
     bool lastCollapse = false;
@@ -177,7 +182,7 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
         if (!unreadRangeIsEmpty)
         {
             int messageDate = (int32_t)messageItem->_message.date;
-            bool currentInsideUnreadRange = TGMessageRangeContains(unreadMessageRange, messageItem->_message.mid, messageDate);
+            bool currentInsideUnreadRange = TGMessageRangeContains(unreadMessageRange, ABS(messageItem->_message.mid), messageDate);
             if (lastInsideUnreadRange && !currentInsideUnreadRange)
             {
                 currentHeight += addUnreadHeader(currentHeight, containerWidth, decorationViewAttributes);
@@ -188,6 +193,15 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
         }
         
         int currentMessageDay = (((int)messageItem->_message.date) + dateOffset) / (24 * 60 * 60);
+        if (messageItem->_message.hole != nil || messageItem->_message.group != nil) {
+            for (int nextIndex = index + 1; nextIndex < count; nextIndex++) {
+                TGMessage *message = ((TGMessageModernConversationItem *)items[nextIndex])->_message;
+                if (message.hole == nil && message.group == nil) {
+                    currentMessageDay = (((int)message.date) + dateOffset) / (24 * 60 * 60);
+                    break;
+                }
+            }
+        }
         if (lastMessageDay != INT_MIN && currentMessageDay != lastMessageDay)
             currentHeight += addDate(currentHeight, containerWidth, lastMessageDay, decorationViewAttributes);
         lastMessageDay = currentMessageDay;
@@ -263,16 +277,15 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
     
     if (_animateLayout)
     {
-        [UIView animateWithDuration:0.3 * 0.7 animations:^
+        [UIView animateWithDuration:0.3 * 0.7 delay:0 options:0 animations:^
         {
             block();
-        }];
+        } completion:nil];
     }
     else
         block();
     
     _contentSize = CGSizeMake(self.collectionView.bounds.size.width, contentHeight);
-    
     std::sort(_decorationViewAttributes.begin(), _decorationViewAttributes.end(), TGDecorationViewAttrubutesComparator());
 }
 

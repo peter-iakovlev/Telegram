@@ -93,10 +93,10 @@
     }
     
     
-    NSData *keyData = [TGDatabaseInstance() encryptionKeyForConversationId:[TGDatabaseInstance() peerIdForEncryptedConversationId:_encryptedConversationId] keyFingerprint:NULL];
-    if (keyData != nil)
+    NSData *keySignatureData = [TGDatabaseInstance() encryptionKeySignatureForConversationId:[TGDatabaseInstance() peerIdForEncryptedConversationId:_encryptedConversationId]];
+    if (keySignatureData != nil)
     {
-        NSData *hashData = MTSha1(keyData);
+        NSData *hashData = keySignatureData;
         if (hashData != nil)
         {
             UIImage *image = TGIdenticonImage(hashData, CGSizeMake(264, 264));
@@ -106,58 +106,52 @@
     
     if (![self _updateControllerInset:false])
         [self controllerInsetUpdated:UIEdgeInsetsZero];
+    
+    [self updateLayout:self.view.bounds.size];
 }
 
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
     
-    if (TGIsPad())
-        [self updateLayout:self.interfaceOrientation];
+    [self updateLayout:self.view.bounds.size];
 }
 
 - (void)controllerInsetUpdated:(UIEdgeInsets)previousInset
 {
     [super controllerInsetUpdated:previousInset];
     
-    [self updateLayout:self.interfaceOrientation];
+    [self updateLayout:self.view.bounds.size];
 }
 
-- (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
-{
-    [self updateLayout:toInterfaceOrientation];
+- (void)layoutControllerForSize:(CGSize)size duration:(NSTimeInterval)duration {
+    [super layoutControllerForSize:size duration:duration];
     
-    [super willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
+    [self updateLayout:size];
 }
 
-- (CGSize)referenceViewSizeForOrientation:(UIInterfaceOrientation)orientation
+- (void)updateLayout:(CGSize)size
 {
-    if (TGIsPad())
-        return self.view.frame.size;
-    else
-        return [TGViewController screenSizeForInterfaceOrientation:orientation];
-}
-
-- (void)updateLayout:(UIInterfaceOrientation)orientation
-{
-    CGSize screenSize = [self referenceViewSizeForOrientation:orientation];
+    CGSize screenSize = size;
     
-    if (screenSize.width < 400)
+    CGFloat screenWidth = MIN(screenSize.width, screenSize.height);
+    
+    if (screenSize.width < screenWidth + FLT_EPSILON)
     {
         CGSize labelSize = [_descriptionLabel sizeThatFits:CGSizeMake(screenSize.width - 20, 1000)];
      
-        float keySize = [TGViewController isWidescreen] ? 264 : 220;
+        CGFloat keySize = [TGViewController isWidescreen] ? 264 : 220;
         
-        _keyImageView.frame = CGRectMake(floorf((self.view.frame.size.width - keySize) / 2), self.controllerInset.top + 28, keySize, keySize);
+        _keyImageView.frame = CGRectMake(CGFloor((self.view.frame.size.width - keySize) / 2), self.controllerInset.top + 28, keySize, keySize);
         
-        _descriptionLabel.frame = CGRectMake(floorf((screenSize.width - labelSize.width) / 2), _keyImageView.frame.origin.y + _keyImageView.frame.size.height + 24, labelSize.width, labelSize.height);
+        _descriptionLabel.frame = CGRectMake(CGFloor((screenSize.width - labelSize.width) / 2), _keyImageView.frame.origin.y + _keyImageView.frame.size.height + 24, labelSize.width, labelSize.height);
         
         NSString *lineText = @"Learn more at telegram.org";
-        float lastWidth = [lineText sizeWithFont:_descriptionLabel.font].width;
-        float prefixWidth = [@"Learn more at " sizeWithFont:_descriptionLabel.font].width;
-        float suffixWidth = [@"telegram.org" sizeWithFont:_descriptionLabel.font].width;
+        CGFloat lastWidth = [lineText sizeWithFont:_descriptionLabel.font].width;
+        CGFloat prefixWidth = [@"Learn more at " sizeWithFont:_descriptionLabel.font].width;
+        CGFloat suffixWidth = [@"telegram.org" sizeWithFont:_descriptionLabel.font].width;
         
-        _linkButton.frame = CGRectMake(_descriptionLabel.frame.origin.x + floorf((_descriptionLabel.frame.size.width - lastWidth) / 2) + prefixWidth - 3, _descriptionLabel.frame.origin.y + _descriptionLabel.frame.size.height - 18, suffixWidth + 4, 19);
+        _linkButton.frame = CGRectMake(_descriptionLabel.frame.origin.x + CGFloor((_descriptionLabel.frame.size.width - lastWidth) / 2) + prefixWidth - 3, _descriptionLabel.frame.origin.y + _descriptionLabel.frame.size.height - 18, suffixWidth + 4, 19);
     }
     else
     {
@@ -165,14 +159,14 @@
         
         CGSize labelSize = [_descriptionLabel sizeThatFits:CGSizeMake(200, 1000)];
         
-        _descriptionLabel.frame = CGRectMake(_keyImageView.frame.origin.x + _keyImageView.frame.size.width + floorf((screenSize.width - (_keyImageView.frame.origin.x + _keyImageView.frame.size.width) - labelSize.width) / 2), self.controllerInset.top + floorf(((screenSize.height - self.controllerInset.top) - labelSize.height) / 2), labelSize.width, labelSize.height);
+        _descriptionLabel.frame = CGRectMake(_keyImageView.frame.origin.x + _keyImageView.frame.size.width + CGFloor((screenSize.width - (_keyImageView.frame.origin.x + _keyImageView.frame.size.width) - labelSize.width) / 2), self.controllerInset.top + CGFloor(((screenSize.height - self.controllerInset.top) - labelSize.height) / 2), labelSize.width, labelSize.height);
         
         NSString *lineText = @"Learn more at telegram.org";
-        float lastWidth = [lineText sizeWithFont:_descriptionLabel.font].width;
-        float prefixWidth = [@"Learn more at " sizeWithFont:_descriptionLabel.font].width;
-        float suffixWidth = [@"telegram.org" sizeWithFont:_descriptionLabel.font].width;
+        CGFloat lastWidth = [lineText sizeWithFont:_descriptionLabel.font].width;
+        CGFloat prefixWidth = [@"Learn more at " sizeWithFont:_descriptionLabel.font].width;
+        CGFloat suffixWidth = [@"telegram.org" sizeWithFont:_descriptionLabel.font].width;
         
-        _linkButton.frame = CGRectMake(_descriptionLabel.frame.origin.x + floorf((_descriptionLabel.frame.size.width - lastWidth) / 2) + prefixWidth - 3, _descriptionLabel.frame.origin.y + _descriptionLabel.frame.size.height - 18, suffixWidth + 4, 19);
+        _linkButton.frame = CGRectMake(_descriptionLabel.frame.origin.x + CGFloor((_descriptionLabel.frame.size.width - lastWidth) / 2) + prefixWidth - 3, _descriptionLabel.frame.origin.y + _descriptionLabel.frame.size.height - 18, suffixWidth + 4, 19);
     }
 }
 

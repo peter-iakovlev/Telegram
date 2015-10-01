@@ -28,7 +28,10 @@ typedef enum {
     TGContactsModeModalInviteWithBack = 1024 | 512 | 16 | 2,
     TGContactsModeCreateGroupOption = 2048,
     TGContactsModeCombineSections = 4096,
-    TGContactsModeManualFirstSection = 8192
+    TGContactsModeManualFirstSection = 8192,
+    TGContactsModeCreateGroupLink = (2 << 14),
+    TGContactsModeSortByLastSeen = (2 << 15),
+    TGContactsModeIgnorePrivateBots = (2 << 16)
 } TGContactsMode;
 
 @interface TGContactsController : TGViewController <TGViewControllerNavigationBarAppearance, ASWatcher>
@@ -52,6 +55,10 @@ typedef enum {
 
 @property (nonatomic, strong) UITableView *tableView;
 
+@property (nonatomic, strong) NSString *composePlaceholder;
+
+@property (nonatomic) bool deselectAutomatically;
+
 - (id)initWithContactsMode:(int)contactsMode;
 
 - (void)clearData;
@@ -66,7 +73,7 @@ typedef enum {
 - (void)contactDeselected:(TGUser *)user;
 - (void)actionItemSelected;
 - (void)encryptionItemSelected;
-- (void)broadcastsItemSelected;
+- (void)channelsItemSelected;
 - (void)singleUserSelected:(TGUser *)user;
 
 - (void)contactActionButtonPressed:(TGUser *)user;

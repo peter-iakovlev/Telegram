@@ -11,7 +11,7 @@
 @interface TGTokenView : UIButton <UIKeyInput>
 
 @property (nonatomic, strong) NSString *label;
-@property (nonatomic) float preferredWidth;
+@property (nonatomic) CGFloat preferredWidth;
 
 @property (nonatomic, strong) id tokenId;
 

@@ -20,6 +20,7 @@
     NSIndexPath *_editingCellIndexPath;
     
     CFAbsoluteTime _disableTouchesStartTime;
+    CGSize _validSize;
 }
 
 @end
@@ -47,6 +48,24 @@
 - (void)setBounds:(CGRect)bounds
 {
     [super setBounds:bounds];
+    
+    if (!CGSizeEqualToSize(_validSize, bounds.size)) {
+        _validSize = bounds.size;
+        if (_layoutForSize) {
+            _layoutForSize(bounds.size);
+        }
+    }
+}
+
+- (void)setFrame:(CGRect)frame {
+    [super setFrame:frame];
+    
+    if (!CGSizeEqualToSize(_validSize, frame.size)) {
+        _validSize = frame.size;
+        if (_layoutForSize) {
+            _layoutForSize(frame.size);
+        }
+    }
 }
 
 - (void)reloadData

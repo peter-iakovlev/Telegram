@@ -12,7 +12,7 @@
 
 @implementation TGPreparedContactMessage
 
-- (instancetype)initWithUid:(int32_t)uid firstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber
+- (instancetype)initWithUid:(int32_t)uid firstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber replyMessage:(TGMessage *)replyMessage
 {
     self = [super init];
     if (self != nil)
@@ -21,13 +21,14 @@
         _firstName = firstName;
         _lastName = lastName;
         _phoneNumber = phoneNumber;
+        _replyMessage = replyMessage;
     }
     return self;
 }
 
-- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber
+- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber replyMessage:(TGMessage *)replyMessage
 {
-    return [self initWithUid:0 firstName:firstName lastName:lastName phoneNumber:phoneNumber];
+    return [self initWithUid:0 firstName:firstName lastName:lastName phoneNumber:phoneNumber replyMessage:replyMessage];
 }
 
 - (TGMessage *)message
@@ -35,14 +36,27 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
+    message.messageLifetime = self.messageLifetime;
+    
+    NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
     TGContactMediaAttachment *contactAttachment = [[TGContactMediaAttachment alloc] init];
     contactAttachment.uid = _uid;
     contactAttachment.firstName = _firstName;
     contactAttachment.lastName = _lastName;
     contactAttachment.phoneNumber = _phoneNumber;
+    [attachments addObject:contactAttachment];
     
-    message.mediaAttachments = @[contactAttachment];
+    if (_replyMessage != nil)
+    {
+        TGReplyMessageMediaAttachment *replyMedia = [[TGReplyMessageMediaAttachment alloc] init];
+        replyMedia.replyMessageId = _replyMessage.mid;
+        replyMedia.replyMessage = _replyMessage;
+        [attachments addObject:replyMedia];
+    }
+    
+    message.mediaAttachments = attachments;
     
     return message;
 }

@@ -70,7 +70,7 @@
     CGRect bounds = self.bounds;
     
     CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
-    _separatorLayer.frame = CGRectMake(35.0f, bounds.size.height - separatorHeight, bounds.size.width - 35.0f, separatorHeight);
+    _separatorLayer.frame = CGRectMake(15.0f, bounds.size.height - separatorHeight, bounds.size.width - 15.0f, separatorHeight);
     
     CGFloat leftPadding = 35.0f + TGRetinaPixel;
     
@@ -78,7 +78,7 @@
     _titleLabel.frame = CGRectMake(leftPadding, 14.0f, titleSize.width, titleSize.height);
     
     CGSize variantSize = [_variantLabel sizeThatFits:CGSizeMake(bounds.size.width - 122.0f - 35.0f, CGFLOAT_MAX)];
-    _variantLabel.frame = CGRectMake(122.0f, 11.0f, variantSize.width, variantSize.height);
+    _variantLabel.frame = CGRectMake(bounds.size.width - variantSize.width - 35.0f, 12.0f, variantSize.width, variantSize.height);
     
     CGSize arrowSize = _arrowView.bounds.size;
     _arrowView.frame = CGRectMake(bounds.size.width - 15.0f - arrowSize.width, 18.0f, arrowSize.width, arrowSize.height);

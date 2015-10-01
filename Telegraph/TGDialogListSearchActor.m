@@ -23,10 +23,10 @@
         return;
     }
     
-    [[TGDatabase instance] searchDialogs:query ignoreUid:TGTelegraphInstance.clientUserId completion:^(NSDictionary *result)
+    [[TGDatabase instance] searchDialogs:query ignoreUid:TGTelegraphInstance.clientUserId partial:false completion:^(NSDictionary *result, __unused bool isFinal)
     {
         [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphObjectNode alloc] initWithObject:result]];
-    }];
+    } isCancelled:nil];
 }
 
 @end

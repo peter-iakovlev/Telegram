@@ -17,11 +17,14 @@
 
 @property (nonatomic) bool editing;
 @property (nonatomic) bool isBroadcast;
+@property (nonatomic) bool isChannel;
 
 - (void)setConversation:(TGConversation *)conversation;
 - (void)setUpdatingTitle:(NSString *)updatingTitle;
 - (void)setUpdatingAvatar:(UIImage *)updatingAvatar hasUpdatingAvatar:(bool)hasUpdatingAvatar;
 - (bool)hasUpdatingAvatar;
+- (void)setStaticAvatar:(UIImage *)staticAvatar;
+- (UIImage *)staticAvatar;
 - (void)setEditing:(bool)editing animated:(bool)animated;
 
 - (id)avatarView;

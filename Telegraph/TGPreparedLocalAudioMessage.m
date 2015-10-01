@@ -10,20 +10,23 @@
 
 #import "TGMessage.h"
 
+#import "TGDataItem.h"
+
+#import "TGAppDelegate.h"
+
 @implementation TGPreparedLocalAudioMessage
 
-+ (instancetype)messageWithTempAudioPath:(NSString *)tempAudioPath duration:(int32_t)duration
++ (instancetype)messageWithTempDataItem:(TGDataItem *)tempDataItem duration:(int32_t)duration replyMessage:(TGMessage *)replyMessage
 {
 #ifdef DEBUG
-    NSAssert(tempAudioPath != nil, @"tempAudioPath should not be nil");
+    NSAssert(tempDataItem != nil, @"tempDataItem should not be nil");
 #endif
-    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+    NSString *documentsDirectory = [TGAppDelegate documentsPath];
     NSString *audiosDirectory = [documentsDirectory stringByAppendingPathComponent:@"audio"];
     if (![[NSFileManager defaultManager] fileExistsAtPath:audiosDirectory])
         [[NSFileManager defaultManager] createDirectoryAtPath:audiosDirectory withIntermediateDirectories:true attributes:nil error:nil];
     
-    NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:tempAudioPath error:nil];
-    int fileSize = [attributes[NSFileSize] intValue];
+    int fileSize = (int)[tempDataItem length];
     
     if (fileSize == 0)
         return nil;
@@ -35,17 +38,19 @@
     NSString *audioFilePath = [TGPreparedLocalAudioMessage localAudioFilePathForLocalAudioId1:localAudioId];
     
     [[NSFileManager defaultManager] createDirectoryAtPath:audioFileDirectory withIntermediateDirectories:true attributes:nil error:NULL];
-    [[NSFileManager defaultManager] moveItemAtPath:tempAudioPath toPath:audioFilePath error:nil];
+    [tempDataItem moveToPath:audioFilePath];
     
     TGPreparedLocalAudioMessage *message = [[TGPreparedLocalAudioMessage alloc] init];
     message.localAudioId = localAudioId;
     message.duration = duration;
     message.fileSize = (int32_t)fileSize;
     
+    message.replyMessage = replyMessage;
+    
     return message;
 }
 
-+ (instancetype)messageWithLocalAudioId:(int64_t)localAudioId duration:(int32_t)duration fileSize:(int32_t)fileSize
++ (instancetype)messageWithLocalAudioId:(int64_t)localAudioId duration:(int32_t)duration fileSize:(int32_t)fileSize replyMessage:(TGMessage *)replyMessage
 {
 #ifdef DEBUG
     NSAssert(localAudioId != 0, @"localAudioId should not be equal to 0");
@@ -56,11 +61,35 @@
     message.localAudioId = localAudioId;
     message.duration = duration;
     message.fileSize = (int32_t)fileSize;
+    message.replyMessage = replyMessage;
     
     return message;
 }
 
-+ (instancetype)messageByCopyingDataFromMedia:(TGAudioMediaAttachment *)audioMedia
++ (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalAudioMessage *)source
+{
+    TGMessage *replyMessage = nil;
+    for (id mediaAttachment in source.message.mediaAttachments)
+    {
+        if ([mediaAttachment isKindOfClass:[TGReplyMessageMediaAttachment class]])
+        {
+            replyMessage = ((TGReplyMessageMediaAttachment *)mediaAttachment).replyMessage;
+            break;
+        }
+    }
+    
+    for (id mediaAttachment in source.message.mediaAttachments)
+    {
+        if ([mediaAttachment isKindOfClass:[TGAudioMediaAttachment class]])
+        {
+            return [self messageByCopyingDataFromMedia:mediaAttachment replyMessage:replyMessage];
+        }
+    }
+    
+    return nil;
+}
+
++ (instancetype)messageByCopyingDataFromMedia:(TGAudioMediaAttachment *)audioMedia replyMessage:(TGMessage *)replyMessage
 {
 #ifdef DEBUG
     NSAssert(audioMedia != nil, @"audioMedia should not be nil");
@@ -85,6 +114,7 @@
     message.localAudioId = localAudioId;
     message.duration = audioMedia.duration;
     message.fileSize = audioMedia.fileSize;
+    message.replyMessage = replyMessage;
     
     return message;
 }
@@ -96,14 +126,14 @@
 
 + (NSString *)localAudioFileDirectoryForLocalAudioId:(int64_t)audioId
 {
-    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+    NSString *documentsDirectory = [TGAppDelegate documentsPath];
     NSString *audiosDirectory = [documentsDirectory stringByAppendingPathComponent:@"audio"];
     return [audiosDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"local%" PRIx64 "", audioId]];
 }
 
 + (NSString *)localAudioFileDirectoryForRemoteAudioId:(int64_t)audioId
 {
-    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+    NSString *documentsDirectory = [TGAppDelegate documentsPath];
     NSString *audiosDirectory = [documentsDirectory stringByAppendingPathComponent:@"audio"];
     return [audiosDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%" PRIx64 "", audioId]];
 }
@@ -128,13 +158,26 @@
     TGMessage *message = [[TGMessage alloc] init];
     message.mid = self.mid;
     message.date = self.date;
+    message.isBroadcast = self.isBroadcast;
+    message.messageLifetime = self.messageLifetime;
+    
+    NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
     TGAudioMediaAttachment *audioAttachment = [[TGAudioMediaAttachment alloc] init];
     audioAttachment.localAudioId = _localAudioId;
     audioAttachment.duration = _duration;
     audioAttachment.fileSize = _fileSize;
+    [attachments addObject:audioAttachment];
     
-    message.mediaAttachments = @[audioAttachment];
+    if (_replyMessage != nil)
+    {
+        TGReplyMessageMediaAttachment *replyMedia = [[TGReplyMessageMediaAttachment alloc] init];
+        replyMedia.replyMessageId = _replyMessage.mid;
+        replyMedia.replyMessage = _replyMessage;
+        [attachments addObject:replyMedia];
+    }
+    
+    message.mediaAttachments = attachments;
     
     return message;
 }

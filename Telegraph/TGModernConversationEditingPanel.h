@@ -20,6 +20,7 @@
 @interface TGModernConversationEditingPanel : TGModernConversationInputPanel
 
 - (void)setForwardingEnabled:(bool)forwardingEnabled;
+- (void)setDeleteEnabled:(bool)deleteEnabled;
 - (void)setActionsEnabled:(bool)actionsEnabled;
 
 @end

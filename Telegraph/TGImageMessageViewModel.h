@@ -10,20 +10,33 @@
 
 @class TGImageInfo;
 @class TGUser;
+@class TGImageMediaAttachment;
 @class TGModernViewContext;
 
 @class TGModernButtonViewModel;
 @class TGMessageImageViewModel;
+@class TGModernFlatteningViewModel;
 
 @interface TGImageMessageViewModel : TGMessageViewModel
+{
+    @protected
+    
+    bool _mediaIsAvailable;
+    TGModernFlatteningViewModel *_contentModel;
+}
 
 @property (nonatomic, strong) TGMessageImageViewModel *imageModel;
 
-- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo author:(TGUser *)author context:(TGModernViewContext *)context;
+@property (nonatomic) bool previewEnabled;
+@property (nonatomic) bool isSecret;
 
-+ (void)calculateImageSizesForImageSize:(in CGSize)imageSize thumbnailSize:(out CGSize *)thumbnailSize renderSize:(out CGSize *)renderSize;
+- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo authorPeer:(id)authorPeer context:(TGModernViewContext *)context forwardPeer:(id)forwardPeer forwardMessageId:(int32_t)forwardMessageId replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor;
+- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo authorPeer:(id)authorPeer context:(TGModernViewContext *)context forwardPeer:(id)forwardPeer forwardMessageId:(int32_t)forwardMessageId replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor caption:(NSString *)caption textCheckingResults:(NSArray *)textCheckingResults;
+
++ (void)calculateImageSizesForImageSize:(in CGSize)imageSize thumbnailSize:(out CGSize *)thumbnailSize renderSize:(out CGSize *)renderSize squareAspect:(bool)squareAspect;
 
 - (void)updateImageInfo:(TGImageInfo *)imageInfo;
+- (void)setAuthorNameColor:(UIColor *)authorNameColor;
 
 - (UIImage *)dateBackground;
 - (UIColor *)dateColor;
@@ -31,10 +44,11 @@
 - (UIImage *)checkCompleteImage;
 - (int)clockProgressType;
 - (CGPoint)dateOffset;
-- (NSString *)filterForMessage:(TGMessage *)message imageSize:(CGSize)imageSize sourceSize:(CGSize)sourceSize;
-- (CGSize)minimumImageSizeForMessage:(TGMessage *)message;
 - (bool)instantPreviewGesture;
 - (void)activateMedia;
 - (int)defaultOverlayActionType;
+
+- (void)enableInstantPreview;
+- (NSString *)defaultAdditionalDataString;
 
 @end

@@ -10,6 +10,6 @@
 
 @interface TGMapMessageViewModel : TGImageMessageViewModel
 
-- (instancetype)initWithLatitude:(double)latitude longitude:(double)longitude message:(TGMessage *)message author:(TGUser *)author context:(TGModernViewContext *)context;
+- (instancetype)initWithLatitude:(double)latitude longitude:(double)longitude message:(TGMessage *)message authorPeer:(id)authorPeer context:(TGModernViewContext *)context replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor;
 
 @end

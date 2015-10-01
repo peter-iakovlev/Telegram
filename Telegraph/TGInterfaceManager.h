@@ -12,6 +12,7 @@
 
 @class TGMessage;
 @class TGConversation;
+@class TGModernConversationController;
 
 @interface TGInterfaceManager : NSObject <ASWatcher>
 
@@ -26,10 +27,14 @@
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions;
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions animated:(bool)animated;
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions atMessage:(NSDictionary *)atMessage clearStack:(bool)clearStack openKeyboard:(bool)openKeyboard animated:(bool)animated;
+- (TGModernConversationController *)configuredConversationControlerWithId:(int64_t)conversationId;
+
+- (TGModernConversationController *)currentControllerWithPeerId:(int64_t)peerId;
 - (void)dismissConversation;
 - (void)navigateToConversationWithBroadcastUids:(NSArray *)broadcastUids forwardMessages:(NSArray *)forwardMessages;
 - (void)navigateToProfileOfUser:(int)uid preferNativeContactId:(int)preferNativeContactId;
 - (void)navigateToProfileOfUser:(int)uid;
+- (void)navigateToProfileOfUser:(int)uid shareVCard:(void (^)())shareVCard;
 - (void)navigateToProfileOfUser:(int)uid encryptedConversationId:(int64_t)encryptedConversationId;
 - (void)navigateToMediaListOfConversation:(int64_t)conversationId navigationController:(UINavigationController *)navigationController;
 

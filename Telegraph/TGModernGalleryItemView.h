@@ -10,29 +10,50 @@
 
 #import "TGModernGalleryItem.h"
 
+#import <SSignalKit/SSignalKit.h>
+
 @class TGModernGalleryItemView;
+@protocol TGModernGalleryDefaultFooterView;
+@protocol TGModernGalleryDefaultFooterAccessoryView;
 
 @protocol TGModernGalleryItemViewDelegate <NSObject>
 
 - (void)itemViewIsReadyForScheduledDismiss:(TGModernGalleryItemView *)itemView;
+- (void)itemViewDidRequestInterfaceShowHide:(TGModernGalleryItemView *)itemView;
 
 @end
 
 @interface TGModernGalleryItemView : UIView
+{
+    id<TGModernGalleryItem> _item;
+}
 
 @property (nonatomic, weak) id<TGModernGalleryItemViewDelegate> delegate;
 
 @property (nonatomic) NSUInteger index;
 @property (nonatomic, strong) id<TGModernGalleryItem> item;
+@property (nonatomic, strong) UIView<TGModernGalleryDefaultFooterView> *defaultFooterView;
+@property (nonatomic, strong) UIView<TGModernGalleryDefaultFooterAccessoryView> *defaultFooterAccessoryLeftView;
+@property (nonatomic, strong) UIView<TGModernGalleryDefaultFooterAccessoryView> *defaultFooterAccessoryRightView;
+
+- (void)setItem:(id<TGModernGalleryItem>)item synchronously:(bool)synchronously;
 
 - (void)prepareForRecycle;
 - (void)prepareForReuse;
+- (void)setIsVisible:(bool)isVisible;
+- (void)setIsCurrent:(bool)isCurrent;
+- (void)setFocused:(bool)isFocused;
 
-- (bool)wantsHeader;
-- (bool)wantsFooter;
 - (UIView *)headerView;
 - (UIView *)footerView;
 
+- (UIView *)transitionView;
+- (CGRect)transitionViewContentRect;
+
 - (bool)dismissControllerNowOrSchedule;
+
+- (bool)allowsScrollingAtPoint:(CGPoint)point;
+
+- (SSignal *)contentAvailabilityStateSignal;
 
 @end

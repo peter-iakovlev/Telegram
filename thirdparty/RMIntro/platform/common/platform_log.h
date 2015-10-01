@@ -1,5 +1,5 @@
 #include "platform_macros.h"
-#include "config.h"
+#include "../../core/config.h"
 
 void _debug_log_v(const char* tag, const char* text, ...) PRINTF_ATTRIBUTE(2, 3);
 void _debug_log_d(const char* tag, const char* text, ...) PRINTF_ATTRIBUTE(2, 3);

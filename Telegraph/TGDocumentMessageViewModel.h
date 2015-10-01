@@ -4,6 +4,6 @@
 
 @interface TGDocumentMessageViewModel : TGContentBubbleViewModel
 
-- (instancetype)initWithMessage:(TGMessage *)message document:(TGDocumentMediaAttachment *)document author:(TGUser *)author context:(TGModernViewContext *)context;
+- (instancetype)initWithMessage:(TGMessage *)message document:(TGDocumentMediaAttachment *)document authorPeer:(id)authorPeer context:(TGModernViewContext *)context;
 
 @end

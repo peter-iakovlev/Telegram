@@ -15,8 +15,10 @@
 @property (nonatomic, strong) UIColor *textColor;
 
 - (instancetype)initWithText:(NSString *)text textColor:(UIColor *)textColor font:(CTFontRef)font maxWidth:(CGFloat)maxWidth;
+- (instancetype)initWithText:(NSString *)text textColor:(UIColor *)textColor font:(CTFontRef)font maxWidth:(CGFloat)maxWidth truncateInTheMiddle:(bool)truncateInTheMiddle;
 
 - (void)setText:(NSString *)text maxWidth:(CGFloat)maxWidth;
+- (void)setText:(NSString *)text maxWidth:(CGFloat)maxWidth needsContentUpdate:(bool *)needsContentUpdate;
 - (NSString *)text;
 - (void)setMaxWidth:(CGFloat)maxWidth;
 

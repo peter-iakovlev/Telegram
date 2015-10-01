@@ -227,7 +227,7 @@
         TGConversation *conversation = options;
         if (conversation.conversationId != 0)
         {
-            [TGAppDelegateInstance.dialogListController.dialogListCompanion deleteItem:[[TGConversation alloc] initWithConversationId:conversation.conversationId unreadCount:0 serviceUnreadCount:0] animated:false];
+            [TGAppDelegateInstance.rootController.dialogListController.dialogListCompanion deleteItem:[[TGConversation alloc] initWithConversationId:conversation.conversationId unreadCount:0 serviceUnreadCount:0] animated:false];
             
             [self dismissViewControllerAnimated:true completion:nil];
         }
@@ -312,9 +312,9 @@
             {
                 if (![self _isCurrentListEqualToUsers:currentUsers])
                 {
-                    for (int i = 0; i < (int)((TGCollectionMenuSection *)self.menuSections.sections[0]).items.count - 1; i++)
+                    for (int i = (int)((TGCollectionMenuSection *)self.menuSections.sections[0]).items.count - 1; i >= 0; i--)
                     {
-                        [self.menuSections deleteItemFromSection:0 atIndex:0];
+                        [self.menuSections deleteItemFromSection:0 atIndex:i];
                     }
                     
                     [self _copyUsersToCurrentList:currentUsers];

@@ -10,7 +10,8 @@
 
 #import <objc/runtime.h>
 
-static const char *staticBackdropImageDataKey = "staticBackdropImageData";
+static const void *staticBackdropImageDataKey = "staticBackdropImageDataKey";
+static const void *extendedInsetsKey = &extendedInsetsKey;
 
 @implementation UIImage (TG)
 
@@ -38,6 +39,19 @@ static const char *staticBackdropImageDataKey = "staticBackdropImageData";
 - (void)setStaticBackdropImageData:(TGStaticBackdropImageData *)staticBackdropImageData
 {
     objc_setAssociatedObject(self, staticBackdropImageDataKey, staticBackdropImageData, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (UIEdgeInsets)extendedEdgeInsets
+{
+    id value = objc_getAssociatedObject(self, extendedInsetsKey);
+    if (value != nil)
+        return [(NSValue *)value UIEdgeInsetsValue];
+    return UIEdgeInsetsZero;
+}
+
+- (void)setExtendedEdgeInsets:(UIEdgeInsets)edgeInsets
+{
+    objc_setAssociatedObject(self, extendedInsetsKey, [NSValue valueWithUIEdgeInsets:edgeInsets], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
 @end

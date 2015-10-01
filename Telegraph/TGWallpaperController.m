@@ -29,6 +29,12 @@
     UIScrollView *_scrollView;
     
     TGHighlightableButton *_setButton;
+    
+    UIView *_panelView;
+    
+    TGHighlightableButton *_cancelButton;
+    
+    UIView *_separatorView;
 }
 
 @end
@@ -83,14 +89,6 @@
     }
 }
 
-- (CGSize)referenceViewSize
-{
-    if (self.modalPresentationStyle == UIModalPresentationFormSheet || self.navigationController.modalPresentationStyle == UIModalPresentationFormSheet)
-        return CGSizeMake(540.0f, 620.0f);
-    
-    return [TGViewController screenSizeForInterfaceOrientation:UIInterfaceOrientationPortrait];
-}
-
 - (void)loadView
 {
     [super loadView];
@@ -98,7 +96,7 @@
     self.view.clipsToBounds = true;
     self.view.backgroundColor = [UIColor blackColor];
     
-    CGSize screenSize = [self referenceViewSize];
+    CGSize screenSize = self.view.bounds.size;
     
     _imageView = [[TGRemoteImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, screenSize.width, screenSize.height)];
     
@@ -148,7 +146,7 @@
         
         CGSize contentSize = _scrollView.contentSize;
         CGSize viewSize = _scrollView.frame.size;
-        _scrollView.contentOffset = CGPointMake(MAX(0, floorf((contentSize.width - viewSize.width) / 2)), MAX(0, floorf((contentSize.height - viewSize.height) / 2)));
+        _scrollView.contentOffset = CGPointMake(MAX(0, CGFloor((contentSize.width - viewSize.width) / 2)), MAX(0, CGFloor((contentSize.height - viewSize.height) / 2)));
     }
     else
     {
@@ -156,7 +154,7 @@
         [self.view addSubview:_imageView];
     }
     
-    UIView *_panelView = [[UIView alloc] initWithFrame:CGRectMake(0, screenSize.height - 49, screenSize.width, 49)];
+    _panelView = [[UIView alloc] initWithFrame:CGRectMake(0, screenSize.height - 49, screenSize.width, 49)];
     
     if (iosMajorVersion() >= 7 && [TGViewController isWidescreen])
     {
@@ -170,17 +168,17 @@
     
     CGFloat separatorWidth = TGIsRetina() ? 0.5f : 1.0f;
     
-    TGHighlightableButton *cancelButton = [[TGHighlightableButton alloc] initWithFrame:CGRectMake(0, 0, floorf(_panelView.frame.size.width / 2) - separatorWidth, _panelView.frame.size.height)];
-    cancelButton.normalBackgroundColor = [UIColor clearColor];
-    cancelButton.highlightedBackgroundColor = UIColorRGBA(0x000000, 0.08f);
-    [cancelButton addTarget:self action:@selector(cancelButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-    [cancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
-    cancelButton.titleLabel.font = TGSystemFontOfSize(17);
-    [cancelButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
-    [cancelButton setTitleShadowColor:[UIColor clearColor] forState:UIControlStateNormal];
-    [_panelView addSubview:cancelButton];
+    _cancelButton = [[TGHighlightableButton alloc] initWithFrame:CGRectMake(0, 0, CGFloor(_panelView.frame.size.width / 2) - separatorWidth, _panelView.frame.size.height)];
+    _cancelButton.normalBackgroundColor = [UIColor clearColor];
+    _cancelButton.highlightedBackgroundColor = UIColorRGBA(0x000000, 0.08f);
+    [_cancelButton addTarget:self action:@selector(cancelButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+    [_cancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
+    _cancelButton.titleLabel.font = TGSystemFontOfSize(17);
+    [_cancelButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+    [_cancelButton setTitleShadowColor:[UIColor clearColor] forState:UIControlStateNormal];
+    [_panelView addSubview:_cancelButton];
     
-    _setButton = [[TGHighlightableButton alloc] initWithFrame:CGRectMake(cancelButton.frame.origin.x + cancelButton.frame.size.width + separatorWidth, 0, floorf(_panelView.frame.size.width / 2), _panelView.frame.size.height)];
+    _setButton = [[TGHighlightableButton alloc] initWithFrame:CGRectMake(_cancelButton.frame.origin.x + _cancelButton.frame.size.width + separatorWidth, 0, CGFloor(_panelView.frame.size.width / 2), _panelView.frame.size.height)];
     _setButton.normalBackgroundColor = [UIColor clearColor];
     _setButton.highlightedBackgroundColor = UIColorRGBA(0x000000, 0.08f);
     _setButton.enabled = !imageLoading;
@@ -192,9 +190,54 @@
     [_setButton setTitleShadowColor:[UIColor clearColor] forState:UIControlStateNormal];
     [_panelView addSubview:_setButton];
     
-    UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(floorf(_panelView.frame.size.width / 2) - separatorWidth, 0, separatorWidth, _panelView.frame.size.height)];
-    separatorView.backgroundColor = UIColorRGBA(0x000000, 0.52f);
-    [_panelView addSubview:separatorView];
+    _separatorView = [[UIView alloc] initWithFrame:CGRectMake(CGFloor(_panelView.frame.size.width / 2) - separatorWidth, 0, separatorWidth, _panelView.frame.size.height)];
+    _separatorView.backgroundColor = UIColorRGBA(0x000000, 0.52f);
+    [_panelView addSubview:_separatorView];
+}
+
+- (void)layoutControllerForSize:(CGSize)size duration:(NSTimeInterval)duration {
+    [super layoutControllerForSize:size duration:duration];
+    
+    CGSize screenSize = self.view.bounds.size;
+    
+    _imageView.frame = CGRectMake(0.0f, 0.0f, screenSize.width, screenSize.height);
+    
+    UIImage *immediateImage = [_wallpaperInfo image];
+    if (_enableWallpaperAdjustment && immediateImage != nil)
+    {
+        _scrollView.frame = CGRectMake(0.0f, 0.0f, screenSize.width, screenSize.height);
+        
+        _scrollView.showsHorizontalScrollIndicator = false;
+        _scrollView.showsVerticalScrollIndicator = false;
+        _scrollView.delegate = self;
+        
+        _adjustingImageScale = immediateImage.scale;
+        _adjustingImageSize = CGSizeMake(immediateImage.size.width / _adjustingImageScale, immediateImage.size.height / _adjustingImageScale);
+        
+        _imageView.frame = CGRectMake(0, 0, _adjustingImageSize.width, _adjustingImageSize.height);
+        _imageView.contentMode = UIViewContentModeScaleToFill;
+        
+        [self _adjustScrollView];
+        _scrollView.zoomScale = _scrollView.minimumZoomScale;
+        
+        CGSize contentSize = _scrollView.contentSize;
+        CGSize viewSize = _scrollView.frame.size;
+        _scrollView.contentOffset = CGPointMake(MAX(0, CGFloor((contentSize.width - viewSize.width) / 2)), MAX(0, CGFloor((contentSize.height - viewSize.height) / 2)));
+    }
+    else
+    {
+        _imageView.contentMode = UIViewContentModeScaleAspectFill;
+    }
+    
+    _panelView.frame = CGRectMake(0, screenSize.height - 49, screenSize.width, 49);
+    
+    CGFloat separatorWidth = TGIsRetina() ? 0.5f : 1.0f;
+    
+    _cancelButton.frame = CGRectMake(0, 0, CGFloor(_panelView.frame.size.width / 2) - separatorWidth, _panelView.frame.size.height);
+    
+    _setButton.frame = CGRectMake(_cancelButton.frame.origin.x + _cancelButton.frame.size.width + separatorWidth, 0, CGFloor(_panelView.frame.size.width / 2), _panelView.frame.size.height);
+    
+    _separatorView.frame = CGRectMake(CGFloor(_panelView.frame.size.width / 2) - separatorWidth, 0, separatorWidth, _panelView.frame.size.height);
 }
 
 - (BOOL)shouldAutorotate
@@ -202,7 +245,7 @@
     return [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad;
 }
 
-- (NSUInteger)supportedInterfaceOrientations
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
     return UIInterfaceOrientationMaskPortrait;
 }
@@ -214,7 +257,7 @@
     [self _adjustScrollView];
 }
 
-- (void)scrollViewDidEndZooming:(UIScrollView *)__unused scrollView withView:(UIView *)__unused view atScale:(float)__unused scale
+- (void)scrollViewDidEndZooming:(UIScrollView *)__unused scrollView withView:(UIView *)__unused view atScale:(CGFloat)__unused scale
 {
     [self _adjustScrollView];
 }
@@ -227,7 +270,7 @@
 - (void)_adjustScrollView
 {
     CGSize imageSize = _adjustingImageSize;
-    float imageScale = _adjustingImageScale;
+    CGFloat imageScale = _adjustingImageScale;
     imageSize.width /= imageScale;
     imageSize.height /= imageScale;
     
@@ -275,14 +318,14 @@
         
         if (_enableWallpaperAdjustment)
         {
-            CGSize screenSize = [self referenceViewSize];
+            CGSize screenSize = self.view.bounds.size;
             CGFloat screenScale = [UIScreen mainScreen].scale;
             screenSize.width *= screenScale;
             screenSize.height *= screenScale;
             
             CGFloat screenSide = MAX(screenSize.width, screenSize.height);
             
-            float scale = 1.0f / _scrollView.zoomScale;
+            CGFloat scale = 1.0f / _scrollView.zoomScale;
             
             CGRect visibleRect;
             visibleRect.origin.x = _scrollView.contentOffset.x * scale;
@@ -298,8 +341,6 @@
         id<TGWallpaperControllerDelegate> delegate = _delegate;
         if ([delegate respondsToSelector:@selector(wallpaperController:didSelectWallpaperWithInfo:)])
             [delegate wallpaperController:self didSelectWallpaperWithInfo:selectedWallpaperInfo];
-        
-        [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
     }
 }
 

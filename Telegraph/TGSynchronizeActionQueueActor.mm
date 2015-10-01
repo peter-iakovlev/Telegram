@@ -10,7 +10,12 @@
 #import "TLMetaClassStore.h"
 #import "TGModernSendSecretMessageActor.h"
 
+#import "TLUpdates+TG.h"
+
 @interface TGSynchronizeActionQueueActor ()
+{
+    SMetaDisposable *_currentDisposable;
+}
 
 @property (nonatomic) bool bypassQueue;
 
@@ -31,6 +36,21 @@
 + (NSString *)genericPath
 {
     return @"/tg/service/synchronizeactionqueue/@";
+}
+
+- (instancetype)initWithPath:(NSString *)path
+{
+    self = [super initWithPath:path];
+    if (self != nil)
+    {
+        _currentDisposable = [[SMetaDisposable alloc] init];
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    [_currentDisposable dispose];
 }
 
 - (void)prepare:(NSDictionary *)__unused options
@@ -58,7 +78,7 @@
         }
     }];
     
-    [TGDatabaseInstance() loadQueuedActions:[NSArray arrayWithObjects:[NSNumber numberWithInt:TGDatabaseActionReadConversation], [NSNumber numberWithInt:TGDatabaseActionDeleteMessage], [NSNumber numberWithInt:TGDatabaseActionClearConversation], [NSNumber numberWithInt:TGDatabaseActionDeleteConversation], @(TGDatabaseActionDeleteSecretMessage), @(TGDatabaseActionClearSecretConversation), nil] completion:^(NSDictionary *actionSetsByType)
+    [TGDatabaseInstance() loadQueuedActions:[NSArray arrayWithObjects:[NSNumber numberWithInt:TGDatabaseActionReadConversation], [NSNumber numberWithInt:TGDatabaseActionDeleteMessage], [NSNumber numberWithInt:TGDatabaseActionClearConversation], [NSNumber numberWithInt:TGDatabaseActionDeleteConversation], @(TGDatabaseActionDeleteSecretMessage), @(TGDatabaseActionClearSecretConversation), @(TGDatabaseActionReadMessageContents), nil] completion:^(NSDictionary *actionSetsByType)
     {
         [ActionStageInstance() dispatchOnStageQueue:^
         {
@@ -68,6 +88,7 @@
             NSArray *deleteConversationActions = [actionSetsByType objectForKey:[NSNumber numberWithInt:TGDatabaseActionDeleteConversation]];
             NSArray *clearConversationActions = [actionSetsByType objectForKey:[NSNumber numberWithInt:TGDatabaseActionClearConversation]];
             NSArray *clearSecretConversationsActions = [actionSetsByType objectForKey:@(TGDatabaseActionClearSecretConversation)];
+            NSArray *readMessageContentActions = [actionSetsByType objectForKey:@(TGDatabaseActionReadMessageContents)];
             
             if (readConversationActions.count != 0)
             {
@@ -87,7 +108,7 @@
                         [self readMessagesSuccess:nil];
                 }
                 else
-                    self.cancelToken = [TGTelegraphInstance doConversationReadHistory:action.subject maxMid:action.arg0 offset:0 actor:self];
+                    self.cancelToken = [TGTelegraphInstance doConversationReadHistory:action.subject accessHash:0 maxMid:action.arg0 offset:0 actor:self];
             }
             else if (deleteMessageActions.count != 0)
             {
@@ -139,36 +160,18 @@
                 
                 int64_t messageRandomId = 0;
                 arc4random_buf(&messageRandomId, 8);
-                TLDecryptedMessage$decryptedMessageService *serviceMessage = [[TLDecryptedMessage$decryptedMessageService alloc] init];
-                serviceMessage.random_id = messageRandomId;
                 
-                TLDecryptedMessageAction$decryptedMessageActionDeleteMessages *deleteMessages = [[TLDecryptedMessageAction$decryptedMessageActionDeleteMessages alloc] init];
-                deleteMessages.random_ids = randomIds;
-                serviceMessage.action = deleteMessages;
+                NSUInteger peerLayer = [TGDatabaseInstance() peerLayer:currentConversationId];
                 
-                NSOutputStream *os = [[NSOutputStream alloc] initToMemory];
-                [os open];
-                TLMetaClassStore::serializeObject(os, serviceMessage, true);
-                NSData *serializedData = [os currentBytes];
-                [os close];
+                NSData *messageData = [TGModernSendSecretMessageActor decryptedServiceMessageActionWithLayer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) deleteMessagesWithRandomIds:randomIds randomId:messageRandomId];
                 
-                int64_t encryptedPeerId = [TGDatabaseInstance() encryptedConversationIdForPeerId:currentConversationId];
-                
-                int64_t keyFingerprint = 0;
-                NSData *key = [TGDatabaseInstance() encryptionKeyForConversationId:currentConversationId keyFingerprint:&keyFingerprint];
-                int64_t accessHash = [TGDatabaseInstance() encryptedConversationAccessHash:currentConversationId];
-                
-                if (encryptedPeerId == 0 || key == nil || accessHash == 0)
+                if (messageData != nil)
                 {
-                    [TGDatabaseInstance() confirmQueuedActions:currentActions requireFullMatch:true];
-                    [self execute:nil];
+                    [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:currentConversationId layer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) keyId:0 randomId:messageRandomId messageData:messageData];
                 }
-                else
-                {
-                    _currentSecretActions = currentActions;
-                    
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedServiceMessage:encryptedPeerId accessHash:accessHash randomId:messageRandomId data:[TGModernSendSecretMessageActor encryptMessage:serializedData key:key keyId:keyFingerprint] actor:(TGSynchronizeServiceActionsActor *)self];
-                }
+                
+                [TGDatabaseInstance() confirmQueuedActions:currentActions requireFullMatch:true];
+                [self execute:nil];
             }
             else if (deleteConversationActions.count != 0)
             {
@@ -208,7 +211,7 @@
                     if (_currentDeleteConversationId <= INT_MIN)
                         [self deleteHistorySuccess:nil];
                     else
-                        self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId offset:0 actor:self];
+                        self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId accessHash:0 offset:0 actor:self];
                 }
             }
             else if (clearConversationActions.count != 0)
@@ -222,7 +225,7 @@
                 if (_currentDeleteConversationId <= INT_MIN)
                     [self deleteHistorySuccess:nil];
                 else
-                    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId offset:0 actor:self];
+                    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId accessHash:0 offset:0 actor:self];
             }
             else if (clearSecretConversationsActions.count != 0)
             {
@@ -236,35 +239,50 @@
                 
                 int64_t messageRandomId = 0;
                 arc4random_buf(&messageRandomId, 8);
-                TLDecryptedMessage$decryptedMessageService *serviceMessage = [[TLDecryptedMessage$decryptedMessageService alloc] init];
-                serviceMessage.random_id = messageRandomId;
                 
-                TLDecryptedMessageAction$decryptedMessageActionFlushHistory *flushHistory = [[TLDecryptedMessageAction$decryptedMessageActionFlushHistory alloc] init];
-                serviceMessage.action = flushHistory;
+                NSUInteger peerLayer = [TGDatabaseInstance() peerLayer:currentConversationId];
                 
-                NSOutputStream *os = [[NSOutputStream alloc] initToMemory];
-                [os open];
-                TLMetaClassStore::serializeObject(os, serviceMessage, true);
-                NSData *serializedData = [os currentBytes];
-                [os close];
+                NSData *messageData = [TGModernSendSecretMessageActor decryptedServiceMessageActionWithLayer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) flushHistoryWithRandomId:messageRandomId];
                 
-                int64_t encryptedPeerId = [TGDatabaseInstance() encryptedConversationIdForPeerId:currentConversationId];
-                
-                int64_t keyFingerprint = 0;
-                NSData *key = [TGDatabaseInstance() encryptionKeyForConversationId:currentConversationId keyFingerprint:&keyFingerprint];
-                int64_t accessHash = [TGDatabaseInstance() encryptedConversationAccessHash:currentConversationId];
-                
-                if (encryptedPeerId == 0 || key == nil || accessHash == 0)
+                if (messageData != nil)
                 {
-                    [TGDatabaseInstance() confirmQueuedActions:currentActions requireFullMatch:true];
-                    [self execute:nil];
+                    [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:currentConversationId layer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) keyId:0 randomId:messageRandomId messageData:messageData];
                 }
-                else
+                
+                [TGDatabaseInstance() confirmQueuedActions:currentActions requireFullMatch:true];
+                [self execute:nil];
+            }
+            else if (readMessageContentActions.count != 0)
+            {
+                TLRPCmessages_readMessageContents$messages_readMessageContents *readMessageContents = [[TLRPCmessages_readMessageContents$messages_readMessageContents alloc] init];
+                
+                NSMutableArray *messageIds = [[NSMutableArray alloc] init];
+                for (NSValue *value in readMessageContentActions)
                 {
-                    _currentSecretActions = currentActions;
-                    
-                    self.cancelToken = [TGTelegraphInstance doSendEncryptedServiceMessage:encryptedPeerId accessHash:accessHash randomId:messageRandomId data:[TGModernSendSecretMessageActor encryptMessage:serializedData key:key keyId:keyFingerprint] actor:(TGSynchronizeServiceActionsActor *)self];
+                    TGDatabaseAction action;
+                    [value getValue:&action];
+                    [messageIds addObject:@((int32_t)action.subject)];
                 }
+                readMessageContents.n_id = messageIds;
+                
+                __weak TGSynchronizeActionQueueActor *weakSelf = self;
+                [_currentDisposable setDisposable:[[[TGTelegramNetworking instance] requestSignal:readMessageContents] startWithNext:nil error:^(__unused id error)
+                {
+                    __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        [TGDatabaseInstance() confirmQueuedActions:readMessageContentActions requireFullMatch:false];
+                        [strongSelf execute:nil];
+                    }
+                } completed:^
+                {
+                    __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        [TGDatabaseInstance() confirmQueuedActions:readMessageContentActions requireFullMatch:false];
+                        [strongSelf execute:nil];
+                    }
+                }]];
             }
             else
             {
@@ -277,11 +295,14 @@
 - (void)readMessagesSuccess:(TLmessages_AffectedHistory *)affectedHistory
 {
     if (affectedHistory != nil)
-        [[TGTelegramNetworking instance] updatePts:affectedHistory.pts date:0 seq:affectedHistory.seq];
+    {
+        TGLog(@"read history, offset = %d", affectedHistory.offset);
+        [[TGTelegramNetworking instance] updatePts:affectedHistory.pts ptsCount:affectedHistory.pts_count seq:0];
+    }
     
     if (affectedHistory.offset > 0)
     {
-        self.cancelToken = [TGTelegraphInstance doConversationReadHistory:_currentReadConversationId maxMid:_currentReadMaxMid offset:affectedHistory.offset actor:self];
+        self.cancelToken = [TGTelegraphInstance doConversationReadHistory:_currentReadConversationId accessHash:0 maxMid:_currentReadMaxMid offset:affectedHistory.offset actor:self];
     }
     else
     {
@@ -294,11 +315,17 @@
 
 - (void)readMessagesFailed
 {
+    TGDatabaseAction action = { .type = TGDatabaseActionReadConversation, .subject = _currentReadConversationId, .arg0 = _currentReadMaxMid, .arg1 = 0 };
+    [TGDatabaseInstance() confirmQueuedActions:[NSArray arrayWithObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]] requireFullMatch:false];
+    
     [self execute:nil];
 }
 
-- (void)deleteMessagesSuccess:(NSArray *)__unused deletedMids
+- (void)deleteMessagesSuccess:(TLmessages_AffectedMessages *)result
 {
+    if (result != nil)
+        [[TGTelegramNetworking instance] updatePts:result.pts ptsCount:result.pts_count seq:0];
+    
     NSMutableArray *actions = [[NSMutableArray alloc] initWithCapacity:_currentMids.count];
     for (NSNumber *nMid in _currentMids)
     {
@@ -318,11 +345,11 @@
 - (void)deleteHistorySuccess:(TLmessages_AffectedHistory *)affectedHistory
 {
     if (affectedHistory != nil)
-        [[TGTelegramNetworking instance] updatePts:affectedHistory.pts date:0 seq:affectedHistory.seq];
+        [[TGTelegramNetworking instance] updatePts:affectedHistory.pts ptsCount:affectedHistory.pts_count seq:0];
     
     if (affectedHistory.offset > 0)
     {
-        self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId offset:affectedHistory.offset actor:self];
+        self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId accessHash:0 offset:affectedHistory.offset actor:self];
     }
     else
     {
@@ -338,20 +365,25 @@
     [self deleteHistorySuccess:nil];
 }
 
-- (void)deleteMemberSuccess:(TLmessages_StatedMessage *)statedMessage
+- (void)deleteMemberSuccess:(TLUpdates *)updates
 {
-    [[TGTelegramNetworking instance] updatePts:statedMessage.pts date:0 seq:statedMessage.seq];
+    int32_t pts = 0;
+    int32_t pts_count = 0;
+    if ([updates maxPtsAndCount:&pts ptsCount:&pts_count])
+        [[TGTelegramNetworking instance] updatePts:pts ptsCount:pts_count seq:0];
+    else
+        [[TGTelegramNetworking instance] addUpdates:updates];
     
     [TGUpdateStateRequestBuilder removeIgnoreConversationId:_currentDeleteConversationId];
     
-    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId offset:0 actor:self];
+    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId accessHash:0 offset:0 actor:self];
 }
 
 - (void)deleteMemberFailed
 {
     [TGUpdateStateRequestBuilder removeIgnoreConversationId:_currentDeleteConversationId];
     
-    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId offset:0 actor:self];
+    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId accessHash:0 offset:0 actor:self];
 }
 
 - (void)rejectEncryptedChatSuccess

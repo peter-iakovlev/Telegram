@@ -10,22 +10,39 @@
 
 #import <CoreText/CoreText.h>
 
+@interface TGModernTextViewLinesInset : NSObject
+
+@property (nonatomic, readonly) NSUInteger numberOfLinesToInset;
+@property (nonatomic, readonly) CGFloat inset;
+
+- (instancetype)initWithNumberOfLinesToInset:(NSUInteger)numberOfLinesToInset inset:(CGFloat)inset;
+
+@end
+
 @interface TGModernTextViewModel : TGModernViewModel
 
 @property (nonatomic, strong) NSString *text;
 @property (nonatomic) CTFontRef font;
 @property (nonatomic, strong) UIColor *textColor;
-@property (nonatomic) int lineCount;
+@property (nonatomic) NSUInteger maxNumberOfLines;
 @property (nonatomic, strong) NSArray *textCheckingResults;
 @property (nonatomic) NSTextAlignment alignment;
 @property (nonatomic) int layoutFlags;
+@property (nonatomic) CGFloat additionalTrailingWidth;
 @property (nonatomic, strong) NSArray *additionalAttributes;
+@property (nonatomic) CGFloat additionalLineSpacing;
 @property (nonatomic, readonly) bool isRTL;
+@property (nonatomic, strong) TGModernTextViewLinesInset *linesInset;
+@property (nonatomic, readonly) bool containsEmptyNewline;
 
 - (instancetype)initWithText:(NSString *)text font:(CTFontRef)font;
 
 - (bool)layoutNeedsUpdatingForContainerSize:(CGSize)containerSize;
+- (bool)layoutNeedsUpdatingForContainerSize:(CGSize)containerSize layoutFlags:(int)layoutFlags;
 - (void)layoutForContainerSize:(CGSize)containerSize;
 - (NSString *)linkAtPoint:(CGPoint)point regionData:(__autoreleasing NSArray **)regionData;
+- (void)enumerateSearchRegionsForString:(NSString *)string withBlock:(void (^)(CGRect))block;
+
+- (NSUInteger)measuredNumberOfLines;
 
 @end

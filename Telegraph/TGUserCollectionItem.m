@@ -24,7 +24,7 @@
     self = [super init];
     if (self != nil)
     {
-        
+        _deleteActionTitle = TGLocalized(@"BlockedUsers.Unblock");
     }
     return self;
 }
@@ -36,16 +36,17 @@
 
 - (CGSize)itemSizeForContainerSize:(CGSize)containerSize
 {
-    return CGSizeMake(containerSize.width, 44);
+    return CGSizeMake(containerSize.width, _showAvatar ? 58 : 44);
 }
 
 - (void)bindView:(TGCollectionItemView *)view
 {
     [super bindView:view];
     
-    ((TGUserCollectionItemView *)view).optionText = TGLocalized(@"BlockedUsers.Unblock");
+    ((TGUserCollectionItemView *)view).optionText = _deleteActionTitle;
     ((TGUserCollectionItemView *)view).delegate = self;
-    [(TGUserCollectionItemView *)view setTitle:_user.displayName];
+    [(TGUserCollectionItemView *)view setShowAvatar:_showAvatar];
+    [(TGUserCollectionItemView *)view setFirstName:_user.firstName lastName:_user.lastName uidForPlaceholderCalculation:_user.uid avatarUri:_user.photoUrlSmall];
 }
 
 - (void)unbindView

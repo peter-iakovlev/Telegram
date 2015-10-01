@@ -23,6 +23,8 @@
 
 @property (nonatomic, weak) id<TGGroupInfoCollectionItemViewDelegate> delegate;
 @property (nonatomic) bool isBroadcast;
+@property (nonatomic) bool isChannel;
+@property (nonatomic) bool isVerified;
 
 - (id)avatarView;
 

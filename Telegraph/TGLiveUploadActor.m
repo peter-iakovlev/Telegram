@@ -20,6 +20,8 @@
 
 #import <MTProtoKit/MTEncryption.h>
 
+#import "TGDataItem.h"
+
 @interface TGLiveUploadActorData () <ASWatcher>
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -57,7 +59,7 @@
 
 @interface TGLiveUploadActor ()
 {
-    NSString *_filePath;
+    TGDataItem *_fileItem;
     bool _encryptFile;
     
     int64_t _fileId;
@@ -72,7 +74,6 @@
     bool _lateHeaderMode;
     NSData *(^_dataProvider)(NSUInteger offset, NSUInteger length);
     NSData *_unfinishedHeaderData;
-    bool _unlinkFileAfterCompletion;
     
     bool _liveMode;
     bool _canComplete;
@@ -114,13 +115,6 @@
 
 - (void)_unlinkFileIfNeeded
 {
-    if (_unlinkFileAfterCompletion)
-    {
-        if ([[[NSFileManager defaultManager] attributesOfItemAtPath:_filePath error:nil][NSFileType] isEqualToString:NSFileTypeSymbolicLink])
-        {
-            [[NSFileManager defaultManager] removeItemAtPath:_filePath error:nil];
-        }
-    }
 }
 
 - (void)_complete:(id)result
@@ -141,15 +135,17 @@
 {
     arc4random_buf(&_fileId, 8);
     
-    _filePath = options[@"filePath"];
+    _fileItem = options[@"fileItem"];
+    if (_fileItem == nil && options[@"filePath"] != nil)
+        _fileItem = [[TGDataItem alloc] initWithFilePath:options[@"filePath"]];
+    
     _encryptFile = [options[@"encryptFile"] boolValue];
     _lateHeaderMode = [options[@"lateHeader"] boolValue];
     _dataProvider = [options[@"dataProvider"] copy];
-    _unlinkFileAfterCompletion = [options[@"unlinkFileAfterCompletion"] boolValue];
     
     _liveMode = true;
     
-    if (_filePath == nil)
+    if (_fileItem == nil)
         [self _fail];
     else
     {
@@ -241,6 +237,23 @@
                 result[@"aesKeyFingerprint"] = @(_keyFingerprint);
             }
             
+            if (_fileItem != nil)
+            {
+                CC_MD5_CTX ctx;
+                CC_MD5_Init(&ctx);
+                NSUInteger bufferSize = 4 * 1024;
+                for (NSUInteger i = 0; i < _availableSize; i += bufferSize)
+                {
+                    NSUInteger currentBufferSize = MIN(bufferSize, _availableSize - i);
+                    NSData *data = [_fileItem readDataAtOffset:i length:currentBufferSize];
+                    CC_MD5_Update(&ctx, data.bytes, (CC_LONG)data.length);
+                }
+                unsigned char md5Buffer[16];
+                CC_MD5_Final(md5Buffer, &ctx);
+                NSString *hash = [[NSString alloc] initWithFormat:@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", md5Buffer[0], md5Buffer[1], md5Buffer[2], md5Buffer[3], md5Buffer[4], md5Buffer[5], md5Buffer[6], md5Buffer[7], md5Buffer[8], md5Buffer[9], md5Buffer[10], md5Buffer[11], md5Buffer[12], md5Buffer[13], md5Buffer[14], md5Buffer[15]];
+                result[@"md5"] = hash;
+            }
+            
             [self _complete:result];
         }
     }
@@ -250,8 +263,12 @@
 
         for (NSInteger slotIndex = 0; slotIndex < availableUploadSlots; slotIndex++)
         {
-            NSUInteger processedSize = [self doneSize];
+            NSUInteger processedSize = 0;
             for (TGLiveUploadPart *part in _uploadingParts)
+            {
+                processedSize = MAX(processedSize, part.offset + part.length);
+            }
+            for (TGLiveUploadPart *part in _doneParts)
             {
                 processedSize = MAX(processedSize, part.offset + part.length);
             }
@@ -315,22 +332,7 @@
                     if (_dataProvider != nil)
                         partData = _dataProvider(processedSize, currentPartSize);
                     else
-                    {
-                        @try
-                        {
-                            NSFileHandle *fileHandle = [NSFileHandle fileHandleForReadingAtPath:_filePath];
-                            [fileHandle seekToFileOffset:processedSize];
-                            partData = [fileHandle readDataOfLength:currentPartSize];
-                            [fileHandle closeFile];
-                        }
-                        @catch (NSException *e)
-                        {
-                            TGLog(@"[TGLiveUploadActor#%p exception: %@]", e);
-                            [self _fail];
-                            
-                            return;
-                        }
-                    }
+                        partData = [_fileItem readDataAtOffset:processedSize length:currentPartSize];
                 }
                 
                 if (partData.length == (NSUInteger)currentPartSize)
@@ -355,7 +357,7 @@
                     
                     TLRPCupload_saveFilePart$upload_saveFilePart *saveFilePart = [[TLRPCupload_saveFilePart$upload_saveFilePart alloc] init];
                     saveFilePart.file_id = _fileId;
-                    saveFilePart.file_part = isHeader ? 0 : ((_lateHeaderMode ? 1 : 0) + _doneParts.count + _uploadingParts.count);
+                    saveFilePart.file_part = (int32_t)(isHeader ? 0 : ((_lateHeaderMode ? 1 : 0) + _doneParts.count + _uploadingParts.count));
                     saveFilePart.bytes = alignedPartData;
                     request.body = saveFilePart;
                     

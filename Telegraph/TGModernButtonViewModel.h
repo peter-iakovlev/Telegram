@@ -16,6 +16,7 @@
 @property (nonatomic, strong) NSArray *possibleTitles;
 @property (nonatomic, strong) UIFont *font;
 @property (nonatomic, strong) UIImage *image;
+@property (nonatomic) UIEdgeInsets extendedEdgeInsets;
 
 @property (nonatomic) UIEdgeInsets titleInset;
 

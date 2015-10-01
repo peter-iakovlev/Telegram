@@ -46,6 +46,8 @@
     
     NSMutableDictionary *_cache;
     NSUInteger _cacheSize;
+    
+    NSMutableDictionary *_averageColors;
 }
 
 @end
@@ -61,6 +63,7 @@
         _softMemoryLimit = softMemoryLimit;
         _hardMemoryLimit = MAX(hardMemoryLimit, softMemoryLimit);
         _cache = [[NSMutableDictionary alloc] init];
+        _averageColors = [[NSMutableDictionary alloc] init];
     }
     return self;
 }
@@ -133,19 +136,52 @@
                     _cacheSize -= item.size;
             }
             
-            if (image != nil)
+            if (image != nil && [image isKindOfClass:[UIImage class]])
             {
-                if ([image isKindOfClass:[UIImage class]])
-                {
-                    CGSize dimensions = image.size;
-                    CGFloat scale = image.scale;
-                    NSUInteger size = (NSUInteger)((dimensions.width * scale * dimensions.height * scale) * 4);
-                    _cache[key] = [[TGMemoryImageCacheItem alloc] initWithObject:image attributes:attributes size:size timestamp:MTAbsoluteSystemTime()];
-                    [self _addSize:size];
-                }
+                CGSize dimensions = image.size;
+                CGFloat scale = image.scale;
+                NSUInteger size = (NSUInteger)((dimensions.width * scale * dimensions.height * scale) * 4);
+                _cache[key] = [[TGMemoryImageCacheItem alloc] initWithObject:image attributes:attributes size:size timestamp:MTAbsoluteSystemTime()];
+                [self _addSize:size];
             }
+            else
+                [_cache removeObjectForKey:key];
         }];
     }
+}
+
+- (void)setAverageColor:(uint32_t)color forKey:(NSString *)key
+{
+    if (key == nil)
+        return;
+    
+    [_queue dispatchOnQueue:^
+    {
+        _averageColors[key] = @(color);
+    }];
+}
+
+- (bool)averageColorForKey:(NSString *)key color:(uint32_t *)color
+{
+    if (key == nil)
+        return nil;
+    
+    __block bool result = false;
+    __block uint32_t resultColor = 0;
+    [_queue dispatchOnQueue:^
+    {
+        NSNumber *nColor = _averageColors[key];
+        if (nColor != nil)
+        {
+            result = true;
+            resultColor = (uint32_t)[nColor unsignedIntValue];
+        }
+    } synchronous:true];
+    
+    if (color)
+        *color = resultColor;
+    
+    return result;
 }
 
 @end

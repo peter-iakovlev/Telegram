@@ -10,6 +10,8 @@
 
 @interface TGUserInfoButtonCollectionItemView : TGCollectionItemView
 
+@property (nonatomic) bool editing;
+
 - (void)setTitle:(NSString *)title;
 - (void)setTitleColor:(UIColor *)titleColor;
 

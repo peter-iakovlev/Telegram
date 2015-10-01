@@ -18,11 +18,13 @@
 @property (nonatomic) int datacenterId;
 @property (nonatomic) int32_t userId;
 @property (nonatomic) int documentDate;
-@property (nonatomic, strong) NSString *fileName;
 @property (nonatomic, strong) NSString *mimeType;
 @property (nonatomic) int size;
 @property (nonatomic, strong) TGImageInfo *thumbnailInfo;
+@property (nonatomic, strong) NSArray *attributes;
 
-- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia;
+@property (nonatomic, strong) TGMessage *replyMessage;
+
+- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia replyMessage:(TGMessage *)replyMessage;
 
 @end

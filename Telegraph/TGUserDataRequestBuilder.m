@@ -11,6 +11,11 @@
 
 #import "TGContactListRequestBuilder.h"
 
+#import "TGAccountSettings.h"
+#import "TGAccountSettingsActor.h"
+
+#import "TGStringUtils.h"
+
 @implementation TGUserDataRequestBuilder
 
 + (NSString *)genericPath
@@ -49,7 +54,7 @@
                     }
                 }
             }
-            else if (!(userLink & TGUserLinkMyContact))
+            else if ((userLink & TGUserLinkKnown) && !(userLink & TGUserLinkMyContact))
             {
                 if ([TGDatabaseInstance() uidIsRemoteContact:uid])
                 {
@@ -77,6 +82,18 @@
         {
             if (originalUser != nil)
             {
+                if (!TGStringCompare(originalUser.phoneNumber, user.phoneNumber) && user.phoneNumber.length != 0 && [TGDatabaseInstance() uidIsRemoteContact:user.uid])
+                {
+                    TGPhonebookContact *phonebookContact = [TGDatabaseInstance() phonebookContactByPhoneId:phoneMatchHash(originalUser.phoneNumber)];
+                    TGPhonebookContact *newPhonebookContact = [TGDatabaseInstance() phonebookContactByPhoneId:phoneMatchHash(user.phoneNumber)];
+                    if (phonebookContact != nil && newPhonebookContact == nil)
+                    {
+                        [[TGSynchronizeContactsManager instance] scheduleContactPhoneAddition:user.uid];
+                        static int actionId = 0;
+                        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/synchronizeContacts/(%dappend,appendPhone)", actionId++] options:[NSDictionary dictionaryWithObjectsAndKeys:[[NSNumber alloc] initWithInt:user.uid], @"uid", user.phoneNumber, @"phoneNumber", @(phonebookContact.nativeId), @"nativeId", nil] watcher:TGTelegraphInstance];
+                    }
+                }
+                
                 [updateUsers addObject:user];
                 [updateUserChanges addObject:[[NSNumber alloc] initWithInt:[user differenceFromUser:originalUser]]];
             }
@@ -90,7 +107,7 @@
     
     if (updateUsers.count != 0)
     {
-        int count = updateUsers.count;
+        int count = (int)updateUsers.count;
         for (int i = 0; i < count; i++)
         {
             [TGTelegraphInstance dispatchUserDataChanges:[updateUsers objectAtIndex:i] changes:[[updateUserChanges objectAtIndex:i] intValue]];

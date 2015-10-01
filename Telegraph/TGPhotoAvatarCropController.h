@@ -1,0 +1,20 @@
+#import "TGPhotoEditorTabController.h"
+
+@class PGPhotoEditor;
+@class TGPhotoEditorPreviewView;
+
+@interface TGPhotoAvatarCropController : TGPhotoEditorTabController
+
+@property (nonatomic, assign) bool switching;
+@property (nonatomic, assign) bool skipTransitionIn;
+@property (nonatomic, assign) bool fromCamera;
+
+@property (nonatomic, copy) void (^finishedPhotoProcessing)(void);
+
+- (instancetype)initWithPhotoEditor:(PGPhotoEditor *)photoEditor previewView:(TGPhotoEditorPreviewView *)previewView;
+
+- (void)setImage:(UIImage *)image;
+- (void)setSnapshotImage:(UIImage *)snapshotImage;
+- (void)setSnapshotView:(UIView *)snapshotView;
+
+@end

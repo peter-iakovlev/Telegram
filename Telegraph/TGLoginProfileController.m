@@ -7,6 +7,8 @@
 #import "TGHacks.h"
 #import "TGFont.h"
 
+#import "UIDevice+PlatformInfo.h"
+
 #import "TGImageUtils.h"
 
 #import "TGAppDelegate.h"
@@ -31,16 +33,33 @@
 
 #import "TGTextField.h"
 
-#define TG_USE_CUSTOM_CAMERA false
+#import "TGActionSheet.h"
 
-#if TG_USE_CUSTOM_CAMERA
-#import "TGCameraWindow.h"
-#endif
+#import "PGCamera.h"
+#import "TGCameraController.h"
+#import "TGLegacyCameraController.h"
+#import "TGModernMediaPickerController.h"
+#import "TGMediaFoldersController.h"
+#import "TGOverlayControllerWindow.h"
+#import "TGOverlayFormsheetWindow.h"
+
+#import "TGWebSearchController.h"
+
+#import "TGAccessChecker.h"
+
+#import "TGAttachmentSheetView.h"
+#import "TGAttachmentSheetWindow.h"
+#import "TGAttachmentSheetButtonItemView.h"
+#import "TGAttachmentSheetRecentItemView.h"
+#import "TGAttachmentSheetRecentCameraView.h"
+#import "TGCameraPreviewView.h"
+
+#import "TGAlertView.h"
 
 #define TGAvatarActionSheetTag ((int)0xF3AEE8CC)
 #define TGImageSourceActionSheetTag ((int)0x34281CB0)
 
-@interface TGLoginProfileController () <UITextFieldDelegate, UIActionSheetDelegate, UINavigationControllerDelegate, UIImagePickerControllerDelegate>
+@interface TGLoginProfileController () <UITextFieldDelegate, UIActionSheetDelegate, UINavigationControllerDelegate, UIImagePickerControllerDelegate, TGLegacyCameraControllerDelegate>
 {
     bool _dismissing;
     
@@ -50,6 +69,10 @@
     UILabel *_noticeLabel;
     UIView *_firstNameSeparator;
     UIView *_lastNameSeparator;
+    
+    bool _didDisappear;
+    
+    TGAttachmentSheetWindow *_attachmentSheetWindow;
 }
 
 @property (nonatomic) bool showKeyboard;
@@ -277,6 +300,9 @@
     
     [super viewWillAppear:animated];
     
+    if (_didDisappear)
+        [_firstNameField becomeFirstResponder];
+    
     [self updateInterface:self.interfaceOrientation];
 }
 
@@ -291,6 +317,8 @@
 - (void)viewWillDisappear:(BOOL)animated
 {
     _dismissing = ![self.navigationController.viewControllers containsObject:self];
+    
+    _didDisappear = true;
     
     [super viewWillDisappear:animated];
 }
@@ -459,7 +487,7 @@
     }
 }
 
-- (void)shakeView:(UIView *)v originalX:(float)originalX
+- (void)shakeView:(UIView *)v originalX:(CGFloat)originalX
 {
     CGRect r = v.frame;
     r.origin.x = originalX;
@@ -536,80 +564,207 @@
 
 - (void)addPhotoButtonPressed
 {
-#if TG_USE_CUSTOM_CAMERA
-    _cameraWindow = [[TGCameraWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    _cameraWindow.watcherHandle = _actionHandle;
-    [_cameraWindow show];
-#else
-    if (_currentActionSheet != nil)
-        _currentActionSheet.delegate = nil;
+    NSMutableArray *actions = [[NSMutableArray alloc] init];
     
-    _currentActionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:nil destructiveButtonTitle:nil otherButtonTitles:nil];
-    _currentActionSheet.tag = TGImageSourceActionSheetTag;
-    [_currentActionSheet addButtonWithTitle:TGLocalized(@"Common.TakePhoto")];
-    [_currentActionSheet addButtonWithTitle:TGLocalized(@"Common.ChoosePhoto")];
-    _currentActionSheet.cancelButtonIndex = [_currentActionSheet addButtonWithTitle:TGLocalized(@"Common.Cancel")];
-    [_currentActionSheet showInView:self.view];
-#endif
+    if ([PGCamera cameraAvailable])
+        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.TakePhoto") action:@"camera"]];
+    
+    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.ChoosePhoto") action:@"choosePhoto"]];
+
+    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
+    
+    TGActionSheet *actionSheet = [[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGLoginProfileController *controller, NSString *action)
+    {
+        if ([action isEqualToString:@"camera"])
+            [controller _displayCamera];
+        else if ([action isEqualToString:@"choosePhoto"])
+            [controller _displayImagePicker];
+    } target:self];
+    
+    [actionSheet showInView:self.view];
 }
 
-- (void)avatarTapped:(UITapGestureRecognizer *)recognizer
+- (void)avatarTapped:(UITapGestureRecognizer *)__unused recognizer
 {
-    if (recognizer.state == UIGestureRecognizerStateRecognized)
+    NSMutableArray *actions = [[NSMutableArray alloc] init];
+    
+    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Login.InfoDeletePhoto") action:@"delete" type:TGActionSheetActionTypeDestructive]];
+    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
+    
+    TGActionSheet *actionSheet = [[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGLoginProfileController *controller, NSString *action)
     {
-        if (_currentActionSheet != nil)
-            _currentActionSheet.delegate = nil;
-        
-        _currentActionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:nil destructiveButtonTitle:nil otherButtonTitles:nil];
-        _currentActionSheet.tag = TGAvatarActionSheetTag;
-        [_currentActionSheet addButtonWithTitle:TGLocalized(@"Login.InfoUpdatePhoto")];
-        _currentActionSheet.destructiveButtonIndex = [_currentActionSheet addButtonWithTitle:TGLocalized(@"Login.InfoDeletePhoto")];
-        _currentActionSheet.cancelButtonIndex = [_currentActionSheet addButtonWithTitle:TGLocalized(@"Common.Cancel")];
-        [_currentActionSheet showInView:self.view];
+        if ([action isEqualToString:@"delete"])
+            [controller _deletePhoto];
+    } target:self];
+    
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+    {
+        [actionSheet showInView:self.view];
+    }
+    else
+    {
+        [actionSheet showFromRect:[recognizer.view.superview convertRect:recognizer.view.frame toView:self.view] inView:self.view animated:true];
     }
 }
 
-- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
+- (void)_deletePhoto
 {
-    _currentActionSheet.delegate = nil;
-    _currentActionSheet = nil;
+    _addPhotoButton.alpha = 1.0f;
+    _addPhotoButton.hidden = false;
+    _avatarView.image = nil;
+    _avatarView.alpha = 0.0f;
+    _avatarView.hidden = true;
+    _dataForPhotoUpload = nil;
+    _imageForPhotoUpload = nil;
+}
+
+- (void)_displayImagePicker
+{
+    [self.view endEditing:true];
     
-    if (actionSheet.tag == TGAvatarActionSheetTag)
+    __weak TGLoginProfileController *weakSelf = self;
+    
+    TGNavigationController *navigationController = nil;
+    
+    TGMediaFoldersController *mediaFoldersController = [[TGMediaFoldersController alloc] initWithIntent:TGModernMediaPickerControllerSetProfilePhotoIntent];
+    TGModernMediaPickerController *mediaPickerController = [[TGModernMediaPickerController alloc] initWithAssetsGroup:nil intent:TGModernMediaPickerControllerSetProfilePhotoIntent];
+    
+    navigationController = [TGNavigationController navigationControllerWithControllers:@[ mediaFoldersController, mediaPickerController ]];
+    
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
     {
-        if (buttonIndex == actionSheet.destructiveButtonIndex)
+        void (^dismiss)(void) = ^
         {
-            _addPhotoButton.alpha = 1.0f;
-            _addPhotoButton.hidden = false;
-            _avatarView.image = nil;
-            _avatarView.alpha = 0.0f;
-            _avatarView.hidden = true;
-            _dataForPhotoUpload = nil;
-            _imageForPhotoUpload = nil;
-        }
-        else if (buttonIndex != actionSheet.cancelButtonIndex)
-        {
-            [self addPhotoButtonPressed];
-        }
-    }
-    else if (actionSheet.tag == TGImageSourceActionSheetTag)
-    {
-        if (buttonIndex == 0 || buttonIndex == 1)
-        {
-            if (buttonIndex == 0 && ![UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera])
+            __strong TGLoginProfileController *strongSelf = weakSelf;
+            if (strongSelf == nil)
                 return;
             
-            [self.view endEditing:true];
-            
-            [(TGApplication *)[UIApplication sharedApplication] setProcessStatusBarHiddenRequests:true];
-            
-            UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
-            imagePicker.sourceType = buttonIndex == 0 ? UIImagePickerControllerSourceTypeCamera : UIImagePickerControllerSourceTypePhotoLibrary;
-            imagePicker.allowsEditing = true;
-            imagePicker.delegate = self;
-            
-            [self presentViewController:imagePicker animated:true completion:nil];
-        }
+            [strongSelf dismissViewControllerAnimated:true completion:nil];
+        };
+        
+        mediaFoldersController.dismiss = dismiss;
+        mediaPickerController.dismiss = dismiss;
+        
+        [self presentViewController:navigationController animated:true completion:nil];
     }
+    else
+    {
+        navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
+        navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
+        
+        TGOverlayFormsheetWindow *formSheetWindow = [[TGOverlayFormsheetWindow alloc] initWithParentController:self contentController:navigationController];
+        [formSheetWindow showAnimated:true];
+        
+        __weak TGOverlayFormsheetWindow *weakFormSheetWindow = formSheetWindow;
+        
+        void (^dismiss)(void) = ^
+        {
+            __strong TGOverlayFormsheetWindow *strongFormSheetWindow = weakFormSheetWindow;
+            if (strongFormSheetWindow == nil)
+                return;
+            
+            [strongFormSheetWindow dismissAnimated:true];
+        };
+        
+        mediaFoldersController.dismiss = dismiss;
+        mediaPickerController.dismiss = dismiss;
+    }
+    
+    __weak TGMediaFoldersController *weakMediaFoldersController = mediaFoldersController;
+    void(^avatarCreated)(UIImage *) = ^(UIImage *image)
+    {
+        __strong TGLoginProfileController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        [strongSelf _updateProfileImage:image];
+        
+        __strong TGMediaFoldersController *strongMediaFoldersController = weakMediaFoldersController;
+        if (strongMediaFoldersController != nil && strongMediaFoldersController.dismiss != nil)
+            strongMediaFoldersController.dismiss();
+    };
+    
+    mediaFoldersController.avatarCreated = avatarCreated;
+    mediaPickerController.avatarCreated = avatarCreated;
+}
+
+- (void)_displayCamera
+{
+    [self.view endEditing:true];
+    
+    if (TGAppDelegateInstance.rootController.isSplitView)
+        return;
+    
+    if (iosMajorVersion() < 7 || [UIDevice currentDevice].platformType == UIDevice4iPhone || [UIDevice currentDevice].platformType == UIDevice4GiPod)
+    {
+        [self _displayLegacyCamera];
+        return;
+    }
+    
+    CGSize screenSize = TGScreenSize();
+    TGCameraController *controller = [[TGCameraController alloc] initWithIntent:TGCameraControllerAvatarIntent];
+    
+    CGRect startFrame = CGRectMake(0, screenSize.height, screenSize.width, screenSize.height);
+    
+    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
+    controllerWindow.windowLevel = self.view.window.windowLevel + 0.0001f;
+    controllerWindow.hidden = false;
+    controllerWindow.clipsToBounds = true;
+    controllerWindow.frame = CGRectMake(0, 0, screenSize.width, screenSize.height);
+    
+    [controller beginTransitionInFromRect:startFrame];
+    
+    __weak TGLoginProfileController *weakSelf = self;
+    controller.beginTransitionOut = ^CGRect
+    {
+        return CGRectZero;
+    };
+    
+    controller.finishedWithPhoto = ^(UIImage *image, __unused NSString *_caption)
+    {
+        __strong TGLoginProfileController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        [strongSelf _updateProfileImage:image];
+    };
+}
+
+- (void)_displayLegacyCamera
+{
+    [(TGApplication *)[UIApplication sharedApplication] setProcessStatusBarHiddenRequests:true];
+    
+    UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
+    imagePicker.sourceType = UIImagePickerControllerSourceTypeCamera;
+    imagePicker.allowsEditing = true;
+    imagePicker.delegate = self;
+    
+    [self presentViewController:imagePicker animated:true completion:nil];
+}
+
+- (void)_updateProfileImage:(UIImage *)image
+{
+    if (image == nil)
+        return;
+    
+    if (MIN(image.size.width, image.size.height) < 160.0f)
+        image = TGScaleImageToPixelSize(image, CGSizeMake(160, 160));
+    
+    NSData *imageData = UIImageJPEGRepresentation(image, 0.6f);
+    if (imageData == nil)
+        return;
+    
+    TGImageProcessor filter = [TGRemoteImageView imageProcessorForName:@"circle:110x110"];
+    UIImage *avatarImage = filter(image);
+    
+    _avatarView.hidden = false;
+    _avatarView.alpha = 1.0f;
+    _addPhotoButton.hidden = true;
+    _addPhotoButton.alpha = 0.0f;
+    _avatarView.image = avatarImage;
+    
+    _dataForPhotoUpload = imageData;
+    _imageForPhotoUpload = ([TGRemoteImageView imageProcessorForName:@"circle:64x64"])(image);
 }
 
 - (void)imagePickerController:(UIImagePickerController *)__unused picker didFinishPickingMediaWithInfo:(NSDictionary *)info
@@ -635,29 +790,9 @@
     
     UIImage *image = TGFixOrientationAndCrop([info objectForKey:UIImagePickerControllerOriginalImage], cropRect, CGSizeMake(600, 600));
     
-    NSData *imageData = UIImageJPEGRepresentation(image, 0.5f);
-    if (imageData == nil)
-        return;
-    
-    TGImageProcessor filter = [TGRemoteImageView imageProcessorForName:@"circle:110x110"];
-    UIImage *toImage = filter(image);
-    
-    _avatarView.hidden = false;
-    _avatarView.alpha = 1.0f;
-    _addPhotoButton.hidden = true;
-    _addPhotoButton.alpha = 0.0f;
-    _avatarView.image = toImage;
-    
-    _dataForPhotoUpload = imageData;
-    _imageForPhotoUpload = ([TGRemoteImageView imageProcessorForName:@"circle:64x64"])(image);
+    [self _updateProfileImage:image];
 }
 
-- (void)imagePickerControllerDidCancel:(UIImagePickerController *)__unused picker
-{
-    [self dismissViewControllerAnimated:true completion:nil];
-    
-    [(TGApplication *)[UIApplication sharedApplication] setProcessStatusBarHiddenRequests:true];
-}
 
 #pragma mark -
 
@@ -678,7 +813,7 @@
                 [filePath appendFormat:@"%02x", fileId[i]];
             }
             
-            NSString *tmpImagesPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0] stringByAppendingPathComponent:@"upload"];
+            NSString *tmpImagesPath = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"upload"];
             static NSFileManager *fileManager = nil;
             if (fileManager == nil)
                 fileManager = [[NSFileManager alloc] init];
@@ -723,7 +858,7 @@
                 else if (resultCode == TGSignUpResultInvalidLastName)
                     errorText = TGLocalized(@"Login.InvalidLastNameError");
                 
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
+                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                 [alertView show];
             }
         });

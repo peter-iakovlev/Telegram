@@ -15,6 +15,10 @@
 
 - (NSString *)viewStateIdentifier
 {
+    if (_viewStateIdentifier)
+    {
+    }
+    
     return [[NSString alloc] initWithFormat:@"TGModernImageView/%lx", (long)self.image];
 }
 

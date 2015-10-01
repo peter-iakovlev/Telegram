@@ -10,6 +10,8 @@
 
 #import "TGStringUtils.h"
 
+#import "TLUser$modernUser.h"
+
 void extractUserPhoto(TLUserProfilePhoto *photo, TGUser *target)
 {
     if ([photo isKindOfClass:[TLUserProfilePhoto$userProfilePhoto class]])
@@ -34,6 +36,7 @@ TGUserPresence extractUserPresence(TLUserStatus *status)
         TGUserPresence presence;
         presence.online = true;
         presence.lastSeen = ((TLUserStatus$userStatusOnline *)status).expires;
+        presence.temporaryLastSeen = 0;
         return presence;
     }
     else if ([status isKindOfClass:[TLUserStatus$userStatusOffline class]])
@@ -41,125 +44,121 @@ TGUserPresence extractUserPresence(TLUserStatus *status)
         TGUserPresence presence;
         presence.online = false;
         presence.lastSeen = ((TLUserStatus$userStatusOffline *)status).was_online;
+        presence.temporaryLastSeen = 0;
+        
+        return presence;
+    }
+    else if ([status isKindOfClass:[TLUserStatus$userStatusRecently class]])
+    {
+        TGUserPresence presence;
+        presence.online = false;
+        presence.lastSeen = TGUserPresenceValueLately;
+        presence.temporaryLastSeen = 0;
+        return presence;
+    }
+    else if ([status isKindOfClass:[TLUserStatus$userStatusLastWeek class]])
+    {
+        TGUserPresence presence;
+        presence.online = false;
+        presence.lastSeen = TGUserPresenceValueWithinAWeek;
+        presence.temporaryLastSeen = 0;
+        return presence;
+    }
+    else if ([status isKindOfClass:[TLUserStatus$userStatusLastMonth class]])
+    {
+        TGUserPresence presence;
+        presence.online = false;
+        presence.lastSeen = TGUserPresenceValueWithinAMonth;
+        presence.temporaryLastSeen = 0;
         return presence;
     }
     else
     {
         TGUserPresence presence;
         presence.online = false;
-        presence.lastSeen = 0;
+        presence.lastSeen = TGUserPresenceValueALongTimeAgo;
+        presence.temporaryLastSeen = 0;
         return presence;
     }
 }
 
 int extractUserLink(TLcontacts_Link *link)
 {
-    int value = TGUserLinkKnown;
+    int value = 0;
     
-    if ([link.my_link isKindOfClass:[TLcontacts_MyLink$contacts_myLinkRequested class]])
-    {
-        value |= TGUserLinkMyRequested;
-        if (((TLcontacts_MyLink$contacts_myLinkRequested *)link.my_link).contact)
-            value |= TGUserLinkMyContact;
-    }
-    else if ([link.my_link isKindOfClass:[TLcontacts_MyLink$contacts_myLinkContact class]])
-        value |= TGUserLinkMyContact;
+    if ([link.my_link isKindOfClass:[TLContactLink$contactLinkContact class]])
+        value |= TGUserLinkMyContact | TGUserLinkKnown;
+    else if ([link.my_link isKindOfClass:[TLContactLink$contactLinkHasPhone class]])
+        value |= TGUserLinkForeignHasPhone | TGUserLinkKnown;
+    else if ([link.my_link isKindOfClass:[TLContactLink$contactLinkNone class]])
+        value |= TGUserLinkKnown;
     
-    if ([link.foreign_link isKindOfClass:[TLcontacts_ForeignLink$contacts_foreignLinkRequested class]])
-    {
-        value |= TGUserLinkForeignRequested;
-        if (((TLcontacts_ForeignLink$contacts_foreignLinkRequested *)link.foreign_link).has_phone)
-            value |= TGUserLinkForeignHasPhone;
-    }
-    else if ([link.foreign_link isKindOfClass:[TLcontacts_ForeignLink$contacts_foreignLinkMutual class]])
-        value |= TGUserLinkForeignMutual;
+    if ([link.foreign_link isKindOfClass:[TLContactLink$contactLinkContact class]])
+        value |= TGUserLinkForeignHasPhone | TGUserLinkKnown;
+    else if ([link.foreign_link isKindOfClass:[TLContactLink$contactLinkHasPhone class]])
+        value |= TGUserLinkForeignHasPhone | TGUserLinkKnown;
+    else if ([link.foreign_link isKindOfClass:[TLContactLink$contactLinkNone class]])
+        value |= TGUserLinkKnown;
     
     return value;
 }
 
 int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
 {
-    int value = TGUserLinkKnown;
+    int value = 0;
     
-    if ([linkUpdate.my_link isKindOfClass:[TLcontacts_MyLink$contacts_myLinkRequested class]])
-    {
-        value |= TGUserLinkMyRequested;
-        if (((TLcontacts_MyLink$contacts_myLinkRequested *)linkUpdate.my_link).contact)
-            value |= TGUserLinkMyContact;
-    }
-    else if ([linkUpdate.my_link isKindOfClass:[TLcontacts_MyLink$contacts_myLinkContact class]])
-        value |= TGUserLinkMyContact;
-    
-    if ([linkUpdate.foreign_link isKindOfClass:[TLcontacts_ForeignLink$contacts_foreignLinkRequested class]])
-    {
-        value |= TGUserLinkForeignRequested;
-        if (((TLcontacts_ForeignLink$contacts_foreignLinkRequested *)linkUpdate.foreign_link).has_phone)
-            value |= TGUserLinkForeignHasPhone;
-    }
-    else if ([linkUpdate.foreign_link isKindOfClass:[TLcontacts_ForeignLink$contacts_foreignLinkMutual class]])
-        value |= TGUserLinkForeignMutual;
+    if ([linkUpdate.my_link isKindOfClass:[TLContactLink$contactLinkContact class]])
+        value |= TGUserLinkMyContact | TGUserLinkKnown;
+    else if ([linkUpdate.my_link isKindOfClass:[TLContactLink$contactLinkHasPhone class]])
+        value |= TGUserLinkForeignHasPhone | TGUserLinkKnown;
+    else if ([linkUpdate.my_link isKindOfClass:[TLContactLink$contactLinkNone class]])
+        value |= TGUserLinkKnown;
+
+    if ([linkUpdate.foreign_link isKindOfClass:[TLContactLink$contactLinkContact class]])
+        value |= TGUserLinkForeignHasPhone | TGUserLinkKnown;
+    else if ([linkUpdate.foreign_link isKindOfClass:[TLContactLink$contactLinkHasPhone class]])
+        value |= TGUserLinkForeignHasPhone | TGUserLinkKnown;
+    else if ([linkUpdate.foreign_link isKindOfClass:[TLContactLink$contactLinkNone class]])
+        value |= TGUserLinkKnown;
     
     return value;
 }
 
 @implementation TGUser (Telegraph)
 
+//user flags:# id:int access_hash:flags.0?long first_name:flags.1?string last_name:flags.2?string username:flags.3?string phone:flags.4?string photo:flags.5?UserProfilePhoto status:flags.6?UserStatus bot_info_version:flags.14?int = User;
+
 - (id)initWithTelegraphUserDesc:(TLUser *)user
 {
     self = [super init];
     if (self != nil)
     {
-        int uid = user.n_id;
-        self.uid = uid;
-
+        int32_t uid = 0;
         NSString *userPhone = nil;
-        if ([user isKindOfClass:[TLUser$userSelf class]])
+        if ([user isKindOfClass:[TLUser$modernUser class]])
         {
-            TLUser$userSelf *concreteUser = (TLUser$userSelf *)user;
+            TLUser$modernUser *concreteUser = (TLUser$modernUser *)user;
+            
+            uid = concreteUser.n_id;
+            self.uid = uid;
+            self.phoneNumberHash = concreteUser.access_hash;
             self.firstName = concreteUser.first_name;
             self.lastName = concreteUser.last_name;
+            self.userName = concreteUser.username;
             userPhone = concreteUser.phone;
             extractUserPhoto(concreteUser.photo, self);
             self.presence = extractUserPresence(concreteUser.status);
+            
+            if (concreteUser.flags & (1 << 14))
+                self.kind = TGUserKindBot;
+            if (concreteUser.flags & (1 << 15))
+                self.kind = TGUserKindSmartBot;
+            self.botKind = (concreteUser.flags & (1 << 16)) ? TGBotKindPrivate : TGBotKindGeneric;
+            self.botInfoVersion = concreteUser.bot_info_version;
         }
-        else if ([user isKindOfClass:[TLUser$userContact class]])
+        else if ([user isKindOfClass:[TLUser$userEmpty class]])
         {
-            TLUser$userContact *concreteUser = (TLUser$userContact *)user;
-            self.firstName = concreteUser.first_name;
-            self.lastName = concreteUser.last_name;
-            self.phoneNumberHash = concreteUser.access_hash;
-            userPhone = concreteUser.phone;
-            extractUserPhoto(concreteUser.photo, self);
-            self.presence = extractUserPresence(concreteUser.status);
-        }
-        else if ([user isKindOfClass:[TLUser$userForeign class]])
-        {
-            TLUser$userForeign *concreteUser = (TLUser$userForeign *)user;
-            self.firstName = concreteUser.first_name;
-            self.lastName = concreteUser.last_name;
-            self.phoneNumberHash = concreteUser.access_hash;
-            extractUserPhoto(concreteUser.photo, self);
-            self.presence = extractUserPresence(concreteUser.status);
-        }
-        else if ([user isKindOfClass:[TLUser$userRequest class]])
-        {
-            TLUser$userRequest *concreteUser = (TLUser$userRequest *)user;
-            self.firstName = concreteUser.first_name;
-            self.lastName = concreteUser.last_name;
-            userPhone = concreteUser.phone;
-            self.phoneNumberHash = concreteUser.access_hash;
-            extractUserPhoto(concreteUser.photo, self);
-            self.presence = extractUserPresence(concreteUser.status);
-        }
-        else if ([user isKindOfClass:[TLUser$userDeleted class]])
-        {
-            TLUser$userDeleted *concreteUser = (TLUser$userDeleted *)user;
-            self.firstName = concreteUser.first_name;
-            self.lastName = concreteUser.last_name;
-            TGUserPresence presence;
-            presence.online = false;
-            presence.lastSeen = 0;
-            self.presence = presence;
+            uid = ((TLUser$userEmpty *)user).n_id;
         }
         
         if (userPhone.length != 0)

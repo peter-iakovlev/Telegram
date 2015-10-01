@@ -73,9 +73,23 @@
     }
 }
 
-- (void)reportDeliverySuccess:(int)maxMid mids:(NSArray *)mids
+- (void)reportDeliverySuccess:(int)maxMid deliveredMessages:(NSArray *)deliveredMessages
 {
-    [TGApplyUpdatesActor applyDelayedNotifications:maxMid mids:mids maxQts:0 randomIds:nil];
+    NSMutableArray *mids = [[NSMutableArray alloc] init];
+    NSMutableSet *midsWithoutSound = [[NSMutableSet alloc] init];
+    
+    for (TLReceivedNotifyMessage *receivedMessage in deliveredMessages)
+    {
+        [mids addObject:@(receivedMessage.n_id)];
+        if (receivedMessage.flags & (1 << 0))
+        {
+            [midsWithoutSound addObject:@(receivedMessage.n_id)];
+        }
+    }
+    
+    TGLog(@"receivedMessages: maxId: %d, mids: %@, withoutSound: %@", maxMid, mids, midsWithoutSound);
+    
+    [TGApplyUpdatesActor applyDelayedNotifications:maxMid mids:mids midsWithoutSound:midsWithoutSound maxQts:0 randomIds:nil];
     
     if (maxMid == _value)
     {
@@ -115,7 +129,9 @@
 
 - (void)reportQtsSuccess:(int32_t)qts randomIds:(NSArray *)randomIds
 {
-    [TGApplyUpdatesActor applyDelayedNotifications:0 mids:nil maxQts:qts randomIds:randomIds];
+    TGLog(@"receivedQueue: qts: %d, randomIds: %@", qts, randomIds);
+    
+    [TGApplyUpdatesActor applyDelayedNotifications:0 mids:nil midsWithoutSound:nil maxQts:qts randomIds:randomIds];
     
     if (qts == _value)
     {

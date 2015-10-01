@@ -4,6 +4,23 @@
 
 #import "TGModernFlatteningViewModel.h"
 
+@interface TGModernFlatteningViewLayer : CALayer
+
+@end
+
+@implementation TGModernFlatteningViewLayer
+
+- (id<CAAction>)actionForKey:(NSString *)event
+{
+    if ([event isEqualToString:@"contents"])
+    {
+        return nil;
+    }
+    return [super actionForKey:event];
+}
+
+@end
+
 @interface TGModernFlatteningView ()
 
 @property (nonatomic, strong) NSString *viewIdentifier;
@@ -22,6 +39,11 @@
         self.opaque = false;
     }
     return self;
+}
+
++ (Class)layerClass
+{
+    return [TGModernFlatteningViewLayer class];
 }
 
 - (void)willBecomeRecycled

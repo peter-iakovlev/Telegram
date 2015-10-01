@@ -13,8 +13,8 @@
 - (CGRect)frame;
 - (void)setFrame:(CGRect)frame;
 
-- (float)alpha;
-- (void)setAlpha:(float)alpha;
+- (CGFloat)alpha;
+- (void)setAlpha:(CGFloat)alpha;
 
 - (BOOL)hidden;
 - (void)setHidden:(BOOL)hidden;

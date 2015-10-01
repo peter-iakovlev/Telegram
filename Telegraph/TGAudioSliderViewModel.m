@@ -37,6 +37,7 @@
     [((TGAudioSliderView *)self.boundView) setAudioPosition:_audioPosition animated:false timestamp:_audioPositionTimestamp isPlaying:_isPlaying immediate:true];
     ((TGAudioSliderView *)self.boundView).manualPositionAdjustmentEnabled = _manualPositionAdjustmentEnabled;
     ((TGAudioSliderView *)self.boundView).progressMode = _progressMode;
+    ((TGAudioSliderView *)self.boundView).listenedStatus = _listenedStatus;
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
@@ -58,6 +59,13 @@
     _duration = duration;
     
     ((TGAudioSliderView *)self.boundView).duration = _duration;
+}
+
+- (void)setListenedStatus:(bool)listenedStatus
+{
+    _listenedStatus = listenedStatus;
+    
+    ((TGAudioSliderView *)self.boundView).listenedStatus = _listenedStatus;
 }
 
 - (void)setAudioDurationText:(NSString *)audioDurationText

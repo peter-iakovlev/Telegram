@@ -11,6 +11,9 @@
 @interface TGProgressWindow : UIWindow
 
 - (void)show:(bool)animated;
+- (void)showWithDelay:(NSTimeInterval)delay;
+
+- (void)showAnimated;
 - (void)dismiss:(bool)animated;
 - (void)dismissWithSuccess;
 

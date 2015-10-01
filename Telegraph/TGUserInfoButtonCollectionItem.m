@@ -12,7 +12,6 @@
 
 @interface TGUserInfoButtonCollectionItem ()
 {
-    NSString *_title;
     SEL _action;
 }
 
@@ -62,6 +61,21 @@
     
     [view setTitle:_title];
     [view setTitleColor:_titleColor];
+    [view setEditing:_editing];
+}
+
+- (void)setTitle:(NSString *)title
+{
+    _title = title;
+    
+    [((TGUserInfoButtonCollectionItemView *)self.boundView) setTitle:_title];
+}
+
+- (void)setEditing:(bool)editing
+{
+    _editing = editing;
+    
+    [((TGUserInfoButtonCollectionItemView *)self.boundView) setEditing:_editing];
 }
 
 @end

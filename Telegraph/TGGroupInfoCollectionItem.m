@@ -24,6 +24,9 @@
     UIImage *_updatingAvatar;
     bool _hasUpdatingAvatar;
     
+    UIImage *_staticAvatar;
+    bool _hasStaticAvatar;
+    
     bool _makeFieldFirstResponder;
 }
 
@@ -49,7 +52,7 @@
 
 - (CGSize)itemSizeForContainerSize:(CGSize)containerSize
 {
-    return CGSizeMake(containerSize.width, 93);
+    return CGSizeMake(containerSize.width, (_isChannel && !_editing) ? 88.0f : 93.0f);
 }
 
 - (void)bindView:(TGGroupInfoCollectionItemView *)view
@@ -59,17 +62,21 @@
     view.delegate = self;
     
     view.isBroadcast = _isBroadcast;
+    view.isChannel = _isChannel;
+    view.isVerified = _conversation.isVerified;
+    [view setGroupId:_conversation.conversationId];
     [view setUpdatingTitle:_updatingTitle != nil animated:false];
-    [view setUpdatingAvatar:_hasUpdatingAvatar animated:false];
+    if (_conversation.conversationId == 0) {
+        [view setAvatarImage:_staticAvatar animated:false];
+    } else {
+        [view setUpdatingAvatar:_hasUpdatingAvatar animated:false];
+        if (_updatingAvatar == nil)
+            [view setAvatarUri:_conversation.chatPhotoSmall animated:false];
+        else
+            [view setAvatarImage:_updatingAvatar animated:false];
+    }
     
     [view setTitle:_updatingTitle != nil ? _updatingTitle : _conversation.chatTitle];
-    
-    [view setGroupId:_conversation.conversationId];
-    
-    if (_updatingAvatar == nil)
-        [view setAvatarUri:_conversation.chatPhotoSmall animated:false];
-    else
-        [view setAvatarImage:_updatingAvatar animated:false];
     
     [view setEditing:_editing animated:false];
     
@@ -94,12 +101,16 @@
     TGGroupInfoCollectionItemView *view = (TGGroupInfoCollectionItemView *)[self boundView];
     if (view != nil)
     {
-        if (_updatingAvatar == nil)
+        if (_conversation.conversationId == 0) {
+            [view setAvatarImage:_staticAvatar animated:true];
+        } else if (_updatingAvatar == nil)
             [view setAvatarUri:_conversation.chatPhotoSmall animated:true];
         else
             [view setAvatarImage:_updatingAvatar animated:true];
         
         [view setTitle:_updatingTitle != nil ? _updatingTitle : _conversation.chatTitle];
+        
+        view.isVerified = _conversation.isVerified;
     }
 }
 
@@ -157,6 +168,21 @@
 - (bool)hasUpdatingAvatar
 {
     return _hasUpdatingAvatar;
+}
+
+- (void)setStaticAvatar:(UIImage *)staticAvatar {
+    _staticAvatar = staticAvatar;
+    
+    TGGroupInfoCollectionItemView *view = (TGGroupInfoCollectionItemView *)[self boundView];
+    if (view != nil) {
+        if (_conversation.conversationId == 0) {
+            [view setAvatarImage:staticAvatar animated:false];
+        }
+    }
+}
+
+- (UIImage *)staticAvatar {
+    return _staticAvatar;
 }
 
 - (void)setEditing:(bool)editing animated:(bool)animated

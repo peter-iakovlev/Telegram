@@ -16,6 +16,12 @@
 @property (nonatomic) int64_t accessHash;
 @property (nonatomic, strong) TGImageInfo *imageInfo;
 
-- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash imageInfo:(TGImageInfo *)imageInfo;
+@property (nonatomic, strong) NSString *caption;
+
+@property (nonatomic, strong) TGMessage *replyMessage;
+
+- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage;
+
++ (NSString *)filePathForRemoteImageId:(int64_t)imageId;
 
 @end

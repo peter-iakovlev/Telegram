@@ -39,8 +39,9 @@
     TLInputFileLocation *_fileLocation;
     int _datacenterId;
     int _size;
-    NSString *_storeFilePath;
+    NSMutableArray *_storeFilePaths;
     NSString *_tempStoreFilePath;
+    
     NSString *_contextStoreFilePath;
     
     NSMutableDictionary *_downloadingParts;
@@ -70,6 +71,8 @@
     TGNetworkWorkerGuard *_worker2;
     
     int _nextWorker;
+    
+    bool _completeWithData;
 }
 
 @end
@@ -143,11 +146,15 @@
 
 - (void)execute:(NSDictionary *)options
 {
+    _storeFilePaths = [[NSMutableArray alloc] init];
+    
     _fileLocation = options[@"fileLocation"];
     _size = [options[@"encryptedSize"] intValue];
     _decryptedSize = [options[@"decryptedSize"] intValue];
-    _storeFilePath = options[@"storeFilePath"];
+    if (options[@"storeFilePath"] != nil)
+        [_storeFilePaths addObject:options[@"storeFilePath"]];
     _datacenterId = [options[@"datacenterId"] intValue];
+    _completeWithData = [options[@"completeWithData"] boolValue];
     
     if (options[@"encryptionArgs"][@"key"] != nil)
     {
@@ -156,11 +163,11 @@
         _runningEncryptionIv = _encryptionIv.length == 0 ? nil : [[NSMutableData alloc] initWithData:_encryptionIv];
     }
     
-    if (_fileLocation != nil && _storeFilePath != nil)
+    if (_fileLocation != nil && _storeFilePaths.count != 0)
     {
         _tempStoreFilePath = options[@"tempStoreFilePath"];
         if (_tempStoreFilePath == nil)
-            _tempStoreFilePath = [_storeFilePath stringByAppendingString:@".parts"];
+            _tempStoreFilePath = [_storeFilePaths[0] stringByAppendingString:@".parts"];
         
         NSFileManager *fileManager = [ActionStageInstance() globalFileManager];
         
@@ -168,7 +175,7 @@
         NSDictionary *fileAttributes = [fileManager attributesOfItemAtPath:_tempStoreFilePath error:&error];
         int fileSize = [[fileAttributes objectForKey:NSFileSize] intValue];
         
-        if (fileAttributes == nil || (fileSize % 1024 != 0 && fileSize != _decryptedSize))
+        if (fileAttributes == nil || (fileSize % 1024 != 0 && fileSize != _decryptedSize && _decryptedSize != 0))
         {
             if (fileAttributes != nil)
             {
@@ -188,7 +195,7 @@
             if (previousData != nil && previousData.length >= _runningEncryptionIv.length)
                 _runningEncryptionIv = [[NSMutableData alloc] initWithData:[previousData subdataWithRange:NSMakeRange(previousData.length - _runningEncryptionIv.length, _runningEncryptionIv.length)]];
             
-            _currentEncryptionContextStreamCount = previousData.length / _runningEncryptionIv.length;
+            _currentEncryptionContextStreamCount = (int)(previousData.length / _runningEncryptionIv.length);
             _encryptionContextStream = [NSOutputStream outputStreamToFileAtPath:_contextStoreFilePath append:true];
             [_encryptionContextStream open];
         }
@@ -223,6 +230,14 @@
     {
         [ActionStageInstance() actionFailed:self.path reason:-1];
     }
+}
+
+- (void)watcherJoined:(ASHandle *)watcherHandle options:(NSDictionary *)options waitingInActorQueue:(bool)waitingInActorQueue
+{
+    [super watcherJoined:watcherHandle options:options waitingInActorQueue:waitingInActorQueue];
+    
+    if (options[@"storeFilePath"] != nil && ![_storeFilePaths containsObject:options[@"storeFilePath"]])
+        [_storeFilePaths addObject:options[@"storeFilePath"]];
 }
 
 - (int)preferredPartSize
@@ -282,14 +297,13 @@
         if (_contextStoreFilePath != nil)
             [[NSFileManager defaultManager] removeItemAtPath:_contextStoreFilePath error:nil];
         
-        NSError *error = nil;
-        [[ActionStageInstance() globalFileManager] moveItemAtPath:_tempStoreFilePath toPath:_storeFilePath error:&error];
-        if (error != nil)
-            [ActionStageInstance() actionFailed:self.path reason:-1];
-        else
+        for (NSString *storeFilePath in _storeFilePaths)
         {
-            [ActionStageInstance() actionCompleted:self.path result:nil];
+            [[ActionStageInstance() globalFileManager] copyItemAtPath:_tempStoreFilePath toPath:storeFilePath error:NULL];
         }
+        [[ActionStageInstance() globalFileManager] removeItemAtPath:_tempStoreFilePath error:NULL];
+
+        [ActionStageInstance() actionCompleted:self.path result:_completeWithData ? [[NSData alloc] initWithContentsOfFile:_storeFilePaths[0]] : nil];
     }
     else
     {
@@ -391,7 +405,7 @@
                 {
                     __strong TGMultipartFileDownloadActor *strongSelf = weakSelf;
                     
-                    [strongSelf filePartDownloadProgress:location offset:requestInfo.offset length:requestInfo.length packetLength:packetLength progress:progress];
+                    [strongSelf filePartDownloadProgress:location offset:requestInfo.offset length:requestInfo.length packetLength:(int)packetLength progress:progress];
                 }];
             }];
             

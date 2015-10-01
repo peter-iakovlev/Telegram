@@ -13,6 +13,7 @@
 #import "TGSwitchCollectionItem.h"
 #import "TGButtonCollectionItem.h"
 #import "TGCommentCollectionItem.h"
+#import "TGDisclosureActionCollectionItem.h"
 
 #import "TGTextSizeController.h"
 
@@ -25,6 +26,10 @@
 
 #import "TGStringUtils.h"
 
+#import "TGCacheController.h"
+
+#import "TGStickerPacksSettingsController.h"
+
 @interface TGChatSettingsController () <TGTextSizeControllerDelegate>
 {
     TGVariantCollectionItem *_textSizeItem;
@@ -34,6 +39,8 @@
     
     TGSwitchCollectionItem *_privateAudioAutoDownloadItem;
     TGSwitchCollectionItem *_groupAudioAutoDownloadItem;
+    
+    TGSwitchCollectionItem *_autoPlayAudioItem;
     
     TGSwitchCollectionItem *_useRTLItem;
     
@@ -75,6 +82,9 @@
         _groupAudioAutoDownloadItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Groups") isOn:TGAppDelegateInstance.autoDownloadAudioInGroups];
         _groupAudioAutoDownloadItem.interfaceHandle = _actionHandle;
         
+        _autoPlayAudioItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutoPlayAudio") isOn:TGAppDelegateInstance.autoPlayAudio];
+        _autoPlayAudioItem.interfaceHandle = _actionHandle;
+        
         TGCollectionMenuSection *autoDownloadPhotoSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutomaticPhotoDownload")],
             _privateAutoDownloadItem,
@@ -91,7 +101,8 @@
         TGCollectionMenuSection *autoDownloadAudioSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutomaticAudioDownload")],
             _privateAudioAutoDownloadItem,
-            _groupAudioAutoDownloadItem
+            _groupAudioAutoDownloadItem,
+            _autoPlayAudioItem
         ]];
         [self.menuSections addSection:autoDownloadAudioSection];
         
@@ -112,17 +123,6 @@
             [self.menuSections addSection:languageSection];
         }
         
-        TGButtonCollectionItem *terminateSessionsItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.ClearOtherSessions") action:@selector(terminateSessionsPressed)];
-        terminateSessionsItem.titleColor = TGDestructiveAccentColor();
-        terminateSessionsItem.deselectAutomatically = true;
-        
-        TGCollectionMenuSection *securitySection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Security")],
-            terminateSessionsItem,
-            [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"ChatSettings.ClearOtherSessionsHelp")]
-        ]];
-        [self.menuSections addSection:securitySection];
-        
         if (TGIsCustomLocalizationActive())
         {
             TGButtonCollectionItem *resetLanguageItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.RevertLanguage") action:@selector(resetLanguagePressed)];
@@ -133,6 +133,18 @@
             ]];
             [self.menuSections addSection:languageSection];
         }
+        
+        TGDisclosureActionCollectionItem *cacheItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Cache.Title") action:@selector(cachePressed)];
+        TGDisclosureActionCollectionItem *stickersItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Stickers") action:@selector(stickersPressed)];
+        TGCollectionMenuSection *otherSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Other")],
+            stickersItem,
+            cacheItem
+        ]];
+        otherSection.insets = (UIEdgeInsets){otherSection.insets.top - 12.0f, otherSection.insets.left, otherSection.insets.bottom, otherSection.insets.right};
+        [self.menuSections addSection:otherSection];
+        
+        self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Back") style:UIBarButtonItemStylePlain target:self action:@selector(backPressed)];
     }
     return self;
 }
@@ -144,6 +156,11 @@
 }
 
 #pragma mark -
+
+- (void)backPressed
+{
+    [self.navigationController popViewControllerAnimated:true];
+}
 
 - (void)textSizePressed
 {
@@ -158,27 +175,6 @@
     TGBaseFontSize = textSize;
     _textSizeItem.variant = [[NSString alloc] initWithFormat:@"%d%@", TGBaseFontSize, TGLocalized(@"ChatSettings.TextSizeUnits")];
     [TGAppDelegateInstance saveSettings];
-}
-
-- (void)terminateSessionsPressed
-{
-    __weak TGChatSettingsController *weakSelf = self;
-    [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"ChatSettings.ClearOtherSessionsConfirmation") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
-    {
-        if (okButtonPressed)
-        {
-            TGChatSettingsController *strongSelf = weakSelf;
-            [strongSelf _commitTerminateSessions];
-        }
-    }] show];
-}
-
-- (void)_commitTerminateSessions
-{
-    _progressWindow = [[TGProgressWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    [_progressWindow show:true];
-    
-    [ActionStageInstance() requestActor:@"/tg/service/revokesessions" options:nil watcher:self];
 }
 
 #pragma mark -
@@ -209,35 +205,22 @@
             TGAppDelegateInstance.autoDownloadAudioInGroups = switchItem.isOn;
             [TGAppDelegateInstance saveSettings];
         }
+        else if (switchItem == _autoPlayAudioItem)
+        {
+            TGAppDelegateInstance.autoPlayAudio = switchItem.isOn;
+            [TGAppDelegateInstance saveSettings];
+        }
         else if (switchItem == _useRTLItem)
         {
             [TGViewController setUseExperimentalRTL:switchItem.isOn];
             
-            [[[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"ChatSettings.LayoutSettingsNeedsAppRestart") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"ChatSettings.LayoutSettingsNeedsAppRestart") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
         }
     }
 }
 
-- (void)actorCompleted:(int)status path:(NSString *)path result:(id)__unused result
+- (void)actorCompleted:(int)__unused status path:(NSString *)__unused path result:(id)__unused result
 {
-    if ([path isEqualToString:@"/tg/service/revokesessions"])
-    {
-        TGDispatchOnMainThread(^
-        {
-            if (status == ASStatusSuccess)
-            {
-                [_progressWindow dismissWithSuccess];
-                _progressWindow = nil;
-            }
-            else
-            {
-                [_progressWindow dismiss:true];
-                _progressWindow = nil;
-                
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"ChatSettings.ClearOtherSessionsFailed") cancelButtonTitle:nil okButtonTitle:TGLocalized(@"Common.OK") completionBlock:nil] show];
-            }
-        });
-    }
 }
 
 - (void)resetLanguagePressed
@@ -251,6 +234,18 @@
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     [progressWindow show:false];
     [progressWindow dismissWithSuccess];
+}
+
+- (void)stickersPressed
+{
+    TGStickerPacksSettingsController *controller = [[TGStickerPacksSettingsController alloc] init];
+    [self.navigationController pushViewController:controller animated:true];
+}
+
+- (void)cachePressed
+{
+    TGCacheController *cacheController = [[TGCacheController alloc] init];
+    [self.navigationController pushViewController:cacheController animated:true];
 }
 
 @end

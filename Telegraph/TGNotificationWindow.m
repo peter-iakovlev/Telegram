@@ -10,13 +10,51 @@
 
 @implementation TGOverlayWindowViewController
 
-- (UIStatusBarStyle)preferredStatusBarStyle
+- (UIViewController *)statusBarAppearanceSourceController
 {
-    UIViewController *topViewController = ((UINavigationController *)TGAppDelegateInstance.mainNavigationController).topViewController;
+    UIViewController *topViewController = TGAppDelegateInstance.rootController.viewControllers.lastObject;
+    
     if ([topViewController isKindOfClass:[UITabBarController class]])
         topViewController = [(UITabBarController *)topViewController selectedViewController];
-    UIStatusBarStyle style = [topViewController preferredStatusBarStyle];
+    if ([topViewController isKindOfClass:[TGViewController class]])
+    {
+        TGViewController *concreteTopViewController = (TGViewController *)topViewController;
+        if (concreteTopViewController.associatedWindowStack.count != 0)
+        {
+            for (UIWindow *window in concreteTopViewController.associatedWindowStack.reverseObjectEnumerator)
+            {
+                if (window.rootViewController != nil && window.rootViewController != self)
+                {
+                    topViewController = window.rootViewController;
+                    break;
+                }
+            }
+        }
+    }
+
+    return topViewController;
+}
+
+- (UIViewController *)autorotationSourceController
+{
+    UIViewController *topViewController = TGAppDelegateInstance.rootController.viewControllers.lastObject;
+    
+    if ([topViewController isKindOfClass:[UITabBarController class]])
+        topViewController = [(UITabBarController *)topViewController selectedViewController];
+    
+    return topViewController;
+}
+
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+    UIStatusBarStyle style = [[self statusBarAppearanceSourceController] preferredStatusBarStyle];
     return style;
+}
+
+- (BOOL)prefersStatusBarHidden
+{
+    bool value = [[self statusBarAppearanceSourceController] prefersStatusBarHidden];
+    return value;
 }
 
 - (BOOL)shouldAutorotate
@@ -42,10 +80,33 @@
         }
     }
     
-    if (TGAppDelegateInstance.mainNavigationController.presentedViewController != nil)
-        return [TGAppDelegateInstance.mainNavigationController.presentedViewController shouldAutorotate];
+    if (TGAppDelegateInstance.rootController.presentedViewController != nil)
+        return [TGAppDelegateInstance.rootController.presentedViewController shouldAutorotate];
 
-    return [TGAppDelegateInstance.mainNavigationController shouldAutorotate];
+    if ([self autorotationSourceController] != nil)
+        return [[self autorotationSourceController] shouldAutorotate];
+    
+    return true;
+}
+
+- (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+{
+    [super willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
+    
+    [self.view.window.layer removeAnimationForKey:@"backgroundColor"];
+    [CATransaction begin];
+    [CATransaction setDisableActions:true];
+    self.view.window.layer.backgroundColor = [UIColor clearColor].CGColor;
+    [CATransaction commit];
+    
+    for (UIView *view in self.view.window.subviews)
+    {
+        if (view != self.view)
+        {
+            [view removeFromSuperview];
+            break;
+        }
+    }
 }
 
 - (void)loadView
@@ -59,141 +120,36 @@
 
 @end
 
-@interface TGNotificationWindow ()
+@interface TGNotificationWindowView : UIView
 {
     bool _isSwipeDismissing;
 }
 
+@property (nonatomic, weak) UIWindow *weakWindow;
+@property (nonatomic) bool isDismissed;
 @property (nonatomic, strong) UIView *containerView;
 @property (nonatomic, strong) UIView *contentView;
 
-@property (nonatomic, strong) TGObserverProxy *statusBarOrientationChangeProxy;
-
 @end
 
-@implementation TGNotificationWindow
+@implementation TGNotificationWindowView
 
-- (id)initWithFrame:(CGRect)frame
+- (instancetype)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
-    if (self)
+    if (self != nil)
     {
-        self.rootViewController = [[TGOverlayWindowViewController alloc] init];
-        
-        self.clipsToBounds = false;
-        
-        _containerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, 20 + 44)];
-        _containerView.layer.anchorPoint = CGPointMake(0.5f, 0.0f);
+        _containerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.frame.size.width, 20 + 44)];
         _containerView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _containerView.opaque = false;
         [self addSubview:_containerView];
         
+        _containerView.exclusiveTouch = true;
+        
         UIPanGestureRecognizer *panRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panGestureRecognized:)];
-        [self addGestureRecognizer:panRecognizer];
-        
-        self.exclusiveTouch = true;
-        
-        _statusBarOrientationChangeProxy = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(orientationWillBeChanged:) name:UIApplicationWillChangeStatusBarOrientationNotification];
+        [_containerView addGestureRecognizer:panRecognizer];
     }
     return self;
-}
-
-- (void)orientationWillBeChanged:(NSNotification *)notification
-{
-    UIInterfaceOrientation fromOrientation = [[UIApplication sharedApplication] statusBarOrientation];
-    NSNumber *nNewOrientation = [notification.userInfo objectForKey:UIApplicationStatusBarOrientationUserInfoKey];
-    UIInterfaceOrientation orientation = (UIInterfaceOrientation)[nNewOrientation intValue];
-    dispatch_async(dispatch_get_main_queue(), ^
-    {
-        [self willRotateToInterfaceOrientation:orientation fromOrientation:fromOrientation duration:UIInterfaceOrientationIsLandscape(orientation) == UIInterfaceOrientationIsLandscape( fromOrientation) ? 0.6 : 0.3];
-    });
-}
-
-- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation fromOrientation:(UIInterfaceOrientation)__unused fromOrientation duration:(NSTimeInterval)duration
-{
-    for (UIView *view in self.subviews)
-    {
-        if (view != _containerView)
-            view.hidden = true;
-    }
-    
-    CGSize screenSize = [TGViewController screenSizeForInterfaceOrientation:UIInterfaceOrientationPortrait];
-    
-    [UIView animateWithDuration:duration animations:^
-    {
-        if (orientation == UIDeviceOrientationPortrait)
-        {
-            self.layer.anchorPoint = CGPointMake(0.5f, (screenSize.height / 2) / _windowHeight);
-            
-            CGAffineTransform transform = CGAffineTransformIdentity;
-            self.transform = transform;
-            self.frame = CGRectMake(0, 0, screenSize.width, _windowHeight);
-        }
-        else if (orientation == UIDeviceOrientationLandscapeLeft)
-        {
-            self.layer.anchorPoint = CGPointMake(0.5f, (screenSize.width / 2) / _windowHeight);
-            
-            CGAffineTransform transform = CGAffineTransformMakeRotation((float)M_PI_2);
-            self.transform = transform;
-            
-            CGRect bounds = self.bounds;
-            bounds.size.width = screenSize.height;
-            self.bounds = bounds;
-        }
-        else if (orientation == UIDeviceOrientationLandscapeRight)
-        {
-            self.layer.anchorPoint = CGPointMake(0.5f, (screenSize.width / 2) / _windowHeight);
-            
-            CGAffineTransform transform = CGAffineTransformMakeRotation((float)-M_PI_2);
-            self.transform = transform;
-            
-            CGRect bounds = self.bounds;
-            bounds.size.width = screenSize.height;
-            self.bounds = bounds;
-        }
-    }];
-}
-
-- (void)adjustToInterfaceOrientation:(UIInterfaceOrientation)orientation
-{
-    CGSize screenSize = [TGViewController screenSizeForInterfaceOrientation:UIInterfaceOrientationPortrait];
-    
-    if (orientation == UIInterfaceOrientationPortrait)
-    {
-        self.layer.anchorPoint = CGPointMake(0.5f, (screenSize.height / 2) / _windowHeight);
-        
-        CGAffineTransform transform = CGAffineTransformIdentity;
-        self.transform = transform;
-        self.frame = CGRectMake(0, 0, screenSize.width, _windowHeight);
-	}
-    else if (orientation == UIDeviceOrientationLandscapeLeft)
-    {
-        if (CGRectIsEmpty(self.frame))
-            [self adjustToInterfaceOrientation:UIInterfaceOrientationPortrait];
-        
-        self.layer.anchorPoint = CGPointMake(0.5f, (screenSize.width / 2) / _windowHeight);
-        
-        CGAffineTransform transform = CGAffineTransformMakeRotation((float)M_PI_2);
-        self.transform = transform;
-        
-        CGRect bounds = self.bounds;
-        bounds.size.width = screenSize.height;
-        self.bounds = bounds;
-	}
-    else if (orientation == UIInterfaceOrientationLandscapeRight)
-    {
-        if (CGRectIsEmpty(self.frame))
-            [self adjustToInterfaceOrientation:UIInterfaceOrientationPortrait];
-        
-        self.layer.anchorPoint = CGPointMake(0.5f, (screenSize.width / 2) / _windowHeight);
-        
-        CGAffineTransform transform = CGAffineTransformMakeRotation((float)-M_PI_2);
-        self.transform = transform;
-        
-        CGRect bounds = self.bounds;
-        bounds.size.width = screenSize.height;
-        self.bounds = bounds;
-	}
 }
 
 - (void)setContentView:(UIView *)view
@@ -210,30 +166,24 @@
 {
     _isDismissed = false;
     
-    CGRect frame = _containerView.layer.frame;
+    UIWindow *window = _weakWindow;
+    
+    CGRect frame = _containerView.frame;
     frame.origin.x = 0;
-    _containerView.layer.frame = frame;
+    _containerView.frame = frame;
     frame.origin = CGPointZero;
-    if (self.hidden || !CGRectEqualToRect(_containerView.layer.frame, frame))
+    if (window.hidden || !CGRectEqualToRect(_containerView.frame, frame))
     {
-        /*CATransform3D rotationAndPerspectiveTransform = CATransform3DIdentity;
-        rotationAndPerspectiveTransform.m34 = 1.0f / -1000.0f;
-        rotationAndPerspectiveTransform = CATransform3DRotate(rotationAndPerspectiveTransform, 89.0f * (float)M_PI / 180.0f, 1.0f, 0.0f, 0.0f);
-        rotationAndPerspectiveTransform = CATransform3DTranslate(rotationAndPerspectiveTransform, 0, -frame.size.height, 0);
-        
-        _containerView.layer.transform = rotationAndPerspectiveTransform;*/
-        
-        self.hidden = false;
+        window.hidden = false;
         
         CGRect startFrame = frame;
         startFrame.origin.y = -frame.size.height;
-        _containerView.layer.frame = startFrame;
+        _containerView.frame = startFrame;
         
         [UIView animateWithDuration:0.3 animations:^
-        {
-            //_containerView.layer.transform = CATransform3DIdentity;
-            _containerView.layer.frame = frame;
-        }];
+         {
+             _containerView.frame = frame;
+         }];
     }
 }
 
@@ -241,18 +191,20 @@
 {
     _isDismissed = true;
     
-    if (self.hidden)
+    UIWindow *window = _weakWindow;
+    
+    if (window.hidden)
         return;
     
-    CGRect frame = _containerView.layer.frame;
+    CGRect frame = _containerView.frame;
     frame.origin.y = -frame.size.height;
     [UIView animateWithDuration:0.3 animations:^
-    {
-        _containerView.layer.frame = frame;
-    } completion:^(__unused BOOL finished)
-    {
-        self.hidden = true;
-    }];
+     {
+         _containerView.frame = frame;
+     } completion:^(__unused BOOL finished)
+     {
+         window.hidden = true;
+     }];
 }
 
 - (void)panGestureRecognized:(UIPanGestureRecognizer *)recognizer
@@ -268,7 +220,7 @@
     }
     else if (recognizer.state == UIGestureRecognizerStateEnded || recognizer.state == UIGestureRecognizerStateCancelled)
     {
-        float velocity = [recognizer velocityInView:self].x;
+        CGFloat velocity = [recognizer velocityInView:self].x;
         
         //TGLog(@"Velocity: %f", velocity);
         
@@ -277,9 +229,9 @@
             CGRect frame = _containerView.frame;
             frame.origin.x = 0;
             [UIView animateWithDuration:0.3 animations:^
-            {
-                _containerView.frame = frame;
-            }];
+             {
+                 _containerView.frame = frame;
+             }];
         }
         else
         {
@@ -296,16 +248,18 @@
             
             _isSwipeDismissing = true;
             [UIView animateWithDuration:duration animations:^
-            {
-                _containerView.frame = frame;
-            } completion:^(BOOL finished)
-            {
-                if (finished)
-                {
-                    _isSwipeDismissing = false;
-                    self.hidden = true;
-                }
-            }];
+             {
+                 _containerView.frame = frame;
+             } completion:^(BOOL finished)
+             {
+                 if (finished)
+                 {
+                     _isSwipeDismissing = false;
+                     
+                    UIWindow *window = _weakWindow;
+                     window.hidden = true;
+                 }
+             }];
         }
     }
 }
@@ -317,9 +271,9 @@
         CGRect frame = _containerView.frame;
         frame.origin.x = 0;
         [UIView animateWithDuration:0.3 animations:^
-        {
-            _containerView.frame = frame;
-        }];
+         {
+             _containerView.frame = frame;
+         }];
     }
     
     [super touchesEnded:touches withEvent:event];
@@ -332,17 +286,106 @@
         CGRect frame = _containerView.frame;
         frame.origin.x = 0;
         [UIView animateWithDuration:0.3 animations:^
-        {
-            _containerView.frame = frame;
-        }];
+         {
+             _containerView.frame = frame;
+         }];
     }
     
     [super touchesCancelled:touches withEvent:event];
 }
 
+@end
+
+@interface TGNotificationWindowController : TGOverlayWindowViewController
+
+@property (nonatomic, strong) TGNotificationWindowView *notificationView;
+@property (nonatomic, weak) UIWindow *weakWindow;
+
+@end
+
+@implementation TGNotificationWindowController
+
+- (void)loadView
+{
+    [super loadView];
+    
+    _notificationView = [[TGNotificationWindowView alloc] initWithFrame:self.view.bounds];
+    _notificationView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    _notificationView.weakWindow = _weakWindow;
+    [self.view addSubview:_notificationView];
+}
+
+- (TGNotificationWindowView *)notificationView
+{
+    if (![self isViewLoaded])
+        [self loadView];
+    
+    return _notificationView;
+}
+
+@end
+
+@interface TGNotificationWindow ()
+
+@end
+
+@implementation TGNotificationWindow
+
+- (id)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self)
+    {
+        TGNotificationWindowController *controller = [[TGNotificationWindowController alloc] init];
+        controller.weakWindow = self;
+        self.rootViewController = controller;
+    }
+    return self;
+}
+
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+{
+    CGPoint localPoint = [((TGNotificationWindowController *)self.rootViewController).notificationView convertPoint:point fromView:self];
+    UIView *result = [((TGNotificationWindowController *)self.rootViewController).notificationView hitTest:localPoint withEvent:event];
+    if (result == ((TGNotificationWindowController *)self.rootViewController).notificationView || result == self.rootViewController.view)
+        return nil;
+    
+    return result;
+}
+
+- (void)setContentView:(UIView *)view
+{
+    [((TGNotificationWindowController *)self.rootViewController).notificationView setContentView:view];
+}
+
+- (UIView *)contentView
+{
+    return [((TGNotificationWindowController *)self.rootViewController).notificationView contentView];
+}
+
+- (void)animateIn
+{
+    [((TGNotificationWindowController *)self.rootViewController).notificationView animateIn];
+}
+
+- (void)animateOut
+{
+    [((TGNotificationWindowController *)self.rootViewController).notificationView animateOut];
+}
+
+- (BOOL)_canBecomeKeyWindow
+{
+    return false;
+}
+
+- (bool)isDismissed
+{
+    return [((TGNotificationWindowController *)self.rootViewController).notificationView isDismissed];
+}
+
 - (void)performTapAction
 {
-    if (_isDismissed)
+    if ([self isDismissed])
         return;
     
     [self animateOut];
@@ -360,16 +403,7 @@
 
 - (void)setFrame:(CGRect)frame
 {
-    frame.origin.y = 0;
-    frame.size.height = 20 + 44;
     [super setFrame:frame];
-    
-    self.rootViewController.view.frame = self.bounds;
-}
-
-- (BOOL)_canBecomeKeyWindow
-{
-    return false;
 }
 
 @end

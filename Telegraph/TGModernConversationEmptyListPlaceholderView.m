@@ -14,7 +14,7 @@
 {
 }
 
-- (void)adjustLayoutForOrientation:(UIInterfaceOrientation)__unused orientation contentInsets:(UIEdgeInsets)__unused contentInsets duration:(NSTimeInterval)__unused duration curve:(int)__unused curve
+- (void)adjustLayoutForSize:(UIInterfaceOrientation)__unused size contentInsets:(UIEdgeInsets)__unused contentInsets duration:(NSTimeInterval)__unused duration curve:(int)__unused curve
 {
     
 }

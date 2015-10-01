@@ -26,6 +26,13 @@
 
 #import "TGWallpaperController.h"
 
+#import "TGOverlayFormsheetWindow.h"
+#import "TGOverlayFormsheetController.h"
+
+#import "TGAccessChecker.h"
+#import "TGNavigationController.h"
+#import "TGMediaFoldersController.h"
+#import "TGModernMediaPickerController.h"
 #import "TGLegacyCameraController.h"
 #import "TGImagePickerController.h"
 #import "TGNavigationBar.h"
@@ -40,6 +47,8 @@
     NSArray *_wallpaperItems;
     
     TGDisclosureActionCollectionItem *_photoLibraryItem;
+    
+    __weak TGOverlayFormsheetWindow *_photoLibraryWindow;
 }
 
 @end
@@ -56,6 +65,7 @@
         [self setTitleText:TGLocalized(@"Wallpaper.Title")];
         
         _photoLibraryItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Wallpaper.PhotoLibrary") action:@selector(photoLibraryPressed)];
+        _photoLibraryItem.deselectAutomatically = TGIsPad();
         
         NSMutableArray *wallpaperItems = [[NSMutableArray alloc] init];
         [wallpaperItems addObjectsFromArray:[[TGWallpaperManager instance] builtinWallpaperList]];
@@ -106,7 +116,7 @@
 
 - (void)viewWillAppear:(BOOL)animated
 {
-    float currentLayoutWidth = [TGViewController screenSizeForInterfaceOrientation:self.interfaceOrientation].width;
+    CGFloat currentLayoutWidth = [TGViewController screenSizeForInterfaceOrientation:self.interfaceOrientation].width;
     if (ABS(currentLayoutWidth - _currentLayoutWidth) > FLT_EPSILON)
     {
         _currentLayoutWidth = currentLayoutWidth;
@@ -149,6 +159,31 @@
                 return CGSizeMake(110.0f, 146.0f);
             else
                 return CGSizeMake(91.0f, 121.0f);
+        }
+        else
+        {
+            CGSize screenSize = TGScreenSize();
+            CGFloat widescreenWidth = MAX(screenSize.width, screenSize.height);
+            
+            if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
+            {
+                if (widescreenWidth >= 736.0f - FLT_EPSILON)
+                {
+                    return CGSizeMake(122.0f, 216.0f);
+                }
+                else if (widescreenWidth >= 667.0f - FLT_EPSILON)
+                {
+                    return CGSizeMake(108.0f, 163.0f);
+                }
+                else
+                {
+                    return CGSizeMake(91.0f, 162.0f);
+                }
+            }
+            else
+            {
+                return CGSizeMake(91.0f, 162.0f);
+            }
         }
         
         return CGSizeMake(91.0f, 162.0f);
@@ -275,6 +310,8 @@
                 [(TGWallpaperItemCell *)cell setIsSelected:[((TGWallpaperItemCell *)cell).wallpaperInfo isEqual:[[TGWallpaperManager instance] currentWallpaperInfo]]];
             }
         }
+        
+        [self _dismissPhotoLibrary];
     }
 }
 
@@ -285,19 +322,40 @@
     imagePickerController.completionDelegate = self;
     
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+    {
         imagePickerController.modalPresentationStyle = UIModalPresentationFormSheet;
     
-    [self presentViewController:imagePickerController animated:true completion:nil];
+        TGOverlayFormsheetWindow *formSheetWindow = [[TGOverlayFormsheetWindow alloc] initWithParentController:self contentController:imagePickerController];
+        [formSheetWindow showAnimated:true];
+        
+        _photoLibraryWindow = formSheetWindow;
+    }
+    else
+    {
+        [self presentViewController:imagePickerController animated:true completion:nil];
+    }
+}
+
+- (void)_dismissPhotoLibrary
+{
+    TGOverlayFormsheetWindow *photoLibraryWindow = _photoLibraryWindow;
+    if (photoLibraryWindow != nil)
+        [photoLibraryWindow dismissAnimated:true];
+    else
+        [self dismissViewControllerAnimated:true completion:nil];
 }
 
 - (void)legacyCameraControllerCompletedWithNoResult
 {
-    [self dismissViewControllerAnimated:true completion:nil];
+    [self _dismissPhotoLibrary];
 }
 
 - (void)imagePickerController:(TGImagePickerController *)__unused imagePicker didFinishPickingWithAssets:(NSArray *)assets
 {
-    if ([self.presentedViewController isKindOfClass:[UINavigationController class]] && assets.count != 0 && [assets[0] isKindOfClass:[UIImage class]])
+    TGOverlayFormsheetWindow *photoLibraryWindow = _photoLibraryWindow;
+    UINavigationController *controller = (UINavigationController *)((photoLibraryWindow != nil) ? [(TGOverlayFormsheetController *)[photoLibraryWindow rootViewController] viewController] : self.presentedViewController);
+    
+    if ([controller isKindOfClass:[UINavigationController class]] && assets.count != 0 && [assets[0] isKindOfClass:[UIImage class]])
     {
         UIImage *wallpaperImage = assets[0];
         
@@ -305,10 +363,12 @@
         wallpaperController.delegate = self;
         wallpaperController.enableWallpaperAdjustment = true;
         wallpaperController.doNotFlipIfRTL = true;
-        [(UINavigationController *)self.presentedViewController pushViewController:wallpaperController animated:true];
+        [controller pushViewController:wallpaperController animated:true];
     }
     else
-        [self dismissViewControllerAnimated:true completion:nil];
+    {
+        [self _dismissPhotoLibrary];
+    }
 }
 
 #pragma mark -

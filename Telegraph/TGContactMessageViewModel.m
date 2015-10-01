@@ -2,6 +2,8 @@
 
 #import "TGMessage.h"
 #import "TGUser.h"
+#import "TGConversation.h"
+#import "TGPeerIdAdapter.h"
 
 #import "TGDateUtils.h"
 #import "TGImageUtils.h"
@@ -26,6 +28,10 @@
 
 #import "TGDoubleTapGestureRecognizer.h"
 
+#import "TGReplyHeaderModel.h"
+
+#import "TGMessageViewsViewModel.h"
+
 #import "TGTelegraphConversationMessageAssetsSource.h"
 
 @interface TGContactMessageViewModel () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate>
@@ -35,6 +41,7 @@
     
     TGModernTextViewModel *_authorNameModel;
     TGModernTextViewModel *_forwardedHeaderModel;
+    TGReplyHeaderModel *_replyHeaderModel;
     
     TGModernLabelViewModel *_contactNameModel;
     TGModernLabelViewModel *_contactPhoneModel;
@@ -51,6 +58,7 @@
     TGModernImageViewModel *_unsentButtonModel;
     
     bool _incoming;
+    bool _incomingAppearance;
     TGMessageDeliveryState _deliveryState;
     bool _read;
     int32_t _date;
@@ -58,7 +66,7 @@
     
     bool _hasAvatar;
     
-    int _forwardedUid;
+    int64_t _forwardedPeerId;
     
     TGDoubleTapGestureRecognizer *_boundDoubleTapRecognizer;
     UITapGestureRecognizer *_unsentButtonTapRecognizer;
@@ -66,15 +74,20 @@
     bool _contactAdded;
     
     CGSize _boundOffset;
+    
+    int32_t _replyMessageId;
+    
+    TGMessageViewCountContentProperty *_messageViews;
+    TGMessageViewsViewModel *_messageViewsModel;
 }
 
 @end
 
 @implementation TGContactMessageViewModel
 
-- (instancetype)initWithMessage:(TGMessage *)message contact:(TGUser *)contact author:(TGUser *)author context:(TGModernViewContext *)context
+- (instancetype)initWithMessage:(TGMessage *)message contact:(TGUser *)contact authorPeer:(id)authorPeer context:(TGModernViewContext *)context
 {
-    self = [super initWithAuthor:author context:context];
+    self = [super initWithAuthorPeer:authorPeer context:context];
     if (self != nil)
     {
         static TGTelegraphConversationMessageAssetsSource *assetsSource = nil;
@@ -105,28 +118,42 @@
         
         _needsEditingCheckButton = true;
         
+        bool isChannel = [authorPeer isKindOfClass:[TGConversation class]];
+        
         _mid = message.mid;
         _incoming = !message.outgoing;
+        _incomingAppearance = _incoming || isChannel;
         _deliveryState = message.deliveryState;
         _read = !message.unread;
         _date = (int32_t)message.date;
         _contact = contact;
+        _messageViews = message.viewCount;
         
-        _backgroundModel = [[TGTextMessageBackgroundViewModel alloc] initWithType:_incoming ? TGTextMessageBackgroundIncoming : TGTextMessageBackgroundOutgoing];
+        _backgroundModel = [[TGTextMessageBackgroundViewModel alloc] initWithType:_incomingAppearance ? TGTextMessageBackgroundIncoming : TGTextMessageBackgroundOutgoing];
         _backgroundModel.blendMode = kCGBlendModeCopy;
         _backgroundModel.skipDrawInContext = true;
         [self addSubmodel:_backgroundModel];
+        
+        if (isChannel) {
+            [_backgroundModel setPartialMode:false];
+        }
         
         _contentModel = [[TGModernFlatteningViewModel alloc] initWithContext:_context];
         _contentModel.viewUserInteractionDisabled = true;
         [self addSubmodel:_contentModel];
         
-        if (author != nil)
+        if (authorPeer != nil)
         {
-            _authorNameModel = [[TGModernTextViewModel alloc] initWithText:author.displayName font:[assetsSource messageAuthorNameFont]];
+            NSString *title = @"";
+            if ([authorPeer isKindOfClass:[TGUser class]]) {
+                title = ((TGUser *)authorPeer).displayName;
+                _hasAvatar = true;
+            } else if ([authorPeer isKindOfClass:[TGConversation class]]) {
+                title = ((TGConversation *)authorPeer).chatTitle;
+            }
+            _authorNameModel = [[TGModernTextViewModel alloc] initWithText:title font:[assetsSource messageAuthorNameFont]];
             [_contentModel addSubmodel:_authorNameModel];
             
-            _hasAvatar = true;
         }
         
         static UIImage *placeholder = nil;
@@ -157,24 +184,32 @@
         _contactAvatarModel.viewUserInteractionDisabled = true;
         [self addSubmodel:_contactAvatarModel];
         
-        _contactNameModel = [[TGModernLabelViewModel alloc] initWithText:contact.displayName textColor:_incoming ? incomingForwardColor : outgoingForwardColor font:[assetsSource messageForwardPhoneNameFont] maxWidth:155.0f];
+        _contactNameModel = [[TGModernLabelViewModel alloc] initWithText:contact.displayName textColor:_incomingAppearance ? incomingForwardColor : outgoingForwardColor font:[assetsSource messageForwardPhoneNameFont] maxWidth:155.0f];
         [_contentModel addSubmodel:_contactNameModel];
 
         _contactPhoneModel = [[TGModernLabelViewModel alloc] initWithText:[TGPhoneUtils formatPhone:contact.phoneNumber forceInternational:contact.uid != 0] textColor:[assetsSource messageTextColor] font:[assetsSource messageForwardPhoneFont] maxWidth:155.0f];
         [_contentModel addSubmodel:_contactPhoneModel];
         
-        _separatorModel = [[TGModernColorViewModel alloc] initWithColor:_incoming ? incomingSeparatorColor : outgoingSeparatorColor];
+        _separatorModel = [[TGModernColorViewModel alloc] initWithColor:_incomingAppearance ? incomingSeparatorColor : outgoingSeparatorColor];
         [self addSubmodel:_separatorModel];
         
         _actionButtonModel = [[TGModernButtonViewModel alloc] init];
-        _actionButtonModel.image = _incoming ? actionImageIncoming : actionImageOutgoing;
+        _actionButtonModel.image = _incomingAppearance ? actionImageIncoming : actionImageOutgoing;
         _actionButtonModel.modernHighlight = true;
         [self addSubmodel:_actionButtonModel];
         
         int daytimeVariant = 0;
         NSString *dateText = [TGDateUtils stringForShortTime:(int)message.date daytimeVariant:&daytimeVariant];
-        _dateModel = [[TGModernDateViewModel alloc] initWithText:dateText textColor:_incoming ? incomingDateColor : outgoingDateColor daytimeVariant:daytimeVariant];
+        _dateModel = [[TGModernDateViewModel alloc] initWithText:dateText textColor:_incomingAppearance ? incomingDateColor : outgoingDateColor daytimeVariant:daytimeVariant];
         [_contentModel addSubmodel:_dateModel];
+        
+        if (_messageViews != nil) {
+            _messageViewsModel = [[TGMessageViewsViewModel alloc] init];
+            _messageViewsModel.type = _incomingAppearance ? TGMessageViewsViewTypeIncoming : TGMessageViewsViewTypeOutgoing;
+            _messageViewsModel.count = _messageViews.viewCount;
+            [self addSubmodel:_messageViewsModel];
+            _messageViewsModel.hidden = _deliveryState != TGMessageDeliveryStateDelivered;
+        }
         
         if (!_incoming)
         {
@@ -193,11 +228,13 @@
             
             if (_deliveryState == TGMessageDeliveryStatePending)
             {
-                _progressModel = [[TGModernClockProgressViewModel alloc] initWithType:TGModernClockProgressTypeOutgoingClock];
+                _progressModel = [[TGModernClockProgressViewModel alloc] initWithType:_incomingAppearance ? TGModernClockProgressTypeIncomingClock : TGModernClockProgressTypeOutgoingClock];
                 [self addSubmodel:_progressModel];
                 
-                [self addSubmodel:_checkFirstModel];
-                [self addSubmodel:_checkSecondModel];
+                if (!_incomingAppearance) {
+                    [self addSubmodel:_checkFirstModel];
+                    [self addSubmodel:_checkSecondModel];
+                }
                 _checkFirstModel.alpha = 0.0f;
                 _checkSecondModel.alpha = 0.0f;
             }
@@ -207,17 +244,23 @@
             }
             else if (_deliveryState == TGMessageDeliveryStateDelivered)
             {
-                [_contentModel addSubmodel:_checkFirstModel];
+                if (!_incomingAppearance) {
+                    [_contentModel addSubmodel:_checkFirstModel];
+                }
                 _checkFirstEmbeddedInContent = true;
                 
                 if (_read)
                 {
-                    [_contentModel addSubmodel:_checkSecondModel];
+                    if (!_incomingAppearance) {
+                        [_contentModel addSubmodel:_checkSecondModel];
+                    }
                     _checkSecondEmbeddedInContent = true;
                 }
                 else
                 {
-                    [self addSubmodel:_checkSecondModel];
+                    if (!_incomingAppearance) {
+                        [self addSubmodel:_checkSecondModel];
+                    }
                     _checkSecondModel.alpha = 0.0f;
                 }
             }
@@ -250,7 +293,7 @@
     _authorNameModel.textColor = authorNameColor;
 }
 
-- (void)setForwardHeader:(TGUser *)forwardUser
+- (void)setForwardHeader:(id)forwardPeer
 {
     if (_forwardedHeaderModel == nil)
     {
@@ -267,23 +310,37 @@
             formatNameRange = [TGLocalizedStatic(@"Message.ForwardedMessage") rangeOfString:@"%@"];
         });
         
-        _forwardedUid = forwardUser.uid;
+        NSString *title = @"";
+        if ([forwardPeer isKindOfClass:[TGUser class]]) {
+            _forwardedPeerId = ((TGUser *)forwardPeer).uid;
+            title = ((TGUser *)forwardPeer).displayName;
+        } else if ([forwardPeer isKindOfClass:[TGConversation class]] ) {
+            _forwardedPeerId = ((TGConversation *)forwardPeer).conversationId;
+            title = ((TGConversation *)forwardPeer).chatTitle;
+        }
         
-        NSString *authorName = forwardUser.displayName;
-        NSString *text = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Message.ForwardedMessage"), authorName];
+        NSString *text = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Message.ForwardedMessage"), title];
         
         _forwardedHeaderModel = [[TGModernTextViewModel alloc] initWithText:text font:[[TGTelegraphConversationMessageAssetsSource instance] messageForwardTitleFont]];
-        _forwardedHeaderModel.textColor = _incoming ? incomingForwardColor : outgoingForwardColor;
+        _forwardedHeaderModel.textColor = _incomingAppearance ? incomingForwardColor : outgoingForwardColor;
         _forwardedHeaderModel.layoutFlags = TGReusableLabelLayoutMultiline;
-        if (formatNameRange.location != NSNotFound && authorName.length != 0)
+        if (formatNameRange.location != NSNotFound && title.length != 0)
         {
             NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageForwardNameFont], (NSString *)kCTFontAttributeName, nil];
-            NSRange range = NSMakeRange(formatNameRange.location, authorName.length);
+            NSRange range = NSMakeRange(formatNameRange.location, title.length);
             _forwardedHeaderModel.additionalAttributes = [[NSArray alloc] initWithObjects:[[NSValue alloc] initWithBytes:&range objCType:@encode(NSRange)], fontAttributes, nil];
         }
         
         [_contentModel addSubmodel:_forwardedHeaderModel];
     }
+}
+
+- (void)setReplyHeader:(TGMessage *)replyHeader peer:(id)peer
+{
+    _replyMessageId = replyHeader.mid;
+    _replyHeaderModel = [TGContentBubbleViewModel replyHeaderModelFromMessage:replyHeader peer:peer incoming:_incomingAppearance system:false];
+    if (_replyHeaderModel != nil)
+        [_contentModel addSubmodel:_replyHeaderModel];
 }
 
 - (void)setTemporaryHighlighted:(bool)temporaryHighlighted viewStorage:(TGModernViewStorage *)__unused viewStorage
@@ -294,16 +351,24 @@
         [_backgroundModel clearHighlight];
 }
 
-- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage
+- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
 {
-    [super updateMessage:message viewStorage:viewStorage];
+    [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
     
     _mid = message.mid;
+    
+    if (_messageViewsModel != nil) {
+        _messageViewsModel.count = message.viewCount.viewCount;
+    }
     
     if (_deliveryState != message.deliveryState || (!_incoming && _read != !message.unread))
     {
         TGMessageDeliveryState previousDeliveryState = _deliveryState;
         _deliveryState = message.deliveryState;
+        
+        if (_messageViewsModel != nil) {
+            _messageViewsModel.hidden = _deliveryState != TGMessageDeliveryStateDelivered;
+        }
         
         bool previousRead = _read;
         _read = !message.unread;
@@ -421,7 +486,7 @@
             if (_progressModel == nil)
             {
                 CGFloat unsentOffset = 0.0f;
-                if (!_incoming && previousDeliveryState == TGMessageDeliveryStateFailed)
+                if (!_incomingAppearance && previousDeliveryState == TGMessageDeliveryStateFailed)
                     unsentOffset = 29.0f;
                 
                 _progressModel = [[TGModernClockProgressViewModel alloc] initWithType:TGModernClockProgressTypeOutgoingClock];
@@ -441,10 +506,12 @@
             
             if (![self containsSubmodel:_checkFirstModel])
             {
-                [self addSubmodel:_checkFirstModel];
+                if (!_incomingAppearance) {
+                    [self addSubmodel:_checkFirstModel];
                 
-                if ([_contentModel boundView] != nil)
-                    [_checkFirstModel bindViewToContainer:[_contentModel boundView].superview viewStorage:viewStorage];
+                    if ([_contentModel boundView] != nil)
+                        [_checkFirstModel bindViewToContainer:[_contentModel boundView].superview viewStorage:viewStorage];
+                }
             }
             if (![self containsSubmodel:_checkSecondModel])
             {
@@ -556,7 +623,7 @@
 
 - (void)_maybeRestructureStateModels:(TGModernViewStorage *)viewStorage
 {
-    if (!_incoming && [_contentModel boundView] == nil)
+    if (!_incoming && [_contentModel boundView] == nil && !_incomingAppearance)
     {
         if (_deliveryState == TGMessageDeliveryStateDelivered)
         {
@@ -598,6 +665,8 @@
     
     [_contactAvatarModel bindViewToContainer:container viewStorage:viewStorage];
     [_contactAvatarModel boundView].frame = CGRectOffset([_contactAvatarModel boundView].frame, itemPosition.x, itemPosition.y);
+    
+    [_replyHeaderModel bindSpecialViewsToContainer:container viewStorage:viewStorage atItemPosition:CGPointMake(itemPosition.x + _contentModel.frame.origin.x + _replyHeaderModel.frame.origin.x, itemPosition.y + _contentModel.frame.origin.y + _replyHeaderModel.frame.origin.y)];
 }
 
 - (void)bindViewToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage
@@ -609,6 +678,8 @@
     [self updateEditingState:nil viewStorage:nil animationDelay:-1.0];
     
     [super bindViewToContainer:container viewStorage:viewStorage];
+    
+    [_replyHeaderModel bindSpecialViewsToContainer:_contentModel.boundView viewStorage:viewStorage atItemPosition:CGPointMake(_replyHeaderModel.frame.origin.x, _replyHeaderModel.frame.origin.y)];
     
     _boundDoubleTapRecognizer = [[TGDoubleTapGestureRecognizer alloc] initWithTarget:self action:@selector(messageDoubleTapGesture:)];
     _boundDoubleTapRecognizer.delegate = self;
@@ -667,10 +738,19 @@
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
             else if (recognizer.doubleTapped)
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
-            else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point))
-                [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @(_forwardedUid)}];
+            else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
+                if (TGPeerIdIsChannel(_forwardedPeerId)) {
+                    [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId)}];
+                } else {
+                    [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                }
+            }
+            else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
+                [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
             else if (CGRectContainsPoint(CGRectOffset(CGRectUnion(_contactAvatarModel.frame, CGRectOffset(CGRectUnion(_contactNameModel.frame, _contactPhoneModel.frame), _contentModel.frame.origin.x, _contentModel.frame.origin.y)), -_backgroundModel.frame.origin.x, -_backgroundModel.frame.origin.y), point))
+            {
                 [_context.companionHandle requestAction:@"showContactMessageMenu" options:@{@"contact": _contact}];
+            }
         }
     }
 }
@@ -698,8 +778,10 @@
 
 - (int)gestureRecognizer:(TGDoubleTapGestureRecognizer *)__unused recognizer shouldFailTap:(CGPoint)point
 {
-    if ((_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) || CGRectContainsPoint(CGRectOffset(CGRectUnion(_contactAvatarModel.frame, CGRectOffset(CGRectUnion(_contactNameModel.frame, _contactPhoneModel.frame), _contentModel.frame.origin.x, _contentModel.frame.origin.y)), -_backgroundModel.frame.origin.x, -_backgroundModel.frame.origin.y), point))
+    if ((_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) || (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point)) || CGRectContainsPoint(CGRectOffset(CGRectUnion(_contactAvatarModel.frame, CGRectOffset(CGRectUnion(_contactNameModel.frame, _contactPhoneModel.frame), _contentModel.frame.origin.x, _contentModel.frame.origin.y)), -_backgroundModel.frame.origin.x, -_backgroundModel.frame.origin.y), point))
+    {
         return 3;
+    }
     return false;
 }
 
@@ -714,12 +796,19 @@
 
 - (void)layoutForContainerSize:(CGSize)containerSize
 {
+    bool isPost = _authorPeer != nil && [_authorPeer isKindOfClass:[TGConversation class]];
+    
     TGMessageViewModelLayoutConstants const *layoutConstants = TGGetMessageViewModelLayoutConstants();
     
     bool isRTL = TGIsRTL();
     
     CGFloat topSpacing = (_collapseFlags & TGModernConversationItemCollapseTop) ? layoutConstants->topInsetCollapsed : layoutConstants->topInset;
     CGFloat bottomSpacing = (_collapseFlags & TGModernConversationItemCollapseBottom) ? layoutConstants->bottomInsetCollapsed : layoutConstants->bottomInset;
+    
+    if (isPost) {
+        topSpacing = layoutConstants->topPostInset;
+        bottomSpacing = layoutConstants->bottomPostInset;
+    }
     
     CGSize headerSize = CGSizeZero;
     if (_authorNameModel != nil)
@@ -744,12 +833,26 @@
         headerSize.width = MAX(headerSize.width, forwardedHeaderFrame.size.width);
     }
     
+    if (_replyHeaderModel != nil)
+    {
+        bool updateContent = false;
+        [_replyHeaderModel layoutForContainerSize:CGSizeMake(containerSize.width - 80.0f - (_hasAvatar ? 38.0f : 0.0f), containerSize.height) updateContent:&updateContent];
+        if (updateContent)
+            [_contentModel setNeedsSubmodelContentsUpdate];
+        CGRect replyHeaderFrame = _replyHeaderModel.frame;
+        replyHeaderFrame.origin = CGPointMake(1.0f, headerSize.height + 2.0f);
+        _replyHeaderModel.frame = replyHeaderFrame;
+        
+        headerSize.height += replyHeaderFrame.size.height + 1.0f;
+        headerSize.width = MAX(headerSize.width, replyHeaderFrame.size.width);
+    }
+    
     CGFloat avatarOffset = 0.0f;
     if (_hasAvatar)
         avatarOffset = 38.0f;
     
     CGFloat unsentOffset = 0.0f;
-    if (!_incoming && _deliveryState == TGMessageDeliveryStateFailed)
+    if (!_incomingAppearance && _deliveryState == TGMessageDeliveryStateFailed)
         unsentOffset = 29.0f;
     
     CGRect contactNameFrame = _contactNameModel.frame;
@@ -766,35 +869,42 @@
     if (!_contactAdded)
         backgroundWidth += 44;
     
-    CGRect backgroundFrame = CGRectMake(_incoming ? (avatarOffset + layoutConstants->leftInset) : (containerSize.width - backgroundWidth - layoutConstants->rightInset - unsentOffset), topSpacing, backgroundWidth, MAX((_hasAvatar ? 44.0f : 30.0f), headerSize.height + textSize.height + 30.0f));
-    if (_incoming && _editing)
+    CGRect backgroundFrame = CGRectMake(_incomingAppearance ? (avatarOffset + layoutConstants->leftInset) : (containerSize.width - backgroundWidth - layoutConstants->rightInset - unsentOffset), topSpacing, backgroundWidth, MAX((_hasAvatar ? 44.0f : 30.0f), headerSize.height + textSize.height + 30.0f));
+    if (_incomingAppearance && _editing)
         backgroundFrame.origin.x += 42.0f;
     _backgroundModel.frame = backgroundFrame;
     
-    _contentModel.frame = CGRectMake(backgroundFrame.origin.x + (_incoming ? 14 : 8), topSpacing + 2.0f, MAX(32.0f, MAX(headerSize.width, textSize.width) + 2 + (_incoming ? 0.0f : 5.0f)), MAX(headerSize.height + textSize.height + 25.0f, _hasAvatar ? 30.0f : 14.0f));
+    _contentModel.frame = CGRectMake(backgroundFrame.origin.x + (_incomingAppearance ? 14 : 8), topSpacing + 2.0f, MAX(32.0f, MAX(headerSize.width, textSize.width) + 2 + (_incomingAppearance ? 0.0f : 5.0f)), MAX(headerSize.height + textSize.height + 25.0f, _hasAvatar ? 30.0f : 14.0f));
     
     if (_authorNameModel != nil)
     {
         CGRect authorModelFrame = _authorNameModel.frame;
-        authorModelFrame.origin.x = isRTL ? (_contentModel.frame.size.width - authorModelFrame.size.width - 1.0f - (_incoming ? 0.0f : 4.0f)) : 1.0f;
+        authorModelFrame.origin.x = isRTL ? (_contentModel.frame.size.width - authorModelFrame.size.width - 1.0f - (_incomingAppearance ? 0.0f : 4.0f)) : 1.0f;
         _authorNameModel.frame = authorModelFrame;
     }
     
     if (_forwardedHeaderModel != nil)
     {
         CGRect forwardedHeaderFrame = _forwardedHeaderModel.frame;
-        forwardedHeaderFrame.origin.x = isRTL ? (_contentModel.frame.size.width - forwardedHeaderFrame.size.width - 1.0f - (_incoming ? 0.0f : 4.0f)) : 1.0f;
+        forwardedHeaderFrame.origin.x = isRTL ? (_contentModel.frame.size.width - forwardedHeaderFrame.size.width - 1.0f - (_incomingAppearance ? 0.0f : 4.0f)) : 1.0f;
         _forwardedHeaderModel.frame = forwardedHeaderFrame;
+    }
+    
+    if (_replyHeaderModel != nil)
+    {
+        CGRect replyHeaderFrame = _replyHeaderModel.frame;
+        replyHeaderFrame.origin.x = isRTL ? (_contentModel.frame.size.width - replyHeaderFrame.size.width - 1.0f) : 1.0f;
+        _replyHeaderModel.frame = replyHeaderFrame;
     }
     
     if (isRTL)
     {
         CGRect contactNameFrame = _contactNameModel.frame;
-        contactNameFrame.origin.x = _contentModel.frame.size.width - 1.0f - contactNameFrame.size.width - (_incoming ? 0.0f : 4.0f);
+        contactNameFrame.origin.x = _contentModel.frame.size.width - 1.0f - contactNameFrame.size.width - (_incomingAppearance ? 0.0f : 4.0f);
         _contactNameModel.frame = contactNameFrame;
         
         CGRect contactPhoneFrame = _contactPhoneModel.frame;
-        contactPhoneFrame.origin.x = _contentModel.frame.size.width - 1.0f - contactPhoneFrame.size.width - (_incoming ? 0.0f : 4.0f);
+        contactPhoneFrame.origin.x = _contentModel.frame.size.width - 1.0f - contactPhoneFrame.size.width - (_incomingAppearance ? 0.0f : 4.0f);
         _contactPhoneModel.frame = contactPhoneFrame;
     }
     
@@ -802,14 +912,23 @@
     
     if (!_contactAdded)
     {
-        _separatorModel.frame = CGRectMake(CGRectGetMaxX(_contentModel.frame) + 1.0f + (_incoming ? 5.0f : 0.0f), backgroundFrame.origin.y + backgroundFrame.size.height - 53.0f - 5.0f, TGRetinaPixel, 53.0f);
-        _actionButtonModel.frame = CGRectMake(CGRectGetMaxX(_contentModel.frame) + 1.0f + (_incoming ? 5.0f : 0.0f), backgroundFrame.origin.y + backgroundFrame.size.height - 53.0f - 5.0f, 46.0f, 54.0f);
+        _separatorModel.frame = CGRectMake(CGRectGetMaxX(_contentModel.frame) + 1.0f + (_incomingAppearance ? 5.0f : 0.0f), backgroundFrame.origin.y + backgroundFrame.size.height - 53.0f - 5.0f, TGRetinaPixel, 53.0f);
+        _actionButtonModel.frame = CGRectMake(CGRectGetMaxX(_contentModel.frame) + 1.0f + (_incomingAppearance ? 5.0f : 0.0f), backgroundFrame.origin.y + backgroundFrame.size.height - 53.0f - 5.0f, 46.0f, 54.0f);
     }
     
-    _dateModel.frame = CGRectMake(_contentModel.frame.size.width - (_incoming ? 3 : 20.0f) - _dateModel.frame.size.width, _contentModel.frame.size.height - 18.0f + TGRetinaPixel - (TGIsLocaleArabic() ? 1.0f : 0.0f), _dateModel.frame.size.width, _dateModel.frame.size.height);
+    _dateModel.frame = CGRectMake(_contentModel.frame.size.width - (_incomingAppearance ? 3 : 20.0f) - _dateModel.frame.size.width, _contentModel.frame.size.height - 18.0f + TGRetinaPixel - (TGIsLocaleArabic() ? 1.0f : 0.0f), _dateModel.frame.size.width, _dateModel.frame.size.height);
     
-    if (_progressModel != nil)
-        _progressModel.frame = CGRectMake(containerSize.width - 32 - unsentOffset - (_contactAdded ? 0 : 44), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + TGRetinaPixel, 15, 15);
+    if (_progressModel != nil) {
+        if (_incomingAppearance) {
+            _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 27.0f - layoutConstants->rightInset - unsentOffset - (_contactAdded ? 0 : 44), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
+        } else {
+            _progressModel.frame = CGRectMake(containerSize.width - 32 - unsentOffset - (_contactAdded ? 0 : 44), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + TGRetinaPixel, 15, 15);
+        }
+    }
+    
+    if (_messageViewsModel != nil) {
+        _messageViewsModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 22.0f - (_incomingAppearance ? 0.0f : 14.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f + TGRetinaPixel, 1.0f, 1.0f);
+    }
     
     CGPoint stateOffset = _contentModel.frame.origin;
     if (_checkFirstModel != nil)
@@ -825,6 +944,8 @@
     
     self.frame = CGRectMake(0, 0, containerSize.width, backgroundFrame.size.height + topSpacing + bottomSpacing);
     
+    [_contentModel updateSubmodelContentsIfNeeded];
+    
     [super layoutForContainerSize:containerSize];
 }
 
@@ -833,7 +954,11 @@
     if (_collapseFlags != collapseFlags)
     {
         _collapseFlags = collapseFlags;
-        [_backgroundModel setPartialMode:collapseFlags & TGModernConversationItemCollapseBottom];
+        if ([_authorPeer isKindOfClass:[TGConversation class]]) {
+            [_backgroundModel setPartialMode:false];
+        } else {
+            [_backgroundModel setPartialMode:collapseFlags & TGModernConversationItemCollapseBottom];
+        }
     }
 }
 

@@ -10,9 +10,14 @@
 
 @interface TGGenericModernConversationCompanion : TGModernConversationCompanion
 {
+    @public
     int64_t _conversationId;
+    int64_t _accessHash;
     
     bool _everyMessageNeedsAuthor;
+    bool _manualMessageManagement;
+    
+    int32_t _preferredInitialPositionedMessageId;
 }
 
 - (instancetype)initWithConversationId:(int64_t)conversationId mayHaveUnreadMessages:(bool)mayHaveUnreadMessages;
@@ -22,20 +27,28 @@
 - (void)setInitialMessagePayloadWithForwardMessages:(NSArray *)initialForwardMessagePayload sendMessages:(NSArray *)initialSendMessagePayload sendFiles:(NSArray *)initialSendFilePayload;
 
 - (int64_t)conversationId;
+- (int64_t)messageAuthorPeerId;
 - (bool)_shouldCacheRemoteAssetUris;
 - (bool)_shouldDisplayProcessUnreadCount;
 + (CGSize)preferredInlineThumbnailSize;
 - (int)messageLifetime;
+- (NSUInteger)layer;
+- (void)setLayer:(NSUInteger)layer;
+
+- (void)loadInitialState:(bool)loadMessages;
 
 - (NSString *)_conversationIdPathComponent;
 - (NSString *)_sendMessagePathForMessageId:(int32_t)mid;
 - (NSString *)_sendMessagePathPrefix;
 - (NSDictionary *)_optionsForMessageActions;
+- (void)_setupOutgoingMessage:(TGMessage *)message;
 - (bool)_messagesNeedRandomId;
 
 - (void)standaloneForwardMessages:(NSArray *)messages;
 - (void)standaloneSendMessages:(NSArray *)messages;
 - (void)standaloneSendFiles:(NSArray *)files;
 - (void)shareVCard;
+
+- (void)scheduleReadHistory;
 
 @end

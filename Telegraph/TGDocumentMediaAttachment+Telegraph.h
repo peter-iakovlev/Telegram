@@ -10,8 +10,11 @@
 
 #import "TL/TLMetaScheme.h"
 
+#import "SecretLayer23.h"
+
 @interface TGDocumentMediaAttachment (Telegraph)
 
 - (instancetype)initWithTelegraphDocumentDesc:(TLDocument *)desc;
+- (instancetype)initWithSecret23Desc:(Secret23_DecryptedMessageMedia_decryptedMessageMediaExternalDocument *)desc;
 
 @end

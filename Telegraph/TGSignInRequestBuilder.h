@@ -17,7 +17,8 @@ typedef enum {
     TGSignInResultNetworkError = -2,
     TGSignInResultTokenExpired = -3,
     TGSignInResultNotRegistered = -4,
-    TGSignInResultFloodWait = -5
+    TGSignInResultFloodWait = -5,
+    TGSignInResultPasswordRequired = -6
 } TGSignInResult;
 
 @interface TGSignInRequestBuilder : ASActor <ASWatcher>

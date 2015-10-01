@@ -4,17 +4,12 @@
 
 @interface TGCommentMenuItem ()
 
-@property (nonatomic) float cachedHeight;
+@property (nonatomic) CGFloat cachedHeight;
 @property (nonatomic) UIInterfaceOrientation cachedHeightWidth;
 
 @end
 
 @implementation TGCommentMenuItem
-
-@synthesize comment = _comment;
-
-@synthesize cachedHeight = _cachedHeight;
-@synthesize cachedHeightWidth = _cachedHeightWidth;
 
 - (id)initWithComment:(NSString *)comment
 {
@@ -34,7 +29,7 @@
     _cachedHeightWidth = 0.0f;
 }
 
-- (float)heightForWidth:(float)width
+- (CGFloat)heightForWidth:(float)width
 {
     if (ABS(width - _cachedHeightWidth) < FLT_EPSILON)
         return _cachedHeight;

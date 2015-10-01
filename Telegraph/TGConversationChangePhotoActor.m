@@ -18,21 +18,19 @@
 
 #import "TGConversationAddMessagesActor.h"
 
+#import "TLUpdates+TG.h"
+
+#import "TGPeerIdAdapter.h"
+
 @interface TGConversationChangePhotoActor ()
 
 @property (nonatomic) int64_t conversationId;
+@property (nonatomic) int64_t accessHash;
 @property (nonatomic, strong) NSData *imageData;
 
 @end
 
 @implementation TGConversationChangePhotoActor
-
-@synthesize actionHandle = _actionHandle;
-
-@synthesize currentImage = _currentImage;
-
-@synthesize conversationId = _conversationId;
-@synthesize imageData = _imageData;
 
 + (NSString *)genericPath
 {
@@ -64,13 +62,14 @@
         [ActionStageInstance() actionFailed:self.path reason:-1];
         return;
     }
+    _accessHash = [options[@"accessHash"] longLongValue];
     
     _currentImage = [options objectForKey:@"currentImage"];
     _imageData = photoData;
     
     if (photoData == nil)
     {
-        self.cancelToken = [TGTelegraphInstance doChangeConversationPhoto:_conversationId photo:[[TLInputChatPhoto$inputChatPhotoEmpty alloc] init] actor:self];
+        self.cancelToken = [TGTelegraphInstance doChangeConversationPhoto:_conversationId accessHash:_accessHash photo:[[TLInputChatPhoto$inputChatPhotoEmpty alloc] init] actor:self];
     }
     else
     {
@@ -79,17 +78,17 @@
     }
 }
 
-- (void)conversationUpdateAvatarSuccess:(TLmessages_StatedMessage *)statedMessage
+- (void)conversationUpdateAvatarSuccess:(TLUpdates *)updates
 {
-    if (statedMessage.chats.count != 0)
+    if (updates.chats.count != 0)
     {
-        [TGUserDataRequestBuilder executeUserDataUpdate:statedMessage.users];
+        [TGUserDataRequestBuilder executeUserDataUpdate:updates.users];
         
         TGConversation *chatConversation = nil;
         
         NSMutableDictionary *chats = [[NSMutableDictionary alloc] init];
         
-        for (TLChat *chatDesc in statedMessage.chats)
+        for (TLChat *chatDesc in updates.chats)
         {
             TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:chatDesc];
             if (conversation != nil)
@@ -100,7 +99,7 @@
             }
         }
         
-        TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:statedMessage.message];
+        TGMessage *message = updates.messages.count == 0 ? nil : [[TGMessage alloc] initWithTelegraphMessageDesc:updates.messages.firstObject];
         
         if (_imageData != nil)
         {
@@ -128,10 +127,13 @@
             }
         }
         
-        static int actionId = 0;
-        [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(updateChatPhotoData%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSArray alloc] initWithObjects:chatConversation, nil], @"chats", nil]];
-        
-        [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(changeChatPhoto%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", @[message], @"messages", nil]];
+        if (TGPeerIdIsChannel(_conversationId)) {
+            [TGDatabaseInstance() updateChannels:@[chatConversation]];
+        } else {
+            static int actionId = 0;
+            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(updateChatPhotoData%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSArray alloc] initWithObjects:chatConversation, nil], @"chats", nil]];
+            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(changeChatPhoto%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", message == nil ? @[] : @[message], @"messages", nil]];
+        }
     
         [ActionStageInstance() actionCompleted:self.path result:[[SGraphObjectNode alloc] initWithObject:chatConversation]];
     }
@@ -140,7 +142,7 @@
         [ActionStageInstance() actionFailed:self.path reason:-1];
     }
     
-    [[TGTelegramNetworking instance] updatePts:statedMessage.pts date:0 seq:statedMessage.seq];
+    [[TGTelegramNetworking instance] addUpdates:updates];
 }
 
 - (void)conversationUpdateAvatarFailed
@@ -160,7 +162,7 @@
             chatPhoto.crop = [[TLInputPhotoCrop$inputPhotoCropAuto alloc] init];
             chatPhoto.file = inputFile;
             
-            self.cancelToken = [TGTelegraphInstance doChangeConversationPhoto:_conversationId photo:chatPhoto actor:self];
+            self.cancelToken = [TGTelegraphInstance doChangeConversationPhoto:_conversationId accessHash:_accessHash photo:chatPhoto actor:self];
         }
         else
         {

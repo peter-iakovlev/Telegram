@@ -41,7 +41,7 @@
 {
     [super drawInContext:context];
     
-    if (!self.skipDrawInContext && self.alpha > FLT_EPSILON)
+    if (!self.skipDrawInContext && self.alpha > FLT_EPSILON && !self.hidden)
         [_image drawInRect:self.bounds blendMode:_blendMode alpha:1.0f];
 }
 

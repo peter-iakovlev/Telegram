@@ -14,9 +14,6 @@
 
 + (void)clearState;
 + (void)clearDelayedNotifications;
-+ (void)applyDelayedNotifications:(int)maxMid mids:(NSArray *)mids maxQts:(int)maxQts randomIds:(NSArray *)randomIds;
-
-+ (NSArray *)filterStatelessUpdates:(TLUpdates *)updates;
-+ (NSArray *)makeStatelessUpdates:(TLUpdates *)updates;
++ (void)applyDelayedNotifications:(int)maxMid mids:(NSArray *)mids midsWithoutSound:(NSSet *)midsWithoutSound maxQts:(int)maxQts randomIds:(NSArray *)randomIds;
 
 @end

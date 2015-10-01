@@ -13,6 +13,8 @@
 
 #import "TGConversationAddMessagesActor.h"
 
+#import "TLUpdates+TG.h"
+
 @implementation TGConversationChangeTitleRequestActor
 
 @synthesize currentTitle = _currentTitle;
@@ -33,24 +35,24 @@
     
     _currentTitle = title;
     
-    int64_t conversationId = [[options objectForKey:@"conversationId"] intValue];
+    int64_t conversationId = [[options objectForKey:@"conversationId"] longLongValue];
     
-    [TGTelegraphInstance doChangeConversationTitle:conversationId title:title actor:self];
+    [TGTelegraphInstance doChangeConversationTitle:conversationId accessHash:[[options objectForKey:@"accessHash"] longLongValue] title:title actor:self];
 }
 
-- (void)conversationTitleChangeSuccess:(TLmessages_StatedMessage *)statedMessage
+- (void)conversationTitleChangeSuccess:(TLUpdates *)updates
 {
-    [TGUserDataRequestBuilder executeUserDataUpdate:statedMessage.users];
+    [TGUserDataRequestBuilder executeUserDataUpdate:updates.users];
     
-    if (statedMessage.chats.count != 0)
+    if (updates.chats.count != 0)
     {
         TGConversation *chatConversation = nil;
         
-        if (statedMessage.chats.count != 0)
+        if (updates.chats.count != 0)
         {
             NSMutableDictionary *chats = [[NSMutableDictionary alloc] init];
             
-            for (TLChat *chatDesc in statedMessage.chats)
+            for (TLChat *chatDesc in updates.chats)
             {
                 TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:chatDesc];
                 if (conversation != nil)
@@ -61,13 +63,15 @@
                 }
             }
             
-            TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:statedMessage.message];
+            TGMessage *message = nil;
+            if (updates.messages.count != 0)
+                message = [[TGMessage alloc] initWithTelegraphMessageDesc:updates.messages.firstObject];
             
             static int actionId = 0;
-            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(changeTitle%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", @[message], @"messages", nil]];
+            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(changeTitle%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", message == nil ? @[] : @[message], @"messages", nil]];
         }
         
-        [[TGTelegramNetworking instance] updatePts:statedMessage.pts date:0 seq:statedMessage.seq];
+        [[TGTelegramNetworking instance] addUpdates:updates];
         
         [ActionStageInstance() actionCompleted:self.path result:[[SGraphObjectNode alloc] initWithObject:chatConversation]];
     }

@@ -37,6 +37,7 @@ typedef enum {
 + (NSArray *)phoneLabels;
 + (NSArray *)customPhoneLabels;
 
+- (void)scheduleContactPhoneAddition:(int32_t)userId;
 - (void)clearState;
 
 @end

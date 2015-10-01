@@ -68,6 +68,8 @@
 
 - (void)setIsSelected:(bool)isSelected
 {
+    _isSelected = isSelected;
+    
     _selectedView.hidden = !isSelected;
 }
 

@@ -11,6 +11,8 @@
 #import "TGViewController.h"
 #import "TGOverlayController.h"
 
+#import "TGAppDelegate.h"
+
 @interface TGOverlayControllerWindow ()
 {
     __weak TGViewController *_parentController;
@@ -20,12 +22,20 @@
 
 @implementation TGOverlayControllerWindow
 
-- (instancetype)initWithParentController:(TGViewController *)parentController contentController:(TGOverlayController *)contentController
+- (instancetype)initWithParentController:(TGViewController *)parentController contentController:(TGOverlayController *)contentController {
+    return [self initWithParentController:parentController contentController:contentController keepKeyboard:false];
+}
+
+- (instancetype)initWithParentController:(TGViewController *)parentController contentController:(TGOverlayController *)contentController keepKeyboard:(bool)keepKeyboard
 {
-    self = [super initWithFrame:[[UIScreen mainScreen] bounds]];
+    if (self != nil) {
+        _keepKeyboard = keepKeyboard;
+    }
+    self = [super initWithFrame:TGAppDelegateInstance.rootController.view.bounds];
     if (self != nil)
     {
-        self.windowLevel = UIWindowLevelStatusBar - 0.01f;
+        _keepKeyboard = keepKeyboard;
+        self.windowLevel = UIWindowLevelStatusBar - 0.001f;
         
         _parentController = parentController;
         [parentController.associatedWindowStack addObject:self];
@@ -46,6 +56,15 @@
 {
     TGViewController *parentController = _parentController;
     [parentController.associatedWindowStack removeObject:self];
+    self.hidden = true;
+}
+
+- (void)setHidden:(BOOL)hidden {
+    [super setHidden:hidden];
+    
+    if (!hidden && !_keepKeyboard) {
+        [TGAppDelegateInstance.window endEditing:true];
+    }
 }
 
 @end

@@ -12,6 +12,8 @@
 
 #import "TGTimer.h"
 
+#import "TLUser$modernUser.h"
+
 @interface TGSignInRequestBuilder ()
 {
     NSString *_phoneNumber;
@@ -78,10 +80,8 @@
     [TGUserDataRequestBuilder executeUserDataUpdate:[NSArray arrayWithObject:authorization.user]];
     
     bool activated = true;
-    if ([authorization.user isKindOfClass:[TLUser$userSelf class]])
-        activated = !((TLUser$userSelf *)authorization.user).inactive;
     
-    [TGTelegraphInstance processAuthorizedWithUserId:authorization.user.n_id clientIsActivated:activated];
+    [TGTelegraphInstance processAuthorizedWithUserId:((TLUser$modernUser *)authorization.user).n_id clientIsActivated:activated];
     
     [ActionStageInstance() actionCompleted:self.path result:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithBool:activated], @"activated", nil]]];
 }

@@ -91,6 +91,13 @@ float timing(float x, timing_type type)
         c[EaseOut][1]=0.0;
         c[EaseOut][2]=0.58;
         c[EaseOut][3]=1.0;
+
+
+        c[EaseOutBounce][0]=0.0;
+        c[EaseOutBounce][1]=0.0;
+        c[EaseOutBounce][2]=0.;
+        c[EaseOutBounce][3]=1.25;
+
         
         c[Linear][0]=0.0;
         c[Linear][1]=0.0;

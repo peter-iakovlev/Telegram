@@ -27,6 +27,8 @@
     self = [super init];
     if (self != nil)
     {
+        self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Back") style:UIBarButtonItemStylePlain target:self action:@selector(backPressed)];
+        
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
         _userInfoItem = [[TGUserInfoCollectionItem alloc] init];
@@ -37,15 +39,22 @@
             _userInfoItem
         ]];
         UIEdgeInsets infoSectionInsets = infoSection.insets;
-        infoSectionInsets.bottom = 7.0f;
+        infoSectionInsets.bottom = 0.0f;
         infoSection.insets = infoSectionInsets;
         [self.menuSections addSection:infoSection];
         
         _phonesSection = [[TGCollectionMenuSection alloc] init];
         UIEdgeInsets phonesSectionInsets = _phonesSection.insets;
-        phonesSectionInsets.bottom = 44.0f;
+        phonesSectionInsets.bottom = 0.0f;
         _phonesSection.insets = phonesSectionInsets;
         [self.menuSections addSection:_phonesSection];
+        
+        _usernameSection = [[TGCollectionMenuSection alloc] init];
+        UIEdgeInsets usernameSectionInsets = _usernameSection.insets;
+        usernameSectionInsets.top = 0.0f;
+        usernameSectionInsets.bottom = 22.0f;
+        _usernameSection.insets = usernameSectionInsets;
+        [self.menuSections addSection:_usernameSection];
         
         _actionsSection = [[TGCollectionMenuSection alloc] init];
         UIEdgeInsets actionsSectionInsets = _actionsSection.insets;
@@ -54,6 +63,11 @@
         [self.menuSections addSection:_actionsSection];
     }
     return self;
+}
+
+- (void)backPressed
+{
+    [self.navigationController popViewControllerAnimated:true];
 }
 
 - (void)dealloc

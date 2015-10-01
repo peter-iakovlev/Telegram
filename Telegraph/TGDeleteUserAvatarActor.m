@@ -11,6 +11,13 @@
 #import "TGRemoteImageView.h"
 #import "TGImageUtils.h"
 
+@interface TGDeleteUserAvatarActor ()
+{
+    int _uid;
+}
+
+@end
+
 @implementation TGDeleteUserAvatarActor
 
 + (NSString *)genericPath
@@ -20,8 +27,8 @@
 
 - (void)prepare:(NSDictionary *)options
 {
-    int uid = [[options objectForKey:@"uid"] intValue];
-    self.requestQueueName = [[NSString alloc] initWithFormat:@"timeline/%d", uid];
+    _uid = [[options objectForKey:@"uid"] intValue];
+    self.requestQueueName = [[NSString alloc] initWithFormat:@"timeline/%d", _uid];
     
     [super prepare:options];
 }
@@ -33,6 +40,8 @@
 
 - (void)assignProfilePhotoRequestSuccess:(TLUserProfilePhoto *)photo
 {
+    [TGDatabaseInstance() clearPeerProfilePhotos:_uid];
+    
     if ([photo isKindOfClass:[TLUserProfilePhoto$userProfilePhoto class]])
     {
         TLUserProfilePhoto$userProfilePhoto *concretePhoto = (TLUserProfilePhoto$userProfilePhoto *)photo;

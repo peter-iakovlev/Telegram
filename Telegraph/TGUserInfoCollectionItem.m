@@ -53,7 +53,7 @@
 
 - (CGSize)itemSizeForContainerSize:(CGSize)containerSize
 {
-    return CGSizeMake(containerSize.width, 93.0f + _additinalHeight);
+    return CGSizeMake(containerSize.width, 93.0f + (_editing ? 0.0f : -3.0f) + _additinalHeight);
 }
 
 - (NSString *)currentFirstName
@@ -90,6 +90,8 @@
         NSString *status = [self stringForPresence:_user.presence accentColored:&active];
         [view setStatus:status active:active];
     }
+    else
+        [view setStatus:_customStatus active:false];
     
     [view setUpdatingAvatar:_hasUpdatingAvatar animated:false];
     
@@ -142,6 +144,14 @@
             [view setStatus:status active:active];
         }
     }
+}
+
+- (void)setCustomStatus:(NSString *)customStatus
+{
+    _customStatus = customStatus;
+    
+    if (!_automaticallyManageUserPresence)
+        [(TGUserInfoCollectionItemView *)self.boundView setStatus:_customStatus active:false];
 }
 
 - (void)setEditing:(bool)editing animated:(bool)animated
@@ -200,9 +210,12 @@
 
 - (void)updateTimestamp
 {
-    bool active = false;
-    NSString *status = [self stringForPresence:_user.presence accentColored:&active];
-    [(TGUserInfoCollectionItemView *)[self boundView] setStatus:status active:active];
+    if (_automaticallyManageUserPresence)
+    {
+        bool active = false;
+        NSString *status = [self stringForPresence:_user.presence accentColored:&active];
+        [(TGUserInfoCollectionItemView *)[self boundView] setStatus:status active:active];
+    }
 }
 
 - (NSString *)stringForPresence:(TGUserPresence)presence accentColored:(bool *)accentColored
@@ -213,9 +226,7 @@
             *accentColored = true;
         return TGLocalizedStatic(@"Presence.online");
     }
-    else if (presence.lastSeen < 0)
-        return TGLocalizedStatic(@"Presence.invisible");
-    else if (presence.lastSeen != 0)
+    if (presence.lastSeen != 0)
         return [TGDateUtils stringForRelativeLastSeen:presence.lastSeen];
     
     return TGLocalized(@"Presence.offline");

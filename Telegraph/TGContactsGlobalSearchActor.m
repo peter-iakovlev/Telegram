@@ -54,12 +54,14 @@
     
     NSMutableArray *foundList = [[NSMutableArray alloc] init];
     
-    for (TLContactFound *contactDesc in contactsFound.results)
+    for (TLPeer *peer in contactsFound.results)
     {
-        TGUser *user = [parsedUsers objectForKey:[[NSNumber alloc] initWithInt:contactDesc.user_id]];
-        if (user != nil)
-        {
-            [foundList addObject:user];
+        if ([peer isKindOfClass:[TLPeer$peerUser class]]) {
+        TGUser *user = [parsedUsers objectForKey:[[NSNumber alloc] initWithInt:((TLPeer$peerUser *)peer).user_id]];
+            if (user != nil)
+            {
+                [foundList addObject:user];
+            }
         }
     }
     

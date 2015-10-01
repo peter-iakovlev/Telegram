@@ -185,7 +185,7 @@
         {
             TLContactLocated$contactLocatedPreview *concreteContact = (TLContactLocated$contactLocatedPreview *)contactDesc;
             
-            [hiddenUsersLocated addObject:[[NSDictionary alloc] initWithObjectsAndKeys:[NSString stringWithString:concreteContact.hash], @"hash", [[NSNumber alloc] initWithInt:concreteContact.date], @"date", nil]];
+            [hiddenUsersLocated addObject:[[NSDictionary alloc] initWithObjectsAndKeys:[NSString stringWithString:concreteContact.n_hash], @"hash", [[NSNumber alloc] initWithInt:concreteContact.date], @"date", nil]];
         }
     }
     
@@ -252,7 +252,7 @@
     
     if (hasNew)
     {
-        [[TGInterfaceManager instance] displayNearbyBannerIdNeeded:usersLocated.count];
+        [[TGInterfaceManager instance] displayNearbyBannerIdNeeded:(int)usersLocated.count];
     }
 }
 

@@ -10,9 +10,9 @@
 int TGBaseFontSize = 16;
 static int defaultMonochromeColor = 0x000000;
 
-static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFactor)
+static UIColor *colorWithFactor(UIColor *baseColor, CGFloat factor, CGFloat alphaFactor)
 {
-    float r = 0.0f, g = 0.0f, b = 0.0f, a = 0.0f;
+    CGFloat r = 0.0f, g = 0.0f, b = 0.0f, a = 0.0f;
     [baseColor getRed:&r green:&g blue:&b alpha:&a];
     return [UIColor colorWithRed:MIN(r * factor, 1.0f) green:MIN(g * factor, 1.0f) blue:MIN(b * factor, 1.0f) alpha:MIN(1.0f, a * alphaFactor)];
 }
@@ -46,10 +46,12 @@ static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFac
         if (font != nil)
             CFRelease(font);
         
-        TGLog(@"===== Creating base font");
-        
         fontSize = TGBaseFontSize;
-        font = CTFontCreateWithName(CFSTR("HelveticaNeue"), TGBaseFontSize, NULL);
+        if (iosMajorVersion() >= 9) {
+            font = CTFontCreateWithName(CFSTR(".SFUIText-Regular"), TGBaseFontSize, NULL);
+        } else {
+            font = CTFontCreateWithName(CFSTR("HelveticaNeue"), TGBaseFontSize, NULL);
+        }
     }
     
     return font;
@@ -62,7 +64,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFac
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 13, NULL));
+        if (iosMajorVersion() >= 9) {
+            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 13, NULL));
+        } else {
+            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 13, NULL));
+        }
     });
     
     return font;
@@ -75,7 +81,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFac
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue-Bold"), 13, NULL));
+        if (iosMajorVersion() >= 9) {
+            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 13, NULL));
+        } else {
+            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue-Bold"), 13, NULL));
+        }
     });
     
     return font;
@@ -88,7 +98,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFac
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 12, NULL));
+        if (iosMajorVersion() >= 9) {
+            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 12, NULL));
+        } else {
+            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 12, NULL));
+        }
     });
     
     return font;
@@ -101,7 +115,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFac
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        font = CFRetain(CTFontCreateWithName(CFSTR("Helvetica"), 13, NULL));
+        if (iosMajorVersion() >= 9) {
+            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 13, NULL));
+        } else {
+            font = CFRetain(CTFontCreateWithName(CFSTR("Helvetica"), 13, NULL));
+        }
     });
     
     return font;
@@ -114,7 +132,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFac
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        font = CFRetain(CTFontCreateWithName(CFSTR("Helvetica-Bold"), 13, NULL));
+        if (iosMajorVersion() >= 9) {
+            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Bold"), 13, NULL));
+        } else {
+            font = CFRetain(CTFontCreateWithName(CFSTR("Helvetica-Bold"), 13, NULL));
+        }
     });
     
     return font;
@@ -127,7 +149,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFac
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 13, NULL));
+        if (iosMajorVersion() >= 9) {
+            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 13, NULL));
+        } else {
+            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 13, NULL));
+        }
     });
     
     return font;
@@ -140,7 +166,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFac
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue-Medium"), 13, NULL));
+        if (iosMajorVersion() >= 9) {
+            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Medium"), 13, NULL));
+        } else {
+            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue-Medium"), 13, NULL));
+        }
     });
     
     return font;
@@ -153,7 +183,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFac
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 14, NULL));
+        if (iosMajorVersion() >= 9) {
+            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 14, NULL));
+        } else {
+            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 14, NULL));
+        }
     });
     
     return font;
@@ -357,7 +391,13 @@ static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFac
 {
     static CTFontRef font = nil;
     if (font == nil)
-        font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 14, NULL));
+    {
+        if (iosMajorVersion() >= 9) {
+            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 14, NULL));
+        } else {
+            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 14, NULL));
+        }
+    }
     return font;
 }
 
@@ -411,7 +451,7 @@ static UIColor *colorWithFactor(UIColor *baseColor, float factor, float alphaFac
     return image;
 }
 
-static UIImage *generateProgressBackground(int baseColor, float alphaFactor, float colorFactor)
+static UIImage *generateProgressBackground(int baseColor, CGFloat alphaFactor, CGFloat colorFactor)
 {
     TGLog(@"Generating progress background");
     
@@ -421,7 +461,7 @@ static UIImage *generateProgressBackground(int baseColor, float alphaFactor, flo
     
     CGRect bounds = CGRectMake(0, 0, 6, 6);
     
-    CGFloat radius = floorf(bounds.size.height / 2.0f);
+    CGFloat radius = CGFloor(bounds.size.height / 2.0f);
     
     CGMutablePathRef visiblePath = CGPathCreateMutable();
     CGRect innerRect = CGRectInset(bounds, radius, radius);
@@ -474,7 +514,7 @@ static UIImage *generateProgressForeground(int baseColor, float alphaFactor, flo
     
     CGRect bounds = CGRectMake(1, 1, 6, 4);
     
-    CGFloat radius = floorf(bounds.size.height / 2.0f);
+    CGFloat radius = CGFloor(bounds.size.height / 2.0f);
     
     CGMutablePathRef visiblePath = CGPathCreateMutable();
     CGRect innerRect = CGRectInset(bounds, radius, radius);
@@ -514,7 +554,7 @@ static UIImage *generateProgressForeground(int baseColor, float alphaFactor, flo
     return cachedImage;
 }
 
-static UIImage *generateInlineCancelButton(int baseColor, float alphaFactor, float colorFactor)
+static UIImage *generateInlineCancelButton(int baseColor, CGFloat alphaFactor, CGFloat colorFactor)
 {
     TGLog(@"Generating inline cancel button variant");
     
@@ -524,7 +564,7 @@ static UIImage *generateInlineCancelButton(int baseColor, float alphaFactor, flo
     
     CGRect bounds = CGRectMake(0, 0, 20, 20);
     
-    CGFloat radius = floorf(bounds.size.height / 2.0f);
+    CGFloat radius = CGFloor(bounds.size.height / 2.0f);
     
     CGContextSaveGState(context);
     
@@ -597,7 +637,7 @@ static UIImage *generateInlineCancelButton(int baseColor, float alphaFactor, flo
     return cachedImage;
 }
 
-static UIImage *generateDownloadButton(int baseColor, float alphaFactor, float colorFactor)
+static UIImage *generateDownloadButton(int baseColor, CGFloat alphaFactor, CGFloat colorFactor)
 {
     TGLog(@"Generating download button variant");
     
@@ -607,7 +647,7 @@ static UIImage *generateDownloadButton(int baseColor, float alphaFactor, float c
     
     CGRect bounds = CGRectMake(0, 0, 29, 29);
     
-    CGFloat radius = floorf(bounds.size.height / 2.0f);
+    CGFloat radius = CGFloor(bounds.size.height / 2.0f);
     
     CGMutablePathRef visiblePath = CGPathCreateMutable();
     CGRect innerRect = CGRectInset(bounds, radius, radius);
@@ -1121,6 +1161,25 @@ static UIImage *generateDownloadButton(int baseColor, float alphaFactor, float c
     return image;
 }
 
+- (UIImage *)systemReplyBackground
+{
+    static int cachedImageColor = -1;
+    static UIImage *image = nil;
+    if (cachedImageColor != _monochromeColor || image == nil)
+    {
+        UIImage *rawImage = [self generateSystemReplyBackground:_monochromeColor];
+        image = [rawImage stretchableImageWithLeftCapWidth:(int)(rawImage.size.width / 2) topCapHeight:(int)(rawImage.size.height / 2)];
+        
+        cachedImageColor = _monochromeColor;
+    }
+    return image;
+}
+
+- (UIColor *)systemMessageBackgroundColor
+{
+    return UIColorRGBA(0x000000, MIN(1.0f, 0.3f));
+}
+
 - (UIImage *)dateListMessageBackground
 {
     static int cachedImageColor = -1;
@@ -1137,9 +1196,77 @@ static UIImage *generateDownloadButton(int baseColor, float alphaFactor, float c
     return image;
 }
 
+- (UIImage *)generateSystemReplyBackground:(int)baseColor
+{
+    CGFloat backgroundAlpha = _systemAlpha;
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(4.0f, 4.0f), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGRect bounds = CGRectMake(0.0f, 0.0f, 4.0f, 4.0f);
+    
+    CGFloat radius = 0.5f * CGRectGetHeight(bounds);
+    
+    CGMutablePathRef visiblePath = CGPathCreateMutable();
+    CGRect innerRect = CGRectInset(bounds, radius, radius);
+    CGPathMoveToPoint(visiblePath, NULL, innerRect.origin.x, bounds.origin.y);
+    CGPathAddLineToPoint(visiblePath, NULL, innerRect.origin.x + innerRect.size.width, bounds.origin.y);
+    CGPathAddArcToPoint(visiblePath, NULL, bounds.origin.x + bounds.size.width, bounds.origin.y, bounds.origin.x + bounds.size.width, innerRect.origin.y, radius);
+    CGPathAddLineToPoint(visiblePath, NULL, bounds.origin.x + bounds.size.width, innerRect.origin.y + innerRect.size.height);
+    CGPathAddArcToPoint(visiblePath, NULL,  bounds.origin.x + bounds.size.width, bounds.origin.y + bounds.size.height, innerRect.origin.x + innerRect.size.width, bounds.origin.y + bounds.size.height, radius);
+    CGPathAddLineToPoint(visiblePath, NULL, innerRect.origin.x, bounds.origin.y + bounds.size.height);
+    CGPathAddArcToPoint(visiblePath, NULL,  bounds.origin.x, bounds.origin.y + bounds.size.height, bounds.origin.x, innerRect.origin.y + innerRect.size.height, radius);
+    CGPathAddLineToPoint(visiblePath, NULL, bounds.origin.x, innerRect.origin.y);
+    CGPathAddArcToPoint(visiblePath, NULL,  bounds.origin.x, bounds.origin.y, innerRect.origin.x, bounds.origin.y, radius);
+    CGPathCloseSubpath(visiblePath);
+    
+    CGContextSaveGState(context);
+    
+    UIColor *color = nil;
+    
+    //color = UIColorRGBA(0xffffff, 0.4f);
+    //CGContextSetShadowWithColor(context, CGSizeMake(0.0f, 1.0f), 0.0f, [color CGColor]);
+    
+    color = UIColorRGBA(baseColor, backgroundAlpha);
+    [color setFill];
+    CGContextAddPath(context, visiblePath);
+    CGContextFillPath(context);
+    
+    CGContextRestoreGState(context);
+    
+    CGMutablePathRef path = CGPathCreateMutable();
+    CGPathAddRect(path, NULL, CGRectInset(bounds, -2, -2));
+    
+    CGPathAddPath(path, NULL, visiblePath);
+    CGPathCloseSubpath(path);
+    
+    CGContextAddPath(context, visiblePath);
+    CGContextClip(context);
+    
+    CGContextSaveGState(context);
+    
+    //color = UIColorRGBA(baseColor, shadowAlpha);
+    //CGContextSetShadowWithColor(context, CGSizeMake(0.0f, 1.0f), 1.0f, [color CGColor]);
+    
+    [color setFill];
+    CGContextAddPath(context, path);
+    CGContextEOFillPath(context);
+    
+    CGContextRestoreGState(context);
+    
+    CGPathRelease(path);
+    CGPathRelease(visiblePath);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
 - (UIImage *)generateSystemMessageBackground:(int)baseColor
 {    
-    float backgroundAlpha = _systemAlpha;
+    CGFloat backgroundAlpha = _systemAlpha;
     
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(21, 21), false, 0.0f);
     

@@ -17,13 +17,13 @@
 - (void)readMessagesSuccess:(TLmessages_AffectedHistory *)affectedHistory;
 - (void)readMessagesFailed;
 
-- (void)deleteMessagesSuccess:(NSArray *)deletedMids;
+- (void)deleteMessagesSuccess:(TLmessages_AffectedMessages *)result;
 - (void)deleteMessagesFailed;
 
 - (void)deleteHistorySuccess:(TLmessages_AffectedHistory *)affectedHistory;
 - (void)deleteHistoryFailed;
 
-- (void)deleteMemberSuccess:(TLmessages_StatedMessage *)statedMessage;
+- (void)deleteMemberSuccess:(TLUpdates *)statedMessage;
 - (void)deleteMemberFailed;
 
 - (void)rejectEncryptedChatSuccess;

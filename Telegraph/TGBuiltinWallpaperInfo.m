@@ -43,6 +43,11 @@
     return self;
 }
 
+- (BOOL)isDefault
+{
+    return _builtinId == 0;
+}
+
 - (NSString *)thumbnailUrl
 {
     return [[NSString alloc] initWithFormat:@"builtin-wallpaper://?id=%d&size=thumbnail", _builtinId];

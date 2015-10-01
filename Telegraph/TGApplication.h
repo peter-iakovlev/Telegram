@@ -8,9 +8,7 @@
 
 #import <UIKit/UIKit.h>
 
-#import "TGAppManager.h"
-
-@interface TGApplication : UIApplication <TGApplicationImpl>
+@interface TGApplication : UIApplication
 
 @property (nonatomic) bool processStatusBarHiddenRequests;
 

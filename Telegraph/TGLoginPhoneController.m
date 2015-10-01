@@ -35,13 +35,28 @@
 
 #import "TGSendCodeRequestBuilder.h"
 
-@interface TGLoginPhoneController () <UITextFieldDelegate>
+#import "TGAlertView.h"
+
+#import "TGObserverProxy.h"
+
+#import "TGPhoneUtils.h"
+
+#import "TGUpdateStateRequestBuilder.h"
+
+#import <MessageUI/MessageUI.h>
+
+@interface TGLoginPhoneController () <UITextFieldDelegate, MFMailComposeViewControllerDelegate>
 {
     UIView *_grayBackground;
     UIView *_separatorView;
     UILabel *_titleLabel;
     UILabel *_noticeLabel;
     UIImageView *_inputBackgroundView;
+    
+    TGObserverProxy *_keyValueStoreChangeProxy;
+    bool _editedText;
+    
+    bool _didDisappear;
 }
 
 @property (nonatomic, strong) NSString *presetPhoneCountry;
@@ -118,14 +133,6 @@
         [self updatePhoneTextForCountryFieldText:_countryCodeField.text];
         [self updateCountry];
     }
-}
-
-- (void)viewDidLayoutSubviews
-{
-    if (!_phoneField.isFirstResponder && !_countryCodeField.isFirstResponder)
-        [_phoneField becomeFirstResponder];
-    
-    [super viewDidLayoutSubviews];
 }
 
 - (void)loadView
@@ -250,7 +257,61 @@
     
     [self updateCountry];
     
+    if (_presetPhoneNumber.length == 0 || _presetPhoneCountry.length == 0)
+    {
+        if (iosMajorVersion() >= 7)
+        {
+            NSUbiquitousKeyValueStore *store = [NSUbiquitousKeyValueStore defaultStore];
+            _keyValueStoreChangeProxy = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(keyValueStoreChanged:) name:NSUbiquitousKeyValueStoreDidChangeExternallyNotification object:store];
+            
+            NSString *phoneNumber = [TGPhoneUtils cleanPhone:[store objectForKey:@"telegram_currentPhoneNumber"]];
+            if (phoneNumber.length != 0)
+            {
+                for (int i = 0; i < (int)phoneNumber.length; i++)
+                {
+                    int countryCode = [[phoneNumber substringWithRange:NSMakeRange(0, phoneNumber.length - i)] intValue];
+                    NSString *countryName = [TGLoginCountriesController countryNameByCode:countryCode];
+                    if (countryName != nil)
+                    {
+                        _presetPhoneCountry = [[NSString alloc] initWithFormat:@"+%@", [phoneNumber substringWithRange:NSMakeRange(0, phoneNumber.length - i)]];
+                        _presetPhoneNumber = [phoneNumber substringFromIndex:phoneNumber.length - i];
+                    }
+                }
+            }
+        }
+    }
+    
     [self _applyPresetNumber];
+}
+
+- (void)keyValueStoreChanged:(NSNotification *)__unused notification
+{
+    if (iosMajorVersion() >= 7)// && !_editedText)
+    {
+        NSUbiquitousKeyValueStore *store = [NSUbiquitousKeyValueStore defaultStore];
+        NSString *phoneNumber = [TGPhoneUtils cleanPhone:[store objectForKey:@"telegram_currentPhoneNumber"]];
+        if (phoneNumber.length != 0)
+        {
+            for (int i = 0; i < (int)phoneNumber.length; i++)
+            {
+                int countryCode = [[phoneNumber substringWithRange:NSMakeRange(0, phoneNumber.length - i)] intValue];
+                NSString *countryName = [TGLoginCountriesController countryNameByCode:countryCode];
+                if (countryName != nil)
+                {
+                    NSString *presetPhoneCountry = [[NSString alloc] initWithFormat:@"+%@", [phoneNumber substringWithRange:NSMakeRange(0, phoneNumber.length - i)]];
+                    NSString *presetPhoneNumber = [phoneNumber substringFromIndex:phoneNumber.length - i];
+                    
+                    if (!TGStringCompare(_presetPhoneCountry, presetPhoneCountry) || !TGStringCompare(_presetPhoneNumber, presetPhoneNumber))
+                    {
+                        _presetPhoneCountry = presetPhoneCountry;
+                        _presetPhoneNumber = presetPhoneNumber;
+                        
+                        [self _applyPresetNumber];
+                    }
+                }
+            }
+        }
+    }
 }
 
 - (void)performClose
@@ -286,11 +347,30 @@
 
 - (void)viewWillAppear:(BOOL)animated
 {
-    [self.view setNeedsLayout];
-    
     [self updateInterface:self.interfaceOrientation];
     
     [super viewWillAppear:animated];
+    
+    if (_didDisappear)
+    {
+        if (!_phoneField.isFirstResponder && !_countryCodeField.isFirstResponder)
+            [_phoneField becomeFirstResponder];
+    }
+}
+
+- (void)viewDidDisappear:(BOOL)animated
+{
+    [super viewDidDisappear:animated];
+    
+    _didDisappear = true;
+}
+
+- (void)viewDidLayoutSubviews
+{
+    if (!_phoneField.isFirstResponder && !_countryCodeField.isFirstResponder)
+        [_phoneField becomeFirstResponder];
+    
+    [super viewDidLayoutSubviews];
 }
 
 - (void)controllerInsetUpdated:(UIEdgeInsets)previousInset
@@ -394,6 +474,8 @@
 {
     if (_inProgress)
         return false;
+    
+    _editedText = true;
     
     if (textField == _countryCodeField)
     {
@@ -739,8 +821,10 @@
     }];
 }
 
-- (void)nextButtonPressed
+- (void)_commitNextButtonPressed
 {
+    [TGUpdateStateRequestBuilder updateNotifiedVersionUpdate];
+    
     if (_inProgress)
         return;
     
@@ -774,6 +858,37 @@
     }
 }
 
+- (void)nextButtonPressed
+{
+    if (_inProgress)
+        return;
+    
+    if (TGIsPad())
+    {
+        NSMutableString *string = [[NSMutableString alloc] initWithString:TGLocalized(@"Login.PadPhoneHelp")];
+        NSRange range = [string rangeOfString:@"{number}"];
+        if (range.location != NSNotFound)
+        {
+            NSString *phoneNumber = [NSString stringWithFormat:@"%@%@", [_countryCodeField.text substringFromIndex:1], _phoneField.text];
+            [string replaceCharactersInRange:range withString:[TGPhoneUtils formatPhone:phoneNumber forceInternational:true]];
+        }
+        __weak TGLoginPhoneController *weakSelf = self;
+        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Login.PadPhoneHelpTitle") message:string cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
+        {
+            if (okButtonPressed)
+            {
+                __strong TGLoginPhoneController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    [strongSelf _commitNextButtonPressed];
+                }
+            }
+        }] show];
+    }
+    else
+        [self _commitNextButtonPressed];
+}
+
 - (void)countryButtonPressed:(id)__unused sender
 {
     TGLoginCountriesController *countriesController = [[TGLoginCountriesController alloc] init];
@@ -797,29 +912,68 @@
             {
                 NSString *phoneCodeHash = [((SGraphObjectNode *)result).object objectForKey:@"phoneCodeHash"];
                 
-                [TGAppDelegateInstance saveLoginStateWithDate:(int)CFAbsoluteTimeGetCurrent() phoneNumber:[[NSString alloc] initWithFormat:@"%@|%@", _countryCodeField.text, _phoneField.text] phoneCode:nil phoneCodeHash:phoneCodeHash firstName:nil lastName:nil photo:nil];
-                
                 NSTimeInterval phoneTimeout = (((SGraphObjectNode *)result).object)[@"callTimeout"] == nil ? 60 : [(((SGraphObjectNode *)result).object)[@"callTimeout"] intValue];
                 
-                [self.navigationController pushViewController:[[TGLoginCodeController alloc] initWithShowKeyboard:(_countryCodeField.isFirstResponder || _phoneField.isFirstResponder) phoneNumber:_phoneNumber phoneCodeHash:phoneCodeHash phoneTimeout:phoneTimeout] animated:true];
+                bool messageSentToTelegram = [(((SGraphObjectNode *)result).object)[@"messageSentToTelegram"] intValue];
+                
+                [TGAppDelegateInstance saveLoginStateWithDate:(int)CFAbsoluteTimeGetCurrent() phoneNumber:[[NSString alloc] initWithFormat:@"%@|%@", _countryCodeField.text, _phoneField.text] phoneCode:nil phoneCodeHash:phoneCodeHash codeSentToTelegram:messageSentToTelegram firstName:nil lastName:nil photo:nil];
+                
+                TGLoginCodeController *loginCodeController = [[TGLoginCodeController alloc] initWithShowKeyboard:(_countryCodeField.isFirstResponder || _phoneField.isFirstResponder) phoneNumber:_phoneNumber phoneCodeHash:phoneCodeHash phoneTimeout:phoneTimeout messageSentToTelegram:messageSentToTelegram];
+                [self.navigationController pushViewController:loginCodeController animated:true];
             }
             else
             {
                 NSString *errorText = TGLocalized(@"Login.UnknownError");
                 
+                bool okButton = false;
                 if (resultCode == TGSendCodeErrorInvalidPhone)
+                {
+                    okButton = true;
                     errorText = TGLocalized(@"Login.InvalidPhoneError");
+                }
                 else if (resultCode == TGSendCodeErrorFloodWait)
                     errorText = TGLocalized(@"Login.CodeFloodError");
                 else if (resultCode == TGSendCodeErrorNetwork)
                     errorText = TGLocalized(@"Login.NetworkError");
                 
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
-                [alertView show];
+                __weak TGLoginPhoneController *weakSelf = self;
+                [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:okButton ? TGLocalized(@"Login.PhoneNumberHelp") : nil completionBlock:^(bool okButtonPressed)
+                {
+                    if (okButton && okButtonPressed)
+                    {
+                        if ([MFMailComposeViewController canSendMail])
+                        {
+                            __strong TGLoginPhoneController *strongSelf = weakSelf;
+                            if (strongSelf != nil)
+                            {
+                                NSString *phoneFormatted = [TGPhoneUtils formatPhone:_phoneNumber forceInternational:true];
+                                
+                                MFMailComposeViewController *composeController = [[MFMailComposeViewController alloc] init];
+                                composeController.mailComposeDelegate = strongSelf;
+                                [composeController setToRecipients:@[@"login@stel.com"]];
+                                [composeController setSubject:[[NSString alloc] initWithFormat:TGLocalized(@"Login.EmailPhoneSubject"), phoneFormatted]];
+                                [composeController setMessageBody:[[NSString alloc] initWithFormat:TGLocalized(@"Login.EmailPhoneBody"), phoneFormatted] isHTML:false];
+                                [self presentViewController:composeController animated:true completion:nil];
+                            }
+                        }
+                        else
+                        {
+                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.EmailNotConfiguredError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                        }
+                    }
+                }] show];
             }
         });
     }
 }
+
+- (void)mailComposeController:(MFMailComposeViewController *)__unused controller didFinishWithResult:(MFMailComposeResult)__unused result error:(NSError *)__unused error
+{
+    [self dismissViewControllerAnimated:true completion:nil];
+    
+    [_phoneField becomeFirstResponder];
+}
+
 
 - (void)actionStageActionRequested:(NSString *)action options:(NSDictionary *)options
 {

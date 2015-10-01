@@ -73,7 +73,7 @@
 
 @protocol TGDeleteChatMemberProtocol <NSObject>
 
-- (void)deleteMemberSuccess:(TLmessages_StatedMessage *)statedMessage;
+- (void)deleteMemberSuccess:(TLUpdates *)statedMessage;
 - (void)deleteMemberFailed;
 
 @end

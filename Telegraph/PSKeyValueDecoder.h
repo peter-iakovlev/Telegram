@@ -7,5 +7,6 @@
 
 - (void)resetData:(NSData *)data;
 - (void)resetBytes:(uint8_t const *)bytes length:(NSUInteger)length;
+- (void)rewind;
 
 @end

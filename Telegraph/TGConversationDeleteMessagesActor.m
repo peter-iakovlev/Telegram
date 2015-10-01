@@ -8,6 +8,14 @@
 
 #import "TGDownloadManager.h"
 
+#import "TGPeerIdAdapter.h"
+
+@interface TGConversationDeleteMessagesActor () {
+    int64_t _peerId;
+}
+
+@end
+
 @implementation TGConversationDeleteMessagesActor
 
 + (NSString *)genericPath
@@ -15,31 +23,40 @@
     return @"/tg/conversation/@/deleteMessages/@";
 }
 
+- (instancetype)initWithPath:(NSString *)path {
+    self = [super initWithPath:path];
+    if (self != nil) {
+        NSRange range = [path rangeOfString:@")/deleteMessages/"];
+        _peerId = [[path substringWithRange:NSMakeRange(@"/tg/conversation/(".length, range.location - @"/tg/conversation/(".length)] longLongValue];
+    }
+    return self;
+}
+
 - (void)execute:(NSDictionary *)options
 {
-    [ActionStageInstance() actionCompleted:self.path result:nil];
-    
     NSArray *messageIds = [options objectForKey:@"mids"];
     
-    [[TGDownloadManager instance] cancelItemsWithMessageIdsInArray:messageIds];
-    
-    NSMutableDictionary *messagesByConversation = [[NSMutableDictionary alloc] init];
-    [TGDatabaseInstance() deleteMessages:messageIds populateActionQueue:true fillMessagesByConversationId:messagesByConversation];
-    
-    [messagesByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSArray *messagesInConversation, __unused BOOL *stop)
+    [[TGDownloadManager instance] cancelItemsWithMessageIdsInArray:messageIds groupId:_peerId];
+ 
+    if (TGPeerIdIsChannel(_peerId)) {
+        [TGDatabaseInstance() addMessagesToChannel:_peerId messages:nil deleteMessages:messageIds unimportantGroups:nil addedHoles:nil removedHoles:nil removedUnimportantHoles:nil updatedMessageSortKeys:nil returnGroups:false changedMessages:nil];
+        [TGDatabaseInstance() enqueueDeleteChannelMessages:_peerId messageIds:messageIds];
+    } else {
+        NSMutableDictionary *messagesByConversation = [[NSMutableDictionary alloc] init];
+        [TGDatabaseInstance() deleteMessages:messageIds populateActionQueue:true fillMessagesByConversationId:messagesByConversation];
+    }
+
+    for (NSNumber *nMid in messageIds)
     {
-        for (NSNumber *nMid in messagesInConversation)
+        int32_t mid = (int32_t)[nMid intValue];
+        if (mid >= TGMessageLocalMidBaseline)
         {
-            int32_t mid = (int32_t)[nMid intValue];
-            if (mid >= TGMessageLocalMidBaseline)
-            {
-                [ActionStageInstance() removeAllWatchersFromPath:[[NSString alloc] initWithFormat:@"/tg/sendCommonMessage/(%lld)/(%d)", [nConversationId longLongValue], [nMid intValue]]];
-                [ActionStageInstance() removeAllWatchersFromPath:[[NSString alloc] initWithFormat:@"/tg/sendSecretMessage/(%lld)/(%d)", [nConversationId longLongValue], [nMid intValue]]];
-            }
+            [ActionStageInstance() removeAllWatchersFromPath:[[NSString alloc] initWithFormat:@"/tg/sendCommonMessage/(%lld)/(%d)", _peerId, [nMid intValue]]];
+            [ActionStageInstance() removeAllWatchersFromPath:[[NSString alloc] initWithFormat:@"/tg/sendSecretMessage/(%lld)/(%d)", _peerId, [nMid intValue]]];
         }
-        
-        [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messagesDeleted", [nConversationId longLongValue]] resource:[[SGraphObjectNode alloc] initWithObject:messagesInConversation]];
-    }];
+    }
+    
+    [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messagesDeleted", _peerId] resource:[[SGraphObjectNode alloc] initWithObject:messageIds]];
     
     dispatch_async([ActionStageInstance() globalStageDispatchQueue], ^
     {

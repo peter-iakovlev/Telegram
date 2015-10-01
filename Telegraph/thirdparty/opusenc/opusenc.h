@@ -4,6 +4,8 @@
 #include "opus_types.h"
 #include <ogg/ogg.h>
 
+#import "TGDataItem.h"
+
 #ifdef ENABLE_NLS
 #include <libintl.h>
 #define _(X) gettext(X)
@@ -49,7 +51,7 @@ typedef struct
 
 @interface TGOggOpusWriter : NSObject
 
-- (bool)begin:(NSFileHandle *)fileHandle;
+- (bool)beginWithDataItem:(TGDataItem *)dataItem;
 - (bool)writeFrame:(uint8_t *)framePcmBytes frameByteCount:(NSUInteger)frameByteCount;
 - (NSUInteger)encodedBytes;
 - (NSTimeInterval)encodedDuration;

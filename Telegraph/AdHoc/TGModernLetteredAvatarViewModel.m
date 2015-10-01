@@ -20,7 +20,9 @@
     
     NSString *_firstName;
     NSString *_lastName;
+    NSString *_title;
     int32_t _uid;
+    int64_t _groupId;
 }
 
 @end
@@ -66,10 +68,15 @@
     [view setSingleFontSize:14.0f doubleFontSize:14.0f useBoldFont:true];
     view.fadeTransition = true;
     
-    if (_avatarUri.length == 0)
-        [view setFirstName:_firstName lastName:_lastName uid:_uid placeholder:_placeholder];
-    else
+    if (_avatarUri.length == 0) {
+        if (_uid != 0) {
+            [view setFirstName:_firstName lastName:_lastName uid:_uid placeholder:_placeholder];
+        } else {
+            [view setTitle:_title groupId:_groupId placeholder:_placeholder];
+        }
+    } else {
         [view setAvatarUri:_avatarUri filter:_filter placeholder:_placeholder];
+    }
 }
 
 - (void)setAvatarUri:(NSString *)avatarUri
@@ -94,13 +101,34 @@
     _avatarUri = nil;
     _firstName = firstName;
     _lastName = lastName;
+    _title = nil;
     _uid = uid;
+    _groupId = 0;
     
     TGModernLetteredAvatarView *view = (TGModernLetteredAvatarView *)[self boundView];
     if (view != nil)
     {
         if (_avatarUri.length == 0)
             [view setFirstName:_firstName lastName:_lastName uid:_uid placeholder:_placeholder];
+        else
+            [view setAvatarUri:_avatarUri filter:_filter placeholder:_placeholder];
+    }
+}
+
+- (void)setAvatarTitle:(NSString *)title groupId:(int64_t)groupId
+{
+    _avatarUri = nil;
+    _firstName = nil;
+    _lastName = nil;
+    _title = title;
+    _uid = 0;
+    _groupId = groupId;
+    
+    TGModernLetteredAvatarView *view = (TGModernLetteredAvatarView *)[self boundView];
+    if (view != nil)
+    {
+        if (_avatarUri.length == 0)
+            [view setTitle:_title groupId:_groupId placeholder:_placeholder];
         else
             [view setAvatarUri:_avatarUri filter:_filter placeholder:_placeholder];
     }

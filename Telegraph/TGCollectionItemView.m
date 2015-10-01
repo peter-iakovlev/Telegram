@@ -33,46 +33,62 @@
         
         self.selectedBackgroundView = [[UIView alloc] init];
         self.selectedBackgroundView.backgroundColor = TGSelectionColor();
+        
+        static UIColor *stripeColor = nil;
+        
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^
+        {
+            stripeColor = TGSeparatorColor();
+        });
+        
+        if (_topStripeView == nil)
+        {
+            _topStripeView = [[UIView alloc] init];
+            _topStripeView.backgroundColor = stripeColor;
+            [self.backgroundView addSubview:_topStripeView];
+        }
+        
+        if (_bottomStripeView == nil)
+        {
+            _bottomStripeView = [[UIView alloc] init];
+            _bottomStripeView.backgroundColor = stripeColor;
+            [self.backgroundView addSubview:_bottomStripeView];
+        }
     }
     return self;
 }
 
 - (void)setItemPosition:(int)itemPosition
 {
+    [self setItemPosition:itemPosition animated:false];
+}
+
+- (void)setItemPosition:(int)itemPosition animated:(bool)animated
+{
     if (_itemPosition != itemPosition)
     {
         _itemPosition = itemPosition;
-        [self _updateStripes];
-        [self setNeedsLayout];
+        if (animated)
+        {
+            [UIView animateWithDuration:0.25 animations:^
+            {
+                [self _updateStripes];
+            }];
+            [self setNeedsLayout];
+        }
+        else
+        {
+            [self _updateStripes];
+            [self setNeedsLayout];
+        }
     }
 }
 
 - (void)_updateStripes
 {
-    static CGColorRef stripeColor = nil;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        stripeColor = CGColorRetain(TGSeparatorColor().CGColor);
-    });
-    
-    if (_topStripeLayer == nil)
-    {
-        _topStripeLayer = [[CALayer alloc] init];
-        _topStripeLayer.backgroundColor = stripeColor;
-        [self.backgroundView.layer addSublayer:_topStripeLayer];
-    }
-    
-    if (_bottomStripeLayer == nil)
-    {
-        _bottomStripeLayer = [[CALayer alloc] init];
-        _bottomStripeLayer.backgroundColor = stripeColor;
-        [self.backgroundView.layer addSublayer:_bottomStripeLayer];
-    }
-    
-    _topStripeLayer.hidden = (_itemPosition & (TGCollectionItemViewPositionFirstInBlock | TGCollectionItemViewPositionLastInBlock | TGCollectionItemViewPositionMiddleInBlock)) == 0;
-    _bottomStripeLayer.hidden = (_itemPosition & (TGCollectionItemViewPositionLastInBlock | TGCollectionItemViewPositionIncludeNextSeparator)) == 0;
+    _topStripeView.alpha = (_itemPosition & (TGCollectionItemViewPositionFirstInBlock | TGCollectionItemViewPositionLastInBlock | TGCollectionItemViewPositionMiddleInBlock)) == 0 ? 0.0f : 1.0f;
+    _bottomStripeView.alpha = (_itemPosition & (TGCollectionItemViewPositionLastInBlock | TGCollectionItemViewPositionIncludeNextSeparator)) == 0 ? 0.0f : 1.0f;
     self.backgroundView.backgroundColor = _itemPosition == 0 ? [UIColor clearColor] : [UIColor whiteColor];
 }
 
@@ -174,14 +190,14 @@ static void adjustSelectedBackgroundViewFrame(CGSize viewSize, int positionMask,
     });
     
     if (_itemPosition & TGCollectionItemViewPositionFirstInBlock)
-        _topStripeLayer.frame = CGRectMake(0, 0, viewSize.width, stripeHeight);
+        _topStripeView.frame = CGRectMake(0, 0, viewSize.width, stripeHeight);
     else
-        _topStripeLayer.frame = CGRectMake(_separatorInset, 0, viewSize.width - _separatorInset, stripeHeight);
+        _topStripeView.frame = CGRectMake(_separatorInset, 0, viewSize.width - _separatorInset, stripeHeight);
     
     if (_itemPosition & TGCollectionItemViewPositionLastInBlock)
-        _bottomStripeLayer.frame = CGRectMake(0, viewSize.height - stripeHeight, viewSize.width, stripeHeight);
+        _bottomStripeView.frame = CGRectMake(0, viewSize.height - stripeHeight, viewSize.width, stripeHeight);
     else if (_itemPosition & TGCollectionItemViewPositionIncludeNextSeparator)
-        _bottomStripeLayer.frame = CGRectMake(_separatorInset, viewSize.height - stripeHeight, viewSize.width - _separatorInset, stripeHeight);
+        _bottomStripeView.frame = CGRectMake(_separatorInset, viewSize.height - stripeHeight, viewSize.width - _separatorInset, stripeHeight);
 }
 
 @end

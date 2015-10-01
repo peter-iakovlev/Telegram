@@ -1,11 +1,3 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGUpdateMessageService.h"
 
 #import "TL/TLMetaScheme.h"
@@ -20,6 +12,16 @@
 #import "TGUpdateMessage.h"
 #import "TGUpdate.h"
 #import "TLUpdate$updateChangePts.h"
+#import "TLUpdates+TG.h"
+
+#import "TGUpdatesWithPts.h"
+#import "TGUpdatesWithQts.h"
+#import "TGUpdatesWithSeq.h"
+#import "TGUpdatesWithDate.h"
+
+#import "TLUpdates$modernUpdateShortMessage.h"
+#import "TLUpdates$modernUpdateShortChatMessage.h"
+#import "TLMessage$modernMessage.h"
 
 @interface TGUpdateMessageService ()
 {
@@ -157,154 +159,303 @@
 
 - (void)processMessages:(NSArray *)messages
 {
-    NSMutableArray *statelessUpdateList = [[NSMutableArray alloc] init];
-    NSMutableArray *statefulUpdateList = [[NSMutableArray alloc] init];
+    NSMutableArray *collectedUpdatesWithPts = [[NSMutableArray alloc] init];
+    NSMutableArray *collectedUpdatesWithQts = [[NSMutableArray alloc] init];
+    NSMutableArray *collectedUpdatesWithSeq = [[NSMutableArray alloc] init];
+    NSMutableArray *collectedUpdatesWithDate = [[NSMutableArray alloc] init];
     
     for (MTIncomingMessage *incomingMessage in messages)
     {
-        [self processMessage:incomingMessage statelessUpdateList:statelessUpdateList statefulUpdateList:statefulUpdateList];
-    }
-    
-    if (statelessUpdateList.count != 0)
-    {
-        [statelessUpdateList sortUsingComparator:^NSComparisonResult(TGUpdateMessage *updateMessage1, TGUpdateMessage *updateMessage2)
+        if ([incomingMessage.body isKindOfClass:[TLUpdates$updates class]] || [incomingMessage.body isKindOfClass:[TLUpdates$updatesCombined class]])
         {
-            TLUpdates$updateShort *message1 = updateMessage1.message;
-            TLUpdates$updateShort *message2 = updateMessage2.message;
-            return message1.date < message2.date ? NSOrderedAscending : NSOrderedDescending;
-        }];
-        
-        NSMutableArray *statelessUpdatesSequence = [[NSMutableArray alloc] init];
-        
-        for (TGUpdateMessage *updateMessage in statelessUpdateList)
-        {
-            TLUpdates$updateShort *message = updateMessage.message;
+            NSArray *containedUpdates = @[];
+            int32_t updatesSeqStart = 0;
+            int32_t updatesSeqEnd = 0;
+            int32_t updatesDate = 0;
+            NSArray *updatesUsers = nil;
+            NSArray *updatesChats = nil;
             
-            [statelessUpdatesSequence addObject:[[TGUpdate alloc] initWithUpdates:[[NSArray alloc] initWithObjects:message.update, nil] date:message.date beginSeq:0 endSeq:0 messageDate:updateMessage.messageDate usersDesc:nil chatsDesc:nil]];
-        }
-        
-        if (statelessUpdatesSequence.count != 0)
-        {
-            static int statelessUpdatesId = 0;
-            [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/service/tryupdates/(stateless%d)", statelessUpdatesId++] options:[NSDictionary dictionaryWithObjectsAndKeys:statelessUpdatesSequence, @"multipleUpdates", [NSNumber numberWithInt:-1], @"unreadCount", nil] watcher:TGTelegraphInstance];
-        }
-    }
-    
-    if (statefulUpdateList.count != 0)
-    {
-        NSMutableArray *updatesArray = [[NSMutableArray alloc] init];
-        
-        for (TGUpdateMessage *updateMessage in statefulUpdateList)
-        {
-            if ([updateMessage.message isKindOfClass:[TLUpdates$updates class]])
+            if ([incomingMessage.body isKindOfClass:[TLUpdates$updates class]])
             {
-                TLUpdates$updates *update = updateMessage.message;
-                
-                [updatesArray addObject:[[TGUpdate alloc] initWithUpdates:update.updates date:update.date beginSeq:update.seq endSeq:update.seq messageDate:updateMessage.messageDate usersDesc:update.users chatsDesc:update.chats]];
+                TLUpdates$updates *updates = (TLUpdates$updates *)incomingMessage.body;
+                containedUpdates = updates.updates;
+                updatesSeqStart = updates.seq;
+                updatesSeqEnd = updates.seq;
+                updatesDate = updates.date;
+                updatesUsers = updates.users;
+                updatesChats = updates.chats;
             }
-            else if ([updateMessage.message isKindOfClass:[TLUpdates$updatesCombined class]])
+            else if ([incomingMessage.body isKindOfClass:[TLUpdates$updatesCombined class]])
             {
-                TLUpdates$updatesCombined *updatesCombined = updateMessage.message;
-                
-                [updatesArray addObject:[[TGUpdate alloc] initWithUpdates:updatesCombined.updates date:updatesCombined.date beginSeq:updatesCombined.seq_start endSeq:updatesCombined.seq messageDate:updateMessage.messageDate usersDesc:updatesCombined.users chatsDesc:updatesCombined.chats]];
+                TLUpdates$updatesCombined *updatesCombined = (TLUpdates$updatesCombined *)incomingMessage.body;
+                containedUpdates = updatesCombined.updates;
+                updatesSeqStart = updatesCombined.seq_start;
+                updatesSeqEnd = updatesCombined.seq;
+                updatesDate = updatesCombined.date;
+                updatesUsers = updatesCombined.users;
+                updatesChats = updatesCombined.chats;
             }
-        }
-        
-        [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(stateful)" options:[[NSDictionary alloc] initWithObjectsAndKeys:updatesArray, @"multipleUpdates", [[NSNumber alloc] initWithBool:true], @"stateful", nil] watcher:TGTelegraphInstance];
-    }
-}
-
-- (void)processMessage:(MTIncomingMessage *)incomingMessage statelessUpdateList:(NSMutableArray *)statelessUpdateList statefulUpdateList:(NSMutableArray *)statefulUpdateList
-{
-    if ([incomingMessage.body isKindOfClass:[TLUpdates$updateShort class]])
-        [statelessUpdateList addObject:[[TGUpdateMessage alloc] initWithMessage:incomingMessage.body messageDate:(int)incomingMessage.timestamp]];
-    else if ([incomingMessage.body isKindOfClass:[TLUpdates$updateShortMessage class]] || [incomingMessage.body isKindOfClass:[TLUpdates$updateShortChatMessage class]])
-    {
-        TLUpdate$updateNewMessage *newMessageUpdate = [[TLUpdate$updateNewMessage alloc] init];
-        
-        TLMessage$message *newMessage = [[TLMessage$message alloc] init];
-        newMessage.n_id = ((TLUpdates$updateShortMessage *)incomingMessage.body).n_id;
-        newMessage.from_id = ((TLUpdates$updateShortMessage *)incomingMessage.body).from_id;
-        
-        if ([incomingMessage.body isKindOfClass:[TLUpdates$updateShortMessage class]])
-        {
-            TLPeer$peerUser *peerUser = [[TLPeer$peerUser alloc] init];
-            peerUser.user_id = TGTelegraphInstance.clientUserId;
-            newMessage.to_id = peerUser;
-        }
-        else
-        {
-            TLPeer$peerChat *peerChat = [[TLPeer$peerChat alloc] init];
-            peerChat.chat_id = ((TLUpdates$updateShortChatMessage *)incomingMessage.body).chat_id;
-            newMessage.to_id = peerChat;
-        }
-        
-        newMessage.out = false;
-        newMessage.unread = true;
-        newMessage.date = ((TLUpdates$updateShortMessage *)incomingMessage.body).date;
-        newMessage.message = ((TLUpdates$updateShortMessage *)incomingMessage.body).message;
-        newMessage.media = [[TLMessageMedia$messageMediaEmpty alloc] init];
-        
-        newMessageUpdate.pts = ((TLUpdates$updateShortMessage *)incomingMessage.body).pts;
-        newMessageUpdate.message = newMessage;
-        
-        TLUpdates$updates *actualUpdates = [[TLUpdates$updates alloc] init];
-        actualUpdates.updates = [[NSArray alloc] initWithObjects:newMessageUpdate, nil];
-        actualUpdates.date = ((TLUpdates$updateShortMessage *)incomingMessage.body).date;
-        actualUpdates.seq = ((TLUpdates$updateShortMessage *)incomingMessage.body).seq;
-        
-        MTIncomingMessage *surrogateIncomingMessage = [[MTIncomingMessage alloc] initWithMessageId:incomingMessage.messageId seqNo:incomingMessage.seqNo salt:incomingMessage.salt timestamp:incomingMessage.timestamp size:incomingMessage.size body:actualUpdates];
-        [self processMessage:surrogateIncomingMessage statelessUpdateList:statelessUpdateList statefulUpdateList:statefulUpdateList];
-    }
-    else if ([incomingMessage.body isKindOfClass:[TLUpdates$updatesTooLong class]])
-    {
-        if (TGTelegraphInstance.clientUserId != 0)
-            [ActionStageInstance() requestActor:@"/tg/service/updatestate" options:nil watcher:TGTelegraphInstance];
-    }
-    else if ([incomingMessage.body isKindOfClass:[TLUpdates$updates class]] || [incomingMessage.body isKindOfClass:[TLUpdates$updatesCombined class]])
-    {
-        //#ifdef DEBUG
-        if ([incomingMessage.body isKindOfClass:[TLUpdates$updatesCombined class]])
-            TGLog(@"#### Update seq = [%d..%d]", ((TLUpdates$updatesCombined *)incomingMessage.body).seq_start, ((TLUpdates$updatesCombined *)incomingMessage.body).seq);
-        else
-            TGLog(@"#### Update seq = %d", ((TLUpdates$updates *)incomingMessage.body).seq);
-        //#endif
-        
-        NSArray *statelessUpdates = [TGApplyUpdatesActor filterStatelessUpdates:(TLUpdates *)incomingMessage.body];
-        for (id updateBody in statelessUpdates)
-        {
-            [statelessUpdateList addObject:[[TGUpdateMessage alloc] initWithMessage:updateBody messageDate:(int)incomingMessage.timestamp]];
-        }
-        
-        if (((TLUpdates$updates *)incomingMessage.body).seq != 0)
-        {
-            if (((TLUpdates$updates *)incomingMessage.body).updates.count == 0)
-                [self updatePts:0 date:0 seq:((TLUpdates$updates *)incomingMessage.body).seq];
+            
+            NSMutableArray *updatesWithPts = [[NSMutableArray alloc] init];
+            NSMutableArray *updatesWithQts = [[NSMutableArray alloc] init];
+            NSMutableArray *otherUpdates = [[NSMutableArray alloc] init];
+            
+            for (TLUpdate *update in containedUpdates)
+            {
+                if ([update hasPts])
+                {
+                    NSAssert([update respondsToSelector:@selector(pts_count)], @"update with pts should also contain pts_count");
+                    [updatesWithPts addObject:update];
+                }
+                if ([update respondsToSelector:@selector(qts)])
+                {
+                    [updatesWithQts addObject:update];
+                }
+                else
+                    [otherUpdates addObject:update];
+            }
+            
+            if (updatesWithPts.count != 0)
+            {
+                [collectedUpdatesWithPts addObject:[[TGUpdatesWithPts alloc] initWithUpdates:updatesWithPts users:updatesUsers chats:updatesChats]];
+            }
+            
+            if (updatesWithQts.count != 0)
+            {
+                [collectedUpdatesWithQts addObject:[[TGUpdatesWithQts alloc] initWithUpdates:updatesWithQts users:updatesUsers chats:updatesChats]];
+            }
+            
+            if (updatesSeqEnd != 0)
+            {
+                [collectedUpdatesWithSeq addObject:[[TGUpdatesWithSeq alloc] initWithUpdates:otherUpdates date:updatesDate seqStart:updatesSeqStart seqEnd:updatesSeqEnd users:updatesUsers chats:updatesChats]];
+            }
             else
             {
-                [statefulUpdateList addObject:[[TGUpdateMessage alloc] initWithMessage:incomingMessage.body messageDate:(int)incomingMessage.timestamp]];
+                [collectedUpdatesWithDate addObject:[[TGUpdatesWithDate alloc] initWithUpdates:otherUpdates date:updatesDate users:updatesUsers chats:updatesChats]];
             }
         }
-        else if (((TLUpdates$updates *)incomingMessage.body).updates.count != 0)
+        else if ([incomingMessage.body isKindOfClass:[TLUpdates$updateShort class]])
         {
-            NSArray *convertedUpdates = [TGApplyUpdatesActor makeStatelessUpdates:(TLUpdates *)incomingMessage.body];
-            for (id updateBody in convertedUpdates)
+            TLUpdates$updateShort *updateShort = (TLUpdates$updateShort *)incomingMessage.body;
+            if ([updateShort.update hasPts])
             {
-                [statelessUpdateList addObject:[[TGUpdateMessage alloc] initWithMessage:updateBody messageDate:(int)incomingMessage.timestamp]];
+                NSAssert([updateShort.update respondsToSelector:@selector(pts_count)], @"update with pts should also contain pts_count");
+                [collectedUpdatesWithPts addObject:[[TGUpdatesWithPts alloc] initWithUpdates:@[updateShort.update] users:nil chats:nil]];
+            }
+            else if ([updateShort.update respondsToSelector:@selector(qts)])
+            {
+                [collectedUpdatesWithQts addObject:[[TGUpdatesWithQts alloc] initWithUpdates:@[updateShort.update] users:nil chats:nil]];
+            }
+            else
+            {
+                [collectedUpdatesWithDate addObject:[[TGUpdatesWithDate alloc] initWithUpdates:@[updateShort.update] date:updateShort.date users:nil chats:nil]];
             }
         }
+        else if ([incomingMessage.body isKindOfClass:[TLUpdates$modernUpdateShortChatMessage class]])
+        {
+            TLUpdates$modernUpdateShortChatMessage *updateShortChatMessage = (TLUpdates$modernUpdateShortChatMessage *)incomingMessage.body;
+            
+            TLMessage$modernMessage *synthesizedMessage = [[TLMessage$modernMessage alloc] init];
+            synthesizedMessage.n_id = updateShortChatMessage.n_id;
+            synthesizedMessage.flags = updateShortChatMessage.flags;
+            synthesizedMessage.from_id = updateShortChatMessage.from_id;
+            TLPeer$peerChat *toId = [[TLPeer$peerChat alloc] init];
+            toId.chat_id = updateShortChatMessage.chat_id;
+            synthesizedMessage.to_id = toId;
+            synthesizedMessage.date = updateShortChatMessage.date;
+            synthesizedMessage.message = updateShortChatMessage.message;
+            synthesizedMessage.media = [[TLMessageMedia$messageMediaEmpty alloc] init];
+            synthesizedMessage.fwd_from_id = updateShortChatMessage.fwd_from_id;
+            synthesizedMessage.fwd_date = updateShortChatMessage.fwd_date;
+            synthesizedMessage.reply_to_msg_id = updateShortChatMessage.reply_to_msg_id;
+            synthesizedMessage.entities = updateShortChatMessage.entities;
+            
+            TLUpdate$updateNewMessage *updateNewMessage = [[TLUpdate$updateNewMessage alloc] init];
+            updateNewMessage.message = synthesizedMessage;
+            updateNewMessage.pts = updateShortChatMessage.pts;
+            updateNewMessage.pts_count = updateShortChatMessage.pts_count;
+            
+            [collectedUpdatesWithPts addObject:[[TGUpdatesWithPts alloc] initWithUpdates:@[updateNewMessage] users:nil chats:nil]];
+        }
+        else if ([incomingMessage.body isKindOfClass:[TLUpdates$modernUpdateShortMessage class]])
+        {
+            TLUpdates$modernUpdateShortMessage *updateShortMessage = (TLUpdates$modernUpdateShortMessage *)incomingMessage.body;
+            
+            TLMessage$modernMessage *synthesizedMessage = [[TLMessage$modernMessage alloc] init];
+            synthesizedMessage.n_id = updateShortMessage.n_id;
+            synthesizedMessage.flags = updateShortMessage.flags;
+            if (updateShortMessage.flags & 2) //outgoing
+            {
+                synthesizedMessage.from_id = TGTelegraphInstance.clientUserId;
+                TLPeer$peerUser *toId = [[TLPeer$peerUser alloc] init];
+                toId.user_id = updateShortMessage.user_id;
+                synthesizedMessage.to_id = toId;
+            }
+            else
+            {
+                synthesizedMessage.from_id = updateShortMessage.user_id;
+                TLPeer$peerUser *toId = [[TLPeer$peerUser alloc] init];
+                toId.user_id = TGTelegraphInstance.clientUserId;
+                synthesizedMessage.to_id = toId;
+            }
+            synthesizedMessage.date = updateShortMessage.date;
+            synthesizedMessage.message = updateShortMessage.message;
+            synthesizedMessage.media = [[TLMessageMedia$messageMediaEmpty alloc] init];
+            synthesizedMessage.fwd_from_id = updateShortMessage.fwd_from_id;
+            synthesizedMessage.fwd_date = updateShortMessage.fwd_date;
+            synthesizedMessage.reply_to_msg_id = updateShortMessage.reply_to_msg_id;
+            synthesizedMessage.entities = updateShortMessage.entities;
+            
+            TLUpdate$updateNewMessage *updateNewMessage = [[TLUpdate$updateNewMessage alloc] init];
+            updateNewMessage.message = synthesizedMessage;
+            updateNewMessage.pts = updateShortMessage.pts;
+            updateNewMessage.pts_count = updateShortMessage.pts_count;
+            
+            [collectedUpdatesWithPts addObject:[[TGUpdatesWithPts alloc] initWithUpdates:@[updateNewMessage] users:nil chats:nil]];
+        }
+        else if ([incomingMessage.body isKindOfClass:[TLUpdates$updatesTooLong class]])
+        {
+            if (TGTelegraphInstance.clientUserId != 0)
+                [ActionStageInstance() requestActor:@"/tg/service/updatestate" options:nil watcher:TGTelegraphInstance];
+        }
+        else
+            NSAssert(false, @"Unknown updates message class %@", incomingMessage.body);
+    }
+    
+    if (collectedUpdatesWithPts.count != 0)
+    {
+        [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(withPts)" options:@{@"updates": collectedUpdatesWithPts} watcher:TGTelegraphInstance];
+    }
+    
+    if (collectedUpdatesWithQts.count != 0)
+    {
+        [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(withQts)" options:@{@"updates": collectedUpdatesWithQts} watcher:TGTelegraphInstance];
+    }
+    
+    if (collectedUpdatesWithSeq.count != 0)
+    {
+        [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(withSeq)" options:@{@"updates": collectedUpdatesWithSeq} watcher:TGTelegraphInstance];
+    }
+    
+    if (collectedUpdatesWithDate.count != 0)
+    {
+        [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(withDate)" options:@{@"updates": collectedUpdatesWithDate} watcher:TGTelegraphInstance];
     }
 }
 
-- (void)updatePts:(int)pts date:(int)date seq:(int)seq
+- (void)updatePts:(int)pts ptsCount:(int)ptsCount seq:(int)seq
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
-        TLUpdate$updateChangePts *ptsUpdate = [[TLUpdate$updateChangePts alloc] init];
-        ptsUpdate.pts = pts;
-        NSArray *updatesArray = [[NSArray alloc] initWithObjects:[[TGUpdate alloc] initWithUpdates:[[NSArray alloc] initWithObjects:ptsUpdate, nil] date:date beginSeq:seq endSeq:seq messageDate:date usersDesc:nil chatsDesc:nil], nil];
-        [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(stateful)" options:[[NSDictionary alloc] initWithObjectsAndKeys:updatesArray, @"multipleUpdates", [[NSNumber alloc] initWithBool:true], @"stateful", nil] watcher:TGTelegraphInstance];
+        if (pts != 0)
+        {
+            TLUpdate$updateChangePts *ptsUpdate = [[TLUpdate$updateChangePts alloc] init];
+            ptsUpdate.pts = pts;
+            ptsUpdate.pts_count = ptsCount;
+            TGUpdatesWithPts *synthesizedUpdatesWithPts = [[TGUpdatesWithPts alloc] initWithUpdates:@[ptsUpdate] users:nil chats:nil];
+            [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(withPts)" options:@{@"updates": @[synthesizedUpdatesWithPts]} watcher:TGTelegraphInstance];
+        }
+        
+        if (seq != 0)
+        {
+            TGUpdatesWithSeq *synthesizedUpdatesWithSeq = [[TGUpdatesWithSeq alloc] initWithUpdates:@[] date:0 seqStart:seq seqEnd:seq users:nil chats:nil];
+            [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(withSeq)" options:@{@"updates": @[synthesizedUpdatesWithSeq]} watcher:TGTelegraphInstance];
+        }
     }];
+}
+
+- (void)addUpdates:(id)body
+{
+    NSMutableArray *collectedUpdatesWithPts = [[NSMutableArray alloc] init];
+    NSMutableArray *collectedUpdatesWithQts = [[NSMutableArray alloc] init];
+    NSMutableArray *collectedUpdatesWithSeq = [[NSMutableArray alloc] init];
+    NSMutableArray *collectedUpdatesWithDate = [[NSMutableArray alloc] init];
+    
+    NSArray *containedUpdates = @[];
+    int32_t updatesSeqStart = 0;
+    int32_t updatesSeqEnd = 0;
+    int32_t updatesDate = 0;
+    NSArray *updatesUsers = nil;
+    NSArray *updatesChats = nil;
+    
+    if ([body isKindOfClass:[TLUpdates$updates class]])
+    {
+        TLUpdates$updates *updates = (TLUpdates$updates *)body;
+        containedUpdates = updates.updates;
+        updatesSeqStart = updates.seq;
+        updatesSeqEnd = updates.seq;
+        updatesDate = updates.date;
+        updatesUsers = updates.users;
+        updatesChats = updates.chats;
+    }
+    else if ([body isKindOfClass:[TLUpdates$updatesCombined class]])
+    {
+        TLUpdates$updatesCombined *updatesCombined = (TLUpdates$updatesCombined *)body;
+        containedUpdates = updatesCombined.updates;
+        updatesSeqStart = updatesCombined.seq_start;
+        updatesSeqEnd = updatesCombined.seq;
+        updatesDate = updatesCombined.date;
+        updatesUsers = updatesCombined.users;
+        updatesChats = updatesCombined.chats;
+    }
+    
+    NSMutableArray *updatesWithPts = [[NSMutableArray alloc] init];
+    NSMutableArray *updatesWithQts = [[NSMutableArray alloc] init];
+    NSMutableArray *otherUpdates = [[NSMutableArray alloc] init];
+    
+    for (TLUpdate *update in containedUpdates)
+    {
+        if ([update hasPts])
+        {
+            NSAssert([update respondsToSelector:@selector(pts_count)], @"update with pts should also contain pts_count");
+            [updatesWithPts addObject:update];
+        }
+        if ([update respondsToSelector:@selector(qts)])
+        {
+            [updatesWithQts addObject:update];
+        }
+        else
+            [otherUpdates addObject:update];
+    }
+    
+    if (updatesWithPts.count != 0)
+    {
+        [collectedUpdatesWithPts addObject:[[TGUpdatesWithPts alloc] initWithUpdates:updatesWithPts users:updatesUsers chats:updatesChats]];
+    }
+    
+    if (updatesWithQts.count != 0)
+    {
+        [collectedUpdatesWithQts addObject:[[TGUpdatesWithQts alloc] initWithUpdates:updatesWithQts users:updatesUsers chats:updatesChats]];
+    }
+    
+    if (updatesSeqEnd != 0)
+    {
+        [collectedUpdatesWithSeq addObject:[[TGUpdatesWithSeq alloc] initWithUpdates:otherUpdates date:updatesDate seqStart:updatesSeqStart seqEnd:updatesSeqEnd users:updatesUsers chats:updatesChats]];
+    }
+    else
+    {
+        [collectedUpdatesWithDate addObject:[[TGUpdatesWithDate alloc] initWithUpdates:otherUpdates date:updatesDate users:updatesUsers chats:updatesChats]];
+    }
+    
+    if (collectedUpdatesWithPts.count != 0)
+    {
+        [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(withPts)" options:@{@"updates": collectedUpdatesWithPts} watcher:TGTelegraphInstance];
+    }
+    
+    if (collectedUpdatesWithQts.count != 0)
+    {
+        [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(withQts)" options:@{@"updates": collectedUpdatesWithQts} watcher:TGTelegraphInstance];
+    }
+    
+    if (collectedUpdatesWithSeq.count != 0)
+    {
+        [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(withSeq)" options:@{@"updates": collectedUpdatesWithSeq} watcher:TGTelegraphInstance];
+    }
+    
+    if (collectedUpdatesWithDate.count != 0)
+    {
+        [ActionStageInstance() requestActor:@"/tg/service/tryupdates/(withDate)" options:@{@"updates": collectedUpdatesWithDate} watcher:TGTelegraphInstance];
+    }
 }
 
 @end

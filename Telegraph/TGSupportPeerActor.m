@@ -15,6 +15,8 @@
 #import "TGTelegraph.h"
 #import "TGDatabase.h"
 
+#import "TLUser$modernUser.h"
+
 @implementation TGSupportPeerActor
 
 + (void)load
@@ -45,10 +47,10 @@
 {
     [TGUserDataRequestBuilder executeUserDataUpdate:@[supportDesc.user]];
     
-    int32_t uid = supportDesc.user.n_id;
+    int32_t uid = ((TLUser$modernUser *)supportDesc.user).n_id;
     [TGDatabaseInstance() setCustomProperty:@"supportAccountUid" value:[[NSData alloc] initWithBytes:&uid length:4]];
     
-    [ActionStageInstance() actionCompleted:self.path result:@{@"uid": @(supportDesc.user.n_id)}];
+    [ActionStageInstance() actionCompleted:self.path result:@{@"uid": @(uid)}];
 }
 
 - (void)requestFailed

@@ -15,14 +15,17 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGAccessChecker.h"
+#import "TGAlertView.h"
+
 #define TGUseModernAudio true
 
 #import "TGOpusAudioRecorder.h"
 
+#import "TGDataItem.h"
+
 @interface TGAudioRecorder () <AVAudioRecorderDelegate>
 {
-    NSString *_tempFilePath;
-    
     TGTimer *_timer;
     
     TGOpusAudioRecorder *_modernRecorder;
@@ -39,10 +42,6 @@
     {
         [[TGAudioRecorder audioRecorderQueue] dispatchOnQueue:^
         {
-            int64_t randomId = 0;
-            arc4random_buf(&randomId, sizeof(randomId));
-            _tempFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%" PRIx64 ".m4a", randomId]];
-            
             _modernRecorder = [[TGOpusAudioRecorder alloc] initWithFileEncryption:fileEncryption];
         }];
     }
@@ -134,7 +133,7 @@ static void playSoundCompleted(__unused SystemSoundID ssID, __unused void *clien
             }
             else
             {
-                [[[UIAlertView alloc] initWithTitle:nil message:TGLocalized(@"Conversation.MicrophoneAccessDisabled") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [TGAccessChecker checkMicrophoneAuthorizationStatusForIntent:TGMicrophoneAccessIntentVoice alertDismissCompletion:nil];
             }
         };
         
@@ -183,7 +182,7 @@ static void playSoundCompleted(__unused SystemSoundID ssID, __unused void *clien
         [timer invalidate];
         
         if (modernRecorder != nil)
-            [modernRecorder stop:NULL liveData:NULL];
+            [modernRecorder stopRecording:NULL liveData:NULL];
     }];
 }
 
@@ -192,31 +191,30 @@ static void playSoundCompleted(__unused SystemSoundID ssID, __unused void *clien
     [[TGAudioRecorder audioRecorderQueue] dispatchOnQueue:^
     {
         [self cleanup];
-        [[NSFileManager defaultManager] removeItemAtPath:_tempFilePath error:nil];
     }];
 }
 
-- (void)finish:(void (^)(NSString *, NSTimeInterval, TGLiveUploadActorData *))completion
+- (void)finish:(void (^)(TGDataItem *, NSTimeInterval, TGLiveUploadActorData *))completion
 {
     [[TGAudioRecorder audioRecorderQueue] dispatchOnQueue:^
     {
-        NSString *resultPath = nil;
+        TGDataItem *resultDataItem = nil;
         NSTimeInterval resultDuration = 0.0;
         __autoreleasing TGLiveUploadActorData *liveData = nil;
         
         if (_modernRecorder != nil)
         {
             NSTimeInterval recordedDuration = 0.0;
-            NSString *path = [_modernRecorder stop:&recordedDuration liveData:&liveData];
-            if (path != nil && recordedDuration > 0.5)
+            TGDataItem *dataItem = [_modernRecorder stopRecording:&recordedDuration liveData:&liveData];
+            if (dataItem != nil && recordedDuration > 0.5)
             {
-                resultPath = path;
+                resultDataItem = dataItem;
                 resultDuration = recordedDuration;
             }
         }
         
         if (completion != nil)
-            completion(resultPath, resultDuration, liveData);
+            completion(resultDataItem, resultDuration, liveData);
     }];
 }
 

@@ -5,6 +5,10 @@
 #import "TGTelegraph.h"
 #import "TGDatabase.h"
 
+#import "TGPeerIdAdapter.h"
+
+#import "TLChat$channel.h"
+
 @implementation TGConversationParticipantsData (Telegraph)
 
 - (id)initWithTelegraphParticipantsDesc:(TLChatParticipants *)participantsDesc
@@ -61,7 +65,8 @@
             TLChat$chat *concreteChat = (TLChat$chat *)chatDesc;
             
             self.chatTitle = concreteChat.title;
-            self.leftChat = concreteChat.left;
+            self.leftChat = concreteChat.flags & (1 << 2);
+            self.kickedFromChat = concreteChat.flags & (1 << 1);
             
             TLChatPhoto *photo = concreteChat.photo;
             if ([photo isKindOfClass:[TLChatPhoto$chatPhoto class]])
@@ -74,6 +79,54 @@
             
             self.chatParticipantCount = concreteChat.participants_count;
             self.chatVersion = concreteChat.version;
+        }
+        else if ([chatDesc isKindOfClass:[TLChat$channel class]])
+        {
+            self.conversationId = TGPeerIdFromChannelId(chatDesc.n_id);
+            
+            TLChat$channel *channel = (TLChat$channel *)chatDesc;
+            
+            self.isChannel = true;
+            self.accessHash = channel.access_hash;
+            self.chatTitle = channel.title;
+            if ([channel.photo isKindOfClass:[TLChatPhoto$chatPhoto class]])
+            {
+                TLChatPhoto$chatPhoto *concretePhoto = (TLChatPhoto$chatPhoto *)channel.photo;
+                self.chatPhotoSmall = extractFileUrl(concretePhoto.photo_small);
+                self.chatPhotoMedium = nil;
+                self.chatPhotoBig = extractFileUrl(concretePhoto.photo_big);
+            }
+            self.chatVersion = channel.version;
+            self.importantSortKey = TGConversationSortKeyMake(self.kind, channel.date, 0);
+            self.unimportantSortKey = TGConversationSortKeyMake(self.kind, channel.date, 0);
+            self.variantSortKey = TGConversationSortKeyMake(self.kind, channel.date, 0);
+            self.chatIsAdmin = channel.flags & (1 << 0);
+            if (channel.flags & (1 << 0)) {
+                self.channelRole = TGChannelRoleCreator;
+            } else if (channel.flags & (1 << 3)) {
+                self.channelRole = TGChannelRolePublisher;
+            } else if (channel.flags & (1 << 4)) {
+                self.channelRole = TGChannelRoleModerator;
+            }
+            self.username = channel.username;
+            self.leftChat = channel.flags & (1 << 2);
+            self.channelIsReadOnly = channel.flags & (1 << 5);
+            self.kickedFromChat = channel.flags & (1 << 1);
+            
+            self.isVerified = channel.flags & (1 << 7);
+            
+            self.postAsChannel = self.channelRole == TGChannelRoleCreator || self.channelRole == TGChannelRolePublisher;
+            
+            self.kind = (self.leftChat || self.kickedFromChat) ? TGConversationKindTemporaryChannel : TGConversationKindPersistentChannel;
+        }
+        else if ([chatDesc isKindOfClass:[TLChat$channelForbidden class]])
+        {
+            TLChat$channelForbidden *channelForbidden = (TLChat$channelForbidden *)chatDesc;
+            self.conversationId = TGPeerIdFromChannelId(channelForbidden.n_id);
+            self.accessHash = channelForbidden.access_hash;
+            self.leftChat = true;
+            self.chatTitle = channelForbidden.title;
+            self.kind = TGConversationKindTemporaryChannel;
         }
         else if ([chatDesc isKindOfClass:[TLChat$chatForbidden class]])
         {

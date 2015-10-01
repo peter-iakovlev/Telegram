@@ -23,9 +23,9 @@
 - (void)commonInit
 {
     _customPlaceholderLabel = [[UILabel alloc] init];
+    _customPlaceholderLabel.textAlignment = NSTextAlignmentLeft;
     _customPlaceholderLabel.backgroundColor = [UIColor clearColor];
     _customPlaceholderLabel.font = [UIFont systemFontOfSize:15];
-    _customPlaceholderLabel.text = TGLocalized(@"Compose.TokenListPlaceholder");
     [_customPlaceholderLabel sizeToFit];
     _customPlaceholderLabel.userInteractionEnabled = false;
     _customPlaceholderLabel.textColor = UIColorRGB(0x8e8e93);
@@ -56,7 +56,7 @@
     _customPlaceholderLabel.hidden = text.length != 0;
 }
 
-- (void)deleteBackward
+- (void)deleteBackward1
 {
     bool wasEmpty = self.text.length == 0;
     
@@ -95,6 +95,29 @@
         return true;
     }
     return false;
+}
+
+- (BOOL)keyboardInputShouldDelete:(UITextField *)textField
+{
+    BOOL shouldDelete = YES;
+    
+    if ([UITextField instancesRespondToSelector:_cmd])
+    {
+        bool wasEmpty = self.text.length == 0;
+        
+        BOOL (*keyboardInputShouldDelete)(id, SEL, UITextField *) = (BOOL (*)(id, SEL, UITextField *))[UITextField instanceMethodForSelector:_cmd];
+        
+        if (keyboardInputShouldDelete)
+            shouldDelete = keyboardInputShouldDelete(self, _cmd, textField);
+        
+        if (wasEmpty)
+            shouldDelete = false;
+        
+        if (iosMajorVersion() >= 7 && wasEmpty)
+            [self deleteLastBackward];
+    }
+    
+    return shouldDelete;
 }
 
 @end

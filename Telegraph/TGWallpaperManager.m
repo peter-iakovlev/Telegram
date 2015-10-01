@@ -17,6 +17,8 @@
 #import "TGImageUtils.h"
 #import "TGViewController.h"
 
+#import "TGAppDelegate.h"
+
 @interface TGWallpaperManager ()
 {
     bool _infoLoaded;
@@ -54,7 +56,7 @@
 
 - (NSString *)_currentWallpaperPath
 {
-    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true) objectAtIndex:0];
+    NSString *documentsDirectory = [TGAppDelegate documentsPath];
     NSString *wallpapersPath = [documentsDirectory stringByAppendingPathComponent:[@"wallpaper-data" stringByAppendingString:[[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone ? @"" : @"-pad"]];
     
     [[NSFileManager defaultManager] createDirectoryAtPath:wallpapersPath withIntermediateDirectories:true attributes:nil error:nil];

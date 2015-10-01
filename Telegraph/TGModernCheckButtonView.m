@@ -116,7 +116,7 @@
         {
             [UIView animateWithDuration:0.12 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^
             {
-                _checkView.transform = CGAffineTransformMakeScale(1.16, 1.16f);
+                _checkView.transform = CGAffineTransformMakeScale(1.16f, 1.16f);
             } completion:^(BOOL finished)
             {
                 if (finished)

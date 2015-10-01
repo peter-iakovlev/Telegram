@@ -9,6 +9,10 @@
 
 #import "TGDownloadManager.h"
 
+#import "TGPeerIdAdapter.h"
+
+#import "TGChannelManagementSignals.h"
+
 @implementation TGConversationDeleteActor
 
 + (NSString *)genericPath
@@ -27,7 +31,18 @@
     
     [[TGDownloadManager instance] cancelItemsWithGroupId:conversationId];
     
-    [TGDatabaseInstance() deleteConversation:conversationId populateActionQueue:true];
+    if (TGPeerIdIsChannel(conversationId)) {
+        [TGDatabaseInstance() enqueueLeaveChannel:conversationId];
+    } else {
+        TGUser *user = conversationId > 0 ? [TGDatabaseInstance() loadUser:(int)conversationId] : nil;
+        if ([options[@"block"] boolValue] && user != nil && (user.kind == TGUserKindBot || user.kind == TGUserKindSmartBot))
+        {
+            static int actionId = 0;
+            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/changePeerBlockedStatus/(auto%d)", actionId++] options:@{@"peerId": @(conversationId), @"block": @(true)} watcher:TGTelegraphInstance];
+        }
+        
+        [TGDatabaseInstance() deleteConversation:conversationId populateActionQueue:true];
+    }
     
     dispatch_async([ActionStageInstance() globalStageDispatchQueue], ^
     {
