@@ -3,7 +3,8 @@
 typedef enum
 {
     TGModernConversationAssociatedInputPanelDefaultStyle,
-    TGModernConversationAssociatedInputPanelDarkStyle
+    TGModernConversationAssociatedInputPanelDarkStyle,
+    TGModernConversationAssociatedInputPanelDarkBlurredStyle
 } TGModernConversationAssociatedInputPanelStyle;
 
 @interface TGModernConversationAssociatedInputPanel : UIView
@@ -12,10 +13,15 @@ typedef enum
 @property (nonatomic, copy) void (^preferredHeightUpdated)();
 
 - (CGFloat)preferredHeight;
+- (bool)displayForTextEntryOnly;
 - (void)setNeedsPreferredHeightUpdate;
 
 - (void)setSendAreaWidth:(CGFloat)sendAreaWidth attachmentAreaWidth:(CGFloat)attachmentAreaWidth;
 
 - (instancetype)initWithStyle:(TGModernConversationAssociatedInputPanelStyle)style;
+
+- (void)selectPreviousItem;
+- (void)selectNextItem;
+- (void)commitSelectedItem;
 
 @end

@@ -12,6 +12,7 @@
 #import "TGBridgeContext.h"
 #import "TGBridgeResponse.h"
 #import "TGBridgeSubscription.h"
+#import "TGBridgeAudioHandler.h"
 #import "TGBridgeChatListHandler.h"
 #import "TGBridgeChatMessageListHandler.h"
 #import "TGBridgeContactsHandler.h"
@@ -29,8 +30,8 @@
 
 #import "TGBridgeContextService.h"
 #import "TGBridgeStickersService.h"
-
-#import "TGBridgeAudioConverter.h"
+#import "TGBridgeLocalizationService.h"
+#import "TGBridgePresetsService.h"
 
 @interface TGBridgeServer () <WCSessionDelegate>
 {
@@ -43,8 +44,8 @@
     
     TGBridgeContext *_activeContext;
     
-    TGBridgeSignalManager *_signalManager;
     NSMutableDictionary *_handlerMap;
+    TGBridgeSignalManager *_signalManager;
     
     OSSpinLock _incomingQueueLock;
     NSMutableArray *_incomingMessageQueue;
@@ -62,8 +63,8 @@
     NSMutableDictionary *_lastServiceSignalState;
     SMulticastSignalManager *_serviceSignalManager;
     
-    TGBridgeContextService *_contextService;
-    TGBridgeStickersService *_stickersService;
+    NSMutableArray *_services;
+    SPipe *_appInstalledPipe;
     
     NSInteger _wakeupToken;
 }
@@ -83,19 +84,7 @@
         _handlerMap = [[NSMutableDictionary alloc] init];
         _incomingMessageQueue = [[NSMutableArray alloc] init];
         
-        NSArray *handlerClasses = @[ [TGBridgeChatListHandler class],
-                                     [TGBridgeChatMessageListHandler class],
-                                     [TGBridgeConversationHandler class],
-                                     [TGBridgeContactsHandler class],
-                                     [TGBridgeSendMessageHandler class],
-                                     [TGBridgeUserInfoHandler class],
-                                     [TGBridgeMediaHandler class],
-                                     [TGBridgeLocationHandler class],
-                                     [TGBridgeStickersHandler class],
-                                     [TGBridgePeerSettingsHandler class],
-                                     [TGBridgeRemoteHandler class],
-                                     [TGBridgeStateHandler class]
-                                     ];
+        NSArray *handlerClasses = [TGBridgeServer handlerClasses];
         
         for (Class class in handlerClasses)
             [self registerHandlerClass:class];
@@ -107,10 +96,42 @@
         
         _lastServiceSignalState = [[NSMutableDictionary alloc] init];
         _serviceSignalManager = [[SMulticastSignalManager alloc] init];
+        _appInstalledPipe = [[SPipe alloc] init];
         
         _activeContext = [[TGBridgeContext alloc] initWithDictionary:[self.session applicationContext]];
     }
     return  self;
+}
+
++ (NSArray *)handlerClasses
+{
+    return @
+    [
+     [TGBridgeAudioHandler class],
+     [TGBridgeChatListHandler class],
+     [TGBridgeChatMessageListHandler class],
+     [TGBridgeConversationHandler class],
+     [TGBridgeContactsHandler class],
+     [TGBridgeSendMessageHandler class],
+     [TGBridgeUserInfoHandler class],
+     [TGBridgeMediaHandler class],
+     [TGBridgeLocationHandler class],
+     [TGBridgeStickersHandler class],
+     [TGBridgePeerSettingsHandler class],
+     [TGBridgeRemoteHandler class],
+     [TGBridgeStateHandler class]
+    ];
+}
+
++ (NSArray *)serviceClasses
+{
+    return @
+    [
+     [TGBridgeContextService class],
+     [TGBridgeStickersService class],
+     [TGBridgeLocalizationService class],
+     [TGBridgePresetsService class]
+    ];
 }
 
 - (void)startRunning
@@ -139,8 +160,13 @@
     if (!self.session.isWatchAppInstalled)
         return;
     
-    _contextService = [[TGBridgeContextService alloc] initWithServer:self];
-    _stickersService = [[TGBridgeStickersService alloc] initWithServer:self];
+    _services = [[NSMutableArray alloc] init];
+    NSArray *serviceClasses = [TGBridgeServer serviceClasses];
+    for (Class serviceClass in serviceClasses)
+    {
+        TGBridgeService *service = [[serviceClass alloc] initWithServer:self];
+        [_services addObject:service];
+    }
     
     _servicesRunning = true;
     if (_pendingStart)
@@ -155,6 +181,11 @@
 - (bool)isWatchAppInstalled
 {
     return self.session.isWatchAppInstalled;
+}
+
+- (SSignal *)watchAppInstalledSignal
+{
+    return [[SSignal single:@(self.isWatchAppInstalled)] then:_appInstalledPipe.signalProducer()];
 }
 
 #pragma mark - 
@@ -178,12 +209,26 @@
     [self pushActiveContext];
 }
 
-- (void)setStartupData:(NSDictionary *)dataObject
+- (void)setMicAccessAllowed:(bool)allowed
+{
+    _activeContext.micAccessAllowed = allowed;
+    
+    [self pushActiveContext];
+}
+
+- (void)setCustomLocalizationEnabled:(bool)enabled
+{
+    _activeContext.customLocalizationEnabled = enabled;
+    
+    [self pushActiveContext];
+}
+
+- (void)setStartupData:(NSDictionary *)dataObject micAccessAllowed:(bool)micAccessAllowed
 {
     [_activeContext setStartupData:dataObject version:[TGBridgeContext versionWithCurrentDate]];
-
-    if (!self.session.isReachable)
-        [self pushActiveContext];
+    _activeContext.micAccessAllowed = micAccessAllowed;
+    
+    [self pushActiveContext];
 }
 
 - (void)pushActiveContext
@@ -192,7 +237,7 @@
         return;
     
     NSError *error;
-    [self.session updateApplicationContext:[_activeContext encodeWithStartupData:!self.session.isReachable] error:&error];
+    [self.session updateApplicationContext:[_activeContext encodeWithStartupData:true] error:&error];
     
     if (error != nil)
         TGLog(@"[BridgeServer][ERROR] Failed to push active application context: %@", error.localizedDescription);
@@ -205,30 +250,26 @@
     __block UIBackgroundTaskIdentifier runningTask = backgroundTask;
     void (^finishTask)(NSTimeInterval) = ^(NSTimeInterval delay)
     {
-        if (runningTask != UIBackgroundTaskInvalid)
+        if (runningTask == UIBackgroundTaskInvalid)
+            return;
+        
+        void (^block)(void) = ^
         {
-            if (delay > DBL_EPSILON)
-            {
-                TGDispatchAfter(delay, dispatch_get_main_queue(), ^
-                {
-                    [[UIApplication sharedApplication] endBackgroundTask:runningTask];
-                    TGLog(@"[BridgeRouter]: ended taskid: %d", runningTask);
-                    runningTask = UIBackgroundTaskInvalid;
-                });
-            }
-            else
-            {
-                [[UIApplication sharedApplication] endBackgroundTask:runningTask];
-                TGLog(@"[BridgeRouter]: ended taskid: %d", runningTask);
-                runningTask = UIBackgroundTaskInvalid;
-            }
-        }
+            [[UIApplication sharedApplication] endBackgroundTask:runningTask];
+            TGLog(@"[BridgeRouter]: ended taskid: %d", runningTask);
+            runningTask = UIBackgroundTaskInvalid;
+        };
+        
+        if (delay > DBL_EPSILON)
+            TGDispatchAfter(delay, dispatch_get_main_queue(), block);
+        else
+            block();
     };
     
     id message = [NSKeyedUnarchiver unarchiveObjectWithData:messageData];
     if ([message isKindOfClass:[TGBridgeChatMessageSubscription class]])
     {
-        TGLog(@"!!!!!!!!!!![BridgeServer] Processing notification message request: %@", message);
+        TGLog(@"[BridgeServer] Processing notification message request: %@", message);
         [self processNotificationRequest:message replyHandler:replyHandler];
         finishTask(4.0);
         return;
@@ -372,48 +413,6 @@
 - (void)_createSubscription:(TGBridgeSubscription *)subscription replyHandler:(void (^)(NSData *))replyHandler finishTask:(void (^)(NSTimeInterval))finishTask completion:(void (^)(void))completion
 {
     Class subscriptionHandler = [self handlerForSubscription:subscription];
-    
-    if (subscription.synchronous)
-    {
-        replyHandler([NSData data]);
-        
-        [self.session transferUserInfo:@{ @"info": @"lolka" }];
-        return;
-        
-        if ([subscription isKindOfClass:[TGBridgeChatMessageSubscription class]])
-            _processingNotification = true;
-        
-        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-        __block NSData *result = nil;
-        [[subscriptionHandler handlingSignalForSubscription:subscription server:self] startWithNext:^(id next)
-        {
-            TGBridgeResponse *response = [TGBridgeResponse single:next forSubscription:subscription];
-            result = [NSKeyedArchiver archivedDataWithRootObject:response];
-            
-            dispatch_semaphore_signal(semaphore);
-        }];
-        
-        dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
-        
-        //NSString *key = [NSString stringWithFormat:@"%lld", subscription.identifier];
-        //NSURL *tmpurl = [NSURL URLWithString:key relativeToURL:self.temporaryFilesURL];
-        //[result writeToURL:tmpurl atomically:true];
-        
-        if (result != nil)
-        {
-            //[self sendFileWithURL:tmpurl key:key];
-            replyHandler([NSKeyedArchiver archivedDataWithRootObject:@"smth"]);
-        }
-        else
-        {
-//            replyHandler([NSData data]);
-        }
-        
-        if ([subscription isKindOfClass:[TGBridgeChatMessageSubscription class]])
-            _processingNotification = false;
-        
-        return;
-    }
     
     if (replyHandler != nil)
     {
@@ -589,13 +588,10 @@
     [self.session sendMessageData:messageData replyHandler:nil errorHandler:nil];
 }
 
-- (void)sendFileWithURL:(NSURL *)url key:(NSString *)key
+- (void)sendFileWithURL:(NSURL *)url metadata:(NSDictionary *)metadata
 {
-    if (key == nil)
-        return;
-    
-    TGLog(@"[BridgeServer] Sent file with key %@", key);
-    [self.session transferFile:url metadata:@{ TGBridgeFileKey: key }];
+    TGLog(@"[BridgeServer] Sent file with metadata %@", metadata);
+    [self.session transferFile:url metadata:metadata];
 }
 
 #pragma mark - Session Delegate
@@ -645,7 +641,7 @@
         return;
     
     if ([metadata[TGBridgeIncomingFileTypeKey] isEqualToString:TGBridgeIncomingFileTypeAudio])
-        [self handleIncomingAudioWithURL:file.fileURL metadata:metadata];
+        [TGBridgeAudioHandler handleIncomingAudioWithURL:file.fileURL metadata:metadata server:self];
 }
 
 - (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *,id> *)userInfo
@@ -679,62 +675,14 @@
         
         [self pushActiveContext];
     }
+    
+    _appInstalledPipe.sink(@(session.isWatchAppInstalled));
 }
 
 - (void)sessionReachabilityDidChange:(WCSession *)session
 {
     NSLog(@"[TGBridgeServer] Reachability changed: %d", session.isReachable);
 }
-
-#pragma mark -
-
-- (void)handleIncomingAudioWithURL:(NSURL *)url metadata:(NSDictionary *)metadata
-{
-    NSString *uniqueId = metadata[TGBridgeIncomingFileRandomIdKey];
-    int64_t peerId = [metadata[TGBridgeIncomingFilePeerIdKey] int64Value];
-    int32_t replyToMid = [metadata[TGBridgeIncomingFileReplyToMidKey] int32Value];
-    
-    NSURL *tempURL = [NSURL URLWithString:url.lastPathComponent relativeToURL:self.session.watchDirectoryURL];
-    
-    NSError *error;
-    [[NSFileManager defaultManager] moveItemAtURL:url toURL:tempURL error:&error];
-    
-    NSString *signalKey = [[NSString alloc] initWithFormat:@"convertAudio_%@", uniqueId];
-    [_serviceSignalManager startStandaloneSignalIfNotRunningForKey:signalKey producer:^SSignal *
-    {
-        SSignal *convertSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-        {
-            TGBridgeAudioConverter *converter = [[TGBridgeAudioConverter alloc] initWithURL:tempURL];
-            [converter startWithCompletion:^(TGDataItem *dataItem, int32_t duration, TGLiveUploadActorData *liveData)
-            {
-                if (dataItem != nil)
-                {
-                    NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
-                    result[@"dataItem"] = dataItem;
-                    result[@"duration"] = @(duration);
-                    if (liveData != nil)
-                        result[@"liveData"] = liveData;
-                    
-                    [subscriber putNext:result];
-                    [subscriber putCompletion];
-                }
-                else
-                {
-                    [subscriber putError:nil];
-                }
-            }];
-            
-            return nil;
-        }];
-        
-        return [convertSignal mapToSignal:^SSignal *(NSDictionary *result)
-        {
-            return [TGSendAudioSignal sendAudioWithPeerId:peerId tempDataItem:result[@"dataItem"] liveData:result[@"liveData"] duration:[result[@"duration"] int32Value] replyToMid:replyToMid];
-        }];
-    }];
-}
-
-
 
 #pragma mark -
 
@@ -785,6 +733,21 @@
     OSSpinLockUnlock(&_lastServiceSignalStateLock);
     
     return signal;
+}
+
+- (void)startSignalForKey:(NSString *)key producer:(SSignal *(^)())producer
+{
+    [_serviceSignalManager startStandaloneSignalIfNotRunningForKey:key producer:producer];
+}
+
+- (SSignal *)pipeForKey:(NSString *)key
+{
+    return [_serviceSignalManager multicastedPipeForKey:key];
+}
+
+- (void)putNext:(id)next forKey:(NSString *)key
+{
+    [_serviceSignalManager putNext:next toMulticastedPipeForKey:key];
 }
 
 #pragma mark - 

@@ -7,8 +7,10 @@
 
 @interface TGChatListSignal : NSObject
 
-+ (TGUserModel *)userModelWithApiUser:(Api38_User *)user;
++ (TGUserModel *)userModelWithApiUser:(Api48_User *)user;
 
 + (SSignal *)remoteChatListWithContext:(TGShareContext *)context;
+
+
 
 @end

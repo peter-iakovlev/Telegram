@@ -19,7 +19,8 @@ typedef enum {
     TGCommonMediaTypeFiles,
     TGCommonMediaTypeStickers,
     TGCommonMediaTypeLocations,
-    TGCommonMediaTypeContacts
+    TGCommonMediaTypeContacts,
+    TGCommonMediaTypeGifs
 } TGCommonMediaType;
 
 @interface TGModernConversationForwardInputPanel ()
@@ -57,6 +58,13 @@ typedef enum {
             {
                 if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
                     return TGCommonMediaTypeStickers;
+                else if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]]) {
+                    return TGCommonMediaTypeGifs;
+                } else if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                    if (((TGDocumentAttributeAudio *)attribute).isVoice) {
+                        return TGCommonMediaTypeAudios;
+                    }
+                }
             }
             return TGCommonMediaTypeFiles;
         }
@@ -106,6 +114,8 @@ typedef enum {
             return @"ForwardedStickers_";
         case TGCommonMediaTypeLocations:
             return @"ForwardedLocations_";
+        case TGCommonMediaTypeGifs:
+            return @"ForwardedGifs_";
     }
 }
 

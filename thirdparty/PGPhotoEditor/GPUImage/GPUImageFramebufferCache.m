@@ -36,9 +36,12 @@
     }
     
 #if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
-    memoryWarningObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidReceiveMemoryWarningNotification object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
-        
-        [self purgeAllUnassignedFramebuffers];
+    __weak GPUImageFramebufferCache *weakSelf = self;
+    memoryWarningObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidReceiveMemoryWarningNotification object:nil queue:nil usingBlock:^(__unused NSNotification *note)
+    {
+        __strong GPUImageFramebufferCache *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf purgeAllUnassignedFramebuffers];
 	}];
 #else
 #endif
@@ -50,6 +53,13 @@
     framebufferCacheQueue = dispatch_queue_create("com.sunsetlakesoftware.GPUImage.framebufferCacheQueue", NULL);
     
     return self;
+}
+
+- (void)dealloc
+{
+    #if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    #endif
 }
 
 #pragma mark -

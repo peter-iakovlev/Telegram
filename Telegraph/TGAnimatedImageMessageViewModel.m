@@ -31,12 +31,19 @@
 
 #import "TGImageBlur.h"
 
+#import "TGInlineVideoModel.h"
+
+#import "TGGifConverter.h"
+
+#import "TGTelegraph.h"
+
 @interface TGAnimatedImageMessageViewModel ()
 {
     TGDocumentMediaAttachment *_document;
     
-    TGModernAnimatedImagePlayer *_player;
-    CGSize _renderSize;
+    bool _activatedMedia;
+    
+    bool _boundToContainer;
 }
 
 @end
@@ -55,7 +62,7 @@
     return queue;
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo document:(TGDocumentMediaAttachment *)document authorPeer:(id)authorPeer context:(TGModernViewContext *)context replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor
+- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo document:(TGDocumentMediaAttachment *)document authorPeer:(id)authorPeer context:(TGModernViewContext *)context forwardPeer:(id)forwardPeer forwardAuthor:(id)forwardAuthor forwardMessageId:(int32_t)forwardMessageId replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor viaUser:(TGUser *)viaUser caption:(NSString *)caption textCheckingResults:(NSArray *)textCheckingResults
 {
     TGImageInfo *previewImageInfo = imageInfo;
     
@@ -75,7 +82,7 @@
         else
             [previewUri appendFormat:@"local-id=%" PRId64 "", document.localDocumentId];
         
-        [previewUri appendFormat:@"&file-name=%@", [document.fileName stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+        [previewUri appendFormat:@"&file-name=%@", [document.safeFileName stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
         
         CGSize thumbnailSize = CGSizeZero;
         [TGImageMessageViewModel calculateImageSizesForImageSize:dimensions thumbnailSize:&thumbnailSize renderSize:&renderSize squareAspect:false];
@@ -87,31 +94,53 @@
             [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", [TGStringUtils stringByEscapingForURL:legacyThumbnailCacheUri]];
         }
         
+        if ([document.mimeType isEqualToString:@"video/mp4"]) {
+            [previewUri appendFormat:@"&video-file-name=%@", [document.safeFileName stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+        }
+        
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
     }
     
-    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:nil forwardMessageId:0 replyHeader:replyHeader replyAuthor:replyAuthor];
+    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyHeader replyAuthor:replyAuthor viaUser:viaUser caption:caption textCheckingResults:textCheckingResults];
     if (self != nil)
     {
         _document = document;
-        _renderSize = renderSize;
+        
+        _canDownload = document.documentId != 0 || (document.documentUri != nil && ![document.documentUri hasPrefix:@"http"]);
+        
+        CGFloat scale = [UIScreen mainScreen].scale;
+        self.imageModel.inlineVideoSize = CGSizeMake(renderSize.width * scale, renderSize.height * scale);
+        
+        if (_contentModel != nil) {
+            self.imageModel.inlineVideoInsets = UIEdgeInsetsZero;
+        } else {
+            self.imageModel.inlineVideoInsets = UIEdgeInsetsMake(2.0f, 2.0f, 2.0f, 2.0f);
+        }
     }
     return self;
 }
 
 - (void)dealloc
 {
-    [_player stop];
 }
 
-- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)viewStorage
+- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)viewStorage delayDisplay:(bool)delayDisplay
 {
-    [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage];
+    bool wasAvailable = _mediaIsAvailable;
+    [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage delayDisplay:delayDisplay];
+    
+    if (!wasAvailable && mediaIsAvailable && _boundToContainer) {
+        if ([self.imageModel boundView] != nil && _context.autoplayAnimations && _mediaIsAvailable) {
+            [self activateMedia];
+        }
+    }
 }
 
 - (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
 {
     [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
+    
+    int64_t previousDocumentId = _document.documentId;
     
     for (TGMediaAttachment *attachment in message.mediaAttachments)
     {
@@ -147,10 +176,22 @@
             [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", [TGStringUtils stringByEscapingForURL:legacyThumbnailCacheUri]];
         }
         
+        if ([_document.mimeType isEqualToString:@"video/mp4"]) {
+            [previewUri appendFormat:@"&video-file-name=%@", [_document.safeFileName stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+        }
+        
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
         
         [self updateImageInfo:previewImageInfo];
     }
+    
+    _canDownload = _document.documentId != 0 || (_document.documentUri != nil && ![_document.documentUri hasPrefix:@"http"]);
+    
+    if ([self.imageModel boundView] != nil && _context.autoplayAnimations && _mediaIsAvailable && _activatedMedia && _document.documentId != previousDocumentId) {
+        [self activateMedia];
+    }
+    
+    [self updateImageOverlay:false];
 }
 
 - (void)updateAnimationsEnabled
@@ -159,12 +200,15 @@
 
 - (void)stopInlineMedia
 {
-    if (_player != nil)
-    {
-        [_player stop];
-        _player = nil;
-        
-        [self.imageModel setOverlayType:TGMessageImageViewOverlayPlay];
+    [((TGMessageImageViewContainer *)self.imageModel.boundView).imageView setVideoPathSignal:nil];
+    _activatedMedia = false;
+    
+    [self updateImageOverlay:false];
+}
+
+- (void)resumeInlineMedia {
+    if (_context.autoplayAnimations && _mediaIsAvailable && !_activatedMedia) {
+        [self activateMedia];
     }
 }
 
@@ -173,56 +217,119 @@
     return CGSizeMake(130, 130);
 }
 
+- (void)bindViewToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage {
+    [super bindViewToContainer:container viewStorage:viewStorage];
+    
+    _boundToContainer = true;
+    
+    if (_context.autoplayAnimations && _mediaIsAvailable) {
+        [self activateMedia];
+    }
+}
+
+- (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition {
+    [super bindSpecialViewsToContainer:container viewStorage:viewStorage atItemPosition:itemPosition];
+    
+    _boundToContainer = false;
+}
+
 - (void)unbindView:(TGModernViewStorage *)viewStorage
 {
+    _boundToContainer = false;
+    
+    [((TGMessageImageViewContainer *)self.imageModel.boundView).imageView setVideoPathSignal:nil];
+    _activatedMedia = false;
+    
     [super unbindView:viewStorage];
     
-    if (_player != nil)
-    {
-        [_player stop];
-        _player = nil;
-        
-        [self.imageModel setOverlayType:TGMessageImageViewOverlayPlay];
-    }
+    [self updateImageOverlay:false];
 }
 
 - (void)activateMedia
 {
-    if (_player == nil)
-    {
-        NSString *filePath = nil;
-        
-        if (_document.localDocumentId != 0)
-        {
-            filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:_document.localDocumentId] stringByAppendingPathComponent:[_document safeFileName]];
+    if (_activatedMedia && !_context.autoplayAnimations) {
+        [self stopInlineMedia];
+    } else {
+        if (true || !_activatedMedia) {
+            _activatedMedia = true;
+            [self updateImageOverlay:false];
+            
+            NSString *documentDirectory = nil;
+            if (_document.localDocumentId != 0) {
+                documentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:_document.localDocumentId];
+            } else {
+                documentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:_document.documentId];
+            }
+            
+            NSString *videoPath = nil;
+            
+            if ([_document.mimeType isEqualToString:@"video/mp4"]) {
+                if (_document.localDocumentId != 0)
+                {
+                    videoPath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:_document.localDocumentId] stringByAppendingPathComponent:[_document safeFileName]];
+                }
+                else
+                {
+                    videoPath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:_document.documentId] stringByAppendingPathComponent:[_document safeFileName]];
+                }
+            }
+            
+            if (videoPath != nil) {
+                [((TGMessageImageViewContainer *)self.imageModel.boundView).imageView setVideoPathSignal:[SSignal single:videoPath]];
+            } else {
+                NSString *filePath = nil;
+                NSString *videoPath = nil;
+                
+                if (_document.localDocumentId != 0)
+                {
+                    filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:_document.localDocumentId] stringByAppendingPathComponent:[_document safeFileName]];
+                    videoPath = [filePath stringByAppendingString:@".mov"];
+                }
+                else
+                {
+                    filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:_document.documentId] stringByAppendingPathComponent:[_document safeFileName]];
+                    videoPath = [filePath stringByAppendingString:@".mov"];
+                }
+                
+                NSString *key = [@"gif-video-path:" stringByAppendingString:filePath];
+                
+                SSignal *videoSignal = [[SSignal defer:^SSignal *{
+                    if ([[NSFileManager defaultManager] fileExistsAtPath:videoPath isDirectory:NULL]) {
+                        return [SSignal single:videoPath];
+                    } else {
+                        return [TGTelegraphInstance.genericTasksSignalManager multicastedSignalForKey:key producer:^SSignal *{
+                            SSignal *dataSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+                                NSData *data = [NSData dataWithContentsOfFile:filePath options:NSDataReadingMappedIfSafe error:nil];
+                                if (data != nil) {
+                                    [subscriber putNext:data];
+                                    [subscriber putCompletion];
+                                } else {
+                                    [subscriber putError:nil];
+                                }
+                                return nil;
+                            }];
+                            return [dataSignal mapToSignal:^SSignal *(NSData *data) {
+                                return [[TGGifConverter convertGifToMp4:data] mapToSignal:^SSignal *(NSString *tempPath) {
+                                    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subsctiber) {
+                                        NSError *error = nil;
+                                        [[NSFileManager defaultManager] moveItemAtPath:tempPath toPath:videoPath error:&error];
+                                        if (error != nil) {
+                                            [subsctiber putError:nil];
+                                        } else {
+                                            [subsctiber putNext:videoPath];
+                                            [subsctiber putCompletion];
+                                        }
+                                        return nil;
+                                    }];
+                                }];
+                            }];
+                        }];
+                    }
+                }] startOn:[SQueue concurrentDefaultQueue]];
+                
+                [((TGMessageImageViewContainer *)self.imageModel.boundView).imageView setVideoPathSignal:videoSignal];
+            }
         }
-        else
-        {
-            filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:_document.documentId] stringByAppendingPathComponent:[_document safeFileName]];
-        }
-        
-        [_context.companionHandle requestAction:@"stopInlineMedia" options:@{}];
-        
-        _player = [[TGModernAnimatedImagePlayer alloc] initWithSize:self.imageModel.frame.size renderSize:_renderSize path:filePath];
-        __weak TGAnimatedImageMessageViewModel *weakSelf = self;
-        _player.frameReady = ^(UIImage *image)
-        {
-            __strong TGAnimatedImageMessageViewModel *strongSelf = weakSelf;
-            [strongSelf animationFrameReady:image];
-        };
-        
-        [_player play];
-        
-        [self.imageModel setOverlayType:TGMessageImageViewOverlayNone];
-    }
-    else
-    {
-        [self.imageModel reloadImage:true];
-        
-        [_player stop];
-        _player = nil;
-        
-        [self.imageModel setOverlayType:TGMessageImageViewOverlayPlay];
     }
 }
 
@@ -233,7 +340,11 @@
 
 - (int)defaultOverlayActionType
 {
-    return _player == nil ? TGMessageImageViewOverlayPlay : TGMessageImageViewOverlayNone;
+    if (_context.autoplayAnimations) {
+        return TGMessageImageViewOverlayNone;
+    } else {
+        return !_activatedMedia ? TGMessageImageViewOverlayPlay : TGMessageImageViewOverlayNone;
+    }
 }
 
 @end

@@ -95,7 +95,17 @@ typedef enum {
 @property (nonatomic) int32_t botKind;
 @property (nonatomic) int32_t botInfoVersion;
 
+@property (nonatomic) int32_t flags;
+
+@property (nonatomic) bool isVerified;
+@property (nonatomic) bool hasExplicitContent;
+@property (nonatomic, strong) NSString *restrictionReason;
+@property (nonatomic, strong) NSString *contextBotPlaceholder;
+@property (nonatomic) bool isContextBot;
+
 @property (nonatomic, strong) NSDictionary *customProperties;
+
+@property (nonatomic) bool minimalRepresentation;
 
 - (id)copyWithZone:(NSZone *)zone;
 

@@ -39,7 +39,7 @@
 
 #define TGModernGalleryItemPadding 20.0f
 
-@interface TGModernGalleryController () <UIScrollViewDelegate, TGModernGalleryScrollViewDelegate, TGModernGalleryItemViewDelegate>
+@interface TGModernGalleryController () <UIScrollViewDelegate, TGModernGalleryScrollViewDelegate, TGModernGalleryItemViewDelegate, TGKeyCommandResponder>
 {
     NSMutableDictionary *_reusableItemViewsByIdentifier;
     NSMutableArray *_visibleItemViews;
@@ -89,6 +89,14 @@
     
     if (_completedTransitionOut)
         _completedTransitionOut();
+}
+
+- (BOOL)prefersStatusBarHidden
+{
+    if (self.childViewControllers.count > 0)
+        return [self.childViewControllers.lastObject prefersStatusBarHidden];
+    
+    return [super prefersStatusBarHidden];
 }
 
 - (UIStatusBarStyle)preferredStatusBarStyle
@@ -333,7 +341,7 @@
     [super loadView];
     object_setClass(self.view, [TGModernGalleryContainerView class]);
     
-    self.view.frame = (CGRect){self.view.frame.origin, TGAppDelegateInstance.rootController.view.bounds.size};
+    self.view.frame = (CGRect){self.view.frame.origin, TGAppDelegateInstance.rootController.applicationBounds.size};
     
     _reusableItemViewsByIdentifier = [[NSMutableDictionary alloc] init];
     _visibleItemViews = [[NSMutableArray alloc] init];
@@ -371,10 +379,20 @@
             if ([strongSelf currentItemIndex] < strongSelf.model.items.count)
                 focusItem = strongSelf.model.items[[strongSelf currentItemIndex]];
             
+            TGModernGalleryItemView *currentItemView = nil;
+            for (TGModernGalleryItemView *itemView in strongSelf->_visibleItemViews)
+            {
+                if ([itemView.item isEqual:focusItem])
+                {
+                    currentItemView = itemView;
+                    break;
+                }
+            }
+            
             if (strongSelf.hasFadeOutTransition)
             {
                 if (strongSelf.beginTransitionOut)
-                    strongSelf.beginTransitionOut(focusItem);
+                    strongSelf.beginTransitionOut(focusItem, currentItemView);
                 
                 [strongSelf->_view fadeOutWithDuration:0.3f completion:^
                 {
@@ -388,18 +406,11 @@
                 CGRect transitionOutFromViewContentRect = CGRectZero;
                 
                 if (strongSelf.beginTransitionOut && focusItem != nil)
-                    transitionOutToView = strongSelf.beginTransitionOut(focusItem);
-                if (transitionOutToView != nil)
+                    transitionOutToView = strongSelf.beginTransitionOut(focusItem, currentItemView);
+                if (transitionOutToView != nil && currentItemView != nil)
                 {
-                    for (TGModernGalleryItemView *itemView in strongSelf->_visibleItemViews)
-                    {
-                        if ([itemView.item isEqual:focusItem])
-                        {
-                            transitionOutFromView = [itemView transitionView];
-                            transitionOutFromViewContentRect = [itemView transitionViewContentRect];
-                            break;
-                        }
-                    }
+                    transitionOutFromView = [currentItemView transitionView];
+                    transitionOutFromViewContentRect = [currentItemView transitionViewContentRect];
                 }
                 
                 if (transitionOutFromView != nil && transitionOutToView != nil)
@@ -665,12 +676,6 @@ static CGFloat transformRotation(CGAffineTransform transform)
     
     if (ABS(toRotation - fromRotation) > FLT_EPSILON)
     {
-        /*POPSpringAnimation *rotationAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerRotation];
-        rotationAnimation.fromValue = @(fromRotation);
-        rotationAnimation.toValue = @(toRotation);
-        rotationAnimation.springSpeed = 20;
-        rotationAnimation.springBounciness = bounciness;
-        [view.layer pop_addAnimation:rotationAnimation forKey:@"layerTransitionRotation"];*/
     }
     
     [CATransaction begin];
@@ -726,26 +731,6 @@ static CGFloat transformRotation(CGAffineTransform transform)
     }
     
     [CATransaction commit];
-    
-    /*POPSpringAnimation *positionAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerPosition];
-    positionAnimation.fromValue = [NSValue valueWithCGPoint:CGPointMake(CGRectGetMidX(fromFrame), CGRectGetMidY(fromFrame))];
-    positionAnimation.toValue = [NSValue valueWithCGPoint:CGPointMake(CGRectGetMidX(toFrame), CGRectGetMidY(toFrame))];
-    positionAnimation.springSpeed = 20;
-    positionAnimation.springBounciness = bounciness;
-    positionAnimation.velocity = [NSValue valueWithCGPoint:velocity];
-    positionAnimation.completionBlock = ^(__unused POPAnimation *animation, BOOL finished)
-    {
-        if (completion)
-            completion(finished);
-    };
-    [view.layer pop_addAnimation:positionAnimation forKey:@"layerTransitionPosition"];
-    
-    POPSpringAnimation *scaleAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerScaleXY];
-    scaleAnimation.fromValue = [NSValue valueWithCGPoint:CGPointMake(fromFrame.size.width / view.bounds.size.width, fromFrame.size.height/ view.bounds.size.height)];
-    scaleAnimation.toValue = [NSValue valueWithCGPoint:CGPointMake(toFrame.size.width / view.bounds.size.width, toFrame.size.height / view.bounds.size.height)];
-    scaleAnimation.springSpeed = 20;
-    scaleAnimation.springBounciness = bounciness;
-    [view.layer pop_addAnimation:scaleAnimation forKey:@"layerTransitionScale"];*/
 }
 
 - (void)animateTransitionInFromView:(UIView *)fromView toView:(UIView *)toView toViewContentRect:(CGRect)toViewContentRect
@@ -1010,7 +995,7 @@ static CGFloat transformRotation(CGAffineTransform transform)
         
         CGPoint outgoingItemTargetPosition = CGPointMake(0, incomingItemTargetPosition.y);
         
-        CGSize referenceSize = TGAppDelegateInstance.rootController.view.bounds.size;
+        CGSize referenceSize = TGAppDelegateInstance.rootController.applicationBounds.size;
         
         switch (direction)
         {
@@ -1437,6 +1422,42 @@ static CGFloat transformRotation(CGAffineTransform transform)
     {
         [TGHacks animateApplicationStatusBarStyleTransitionWithDuration:duration];
     }
+}
+
+- (void)processKeyCommand:(UIKeyCommand *)keyCommand
+{
+    if ([keyCommand.input isEqualToString:UIKeyInputLeftArrow])
+    {
+        NSInteger newIndex = [self currentItemIndex] - 1;
+        if (newIndex >= 0)
+            [self setCurrentItemIndex:newIndex animated:true];
+    }
+    else if ([keyCommand.input isEqualToString:UIKeyInputRightArrow])
+    {
+        NSUInteger newIndex = [self currentItemIndex] + 1;
+        if (newIndex < _model.items.count)
+            [self setCurrentItemIndex:newIndex animated:true];
+    }
+    else if ([keyCommand.input isEqualToString:UIKeyInputEscape])
+    {
+        _view.transitionOut(0.0f);
+    }
+}
+
+- (NSArray *)availableKeyCommands
+{
+    return @
+    [
+        [TGKeyCommand keyCommandWithTitle:nil input:UIKeyInputLeftArrow modifierFlags:0],
+        [TGKeyCommand keyCommandWithTitle:nil input:UIKeyInputRightArrow modifierFlags:0],
+        [TGKeyCommand keyCommandWithTitle:nil input:UIKeyInputEscape modifierFlags:0],
+        [TGKeyCommand keyCommandWithTitle:nil input:@"\t" modifierFlags:0]
+    ];
+}
+
+- (bool)isExclusive
+{
+    return true;
 }
 
 @end

@@ -9,11 +9,9 @@
 #import "TGDraggableCollectionView.h"
 #import "TGDraggableCollectionViewFlowLayout.h"
 
+#import "TGMediaPickerPhotoStripCell.h"
+
 #import "TGMediaPickerGallerySelectedItemsModel.h"
-#import "TGMediaPickerPhotoStripItemView.h"
-#import "TGModernMediaListItemView.h"
-#import "TGMediaPickerAssetItemView.h"
-#import "TGMediaPickerPhotoItemView.h"
 
 const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
 
@@ -25,10 +23,6 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
     UIView *_maskView;
     TGDraggableCollectionView *_collectionView;
     TGDraggableCollectionViewFlowLayout *_collectionViewLayout;
-    
-    void (^_recycleItemContentView)(TGModernMediaListItemContentView *);
-    NSMutableArray *_storedItemContentViews;
-    NSMutableDictionary *_reusableItemContentViewsByIdentifier;
 }
 @end
 
@@ -38,18 +32,7 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
 {
     self = [super initWithFrame:frame];
     if (self != nil)
-    {
-        __weak TGMediaPickerPhotoStripView *weakSelf = self;
-        
-        _reusableItemContentViewsByIdentifier = [[NSMutableDictionary alloc] init];
-        _storedItemContentViews = [[NSMutableArray alloc] init];
-        
-        _recycleItemContentView = ^(TGModernMediaListItemContentView *itemContentView)
-        {
-            __strong TGMediaPickerPhotoStripView *strongSelf = weakSelf;
-            [strongSelf enqueueView:itemContentView];
-        };
-        
+    {        
         static UIImage *background = nil;
         static UIImage *arrow = nil;
         static dispatch_once_t onceToken;
@@ -108,10 +91,11 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
         _collectionView.backgroundColor = [UIColor clearColor];
         _collectionView.dataSource = self;
         _collectionView.delegate = self;
+        _collectionView.draggable = false;
         _collectionView.draggedViewSuperview = self;
         _collectionView.showsHorizontalScrollIndicator = false;
         _collectionView.showsVerticalScrollIndicator = false;
-        [_collectionView registerClass:[TGMediaPickerPhotoStripItemView class] forCellWithReuseIdentifier:TGMediaPickerPhotoStripItemViewCellKind];
+        [_collectionView registerClass:[TGMediaPickerPhotoStripCell class] forCellWithReuseIdentifier:TGMediaPickerPhotoStripCellKind];
         [_maskView addSubview:_collectionView];
         
         CGFloat draggingInset = 40.0f + _collectionViewLayout.itemSize.width / 2;
@@ -185,22 +169,6 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
                 [_collectionView scrollToItemAtIndexPath:previousIndexPath atScrollPosition:UICollectionViewScrollPositionBottom animated:false];
         }
     }];
-}
-
-- (void)updateItemAtIndex:(NSInteger)index
-{
-    UICollectionViewCell *cell = [_collectionView cellForItemAtIndexPath:[NSIndexPath indexPathForRow:index inSection:0]];
-    
-    if ([cell isKindOfClass:[TGModernMediaListItemView class]])
-    {
-        TGModernMediaListItemView *listItemView = (TGModernMediaListItemView *)cell;
-        
-        if ([listItemView.itemContentView isKindOfClass:[TGMediaPickerAssetItemView class]])
-        {
-            TGMediaPickerAssetItemView *itemView = (TGMediaPickerAssetItemView *)listItemView.itemContentView;
-            [itemView setItem:itemView.item synchronously:false];
-        }
-    }
 }
 
 - (void)setHidden:(bool)hidden animated:(bool)animated
@@ -322,97 +290,25 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
 
 #pragma mark - Collection View Data Source & Delegate
 
-- (TGModernMediaListItemContentView *)dequeueViewForItem:(id<TGModernMediaListItem>)item synchronously:(bool)synchronously
+- (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    if (item == nil || [item viewClass] == nil)
-        return nil;
+    id item = _selectedItemsModel.items[indexPath.row];
     
-    NSString *identifier = NSStringFromClass([item viewClass]);
-    NSMutableArray *views = _reusableItemContentViewsByIdentifier[identifier];
-    if (views == nil)
+    __weak TGMediaPickerPhotoStripView *weakSelf = self;
+    TGMediaPickerPhotoStripCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:TGMediaPickerPhotoStripCellKind forIndexPath:indexPath];
+    cell.selectionContext = self.selectionContext;
+    cell.editingContext = self.editingContext;
+    cell.itemSelected = ^(id<TGMediaSelectableItem> item, bool selected, __unused id sender)
     {
-        views = [[NSMutableArray alloc] init];
-        _reusableItemContentViewsByIdentifier[identifier] = views;
-    }
-    
-    if (views.count == 0)
-    {
-        Class itemClass = [item viewClass];
-        TGModernMediaListItemContentView *itemView = [[itemClass alloc] init];
-        [itemView setItem:item synchronously:synchronously];
+        __strong TGMediaPickerPhotoStripView *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
         
-        return itemView;
-    }
-    
-    TGModernMediaListItemContentView *itemView = [views lastObject];
-    [views removeLastObject];
-    
-    [itemView setItem:item synchronously:synchronously];
-    
-    return itemView;
-}
+        [strongSelf.selectionContext setItem:item selected:selected animated:true sender:strongSelf.selectedItemsModel];
+    };
+    [cell setItem:item signal:self.thumbnailSignalForItem(item)];
 
-- (void)enqueueView:(TGModernMediaListItemContentView *)itemView
-{
-    if (itemView == nil)
-        return;
-    
-    NSString *identifier = NSStringFromClass([itemView class]);
-    if (identifier != nil)
-    {
-        NSMutableArray *views = _reusableItemContentViewsByIdentifier[identifier];
-        if (views == nil)
-        {
-            views = [[NSMutableArray alloc] init];
-            _reusableItemContentViewsByIdentifier[identifier] = views;
-        }
-        [views addObject:itemView];
-    }
-}
-
-- (UICollectionViewCell *)collectionView:(UICollectionView *)__unused collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
-{
-    NSInteger index = indexPath.item;
-    if (index < 0)
-    {
-        TGModernMediaListItemView *itemView = (TGModernMediaListItemView *)[collectionView dequeueReusableCellWithReuseIdentifier:TGMediaPickerPhotoStripItemViewCellKind forIndexPath:indexPath];
-        return itemView;
-    }
-    else
-    {
-        TGMediaPickerGallerySelectedItemsModel *selectedItemsModel = self.selectedItemsModel;
-        id<TGModernMediaListItem> item = [selectedItemsModel.items objectAtIndex:indexPath.item];
-        
-        TGMediaPickerPhotoStripItemView *itemView = (TGMediaPickerPhotoStripItemView *)[collectionView dequeueReusableCellWithReuseIdentifier:TGMediaPickerPhotoStripItemViewCellKind forIndexPath:indexPath];
-        
-        if (itemView.recycleItemContentView == nil)
-            itemView.recycleItemContentView = _recycleItemContentView;
-    
-        TGModernMediaListItemContentView *itemContentView = nil;
-        if (_storedItemContentViews.count != 0)
-        {
-            NSInteger index = -1;
-            for (TGModernMediaListItemContentView *stroredItemContentView in _storedItemContentViews)
-            {
-                index++;
-                
-                if ([item isEqual:stroredItemContentView.item])
-                {
-                    itemContentView = stroredItemContentView;
-                    [_storedItemContentViews removeObjectAtIndex:(NSUInteger)index];
-                    
-                    break;
-                }
-            }
-        }
-        
-        if (itemContentView == nil)
-            itemContentView = [self dequeueViewForItem:item synchronously:false];
-        
-        [itemView setItemContentView:itemContentView];
-        
-        return itemView;
-    }
+    return cell;
 }
 
 - (void)collectionView:(UICollectionView *)__unused collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
@@ -448,21 +344,10 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
 - (bool)collectionView:(UICollectionView *)__unused collectionView canMoveItemAtIndexPath:(NSIndexPath *)__unused indexPath
 {
     return false;
-    
-    TGMediaPickerGallerySelectedItemsModel *selectedItemsModel = self.selectedItemsModel;
-    if (selectedItemsModel.totalCount > 1)
-        return true;
-    
-    return false;
 }
 
-- (void)collectionView:(UICollectionView *)__unused collectionView itemAtIndexPath:(NSIndexPath *)fromIndexPath willMoveToIndexPath:(NSIndexPath *)toIndexPath
+- (UIEdgeInsets)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout*)__unused collectionViewLayout insetForSectionAtIndex:(NSInteger)__unused section
 {
-    TGMediaPickerGallerySelectedItemsModel *selectedItemsModel = self.selectedItemsModel;
-    [selectedItemsModel exchangeItemAtIndex:fromIndexPath.row withItemAtIndex:toIndexPath.row];
-}
-
-- (UIEdgeInsets)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout*)__unused collectionViewLayout insetForSectionAtIndex:(NSInteger)__unused section{
     return UIEdgeInsetsMake(40, 40, 40, 40);
 }
 
@@ -621,15 +506,6 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
     
     if (self.hidden)
         [self setHidden:self.hidden animated:false];
-}
-
-- (void)updateSelectedItems
-{
-    for (TGModernMediaListItemView *itemView in [_collectionView visibleCells])
-    {
-        if ([itemView.itemContentView isKindOfClass:[TGMediaPickerPhotoItemView class]])
-            [((TGMediaPickerPhotoItemView *)itemView.itemContentView) updateSelectionAnimated:false];
-    }
 }
 
 @end

@@ -2,9 +2,6 @@
 #import "WKInterface+TGInterface.h"
 #import "TGColor.h"
 
-#define TGLocalized(s) NSLocalizedString((s), nil)
-#define TGLocalizedStatic(s) NSLocalizedString((s), nil)
-
 #define TGTick   NSDate *startTime = [NSDate date]
 #define TGTock   NSLog(@"%s Time: %f", __func__, -[startTime timeIntervalSinceNow])
 
@@ -13,6 +10,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+    
+extern int TGLocalizedStaticVersion;
+#define TGLocalizedStatic(s) ({ static int _localizedStringVersion = 0; static NSString *_localizedString = nil; if (_localizedString == nil || _localizedStringVersion != TGLocalizedStaticVersion) { _localizedString = TGLocalized(s); _localizedStringVersion = TGLocalizedStaticVersion; } _localizedString; })
+    
+void TGSetLocalizationFromFile(NSURL *fileUrl);
+bool TGIsCustomLocalizationActive();
+void TGResetLocalization();
+NSString *TGLocalized(NSString *s);
     
 static inline void TGDispatchOnMainThread(dispatch_block_t block)
 {

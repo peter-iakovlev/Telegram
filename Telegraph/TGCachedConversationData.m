@@ -30,6 +30,28 @@
 
 @end
 
+@implementation TGConversationMigrationData
+
+- (instancetype)initWithPeerId:(int64_t)peerId maxMessageId:(int32_t)maxMessageId {
+    self = [super init];
+    if (self != nil) {
+        _peerId = peerId;
+        _maxMessageId = maxMessageId;
+    }
+    return self;
+}
+
+- (instancetype)initWithKeyValueCoder:(PSKeyValueCoder *)coder {
+    return [self initWithPeerId:[coder decodeInt64ForCKey:"peerId"] maxMessageId:[coder decodeInt32ForCKey:"maxMessageId"]];
+}
+
+- (void)encodeWithKeyValueCoder:(PSKeyValueCoder *)coder {
+    [coder encodeInt64:_peerId forCKey:"peerId"];
+    [coder encodeInt32:_maxMessageId forCKey:"maxMessageId"];
+}
+
+@end
+
 @implementation TGCachedConversationData
 
 - (instancetype)init {
@@ -39,7 +61,7 @@
     return self;
 }
 
-- (instancetype)initWithManagementCount:(int32_t)managementCount blacklistCount:(int32_t)blacklistCount memberCount:(int32_t)memberCount managementMembers:(NSArray *)managementMembers blacklistMembers:(NSArray *)blacklistMembers generalMembers:(NSArray *)generalMembers privateLink:(NSString *)privateLink {
+- (instancetype)initWithManagementCount:(int32_t)managementCount blacklistCount:(int32_t)blacklistCount memberCount:(int32_t)memberCount managementMembers:(NSArray *)managementMembers blacklistMembers:(NSArray *)blacklistMembers generalMembers:(NSArray *)generalMembers privateLink:(NSString *)privateLink migrationData:(TGConversationMigrationData *)migrationData botInfos:(NSDictionary *)botInfos {
     self = [super init];
     if (self != nil) {
         _managementCount = managementCount;
@@ -49,12 +71,14 @@
         _blacklistMembers = blacklistMembers;
         _generalMembers = generalMembers;
         _privateLink = privateLink;
+        _migrationData = migrationData;
+        _botInfos = botInfos;
     }
     return self;
 }
 
 - (instancetype)initWithKeyValueCoder:(PSKeyValueCoder *)coder {
-    return [self initWithManagementCount:[coder decodeInt32ForCKey:"managementCount"] blacklistCount:[coder decodeInt32ForCKey:"blacklistCount"] memberCount:[coder decodeInt32ForCKey:"memberCount"] managementMembers:[coder decodeArrayForCKey:"managementMembers"] blacklistMembers:[coder decodeArrayForCKey:"blacklistMembers"] generalMembers:[coder decodeArrayForCKey:"generalMembers"] privateLink:[coder decodeStringForCKey:"privateLink"]];
+    return [self initWithManagementCount:[coder decodeInt32ForCKey:"managementCount"] blacklistCount:[coder decodeInt32ForCKey:"blacklistCount"] memberCount:[coder decodeInt32ForCKey:"memberCount"] managementMembers:[coder decodeArrayForCKey:"managementMembers"] blacklistMembers:[coder decodeArrayForCKey:"blacklistMembers"] generalMembers:[coder decodeArrayForCKey:"generalMembers"] privateLink:[coder decodeStringForCKey:"privateLink"] migrationData:[coder decodeObjectForCKey:"migrationData"] botInfos:[coder decodeInt32DictionaryForCKey:"botInfos"]];
 }
 
 - (void)encodeWithKeyValueCoder:(PSKeyValueCoder *)coder {
@@ -67,10 +91,13 @@
     [coder encodeArray:_generalMembers forCKey:"generalMembers"];
     
     [coder encodeString:_privateLink forCKey:"privateLink"];
+    [coder encodeObject:_migrationData forCKey:"migrationData"];
+    
+    [coder encodeInt32Dictionary:_botInfos forCKey:"botInfos"];
 }
 
 - (TGCachedConversationData *)updateManagementCount:(int32_t)managementCount blacklistCount:(int32_t)blacklistCount memberCount:(int32_t)memberCount {
-    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:blacklistCount memberCount:memberCount managementMembers:_managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink];
+    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:blacklistCount memberCount:memberCount managementMembers:_managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
 }
 
 - (TGCachedConversationData *)blacklistMember:(int32_t)uid timestamp:(int32_t)timestamp {
@@ -99,7 +126,10 @@
         [managementMembers removeObject:member];
     }
     
-    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:blacklistCount memberCount:memberCount managementMembers:managementMembers blacklistMembers:blacklistMembers generalMembers:generalMembers privateLink:_privateLink];
+    NSMutableDictionary *botInfos = _botInfos == nil ? nil : [[NSMutableDictionary alloc] initWithDictionary:_botInfos];
+    [botInfos removeObjectForKey:@(uid)];
+    
+    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:blacklistCount memberCount:memberCount managementMembers:managementMembers blacklistMembers:blacklistMembers generalMembers:generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:botInfos];
 }
 
 - (TGCachedConversationData *)unblacklistMember:(int32_t)uid timestamp:(int32_t)timestamp {
@@ -115,12 +145,7 @@
         [blacklistMembers removeObject:member];
     }
     
-    if (![generalMembers containsObject:member]) {
-        memberCount++;
-        [generalMembers addObject:member];
-    }
-    
-    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:blacklistCount memberCount:memberCount managementMembers:_managementMembers blacklistMembers:blacklistMembers generalMembers:generalMembers privateLink:_privateLink];
+    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:blacklistCount memberCount:memberCount managementMembers:_managementMembers blacklistMembers:blacklistMembers generalMembers:generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
 }
 
 - (TGCachedConversationData *)addManagementMember:(TGCachedConversationMember *)member {
@@ -135,7 +160,7 @@
     
     [managementMembers addObject:member];
     
-    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink];
+    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
 }
 
 - (TGCachedConversationData *)removeManagementMember:(int32_t)uid {
@@ -148,7 +173,7 @@
         [managementMembers removeObject:member];
     }
     
-    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink];
+    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
 }
 
 - (TGCachedConversationData *)addMembers:(NSArray *)uids timestamp:(int32_t)timestamp {
@@ -163,7 +188,7 @@
         
         if (![generalMembers containsObject:member]) {
             memberCount++;
-            [generalMembers addObject:member];
+            [generalMembers insertObject:member atIndex:0];
         }
         
         if ([blacklistMembers containsObject:member]) {
@@ -172,23 +197,31 @@
         }
     }
     
-    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:blacklistCount memberCount:memberCount managementMembers:_managementMembers blacklistMembers:blacklistMembers generalMembers:generalMembers privateLink:_privateLink];
+    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:blacklistCount memberCount:memberCount managementMembers:_managementMembers blacklistMembers:blacklistMembers generalMembers:generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
 }
 
 - (TGCachedConversationData *)updatePrivateLink:(NSString *)privateLink {
-    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:_managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:privateLink];
+    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:_managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:privateLink migrationData:_migrationData botInfos:_botInfos];
 }
 
 - (TGCachedConversationData *)updateGeneralMembers:(NSArray *)generalMembers {
-    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:_managementMembers blacklistMembers:_blacklistMembers generalMembers:generalMembers privateLink:_privateLink];
+    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:_managementMembers blacklistMembers:_blacklistMembers generalMembers:generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
 }
 
 - (TGCachedConversationData *)updateManagementMembers:(NSArray *)managementMembers {
-    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink];
+    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
 }
 
 - (TGCachedConversationData *)updateBlacklistMembers:(NSArray *)blacklistMembers {
-    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:_managementMembers blacklistMembers:blacklistMembers generalMembers:_generalMembers privateLink:_privateLink];
+    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:_managementMembers blacklistMembers:blacklistMembers generalMembers:_generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
+}
+
+- (TGCachedConversationData *)updateMigrationData:(TGConversationMigrationData *)migrationData {
+    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:_managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink migrationData:migrationData botInfos:_botInfos];
+}
+
+- (TGCachedConversationData *)updateBotInfos:(NSDictionary *)botInfos {
+    return [[TGCachedConversationData alloc] initWithManagementCount:_managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:_managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:botInfos];
 }
 
 @end

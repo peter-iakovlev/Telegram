@@ -22,6 +22,16 @@
 #import "TLUpdates_ChannelDifference_manual.h"
 #import "TLChat$channel.h"
 #import "TLChatFull$channelFull.h"
+#import "TLChat$chat.h"
+#import "TLChatParticipants$chatParticipantsForbidden.h"
+#import "TLWebPage$webPageExternal.h"
+#import "TLMessages_BotResults$botResults.h"
+#import "TLBotInlineMessage$botInlineMessageText.h"
+#import "TLBotInlineResult$botInlineResult.h"
+#import "TLDocumentAttribute$documentAttributeAudio.h"
+#import "TLchannels_MessageEditData$messageEditData.h"
+#import "TLMessageFwdHeader$messageFwdHeader.h"
+
 #import "TLBool.h"
 
 #import "TGStringUtils.h"
@@ -446,21 +456,30 @@ void TLMetaClassStore::mergeScheme(TLScheme *scheme)
         
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x5162463, [[TLResPQ$resPQ_manual alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x62d6b459, [[TLMsgsAck$msgs_ack_manual alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x5BA66C13, [[TLMessage$modernMessage alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xC09BE45F, [[TLMessage$modernMessage alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xC06B9607, [[TLMessage$modernMessageService alloc] init]));
         
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >((int32_t)0xCA820ED7, [[TLWebPage_manual alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >((int32_t)0x22E49072, [[TLUser$modernUser alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >((int32_t)0xD10D979A, [[TLUser$modernUser alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >((int32_t)0x05D8C6CC, [[TLDcOption$modernDcOption alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xF7D91A46, [[TLUpdates$modernUpdateShortMessage alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xCAC7FDD2, [[TLUpdates$modernUpdateShortChatMessage alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x914FBF11, [[TLUpdates$modernUpdateShortMessage alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x16812688, [[TLUpdates$modernUpdateShortChatMessage alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xBC0F17BC, [[TLmessages_Messages$modernChannelMessages alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x11f1331c, [[TLUpdates$updateShortSentMessage alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x2064674E, [[TLUpdates_ChannelDifference$channelDifference alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x3E11AFFB, [[TLUpdates_ChannelDifference$empty alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x5E167646, [[TLUpdates_ChannelDifference$tooLong alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x678E9587, [[TLChat$channel alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xFAB31AA3, [[TLChatFull$channelFull alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x4B1B7506, [[TLChat$channel alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x9e341ddf, [[TLChatFull$channelFull alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xFC900C2B, [[TLChatParticipants$chatParticipantsForbidden alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xD91CDD54, [[TLChat$chat alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xB08FBB93, [[TLWebPage$webPageExternal alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x1170b0a3, [[TLMessages_BotResults$botResults alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xA56197A9, [[TLBotInlineMessage$botInlineMessageText alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x9BEBAEB9, [[TLBotInlineResult$botInlineResult alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x9852F9C6, [[TLDocumentAttribute$documentAttributeAudio alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x67E1255F, [[TLchannels_MessageEditData$messageEditData alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xC786DDCB, [[TLMessageFwdHeader$messageFwdHeader alloc] init]));
         
         {
             TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];

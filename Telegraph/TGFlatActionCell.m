@@ -62,6 +62,8 @@
         _titleLabel.text = TGLocalized(@"Channels.Title");
     else if (mode == TGFlatActionCellModeCreateChannel)
         _titleLabel.text = TGLocalized(@"Compose.NewChannelButton");
+    else if (mode == TGFlatActionCellModeCreateChannelGroup)
+        _titleLabel.text = TGLocalized(@"Compose.NewChannelGroupButton");
 
     static UIImage *inviteIcon = nil;
     static UIImage *friendsIcon = nil;
@@ -88,7 +90,7 @@
         iconFrame.origin = CGPointMake(20 - TGRetinaPixel + horizontalOffset, 9 + verticalOffset);
         _iconView.frame = iconFrame;
     }
-    else if (mode == TGFlatActionCellModeCreateGroup || mode == TGFlatActionCellModeCreateGroupContacts)
+    else if (mode == TGFlatActionCellModeCreateGroup || mode == TGFlatActionCellModeCreateGroupContacts || mode == TGFlatActionCellModeCreateChannelGroup)
     {
         _iconView.image = friendsIcon;
         [_iconView sizeToFit];

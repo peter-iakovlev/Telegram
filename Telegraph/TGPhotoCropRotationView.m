@@ -121,7 +121,8 @@ const CGFloat TGPhotoCropRotationViewMaximumAngle = 45;
         {
             CGFloat translation = 0;
             
-            switch (self.interfaceOrientation) {
+            switch (self.interfaceOrientation)
+            {
                 case UIInterfaceOrientationLandscapeLeft:
                     translation = [gestureRecognizer translationInView:self].y;
                     break;

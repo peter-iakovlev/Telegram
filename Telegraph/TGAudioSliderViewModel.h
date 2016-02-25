@@ -8,16 +8,20 @@
 
 #import "TGModernViewModel.h"
 
+#import <SSignalKit/SSignalKit.h>
+
+@class TGMusicPlayerStatus;
+
 @interface TGAudioSliderViewModel : TGModernViewModel
 
-@property (nonatomic) NSTimeInterval duration;
+@property (nonatomic) int64_t audioId;
+@property (nonatomic) int64_t localAudioId;
 @property (nonatomic) bool incoming;
-@property (nonatomic, strong) NSString *audioDurationText;
-@property (nonatomic) NSTimeInterval preciseDuration;
+@property (nonatomic) int32_t duration;
 @property (nonatomic) bool manualPositionAdjustmentEnabled;
-@property (nonatomic) bool progressMode;
 @property (nonatomic) bool listenedStatus;
+@property (nonatomic, strong) TGMusicPlayerStatus *status;
 
-- (void)setAudioPosition:(float)audioPosition animated:(bool)animated timestamp:(NSTimeInterval)timestamp isPlaying:(bool)isPlaying;
+@property (nonatomic, strong) SSignal *waveformSignal;
 
 @end

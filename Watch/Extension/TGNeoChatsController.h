@@ -26,9 +26,15 @@
 
 @property (nonatomic, readonly) NSArray *chats;
 
+- (void)popAllControllers;
+- (void)resetLocalization;
+
 + (NSString *)stringForSyncState:(TGBridgeSynchronizationStateValue)value;
 
 @end
 
 extern NSString *const TGSynchronizationStateNotification;
 extern NSString *const TGSynchronizationStateKey;
+
+extern NSString *const TGContextNotification;
+extern NSString *const TGContextNotificationKey;

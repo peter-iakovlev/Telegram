@@ -9,6 +9,8 @@
 #import "TGPreparedMessage.h"
 
 @class TGDocumentMediaAttachment;
+@class TGDataItem;
+@class TGLiveUploadActorData;
 
 @interface TGPreparedLocalDocumentMessage : TGPreparedMessage
 
@@ -18,12 +20,13 @@
 @property (nonatomic, strong) NSString *localThumbnailDataPath;
 @property (nonatomic) CGSize thumbnailSize;
 @property (nonatomic, strong) NSArray *attributes;
-
-@property (nonatomic, strong) TGMessage *replyMessage;
+@property (nonatomic, strong) TGDataItem *tempDataItem;
+@property (nonatomic, strong) TGLiveUploadActorData *liveUploadData;
 
 - (NSString *)localDocumentDirectory;
 - (NSString *)localDocumentFileName;
 
++ (instancetype)messageWithTempDataItem:(TGDataItem *)tempDataItem size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage;
 + (instancetype)messageWithTempDocumentPath:(NSString *)tempDocumentPath size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage;
 + (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalDocumentMessage *)source;
 + (instancetype)messageByCopyingDataFromMedia:(TGDocumentMediaAttachment *)media replyMessage:(TGMessage *)replyMessage;
@@ -31,5 +34,7 @@
 
 + (NSString *)localDocumentDirectoryForLocalDocumentId:(int64_t)localDocumentId;
 + (NSString *)localDocumentDirectoryForDocumentId:(int64_t)documentId;
+
+- (TGDocumentMediaAttachment *)document;
 
 @end

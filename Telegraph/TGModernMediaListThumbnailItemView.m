@@ -7,6 +7,7 @@
 @interface TGModernMediaListThumbnailItemView () <TGModernGalleryTransitionView>
 {
     NSString *_imageUri;
+    SSignal *_signal;
 }
 
 @end
@@ -19,12 +20,17 @@
     if (self != nil)
     {
         _imageView = [[TGImageView alloc] initWithFrame:(CGRect){CGPointZero, frame.size}];
-        _imageView.backgroundColor = [UIColor grayColor];
         _imageView.contentMode = UIViewContentModeScaleAspectFill;
         _imageView.clipsToBounds = true;
         [self addSubview:_imageView];
     }
     return self;
+}
+
+- (void)prepareForReuse {
+    [super prepareForReuse];
+    
+    [_imageView reset];
 }
 
 - (UIImage *)transitionImage
@@ -56,13 +62,24 @@
 
 - (void)setImageUri:(NSString *)imageUri synchronously:(bool)synchronously
 {
+    _signal = nil;
     _imageUri = imageUri;
     [_imageView loadUri:imageUri withOptions:@{TGImageViewOptionSynchronous: @(synchronously)}];
 }
 
+- (void)setImageSignal:(SSignal *)signal {
+    _imageUri = nil;
+    _signal = signal;
+    [_imageView setSignal:signal];
+}
+
 - (void)updateItem
 {
-    [_imageView loadUri:_imageUri withOptions:@{TGImageViewOptionKeepCurrentImageAsPlaceholder: @true}];
+    if (_signal != nil) {
+        [_imageView setSignal:_signal];
+    } else {
+        [_imageView loadUri:_imageUri withOptions:@{TGImageViewOptionKeepCurrentImageAsPlaceholder: @true}];
+    }
 }
 
 @end

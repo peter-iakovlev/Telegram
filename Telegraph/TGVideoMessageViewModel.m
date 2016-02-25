@@ -41,7 +41,7 @@
 
 @implementation TGVideoMessageViewModel
 
-- (NSString *)filePathForVideoId:(int64_t)videoId local:(bool)local
++ (NSString *)filePathForVideoId:(int64_t)videoId local:(bool)local
 {
     static NSString *videosDirectory = nil;
     static dispatch_once_t onceToken;
@@ -56,11 +56,11 @@
     return [videosDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@%" PRIx64 ".mov", local ? @"local" : @"remote", videoId]];
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo video:(TGVideoMediaAttachment *)video authorPeer:(id)authorPeer context:(TGModernViewContext *)context replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor
+- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo video:(TGVideoMediaAttachment *)video authorPeer:(id)authorPeer context:(TGModernViewContext *)context forwardPeer:(id)forwardPeer forwardAuthor:(id)forwardAuthor forwardMessageId:(int32_t)forwardMessageId replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor viaUser:(TGUser *)viaUser
 {
     TGImageInfo *previewImageInfo = imageInfo;
     
-    NSString *legacyVideoFilePath = [self filePathForVideoId:video.videoId != 0 ? video.videoId : video.localVideoId local:video.videoId == 0];
+    NSString *legacyVideoFilePath = [TGVideoMessageViewModel filePathForVideoId:video.videoId != 0 ? video.videoId : video.localVideoId local:video.videoId == 0];
     NSString *legacyThumbnailCacheUri = [imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL];
     
     if (video.videoId != 0 || video.localVideoId != 0)
@@ -89,7 +89,7 @@
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
     }
     
-    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:nil forwardMessageId:0 replyHeader:replyHeader replyAuthor:replyAuthor caption:video.caption textCheckingResults:video.textCheckingResults];
+    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyHeader replyAuthor:replyAuthor viaUser:viaUser caption:video.caption textCheckingResults:video.textCheckingResults];
     if (self != nil)
     {
         _video = video;
@@ -119,49 +119,27 @@
     
     TGVideoMediaAttachment *video = nil;
     
-    
-    if (video != nil)
+    for (TGMediaAttachment *attachment in message.mediaAttachments)
     {
-        TGImageInfo *previewImageInfo = video.thumbnailInfo;
-        
-        NSString *legacyVideoFilePath = [self filePathForVideoId:video.videoId != 0 ? video.videoId : video.localVideoId local:video.videoId == 0];
-        NSString *legacyThumbnailCacheUri = [video.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL];
-        
-        if (video.videoId != 0 || video.localVideoId != 0)
+        if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
         {
-            previewImageInfo = [[TGImageInfo alloc] init];
-            
-            NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"video-thumbnail://?"];
-            if (video.videoId != 0)
-                [previewUri appendFormat:@"id=%" PRId64 "", video.videoId];
-            else
-                [previewUri appendFormat:@"local-id=%" PRId64 "", video.localVideoId];
-            
-            CGSize thumbnailSize = CGSizeZero;
-            CGSize renderSize = CGSizeZero;
-            [TGImageMessageViewModel calculateImageSizesForImageSize:video.dimensions thumbnailSize:&thumbnailSize renderSize:&renderSize squareAspect:message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17];
-            
-            [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)thumbnailSize.width, (int)thumbnailSize.height, (int)renderSize.width, (int)renderSize.height];
-            
-            [previewUri appendFormat:@"&legacy-video-file-path=%@", legacyVideoFilePath];
-            if (legacyThumbnailCacheUri != nil)
-                [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUri];
-            
-            if (message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17)
-                [previewUri appendString:@"&secret=1"];
-            
-            [previewImageInfo addImageWithSize:renderSize url:previewUri];
+            video = (TGVideoMediaAttachment *)attachment;
+            break;
         }
-        
-        [self updateImageInfo:previewImageInfo];
     }
+    
+    if (video == nil)
+        return;
+    
+    _video = video;
+    [_video.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:&_videoSize];
 }
 
-- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage
+- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage delayDisplay:(bool)delayDisplay
 {
     //_touchAreaModel.touchesBeganAction = mediaIsAvailable ? @"openMediaRequested" : @"mediaDownloadRequested";
     
-    [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage];
+    [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage delayDisplay:delayDisplay];
 }
 
 - (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated
@@ -174,7 +152,11 @@
     
     if (progressVisible)
     {
-        if (_videoSize < 1024 * 1024)
+        if (_videoSize == INT_MAX)
+        {
+            labelText = TGLocalized(@"Conversation.Processing");
+        }
+        else if (_videoSize < 1024 * 1024)
         {
             labelText = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.DownloadProgressKilobytes"), (int)(_videoSize * progress / 1024), (int)(_videoSize / 1024)];
         }

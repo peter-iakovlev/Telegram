@@ -71,7 +71,7 @@
         lowp float satLuminance = dot(result.rgb, satLuminanceWeighting);
         lowp vec3 greyScaleColor = vec3(satLuminance);
      
-        result = vec4(mix(greyScaleColor, result.rgb, saturation), result.a);
+        result = vec4(clamp(mix(greyScaleColor, result.rgb, saturation), 0.0, 1.0), result.a);
     );
 }
 

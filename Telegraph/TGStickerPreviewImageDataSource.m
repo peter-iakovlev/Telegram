@@ -116,6 +116,7 @@ static ASQueue *taskManagementQueue()
                  
                  NSString *filePath = [fileDirectory stringByAppendingPathComponent:highQuality ? @"thumbnail-high" :  @"thumbnail"];
                  
+                 __weak TGMediaPreviewTask *weakPreviewTask = previewTask;
                  [previewTask executeMultipartWithImageUri:args[@"legacyThumbnailUri"] targetFilePath:filePath progress:^(float value)
                  {
                      if (progress)
@@ -124,7 +125,10 @@ static ASQueue *taskManagementQueue()
                  {
                      if (success)
                      {
-                         [previewTask executeWithWorkerTask:workerTask threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool]];
+                         __strong TGMediaPreviewTask *strongPreviewTask = weakPreviewTask;
+                         if (strongPreviewTask != nil) {
+                             [strongPreviewTask executeWithWorkerTask:workerTask threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool]];
+                         }
                      }
                      else
                      {

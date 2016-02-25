@@ -1,6 +1,7 @@
 #import <UIKit/UIKit.h>
 
 @class TGStickerPack;
+@class TGDocumentMediaAttachment;
 
 @interface TGStickerPreviewPagingScrollView : UIScrollView
 
@@ -8,5 +9,6 @@
 
 - (void)setStickerPack:(TGStickerPack *)stickerPack;
 - (NSUInteger)pageCount;
+- (TGDocumentMediaAttachment *)documentAtPoint:(CGPoint)point;
 
 @end

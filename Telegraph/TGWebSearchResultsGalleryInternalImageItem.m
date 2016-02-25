@@ -1,7 +1,7 @@
 #import "TGWebSearchResultsGalleryInternalImageItem.h"
 
 #import "TGWebSearchResultsGalleryImageItemView.h"
-#import "TGWebSearchInternalImageResult+TGEditablePhotoItem.h"
+#import "TGWebSearchInternalImageResult+TGMediaItem.h"
 
 #import "TGImageInfo.h"
 #import "TGRemoteImageView.h"
@@ -12,7 +12,8 @@
 
 @implementation TGWebSearchResultsGalleryInternalImageItem
 
-@synthesize itemSelected = _itemSelected;
+@synthesize selectionContext;
+@synthesize editingContext;
 
 - (instancetype)initWithSearchResult:(TGWebSearchInternalImageResult *)searchResult
 {
@@ -61,14 +62,24 @@
     return [TGWebSearchResultsGalleryImageItemView class];
 }
 
-- (id<TGEditablePhotoItem>)editableMediaItem
+- (id<TGMediaSelectableItem>)selectableMediaItem
 {
     return self.webSearchResult;
 }
 
+- (id<TGMediaEditableItem>)editableMediaItem
+{
+    return self.webSearchResult;
+}
+
+- (TGPhotoEditorTab)toolbarTabs
+{
+    return TGPhotoEditorCaptionTab | TGPhotoEditorCropTab | TGPhotoEditorToolsTab;
+}
+
 - (NSString *)uniqueId
 {
-    return [self.webSearchResult uniqueId];
+    return [self.webSearchResult uniqueIdentifier];
 }
 
 - (BOOL)isEqual:(id)object

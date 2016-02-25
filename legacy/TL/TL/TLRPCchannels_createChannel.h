@@ -10,7 +10,6 @@
 @property (nonatomic) int32_t flags;
 @property (nonatomic, retain) NSString *title;
 @property (nonatomic, retain) NSString *about;
-@property (nonatomic, retain) NSArray *users;
 
 - (Class)responseClass;
 

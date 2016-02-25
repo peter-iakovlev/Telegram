@@ -16,6 +16,7 @@
 @property (nonatomic) bool enabled;
 @property (nonatomic) CGFloat leftInset;
 @property (nonatomic) CGFloat additionalSeparatorInset;
+@property (nonatomic, strong) UIImage *icon;
 
 @property (nonatomic) SEL action;
 

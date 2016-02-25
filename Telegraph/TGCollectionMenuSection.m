@@ -57,6 +57,11 @@
     return false;
 }
 
+- (void)replaceItems:(NSArray *)items {
+    [_items removeAllObjects];
+    [_items addObjectsFromArray:items];
+}
+
 - (NSUInteger)indexOfItem:(TGCollectionItem *)item {
     return [_items indexOfObject:item];
 }

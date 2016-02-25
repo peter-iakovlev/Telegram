@@ -13,6 +13,7 @@
 @interface TGOverlayController : TGViewController
 
 @property (nonatomic, weak) TGOverlayControllerWindow *overlayWindow;
+@property (nonatomic, assign) bool isImportant;
 
 - (void)dismiss;
 

@@ -1,5 +1,7 @@
 #import "TGMessageViewMessageRowController.h"
 
+#import "TGExtensionDelegate.h"
+
 #import "TGDateUtils.h"
 #import "TGStringUtils.h"
 #import "TGLocationUtils.h"
@@ -8,6 +10,8 @@
 #import "TGMessageViewModel.h"
 
 #import "TGBridgeMediaSignals.h"
+
+#import "TGPeerIdAdapter.h"
 
 #import "TGBridgeUser.h"
 #import "TGBridgeMessage.h"
@@ -23,6 +27,8 @@ NSString *const TGMessageViewMessageRowIdentifier = @"TGMessageViewMessageRow";
     int64_t _currentDocumentId;
     int64_t _currentPhotoId;
     int64_t _currentReplyPhotoId;
+    
+    bool _processing;
 }
 @end
 
@@ -46,7 +52,7 @@ NSString *const TGMessageViewMessageRowIdentifier = @"TGMessageViewMessageRow";
         self.contactPressed();
 }
 
-- (void)updateWithMessage:(TGBridgeMessage *)message context:(TGBridgeContext *)context
+- (void)updateWithMessage:(TGBridgeMessage *)message context:(TGBridgeContext *)context additionalPeers:(NSDictionary *)additionalPeers
 {
     bool mediaGroupHidden = true;
     bool mapGroupHidden = true;
@@ -56,7 +62,10 @@ NSString *const TGMessageViewMessageRowIdentifier = @"TGMessageViewMessageRow";
     
     TGBridgeForwardedMessageMediaAttachment *forwardAttachment = nil;
     TGBridgeReplyMessageMediaAttachment *replyAttachment = nil;
-    NSString *messageText = nil;
+    id messageText = nil;
+    CGFloat fontSize = [TGMessageViewMessageRowController textFontSize];
+    
+    bool inhibitForwardHeader = false;
     
     for (TGBridgeMediaAttachment *attachment in message.media)
     {
@@ -120,15 +129,26 @@ NSString *const TGMessageViewMessageRowIdentifier = @"TGMessageViewMessageRow";
                 
                 [TGStickerViewModel updateWithMessage:message isGroup:false context:context currentDocumentId:&_currentDocumentId authorLabel:nil imageGroup:self.stickerGroup isVisible:self.isVisible completion:nil];
             }
+            else if (documentAttachment.isAudio && documentAttachment.isVoice)
+            {
+                fileGroupHidden = false;
+                
+                self.titleLabel.text = TGLocalized(@"Message.Audio");
+                
+                NSInteger durationMinutes = floor(documentAttachment.duration / 60.0);
+                NSInteger durationSeconds = documentAttachment.duration % 60;
+                self.subtitleLabel.text = [NSString stringWithFormat:@"%ld:%02ld", (long)durationMinutes, (long)durationSeconds];
+                
+                self.audioButton.hidden = false;
+                self.fileIconGroup.hidden = true;
+                self.venueIcon.hidden = true;
+                
+                inhibitForwardHeader = true;
+            }
             else
             {
                 fileGroupHidden = false;
                 
-                NSString *extension = [[documentAttachment.fileName pathExtension] lowercaseString];
-                if (extension.length == 0)
-                    extension = @"file";
-                                
-                self.extensionLabel.text = extension;
                 self.titleLabel.text = documentAttachment.fileName;
                 self.subtitleLabel.text = [TGStringUtils stringForFileSize:documentAttachment.fileSize precision:2];
                 
@@ -152,6 +172,8 @@ NSString *const TGMessageViewMessageRowIdentifier = @"TGMessageViewMessageRow";
             self.audioButton.hidden = false;
             self.fileIconGroup.hidden = true;
             self.venueIcon.hidden = true;
+            
+            inhibitForwardHeader = true;
         }
         else if ([attachment isKindOfClass:[TGBridgeLocationMediaAttachment class]])
         {
@@ -231,9 +253,21 @@ NSString *const TGMessageViewMessageRowIdentifier = @"TGMessageViewMessageRow";
     }
     
     if (messageText == nil)
-        messageText = message.text;
+        messageText = [TGMessageViewModel attributedTextForMessage:message fontSize:fontSize textColor:[UIColor whiteColor]];
     
-    [TGMessageViewModel updateForwardHeaderGroup:self.forwardHeaderButton titleLabel:self.forwardTitleLabel fromLabel:self.forwardFromLabel forwardAttachment:forwardAttachment textColor:[UIColor whiteColor]];
+    if (inhibitForwardHeader)
+        forwardAttachment = nil;
+
+    id forwardPeer = nil;
+    if (forwardAttachment != nil)
+    {
+        if (TGPeerIdIsChannel(forwardAttachment.peerId))
+            forwardPeer = additionalPeers[@(forwardAttachment.peerId)];
+        else
+            forwardPeer = [[TGBridgeUserCache instance] userWithId:(int32_t)forwardAttachment.peerId];
+    }
+    
+    [TGMessageViewModel updateForwardHeaderGroup:self.forwardHeaderButton titleLabel:self.forwardTitleLabel fromLabel:self.forwardFromLabel forwardAttachment:forwardAttachment forwardPeer:forwardPeer textColor:[UIColor whiteColor]];
     
     [TGMessageViewModel updateReplyHeaderGroup:self.replyHeaderGroup authorLabel:self.replyAuthorNameLabel imageGroup:self.replyHeaderImageGroup textLabel:self.replyMessageTextLabel titleColor:[UIColor whiteColor] subtitleColor:[UIColor hexColor:0x7e7e81] replyAttachment:replyAttachment currentReplyPhoto:&_currentReplyPhotoId isVisible:self.isVisible completion:nil];
     
@@ -243,9 +277,40 @@ NSString *const TGMessageViewMessageRowIdentifier = @"TGMessageViewMessageRow";
     self.contactButton.hidden = contactButtonHidden;
     self.stickerGroup.hidden = stickerGroupHidden;
     
-    self.messageTextLabel.hidden = (messageText.length == 0);
+    self.messageTextLabel.hidden = (((NSString *)messageText).length == 0);
     if (!self.messageTextLabel.hidden)
-        self.messageTextLabel.text = messageText;
+    {
+        if ([messageText isKindOfClass:[NSString class]])
+        {
+            if (fontSize == 16.0f)
+                self.messageTextLabel.text = messageText;
+            else
+                self.messageTextLabel.attributedText = [TGMessageViewModel attributedTextForMessage:message fontSize:fontSize textColor:[UIColor whiteColor]];
+        }
+        else if ([messageText isKindOfClass:[NSAttributedString class]])
+        {
+            self.messageTextLabel.attributedText = messageText;
+        }
+    }
+}
+
+- (void)setProcessingState:(bool)processing
+{
+    if (processing == _processing)
+        return;
+    
+    _processing = processing;
+    
+    if (processing)
+    {
+        [self.audioIcon setImageNamed:@"BubbleSpinner"];
+        [self.audioIcon startAnimatingWithImagesInRange:NSMakeRange(0, 39) duration:0.65 repeatCount:0];
+    }
+    else
+    {
+        [self.audioIcon stopAnimating];
+        [self.audioIcon setImageNamed:@"MediaAudioPlay"];
+    }
 }
 
 - (void)notifyVisiblityChange
@@ -254,6 +319,37 @@ NSString *const TGMessageViewMessageRowIdentifier = @"TGMessageViewMessageRow";
     [self.mediaGroup updateIfNeeded];
     [self.avatarGroup updateIfNeeded];
     [self.stickerGroup updateIfNeeded];
+}
+
++ (CGFloat)textFontSize
+{
+    TGContentSizeCategory category = [TGExtensionDelegate instance].contentSizeCategory;
+    
+    switch (category)
+    {
+        case TGContentSizeCategoryXS:
+            return 14.0f;
+            
+        case TGContentSizeCategoryS:
+            return 15.0f;
+            
+        case TGContentSizeCategoryL:
+            return 16.0f;
+            
+        case TGContentSizeCategoryXL:
+            return 17.0f;
+            
+        case TGContentSizeCategoryXXL:
+            return 18.0f;
+            
+        case TGContentSizeCategoryXXXL:
+            return 19.0f;
+            
+        default:
+            break;
+    }
+    
+    return 16.0f;
 }
 
 + (NSString *)identifier

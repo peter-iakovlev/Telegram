@@ -136,12 +136,12 @@
 
 - (void)textViewDidChange:(UITextView *)__unused textView
 {
-    [self refreshHeight];
+    [self refreshHeight:true];
     if (self.showPlaceholderWhenFocussed)
         _placeholderView.hidden = [_internalTextView hasText];
 }
 
-- (void)refreshHeight
+- (void)refreshHeight:(bool)textChanged
 {
     CGFloat newSizeH = [self measureHeight]; //size of content, so we can set the frame of self
     
@@ -209,8 +209,9 @@
         }
 	}
 	
-    if ([delegate respondsToSelector:@selector(growingTextViewDidChange:afterSetText:afterPastingText:)])
+    if (textChanged && [delegate respondsToSelector:@selector(growingTextViewDidChange:afterSetText:afterPastingText:)]) {
 		[delegate growingTextViewDidChange:self afterSetText:_ignoreChangeNotification afterPastingText:_internalTextView.isPasting];
+    }
 
     _oneTimeLongAnimation = false;
 }
@@ -305,6 +306,15 @@
     _animateHeightChange = previousAnimateHeightChange;
 }
 
+- (void)selectRange:(NSRange)range {
+    if (range.length != 0) {
+        UITextPosition *startPosition = [_internalTextView positionFromPosition:_internalTextView.beginningOfDocument offset:range.location];
+        UITextPosition *endPosition = [_internalTextView positionFromPosition:_internalTextView.beginningOfDocument offset:range.location + range.length];
+        UITextRange *selection = [_internalTextView textRangeFromPosition:startPosition toPosition:endPosition];
+        _internalTextView.selectedTextRange = selection;
+    }
+}
+
 -(NSString *)text
 {
     return _internalTextView.text;
@@ -394,20 +404,6 @@
     
 	if ([delegate respondsToSelector:@selector(growingTextViewDidChangeSelection:)])
 		[delegate growingTextViewDidChangeSelection:self];
-}
-
-- (void)keyCommandPressed:(UIKeyCommand *)keyCommand
-{
-    id<HPGrowingTextViewDelegate> delegate = _delegate;
-    
-    if ([delegate respondsToSelector:@selector(growingTextView:receivedReturnKeyCommandWithModifierFlags:)])
-        [delegate growingTextView:self receivedReturnKeyCommandWithModifierFlags:keyCommand.modifierFlags];
-}
-
-- (NSArray *)keyCommands
-{
-    return @[ [UIKeyCommand keyCommandWithInput:@"\r" modifierFlags:UIKeyModifierCommand action:@selector(keyCommandPressed:)],
-              [UIKeyCommand keyCommandWithInput:@"\r" modifierFlags:UIKeyModifierCommand | UIKeyModifierAlphaShift action:@selector(keyCommandPressed:)]];
 }
 
 @end

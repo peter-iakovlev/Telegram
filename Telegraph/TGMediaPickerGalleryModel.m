@@ -5,6 +5,7 @@
 #import "TGModernGalleryController.h"
 #import "TGModernGalleryItem.h"
 #import "TGModernGallerySelectableItem.h"
+#import "TGModernGalleryEditableItem.h"
 #import "TGModernGalleryEditableItemView.h"
 #import "TGModernGalleryZoomableItemView.h"
 #import "TGMediaPickerGalleryVideoItemView.h"
@@ -13,15 +14,10 @@
 #import "TGModernMediaListSelectableItem.h"
 
 #import "PGPhotoEditorValues.h"
-#import "UIImage+TGEditablePhotoItem.h"
-
-#import "TGOverlayControllerWindow.h"
 
 @interface TGMediaPickerGalleryModel ()
 {
     id<TGModernGalleryEditableItem> _itemBeingEdited;
-    NSArray *_availableTabs;
-    bool _forVideo;
 }
 
 @property (nonatomic, weak) TGPhotoEditorController *editorController;
@@ -30,29 +26,30 @@
 
 @implementation TGMediaPickerGalleryModel
 
-- (instancetype)initWithItems:(NSArray *)items focusItem:(id<TGModernGalleryItem>)focusItem allowsSelection:(bool)allowsSelection allowsEditing:(bool)allowsEditing hasCaptions:(bool)hasCaptions forVideo:(bool)forVideo
+- (instancetype)initWithItems:(NSArray *)items focusItem:(id<TGModernGalleryItem>)focusItem selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext hasCaptions:(bool)hasCaptions hasSelectionPanel:(bool)hasSelectionPanel
 {
     self = [super init];
     if (self != nil)
     {
         [self _replaceItems:items focusingOnItem:focusItem];
         
-        _forVideo = forVideo;
-        NSMutableArray *tabs = [[NSMutableArray alloc] init];
-        if (hasCaptions)
-            [tabs addObject:@(TGPhotoEditorCaptionTab)];
-        [tabs addObject:@(TGPhotoEditorCropTab)];
-        
-        if (forVideo)
-            [tabs addObject:@(TGPhotoEditorRotateTab)];
-        else if (iosMajorVersion() >= 7)
-            [tabs addObject:@(TGPhotoEditorToolsTab)];
-        
-        _availableTabs = tabs;
-
         __weak TGMediaPickerGalleryModel *weakSelf = self;
-        _interfaceView = [[TGMediaPickerGalleryInterfaceView alloc] initWithFocusItem:focusItem allowsSelection:allowsSelection availableTabs:tabs];
-        _interfaceView.allowsEditing = allowsEditing;
+        if (selectionContext != nil)
+        {
+            _selectedItemsModel = [[TGMediaPickerGallerySelectedItemsModel alloc] initWithSelectionContext:selectionContext];
+            _selectedItemsModel.selectionUpdated = ^(bool reload, bool incremental, bool add, NSInteger index)
+            {
+                __strong TGMediaPickerGalleryModel *strongSelf = weakSelf;
+                if (strongSelf == nil)
+                    return;
+
+                [strongSelf.interfaceView updateSelectionInterface:[strongSelf selectionCount] counterVisible:([strongSelf selectionCount] > 0) animated:incremental];
+                [strongSelf.interfaceView updateSelectedPhotosView:reload incremental:incremental add:add index:index];
+            };
+        }
+        
+        _interfaceView = [[TGMediaPickerGalleryInterfaceView alloc] initWithFocusItem:focusItem selectionContext:selectionContext editingContext:editingContext hasSelectionPanel:hasSelectionPanel];
+        _interfaceView.hasCaptions = hasCaptions;
         [_interfaceView setEditorTabPressed:^(TGPhotoEditorTab tab)
         {
             __strong TGMediaPickerGalleryModel *strongSelf = weakSelf;
@@ -75,27 +72,35 @@
     return self;
 }
 
-- (void)setCurrentItemWithListItem:(id<TGModernMediaListItem>)listItem direction:(TGModernGalleryScrollAnimationDirection)direction
+- (NSInteger)selectionCount
 {
-    if (![listItem conformsToProtocol:@protocol(TGModernMediaListSelectableItem)])
+    if (self.externalSelectionCount != nil)
+        return self.externalSelectionCount();
+    
+    return _selectedItemsModel.selectedCount;
+}
+
+- (void)setCurrentItem:(id<TGMediaSelectableItem>)item direction:(TGModernGalleryScrollAnimationDirection)direction
+{
+    if (![(id)item conformsToProtocol:@protocol(TGMediaSelectableItem)])
         return;
     
-    id<TGModernMediaListSelectableItem> selectableListItem = (id<TGModernMediaListSelectableItem>)listItem;
+    id<TGMediaSelectableItem> targetSelectableItem = (id<TGMediaSelectableItem>)item;
     
     __block NSUInteger newIndex = NSNotFound;
     [self.items enumerateObjectsUsingBlock:^(id<TGModernGalleryItem> galleryItem, NSUInteger idx, BOOL *stop)
-     {
+    {
          if ([galleryItem conformsToProtocol:@protocol(TGModernGallerySelectableItem)])
          {
-             id<TGModernGallerySelectableItem> selectableItem = (id<TGModernGallerySelectableItem>)galleryItem;
+             id<TGMediaSelectableItem> selectableItem = ((id<TGModernGallerySelectableItem>)galleryItem).selectableMediaItem;
              
-             if ([[selectableItem uniqueId] isEqual:[selectableListItem uniqueId]])
+             if ([selectableItem.uniqueIdentifier isEqual:targetSelectableItem.uniqueIdentifier])
              {
                  newIndex = idx;
                  *stop = true;
              }
          }
-     }];
+    }];
     
     TGModernGalleryController *galleryController = self.controller;
     [galleryController setCurrentItemIndex:newIndex direction:direction animated:true];
@@ -103,7 +108,7 @@
 
 - (void)setCurrentItemWithIndex:(NSUInteger)index
 {
-    if (self.selectedItemsModel == nil)
+    if (_selectedItemsModel == nil)
         return;
     
     TGModernGalleryController *galleryController = self.controller;
@@ -114,27 +119,22 @@
     id<TGModernGallerySelectableItem> currentGalleryItem = (id<TGModernGallerySelectableItem>)galleryController.currentItem;
 
     __block NSUInteger currentSelectedItemIndex = NSNotFound;
-    [self.selectedItemsModel.items enumerateObjectsUsingBlock:^(id<TGModernMediaListItem> listItem, NSUInteger idx, BOOL *stop)
+    [_selectedItemsModel.items enumerateObjectsUsingBlock:^(id<TGMediaSelectableItem> item, NSUInteger index, BOOL *stop)
     {
-        if ([listItem conformsToProtocol:@protocol(TGModernMediaListSelectableItem)])
+        if ([item.uniqueIdentifier isEqualToString:currentGalleryItem.selectableMediaItem.uniqueIdentifier])
         {
-            id<TGModernMediaListSelectableItem> selectableItem = (id<TGModernMediaListSelectableItem>)listItem;
-            
-            if ([[selectableItem uniqueId] isEqual:[currentGalleryItem uniqueId]])
-            {
-                currentSelectedItemIndex = idx;
-                *stop = true;
-            }
+            currentSelectedItemIndex = index;
+            *stop = true;
         }
     }];
-    
-    id<TGModernMediaListItem> listItem = self.selectedItemsModel.items[index];
+
+    id<TGMediaSelectableItem> item = _selectedItemsModel.items[index];
     
     TGModernGalleryScrollAnimationDirection direction = TGModernGalleryScrollAnimationDirectionLeft;
     if (currentSelectedItemIndex < index)
         direction = TGModernGalleryScrollAnimationDirectionRight;
     
-    [self setCurrentItemWithListItem:listItem direction:direction];
+    [self setCurrentItem:item direction:direction];
 }
 
 - (UIView <TGModernGalleryInterfaceView> *)createInterfaceView
@@ -151,12 +151,12 @@
     {
         TGModernGalleryZoomableItemView *zoomableItemView = (TGModernGalleryZoomableItemView *)galleryItemView;
         
-        if ([zoomableItemView.contentView isKindOfClass:[UIImageView class]])
+        if (zoomableItemView.contentView != nil)
         {
             if (frame != NULL)
                 *frame = [zoomableItemView transitionViewContentRect];
             
-            return (UIImageView *)zoomableItemView.contentView;
+            return (UIImageView *)zoomableItemView.transitionContentView;
         }
     }
     else if ([galleryItemView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]])
@@ -210,14 +210,9 @@
     
     _itemBeingEdited = item;
 
-    id<TGEditablePhotoItem> editableMediaItem = [item editableMediaItem];
-    PGPhotoEditorValues *editorValues = nil;
-    if (editableMediaItem.fetchEditorValues != nil)
-        editorValues = (PGPhotoEditorValues *)editableMediaItem.fetchEditorValues(editableMediaItem);
+    PGPhotoEditorValues *editorValues = (PGPhotoEditorValues *)[item.editingContext adjustmentsForItem:item.editableMediaItem];
     
-    NSString *caption = nil;
-    if (editableMediaItem.fetchCaption != nil)
-        caption = editableMediaItem.fetchCaption(editableMediaItem);
+    NSString *caption = [item.editingContext captionForItem:item.editableMediaItem];
 
     CGRect refFrame = CGRectZero;
     UIView *editorReferenceView = [self referenceViewForItem:item frame:&refFrame];
@@ -226,6 +221,7 @@
     UIView *referenceParentView = nil;
     UIImage *image = nil;
     
+    bool isVideo = false;
     if ([editorReferenceView isKindOfClass:[UIImageView class]])
     {
         screenImage = [(UIImageView *)editorReferenceView image];
@@ -242,43 +238,66 @@
         image = [videoItemView screenImage];
         referenceView = [[UIImageView alloc] initWithImage:screenImage];
         referenceParentView = editorReferenceView;
+        
+        isVideo = true;
     }
     
     if (self.useGalleryImageAsEditableItemImage && self.storeOriginalImageForItem != nil)
-        self.storeOriginalImageForItem(editableMediaItem, screenImage);
+        self.storeOriginalImageForItem(item.editableMediaItem, screenImage);
     
-    TGPhotoEditorControllerIntent intent = _forVideo ? TGPhotoEditorControllerVideoIntent : TGPhotoEditorControllerGenericIntent;
-    TGPhotoEditorController *controller = [[TGPhotoEditorController alloc] initWithItem:editableMediaItem intent:intent adjustments:editorValues caption:caption screenImage:screenImage availableTabs:_availableTabs selectedTab:tab];
+    TGPhotoEditorControllerIntent intent = isVideo ? TGPhotoEditorControllerVideoIntent : TGPhotoEditorControllerGenericIntent;
+    TGPhotoEditorController *controller = [[TGPhotoEditorController alloc] initWithItem:item.editableMediaItem intent:intent adjustments:editorValues caption:caption screenImage:screenImage availableTabs:_interfaceView.currentTabs selectedTab:tab];
     self.editorController = controller;
-    controller.userListSignal = self.userListSignal;
-    controller.hashtagListSignal = self.hashtagListSignal;
-    controller.finishedEditing = ^(id<TGMediaEditAdjustments> adjustments, UIImage *resultImage, UIImage *thumbnailImage, bool noChanges)
+    controller.suggestionContext = self.suggestionContext;
+    controller.willFinishEditing = ^(id<TGMediaEditAdjustments> adjustments, id temporaryRep, bool hasChanges)
     {
         __strong TGMediaPickerGalleryModel *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
+        strongSelf->_itemBeingEdited = nil;
+        
+        if (strongSelf.willFinishEditingItem != nil)
+            strongSelf.willFinishEditingItem(item.editableMediaItem, adjustments, temporaryRep, hasChanges);
+    };
+    
+    void (^didFinishEditingItem)(id<TGMediaEditableItem>item, id<TGMediaEditAdjustments> adjustments, UIImage *resultImage, UIImage *thumbnailImage) = self.didFinishEditingItem;
+    controller.didFinishEditing = ^(id<TGMediaEditAdjustments> adjustments, UIImage *resultImage, UIImage *thumbnailImage, bool hasChanges)
+    {
+        __strong TGMediaPickerGalleryModel *strongSelf = weakSelf;
+        if (strongSelf == nil) {
+            TGLog(@"controller.didFinishEditing strongSelf == nil"); //just to be sure
+        }
+        
 #ifdef DEBUG
-        if (adjustments != nil && !noChanges && !strongSelf->_forVideo)
+        if (adjustments != nil && hasChanges && !isVideo)
             NSAssert(resultImage != nil, @"resultImage should not be nil");
 #endif
         
-        if (!noChanges)
+        NSLog(@"imagecreated %@", resultImage);
+        
+        if (hasChanges)
         {
-            if (strongSelf.saveEditedItem != nil)
-                strongSelf.saveEditedItem(editableMediaItem, adjustments, resultImage, thumbnailImage);
-            
-            [strongSelf updateEditedItemView];
-            [strongSelf.interfaceView updateEditedItem:strongSelf->_itemBeingEdited];
+            if (didFinishEditingItem != nil) {
+                didFinishEditingItem(item.editableMediaItem, adjustments, resultImage, thumbnailImage);
+            }
         }
         
         if ([editorReferenceView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]])
         {
             TGMediaPickerGalleryVideoItemView *videoItemView = (TGMediaPickerGalleryVideoItemView *)editorReferenceView;
-            [videoItemView presentScrubbingPanelAfterReload:!noChanges];
+            [videoItemView presentScrubbingPanelAfterReload:hasChanges];
         }
+    };
+    
+    controller.didFinishRenderingFullSizeImage = ^(UIImage *image)
+    {
+        __strong TGMediaPickerGalleryModel *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
         
-        strongSelf->_itemBeingEdited = nil;
+        if (strongSelf.didFinishRenderingFullSizeImage != nil)
+            strongSelf.didFinishRenderingFullSizeImage(item.editableMediaItem, image);
     };
     
     controller.captionSet = ^(NSString *caption)
@@ -288,9 +307,7 @@
             return;
         
         if (strongSelf.saveItemCaption != nil)
-            strongSelf.saveItemCaption(editableMediaItem, caption);
-        
-        [strongSelf.interfaceView updateEditedItem:strongSelf->_itemBeingEdited];
+            strongSelf.saveItemCaption(item.editableMediaItem, caption);
     };
     
     controller.requestToolbarsHidden = ^(bool hidden, bool animated)
@@ -301,12 +318,15 @@
         
         [strongSelf.interfaceView setToolbarsHidden:hidden animated:animated];
     };
-    
+
     controller.beginTransitionIn = ^UIView *(CGRect *referenceFrame, __unused UIView **parentView)
     {
         __strong TGMediaPickerGalleryModel *strongSelf = weakSelf;
         if (strongSelf == nil)
             return nil;
+        
+        if (strongSelf.editorOpened != nil)
+            strongSelf.editorOpened();
         
         [strongSelf updateHiddenItem];
         [strongSelf.interfaceView setSelectionInterfaceHidden:true animated:true];
@@ -315,6 +335,11 @@
         
         if (referenceView.superview == nil)
             *parentView = referenceParentView;
+        
+        if (iosMajorVersion() >= 7)
+            [strongSelf.controller setNeedsStatusBarAppearanceUpdate];
+        else
+            [[UIApplication sharedApplication] setStatusBarHidden:true];
         
         return referenceView;
     };
@@ -332,8 +357,6 @@
         
         TGModernGalleryZoomableItemView *zoomableItemView = (TGModernGalleryZoomableItemView *)galleryItemView;
         [zoomableItemView reset];
-        
-        [strongSelf.interfaceView setSelectedItemsModel:strongSelf.selectedItemsModel];
     };
     
     controller.beginTransitionOut = ^UIView *(CGRect *referenceFrame, __unused UIView **parentView)
@@ -366,25 +389,52 @@
         if (strongSelf == nil)
             return;
         
+        if (strongSelf.editorClosed != nil)
+            strongSelf.editorClosed();
+        
         [strongSelf updateHiddenItem];
         
         UIView *referenceView = [strongSelf referenceViewForItem:item frame:NULL];
         if ([referenceView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]])
             [(TGMediaPickerGalleryVideoItemView *)referenceView setPlayButtonHidden:false animated:true];
+        
+        if (iosMajorVersion() >= 7)
+            [strongSelf.controller setNeedsStatusBarAppearanceUpdate];
+        else
+            [[UIApplication sharedApplication] setStatusBarHidden:false];
     };
     
-    if (_forVideo)
+    controller.requestThumbnailImage = ^SSignal *(id<TGMediaEditableItem> editableItem)
     {
-        controller.requestImage = ^
-        {
-            return image;
-        };
-    }
+        return [editableItem thumbnailImageSignal];
+    };
     
-    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:(TGViewController *)self.controller contentController:controller];
-    controllerWindow.windowLevel = ((TGViewController *)self.controller).view.window.windowLevel + 0.0001f;
-    controllerWindow.hidden = false;
-    controller.view.clipsToBounds = true;
+    controller.requestOriginalScreenSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem)
+    {
+        return [editableItem screenImageSignal];
+    };
+    
+    controller.requestOriginalFullSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem)
+    {
+        return [editableItem originalImageSignal];
+    };
+    
+    controller.requestAdjustments = ^id<TGMediaEditAdjustments> (id<TGMediaEditableItem> editableItem)
+    {
+        __strong TGMediaPickerGalleryModel *strongSelf = weakSelf;
+        if (strongSelf != nil && strongSelf.requestAdjustments != nil)
+            return strongSelf.requestAdjustments(editableItem);
+    
+        return nil;
+    };
+    
+    controller.requestImage = ^
+    {
+        return image;
+    };
+    
+    [self.controller addChildViewController:controller];
+    [self.controller.view addSubview:controller.view];
 }
 
 - (void)_replaceItems:(NSArray *)items focusingOnItem:(id<TGModernGalleryItem>)item
@@ -393,7 +443,8 @@
  
     TGModernGalleryController *controller = self.controller;
     
-    for (TGModernGalleryItemView *itemView in controller.visibleItemViews)
+    NSArray *itemViews = [controller.visibleItemViews copy];
+    for (TGModernGalleryItemView *itemView in itemViews)
         [itemView setItem:itemView.item synchronously:false];
 }
 

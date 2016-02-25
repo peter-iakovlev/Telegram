@@ -1,6 +1,6 @@
 #import "TGWebSearchInternalImageItem.h"
 
-#import "TGWebSearchInternalImageResult+TGEditablePhotoItem.h"
+#import "TGWebSearchInternalImageResult+TGMediaItem.h"
 
 #import "TGImageUtils.h"
 #import "TGImageInfo.h"
@@ -10,7 +10,10 @@
 
 @implementation TGWebSearchInternalImageItem
 
-- (instancetype)initWithSearchResult:(TGWebSearchInternalImageResult *)searchResult isEditing:(bool (^)())isEditing toggleEditing:(void (^)())toggleEditing itemSelected:(void (^)(id<TGWebSearchListItem>))itemSelected isItemSelected:(bool (^)(id<TGWebSearchListItem>))isItemSelected isItemHidden:(bool (^)(id<TGWebSearchListItem>))isItemHidden
+@synthesize selectionContext;
+@synthesize editingContext;
+
+- (instancetype)initWithSearchResult:(TGWebSearchInternalImageResult *)searchResult
 {
     TGImageInfo *legacyImageInfo = searchResult.imageInfo;
     
@@ -47,12 +50,6 @@
     if (self != nil)
     {
         _webSearchResult = searchResult;
-        
-        _isEditing = [isEditing copy];
-        _toggleEditing = [toggleEditing copy];
-        _itemSelected = [itemSelected copy];
-        _isItemSelected = [isItemSelected copy];
-        _isItemHidden = [isItemHidden copy];
     }
     return self;
 }
@@ -62,14 +59,14 @@
     return self;
 }
 
-- (id<TGEditablePhotoItem>)editableMediaItem
+- (id<TGMediaSelectableItem>)selectableMediaItem
 {
     return self.webSearchResult;
 }
 
-- (NSString *)uniqueId
+- (id<TGMediaEditableItem>)editableMediaItem
 {
-    return [self.webSearchResult uniqueId];
+    return self.webSearchResult;
 }
 
 - (Class)viewClass

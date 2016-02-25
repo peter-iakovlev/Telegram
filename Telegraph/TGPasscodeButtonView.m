@@ -43,7 +43,7 @@
             screenSize.height = tmp;
         }
         
-        if ((int)screenSize.height == 1024)
+        if ((int)screenSize.height == 1024 || (int)screenSize.height == 1366)
         {
             titleFontSize = 38.0f;
             subtitleFontSize = 10.0f;
@@ -146,7 +146,7 @@
             screenSize.height = tmp;
         }
         
-        if ((int)screenSize.height == 1024)
+        if ((int)screenSize.height == 1024 || (int)screenSize.height == 1366)
         {
             topOffset = 1.0f;
             subtitleOffset = 2.0f;

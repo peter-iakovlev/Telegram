@@ -115,6 +115,7 @@
     if ([platform hasPrefix:@"iPad3"])              return UIDevice3GiPad;
     if ([platform hasPrefix:@"iPad4"])              return UIDevice4GiPad;
     if ([platform hasPrefix:@"iPad5"])              return UIDevice5GiPad;
+    if ([platform hasPrefix:@"iPad6"])              return UIDevice6GiPad;
     
     // Apple TV
     if ([platform hasPrefix:@"AppleTV2"])           return UIDeviceAppleTV2;
@@ -164,6 +165,7 @@
         case UIDevice3GiPad : return IPAD_3G_NAMESTRING;
         case UIDevice4GiPad : return IPAD_4G_NAMESTRING;
         case UIDevice5GiPad : return IPAD_5G_NAMESTRING;
+        case UIDevice6GiPad : return IPAD_6G_NAMESTRING;
         case UIDeviceUnknowniPad : return IPAD_UNKNOWN_NAMESTRING;
             
         case UIDeviceAppleTV2 : return APPLETV_2G_NAMESTRING;

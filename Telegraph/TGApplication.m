@@ -28,7 +28,7 @@
 
 - (NSString *)telegramMeLinkFromText:(NSString *)text startPrivatePayload:(__autoreleasing NSString **)startPrivatePayload startGroupPayload:(__autoreleasing NSString **)startGroupPayload
 {
-    NSString *pattern = @"https?:\\/\\/telegram\\.me\\/([a-zA-Z0-9_]+)(\\?.*)?";
+    NSString *pattern = @"https?:\\/\\/telegram\\.me\\/([a-zA-Z0-9_\\/]+)(\\?.*)?$";
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:NULL];
     NSTextCheckingResult *match = [regex firstMatchInString:text options:0 range:NSMakeRange(0, [text length])];
     if (match != nil)
@@ -52,8 +52,27 @@
     return nil;
 }
 
+- (NSString *)shareLinkFromText:(NSString *)text {
+    NSString *pattern = @"https?:\\/\\/telegram\\.me\\/share\\/url\\?(.*)$";
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:NULL];
+    NSTextCheckingResult *match = [regex firstMatchInString:text options:0 range:NSMakeRange(0, [text length])];
+    if (match != nil) {
+        NSString *arguments = ([match numberOfRanges] >= 1 && [match rangeAtIndex:1].location != NSNotFound) ? [text substringWithRange:[match rangeAtIndex:1]] : nil;
+        if (arguments.length != 0)
+        {
+            return arguments;
+        }
+        return [text substringWithRange:[match rangeAtIndex:1]];
+    }
+    return nil;
+}
+
 - (BOOL)openURL:(NSURL *)url forceNative:(BOOL)__unused forceNative
 {
+    if (url.scheme.length == 0) {
+        url = [NSURL URLWithString:[@"http://" stringByAppendingString:[url absoluteString]]];
+    }
+    
     NSString *rawAbsoluteString = url.absoluteString;
     NSString *absolutePrefixString = [url.absoluteString lowercaseString];
     if ([absolutePrefixString hasPrefix:@"tel:"] || [absolutePrefixString hasPrefix:@"facetime:"])
@@ -100,7 +119,20 @@
     NSString *telegramMeLink = [self telegramMeLinkFromText:rawAbsoluteString startPrivatePayload:&startPrivatePayload startGroupPayload:&startGroupPayload];
     if (telegramMeLink.length != 0)
     {
-        NSMutableString *internalUrl = [[NSMutableString alloc] initWithFormat:@"tg://resolve?domain=%@", telegramMeLink];
+        NSString *domainName = telegramMeLink;
+        NSString *postId = nil;
+        NSRange slashRange = [telegramMeLink rangeOfString:@"/"];
+        if (slashRange.location != NSNotFound) {
+            domainName = [telegramMeLink substringToIndex:slashRange.location];
+            postId = [telegramMeLink substringFromIndex:slashRange.location + 1];
+        }
+        NSMutableString *internalUrl = nil;
+        if (postId.length == 0) {
+            internalUrl = [[NSMutableString alloc] initWithFormat:@"tg://resolve?domain=%@", domainName];
+        } else {
+            internalUrl = [[NSMutableString alloc] initWithFormat:@"tg://resolve?domain=%@&post=%@", domainName, postId];
+        }
+        
         if (startPrivatePayload.length != 0 || startGroupPayload.length != 0)
         {
             if (startPrivatePayload.length != 0)
@@ -112,9 +144,23 @@
         return true;
     }
     
-    if (iosMajorVersion() >= 9 && ([url.scheme isEqual:@"http"] || [url.scheme isEqual:@"https"])) {
-        SFSafariViewController *controller = [[SFSafariViewController alloc] initWithURL:url entersReaderIfAvailable:false];
-        [TGAppDelegateInstance.window.rootViewController presentViewController:controller animated:true completion:nil];
+    NSString *shareLinkFromText = [self shareLinkFromText:rawAbsoluteString];
+    if (shareLinkFromText.length != 0) {
+        NSMutableString *internalUrl = [[NSMutableString alloc] initWithFormat:@"tg://msg_url?%@", shareLinkFromText];
+        [(TGAppDelegate *)self.delegate handleOpenDocument:[NSURL URLWithString:internalUrl] animated:true];
+        return true;
+    }
+    
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone && iosMajorVersion() >= 9 && ([url.scheme isEqual:@"http"] || [url.scheme isEqual:@"https"])) {
+        if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                SFSafariViewController *controller = [[SFSafariViewController alloc] initWithURL:url entersReaderIfAvailable:false];
+                [TGAppDelegateInstance.window.rootViewController presentViewController:controller animated:true completion:nil];
+            });
+        } else {
+            SFSafariViewController *controller = [[SFSafariViewController alloc] initWithURL:url entersReaderIfAvailable:false];
+            [TGAppDelegateInstance.window.rootViewController presentViewController:controller animated:true completion:nil];
+        }
         return true;
     }
     
@@ -145,20 +191,20 @@
     if (_processStatusBarHiddenRequests)
     {
         /*if (animation != UIStatusBarAnimationNone)
-        {
-            [TGHacks animateApplicationStatusBarAppearance:hidden ? TGStatusBarAppearanceAnimationSlideUp : TGStatusBarAppearanceAnimationSlideUp duration:0.3 completion:^
-            {
-                if (hidden)
-                    [TGHacks setApplicationStatusBarAlpha:0.0f];
-            }];
-            
-            if (!hidden)
-                [TGHacks setApplicationStatusBarAlpha:1.0f];
-        }
-        else
-        {
-            [TGHacks setApplicationStatusBarAlpha:hidden ? 0.0f : 1.0f];
-        }*/
+         {
+         [TGHacks animateApplicationStatusBarAppearance:hidden ? TGStatusBarAppearanceAnimationSlideUp : TGStatusBarAppearanceAnimationSlideUp duration:0.3 completion:^
+         {
+         if (hidden)
+         [TGHacks setApplicationStatusBarAlpha:0.0f];
+         }];
+         
+         if (!hidden)
+         [TGHacks setApplicationStatusBarAlpha:1.0f];
+         }
+         else
+         {
+         [TGHacks setApplicationStatusBarAlpha:hidden ? 0.0f : 1.0f];
+         }*/
         
         [self forceSetStatusBarHidden:hidden withAnimation:animation];
     }

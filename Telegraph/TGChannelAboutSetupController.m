@@ -61,7 +61,7 @@
         }
     };
     
-    TGCommentCollectionItem *commentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.About.Help")];
+    TGCommentCollectionItem *commentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:_conversation.isChannelGroup ? TGLocalized(@"Group.About.Help") : TGLocalized(@"Channel.About.Help")];
     commentItem.topInset = 1.0f;
     
     _aboutSection = [[TGCollectionMenuSection alloc] initWithItems:@[_inputItem, commentItem]];
@@ -76,6 +76,12 @@
 - (BOOL)shouldAutorotate
 {
     return true;
+}
+
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    
+    [_inputItem becomeFirstResponder];
 }
 
 - (void)cancelPressed

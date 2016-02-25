@@ -29,6 +29,7 @@
     bool _isKickedFromGroup;
     
     bool _isChannel;
+    bool _isChannelGroup;
     
     NSString *_userName;
     NSString *_about;
@@ -63,6 +64,7 @@
 @property (nonatomic, readonly) bool isKickedFromGroup;
 
 @property (nonatomic, readonly) bool isChannel;
+@property (nonatomic, readonly) bool isChannelGroup;
 
 @property (nonatomic, readonly) NSString *userName;
 @property (nonatomic, readonly) NSString *about;

@@ -44,7 +44,8 @@
         _buttonView = [[TGModernButton alloc] initWithFrame:CGRectMake(8, 8, self.frame.size.width - 16, self.frame.size.height - 16)];
         _buttonView.backgroundColor = [TGCameraInterfaceAssets normalColor];
         _buttonView.layer.cornerRadius = _buttonView.frame.size.width / 2;
-        [_buttonView addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [_buttonView addTarget:self action:@selector(buttonReleased) forControlEvents:UIControlEventTouchUpInside];
+        [_buttonView addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchDown];
         [self addSubview:_buttonView];
         
         [self setButtonMode:TGCameraShutterButtonNormalMode animated:false];
@@ -121,6 +122,7 @@
                 
             case TGCameraShutterButtonVideoMode:
             {
+                [_buttonView.layer removeAllAnimations];
                 _buttonView.backgroundColor = [TGCameraInterfaceAssets redColor];
                 _buttonView.frame = CGRectMake(8, 8, self.frame.size.width - 16, self.frame.size.height - 16);
                 _buttonView.layer.cornerRadius = _buttonView.frame.size.width / 2;
@@ -141,9 +143,19 @@
     }
 }
 
-- (void)buttonPressed
+- (void)setEnabled:(bool)enabled animated:(bool)animated
+{
+    
+}
+
+- (void)buttonReleased
 {
     [self sendActionsForControlEvents:UIControlEventTouchUpInside];
+}
+
+- (void)buttonPressed
+{
+    [self sendActionsForControlEvents:UIControlEventTouchDown];
 }
 
 - (void)setHighlighted:(BOOL)highlighted

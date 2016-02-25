@@ -29,7 +29,7 @@ typedef enum {
 @property (nonatomic, copy) void (^itemFocused)(id<TGModernGalleryItem>);
 @property (nonatomic, copy) UIView *(^beginTransitionIn)(id<TGModernGalleryItem>, TGModernGalleryItemView *);
 @property (nonatomic, copy) void (^finishedTransitionIn)(id<TGModernGalleryItem>, TGModernGalleryItemView *);
-@property (nonatomic, copy) UIView *(^beginTransitionOut)(id<TGModernGalleryItem>);
+@property (nonatomic, copy) UIView *(^beginTransitionOut)(id<TGModernGalleryItem>, TGModernGalleryItemView *);
 @property (nonatomic, copy) void (^completedTransitionOut)();
 
 - (NSArray *)visibleItemViews;

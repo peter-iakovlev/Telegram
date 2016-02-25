@@ -1,5 +1,4 @@
 #import "TGVideoConverter.h"
-
 #import "ActionStage.h"
 
 #import "ATQueue.h"
@@ -7,9 +6,9 @@
 #import "TGStringUtils.h"
 #import "TGPhotoEditorUtils.h"
 
-#import "TGMediaPickerAsset.h"
-#import "TGAssetImageManager.h"
+#import "TGVideoEditAdjustments.h"
 
+#import <SSignalKit/SSignalKit.h>
 #import <AVFoundation/AVFoundation.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <AssetsLibrary/AssetsLibrary.h>
@@ -27,7 +26,7 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
     ATQueue *_queue;
     ATQueue *_readQueue;
     
-    TGMediaPickerAsset *_asset;
+    AVAsset *_asset;
     NSURL *_itemURL;
     
     NSString *_tempFilePath;
@@ -49,7 +48,7 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
 
 @implementation TGVideoConverter
 
-- (instancetype)initForConvertationWithAsset:(TGMediaPickerAsset *)asset liveUpload:(bool)liveUpload highDefinition:(bool)highDefinition
+- (instancetype)initForConvertationWithAVAsset:(AVAsset *)asset liveUpload:(bool)liveUpload highDefinition:(bool)highDefinition
 {
     self = [super init];
     if (self != nil)
@@ -69,6 +68,20 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
     if (self != nil)
     {
         _itemURL = url;
+        _liveUpload = liveUpload;
+        _passThrough = true;
+        
+        [self commonInit];
+    }
+    return self;
+}
+
+- (instancetype)initForPassthroughWithAVAsset:(AVAsset *)avAsset liveUpload:(bool)liveUpload
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _asset = avAsset;
         _liveUpload = liveUpload;
         _passThrough = true;
         
@@ -281,7 +294,7 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
         
         AVAsset *avAsset = nil;
         if (_asset != nil)
-            avAsset = [TGAssetImageManager avAssetForVideoAsset:_asset];
+            avAsset = _asset;
         else if (_itemURL != nil)
             avAsset = [AVURLAsset assetWithURL:_itemURL];
         
@@ -361,7 +374,6 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
 
         videoComposition = [AVMutableVideoComposition videoComposition];
         videoComposition.frameDuration = CMTimeMake(1, (int32_t)videoTrack.nominalFrameRate);
-        
         
         if (TGOrientationIsSideward(_cropOrientation, NULL))
             videoComposition.renderSize = [self _renderSizeWithCropSize:CGSizeMake(cropRect.size.height, cropRect.size.width)];
@@ -633,10 +645,7 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
         if (error != nil)
             return nil;
         
-        return [self hashForVideoWithSize:fileData.length
-                           highDefinition:highDefinition
-                               timingData:timingData
-                            dataReadBlock:^(uint8_t *buffer, NSUInteger offset, NSUInteger length)
+        return [self hashForVideoWithSize:fileData.length highDefinition:highDefinition timingData:timingData dataReadBlock:^(uint8_t *buffer, NSUInteger offset, NSUInteger length)
         {
             [fileData getBytes:buffer range:NSMakeRange(offset, length)];
         }];
@@ -681,10 +690,7 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
     {
         ALAssetRepresentation *representation = ((ALAsset *)asset).defaultRepresentation;
         
-        hash = [self hashForVideoWithSize:(NSUInteger)representation.size
-                           highDefinition:highDefinition
-                               timingData:nil
-                            dataReadBlock:^(uint8_t *buffer, NSUInteger offset, NSUInteger length)
+        hash = [self hashForVideoWithSize:(NSUInteger)representation.size highDefinition:highDefinition timingData:nil dataReadBlock:^(uint8_t *buffer, NSUInteger offset, NSUInteger length)
         {
             [representation getBytes:buffer fromOffset:offset length:length error:nil];
         }];
@@ -741,6 +747,74 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
     NSString *hash = [[NSString alloc] initWithFormat:@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", md5Buffer[0], md5Buffer[1], md5Buffer[2], md5Buffer[3], md5Buffer[4], md5Buffer[5], md5Buffer[6], md5Buffer[7], md5Buffer[8], md5Buffer[9], md5Buffer[10], md5Buffer[11], md5Buffer[12], md5Buffer[13], md5Buffer[14], md5Buffer[15]];
     
     return hash;
+}
+
++ (SSignal *)convertSignalForAVAsset:(AVAsset *)asset adjustments:(TGVideoEditAdjustments *)adjustments liveUpload:(bool)liveUpload passthrough:(bool)passthrough
+{
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+    {
+        TGVideoConverter *videoConverter = nil;
+        if (passthrough)
+            videoConverter = [[TGVideoConverter alloc] initForPassthroughWithAVAsset:asset liveUpload:liveUpload];
+        else
+            videoConverter = [[TGVideoConverter alloc] initForConvertationWithAVAsset:asset liveUpload:liveUpload highDefinition:false];
+        
+        if (adjustments != nil)
+        {
+            videoConverter.cropOrientation = adjustments.cropOrientation;
+            if ([adjustments cropAppliedForAvatar:false])
+            {
+                videoConverter.cropRect = adjustments.cropRect;
+            }
+            if (adjustments.trimStartValue > DBL_EPSILON || adjustments.trimEndValue > DBL_EPSILON)
+            {
+                videoConverter.trimRange = CMTimeRangeMake(CMTimeMakeWithSeconds(adjustments.trimStartValue , NSEC_PER_SEC), CMTimeMakeWithSeconds((adjustments.trimEndValue - adjustments.trimStartValue), NSEC_PER_SEC));
+            }
+        }
+        
+        [videoConverter processWithCompletion:^(NSString *filePath, CGSize dimensions, NSTimeInterval duration, UIImage *previewImage, TGLiveUploadActorData *liveUploadData)
+        {
+            if (filePath != nil)
+            {
+                NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                dict[@"fileUrl"] = [NSURL fileURLWithPath:filePath];
+                dict[@"dimensions"] = [NSValue valueWithCGSize:dimensions];
+                dict[@"duration"] = @(duration);
+                if (previewImage != nil)
+                    dict[@"previewImage"] = previewImage;
+                if (liveUploadData != nil)
+                    dict[@"liveUploadData"] = liveUploadData;
+                
+                [subscriber putNext:dict];
+                [subscriber putCompletion];
+            }
+            else
+            {
+                [subscriber putError:nil];
+            }
+        } progress:^(float progress)
+        {
+            [subscriber putNext:@(progress)];
+        }];
+        
+        return [[SBlockDisposable alloc] initWithBlock:^
+        {
+            [videoConverter cancel];
+        }];
+    }];
+}
+
++ (SSignal *)hashSignalForAVAsset:(AVAsset *)avAsset
+{
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+    {
+        [TGVideoConverter computeHashForVideoAsset:avAsset hasTrimming:false isCropped:false highDefinition:false completion:^(NSString *hash)
+        {
+            [subscriber putNext:hash];
+            [subscriber putCompletion];
+        }];
+        return nil;
+    }];
 }
 
 @end

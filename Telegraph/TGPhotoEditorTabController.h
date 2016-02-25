@@ -31,6 +31,8 @@
 - (void)prepareTransitionInWithReferenceView:(UIView *)referenceView referenceFrame:(CGRect)referenceFrame parentView:(UIView *)parentView noTransitionView:(bool)noTransitionView;
 - (void)prepareTransitionOutSaving:(bool)saving;
 
+- (void)prepareForCustomTransitionOut;
+
 - (CGRect)_targetFrameForTransitionInFromFrame:(CGRect)fromFrame;
 - (void)_animatePreviewViewTransitionOutToFrame:(CGRect)toFrame saving:(bool)saving parentView:(UIView *)parentView completion:(void (^)(void))completion;
 - (void)_finishedTransitionInWithView:(UIView *)transitionView;
@@ -42,11 +44,13 @@
 
 - (UIView *)snapshotView;
 
+- (id)currentResultRepresentation;
+
 - (bool)isDismissAllowed;
 
 + (CGRect)photoContainerFrameForParentViewFrame:(CGRect)parentViewFrame toolbarLandscapeSize:(CGFloat)toolbarLandscapeSize orientation:(UIInterfaceOrientation)orientation includePanel:(bool)includePanel;
 
-+ (NSInteger)highlightedButtonsForEditorValues:(id<TGMediaEditAdjustments>)editorValues forAvatar:(bool)forAvatar hasCaption:(bool)hasCaption;
++ (TGPhotoEditorTab)highlightedButtonsForEditorValues:(id<TGMediaEditAdjustments>)editorValues forAvatar:(bool)forAvatar hasCaption:(bool)hasCaption;
 
 @end
 

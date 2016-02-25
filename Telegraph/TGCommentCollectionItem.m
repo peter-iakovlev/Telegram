@@ -204,7 +204,7 @@
         textSize.height = MAX(lineHeight, textSize.height - lineHeight);
     }
     
-    _calculatedSize = CGSizeMake(containerSize.width, textSize.height + 7.0f + 7.0f + MAX(0.0f, _topInset));
+    _calculatedSize = CGSizeMake(containerSize.width, textSize.height + 7.0f + 7.0f + MAX(0.0f, _topInset) + _bottomInset);
     
     _lastContainerWidth = containerSize.width;
     

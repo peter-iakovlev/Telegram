@@ -12,6 +12,7 @@
 
 @property (nonatomic) bool skipLastLineInSizeComputation;
 @property (nonatomic) CGFloat topInset;
+@property (nonatomic) CGFloat bottomInset;
 @property (nonatomic) CGFloat alpha;
 @property (nonatomic) bool hidden;
 @property (nonatomic, strong) UIColor *textColor;

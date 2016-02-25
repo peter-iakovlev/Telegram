@@ -18,7 +18,7 @@
 
 - (NSString *)uniqueIdentifier
 {
-    return [TGStringUtils md5WithString:[NSString stringWithFormat:@"%@,%@,%zu", self.handle, self.type, self.handleType]];
+    return [TGStringUtils md5WithString:[NSString stringWithFormat:@"%@,%@,%zu", self.handle, self.type, (unsigned long)self.handleType]];
 }
 
 @end

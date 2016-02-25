@@ -11,6 +11,7 @@
 #include <vector>
 
 #import "TGDateUtils.h"
+#import "TGFont.h"
 
 #import "TGTextCheckingResult.h"
 
@@ -238,27 +239,35 @@
 {
 }
 
-+ (TGReusableLabelLayoutData *)calculateLayout:(NSString *)text additionalAttributes:(NSArray *)additionalAttributes textCheckingResults:(NSArray *)textCheckingResults font:(CTFontRef)font textColor:(UIColor *)textColor frame:(CGRect)frame orMaxWidth:(float)maxWidth flags:(int)flags textAlignment:(UITextAlignment)textAlignment outIsRTL:(bool *)outIsRTL
++ (TGReusableLabelLayoutData *)calculateLayout:(NSString *)text additionalAttributes:(NSArray *)additionalAttributes textCheckingResults:(NSArray *)textCheckingResults font:(CTFontRef)font textColor:(UIColor *)textColor frame:(CGRect)frame orMaxWidth:(float)maxWidth flags:(int)flags textAlignment:(NSTextAlignment)textAlignment outIsRTL:(bool *)outIsRTL
 {
-    return [self calculateLayout:text additionalAttributes:additionalAttributes textCheckingResults:textCheckingResults font:font textColor:textColor frame:frame orMaxWidth:maxWidth flags:flags textAlignment:textAlignment outIsRTL:outIsRTL additionalTrailingWidth:0.0f maxNumberOfLines:0 numberOfLinesToInset:0 linesInset:0.0f containsEmptyNewline:NULL additionalLineSpacing:0.0f];
+    return [self calculateLayout:text additionalAttributes:additionalAttributes textCheckingResults:textCheckingResults font:font textColor:textColor frame:frame orMaxWidth:maxWidth flags:flags textAlignment:textAlignment outIsRTL:outIsRTL additionalTrailingWidth:0.0f maxNumberOfLines:0 numberOfLinesToInset:0 linesInset:0.0f containsEmptyNewline:NULL additionalLineSpacing:0.0f ellipsisString:nil];
 }
 
-+ (TGReusableLabelLayoutData *)calculateLayout:(NSString *)text additionalAttributes:(NSArray *)additionalAttributes textCheckingResults:(NSArray *)textCheckingResults font:(CTFontRef)font textColor:(UIColor *)textColor frame:(CGRect)frame orMaxWidth:(float)maxWidth flags:(int)flags textAlignment:(UITextAlignment)textAlignment outIsRTL:(bool *)outIsRTL additionalTrailingWidth:(CGFloat)additionalTrailingWidth maxNumberOfLines:(NSUInteger)maxNumberOfLines numberOfLinesToInset:(NSUInteger)numberOfLinesToInset linesInset:(CGFloat)linesInset containsEmptyNewline:(bool *)containsEmptyNewline additionalLineSpacing:(CGFloat)additionalLineSpacing
++ (TGReusableLabelLayoutData *)calculateLayout:(NSString *)text additionalAttributes:(NSArray *)additionalAttributes textCheckingResults:(NSArray *)textCheckingResults font:(CTFontRef)font textColor:(UIColor *)textColor frame:(CGRect)frame orMaxWidth:(float)maxWidth flags:(int)flags textAlignment:(NSTextAlignment)textAlignment outIsRTL:(bool *)outIsRTL additionalTrailingWidth:(CGFloat)additionalTrailingWidth maxNumberOfLines:(NSUInteger)maxNumberOfLines numberOfLinesToInset:(NSUInteger)numberOfLinesToInset linesInset:(CGFloat)linesInset containsEmptyNewline:(bool *)containsEmptyNewline additionalLineSpacing:(CGFloat)additionalLineSpacing ellipsisString:(NSString *)ellipsisString
 {
     if (font == NULL || text == nil)
         return nil;
     
+    bool justify = textAlignment == NSTextAlignmentJustified;
+    if (justify) {
+        textAlignment = NSTextAlignmentLeft;
+    }
+    
     static bool needToOffsetEmoji = false;
     static bool needToOffsetEmojiInitialized = false;
+    static bool enableUnderline = true;
     if (!needToOffsetEmojiInitialized)
     {
         needToOffsetEmojiInitialized = true;
         needToOffsetEmoji = iosMajorVersion() < 6;
+        enableUnderline = !(iosMajorVersion() == 7 && (iosMinorVersion() == 0 || iosMinorVersion() == 1));
     }
     
     TGReusableLabelLayoutData *layout = [[TGReusableLabelLayoutData alloc] init];
     layout.text = text;
     
+    CGFloat fontSize = CTFontGetSize(font);
     CGFloat fontAscent = CTFontGetAscent(font);
     CGFloat fontDescent = CTFontGetDescent(font);
     
@@ -269,9 +278,6 @@
     layout.fontLineSpacing = fontLineSpacing;
     
     NSMutableDictionary *attributes = [[NSMutableDictionary alloc] initWithObjectsAndKeys:(__bridge id)font, (NSString *)kCTFontAttributeName, nil];
-    if (true || iosMajorVersion() < 9) {
-        attributes[(NSString *)kCTKernAttributeName] = @(0.0f);
-    }
     
     NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:text attributes:attributes];
     
@@ -298,6 +304,11 @@
     if (defaultLinkColor == nil)
         defaultLinkColor = (CGColorRef)CFRetain(UIColorRGB(0x004bad).CGColor);
     
+    CTFontRef boldFont = NULL;
+    CTFontRef ultraBoldFont = NULL;
+    CTFontRef italicFont = NULL;
+    CTFontRef fixedFont = NULL;
+    
     CGColorRef linkColor = defaultLinkColor;
     
     NSRange *pLinkRanges = NULL;
@@ -322,7 +333,10 @@
                 if (flags & TGReusableLabelLayoutHighlightLinks)
                 {
                     CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTForegroundColorAttributeName, linkColor);
-                    CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTUnderlineStyleAttributeName, (CFNumberRef)underlineStyle);
+                    
+                    if (enableUnderline) {
+                        CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTUnderlineStyleAttributeName, (CFNumberRef)underlineStyle);
+                    }
                 }
                 
                 useRange = true;
@@ -352,6 +366,64 @@
                             useRange = true;
                             url = [[NSString alloc] initWithFormat:@"command://%@", ((TGTextCheckingResult *)match).contents];
                         }
+                        break;
+                    }
+                    case TGTextCheckingResultTypeCode:
+                    {
+                        if (fixedFont == nil) {
+                            fixedFont = TGCoreTextFixedFontOfSize(fontSize);
+                        }
+                        
+                        CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTFontAttributeName, fixedFont);
+                        
+                        break;
+                    }
+                    case TGTextCheckingResultTypeItalic:
+                    {
+                        if (italicFont == nil) {
+                            italicFont = TGCoreTextItalicFontOfSize(fontSize);
+                        }
+                        
+                        CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTFontAttributeName, italicFont);
+                        
+                        break;
+                    }
+                    case TGTextCheckingResultTypeBold:
+                    {
+                        if (boldFont == nil) {
+                            boldFont = TGCoreTextMediumFontOfSize(fontSize);
+                        }
+                        
+                        CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTFontAttributeName, boldFont);
+                        
+                        break;
+                    }
+                    case TGTextCheckingResultTypeUltraBold:
+                    {
+                        if (ultraBoldFont == nil) {
+                            ultraBoldFont = TGCoreTextBoldFontOfSize(fontSize);
+                        }
+                        
+                        CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTFontAttributeName, ultraBoldFont);
+                        
+                        break;
+                    }
+                    case TGTextCheckingResultTypeLink:
+                    {
+                        NSString *url = ((TGTextCheckingResult *)match).contents;
+                        layout.links->push_back(TGLinkData(linkRange, url));
+                        
+                        if (flags & TGReusableLabelLayoutHighlightLinks)
+                        {
+                            CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTForegroundColorAttributeName, linkColor);
+                            
+                            if (enableUnderline) {
+                                CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTUnderlineStyleAttributeName, (CFNumberRef)underlineStyle);
+                            }
+                        }
+                        
+                        useRange = true;
+                        
                         break;
                     }
                 }
@@ -456,7 +528,7 @@
                             tokenString = [[NSString alloc] initWithCharacters:&tokenChar length:1];
                         }
                         
-                        NSAttributedString *truncationTokenString = [[NSAttributedString alloc] initWithString:tokenString attributes:truncationTokenAttributes];
+                        NSAttributedString *truncationTokenString = [[NSAttributedString alloc] initWithString:ellipsisString == nil ? tokenString : ellipsisString attributes:truncationTokenAttributes];
                         CTLineRef truncationToken = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)truncationTokenString);
                         
                         line = CTLineCreateTruncatedLine(originalLine, currentMaxWidth, (flags & TGReusableLabelTruncateInTheMiddle) ? kCTLineTruncationMiddle : kCTLineTruncationEnd, truncationToken);
@@ -486,7 +558,7 @@
                     
                     CGFloat lineWidth = (CGFloat)CTLineGetTypographicBounds(line, NULL, NULL, NULL) - (CGFloat)CTLineGetTrailingWhitespaceWidth(line) + currentLineInset;
                     
-                    TGLinePosition linePosition = {.offset = (CGFloat)(currentLineOffset + fontLineHeight), .horizontalOffset = 0.0f, .alignment = (textAlignment == NSTextAlignmentCenter ? 1 : (rightAligned ? 2 : 0)), .lineWidth = lineWidth};
+                    TGLinePosition linePosition = {.offset = (CGFloat)(currentLineOffset + fontLineHeight), .horizontalOffset = 0.0f, .alignment = (uint8_t)(textAlignment == NSTextAlignmentCenter ? 1 : (rightAligned ? 2 : 0)), .lineWidth = lineWidth};
                     pLineOrigins->push_back(linePosition);
                     
                     currentLineOffset += fontLineSpacing;
@@ -511,7 +583,7 @@
         
         if (flags & TGReusableLabelLayoutDateSpacing)
         {
-            CGFloat dateSpacing = ((flags & TGReusableLabelLayoutExtendedDateSpacing) ? 61.0f : 42.0f) + (TGUse12hDateFormat() ? 10.0f : 0.0f) + additionalTrailingWidth;
+            CGFloat dateSpacing = ((flags & TGReusableLabelLayoutExtendedDateSpacing) ? 61.0f : 52.0f) + (TGUse12hDateFormat() ? 10.0f : 0.0f) + additionalTrailingWidth;
             if (flags & TGReusableLabelViewCountSpacing) {
                 dateSpacing += 40.0f;
             }
@@ -574,6 +646,29 @@
         layout.size = CGSizeMake(CGFloor(rect.size.width), CGFloor(rect.size.height + fontLineHeight * 0.1f));
         layout.drawingSize = rect.size;
         
+        if (justify) {
+            NSMutableArray *justifiedLines = [[NSMutableArray alloc] init];
+            for (NSInteger i = 0; i < (NSInteger)textLines.count; i++) {
+                if (i != (NSInteger)textLines.count - 1) {
+                    CGFloat width = layout.size.width;
+                    if (i < (NSInteger)numberOfLinesToInset) {
+                        width -= linesInset;
+                    }
+                    
+                    CTLineRef line = CTLineCreateJustifiedLine((__bridge CTLineRef)textLines[i], 1.0f, width);
+                    if (line != NULL) {
+                        [justifiedLines addObject:(__bridge id)line];
+                        CFRelease(line);
+                    } else {
+                        [justifiedLines addObject:textLines[i]];
+                    }
+                } else {
+                    [justifiedLines addObject:textLines[i]];
+                }
+            }
+            textLines = justifiedLines;
+        }
+        
         layout.textLines = textLines;
         
         if (typesetter != NULL)
@@ -603,7 +698,7 @@
         
         CTLineRef line = NULL;
         
-        NSAttributedString *truncationTokenString = [[NSAttributedString alloc] initWithString:tokenString attributes:truncationTokenAttributes];
+        NSAttributedString *truncationTokenString = [[NSAttributedString alloc] initWithString:ellipsisString == nil ? tokenString : ellipsisString attributes:truncationTokenAttributes];
         CTLineRef truncationToken = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)truncationTokenString);
         
         CTLineRef originalLine = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)string);

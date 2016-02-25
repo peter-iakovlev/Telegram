@@ -64,6 +64,7 @@
 - (instancetype)initWithParentController:(TGViewController *)parentController stickerPack:(TGStickerPack *)stickerPack
 {
     TGStickerPackPreviewView *stickerPackPreviewView = [[TGStickerPackPreviewView alloc] init];
+    stickerPackPreviewView.controller = parentController;
     
     self = [super initWithParentController:parentController contentController:[[TGStickerPackPreviewController alloc] initWithStickerPackPreviewView:stickerPackPreviewView]];
     if (self != nil)

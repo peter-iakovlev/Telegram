@@ -31,9 +31,9 @@
 
 @implementation TGVenueMessageViewModel
 
-- (instancetype)initWithLatitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue message:(TGMessage *)message authorPeer:(id)authorPeer context:(TGModernViewContext *)context
+- (instancetype)initWithLatitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue message:(TGMessage *)message authorPeer:(id)authorPeer viaUser:(TGUser *)viaUser context:(TGModernViewContext *)context
 {
-    self = [super initWithMessage:message authorPeer:authorPeer context:context];
+    self = [super initWithMessage:message authorPeer:authorPeer viaUser:viaUser context:context];
     if (self != nil)
     {
         static UIColor *incomingAddressColor = nil;

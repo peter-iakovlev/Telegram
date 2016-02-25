@@ -210,6 +210,9 @@
     if ([TGLocationUtils isYandexMapsInstalled])
         [openInActions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInYandexMaps") action:@"openInYandexMaps"]];
     
+    if ([TGLocationUtils isWazeInstalled])
+        [openInActions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInWaze") action:@"openInWaze"]];
+    
     TGActionSheetAction *cancelAction = [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel];
     
     if (openInActions.count < 3)
@@ -261,6 +264,8 @@
         [TGLocationUtils openGoogleWithPlaceId:_venue.venueId];
     else if ([action isEqualToString:@"openInFoursquare"])
         [TGLocationUtils openFoursquareWithVenueId:_venue.venueId];
+    else if ([action isEqualToString:@"openInWaze"])
+        [TGLocationUtils openWazeWithCoordinate:_location.coordinate withDirections:false];
 }
 
 - (void)trackingModePressed
@@ -309,7 +314,8 @@
     bool googleMapsInstalled = [TGLocationUtils isGoogleMapsInstalled];
     bool yandexMapsInstalled = [TGLocationUtils isYandexMapsInstalled];
     bool yandexNavigatorInstalled = [TGLocationUtils isYandexNavigatorInstalled];
-    bool anyThirdPartyAppInstalled = googleMapsInstalled || yandexNavigatorInstalled;
+    bool wazeInstalled = [TGLocationUtils isWazeInstalled];
+    bool anyThirdPartyAppInstalled = googleMapsInstalled || yandexMapsInstalled || yandexNavigatorInstalled || wazeInstalled;
     
     if (!anyThirdPartyAppInstalled)
     {
@@ -330,6 +336,9 @@
         if (yandexNavigatorInstalled)
             [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInYandexNavigator") action:@"openInYandexNavigator"]];
         
+        if (wazeInstalled)
+            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInWaze") action:@"openInWaze"]];
+        
         [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
         
         [[[TGActionSheet alloc] initWithTitle:TGLocalized(@"Map.GetDirections") actions:actions actionBlock:^(TGLocationViewController *controller, NSString *action)
@@ -342,6 +351,8 @@
                 [TGLocationUtils openYandexMapsWithCoordinate:controller->_location.coordinate withDirections:true];
             else if ([action isEqualToString:@"openInYandexNavigator"])
                 [TGLocationUtils openDirectionsInYandexNavigatorWithCoordinate:controller->_location.coordinate];
+            else if ([action isEqualToString:@"openInWaze"])
+                [TGLocationUtils openWazeWithCoordinate:controller->_location.coordinate withDirections:true];
         } target:self] showInView:self.view];
     }
 }

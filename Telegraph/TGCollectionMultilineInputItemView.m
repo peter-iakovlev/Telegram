@@ -95,4 +95,8 @@
     _textView.frame = self.bounds;
 }
 
+- (BOOL)becomeFirstResponder {
+    return [_textView becomeFirstResponder];
+}
+
 @end

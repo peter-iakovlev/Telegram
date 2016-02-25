@@ -9,6 +9,7 @@
 #import "TGConversation.h"
 
 #import "TGImageUtils.h"
+#import "TGFont.h"
 
 #import "TGReusableLabel.h"
 
@@ -29,10 +30,11 @@ static CTFontRef nameFont()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (false && iosMajorVersion() >= 9) {
-            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Medium"), 14.0f, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGMediumSystemFontOfSize(14.0f) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue-Medium"), 14.0f, NULL));
+            UIFont *systemFont = TGMediumSystemFontOfSize(14.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     });
     
@@ -46,10 +48,11 @@ static CTFontRef textFont()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (false && iosMajorVersion() >= 9) {
-            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 14.0f, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGSystemFontOfSize(14.0f) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 14.0f, NULL));
+            UIFont *systemFont = TGSystemFontOfSize(14.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     });
     

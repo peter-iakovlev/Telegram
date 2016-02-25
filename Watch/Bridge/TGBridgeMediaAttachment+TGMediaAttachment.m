@@ -10,6 +10,7 @@
 #import "TGBridgeReplyMessageMediaAttachment+TGReplyMessageMediaAttachment.h"
 #import "TGBridgeForwardedMessageMediaAttachment+TGForwardedMessageMediaAttachment.h"
 #import "TGBridgeWebPageMediaAttachment+TGWebPageMediaAttachment.h"
+#import "TGBridgeMessageEntitiesAttachment+TGMessageEntitiesAttachment.h"
 #import "TGBridgeUnsupportedMediaAttachment+TGUnsupportedMediaAttachment.h"
 
 @implementation TGBridgeMediaAttachment (TGMediaAttachment)
@@ -41,6 +42,8 @@
         bridgeAttachment = [TGBridgeForwardedMessageMediaAttachment attachmentWithTGForwardedMessageMediaAttachment:(TGForwardedMessageMediaAttachment *)attachment];
     else if ([attachment isKindOfClass:[TGWebPageMediaAttachment class]])
         bridgeAttachment = [TGBridgeWebPageMediaAttachment attachmentWithTGWebPageMediaAttachment:(TGWebPageMediaAttachment *)attachment];
+    else if ([attachment isKindOfClass:[TGMessageEntitiesAttachment class]])
+        bridgeAttachment = [TGBridgeMessageEntitiesAttachment attachmentWithTGMessageEntitiesAttachment:(TGMessageEntitiesAttachment *)attachment];
     else if ([attachment isKindOfClass:[TGUnsupportedMediaAttachment class]])
         bridgeAttachment = [TGBridgeUnsupportedMediaAttachment attachmentWithTGUnsupportedMediaAttachment:(TGUnsupportedMediaAttachment *)attachment];
     

@@ -5,6 +5,8 @@ NSString *const TGBridgeContextAuthorized = @"authorized";
 NSString *const TGBridgeContextUserId = @"userId";
 NSString *const TGBridgeContextPasscodeEnabled = @"passcodeEnanled";
 NSString *const TGBridgeContextPasscodeEncrypted = @"passcodeEncrypted";
+NSString *const TGBridgeContextCustomLocalizationEnabled = @"customLocalizationEnabled";
+NSString *const TGBridgeContextMicAccessAllowed = @"micAccessAllowed";
 NSString *const TGBridgeContextStartupData = @"startupData";
 
 NSString *const TGBridgeContextStartupDataVersion = @"startupDataVersion";
@@ -20,6 +22,9 @@ NSString *const TGBridgeContextStartupDataVersion = @"startupDataVersion";
         _userId = [dictionary[TGBridgeContextUserId] int32Value];
         _passcodeEnabled = [dictionary[TGBridgeContextPasscodeEnabled] boolValue];
         _passcodeEncrypted = [dictionary[TGBridgeContextPasscodeEncrypted] boolValue];
+        _customLocalizationEnabled = [dictionary[TGBridgeContextCustomLocalizationEnabled] boolValue];
+        _micAccessAllowed = [dictionary[TGBridgeContextMicAccessAllowed] boolValue];
+        
         if (dictionary[TGBridgeContextStartupData] != nil)
             _startupData = [NSKeyedUnarchiver unarchiveObjectWithData:dictionary[TGBridgeContextStartupData]];
     }
@@ -55,6 +60,8 @@ NSString *const TGBridgeContextStartupDataVersion = @"startupDataVersion";
     dictionary[TGBridgeContextUserId] = @(self.userId);
     dictionary[TGBridgeContextPasscodeEnabled] = @(self.passcodeEnabled);
     dictionary[TGBridgeContextPasscodeEncrypted] = @(self.passcodeEncrypted);
+    dictionary[TGBridgeContextMicAccessAllowed] = @(self.micAccessAllowed);
+    dictionary[TGBridgeContextCustomLocalizationEnabled] = @(self.customLocalizationEnabled);
     
     if (withStartupData && self.startupData != nil)
         dictionary[TGBridgeContextStartupData] = [NSKeyedArchiver archivedDataWithRootObject:self.startupData];
@@ -78,6 +85,10 @@ NSString *const TGBridgeContextStartupDataVersion = @"startupDataVersion";
     if (context.passcodeEnabled != self.passcodeEnabled)
         return false;
     if (context.passcodeEncrypted != self.passcodeEncrypted)
+        return false;
+    if (context.micAccessAllowed != self.micAccessAllowed)
+        return false;
+    if (context.customLocalizationEnabled != self.customLocalizationEnabled)
         return false;
     
     return true;

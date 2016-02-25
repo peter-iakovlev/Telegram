@@ -7,11 +7,11 @@
 
 @end
 
-extern NSString *const TGBridgeFileKey;
-
 extern NSString *const TGBridgeIncomingFileTypeKey;
+extern NSString *const TGBridgeIncomingFileIdentifierKey;
 extern NSString *const TGBridgeIncomingFileRandomIdKey;
 extern NSString *const TGBridgeIncomingFilePeerIdKey;
 extern NSString *const TGBridgeIncomingFileReplyToMidKey;
 
 extern NSString *const TGBridgeIncomingFileTypeAudio;
+extern NSString *const TGBridgeIncomingFileTypeImage;

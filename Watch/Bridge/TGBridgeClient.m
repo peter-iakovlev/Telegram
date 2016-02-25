@@ -12,6 +12,7 @@
 #import "TGBridgeChatMessageListSubscription.h"
 
 #import "TGBridgeStickersSignals.h"
+#import "TGBridgePresetsSignals.h"
 
 #import "TGExtensionDelegate.h"
 
@@ -42,9 +43,6 @@ const NSTimeInterval TGBridgeClientWakeInterval = 2.0;
     
     OSSpinLock _outgoingQueueLock;
     NSMutableArray *_outgoingMessageQueue;
-    
-    NSURL *_startupDataURL;
-    NSDictionary *_startupData;
     
     NSArray *_stickerPacks;
     OSSpinLock _stickerPacksLock;
@@ -84,10 +82,7 @@ const NSTimeInterval TGBridgeClientWakeInterval = 2.0;
         _reachable = true;
         
         _outgoingMessageQueue = [[NSMutableArray alloc] init];
-        
         _subscriptions = [[NSMutableDictionary alloc] init];
-        
-        _startupData = [self loadStartupData];
 
         self.session.delegate = self;
         [self.session activateSession];
@@ -288,67 +283,6 @@ const NSTimeInterval TGBridgeClientWakeInterval = 2.0;
     }
 }
 
-- (void)saveStartupData:(NSDictionary *)dataObject
-{
-    dispatch_async(_contextQueue, ^
-    {
-        if (dataObject != nil)
-        {
-            NSMutableDictionary *dict = [dataObject mutableCopy];
-            NSArray *chatsArray = dict[TGBridgeChatsArrayKey];
-            if (chatsArray.count > 4)
-            {
-                NSArray *trimmedArray = [chatsArray subarrayWithRange:NSMakeRange(0, 4)];
-                dict[TGBridgeChatsArrayKey] = trimmedArray;
-            }
-            
-            dict[TGBridgeContextStartupDataVersion] = @([TGBridgeContext versionWithCurrentDate]);
-            
-            NSData *data = [NSKeyedArchiver archivedDataWithRootObject:dict];
-            [data writeToURL:[self startupDataURL] atomically:true];
-        }
-        else
-        {
-            [[NSFileManager defaultManager] removeItemAtURL:[self startupDataURL] error:NULL];
-        }
-    });
-}
-
-- (NSDictionary *)loadStartupData
-{
-    NSError *error;
-    NSData *data = [[NSData alloc] initWithContentsOfURL:[self startupDataURL] options:kNilOptions error:&error];
-    
-    if (data == nil || error != nil)
-        return nil;
-    
-    NSDictionary *dictionary = nil;
-    @try
-    {
-        dictionary = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-    }
-    @catch (NSException *exception)
-    {
-
-    }
-    
-    if (![dictionary isKindOfClass:[NSDictionary class]])
-        return nil;
-    
-    return dictionary;
-}
-
-- (NSURL *)startupDataURL
-{
-    if (_startupDataURL == nil)
-    {
-        NSString *cachesPath = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, true)[0];
-        _startupDataURL = [[NSURL alloc] initFileURLWithPath:[cachesPath stringByAppendingPathComponent:@"startup.data"]];
-    }
-    
-    return _startupDataURL;
-}
-
 #pragma mark -
 
 - (SSignal *)fileSignalForKey:(NSString *)key
@@ -448,18 +382,26 @@ const NSTimeInterval TGBridgeClientWakeInterval = 2.0;
 
 - (void)session:(WCSession *)session didReceiveApplicationContext:(NSDictionary *)applicationContext
 {
-    _contextPipe.sink([[TGBridgeContext alloc] initWithDictionary:applicationContext]);
+    TGBridgeContext *context = [[TGBridgeContext alloc] initWithDictionary:applicationContext];
+    _contextPipe.sink(context);
+    
+    if (!context.customLocalizationEnabled && TGIsCustomLocalizationActive())
+        [[TGExtensionDelegate instance] setCustomLocalizationFile:nil];
 }
 
 - (void)session:(WCSession *)session didReceiveFile:(WCSessionFile *)file
 {
-    NSString *key = file.metadata[TGBridgeFileKey];
-    if (key == nil)
+    NSString *type = file.metadata[TGBridgeIncomingFileTypeKey];
+    NSString *identifier = file.metadata[TGBridgeIncomingFileIdentifierKey];
+    if (identifier == nil)
         return;
     
-    if ([key isEqualToString:@"stickers"])
+    if ([identifier isEqualToString:@"stickers"])
     {
         NSURL *stickerPacksURL = [TGBridgeStickersSignals stickerPacksURL];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:stickerPacksURL.path])
+            [[NSFileManager defaultManager] removeItemAtURL:stickerPacksURL error:nil];
+        
         [[NSFileManager defaultManager] moveItemAtURL:file.fileURL toURL:stickerPacksURL error:nil];
         
         NSArray *stickerPacks = [self readStickerPacks];
@@ -467,24 +409,39 @@ const NSTimeInterval TGBridgeClientWakeInterval = 2.0;
         _stickerPacks = stickerPacks;
         OSSpinLockUnlock(&_stickerPacksLock);
         
-        [_fileSignalManager putNext:stickerPacks toMulticastedPipeForKey:key];
+        [_fileSignalManager putNext:stickerPacks toMulticastedPipeForKey:identifier];
     }
-    else
+    else if ([identifier isEqualToString:@"localization"])
     {
-        NSLog(@"Received file: %@", key);
-        [[TGExtensionDelegate instance].imageCache cacheFileAtURL:file.fileURL key:key synchronous:true unserializeBlock:^id(NSData *data)
+        [[TGExtensionDelegate instance] setCustomLocalizationFile:file.fileURL];
+    }
+    else if ([identifier isEqualToString:@"presets"])
+    {
+        NSURL *presetsURL = [TGBridgePresetsSignals presetsURL];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:presetsURL.path])
+            [[NSFileManager defaultManager] removeItemAtURL:presetsURL error:nil];
+        
+        [[NSFileManager defaultManager] moveItemAtURL:file.fileURL toURL:presetsURL error:nil];
+    }
+    else if ([type isEqualToString:TGBridgeIncomingFileTypeImage])
+    {
+        NSLog(@"Received image file: %@", identifier);
+        [[TGExtensionDelegate instance].imageCache cacheFileAtURL:file.fileURL key:identifier synchronous:true unserializeBlock:^id(NSData *data)
         {
             return data;
         } completion:^(NSURL *url)
         {
-            [_fileSignalManager putNext:url toMulticastedPipeForKey:key];
+            [_fileSignalManager putNext:url toMulticastedPipeForKey:identifier];
         }];
     }
-}
-
-- (void)session:(WCSession *)session didFinishFileTransfer:(WCSessionFileTransfer *)fileTransfer error:(NSError *)error
-{
-    
+    else if ([type isEqualToString:TGBridgeIncomingFileTypeAudio])
+    {
+        NSLog(@"Received audio file: %@", identifier);
+        [[TGExtensionDelegate instance].audioCache cacheFileAtURL:file.fileURL key:identifier synchronous:true unserializeBlock:nil completion:^(NSURL *url)
+        {
+            [_fileSignalManager putNext:url toMulticastedPipeForKey:identifier];
+        }];
+    }
 }
 
 - (void)sessionReachabilityDidChange:(WCSession *)session

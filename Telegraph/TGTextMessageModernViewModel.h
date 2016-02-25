@@ -16,7 +16,7 @@
 
 @property (nonatomic) bool animateContentChanges;
 
-- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer context:(TGModernViewContext *)context;
+- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer viaUser:(TGUser *)viaUser context:(TGModernViewContext *)context;
 
 - (void)setIsUnsupported:(bool)isUnsupported;
 

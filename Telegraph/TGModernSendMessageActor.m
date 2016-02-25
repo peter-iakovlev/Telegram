@@ -48,6 +48,8 @@
         _uploadingProgressActorPaths = [[NSMutableDictionary alloc] init];
         _completedUploads = [[NSMutableDictionary alloc] init];
         _uploadProgress = -1.0f;
+        _sendActivity = true;
+        _disposables = [[SDisposableSet alloc] init];
     }
     return self;
 }
@@ -58,6 +60,8 @@
     
     [_actionHandle reset];
     [ActionStageInstance() removeWatcher:self];
+    
+    [_disposables dispose];
 }
 
 - (void)prepare:(NSDictionary *)options
@@ -182,6 +186,8 @@
 {
     [self _fail];
     
+    [_disposables dispose];
+    
     [super cancel];
 }
 
@@ -192,14 +198,28 @@
     return 0;
 }
 
+- (int64_t)accessHashForActivity {
+    return 0;
+}
+
 - (NSString *)activityType
 {
-    if ([_preparedMessage isKindOfClass:[TGPreparedLocalImageMessage class]])
-        return @"uploadingPhoto";
-    else if ([_preparedMessage isKindOfClass:[TGPreparedLocalVideoMessage class]])
-        return @"uploadingVideo";
-    else if ([_preparedMessage isKindOfClass:[TGPreparedLocalDocumentMessage class]])
-        return @"uploadingDocument";
+    if (_sendActivity) {
+        if ([_preparedMessage isKindOfClass:[TGPreparedLocalImageMessage class]])
+            return @"uploadingPhoto";
+        else if ([_preparedMessage isKindOfClass:[TGPreparedLocalVideoMessage class]])
+            return @"uploadingVideo";
+        else if ([_preparedMessage isKindOfClass:[TGPreparedLocalDocumentMessage class]]) {
+            for (id attribute in ((TGPreparedLocalDocumentMessage *)_preparedMessage).attributes) {
+                if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                    if (((TGDocumentAttributeAudio *)attribute).isVoice) {
+                        return nil;
+                    }
+                }
+            }
+            return @"uploadingDocument";
+        }
+    }
     
     return nil;
 }
@@ -211,7 +231,7 @@
     
     if (_activityHolder == nil && [self conversationIdForActivity] != 0 && [self activityType] != nil)
     {
-        _activityHolder = [[TGTelegraphInstance activityManagerForConversationId:[self conversationIdForActivity]] addActivityWithType:[self activityType] priority:2];
+        _activityHolder = [[TGTelegraphInstance activityManagerForConversationId:[self conversationIdForActivity] accessHash:[self accessHashForActivity]] addActivityWithType:[self activityType] priority:2];
     }
     
     _notifiedUploadsStarted = false;
@@ -355,3 +375,12 @@
 }
 
 @end
+
+SSignalQueue *videoDownloadQueue() {
+    static SSignalQueue *instance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        instance = [[SSignalQueue alloc] init];
+    });
+    return instance;
+}

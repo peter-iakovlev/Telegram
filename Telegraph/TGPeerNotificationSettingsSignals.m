@@ -99,10 +99,10 @@
         int soundId = 0;
         int muteUntil = 0;
         bool previewText = true;
-        bool photoNotificationsEnabled = true;
+        bool messagesMuted = false;
         bool notFound = false;
         
-        [TGDatabaseInstance() loadPeerNotificationSettings:peerId soundId:&soundId muteUntil:&muteUntil previewText:&previewText photoNotificationsEnabled:&photoNotificationsEnabled notFound:&notFound];
+        [TGDatabaseInstance() loadPeerNotificationSettings:peerId soundId:&soundId muteUntil:&muteUntil previewText:&previewText messagesMuted:&messagesMuted notFound:&notFound];
         [subscriber putNext:[[TGPeerNotificationSettings alloc] initWithMuteUntil:muteUntil]];
         [subscriber putCompletion];
         

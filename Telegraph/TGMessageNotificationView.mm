@@ -263,6 +263,7 @@
                 bool isAnimated = false;
                 CGSize imageSize = CGSizeZero;
                 bool isSticker = false;
+                bool isVoice = false;
                 for (id attribute in documentAttachment.attributes)
                 {
                     if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]])
@@ -273,14 +274,26 @@
                     {
                         imageSize = ((TGDocumentAttributeImageSize *)attribute).size;
                     }
+                    else if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                        imageSize = ((TGDocumentAttributeVideo *)attribute).size;
+                    }
                     else if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
                     {
                         isSticker = true;
+                    }
+                    else if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                        isVoice = ((TGDocumentAttributeAudio *)attribute).isVoice;
                     }
                 }
                 
                 if (isSticker)
                     messageText = TGLocalized(@"Message.Sticker");
+                else if (isAnimated) {
+                    messageText = TGLocalized(@"Message.Animation");
+                }
+                else if (isVoice) {
+                    messageText = TGLocalized(@"Message.Audio");
+                }
                 else
                     messageText = TGLocalized(@"Message.File");
                 

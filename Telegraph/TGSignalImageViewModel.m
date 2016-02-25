@@ -3,11 +3,20 @@
 #import "TGSignalImageView.h"
 #import "TGSignalImageViewWithProgress.h"
 
+typedef enum {
+    TGSignalImageViewModelOverlayNone = 0,
+    TGSignalImageViewModelOverlayProgress,
+    TGSignalImageViewModelOverlayDownload,
+    TGSignalImageViewModelOverlayPlay
+} TGSignalImageViewModelOverlay;
+
 @interface TGSignalImageViewModel ()
 {
     SSignal *(^_signalGenerator)();
     NSString *_identifier;
     CGFloat _progress;
+    
+    TGSignalImageViewModelOverlay _overlay;
 }
 
 @end
@@ -26,7 +35,7 @@
 
 - (Class)viewClass
 {
-    return _showProgress ? [TGSignalImageViewWithProgress class] : [TGSignalImageView class];
+    return (_showProgress || _manualProgress) ? [TGSignalImageViewWithProgress class] : [TGSignalImageView class];
 }
 
 - (void)setSignalGenerator:(SSignal *(^)())signalGenerator identifier:(NSString *)identifier
@@ -46,8 +55,27 @@
     
     [super bindViewToContainer:container viewStorage:viewStorage];
     
-    if (_showProgress)
-        ((TGSignalImageViewWithProgress *)self.boundView).progress = _progress;
+    if (_manualProgress) {
+        if ([[self boundView] isKindOfClass:[TGSignalImageViewWithProgress class]]) {
+            switch (_overlay) {
+                case TGSignalImageViewModelOverlayProgress:
+                    ((TGSignalImageViewWithProgress *)self.boundView).progress = _progress;
+                    break;
+                case TGSignalImageViewModelOverlayDownload:
+                    [((TGSignalImageViewWithProgress *)self.boundView) setDownload];
+                    break;
+                case TGSignalImageViewModelOverlayNone:
+                    [((TGSignalImageViewWithProgress *)self.boundView) setNone];
+                    break;
+                case TGSignalImageViewModelOverlayPlay:
+                    [((TGSignalImageViewWithProgress *)self.boundView) setPlay];
+                    break;
+            }
+        }
+    } else {
+        if (_showProgress)
+            ((TGSignalImageViewWithProgress *)self.boundView).progress = _progress;
+    }
     
     ((TGSignalImageView *)self.boundView).transitionContentRect = _transitionContentRect;
     
@@ -61,6 +89,46 @@
         _progress = ((TGSignalImageViewWithProgress *)self.boundView).progress;
     
     [super unbindView:viewStorage];
+}
+
+- (void)setProgress:(float)progress animated:(bool)animated {
+    _progress = progress;
+    
+    _overlay = TGSignalImageViewModelOverlayProgress;
+    if ([[self boundView] isKindOfClass:[TGSignalImageViewWithProgress class]]) {
+        [((TGSignalImageViewWithProgress *)self.boundView) setProgress:progress animated:animated];
+    }
+}
+
+- (void)setDownload {
+    _overlay = TGSignalImageViewModelOverlayDownload;
+    if ([[self boundView] isKindOfClass:[TGSignalImageViewWithProgress class]]) {
+        [((TGSignalImageViewWithProgress *)self.boundView) setDownload];
+    }
+}
+
+- (void)setNone {
+    _overlay = TGSignalImageViewModelOverlayNone;
+    if ([[self boundView] isKindOfClass:[TGSignalImageViewWithProgress class]]) {
+        [((TGSignalImageViewWithProgress *)self.boundView) setNone];
+    }
+}
+
+- (void)setPlay {
+    _overlay = TGSignalImageViewModelOverlayPlay;
+    if ([[self boundView] isKindOfClass:[TGSignalImageViewWithProgress class]]) {
+        [((TGSignalImageViewWithProgress *)self.boundView) setPlay];
+    }
+}
+
+- (void)reload {
+    if (_signalGenerator) {
+        [((TGSignalImageView *)self.boundView) setSignal:_signalGenerator()];
+    }
+}
+
+- (void)setVideoPathSignal:(SSignal *)videoPathSignal {
+    [((TGSignalImageView *)self.boundView) setVideoPathSignal:videoPathSignal];
 }
 
 @end

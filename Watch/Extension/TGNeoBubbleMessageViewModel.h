@@ -20,6 +20,8 @@
 - (UIColor *)subtitleColorForMessage:(TGBridgeMessage *)message;
 - (UIColor *)accentColorForMessage:(TGBridgeMessage *)message;
 
++ (CGFloat)bodyTextFontSize;
+
 @end
 
 extern const UIEdgeInsets TGNeoBubbleMessageViewModelInsets;

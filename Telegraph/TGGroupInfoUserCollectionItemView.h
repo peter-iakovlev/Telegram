@@ -15,6 +15,7 @@
 @optional
 
 - (void)groupInfoUserItemViewRequestedDeleteAction:(TGGroupInfoUserCollectionItemView *)groupInfoUserItemView;
+- (void)switchValueChanged:(bool)switchValue;
 
 @end
 
@@ -26,6 +27,10 @@
 - (void)setStatus:(NSString *)status active:(bool)active;
 - (void)setAvatarUri:(NSString *)avatarUri;
 - (void)setIsSecretChat:(bool)isSecretChat;
+
+- (void)setDisplaySwitch:(bool)displaySwitch;
+- (void)setEnableSwitch:(bool)enableSwitch animated:(bool)animated;
+- (void)setSwitchIsOn:(bool)switchIsOn animated:(bool)animated;
 
 - (void)setDisabled:(bool)disabled animated:(bool)animated;
 

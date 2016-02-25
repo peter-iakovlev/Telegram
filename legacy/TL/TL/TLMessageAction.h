@@ -39,12 +39,6 @@
 
 @end
 
-@interface TLMessageAction$messageActionChatAddUser : TLMessageAction
-
-@property (nonatomic) int32_t user_id;
-
-@end
-
 @interface TLMessageAction$messageActionChatDeleteUser : TLMessageAction
 
 @property (nonatomic) int32_t user_id;
@@ -77,6 +71,41 @@
 @interface TLMessageAction$messageActionChannelToggleComments : TLMessageAction
 
 @property (nonatomic) bool enabled;
+
+@end
+
+@interface TLMessageAction$messageActionChatMigrateTo : TLMessageAction
+
+@property (nonatomic) int32_t channel_id;
+
+@end
+
+@interface TLMessageAction$messageActionChatDeactivate : TLMessageAction
+
+
+@end
+
+@interface TLMessageAction$messageActionChatActivate : TLMessageAction
+
+
+@end
+
+@interface TLMessageAction$messageActionChannelMigrateFrom : TLMessageAction
+
+@property (nonatomic, retain) NSString *title;
+@property (nonatomic) int32_t chat_id;
+
+@end
+
+@interface TLMessageAction$messageActionChatAddUser : TLMessageAction
+
+@property (nonatomic, retain) NSArray *users;
+
+@end
+
+@interface TLMessageAction$messageActionChatAddUserLegacy : TLMessageAction
+
+@property (nonatomic) int32_t user_id;
 
 @end
 

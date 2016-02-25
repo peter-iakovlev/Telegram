@@ -67,6 +67,7 @@
     int64_t _sharedMediaPeerId;
     NSDictionary *_sharedMediaOptions;
     bool _withoutActions;
+    bool _withoutCompose;
     
     TGUser *_user;
     TGPhonebookContact *_phonebookInfo;
@@ -99,6 +100,12 @@
 
 - (instancetype)initWithUid:(int32_t)uid
 {
+    return [self initWithUid:uid withoutCompose:false];
+}
+
+- (instancetype)initWithUid:(int32_t)uid withoutCompose:(bool)withoutCompose
+{
+    _withoutCompose = withoutCompose;
     return [self initWithUid:uid withoutActions:false sharedMediaPeerId:uid sharedMediaOptions:nil];
 }
 
@@ -375,8 +382,11 @@
                     [self.menuSections deleteItemFromSection:actionsSectionIndex atIndex:0];
                 }
                 
-                [self.menuSections addItemToSection:actionsSectionIndex item:[[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"UserInfo.SendMessage") action:@selector(sendMessagePressed)]];
-
+                if (!_withoutCompose)
+                {
+                    [self.menuSections addItemToSection:actionsSectionIndex item:[[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"UserInfo.SendMessage") action:@selector(sendMessagePressed)]];
+                }
+                
                 if (_phonebookInfo != nil)
                 {
                     TGUserInfoButtonCollectionItem *shareContactItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"UserInfo.ShareContact") action:@selector(shareContactPressed)];
@@ -786,7 +796,7 @@ static UIView *_findBackArrow(UIView *view)
     NSMutableArray *infoList = [[NSMutableArray alloc] init];
     
     int defaultSoundId = 1;
-    [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 1 soundId:&defaultSoundId muteUntil:NULL previewText:NULL photoNotificationsEnabled:NULL notFound:NULL];
+    [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 1 soundId:&defaultSoundId muteUntil:NULL previewText:NULL messagesMuted:NULL notFound:NULL];
     NSString *defaultSoundTitle = [self soundNameFromId:defaultSoundId];
     
     int index = -1;
@@ -847,7 +857,7 @@ static UIView *_findBackArrow(UIView *view)
     
     message.mediaAttachments = [[NSArray alloc] initWithObjects:contactAttachment, nil];
     
-    TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:nil sendMessages:[[NSArray alloc] initWithObjects:message, nil] showSecretChats:false];
+    TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:nil sendMessages:[[NSArray alloc] initWithObjects:message, nil] shareLink:nil showSecretChats:false];
     forwardController.watcherHandle = self.actionHandle;
     forwardController.controllerTitle = TGLocalized(@"Profile.ShareContactButton");
     forwardController.confirmationDefaultPersonFormat = TGLocalized(@"Profile.ShareContactPersonFormat");
@@ -1230,7 +1240,7 @@ static UIView *_findBackArrow(UIView *view)
                     return nil;
                 };
                 
-                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
+                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
                 {
                     __strong TGTelegraphUserInfoController *strongSelf = weakSelf;
                     if (strongSelf != nil)

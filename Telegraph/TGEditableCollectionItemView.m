@@ -107,7 +107,7 @@ static TGCollectionMenuView *_findCollectionMenuView(UIView *baseView)
     if (_actionButton == nil)
     {
         _actionButton = [[UIButton alloc] init];
-        _actionButton.backgroundColor = TGDestructiveAccentColor();
+        _actionButton.backgroundColor = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? TGAccentColor() : TGDestructiveAccentColor();
         [_actionButton setTitle:self.optionText forState:UIControlStateNormal];
         [_actionButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
         _actionButton.titleLabel.font = TGSystemFontOfSize(18);
@@ -178,13 +178,25 @@ static TGCollectionMenuView *_findCollectionMenuView(UIView *baseView)
     [self setShowsDeleteIndicator:showsDeleteIndicator animated:false];
 }
 
+- (void)setIndicatorMode:(TGEditableCollectionItemViewIndicator)indicatorMode {
+    if (_indicatorMode != indicatorMode) {
+        _indicatorMode = indicatorMode;
+        if (_deleteIndicator != nil) {
+            _deleteIndicator.image = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? [UIImage imageNamed:@"ModernMenuAddIcon.png"] : [UIImage imageNamed:@"ModernMenuDeleteIcon.png"];
+        }
+        if (_actionButton != nil) {
+            _actionButton.backgroundColor = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? TGAccentColor() : TGDestructiveAccentColor();
+        }
+    }
+}
+
 - (void)setShowsDeleteIndicator:(bool)showsDeleteIndicator animated:(bool)animated
 {
     if (_showsDeleteIndicator != showsDeleteIndicator)
     {
         if (_deleteIndicator == nil)
         {
-            _deleteIndicator = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernMenuDeleteIcon.png"]];
+            _deleteIndicator = [[UIImageView alloc] initWithImage:_indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? [UIImage imageNamed:@"ModernMenuAddIcon.png"] : [UIImage imageNamed:@"ModernMenuDeleteIcon.png"]];
             _deleteIndicator.userInteractionEnabled = true;
             [_deleteIndicator addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(deleteIndicatorTapGesture:)]];
             

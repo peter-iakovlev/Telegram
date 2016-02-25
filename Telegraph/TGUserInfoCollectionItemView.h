@@ -13,6 +13,8 @@
 
 @interface TGUserInfoCollectionItemView : TGCollectionItemView
 
+@property (nonatomic) bool isVerified;
+
 @property (nonatomic, strong) ASHandle *itemHandle;
 
 - (void)setEditing:(bool)editing animated:(bool)animated;

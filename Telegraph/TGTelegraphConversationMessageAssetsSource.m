@@ -7,6 +7,8 @@
 
 #import "TGViewController.h"
 
+#import "TGFont.h"
+
 int TGBaseFontSize = 16;
 static int defaultMonochromeColor = 0x000000;
 
@@ -47,10 +49,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, CGFloat factor, CGFloat alph
             CFRelease(font);
         
         fontSize = TGBaseFontSize;
-        if (iosMajorVersion() >= 9) {
-            font = CTFontCreateWithName(CFSTR(".SFUIText-Regular"), TGBaseFontSize, NULL);
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGSystemFontOfSize(TGBaseFontSize) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CTFontCreateWithName(CFSTR("HelveticaNeue"), TGBaseFontSize, NULL);
+            UIFont *systemFont = TGSystemFontOfSize(TGBaseFontSize);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     }
     
@@ -64,10 +67,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, CGFloat factor, CGFloat alph
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (iosMajorVersion() >= 9) {
-            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 13, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGSystemFontOfSize(13.0f) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 13, NULL));
+            UIFont *systemFont = TGSystemFontOfSize(13.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     });
     
@@ -81,10 +85,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, CGFloat factor, CGFloat alph
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (iosMajorVersion() >= 9) {
-            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 13, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGBoldSystemFontOfSize(13.0f) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue-Bold"), 13, NULL));
+            UIFont *systemFont = TGMediumSystemFontOfSize(13.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     });
     
@@ -98,10 +103,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, CGFloat factor, CGFloat alph
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (iosMajorVersion() >= 9) {
-            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 12, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGSystemFontOfSize(12.0f) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 12, NULL));
+            UIFont *systemFont = TGSystemFontOfSize(12.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     });
     
@@ -115,10 +121,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, CGFloat factor, CGFloat alph
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (iosMajorVersion() >= 9) {
-            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 13, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGSystemFontOfSize(13.0f) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CFRetain(CTFontCreateWithName(CFSTR("Helvetica"), 13, NULL));
+            UIFont *systemFont = TGSystemFontOfSize(13.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     });
     
@@ -132,10 +139,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, CGFloat factor, CGFloat alph
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (iosMajorVersion() >= 9) {
-            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Bold"), 13, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGSystemFontOfSize(13.0f) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CFRetain(CTFontCreateWithName(CFSTR("Helvetica-Bold"), 13, NULL));
+            UIFont *systemFont = TGSystemFontOfSize(13.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     });
     
@@ -149,10 +157,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, CGFloat factor, CGFloat alph
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (iosMajorVersion() >= 9) {
-            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 13, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGSystemFontOfSize(13.0f) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 13, NULL));
+            UIFont *systemFont = TGSystemFontOfSize(13.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     });
     
@@ -166,10 +175,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, CGFloat factor, CGFloat alph
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (iosMajorVersion() >= 9) {
-            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Medium"), 13, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGMediumSystemFontOfSize(13.0f) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue-Medium"), 13, NULL));
+            UIFont *systemFont = TGMediumSystemFontOfSize(13.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     });
     
@@ -183,10 +193,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, CGFloat factor, CGFloat alph
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (iosMajorVersion() >= 9) {
-            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 14, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGSystemFontOfSize(14.0f) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 14, NULL));
+            UIFont *systemFont = TGSystemFontOfSize(14.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     });
     
@@ -392,10 +403,11 @@ static UIColor *colorWithFactor(UIColor *baseColor, CGFloat factor, CGFloat alph
     static CTFontRef font = nil;
     if (font == nil)
     {
-        if (iosMajorVersion() >= 9) {
-            font = CFRetain(CTFontCreateWithName(CFSTR(".SFUIText-Regular"), 14, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGSystemFontOfSize(14.0f) fontDescriptor], 0.0f, NULL);
         } else {
-            font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue"), 14, NULL));
+            UIFont *systemFont = TGSystemFontOfSize(14.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
     }
     return font;
@@ -1190,6 +1202,31 @@ static UIImage *generateDownloadButton(int baseColor, CGFloat alphaFactor, CGFlo
         
         UIImage *rawImage = [self generateSystemMessageBackground:_monochromeColor];
         image = [rawImage stretchableImageWithLeftCapWidth:(int)(rawImage.size.width / 2) topCapHeight:(int)(rawImage.size.height / 2)];
+        
+        cachedImageColor = _monochromeColor;
+    }
+    return image;
+}
+
+- (UIImage *)systemShareButton {
+    static int cachedImageColor = -1;
+    static UIImage *image = nil;
+    if (cachedImageColor != _monochromeColor || image == nil)
+    {
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(29.0f, 29.0f), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        
+        CGFloat backgroundAlpha = _systemAlpha;
+        UIColor *color = UIColorRGBA(_monochromeColor, backgroundAlpha);
+        
+        CGContextSetFillColorWithColor(context, color.CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 29.0f, 29.0f));
+        
+        UIImage *iconImage = [UIImage imageNamed:@"ConversationChannelInlineShareIcon.png"];
+        [iconImage drawAtPoint:CGPointMake(CGFloor((29.0f - iconImage.size.width) / 2.0f), CGFloor((29.0f - iconImage.size.height) / 2.0f))];
+        
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
         
         cachedImageColor = _monochromeColor;
     }

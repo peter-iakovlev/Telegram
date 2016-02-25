@@ -41,4 +41,7 @@
 + (void)openDirectionsInYandexNavigatorWithCoordinate:(CLLocationCoordinate2D)coordinate;
 + (bool)isYandexNavigatorInstalled;
 
++ (void)openWazeWithCoordinate:(CLLocationCoordinate2D)coordinate withDirections:(bool)withDirections;
++ (bool)isWazeInstalled;
+
 @end

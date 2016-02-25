@@ -41,6 +41,16 @@
     
     [os writeString:_message];
     [os writeInt64:_random_id];
+    
+    if (_flags & (1 << 3)) {
+        int32_t vectorSignature = TL_UNIVERSAL_VECTOR_CONSTRUCTOR;
+        [os writeInt32:vectorSignature];
+        
+        [os writeInt32:(int32_t)_entities.count];
+        for (TLMessageEntity *entity in _entities) {
+            TLMetaClassStore::serializeObject(os, entity, true);
+        }
+    }
 }
 
 - (id<TLObject>)TLdeserialize:(NSInputStream *)__unused is signature:(int32_t)__unused signature environment:(id<TLSerializationEnvironment>)__unused environment context:(TLSerializationContext *)__unused context error:(__autoreleasing NSError **)__unused error

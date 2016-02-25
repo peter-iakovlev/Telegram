@@ -45,8 +45,8 @@ NSString *const TGComposeControllerIdentifier = @"TGComposeController";
 
 - (void)configureWithContext:(id<TGInterfaceContext>)__unused context
 {
-    self.recipientLabel.text = TGLocalized(@"Compose.AddContact");
-    self.messageLabel.text = TGLocalized(@"Compose.CreateMessage");
+    self.recipientLabel.text = TGLocalized(@"Watch.Compose.AddContact");
+    self.messageLabel.text = TGLocalized(@"Watch.Compose.CreateMessage");
     [self setSendButtonEnabled:false];
 }
 
@@ -179,7 +179,7 @@ NSString *const TGComposeControllerIdentifier = @"TGComposeController";
         }
         else
         {
-            self.recipientLabel.text = TGLocalized(@"Compose.AddContact");
+            self.recipientLabel.text = TGLocalized(@"Watch.Compose.AddContact");
             self.recipientLabel.textColor = [UIColor hexColor:0xaeb4bf];
         }
         
@@ -207,7 +207,7 @@ NSString *const TGComposeControllerIdentifier = @"TGComposeController";
         }
         else
         {
-            self.messageLabel.text = TGLocalized(@"Compose.CreateMessage");
+            self.messageLabel.text = TGLocalized(@"Watch.Compose.CreateMessage");
             self.messageLabel.textColor = [UIColor hexColor:0xaeb4bf];
         }
         
@@ -259,7 +259,7 @@ NSString *const TGComposeControllerIdentifier = @"TGComposeController";
         if (messageLocation.venue != nil)
             self.messageLabel.text = messageLocation.venue.title;
         else
-            self.messageLabel.text = TGLocalized(@"Compose.CurrentLocation");
+            self.messageLabel.text = TGLocalized(@"Watch.Compose.CurrentLocation");
         self.messageLabel.textColor = [UIColor hexColor:0xaeb4bf];
         
         [self updateSendButtonEnabled];
@@ -268,7 +268,7 @@ NSString *const TGComposeControllerIdentifier = @"TGComposeController";
 
 - (void)setSendButtonEnabled:(bool)enabled
 {
-    NSAttributedString *buttonTitle = [[NSAttributedString alloc] initWithString:TGLocalized(@"Compose.Send") attributes:@{ NSForegroundColorAttributeName:enabled ? [UIColor hexColor:0x2094fa] : [UIColor hexColor:0xaeb4bf], NSFontAttributeName: [UIFont systemFontOfSize:15] }];
+    NSAttributedString *buttonTitle = [[NSAttributedString alloc] initWithString:TGLocalized(@"Watch.Compose.Send") attributes:@{ NSForegroundColorAttributeName:enabled ? [UIColor hexColor:0x2094fa] : [UIColor hexColor:0xaeb4bf], NSFontAttributeName: [UIFont systemFontOfSize:15] }];
 
     self.sendButton.enabled = enabled;
     self.sendButton.attributedTitle = buttonTitle;

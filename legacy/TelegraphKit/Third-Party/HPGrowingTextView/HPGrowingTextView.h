@@ -83,8 +83,9 @@
 @property (nonatomic,strong) UIColor *textColor;
 @property (nonatomic) NSTextAlignment textAlignment;
 
-- (void)refreshHeight;
+- (void)refreshHeight:(bool)textChanged;
 
 - (void)setText:(NSString *)newText animated:(bool)animated;
+- (void)selectRange:(NSRange)range;
 
 @end

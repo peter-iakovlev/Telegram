@@ -20,11 +20,7 @@
 @property (nonatomic, strong) UIView *wrappingClip;
 @property (nonatomic, strong) UIView *wrappingView;
 
-@property (nonatomic, strong) UIImageView *customBackgroundView;
-@property (nonatomic, strong) UIImageView *customActiveBackgroundView;
-
 @property (nonatomic, strong) UIImageView *textFieldBackground;
-@property (nonatomic, strong) UITextField *customTextField;
 
 @property (nonatomic, strong) UIImage *normalTextFieldBackgroundImage;
 @property (nonatomic, strong) UIImage *activeTextFieldBackgroundImage;
@@ -49,6 +45,24 @@
 + (CGFloat)searchBarBaseHeight
 {
     return 44.0f;
+}
+
+- (CGFloat)baseHeight {
+    if (self.showsScopeBar)
+        return 44.0f;
+    return [self inputHeight] + 12.0f;
+}
+
+- (CGFloat)inputContentOffset {
+    return _style == TGSearchBarStyleLightAlwaysPlain ? 5.0f : 0.0f;
+}
+
+- (CGFloat)searchIconOffset {
+    return _style == TGSearchBarStyleLightAlwaysPlain ? TGRetinaPixel : 0.0f;
+}
+
+- (CGFloat)inputHeight {
+    return _style == TGSearchBarStyleLightAlwaysPlain ? 40.0f : 28.0f;
 }
 
 + (CGFloat)searchBarScopeHeight
@@ -98,10 +112,12 @@
             backgroundFileName = @"SearchBarBackgroundDark.png";
             backgroundActiveFileName = @"SearchBarBackgroundDark.png";
         }
-        else if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain)
+        else if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain || _style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader)
         {
             static UIImage *image = nil;
             static UIImage *imagePlain = nil;
+            static UIImage *imageHeader = nil;
+            
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
@@ -117,9 +133,31 @@
                 
                 image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];
                 UIGraphicsEndImageContext();
+                
+                
+                UIGraphicsBeginImageContextWithOptions(CGSizeMake(1.0f, 3.0f), true, 0.0f);
+                context = UIGraphicsGetCurrentContext();
+                CGContextSetFillColorWithColor(context, UIColorRGB(0xf7f7f7).CGColor);
+                CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 3.0f));
+                
+                CGContextSetFillColorWithColor(context, UIColorRGB(0xc8c7cc).CGColor);
+                CGContextFillRect(context, CGRectMake(0.0f, 3.0f - separatorHeight, 1.0f, separatorHeight));
+                
+                imageHeader = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];
+                
+                UIGraphicsEndImageContext();
             });
-            backgroundManualImage = _style == TGSearchBarStyleLight ? image : imagePlain;
-            backgroundManualActiveImage = image;
+            
+            if (_style == TGSearchBarStyleHeader)
+            {
+                backgroundManualImage = imageHeader;
+                backgroundManualActiveImage = imageHeader;
+            }
+            else
+            {
+                backgroundManualImage = _style == TGSearchBarStyleLight ? image : imagePlain;
+                backgroundManualActiveImage = _style == TGSearchBarStyleLightAlwaysPlain ? imagePlain : image;
+            }
         }
         
         UIImage *backgroundImage = nil;
@@ -152,7 +190,7 @@
             placeholderColor = UIColorRGB(0x8e8e93);
         else if (_style == TGSearchBarStyleDark)
             placeholderColor = [UIColor whiteColor];
-        else if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain)
+        else if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain || _style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader)
             placeholderColor = UIColorRGB(0x8e8e93);
         
         _placeholderLabel = [[UILabel alloc] init];
@@ -160,7 +198,7 @@
         _placeholderLabel.userInteractionEnabled = false;
         _placeholderLabel.textColor = placeholderColor;
         _placeholderLabel.backgroundColor = [UIColor clearColor];
-        _placeholderLabel.font = TGSystemFontOfSize(14.0f);
+        _placeholderLabel.font = TGSystemFontOfSize(style == TGSearchBarStyleLightAlwaysPlain ? 16.0f : 14.0f);
         _placeholderLabel.text = TGLocalized(@"Common.Search");
         [_wrappingView addSubview:_placeholderLabel];
         
@@ -170,8 +208,10 @@
             iconFileName = @"SearchBarIcon.png";
         else if (_style == TGSearchBarStyleDark)
             iconFileName = @"SearchBarIconDark.png";
-        else if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain)
+        else if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain || _style == TGSearchBarStyleHeader)
             iconFileName = @"SearchBarIconLight.png";
+        else if (_style == TGSearchBarStyleLightAlwaysPlain)
+            iconFileName = @"SearchBarIconLightLarge.png";
         
         _customSearchIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:iconFileName]];
         _customSearchIcon.userInteractionEnabled = false;
@@ -196,17 +236,22 @@
     }
 }
 
+- (void)setFrame:(CGRect)frame
+{
+    [super setFrame:frame];
+}
+
 - (void)sizeToFit
 {
     CGFloat requiredHeight = 0;
     
-    if (_searchBarShouldShowScopeControl && ![self landscapeMode])
+    if (_searchBarShouldShowScopeControl && ![self landscapeMode] && !_scopeBarCollapsed)
     {
-        requiredHeight = [TGSearchBar searchBarBaseHeight] + [TGSearchBar searchBarScopeHeight];
+        requiredHeight = [self baseHeight] + [TGSearchBar searchBarScopeHeight];
     }
     else
     {
-        requiredHeight = [TGSearchBar searchBarBaseHeight];
+        requiredHeight = [self baseHeight];
     }
     
     CGRect frame = self.frame;
@@ -231,9 +276,44 @@
             fileName = @"SearchInputFieldDark.png";
         else if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain)
             fileName = @"SearchInputFieldLight.png";
-        
+        else if (_style == TGSearchBarStyleLightAlwaysPlain)
+        {
+            static UIImage *image = nil;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^
+            {
+                CGFloat diameter = 10.0f;
+                UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+                CGContextRef context = UIGraphicsGetCurrentContext();
+                CGContextSetFillColorWithColor(context, UIColorRGB(0xe8e8e8).CGColor);
+                CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+                image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
+                UIGraphicsEndImageContext();
+            });
+            
+            _normalTextFieldBackgroundImage = image;
+            return _normalTextFieldBackgroundImage;
+        }
+        else if (_style == TGSearchBarStyleHeader)
+        {
+            static UIImage *headerImage = nil;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^
+            {
+                CGFloat diameter = 10.0f;
+                UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+                CGContextRef context = UIGraphicsGetCurrentContext();
+                CGContextSetFillColorWithColor(context, UIColorRGB(0xe4e4e4).CGColor);
+                CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+                headerImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
+                UIGraphicsEndImageContext();
+            });
+            
+            _normalTextFieldBackgroundImage = headerImage;
+            return _normalTextFieldBackgroundImage;
+        }
         UIImage *rawImage = [UIImage imageNamed:fileName];
-        _normalTextFieldBackgroundImage = [rawImage stretchableImageWithLeftCapWidth:(int)(rawImage.size.width / 2) topCapHeight:1];
+        _normalTextFieldBackgroundImage = [rawImage stretchableImageWithLeftCapWidth:(int)(rawImage.size.width / 2) topCapHeight:(int)(rawImage.size.height / 2)];
     }
     
     return _normalTextFieldBackgroundImage;
@@ -251,12 +331,21 @@
             fileName = @"SearchInputFieldDark.png";
         else if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain)
             fileName = @"SearchInputFieldLight.png";
-        
+        else if (_style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader) {
+            _activeTextFieldBackgroundImage = [self normalTextFieldBackgroundImage];
+            return _activeTextFieldBackgroundImage;
+        }
+
         UIImage *rawImage = [UIImage imageNamed:fileName];
-        _activeTextFieldBackgroundImage = [rawImage stretchableImageWithLeftCapWidth:(int)(rawImage.size.width / 2) topCapHeight:1];
+        _activeTextFieldBackgroundImage = [rawImage stretchableImageWithLeftCapWidth:(int)(rawImage.size.width / 2) topCapHeight:(int)(rawImage.size.height / 2)];
     }
     
     return _activeTextFieldBackgroundImage;
+}
+
+- (UITextField *)maybeCustomTextField
+{
+    return _customTextField;
 }
 
 - (UITextField *)customTextField
@@ -268,7 +357,7 @@
         frame.origin.x += 27;
         frame.size.width -= 27 + 8 + 14;
         _customTextField = [[UITextField alloc] initWithFrame:frame];
-        _customTextField.font = TGSystemFontOfSize(13);
+        _customTextField.font = _placeholderLabel.font;
         if (iosMajorVersion() >= 7)
             _customTextField.textAlignment = NSTextAlignmentNatural;
         _customTextField.autocapitalizationType = UITextAutocapitalizationTypeNone;
@@ -277,7 +366,7 @@
         UIColor *textColor = nil;
         UIImage *clearImage = nil;
         
-        if (_style == TGSearchBarStyleDefault || _style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain)
+        if (_style == TGSearchBarStyleDefault || _style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain || _style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader)
         {
             textColor = [UIColor blackColor];
             clearImage = [UIImage imageNamed:@"SearchBarClearIcon.png"];
@@ -317,12 +406,12 @@
         _cancelButtonWidth = [TGLocalized(@"Common.Cancel") sizeWithFont:TGSystemFontOfSize(17.0f)].width + 11.0f;
         
         CGRect textFieldBackgroundFrame = _textFieldBackground.frame;
-        _customCancelButton = [[TGModernButton alloc] initWithFrame:CGRectMake(textFieldBackgroundFrame.origin.x + textFieldBackgroundFrame.size.width + 10, 0, _cancelButtonWidth, [TGSearchBar searchBarBaseHeight])];
+        _customCancelButton = [[TGModernButton alloc] initWithFrame:CGRectMake(textFieldBackgroundFrame.origin.x + textFieldBackgroundFrame.size.width + 10, 0, _cancelButtonWidth, [self baseHeight])];
         [_customCancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
         
         UIColor *buttonColor = nil;
         
-        if (_style == TGSearchBarStyleDefault || _style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain)
+        if (_style == TGSearchBarStyleDefault || _style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain || _style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader)
             buttonColor = TGAccentColor();
         else if (_style == TGSearchBarStyleDark)
             buttonColor = [UIColor whiteColor];
@@ -350,7 +439,7 @@
         if (showsCancelButton)
         {
             [self customCancelButton];
-            _customCancelButton.hidden = false;
+            _customCancelButton.hidden = _hidesCancelButton;
             
             if (_customScopeButtonTitles.count > 1)
             {
@@ -449,7 +538,7 @@
     float retinaPixel = TGIsRetina() ? 0.5f : 0.0f;
     const float scopeBarHorizontalWidth = 220;
     
-    CGFloat rightPadding = _showsCustomCancelButton ? ((_customScopeButtonContainer != nil && landscapeMode ? scopeBarHorizontalWidth : 0) + _cancelButtonWidth) : 0.0f;
+    CGFloat rightPadding = _showsCustomCancelButton && !_hidesCancelButton ? ((_customScopeButtonContainer != nil && landscapeMode ? scopeBarHorizontalWidth : 0) + _cancelButtonWidth) : 0.0f;
     
     _customBackgroundView.frame = CGRectMake(0, ((_showsCustomCancelButton || _alwaysExtended) ? -20.0f : 0.0f), self.frame.size.width, self.frame.size.height + (_showsCustomCancelButton || _alwaysExtended ? 20.0f : 0.0f));
     _customActiveBackgroundView.frame = _customBackgroundView.frame;
@@ -457,13 +546,13 @@
     CGSize placeholderSize = [_placeholderLabel.text sizeWithFont:_placeholderLabel.font];
     placeholderSize.width = MIN(placeholderSize.width, self.frame.size.width - rightPadding - 40.0f);
     
-    _textFieldBackground.frame = CGRectMake(8, 9 + [self topPadding], self.frame.size.width - 16 - rightPadding, _textFieldBackground.frame.size.height);
+    _textFieldBackground.frame = CGRectMake(8, 9 + [self topPadding], self.frame.size.width - 16 - rightPadding, [self inputHeight]);
     
-    _customSearchIcon.frame = CGRectMake(_showsCustomCancelButton ? (_textFieldBackground.frame.origin.x + 8.0f) : ((CGFloor((self.frame.size.width - placeholderSize.width) / 2) + 10 + TGRetinaPixel) - 20), 16 + retinaPixel + [self topPadding], _customSearchIcon.frame.size.width, _customSearchIcon.frame.size.height);
+    _customSearchIcon.frame = CGRectMake(_showsCustomCancelButton ? (_textFieldBackground.frame.origin.x + 8.0f) : ((CGFloor((self.frame.size.width - placeholderSize.width) / 2) + 10 + TGRetinaPixel) - 20), [self searchIconOffset] + [self inputContentOffset] + 16 + retinaPixel + [self topPadding], _customSearchIcon.frame.size.width, _customSearchIcon.frame.size.height);
     
     _customSearchActivityIndicator.frame = (CGRect){{CGFloor(_customSearchIcon.frame.origin.x + (_customSearchIcon.frame.size.width - _customSearchActivityIndicator.frame.size.width) / 2.0f), CGFloor(_customSearchIcon.frame.origin.y + (_customSearchIcon.frame.size.height - _customSearchActivityIndicator.frame.size.height) / 2.0f) + 1.0f + TGRetinaPixel}, _customSearchActivityIndicator.frame.size};
     
-    _placeholderLabel.frame = CGRectMake(_showsCustomCancelButton ? (TGIsRTL() ? (CGRectGetMaxX(_textFieldBackground.frame) - placeholderSize.width - 32.0f) : 36) : (CGFloor((self.frame.size.width - placeholderSize.width) / 2) + 10 + TGRetinaPixel), 14 + [self topPadding], placeholderSize.width, placeholderSize.height);
+    _placeholderLabel.frame = CGRectMake(_showsCustomCancelButton ? (TGIsRTL() ? (CGRectGetMaxX(_textFieldBackground.frame) - placeholderSize.width - 32.0f) : 36) : (CGFloor((self.frame.size.width - placeholderSize.width) / 2) + 10 + TGRetinaPixel), [self inputContentOffset] + 14 + [self topPadding], placeholderSize.width, placeholderSize.height);
     
     if (_customTextField != nil)
     {
@@ -473,12 +562,12 @@
         frame.size.width -= 27 + 8 + 24;
         _customTextField.frame = frame;
         
-        _customClearButton.frame = CGRectMake(CGRectGetMaxX(_textFieldBackground.frame) - 22, 16 + [self topPadding], _customClearButton.frame.size.width, _customClearButton.frame.size.height);
+        _customClearButton.frame = CGRectMake(CGRectGetMaxX(_textFieldBackground.frame) - 22, [self inputContentOffset] + 16 + [self topPadding], _customClearButton.frame.size.width, _customClearButton.frame.size.height);
     }
     
     if (_customCancelButton != nil)
     {
-        _customCancelButton.frame = CGRectMake(self.frame.size.width + (_showsCustomCancelButton ? (-_customCancelButton.frame.size.width - 9) : 9), [self topPadding], _cancelButtonWidth, [TGSearchBar searchBarBaseHeight]);
+        _customCancelButton.frame = CGRectMake(self.frame.size.width + (_showsCustomCancelButton ? (-_customCancelButton.frame.size.width - 9) : 9), [self topPadding] + 2.0f, _cancelButtonWidth, [self baseHeight]);
     }
     
     if (_customScopeButtonContainer != nil)
@@ -517,12 +606,15 @@
 {
     _searchBarShouldShowScopeControl = searchBarShouldShowScopeControl;
     
+    if (_searchBarShouldShowScopeControl)
+        self.customScopeButtonContainer.hidden = false;
+    
     CGFloat requiredHeight = 0;
     
     if (_searchBarShouldShowScopeControl && ![self landscapeMode])
-        requiredHeight = [TGSearchBar searchBarBaseHeight] + [TGSearchBar searchBarScopeHeight];
+        requiredHeight = [self baseHeight] + [TGSearchBar searchBarScopeHeight];
     else
-        requiredHeight = [TGSearchBar searchBarBaseHeight];
+        requiredHeight = [self baseHeight];
     
     if (ABS(requiredHeight - self.frame.size.height) > FLT_EPSILON)
     {   
@@ -530,6 +622,12 @@
         if ([delegate respondsToSelector:@selector(searchBar:willChangeHeight:)])
             [delegate searchBar:self willChangeHeight:requiredHeight];
     }
+}
+
+- (void)setCustomScopeBarHidden:(bool)hidden
+{
+    self.customScopeButtonContainer.alpha = hidden ? 0.0f : 1.0f;
+    self.customScopeButtonContainer.userInteractionEnabled = !hidden;
 }
 
 #pragma mark -
@@ -762,7 +860,7 @@
     _cancelButtonWidth = [TGLocalized(@"Common.Cancel") sizeWithFont:TGSystemFontOfSize(17.0f)].width + 11.0f;
     
     CGRect textFieldBackgroundFrame = _textFieldBackground.frame;
-    _customCancelButton.frame = CGRectMake(textFieldBackgroundFrame.origin.x + textFieldBackgroundFrame.size.width + 10, 0, _cancelButtonWidth, [TGSearchBar searchBarBaseHeight]);
+    _customCancelButton.frame = CGRectMake(textFieldBackgroundFrame.origin.x + textFieldBackgroundFrame.size.width + 10, 0, _cancelButtonWidth, [self baseHeight]);
     [_customCancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
     
     [_customSegmentedControl removeAllSegments];

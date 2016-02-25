@@ -29,13 +29,18 @@
 #import "TGMessageModernConversationItem.h"
 
 #import "TGBotSignals.h"
+#import "TGRecentContextBotsSignal.h"
 
 #import "TGModernViewContext.h"
+
+#import "TGPeerIdAdapter.h"
+#import "TGProgressWindow.h"
 
 typedef enum {
     TGGroupParticipationStatusMember = 0,
     TGGroupParticipationStatusLeft = 1,
-    TGGroupParticipationStatusKicked = 2
+    TGGroupParticipationStatusKicked = 2,
+    TGGroupParticipationStatusDeactivated = 3
 } TGGroupParticipationStatus;
 
 @interface TGGroupModernConversationCompanion ()
@@ -103,6 +108,8 @@ typedef enum {
         return TGLocalized(@"Conversation.StatusKickedFromGroup");
     else if (participationStatus == TGGroupParticipationStatusLeft)
         return TGLocalized(@"Conversation.StatusLeftGroup");
+    else if (participationStatus == TGGroupParticipationStatusDeactivated)
+        return TGLocalized(@"Conversation.StatusGroupDeactivated");
     else
     {
         if (onlineCount <= 1)
@@ -200,6 +207,8 @@ typedef enum {
         return TGGroupParticipationStatusKicked;
     else if (conversation.leftChat)
         return TGGroupParticipationStatusLeft;
+    else if (conversation.isDeactivated)
+        return TGGroupParticipationStatusDeactivated;
     
     return TGGroupParticipationStatusMember;
 }
@@ -387,6 +396,11 @@ typedef enum {
     return TGAppDelegateInstance.autoDownloadPhotosInGroups;
 }
 
+- (bool)shouldAutomaticallyDownloadAnimations
+{
+    return TGAppDelegateInstance.autoPlayAnimations;
+}
+
 - (bool)shouldAutomaticallyDownloadAudios
 {
     return TGAppDelegateInstance.autoDownloadAudioInGroups;
@@ -566,7 +580,41 @@ typedef enum {
     }
     else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId]])
     {
-        _conversation = ((SGraphObjectNode *)resource).object;
+        TGConversation *updatedConversation = ((SGraphObjectNode *)resource).object;
+        
+        if (!_conversation.isDeactivated && updatedConversation.isDeactivated && updatedConversation.migratedToChannelId != 0) {
+            [ActionStageInstance() removeWatcher:self];
+            
+            TGDispatchOnMainThread(^{
+                TGModernConversationController *controller = self.controller;
+                if (controller.navigationController.topViewController == controller) {
+                    __block TGProgressWindow *progressWindow = nil;
+                    progressWindow = [[TGProgressWindow alloc] init];
+                    [progressWindow show:true];
+                    
+                    __weak TGGroupModernConversationCompanion *weakSelf = self;
+                    [[[[[[TGDatabaseInstance() existingChannel:TGPeerIdFromChannelId(updatedConversation.migratedToChannelId)] take:1] timeout:5.0 onQueue:[SQueue concurrentDefaultQueue] orSignal:[SSignal fail:nil]] deliverOn:[SQueue mainQueue]] onDispose:^{
+                        TGDispatchOnMainThread(^{
+                            [progressWindow dismiss:true];
+                        });
+                    }] startWithNext:^(TGConversation *next) {
+                        TGDispatchOnMainThread(^{
+                            [[TGInterfaceManager instance] navigateToConversationWithId:next.conversationId conversation:nil];
+                        });
+                    } error:^(__unused id error) {
+                        __strong TGGroupModernConversationCompanion *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            TGModernConversationController *controller = strongSelf.controller;
+                            [controller.navigationController popToRootViewControllerAnimated:true];
+                        }
+                    } completed:nil];
+                }
+            });
+            
+            return;
+        }
+        
+        _conversation = updatedConversation;
         _hasBots = [self conversationHasBots:_conversation hasSingleBot:&_hasSingleBot];
         self.viewContext.commandsEnabled = _hasBots;
         bool hasBots = _hasBots;
@@ -632,13 +680,13 @@ typedef enum {
     return true;
 }
 
-- (SSignal *)userListForMention:(NSString *)mention
+- (SSignal *)userListForMention:(NSString *)mention canBeContextBot:(bool)canBeContextBot
 {
     NSString *normalizedMention = [mention lowercaseString];
     
+    NSMutableDictionary *userDict = [[NSMutableDictionary alloc] init];
     if (_conversation.chatParticipants != nil)
     {
-        NSMutableDictionary *userDict = [[NSMutableDictionary alloc] init];
         for (NSNumber *nUid in _conversation.chatParticipants.chatParticipantUids)
         {
             TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
@@ -647,34 +695,70 @@ typedef enum {
                 userDict[@(user.uid)] = user;
             }
         }
-        
-        NSMutableArray *sortedUserList = [[NSMutableArray alloc] init];
-        
-        TGModernConversationController *controller = self.controller;
-        for (TGMessageModernConversationItem *item in [controller _items])
-        {
-            int32_t uid = (int32_t)(item->_message.fromUid);
-            TGUser *user = userDict[@(uid)];
-            if (user != nil)
-            {
-                [sortedUserList addObject:user];
-                [userDict removeObjectForKey:@(uid)];
-                if (userDict.count == 0)
-                    break;
-            }
-        }
-        
-        NSArray *sortedRemainingUsers = [[userDict allValues] sortedArrayUsingComparator:^NSComparisonResult(TGUser *user1, TGUser *user2)
-        {
-            return [user1.displayName compare:user2.displayName];
-        }];
-        
-        [sortedUserList addObjectsFromArray:sortedRemainingUsers];
-        
-        return [SSignal single:sortedUserList];
     }
     
-    return [SSignal single:@[]];
+    NSMutableArray *sortedUserList = [[NSMutableArray alloc] init];
+    
+    TGModernConversationController *controller = self.controller;
+    for (TGMessageModernConversationItem *item in [controller _items])
+    {
+        int32_t uid = (int32_t)(item->_message.fromUid);
+        TGUser *user = userDict[@(uid)];
+        if (user != nil)
+        {
+            [sortedUserList addObject:user];
+            [userDict removeObjectForKey:@(uid)];
+            if (userDict.count == 0)
+                break;
+        }
+    }
+    
+    return [[canBeContextBot ? [TGRecentContextBotsSignal recentBots] : [SSignal single:@[]] mapToSignal:^SSignal *(NSArray *userIds) {
+        return [TGDatabaseInstance() modify:^id{
+            NSMutableArray *users = [[NSMutableArray alloc] initWithArray:[userDict allValues]];
+            NSMutableArray *contextBots = [[NSMutableArray alloc] init];
+            
+            NSMutableSet *existingUsers = [[NSMutableSet alloc] init];
+            for (TGUser *user in users) {
+                [existingUsers addObject:@(user.uid)];
+            }
+            
+            for (TGUser *user in sortedUserList) {
+                [existingUsers addObject:@(user.uid)];
+            }
+            
+            NSString *normalizedMention = [mention lowercaseString];
+            for (NSNumber *nUserId in userIds) {
+                if (![existingUsers containsObject:nUserId]) {
+                    [existingUsers addObject:nUserId];
+                    
+                    TGUser *user = [TGDatabaseInstance() loadUser:[nUserId intValue]];
+                    if (user != nil && (normalizedMention.length == 0 || [[user.userName lowercaseString] hasPrefix:normalizedMention])) {
+                        if (user.isContextBot) {
+                            [contextBots addObject:user];
+                        } else {
+                            [users addObject:user];
+                        }
+                    }
+                }
+            }
+            
+            NSArray *sortedContextBots = [contextBots sortedArrayUsingComparator:^NSComparisonResult(TGUser *user1, TGUser *user2) {
+                return [user1.displayName compare:user2.displayName];
+            }];
+            
+            NSArray *sortedRemainingUsers = [users sortedArrayUsingComparator:^NSComparisonResult(TGUser *user1, TGUser *user2) {
+                return [user1.displayName compare:user2.displayName];
+            }];
+            
+            NSMutableArray *finalList = [[NSMutableArray alloc] init];
+            [finalList addObjectsFromArray:sortedContextBots];
+            [finalList addObjectsFromArray:sortedUserList];
+            [finalList addObjectsFromArray:sortedRemainingUsers];
+            
+            return finalList;
+        }];
+    }] deliverOn:[SQueue mainQueue]];
 }
 
 - (SSignal *)commandListForCommand:(NSString *)command

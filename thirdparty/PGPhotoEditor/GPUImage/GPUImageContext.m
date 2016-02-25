@@ -204,7 +204,7 @@ static void *openGLESContextQueueKey;
         adjustedSize.width = ((CGFloat)maxTextureSize / inputSize.height) * inputSize.width;
     }
 
-    return adjustedSize;
+    return CGSizeMake(floor(adjustedSize.width), floor(adjustedSize.height));
 }
 
 - (void)presentBufferForDisplay

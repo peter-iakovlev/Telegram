@@ -8,6 +8,8 @@
 
 #import "TGImageView.h"
 
+#import <SSignalKit/SSignalKit.h>
+
 #import "TGModernView.h"
 
 typedef enum {
@@ -54,6 +56,8 @@ typedef enum {
 @property (nonatomic) CGFloat progress;
 @property (nonatomic) NSTimeInterval completeDuration;
 @property (nonatomic, strong) UIColor *overlayBackgroundColorHint;
+@property (nonatomic) UIEdgeInsets inlineVideoInsets;
+@property (nonatomic) CGSize inlineVideoSize;
 
 @property (nonatomic, copy) void (^progressBlock)(TGImageView *, CGFloat);
 @property (nonatomic, copy) void (^completionBlock)(TGImageView *);
@@ -65,10 +69,12 @@ typedef enum {
 - (void)setTimestampColor:(UIColor *)color;
 - (void)setTimestampHidden:(bool)timestampHidden;
 - (void)setTimestampPosition:(int)timestampPosition;
-- (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated;
+- (void)setTimestampString:(NSString *)timestampString signatureString:(NSString *)signatureString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated;
 - (void)setAdditionalDataString:(NSString *)additionalDataString animated:(bool)animated;
 - (void)setDisplayTimestampProgress:(bool)displayTimestampProgress;
 - (void)setIsBroadcast:(bool)isBroadcast;
 - (void)setDetailStrings:(NSArray *)detailStrings detailStringsEdgeInsets:(UIEdgeInsets)detailStringsEdgeInsets animated:(bool)animated;
+
+- (void)setVideoPathSignal:(SSignal *)signal;
 
 @end

@@ -14,7 +14,9 @@ typedef enum {
     TGMessageFlagBroadcast = 1,
     TGMessageFlagLayerMask = 2 | 4 | 8 | 16 | 32,
     TGMessageFlagContainsMention = 64,
-    TGMessageFlagForceReply = (1 << 7)
+    TGMessageFlagForceReply = (1 << 7),
+    TGMessageFlagLayerMaskExtended = 0xff << 8,
+    TGMessageFlagSilent = (1 << 16)
 } TGMessageFlags;
 
 
@@ -98,7 +100,6 @@ typedef enum {
     copyMessage->_mid = _mid;
     copyMessage->_sortKey = _sortKey;
     copyMessage->_pts = _pts;
-    copyMessage->_ptsCount = _ptsCount;
     copyMessage->_unread = _unread;
     copyMessage->_outgoing = _outgoing;
     copyMessage->_deliveryState = _deliveryState;
@@ -164,14 +165,29 @@ typedef enum {
     return _flags & TGMessageFlagForceReply;
 }
 
+- (void)setIsSilent:(bool)isSilent {
+    if (isSilent) {
+        _flags |= TGMessageFlagSilent;
+    } else {
+        _flags &= ~TGMessageFlagSilent;
+    }
+}
+
+- (bool)isSilent {
+    return _flags & TGMessageFlagSilent;
+}
+
 - (void)setLayer:(NSUInteger)layer
 {
-    _flags = (_flags & ~TGMessageFlagLayerMask) | ((layer & (1 | 2 | 4 | 8 | 16)) << 1);
+    int32_t layerLow = (int32_t)MIN((int32_t)layer, 31);
+    int32_t layerHigh = (int32_t)((int32_t)layer - layerLow);
+    _flags = (_flags & ~TGMessageFlagLayerMask) | ((layerLow & (1 | 2 | 4 | 8 | 16)) << 1);
+    _flags = (_flags & ~TGMessageFlagLayerMaskExtended) | ((layerHigh & 0xff) << 8);
 }
 
 - (NSUInteger)layer
 {
-    NSUInteger value = (_flags & TGMessageFlagLayerMask) >> 1;
+    NSUInteger value = [TGMessage layerFromFlags:_flags];
     if (value < 1)
         value = 1;
     return value;
@@ -192,7 +208,9 @@ typedef enum {
 
 + (NSUInteger)layerFromFlags:(int64_t)flags
 {
-    NSUInteger value = (flags & TGMessageFlagLayerMask) >> 1;
+    int32_t layerLow = (int32_t)((flags & TGMessageFlagLayerMask) >> 1);
+    int32_t layerHigh = (int32_t)((flags & TGMessageFlagLayerMaskExtended) >> 8);
+    int32_t value = layerLow + layerHigh;
     if (value < 1)
         value = 1;
     return value;
@@ -252,7 +270,7 @@ typedef enum {
     unichar lastChar = 0;
     
     SEL sel = @selector(characterAtIndex:);
-    unichar (*characterAtIndexImp)(id, SEL, NSUInteger) = (typeof(characterAtIndexImp))[text methodForSelector:sel];
+    unichar (*characterAtIndexImp)(id, SEL, NSUInteger) = (unichar (*)(id, SEL, NSUInteger))[text methodForSelector:sel];
     
     for (int i = 0; i < length; i++)
     {
@@ -371,7 +389,7 @@ typedef enum {
                                 NSRange mentionRange = NSMakeRange(range.location - 1, range.length + 1);
                                 
                                 unichar mentionStartChar = [text characterAtIndex:mentionRange.location + 1];
-                                if (!(mentionRange.length <= 5 || (mentionStartChar >= '0' && mentionStartChar <= '9')))
+                                if (!(mentionRange.length <= 1 || (mentionStartChar >= '0' && mentionStartChar <= '9')))
                                 {
                                     [results addObject:[[TGTextCheckingResult alloc] initWithRange:mentionRange type:TGTextCheckingResultTypeMention contents:[text substringWithRange:range]]];
                                 }
@@ -429,7 +447,7 @@ typedef enum {
                 NSRange range = NSMakeRange(mentionStart + 1, length - mentionStart - 1);
                 NSRange mentionRange = NSMakeRange(range.location - 1, range.length + 1);
                 unichar mentionStartChar = [text characterAtIndex:mentionRange.location + 1];
-                if (!(mentionRange.length <= 5 || (mentionStartChar >= '0' && mentionStartChar <= '9')))
+                if (!(mentionRange.length <= 2 || (mentionStartChar >= '0' && mentionStartChar <= '9')))
                 {
                     [results addObject:[[TGTextCheckingResult alloc] initWithRange:mentionRange type:TGTextCheckingResultTypeMention contents:[text substringWithRange:range]]];
                 }
@@ -455,8 +473,149 @@ typedef enum {
     return nil;
 }
 
++ (NSArray *)entitiesForMarkedUpText:(NSString *)text resultingText:(__autoreleasing NSString **)resultingText {
+    NSMutableArray *entities = [[NSMutableArray alloc] init];
+    
+    NSMutableString *cleanText = [[NSMutableString alloc] initWithString:text];
+    
+#ifdef DEBUG
+    while (true)
+    {
+        NSRange startRange = [cleanText rangeOfString:@"***"];
+        if (startRange.location == NSNotFound)
+            break;
+        
+        [cleanText deleteCharactersInRange:startRange];
+        
+        NSRange endRange = [cleanText rangeOfString:@"***"];
+        if (endRange.location == NSNotFound)
+            break;
+        
+        [cleanText deleteCharactersInRange:endRange];
+        
+        NSRange range = NSMakeRange(startRange.location, endRange.location - startRange.location);
+        [entities addObject:[[TGMessageEntityBold alloc] initWithRange:range]];
+    }
+    
+    while (true)
+    {
+        NSRange startRange = [cleanText rangeOfString:@"%%%"];
+        if (startRange.location == NSNotFound)
+            break;
+        
+        [cleanText deleteCharactersInRange:startRange];
+        
+        NSRange endRange = [cleanText rangeOfString:@"%%%"];
+        if (endRange.location == NSNotFound)
+            break;
+        
+        [cleanText deleteCharactersInRange:endRange];
+        
+        NSRange range = NSMakeRange(startRange.location, endRange.location - startRange.location);
+        [entities addObject:[[TGMessageEntityItalic alloc] initWithRange:range]];
+    }
+    
+    while (true)
+    {
+        NSRange startRange = [cleanText rangeOfString:@"```"];
+        if (startRange.location == NSNotFound)
+            break;
+        
+        [cleanText deleteCharactersInRange:startRange];
+        
+        NSRange endRange = [cleanText rangeOfString:@"```"];
+        if (endRange.location == NSNotFound)
+            break;
+        
+        [cleanText deleteCharactersInRange:endRange];
+        
+        NSRange range = NSMakeRange(startRange.location, endRange.location - startRange.location);
+        [entities addObject:[[TGMessageEntityPre alloc] initWithRange:range]];
+    }
+    
+    while (true)
+    {
+        NSRange startRange = [cleanText rangeOfString:@"[[["];
+        if (startRange.location == NSNotFound)
+            break;
+        
+        [cleanText deleteCharactersInRange:startRange];
+        
+        NSRange endRange = [cleanText rangeOfString:@"]]]"];
+        if (endRange.location == NSNotFound)
+            break;
+        
+        [cleanText deleteCharactersInRange:endRange];
+        
+        NSRange range = NSMakeRange(startRange.location, endRange.location - startRange.location);
+        [entities addObject:[[TGMessageEntityTextUrl alloc] initWithRange:range url:@"http://google.com"]];
+    }
+#endif
+    
+    if (resultingText != NULL) {
+        *resultingText = cleanText;
+    }
+    
+    return entities.count == 0 ? nil : entities;
+}
+
 - (NSArray *)textCheckingResults
 {
+    if (_textCheckingResults != nil) {
+        return _textCheckingResults;
+    }
+    
+    if (_mediaAttachments.count != 0) {
+        for (TGMediaAttachment *attachment in _mediaAttachments) {
+            if (attachment.type == TGMessageEntitiesAttachmentType) {
+                NSMutableArray *textCheckingResults = [[NSMutableArray alloc] init];
+                
+                for (TGMessageEntity *entity in ((TGMessageEntitiesAttachment *)attachment).entities) {
+                    if (entity.range.location + entity.range.length > _text.length) {
+                        continue;
+                    }
+                    
+                    if ([entity isKindOfClass:[TGMessageEntityBold class]]) {
+                        [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeBold contents:@""]];
+                    } else if ([entity isKindOfClass:[TGMessageEntityBotCommand class]]) {
+                        if (entity.range.length > 1) {
+                            [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeCommand contents:[_text substringWithRange:NSMakeRange(entity.range.location, entity.range.length)]]];
+                        }
+                    } else if ([entity isKindOfClass:[TGMessageEntityCode class]]) {
+                        [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeCode contents:@""]];
+                    } else if ([entity isKindOfClass:[TGMessageEntityEmail class]]) {
+                        NSString *email = [_text substringWithRange:entity.range];
+                        [textCheckingResults addObject:[NSTextCheckingResult linkCheckingResultWithRange:entity.range URL:[NSURL URLWithString:[@"mailto:" stringByAppendingString:email]]]];
+                    } else if ([entity isKindOfClass:[TGMessageEntityHashtag class]]) {
+                        if (entity.range.length > 1) {
+                            [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeHashtag contents:[_text substringWithRange:NSMakeRange(entity.range.location + 1, entity.range.length - 1)]]];
+                        }
+                    } else if ([entity isKindOfClass:[TGMessageEntityItalic class]]) {
+                        [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeItalic contents:@""]];
+                    } else if ([entity isKindOfClass:[TGMessageEntityMention class]]) {
+                        if (entity.range.length > 1) {
+                            [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeMention contents:[_text substringWithRange:NSMakeRange(entity.range.location + 1, entity.range.length - 1)]]];
+                        }
+                    } else if ([entity isKindOfClass:[TGMessageEntityPre class]]) {
+                        [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeCode contents:@""]];
+                    } else if ([entity isKindOfClass:[TGMessageEntityTextUrl class]]) {
+                        [textCheckingResults addObject:[NSTextCheckingResult linkCheckingResultWithRange:entity.range URL:[NSURL URLWithString:((TGMessageEntityTextUrl *)entity).url]]];
+                    } else if ([entity isKindOfClass:[TGMessageEntityUrl class]]) {
+                        NSString *link = [_text substringWithRange:entity.range];
+                        NSURL *url = [NSURL URLWithString:link];
+                        if (url == nil) {
+                            url = [NSURL URLWithString:[link stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+                        }
+                        [textCheckingResults addObject:[NSTextCheckingResult linkCheckingResultWithRange:entity.range URL:url]];
+                    }
+                }
+                
+                _textCheckingResults = textCheckingResults;
+                return textCheckingResults;
+            }
+        }
+    }
+    
     if (_text.length < 2 || _text.length > 1024 * 20)
         return nil;
     

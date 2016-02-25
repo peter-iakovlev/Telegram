@@ -9,6 +9,7 @@
 @interface TGWallpapersCollectionItemView ()
 {
     UILabel *_titleLabel;
+    UIImageView *_iconView;
     UIImageView *_disclosureIndicator;
     
     NSMutableArray *_imageViews;
@@ -47,6 +48,20 @@
     _titleLabel.text = title;
 }
 
+- (void)setIcon:(UIImage *)icon
+{
+    if (_iconView == nil && icon != nil)
+    {
+        _iconView = [[UIImageView alloc] initWithFrame:CGRectMake(15, (self.frame.size.height - 15), 29, 29)];
+        _iconView.contentMode = UIViewContentModeCenter;
+        [self addSubview:_iconView];
+    }
+    
+    _iconView.image = icon;
+    
+    [self setNeedsLayout];
+}
+
 - (void)setSelectedWallpaperInfo:(TGWallpaperInfo *)selectedWallpaperInfo
 {
     _selectedWallpaperInfo = selectedWallpaperInfo;
@@ -79,8 +94,14 @@
     
     CGRect bounds = self.bounds;
     
-    _titleLabel.frame = CGRectMake(15, bounds.size.height - 26 - 9, bounds.size.width - 15 - 40, 26);
+    CGFloat startingX = (_iconView.image != nil) ? 59.0f : 15.0f;
+    _titleLabel.frame = CGRectMake(startingX, bounds.size.height - 26 - 9, bounds.size.width - 15 - 40, 26);
     _disclosureIndicator.frame = CGRectMake(bounds.size.width - _disclosureIndicator.frame.size.width - 15, bounds.size.height - 29, _disclosureIndicator.frame.size.width, _disclosureIndicator.frame.size.height);
+    
+    if (_iconView.image != nil)
+    {
+        _iconView.frame = CGRectMake(_iconView.frame.origin.x, (self.frame.size.height - _iconView.frame.size.height) - 8, _iconView.frame.size.width, _iconView.frame.size.height);
+    }
     
     CGSize imageSize = CGSizeMake(91.0f, 162.0f);
     

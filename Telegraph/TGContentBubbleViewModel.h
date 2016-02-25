@@ -29,6 +29,10 @@ extern bool debugShowMessageIds;
     TGTextMessageBackgroundViewModel *_backgroundModel;
     TGModernFlatteningViewModel *_contentModel;
     TGModernTextViewModel *_authorNameModel;
+    TGModernTextViewModel *_viaUserModel;
+    TGModernTextViewModel *_authorSignatureModel;
+    NSString *_authorSignature;
+    TGUser *_viaUser;
     TGModernTextViewModel *_forwardedHeaderModel;
     TGReplyHeaderModel *_replyHeaderModel;
     TGWebpageFooterModel *_webPageFooterModel;
@@ -61,10 +65,10 @@ extern bool debugShowMessageIds;
 
 + (void)debugEnableShowMessageIds;
 
-- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer context:(TGModernViewContext *)context;
+- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer viaUser:(TGUser *)viaUser context:(TGModernViewContext *)context;
 
 - (void)setAuthorNameColor:(UIColor *)authorNameColor;
-- (void)setForwardHeader:(id)forwardPeer messageId:(int32_t)messageId;
+- (void)setForwardHeader:(id)forwardPeer forwardAuthor:(id)forwardAuthor messageId:(int32_t)messageId;
 - (void)setReplyHeader:(TGMessage *)replyHeader peer:(id)peer;
 - (void)setWebPageFooter:(TGWebPageMediaAttachment *)webPage viewStorage:(TGModernViewStorage *)viewStorage;
 

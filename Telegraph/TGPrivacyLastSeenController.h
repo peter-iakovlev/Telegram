@@ -2,10 +2,15 @@
 
 @class TGNotificationPrivacyAccountSetting;
 
+typedef enum {
+    TGPrivacySettingsModeLastSeen,
+    TGPrivacySettingsModeGroupsAndChannels
+} TGPrivacySettingsMode;
+
 @interface TGPrivacyLastSeenController : TGCollectionMenuController
 
 @property (nonatomic, copy, readonly) void (^privacySettingsChanged)(TGNotificationPrivacyAccountSetting *);
 
-- (instancetype)initWithPrivacySettings:(TGNotificationPrivacyAccountSetting *)privacySettings privacySettingsChanged:(void (^)(TGNotificationPrivacyAccountSetting *))privacySettingsChanged;
+- (instancetype)initWithMode:(TGPrivacySettingsMode)mode privacySettings:(TGNotificationPrivacyAccountSetting *)privacySettings privacySettingsChanged:(void (^)(TGNotificationPrivacyAccountSetting *))privacySettingsChanged;
 
 @end

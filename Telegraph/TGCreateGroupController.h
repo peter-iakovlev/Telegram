@@ -14,6 +14,6 @@
 
 - (void)setUserIds:(NSArray *)userIds;
 
-- (instancetype)initWithCreateChannel:(bool)createChannel;
+- (instancetype)initWithCreateChannel:(bool)createChannel createChannelGroup:(bool)createChannelGroup;
 
 @end

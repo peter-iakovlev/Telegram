@@ -2,6 +2,7 @@
 #import "TGNeoChatsController.h"
 
 #import "TGStringUtils.h"
+#import "TGDateUtils.h"
 
 #import "WKInterfaceTable+TGDataDrivenTable.h"
 #import "TGTableDeltaUpdater.h"
@@ -26,9 +27,11 @@
 #import "TGBridgeBotSignals.h"
 #import "TGBridgeStateSignal.h"
 #import "TGBridgeRemoteSignals.h"
+#import "TGBridgeAudioSignals.h"
 
 #import "TGNeoConversationRowController.h"
 #import "TGNeoConversationStaticRowController.h"
+#import "TGNeoConversationTimeRowController.h"
 #import "TGConversationFooterController.h"
 
 #import "TGUserInfoController.h"
@@ -39,6 +42,7 @@
 #import "TGLocationController.h"
 #import "TGInputController.h"
 #import "TGMessageViewController.h"
+#import "TGAudioMicAlertController.h"
 
 NSString *const TGNeoConversationControllerIdentifier = @"TGNeoConversationController";
 const NSInteger TGNeoConversationControllerDefaultBatchLimit = 8;
@@ -131,10 +135,15 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     SMetaDisposable *_botReplyMarkupDisposable;
     SMetaDisposable *_remoteActionDisposable;
     
+    SMetaDisposable *_sentMediaDisposable;
+    SMetaDisposable *_playAudioDisposable;
+    TGBridgeMediaAttachment *_pendingAudioAttachment;
+    
     TGBridgeChat *_chatModel;
     TGBridgeChatMessageListView *_messageListView;
     TGBridgeBotInfo *_botInfo;
     TGBridgeBotReplyMarkup *_botReplyMarkup;
+    NSDictionary *_peerModels;
     
     NSMutableArray *_pendingSentMessages;
     bool _shouldReadMessages;
@@ -170,6 +179,8 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         _botInfoDisposable = [[SMetaDisposable alloc] init];
         _botReplyMarkupDisposable = [[SMetaDisposable alloc] init];
         _remoteActionDisposable = [[SMetaDisposable alloc] init];
+        _sentMediaDisposable = [[SMetaDisposable alloc] init];
+        _playAudioDisposable = [[SMetaDisposable alloc] init];
         
         _pendingSentMessages = [[NSMutableArray alloc] init];
         
@@ -179,9 +190,9 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         self.table.tableDataSource = self;
         [self.table _setInitialHidden:true];
         
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(synchronizationStateUpdated:)
-                                                     name:TGSynchronizationStateNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(synchronizationStateUpdated:) name:TGSynchronizationStateNotification object:nil];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(contextUpdated:) name:TGContextNotification object:nil];
     }
     return self;
 }
@@ -197,6 +208,8 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     [_botInfoDisposable dispose];
     [_botReplyMarkupDisposable dispose];
     [_remoteActionDisposable dispose];
+    [_sentMediaDisposable dispose];
+    [_playAudioDisposable dispose];
     
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
@@ -226,7 +239,9 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         
         TGBridgeChatMessageListView *messageListView = models[TGBridgeChatMessageListViewKey];
         strongSelf->_messageListView = messageListView;
+        
         [[TGBridgeUserCache instance] storeUsers:[models[TGBridgeUsersDictionaryKey] allValues]];
+        strongSelf->_peerModels = models[TGBridgeUsersDictionaryKey];
         
         [strongSelf _readMessagesIfNeeded];
         
@@ -240,7 +255,7 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         }];
     }]];
     
-    if ([self peerIsGroup])
+    if ([self peerIsAnyGroup])
     {
         [_chatGroupDisposable setDisposable:[[TGBridgeConversationSignals conversationWithPeerId:[self peerId]] startWithNext:^(NSDictionary *next)
         {
@@ -288,7 +303,7 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         }
     }
     
-    if ([self peerIsGroup] || _hasBots)
+    if ([self peerIsAnyGroup] || _hasBots)
     {
         [_botReplyMarkupDisposable setDisposable:[[TGBridgeBotSignals botReplyMarkupForPeerId:[self peerId]] startWithNext:^(TGBridgeBotReplyMarkup *next)
         {
@@ -332,6 +347,11 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         }];
     }]];
     
+    [_sentMediaDisposable setDisposable:[[TGBridgeAudioSignals sentAudioForConversationId:[self peerId]] startWithNext:^(id next)
+    {
+        
+    }]];
+    
     [self configureHandoff];
 }
 
@@ -359,22 +379,20 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         else
             _footerOptions |= TGConversationFooterOptionsBotCommands;
     }
-    if ([self peerIsGroup] || !_hasBots)
+    if ([self peerIsAnyGroup] || !_hasBots)
         _footerOptions |= TGConversationFooterOptionsVoice;
-    
-    NSTimeInterval currentTime = [[NSDate date] timeIntervalSince1970];
     
     NSMutableArray *pendingSentMessages = [[NSMutableArray alloc] init];
     for (TGBridgeMessage *message in _pendingSentMessages)
     {
-        TGBridgeDocumentMediaAttachment *stickerAttachment = nil;
+        TGBridgeDocumentMediaAttachment *documentAttachment = nil;
         TGBridgeLocationMediaAttachment *locationAttachment = nil;
         TGBridgeAudioMediaAttachment *audioAttachment = nil;
         
         for (TGBridgeMediaAttachment *attachment in message.media)
         {
             if ([attachment isKindOfClass:[TGBridgeDocumentMediaAttachment class]])
-                stickerAttachment = (TGBridgeDocumentMediaAttachment *)attachment;
+                documentAttachment = (TGBridgeDocumentMediaAttachment *)attachment;
             else if ([attachment isKindOfClass:[TGBridgeLocationMediaAttachment class]])
                 locationAttachment = (TGBridgeLocationMediaAttachment *)attachment;
             else if ([attachment isKindOfClass:[TGBridgeAudioMediaAttachment class]])
@@ -388,7 +406,7 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
             if (!realMessage.outgoing)
                 continue;
             
-            if (fabs(realMessage.date - currentTime) > 5.0)
+            if (fabs(realMessage.date - message.date) > 4.0)
                 continue;
             
             if ([realMessage.text isEqualToString:message.text])
@@ -397,21 +415,21 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
             }
             else
             {
-                TGBridgeDocumentMediaAttachment *realStickerAttachment = nil;
+                TGBridgeDocumentMediaAttachment *realDocumentAttachment = nil;
                 TGBridgeLocationMediaAttachment *realLocationAttachment = nil;
                 TGBridgeAudioMediaAttachment *realAudioAttachment = nil;
                 
                 for (TGBridgeMediaAttachment *attachment in message.media)
                 {
                     if ([attachment isKindOfClass:[TGBridgeDocumentMediaAttachment class]])
-                        realStickerAttachment = (TGBridgeDocumentMediaAttachment *)attachment;
+                        realDocumentAttachment = (TGBridgeDocumentMediaAttachment *)attachment;
                     else if ([attachment isKindOfClass:[TGBridgeLocationMediaAttachment class]])
                         realLocationAttachment = (TGBridgeLocationMediaAttachment *)attachment;
                     else if ([attachment isKindOfClass:[TGBridgeAudioMediaAttachment class]])
                         realAudioAttachment = (TGBridgeAudioMediaAttachment *)attachment;
                 }
                 
-                if ([realStickerAttachment isEqual:stickerAttachment] || [realLocationAttachment isEqual:locationAttachment] || [realAudioAttachment isEqual:audioAttachment])
+                if ([realDocumentAttachment isEqual:documentAttachment] || [realLocationAttachment isEqual:locationAttachment] || [realAudioAttachment isEqual:audioAttachment])
                 {
                     skip = true;
                 }
@@ -429,12 +447,12 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     if (_botInfo.botDescription.length > 0)
     {
         TGChatInfo *chatInfo = [[TGChatInfo alloc] init];
-        chatInfo.title = TGLocalized(@"Bot.IntroTitle");
+        chatInfo.title = TGLocalized(@"Bot.DescriptionTitle");
         chatInfo.text = _botInfo.botDescription;
         [rowModels insertObject:chatInfo atIndex:0];
     }
     
-    _rowModels = rowModels;
+    _rowModels = [TGNeoConversationController timestampedModelsArray:rowModels];
     
     bool initial = (currentRowModels == nil);
     if (!initial)
@@ -495,7 +513,7 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
 - (void)configureHandoff
 {
     int64_t peerId = [self peerId];
-    bool isGroup = [self peerIsGroup];
+    bool isGroup = [self peerIsGroup] || [self peerIsChannel];
     
     if (isGroup)
         peerId = -peerId;
@@ -512,10 +530,17 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
 
 - (void)synchronizationStateUpdated:(NSNotification *)notification
 {
-    TGBridgeSynchronizationStateValue value = (TGBridgeSynchronizationStateValue)[notification.userInfo[TGSynchronizationStateKey] integerValue];
+    //TGBridgeSynchronizationStateValue value = (TGBridgeSynchronizationStateValue)[notification.userInfo[TGSynchronizationStateKey] integerValue];
     
     //if (self.isVisible)
     //    [self updateTitleWithState:value];
+}
+
+- (void)contextUpdated:(NSNotification *)notification
+{
+    TGBridgeContext *context = notification.userInfo[TGContextNotificationKey];
+    if (context != nil)
+        _context.context = context;
 }
 
 - (void)updateTitleWithState:(TGBridgeSynchronizationStateValue)value
@@ -540,7 +565,7 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     NSMutableArray *menuItems = [[NSMutableArray alloc] init];
     
     __weak TGNeoConversationController *weakSelf = self;
-    TGInterfaceMenuItem *infoItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:WKMenuItemIconInfo title:_context.chat.isGroup ? TGLocalized(@"Conversation.GroupInfo") : TGLocalized(@"Conversation.UserInfo") actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
+    TGInterfaceMenuItem *infoItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:WKMenuItemIconInfo title:[self peerIsAnyGroup] ? TGLocalized(@"Watch.Conversation.GroupInfo") : TGLocalized(@"Watch.Conversation.UserInfo") actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
     {
         __strong TGNeoConversationController *strongSelf = weakSelf;
         if (strongSelf == nil)
@@ -569,17 +594,18 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     bool muted = _muted;
     bool blocked = _blocked;
     
-    int32_t muteFor = 1;
-    NSString *muteTitle = [NSString stringWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"UserInfo.Mute_" value:muteFor]), muteFor];
+    bool muteForever = [self peerIsAnyGroup];
+    int32_t muteFor = muteForever ? INT_MAX : 1;
+    NSString *muteTitle = muteForever ? TGLocalized(@"Watch.UserInfo.Mute") : [NSString stringWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"Watch.UserInfo.Mute_" value:muteFor]), muteFor];
     
-    TGInterfaceMenuItem *muteItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:muted ? WKMenuItemIconSpeaker : WKMenuItemIconMute title:muted ? TGLocalized(@"UserInfo.Unmute") : muteTitle actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
+    TGInterfaceMenuItem *muteItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:muted ? WKMenuItemIconSpeaker : WKMenuItemIconMute title:muted ? TGLocalized(@"Watch.UserInfo.Unmute") : muteTitle actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
     {
         __strong TGNeoConversationController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
         TGBridgePeerNotificationSettings *settings = [[TGBridgePeerNotificationSettings alloc] init];
-        settings.muteFor = muted ? 0 : muteFor * 60 * 60;
+        settings.muteFor = muted ? 0 : (muteFor == INT_MAX ? INT_MAX : muteFor * 60 * 60);
         [strongSelf->_updateSettingsDisposable setDisposable:[[[TGBridgePeerSettingsSignals updateNotificationSettingsWithPeerId:[strongSelf peerId] settings:settings] deliverOn:[SQueue mainQueue]] startWithNext:nil completed:^
         {
             __strong TGNeoConversationController *strongSelf = weakSelf;
@@ -602,7 +628,7 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     
     if (![self peerIsGroup] && ![self peerIsChannel])
     {
-        TGInterfaceMenuItem *blockItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:WKMenuItemIconBlock title:blocked ? TGLocalized(@"UserInfo.Unblock") : TGLocalized(@"UserInfo.Block") actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
+        TGInterfaceMenuItem *blockItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:WKMenuItemIconBlock title:blocked ? TGLocalized(@"Watch.UserInfo.Unblock") : TGLocalized(@"Watch.UserInfo.Block") actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
         {
             __strong TGNeoConversationController *strongSelf = weakSelf;
             if (strongSelf == nil)
@@ -656,6 +682,19 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         return false;
 }
 
+- (bool)peerIsChannelGroup
+{
+    if (_chatModel != nil)
+        return _chatModel.isChannelGroup;
+    else
+        return false;
+}
+
+- (bool)peerIsAnyGroup
+{
+    return [self peerIsGroup] || [self peerIsChannelGroup];
+}
+
 #pragma mark - Bots
 
 - (SSignal *)botCommandListSignal
@@ -663,7 +702,7 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     if (!_hasBots)
         return nil;
     
-    if ([self peerIsGroup])
+    if ([self peerIsAnyGroup])
     {
         NSMutableArray *botInfoSignals = [[NSMutableArray alloc] init];
         NSMutableArray *botUsers = [[NSMutableArray alloc] init];
@@ -729,7 +768,7 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
 {
     _hasBots = false;
     
-    if ([self peerIsGroup])
+    if ([self peerIsAnyGroup])
     {
         [_chatModel.participantsUserIds enumerateIndexesUsingBlock:^(NSUInteger userId, BOOL * _Nonnull stop)
         {
@@ -820,7 +859,7 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     _shouldReadMessages = true;
     _shouldScrollToBottom = true;
     
-    [_pendingSentMessages addObject:[TGBridgeMessage temporaryNewMessageForAudioWithDuration:duration userId:_context.context.userId]];
+    [_pendingSentMessages addObject:[TGBridgeMessage temporaryNewMessageForAudioWithDuration:duration userId:_context.context.userId localAudioId:uniqueId]];
     
     __weak TGNeoConversationController *weakSelf = self;
     [self performInterfaceUpdate:^(bool animated)
@@ -835,7 +874,7 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     NSDictionary *metadata = @
     {
         TGBridgeIncomingFileTypeKey: TGBridgeIncomingFileTypeAudio,
-        TGBridgeIncomingFileRandomIdKey: [NSString stringWithFormat:@"%lld", uniqueId],
+        TGBridgeIncomingFileRandomIdKey: @(uniqueId),
         TGBridgeIncomingFilePeerIdKey: @([self peerId]),
         TGBridgeIncomingFileReplyToMidKey: @(0)
     };
@@ -891,6 +930,10 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     {
         return [TGNeoConversationStaticRowController class];
     }
+    else if ([model isKindOfClass:[TGChatTimestamp class]])
+    {
+        return [TGNeoConversationTimeRowController class];
+    }
     
     return nil;
 }
@@ -900,14 +943,22 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     return _rowModels.count;
 }
 
-- (void)table:(WKInterfaceTable *)table updateRowController:(TGNeoRowController *)controller forIndexPath:(TGIndexPath *)indexPath
+- (void)table:(WKInterfaceTable *)table updateRowController:(TGTableRowController *)controller forIndexPath:(TGIndexPath *)indexPath
 {
     __weak TGNeoConversationController *weakSelf = self;
     
     id model = _rowModels[indexPath.row];
     NSUInteger index = [self numberOfRowsInTable:self.table section:0] - indexPath.row - 1;
     
-    controller.shouldRenderContent = ^bool
+    if ([model isKindOfClass:[TGChatTimestamp class]])
+    {
+        TGNeoConversationTimeRowController *timeController = (TGNeoConversationTimeRowController *)controller;
+        [timeController updateWithTimestamp:model];
+        return;
+    }
+    
+    TGNeoRowController *rowController = (TGNeoRowController *)controller;
+    rowController.shouldRenderContent = ^bool
     {
         __strong TGNeoConversationController *strongSelf = weakSelf;
         if (strongSelf != nil && strongSelf->_initialRendering && index >= TGNeoConversationControllerInitialRenderCount)
@@ -921,6 +972,8 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         TGBridgeMessage *message = (TGBridgeMessage *)model;
         
         TGNeoConversationRowController *conversationRow = (TGNeoConversationRowController *)controller;
+        __weak TGNeoConversationRowController *weakConversationRow = conversationRow;
+       
         conversationRow.animate = ^(void (^animations)(void))
         {
             __strong TGNeoConversationController *strongSelf = weakSelf;
@@ -930,16 +983,79 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
             [strongSelf animateWithDuration:0.25 animations:animations];
         };
         
-        conversationRow.remotePressed = ^
+        conversationRow.buttonPressed = ^
         {
             __strong TGNeoConversationController *strongSelf = weakSelf;
             if (strongSelf == nil)
                 return;
             
-            [strongSelf->_remoteActionDisposable setDisposable:[[TGBridgeRemoteSignals openRemoteMessageWithPeerId:[strongSelf peerId] messageId:message.identifier type:0 autoPlay:true] startWithNext:nil]];
+            TGBridgeMediaAttachment *audioAttachment = nil;
+            for (TGBridgeMediaAttachment *attachment in message.media)
+            {
+                if ([attachment isKindOfClass:[TGBridgeAudioMediaAttachment class]])
+                {
+                    audioAttachment = (TGBridgeAudioMediaAttachment *)attachment;
+                }
+                else if ([attachment isKindOfClass:[TGBridgeDocumentMediaAttachment class]])
+                {
+                    TGBridgeDocumentMediaAttachment *documentAttachment = (TGBridgeDocumentMediaAttachment *)attachment;
+                    if (documentAttachment.isVoice)
+                        audioAttachment = documentAttachment;
+                }
+            }
+            
+            if (audioAttachment != nil)
+            {
+                __strong TGNeoConversationRowController *strongConversationRow = weakConversationRow;
+                if ([strongSelf->_pendingAudioAttachment isEqual:audioAttachment])
+                {
+                    if (strongConversationRow != nil)
+                        [strongConversationRow setProcessingState:false];
+                 
+                    strongSelf->_pendingAudioAttachment = nil;
+                    
+                    [strongSelf->_playAudioDisposable setDisposable:nil];
+                }
+                else
+                {
+                    if (strongConversationRow != nil)
+                        [strongConversationRow setProcessingState:true];
+                    
+                    strongSelf->_pendingAudioAttachment = audioAttachment;
+                    
+                    [strongSelf->_playAudioDisposable setDisposable:[[[TGBridgeAudioSignals audioForAttachment:audioAttachment conversationId:[strongSelf peerId] messageId:message.identifier] deliverOn:[SQueue mainQueue]] startWithNext:^(NSURL *url)
+                    {
+                        if (url == nil)
+                            return;
+                        
+                        __strong TGNeoConversationController *strongSelf = weakSelf;
+                        if (strongSelf == nil)
+                            return;
+                        
+                        __strong TGNeoConversationRowController *strongConversationRow = weakConversationRow;
+                        if (strongConversationRow != nil)
+                            [strongConversationRow setProcessingState:false];
+                        
+                        strongSelf->_pendingAudioAttachment = nil;
+                        
+                        [strongSelf presentMediaPlayerControllerWithURL:url options:@{ WKMediaPlayerControllerOptionsAutoplayKey: @true } completion:^(BOOL didPlayToEnd, NSTimeInterval endTime, NSError *error) {}];
+                    }]];
+                }
+            }
+            else
+            {
+                [strongSelf->_remoteActionDisposable setDisposable:[[TGBridgeRemoteSignals openRemoteMessageWithPeerId:[strongSelf peerId] messageId:message.identifier type:0 autoPlay:true] startWithNext:nil]];
+            }
         };
         
-        [conversationRow updateWithMessage:message context:_context.context index:index channel:[self peerIsChannel]];
+        TGNeoMessageType type = TGNeoMessageTypeGeneric;
+        if ([self peerIsAnyGroup])
+            type = TGNeoMessageTypeGroup;
+        else if ([self peerIsChannel])
+            type = TGNeoMessageTypeChannel;
+        
+        conversationRow.additionalPeers = _peerModels;
+        [conversationRow updateWithMessage:message context:_context.context index:index type:type];
     }
     else if ([model isKindOfClass:[TGChatInfo class]])
     {
@@ -955,17 +1071,19 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
     TGBridgeMessage *message = _rowModels[indexPath.row];
     
     TGMessageViewControllerContext *context = nil;
-    if ([self peerIsChannel])
+    if ([self peerIsChannel] && ![self peerIsChannelGroup])
         context = [[TGMessageViewControllerContext alloc] initWithMessage:message channel:_chatModel];
     else
         context = [[TGMessageViewControllerContext alloc] initWithMessage:message peerId:[self peerId]];
+    
+    context.additionalPeers = _peerModels;
     
     [self pushControllerWithClass:[TGMessageViewController class] context:context];
 }
 
 - (Class)footerControllerClassForTable:(WKInterfaceTable *)table
 {
-    if ([self peerIsChannel])
+    if ([self peerIsChannel] && ![self peerIsChannelGroup])
         return nil;
     
     return [TGConversationFooterController class];
@@ -1026,14 +1144,21 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         if (strongSelf == nil)
             return;
         
-        [TGInputController presentAudioControllerForInterfaceController:strongSelf completion:^(int64_t uniqueId, int32_t duration, NSURL *url)
+        if (strongSelf->_context.context.micAccessAllowed)
         {
-            __strong TGNeoConversationController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf sendAudioWithUniqueId:uniqueId duration:duration url:url];
-        }];
+            [TGInputController presentAudioControllerForInterfaceController:strongSelf completion:^(int64_t uniqueId, int32_t duration, NSURL *url)
+            {
+                __strong TGNeoConversationController *strongSelf = weakSelf;
+                if (strongSelf == nil)
+                    return;
+                
+                [strongSelf sendAudioWithUniqueId:uniqueId duration:duration url:url];
+            }];
+        }
+        else
+        {
+            [strongSelf presentControllerWithClass:[TGAudioMicAlertController class] context:nil];
+        }
     };
     controller.commandsPressed = ^
     {
@@ -1137,6 +1262,36 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         [reversedArray insertObject:object atIndex:0];
     
     return reversedArray;
+}
+
++ (NSArray *)timestampedModelsArray:(NSArray *)models
+{
+    NSMutableArray *newModels = [[NSMutableArray alloc] init];
+    TGChatTimestamp *lastTimestamp = nil;
+    
+    for (id model in models)
+    {
+        if ([model isKindOfClass:[TGChatTimestamp class]])
+        {
+            continue;
+        }
+        else if ([model isKindOfClass:[TGBridgeMessage class]])
+        {
+            TGBridgeMessage *message = (TGBridgeMessage *)model;
+            
+            TGChatTimestamp *timestamp = [TGDateUtils timestampForDateIfNeeded:message.date previousDate:lastTimestamp ? @(lastTimestamp.date) : nil];
+            
+            if (timestamp != nil)
+            {
+                lastTimestamp = timestamp;
+                [newModels addObject:timestamp];
+            }
+        }
+        
+        [newModels addObject:model];
+    }
+    
+    return newModels;
 }
 
 #pragma mark -

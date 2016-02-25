@@ -94,7 +94,7 @@ typedef enum {
     
     
     {
-        NSDictionary *attributes = [_attributedString attributesAtIndex:0 effectiveRange:NULL];
+        NSDictionary *attributes = _attributedString.length == 0 ? @{} : [_attributedString attributesAtIndex:0 effectiveRange:NULL];
         
         static NSString *tokenString = nil;
         if (tokenString == nil)

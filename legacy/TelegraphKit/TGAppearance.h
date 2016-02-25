@@ -5,10 +5,6 @@
 extern "C" {
 #endif
 
-UIColor *TGAccentColor();
-UIColor *TGDestructiveAccentColor();
-UIColor *TGSelectionColor();
-UIColor *TGSeparatorColor();
 bool TGBackdropEnabled();
     
 #ifdef __cplusplus

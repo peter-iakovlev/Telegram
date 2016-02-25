@@ -2,6 +2,7 @@
 
 @class TLInputFileLocation;
 @class TGMemoryImageCache;
+@class TGModernCache;
 
 typedef enum {
     TGSharedMediaImageDataQualityLow,
@@ -42,6 +43,8 @@ typedef enum {
                           memoryCache:(TGMemoryImageCache *)memoryCache;
 
 + (SSignal *)squareThumbnail:(NSString *)cachedSizeLowPath cachedSizePath:(NSString *)cachedSizePath ofSize:(CGSize)size renderSize:(CGSize)renderSize pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock fullSizeImageSignalGenerator:(SSignal *(^)())fullSizeImageSignalGenerator lowQualityThumbnailSignalGenerator:(SSignal *(^)())lowQualityThumbnailSignalGenerator localCachedImageSignalGenerator:(SSignal *(^)(CGSize, CGSize, bool))localCachedImageSignalGenerator lowQualityImagePath:(NSString *)lowQualityImagePath lowQualityImageUrl:(NSString *)lowQualityImageUrl highQualityImageUrl:(NSString *)highQualityImageUrl highQualityImageIdentifier:(NSString *)highQualityImageIdentifier threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache placeholder:(SSignal *)placeholder;
+
++ (SSignal *)cachedRemoteThumbnailWithKey:(NSString *)key size:(CGSize)size pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock fetchData:(SSignal *)fetchData originalImage:(SSignal *)originalImage threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache diskCache:(TGModernCache *)diskCache;
 
 + (void (^)(void *, int, int, int))pixelProcessingBlockForRoundCornersOfRadius:(CGFloat)radius;
 

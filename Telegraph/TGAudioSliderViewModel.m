@@ -12,9 +12,6 @@
 
 @interface TGAudioSliderViewModel ()
 {
-    bool _isPlaying;
-    float _audioPosition;
-    NSTimeInterval _audioPositionTimestamp;
 }
 
 @end
@@ -28,22 +25,22 @@
 
 - (void)bindViewToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage
 {
+    self.viewStateIdentifier = [[NSString alloc] initWithFormat:@"TGAudioSliderViewModel/%lld/%lld", _audioId, _localAudioId];
+    
     [super bindViewToContainer:container viewStorage:viewStorage];
     
-    ((TGAudioSliderView *)self.boundView).incoming = _incoming;
+    ((TGAudioSliderView *)self.boundView).viewStateIdentifier = self.viewStateIdentifier;
+    
+    ((TGAudioSliderView *)self.boundView).style = _incoming ? TGAudioSliderViewStyleIncoming : TGAudioSliderViewStyleOutgoing;
     ((TGAudioSliderView *)self.boundView).duration = _duration;
-    ((TGAudioSliderView *)self.boundView).audioDurationText = _audioDurationText;
-    [((TGAudioSliderView *)self.boundView) setPreciseDuration:_preciseDuration];
-    [((TGAudioSliderView *)self.boundView) setAudioPosition:_audioPosition animated:false timestamp:_audioPositionTimestamp isPlaying:_isPlaying immediate:true];
+    [((TGAudioSliderView *)self.boundView) setStatus:_status];
     ((TGAudioSliderView *)self.boundView).manualPositionAdjustmentEnabled = _manualPositionAdjustmentEnabled;
-    ((TGAudioSliderView *)self.boundView).progressMode = _progressMode;
     ((TGAudioSliderView *)self.boundView).listenedStatus = _listenedStatus;
+    [((TGAudioSliderView *)self.boundView) setWaveformSignal:_waveformSignal];
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
 {
-    [((TGAudioSliderView *)self.boundView) stopAnimations];
-    
     [super unbindView:viewStorage];
 }
 
@@ -51,10 +48,10 @@
 {
     _incoming = incoming;
     
-    ((TGAudioSliderView *)self.boundView).incoming = _incoming;
+    ((TGAudioSliderView *)self.boundView).style = _incoming ? TGAudioSliderViewStyleIncoming : TGAudioSliderViewStyleOutgoing;
 }
 
-- (void)setDuration:(NSTimeInterval)duration
+- (void)setDuration:(int32_t)duration
 {
     _duration = duration;
     
@@ -67,28 +64,9 @@
     
     ((TGAudioSliderView *)self.boundView).listenedStatus = _listenedStatus;
 }
-
-- (void)setAudioDurationText:(NSString *)audioDurationText
-{
-    _audioDurationText = audioDurationText;
-    
-    ((TGAudioSliderView *)self.boundView).audioDurationText = _audioDurationText;
-}
-
-- (void)setAudioPosition:(float)audioPosition animated:(bool)animated timestamp:(NSTimeInterval)timestamp isPlaying:(bool)isPlaying
-{
-    _audioPosition = audioPosition;
-    _audioPositionTimestamp = timestamp;
-    _isPlaying = isPlaying;
-    
-    [((TGAudioSliderView *)self.boundView) setAudioPosition:_audioPosition animated:animated timestamp:_audioPositionTimestamp isPlaying:_isPlaying immediate:false];
-}
-
-- (void)setPreciseDuration:(NSTimeInterval)preciseDuration
-{
-    _preciseDuration = preciseDuration;
-    
-    [((TGAudioSliderView *)self.boundView) setPreciseDuration:_preciseDuration];
+- (void)setStatus:(TGMusicPlayerStatus *)status {
+    _status = status;
+    [((TGAudioSliderView *)self.boundView) setStatus:status];
 }
 
 - (void)setManualPositionAdjustmentEnabled:(bool)manualPositionAdjustmentEnabled
@@ -98,11 +76,10 @@
     ((TGAudioSliderView *)self.boundView).manualPositionAdjustmentEnabled = _manualPositionAdjustmentEnabled;
 }
 
-- (void)setProgressMode:(bool)progressMode
-{
-    _progressMode = progressMode;
-    
-    ((TGAudioSliderView *)self.boundView).progressMode = _progressMode;
+
+- (void)setWaveformSignal:(SSignal *)waveformSignal {
+    _waveformSignal = waveformSignal;
+    [((TGAudioSliderView *)self.boundView) setWaveformSignal:waveformSignal];
 }
 
 @end

@@ -132,6 +132,12 @@ typedef enum {
     return true;
 }
 
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    
+    [_usernameItem becomeFirstResponder];
+}
+
 - (void)cancelPressed
 {
     [self.view endEditing:true];

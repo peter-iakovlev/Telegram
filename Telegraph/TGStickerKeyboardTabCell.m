@@ -3,11 +3,13 @@
 #import "TGDocumentMediaAttachment.h"
 #import "TGImageView.h"
 
+#import "TGImageUtils.h"
 #import "TGStringUtils.h"
 
 @interface TGStickerKeyboardTabCell ()
 {
-    TGImageView *_imageView;   
+    TGImageView *_imageView;
+    TGStickerKeyboardViewStyle _style;
 }
 
 @end
@@ -19,6 +21,8 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
+        _style = TGStickerKeyboardViewDefaultStyle;
+        
         self.clipsToBounds = true;
         self.selectedBackgroundView = [[UIView alloc] init];
         self.selectedBackgroundView.backgroundColor = UIColorRGB(0xe6e6e6);
@@ -41,7 +45,12 @@
 {
     [_imageView reset];
     _imageView.contentMode = UIViewContentModeCenter;
-    _imageView.image = [UIImage imageNamed:@"StickerKeyboardRecentTab.png"];
+    
+    UIImage *recentTabImage = [UIImage imageNamed:@"StickerKeyboardRecentTab.png"];
+    if (_style == TGStickerKeyboardViewDarkBlurredStyle)
+        _imageView.image = TGTintedImage(recentTabImage, UIColorRGB(0xb4b5b5));
+    else
+        _imageView.image = recentTabImage;
 }
 
 - (void)setNone
@@ -70,6 +79,20 @@
     [uri appendFormat:@"&highQuality=1"];
     
     [_imageView loadUri:uri withOptions:nil];
+}
+
+- (void)setStyle:(TGStickerKeyboardViewStyle)style
+{
+    switch (style)
+    {
+        case TGStickerKeyboardViewDarkBlurredStyle:
+            self.selectedBackgroundView.backgroundColor = UIColorRGB(0x393939);
+            break;
+            
+        default:
+            self.selectedBackgroundView.backgroundColor = UIColorRGB(0xe6e6e6);
+            break;
+    }
 }
 
 - (void)layoutSubviews

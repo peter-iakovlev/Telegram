@@ -15,6 +15,7 @@
 
 @optional
 
+- (void)audioPlayerDidPause:(TGAudioPlayer *)audioPlayer;
 - (void)audioPlayerDidFinishPlaying:(TGAudioPlayer *)audioPlayer;
 
 @end
@@ -23,11 +24,14 @@
 
 @property (nonatomic, weak) id<TGAudioPlayerDelegate> delegate;
 
-+ (TGAudioPlayer *)audioPlayerForPath:(NSString *)path;
++ (TGAudioPlayer *)audioPlayerForPath:(NSString *)path music:(bool)music controlAudioSession:(bool)controlAudioSession;
+
+- (instancetype)init;
+- (instancetype)initWithMusic:(bool)music controlAudioSession:(bool)controlAudioSession;
 
 - (void)play;
 - (void)playFromPosition:(NSTimeInterval)position;
-- (void)pause;
+- (void)pause:(void (^)())completion;
 - (void)stop;
 - (NSTimeInterval)currentPositionSync:(bool)sync;
 - (NSTimeInterval)duration;
@@ -37,5 +41,6 @@
 - (void)_endAudioSession;
 - (void)_endAudioSessionFinal;
 - (void)_notifyFinished;
+- (void)_notifyPaused;
 
 @end

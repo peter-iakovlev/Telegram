@@ -4,4 +4,6 @@
 
 @interface TGPeerInfoSignals : NSObject
 
++ (SSignal *)resolveBotDomain:(NSString *)query;
+
 @end

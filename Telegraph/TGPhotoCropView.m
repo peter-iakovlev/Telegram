@@ -90,6 +90,8 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
             [strongSelf cancelConfirmCountdown];
             [strongSelf->_areaView setGridMode:TGPhotoCropViewGridModeMajor animated:true];
             
+            [strongSelf->_scrollView resetRotationStartValues];
+            
             if (strongSelf.interactionBegan != nil)
                 strongSelf.interactionBegan();
         };
@@ -147,6 +149,8 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
             [strongSelf cancelConfirmCountdown];
             [strongSelf->_areaView setGridMode:TGPhotoCropViewGridModeMajor animated:true];
             [strongSelf setIntefaceHidden:true animated:true];
+
+            [strongSelf->_scrollView resetRotationStartValues];
             
             if (strongSelf.interactionBegan != nil)
                 strongSelf.interactionBegan();
@@ -192,6 +196,8 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
                 [strongSelf resetBackdropViewsAnimated:true];
                 [strongSelf cancelConfirmCountdown];
                 [strongSelf->_areaView setGridMode:TGPhotoCropViewGridModeMinor animated:true];
+                
+                [strongSelf->_scrollView storeRotationStartValues];
                 
                 if (strongSelf.interactionBegan != nil)
                     strongSelf.interactionBegan();
@@ -711,7 +717,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
 
 - (UIImage *)croppedImageWithMaxSize:(CGSize)maxSize
 {
-    return TGPhotoEditorCrop(_imageView.image, self.cropOrientation, self.rotation, self.cropRect, maxSize, _originalSize);
+    return TGPhotoEditorCrop(_imageView.image, self.cropOrientation, self.rotation, self.cropRect, maxSize, _originalSize, true);
 }
 
 #pragma mark - Rotation
@@ -730,7 +736,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
 - (void)setRotation:(CGFloat)rotation resetting:(bool)resetting
 {
     _rotation = rotation;
-    [_scrollView setContentRotation:rotation resetting:resetting];
+    [_scrollView setContentRotation:rotation maximize:true resetting:resetting];
 }
 
 - (void)setRotation:(CGFloat)rotation animated:(bool)animated
@@ -773,6 +779,8 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     
     [self setIntefaceHidden:true animated:false];
     [self setCropAreaHidden:true animated:false];
+    
+    [_scrollView resetRotationStartValues];
     
     self.cropOrientation = TGNextCCWOrientationForOrientation(self.cropOrientation);
     
@@ -973,6 +981,8 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     
     [_rotationView resetAnimated:animated];
     [_areaView setGridMode:TGPhotoCropViewGridModeNone animated:animated];
+    
+    [_scrollView resetRotationStartValues];
     
     [self evenlyFillAreaViewAnimated:animated reset:true completion:^
     {

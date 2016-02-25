@@ -23,7 +23,8 @@ typedef enum
     PGCameraModeUndefined,
     PGCameraModePhoto,
     PGCameraModeVideo,
-    PGCameraModeSquare
+    PGCameraModeSquare,
+    PGCameraModeClip
 } PGCameraMode;
 
 typedef enum
@@ -64,8 +65,8 @@ typedef enum
 @property (nonatomic, copy) void(^flashActivityChanged)(bool flashActive);
 @property (nonatomic, copy) void(^flashAvailabilityChanged)(bool flashAvailable);
 
-@property (nonatomic, copy) void(^beganVideoRecording)(void);
-@property (nonatomic, copy) void(^finishedVideoRecording)(void);
+@property (nonatomic, copy) void(^beganVideoRecording)(bool moment);
+@property (nonatomic, copy) void(^finishedVideoRecording)(bool moment);
 
 @property (nonatomic, copy) void(^captureInterrupted)(AVCaptureSessionInterruptionReason reason);
 
@@ -98,7 +99,7 @@ typedef enum
 
 - (void)takePhotoWithCompletion:(void (^)(UIImage *result, PGCameraShotMetadata *metadata))completion;
 
-- (void)startVideoRecordingWithCompletion:(void (^)(NSURL *, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success))completion;
+- (void)startVideoRecordingForMoment:(bool)moment completion:(void (^)(NSURL *, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success))completion;
 - (void)stopVideoRecording;
 - (bool)isRecordingVideo;
 

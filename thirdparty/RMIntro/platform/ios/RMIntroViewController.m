@@ -6,16 +6,6 @@
 //
 //
 
-#define IPAD     UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad
-
-#define dDeviceOrientation [[UIDevice currentDevice] orientation]
-#define isPortrait  UIDeviceOrientationIsPortrait(dDeviceOrientation)
-#define isLandscape UIDeviceOrientationIsLandscape(dDeviceOrientation)
-
-#define UIColorFromRGB(rgbValue) [UIColor colorWithRed:((float)((rgbValue & 0xFF0000) >> 16))/255.0 green:((float)((rgbValue & 0xFF00) >> 8))/255.0 blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
-
-#define _(n) NSLocalizedString(n, nil)
-
 #import "RMGeometry.h"
 
 #import "TGLoginPhoneController.h"
@@ -39,20 +29,25 @@
 - (int)currentPageMax;
 
 @end
+
 @implementation UIScrollView (CurrentPage)
-- (int)currentPage{
+
+- (int)currentPage
+{
     CGFloat pageWidth = self.frame.size.width;
-    return floor((self.contentOffset.x - pageWidth / 2) / pageWidth) + 1;
+    return (int)floor((self.contentOffset.x - pageWidth / 2) / pageWidth) + 1;
 }
 
-- (int)currentPageMin{
+- (int)currentPageMin
+{
     CGFloat pageWidth = self.frame.size.width;
-    return floor((self.contentOffset.x - pageWidth / 2 - pageWidth / 2) / pageWidth) + 1;
+    return (int)floor((self.contentOffset.x - pageWidth / 2 - pageWidth / 2) / pageWidth) + 1;
 }
 
-- (int)currentPageMax{
+- (int)currentPageMax
+{
     CGFloat pageWidth = self.frame.size.width;
-    return floor((self.contentOffset.x - pageWidth / 2 + pageWidth / 2 ) / pageWidth) + 1;
+    return (int)floor((self.contentOffset.x - pageWidth / 2 + pageWidth / 2 ) / pageWidth) + 1;
 }
 
 - (void)setPage:(NSInteger)page
@@ -71,42 +66,31 @@
     bool _displayedStillLogo;
     
     UIButton *_switchToDebugButton;
-    
-    
 }
-
 @end
+
 
 @implementation RMIntroViewController
 
-
-
-@synthesize rootVC;
-@synthesize draw_q;
-
-
-- (id)init
+- (instancetype)init
 {
     self = [super init];
-    if (self) {
-        
+    if (self != nil)
+    {
         if (iosMajorVersion() >= 7)
             self.automaticallyAdjustsScrollViewInsets = false;
         
-        _headlines = @[_(@"Tour.Title1"), _(@"Tour.Title2"),  _(@"Tour.Title6"), _(@"Tour.Title3"), _(@"Tour.Title4"), _(@"Tour.Title5")];
-        _descriptions = @[_(@"Tour.Text1"), _(@"Tour.Text2"),  _(@"Tour.Text6"), _(@"Tour.Text3"), _(@"Tour.Text4"), _(@"Tour.Text5")];
-        
-        //[self startTimer];
+        _headlines = @[ TGLocalized(@"Tour.Title1"), TGLocalized(@"Tour.Title2"),  TGLocalized(@"Tour.Title6"), TGLocalized(@"Tour.Title3"), TGLocalized(@"Tour.Title4"), TGLocalized(@"Tour.Title5")];
+        _descriptions = @[TGLocalized(@"Tour.Text1"), TGLocalized(@"Tour.Text2"),  TGLocalized(@"Tour.Text6"), TGLocalized(@"Tour.Text3"), TGLocalized(@"Tour.Text4"), TGLocalized(@"Tour.Text5")];
         
         __weak RMIntroViewController *weakSelf = self;
-        
-        _didEnterBackgroundObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidEnterBackgroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification *note)
+        _didEnterBackgroundObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidEnterBackgroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification *notification)
         {
             __strong RMIntroViewController *strongSelf = weakSelf;
             [strongSelf stopTimer];
         }];
         
-        _willEnterBackgroundObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillEnterForegroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification *note)
+        _willEnterBackgroundObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillEnterForegroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification *notification)
         {
             __strong RMIntroViewController *strongSelf = weakSelf;
             [strongSelf loadGL];
@@ -118,17 +102,19 @@
 
 - (void)startTimer
 {
-    if (_updateAndRenderTimer == nil) {
-        _updateAndRenderTimer = [NSTimer timerWithTimeInterval:1.0f/60.0f target:self selector:@selector(updateAndRender) userInfo:nil repeats:YES];
+    if (_updateAndRenderTimer == nil)
+    {
+        _updateAndRenderTimer = [NSTimer timerWithTimeInterval:1.0f / 60.0f target:self selector:@selector(updateAndRender) userInfo:nil repeats:true];
         [[NSRunLoop mainRunLoop] addTimer:_updateAndRenderTimer forMode:NSRunLoopCommonModes];
     }
 }
 
 - (void)stopTimer
 {
-    if (_updateAndRenderTimer) {
+    if (_updateAndRenderTimer != nil)
+    {
         [_updateAndRenderTimer invalidate];
-        _updateAndRenderTimer=nil;
+        _updateAndRenderTimer = nil;
     }
 }
 
@@ -140,9 +126,6 @@
 #if defined(DEBUG) || defined(INTERNAL_RELEASE)
     [self.view addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(switchToDebugPressed:)]];
 #endif
-    
-    //NSLog(@"loadView Orientation>%@", [self convertOrientationToString:self.interfaceOrientation]);
-    //NSLog(@"loadView Width>%f", self.window.bounds.size.width);
 }
 
 - (void)switchToDebugPressed:(UILongPressGestureRecognizer *)recognizer
@@ -166,64 +149,28 @@
     [[TGTelegramNetworking instance] switchBackends];
 }
 
-
 - (CGRect)windowBounds
 {
-    CGRect r = CGRectZero;
+    CGRect bounds = CGRectZero;
     
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+    int max = (int)[[UIScreen mainScreen] bounds].size.height;
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
     {
-        /*
-         switch (self.interfaceOrientation) {
-         case UIInterfaceOrientationLandscapeLeft:
-         case UIInterfaceOrientationLandscapeRight:
-         r = CGRectMake(0, 0, 1024, 768);
-         break;
-         
-         case UIInterfaceOrientationPortrait:
-         case UIInterfaceOrientationPortraitUpsideDown:
-         r = CGRectMake(0, 0, 768, 1024);
-         break;
-         
-         default:
-         break;
-         }
-         */
-        
-        UIInterfaceOrientation isVertical = (self.view.bounds.size.height/self.view.bounds.size.width > 1.) ? YES : NO;
-        
-        if (isVertical) {
-            r = CGRectMake(0, 0, 768, 1024);
-        }
-        else
+        switch (max)
         {
-            r = CGRectMake(0, 0, 1024, 768);
+            case 1366:
+                _deviceScreen = iPadPro;
+                break;
+                
+            default:
+                _deviceScreen = iPad;
+                break;
         }
-        //r = [[UIScreen mainScreen] bounds];
-        
-        
     }
     else
     {
-        int max = (int)[[UIScreen mainScreen] bounds].size.height;
-        //NSLog(@"self h>%d", max);
-        
-        //3.5 - 480
-        //4.0 - 568
-        //4.7 - 667
-        //5.5 - 736
-        /*
-         if (MAX(self.view.bounds.size.width, self.view.window.bounds.size.height) > 480) {
-         is4inch = YES;
-         r = CGRectMake(0, 0, 320, 568);
-         }
-         else
-         {
-         is4inch = NO;
-         r = CGRectMake(0, 0, 320, 480);
-         }
-         */
-        switch (max) {
+        switch (max)
+        {
             case 480:
                 _deviceScreen = Inch35;
                 break;
@@ -237,49 +184,46 @@
                 _deviceScreen = Inch55;
                 break;
         }
-        
-        r = [[UIScreen mainScreen] bounds];
-        
     }
-    //NSLog(@"windowBounds>%@", NSStringFromCGRect(r));
-    return r;
     
+    bounds = [[UIScreen mainScreen] bounds];
+
+    return bounds;
 }
-
-
-
 
 - (void)loadGL
 {
     if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateBackground && !_isOpenGLLoaded)
     {
         context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-        if (!context) {
+        if (!context)
             NSLog(@"Failed to create ES context");
-        }
         
-        int size = 200;
-        if (IPAD) size *= 1.2;
+        bool isIpad = ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad);
+        
+        CGFloat size = 200;
+        if (isIpad)
+            size *= 1.2;
         
         int height = 50;
-        if (IPAD) height += 138/2;
+        if (isIpad)
+            height += 138 / 2;
         
-        _glkView = [[GLKView alloc]initWithFrame:CGRectMake(self.view.bounds.size.width/2-size/2, height, size, size) context:context];
+        _glkView = [[GLKView alloc] initWithFrame:CGRectMake(self.view.bounds.size.width / 2 - size / 2, height, size, size) context:context];
         _glkView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
         _glkView.drawableDepthFormat = GLKViewDrawableDepthFormat24;
         _glkView.drawableMultisample = GLKViewDrawableMultisample4X;
-        _glkView.enableSetNeedsDisplay = NO;
-        _glkView.userInteractionEnabled=NO;
+        _glkView.enableSetNeedsDisplay = false;
+        _glkView.userInteractionEnabled = false;
         _glkView.delegate = self;
         
-        int patchHalfWidth=1;
-        UIView *v1 = [[UIView alloc]initWithFrame:CGRectMake(-patchHalfWidth, -patchHalfWidth, _glkView.frame.size.width+patchHalfWidth*2, patchHalfWidth*2)];
-        UIView *v2 = [[UIView alloc]initWithFrame:CGRectMake(-patchHalfWidth, -patchHalfWidth, patchHalfWidth*2, _glkView.frame.size.height+patchHalfWidth*2)];
+        int patchHalfWidth = 1;
+        UIView *v1 = [[UIView alloc] initWithFrame:CGRectMake(-patchHalfWidth, -patchHalfWidth, _glkView.frame.size.width + patchHalfWidth * 2, patchHalfWidth * 2)];
+        UIView *v2 = [[UIView alloc] initWithFrame:CGRectMake(-patchHalfWidth, -patchHalfWidth, patchHalfWidth * 2, _glkView.frame.size.height + patchHalfWidth * 2)];
+        UIView *v3 = [[UIView alloc] initWithFrame:CGRectMake(-patchHalfWidth, -patchHalfWidth + _glkView.frame.size.height, _glkView.frame.size.width + patchHalfWidth * 2, patchHalfWidth * 2)];
+        UIView *v4 = [[UIView alloc] initWithFrame:CGRectMake(-patchHalfWidth + _glkView.frame.size.width, -patchHalfWidth, patchHalfWidth * 2, _glkView.frame.size.height + patchHalfWidth * 2)];
         
-        UIView *v3 = [[UIView alloc]initWithFrame:CGRectMake(-patchHalfWidth, -patchHalfWidth+_glkView.frame.size.height, _glkView.frame.size.width+patchHalfWidth*2, patchHalfWidth*2)];
-        UIView *v4 = [[UIView alloc]initWithFrame:CGRectMake(-patchHalfWidth+_glkView.frame.size.width, -patchHalfWidth, patchHalfWidth*2, _glkView.frame.size.height+patchHalfWidth*2)];
-        
-        v1.backgroundColor=v2.backgroundColor=v3.backgroundColor=v4.backgroundColor=[UIColor whiteColor];
+        v1.backgroundColor = v2.backgroundColor = v3.backgroundColor = v4.backgroundColor = [UIColor whiteColor];
         
         [_glkView addSubview:v1];
         [_glkView addSubview:v2];
@@ -290,25 +234,25 @@
         [self.view addSubview:_glkView];
         
         [self startTimer];
-        _isOpenGLLoaded = YES;
+        _isOpenGLLoaded = true;
     }
 }
 
-
 - (void)freeGL
 {
-    if (_isOpenGLLoaded) {
-        [self stopTimer];
-        
-        if ([EAGLContext currentContext] == _glkView.context) {
-            [EAGLContext setCurrentContext:nil];
-        }
-        _glkView.context = nil;
-        context = nil;
-        [_glkView removeFromSuperview];
-        _glkView=nil;
-        _isOpenGLLoaded = NO;
-    }
+    if (!_isOpenGLLoaded)
+        return;
+
+    [self stopTimer];
+    
+    if ([EAGLContext currentContext] == _glkView.context)
+        [EAGLContext setCurrentContext:nil];
+
+    _glkView.context = nil;
+    context = nil;
+    [_glkView removeFromSuperview];
+    _glkView = nil;
+    _isOpenGLLoaded = false;
 }
 
 - (void)viewDidLoad
@@ -319,226 +263,142 @@
     
     [self loadGL];
     
+    bool isIpad = ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad);
     
     _pageScrollView = [[UIScrollView alloc]initWithFrame:[self windowBounds]];
-    _pageScrollView.clipsToBounds=YES;
-    _pageScrollView.opaque=YES;
-    _pageScrollView.clearsContextBeforeDrawing=NO;
-    [_pageScrollView setShowsHorizontalScrollIndicator:NO];
-    [_pageScrollView setShowsVerticalScrollIndicator:NO];
-    _pageScrollView.pagingEnabled = YES;
-    _pageScrollView.contentSize=CGSizeMake(_headlines.count*[self windowBounds].size.width, [self windowBounds].size.height);
+    _pageScrollView.clipsToBounds = true;
+    _pageScrollView.opaque = true;
+    _pageScrollView.clearsContextBeforeDrawing = false;
+    [_pageScrollView setShowsHorizontalScrollIndicator:false];
+    [_pageScrollView setShowsVerticalScrollIndicator:false];
+    _pageScrollView.pagingEnabled = true;
+    _pageScrollView.contentSize = CGSizeMake(_headlines.count * [self windowBounds].size.width, [self windowBounds].size.height);
     _pageScrollView.delegate = self;
     [self.view addSubview:_pageScrollView];
     
-    
     _pageViews = [NSMutableArray array];
-    for (int i=0; i<_headlines.count; i++) {
-        RMIntroPageView *p = [[RMIntroPageView alloc]initWithFrame:CGRectMake(i*[self windowBounds].size.width, 0, [self windowBounds].size.width, 0) headline:[_headlines objectAtIndex:i] description:[_descriptions objectAtIndex:i]];
-        p.opaque=YES;
-        p.clearsContextBeforeDrawing=NO;
+    
+    for (NSUInteger i = 0; i < _headlines.count; i++)
+    {
+        RMIntroPageView *p = [[RMIntroPageView alloc]initWithFrame:CGRectMake(i * [self windowBounds].size.width, 0, [self windowBounds].size.width, 0) headline:[_headlines objectAtIndex:i] description:[_descriptions objectAtIndex:i]];
+        p.opaque = true;
+        p.clearsContextBeforeDrawing = false;
         [_pageViews addObject:p];
         [_pageScrollView addSubview:p];
     }
     [_pageScrollView setPage:0];
     
-    
     _startButton = [[TGModernButton alloc] init];
     ((TGModernButton *)_startButton).modernHighlight = true;
-    [_startButton setTitle:_(@"Tour.StartButton") forState:UIControlStateNormal];
-    [_startButton.titleLabel setFont:[UIFont fontWithName:@"HelveticaNeue" size:IPAD? 55/2. : 21]];
-    [_startButton setTitleColor:UIColorFromRGB(0x007ee5) forState:UIControlStateNormal];
-    _startArrow = [[UIImageView alloc]initWithImage:[UIImage imageNamed:IPAD ? @"start_arrow_ipad.png" : @"start_arrow.png"]];
-    _startButton.titleLabel.clipsToBounds=NO;
+    [_startButton setTitle:TGLocalized(@"Tour.StartButton") forState:UIControlStateNormal];
+    [_startButton.titleLabel setFont:[UIFont fontWithName:@"HelveticaNeue" size:isIpad ? 55 / 2.0f : 21]];
+    [_startButton setTitleColor:TGAccentColor() forState:UIControlStateNormal];
+    _startArrow = [[UIImageView alloc]initWithImage:[UIImage imageNamed:isIpad ? @"start_arrow_ipad.png" : @"start_arrow.png"]];
+    _startButton.titleLabel.clipsToBounds = false;
     
-    
-    _startArrow.frame = CGRectChangedOrigin(_startArrow.frame, CGPointMake([_startButton.titleLabel.text sizeWithFont:_startButton.font].width+ (IPAD ? 7 : 6), IPAD ? 6.5 : 4.5));
+    _startArrow.frame = CGRectChangedOrigin(_startArrow.frame, CGPointMake([_startButton.titleLabel.text sizeWithFont:_startButton.titleLabel.font].width + (isIpad ? 7 : 6), isIpad ? 6.5f : 4.5f));
     [_startButton.titleLabel addSubview:_startArrow];
     [self.view addSubview:_startButton];
     
-    
-    _pageControl = [[UIPageControl alloc]init];
+    _pageControl = [[UIPageControl alloc] init];
     _pageControl.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin;
-    _pageControl.userInteractionEnabled=NO;
+    _pageControl.userInteractionEnabled = false;
     [_pageControl setPageIndicatorTintColor:[UIColor colorWithWhite:.85 alpha:1]];
     [_pageControl setCurrentPageIndicatorTintColor:[UIColor colorWithWhite:.2 alpha:1]];
     [_pageControl setNumberOfPages:6];
     [self.view addSubview:_pageControl];
-    
-    
-    if (IPAD) {
-        _separatorView = [[UIView alloc]init];
-        _separatorView.backgroundColor = UIColorFromRGB(0xc8c8cc);
-        [self.view addSubview:_separatorView];
-    }
-    
-    
-    
-    
 }
 
+- (BOOL)shouldAutorotate
+{
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
+        return true;
+    
+    return false;
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
+{
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
+        return UIInterfaceOrientationMaskAll;
+    
+    return UIInterfaceOrientationMaskPortrait;
+}
 
 - (void)viewWillLayoutSubviews
 {
-    NSLog(@"view.bounds>%@", NSStringFromCGRect(self.view.bounds));
-    UIInterfaceOrientation isVertical = (self.view.bounds.size.height/self.view.bounds.size.width > 1.) ? YES : NO;
-    int originY;
-    NSLog(@"viewWillLayoutSubviews>%d", isVertical);
+    UIInterfaceOrientation isVertical = (self.view.bounds.size.height / self.view.bounds.size.width > 1.0f);
     
-    int status_height = [[[[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."] objectAtIndex:0] integerValue] >=7 ? 0 : 20;
-    int w = 1046/2;
+    CGFloat statusBarHeight = (iosMajorVersion() >= 7) ? 0 : 20;
     
-    CGFloat screenScale = [[UIScreen mainScreen] scale];
-    _separatorView.frame = CGRectMake([self windowBounds].size.width/2-w/2, [self windowBounds].size.height-248/2 - status_height, w, (screenScale>1) ? .5 : 1.);
-    _separatorView.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin;
+    CGFloat pageControlY = 0;
+    CGFloat glViewY = 0;
+    CGFloat startButtonY = 0;
+    CGFloat pageY = 0;
     
-    
-    originY = 162/2;
-    if (IPAD)
+    switch (_deviceScreen)
     {
-        originY = 386/2;
-    }
-    else
-    {
-        switch (_deviceScreen) {
-            case Inch35:
-                originY = 162/2;
-                break;
-            case Inch4:
-                originY = 162/2;
-                break;
-            case Inch47:
-                originY = 162/2+10;
-                break;
-            case Inch55:
-                originY = 162/2+20;
-                break;
-            default:
-                break;
-        }
-    }
-    _pageControl.frame = CGRectMake(0, [self windowBounds].size.height - originY - status_height, [self windowBounds].size.width, 7);
-    
-    
-    //NSLog(@"orient>%@", [self convertOrientationToString:self.interfaceOrientation]);
-    originY = 62;
-    if (IPAD)
-    {
-        //if (UIDeviceOrientationIsPortrait(self.interfaceOrientation)) {
-        if (isVertical) {
-            originY = 121+90;
-        }
-        else
-        {
-            originY = 121;
-        }
-    }
-    else
-    {
-        switch (_deviceScreen) {
-            case Inch35:
-                NSLog(@"Inch35");
-                originY = 62-20;
-                break;
-            case Inch4:
-                NSLog(@"Inch4");
-                originY = 62;
-                break;
-            case Inch47:
-                NSLog(@"Inch47");
-                originY = 62+25;
-                break;
-            case Inch55:
-                NSLog(@"Inch55");
-                originY = 62+45;
-                break;
-            default:
-                break;
-        }
+        case iPad:
+            pageControlY = 386 / 2;
+            glViewY = isVertical ? 121 + 90 : 121;
+            startButtonY = 120;
+            pageY = isVertical ? 485 : 335;
+            break;
+        
+        case iPadPro:
+            pageControlY = 386 / 2;
+            glViewY = isVertical ? 221 + 110 : 221;
+            startButtonY = 120;
+            pageY = isVertical ? 605 : 435;
+            break;
+            
+        case Inch35:
+            pageControlY = 162 / 2;
+            glViewY = 62 - 20;
+            startButtonY = 75;
+            pageY = 215;
+            break;
+            
+        case Inch4:
+            pageControlY = 162 / 2;
+            glViewY = 62;
+            startButtonY = 75;
+            pageY = 245;
+            break;
+
+        case Inch47:
+            pageControlY = 162 / 2 + 10;
+            glViewY = 62 + 25;
+            startButtonY = 75 + 5;
+            pageY = 245 + 50;
+            break;
+
+        case Inch55:
+            pageControlY = 162 / 2 + 20;
+            glViewY = 62 + 45;
+            startButtonY = 75 + 20;
+            pageY = 245 + 85;
+            break;
+            
+        default:
+            break;
     }
     
-    //NSLog(@"origin>%d", originY);
-    _glkView.frame = CGRectChangedOriginY(_glkView.frame, originY - status_height);
-    //NSLog(@"rect>%@", NSStringFromCGRect(_glkView.frame));
+    _pageControl.frame = CGRectMake(0, [self windowBounds].size.height - pageControlY - statusBarHeight, [self windowBounds].size.width, 7);
+    _glkView.frame = CGRectChangedOriginY(_glkView.frame, glViewY - statusBarHeight);
     
-    
-    originY = 75;
-    if (IPAD)
-    {
-        originY = 120;//99;
-    }
-    else
-    {
-        switch (_deviceScreen) {
-            case Inch35:
-                originY = 75;
-                break;
-            case Inch4:
-                originY = 75;
-                break;
-            case Inch47:
-                originY = 75+5;
-                break;
-            case Inch55:
-                originY = 75+20;
-                break;
-            default:
-                break;
-        }
-    }
-    //_startButton.backgroundColor = [UIColor lightGrayColor];
-    _startButton.frame = CGRectMake(0-9, [self windowBounds].size.height - originY - status_height, [self windowBounds].size.width, originY-4);
+    _startButton.frame = CGRectMake(-9, [self windowBounds].size.height - startButtonY - statusBarHeight, [self windowBounds].size.width, startButtonY - 4);
     [_startButton addTarget:self action:@selector(startButtonPress) forControlEvents:UIControlEventTouchUpInside];
     
     _pageScrollView.frame=CGRectMake(0, 20, [self windowBounds].size.width, [self windowBounds].size.height - 20);
     _pageScrollView.contentSize=CGSizeMake(_headlines.count*[self windowBounds].size.width, 150);
     _pageScrollView.contentOffset = CGPointMake(_currentPage*[self windowBounds].size.width, 0);
     
-    
-    int i=0;
-    
-    originY = 245;
-    if (IPAD)
+    [_pageViews enumerateObjectsUsingBlock:^(UIView *pageView, NSUInteger index, __unused BOOL *stop)
     {
-        //if (UIDeviceOrientationIsPortrait(self.interfaceOrientation)) {
-        if (isVertical) {
-            originY = 485;
-        }
-        else
-        {
-            originY = 335;
-        }
-    }
-    else
-    {
-        switch (_deviceScreen) {
-            case Inch35:
-                originY = 215;
-                break;
-            case Inch4:
-                originY = 245;
-                break;
-            case Inch47:
-                originY = 245+50;
-                break;
-            case Inch55:
-                originY = 245+85;
-                break;
-            default:
-                break;
-        }
-    }
-    
-    for (RMIntroPageView *p in _pageViews) {
-        //p.alpha=(5-i)/5.;
-        //p.backgroundColor = [UIColor redColor];
-        p.frame = CGRectMake(i*[self windowBounds].size.width, (originY-status_height), [self windowBounds].size.width, 150);
-        i++;
-    }
-    
+        pageView.frame = CGRectMake(index * [self windowBounds].size.width, (pageY - statusBarHeight), [self windowBounds].size.width, 150);
+    }];
 }
-
-
 
 - (void)viewWillAppear:(BOOL)animated
 {
@@ -548,70 +408,46 @@
     {
         _displayedStillLogo = true;
         
-        CGFloat verticalOffset = 0.0f;
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        {
-            if ([TGViewController isWidescreen])
-                verticalOffset = 87.0f;
-            else
-                verticalOffset = 67.0f;
-        }
-        else
-        {
-            verticalOffset = (self.view.frame.size.width > 768 + FLT_EPSILON) ? 131.0f : 221.0f;
-        }
-        
         _stillLogoView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"telegram_logo_still.png"]];
         _stillLogoView.contentMode = UIViewContentModeCenter;
         _stillLogoView.bounds = CGRectMake(0, 0, 200, 200);
-        //_stillLogoView.frame = (CGRect){CGPointMake((self.view.frame.size.width - _stillLogoView.frame.size.width) / 2.0f, verticalOffset), _stillLogoView.frame.size};
-        //_stillLogoView.center = _glkView.center;
         
+        UIInterfaceOrientation isVertical = (self.view.bounds.size.height / self.view.bounds.size.width > 1.0f);
         
-        UIInterfaceOrientation isVertical = (self.view.bounds.size.height/self.view.bounds.size.width > 1.) ? YES : NO;
+        CGFloat statusBarHeight = (iosMajorVersion() >= 7) ? 0 : 20;
         
-        int status_height = [[[[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."] objectAtIndex:0] integerValue] >=7 ? 0 : 20;
-        
-        int originY;
-        originY = 62;
-        if (IPAD)
+        CGFloat glViewY = 0;
+        switch (_deviceScreen)
         {
-            //if (UIDeviceOrientationIsPortrait(self.interfaceOrientation)) {
-            if (isVertical) {
-                originY = 121+90;
-            }
-            else
-            {
-                originY = 121;
-            }
-        }
-        else
-        {
-            switch (_deviceScreen) {
-                case Inch35:
-                    //NSLog(@"Inch35");
-                    originY = 62-20;
-                    break;
-                case Inch4:
-                    //NSLog(@"Inch4");
-                    originY = 62;
-                    break;
-                case Inch47:
-                    //NSLog(@"Inch47");
-                    originY = 62+25;
-                    break;
-                case Inch55:
-                    //NSLog(@"Inch55");
-                    originY = 62+45;
-                    break;
-                default:
-                    break;
-            }
+            case iPad:
+                glViewY = isVertical ? 121 + 90 : 121;
+                break;
+                
+            case iPadPro:
+                glViewY = isVertical ? 221 + 110 : 221;
+                break;
+                
+            case Inch35:
+                glViewY = 62 - 20;
+                break;
+                
+            case Inch4:
+                glViewY = 62;
+                break;
+                
+            case Inch47:
+                glViewY = 62 + 25;
+                break;
+                
+            case Inch55:
+                glViewY = 62 + 45;
+                break;
+                
+            default:
+                break;
         }
         
-        _stillLogoView.frame = CGRectChangedOriginY(_glkView.frame, originY - status_height);
-        
-        
+        _stillLogoView.frame = CGRectChangedOriginY(_glkView.frame, glViewY - statusBarHeight);
         [self.view addSubview:_stillLogoView];
     }
     
@@ -632,61 +468,15 @@
 - (void)viewDidDisappear:(BOOL)animated
 {
     [super viewDidDisappear:animated];
-    NSLog(@"viewDidDisappear");
     
     [self freeGL];
 }
 
 - (void)startButtonPress
 {
-    NSLog(@"startButtonPress");
-    
-    /*
-     if (!_updateAndRenderTimer) {
-     [self loadGL];
-     }
-     else
-     {
-     [self freeGL];
-     }
-     
-     */
-    
     TGLoginPhoneController *phoneController = [[TGLoginPhoneController alloc] init];
     [self.navigationController pushViewController:phoneController animated:true];
 }
-
-- (NSString*)convertOrientationToString:(UIInterfaceOrientation)orientation {
-    NSString *result = nil;
-    
-    typedef NS_ENUM(NSInteger, UIInterfaceOrientation) {
-        UIInterfaceOrientationPortrait           = UIDeviceOrientationPortrait,
-        UIInterfaceOrientationPortraitUpsideDown = UIDeviceOrientationPortraitUpsideDown,
-        UIInterfaceOrientationLandscapeLeft      = UIDeviceOrientationLandscapeRight,
-        UIInterfaceOrientationLandscapeRight     = UIDeviceOrientationLandscapeLeft
-    };
-    
-    switch(orientation) {
-        case UIInterfaceOrientationPortrait:
-            result = @"UIInterfaceOrientationPortrait";
-            break;
-        case UIInterfaceOrientationPortraitUpsideDown:
-            result = @"UIInterfaceOrientationPortraitUpsideDown";
-            break;
-        case UIInterfaceOrientationLandscapeLeft:
-            result = @"UIInterfaceOrientationLandscapeLeft";
-            break;
-        case UIInterfaceOrientationLandscapeRight:
-            result = @"UIInterfaceOrientationLandscapeRight";
-            break;
-            
-        default:
-            result = @"unknown";
-    }
-    
-    return result;
-}
-
 
 - (void)updateAndRender
 {
@@ -701,7 +491,6 @@
         }
     });
 }
-
 
 - (void)dealloc
 {
@@ -736,63 +525,52 @@
     on_surface_changed(200, 200, 1, 0,0,0,0,0);
 }
 
-
-
-
 #pragma mark - GLKView delegate methods
 
-- (void)glkView:(GLKView *)view drawInRect:(CGRect)rect
+- (void)glkView:(GLKView *)__unused view drawInRect:(CGRect)__unused rect
 {
     double time = CFAbsoluteTimeGetCurrent();
-    //NSLog(@">%f", time);
     
-    set_page(_currentPage);
+    set_page((int)_currentPage);
     set_date(time);
     
     on_draw_frame();
 }
 
-
-
-
-
 static CGFloat x;
 static bool justEndDragging;
 
-
-- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)__unused decelerate
 {
-    x=scrollView.contentOffset.x;
-    justEndDragging=YES;
-    //NSLog(@"scrollViewDidEndDragging x>%f", x);
+    x = scrollView.contentOffset.x;
+    justEndDragging = true;
 }
 
-int _current_page_end;
+NSInteger _current_page_end;
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
+    CGFloat offset = (scrollView.contentOffset.x - _currentPage * [self windowBounds].size.width) / self.view.frame.size.width;
     
-    //float offset = MIN(1, MAX(-1, (scrollView.contentOffset.x - _currentPage*[self windowBounds].size.width)/320.));
-    float offset = (scrollView.contentOffset.x - _currentPage*[self windowBounds].size.width)/self.view.frame.size.width;
+    set_scroll_offset((float)offset);
     
-    set_scroll_offset(offset);
-    
-    if (justEndDragging) {
-        justEndDragging=NO;
+    if (justEndDragging)
+    {
+        justEndDragging = false;
         
         CGFloat page = scrollView.contentOffset.x/[self windowBounds].size.width;
         CGFloat sign = scrollView.contentOffset.x - x;
         
-        if (sign>0) {
-            if (page>_currentPage) {
+        if (sign > 0)
+        {
+            if (page > _currentPage)
                 _currentPage++;
-            }
         }
         
-        if (sign<0) {
-            if (page<_currentPage) {
+        if (sign < 0)
+        {
+            if (page < _currentPage)
                 _currentPage--;
-            }
         }
         
         _currentPage = MAX(0, MIN(5, _currentPage));
@@ -800,7 +578,8 @@ int _current_page_end;
     }
     else
     {
-        if (_pageScrollView.contentOffset.x > _current_page_end*_pageScrollView.frame.size.width) {
+        if (_pageScrollView.contentOffset.x > _current_page_end*_pageScrollView.frame.size.width)
+        {
             if (_pageScrollView.currentPageMin > _current_page_end) {
                 _currentPage = [_pageScrollView currentPage];
                 _current_page_end = _currentPage;
@@ -808,7 +587,8 @@ int _current_page_end;
         }
         else
         {
-            if (_pageScrollView.currentPageMax < _current_page_end) {
+            if (_pageScrollView.currentPageMax < _current_page_end)
+            {
                 _currentPage = [_pageScrollView currentPage];
                 _current_page_end = _currentPage;
             }
@@ -816,14 +596,6 @@ int _current_page_end;
     }
     
     [_pageControl setCurrentPage:_currentPage];
-    
-}
-
-
-- (void)didReceiveMemoryWarning
-{
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
 }
 
 @end

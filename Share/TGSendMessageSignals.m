@@ -1,28 +1,53 @@
 #import "TGSendMessageSignals.h"
 
 #import "TGUserModel.h"
+#import "TGChannelChatModel.h"
 
 @implementation TGSendMessageSignals
 
-+ (Api38_InputPeer *)inputPeerForPeerId:(TGPeerId)peerId users:(NSArray *)users
++ (Api48_InputPeer *)inputPeerForPeerId:(TGPeerId)peerId users:(NSArray *)users isChannel:(bool *)isChannel
 {
     switch (peerId.namespaceId)
     {
         case TGPeerIdPrivate:
         {
-            for (TGUserModel *user in users)
+            for (id model in users)
             {
-                if (user.userId == peerId.peerId)
+                if ([model isKindOfClass:[TGUserModel class]] && ((TGUserModel *)model).userId == peerId.peerId)
                 {
+                    TGUserModel *user = (TGUserModel *)model;
+                    
                     if (user.accessHash == -1)
-                        return [Api38_InputPeer inputPeerSelf];
+                        return [Api48_InputPeer inputPeerSelf];
                     else
-                        return [Api38_InputPeer inputPeerUserWithUserId:@(user.userId) accessHash:@(user.accessHash)];
+                        return [Api48_InputPeer inputPeerUserWithUserId:@(user.userId) accessHash:@(user.accessHash)];
                 }
             }
         }
+            break;
+            
         case TGPeerIdGroup:
-            return [Api38_InputPeer inputPeerChatWithChatId:@(peerId.peerId)];
+        {
+            return [Api48_InputPeer inputPeerChatWithChatId:@(peerId.peerId)];
+        }
+            break;
+            
+        case TGPeerIdChannel:
+        {
+            for (id model in users)
+            {
+                if ([model isKindOfClass:[TGChannelChatModel class]] && ((TGChannelChatModel *)model).peerId.peerId == peerId.peerId)
+                {
+                    TGChannelChatModel *channel = (TGChannelChatModel *)model;
+                    if (isChannel != NULL)
+                        *isChannel = !channel.isGroup;
+                    
+                    return [Api48_InputPeer inputPeerChannelWithChannelId:@(channel.peerId.peerId) accessHash:@(channel.accessHash)];
+                }
+            }
+        }
+            break;
+            
         default:
             break;
     }
@@ -31,24 +56,36 @@
 
 + (SSignal *)sendTextMessageWithContext:(TGShareContext *)context peerId:(TGPeerId)peerId users:(NSArray *)users text:(NSString *)text
 {
-    Api38_InputPeer *inputPeer = [self inputPeerForPeerId:peerId users:users];
+    bool isChannel = false;
+    Api48_InputPeer *inputPeer = [self inputPeerForPeerId:peerId users:users isChannel:&isChannel];
     if (inputPeer == nil)
         return [SSignal fail:nil];
     
     int64_t randomId = 0;
     arc4random_buf(&randomId, 8);
-    return [context function:[Api38 messages_sendMessageWithFlags:@(0) peer:inputPeer replyToMsgId:@(0) message:text randomId:@(randomId) replyMarkup:nil entities:@[]]];
+    int32_t flags = 0;
+    if (isChannel)
+        flags |= 16;
+    flags |= (1 << 6);
+    
+    return [context function:[Api48 messages_sendMessageWithFlags:@(flags) peer:inputPeer replyToMsgId:@(0) message:text randomId:@(randomId) replyMarkup:nil entities:@[]]];
 }
 
-+ (SSignal *)sendMediaWithContext:(TGShareContext *)context peerId:(TGPeerId)peerId users:(NSArray *)users inputMedia:(Api38_InputMedia *)inputMedia
++ (SSignal *)sendMediaWithContext:(TGShareContext *)context peerId:(TGPeerId)peerId users:(NSArray *)users inputMedia:(Api48_InputMedia *)inputMedia
 {
-    Api38_InputPeer *inputPeer = [self inputPeerForPeerId:peerId users:users];
+    bool isChannel = false;
+    Api48_InputPeer *inputPeer = [self inputPeerForPeerId:peerId users:users isChannel:&isChannel];
     if (inputPeer == nil)
         return [SSignal fail:nil];
     
     int64_t randomId = 0;
     arc4random_buf(&randomId, 8);
-    return [context function:[Api38 messages_sendMediaWithFlags:@(0) peer:inputPeer replyToMsgId:@(0) media:inputMedia randomId:@(randomId) replyMarkup:nil]];
+    int32_t flags = 0;
+    if (isChannel)
+        flags |= 16;
+    flags |= (1 << 6);
+    
+    return [context function:[Api48 messages_sendMediaWithFlags:@(flags) peer:inputPeer replyToMsgId:@(0) media:inputMedia randomId:@(randomId) replyMarkup:nil]];
 }
 
 @end

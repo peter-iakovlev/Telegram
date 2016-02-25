@@ -1,4 +1,10 @@
 #import <Foundation/Foundation.h>
+#import "TGOverlayController.h"
+
+@interface TGPickerSheetOverlayController : TGOverlayController
+
+@end
+
 
 @interface TGPickerSheet : NSObject
 

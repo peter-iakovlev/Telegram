@@ -15,12 +15,19 @@
 
 #import "TGStringUtils.h"
 
+#import "TGChannelManagementSignals.h"
+
+#import "TGPeerIdAdapter.h"
+
 @interface TGLoadConversationAndHistoryForSearchActor () <ASWatcher>
 {
     int64_t _peerId;
+    int64_t _accessHash;
     int32_t _messageId;
     
     bool _loadingFirstHistory;
+    
+    id<SDisposable> _disposable;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -48,6 +55,8 @@
 {
     [_actionHandle reset];
     [ActionStageInstance() removeWatcher:self];
+    
+    [_disposable dispose];
 }
 
 + (NSString *)genericPath
@@ -58,12 +67,12 @@
 - (void)execute:(NSDictionary *)options
 {
     _peerId = [options[@"peerId"] longLongValue];
+    _accessHash = [options[@"accessHash"] longLongValue];
     _messageId = [options[@"messageId"] intValue];
     
-    if ([TGDatabaseInstance() loadConversationWithId:_peerId] != nil)
+    if ([TGDatabaseInstance() loadConversationWithId:_peerId] != nil) {
         [self _loadSearchArea];
-    else
-    {
+    } else {
         _loadingFirstHistory = true;
         
         self.cancelToken = [TGTelegraphInstance doRequestConversationHistory:_peerId accessHash:0 maxMid:0 orOffset:0 limit:(int)[self loadCount] / 2 actor:(TGConversationHistoryAsyncRequestActor *)self];
@@ -81,7 +90,33 @@
 
 - (void)_loadSearchArea
 {
-    self.cancelToken = [TGTelegraphInstance doRequestConversationHistory:_peerId accessHash:0 maxMid:_messageId + 1 orOffset:(int)-[self loadCount] / 2 limit:(int)[self loadCount] actor:(TGConversationHistoryAsyncRequestActor *)self];
+    if (TGPeerIdIsChannel(_peerId)) {
+        NSString *path = self.path;
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+        dict[@"peerId"] = @(_peerId);
+        dict[@"messageId"] = @(_messageId);
+        
+        int64_t peerId = _peerId;
+        _disposable = [[[TGChannelManagementSignals preloadedHistoryForPeerId:_peerId accessHash:_accessHash aroundMessageId:_messageId] mapToSignal:^SSignal *(NSDictionary *dict) {
+            NSArray *removedImportantHoles = nil;
+            NSArray *removedUnimportantHoles = nil;
+            
+            removedImportantHoles = dict[@"hole"] == nil ? nil : @[dict[@"hole"]];
+            removedUnimportantHoles = dict[@"hole"] == nil ? nil : @[dict[@"hole"]];
+            
+            return [[TGDatabaseInstance() modify:^id {
+                [TGDatabaseInstance() addMessagesToChannel:peerId messages:dict[@"messages"] deleteMessages:nil unimportantGroups:dict[@"unimportantGroups"] addedHoles:nil removedHoles:removedImportantHoles removedUnimportantHoles:removedUnimportantHoles updatedMessageSortKeys:nil returnGroups:false keepUnreadCounters:false changedMessages:nil];
+                
+                return [SSignal complete];
+            }] switchToLatest];
+        }] startWithNext:nil error:^(__unused id error) {
+            [ActionStageInstance() actionFailed:path reason:-1];
+        } completed:^{
+            [ActionStageInstance() actionCompleted:path result:dict];
+        }];
+    } else {
+        self.cancelToken = [TGTelegraphInstance doRequestConversationHistory:_peerId accessHash:0 maxMid:_messageId + 1 orOffset:(int)-[self loadCount] / 2 limit:(int)[self loadCount] actor:(TGConversationHistoryAsyncRequestActor *)self];
+    }
 }
 
 - (void)cancel

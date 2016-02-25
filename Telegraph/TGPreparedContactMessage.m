@@ -21,7 +21,7 @@
         _firstName = firstName;
         _lastName = lastName;
         _phoneNumber = phoneNumber;
-        _replyMessage = replyMessage;
+        self.replyMessage = replyMessage;
     }
     return self;
 }
@@ -48,11 +48,11 @@
     contactAttachment.phoneNumber = _phoneNumber;
     [attachments addObject:contactAttachment];
     
-    if (_replyMessage != nil)
+    if (self.replyMessage != nil)
     {
         TGReplyMessageMediaAttachment *replyMedia = [[TGReplyMessageMediaAttachment alloc] init];
-        replyMedia.replyMessageId = _replyMessage.mid;
-        replyMedia.replyMessage = _replyMessage;
+        replyMedia.replyMessageId = self.replyMessage.mid;
+        replyMedia.replyMessage = self.replyMessage;
         [attachments addObject:replyMedia];
     }
     

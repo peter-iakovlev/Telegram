@@ -81,11 +81,11 @@ const CGFloat TGPhotoAvatarCropViewOverscreenSize = 1000;
         _bottomOverlayView.userInteractionEnabled = false;
         [self addSubview:_bottomOverlayView];
         
-        [self updateCircleImageWithReferenceSize:screenSize];
-        
         _areaMaskView = [[UIImageView alloc] initWithFrame:self.bounds];
         _areaMaskView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [self addSubview:_areaMaskView];
+        
+        [self updateCircleImageWithReferenceSize:screenSize];
     }
     return self;
 }
@@ -140,7 +140,7 @@ const CGFloat TGPhotoAvatarCropViewOverscreenSize = 1000;
     
     _imageReloadingNeeded = false;
     
-    _imageView.image = _image;;
+    _imageView.image = _image;
     
     if (_snapshotView != nil && !_scrollView.hidden)
     {
@@ -149,6 +149,12 @@ const CGFloat TGPhotoAvatarCropViewOverscreenSize = 1000;
             [self fadeInImageView];
         });
     }
+}
+
+- (void)_replaceSnapshotImage:(UIImage *)image
+{
+    if ([_snapshotView isKindOfClass:[UIImageView class]])
+        ((UIImageView *)_snapshotView).image = image;
 }
 
 - (void)setSnapshotImage:(UIImage *)snapshotImage
@@ -327,7 +333,7 @@ const CGFloat TGPhotoAvatarCropViewOverscreenSize = 1000;
 - (void)adjustScrollView
 {
     CGSize imageSize = _originalSize;
-    float imageScale = 1.0f;
+    CGFloat imageScale = 1.0f;
     imageSize.width /= imageScale;
     imageSize.height /= imageScale;
     
@@ -341,20 +347,6 @@ const CGFloat TGPhotoAvatarCropViewOverscreenSize = 1000;
         _scrollView.minimumZoomScale = minScale;
     if (_scrollView.maximumZoomScale != minScale * 3.0f)
         _scrollView.maximumZoomScale = minScale * 3.0f;
-
-    CGRect contentsFrame = _wrapperView.frame;
-    
-    if (boundsSize.width > contentsFrame.size.width)
-        contentsFrame.origin.x = (boundsSize.width - contentsFrame.size.width) / 2.0f;
-    else
-        contentsFrame.origin.x = 0;
-    
-    if (boundsSize.height > contentsFrame.size.height)
-        contentsFrame.origin.y = (boundsSize.height - contentsFrame.size.height) / 2.0f;
-    else
-        contentsFrame.origin.y = 0;
-    
-    //_wrapperView.frame = contentsFrame;
 }
 
 #pragma mark - Cropping
@@ -400,7 +392,7 @@ const CGFloat TGPhotoAvatarCropViewOverscreenSize = 1000;
 
 - (UIImage *)croppedImageWithMaxSize:(CGSize)maxSize
 {
-    return TGPhotoEditorCrop(_imageView.image, self.cropOrientation, 0.0f, self.cropRect, maxSize, _originalSize);
+    return TGPhotoEditorCrop(_imageView.image, self.cropOrientation, 0.0f, self.cropRect, maxSize, _originalSize, true);
 }
 
 #pragma mark - Transition
@@ -479,6 +471,11 @@ const CGFloat TGPhotoAvatarCropViewOverscreenSize = 1000;
         _bottomOverlayView.alpha = 0.0f;
         _areaMaskView.alpha = 0.0f;
     }];
+}
+
+- (void)hideImageForCustomTransition
+{
+    _scrollView.hidden = true;
 }
 
 #pragma mark - Layout

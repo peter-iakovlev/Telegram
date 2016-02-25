@@ -13,6 +13,8 @@
 
 #import "TGConversationAddMessagesActor.h"
 
+#import "TLChat$chat.h"
+
 @interface TGConversationDeleteMemberRequestActor ()
 
 @property (nonatomic) int uid;

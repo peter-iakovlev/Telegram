@@ -8,6 +8,7 @@
 
 @property (nonatomic, strong) NSString *fileName;
 
+@property (nonatomic) CGFloat diameter;
 @property (nonatomic) bool incoming;
 @property (nonatomic) int overlayType;
 @property (nonatomic) CGFloat progress;

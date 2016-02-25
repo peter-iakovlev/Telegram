@@ -160,9 +160,16 @@ static NSTimeInterval configInvalidationDate = 0.0;
 - (void)configRequestSuccess:(TLConfig *)config
 {
     int32_t maxChatParticipants = MAX(100, config.chat_size_max);
-    int32_t maxBroadcastReceivers = MAX(100, config.broadcast_size_max);
     [TGDatabaseInstance() setCustomProperty:@"maxChatParticipants" value:[NSData dataWithBytes:&maxChatParticipants length:4]];
-    [TGDatabaseInstance() setCustomProperty:@"maxBroadcastReceivers" value:[NSData dataWithBytes:&maxBroadcastReceivers length:4]];
+    
+    int32_t maxChannelGroupMembers = config.megagroup_size_max;
+    [TGDatabaseInstance() setCustomProperty:@"maxChannelGroupMembers" value:[NSData dataWithBytes:&maxChannelGroupMembers length:4]];
+    
+    int32_t maxSavedGifs = config.saved_gifs_limit;
+    [TGDatabaseInstance() setCustomProperty:@"maxSavedGifs" value:[NSData dataWithBytes:&maxSavedGifs length:4]];
+    
+    int32_t maxChannelMessageEditTime = config.edit_time_limit;
+    [TGDatabaseInstance() setCustomProperty:@"maxChannelMessageEditTime" value:[NSData dataWithBytes:&maxChannelMessageEditTime length:4]];
     
     //[TGApplicationFeatures setLargeGroupMemberCountLimit:(NSUInteger)config.chat_big_size];
     

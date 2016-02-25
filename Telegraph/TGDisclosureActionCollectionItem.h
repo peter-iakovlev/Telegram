@@ -11,6 +11,7 @@
 @interface TGDisclosureActionCollectionItem : TGCollectionItem
 
 @property (nonatomic, strong) NSString *title;
+@property (nonatomic, strong) UIImage *icon;
 @property (nonatomic) SEL action;
 
 - (instancetype)initWithTitle:(NSString *)title action:(SEL)action;

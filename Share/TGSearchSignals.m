@@ -73,10 +73,11 @@ static void enumerateStringParts(NSString *string, void (^block)(NSString *, boo
             if ([chatModel isKindOfClass:[TGPrivateChatModel class]])
             {
                 int32_t userId = ((TGPrivateChatModel *)chatModel).peerId.peerId;
-                for (TGUserModel *userModel in users)
+                for (id model in users)
                 {
-                    if (userModel.userId == userId)
+                    if ([model isKindOfClass:[TGUserModel class]] && ((TGUserModel *)model).userId == userId)
                     {
+                        TGUserModel *userModel = (TGUserModel *)model;
                         NSString *title = [[userModel displayName] lowercaseString];
                         __block bool matches = false;
                         enumerateStringParts(title, ^(NSString *part, bool *stop)
@@ -130,22 +131,22 @@ static void enumerateStringParts(NSString *string, void (^block)(NSString *, boo
     if (query.length < 5)
         return [SSignal single:@{@"chats": @[], @"users": @[]}];
     
-    return [[context function:[Api38 contacts_searchWithQ:query limit:@(100)]] map:^id(Api38_contacts_Found *result)
+    return [[context function:[Api48 contacts_searchWithQ:query limit:@(100)]] map:^id(Api48_contacts_Found *result)
     {
         NSMutableArray *chatModels = [[NSMutableArray alloc] init];
         NSMutableArray *userModels = [[NSMutableArray alloc] init];
         
-        for (Api38_User *user in result.users)
+        for (Api48_User *user in result.users)
         {
             TGUserModel *userModel = [TGChatListSignal userModelWithApiUser:user];
             if (userModel != nil)
                 [userModels addObject:userModel];
         }
         
-        for (Api38_Peer *peerFound in result.results)
+        for (Api48_Peer *peerFound in result.results)
         {
-            if ([peerFound isKindOfClass:[Api38_Peer_peerUser class]]) {
-                int32_t userId = [((Api38_Peer_peerUser *)peerFound).userId intValue];
+            if ([peerFound isKindOfClass:[Api48_Peer_peerUser class]]) {
+                int32_t userId = [((Api48_Peer_peerUser *)peerFound).userId intValue];
                 
                 for (TGUserModel *userModel in userModels)
                 {

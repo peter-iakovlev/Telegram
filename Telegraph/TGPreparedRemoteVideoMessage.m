@@ -25,7 +25,7 @@
         _videoInfo = videoInfo;
         _thumbnailInfo = thumbnailInfo;
         _caption = caption;
-        _replyMessage = replyMessage;
+        self.replyMessage = replyMessage;
     }
     return self;
 }
@@ -50,11 +50,11 @@
     videoAttachment.caption = _caption;
     [attachments addObject:videoAttachment];
     
-    if (_replyMessage != nil)
+    if (self.replyMessage != nil)
     {
         TGReplyMessageMediaAttachment *replyMedia = [[TGReplyMessageMediaAttachment alloc] init];
-        replyMedia.replyMessageId = _replyMessage.mid;
-        replyMedia.replyMessage = _replyMessage;
+        replyMedia.replyMessageId = self.replyMessage.mid;
+        replyMedia.replyMessage = self.replyMessage;
         [attachments addObject:replyMedia];
     }
     

@@ -219,6 +219,9 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
 {
 }
 
+- (void)setAuthorSignature:(NSString *)__unused authorSignature {
+}
+
 - (void)updateAssets
 {
 }
@@ -265,7 +268,7 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
 {
 }
 
-- (void)updateMediaAvailability:(bool)__unused mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage
+- (void)updateMediaAvailability:(bool)__unused mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage delayDisplay:(bool)__unused delayDisplay
 {
 }
 
@@ -286,6 +289,10 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
 }
 
 - (void)stopInlineMedia
+{
+}
+
+- (void)resumeInlineMedia
 {
 }
 

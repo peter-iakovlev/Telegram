@@ -409,7 +409,7 @@
             return nil;
         };
         
-        modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
+        modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
         {
             __strong TGGenericPeerMediaListModel *strongSelf = weakSelf;
             if (strongSelf != nil && [item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])

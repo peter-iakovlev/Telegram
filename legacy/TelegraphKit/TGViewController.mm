@@ -272,6 +272,20 @@ static std::set<int> autorotationLockIds;
     return value;
 }
 
++ (bool)hasVeryLargeScreen {
+    static bool value = false;
+    
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        CGSize screenSize = [TGViewController screenSizeForInterfaceOrientation:UIInterfaceOrientationPortrait];
+        CGFloat side = MAX(screenSize.width, screenSize.height);
+        value = side >= 736 - FLT_EPSILON;
+    });
+    
+    return value;
+}
+
 + (void)disableAutorotation
 {
     autorotationDisabled = true;
@@ -400,7 +414,7 @@ static std::set<int> autorotationLockIds;
         __strong TGViewController *strongSelf = weakSelf;
         if (strongSelf != nil) {
             if (strongSelf->_currentSizeClass != [next integerValue]) {
-                strongSelf->_currentSizeClass = [next integerValue];
+                strongSelf->_currentSizeClass = (UIUserInterfaceSizeClass)[next integerValue];
                 if (initializedSizeClass) {
                     [strongSelf updateSizeClass];
                 }

@@ -1,9 +1,13 @@
 #import "TGModernGalleryItem.h"
 
+@protocol TGMediaSelectableItem;
+@class TGMediaSelectionContext;
+
 @protocol TGModernGallerySelectableItem <TGModernGalleryItem>
 
-@property (nonatomic, copy) void(^itemSelected)(id<TGModernGallerySelectableItem> item);
+@property (nonatomic, strong) TGMediaSelectionContext *selectionContext;
 
+- (id<TGMediaSelectableItem>)selectableMediaItem;
 - (NSString *)uniqueId;
 
 @end

@@ -11,6 +11,15 @@
 #import "TGProgressWindow.h"
 #import "TGInstagramMediaIdSignal.h"
 
+#import "TGRemoteImageView.h"
+
+#import "TGAppDelegate.h"
+
+#import "TGGenericPeerMediaGalleryImageItem.h"
+
+#import "TGMediaAssetsLibrary.h"
+#import "TGAccessChecker.h"
+
 @interface TGExternalGalleryModel ()
 {
     TGWebPageMediaAttachment *_webPage;
@@ -20,14 +29,22 @@
 
 @implementation TGExternalGalleryModel
 
-- (instancetype)initWithWebPage:(TGWebPageMediaAttachment *)webPage
+- (instancetype)initWithWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId
 {
     self = [super init];
     if (self != nil)
     {
         _webPage = webPage;
-        TGExternalGalleryItem *item = [[TGExternalGalleryItem alloc] initWithWebPage:webPage];
+        
+        //TGExternalGalleryItem *item = [[TGExternalGalleryItem alloc] initWithWebPage:webPage];
+        //NSArray *items = @[item];
+        
+        TGGenericPeerMediaGalleryImageItem *item = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:webPage.photo.imageId orLocalId:0 peerId:peerId messageId:messageId legacyImageInfo:webPage.photo.imageInfo];
+        item.date = webPage.photo.date;
+        item.messageId = messageId;
+        item.caption = webPage.photo.caption;
         NSArray *items = @[item];
+        
         [self _replaceItems:items focusingOnItem:item];
     }
     return self;
@@ -39,7 +56,7 @@
     __weak TGExternalGalleryModel *weakSelf = self;
     accessoryView.action = ^(id<TGModernGalleryItem> item)
     {
-        if ([item isKindOfClass:[TGExternalGalleryItem class]])
+        if ([item isKindOfClass:[TGGenericPeerMediaGalleryImageItem class]])
         {
             __strong TGExternalGalleryModel *strongSelf = weakSelf;
             if (strongSelf != nil)
@@ -57,6 +74,35 @@
                         openInText = TGLocalized(@"Preview.OpenInInstagram");
                     
                     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:openInText action:@"open" type:TGActionSheetActionTypeGeneric]];
+                    
+                    NSString *imageUrl = [_webPage.photo.imageInfo closestImageUrlWithSize:CGSizeMake(1000.0f, 1000.0f) resultingSize:NULL];
+                    
+                    NSData *data = nil;
+                    
+                    static NSString *filesDirectory = nil;
+                    static dispatch_once_t onceToken;
+                    dispatch_once(&onceToken, ^ {
+                        filesDirectory = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"files"];
+                    });
+                    
+                    if (_webPage.photo.imageId != 0)
+                    {
+                        NSString *photoDirectoryName = nil;
+                        photoDirectoryName = [[NSString alloc] initWithFormat:@"image-remote-%" PRIx64 "", (int64_t)_webPage.photo.imageId];
+                        NSString *photoDirectory = [filesDirectory stringByAppendingPathComponent:photoDirectoryName];
+                    
+                        NSString *imagePath = [photoDirectory stringByAppendingPathComponent:@"image.jpg"];
+                        data = [NSData dataWithContentsOfFile:imagePath options:NSDataReadingMappedIfSafe error:NULL];
+                    }
+                    
+                    if (data == nil) {
+                        data = [NSData dataWithContentsOfFile:[[TGRemoteImageView sharedCache] pathForCachedData:imageUrl] options:NSDataReadingMappedIfSafe error:NULL];
+                    }
+                    
+                    if (data != nil) {
+                        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Preview.SaveToCameraRoll") action:@"save" type:TGActionSheetActionTypeGeneric]];
+                    }
+                    
                     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
                     
                     [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
@@ -107,12 +153,36 @@
                                 [(TGApplication *)[UIApplication sharedApplication] openURL:[NSURL URLWithString:strongSelf->_webPage.url] forceNative:true];
                             }
                         }
+                        else if ([action isEqualToString:@"save"]) {
+                            [strongSelf _saveImageDataToCameraRoll:data];
+                        }
                     } target:strongSelf] showInView:actionSheetView];
                 }
             }
         }
     };
     return accessoryView;
+}
+
+- (void)_saveImageDataToCameraRoll:(NSData *)data
+{
+    if (data == nil)
+        return;
+    
+    if (![TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
+        return;
+    
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    [progressWindow show:true];
+    
+    [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImageData:data] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
+    {
+        [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
+        [progressWindow dismiss:true];
+    } completed:^
+    {
+        [progressWindow dismissWithSuccess];
+    }];
 }
 
 - (NSString *)instagramShortcodeFromText:(NSString *)text

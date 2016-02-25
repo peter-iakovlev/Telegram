@@ -40,6 +40,7 @@
     bool _isBot;
     
     NSArray *_currentSearchHighlightViews;
+    NSString *_text;
 }
 
 @end
@@ -60,9 +61,9 @@ static CTFontRef textFontForSize(CGFloat size)
     return font;
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer context:(TGModernViewContext *)context
+- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer viaUser:(TGUser *)viaUser context:(TGModernViewContext *)context
 {
-    self = [super initWithMessage:message authorPeer:authorPeer context:context];
+    self = [super initWithMessage:message authorPeer:authorPeer viaUser:viaUser context:context];
     if (self != nil)
     {
         static TGTelegraphConversationMessageAssetsSource *assetsSource = nil;
@@ -71,6 +72,8 @@ static CTFontRef textFontForSize(CGFloat size)
         {
             assetsSource = [TGTelegraphConversationMessageAssetsSource instance];
         });
+        
+        _text = message.text;
         
         _textModel = [[TGModernTextViewModel alloc] initWithText:message.text font:textFontForSize(TGGetMessageViewModelLayoutConstants()->textFontSize)];
         _textModel.textCheckingResults = message.textCheckingResults;
@@ -143,15 +146,17 @@ static CTFontRef textFontForSize(CGFloat size)
             NSString *linkCandidate = [_textModel linkAtPoint:CGPointMake(point.x - _textModel.frame.origin.x, point.y - _textModel.frame.origin.y) regionData:NULL];
             TGWebPageMediaAttachment *webPage = nil;
             bool activateWebpageContents = false;
+            TGWebpageFooterModelAction webpageAction = TGWebpageFooterModelActionNone;
             if (linkCandidate == nil)
             {
                 if (_webPageFooterModel != nil)
                 {
-                    if ([_webPageFooterModel hasWebpageActionAtPoint:CGPointMake(point.x - _webPageFooterModel.frame.origin.x, point.y - _webPageFooterModel.frame.origin.y)])
+                    webpageAction = [_webPageFooterModel webpageActionAtPoint:CGPointMake(point.x - _webPageFooterModel.frame.origin.x, point.y - _webPageFooterModel.frame.origin.y)];
+                    if (webpageAction != TGWebpageFooterModelActionNone)
                     {
                         if ([_webPage.pageType isEqualToString:@"photo"] || [_webPage.pageType isEqualToString:@"article"])
                         {
-                            webPage = _webPage;   
+                            webPage = _webPage;
                         }
                         activateWebpageContents = _webPage.embedUrl.length != 0;
                         linkCandidate = _webPage.url;
@@ -165,13 +170,26 @@ static CTFontRef textFontForSize(CGFloat size)
             
             if (recognizer.longTapped)
             {
-                if (linkCandidate != nil)
-                    [_context.companionHandle requestAction:@"openLinkWithOptionsRequested" options:@{@"url": linkCandidate}];
+                if (linkCandidate != nil) {
+                    if (_webPage != nil) {
+                        [_context.companionHandle requestAction:@"openLinkWithOptionsRequested" options:@{@"url": linkCandidate, @"webPage": _webPage}];
+                    } else {
+                        [_context.companionHandle requestAction:@"openLinkWithOptionsRequested" options:@{@"url": linkCandidate}];
+                    }
+                }
                 else
                     [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
             }
             else if (recognizer.doubleTapped)
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+            else if (webpageAction == TGWebpageFooterModelActionDownload) {
+                [_context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid)}];
+            } else if (webpageAction == TGWebpageFooterModelActionPlay) {
+                [_webPageFooterModel activateWebpageContents];
+            }
+            else if (webpageAction == TGWebpageFooterModelActionOpenURL && linkCandidate != nil) {
+                [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": linkCandidate, @"mid": @(_mid)}];
+            }
             else if (activateWebpageContents)
                 [_context.companionHandle requestAction:@"openEmbedRequested" options:@{@"webPage": _webPage}];
             else if (webPage != nil)
@@ -179,11 +197,18 @@ static CTFontRef textFontForSize(CGFloat size)
             else if (linkCandidate != nil)
                 [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": linkCandidate, @"mid": @(_mid)}];
             else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
-                if (TGPeerIdIsChannel(_forwardedPeerId)) {
-                    [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+                if (_viaUser != nil && [_forwardedHeaderModel linkAtPoint:CGPointMake(point.x - _forwardedHeaderModel.frame.origin.x, point.y - _forwardedHeaderModel.frame.origin.y) regionData:NULL]) {
+                    [_context.companionHandle requestAction:@"useContextBot" options:@{@"uid": @((int32_t)_viaUser.uid), @"username": _viaUser.userName == nil ? @"" : _viaUser.userName}];
                 } else {
-                    [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                    if (TGPeerIdIsChannel(_forwardedPeerId)) {
+                        [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+                    } else {
+                        [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                    }
                 }
+            }
+            else if (_viaUserModel != nil && CGRectContainsPoint(_viaUserModel.frame, point)) {
+                [_context.companionHandle requestAction:@"useContextBot" options:@{@"uid": @((int32_t)_viaUser.uid), @"username": _viaUser.userName == nil ? @"" : _viaUser.userName}];
             }
             else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
                 [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
@@ -191,9 +216,22 @@ static CTFontRef textFontForSize(CGFloat size)
     }
 }
 
+- (UIScrollView *)findScrollView {
+    UIView *superview = [_backgroundModel.boundView superview];
+    while (superview != nil) {
+        if ([superview isKindOfClass:[UIScrollView class]]) {
+            return (UIScrollView *)superview;
+        }
+        superview = [superview superview];
+    }
+    return nil;
+}
+
 - (void)gestureRecognizer:(TGDoubleTapGestureRecognizer *)__unused recognizer didBeginAtPoint:(CGPoint)point
 {
-    [self updateLinkSelection:point];
+    if (![self findScrollView].isDecelerating) {
+        [self updateLinkSelection:point];
+    }
 }
 
 - (void)gestureRecognizerDidFail:(TGDoubleTapGestureRecognizer *)__unused recognizer
@@ -216,12 +254,13 @@ static CTFontRef textFontForSize(CGFloat size)
     point = [recognizer locationInView:[_contentModel boundView]];
     
     if ([_textModel linkAtPoint:CGPointMake(point.x - _textModel.frame.origin.x, point.y - _textModel.frame.origin.y) regionData:NULL] != nil ||
-        (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) || (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point)))
+        (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) || (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point)) ||
+            (_viaUserModel && CGRectContainsPoint(_viaUserModel.frame, point)))
         return 3;
     
     if (_webPageFooterModel != nil && CGRectContainsPoint(_webPageFooterModel.frame, point))
     {
-        if ([_webPageFooterModel hasWebpageActionAtPoint:CGPointMake(point.x - _webPageFooterModel.frame.origin.x, point.y - _webPageFooterModel.frame.origin.y)])
+        if ([_webPageFooterModel webpageActionAtPoint:CGPointMake(point.x - _webPageFooterModel.frame.origin.x, point.y - _webPageFooterModel.frame.origin.y)] != TGWebpageFooterModelActionNone)
         {
             return 3;
         }
@@ -681,10 +720,22 @@ static CTFontRef textFontForSize(CGFloat size)
     if (updateContents)
         [_textModel layoutForContainerSize:containerSize];
     
-    if (needsContentsUpdate != NULL)
+    if (needsContentsUpdate != NULL && updateContents)
         *needsContentsUpdate = updateContents;
     
     return _textModel.frame.size;
+}
+
+- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated {
+    [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
+    
+    if (!TGStringCompare(message.text, _text)) {
+        _text = message.text;
+        _textModel.text = _text;
+        _textModel.textCheckingResults = message.textCheckingResults;
+        [_contentModel setNeedsSubmodelContentsUpdate];
+        *sizeUpdated = true;
+    }
 }
 
 @end

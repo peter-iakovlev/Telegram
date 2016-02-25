@@ -203,6 +203,12 @@ static ASQueue *taskManagementQueue()
             return true;
     }
     
+    if (args[@"video-file-name"] != nil) {
+        NSString *videoFilePath = [fileDirectory stringByAppendingPathComponent:args[@"video-file-name"]];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:videoFilePath isDirectory:NULL])
+            return true;
+    }
+    
     return false;
 }
 
@@ -323,40 +329,71 @@ static ASQueue *taskManagementQueue()
         [[NSFileManager defaultManager] createDirectoryAtPath:fileDirectory withIntermediateDirectories:true attributes:nil error:nil];
         
         NSString *filePath = [fileDirectory stringByAppendingPathComponent:args[@"file-name"]];
+        NSString *videoFilePath = nil;
+        if (args[@"video-file-name"] != nil) {
+            videoFilePath = [fileDirectory stringByAppendingPathComponent:args[@"video-file-name"]];
+        }
         NSString *temporaryThumbnailImagePath = [fileDirectory stringByAppendingPathComponent:@"file-thumb.jpg"];
         
         UIImage *image = nil;
         
-        if ([[NSFileManager defaultManager] fileExistsAtPath:filePath isDirectory:NULL])
+        if ([[NSFileManager defaultManager] fileExistsAtPath:videoFilePath isDirectory:NULL]) {
+            if ([videoFilePath pathExtension].length == 0) {
+                [[NSFileManager defaultManager] createSymbolicLinkAtPath:[videoFilePath stringByAppendingPathExtension:@"mov"] withDestinationPath:[videoFilePath pathComponents].lastObject error:nil];
+                videoFilePath = [videoFilePath stringByAppendingPathExtension:@"mov"];
+            }
+            
+            AVAsset *asset = [AVAsset assetWithURL:[NSURL fileURLWithPath:videoFilePath]];
+            
+            AVAssetImageGenerator *imageGenerator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
+            imageGenerator.maximumSize = CGSizeMake(800, 800);
+            imageGenerator.appliesPreferredTrackTransform = true;
+            NSError *imageError = nil;
+            CGImageRef imageRef = [imageGenerator copyCGImageAtTime:CMTimeMake(0, asset.duration.timescale) actualTime:NULL error:&imageError];
+            image = [[UIImage alloc] initWithCGImage:imageRef];
+            if (imageRef != NULL) {
+                CGImageRelease(imageRef);
+            }
+        }
+        
+        if (image == nil && [[NSFileManager defaultManager] fileExistsAtPath:filePath isDirectory:NULL]) {
             image = [[UIImage alloc] initWithContentsOfFile:filePath];
-        else
-        {
+        }
+        
+        if (image == nil) {
             image = [[UIImage alloc] initWithContentsOfFile:temporaryThumbnailImagePath];
-            if (image == nil)
+            
+            if (image != nil)
+                lowQualityThumbnail = true;
+        }
+        
+        if (image == nil)
+        {
+            if ([args[@"legacy-thumbnail-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
             {
-                if ([args[@"legacy-thumbnail-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
+                NSString *legacyThumbnailImagePath = [[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]];
+                image = [[UIImage alloc] initWithContentsOfFile:legacyThumbnailImagePath];
+                
+                if (image != nil)
                 {
-                    NSString *legacyThumbnailImagePath = [[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]];
-                    image = [[UIImage alloc] initWithContentsOfFile:legacyThumbnailImagePath];
-                    
-                    if (image != nil)
-                    {
-                        [[NSFileManager defaultManager] copyItemAtPath:legacyThumbnailImagePath toPath:temporaryThumbnailImagePath error:nil];
-                    }
+                    [[NSFileManager defaultManager] copyItemAtPath:legacyThumbnailImagePath toPath:temporaryThumbnailImagePath error:nil];
                 }
             }
             
-            if (image == nil)
+            if (image != nil)
+                lowQualityThumbnail = true;
+        }
+        
+        if (image == nil)
+        {
+            NSString *imageUrl = args[@"legacy-thumbnail-cache-url"];
+            if (imageUrl.length != 0)
             {
-                NSString *imageUrl = args[@"legacy-thumbnail-cache-url"];
-                if (imageUrl.length != 0)
+                if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
                 {
-                    if ([imageUrl hasPrefix:@"http://"] || [imageUrl hasPrefix:@"https://"])
-                    {
-                        NSData *imageData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
-                        if (imageData != nil)
-                            image = [[UIImage alloc] initWithData:imageData];
-                    }
+                    NSData *imageData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
+                    if (imageData != nil)
+                        image = [[UIImage alloc] initWithData:imageData];
                 }
             }
             

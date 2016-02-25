@@ -109,6 +109,7 @@ static ASQueue *taskManagementQueue()
     
     NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"map-thumbnail://?".length]];
     bool isFlat = [args[@"flat"] boolValue];
+    int cornerRadius = [args[@"cornerRadius"] intValue];
     
     [taskManagementQueue() dispatchOnQueue:^
     {
@@ -123,7 +124,7 @@ static ASQueue *taskManagementQueue()
                 return;
             
             if (completion != nil)
-                completion(result != nil ? result : [TGLocationThumbnailDataSource resultForUnavailableImage:isFlat]);
+                completion(result != nil ? result : [TGLocationThumbnailDataSource resultForUnavailableImage:isFlat cornerRadius:cornerRadius]);
         }];
         
         if ([TGLocationThumbnailDataSource _isDataLocallyAvailableForUri:uri])
@@ -150,7 +151,7 @@ static ASQueue *taskManagementQueue()
                                 return;
                             
                             if (completion != nil)
-                                completion(result != nil ? result : [TGLocationThumbnailDataSource resultForUnavailableImage:isFlat]);
+                                completion(result != nil ? result : [TGLocationThumbnailDataSource resultForUnavailableImage:isFlat cornerRadius:cornerRadius]);
                         }];
                         
                         [previewTask executeWithWorkerTask:modernWorkerTask workerPool:workerPool()];
@@ -158,7 +159,7 @@ static ASQueue *taskManagementQueue()
                     else
                     {
                         if (completion != nil)
-                            completion([TGLocationThumbnailDataSource resultForUnavailableImage:isFlat]);
+                            completion([TGLocationThumbnailDataSource resultForUnavailableImage:isFlat cornerRadius:cornerRadius]);
                     }
                 } workerTask:workerTask];
             }
@@ -173,7 +174,7 @@ static ASQueue *taskManagementQueue()
                     else
                     {
                         if (completion != nil)
-                            completion([TGLocationThumbnailDataSource resultForUnavailableImage:isFlat]);
+                            completion([TGLocationThumbnailDataSource resultForUnavailableImage:isFlat cornerRadius:cornerRadius]);
                     }
                 } workerTask:workerTask];
             }
@@ -195,18 +196,39 @@ static ASQueue *taskManagementQueue()
     }];
 }
 
-+ (TGDataResource *)resultForUnavailableImage:(bool)isFlat
++ (TGDataResource *)resultForUnavailableImage:(bool)isFlat cornerRadius:(int)cornerRadius
 {
     static TGDataResource *normalData = nil;
-    static TGDataResource *flatData = nil;
+    static NSMutableDictionary *flatDatas = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
         normalData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true) decoded:true];
-        flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], false) decoded:true];
+        flatDatas = [[NSMutableDictionary alloc] init];
     });
     
-    return isFlat ? flatData : normalData;
+    if (isFlat)
+    {
+        TGDataResource *flatData = flatDatas[@(cornerRadius)];
+        if (flatData == nil)
+        {
+            if (cornerRadius == 0)
+            {
+                flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], false) decoded:true];
+            }
+            else
+            {
+                flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], false, cornerRadius) decoded:true];
+            }
+            
+            flatDatas[@(cornerRadius)] = flatData;
+        }
+        return flatData;
+    }
+    else
+    {
+        return normalData;
+    }
 }
 
 - (id)loadAttributeSyncForUri:(NSString *)uri attribute:(NSString *)attribute
@@ -215,6 +237,7 @@ static ASQueue *taskManagementQueue()
     {
         NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"map-thumbnail://?".length]];
         bool isFlat = [args[@"flat"] boolValue];
+        int cornerRadius = [args[@"cornerRadius"] intValue];
         
         static NSMutableDictionary *placeholderBySize = nil;
         static dispatch_once_t onceToken;
@@ -231,7 +254,12 @@ static ASQueue *taskManagementQueue()
             return placeholder;
         
         UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
-        [TGAverageColorAttachmentImage([UIColor whiteColor], !isFlat) drawInRect:CGRectMake(0.0f, 0.0f, size.width, size.height) blendMode:kCGBlendModeCopy alpha:1.0f];
+        UIImage *image = nil;
+        if (isFlat && cornerRadius > 0)
+            image = TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], !isFlat, cornerRadius);
+        else
+            image = TGAverageColorAttachmentImage([UIColor whiteColor], !isFlat);
+        [image drawInRect:CGRectMake(0.0f, 0.0f, size.width, size.height) blendMode:kCGBlendModeCopy alpha:1.0f];
         CGRect imageRect = CGRectMake(0.0f, 0.0f, size.width, size.height);
         UIImage *pinImage = [UIImage imageNamed:@"ModernMessageLocationPin.png"];
         [pinImage drawInRect:CGRectMake(imageRect.origin.x + CGFloor((imageRect.size.width - pinImage.size.width) / 2.0f) + 1.0f, imageRect.origin.y + CGFloor((imageRect.size.height - pinImage.size.height) / 2.0f) + 6, pinImage.size.width, pinImage.size.height)];
@@ -300,16 +328,21 @@ static ASQueue *taskManagementQueue()
     UIGraphicsEndImageContext();
     
     bool isFlat = [args[@"flat"] boolValue];
+    int cornerRadius = [args[@"cornerRadius"] intValue];
     
     if (image != nil)
     {
-        UIImage *thumbnailImage = nil;
-        
         NSNumber *averageColor = [[TGMediaStoreContext instance] mediaImageAverageColor:uri];
         bool needsAverageColor = averageColor == nil;
         uint32_t averageColorValue = [averageColor intValue];
+     
+        uint32_t *averageColorPtr = needsAverageColor ? &averageColorValue : NULL;
         
-        thumbnailImage = TGLoadedAttachmentImage(image, size, needsAverageColor ? &averageColorValue : NULL, !isFlat);
+        UIImage *thumbnailImage = nil;
+        if (isFlat && cornerRadius > 0)
+            thumbnailImage = TGLoadedAttachmentWithCornerRadiusImage(image, size, averageColorPtr, !isFlat, cornerRadius);
+        else
+            thumbnailImage = TGLoadedAttachmentImage(image, size, averageColorPtr, !isFlat);
         
         if (thumbnailImage != nil)
         {

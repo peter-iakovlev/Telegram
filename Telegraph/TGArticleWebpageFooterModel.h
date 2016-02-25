@@ -4,6 +4,6 @@
 
 @interface TGArticleWebpageFooterModel : TGWebpageFooterModel
 
-- (instancetype)initWithWithIncoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage imageInText:(bool)imageInText hasViews:(bool)hasViews;
+- (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage imageInText:(bool)imageInText hasViews:(bool)hasViews;
 
 @end

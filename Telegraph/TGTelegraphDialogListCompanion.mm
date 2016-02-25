@@ -166,7 +166,7 @@ typedef enum {
     }];
 }
 
-- (void)composeMessage
+- (void)composeMessageAndOpenSearch:(bool)openSearch
 {
     if ([TGAppDelegateInstance isDisplayingPasscodeWindow])
         return;
@@ -174,13 +174,14 @@ typedef enum {
     TGDialogListController *controller = self.dialogListController;
     [controller selectConversationWithId:0];
     
-    TGSelectContactController *selectController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:false createBroadcast:false createChannel:false inviteToChannel:false];
+    TGSelectContactController *selectController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:false createBroadcast:false createChannel:false inviteToChannel:false showLink:false];
+    selectController.shouldOpenSearch = openSearch;
     [TGAppDelegateInstance.rootController pushContentController:selectController];
 }
 
 - (void)navigateToBroadcastLists
 {
-    TGCreateGroupController *controller = [[TGCreateGroupController alloc] initWithCreateChannel:true];
+    TGCreateGroupController *controller = [[TGCreateGroupController alloc] initWithCreateChannel:true createChannelGroup:false];
     [TGAppDelegateInstance.rootController pushContentController:controller];
 }
 
@@ -196,7 +197,7 @@ typedef enum {
     TGDialogListController *controller = self.dialogListController;
     [controller selectConversationWithId:0];
     
-    TGSelectContactController *selectController = [[TGSelectContactController alloc] initWithCreateGroup:true createEncrypted:false createBroadcast:false createChannel:false inviteToChannel:false];
+    TGSelectContactController *selectController = [[TGSelectContactController alloc] initWithCreateGroup:true createEncrypted:false createBroadcast:false createChannel:false inviteToChannel:false showLink:false];
     [TGAppDelegateInstance.rootController pushContentController:selectController];
 }
 
@@ -256,7 +257,7 @@ typedef enum {
             _progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
             [_progressWindow show:true];
             
-            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/loadConversationAndMessageForSearch/(%" PRId64 ", %" PRId32 ")", conversation.conversationId, messageId] options:@{@"peerId": @(conversation.conversationId), @"messageId": @(messageId)} flags:0 watcher:self];
+            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/loadConversationAndMessageForSearch/(%" PRId64 ", %" PRId32 ")", conversation.conversationId, messageId] options:@{@"peerId": @(conversation.conversationId), @"accessHash": @(conversation.accessHash), @"messageId": @(messageId)} flags:0 watcher:self];
         }
     }
 }
@@ -571,6 +572,8 @@ typedef enum {
         else
             user = [[TGDatabase instance] loadUser:(int)userId];
         
+        dict[@"isVerified"] = @(user.isVerified);
+        
         NSString *title = nil;
         NSArray *titleLetters = nil;
         
@@ -699,14 +702,23 @@ typedef enum {
         if (attachment.type == TGActionMediaAttachmentType)
         {
             TGActionMediaAttachment *actionAttachment = (TGActionMediaAttachment *)attachment;
-            if (actionAttachment.actionType == TGMessageActionChatAddMember || actionAttachment.actionType == TGMessageActionChatDeleteMember)
+            if (actionAttachment.actionType == TGMessageActionChatAddMember || actionAttachment.actionType == TGMessageActionChatDeleteMember || actionAttachment.actionType == TGMessageActionChannelInviter)
             {
-                NSNumber *nUid = [actionAttachment.actionData objectForKey:@"uid"];
-                if (nUid != nil)
-                {
-                    TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
-                    if (user != nil)
-                        [messageUsers setObject:user forKey:nUid];
+                NSArray *uids = actionAttachment.actionData[@"uids"];
+                if (uids != nil) {
+                    for (NSNumber *nUid in uids) {
+                        TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                        if (user != nil)
+                            [messageUsers setObject:user forKey:nUid];
+                    }
+                } else {
+                    NSNumber *nUid = [actionAttachment.actionData objectForKey:@"uid"];
+                    if (nUid != nil)
+                    {
+                        TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                        if (user != nil)
+                            [messageUsers setObject:user forKey:nUid];
+                    }
                 }
             }
             
@@ -820,6 +832,10 @@ typedef enum {
                     if (((forwardMode || privacyMode) && conversation.conversationId <= INT_MIN) && !showSecretInForwardMode)
                         continue;
                     
+                    if (conversation.isDeactivated || conversation.isDeleted) {
+                        continue;
+                    }
+                    
                     if ((forwardMode || privacyMode) && conversation.isBroadcast)
                         continue;
                     
@@ -872,7 +888,10 @@ typedef enum {
             {
                 for (int i = 0; i < (int)loadedItems.count; i++)
                 {
-                    if (((TGConversation *)loadedItems[i]).conversationId <= INT_MIN)
+                    TGConversation *conversation = (TGConversation *)loadedItems[i];
+                    if (conversation.isChannel && conversation.isChannelGroup && (!self.botStartMode || conversation.channelRole == TGChannelRoleCreator || conversation.channelRole == TGChannelRoleModerator || conversation.channelRole == TGChannelRolePublisher)) {
+                        
+                    } else if (conversation.conversationId <= INT_MIN)
                     {
                         [loadedItems removeObjectAtIndex:i];
                         i--;
@@ -892,13 +911,22 @@ typedef enum {
                 }
             }
             
+            for (int i = 0; i < (int)loadedItems.count; i++)
+            {
+                if (((TGConversation *)loadedItems[i]).isDeactivated)
+                {
+                    [loadedItems removeObjectAtIndex:i];
+                    i--;
+                }
+            }
+            
             if (showGroupsOnly)
             {
                 for (int i = 0; i < (int)loadedItems.count; i++)
                 {
                     TGConversation *conversation = loadedItems[i];
-                    if (conversation.conversationId <= INT_MIN || conversation.conversationId > 0)
-                    {
+                    if (conversation.isChannel && conversation.isChannelGroup && (!self.botStartMode || conversation.channelRole == TGChannelRoleCreator || conversation.channelRole == TGChannelRoleModerator || conversation.channelRole == TGChannelRolePublisher)) {
+                    } else if (conversation.conversationId <= INT_MIN || conversation.conversationId > 0) {
                         [loadedItems removeObjectAtIndex:i];
                         i--;
                     }
@@ -1056,6 +1084,7 @@ typedef enum {
         
         for (NSInteger i = 0; i < (NSInteger)conversations.count; i++) {
             TGConversation *conversation = conversations[i];
+            
             if (conversation.isChannel && conversation.kind != TGConversationKindPersistentChannel) {
                 [conversations removeObjectAtIndex:i];
                 i--;
@@ -1084,10 +1113,15 @@ typedef enum {
         {
             for (int i = 0; i < (int)conversations.count; i++)
             {
-                if (((TGConversation *)conversations[i]).conversationId <= INT_MIN)
-                {
-                    [conversations removeObjectAtIndex:i];
-                    i--;
+                TGConversation *conversation = (TGConversation *)conversations[i];
+                if (conversation.isChannel && conversation.isChannelGroup && (!self.botStartMode || conversation.channelRole == TGChannelRoleCreator || conversation.channelRole == TGChannelRoleModerator || conversation.channelRole == TGChannelRolePublisher)) {
+                    
+                } else {
+                    if (conversation.conversationId <= INT_MIN)
+                    {
+                        [conversations removeObjectAtIndex:i];
+                        i--;
+                    }
                 }
             }
         }
@@ -1109,8 +1143,9 @@ typedef enum {
             for (int i = 0; i < (int)conversations.count; i++)
             {
                 TGConversation *conversation = conversations[i];
-                if (conversation.conversationId <= INT_MIN || conversation.conversationId > 0)
-                {
+                if (conversation.isChannel && conversation.isChannelGroup && (!self.botStartMode || conversation.channelRole == TGChannelRoleCreator || conversation.channelRole == TGChannelRoleModerator || conversation.channelRole == TGChannelRolePublisher)) {
+                    
+                } else if (conversation.conversationId <= INT_MIN || conversation.conversationId > 0) {
                     [conversations removeObjectAtIndex:i];
                     i--;
                 }
@@ -1137,7 +1172,7 @@ typedef enum {
         {
             TGConversation *singleConversation = [conversations objectAtIndex:0];
             TGConversation *topConversation = ((TGConversation *)[_conversationList objectAtIndex:0]);
-            if (!singleConversation.isDeleted && _conversationList.count > 0 && topConversation.conversationId == singleConversation.conversationId && topConversation.date <= singleConversation.date)
+            if (!singleConversation.isDeleted && !singleConversation.isDeactivated && _conversationList.count > 0 && topConversation.conversationId == singleConversation.conversationId && topConversation.date <= singleConversation.date)
             {
                 [self initializeDialogListData:singleConversation customUser:nil selfUser:selfUser];
                 [_conversationList replaceObjectAtIndex:0 withObject:singleConversation];
@@ -1162,6 +1197,15 @@ typedef enum {
             conversationIdToIndex.insert(std::pair<int64_t, int>(conversationId, index));
         }
         
+        NSMutableSet *addedPeerIds = [[NSMutableSet alloc] init];
+        for (TGConversation *conversation in conversations) {
+            if (conversationIdToIndex.find(conversation.conversationId) == conversationIdToIndex.end()) {
+                [addedPeerIds addObject:@(conversation.conversationId)];
+            }
+        }
+        
+        NSMutableSet *candidatesForCutoff = [[NSMutableSet alloc] init];
+        
         for (int i = 0; i < (int)conversations.count; i++)
         {
             TGConversation *conversation = [conversations objectAtIndex:i];
@@ -1170,8 +1214,14 @@ typedef enum {
             if (it != conversationIdToIndex.end())
             {
                 TGConversation *newConversation = [conversation copy];
-                if (!newConversation.isDeleted)
+                if (!newConversation.isDeleted && !newConversation.isDeactivated)
                     [self initializeDialogListData:newConversation customUser:nil selfUser:selfUser];
+                
+                TGConversation *previousConversation = _conversationList[(it->second)];
+                
+                if (newConversation.date < previousConversation.date) {
+                    [candidatesForCutoff addObject:@(newConversation.conversationId)];
+                }
                 
                 [_conversationList replaceObjectAtIndex:(it->second) withObject:newConversation];
                 [conversations removeObjectAtIndex:i];
@@ -1182,10 +1232,8 @@ typedef enum {
         for (int i = 0; i < (int)_conversationList.count; i++)
         {
             TGConversation *conversation = [_conversationList objectAtIndex:i];
-            if (conversation.isDeleted)
+            if (conversation.isDeleted || conversation.isDeactivated)
             {
-                TGLog(@"===== Removing item at %d", i);
-                
                 [_conversationList removeObjectAtIndex:i];
                 i--;
             }
@@ -1194,7 +1242,7 @@ typedef enum {
         for (TGConversation *conversation in conversations)
         {
             TGConversation *newConversation = [conversation copy];
-            if (!newConversation.isDeleted)
+            if (!newConversation.isDeleted && !newConversation.isDeactivated)
             {
                 [self initializeDialogListData:newConversation customUser:nil selfUser:selfUser];
                 
@@ -1220,6 +1268,28 @@ typedef enum {
                 TGConversation *conversation = [_conversationList lastObject];
                 if (conversation.isChannel) {
                     [_conversationList removeLastObject];
+                } else {
+                    break;
+                }
+            }
+        }
+        
+        if (candidatesForCutoff.count != 0) {
+            for (NSInteger i = _conversationList.count - 1; i >= 0; i--) {
+                TGConversation *conversation = _conversationList[i];
+                if ([candidatesForCutoff containsObject:@(conversation.conversationId)]) {
+                    [_conversationList removeObjectAtIndex:i];
+                } else {
+                    break;
+                }
+            }
+        }
+        
+        if (_canLoadMore) {
+            for (NSInteger i = _conversationList.count - 1; i >= 0; i--) {
+                TGConversation *conversation = _conversationList[i];
+                if ([addedPeerIds containsObject:@(conversation.conversationId)]) {
+                    [_conversationList removeObjectAtIndex:i];
                 } else {
                     break;
                 }
@@ -1303,7 +1373,7 @@ typedef enum {
             NSDictionary *userActivities = [dict objectForKey:@"typingUsers"];
             NSString *typingString = nil;
             NSArray *typingUsers = userActivities.allKeys;
-            if (conversationId < 0 && conversationId > INT_MIN && typingUsers.count != 0)
+            if (((conversationId < 0 && conversationId > INT_MIN) || TGPeerIdIsChannel(conversationId)) && typingUsers.count != 0)
             {
                 NSMutableString *userNames = [[NSMutableString alloc] init];
                 NSMutableArray *userNamesArray = [[NSMutableArray alloc] init];

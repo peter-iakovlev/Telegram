@@ -18,7 +18,8 @@
     
     attachment.forwardPeerId = _forwardPeerId;
     attachment.forwardDate = _forwardDate;
-    
+    attachment.forwardAuthorUserId = _forwardAuthorUserId;
+    attachment.forwardPostId = _forwardPostId;
     attachment.forwardMid = _forwardMid;
     
     return attachment;
@@ -26,7 +27,7 @@
 
 - (void)serialize:(NSMutableData *)data
 {
-    int32_t magic = 0x72413faa;
+    int32_t magic = 0x72413fab;
     [data appendBytes:&magic length:4];
     
     int dataLengthPtr = (int)data.length;
@@ -36,6 +37,9 @@
     [data appendBytes:&_forwardPeerId length:8];
     [data appendBytes:&_forwardDate length:4];
     [data appendBytes:&_forwardMid length:4];
+    
+    [data appendBytes:&_forwardAuthorUserId length:4];
+    [data appendBytes:&_forwardPostId length:4];
     
     int dataLength = (int)(data.length - dataLengthPtr - 4);
     [data replaceBytesInRange:NSMakeRange(dataLengthPtr, 4) withBytes:&dataLength];
@@ -53,13 +57,16 @@
     if (magic == 0x72413faa) {
         version = 2;
         [is read:(uint8_t *)&dataLength maxLength:4];
+    } else if (magic == 0x72413fab) {
+        version = 3;
+        [is read:(uint8_t *)&dataLength maxLength:4];
     } else {
         dataLength = magic;
     }
     
     TGForwardedMessageMediaAttachment *messageAttachment = [[TGForwardedMessageMediaAttachment alloc] init];
     
-    if (version == 2) {
+    if (version >= 2) {
         int64_t forwardPeerId = 0;
         [is read:(uint8_t *)&forwardPeerId maxLength:8];
         messageAttachment.forwardPeerId = forwardPeerId;
@@ -76,6 +83,16 @@
     int forwardMid = 0;
     [is read:(uint8_t *)&forwardMid maxLength:4];
     messageAttachment.forwardMid = forwardMid;
+    
+    if (version >= 3) {
+        int32_t forwardAuthorUserId = 0;
+        [is read:(uint8_t *)&forwardAuthorUserId maxLength:4];
+        messageAttachment.forwardAuthorUserId = forwardAuthorUserId;
+        
+        int32_t forwardPostId = 0;
+        [is read:(uint8_t *)&forwardPostId maxLength:4];
+        messageAttachment.forwardPostId = forwardPostId;
+    }
     
     return messageAttachment;
 }

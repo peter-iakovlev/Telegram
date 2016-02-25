@@ -8,26 +8,29 @@
 
 #import "TGPeerIdAdapter.h"
 
-const UIEdgeInsets TGNeoServiceMessageInsets = { 12, 0, 12, 0 };
+const UIEdgeInsets TGNeoServiceMessageInsets = { 2, 0, 6, 0 };
+const UIEdgeInsets TGNeoChatInfoInsets = { 12, 0, 12, 0 };
 
 @interface TGNeoServiceMessageViewModel ()
 {
     TGNeoLabelViewModel *_titleModel;
     TGNeoLabelViewModel *_textModel;
+    
+    bool _chatInfo;
 }
 @end
 
 @implementation TGNeoServiceMessageViewModel
 
-- (instancetype)initWithMessage:(TGBridgeMessage *)message users:(NSDictionary *)users context:(TGBridgeContext *)context
+- (instancetype)initWithMessage:(TGBridgeMessage *)message type:(TGNeoMessageType)type users:(NSDictionary *)users context:(TGBridgeContext *)context
 {
-    self = [super initWithMessage:message users:users context:context];
+    self = [super initWithMessage:message type:type users:users context:context];
     if (self != nil)
     {
         NSString *actionText = nil;
         NSArray *additionalAttributes = nil;
         
-        bool isChannel = TGPeerIdIsChannel(message.cid);
+        bool isChannel = type == TGNeoMessageTypeChannel;
         
         TGBridgeUser *author = users[@(message.fromUid)];
         
@@ -183,6 +186,30 @@ const UIEdgeInsets TGNeoServiceMessageInsets = { 12, 0, 12, 0 };
                     }
                         break;
                         
+                    case TGBridgeMessageActionGroupMigratedTo:
+                    {
+                        actionText = TGLocalized(@"Notification.GroupMigratedToChannel");
+                    }
+                        break;
+                        
+                    case TGBridgeMessageActionGroupActivated:
+                    {
+                        actionText = TGLocalized(@"Notification.GroupActivated");
+                    }
+                        break;
+                        
+                    case TGBridgeMessageActionGroupDeactivated:
+                    {
+                        actionText = TGLocalized(@"Notification.GroupDeactivated");
+                    }
+                        break;
+                        
+                    case TGBridgeMessageActionChannelMigratedFrom:
+                    {
+                        actionText = TGLocalized(@"Notification.ChannelMigratedFrom");
+                    }
+                        break;
+                        
                     default:
                         break;
                 }
@@ -216,6 +243,7 @@ const UIEdgeInsets TGNeoServiceMessageInsets = { 12, 0, 12, 0 };
         }
         
         _textModel = [[TGNeoLabelViewModel alloc] initWithAttributedText:attributedText];
+        _textModel.multiline = true;
         [self addSubmodel:_textModel];
     }
     return self;
@@ -226,6 +254,8 @@ const UIEdgeInsets TGNeoServiceMessageInsets = { 12, 0, 12, 0 };
     self = [super init];
     if (self != nil)
     {
+        _chatInfo = true;
+        
         NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
         style.alignment = NSTextAlignmentCenter;
         NSDictionary *attributes = @{ NSParagraphStyleAttributeName: style };
@@ -242,7 +272,8 @@ const UIEdgeInsets TGNeoServiceMessageInsets = { 12, 0, 12, 0 };
 - (CGSize)layoutWithContainerSize:(CGSize)containerSize
 {
     CGSize titleSize = CGSizeZero;
-    CGFloat textTopOffset = TGNeoServiceMessageInsets.top;
+    UIEdgeInsets inset = _chatInfo ? TGNeoChatInfoInsets : TGNeoServiceMessageInsets;
+    CGFloat textTopOffset = inset.top;
     
     if (_titleModel != nil)
     {
@@ -255,7 +286,7 @@ const UIEdgeInsets TGNeoServiceMessageInsets = { 12, 0, 12, 0 };
     CGSize textSize = [_textModel contentSizeWithContainerSize:CGSizeMake(containerSize.width, FLT_MAX)];
     _textModel.frame = CGRectMake((containerSize.width - textSize.width) / 2, textTopOffset, textSize.width, textSize.height);
     
-    CGSize contentSize = CGSizeMake(containerSize.width, CGRectGetMaxY(_textModel.frame) + TGNeoServiceMessageInsets.bottom);
+    CGSize contentSize = CGSizeMake(containerSize.width, CGRectGetMaxY(_textModel.frame) + inset.bottom);
     
     self.contentSize = contentSize;
     

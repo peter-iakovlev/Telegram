@@ -31,7 +31,7 @@
     if (imageId != 0)
         [imageUri appendFormat:@"&id=%" PRId64 "", imageId];
     else if (localId != 0)
-        [imageUri appendFormat:@"&local-id=%" PRId64 "", imageId];
+        [imageUri appendFormat:@"&local-id=%" PRId64 "", localId];
     [imageUri appendFormat:@"&legacy-file-path=%@", legacyFilePath];
     
     NSString *escapedLegacyThumbnailCacheUrl = (__bridge_transfer NSString *)CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (__bridge CFStringRef)legacyThumbnailCacheUrl, (__bridge CFStringRef)@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-", (__bridge CFStringRef)@"&?= ", kCFStringEncodingUTF8);

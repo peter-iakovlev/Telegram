@@ -1,6 +1,7 @@
 #import "TGBridgeContextService.h"
 #import "TGChatListSignals.h"
-#import "TGBridgeServer.h"
+
+#import "PGCamera.h"
 
 #import "TGBridgeChat+TGConversation.h"
 #import "TGBridgeUser+TGUser.h"
@@ -14,9 +15,6 @@ const NSUInteger TGBridgeContextChatsCount = 4;
     SSignal *_chatListSignal;
     SMetaDisposable *_disposable;
 }
-
-@property (nonatomic, weak) TGBridgeServer *server;
-
 @end
 
 
@@ -24,11 +22,9 @@ const NSUInteger TGBridgeContextChatsCount = 4;
 
 - (instancetype)initWithServer:(TGBridgeServer *)server
 {
-    self = [super init];
+    self = [super initWithServer:server];
     if (self != nil)
     {
-        self.server = server;
-        
         _chatListSignal = [server serviceSignalForKey:@"chatList" producer:^SSignal *
         {
             return [TGChatListSignals chatListWithLimit:24];
@@ -36,11 +32,16 @@ const NSUInteger TGBridgeContextChatsCount = 4;
         
         __weak TGBridgeContextService *weakSelf = self;
         _disposable = [[SMetaDisposable alloc] init];
-        [_disposable setDisposable:[_chatListSignal startWithNext:^(NSArray *next)
+        [_disposable setDisposable:[[_chatListSignal mapToSignal:^SSignal *(id next)
+        {
+            return [[SSignal single:next] delay:2.0 onQueue:[SQueue concurrentDefaultQueue]];
+        }] startWithNext:^(NSArray *next)
         {
             __strong TGBridgeContextService *strongSelf = weakSelf;
             if (strongSelf == nil)
                 return;
+            
+            bool micAccessAllowed = ([PGCamera microphoneAuthorizationStatus] == PGMicrophoneAuthorizationStatusAuthorized);
             
             if (next.count > 0)
             {
@@ -77,11 +78,11 @@ const NSUInteger TGBridgeContextChatsCount = 4;
                         bridgeUsers[@(userId)] = bridgeUser;
                 }];
                 
-                [strongSelf.server setStartupData:@{ TGBridgeChatsArrayKey: bridgeChats, TGBridgeUsersDictionaryKey: bridgeUsers }];
+                [strongSelf.server setStartupData:@{ TGBridgeChatsArrayKey: bridgeChats, TGBridgeUsersDictionaryKey: bridgeUsers } micAccessAllowed:micAccessAllowed];
             }
             else
             {
-                [strongSelf.server setStartupData:nil];
+                [strongSelf.server setStartupData:nil micAccessAllowed:micAccessAllowed];
             }
         }]];
     }

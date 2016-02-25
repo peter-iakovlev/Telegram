@@ -15,6 +15,9 @@ extern NSString *TGImageViewOptionEmbeddedImage;
 extern NSString *TGImageViewOptionSynchronous;
 
 @interface TGImageView : UIImageView
+{
+    UIImageView *_extendedInsetsImageView;
+}
 
 @property (nonatomic) bool expectExtendedEdges;
 @property (nonatomic) bool legacyAutomaticProgress;

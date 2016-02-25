@@ -39,7 +39,7 @@ typedef enum {
         [[NSFileManager defaultManager] createDirectoryAtPath:[_path stringByAppendingPathComponent:@"store"] withIntermediateDirectories:true attributes:nil error:nil];
         _maxSize = size;
         _queue = [[ATQueue alloc] init];
-        _keyValueStore = [PSLMDBKeyValueStore storeWithPath:[_path stringByAppendingPathComponent:@"meta"] size:1 * 1024 * 1024];
+        _keyValueStore = [PSLMDBKeyValueStore storeWithPath:[_path stringByAppendingPathComponent:@"meta"] size:64 * 1024 * 1024];
     }
     return self;
 }
@@ -62,7 +62,7 @@ typedef enum {
         [[NSFileManager defaultManager] removeItemAtPath:_path error:nil];
         
         [[NSFileManager defaultManager] createDirectoryAtPath:[_path stringByAppendingPathComponent:@"store"] withIntermediateDirectories:true attributes:nil error:nil];
-        _keyValueStore = [PSLMDBKeyValueStore storeWithPath:[_path stringByAppendingPathComponent:@"meta"] size:1 * 1024 * 1024];
+        _keyValueStore = [PSLMDBKeyValueStore storeWithPath:[_path stringByAppendingPathComponent:@"meta"] size:32 * 1024 * 1024];
     }];
 }
 
@@ -361,6 +361,36 @@ typedef enum {
     }];
 }
 
+- (void)getValuePathForKey:(NSData *)key completion:(void (^)(NSString *))completion {
+    [_queue dispatch:^
+    {
+        NSString *path = [self _filePathForKey:key];
+        NSDictionary *dict = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
+        if (dict != nil)
+        {
+            [_keyValueStore readWriteInTransaction:^(id<PSKeyValueReader,PSKeyValueWriter> readerWriter)
+            {
+                NSMutableData *keyData = [[NSMutableData alloc] init];
+                int8_t keyspace = TGModernCacheKeyspaceLastUsageByPath;
+                [keyData appendBytes:&keyspace length:1];
+                [keyData appendData:key];
+                PSData k = {.data = (void *)keyData.bytes, .length = keyData.length};
+                if ([readerWriter readValueForRawKey:&k value:NULL])
+                {
+                    [self _updateLastAccessDateForKey:key size:[dict[NSFileSize] intValue] readerWriter:readerWriter];
+                }
+            }];
+        }
+        else
+        {
+            path = nil;
+        }
+        
+        if (completion)
+            completion(path);
+    }];
+}
+
 - (NSData *)getValueForKey:(NSData *)key
 {
     __block NSData *result = nil;
@@ -369,6 +399,17 @@ typedef enum {
         [self getValueForKey:key completion:^(NSData *data)
         {
             result = data;
+        }];
+    } synchronous:true];
+    
+    return result;
+}
+
+- (NSString *)getValuePathForKey:(NSData *)key {
+    __block NSString *result = nil;
+    [_queue dispatch:^ {
+        [self getValuePathForKey:key completion:^(NSString *path) {
+            result = path;
         }];
     } synchronous:true];
     

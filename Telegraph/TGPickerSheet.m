@@ -10,7 +10,7 @@
 #import "TGSecretTimerValueControllerItemView.h"
 #import "TGPopoverController.h"
 
-@interface TGPickerSheetOverlayController : TGOverlayController <UIPickerViewDelegate, UIPickerViewDataSource>
+@interface TGPickerSheetOverlayController () <UIPickerViewDelegate, UIPickerViewDataSource>
 {
     UIView *_backgroundView;
     UIView *_containerView;

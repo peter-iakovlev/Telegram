@@ -13,6 +13,7 @@
 @interface TGModernLabelViewModel : TGModernViewModel
 
 @property (nonatomic, strong) UIColor *textColor;
+@property (nonatomic, readonly) CGFloat maxWidth;
 
 - (instancetype)initWithText:(NSString *)text textColor:(UIColor *)textColor font:(CTFontRef)font maxWidth:(CGFloat)maxWidth;
 - (instancetype)initWithText:(NSString *)text textColor:(UIColor *)textColor font:(CTFontRef)font maxWidth:(CGFloat)maxWidth truncateInTheMiddle:(bool)truncateInTheMiddle;

@@ -5,6 +5,8 @@
 
 @interface TGPhotoAvatarCropController : TGPhotoEditorTabController
 
+@property (nonatomic, readonly) UIView *transitionParentView;
+
 @property (nonatomic, assign) bool switching;
 @property (nonatomic, assign) bool skipTransitionIn;
 @property (nonatomic, assign) bool fromCamera;
@@ -16,5 +18,7 @@
 - (void)setImage:(UIImage *)image;
 - (void)setSnapshotImage:(UIImage *)snapshotImage;
 - (void)setSnapshotView:(UIView *)snapshotView;
+
+- (void)_finishedTransitionIn;
 
 @end

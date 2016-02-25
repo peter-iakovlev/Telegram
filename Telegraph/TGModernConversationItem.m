@@ -87,7 +87,7 @@
     return CGSizeMake(containerSize.width, 0.0f);
 }
 
-- (void)updateToItem:(TGModernConversationItem *)__unused updatedItem viewStorage:(TGModernViewStorage *)__unused viewStorage sizeChanged:(bool *)__unused sizeChanged
+- (void)updateToItem:(TGModernConversationItem *)__unused updatedItem viewStorage:(TGModernViewStorage *)__unused viewStorage sizeChanged:(bool *)__unused sizeChanged delayAvailability:(bool)__unused delayAvailability
 {
 }
 
@@ -104,6 +104,10 @@
 }
 
 - (void)stopInlineMedia
+{
+}
+
+- (void)resumeInlineMedia
 {
 }
 

@@ -10,6 +10,7 @@
 
 @property (nonatomic, copy) void (^previewStickerPack)();
 @property (nonatomic, copy) void (^deleteStickerPack)();
+@property (nonatomic, copy) void (^addStickerPack)();
 
 - (instancetype)initWithStickerPack:(TGStickerPack *)stickerPack;
 

@@ -14,3 +14,8 @@
 
 @end
 
+@interface TLPrivacyKey$privacyKeyChatInvite : TLPrivacyKey
+
+
+@end
+

@@ -32,6 +32,7 @@
 
 - (void)willBecomeRecycled
 {
+    [self removeTarget:nil action:nil forControlEvents:UIControlEventTouchUpInside];
 }
 
 - (NSString *)viewStateIdentifier

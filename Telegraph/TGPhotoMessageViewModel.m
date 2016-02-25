@@ -22,12 +22,16 @@
 
 @implementation TGPhotoMessageViewModel
 
-- (instancetype)initWithMessage:(TGMessage *)message imageMedia:(TGImageMediaAttachment *)imageMedia authorPeer:(id)authorPeer context:(TGModernViewContext *)context forwardPeer:(id)forwardPeer forwardMessageId:(int32_t)forwardMessageId replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor
+- (instancetype)initWithMessage:(TGMessage *)message imageMedia:(TGImageMediaAttachment *)imageMedia authorPeer:(id)authorPeer context:(TGModernViewContext *)context forwardPeer:(id)forwardPeer forwardAuthor:(id)forwardAuthor forwardMessageId:(int32_t)forwardMessageId replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor viaUser:(TGUser *)viaUser
 {
     TGImageInfo *previewImageInfo = imageMedia.imageInfo;
     
     CGSize largestSize = CGSizeZero;
     NSString *legacyCacheUrl = [imageMedia.imageInfo closestImageUrlWithSize:CGSizeMake(1136, 1136) resultingSize:&largestSize pickLargest:true];
+    if (largestSize.width <= 90.0f + FLT_EPSILON || largestSize.height <= 90.0f + FLT_EPSILON) {
+        legacyCacheUrl = [imageMedia.imageInfo imageUrlForSizeLargerThanSize:CGSizeMake(1000.0f, 1000.0f) actualSize:&largestSize];
+    }
+    
     NSString *legacyThumbnailCacheUrl = [imageMedia.imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL];
     
     int64_t localImageId = 0;
@@ -70,10 +74,12 @@
         [previewImageInfo addImageWithSize:thumbnailSize url:previewUri];
     }
     
-    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:forwardPeer forwardMessageId:forwardMessageId replyHeader:replyHeader replyAuthor:replyAuthor caption:imageMedia.caption textCheckingResults:imageMedia.textCheckingResults];
+    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyHeader replyAuthor:replyAuthor viaUser:viaUser caption:imageMedia.caption textCheckingResults:imageMedia.textCheckingResults];
     if (self != nil)
     {
         _imageMedia = imageMedia;
+        
+        _canDownload = _imageMedia.imageId != 0 || (![[imageMedia.imageInfo imageUrlForLargestSize:NULL] hasPrefix:@"http"]);
         
         if (message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17)
         {
@@ -152,6 +158,8 @@
         
         [self updateImageInfo:previewImageInfo];
     }
+    
+    _canDownload = _imageMedia.imageId != 0 || (![[imageMedia.imageInfo imageUrlForLargestSize:NULL] hasPrefix:@"http"]);
 }
 
 - (void)updateMessageAttributes

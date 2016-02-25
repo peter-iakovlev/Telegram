@@ -91,7 +91,7 @@ const NSUInteger TGContactsControllerBatchCount = 15;
             else
             {
                 strongSelf->_alertLabel.hidden = false;
-                strongSelf->_alertLabel.text = TGLocalized(@"Contacts.NoResults");
+                strongSelf->_alertLabel.text = TGLocalized(@"Watch.Contacts.NoResults");
             }
         }];
     } error:^(id error)

@@ -36,11 +36,12 @@
     
     TGSwitchCollectionItem *_privateAutoDownloadItem;
     TGSwitchCollectionItem *_groupAutoDownloadItem;
+    TGSwitchCollectionItem *_autosavePhotosItem;
     
     TGSwitchCollectionItem *_privateAudioAutoDownloadItem;
     TGSwitchCollectionItem *_groupAudioAutoDownloadItem;
     
-    TGSwitchCollectionItem *_autoPlayAudioItem;
+    TGSwitchCollectionItem *_autoPlayAnimationsItem;
     
     TGSwitchCollectionItem *_useRTLItem;
     
@@ -77,18 +78,23 @@
         _groupAutoDownloadItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Groups") isOn:TGAppDelegateInstance.autoDownloadPhotosInGroups];
         _groupAutoDownloadItem.interfaceHandle = _actionHandle;
         
+        _autosavePhotosItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.SaveIncomingPhotos") isOn:TGAppDelegateInstance.autosavePhotos];
+        _autosavePhotosItem.interfaceHandle = _actionHandle;
+        
         _privateAudioAutoDownloadItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.PrivateChats") isOn:TGAppDelegateInstance.autoDownloadAudioInPrivateChats];
         _privateAudioAutoDownloadItem.interfaceHandle = _actionHandle;
         _groupAudioAutoDownloadItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Groups") isOn:TGAppDelegateInstance.autoDownloadAudioInGroups];
         _groupAudioAutoDownloadItem.interfaceHandle = _actionHandle;
         
-        _autoPlayAudioItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutoPlayAudio") isOn:TGAppDelegateInstance.autoPlayAudio];
-        _autoPlayAudioItem.interfaceHandle = _actionHandle;
+        _autoPlayAnimationsItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutoPlayAnimations") isOn:TGAppDelegateInstance.autoPlayAnimations];
+        _autoPlayAnimationsItem.interfaceHandle = _actionHandle;
         
         TGCollectionMenuSection *autoDownloadPhotoSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutomaticPhotoDownload")],
             _privateAutoDownloadItem,
-            _groupAutoDownloadItem
+            _groupAutoDownloadItem,
+            _autosavePhotosItem,
+            [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"Settings.SaveIncomingPhotosHelp")]
         ]];
         if (iosMajorVersion() >= 7 || [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
         {
@@ -102,7 +108,6 @@
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutomaticAudioDownload")],
             _privateAudioAutoDownloadItem,
             _groupAudioAutoDownloadItem,
-            _autoPlayAudioItem
         ]];
         [self.menuSections addSection:autoDownloadAudioSection];
         
@@ -138,8 +143,9 @@
         TGDisclosureActionCollectionItem *stickersItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Stickers") action:@selector(stickersPressed)];
         TGCollectionMenuSection *otherSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Other")],
+            _autoPlayAnimationsItem,
             stickersItem,
-            cacheItem
+            cacheItem,
         ]];
         otherSection.insets = (UIEdgeInsets){otherSection.insets.top - 12.0f, otherSection.insets.left, otherSection.insets.bottom, otherSection.insets.right};
         [self.menuSections addSection:otherSection];
@@ -195,6 +201,11 @@
             TGAppDelegateInstance.autoDownloadPhotosInGroups = switchItem.isOn;
             [TGAppDelegateInstance saveSettings];
         }
+        else if (switchItem == _autosavePhotosItem)
+        {
+            TGAppDelegateInstance.autosavePhotos = switchItem.isOn;
+            [TGAppDelegateInstance saveSettings];
+        }
         else if (switchItem == _privateAudioAutoDownloadItem)
         {
             TGAppDelegateInstance.autoDownloadAudioInPrivateChats = switchItem.isOn;
@@ -205,9 +216,9 @@
             TGAppDelegateInstance.autoDownloadAudioInGroups = switchItem.isOn;
             [TGAppDelegateInstance saveSettings];
         }
-        else if (switchItem == _autoPlayAudioItem)
+        else if (switchItem == _autoPlayAnimationsItem)
         {
-            TGAppDelegateInstance.autoPlayAudio = switchItem.isOn;
+            TGAppDelegateInstance.autoPlayAnimations = switchItem.isOn;
             [TGAppDelegateInstance saveSettings];
         }
         else if (switchItem == _useRTLItem)

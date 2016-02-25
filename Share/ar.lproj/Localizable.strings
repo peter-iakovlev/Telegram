@@ -1,13 +1,25 @@
-"Share.Cancel" = "Cancel";
-"Share.Next" = "Next";
-"Share.OK" = "OK";
-"Share.Search" = "Search";
+"Share.Cancel" = "إلغاء";
+"Share.Next" = "التالي";
+"Share.OK" = "موافق";
+"Share.Search" = "بحث";
 
-"Share.Title" = "Share";
-"Share.ShareWithPerson" = "Share with %@?";
-"Share.ShareWithGroup" = "Share with %@?";
-"Share.Sharing" = "Sharing...";
+"Share.Title" = "مشاركة";
+"Share.ShareWithPerson" = "هل ترغب في المشاركة مع %@؟";
+"Share.ShareWithGroup" = "هل ترغب في المشاركة مع %@؟";
+"Share.ShareWithMultiple" = "هل ترغب في المشاركة مع %@ مستقبلين؟";
+"Share.Sharing" = "جاري المشاركة...";
 
-"Share.PasscodeTitle" = "Passcode";
-"Share.EnterPasscode" = "Enter passcode";
-"Share.ErrorInvalidPasscode" = "Invalid passcode";
+"Share.PasscodeTitle" = "رمز المرور";
+"Share.EnterPasscode" = "قم بإدخال رمز المرور";
+"Share.ErrorInvalidPasscode" = "رمز مرور غير صحيح";
+
+"Share.Select" = "اختر";
+"Share.Done" = "تم";
+
+"Share.AuthTitle" = "سجل الدخول إلى تيليجرام";
+"Share.AuthText" = "افتح تيليجرام وسجل الدخول للمشاركة";
+
+"Share.ChoosePhoneNumber" = "اختر رقم هاتف للمشاركة";
+
+"Share.RecentSection" = "حديث";
+"Share.RecentSectionClear" = "مسح";

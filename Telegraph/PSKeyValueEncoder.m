@@ -318,6 +318,48 @@ static void encodeObjectValue(PSKeyValueEncoder *self, id<PSCoding> object)
     }
 }
 
+- (void)encodeInt32Dictionary:(NSDictionary *)value forCKey:(const char *)key {
+    if (key == NULL) {
+        return;
+    }
+    
+    uint32_t keyLength = (uint32_t)strlen(key);
+    writeLength(self, keyLength);
+    [_data appendBytes:key length:keyLength];
+    
+    uint8_t fieldType = PSKeyValueCoderFieldTypeInt32Dictionary;
+    [_data appendBytes:&fieldType length:1];
+    
+    uint32_t objectLength = 0;
+    NSUInteger objectLengthPosition = [self->_data length];
+    [self->_data appendBytes:&objectLength length:4];
+    
+    NSArray *allKeys = [value allKeys];
+    uint32_t count = (uint32_t)[allKeys count];
+    writeLength(self, count);
+    
+    for (NSNumber *nKey in allKeys) {
+        id<PSCoding> object = value[nKey];
+        int32_t objectKey = [nKey intValue];
+        [self->_data appendBytes:&objectKey length:4];
+        encodeObjectValue(self, object);
+    }
+    
+    objectLength = (int)([_data length] - objectLengthPosition - 4);
+    [_data replaceBytesInRange:NSMakeRange(objectLengthPosition, 4) withBytes:&objectLength];
+}
+
+- (void)encodeDouble:(double)value forCKey:(const char *)key {
+    uint32_t keyLength = (uint32_t)strlen(key);
+    writeLength(self, keyLength);
+    [_data appendBytes:key length:keyLength];
+    
+    uint8_t fieldType = PSKeyValueCoderFieldTypeDouble;
+    [_data appendBytes:&fieldType length:1];
+    
+    [_data appendBytes:&value length:8];
+}
+
 - (void)reset
 {
     [_data setLength:0];

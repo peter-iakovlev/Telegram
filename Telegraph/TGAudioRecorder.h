@@ -11,6 +11,7 @@
 @class TGAudioRecorder;
 @class TGLiveUploadActorData;
 @class TGDataItem;
+@class TGAudioWaveform;
 
 @protocol TGAudioRecorderDelegate <NSObject>
 
@@ -24,12 +25,14 @@
 
 @property (nonatomic, weak) id<TGAudioRecorderDelegate> delegate;
 @property (nonatomic, strong) id activityHolder;
+@property (nonatomic, copy) void (^pauseRecording)();
+@property (nonatomic, copy) void (^micLevel)(CGFloat);
 
 - (instancetype)initWithFileEncryption:(bool)fileEncryption;
 
-- (void)start;
+- (void)startWithSpeaker:(bool)speaker completion:(void (^)())completion;
 - (NSTimeInterval)currentDuration;
 - (void)cancel;
-- (void)finish:(void (^)(TGDataItem *, NSTimeInterval, TGLiveUploadActorData *))completion;
+- (void)finish:(void (^)(TGDataItem *, NSTimeInterval, TGLiveUploadActorData *, TGAudioWaveform *))completion;
 
 @end

@@ -13,7 +13,7 @@
 #import "TGProgressWindow.h"
 
 #import "TGAccessChecker.h"
-#import "TGMediaPickerAssetsLibrary.h"
+#import "TGMediaAssetsLibrary.h"
 
 @implementation TGGroupAvatarGalleryModel
 
@@ -98,20 +98,13 @@
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     [progressWindow show:true];
     
-    [[TGMediaPickerAssetsLibrary sharedLibrary] saveAssetWithImageData:data completionBlock:^(bool success, __unused NSString *uniqueId, __unused NSError *error)
+    [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImageData:data] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
     {
-        TGDispatchOnMainThread(^
-        {
-            if (!success)
-            {
-                [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
-                [progressWindow dismiss:true];
-            }
-            else
-            {
-                [progressWindow dismissWithSuccess];
-            }
-        });
+        [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
+        [progressWindow dismiss:true];
+    } completed:^
+    {
+        [progressWindow dismissWithSuccess];
     }];
 }
 

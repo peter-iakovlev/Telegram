@@ -22,4 +22,13 @@
 - (UIEdgeInsets)extendedEdgeInsets;
 - (void)setExtendedEdgeInsets:(UIEdgeInsets)edgeInsets;
 
+- (bool)degraded;
+- (void)setDegraded:(bool)degraded;
+
+- (bool)edited;
+- (void)setEdited:(bool)edited;
+
+- (bool)fromCloud;
+- (void)setFromCloud:(bool)fromCloud;
+
 @end

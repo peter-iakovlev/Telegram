@@ -2,7 +2,6 @@
 
 @interface TGWebSearchGifItemView : TGModernMediaListThumbnailItemView
 
-- (void)updateItemHiddenAnimated:(bool)animated;
-- (void)updateItemSelected;
+- (void)setHidden:(bool)hidden animated:(bool)animated;
 
 @end

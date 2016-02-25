@@ -24,11 +24,15 @@
 
 #import "TGDataItem.h"
 
+#import "TGMusicPlayer.h"
+
 @interface TGAudioRecorder () <AVAudioRecorderDelegate>
 {
     TGTimer *_timer;
+    bool _stopped;
     
     TGOpusAudioRecorder *_modernRecorder;
+    AVAudioPlayer *_tonePlayer;
 }
 
 @end
@@ -40,9 +44,17 @@
     self = [super init];
     if (self != nil)
     {
+        _modernRecorder = [[TGOpusAudioRecorder alloc] initWithFileEncryption:fileEncryption];
+        
         [[TGAudioRecorder audioRecorderQueue] dispatchOnQueue:^
         {
-            _modernRecorder = [[TGOpusAudioRecorder alloc] initWithFileEncryption:fileEncryption];
+            __weak TGAudioRecorder *weakSelf = self;
+            _modernRecorder.pauseRecording = ^{
+                __strong TGAudioRecorder *strongSelf = weakSelf;
+                if (strongSelf != nil && strongSelf->_pauseRecording) {
+                    strongSelf->_pauseRecording();
+                }
+            };
         }];
     }
     return self;
@@ -51,6 +63,11 @@
 - (void)dealloc
 {
     [self cleanup];
+}
+
+- (void)setMicLevel:(void (^)(CGFloat))micLevel {
+    _micLevel = [micLevel copy];
+    _modernRecorder.micLevel = micLevel;
 }
 
 + (ASQueue *)audioRecorderQueue
@@ -80,17 +97,37 @@ static int currentTimerId = 0;
 
 static void playSoundCompleted(__unused SystemSoundID ssID, __unused void *clientData)
 {
-    [[TGAudioRecorder audioRecorderQueue] dispatchOnQueue:^
-    {
-        int timerId = currentTimerId;
-        TGTimer *timer = (TGTimer *)recordTimers()[@(timerId)];
-        if ([timer isScheduled])
-            [timer resetTimeout:0.05];
-    }];
+    int timerId = currentTimerId;
+    TGTimer *timer = (TGTimer *)recordTimers()[@(timerId)];
+    dispatch_block_t block = ^{
+        if ([timer isScheduled]) {
+            [timer fireAndInvalidate];
+            TGLog(@"vibration completed");
+        }
+    };
+    
+    if (![TGViewController isWidescreen]) {
+        TGDispatchAfter(0.2, [TGAudioRecorder audioRecorderQueue].nativeQueue, block);
+    } else {
+        block();
+    }
 }
 
-- (void)start
+- (void)startWithSpeaker:(bool)speaker1 completion:(void (^)())completion
 {
+    static SystemSoundID soundId;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        /*NSString *path = [NSString stringWithFormat:@"%@/%@", [[NSBundle mainBundle] resourcePath], @"begin_record.caf"];
+        NSURL *filePath = [NSURL fileURLWithPath:path isDirectory:false];
+        AudioServicesCreateSystemSoundID((__bridge CFURLRef)filePath, &soundId);
+        if (soundId != 0) {
+            //AudioServicesAddSystemSoundCompletion(soundId, NULL, kCFRunLoopCommonModes, &playSoundCompleted, NULL);
+        }*/
+        AudioServicesAddSystemSoundCompletion(kSystemSoundID_Vibrate, NULL, kCFRunLoopCommonModes, &playSoundCompleted, NULL);
+    });
+    
     TGLog(@"[TGAudioRecorder start]");
     
     [[TGAudioRecorder audioRecorderQueue] dispatchOnQueue:^
@@ -99,37 +136,49 @@ static void playSoundCompleted(__unused SystemSoundID ssID, __unused void *clien
         {
             if (granted)
             {
-                NSTimeInterval prepareStart = CFAbsoluteTimeGetCurrent();
-                
                 [_timer invalidate];
                 
-                static int nextTimerId = 0;
-                int timerId = nextTimerId++;
+                TGLog(@"[TGAudioRecorder initialized session]");
                 
+                if (!_stopped && completion) {
+                    completion();
+                }
+                
+                bool headphones = [TGMusicPlayer isHeadsetPluggedIn];
+                bool speaker = headphones || speaker1;
+                NSTimeInterval startTime = CACurrentMediaTime();
+                [_modernRecorder _beginAudioSession:speaker];
+                TGLog(@"AudioSession time: %f s", CACurrentMediaTime() - startTime);
+                
+                /*static int nextTimerId = 0;
+                int timerId = nextTimerId++;
+                NSTimeInterval timeout = [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad ? 0.5 : 1.0;
                 __weak TGAudioRecorder *weakSelf = self;
-                NSTimeInterval timeout = MIN(1.0, MAX(0.1, 1.0 - (CFAbsoluteTimeGetCurrent() - prepareStart)));
                 _timer = [[TGTimer alloc] initWithTimeout:timeout repeat:false completion:^
                 {
+                    TGLog(@"[TGAudioRecorder record]");
                     __strong TGAudioRecorder *strongSelf = weakSelf;
+
                     [strongSelf _commitRecord];
                 } queue:[TGAudioRecorder audioRecorderQueue].nativeQueue];
-                recordTimers()[@(timerId)] = _timer;
-                [_timer start];
+                recordTimers()[@(timerId)] = strongSelf->_timer;
+                [strongSelf->_timer start];
                 
+                [strongSelf->_modernRecorder _beginAudioSession:speaker];
                 currentTimerId = timerId;
+                if (!speaker) {
+                    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+                        [strongSelf->_timer fireAndInvalidate];
+                    } else {
+                        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+                    }
+                } else {
+                }
                 
-                static SystemSoundID soundId;
-                static dispatch_once_t onceToken;
-                dispatch_once(&onceToken, ^
-                {
-                    NSString *path = [NSString stringWithFormat:@"%@/%@", [[NSBundle mainBundle] resourcePath], @"begin_record.caf"];
-                    NSURL *filePath = [NSURL fileURLWithPath:path isDirectory:false];
-                    AudioServicesCreateSystemSoundID((__bridge CFURLRef)filePath, &soundId);
-                    if (soundId != 0)
-                        AudioServicesAddSystemSoundCompletion(soundId, NULL, kCFRunLoopCommonModes, &playSoundCompleted, NULL);
-                });
+                [strongSelf->_timer fireAndInvalidate];*/
                 
-                AudioServicesPlaySystemSound(soundId);
+                [self _prepareRecord:speaker completion:nil];
+                [self _commitRecord];
             }
             else
             {
@@ -157,6 +206,16 @@ static void playSoundCompleted(__unused SystemSoundID ssID, __unused void *clien
     return [_modernRecorder currentDuration];
 }
 
+- (void)_prepareRecord:(bool)playTone completion:(void (^)())completion {
+    [_modernRecorder prepareRecord:playTone completion:^{
+        [[TGAudioRecorder audioRecorderQueue] dispatchOnQueue:^{
+            if (completion) {
+                completion();
+            }
+        }];
+    }];
+}
+
 - (void)_commitRecord
 {
     [_modernRecorder record];
@@ -182,39 +241,44 @@ static void playSoundCompleted(__unused SystemSoundID ssID, __unused void *clien
         [timer invalidate];
         
         if (modernRecorder != nil)
-            [modernRecorder stopRecording:NULL liveData:NULL];
+            [modernRecorder stopRecording:NULL liveData:NULL waveform:NULL];
     }];
 }
 
 - (void)cancel
 {
+    _stopped = true;
     [[TGAudioRecorder audioRecorderQueue] dispatchOnQueue:^
     {
         [self cleanup];
     }];
 }
 
-- (void)finish:(void (^)(TGDataItem *, NSTimeInterval, TGLiveUploadActorData *))completion
+- (void)finish:(void (^)(TGDataItem *, NSTimeInterval, TGLiveUploadActorData *, TGAudioWaveform *))completion
 {
+    _stopped = true;
     [[TGAudioRecorder audioRecorderQueue] dispatchOnQueue:^
     {
         TGDataItem *resultDataItem = nil;
         NSTimeInterval resultDuration = 0.0;
+        TGAudioWaveform *resultWaveform = nil;
         __autoreleasing TGLiveUploadActorData *liveData = nil;
         
         if (_modernRecorder != nil)
         {
             NSTimeInterval recordedDuration = 0.0;
-            TGDataItem *dataItem = [_modernRecorder stopRecording:&recordedDuration liveData:&liveData];
+            TGAudioWaveform *waveform = nil;
+            TGDataItem *dataItem = [_modernRecorder stopRecording:&recordedDuration liveData:&liveData waveform:&waveform];
             if (dataItem != nil && recordedDuration > 0.5)
             {
                 resultDataItem = dataItem;
                 resultDuration = recordedDuration;
+                resultWaveform = waveform;
             }
         }
         
         if (completion != nil)
-            completion(resultDataItem, resultDuration, liveData);
+            completion(resultDataItem, resultDuration, liveData, resultWaveform);
     }];
 }
 

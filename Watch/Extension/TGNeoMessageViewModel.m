@@ -41,15 +41,19 @@ NSString *const TGNeoMessageAvatarColor = @"color";
 NSString *const TGNeoMessageAvatarInitials = @"initials";
 
 NSString *const TGNeoMessageAudioButton = @"audio";
+NSString *const TGNeoMessageAudioButtonHasBackground = @"hasBackground";
 NSString *const TGNeoMessageAudioIcon = @"icon";
+NSString *const TGNeoMessageAudioIconTint = @"tint";
+NSString *const TGNeoMessageAudioAnimatedIcon = @"animatedIcon";
 
 @implementation TGNeoMessageViewModel
 
-- (instancetype)initWithMessage:(TGBridgeMessage *)message users:(NSDictionary *)users context:(TGBridgeContext *)context
+- (instancetype)initWithMessage:(TGBridgeMessage *)message type:(TGNeoMessageType)type users:(NSDictionary *)users context:(TGBridgeContext *)context
 {
     self = [super init];
     if (self != nil)
     {
+        _type = type;
         _identifier = message.identifier;
     }
     return self;
@@ -63,7 +67,7 @@ NSString *const TGNeoMessageAudioIcon = @"icon";
         _additionalLayout = @{ key: layout };
 }
 
-+ (TGNeoMessageViewModel *)viewModelForMessage:(TGBridgeMessage *)message context:(TGBridgeContext *)context
++ (TGNeoMessageViewModel *)viewModelForMessage:(TGBridgeMessage *)message type:(TGNeoMessageType)type context:(TGBridgeContext *)context additionalPeers:(NSDictionary *)additionalPeers
 {
     Class viewModelClass = [TGNeoTextMessageViewModel class];
     
@@ -128,7 +132,10 @@ NSString *const TGNeoMessageAudioIcon = @"icon";
             viewModelClass = [TGNeoSmiliesMessageViewModel class];
     }
     
-    return [[viewModelClass alloc] initWithMessage:message users:[[TGBridgeUserCache instance] usersWithIndexSet:[message involvedUserIds]] context:context];
+    NSMutableDictionary *users = [NSMutableDictionary dictionaryWithDictionary:additionalPeers];
+    [users addEntriesFromDictionary:[[TGBridgeUserCache instance] usersWithIndexSet:[message involvedUserIds]]];
+    
+    return [[viewModelClass alloc] initWithMessage:message type:type users:users context:context];
 }
 
 @end

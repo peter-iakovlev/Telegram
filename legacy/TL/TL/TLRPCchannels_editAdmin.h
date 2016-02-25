@@ -6,6 +6,7 @@
 @class TLInputChannel;
 @class TLInputUser;
 @class TLChannelParticipantRole;
+@class TLUpdates;
 
 @interface TLRPCchannels_editAdmin : TLMetaRpc
 

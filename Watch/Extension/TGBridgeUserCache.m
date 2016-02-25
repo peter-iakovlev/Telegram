@@ -41,27 +41,6 @@
     user = _userByUid[@(userId)];
     OSSpinLockUnlock(&_userByUidLock);
     
-//    if (user == nil)
-//    {
-//        [_fileCache fetchDataForKey:[NSString stringWithFormat:@"%d", user.identifier] synchronous:true unserializeBlock:^id(NSData *data)
-//        {
-//            id object = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-//            if ([object isKindOfClass:[TGBridgeUser class]])
-//                return object;
-//            
-//            return nil;
-//        } completion:^(TGBridgeUser *result)
-//        {
-//            if (result != nil)
-//            {
-//                user = result;
-//                OSSpinLockLock(&_userByUidLock);
-//                _userByUid[@(userId)] = user;
-//                OSSpinLockUnlock(&_userByUidLock);
-//            }
-//        }];
-//    }
-    
     return user;
 }
 
@@ -86,31 +65,6 @@
     
     [neededUsers removeIndexes:foundUsers];
     
-//    if (neededUsers.count > 0)
-//    {
-//        [neededUsers enumerateIndexesUsingBlock:^(NSUInteger index, BOOL * _Nonnull stop)
-//        {
-//            [_fileCache fetchDataForKey:[NSString stringWithFormat:@"%d", index] synchronous:true unserializeBlock:^id(NSData *data)
-//            {
-//                 id object = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-//                 if ([object isKindOfClass:[TGBridgeUser class]])
-//                     return object;
-//                 
-//                 return nil;
-//             } completion:^(TGBridgeUser *result)
-//             {
-//                 if (result != nil)
-//                 {
-//                     users[@(index)] = result;
-//                     
-//                     OSSpinLockLock(&_userByUidLock);
-//                     _userByUid[@(index)] = result;
-//                     OSSpinLockUnlock(&_userByUidLock);
-//                 }
-//             }];
-//        }];
-//    }
-    
     return users;
 }
 
@@ -125,17 +79,12 @@
 - (void)storeUsers:(NSArray *)users
 {
     OSSpinLockLock(&_userByUidLock);
-    for (TGBridgeUser *user in users)
-        _userByUid[@(user.identifier)] = user;
+    for (id peer in users)
+    {
+        if ([peer isKindOfClass:[TGBridgeUser class]])
+            _userByUid[@(((TGBridgeUser *)peer).identifier)] = peer;
+    }
     OSSpinLockUnlock(&_userByUidLock);
-  
-//    for (TGBridgeUser *user in users)
-//    {
-//        [_fileCache cacheData:user key:[NSString stringWithFormat:@"%d", user.identifier] synchronous:false serializeBlock:^NSData *(NSObject<NSCoding> *object)
-//        {
-//            return [NSKeyedArchiver archivedDataWithRootObject:object];
-//        } completion:nil];
-//    }
 }
 
 - (NSArray *)applyUserChanges:(NSArray *)userChanges

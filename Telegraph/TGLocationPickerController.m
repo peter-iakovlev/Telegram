@@ -103,6 +103,7 @@ const TGLocationPlacesService TGLocationPickerPlacesProvider = TGLocationPlacesS
     CGFloat _tableViewTopInset;
     UITableView *_nearbyVenuesTableView;
     
+    UIView *_searchBarOverlay;
     UIBarButtonItem *_searchButtonItem;
     UIView *_searchReferenceView;
     UIView *_searchBarWrapper;
@@ -262,13 +263,23 @@ const TGLocationPlacesService TGLocationPickerPlacesProvider = TGLocationPlacesS
     stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
     [_mapViewWrapper addSubview:stripeView];
     
+    _searchBarOverlay = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.navigationController.view.frame.size.width, 64)];
+    _searchBarOverlay.alpha = 0.0f;
+    _searchBarOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    _searchBarOverlay.backgroundColor = UIColorRGB(0xf7f7f7);
+    _searchBarOverlay.userInteractionEnabled = false;
+    [self.navigationController.view addSubview:_searchBarOverlay];
+    
     _searchBarWrapper = [[UIView alloc] initWithFrame:CGRectMake(0, -64, self.navigationController.view.frame.size.width, 64)];
     _searchBarWrapper.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     _searchBarWrapper.backgroundColor = [UIColor whiteColor];
+    _searchBarWrapper.hidden = true;
     [self.navigationController.view addSubview:_searchBarWrapper];
     
-    _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, 20, _searchBarWrapper.frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleLight];
+    _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, 20, _searchBarWrapper.frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleHeader];
     _searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    _searchBar.customBackgroundView.image = nil;
+    _searchBar.customActiveBackgroundView.image = nil;
     _searchBar.delegate = self;
     [_searchBar setShowsCancelButton:true animated:false];
     [_searchBar setAlwaysExtended:true];
@@ -453,6 +464,8 @@ const TGLocationPlacesService TGLocationPickerPlacesProvider = TGLocationPlacesS
 - (void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
+    
+    _searchBarWrapper.hidden = false;
     
     if (_intent != TGLocationPickerControllerCustomLocationIntent)
     {
@@ -1061,12 +1074,15 @@ const TGLocationPlacesService TGLocationPickerPlacesProvider = TGLocationPlacesS
         if (hidden)
         {
             frame.origin.y = -64;
+            _searchBarOverlay.alpha = 0.0f;
         }
         else
         {
             frame.origin.y = 0;
             if (self.navigationController.modalPresentationStyle == UIModalPresentationFormSheet)
                 frame.origin.y -= 20;
+            
+            _searchBarOverlay.alpha = 1.0f;
         }
         _searchBarWrapper.frame = frame;
     };

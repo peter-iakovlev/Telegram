@@ -17,9 +17,9 @@ typedef struct
     bool outputBGRA;
 }
 
-@property(readonly) GLubyte *rawBytesForImage;
-@property(nonatomic, copy) void(^newFrameAvailableBlock)(void);
-@property(nonatomic) BOOL enabled;
+@property (nonatomic, readonly) GLubyte *rawBytesForImage;
+@property (nonatomic, copy) void(^newFrameAvailableBlock)(void);
+@property (nonatomic, assign) bool enabled;
 @property (nonatomic, assign) CGSize imageSize;
 
 - (instancetype)initWithImageSize:(CGSize)newImageSize resultsInBGRAFormat:(bool)resultsInBGRAFormat;

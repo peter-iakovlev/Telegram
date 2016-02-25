@@ -14,3 +14,8 @@
 
 @end
 
+@interface TLInputPrivacyKey$inputPrivacyKeyChatInvite : TLInputPrivacyKey
+
+
+@end
+

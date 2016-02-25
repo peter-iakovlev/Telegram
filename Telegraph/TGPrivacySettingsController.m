@@ -47,6 +47,7 @@
     TGProgressWindow *_progressWindow;
     
     TGVariantCollectionItem *_blockedUsersItem;
+    TGVariantCollectionItem *_groupsAndChannelsItem;
     TGAccountSettings *_accountSettings;
     TGVariantCollectionItem *_lastSeenItem;
     TGVariantCollectionItem *_accountExpirationItem;
@@ -113,14 +114,17 @@
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
         self.title = TGLocalized(@"PrivacySettings.Title");
+        self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Back") style:UIBarButtonItemStylePlain target:nil action:nil];
         
         _lastSeenItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.LastSeen") action:@selector(lastSeenPressed)];
         _blockedUsersItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.BlockedUsers") action:@selector(blockedUsersPressed)];
+        _groupsAndChannelsItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Privacy.GroupsAndChannels") action:@selector(groupsAndChannelsPressed)];
         TGCollectionMenuSection *lastSeenSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.PrivacyTitle")],
             _blockedUsersItem,
             _lastSeenItem,
-            [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"PrivacyLastSeenSettings.LastSeenHelp")]
+            _groupsAndChannelsItem,
+            [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"PrivacyLastSeenSettings.GroupsAndChannelsHelp")]
         ]];
         UIEdgeInsets topSectionInsets = lastSeenSection.insets;
         topSectionInsets.top = 32.0f;
@@ -223,13 +227,14 @@
     _accountSettings = accountSettings;
     
     _lastSeenItem.variant = [self lastSeenVariantForPrivacySettings:_accountSettings.notificationSettings];
+    _groupsAndChannelsItem.variant = [self lastSeenVariantForPrivacySettings:_accountSettings.groupsAndChannelsSettings];
     _accountExpirationItem.variant = [self accountExpirationTimeVariantForAccountTTLSetting:_accountSettings.accountTTLSetting];
 }
 
 - (void)lastSeenPressed
 {
     __weak TGPrivacySettingsController *weakSelf = self;
-    [self.navigationController pushViewController:[[TGPrivacyLastSeenController alloc] initWithPrivacySettings:_accountSettings.notificationSettings privacySettingsChanged:^(TGNotificationPrivacyAccountSetting *privacySettings)
+    [self.navigationController pushViewController:[[TGPrivacyLastSeenController alloc] initWithMode:TGPrivacySettingsModeLastSeen privacySettings:_accountSettings.notificationSettings privacySettingsChanged:^(TGNotificationPrivacyAccountSetting *privacySettings)
     {
         __strong TGPrivacySettingsController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -237,9 +242,9 @@
             strongSelf->_progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
             [strongSelf->_progressWindow show:true];
             
-            TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:privacySettings accountTTLSetting:strongSelf->_accountSettings.accountTTLSetting];
+            TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:privacySettings groupsAndChannelsSettings:strongSelf->_accountSettings.groupsAndChannelsSettings accountTTLSetting:strongSelf->_accountSettings.accountTTLSetting];
             [strongSelf setAccountSettings:accountSettings];
-            [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[privacySettings]} flags:0 watcher:strongSelf];
+            [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[@{@"notifications": privacySettings}]} flags:0 watcher:strongSelf];
         }
     }] animated:true];
 }
@@ -247,6 +252,23 @@
 - (void)blockedUsersPressed
 {
     [self.navigationController pushViewController:[[TGBlockedController alloc] init] animated:true];
+}
+
+- (void)groupsAndChannelsPressed {
+    __weak TGPrivacySettingsController *weakSelf = self;
+    [self.navigationController pushViewController:[[TGPrivacyLastSeenController alloc] initWithMode:TGPrivacySettingsModeGroupsAndChannels privacySettings:_accountSettings.groupsAndChannelsSettings privacySettingsChanged:^(TGNotificationPrivacyAccountSetting *privacySettings)
+    {
+        __strong TGPrivacySettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            strongSelf->_progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+            [strongSelf->_progressWindow show:true];
+            
+            TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:strongSelf->_accountSettings.notificationSettings groupsAndChannelsSettings:privacySettings accountTTLSetting:strongSelf->_accountSettings.accountTTLSetting];
+            [strongSelf setAccountSettings:accountSettings];
+            [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[@{@"groupsAndChannels": privacySettings}]} flags:0 watcher:strongSelf];
+        }
+    }] animated:true];
 }
 
 - (void)deleteAccountNowPressed
@@ -286,7 +308,7 @@
         {
             TGAccountTTLSetting *accountTTLSetting = [[TGAccountTTLSetting alloc] initWithAccountTTL:[item intValue] == 0 ? nil : item];
             
-            TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:strongSelf->_accountSettings.notificationSettings accountTTLSetting:accountTTLSetting];
+            TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:strongSelf->_accountSettings.notificationSettings groupsAndChannelsSettings:strongSelf->_accountSettings.groupsAndChannelsSettings accountTTLSetting:accountTTLSetting];
             
             if (![strongSelf->_accountSettings.accountTTLSetting isEqual:accountTTLSetting])
             {
@@ -294,7 +316,7 @@
                 [strongSelf->_progressWindow show:true];
                 
                 [strongSelf setAccountSettings:accountSettings];
-                [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[accountTTLSetting]} flags:0 watcher:strongSelf];
+                [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[@{@"accountTTL": accountTTLSetting}]} flags:0 watcher:strongSelf];
             }
         }
     }];

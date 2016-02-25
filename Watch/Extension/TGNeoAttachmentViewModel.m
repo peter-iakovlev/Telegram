@@ -25,6 +25,8 @@
     NSString *messageIcon = nil;
     bool useNormalColor = false;
     
+    CGFloat fontSize = font.pointSize;
+    
     for (TGBridgeMediaAttachment *attachment in attachments)
     {
         if ([attachment isKindOfClass:[TGBridgeImageMediaAttachment class]])
@@ -82,6 +84,12 @@
                 else
                     messageText = TGLocalized(@"Message.Sticker");
             }
+            else if (documentAttachment.isAudio && documentAttachment.isVoice)
+            {
+                messageText = TGLocalized(@"Message.Audio");
+                
+                messageIcon = @"MediaAudio";
+            }
             else
             {
                 if (documentAttachment.fileName.length > 0)
@@ -118,7 +126,7 @@
                 {
                     if (forChannel)
                     {
-                        messageText = TGLocalized(@"Notification.ChannelTitleUpdated");
+                        messageText = TGLocalized(@"Notification.RenamedChannel");
                     }
                     else
                     {
@@ -130,7 +138,7 @@
                         NSRange formatNameRange = [formatString rangeOfString:@"%@"];
                         if (formatNameRange.location != NSNotFound)
                         {
-                            additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length)];
+                            additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length) fontSize:fontSize];
                         }
                     }
                 }
@@ -143,9 +151,10 @@
                  
                     if (forChannel)
                     {
-                        messageText = changed ? TGLocalized(@"Notification.ChannelPhotoUpdated") : TGLocalized(@"Notification.ChannelPhotoRemoved");
+                        messageText = changed ? TGLocalized(@"Channel.MessagePhotoUpdated") : TGLocalized(@"Channel.MessagePhotoRemoved");
                     }
-                    else {
+                    else
+                    {
                         NSString *formatString = changed ? TGLocalized(@"Notification.ChangedGroupPhoto") : TGLocalized(@"Notification.RemovedGroupPhoto");
                         
                         actionText = [NSString stringWithFormat:formatString, authorName];
@@ -153,7 +162,7 @@
                         NSRange formatNameRange = [formatString rangeOfString:@"%@"];
                         if (formatNameRange.location != NSNotFound)
                         {
-                            additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length)];
+                            additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length) fontSize:fontSize];
                         }
                     }
                 }
@@ -179,7 +188,7 @@
                         NSRange formatNameRange = [formatString rangeOfString:@"%@"];
                         if (formatNameRange.location != NSNotFound)
                         {
-                            additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length)];
+                            additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length) fontSize:fontSize];
                         }
                     }
                     else
@@ -196,8 +205,8 @@
                             NSMutableArray *array = [[NSMutableArray alloc] init];
                             
                             NSRange rangeFirst = NSMakeRange(formatNameRangeFirst.location, authorName.length);
-                            [array addObjectsFromArray:[TGNeoAttachmentViewModel _mediumFontAttributeForRange:rangeFirst]];
-                            [array addObjectsFromArray:[TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(rangeFirst.length - formatNameRangeFirst.length + formatNameRangeSecond.location, userName.length)]];
+                            [array addObjectsFromArray:[TGNeoAttachmentViewModel _mediumFontAttributeForRange:rangeFirst fontSize:fontSize]];
+                            [array addObjectsFromArray:[TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(rangeFirst.length - formatNameRangeFirst.length + formatNameRangeSecond.location, userName.length) fontSize:fontSize]];
                             
                             additionalAttributes = array;
                         }
@@ -214,7 +223,7 @@
                     NSRange formatNameRange = [formatString rangeOfString:@"%@"];
                     if (formatNameRange.location != NSNotFound)
                     {
-                        additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length)];
+                        additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length) fontSize:fontSize];
                     }
                 }
                     break;
@@ -228,20 +237,20 @@
                     NSRange formatNameRange = [formatString rangeOfString:@"%@"];
                     if (formatNameRange.location != NSNotFound)
                     {
-                        additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length)];
+                        additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length) fontSize:fontSize];
                     }
                 }
                     break;
                     
                 case TGBridgeMessageActionContactRegistered:
                 {
-                    messageText = TGLocalized(@"Notification.Joined");
+                    messageText = TGLocalized(@"Watch.Notification.Joined");
                 }
                     break;
                     
                 case TGBridgeMessageActionChannelCreated:
                 {
-                    messageText = TGLocalized(@"Notification.ChannelCreated");
+                    messageText = TGLocalized(@"Notification.CreatedChannel");
                 }
                     break;
                     
@@ -256,8 +265,32 @@
                     NSRange formatNameRange = [formatString rangeOfString:@"%@"];
                     if (formatNameRange.location != NSNotFound)
                     {
-                        additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length)];
+                        additionalAttributes = [TGNeoAttachmentViewModel _mediumFontAttributeForRange:NSMakeRange(formatNameRange.location, authorName.length) fontSize:fontSize];
                     }
+                }
+                    break;
+                    
+                case TGBridgeMessageActionGroupMigratedTo:
+                {
+                    messageText = TGLocalized(@"Notification.GroupMigratedToChannel");
+                }
+                    break;
+                    
+                case TGBridgeMessageActionGroupActivated:
+                {
+                    messageText = TGLocalized(@"Notification.GroupActivated");
+                }
+                    break;
+                    
+                case TGBridgeMessageActionGroupDeactivated:
+                {
+                    messageText = TGLocalized(@"Notification.GroupDeactivated");
+                }
+                    break;
+                    
+                case TGBridgeMessageActionChannelMigratedFrom:
+                {
+                    messageText = TGLocalized(@"Notification.ChannelMigratedFrom");
                 }
                     break;
                     
@@ -267,7 +300,7 @@
             
             if (actionText != nil)
             {
-                attributedText = [[NSMutableAttributedString alloc] initWithString:actionText attributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:16.0f weight:UIFontWeightRegular], NSForegroundColorAttributeName: subTitleColor }];
+                attributedText = [[NSMutableAttributedString alloc] initWithString:actionText attributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:fontSize weight:UIFontWeightRegular], NSForegroundColorAttributeName: subTitleColor }];
                 
                 if (additionalAttributes != nil)
                 {
@@ -302,6 +335,7 @@
         if (attributedText != nil)
         {
             _textModel = [[TGNeoLabelViewModel alloc] initWithAttributedText:attributedText];
+            _textModel.multiline = false;
             [self addSubmodel:_textModel];
         }
         else
@@ -341,9 +375,24 @@
     _textModel.frame = CGRectMake(textOffset, 0, frame.size.width - textOffset, 20);
 }
 
-+ (NSArray *)_mediumFontAttributeForRange:(NSRange)range
+- (CGSize)contentSizeWithContainerSize:(CGSize)containerSize
 {
-    NSDictionary *fontAttributes = @{ NSFontAttributeName: [UIFont systemFontOfSize:16.0f weight:UIFontWeightMedium], NSForegroundColorAttributeName: [UIColor whiteColor] };
+    CGFloat textOffset = 0;
+    if (_iconModel != nil)
+        textOffset = CGRectGetMaxX(_iconModel.frame) + 2;
+    
+    CGSize textSize = [_textModel contentSizeWithContainerSize:CGSizeMake(self.frame.size.width - textOffset, FLT_MAX)];
+
+    CGSize contentSize = CGSizeZero;
+    contentSize.width = CGRectGetMaxX(self.frame);
+    contentSize.height = textSize.height;
+    
+    return contentSize;
+}
+
++ (NSArray *)_mediumFontAttributeForRange:(NSRange)range fontSize:(CGFloat)fontSize
+{
+    NSDictionary *fontAttributes = @{ NSFontAttributeName: [UIFont systemFontOfSize:fontSize weight:UIFontWeightMedium], NSForegroundColorAttributeName: [UIColor whiteColor] };
     return [[NSArray alloc] initWithObjects:[[NSValue alloc] initWithBytes:&range objCType:@encode(NSRange)], fontAttributes, nil];
 }
 

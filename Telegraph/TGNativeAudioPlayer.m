@@ -12,23 +12,30 @@
 
 #import <AVFoundation/AVFoundation.h>
 
-@interface TGNativeAudioPlayer () <AVAudioPlayerDelegate>
+#import "TGObserverProxy.h"
+
+@interface TGNativeAudioPlayer ()
 {
-    AVAudioPlayer *_audioPlayer;
+    AVPlayer *_audioPlayer;
+    AVPlayerItem *_currentItem;
+    TGObserverProxy *_didPlayToEndObserver;
 }
 
 @end
 
 @implementation TGNativeAudioPlayer
 
-- (instancetype)initWithPath:(NSString *)path
+- (instancetype)initWithPath:(NSString *)path music:(bool)music controlAudioSession:(bool)controlAudioSession
 {
-    self = [super init];
+    self = [super initWithMusic:music controlAudioSession:controlAudioSession];
     if (self != nil)
     {
         __autoreleasing NSError *error = nil;
-        _audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:[NSURL fileURLWithPath:path] error:&error];
-        _audioPlayer.delegate = self;
+        _currentItem = [[AVPlayerItem alloc] initWithURL:[NSURL fileURLWithPath:path]];
+        if (_currentItem != nil) {
+            _audioPlayer = [[AVPlayer alloc] initWithPlayerItem:_currentItem];
+            _didPlayToEndObserver = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(playerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:_currentItem];
+        }
         
         if (_audioPlayer == nil || error != nil)
         {
@@ -50,13 +57,12 @@
 
 - (void)cleanup
 {
-    AVAudioPlayer *audioPlayer = _audioPlayer;
-    _audioPlayer.delegate = nil;
+    AVPlayer *audioPlayer = _audioPlayer;
     _audioPlayer = nil;
     
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
-        [audioPlayer stop];
+        [audioPlayer pause];
     }];
     
     [self _endAudioSessionFinal];
@@ -68,17 +74,22 @@
     {
         [self _beginAudioSession];
         
-        if (position >= 0.0)
-            [_audioPlayer setCurrentTime:position];
+        if (position >= 0.0) {
+            CMTime targetTime = CMTimeMakeWithSeconds(position, NSEC_PER_SEC);
+            [_currentItem seekToTime:targetTime toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
+        }
         [_audioPlayer play];
     }];
 }
 
-- (void)pause
+- (void)pause:(void (^)())completion
 {
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
         [_audioPlayer pause];
+        if (completion) {
+            completion();
+        }
     }];
 }
 
@@ -86,7 +97,7 @@
 {
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
-        [_audioPlayer stop];
+        [_audioPlayer pause];
     }];
 }
 
@@ -96,7 +107,7 @@
     
     dispatch_block_t block = ^
     {
-        result = [_audioPlayer currentTime];
+        result = CMTimeGetSeconds(_currentItem.currentTime);
     };
     
     if (sync)
@@ -109,11 +120,17 @@
 
 - (NSTimeInterval)duration
 {
-    return [_audioPlayer duration];
+    return CMTimeGetSeconds(_currentItem.duration);
 }
 
 - (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)__unused player successfully:(BOOL)__unused flag
 {
+}
+
+- (void)playerItemDidPlayToEndTime:(NSNotification *)__unused notification
+{
+    [_audioPlayer pause];
+    
     [self _notifyFinished];
 }
 

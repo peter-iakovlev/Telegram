@@ -1,4 +1,4 @@
-#import <UIKit/UIKit.h>
+#import "TGStickerKeyboardView.h"
 
 @class TGDocumentMediaAttachment;
 
@@ -7,5 +7,7 @@
 - (void)setRecent;
 - (void)setNone;
 - (void)setDocumentMedia:(TGDocumentMediaAttachment *)documentMedia;
+
+- (void)setStyle:(TGStickerKeyboardViewStyle)style;
 
 @end

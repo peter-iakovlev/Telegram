@@ -66,6 +66,9 @@
             {
                 imageSize = ((TGDocumentAttributeImageSize *)attribute).size;
             }
+            else if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                imageSize = ((TGDocumentAttributeVideo *)attribute).size;
+            }
             else if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
             {
                 isSticker = true;

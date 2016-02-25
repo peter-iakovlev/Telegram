@@ -3,11 +3,14 @@
 #import "TLObject.h"
 #import "TLMetaRpc.h"
 
+@class TLInputPeer;
 @class TLmessages_Dialogs;
 
 @interface TLRPCmessages_getDialogs : TLMetaRpc
 
-@property (nonatomic) int32_t offset;
+@property (nonatomic) int32_t offset_date;
+@property (nonatomic) int32_t offset_id;
+@property (nonatomic, retain) TLInputPeer *offset_peer;
 @property (nonatomic) int32_t limit;
 
 - (Class)responseClass;

@@ -23,6 +23,7 @@
     TGMessageImageViewTimestampPosition _timestampPosition;
     UIColor *_timestampColor;
     NSString *_timestampString;
+    NSString *_signatureString;
     bool _displayCheckmarks;
     int _checkmarkValue;
     bool _displayViews;
@@ -52,6 +53,8 @@
         
         _uri = uri;
         [self _updateViewStateIdentifier];
+        
+        _inlineVideoInsets = UIEdgeInsetsMake(2.0f, 2.0f, 2.0f, 2.0f);
     }
     return self;
 }
@@ -75,6 +78,9 @@
     if (!TGStringCompare(self.viewStateIdentifier, self.boundView.viewStateIdentifier))
         [((TGMessageImageViewContainer *)self.boundView).imageView loadUri:_uri withOptions:nil];
 
+    [((TGMessageImageViewContainer *)self.boundView).imageView setInlineVideoInsets:_inlineVideoInsets];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setInlineVideoSize:_inlineVideoSize];
+    
     [((TGMessageImageViewContainer *)self.boundView).imageView setOverlayDiameter:_overlayDiameter];
     [((TGMessageImageViewContainer *)self.boundView).imageView setOverlayBackgroundColorHint:_overlayBackgroundColorHint];
     [((TGMessageImageViewContainer *)self.boundView).imageView setProgress:_progress animated:false];
@@ -82,7 +88,7 @@
     [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampPosition:(int)_timestampPosition];
     [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampColor:_timestampColor];
     [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampHidden:_timestampHidden];
-    [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampString:_timestampString displayCheckmarks:_displayCheckmarks checkmarkValue:_checkmarkValue displayViews:_displayViews viewsValue:_viewsValue animated:false];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampString:_timestampString signatureString:_signatureString displayCheckmarks:_displayCheckmarks checkmarkValue:_checkmarkValue displayViews:_displayViews viewsValue:_viewsValue animated:false];
     [((TGMessageImageViewContainer *)self.boundView).imageView setDisplayTimestampProgress:_displayTimestampProgress];
     [((TGMessageImageViewContainer *)self.boundView).imageView setAdditionalDataString:_additionalDataString animated:false];
     [((TGMessageImageViewContainer *)self.boundView).imageView setIsBroadcast:_isBroadcast];
@@ -167,15 +173,16 @@
     [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampColor:_timestampColor];
 }
 
-- (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated
+- (void)setTimestampString:(NSString *)timestampString signatureString:(NSString *)signatureString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated
 {
     _timestampString = timestampString;
+    _signatureString = signatureString;
     _displayCheckmarks = displayCheckmarks;
     _checkmarkValue = checkmarkValue;
     _displayViews = displayViews;
     _viewsValue = viewsValue;
     
-    [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampString:_timestampString displayCheckmarks:_displayCheckmarks checkmarkValue:_checkmarkValue displayViews:_displayViews viewsValue:_viewsValue animated:animated];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampString:_timestampString signatureString:_signatureString displayCheckmarks:_displayCheckmarks checkmarkValue:_checkmarkValue displayViews:_displayViews viewsValue:_viewsValue animated:animated];
 }
 
 - (void)setTimestampPosition:(TGMessageImageViewTimestampPosition)timestampPosition

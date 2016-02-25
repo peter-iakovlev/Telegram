@@ -39,7 +39,7 @@
     else
         string = [[NSAttributedString alloc] initWithString:@" "];
     
-    CGSize contentSize = [string boundingRectWithSize:containerSize options:[self _stringDrawingOptions] context:nil].size;
+    CGSize contentSize = [string boundingRectWithSize:containerSize options:[self _stringDrawingOptionsForMetrics:true] context:nil].size;
     contentSize.width = ceilf(contentSize.width);
     contentSize.height = ceilf(contentSize.height);
 
@@ -49,16 +49,20 @@
 - (void)drawInContext:(CGContextRef)context
 {
     UIGraphicsPushContext(context);
+    NSStringDrawingOptions options = [self _stringDrawingOptionsForMetrics:false];
     if (self.attributedText.length > 0)
-        [self.attributedText drawWithRect:self.bounds options:[self _stringDrawingOptions] context:nil];
+        [self.attributedText drawWithRect:self.bounds options:options context:nil];
     else if (self.text.length > 0)
-        [self.text drawWithRect:self.bounds options:[self _stringDrawingOptions] attributes:self.attributes context:nil];
+        [self.text drawWithRect:self.bounds options:options attributes:self.attributes context:nil];
     UIGraphicsPopContext();
 }
 
-- (NSStringDrawingOptions)_stringDrawingOptions
+- (NSStringDrawingOptions)_stringDrawingOptionsForMetrics:(bool)forMetrics
 {
-    NSStringDrawingOptions options = NSStringDrawingUsesLineFragmentOrigin;
+    NSStringDrawingOptions options = kNilOptions;
+    if (self.multiline || !forMetrics)
+        options |= NSStringDrawingUsesLineFragmentOrigin;
+    
     if (!self.multiline)
         options |= NSStringDrawingTruncatesLastVisibleLine;
     

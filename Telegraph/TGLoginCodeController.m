@@ -44,6 +44,8 @@
 
 #import "TGTwoStepConfigSignal.h"
 
+#import "TGAccountSignals.h"
+
 @interface TGLoginCodeController () <UITextFieldDelegate, UIAlertViewDelegate, MFMailComposeViewControllerDelegate, UINavigationControllerDelegate>
 {
     bool _dismissing;
@@ -57,6 +59,8 @@
     bool _didDisappear;
     
     SMetaDisposable *_twoStepConfigDisposable;
+    
+    UILabel *_termsOfServiceLabel;
 }
 
 @property (nonatomic) NSTimeInterval phoneTimeout;
@@ -270,7 +274,48 @@
     _callSentLabel.backgroundColor = [UIColor clearColor];
     _callSentLabel.alpha = 0.0f;
     
-    _timeoutLabel.hidden = _messageSentToTelegram;
+    _timeoutLabel.hidden = _messageSentToTelegram || _phoneTimeout >= (3600.0 - DBL_EPSILON);
+    
+    if (!_messageSentToTelegram && !(TGIsPad() || [TGViewController isWidescreen] || [TGViewController hasLargeScreen])) {
+        _termsOfServiceLabel = [[UILabel alloc] init];
+        _termsOfServiceLabel.font = TGSystemFontOfSize(TGIsPad() || [TGViewController hasLargeScreen] ? 16.0f : 14.0f);
+        _termsOfServiceLabel.textColor = UIColorRGB(0x999999);
+        [_termsOfServiceLabel addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(termsOfServiceTapGesture:)]];
+        _termsOfServiceLabel.userInteractionEnabled = true;
+        
+        NSMutableString *rawTermsOfServiceString = [[NSMutableString alloc] initWithString:TGLocalized(@"Login.TermsOfServiceLabel")];
+        NSMutableAttributedString *termsOfServiceString = nil;
+        {
+            NSRange extractedRange = NSMakeRange(NSNotFound, 0);
+            
+            NSRange linkRange = [rawTermsOfServiceString rangeOfString:@"["];
+            if (linkRange.location != NSNotFound) {
+                [rawTermsOfServiceString replaceCharactersInRange:linkRange withString:@""];
+                
+                NSRange linkEndRange = [rawTermsOfServiceString rangeOfString:@"]"];
+                if (linkEndRange.location != NSNotFound) {
+                    [rawTermsOfServiceString replaceCharactersInRange:linkEndRange withString:@""];
+                    
+                    extractedRange = NSMakeRange(linkRange.location, linkEndRange.location - linkRange.location);
+                }
+            }
+            
+            termsOfServiceString = [[NSMutableAttributedString alloc] initWithString:rawTermsOfServiceString attributes:@{NSFontAttributeName: _termsOfServiceLabel.font}];
+            if (extractedRange.location != NSNotFound) {
+                [termsOfServiceString addAttribute:NSForegroundColorAttributeName value:TGAccentColor() range:extractedRange];
+            }
+        }
+        
+        _termsOfServiceLabel.attributedText = termsOfServiceString;
+        _termsOfServiceLabel.backgroundColor = [UIColor clearColor];
+        _termsOfServiceLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        _termsOfServiceLabel.textAlignment = NSTextAlignmentCenter;
+        _termsOfServiceLabel.contentMode = UIViewContentModeCenter;
+        _termsOfServiceLabel.numberOfLines = 0;
+        CGSize termsOfServiceSize = [_termsOfServiceLabel sizeThatFits:CGSizeMake(278.0f, CGFLOAT_MAX)];
+        _termsOfServiceLabel.frame = CGRectMake(CGFloor((screenSize.width - termsOfServiceSize.width) / 2.0f), [TGViewController isWidescreen] ? 274.0f : 214.0f, termsOfServiceSize.width, termsOfServiceSize.height);
+        [self.view addSubview:_termsOfServiceLabel];
+    }
     
     NSString *codeTextFormat = TGLocalized(@"Login.CallRequestState3");
     NSRange linkRange = NSMakeRange(NSNotFound, 0);
@@ -431,7 +476,7 @@
     [_countdownTimer invalidate];
     _countdownTimer = nil;
     
-    int timeout = MAX(30, (int)_phoneTimeout);
+    int timeout = (int)_phoneTimeout;
     
     NSTimeInterval currentTime = CFAbsoluteTimeGetCurrent();
     NSTimeInterval remainingTime = (_countdownStart + timeout) - currentTime;
@@ -440,6 +485,9 @@
         remainingTime = 0;
     
     _timeoutLabel.text = [TGStringUtils stringWithLocalizedNumberCharacters:[NSString stringWithFormat:TGLocalized(@"Login.CallRequestState1"), ((int)remainingTime) / 60, ((int)remainingTime) % 60]];
+    CGSize size = [_timeoutLabel.text sizeWithFont:_timeoutLabel.font];
+    _timeoutLabel.frame = CGRectMake(_timeoutLabel.frame.origin.x, _timeoutLabel.frame.origin.y, size.width, size.height);
+    [self updateInterface:self.interfaceOrientation];
     
     if (remainingTime <= 0)
     {
@@ -542,6 +590,14 @@
     
     [_didNotReceiveCodeButton sizeToFit];
     _didNotReceiveCodeButton.frame = CGRectMake(CGCeil((screenSize.width - _didNotReceiveCodeButton.frame.size.width) / 2.0f), CGRectGetMaxY(_noticeLabel.frame) + 2.0f, _didNotReceiveCodeButton.frame.size.width, _didNotReceiveCodeButton.frame.size.height);
+    
+    if (_termsOfServiceLabel != nil) {
+        CGSize termsOfServiceSize = [_termsOfServiceLabel sizeThatFits:CGSizeMake(278.0f, CGFLOAT_MAX)];
+        
+        CGFloat termsOfServiceOffset = 10.0f;
+        
+        _termsOfServiceLabel.frame = CGRectMake(CGFloor((screenSize.width - termsOfServiceSize.width) / 2.0f), screenSize.height - termsOfServiceSize.height - termsOfServiceOffset - 216.0f, termsOfServiceSize.width, termsOfServiceSize.height);
+    }
 }
 
 - (void)setInProgress:(bool)inProgress
@@ -891,6 +947,45 @@
     
     static int actionId = 0;
     [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/service/auth/sendCode/(sms%d)", actionId++] options:[[NSDictionary alloc] initWithObjectsAndKeys:_phoneNumber, @"phoneNumber", _phoneCodeHash, @"phoneHash", [[NSNumber alloc] initWithBool:true], @"requestSms", nil] watcher:self];
+}
+
+- (void)termsOfServiceTapGesture:(UITapGestureRecognizer *)recognizer {
+    if (recognizer.state == UIGestureRecognizerStateEnded) {
+        TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+        [progressWindow showWithDelay:0.1];
+        
+        [[[[TGAccountSignals termsOfService] deliverOn:[SQueue mainQueue]] onDispose:^{
+            TGDispatchOnMainThread(^{
+                [progressWindow dismiss:true];
+            });
+        }] startWithNext:^(NSString *termsText) {
+            if (NSClassFromString(@"UIAlertController") != nil) {
+                UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:@"" message:@"" preferredStyle:UIAlertControllerStyleAlert];
+                
+                NSString *headerText = TGLocalized(@"Login.TermsOfServiceHeader");
+                
+                NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
+                style.lineSpacing = 5.0;
+                style.lineBreakMode = NSLineBreakByWordWrapping;
+                style.alignment = NSTextAlignmentLeft;
+                
+                NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithString:[[NSString alloc] initWithFormat:@"%@\n\n%@", headerText, termsText] attributes:@{NSFontAttributeName: TGSystemFontOfSize(13.0f)}];
+                [text addAttribute:NSFontAttributeName value:TGMediumSystemFontOfSize(17.0f) range:NSMakeRange(0, headerText.length)];
+                
+                [text addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(headerText.length + 2, text.length - headerText.length - 2)];
+                
+                [alertVC setValue:text forKey:@"attributedTitle"];
+                
+                UIAlertAction *button = [UIAlertAction actionWithTitle:TGLocalized(@"Common.OK") style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+                }];
+                
+                [alertVC addAction:button];
+                [self presentViewController:alertVC animated:true completion:nil];
+            } else {
+                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Login.TermsOfServiceHeader") message:termsText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            }
+        }];
+    }
 }
 
 @end

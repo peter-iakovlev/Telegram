@@ -10,5 +10,6 @@ typedef enum
 @interface TGCameraShutterButton : UIControl
 
 - (void)setButtonMode:(TGCameraShutterButtonMode)mode animated:(bool)animated;
+- (void)setEnabled:(bool)enabled animated:(bool)animated;
 
 @end

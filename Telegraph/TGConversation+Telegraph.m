@@ -8,6 +8,7 @@
 #import "TGPeerIdAdapter.h"
 
 #import "TLChat$channel.h"
+#import "TLChat$chat.h"
 
 @implementation TGConversationParticipantsData (Telegraph)
 
@@ -25,23 +26,37 @@
             NSMutableArray *participants = [[NSMutableArray alloc] init];
             NSMutableDictionary *invitedBy = [[NSMutableDictionary alloc] init];
             NSMutableDictionary *invitedDates = [[NSMutableDictionary alloc] init];
+            NSMutableSet *chatAdminUids = [[NSMutableSet alloc] init];
             
             for (TLChatParticipant *chatParticipant in concreteParticipants.participants)
             {
                 int64_t uid = chatParticipant.user_id;
                 [participants addObject:[NSNumber numberWithLongLong:uid]];
                 
-                int64_t inviterUid = chatParticipant.inviter_id;
-                [invitedBy setObject:[NSNumber numberWithInt:(int)inviterUid] forKey:[NSNumber numberWithInt:(int)uid]];
-                [invitedDates setObject:[NSNumber numberWithInt:chatParticipant.date] forKey:[NSNumber numberWithInt:(int)uid]];
+                if ([chatParticipant isKindOfClass:[TLChatParticipant$chatParticipant class]]) {
+                    TLChatParticipant$chatParticipant *concreteParticipant = (TLChatParticipant$chatParticipant *)chatParticipant;
+
+                    int64_t inviterUid = concreteParticipant.inviter_id;
+                    [invitedBy setObject:[NSNumber numberWithInt:(int)inviterUid] forKey:[NSNumber numberWithInt:(int)uid]];
+                    [invitedDates setObject:[NSNumber numberWithInt:concreteParticipant.date] forKey:[NSNumber numberWithInt:(int)uid]];
+                } else if ([chatParticipant isKindOfClass:[TLChatParticipant$chatParticipantAdmin class]]) {
+                    TLChatParticipant$chatParticipantAdmin *concreteParticipant = (TLChatParticipant$chatParticipantAdmin *)chatParticipant;
+                    
+                    int64_t inviterUid = concreteParticipant.inviter_id;
+                    [invitedBy setObject:[NSNumber numberWithInt:(int)inviterUid] forKey:[NSNumber numberWithInt:(int)uid]];
+                    [invitedDates setObject:[NSNumber numberWithInt:concreteParticipant.date] forKey:[NSNumber numberWithInt:(int)uid]];
+                    [chatAdminUids addObject:@(uid)];
+                } else if ([chatParticipant isKindOfClass:[TLChatParticipant$chatParticipantCreator class]]) {
+                    self.chatAdminId = (int32_t)uid;
+                }
             }
             
             self.version = concreteParticipants.version;
-            self.chatAdminId = concreteParticipants.admin_id;
             
             self.chatParticipantUids = participants;
             self.chatInvitedBy = invitedBy;
             self.chatInvitedDates = invitedDates;
+            self.chatAdminUids = chatAdminUids;
         }
     }
     return self;
@@ -79,6 +94,18 @@
             
             self.chatParticipantCount = concreteChat.participants_count;
             self.chatVersion = concreteChat.version;
+            self.hasAdmins = concreteChat.flags & (1 << 3);
+            self.isAdmin = concreteChat.flags & (1 << 4);
+            self.isCreator = concreteChat.flags & (1 << 0);
+            self.isDeactivated = concreteChat.deactivated;
+            if (concreteChat.flags & (1 << 6)) {
+                self.isMigrated = true;
+                if ([concreteChat.migrated_to isKindOfClass:[TLInputChannel$inputChannel class]]) {
+                    TLInputChannel$inputChannel *inputChannel = (TLInputChannel$inputChannel *)concreteChat.migrated_to;
+                    self.migratedToChannelId = inputChannel.channel_id;
+                    self.migratedToChannelAccessHash = inputChannel.access_hash;
+                }
+            }
         }
         else if ([chatDesc isKindOfClass:[TLChat$channel class]])
         {
@@ -114,8 +141,16 @@
             self.kickedFromChat = channel.flags & (1 << 1);
             
             self.isVerified = channel.flags & (1 << 7);
+            self.isChannelGroup = channel.flags & (1 << 8);
+            self.everybodyCanAddMembers = channel.flags & (1 << 10);
+            self.signaturesEnabled = channel.flags & (1 << 11);
+            
+            self.displayVariant = self.isChannelGroup ? TGChannelDisplayVariantAll : TGChannelDisplayVariantImportant;
             
             self.postAsChannel = self.channelRole == TGChannelRoleCreator || self.channelRole == TGChannelRolePublisher;
+            
+            self.hasExplicitContent = channel.flags & (1 << 9);
+            self.restrictionReason = channel.restriction_reason;
             
             self.kind = (self.leftChat || self.kickedFromChat) ? TGConversationKindTemporaryChannel : TGConversationKindPersistentChannel;
         }
@@ -124,7 +159,8 @@
             TLChat$channelForbidden *channelForbidden = (TLChat$channelForbidden *)chatDesc;
             self.conversationId = TGPeerIdFromChannelId(channelForbidden.n_id);
             self.accessHash = channelForbidden.access_hash;
-            self.leftChat = true;
+            self.leftChat = false;
+            self.kickedFromChat = true;
             self.chatTitle = channelForbidden.title;
             self.kind = TGConversationKindTemporaryChannel;
         }

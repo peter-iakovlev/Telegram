@@ -18,6 +18,8 @@
 - (void)setSnapshotImage:(UIImage *)image;
 - (void)setSnapshotView:(UIView *)snapshotView;
 
+- (void)_replaceSnapshotImage:(UIImage *)image;
+
 - (void)rotate90DegreesCCWAnimated:(bool)animated;
 - (void)resetAnimated:(bool)animated;
 
@@ -26,6 +28,8 @@
 - (void)transitionInFinishedFromCamera:(bool)fromCamera;
 
 - (void)invalidateCropRect;
+
+- (void)hideImageForCustomTransition;
 
 - (CGRect)contentFrameForView:(UIView *)view;
 - (CGRect)cropRectFrameForView:(UIView *)view;

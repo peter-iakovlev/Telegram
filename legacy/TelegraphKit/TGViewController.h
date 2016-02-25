@@ -56,6 +56,7 @@ typedef enum {
 + (CGSize)screenSizeForInterfaceOrientation:(UIInterfaceOrientation)orientation;
 + (bool)isWidescreen;
 + (bool)hasLargeScreen;
++ (bool)hasVeryLargeScreen;
 
 + (void)disableAutorotation;
 + (void)enableAutorotation;
@@ -118,6 +119,7 @@ typedef enum {
 - (bool)_updateControllerInsetForOrientation:(UIInterfaceOrientation)orientation force:(bool)force notify:(bool)notify;
 - (void)controllerInsetUpdated:(UIEdgeInsets)previousInset;
 - (bool)shouldAdjustScrollViewInsetsForInversedLayout;
+- (bool)shouldIgnoreNavigationBar;
 
 - (void)setNavigationBarHidden:(bool)navigationBarHidden animated:(BOOL)animated;
 - (void)setNavigationBarHidden:(bool)navigationBarHidden withAnimation:(TGViewControllerNavigationBarAnimation)animation;

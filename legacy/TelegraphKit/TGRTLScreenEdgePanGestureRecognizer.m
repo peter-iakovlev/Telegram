@@ -8,20 +8,22 @@
 
 #import "TGRTLScreenEdgePanGestureRecognizer.h"
 
+#import "TGModernConversationInputMicButton.h"
+
 @implementation TGRTLScreenEdgePanGestureRecognizer
 
-- (CGPoint)translationInView:(UIView *)view
-{
-    CGPoint result = [super translationInView:view];
-    result.x = -result.x;
-    return result;
-}
-
-- (CGPoint)velocityInView:(UIView *)view
-{
-    CGPoint result = [super velocityInView:view];
-    result.x = -result.x;
-    return result;
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    UITouch *touch = [touches anyObject];
+    if (touch != nil) {
+        CGPoint location = [touch locationInView:self.view];
+        UIView *targetView = [self.view hitTest:location withEvent:event];
+        if ([targetView isKindOfClass:[TGModernConversationInputMicButton class]]) {
+            self.state = UIGestureRecognizerStateFailed;
+            return;
+        }
+    }
+    
+    [super touchesBegan:touches withEvent:event];
 }
 
 @end

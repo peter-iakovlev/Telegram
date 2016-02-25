@@ -4,19 +4,25 @@
 @class TGBridgeUser;
 @class TGBridgeContext;
 
+typedef enum
+{
+    TGNeoMessageTypeGeneric,
+    TGNeoMessageTypeGroup,
+    TGNeoMessageTypeChannel
+} TGNeoMessageType;
+
 @interface TGNeoMessageViewModel : TGNeoRenderableViewModel
 
 @property (nonatomic, readonly) int32_t identifier;
+@property (nonatomic, readonly) TGNeoMessageType type;
 @property (nonatomic, readonly) NSDictionary *additionalLayout;
 @property (nonatomic, assign) bool showBubble;
 
-- (instancetype)initWithMessage:(TGBridgeMessage *)message users:(NSDictionary *)users context:(TGBridgeContext *)context;
+- (instancetype)initWithMessage:(TGBridgeMessage *)message type:(TGNeoMessageType)type users:(NSDictionary *)users context:(TGBridgeContext *)context;
 
 - (void)addAdditionalLayout:(NSDictionary *)layout withKey:(NSString *)key;
 
-+ (TGNeoMessageViewModel *)viewModelForMessage:(TGBridgeMessage *)message context:(TGBridgeContext *)context;
-
-+ (TGNeoMessageViewModel *)cachedViewModel;
++ (TGNeoMessageViewModel *)viewModelForMessage:(TGBridgeMessage *)message type:(TGNeoMessageType)type context:(TGBridgeContext *)context additionalPeers:(NSDictionary *)additionalPeers;
 
 @end
 
@@ -43,4 +49,7 @@ extern NSString *const TGNeoMessageAvatarColor;
 extern NSString *const TGNeoMessageAvatarInitials;
 
 extern NSString *const TGNeoMessageAudioButton;
+extern NSString *const TGNeoMessageAudioButtonHasBackground;
 extern NSString *const TGNeoMessageAudioIcon;
+extern NSString *const TGNeoMessageAudioIconTint;
+extern NSString *const TGNeoMessageAudioAnimatedIcon;

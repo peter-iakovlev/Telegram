@@ -15,10 +15,11 @@
 #import "TGDocumentAttributeSticker.h"
 #import "TGDocumentAttributeImageSize.h"
 #import "TGDocumentAttributeAudio.h"
+#import "TGDocumentAttributeVideo.h"
 
 #define TGDocumentMediaAttachmentType ((int)0xE6C64318)
 
-@interface TGDocumentMediaAttachment : TGMediaAttachment <TGMediaAttachmentParser, NSCoding>
+@interface TGDocumentMediaAttachment : TGMediaAttachment <TGMediaAttachmentParser, NSCoding, NSCopying>
 
 @property (nonatomic) int64_t localDocumentId;
 
@@ -34,9 +35,15 @@
 @property (nonatomic, strong) NSString *documentUri;
 
 @property (nonatomic, strong) NSArray *attributes;
+@property (nonatomic, strong) NSString *caption;
+
+@property (nonatomic, readonly) NSArray *textCheckingResults;
 
 - (NSString *)safeFileName;
 + (NSString *)safeFileNameForFileName:(NSString *)fileName;
 - (NSString *)fileName;
+
+- (bool)isAnimated;
+- (CGSize)pictureSize;
 
 @end

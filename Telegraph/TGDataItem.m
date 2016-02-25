@@ -123,4 +123,8 @@
     return result;
 }
 
+- (NSString *)path {
+    return _fileName;
+}
+
 @end

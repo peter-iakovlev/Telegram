@@ -172,6 +172,7 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
     
     bool lastCollapse = false;
     bool lastInsideUnreadRange = false;
+    bool didAddUnreadHeader = false;
     
     bool unreadRangeIsEmpty = TGMessageRangeIsEmpty(unreadMessageRange);
     
@@ -183,8 +184,9 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
         {
             int messageDate = (int32_t)messageItem->_message.date;
             bool currentInsideUnreadRange = TGMessageRangeContains(unreadMessageRange, ABS(messageItem->_message.mid), messageDate);
-            if (lastInsideUnreadRange && !currentInsideUnreadRange)
+            if (lastInsideUnreadRange && !currentInsideUnreadRange && !didAddUnreadHeader)
             {
+                didAddUnreadHeader = true;
                 currentHeight += addUnreadHeader(currentHeight, containerWidth, decorationViewAttributes);
                 lastCollapse = false;
             }

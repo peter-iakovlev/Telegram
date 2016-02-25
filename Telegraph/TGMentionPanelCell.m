@@ -40,6 +40,13 @@ NSString *const TGMentionPanelCellKind = @"TGMentionPanelCell";
             usernameColor = UIColorRGB(0x828282);
             selectionColor = UIColorRGB(0x292929);            
         }
+        else if (style == TGModernConversationAssociatedInputPanelDarkBlurredStyle)
+        {
+            backgroundColor = [UIColor clearColor];
+            nameColor = [UIColor whiteColor];
+            usernameColor = UIColorRGB(0x828282);
+            selectionColor = UIColorRGB(0x3d3d3d);
+        }
         
         self.backgroundColor = backgroundColor;
         self.backgroundView = [[UIView alloc] init];

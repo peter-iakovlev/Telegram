@@ -15,7 +15,13 @@
         {
             TLMessageAction$messageActionChatAddUser *concreteAction = (TLMessageAction$messageActionChatAddUser *)actionDesc;
             self.actionType = TGMessageActionChatAddMember;
-            self.actionData = [NSDictionary dictionaryWithObject:[NSNumber numberWithInt:concreteAction.user_id] forKey:@"uid"];
+            self.actionData = @{@"uids": concreteAction.users};
+        }
+        else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionChatAddUserLegacy class]])
+        {
+            TLMessageAction$messageActionChatAddUserLegacy *concreteAction = (TLMessageAction$messageActionChatAddUserLegacy *)actionDesc;
+            self.actionType = TGMessageActionChatAddMember;
+            self.actionData = @{@"uids": @[@(concreteAction.user_id)]};
         }
         else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionChatDeleteUser class]])
         {
@@ -71,6 +77,17 @@
             TLMessageAction$messageActionChannelToggleComments *concreteAction = (TLMessageAction$messageActionChannelToggleComments *)actionDesc;
             self.actionType = TGMessageActionChannelCommentsStatusChanged;
             self.actionData = [[NSDictionary alloc] initWithObjectsAndKeys:@(concreteAction.enabled), @"enabled", nil];
+        }
+        else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionChatMigrateTo class]]) {
+            self.actionType = TGMessageActionGroupMigratedTo;
+            self.actionData = @{@"channelId": @(((TLMessageAction$messageActionChatMigrateTo *)actionDesc).channel_id)};
+        } else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionChatDeactivate class]]) {
+            self.actionType = TGMessageActionGroupDeactivated;
+        } else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionChatActivate class]]) {
+            self.actionType = TGMessageActionGroupActivated;
+        } else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionChannelMigrateFrom class]]) {
+            self.actionType = TGMessageActionChannelMigratedFrom;
+            self.actionData = @{@"groupId": @(((TLMessageAction$messageActionChannelMigrateFrom *)actionDesc).chat_id), @"title": ((TLMessageAction$messageActionChannelMigrateFrom *)actionDesc).title};
         }
     }
     return self;

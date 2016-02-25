@@ -9,7 +9,9 @@ typedef enum {
     PSKeyValueCoderFieldTypeCustomClass = 4,
     PSKeyValueCoderFieldTypeArray = 5,
     PSKeyValueCoderFieldTypeData = 6,
-    PSKeyValueCoderFieldTypeInt32Array = 7
+    PSKeyValueCoderFieldTypeInt32Array = 7,
+    PSKeyValueCoderFieldTypeInt32Dictionary = 8,
+    PSKeyValueCoderFieldTypeDouble = 9
 } PSKeyValueCoderFieldType;
 
 @interface PSKeyValueCoder : NSObject
@@ -27,6 +29,8 @@ typedef enum {
 - (void)encodeData:(NSData *)data forCKey:(const char *)key;
 - (void)encodeBytes:(uint8_t const *)value length:(NSUInteger)length forCKey:(const char *)key;
 - (void)encodeInt32Array:(NSArray *)value forCKey:(const char *)key;
+- (void)encodeInt32Dictionary:(NSDictionary *)value forCKey:(const char *)key;
+- (void)encodeDouble:(double)value forCKey:(const char *)key;
 
 - (NSString *)decodeStringForKey:(NSString *)key;
 - (NSString *)decodeStringForCKey:(const char *)key;
@@ -42,6 +46,8 @@ typedef enum {
 - (void)decodeBytesForCKey:(const char *)key value:(uint8_t *)value length:(NSUInteger)length;
 - (NSDictionary *)decodeObjectsByKeys;
 - (NSArray *)decodeInt32ArrayForCKey:(const char *)key;
+- (NSDictionary *)decodeInt32DictionaryForCKey:(const char *)key;
+- (double)decodeDoubleForCKey:(const char *)key;
 
 + (Class<PSCoding>)classForName:(NSString *)name;
 

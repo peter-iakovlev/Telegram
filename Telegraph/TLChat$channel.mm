@@ -1,7 +1,7 @@
 #import "TLChat$channel.h"
 #import "TLMetaClassStore.h"
 
-//channel flags:# id:int access_hash:long title:string username:flags.6?string photo:ChatPhoto date:int version:int = Chat;
+//channel flags:# creator:flags.0?true kicked:flags.1?true left:flags.2?true editor:flags.3?true moderator:flags.4?true broadcast:flags.5?true verified:flags.7?true megagroup:flags.8?true restricted:flags.9?true id:int access_hash:long title:string username:flags.6?string photo:ChatPhoto date:int version:int restriction_reason:flags.9?string = Chat;
 
 @implementation TLChat$channel
 
@@ -34,6 +34,10 @@
     
     result.date = [is readInt32];
     result.version = [is readInt32];
+    
+    if (flags & (1 << 9)) {
+        result.restriction_reason = [is readString];
+    }
     
     return result;
 }

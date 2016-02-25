@@ -14,7 +14,7 @@ NSString *const TGLocationMapHeaderIdentifier = @"TGLocationMapHeader";
 
 - (void)updateWithLocation:(CLLocation *)location
 {
-    self.currentLocationLabel.text = TGLocalized(@"Location.Current");
+    self.currentLocationLabel.text = TGLocalized(@"Watch.Location.Current");
     
     if (_location == nil || [_location distanceFromLocation:location] > 50)
     {

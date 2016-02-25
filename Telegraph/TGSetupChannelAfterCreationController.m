@@ -174,7 +174,7 @@ typedef enum {
     }] startWithNext:nil completed:^{
         __strong TGSetupChannelAfterCreationController *strongSelf = weakSelf;
         if (strongSelf != nil) {
-            TGSelectContactController *createGroupController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:false createBroadcast:false createChannel:true inviteToChannel:false];
+            TGSelectContactController *createGroupController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:false createBroadcast:false createChannel:true inviteToChannel:false showLink:false];
             createGroupController.channelConversation = strongSelf->_conversation;
             
             NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:strongSelf.navigationController.viewControllers];

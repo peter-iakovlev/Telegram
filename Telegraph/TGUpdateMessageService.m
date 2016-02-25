@@ -265,10 +265,10 @@
             synthesizedMessage.date = updateShortChatMessage.date;
             synthesizedMessage.message = updateShortChatMessage.message;
             synthesizedMessage.media = [[TLMessageMedia$messageMediaEmpty alloc] init];
-            synthesizedMessage.fwd_from_id = updateShortChatMessage.fwd_from_id;
-            synthesizedMessage.fwd_date = updateShortChatMessage.fwd_date;
+            synthesizedMessage.fwd_header = updateShortChatMessage.fwd_header;
             synthesizedMessage.reply_to_msg_id = updateShortChatMessage.reply_to_msg_id;
             synthesizedMessage.entities = updateShortChatMessage.entities;
+            synthesizedMessage.via_bot_id = updateShortChatMessage.via_bot_id;
             
             TLUpdate$updateNewMessage *updateNewMessage = [[TLUpdate$updateNewMessage alloc] init];
             updateNewMessage.message = synthesizedMessage;
@@ -301,10 +301,10 @@
             synthesizedMessage.date = updateShortMessage.date;
             synthesizedMessage.message = updateShortMessage.message;
             synthesizedMessage.media = [[TLMessageMedia$messageMediaEmpty alloc] init];
-            synthesizedMessage.fwd_from_id = updateShortMessage.fwd_from_id;
-            synthesizedMessage.fwd_date = updateShortMessage.fwd_date;
+            synthesizedMessage.fwd_header = updateShortMessage.fwd_header;
             synthesizedMessage.reply_to_msg_id = updateShortMessage.reply_to_msg_id;
             synthesizedMessage.entities = updateShortMessage.entities;
+            synthesizedMessage.via_bot_id = updateShortMessage.via_bot_id;
             
             TLUpdate$updateNewMessage *updateNewMessage = [[TLUpdate$updateNewMessage alloc] init];
             updateNewMessage.message = synthesizedMessage;

@@ -58,6 +58,9 @@
     
     int32_t _replyMessageId;
     TGMessageViewCountContentProperty *_messageViews;
+    
+    TGMessage *_message;
+    NSString *_authorSignature;
 }
 
 @end
@@ -81,6 +84,7 @@
         _deliveryState = message.deliveryState;
         _hasAvatar = authorPeer != nil && [authorPeer isKindOfClass:[TGUser class]];
         _messageViews = message.viewCount;
+        _message = message;
         
         _needsEditingCheckButton = true;
         
@@ -117,7 +121,7 @@
         [self addSubmodel:_imageModel];
         
         [_imageModel setTimestampColor:[[TGTelegraphConversationMessageAssetsSource instance] systemMessageBackgroundColor]];
-        [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)message.date] displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:false];
+        [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)message.date] signatureString:nil displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:false];
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
         [_imageModel setIsBroadcast:message.isBroadcast];
         
@@ -162,6 +166,11 @@
         }
     }
     return self;
+}
+
+- (void)setAuthorSignature:(NSString *)authorSignature {
+    _authorSignature = authorSignature;
+    [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)_message.date] signatureString:authorSignature displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:false];
 }
 
 - (void)updateAssets
@@ -226,7 +235,7 @@
         _deliveryState = message.deliveryState;
         _read = !message.unread;
         
-        [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)message.date] displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:true];
+        [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)message.date] signatureString:_authorSignature displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:true];
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
         
         if (_deliveryState == TGMessageDeliveryStateDelivered)

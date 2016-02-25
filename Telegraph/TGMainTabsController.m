@@ -20,6 +20,9 @@
 #import "TGImageUtils.h"
 #import "TGFont.h"
 
+#import "TGAppDelegate.h"
+#import "TGDebugController.h"
+
 #import "TGNavigationController.h"
 
 @protocol TGTabBarDelegate <NSObject>
@@ -373,6 +376,8 @@
 @interface TGMainTabsController () <UITabBarControllerDelegate, TGTabBarDelegate>
 {
     int _unreadCount;
+    NSTimeInterval _lastSameIndexTapTime;
+    int _tapsInSuccession;
 }
 
 @property (nonatomic, strong) TGTabBar *customTabBar;
@@ -503,6 +508,23 @@
     {
         if ([self.selectedViewController respondsToSelector:@selector(scrollToTopRequested)])
             [self.selectedViewController performSelector:@selector(scrollToTopRequested)];
+    }
+    
+    if (index == 2) {
+        NSTimeInterval t = CACurrentMediaTime();
+        if (_lastSameIndexTapTime < DBL_EPSILON || t < _lastSameIndexTapTime + 0.5) {
+            _lastSameIndexTapTime = t;
+            _tapsInSuccession++;
+            if (_tapsInSuccession == 10) {
+                _tapsInSuccession = 0;
+                _lastSameIndexTapTime = 0.0;
+                
+                [TGAppDelegateInstance.rootController pushContentController:[[TGDebugController alloc] init]];
+            }
+        } else {
+            _lastSameIndexTapTime = 0.0;
+            _tapsInSuccession = 0;
+        }
     }
 }
 

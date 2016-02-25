@@ -16,7 +16,11 @@
 + (TGPeerNotificationSettings *)tgPeerNotificationSettingsWithpeerNotificationSettingsWithBridgePeerNotificationSettings:(TGBridgePeerNotificationSettings *)bridgeSettings currentTime:(int32_t)currentTime
 {
     int32_t muteFor = bridgeSettings.muteFor;
-    int32_t muteUntil = muteFor == 0 ? 0 :  bridgeSettings.muteFor + currentTime;
+    int32_t muteUntil = 0;
+    if (muteFor == INT_MAX)
+        muteUntil = INT_MAX;
+    else if (muteFor > 0)
+        muteUntil = bridgeSettings.muteFor + currentTime;
     
     return [[TGPeerNotificationSettings alloc] initWithMuteUntil:muteUntil];
 }

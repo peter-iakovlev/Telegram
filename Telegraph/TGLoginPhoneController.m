@@ -45,12 +45,15 @@
 
 #import <MessageUI/MessageUI.h>
 
+#import "TGAccountSignals.h"
+
 @interface TGLoginPhoneController () <UITextFieldDelegate, MFMailComposeViewControllerDelegate>
 {
     UIView *_grayBackground;
     UIView *_separatorView;
     UILabel *_titleLabel;
     UILabel *_noticeLabel;
+    UILabel *_termsOfServiceLabel;
     UIImageView *_inputBackgroundView;
     
     TGObserverProxy *_keyValueStoreChangeProxy;
@@ -168,6 +171,46 @@
     CGSize noticeSize = [_noticeLabel sizeThatFits:CGSizeMake(278.0f, CGFLOAT_MAX)];
     _noticeLabel.frame = CGRectMake(CGFloor((screenSize.width - noticeSize.width) / 2.0f), [TGViewController isWidescreen] ? 274.0f : 214.0f, noticeSize.width, noticeSize.height);
     [self.view addSubview:_noticeLabel];
+    
+    _termsOfServiceLabel = [[UILabel alloc] init];
+    _termsOfServiceLabel.font = TGSystemFontOfSize(TGIsPad() || [TGViewController hasLargeScreen] ? 16.0f : 14.0f);
+    _termsOfServiceLabel.textColor = [UIColor blackColor];
+    [_termsOfServiceLabel addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(termsOfServiceTapGesture:)]];
+    _termsOfServiceLabel.userInteractionEnabled = true;
+    
+    NSMutableString *rawTermsOfServiceString = [[NSMutableString alloc] initWithString:TGLocalized(@"Login.TermsOfServiceLabel")];
+    NSMutableAttributedString *termsOfServiceString = nil;
+    {
+        NSRange extractedRange = NSMakeRange(NSNotFound, 0);
+        
+        NSRange linkRange = [rawTermsOfServiceString rangeOfString:@"["];
+        if (linkRange.location != NSNotFound) {
+            [rawTermsOfServiceString replaceCharactersInRange:linkRange withString:@""];
+            
+            NSRange linkEndRange = [rawTermsOfServiceString rangeOfString:@"]"];
+            if (linkEndRange.location != NSNotFound) {
+                [rawTermsOfServiceString replaceCharactersInRange:linkEndRange withString:@""];
+                
+                extractedRange = NSMakeRange(linkRange.location, linkEndRange.location - linkRange.location);
+            }
+        }
+        
+        termsOfServiceString = [[NSMutableAttributedString alloc] initWithString:rawTermsOfServiceString attributes:@{NSFontAttributeName: _termsOfServiceLabel.font}];
+        if (extractedRange.location != NSNotFound) {
+            [termsOfServiceString addAttribute:NSForegroundColorAttributeName value:TGAccentColor() range:extractedRange];
+        }
+    }
+    
+    _termsOfServiceLabel.attributedText = termsOfServiceString;
+    _termsOfServiceLabel.backgroundColor = [UIColor clearColor];
+    _termsOfServiceLabel.lineBreakMode = NSLineBreakByWordWrapping;
+    _termsOfServiceLabel.textAlignment = NSTextAlignmentCenter;
+    _termsOfServiceLabel.contentMode = UIViewContentModeCenter;
+    _termsOfServiceLabel.numberOfLines = 0;
+    CGSize termsOfServiceSize = [_termsOfServiceLabel sizeThatFits:CGSizeMake(278.0f, CGFLOAT_MAX)];
+    _termsOfServiceLabel.frame = CGRectMake(CGFloor((screenSize.width - termsOfServiceSize.width) / 2.0f), [TGViewController isWidescreen] ? 274.0f : 214.0f, termsOfServiceSize.width, termsOfServiceSize.height);
+    [self.view addSubview:_termsOfServiceLabel];
+    _termsOfServiceLabel.hidden = !(TGIsPad() || [TGViewController isWidescreen] || [TGViewController hasLargeScreen]);
     
     UIImage *rawCountryImage = [UIImage imageNamed:@"ModernAuthCountryButton.png"];
     UIImage *rawCountryImageHighlighted = [UIImage imageNamed:@"ModernAuthCountryButtonHighlighted.png"];
@@ -401,23 +444,31 @@
         {
             topOffset = 305.0f;
             titleLabelOffset = topOffset - 108.0f;
+            noticeLabelOffset = topOffset + 143.0f;
         }
         else
         {
             topOffset = 135.0f;
             titleLabelOffset = topOffset - 78.0f;
+            noticeLabelOffset = topOffset + 123.0f;
         }
         
-        noticeLabelOffset = topOffset + 143.0f;
         countryButtonOffset = topOffset;
         sideInset = 130.0f;
     }
     else
     {
-        topOffset = [TGViewController isWidescreen] ? 131.0f : 90.0f;
-        titleLabelOffset = [TGViewController isWidescreen] ? 71.0f : 48.0f;
-        noticeLabelOffset = [TGViewController isWidescreen] ? 274.0f : 214.0f;
-        countryButtonOffset = [TGViewController isWidescreen] ? 131.0f : 90.0f;
+        topOffset = [TGViewController hasLargeScreen] ? 131.0f : 90.0f;
+        titleLabelOffset = [TGViewController hasLargeScreen] ? 71.0f : 48.0f;
+        noticeLabelOffset = [TGViewController hasLargeScreen] ? 274.0f : 214.0f;
+        countryButtonOffset = [TGViewController hasLargeScreen] ? 131.0f : 90.0f;
+        
+        if (![TGViewController hasLargeScreen] && [TGViewController isWidescreen]) {
+            topOffset += 20.0f;
+            titleLabelOffset += 20.0f;
+            noticeLabelOffset += 20.0f;
+            countryButtonOffset += 20.0f;
+        }
     }
     
     _grayBackground.frame = CGRectMake(0.0f, 0.0f, screenSize.width, topOffset);
@@ -427,6 +478,27 @@
     
     CGSize noticeSize = [_noticeLabel sizeThatFits:CGSizeMake(278.0f, CGFLOAT_MAX)];
     _noticeLabel.frame = CGRectMake(CGFloor((screenSize.width - noticeSize.width) / 2.0f), noticeLabelOffset, noticeSize.width, noticeSize.height);
+
+    if (!_termsOfServiceLabel.hidden) {
+        CGSize termsOfServiceSize = [_termsOfServiceLabel sizeThatFits:CGSizeMake(278.0f, CGFLOAT_MAX)];
+        
+        CGFloat termsOfServiceOffset = 40.0f;
+        if (!TGIsPad() && ![TGViewController hasLargeScreen]) {
+            termsOfServiceOffset = 20.0f;
+        }
+        
+        CGFloat keyboardHeight = 216.0f;
+        if (TGIsPad()) {
+            CGFloat longSize = MAX(screenSize.width, screenSize.height);
+            
+            if (fabs(longSize - 1024.0f) < FLT_EPSILON)
+                keyboardHeight = (screenSize.width > screenSize.height) ? 370.0f : 300.0f;
+            else
+                keyboardHeight = (screenSize.width > screenSize.height) ? 435.0f : 350.0f;
+        }
+        
+        _termsOfServiceLabel.frame = CGRectMake(CGFloor((screenSize.width - termsOfServiceSize.width) / 2.0f), screenSize.height - termsOfServiceSize.height - termsOfServiceOffset - keyboardHeight, termsOfServiceSize.width, termsOfServiceSize.height);
+    }
     
     _countryButton.frame = CGRectMake(sideInset, countryButtonOffset, screenSize.width - sideInset * 2.0f, _countryButton.frame.size.height);
     
@@ -989,6 +1061,45 @@
             
             [self updatePhoneTextForCountryFieldText:_countryCodeField.text];
         }
+    }
+}
+
+- (void)termsOfServiceTapGesture:(UITapGestureRecognizer *)recognizer {
+    if (recognizer.state == UIGestureRecognizerStateEnded) {
+        TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+        [progressWindow showWithDelay:0.1];
+        
+        [[[[TGAccountSignals termsOfService] deliverOn:[SQueue mainQueue]] onDispose:^{
+            TGDispatchOnMainThread(^{
+                [progressWindow dismiss:true];
+            });
+        }] startWithNext:^(NSString *termsText) {
+            if (NSClassFromString(@"UIAlertController") != nil) {
+                UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:@"" message:@"" preferredStyle:UIAlertControllerStyleAlert];
+                
+                NSString *headerText = TGLocalized(@"Login.TermsOfServiceHeader");
+                
+                NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
+                style.lineSpacing = 5.0;
+                style.lineBreakMode = NSLineBreakByWordWrapping;
+                style.alignment = NSTextAlignmentLeft;
+                
+                NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithString:[[NSString alloc] initWithFormat:@"%@\n\n%@", headerText, termsText] attributes:@{NSFontAttributeName: TGSystemFontOfSize(13.0f)}];
+                [text addAttribute:NSFontAttributeName value:TGMediumSystemFontOfSize(17.0f) range:NSMakeRange(0, headerText.length)];
+                
+                [text addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(headerText.length + 2, text.length - headerText.length - 2)];
+                
+                [alertVC setValue:text forKey:@"attributedTitle"];
+                
+                UIAlertAction *button = [UIAlertAction actionWithTitle:TGLocalized(@"Common.OK") style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+                }];
+                
+                [alertVC addAction:button];
+                [self presentViewController:alertVC animated:true completion:nil];
+            } else {
+                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Login.TermsOfServiceHeader") message:termsText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            }
+        }];
     }
 }
 

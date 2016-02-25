@@ -2,7 +2,7 @@
 
 #import "TLMetaClassStore.h"
 
-//message flags:# id:int from_id:flags.8?int to_id:Peer fwd_from_id:flags.2?Peer fwd_date:flags.2?int reply_to_msg_id:flags.3?int date:int message:string media:flags.9?MessageMedia reply_markup:flags.6?ReplyMarkup entities:flags.7?Vector<MessageEntity> views:flags.10?int = Message;
+//message flags:# unread:flags.0?true out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true post:flags.14?true id:int from_id:flags.8?int to_id:Peer fwd_from:flags.2?MessageFwdHeader via_bot_id:flags.11?int reply_to_msg_id:flags.3?int date:int message:string media:flags.9?MessageMedia reply_markup:flags.6?ReplyMarkup entities:flags.7?Vector<MessageEntity> views:flags.10?int edit_date:flags.15?int = Message
 
 @implementation TLMessage$modernMessage
 
@@ -31,8 +31,12 @@
     if (flags & (1 << 2))
     {
         int32_t signature = [is readInt32];
-        result.fwd_from_id = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
-        result.fwd_date = [is readInt32];
+        result.fwd_header = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+    }
+    
+    if (flags & (1 << 11))
+    {
+        result.via_bot_id = [is readInt32];
     }
     
     if (flags & (1 << 3))
@@ -73,6 +77,10 @@
     
     if (flags & (1 << 10)) {
         result.views = [is readInt32];
+    }
+    
+    if (flags & (1 << 15)) {
+        result.edit_date = [is readInt32];
     }
     
     return result;

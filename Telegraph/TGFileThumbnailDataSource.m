@@ -182,7 +182,14 @@ static ASQueue *taskManagementQueue()
     
     if ([args[@"legacy-thumbnail-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
     {
-        NSString *legacyThumbnailImagePath = [[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]];
+        NSString *legacyThumbnailImagePath = nil;
+        NSString *legacyThumbnailUrl = args[@"legacy-thumbnail-cache-url"];
+        
+        if ([legacyThumbnailUrl hasPrefix:@"file://"])
+            legacyThumbnailImagePath = [legacyThumbnailUrl substringFromIndex:@"file://".length];
+        else
+            legacyThumbnailImagePath = [[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]];
+        
         if ([[NSFileManager defaultManager] fileExistsAtPath:legacyThumbnailImagePath isDirectory:NULL])
             return true;
         
@@ -298,29 +305,60 @@ static ASQueue *taskManagementQueue()
     UIImage *thumbnailSourceImage = [[UIImage alloc] initWithContentsOfFile:thumbnailPath];
     bool lowQualityThumbnail = false;
     
+    bool forceHighQuality = [args[@"forceHighQuality"] boolValue];
+    
     if (thumbnailSourceImage == nil)
     {
         [[NSFileManager defaultManager] createDirectoryAtPath:fileDirectory withIntermediateDirectories:true attributes:nil error:nil];
         
         NSString *filePath = [fileDirectory stringByAppendingPathComponent:args[@"file-name"]];
+        NSString *videoFilePath = nil;
+        if (args[@"video-file-name"] != nil) {
+            videoFilePath = [fileDirectory stringByAppendingPathComponent:args[@"video-file-name"]];
+        }
         NSString *temporaryThumbnailImagePath = [fileDirectory stringByAppendingPathComponent:@"file-thumb.jpg"];
         
         UIImage *image = nil;
         
-        if ([[NSFileManager defaultManager] fileExistsAtPath:filePath isDirectory:NULL])
+        if (videoFilePath != nil && [[NSFileManager defaultManager] fileExistsAtPath:videoFilePath isDirectory:NULL]) {
+            if ([videoFilePath pathExtension].length == 0) {
+                [[NSFileManager defaultManager] createSymbolicLinkAtPath:[videoFilePath stringByAppendingPathExtension:@"mov"] withDestinationPath:[videoFilePath pathComponents].lastObject error:nil];
+                videoFilePath = [videoFilePath stringByAppendingPathExtension:@"mov"];
+            }
+            
+            AVAsset *asset = [AVAsset assetWithURL:[NSURL fileURLWithPath:videoFilePath]];
+            
+            AVAssetImageGenerator *imageGenerator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
+            imageGenerator.maximumSize = CGSizeMake(800, 800);
+            imageGenerator.appliesPreferredTrackTransform = true;
+            NSError *imageError = nil;
+            CGImageRef imageRef = [imageGenerator copyCGImageAtTime:CMTimeMake(0, asset.duration.timescale) actualTime:NULL error:&imageError];
+            image = [[UIImage alloc] initWithCGImage:imageRef];
+            if (imageRef != NULL) {
+                CGImageRelease(imageRef);
+            }
+        }
+        
+        if (image == nil && [[NSFileManager defaultManager] fileExistsAtPath:filePath isDirectory:NULL])
         {
             image = [[UIImage alloc] initWithContentsOfFile:filePath];
-            if (image == nil)
-                image = [[UIImage alloc] initWithContentsOfFile:temporaryThumbnailImagePath];
         }
-        else
+        
+        if (image == nil)
         {
             image = [[UIImage alloc] initWithContentsOfFile:temporaryThumbnailImagePath];
             if (image == nil)
             {
                 if ([args[@"legacy-thumbnail-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
                 {
-                    NSString *legacyThumbnailImagePath = [[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]];
+                    NSString *legacyThumbnailImagePath = nil;
+                    NSString *legacyThumbnailUrl = args[@"legacy-thumbnail-cache-url"];
+                    
+                    if ([legacyThumbnailUrl hasPrefix:@"file://"])
+                        legacyThumbnailImagePath = [legacyThumbnailUrl substringFromIndex:@"file://".length];
+                    else
+                        legacyThumbnailImagePath = [[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]];
+                    
                     image = [[UIImage alloc] initWithContentsOfFile:legacyThumbnailImagePath];
                     
                     if (image != nil)
@@ -349,6 +387,10 @@ static ASQueue *taskManagementQueue()
                     }
                 }
             }
+        }
+        
+        if (forceHighQuality) {
+            lowQualityThumbnail = false;
         }
         
         if (image != nil)

@@ -13,6 +13,7 @@
 #import "TGConversationAddMessagesActor.h"
 
 #import "TLUpdates+TG.h"
+#import "TLChat$chat.h"
 
 @interface TGConversationAddMemberRequestActor ()
 

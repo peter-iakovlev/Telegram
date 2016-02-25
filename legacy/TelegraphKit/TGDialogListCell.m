@@ -53,6 +53,7 @@ static UIColor *mediaTextColor = nil;
 @property (nonatomic, strong) NSString *title;
 @property (nonatomic) CGRect titleFrame;
 @property (nonatomic, strong) UIFont *titleFont;
+@property (nonatomic, strong) UIImage *mediaIcon;
 @property (nonatomic, strong) NSString *text;
 @property (nonatomic, strong) UIColor *textColor;
 @property (nonatomic) CGRect textFrame;
@@ -184,6 +185,12 @@ static UIColor *mediaTextColor = nil;
         {
             CGContextSetFillColorWithColor(context, _textColor.CGColor);
             
+            if (_mediaIcon != nil)
+            {
+                [_mediaIcon drawAtPoint:CGPointMake(textFrame.origin.x, textFrame.origin.y + 1.5f) blendMode:kCGBlendModeNormal alpha:1.0f];
+                textFrame = CGRectMake(textFrame.origin.x + 19, textFrame.origin.y, textFrame.size.width - 19, textFrame.size.height);
+            }
+            
             if (iosMajorVersion() >= 7)
             {
                 static NSDictionary *attributes = nil;
@@ -284,6 +291,8 @@ static UIColor *mediaTextColor = nil;
 @property (nonatomic) bool hideAuthorName;
 
 @property (nonatomic) bool editingIsActive;
+
+@property (nonatomic, strong) UIImage *mediaIcon;
 
 @property (nonatomic, strong) UIColor *messageTextColor;
 
@@ -714,7 +723,7 @@ static UIColor *mediaTextColor = nil;
     }
     
     bool attachmentFound = false;
-    _hideAuthorName = !_isGroupChat || _rawText;
+    _hideAuthorName = !_isGroupChat || _rawText || (_isChannel && !_isChannelGroup);
     
     if (_messageAttachments != nil && _messageAttachments.count != 0)
     {
@@ -722,13 +731,14 @@ static UIColor *mediaTextColor = nil;
         {
             if (attachment.type == TGActionMediaAttachmentType)
             {
+                _mediaIcon = nil;
                 TGActionMediaAttachment *actionAttachment = (TGActionMediaAttachment *)attachment;
                 switch (actionAttachment.actionType)
                 {
                     case TGMessageActionChatEditTitle:
                     {
                         if (TGPeerIdIsChannel(_conversationId)) {
-                            _messageText = TGLocalized(@"Notification.RenamedChannel");
+                            _messageText = _isChannelGroup ? TGLocalized(@"Notification.RenamedGroup") : TGLocalized(@"Notification.RenamedChannel");
                         } else {
                             TGUser *user = [_users objectForKey:@"author"];
                             _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.RenamedChat"), user.displayName];
@@ -743,10 +753,18 @@ static UIColor *mediaTextColor = nil;
                     case TGMessageActionChatEditPhoto:
                     {
                         if (TGPeerIdIsChannel(_conversationId)) {
-                            if ([(TGImageMediaAttachment *)[actionAttachment.actionData objectForKey:@"photo"] imageInfo] == nil) {
-                                _messageText = TGLocalized(@"Channel.MessagePhotoRemoved");
+                            if (_isChannelGroup) {
+                                if ([(TGImageMediaAttachment *)[actionAttachment.actionData objectForKey:@"photo"] imageInfo] == nil) {
+                                    _messageText = TGLocalized(@"Group.MessagePhotoRemoved");
+                                } else {
+                                    _messageText = TGLocalized(@"Group.MessagePhotoUpdated");
+                                }
                             } else {
-                                _messageText = TGLocalized(@"Channel.MessagePhotoUpdated");
+                                if ([(TGImageMediaAttachment *)[actionAttachment.actionData objectForKey:@"photo"] imageInfo] == nil) {
+                                    _messageText = TGLocalized(@"Channel.MessagePhotoRemoved");
+                                } else {
+                                    _messageText = TGLocalized(@"Channel.MessagePhotoUpdated");
+                                }
                             }
                         } else {
                             TGUser *user = [_users objectForKey:@"author"];
@@ -778,19 +796,48 @@ static UIColor *mediaTextColor = nil;
                     }
                     case TGMessageActionChatAddMember:
                     {
-                        NSNumber *nUid = [actionAttachment.actionData objectForKey:@"uid"];
-                        if (nUid != nil)
-                        {
+                        NSArray *uids = actionAttachment.actionData[@"uids"];
+                        if (uids != nil) {
                             TGUser *authorUser = [_users objectForKey:@"author"];
-                            TGUser *subjectUser = [_users objectForKey:nUid];
-                            if (authorUser.uid == subjectUser.uid)
+                            NSMutableArray *subjectUsers = [[NSMutableArray alloc] init];
+                            for (NSNumber *nUid in uids) {
+                                TGUser *user = [_users objectForKey:nUid];
+                                if (user != nil) {
+                                    [subjectUsers addObject:user];
+                                }
+                            }
+                            
+                            if (subjectUsers.count == 1 && authorUser.uid == ((TGUser *)subjectUsers[0]).uid) {
                                 _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.JoinedChat"), authorUser.displayName];
-                            else
-                                _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.Invited"), authorUser.displayName, subjectUser.displayName];
+                            } else {
+                                NSMutableString *subjectNames = [[NSMutableString alloc] init];
+                                for (TGUser *user in subjectUsers) {
+                                    if (subjectNames.length != 0) {
+                                        [subjectNames appendString:@", "];
+                                    }
+                                    [subjectNames appendString:user.displayName];
+                                }
+                                _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.Invited"), authorUser.displayName, subjectNames];
+                            }
                             _messageTextColor = actionTextColor;
                             attachmentFound = true;
                             
                             _hideAuthorName = true;
+                        } else {
+                            NSNumber *nUid = [actionAttachment.actionData objectForKey:@"uid"];
+                            if (nUid != nil)
+                            {
+                                TGUser *authorUser = [_users objectForKey:@"author"];
+                                TGUser *subjectUser = [_users objectForKey:nUid];
+                                if (authorUser.uid == subjectUser.uid)
+                                    _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.JoinedChat"), authorUser.displayName];
+                                else
+                                    _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.Invited"), authorUser.displayName, subjectUser.displayName];
+                                _messageTextColor = actionTextColor;
+                                attachmentFound = true;
+                                
+                                _hideAuthorName = true;
+                            }
                         }
                         
                         break;
@@ -838,7 +885,11 @@ static UIColor *mediaTextColor = nil;
                     }
                     case TGMessageActionChannelCreated:
                     {
-                        _messageText = TGLocalized(@"Notification.CreatedChannel");
+                        if (_isChannelGroup) {
+                            _messageText = TGLocalized(@"Notification.CreatedGroup");
+                        } else {
+                            _messageText = TGLocalized(@"Notification.CreatedChannel");
+                        }
                         _messageTextColor = actionTextColor;
                         attachmentFound = true;
                         
@@ -846,21 +897,68 @@ static UIColor *mediaTextColor = nil;
                         
                         break;
                     }
-                    case TGMessageActionChannelCommentsStatusChanged:
+                    case TGMessageActionGroupMigratedTo:
                     {
-                        _messageText = [actionAttachment.actionData[@"enabled"] boolValue] ? TGLocalized(@"Channel.NotificationCommentsEnabled") : TGLocalized(@"Channel.NotificationCommentsDisabled");
+                        _messageText = TGLocalized(@"Notification.GroupMigratedToChannel");
                         _messageTextColor = actionTextColor;
                         attachmentFound = true;
+                        
                         _hideAuthorName = true;
+                        
+                        break;
+                    }
+                    case TGMessageActionGroupActivated:
+                    {
+                        _messageText = TGLocalized(@"Notification.GroupDeactivated");
+                        _messageTextColor = actionTextColor;
+                        attachmentFound = true;
+                        
+                        _hideAuthorName = true;
+                        
+                        break;
+                    }
+                    case TGMessageActionGroupDeactivated:
+                    {
+                        _messageText = TGLocalized(@"Notification.GroupActivated");
+                        _messageTextColor = actionTextColor;
+                        attachmentFound = true;
+                        
+                        _hideAuthorName = true;
+                        
+                        break;
+                    }
+                    case TGMessageActionChannelMigratedFrom:
+                    {
+                        _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.ChannelMigratedFrom"), actionAttachment.actionData[@"title"]];
+                        _messageTextColor = actionTextColor;
+                        attachmentFound = true;
+                        
+                        _hideAuthorName = true;
+                        
                         break;
                     }
                     case TGMessageActionChannelInviter:
                     {
                         TGUser *user = [_users objectForKey:@"author"];
                         if ([actionAttachment.actionData[@"uid"] intValue] == user.uid) {
-                            _messageText = TGLocalized(@"Notification.ChannelInviterSelf");
+                            if (_isChannelGroup) {
+                                _messageText = TGLocalized(@"Notification.GroupInviterSelf");
+                            } else {
+                                _messageText = TGLocalized(@"Notification.ChannelInviterSelf");
+                            }
                         } else {
-                            _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.ChannelInviter"), user.displayName];
+                            int32_t inviterUid = [actionAttachment.actionData[@"uid"] intValue];
+                            NSString *inviterName = nil;
+                            TGUser *user = _users[@(inviterUid)];
+                            if (user.uid == inviterUid) {
+                                inviterName = user.displayName;
+                            }
+                            
+                            if (_isChannelGroup) {
+                                _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.GroupInviter"), inviterName];
+                            } else {
+                                _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.ChannelInviter"), inviterName];
+                            }
                         }
                         _messageTextColor = actionTextColor;
                         attachmentFound = true;
@@ -985,6 +1083,7 @@ static UIColor *mediaTextColor = nil;
                     _messageText = TGLocalized(@"Message.Photo");
                     _messageTextColor = mediaTextColor;
                 }
+                //_mediaIcon = [UIImage imageNamed:@"MediaPhoto"];
                 attachmentFound = true;
                 break;
             }
@@ -1001,6 +1100,7 @@ static UIColor *mediaTextColor = nil;
                     _messageText = TGLocalized(@"Message.Video");
                     _messageTextColor = mediaTextColor;
                 }
+                //_mediaIcon = [UIImage imageNamed:@"MediaVideo"];
                 attachmentFound = true;
                 break;
             }
@@ -1008,6 +1108,7 @@ static UIColor *mediaTextColor = nil;
             {
                 _messageText = TGLocalized(@"Message.Location");
                 _messageTextColor = mediaTextColor;
+                //_mediaIcon = [UIImage imageNamed:@"MediaLocation"];
                 attachmentFound = true;
                 break;
             }
@@ -1015,6 +1116,7 @@ static UIColor *mediaTextColor = nil;
             {
                 _messageText = TGLocalized(@"Message.Contact");
                 _messageTextColor = mediaTextColor;
+                //_mediaIcon = [UIImage imageNamed:@"MediaContact"];
                 attachmentFound = true;
                 break;
             }
@@ -1025,6 +1127,7 @@ static UIColor *mediaTextColor = nil;
                 bool isAnimated = false;
                 CGSize imageSize = CGSizeZero;
                 bool isSticker = false;
+                bool isVoice = false;
                 NSString *stickerRepresentation = nil;
                 for (id attribute in documentAttachment.attributes)
                 {
@@ -1036,11 +1139,21 @@ static UIColor *mediaTextColor = nil;
                     {
                         imageSize = ((TGDocumentAttributeImageSize *)attribute).size;
                     }
+                    else if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                        imageSize = ((TGDocumentAttributeVideo *)attribute).size;
+                    }
                     else if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
                     {
                         isSticker = true;
                         stickerRepresentation = ((TGDocumentAttributeSticker *)attribute).alt;
                     }
+                    else if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                        isVoice = ((TGDocumentAttributeAudio *)attribute).isVoice;
+                    }
+                }
+                
+                if (TGPeerIdIsSecretChat(_conversationId) && [documentAttachment.mimeType isEqualToString:@"video/mp4"] && documentAttachment.size < 1024 * 1024) {
+                    isAnimated = true;
                 }
                 
                 if (isSticker)
@@ -1049,6 +1162,17 @@ static UIColor *mediaTextColor = nil;
                         _messageText = TGLocalized(@"Message.Sticker");
                     else
                         _messageText = [[NSString alloc] initWithFormat:@"%@ %@", stickerRepresentation, TGLocalized(@"Message.Sticker")];
+                    _mediaIcon = nil;
+                }
+                else if (isAnimated) {
+                    _messageText = TGLocalized(@"Message.Animation");
+                    _messageTextColor = mediaTextColor;
+                    attachmentFound = true;
+                }
+                else if (isVoice) {
+                    _messageText = TGLocalized(@"Message.Audio");
+                    _messageTextColor = mediaTextColor;
+                    attachmentFound = true;
                 }
                 else
                 {
@@ -1059,6 +1183,7 @@ static UIColor *mediaTextColor = nil;
                         _messageText = TGLocalized(@"Message.File");
                     
                     _messageTextColor = mediaTextColor;
+                    //_mediaIcon = [UIImage imageNamed:@"MediaFile"];
                     attachmentFound = true;
                 }
                 break;
@@ -1067,6 +1192,7 @@ static UIColor *mediaTextColor = nil;
             {
                 _messageText = TGLocalized(@"Message.Audio");
                 _messageTextColor = mediaTextColor;
+                //_mediaIcon = [UIImage imageNamed:@"MediaVoice"];
                 attachmentFound = true;
                 break;
             }
@@ -1076,6 +1202,7 @@ static UIColor *mediaTextColor = nil;
     if (!attachmentFound)
     {
         _messageTextColor = normalTextColor;
+        _mediaIcon = nil;
     }
     
     if (_messageText.length == 0)
@@ -1101,10 +1228,11 @@ static UIColor *mediaTextColor = nil;
     
     _textView.text = _messageText;
     _textView.textColor = _messageTextColor;
+    _textView.mediaIcon = _mediaIcon;
     
     int totalUnreadCount = 0;
     if (TGPeerIdIsChannel(_conversationId)) {
-        totalUnreadCount = _unreadCount;
+        totalUnreadCount = _unreadCount + _serviceUnreadCount;
     } else {
         totalUnreadCount = _unreadCount + _serviceUnreadCount;
     }

@@ -33,6 +33,8 @@ typedef enum
     TGBridgeBotKind _botKind;
     int32_t _botVersion;
     
+    bool _verified;
+    
     int32_t _userVersion;
 }
 
@@ -52,6 +54,8 @@ typedef enum
 @property (nonatomic, readonly) TGBridgeUserKind kind;
 @property (nonatomic, readonly) TGBridgeBotKind botKind;
 @property (nonatomic, readonly) int32_t botVersion;
+
+@property (nonatomic, readonly, getter=isVerified) bool verified;
 
 @property (nonatomic, readonly) int32_t userVersion;
 

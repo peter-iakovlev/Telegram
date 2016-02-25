@@ -192,39 +192,6 @@
 
 @end
 
-@implementation TLMessageAction$messageActionChatAddUser : TLMessageAction
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0x5e3cfc4b;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0xf4f77cb2;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
-{
-    TLMessageAction$messageActionChatAddUser *object = [[TLMessageAction$messageActionChatAddUser alloc] init];
-    object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.user_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xafdf4073, value));
-    }
-}
-
-
-@end
-
 @implementation TLMessageAction$messageActionChatDeleteUser : TLMessageAction
 
 
@@ -410,6 +377,197 @@
         value.type = TLConstructedValueTypePrimitiveBool;
         value.primitive.boolValue = self.enabled;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x335ec0ee, value));
+    }
+}
+
+
+@end
+
+@implementation TLMessageAction$messageActionChatMigrateTo : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x51bdb021;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xa414884f;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageAction$messageActionChatMigrateTo *object = [[TLMessageAction$messageActionChatMigrateTo alloc] init];
+    object.channel_id = metaObject->getInt32((int32_t)0x1cfcdb86);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.channel_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x1cfcdb86, value));
+    }
+}
+
+
+@end
+
+@implementation TLMessageAction$messageActionChatDeactivate : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x64ad20a8;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x5474cbda;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLMessageAction$messageActionChatDeactivate *object = [[TLMessageAction$messageActionChatDeactivate alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLMessageAction$messageActionChatActivate : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x40ad8cb2;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x7613c945;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLMessageAction$messageActionChatActivate *object = [[TLMessageAction$messageActionChatActivate alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLMessageAction$messageActionChannelMigrateFrom : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xb055eaee;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xb37541c7;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageAction$messageActionChannelMigrateFrom *object = [[TLMessageAction$messageActionChannelMigrateFrom alloc] init];
+    object.title = metaObject->getString((int32_t)0xcdebf414);
+    object.chat_id = metaObject->getInt32((int32_t)0x7234457c);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.title;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xcdebf414, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.chat_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7234457c, value));
+    }
+}
+
+
+@end
+
+@implementation TLMessageAction$messageActionChatAddUser : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x488a7337;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xf4f77cb2;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageAction$messageActionChatAddUser *object = [[TLMessageAction$messageActionChatAddUser alloc] init];
+    object.users = metaObject->getArray((int32_t)0x933e5ff3);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.users;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x933e5ff3, value));
+    }
+}
+
+
+@end
+
+@implementation TLMessageAction$messageActionChatAddUserLegacy : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x5e3cfc4b;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x9bfff3e5;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageAction$messageActionChatAddUserLegacy *object = [[TLMessageAction$messageActionChatAddUserLegacy alloc] init];
+    object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.user_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xafdf4073, value));
     }
 }
 

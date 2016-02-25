@@ -15,5 +15,7 @@
 @property (nonatomic, strong) TLUserProfilePhoto *photo;
 @property (nonatomic, strong) TLUserStatus *status;
 @property (nonatomic) int32_t bot_info_version;
+@property (nonatomic, strong) NSString *restriction_reason;
+@property (nonatomic, strong) NSString *inlineBotPlaceholder;
 
 @end

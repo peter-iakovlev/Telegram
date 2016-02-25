@@ -5,4 +5,6 @@
 
 + (TGBridgeAudioMediaAttachment *)attachmentWithTGAudioMediaAttachment:(TGAudioMediaAttachment *)attachment;
 
++ (TGAudioMediaAttachment *)tgAudioMediaAttachmentWithBridgeAudioMediaAttachment:(TGBridgeAudioMediaAttachment *)bridgeAttachment;
+
 @end

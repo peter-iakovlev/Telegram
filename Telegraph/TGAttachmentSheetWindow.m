@@ -1,4 +1,5 @@
 #import "TGAttachmentSheetWindow.h"
+#import "TGOverlayControllerWindow.h"
 
 #import "TGNotificationWindow.h"
 #import "TGAppDelegate.h"
@@ -13,6 +14,17 @@
 @end
 
 @implementation TGAttachmentSheetController
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self != nil)
+    {
+        if (iosMajorVersion() < 7)
+            self.wantsFullScreenLayout = true;
+    }
+    return self;
+}
 
 - (void)loadView
 {
@@ -33,7 +45,7 @@
     [_attachmentSheetView removeFromSuperview];
     
     _attachmentSheetView = attachmentSheetView;
-    _attachmentSheetView.frame = self.view.frame;
+    _attachmentSheetView.frame = self.view.bounds;
     _attachmentSheetView.attachmentSheetWindow = _attachmentSheetWindow;
     _attachmentSheetView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_attachmentSheetView];
@@ -48,7 +60,7 @@
 
 - (instancetype)init
 {
-    self = [super initWithFrame:[UIScreen mainScreen].bounds];
+    self = [super initWithFrame:TGAppDelegateInstance.rootController.applicationBounds];
     if (self != nil)
     {
         self.windowLevel = UIWindowLevelStatusBar - 0.003f;

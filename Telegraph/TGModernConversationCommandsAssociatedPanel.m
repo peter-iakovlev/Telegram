@@ -105,7 +105,7 @@
     else
     {
         __weak TGModernConversationCommandsAssociatedPanel *weakSelf = self;
-        [_disposable setDisposable:[commandListSignal startWithNext:^(NSArray *commandList)
+        [_disposable setDisposable:[[commandListSignal deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *commandList)
         {
             __strong TGModernConversationCommandsAssociatedPanel *strongSelf = weakSelf;
             if (strongSelf != nil)
@@ -200,6 +200,56 @@
     _tableView.frame = CGRectMake(0.0f, separatorHeight, self.frame.size.width, self.frame.size.height - separatorHeight);
     
     _bottomView.frame = CGRectMake(0.0f, self.frame.size.height, self.frame.size.width, 4.0f);
+}
+
+- (void)selectPreviousItem
+{
+    if ([self tableView:_tableView numberOfRowsInSection:0] == 0)
+        return;
+    
+    NSIndexPath *newIndexPath = _tableView.indexPathForSelectedRow;
+    
+    if (newIndexPath == nil)
+        newIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+    else if (newIndexPath.row > 0)
+        newIndexPath = [NSIndexPath indexPathForRow:newIndexPath.row - 1 inSection:0];
+    
+    if (_tableView.indexPathForSelectedRow != nil)
+        [_tableView deselectRowAtIndexPath:_tableView.indexPathForSelectedRow animated:false];
+    
+    if (newIndexPath != nil)
+        [_tableView selectRowAtIndexPath:newIndexPath animated:false scrollPosition:UITableViewScrollPositionBottom];
+}
+
+- (void)selectNextItem
+{
+    if ([self tableView:_tableView numberOfRowsInSection:0] == 0)
+        return;
+    
+    NSIndexPath *newIndexPath = _tableView.indexPathForSelectedRow;
+    
+    if (newIndexPath == nil)
+        newIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+    else if (newIndexPath.row < [self tableView:_tableView numberOfRowsInSection:newIndexPath.section] - 1)
+        newIndexPath = [NSIndexPath indexPathForRow:newIndexPath.row + 1 inSection:0];
+    
+    if (_tableView.indexPathForSelectedRow != nil)
+        [_tableView deselectRowAtIndexPath:_tableView.indexPathForSelectedRow animated:false];
+    
+    if (newIndexPath != nil)
+        [_tableView selectRowAtIndexPath:newIndexPath animated:false scrollPosition:UITableViewScrollPositionBottom];
+}
+
+- (void)commitSelectedItem
+{
+    if ([self tableView:_tableView numberOfRowsInSection:0] == 0)
+        return;
+    
+    NSIndexPath *selectedIndexPath = _tableView.indexPathForSelectedRow;
+    if (selectedIndexPath == nil)
+        selectedIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+    
+    [self tableView:_tableView didSelectRowAtIndexPath:selectedIndexPath];
 }
 
 @end

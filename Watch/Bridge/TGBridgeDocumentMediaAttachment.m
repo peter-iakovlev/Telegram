@@ -3,6 +3,7 @@
 const NSInteger TGBridgeDocumentMediaAttachmentType = 0xE6C64318;
 
 NSString *const TGBridgeDocumentMediaDocumentIdKey = @"documentId";
+NSString *const TGBridgeDocumentMediaLocalDocumentIdKey = @"localDocumentId";
 NSString *const TGBridgeDocumentMediaAccessHashKey = @"accessHash";
 NSString *const TGBridgeDocumentMediaDatacenterIdKey = @"datacenterId";
 NSString *const TGBridgeDocumentMediaLegacyThumbnailUriKey = @"legacyThumbnailUri";
@@ -16,6 +17,8 @@ NSString *const TGBridgeDocumentMediaStickerAltKey = @"stickerAlt";
 NSString *const TGBridgeDocumentMediaAudioKey = @"audio";
 NSString *const TGBridgeDocumentMediaAudioTitleKey = @"title";
 NSString *const TGBridgeDocumentMediaAudioPerformerKey = @"performer";
+NSString *const TGBridgeDocumentMediaAudioVoice = @"voice";
+NSString *const TGBridgeDocumentMediaAudioDuration = @"duration";
 
 @implementation TGBridgeDocumentMediaAttachment
 
@@ -25,6 +28,7 @@ NSString *const TGBridgeDocumentMediaAudioPerformerKey = @"performer";
     if (self != nil)
     {
         _documentId = [aDecoder decodeInt64ForKey:TGBridgeDocumentMediaDocumentIdKey];
+        _localDocumentId = [aDecoder decodeInt64ForKey:TGBridgeDocumentMediaLocalDocumentIdKey];
         _accessHash = [aDecoder decodeInt64ForKey:TGBridgeDocumentMediaAccessHashKey];
         _datacenterId = [aDecoder decodeInt32ForKey:TGBridgeDocumentMediaDatacenterIdKey];
         _legacyThumbnailUri = [aDecoder decodeObjectForKey:TGBridgeDocumentMediaLegacyThumbnailUriKey];
@@ -37,6 +41,8 @@ NSString *const TGBridgeDocumentMediaAudioPerformerKey = @"performer";
         _isAudio = [aDecoder decodeBoolForKey:TGBridgeDocumentMediaAudioKey];
         _title = [aDecoder decodeObjectForKey:TGBridgeDocumentMediaAudioTitleKey];
         _performer = [aDecoder decodeObjectForKey:TGBridgeDocumentMediaAudioPerformerKey];
+        _isVoice = [aDecoder decodeBoolForKey:TGBridgeDocumentMediaAudioVoice];
+        _duration = [aDecoder decodeInt32ForKey:TGBridgeDocumentMediaAudioDuration];
     }
     return self;
 }
@@ -44,6 +50,7 @@ NSString *const TGBridgeDocumentMediaAudioPerformerKey = @"performer";
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
     [aCoder encodeInt64:self.documentId forKey:TGBridgeDocumentMediaDocumentIdKey];
+    [aCoder encodeInt64:self.localDocumentId forKey:TGBridgeDocumentMediaLocalDocumentIdKey];
     [aCoder encodeInt64:self.accessHash forKey:TGBridgeDocumentMediaAccessHashKey];
     [aCoder encodeInt32:self.datacenterId forKey:TGBridgeDocumentMediaDatacenterIdKey];
     [aCoder encodeObject:self.legacyThumbnailUri forKey:TGBridgeDocumentMediaLegacyThumbnailUriKey];
@@ -56,6 +63,8 @@ NSString *const TGBridgeDocumentMediaAudioPerformerKey = @"performer";
     [aCoder encodeBool:self.isAudio forKey:TGBridgeDocumentMediaAudioKey];
     [aCoder encodeObject:self.title forKey:TGBridgeDocumentMediaAudioTitleKey];
     [aCoder encodeObject:self.performer forKey:TGBridgeDocumentMediaAudioPerformerKey];
+    [aCoder encodeBool:self.isVoice forKey:TGBridgeDocumentMediaAudioVoice];
+    [aCoder encodeInt32:self.duration forKey:TGBridgeDocumentMediaAudioDuration];
 }
 
 - (BOOL)isEqual:(id)object
@@ -68,7 +77,7 @@ NSString *const TGBridgeDocumentMediaAudioPerformerKey = @"performer";
     
     TGBridgeDocumentMediaAttachment *document = (TGBridgeDocumentMediaAttachment *)object;
     
-    return (self.documentId == document.documentId && self.accessHash == document.accessHash);
+    return ((self.documentId == document.documentId && self.accessHash == document.accessHash) || (self.localDocumentId == document.localDocumentId));
 }
 
 + (NSInteger)mediaType

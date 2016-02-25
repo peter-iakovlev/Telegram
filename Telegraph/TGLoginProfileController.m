@@ -35,31 +35,14 @@
 
 #import "TGActionSheet.h"
 
-#import "PGCamera.h"
-#import "TGCameraController.h"
-#import "TGLegacyCameraController.h"
-#import "TGModernMediaPickerController.h"
-#import "TGMediaFoldersController.h"
-#import "TGOverlayControllerWindow.h"
-#import "TGOverlayFormsheetWindow.h"
-
-#import "TGWebSearchController.h"
-
-#import "TGAccessChecker.h"
-
-#import "TGAttachmentSheetView.h"
-#import "TGAttachmentSheetWindow.h"
-#import "TGAttachmentSheetButtonItemView.h"
-#import "TGAttachmentSheetRecentItemView.h"
-#import "TGAttachmentSheetRecentCameraView.h"
-#import "TGCameraPreviewView.h"
-
 #import "TGAlertView.h"
+
+#import "TGMediaAvatarMenuMixin.h"
 
 #define TGAvatarActionSheetTag ((int)0xF3AEE8CC)
 #define TGImageSourceActionSheetTag ((int)0x34281CB0)
 
-@interface TGLoginProfileController () <UITextFieldDelegate, UIActionSheetDelegate, UINavigationControllerDelegate, UIImagePickerControllerDelegate, TGLegacyCameraControllerDelegate>
+@interface TGLoginProfileController () <UITextFieldDelegate, UIActionSheetDelegate, UINavigationControllerDelegate>
 {
     bool _dismissing;
     
@@ -72,7 +55,7 @@
     
     bool _didDisappear;
     
-    TGAttachmentSheetWindow *_attachmentSheetWindow;
+    TGMediaAvatarMenuMixin *_avatarMixin;
 }
 
 @property (nonatomic) bool showKeyboard;
@@ -460,15 +443,9 @@
     }
 }
 
-- (void)backgroundTapped:(UITapGestureRecognizer *)recognizer
+- (void)backgroundTapped:(UITapGestureRecognizer *)__unused recognizer
 {
-    return;
-    
-    if (recognizer.state == UIGestureRecognizerStateRecognized)
-    {
-        [_firstNameField resignFirstResponder];
-        [_lastNameField resignFirstResponder];
-    }
+
 }
 
 - (void)inputFirstNameBackgroundTapped:(UITapGestureRecognizer *)recognizer
@@ -564,24 +541,26 @@
 
 - (void)addPhotoButtonPressed
 {
-    NSMutableArray *actions = [[NSMutableArray alloc] init];
-    
-    if ([PGCamera cameraAvailable])
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.TakePhoto") action:@"camera"]];
-    
-    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.ChoosePhoto") action:@"choosePhoto"]];
-
-    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
-    
-    TGActionSheet *actionSheet = [[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGLoginProfileController *controller, NSString *action)
+    __weak TGLoginProfileController *weakSelf = self;
+    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithParentController:self hasDeleteButton:false personalPhoto:true];
+    _avatarMixin.didFinishWithImage = ^(UIImage *image)
     {
-        if ([action isEqualToString:@"camera"])
-            [controller _displayCamera];
-        else if ([action isEqualToString:@"choosePhoto"])
-            [controller _displayImagePicker];
-    } target:self];
-    
-    [actionSheet showInView:self.view];
+        __strong TGLoginProfileController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        [strongSelf _updateProfileImage:image];
+        strongSelf->_avatarMixin = nil;
+    };
+    _avatarMixin.didDismiss = ^
+    {
+        __strong TGLoginProfileController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        strongSelf->_avatarMixin = nil;
+    };
+    [_avatarMixin present];
 }
 
 - (void)avatarTapped:(UITapGestureRecognizer *)__unused recognizer
@@ -618,130 +597,6 @@
     _imageForPhotoUpload = nil;
 }
 
-- (void)_displayImagePicker
-{
-    [self.view endEditing:true];
-    
-    __weak TGLoginProfileController *weakSelf = self;
-    
-    TGNavigationController *navigationController = nil;
-    
-    TGMediaFoldersController *mediaFoldersController = [[TGMediaFoldersController alloc] initWithIntent:TGModernMediaPickerControllerSetProfilePhotoIntent];
-    TGModernMediaPickerController *mediaPickerController = [[TGModernMediaPickerController alloc] initWithAssetsGroup:nil intent:TGModernMediaPickerControllerSetProfilePhotoIntent];
-    
-    navigationController = [TGNavigationController navigationControllerWithControllers:@[ mediaFoldersController, mediaPickerController ]];
-    
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-    {
-        void (^dismiss)(void) = ^
-        {
-            __strong TGLoginProfileController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf dismissViewControllerAnimated:true completion:nil];
-        };
-        
-        mediaFoldersController.dismiss = dismiss;
-        mediaPickerController.dismiss = dismiss;
-        
-        [self presentViewController:navigationController animated:true completion:nil];
-    }
-    else
-    {
-        navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-        navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-        
-        TGOverlayFormsheetWindow *formSheetWindow = [[TGOverlayFormsheetWindow alloc] initWithParentController:self contentController:navigationController];
-        [formSheetWindow showAnimated:true];
-        
-        __weak TGOverlayFormsheetWindow *weakFormSheetWindow = formSheetWindow;
-        
-        void (^dismiss)(void) = ^
-        {
-            __strong TGOverlayFormsheetWindow *strongFormSheetWindow = weakFormSheetWindow;
-            if (strongFormSheetWindow == nil)
-                return;
-            
-            [strongFormSheetWindow dismissAnimated:true];
-        };
-        
-        mediaFoldersController.dismiss = dismiss;
-        mediaPickerController.dismiss = dismiss;
-    }
-    
-    __weak TGMediaFoldersController *weakMediaFoldersController = mediaFoldersController;
-    void(^avatarCreated)(UIImage *) = ^(UIImage *image)
-    {
-        __strong TGLoginProfileController *strongSelf = weakSelf;
-        if (strongSelf == nil)
-            return;
-        
-        [strongSelf _updateProfileImage:image];
-        
-        __strong TGMediaFoldersController *strongMediaFoldersController = weakMediaFoldersController;
-        if (strongMediaFoldersController != nil && strongMediaFoldersController.dismiss != nil)
-            strongMediaFoldersController.dismiss();
-    };
-    
-    mediaFoldersController.avatarCreated = avatarCreated;
-    mediaPickerController.avatarCreated = avatarCreated;
-}
-
-- (void)_displayCamera
-{
-    [self.view endEditing:true];
-    
-    if (TGAppDelegateInstance.rootController.isSplitView)
-        return;
-    
-    if (iosMajorVersion() < 7 || [UIDevice currentDevice].platformType == UIDevice4iPhone || [UIDevice currentDevice].platformType == UIDevice4GiPod)
-    {
-        [self _displayLegacyCamera];
-        return;
-    }
-    
-    CGSize screenSize = TGScreenSize();
-    TGCameraController *controller = [[TGCameraController alloc] initWithIntent:TGCameraControllerAvatarIntent];
-    
-    CGRect startFrame = CGRectMake(0, screenSize.height, screenSize.width, screenSize.height);
-    
-    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
-    controllerWindow.windowLevel = self.view.window.windowLevel + 0.0001f;
-    controllerWindow.hidden = false;
-    controllerWindow.clipsToBounds = true;
-    controllerWindow.frame = CGRectMake(0, 0, screenSize.width, screenSize.height);
-    
-    [controller beginTransitionInFromRect:startFrame];
-    
-    __weak TGLoginProfileController *weakSelf = self;
-    controller.beginTransitionOut = ^CGRect
-    {
-        return CGRectZero;
-    };
-    
-    controller.finishedWithPhoto = ^(UIImage *image, __unused NSString *_caption)
-    {
-        __strong TGLoginProfileController *strongSelf = weakSelf;
-        if (strongSelf == nil)
-            return;
-        
-        [strongSelf _updateProfileImage:image];
-    };
-}
-
-- (void)_displayLegacyCamera
-{
-    [(TGApplication *)[UIApplication sharedApplication] setProcessStatusBarHiddenRequests:true];
-    
-    UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
-    imagePicker.sourceType = UIImagePickerControllerSourceTypeCamera;
-    imagePicker.allowsEditing = true;
-    imagePicker.delegate = self;
-    
-    [self presentViewController:imagePicker animated:true completion:nil];
-}
-
 - (void)_updateProfileImage:(UIImage *)image
 {
     if (image == nil)
@@ -766,33 +621,6 @@
     _dataForPhotoUpload = imageData;
     _imageForPhotoUpload = ([TGRemoteImageView imageProcessorForName:@"circle:64x64"])(image);
 }
-
-- (void)imagePickerController:(UIImagePickerController *)__unused picker didFinishPickingMediaWithInfo:(NSDictionary *)info
-{
-    [self dismissViewControllerAnimated:true completion:nil];
-    
-    [(TGApplication *)[UIApplication sharedApplication] setProcessStatusBarHiddenRequests:false];
-    
-    CGRect cropRect = [[info objectForKey:UIImagePickerControllerCropRect] CGRectValue];
-    if (ABS(cropRect.size.width - cropRect.size.height) > FLT_EPSILON)
-    {
-        if (cropRect.size.width < cropRect.size.height)
-        {
-            cropRect.origin.x -= (cropRect.size.height - cropRect.size.width) / 2;
-            cropRect.size.width = cropRect.size.height;
-        }
-        else
-        {
-            cropRect.origin.y -= (cropRect.size.width - cropRect.size.height) / 2;
-            cropRect.size.height = cropRect.size.width;
-        }
-    }
-    
-    UIImage *image = TGFixOrientationAndCrop([info objectForKey:UIImagePickerControllerOriginalImage], cropRect, CGSizeMake(600, 600));
-    
-    [self _updateProfileImage:image];
-}
-
 
 #pragma mark -
 

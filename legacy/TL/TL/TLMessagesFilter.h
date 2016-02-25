@@ -34,17 +34,22 @@
 
 @end
 
-@interface TLMessagesFilter$inputMessagesFilterAudio : TLMessagesFilter
-
-
-@end
-
 @interface TLMessagesFilter$inputMessagesFilterPhotoVideoDocuments : TLMessagesFilter
 
 
 @end
 
 @interface TLMessagesFilter$inputMessagesFilterUrl : TLMessagesFilter
+
+
+@end
+
+@interface TLMessagesFilter$inputMessagesFilterVoice : TLMessagesFilter
+
+
+@end
+
+@interface TLMessagesFilter$inputMessagesFilterMusic : TLMessagesFilter
 
 
 @end

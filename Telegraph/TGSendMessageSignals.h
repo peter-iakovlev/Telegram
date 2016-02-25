@@ -16,6 +16,9 @@
 
 + (SSignal *)forwardMessageWithMid:(int32_t)mid peerId:(int64_t)peerId;
 
++ (SSignal *)forwardMessagesWithMessageIds:(NSArray *)messageIds toPeerIds:(NSArray *)peerIds fromPeerId:(int64_t)fromPeerId fromPeerAccessHash:(int64_t)fromPeerAccessHash;
++ (SSignal *)broadcastMessageWithText:(NSString *)text toPeerIds:(NSArray *)peerIds;
+
 + (SSignal *)_addMessageToDatabaseWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid text:(NSString *)text attachment:(TGMediaAttachment *)attachment;
 + (SSignal *)_sendMediaWithMessage:(TGMessage *)message replyToMid:(int32_t)replyToMid mediaProducer:(TLInputMedia *(^)(void))mediaProducer;
 

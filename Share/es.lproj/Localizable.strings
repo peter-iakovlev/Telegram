@@ -6,8 +6,20 @@
 "Share.Title" = "Compartir";
 "Share.ShareWithPerson" = "¿Compartir con %@?";
 "Share.ShareWithGroup" = "¿Compartir con %@?";
+"Share.ShareWithMultiple" = "¿Compartir con %@ destinatarios?";
 "Share.Sharing" = "Compartiendo...";
 
 "Share.PasscodeTitle" = "Código de acceso";
 "Share.EnterPasscode" = "Poner el código de acceso";
 "Share.ErrorInvalidPasscode" = "Código de acceso inválido";
+
+"Share.Select" = "Elegir";
+"Share.Done" = "Hecho";
+
+"Share.AuthTitle" = "Iniciar sesión en Telegram";
+"Share.AuthText" = "Abre Telegram e inicia sesión para compartir.";
+
+"Share.ChoosePhoneNumber" = "Elige un número de teléfono para compartir";
+
+"Share.RecentSection" = "Recientes";
+"Share.RecentSectionClear" = "Borrar";

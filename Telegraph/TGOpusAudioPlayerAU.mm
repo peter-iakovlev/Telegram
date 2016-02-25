@@ -49,6 +49,7 @@ static volatile OSSpinLock audioPositionLock = OS_SPINLOCK_INIT;
     
     OggOpusFile *_opusFile;
     AudioComponentInstance _audioUnit;
+    bool _audioUnitInitialized;
     
     TGAudioBuffer *_filledAudioBuffers[TGOpusAudioPlayerBufferCount];
     int _filledAudioBufferCount;
@@ -76,9 +77,9 @@ static volatile OSSpinLock audioPositionLock = OS_SPINLOCK_INIT;
     return false;
 }
 
-- (instancetype)initWithPath:(NSString *)path
+- (instancetype)initWithPath:(NSString *)path music:(bool)music controlAudioSession:(bool)controlAudioSession
 {
-    self = [super init];
+    self = [super initWithMusic:music controlAudioSession:controlAudioSession];
     if (self != nil)
     {
         _filePath = path;
@@ -135,6 +136,7 @@ static volatile OSSpinLock audioPositionLock = OS_SPINLOCK_INIT;
     
     AudioUnit audioUnit = _audioUnit;
     _audioUnit = NULL;
+    _audioUnitInitialized = false;
     
     intptr_t objectId = (intptr_t)self;
     
@@ -240,6 +242,7 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
         for (int i = 0; i < (int)ioData->mNumberBuffers; i++)
         {
             AudioBuffer *buffer = &ioData->mBuffers[i];
+            buffer->mNumberChannels = 1;
             memset(buffer->mData, 0, buffer->mDataByteSize);
         }
     }
@@ -348,8 +351,13 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
             
             _finished = false;
             
-            if (_isSeekable && position >= 0.0)
-                op_pcm_seek(_opusFile, (ogg_int64_t)(position * TGOpusAudioPlayerSampleRate));
+            if (_isSeekable) {
+                if (position >= 0.0) {
+                    op_pcm_seek(_opusFile, (ogg_int64_t)(position * TGOpusAudioPlayerSampleRate));
+                } else if (_currentPcmOffset > 0) {
+                    op_pcm_seek(_opusFile, _currentPcmOffset);
+                }
+            }
             
             status = AudioOutputUnitStart(_audioUnit);
             if (status != noErr)
@@ -357,6 +365,38 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
                 TGLog(@"[TGOpusAudioRecorder#%x AudioOutputUnitStart failed: %d]", self, (int)status);
                 [self cleanupAndReportError];
             }
+            
+            _audioUnitInitialized = true;
+        }
+        else if (!_audioUnitInitialized) {
+            [self _beginAudioSession];
+            
+            if (_isSeekable && position >= 0.0)
+            {
+                int result = op_pcm_seek(_opusFile, (ogg_int64_t)(position * TGOpusAudioPlayerSampleRate));
+                if (result != OPUS_OK)
+                    TGLog(@"[TGOpusAudioPlayer#%p op_pcm_seek failed: %d]", self, result);
+                
+                ogg_int64_t pcmPosition = op_pcm_tell(_opusFile);
+                _currentPcmOffset = pcmPosition;
+                
+                _isPaused = false;
+            }
+            else
+                _isPaused = false;
+            
+            _finished = false;
+            
+            TG_SYNCHRONIZED_BEGIN(filledBuffersLock);
+            for (int i = 0; i < _filledAudioBufferCount; i++)
+            {
+                _filledAudioBuffers[i]->size = 0;
+            }
+            self->_filledAudioBufferPosition = 0;
+            TG_SYNCHRONIZED_END(filledBuffersLock);
+            
+            AudioOutputUnitStart(_audioUnit);
+            _audioUnitInitialized = true;
         }
         else
         {
@@ -481,7 +521,7 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
     return MAX(minBufferSize, MIN(maxBufferSize, result));
 }
 
-- (void)pause
+- (void)pause:(void (^)())completion
 {
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
@@ -495,6 +535,15 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
             _filledAudioBuffers[i]->pcmOffset = _currentPcmOffset;
         }
         TG_SYNCHRONIZED_END(filledBuffersLock);
+        
+        if (_audioUnitInitialized) {
+            AudioOutputUnitStop(_audioUnit);
+            _audioUnitInitialized = false;
+        }
+        
+        if (completion) {
+            completion();
+        }
     }];
 }
 

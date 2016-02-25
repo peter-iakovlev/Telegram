@@ -64,7 +64,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x8d5e11ee;
+    return (int32_t)0x9acda4c0;
 }
 
 - (int32_t)TLconstructorName
@@ -75,15 +75,20 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
     TLPeerNotifySettings$peerNotifySettings *object = [[TLPeerNotifySettings$peerNotifySettings alloc] init];
+    object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.mute_until = metaObject->getInt32((int32_t)0xb47c7399);
     object.sound = metaObject->getString((int32_t)0x352fa0b9);
-    object.show_previews = metaObject->getBool((int32_t)0xccc87c93);
-    object.events_mask = metaObject->getInt32((int32_t)0x76f7fd23);
     return object;
 }
 
 - (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
 {
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.flags;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x81915c23, value));
+    }
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypePrimitiveInt32;
@@ -95,18 +100,6 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.sound;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x352fa0b9, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveBool;
-        value.primitive.boolValue = self.show_previews;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xccc87c93, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.events_mask;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x76f7fd23, value));
     }
 }
 

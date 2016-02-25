@@ -32,6 +32,16 @@
     return self;
 }
 
+- (TGDocumentMediaAttachment *)documentAtPoint:(CGPoint)point {
+    for (TGStickerPreviewPage *page in _visiblePages) {
+        TGDocumentMediaAttachment *document = [page documentAtPoint:CGPointMake(point.x - page.frame.origin.x, point.y - page.frame.origin.y)];
+        if (document != nil) {
+            return document;
+        }
+    }
+    return nil;
+}
+
 - (void)setStickerPack:(TGStickerPack *)stickerPack
 {
     _stickerPack = stickerPack;

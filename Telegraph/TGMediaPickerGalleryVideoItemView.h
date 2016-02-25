@@ -1,12 +1,11 @@
 #import "TGModernGalleryItemView.h"
 #import "TGModernGalleryEditableItemView.h"
+#import "TGModernGalleryImageItemImageView.h"
 #import "AVFoundation/AVFoundation.h"
-
-@class TGAssetImageView;
 
 @interface TGMediaPickerGalleryVideoItemView : TGModernGalleryItemView <TGModernGalleryEditableItemView>
 
-@property (nonatomic, strong) TGAssetImageView *imageView;
+@property (nonatomic, strong) TGModernGalleryImageItemImageView *imageView;
 @property (nonatomic, strong) AVPlayer *player;
 
 @property (nonatomic, readonly) bool isPlaying;

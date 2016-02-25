@@ -9,7 +9,24 @@
 #import "TGBridgeReplyMessageMediaAttachment.h"
 #import "TGBridgeForwardedMessageMediaAttachment.h"
 #import "TGBridgeWebPageMediaAttachment.h"
+#import "TGBridgeMessageEntitiesAttachment.h"
 #import "TGBridgeUnsupportedMediaAttachment.h"
+
+typedef enum {
+    TGBridgeTextCheckingResultTypeUndefined,
+    TGBridgeTextCheckingResultTypeBold,
+    TGBridgeTextCheckingResultTypeItalic,
+    TGBridgeTextCheckingResultTypeCode,
+    TGBridgeTextCheckingResultTypePre
+} TGBridgeTextCheckingResultType;
+
+@interface TGBridgeTextCheckingResult : NSObject
+
+@property (nonatomic, assign) TGBridgeTextCheckingResultType type;
+@property (nonatomic, assign) NSRange range;
+
+@end
+
 
 typedef enum {
     TGBridgeMessageDeliveryStateDelivered = 0,
@@ -49,12 +66,13 @@ typedef enum {
 @property (nonatomic, readonly) bool forceReply;
 
 - (NSIndexSet *)involvedUserIds;
+- (NSArray *)textCheckingResults;
 
 + (instancetype)temporaryNewMessageForText:(NSString *)text userId:(int32_t)userId;
 + (instancetype)temporaryNewMessageForText:(NSString *)text userId:(int32_t)userId replyToMessage:(TGBridgeMessage *)replyToMessage;
 + (instancetype)temporaryNewMessageForSticker:(TGBridgeDocumentMediaAttachment *)sticker userId:(int32_t)userId;
 + (instancetype)temporaryNewMessageForLocation:(TGBridgeLocationMediaAttachment *)location userId:(int32_t)userId;
-+ (instancetype)temporaryNewMessageForAudioWithDuration:(int32_t)duration userId:(int32_t)userId;
++ (instancetype)temporaryNewMessageForAudioWithDuration:(int32_t)duration userId:(int32_t)userId localAudioId:(int64_t)localAudioId;
 
 @end
 

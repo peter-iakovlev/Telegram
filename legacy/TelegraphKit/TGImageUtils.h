@@ -36,9 +36,13 @@ UIImage *TGRotateAndCrop(UIImage *source, CGRect cropFrame, CGSize imageSize);
 UIImage *TGAttachmentImage(UIImage *source, CGSize sourceSize, CGSize size, bool incoming, bool location);
 UIImage *TGSecretAttachmentImage(UIImage *source, CGSize sourceSize, CGSize size);
     
-UIImage *TGIdenticonImage(NSData *data, CGSize size);
+UIImage *TGIdenticonImage(NSData *data, NSData *additionalData, CGSize size);
     
 UIImage *TGCircleImage(CGFloat radius, UIColor *color);
+    
+UIImage *TGTintedImage(UIImage *image, UIColor *color);
+    
+NSString *TGImageHash(NSData *data);
     
 #ifdef __cplusplus
 }
@@ -78,6 +82,8 @@ bool TGIsPad();
 CGSize TGScreenSize();
     
 extern CGFloat TGRetinaPixel;
+    
+void TGDrawSvgPath(CGContextRef context, NSString *path);
 
 #ifdef __cplusplus
 }

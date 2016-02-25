@@ -118,9 +118,9 @@ NSString *const TGUserInfoControllerIdentifier = @"TGUserInfoController";
 
 - (void)configureWithChannelContext:(TGUserInfoControllerContext *)context
 {
-    self.title = TGLocalized(@"ChannelInfo.Title");
-    
     _channelModel = context.channel;
+    
+    self.title = _channelModel.isChannelGroup ? TGLocalized(@"Watch.GroupInfo.Title") : TGLocalized(@"Watch.ChannelInfo.Title");
     
     [self updateChannelHandles];
     
@@ -139,7 +139,7 @@ NSString *const TGUserInfoControllerIdentifier = @"TGUserInfoController";
 
 - (void)configureWithUserContext:(TGUserInfoControllerContext *)context
 {
-    self.title = TGLocalized(@"UserInfo.Title");
+    self.title = TGLocalized(@"Watch.UserInfo.Title");
     
     int32_t userId = (_context.user != nil) ? _context.user.identifier : _context.userId;
     SSignal *remoteUserSignal = [TGBridgeUserInfoSignals userInfoWithUserId:userId];
@@ -240,11 +240,11 @@ NSString *const TGUserInfoControllerIdentifier = @"TGUserInfoController";
     }
     if ([self _userHasUsername])
     {
-        [handles addObject:[[TGUserHandle alloc] initWithHandle:[NSString stringWithFormat:@"@%@", self->_userModel.userName] type:TGLocalized(@"UserInfo.UsernameLabel") handleType:TGUserHandleTypeUndefined data:nil]];
+        [handles addObject:[[TGUserHandle alloc] initWithHandle:[NSString stringWithFormat:@"@%@", self->_userModel.userName] type:TGLocalized(@"Profile.Username") handleType:TGUserHandleTypeUndefined data:nil]];
     }
     if ([self _botHasDescription])
     {
-        [handles addObject:[[TGUserHandle alloc] initWithHandle:_botInfo.shortDescription type:TGLocalized(@"Bot.About") handleType:TGUserHandleTypeDescription data:nil]];
+        [handles addObject:[[TGUserHandle alloc] initWithHandle:_botInfo.shortDescription type:TGLocalized(@"Profile.BotInfo") handleType:TGUserHandleTypeDescription data:nil]];
     }
     
     _handleModels = handles;
@@ -255,11 +255,11 @@ NSString *const TGUserInfoControllerIdentifier = @"TGUserInfoController";
     NSMutableArray *handles = [[NSMutableArray alloc] init];
     if (_channelModel.userName.length > 0)
     {
-        [handles addObject:[[TGUserHandle alloc] initWithHandle:[NSString stringWithFormat:@"telegram.me/%@", self->_channelModel.userName] type:TGLocalized(@"Channel.Link") handleType:TGUserHandleTypeUndefined data:nil]];
+        [handles addObject:[[TGUserHandle alloc] initWithHandle:[NSString stringWithFormat:@"telegram.me/%@", self->_channelModel.userName] type:TGLocalized(@"Channel.LinkItem") handleType:TGUserHandleTypeUndefined data:nil]];
     }
     if (_channelModel.about.length > 0)
     {
-        [handles addObject:[[TGUserHandle alloc] initWithHandle:_channelModel.about type:TGLocalized(@"Channel.About") handleType:TGUserHandleTypeDescription data:nil]];
+        [handles addObject:[[TGUserHandle alloc] initWithHandle:_channelModel.about type:TGLocalized(@"Channel.AboutItem") handleType:TGUserHandleTypeDescription data:nil]];
     }
     
     _handleModels = handles;
@@ -331,17 +331,18 @@ NSString *const TGUserInfoControllerIdentifier = @"TGUserInfoController";
     bool muted = _muted;
     bool blocked = _blocked;
     
-    int32_t muteFor = 1;
-    NSString *muteTitle = [NSString stringWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"UserInfo.Mute_" value:muteFor]), muteFor];
+    bool muteForever = _channelModel.isChannelGroup;
+    int32_t muteFor = muteForever ? INT_MAX : 1;
+    NSString *muteTitle = muteForever ? TGLocalized(@"Watch.UserInfo.Mute") : [NSString stringWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"Watch.UserInfo.Mute_" value:muteFor]), muteFor];
     
-    TGInterfaceMenuItem *muteItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:muted ? WKMenuItemIconSpeaker : WKMenuItemIconMute title:muted ? TGLocalized(@"UserInfo.Unmute") : muteTitle actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
+    TGInterfaceMenuItem *muteItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:muted ? WKMenuItemIconSpeaker : WKMenuItemIconMute title:muted ? TGLocalized(@"Watch.UserInfo.Unmute") : muteTitle actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
     {
         __strong TGUserInfoController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
         TGBridgePeerNotificationSettings *settings = [[TGBridgePeerNotificationSettings alloc] init];
-        settings.muteFor = muted ? 0 : muteFor * 60 * 60;
+        settings.muteFor = muted ? 0 : (muteFor == INT_MAX ? INT_MAX : muteFor * 60 * 60);
         [strongSelf->_updateSettingsDisposable setDisposable:[[TGBridgePeerSettingsSignals updateNotificationSettingsWithPeerId:strongSelf->_userModel.identifier settings:settings] startWithNext:nil completed:^
         {
             __strong TGUserInfoController *strongSelf = weakSelf;
@@ -356,7 +357,7 @@ NSString *const TGUserInfoControllerIdentifier = @"TGUserInfoController";
     
     if (_channelModel == nil)
     {
-        TGInterfaceMenuItem *blockItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:WKMenuItemIconBlock title:blocked ? TGLocalized(@"UserInfo.Unblock") : TGLocalized(@"UserInfo.Block") actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
+        TGInterfaceMenuItem *blockItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:WKMenuItemIconBlock title:blocked ? TGLocalized(@"Watch.UserInfo.Unblock") : TGLocalized(@"Watch.UserInfo.Block") actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
         {
             __strong TGUserInfoController *strongSelf = weakSelf;
             if (strongSelf == nil)
@@ -377,7 +378,7 @@ NSString *const TGUserInfoControllerIdentifier = @"TGUserInfoController";
     
     if (!_context.disallowCompose)
     {
-        TGInterfaceMenuItem *composeItem = [[TGInterfaceMenuItem alloc] initWithImageNamed:@"Compose" title:TGLocalized(@"UserInfo.SendMessage") actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
+        TGInterfaceMenuItem *composeItem = [[TGInterfaceMenuItem alloc] initWithImageNamed:@"Compose" title:TGLocalized(@"Watch.UserInfo.SendMessage") actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
         {
             __strong TGUserInfoController *strongSelf = weakSelf;
             if (strongSelf == nil)

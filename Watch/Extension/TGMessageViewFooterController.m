@@ -13,9 +13,9 @@ NSString *const TGMessageViewFooterIdentifier = @"TGMessageViewFooter";
     self.dateLabel.text = [TGDateUtils stringForFullDate:message.date];
     self.timeLabel.text = [TGDateUtils stringForShortTime:message.date];
     
-    self.forwardLabel.text = TGLocalized(@"MessageView.Forward");
-    self.replyLabel.text = TGLocalized(@"MessageView.Reply");
-    self.viewLabel.text = TGLocalized(@"MessageView.ViewOnPhone");
+    self.forwardLabel.text = TGLocalized(@"Watch.MessageView.Forward");
+    self.replyLabel.text = TGLocalized(@"Watch.MessageView.Reply");
+    self.viewLabel.text = TGLocalized(@"Watch.MessageView.ViewOnPhone");
     
     if (channel)
     {

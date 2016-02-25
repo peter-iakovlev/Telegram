@@ -20,6 +20,8 @@
 
 #import "TGViewController.h"
 
+#import "TGMusicPlayer.h"
+
 @interface TGMusicAudioMessageModel () <TGMessageImageViewDelegate>
 {
     TGDocumentMessageIconModel *_iconModel;
@@ -42,9 +44,9 @@
 
 @implementation TGMusicAudioMessageModel
 
-- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer context:(TGModernViewContext *)context
+- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer viaUser:(TGUser *)viaUser context:(TGModernViewContext *)context
 {
-    self = [super initWithMessage:message authorPeer:authorPeer context:context];
+    self = [super initWithMessage:message authorPeer:authorPeer viaUser:viaUser context:context];
     if (self != nil)
     {
         _iconModel = [[TGDocumentMessageIconModel alloc] init];
@@ -111,9 +113,9 @@
     return self;
 }
 
-- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage
+- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage delayDisplay:(bool)delayDisplay
 {
-    [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage];
+    [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage delayDisplay:delayDisplay];
     
     _mediaIsAvailable = mediaIsAvailable;
     
@@ -122,10 +124,10 @@
 
 - (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated
 {
-    [super updateProgress:progressVisible progress:progress viewStorage:viewStorage animated:animated];
-    
     bool progressWasVisible = _progressVisible;
     float previousProgress = _progress;
+    
+    [super updateProgress:progressVisible progress:progress viewStorage:viewStorage animated:animated];
     
     _progress = progress;
     _progressVisible = progressVisible;
@@ -171,18 +173,21 @@
     [_iconModel boundView].frame = CGRectOffset([_iconModel boundView].frame, itemPosition.x, itemPosition.y);
     ((TGDocumentMessageIconView *)[_iconModel boundView]).delegate = self;
     
+    [self subscribeToStatus];
+}
+
+- (void)subscribeToStatus {
     [_playingAudioMessageIdDisposable dispose];
-    if (_context.playingAudioMessageId != nil)
+    if (_context.playingAudioMessageStatus != nil)
     {
         __weak TGMusicAudioMessageModel *weakSelf = self;
-        _playingAudioMessageIdDisposable = [_context.playingAudioMessageId startWithNext:^(NSNumber *nPacked)
+        _playingAudioMessageIdDisposable = [_context.playingAudioMessageStatus startWithNext:^(TGMusicPlayerStatus *status)
         {
             __strong TGMusicAudioMessageModel *strongSelf = weakSelf;
             if (strongSelf != nil)
             {
-                int64_t packed = (int64_t)[nPacked longLongValue];
-                int32_t mid = (packed >> 32) & 0xffffffff;
-                int paused = packed & 1;
+                int32_t mid = [(NSNumber *)status.item.key intValue];;
+                int paused = status.paused;
                 
                 bool isCurrent = mid == strongSelf->_mid;
                 bool isPlaying = isCurrent && (paused == 0);
@@ -204,31 +209,7 @@
     
     ((TGDocumentMessageIconView *)[_iconModel boundView]).delegate = self;
     
-    [_playingAudioMessageIdDisposable dispose];
-    if (_context.playingAudioMessageId != nil)
-    {
-        __weak TGMusicAudioMessageModel *weakSelf = self;
-        _playingAudioMessageIdDisposable = [_context.playingAudioMessageId startWithNext:^(NSNumber *nPacked)
-        {
-            __strong TGMusicAudioMessageModel *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                int64_t packed = (int64_t)[nPacked longLongValue];
-                int32_t mid = (packed >> 32) & 0xffffffff;
-                int paused = packed & 1;
-                
-                bool isCurrent = mid == strongSelf->_mid;
-                bool isPlaying = isCurrent && (paused == 0);
-                
-                if (isPlaying != strongSelf->_isPlaying || isCurrent != strongSelf->_isCurrent)
-                {
-                    strongSelf->_isPlaying = isPlaying;
-                    strongSelf->_isCurrent = isCurrent;
-                    [strongSelf updateImageOverlay:false];
-                }
-            }
-        }];
-    }
+    [self subscribeToStatus];
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage

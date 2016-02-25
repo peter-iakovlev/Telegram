@@ -8,8 +8,6 @@
 
 @property (nonatomic, strong) NSString *caption;
 
-@property (nonatomic, strong) TGMessage *replyMessage;
-
 - (instancetype)initWithImageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage;
 
 @end

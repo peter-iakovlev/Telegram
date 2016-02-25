@@ -14,7 +14,9 @@ typedef enum {
     Inch35 = 0,
     Inch4 = 1,
     Inch47 = 2,
-    Inch55 = 3
+    Inch55 = 3,
+    iPad = 4,
+    iPadPro = 5
 } DeviceScreen;
 
 @interface RMIntroViewController : UIViewController<UIScrollViewDelegate, GLKViewDelegate>
@@ -25,7 +27,6 @@ typedef enum {
     
     GLKView *_glkView;
     
-    
     UIImageView *_startArrow;
     
     NSArray *_headlines;
@@ -33,34 +34,18 @@ typedef enum {
     
     NSMutableArray *_pageViews;
     
-    UIView *_separatorView;
-    
-    //RMTestView *_iconView;
-    
-    UIScrollView *_pageScrollView;
-    
     NSInteger _currentPage;
     
+    UIScrollView *_pageScrollView;
     UIButton *_startButton;
     UIPageControl *_pageControl;
     
-    
-    
-    
     NSTimer *_updateAndRenderTimer;
-    
     
     BOOL _isOpenGLLoaded;
 }
 
-@property (nonatomic) UIViewController *rootVC;
-@property (nonatomic, assign) NSInteger draw_q;
-
-
-
 - (void)startTimer;
-
 - (void)stopTimer;
-
 
 @end

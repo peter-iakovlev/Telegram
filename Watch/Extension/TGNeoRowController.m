@@ -22,6 +22,10 @@
     SMetaDisposable *_renderDisposable;
     
     bool _pendingRendering;
+    
+    bool _processing;
+    NSString *_normalIconName;
+    NSString *_processingIconName;
 }
 @end
 
@@ -67,9 +71,11 @@
     }
 }
 
-- (void)updateWithMessage:(TGBridgeMessage *)message context:(TGBridgeContext *)context index:(NSInteger)index channel:(bool)channel
+- (void)updateWithMessage:(TGBridgeMessage *)message context:(TGBridgeContext *)context index:(NSInteger)index type:(TGNeoMessageType)type
 {
-    if (!channel)
+    bool isChannelMessage = (type == TGNeoMessageTypeChannel);
+    
+    if (!isChannelMessage)
         [self updateStatusWithMessage:message];
     
     if ([self renderIfNeeded])
@@ -78,27 +84,27 @@
     if (_viewModel != nil)
         return;
     
-    _viewModel = [TGNeoMessageViewModel viewModelForMessage:message context:context];
+    _viewModel = [TGNeoMessageViewModel viewModelForMessage:message type:type context:context additionalPeers:self.additionalPeers];
     
     CGSize containerSize = [TGNeoRowController containerSizeForMessage:message];
     CGSize contentSize = [_viewModel layoutWithContainerSize:containerSize];
     
     if (_viewModel.showBubble)
     {
-        if (!channel)
+        if (isChannelMessage)
+        {
+            [self.bubbleGroup setBackgroundImageNamed:@"ChatBubbleChannel"];
+        }
+        else
         {
             if (message.outgoing)
                 [self.bubbleGroup setBackgroundImageNamed:@"ChatBubbleOutgoing"];
             else
                 [self.bubbleGroup setBackgroundImageNamed:@"ChatBubbleIncoming"];
         }
-        else
-        {
-            [self.bubbleGroup setBackgroundImageNamed:@"ChatBubbleChannel"];
-        }
     }
     
-    if (!channel && message.outgoing)
+    if (!isChannelMessage && message.outgoing)
     {
         [self.bubbleGroup setHorizontalAlignment:WKInterfaceObjectHorizontalAlignmentRight];
         
@@ -128,10 +134,7 @@
 {
     _pendingRendering = false;
     
-    bool onMainThread = true;
-    //if (self.shouldRenderOnMainThread != nil)
-    //    onMainThread = self.shouldRenderOnMainThread();
-    
+    bool onMainThread = true;    
     SSignal *signal = [TGNeoRenderableViewModel renderSignalForViewModel:_viewModel];
     if (!onMainThread)
         signal = [[signal startOn:[SQueue concurrentDefaultQueue]] deliverOn:[SQueue mainQueue]];
@@ -313,6 +316,27 @@
         if (audioLayout != nil)
         {
             self.audioButton.hidden = false;
+            
+            NSNumber *hasBackground = audioLayout[TGNeoMessageAudioButtonHasBackground] ?: @true;
+            if (hasBackground.boolValue)
+                [self.audioButtonGroup setBackgroundColor:[UIColor hexColor:0x6bbeee]];
+            else
+                [self.audioButtonGroup setBackgroundColor:[UIColor clearColor]];
+            
+            NSString *audioIcon = audioLayout[TGNeoMessageAudioIcon];
+            if (audioIcon != nil)
+            {
+                _normalIconName = audioIcon;
+                [self.audioIcon setImageNamed:audioIcon];
+            }
+            
+            NSString *audioAnimatedIcon = audioLayout[TGNeoMessageAudioAnimatedIcon];
+            if (audioAnimatedIcon != nil)
+                _processingIconName = audioAnimatedIcon;
+            
+            UIColor *iconColor = audioLayout[TGNeoMessageAudioIconTint];
+            if (iconColor != nil)
+                [self.audioIcon setTintColor:iconColor];
         }
         
         NSDictionary *avatarLayout = metaGroupLayout[TGNeoMessageAvatarGroup];
@@ -347,8 +371,27 @@
 
 - (IBAction)remotePressedAction
 {
-    if (self.remotePressed != nil)
-        self.remotePressed();
+    if (self.buttonPressed != nil)
+        self.buttonPressed();
+}
+
+- (void)setProcessingState:(bool)processing
+{
+    if (processing == _processing)
+        return;
+    
+    _processing = processing;
+    
+    if (processing)
+    {
+        [self.audioIcon setImageNamed:_processingIconName];
+        [self.audioIcon startAnimatingWithImagesInRange:NSMakeRange(0, 39) duration:0.65 repeatCount:0];
+    }
+    else
+    {
+        [self.audioIcon stopAnimating];
+        [self.audioIcon setImageNamed:_normalIconName];
+    }
 }
 
 + (Class)rowControllerClassForMessage:(TGBridgeMessage *)message

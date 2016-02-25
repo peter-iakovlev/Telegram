@@ -52,10 +52,18 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
 
 - (TGMediaId *)mediaIdForItem:(TGMusicPlayerItem *)item
 {
-    if (item.document.documentId != 0)
-        return [[TGMediaId alloc] initWithType:3 itemId:item.document.documentId];
-    else if (item.document.localDocumentId != 0 && item.document.documentUri.length != 0)
-        return [[TGMediaId alloc] initWithType:3 itemId:item.document.localDocumentId];
+    if ([item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+        TGDocumentMediaAttachment *document = item.media;
+        if (document.documentId != 0)
+            return [[TGMediaId alloc] initWithType:3 itemId:document.documentId];
+        else if (document.localDocumentId != 0 && document.documentUri.length != 0)
+            return [[TGMediaId alloc] initWithType:3 itemId:document.localDocumentId];
+    } else if ([item.media isKindOfClass:[TGAudioMediaAttachment class]]) {
+        TGAudioMediaAttachment *audio = item.media;
+        
+        id mediaId = [[TGMediaId alloc] initWithType:4 itemId:audio.audioId != 0 ? audio.audioId : audio.localAudioId];
+        return mediaId;
+    }
     return nil;
 }
 
@@ -90,11 +98,20 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
-        TGDocumentMediaAttachment *documentAttachment = _item.document;
-        if (documentAttachment.documentId != 0 || documentAttachment.documentUri.length != 0)
-        {
-            id mediaId = [[TGMediaId alloc] initWithType:3 itemId:documentAttachment.documentId != 0 ? documentAttachment.documentId : documentAttachment.localDocumentId];
-            [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/document/(%d:%" PRId64 ":%@)", documentAttachment.datacenterId, documentAttachment.documentId, documentAttachment.documentUri.length != 0 ? documentAttachment.documentUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:documentAttachment, @"documentAttachment", nil] changePriority:priority messageId:[(NSNumber *)_item.key intValue] itemId:mediaId groupId:[_item peerId] itemClass:TGDownloadItemClassDocument];
+        if ([_item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+            TGDocumentMediaAttachment *documentAttachment = _item.media;
+            if (documentAttachment.documentId != 0 || documentAttachment.documentUri.length != 0)
+            {
+                id mediaId = [[TGMediaId alloc] initWithType:3 itemId:documentAttachment.documentId != 0 ? documentAttachment.documentId : documentAttachment.localDocumentId];
+                [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/document/(%d:%" PRId64 ":%@)", documentAttachment.datacenterId, documentAttachment.documentId, documentAttachment.documentUri.length != 0 ? documentAttachment.documentUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:documentAttachment, @"documentAttachment", nil] changePriority:priority messageId:[(NSNumber *)_item.key intValue] itemId:mediaId groupId:[_item peerId] itemClass:TGDownloadItemClassDocument];
+            }
+        } else if ([_item.media isKindOfClass:[TGAudioMediaAttachment class]]) {
+            TGAudioMediaAttachment *audio = _item.media;
+            if (audio.audioId != 0 || audio.audioUri.length != 0) {
+                id mediaId = [[TGMediaId alloc] initWithType:4 itemId:audio.audioId != 0 ? audio.audioId : audio.localAudioId];
+                
+                [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/audio/(%" PRId32 ":%" PRId64 ":%@)", audio.datacenterId, audio.audioId, audio.audioUri.length != 0 ? audio.audioUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:audio, @"audioAttachment", nil] changePriority:priority messageId:[(NSNumber *)_item.key intValue] itemId:mediaId groupId:[_item peerId] itemClass:TGDownloadItemClassAudio];
+            }
         }
     }];
 }
@@ -144,16 +161,32 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
 
 + (NSString *)pathForItem:(TGMusicPlayerItem *)item
 {
-    NSString *path = nil;
-    if (item.document.documentId != 0)
-        path = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:item.document.documentId];
-    else
-    {
-        path = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:item.document.localDocumentId];
+    if ([item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+        TGDocumentMediaAttachment *document = item.media;
+        
+        NSString *path = nil;
+        if (document.documentId != 0)
+            path = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId];
+        else
+        {
+            path = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId];
+        }
+        
+        path = [path stringByAppendingPathComponent:[document safeFileName]];
+        return path;
+    } else if ([item.media isKindOfClass:[TGAudioMediaAttachment class]]) {
+        TGAudioMediaAttachment *audio = item.media;
+        NSString *path = nil;
+        if (audio.audioId != 0)
+            path = [TGAudioMediaAttachment localAudioFilePathForRemoteAudioId:audio.audioId];
+        else
+        {
+            path = [TGAudioMediaAttachment localAudioFilePathForLocalAudioId:audio.localAudioId];
+        }
+        
+        return path;
     }
-    
-    path = [path stringByAppendingPathComponent:[item.document safeFileName]];
-    return path;
+    return nil;
 }
 
 + (SSignal *)downloadItem:(TGMusicPlayerItem *)item priority:(bool)priority

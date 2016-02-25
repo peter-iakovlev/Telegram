@@ -37,10 +37,23 @@
 @class TGGiphySearchResultItem;
 @class TGWebSearchInternalImageResult;
 @class TGWebSearchInternalGifResult;
+@class TGExternalGifSearchResult;
+@class TGInternalGifSearchResult;
 
 @class TGICloudItem;
 @class TGDropboxItem;
 @class TGGoogleDriveItem;
+
+@class TGBotContextResultAttachment;
+@class TGImageMediaAttachment;
+@class TGExternalImageSearchResult;
+
+@class TGMediaAsset;
+@class TGVideoEditAdjustments;
+
+@class TGAudioWaveform;
+
+@class TGMessageEditingContext;
 
 typedef enum {
     TGInitialScrollPositionTop = 0,
@@ -73,6 +86,9 @@ typedef enum {
 @property (nonatomic, strong) TGModernViewContext *viewContext;
 
 @property (nonatomic) int32_t mediaHiddenMessageId;
+
+@property (nonatomic) bool previewMode;
+@property (nonatomic) bool useInitialSnapshot;
 
 + (void)warmupResources;
 
@@ -116,30 +132,36 @@ typedef enum {
 - (UIView *)_conversationHeader;
 - (UIView *)_controllerInputTextPanelAccessoryView;
 - (NSString *)_controllerInfoButtonText;
-- (void)updateControllerInputText:(NSString *)inputText;
+- (void)updateControllerInputText:(NSString *)inputText messageEditingContext:(TGMessageEditingContext *)messageEditingContext;
 - (void)controllerDidUpdateTypingActivity;
 - (void)controllerDidCancelTypingActivity;
 - (void)controllerDidChangeInputText:(NSString *)inputText;
-- (void)controllerWantsToSendTextMessage:(NSString *)text asReplyToMessageId:(int32_t)replyMessageId withAttachedMessages:(NSArray *)withAttachedMessages disableLinkPreviews:(bool)disableLinkPreviews;
+- (void)controllerWantsToSendTextMessage:(NSString *)text entities:(NSArray *)entities asReplyToMessageId:(int32_t)replyMessageId withAttachedMessages:(NSArray *)withAttachedMessages disableLinkPreviews:(bool)disableLinkPreviews botContextResult:(TGBotContextResultAttachment *)botContextResult;
 - (void)controllerWantsToSendMapWithLatitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue asReplyToMessageId:(int32_t)replyMessageId;
 - (NSURL *)fileUrlForDocumentMedia:(TGDocumentMediaAttachment *)documentMedia;
 - (NSDictionary *)imageDescriptionFromImage:(UIImage *)image caption:(NSString *)caption optionalAssetUrl:(NSString *)assetUrl;
 - (NSDictionary *)imageDescriptionFromBingSearchResult:(TGBingSearchResultItem *)item caption:(NSString *)caption;
+- (NSDictionary *)imageDescriptionFromExternalImageSearchResult:(TGExternalImageSearchResult *)item text:(NSString *)text botContextResult:(TGBotContextResultAttachment *)botContextResult;
 - (NSDictionary *)documentDescriptionFromGiphySearchResult:(TGGiphySearchResultItem *)item;
+- (NSDictionary *)documentDescriptionFromExternalGifSearchResult:(TGExternalGifSearchResult *)item text:(NSString *)text botContextResult:(TGBotContextResultAttachment *)botContextResult;
+- (NSDictionary *)imageDescriptionFromMediaAsset:(TGMediaAsset *)asset previewImage:(UIImage *)previewImage document:(bool)document fileName:(NSString *)fileName caption:(NSString *)caption;
+- (NSDictionary *)videoDescriptionFromMediaAsset:(TGMediaAsset *)asset previewImage:(UIImage *)previewImage adjustments:(TGVideoEditAdjustments *)adjustments document:(bool)document fileName:(NSString *)fileName caption:(NSString *)caption;
 - (NSDictionary *)documentDescriptionFromICloudDriveItem:(TGICloudItem *)item;
 - (NSDictionary *)documentDescriptionFromDropboxItem:(TGDropboxItem *)item;
 - (NSDictionary *)documentDescriptionFromGoogleDriveItem:(TGGoogleDriveItem *)item;
 - (NSDictionary *)imageDescriptionFromInternalSearchImageResult:(TGWebSearchInternalImageResult *)item caption:(NSString *)caption;
 - (NSDictionary *)documentDescriptionFromInternalSearchResult:(TGWebSearchInternalGifResult *)item;
-- (NSDictionary *)documentDescriptionFromFileAtTempUrl:(NSURL *)url fileName:(NSString *)fileName mimeType:(NSString *)mimeType;
+- (NSDictionary *)documentDescriptionFromRemoteDocument:(TGDocumentMediaAttachment *)document;
+- (NSDictionary *)documentDescriptionFromFileAtTempUrl:(NSURL *)url fileName:(NSString *)fileName mimeType:(NSString *)mimeType isAnimation:(bool)isAnimation;
 - (void)controllerWantsToSendImagesWithDescriptions:(NSArray *)imageDescriptions asReplyToMessageId:(int32_t)replyMessageId;
 - (void)controllerWantsToSendLocalVideoWithTempFilePath:(NSString *)tempVideoFilePath fileSize:(int32_t)fileSize previewImage:(UIImage *)previewImage duration:(NSTimeInterval)duration dimensions:(CGSize)dimenstions caption:(NSString *)caption assetUrl:(NSString *)assetUrl liveUploadData:(TGLiveUploadActorData *)liveUploadData asReplyToMessageId:(int32_t)replyMessageId;
 - (TGVideoMediaAttachment *)serverCachedAssetWithId:(NSString *)assetId;
 - (void)controllerWantsToSendDocumentWithTempFileUrl:(NSURL *)tempFileUrl fileName:(NSString *)fileName mimeType:(NSString *)mimeType asReplyToMessageId:(int32_t)replyMessageId;
 - (void)controllerWantsToSendDocumentsWithDescriptions:(NSArray *)descriptions asReplyToMessageId:(int32_t)replyMessageId;
-- (void)controllerWantsToSendRemoteDocument:(TGDocumentMediaAttachment *)document asReplyToMessageId:(int32_t)replyMessageId;
+- (void)controllerWantsToSendRemoteDocument:(TGDocumentMediaAttachment *)document asReplyToMessageId:(int32_t)replyMessageId text:(NSString *)text botContextResult:(TGBotContextResultAttachment *)botContextResult;
+- (void)controllerWantsToSendRemoteImage:(TGImageMediaAttachment *)image text:(NSString *)text asReplyToMessageId:(int32_t)replyMessageId botContextResult:(TGBotContextResultAttachment *)botContextResult;
 - (void)controllerWantsToSendCloudDocumentsWithDescriptions:(NSArray *)descriptions asReplyToMessageId:(int32_t)replyMessageId;
-- (void)controllerWantsToSendLocalAudioWithDataItem:(TGDataItem *)dataItem duration:(NSTimeInterval)duration liveData:(TGLiveUploadActorData *)liveData asReplyToMessageId:(int32_t)replyMessageId;
+- (void)controllerWantsToSendLocalAudioWithDataItem:(TGDataItem *)dataItem duration:(NSTimeInterval)duration liveData:(TGLiveUploadActorData *)liveData waveform:(TGAudioWaveform *)waveform asReplyToMessageId:(int32_t)replyMessageId;
 - (void)controllerWantsToSendRemoteVideoWithMedia:(TGVideoMediaAttachment *)media asReplyToMessageId:(int32_t)replyMessageId;
 - (void)controllerWantsToSendContact:(TGUser *)contactUser asReplyToMessageId:(int32_t)replyMessageId;
 - (void)controllerWantsToResendMessages:(NSArray *)messageIds;
@@ -158,8 +180,11 @@ typedef enum {
 - (bool)controllerShouldLiveUploadVideo;
 - (bool)imageDownloadsShouldAutosavePhotos;
 - (bool)shouldAutomaticallyDownloadPhotos;
+- (bool)shouldAutomaticallyDownloadAnimations;
 - (bool)allowMessageForwarding;
 - (bool)allowReplies;
+- (bool)allowMessageEntities;
+- (bool)allowExternalContent;
 - (bool)allowContactSharing;
 - (bool)allowVenueSharing;
 - (bool)allowCaptionedMedia;
@@ -181,11 +206,9 @@ typedef enum {
 - (bool)_isSecretMessageScreenshotted:(int32_t)messageId;
 - (NSTimeInterval)_secretMessageViewDate:(int32_t)messageId;
 
-- (TGModernViewInlineMediaContext *)_inlineMediaContext:(int32_t)messageId;
-
 - (void)_updateMessageItemsWithData:(NSArray *)items;
 - (void)_updateMediaStatusDataForCurrentItems;
-- (void)_updateMediaStatusDataForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated;
+- (void)_updateMediaStatusDataForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated forceforceCheckDownload:(bool)forceCheckDownload;
 - (void)_updateMediaStatusDataForItemsWithMessageIdsInSet:(NSMutableSet *)messageIds;
 - (void)_downloadMediaInMessage:(TGMessage *)message highPriority:(bool)highPriority;
 - (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)indexSet animated:(bool)animated;
@@ -201,14 +224,14 @@ typedef enum {
 
 - (void)_performFastScrollDown:(bool)becauseOfSendTextAction;
 - (void)_replaceMessages:(NSArray *)newMessages;
-- (void)_replaceMessages:(NSArray *)newMessages atMessageId:(int32_t)atMessageId expandFrom:(int32_t)expandMessageId jump:(bool)jump;
+- (void)_replaceMessages:(NSArray *)newMessages atMessageId:(int32_t)atMessageId expandFrom:(int32_t)expandMessageId jump:(bool)jump top:(bool)top messageIdForVisibleHoleDirection:(int32_t)messageIdForVisibleHoleDirection scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated;
 - (void)_replaceMessagesWithFastScroll:(NSArray *)newMessages intent:(TGModernConversationAddMessageIntent)intent scrollToMessageId:(int32_t)scrollToMessageId scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated;
 - (void)_addMessages:(NSArray *)addedMessages animated:(bool)animated intent:(TGModernConversationAddMessageIntent)intent;
 - (void)_addMessages:(NSArray *)addedMessages animated:(bool)animated intent:(TGModernConversationAddMessageIntent)intent deletedMessageIds:(NSArray *)deletedMessageIds;
 - (void)_deleteMessages:(NSArray *)messageIds animated:(bool)animated;
 - (void)_updateMessagesRead:(NSArray *)messageIds;
 - (void)_updateMessageDelivered:(int32_t)previousMid;
-- (void)_updateMessageDelivered:(int32_t)previousMid mid:(int32_t)mid date:(int32_t)date message:(TGMessage *)message unread:(NSNumber *)unread;
+- (void)_updateMessageDelivered:(int32_t)previousMid mid:(int32_t)mid date:(int32_t)date message:(TGMessage *)message unread:(NSNumber *)unread pts:(int32_t)pts;
 - (void)_updateMessageDeliveryFailed:(int32_t)previousMid;
 - (void)_updateMessages:(NSDictionary *)messagesByIds;
 
@@ -220,7 +243,8 @@ typedef enum {
 - (void)serviceNotificationsForMessageIds:(NSArray *)messageIds;
 - (void)markMessagesAsViewed:(NSArray *)messageIds;
 
-- (SSignal *)userListForMention:(NSString *)mention;
+- (SSignal *)userListForMention:(NSString *)mention canBeContextBot:(bool)canBeContextBot;
+- (SSignal *)inlineResultForMentionText:(NSString *)mention text:(NSString *)text;
 - (SSignal *)hashtagListForHashtag:(NSString *)hashtag;
 - (SSignal *)commandListForCommand:(NSString *)command;
 
@@ -234,15 +258,31 @@ typedef enum {
 - (void)_controllerDidUpdateVisibleUnseenMessageIds:(NSArray *)unseenMessageIds;
 - (bool)_controllerShouldHideInputTextByDefault;
 - (bool)canDeleteMessage:(TGMessage *)message;
+- (bool)canEditMessage:(TGMessage *)message;
 - (bool)canDeleteMessages;
 - (bool)canDeleteAllMessages;
 
 - (int64_t)requestPeerId;
 - (int64_t)requestAccessHash;
+- (int64_t)attachedPeerId;
 
 - (void)_toggleBroadcastMode;
 
 - (void)updateMessageViews:(NSDictionary *)messageIdToViews markAsSeen:(bool)markAsSeen;
 - (void)_toggleTitleMode;
+
+- (SSignal *)inputPlaceholderForText:(NSString *)text;
+
+- (SSignalQueue *)mediaUploadQueue;
+
+- (id)playlistMetadata:(bool)voice;
+
+- (void)maybeAskForSecretWebpages;
+- (void)maybeAskForInlineBots;
+
+- (SSignal *)editingContextForMessageWithId:(int32_t)messageId;
+- (SSignal *)saveEditedMessageWithId:(int32_t)messageId text:(NSString *)text disableLinkPreviews:(bool)disableLinkPreviews;
+
+- (bool)canCreateLinksToMessages;
 
 @end

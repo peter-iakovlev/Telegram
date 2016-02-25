@@ -188,13 +188,25 @@
 
 - (void)editPressed
 {
-    [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(donePressed)]];
     [self enterEditingMode:true];
 }
 
 - (void)donePressed
 {
     [self leaveEditingMode:true];
+}
+
+- (void)didEnterEditingMode:(bool)animated
+{
+    [super didEnterEditingMode:animated];
+    
+    [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(donePressed)]];
+}
+
+- (void)didLeaveEditingMode:(bool)animated
+{
+    [super didLeaveEditingMode:animated];
+    
     [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Edit") style:UIBarButtonItemStylePlain target:self action:@selector(editPressed)]];
 }
 

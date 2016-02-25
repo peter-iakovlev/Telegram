@@ -17,21 +17,7 @@
 
 @end
 
-@interface TLInputFileLocation$inputVideoFileLocation : TLInputFileLocation
-
-@property (nonatomic) int64_t n_id;
-@property (nonatomic) int64_t access_hash;
-
-@end
-
 @interface TLInputFileLocation$inputEncryptedFileLocation : TLInputFileLocation
-
-@property (nonatomic) int64_t n_id;
-@property (nonatomic) int64_t access_hash;
-
-@end
-
-@interface TLInputFileLocation$inputAudioFileLocation : TLInputFileLocation
 
 @property (nonatomic) int64_t n_id;
 @property (nonatomic) int64_t access_hash;

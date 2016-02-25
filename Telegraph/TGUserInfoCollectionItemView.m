@@ -47,6 +47,8 @@
     UIActivityIndicatorView *_activityIndicator;
     
     int32_t _uidForPlaceholderCalculation;
+    
+    UIImageView *_verifiedIcon;
 }
 
 @end
@@ -58,7 +60,7 @@
     self = [super initWithFrame:frame];
     if (self)
     {   
-        _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(15, 10 + TGRetinaPixel, 66, 66)];
+        _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(15, 15 + TGRetinaPixel, 66, 66)];
         [_avatarView setSingleFontSize:35.0f doubleFontSize:21.0f useBoldFont:false];
         _avatarView.fadeTransition = true;
         _avatarView.userInteractionEnabled = true;
@@ -120,7 +122,7 @@
         _editingLastNameSeparator.backgroundColor = TGSeparatorColor();
         _editingLastNameSeparator.hidden = true;
         _editingLastNameSeparator.alpha = 0.0f;
-        [self addSubview:_editingLastNameSeparator];
+        //[self addSubview:_editingLastNameSeparator];
     }
     return self;
 }
@@ -188,6 +190,8 @@
     if (_editing != editing)
     {
         _editing = editing;
+        
+        _verifiedIcon.hidden = _editing;
         
         if (editing)
         {
@@ -415,31 +419,39 @@
     
     CGRect bounds = self.bounds;
     
-    _avatarView.frame = CGRectMake(15.0f + _avatarOffset.width, 10.0f + TGRetinaPixel + _avatarOffset.height, 66.0f, 66.0f);
+    _avatarView.frame = CGRectMake(15.0f + _avatarOffset.width, 15.0f + TGRetinaPixel + _avatarOffset.height, 66.0f, 66.0f);
     
     CGFloat maxNameWidth = bounds.size.width - 92 - 14;
     
+    if (_verifiedIcon.superview != nil) {
+        maxNameWidth -= _verifiedIcon.bounds.size.width + 5.0f;
+    }
+    
     CGSize nameLabelSize = [_nameLabel sizeThatFits:CGSizeMake(maxNameWidth, 1000)];
     nameLabelSize.width = MIN(nameLabelSize.width, maxNameWidth);
-    CGRect firstNameLabelFrame = CGRectMake(92 + _nameOffset.width, 21 + TGRetinaPixel + _nameOffset.height, nameLabelSize.width, nameLabelSize.height);
+    CGRect firstNameLabelFrame = CGRectMake(92 + _nameOffset.width, 26 + TGRetinaPixel + _nameOffset.height, nameLabelSize.width, nameLabelSize.height);
     _nameLabel.frame = firstNameLabelFrame;
     
     CGSize statusLabelSize = [_statusLabel sizeThatFits:CGSizeMake(bounds.size.width - 92 - 14, 1000)];
-    CGRect statusLabelFrame = CGRectMake(92 + _nameOffset.width, 48 + _nameOffset.height, statusLabelSize.width, statusLabelSize.height);
+    CGRect statusLabelFrame = CGRectMake(92 + _nameOffset.width, 53 + _nameOffset.height, statusLabelSize.width, statusLabelSize.height);
     if (!CGRectEqualToRect(statusLabelFrame, _statusLabel.frame))
         _statusLabel.frame = statusLabelFrame;
     
     CGFloat fieldLeftPadding = 100.0f;
     
-    CGRect firstNameFieldFrame = CGRectMake(fieldLeftPadding + 13.0f, 7 + TGRetinaPixel, bounds.size.width - fieldLeftPadding - 14.0f - 13.0f, 30);
+    CGRect firstNameFieldFrame = CGRectMake(fieldLeftPadding + 13.0f, 12 + TGRetinaPixel, bounds.size.width - fieldLeftPadding - 14.0f - 13.0f, 30);
     _firstNameField.frame = firstNameFieldFrame;
     
-    CGRect lastNameFieldFrame = CGRectMake(fieldLeftPadding + 13.0f, 51 + TGRetinaPixel, bounds.size.width - fieldLeftPadding - 14.0f - 13.0f, 30);
+    CGRect lastNameFieldFrame = CGRectMake(fieldLeftPadding + 13.0f, 56 + TGRetinaPixel, bounds.size.width - fieldLeftPadding - 14.0f - 13.0f, 30);
     _lastNameField.frame = lastNameFieldFrame;
     
     CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
-    _editingFirstNameSeparator.frame = CGRectMake(fieldLeftPadding, 44.0f, bounds.size.width - fieldLeftPadding, separatorHeight);
+    _editingFirstNameSeparator.frame = CGRectMake(fieldLeftPadding, 49.0f, bounds.size.width - fieldLeftPadding, separatorHeight);
     _editingLastNameSeparator.frame = CGRectMake(fieldLeftPadding, 88.0f, bounds.size.width - fieldLeftPadding, separatorHeight);
+    
+    if (_verifiedIcon.superview != nil) {
+        _verifiedIcon.frame = CGRectOffset(_verifiedIcon.bounds, firstNameLabelFrame.origin.x + nameLabelSize.width + 4.0f, firstNameLabelFrame.origin.y + 5.0f + TGRetinaPixel);
+    }
 }
 
 #pragma mark -
@@ -478,6 +490,25 @@
             
             [_itemHandle requestAction:@"editingNameChanged" options:@{@"field": textField == _firstNameField ? @"firstName" : @"lastName", @"text": textField.text == nil ? @"" : textField.text}];
         }
+    }
+}
+
+- (void)setIsVerified:(bool)isVerified {
+    if (_isVerified != isVerified) {
+        _isVerified = isVerified;
+        
+        if (_isVerified) {
+            if (_verifiedIcon == nil) {
+                _verifiedIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ChannelVerifiedIconMedium.png"]];
+            }
+            if (_verifiedIcon.superview == nil) {
+                [self.contentView addSubview:_verifiedIcon];
+            }
+        } else if (_verifiedIcon.superview != nil) {
+            [_verifiedIcon removeFromSuperview];
+        }
+        
+        [self setNeedsLayout];
     }
 }
 

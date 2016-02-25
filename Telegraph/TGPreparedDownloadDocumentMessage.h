@@ -14,8 +14,6 @@
 @property (nonatomic) int64_t localDocumentId;
 @property (nonatomic, strong) NSArray *attributes;
 
-@property (nonatomic, strong) TGMessage *replyMessage;
-
 - (instancetype)initWithGiphyId:(NSString *)giphyId documentUrl:(NSString *)documentUrl localDocumentId:(int64_t)localDocumentId mimeType:(NSString *)mimeType size:(int)size thumbnailInfo:(TGImageInfo *)thumbnailInfo attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage;
 
 @end

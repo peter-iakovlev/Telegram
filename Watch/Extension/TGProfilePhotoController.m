@@ -41,7 +41,7 @@ NSString *const TGProfilePhotoControllerIdentifier = @"TGProfilePhotoController"
 {
     _context = context;
     
-    self.title = TGLocalized(@"PhotoView.Title");
+    self.title = TGLocalized(@"Watch.PhotoView.Title");
 
     __weak TGProfilePhotoController *weakSelf = self;
     [self.imageGroup setBackgroundImageSignal:[[TGBridgeMediaSignals avatarWithUrl:_context.imageUrl type:TGBridgeMediaAvatarTypeLarge] onNext:^(id next)

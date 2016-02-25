@@ -393,7 +393,7 @@ static inline NSString *dialogTimeFormat()
 {
     NSString *timeString = [self stringForShortTimeWithHours:hours minutes:minutes];
     
-    return [[NSString alloc] initWithFormat:today ? TGLocalizedStatic(@"LastSeen.TodayAt") : TGLocalizedStatic(@"LastSeen.YesterdayAt"), timeString];
+    return [[NSString alloc] initWithFormat:today ? TGLocalizedStatic(@"Watch.LastSeen.TodayAt") : TGLocalizedStatic(@"Watch.LastSeen.YesterdayAt"), timeString];
 }
 
 + (NSString *)stringForLastSeen:(int)date
@@ -408,7 +408,7 @@ static inline NSString *dialogTimeFormat()
     localtime_r(&t_now, &timeinfo_now);
     
     if (timeinfo.tm_year != timeinfo_now.tm_year)
-        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"LastSeen.AtDate"), [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year]];
+        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Watch.LastSeen.AtDate"), [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year]];
     else
     {
         int dayDiff = timeinfo.tm_yday - timeinfo_now.tm_yday;
@@ -416,9 +416,9 @@ static inline NSString *dialogTimeFormat()
         if(dayDiff == 0 || dayDiff == -1)
             return [self stringForLastSeenTodayOrYesterday:dayDiff == 0 hours:timeinfo.tm_hour minutes:timeinfo.tm_min];
         else if (false && dayDiff > -7 && dayDiff <= -2)
-            return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"LastSeen.AtWeekday"), weekdayNameShort(timeinfo.tm_wday)];
+            return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Watch.LastSeen.AtWeekday"), weekdayNameShort(timeinfo.tm_wday)];
         else
-            return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"LastSeen.AtDate"), [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year]];
+            return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Watch.LastSeen.AtDate"), [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year]];
     }
     
     return nil;
@@ -429,13 +429,13 @@ static inline NSString *dialogTimeFormat()
     if (date == -1)
         return TGLocalized(@"Presence.invisible");
     else if (date == TGDateRelativeSpanLately)
-        return TGLocalized(@"LastSeen.Lately");
+        return TGLocalized(@"Watch.LastSeen.Lately");
     else if (date == TGDateRelativeSpanWithinAWeek)
-        return TGLocalized(@"LastSeen.WithinAWeek");
+        return TGLocalized(@"Watch.LastSeen.WithinAWeek");
     else if (date == TGDateRelativeSpanWithinAMonth)
-        return TGLocalized(@"LastSeen.WithinAMonth");
+        return TGLocalized(@"Watch.LastSeen.WithinAMonth");
     else if (date == TGDateRelativeSpanALongTimeAgo)
-        return TGLocalized(@"LastSeen.ALongTimeAgo");
+        return TGLocalized(@"Watch.LastSeen.ALongTimeAgo");
     else if (date <= 0)
         return TGLocalized(@"Presence.offline");
     
@@ -449,7 +449,7 @@ static inline NSString *dialogTimeFormat()
     localtime_r(&t_now, &timeinfo_now);
     
     if (timeinfo.tm_year != timeinfo_now.tm_year)
-        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"LastSeen.AtDate"), [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year]];
+        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Watch.LastSeen.AtDate"), [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year]];
     else
     {
         int dayDiff = timeinfo.tm_yday - timeinfo_now.tm_yday;
@@ -460,37 +460,125 @@ static inline NSString *dialogTimeFormat()
         if (dayDiff == 0 && hoursDiff <= 23)
         {
             if (minutesDiff < 1)
-                return TGLocalizedStatic(@"LastSeen.JustNow");
+                return TGLocalizedStatic(@"Watch.LastSeen.JustNow");
             else if (minutesDiff < 60)
             {
                 if (minutesDiff == 1)
-                    return TGLocalizedStatic(@"LastSeen.MinutesAgo_1");
+                    return TGLocalizedStatic(@"Watch.LastSeen.MinutesAgo_1");
                 else if (minutesDiff == 2)
-                    return TGLocalizedStatic(@"LastSeen.MinutesAgo_2");
+                    return TGLocalizedStatic(@"Watch.LastSeen.MinutesAgo_2");
                 else if (minutesDiff >= 3 && minutesDiff <= 10)
-                    return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"LastSeen.MinutesAgo_3_10"), [TGStringUtils stringWithLocalizedNumber:minutesDiff]];
+                    return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Watch.LastSeen.MinutesAgo_3_10"), [TGStringUtils stringWithLocalizedNumber:minutesDiff]];
                 else
-                    return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"LastSeen.MinutesAgo_any"), [TGStringUtils stringWithLocalizedNumber:minutesDiff]];
+                    return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Watch.LastSeen.MinutesAgo_any"), [TGStringUtils stringWithLocalizedNumber:minutesDiff]];
             }
             else
             {
                 if (hoursDiff == 1)
-                    return TGLocalizedStatic(@"LastSeen.HoursAgo_1");
+                    return TGLocalizedStatic(@"Watch.LastSeen.HoursAgo_1");
                 else if (hoursDiff == 2)
-                    return TGLocalizedStatic(@"LastSeen.HoursAgo_2");
+                    return TGLocalizedStatic(@"Watch.LastSeen.HoursAgo_2");
                 else if (hoursDiff >= 3 && hoursDiff <= 10)
-                    return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"LastSeen.HoursAgo_3_10"), [TGStringUtils stringWithLocalizedNumber:hoursDiff]];
+                    return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Watch.LastSeen.HoursAgo_3_10"), [TGStringUtils stringWithLocalizedNumber:hoursDiff]];
                 else
-                    return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"LastSeen.HoursAgo_any"), [TGStringUtils stringWithLocalizedNumber:hoursDiff]];
+                    return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Watch.LastSeen.HoursAgo_any"), [TGStringUtils stringWithLocalizedNumber:hoursDiff]];
             }
         }
         else if (dayDiff == 0 || dayDiff == -1)
             return [self stringForLastSeenTodayOrYesterday:dayDiff == 0 hours:timeinfo.tm_hour minutes:timeinfo.tm_min];
         else
-            return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"LastSeen.AtDate"), [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year]];
+            return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Watch.LastSeen.AtDate"), [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year]];
     }
     
     return nil;
+}
+
++ (TGChatTimestamp *)timestampForDateIfNeeded:(int)date previousDate:(NSNumber *)previousDate
+{
+    if (previousDate == nil)
+        return [self timestampForDate:date];
+    
+    TGChatTimestamp *timestamp = nil;
+    
+    time_t t = date;
+    struct tm timeinfo;
+    localtime_r(&t, &timeinfo);
+    
+    time_t t_prev = previousDate.integerValue;
+    struct tm timeinfo_prev;
+    localtime_r(&t_prev, &timeinfo_prev);
+    
+    time_t t_now;
+    time(&t_now);
+    struct tm timeinfo_now;
+    localtime_r(&t_now, &timeinfo_now);
+    
+    bool timestampNeeded = false;
+    
+    if (timeinfo.tm_yday != timeinfo_prev.tm_yday)
+    {
+        timestampNeeded = true;
+    }
+    else
+    {
+        if (timeinfo.tm_year != timeinfo_prev.tm_year)
+        {
+            timestampNeeded = true;
+        }
+        else
+        {
+            if (timeinfo.tm_year == timeinfo_now.tm_year)
+            {
+                if (timeinfo_now.tm_yday - timeinfo.tm_yday < 7)
+                {
+                    if (abs(t - t_prev) > 3600)
+                        timestampNeeded = true;
+                }
+            }
+        }
+    }
+    
+    if (timestampNeeded)
+        timestamp = [self timestampForDate:date];
+    
+    return timestamp;
+}
+
++ (TGChatTimestamp *)timestampForDate:(int)date
+{
+    time_t t = date;
+    struct tm timeinfo;
+    localtime_r(&t, &timeinfo);
+    
+    time_t t_now;
+    time(&t_now);
+    struct tm timeinfo_now;
+    localtime_r(&t_now, &timeinfo_now);
+    
+    NSString *string = nil;
+    if (timeinfo.tm_year != timeinfo_now.tm_year)
+    {
+        string = [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year];
+    }
+    else
+    {
+        int dayDiff = timeinfo.tm_yday - timeinfo_now.tm_yday;
+        
+        if (dayDiff == 0 || dayDiff == -1)
+        {
+            string = [NSString stringWithFormat:dayDiff == 0 ? TGLocalized(@"Watch.Time.ShortTodayAt") : TGLocalized(@"Watch.Time.ShortYesterdayAt"), [self stringForShortTimeWithHours:timeinfo.tm_hour minutes:timeinfo.tm_min]];
+        }
+        else if (dayDiff > -7)
+        {
+            string = [NSString stringWithFormat:TGLocalized(@"Watch.Time.ShortWeekdayAt"), [self stringForDayOfWeek:timeinfo.tm_wday], [self stringForShortTimeWithHours:timeinfo.tm_hour minutes:timeinfo.tm_min]];
+        }
+        else
+        {
+            string = [NSString stringWithFormat:TGLocalized(@"Watch.Time.ShortFullAt"), [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year], [self stringForShortTimeWithHours:timeinfo.tm_hour minutes:timeinfo.tm_min]];
+        }
+    }
+    
+    return [[TGChatTimestamp alloc] initWithDate:date string:string];
 }
 
 @end

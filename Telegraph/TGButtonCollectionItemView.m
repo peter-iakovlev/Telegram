@@ -5,6 +5,7 @@
 
 @interface TGButtonCollectionItemView ()
 {
+    UIImageView *_iconView;
     UILabel *_titleLabel;
     NSTextAlignment _alignment;
 }
@@ -52,6 +53,24 @@
     _titleLabel.alpha = enabled ? 1.0f : 0.5f;
 }
 
+- (void)setIcon:(UIImage *)icon {
+    if (icon != nil) {
+        if (_iconView == nil) {
+            _iconView = [[UIImageView alloc] init];
+        }
+        
+        if (_iconView.superview == nil) {
+            [self addSubview:_iconView];
+        }
+        _iconView.image = icon;
+    } else {
+        _iconView.image = nil;
+        [_iconView removeFromSuperview];
+    }
+    
+    [self setNeedsLayout];
+}
+
 - (void)setItemPosition:(int)itemPosition
 {
     [super setItemPosition:itemPosition];
@@ -86,6 +105,12 @@
     CGRect bounds = self.bounds;
     
     CGFloat inset = _leftInset;
+    
+    if (_iconView.superview != nil) {
+        CGSize iconSize = _iconView.image.size;
+        
+        _iconView.frame = CGRectMake(CGFloor((_leftInset - iconSize.width) / 2.0f), CGFloor((bounds.size.height - iconSize.height) / 2.0f), iconSize.width, iconSize.height);
+    }
     
     _titleLabel.frame = CGRectMake(inset, CGFloor((bounds.size.height - 26) / 2), bounds.size.width - inset - 15.0f, 26);
     [_titleLabel sizeToFit];

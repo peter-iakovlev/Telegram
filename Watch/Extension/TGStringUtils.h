@@ -33,3 +33,10 @@ extern "C" {
 + (NSString *)md5WithString:(NSString *)string;
 
 @end
+
+
+@interface NSString (NSArrayFormatExtension)
+
++ (id)stringWithFormat:(NSString *)format array:(NSArray*) arguments;
+
+@end

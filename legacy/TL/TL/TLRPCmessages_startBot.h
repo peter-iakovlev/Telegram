@@ -4,12 +4,13 @@
 #import "TLMetaRpc.h"
 
 @class TLInputUser;
+@class TLInputPeer;
 @class TLUpdates;
 
 @interface TLRPCmessages_startBot : TLMetaRpc
 
 @property (nonatomic, retain) TLInputUser *bot;
-@property (nonatomic) int32_t chat_id;
+@property (nonatomic, retain) TLInputPeer *peer;
 @property (nonatomic) int64_t random_id;
 @property (nonatomic, retain) NSString *start_param;
 

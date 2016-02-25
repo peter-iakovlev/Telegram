@@ -15,12 +15,13 @@
 
 @property (nonatomic, strong) TGImageView *imageView;
 @property (nonatomic, strong) AVPlayer *player;
-@property (nonatomic) CGSize videoDimenstions;
+@property (nonatomic) CGSize videoDimensions;
 
 - (bool)shouldLoopVideo:(NSUInteger)currentLoopCount;
 
 - (void)play;
 - (void)hidePlayButton;
+- (void)stop;
 
 - (void)_willPlay;
 

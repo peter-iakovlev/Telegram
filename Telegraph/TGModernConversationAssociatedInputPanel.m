@@ -22,6 +22,10 @@
     return 75.0f;
 }
 
+- (bool)displayForTextEntryOnly {
+    return false;
+}
+
 - (void)setNeedsPreferredHeightUpdate
 {
     if (_preferredHeightUpdated)
@@ -29,6 +33,18 @@
 }
 
 - (void)setSendAreaWidth:(CGFloat)__unused sendAreaWidth attachmentAreaWidth:(CGFloat)__unused attachmentAreaWidth
+{
+}
+
+- (void)selectPreviousItem
+{
+}
+
+- (void)selectNextItem
+{
+}
+
+- (void)commitSelectedItem
 {
 }
 

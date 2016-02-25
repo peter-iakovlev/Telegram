@@ -38,7 +38,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x4e32b894;
+    return (int32_t)0x317ceef4;
 }
 
 - (int32_t)TLconstructorName
@@ -55,7 +55,7 @@
     object.this_dc = metaObject->getInt32((int32_t)0x1b29ec36);
     object.dc_options = metaObject->getArray((int32_t)0x25e6c768);
     object.chat_size_max = metaObject->getInt32((int32_t)0x95174295);
-    object.broadcast_size_max = metaObject->getInt32((int32_t)0xe161a8ce);
+    object.megagroup_size_max = metaObject->getInt32((int32_t)0xb04bfaa8);
     object.forwarded_count_max = metaObject->getInt32((int32_t)0xc6f3cb03);
     object.online_update_period_ms = metaObject->getInt32((int32_t)0x1c2d17b2);
     object.offline_blur_timeout_ms = metaObject->getInt32((int32_t)0xbc30fa37);
@@ -66,6 +66,8 @@
     object.chat_big_size = metaObject->getInt32((int32_t)0xbb094b49);
     object.push_chat_period_ms = metaObject->getInt32((int32_t)0x6755b26f);
     object.push_chat_limit = metaObject->getInt32((int32_t)0x68adc403);
+    object.saved_gifs_limit = metaObject->getInt32((int32_t)0xc5b5cecd);
+    object.edit_time_limit = metaObject->getInt32((int32_t)0x70ce70f9);
     object.disabled_features = metaObject->getArray((int32_t)0x4f56c735);
     return object;
 }
@@ -111,8 +113,8 @@
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.broadcast_size_max;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe161a8ce, value));
+        value.primitive.int32Value = self.megagroup_size_max;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xb04bfaa8, value));
     }
     {
         TLConstructedValue value;
@@ -173,6 +175,18 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.push_chat_limit;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x68adc403, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.saved_gifs_limit;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc5b5cecd, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.edit_time_limit;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x70ce70f9, value));
     }
     {
         TLConstructedValue value;

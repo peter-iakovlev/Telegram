@@ -84,7 +84,7 @@ NSString *const TGGroupInfoControllerIdentifier = @"TGGroupInfoController";
 {
     _context = context;
     
-    self.title = TGLocalized(@"GroupInfo.Title");
+    self.title = TGLocalized(@"Watch.GroupInfo.Title");
     
     __weak TGGroupInfoController *weakSelf = self;
     [_chatDisposable setDisposable:[[[TGBridgeConversationSignals conversationWithPeerId:_context.groupChat.identifier] deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *models)
@@ -189,17 +189,18 @@ NSString *const TGGroupInfoControllerIdentifier = @"TGGroupInfoController";
     
     NSMutableArray *menuItems = [[NSMutableArray alloc] init];
 
-    int32_t muteFor = 1;
-    NSString *muteTitle = [NSString stringWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"UserInfo.Mute_" value:muteFor]), muteFor];
+    bool muteForever = true;
+    int32_t muteFor = muteForever ? INT_MAX : 1;
+    NSString *muteTitle = muteForever ? TGLocalized(@"Watch.UserInfo.Mute") : [NSString stringWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"Watch.UserInfo.Mute_" value:muteFor]), muteFor];
     
-    TGInterfaceMenuItem *muteItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:muted ? WKMenuItemIconSpeaker : WKMenuItemIconMute title:muted ? TGLocalized(@"UserInfo.Unmute") : muteTitle actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
+    TGInterfaceMenuItem *muteItem = [[TGInterfaceMenuItem alloc] initWithItemIcon:muted ? WKMenuItemIconSpeaker : WKMenuItemIconMute title:muted ? TGLocalized(@"Watch.UserInfo.Unmute") : muteTitle actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
     {
         __strong TGGroupInfoController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
         TGBridgePeerNotificationSettings *settings = [[TGBridgePeerNotificationSettings alloc] init];
-        settings.muteFor = muted ? 0 : muteFor * 60 * 60;
+        settings.muteFor = muted ? 0 : (muteFor == INT_MAX ? INT_MAX : muteFor * 60 * 60);
         [strongSelf->_updateSettingsDisposable setDisposable:[[TGBridgePeerSettingsSignals updateNotificationSettingsWithPeerId:strongSelf->_context.groupChat.identifier settings:settings] startWithNext:nil completed:^
         {
             __strong TGGroupInfoController *strongSelf = weakSelf;

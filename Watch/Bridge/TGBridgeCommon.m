@@ -43,11 +43,11 @@
 
 @end
 
-NSString *const TGBridgeFileKey = @"fileKey";
-
 NSString *const TGBridgeIncomingFileTypeKey = @"type";
+NSString *const TGBridgeIncomingFileIdentifierKey = @"identifier";
 NSString *const TGBridgeIncomingFileRandomIdKey = @"randomId";
 NSString *const TGBridgeIncomingFilePeerIdKey = @"peerId";
 NSString *const TGBridgeIncomingFileReplyToMidKey = @"replyToMid";
 
 NSString *const TGBridgeIncomingFileTypeAudio = @"audio";
+NSString *const TGBridgeIncomingFileTypeImage = @"image";

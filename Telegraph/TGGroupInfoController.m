@@ -43,14 +43,6 @@
 #import "TGAlertSoundController.h"
 
 #import "TGRemoteImageView.h"
-#import "TGLegacyCameraController.h"
-#import "TGImagePickerController.h"
-
-#import "TGOverlayFormsheetWindow.h"
-#import "TGMediaFoldersController.h"
-#import "TGModernMediaPickerController.h"
-#import "TGWebSearchController.h"
-#import "TGCameraController.h"
 
 #import "TGImageUtils.h"
 
@@ -62,15 +54,6 @@
 #import "TGGroupAvatarGalleryModel.h"
 #import "TGOverlayControllerWindow.h"
 
-#import "TGAccessChecker.h"
-
-#import "TGAttachmentSheetView.h"
-#import "TGAttachmentSheetWindow.h"
-#import "TGAttachmentSheetButtonItemView.h"
-#import "TGAttachmentSheetRecentItemView.h"
-#import "TGAttachmentSheetRecentCameraView.h"
-#import "TGCameraPreviewView.h"
-
 #import "TGSharedMediaController.h"
 
 #import "TGTimerTarget.h"
@@ -80,7 +63,11 @@
 
 #import "TGGroupInfoShareLinkController.h"
 
-@interface TGGroupInfoController () <TGGroupInfoSelectContactControllerDelegate, TGAlertSoundControllerDelegate, TGLegacyCameraControllerDelegate, TGImagePickerControllerDelegate>
+#import "TGGroupAdminsController.h"
+
+#import "TGMediaAvatarMenuMixin.h"
+
+@interface TGGroupInfoController () <TGGroupInfoSelectContactControllerDelegate, TGAlertSoundControllerDelegate>
 {
     bool _editing;
     bool _haveEditableUsers;
@@ -94,12 +81,16 @@
     TGButtonCollectionItem *_setGroupPhotoItem;
     
     TGCollectionMenuSection *_notificationsAndMediaSection;
-    TGVariantCollectionItem *_notificationsItem;
+    TGSwitchCollectionItem *_notificationsItem;
+    TGVariantCollectionItem *_chatAdminsItem;
     TGVariantCollectionItem *_sharedMediaItem;
     TGVariantCollectionItem *_soundItem;
     
     TGCollectionMenuSection *_usersSection;
     TGHeaderCollectionItem *_usersSectionHeader;
+    TGCommentCollectionItem *_usersSectionUpgradeNotice1;
+    TGCommentCollectionItem *_usersSectionUpgradeNotice2;
+    TGButtonCollectionItem *_addParticipantItem;
     
     NSMutableDictionary *_groupNotificationSettings;
     NSInteger _sharedMediaCount;
@@ -111,7 +102,11 @@
     
     NSTimer *_muteExpirationTimer;
     
-    TGAttachmentSheetWindow *_attachmentSheetWindow;
+    int _upgradeNoticeMemberLimit;
+    
+    bool _ignoreUpdates;
+    
+    TGMediaAvatarMenuMixin *_avatarMixin;
 }
 
 @end
@@ -150,11 +145,20 @@
         
         [self.menuSections addSection:_groupInfoSection];
         
-        _notificationsItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Notifications") variant:nil action:@selector(notificationsPressed)];
+        _notificationsItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Notifications") isOn:false];
+        __weak TGGroupInfoController *weakSelf = self;
+        _notificationsItem.toggled = ^(bool value) {
+            __strong TGGroupInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf _commitEnableNotifications:value orMuteFor:0];
+            }
+        };
         _notificationsItem.deselectAutomatically = true;
         _soundItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Sound") variant:nil action:@selector(soundPressed)];
         _soundItem.deselectAutomatically = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad;
         _sharedMediaItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.SharedMedia") variant:nil action:@selector(sharedMediaPressed)];
+        
+        _chatAdminsItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.ChatAdmins") action:@selector(chatAdminsPressed)];
         
         _notificationsAndMediaSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             _notificationsItem,
@@ -166,15 +170,50 @@
         [self.menuSections addSection:_notificationsAndMediaSection];
         
         _usersSectionHeader = [[TGHeaderCollectionItem alloc] initWithTitle:@""];
-        TGButtonCollectionItem *addParticipantItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.AddParticipant") action:@selector(addParticipantPressed)];
-        addParticipantItem.leftInset = 65.0f;
-        addParticipantItem.titleColor = TGAccentColor();
-        addParticipantItem.deselectAutomatically = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad;
+        _addParticipantItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.AddParticipant") action:@selector(addParticipantPressed)];
+        _addParticipantItem.leftInset = 65.0f;
+        _addParticipantItem.icon = [UIImage imageNamed:@"GroupInfoIconAddMember.png"];
+        _addParticipantItem.titleColor = TGAccentColor();
+        _addParticipantItem.deselectAutomatically = true;
         _usersSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             _usersSectionHeader,
-            addParticipantItem
+            _addParticipantItem
         ]];
         [self.menuSections addSection:_usersSection];
+        
+        _usersSectionUpgradeNotice1 = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Group.UpgradeNoticeText1")];
+        _usersSectionUpgradeNotice1.topInset = -2.0f;
+        
+        int channelGroupMemberLimit = 1000;
+        NSData *data = [TGDatabaseInstance() customProperty:@"maxChannelGroupMembers"];
+        if (data.length >= 4)
+        {
+            int32_t maxChannelGroupMembers = 0;
+            [data getBytes:&maxChannelGroupMembers length:4];
+            if (maxChannelGroupMembers != 0) {
+                channelGroupMemberLimit = MAX(0, maxChannelGroupMembers);
+            }
+        }
+        
+        data = [TGDatabaseInstance() customProperty:@"maxChatParticipants"];
+        if (data.length >= 4)
+        {
+            int32_t maxChatParticipants = 0;
+            [data getBytes:&maxChatParticipants length:4];
+            if (maxChatParticipants == 0) {
+                _upgradeNoticeMemberLimit = 99;
+            } else {
+                _upgradeNoticeMemberLimit = maxChatParticipants - 1;
+            }
+        }
+        
+#if TARGET_IPHONE_SIMULATOR
+        _upgradeNoticeMemberLimit = 4;
+#endif
+        
+        _usersSectionUpgradeNotice2 = [[TGCommentCollectionItem alloc] initWithFormattedText:[TGLocalized(@"Group.UpgradeNoticeText2") stringByReplacingOccurrencesOfString:@"{supergroup_member_limit}" withString:[[NSString alloc] initWithFormat:@"%d", channelGroupMemberLimit]]];
+        _usersSectionUpgradeNotice2.topInset = -5.0f;
+        _usersSectionUpgradeNotice2.bottomInset = 5.0f;
         
         TGButtonCollectionItem *leaveGroupItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.DeleteAndExit") action:@selector(leaveGroupPressed)];
         leaveGroupItem.titleColor = TGDestructiveAccentColor();
@@ -188,6 +227,8 @@
             
         [self _updateNotificationItems:false];
         [self _updateSharedMediaCount];
+        
+        [self resetSections];
         
         [ActionStageInstance() dispatchOnStageQueue:^
         {
@@ -262,6 +303,69 @@
     return self;
 }
 
+- (void)resetSections {
+    bool reload = false;
+    
+    if (_editing) {
+        if (_conversation.isCreator) {
+            if ([_notificationsAndMediaSection indexOfItem:_chatAdminsItem] == NSNotFound) {
+                [_notificationsAndMediaSection insertItem:_chatAdminsItem atIndex:1];
+                reload = true;
+            }
+        } else {
+            if ([_notificationsAndMediaSection indexOfItem:_chatAdminsItem] != NSNotFound) {
+                [_notificationsAndMediaSection deleteItem:_chatAdminsItem];
+                reload = true;
+            }
+        }
+    }
+    
+    bool canAddParticipants = _conversation.isCreator || !_conversation.hasAdmins || (_conversation.hasAdmins && _conversation.isAdmin);
+    bool canEditGroup = canAddParticipants;
+    
+    if (canAddParticipants) {
+        if ([_usersSection indexOfItem:_addParticipantItem] == NSNotFound) {
+            [_usersSection insertItem:_addParticipantItem atIndex:1];
+            reload = true;
+        }
+    } else {
+        if ([_usersSection deleteItem:_addParticipantItem]) {
+            reload = true;
+        }
+    }
+    
+    if (canEditGroup) {
+        if ([_groupInfoSection indexOfItem:_setGroupPhotoItem] == NSNotFound) {
+            [_groupInfoSection addItem:_setGroupPhotoItem];
+            reload = true;
+        }
+    } else {
+        if ([_groupInfoSection deleteItem:_setGroupPhotoItem]) {
+            reload = true;
+        }
+    }
+    
+    if (reload) {
+        [self.collectionView reloadData];
+    }
+    
+    if (!canEditGroup && _editing) {
+        [self leaveEditingMode:false];
+    }
+    
+    if (!(_conversation.kickedFromChat || _conversation.leftChat || _conversation.isDeactivated)) {
+        if (canEditGroup) {
+            if (self.navigationItem.rightBarButtonItem == nil) {
+                [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Edit") style:UIBarButtonItemStylePlain target:self action:@selector(editPressed)] animated:false];
+            }
+        } else {
+            if (self.navigationItem.rightBarButtonItem != nil) {
+                [self setRightBarButtonItem:nil];
+            }
+        }
+    }
+}
+
 - (void)backPressed
 {
     [self.navigationController popViewControllerAnimated:true];
@@ -313,6 +417,11 @@
         {
             [self.menuSections beginRecordingChanges];
             [self.menuSections replaceItemInSection:sharedMediaIndexPath.section atIndex:sharedMediaIndexPath.item withItem:_soundItem];
+            if (_conversation.isCreator) {
+                if ([_notificationsAndMediaSection indexOfItem:_chatAdminsItem] == NSNotFound) {
+                    [self.menuSections insertItem:_chatAdminsItem toSection:[self indexForSection:_notificationsAndMediaSection] atIndex:2];
+                }
+            }
             [self.menuSections commitRecordedChanges:self.collectionView];
         }
         
@@ -337,6 +446,9 @@
     {
         [self.menuSections beginRecordingChanges];
         [self.menuSections replaceItemInSection:soundIndexPath.section atIndex:soundIndexPath.item withItem:_sharedMediaItem];
+        if ([_notificationsAndMediaSection indexOfItem:_chatAdminsItem] != NSNotFound) {
+            [self.menuSections deleteItemFromSection:[self indexForSection:_notificationsAndMediaSection] atIndex:[_notificationsAndMediaSection indexOfItem:_chatAdminsItem]];
+        }
         [self.menuSections commitRecordedChanges:self.collectionView];
     }
     
@@ -359,367 +471,38 @@
 
 - (void)setGroupPhotoPressed
 {
-    if (false && iosMajorVersion() >= 7 && !TGIsPad())
-    {
-        __weak TGGroupInfoController *weakSelf = self;
-        _attachmentSheetWindow = [[TGAttachmentSheetWindow alloc] init];
-        _attachmentSheetWindow.dismissalBlock = ^
-        {
-            __strong TGGroupInfoController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            strongSelf->_attachmentSheetWindow.rootViewController = nil;
-            strongSelf->_attachmentSheetWindow = nil;
-        };
-        
-        NSMutableArray *items = [[NSMutableArray alloc] init];
-        
-        TGAttachmentSheetRecentItemView *recentView = [[TGAttachmentSheetRecentItemView alloc] initWithParentController:self mode:TGAttachmentSheetItemViewSetGroupPhotoMode];
-        recentView.openCamera = ^(TGAttachmentSheetRecentCameraView *cameraView)
-        {
-            __strong TGGroupInfoController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                [strongSelf.view endEditing:true];
-                [strongSelf _displayCameraWithView:cameraView];
-            }
-        };
-        recentView.avatarCreated = ^(UIImage *resultImage)
-        {
-            __strong TGGroupInfoController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-                [strongSelf _updateGroupProfileImage:resultImage];
-            }
-        };
-        [items addObject:recentView];
-        
-        [items addObject:[[TGAttachmentSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.ChoosePhoto") pressed:^
-        {
-            __strong TGGroupInfoController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-                [strongSelf _displayImagePicker:false];
-            }
-        }]];
-        
-        [items addObject:[[TGAttachmentSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Conversation.SearchWebImages") pressed:^
-        {
-            __strong TGGroupInfoController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-                [strongSelf _displayImagePicker:true];
-            }
-        }]];
-        
-        if (_conversation.chatPhotoSmall.length != 0)
-        {
-            TGAttachmentSheetButtonItemView *deleteItem = [[TGAttachmentSheetButtonItemView alloc] initWithTitle:TGLocalized(@"GroupInfo.SetGroupPhotoDelete") pressed:^
-            {
-                __strong TGGroupInfoController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                {
-                    [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-                    [strongSelf _commitDeleteAvatar];
-                }
-            }];
-            [deleteItem setDestructive:true];
-            [items addObject:deleteItem];
-        }
-        
-        TGAttachmentSheetButtonItemView *cancelItem =[[TGAttachmentSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") pressed:^
-        {
-            __strong TGGroupInfoController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-        }];
-        [cancelItem setBold:true];
-        [items addObject:cancelItem];
-        
-        _attachmentSheetWindow.view.items = items;
-        [_attachmentSheetWindow showAnimated:true completion:nil];
-    }
-    else
-    {
-        NSMutableArray *actions = [[NSMutableArray alloc] init];
-        
-        if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera])
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.TakePhoto") action:@"camera"]];
-        
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.ChoosePhoto") action:@"choosePhoto"]];
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.SearchWebImages") action:@"searchWeb"]];
-        
-        if (_conversation.chatPhotoSmall.length != 0)
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"GroupInfo.SetGroupPhotoDelete") action:@"delete" type:TGActionSheetActionTypeDestructive]];
-        
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
-        
-        [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGGroupInfoController *controller, NSString *action)
-        {
-            if ([action isEqualToString:@"camera"])
-                [controller _displayCameraWithView:nil];
-            else if ([action isEqualToString:@"choosePhoto"])
-                [controller _displayImagePicker:false];
-            else if ([action isEqualToString:@"searchWeb"])
-                [controller _displayImagePicker:true];
-            else if ([action isEqualToString:@"delete"])
-                [controller _commitDeleteAvatar];
-        } target:self] showInView:self.view];
-    }
-}
-
-- (void)_displayCameraWithView:(TGAttachmentSheetRecentCameraView *)cameraView
-{
-    if (![TGAccessChecker checkCameraAuthorizationStatusWithAlertDismissComlpetion:nil])
+    if ([_groupInfoSection indexOfItem:_setGroupPhotoItem] == NSNotFound)
         return;
-    
-    if (TGAppDelegateInstance.rootController.isSplitView)
-        return;
-    
-    if (iosMajorVersion() < 7 || [UIDevice currentDevice].platformType == UIDevice4iPhone || [UIDevice currentDevice].platformType == UIDevice4GiPod)
-    {
-        [self _displayLegacyCamera];
-        [_attachmentSheetWindow dismissAnimated:true completion:nil];
-        return;
-    }
-    
-    TGCameraController *controller = nil;
-    CGSize screenSize = TGScreenSize();
-    
-    if (cameraView.previewView != nil)
-        controller = [[TGCameraController alloc] initWithCamera:cameraView.previewView.camera previewView:cameraView.previewView intent:TGCameraControllerAvatarIntent];
-    else
-        controller = [[TGCameraController alloc] initWithIntent:TGCameraControllerAvatarIntent];
-    
-    controller.shouldStoreCapturedAssets = true;
-    
-    TGCameraControllerWindow *controllerWindow = [[TGCameraControllerWindow alloc] initWithParentController:self contentController:controller];
-    if (_attachmentSheetWindow != nil)
-        controllerWindow.windowLevel = _attachmentSheetWindow.windowLevel + 0.0001f;
-    controllerWindow.hidden = false;
-    controllerWindow.clipsToBounds = true;
-    controllerWindow.frame = CGRectMake(0, 0, screenSize.width, screenSize.height);
-    
-    bool standalone = true;
-    CGRect startFrame = CGRectMake(0, screenSize.height, screenSize.width, screenSize.height);
-    if (cameraView != nil)
-    {
-        standalone = false;
-        startFrame = [controller.view convertRect:cameraView.previewView.frame fromView:cameraView];
-    }
-    
-    [cameraView detachPreviewView];
-    [controller beginTransitionInFromRect:startFrame];
     
     __weak TGGroupInfoController *weakSelf = self;
-    __weak TGCameraController *weakCameraController = controller;
-    __weak TGAttachmentSheetRecentCameraView *weakCameraView = cameraView;
-    
-    controller.beginTransitionOut = ^CGRect
-    {
-        __strong TGCameraController *strongCameraController = weakCameraController;
-        if (strongCameraController == nil)
-            return CGRectZero;
-        
-        if (!standalone)
-        {
-            __strong TGAttachmentSheetRecentCameraView *strongCameraView = weakCameraView;
-            if (strongCameraView != nil)
-                return [strongCameraController.view convertRect:strongCameraView.frame fromView:strongCameraView.superview];
-        }
-        
-        return CGRectZero;
-    };
-    
-    controller.finishedTransitionOut = ^
-    {
-        __strong TGAttachmentSheetRecentCameraView *strongCameraView = weakCameraView;
-        if (strongCameraView == nil)
-            return;
-        
-        [strongCameraView attachPreviewViewAnimated:true];
-    };
-    
-    controller.finishedWithPhoto = ^(UIImage *resultImage, __unused NSString *caption)
+    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithParentController:self hasDeleteButton:(_conversation.chatPhotoSmall.length != 0)];
+    _avatarMixin.didFinishWithImage = ^(UIImage *image)
     {
         __strong TGGroupInfoController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
-        [strongSelf _updateGroupProfileImage:resultImage];
-        [strongSelf->_attachmentSheetWindow dismissAnimated:false completion:nil];
+        [strongSelf _updateGroupProfileImage:image];
+        strongSelf->_avatarMixin = nil;
     };
-}
-
-- (void)_displayLegacyCamera
-{
-    TGLegacyCameraController *legacyCameraController = [[TGLegacyCameraController alloc] init];
-    legacyCameraController.sourceType = UIImagePickerControllerSourceTypeCamera;
-    legacyCameraController.avatarMode = true;
-    
-    legacyCameraController.completionDelegate = self;
-    
-    [self presentViewController:legacyCameraController animated:true completion:nil];
-}
-
-- (void)_displayImagePicker:(bool)openWebSearch
-{
-    __weak TGGroupInfoController *weakSelf = self;
-    
-    TGNavigationController *navigationController = nil;
-    
-    if (openWebSearch)
+    _avatarMixin.didFinishWithDelete = ^
     {
-        TGWebSearchController *controller = [[TGWebSearchController alloc] initForAvatarSelection:true];
-        __weak TGWebSearchController *weakController = controller;
-        controller.avatarCreated = ^(UIImage *image)
-        {
-            __strong TGGroupInfoController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf _updateGroupProfileImage:image];
-            
-            __strong TGWebSearchController *strongController = weakController;
-            if (strongController != nil && strongController.dismiss != nil)
-                strongController.dismiss();
-        };
+        __strong TGGroupInfoController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
         
-        navigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];
-        
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        {
-            void (^dismiss)(void) = ^
-            {
-                __strong TGGroupInfoController *strongSelf = weakSelf;
-                if (strongSelf == nil)
-                    return;
-                
-                [strongSelf dismissViewControllerAnimated:true completion:nil];
-            };
-            
-            [self presentViewController:navigationController animated:true completion:nil];
-            
-            controller.dismiss = dismiss;
-        }
-        else
-        {
-            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-            
-            TGOverlayFormsheetWindow *formSheetWindow = [[TGOverlayFormsheetWindow alloc] initWithParentController:self contentController:navigationController];
-            [formSheetWindow showAnimated:true];
-            
-            __weak TGNavigationController *weakNavController = navigationController;
-            __weak TGOverlayFormsheetWindow *weakFormSheetWindow = formSheetWindow;
-            void (^dismiss)(void) = ^
-            {
-                __strong TGOverlayFormsheetWindow *strongFormSheetWindow = weakFormSheetWindow;
-                if (strongFormSheetWindow == nil)
-                    return;
-                
-                __strong TGNavigationController *strongNavController = weakNavController;
-                if (strongNavController != nil)
-                {
-                    if (strongNavController.presentingViewController != nil)
-                        [strongNavController.presentingViewController dismissViewControllerAnimated:true completion:nil];
-                    else
-                        [strongFormSheetWindow dismissAnimated:true];
-                }
-            };
-            
-            controller.dismiss = dismiss;
-        }
-    }
-    else
+        [strongSelf _commitDeleteAvatar];
+        strongSelf->_avatarMixin = nil;
+    };
+    _avatarMixin.didDismiss = ^
     {
-        TGMediaFoldersController *mediaFoldersController = [[TGMediaFoldersController alloc] initWithIntent:TGModernMediaPickerControllerSetProfilePhotoIntent];
-        TGModernMediaPickerController *mediaPickerController = [[TGModernMediaPickerController alloc] initWithAssetsGroup:nil intent:TGModernMediaPickerControllerSetProfilePhotoIntent];
-    
-        navigationController = [TGNavigationController navigationControllerWithControllers:@[ mediaFoldersController, mediaPickerController ]];
+        __strong TGGroupInfoController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
         
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        {
-            void (^dismiss)(void) = ^
-            {
-                __strong TGGroupInfoController *strongSelf = weakSelf;
-                if (strongSelf == nil)
-                    return;
-                
-                [strongSelf dismissViewControllerAnimated:true completion:nil];
-            };
-            
-            mediaFoldersController.dismiss = dismiss;
-            mediaPickerController.dismiss = dismiss;
-            
-            [self presentViewController:navigationController animated:true completion:nil];
-        }
-        else
-        {
-            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-            
-            TGOverlayFormsheetWindow *formSheetWindow = [[TGOverlayFormsheetWindow alloc] initWithParentController:self contentController:navigationController];
-            [formSheetWindow showAnimated:true];
-            
-            __weak TGNavigationController *weakNavController = navigationController;
-            __weak TGOverlayFormsheetWindow *weakFormSheetWindow = formSheetWindow;
-            void (^dismiss)(void) = ^
-            {
-                __strong TGOverlayFormsheetWindow *strongFormSheetWindow = weakFormSheetWindow;
-                if (strongFormSheetWindow == nil)
-                    return;
-                
-                __strong TGNavigationController *strongNavController = weakNavController;
-                if (strongNavController != nil)
-                {
-                    if (strongNavController.presentingViewController != nil)
-                        [strongNavController.presentingViewController dismissViewControllerAnimated:true completion:nil];
-                    else
-                        [strongFormSheetWindow dismissAnimated:true];
-                }
-            };
-            
-            mediaFoldersController.dismiss = dismiss;
-            mediaPickerController.dismiss = dismiss;
-        }
-        
-        __weak TGMediaFoldersController *weakMediaFoldersController = mediaFoldersController;
-        void(^avatarCreated)(UIImage *) = ^(UIImage *image)
-        {
-            __strong TGGroupInfoController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf _updateGroupProfileImage:image];
-            
-            __strong TGMediaFoldersController *strongMediaFoldersController = weakMediaFoldersController;
-            if (strongMediaFoldersController != nil && strongMediaFoldersController.dismiss != nil)
-                strongMediaFoldersController.dismiss();
-        };
-        
-        mediaFoldersController.avatarCreated = avatarCreated;
-        mediaPickerController.avatarCreated = avatarCreated;
-    }
-}
-
-- (void)imagePickerController:(TGImagePickerController *)__unused imagePicker didFinishPickingWithAssets:(NSArray *)assets
-{
-    UIImage *image = nil;
-    
-    if (assets.count != 0)
-    {
-        if ([assets[0] isKindOfClass:[UIImage class]])
-            image = assets[0];
-    }
-    
-    [self _updateGroupProfileImage:image];
-    
-    [self dismissViewControllerAnimated:true completion:nil];
+        strongSelf->_avatarMixin = nil;
+    };
+    [_avatarMixin present];
 }
 
 - (void)_updateGroupProfileImage:(UIImage *)image
@@ -784,11 +567,6 @@
     }];
 }
 
-- (void)legacyCameraControllerCompletedWithNoResult
-{
-    [self dismissViewControllerAnimated:true completion:nil];
-}
-
 - (void)notificationsPressed
 {
     NSMutableArray *actions = [[NSMutableArray alloc] init];
@@ -850,27 +628,56 @@
 
 - (void)addParticipantPressed
 {
-    int contactsMode = TGContactsModeRegistered | TGContactsModeManualFirstSection;
-    if (_conversation.chatParticipants.chatAdminId == TGTelegraphInstance.clientUserId)
-        contactsMode |= TGContactsModeCreateGroupLink;
-    contactsMode |= TGContactsModeIgnorePrivateBots;
-    TGGroupInfoSelectContactController *selectContactController = [[TGGroupInfoSelectContactController alloc] initWithContactsMode:contactsMode];
-    selectContactController.delegate = self;
-    
-    NSMutableArray *disabledUsers = [[NSMutableArray alloc] init];
-    [disabledUsers addObjectsFromArray:_conversation.chatParticipants.chatParticipantUids];
-    [disabledUsers addObjectsFromArray:_soonToBeAddedUserIds];
-    
-    selectContactController.disabledUsers = disabledUsers;
-    
-    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[selectContactController] navigationBarClass:[TGWhiteNavigationBar class]];
-    if ([self inPopover])
-    {
-        navigationController.modalPresentationStyle = UIModalPresentationCurrentContext;
-        navigationController.presentationStyle = TGNavigationControllerPresentationStyleChildInPopover;
+    if ([self showGroupUpgradeNotice]) {
+        int64_t conversationId = _conversationId;
+        __weak TGGroupInfoController *weakSelf = self;
+        [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Group.UpgradeConfirmation") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
+            if (okButtonPressed) {
+                __strong TGGroupInfoController *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    strongSelf->_ignoreUpdates = true;
+                }
+                
+                TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+                [progressWindow show:true];
+                
+                [[[[TGGroupManagementSignals migrateGroup:conversationId] deliverOn:[SQueue mainQueue]] onDispose:^{
+                    TGDispatchOnMainThread(^{
+                        [progressWindow dismiss:true];
+                    });
+                }] startWithNext:^(TGConversation *conversation) {
+                    [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:conversation];
+                } error:^(__unused id error) {
+                    __strong TGGroupInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        strongSelf->_ignoreUpdates = false;
+                    }
+                } completed:nil];
+            }
+        }] show];
+    } else {
+        int contactsMode = TGContactsModeRegistered | TGContactsModeManualFirstSection;
+        if (_conversation.chatParticipants.chatAdminId == TGTelegraphInstance.clientUserId)
+            contactsMode |= TGContactsModeCreateGroupLink;
+        contactsMode |= TGContactsModeIgnorePrivateBots;
+        TGGroupInfoSelectContactController *selectContactController = [[TGGroupInfoSelectContactController alloc] initWithContactsMode:contactsMode];
+        selectContactController.delegate = self;
+        
+        NSMutableArray *disabledUsers = [[NSMutableArray alloc] init];
+        [disabledUsers addObjectsFromArray:_conversation.chatParticipants.chatParticipantUids];
+        [disabledUsers addObjectsFromArray:_soonToBeAddedUserIds];
+        
+        selectContactController.disabledUsers = disabledUsers;
+        
+        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[selectContactController] navigationBarClass:[TGWhiteNavigationBar class]];
+        if ([self inPopover])
+        {
+            navigationController.modalPresentationStyle = UIModalPresentationCurrentContext;
+            navigationController.presentationStyle = TGNavigationControllerPresentationStyleChildInPopover;
+        }
+        
+        [self presentViewController:navigationController animated:true completion:nil];
     }
-    
-    [self presentViewController:navigationController animated:true completion:nil];
 }
 
 - (void)selectContactControllerDidSelectUser:(TGUser *)user
@@ -1054,7 +861,7 @@
     NSMutableArray *infoList = [[NSMutableArray alloc] init];
     
     int defaultSoundId = 1;
-    [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 2 soundId:&defaultSoundId muteUntil:NULL previewText:NULL photoNotificationsEnabled:NULL notFound:NULL];
+    [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 2 soundId:&defaultSoundId muteUntil:NULL previewText:NULL messagesMuted:NULL notFound:NULL];
     NSString *defaultSoundTitle = [self soundNameFromId:defaultSoundId];
         
     int index = -1;
@@ -1116,26 +923,20 @@
     [_muteExpirationTimer invalidate];
     _muteExpirationTimer = nil;
     
-    NSString *variant = TGLocalized(@"UserInfo.NotificationsEnabled");
+    bool enabled = false;
     int muteUntil = [_groupNotificationSettings[@"muteUntil"] intValue];
-    if (muteUntil <= [[TGTelegramNetworking instance] approximateRemoteTime])
-    {
-        variant = TGLocalized(@"UserInfo.NotificationsEnabled");
-    }
-    else
-    {
+    if (muteUntil <= [[TGTelegramNetworking instance] approximateRemoteTime]) {
+        enabled = true;
+    } else {
         int muteExpiration = muteUntil - (int)[[TGTelegramNetworking instance] approximateRemoteTime];
-        if (muteExpiration >= 7 * 24 * 60 * 60)
-            variant = TGLocalized(@"UserInfo.NotificationsDisabled");
-        else
-        {
-            variant = [TGStringUtils stringForRemainingMuteInterval:muteExpiration];
+        if (muteExpiration >= 7 * 24 * 60 * 60) {
             
+        } else {
             _muteExpirationTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(updateMuteExpiration) interval:2.0 repeat:true];
         }
     }
     
-    [_notificationsItem setVariant:variant];
+    _notificationsItem.isOn = enabled;
     
     int groupSoundId = [[_groupNotificationSettings objectForKey:@"soundId"] intValue];
     _soundItem.variant = [self soundNameFromId:groupSoundId];
@@ -1143,21 +944,14 @@
 
 - (void)updateMuteExpiration
 {
-    NSString *variant = TGLocalized(@"UserInfo.NotificationsEnabled");
+    bool enabled = false;
     int muteUntil = [_groupNotificationSettings[@"muteUntil"] intValue];
-    if (muteUntil <= [[TGTelegramNetworking instance] approximateRemoteTime])
-    {
-        variant = TGLocalized(@"UserInfo.NotificationsEnabled");
-    }
-    else
-    {
-        int muteExpiration = muteUntil - (int)[[TGTelegramNetworking instance] approximateRemoteTime];
-        variant = [TGStringUtils stringForRemainingMuteInterval:muteExpiration];
+    if (muteUntil <= [[TGTelegramNetworking instance] approximateRemoteTime]) {
+        enabled = true;
     }
     
-    if (!TGStringCompare(_notificationsItem.variant, variant))
-    {
-        [_notificationsItem setVariant:variant];
+    if (_notificationsItem.isOn != enabled) {
+        _notificationsItem.isOn = enabled;
     }
 }
 
@@ -1179,6 +973,10 @@
     
     TGDispatchOnMainThread(^
     {
+        if (_ignoreUpdates) {
+            return;
+        }
+        
         for (NSNumber *nUid in _soonToBeAddedUserIds)
         {
             if (![conversation.chatParticipants.chatParticipantUids containsObject:nUid])
@@ -1196,7 +994,22 @@
         
         [self _updateLeftState];
         [self _updateConversationWithLoadedUsers:participantUsers forceReload:forceReload];
+        
+        [self resetSections];
     });
+}
+
+- (bool)showGroupUpgradeNotice {
+    if (_conversation.isCreator) {
+#ifdef INTERNAL_RELEASE
+        //return _conversation.chatParticipantCount >= 2;
+#endif
+        
+        if (_upgradeNoticeMemberLimit != 0) {
+            return _conversation.chatParticipantCount >= _upgradeNoticeMemberLimit;
+        }
+    }
+    return false;
 }
 
 - (void)_updateConversationWithLoadedUsers:(NSArray *)participantUsers forceReload:(bool)forceReload
@@ -1256,28 +1069,60 @@
         return user1.presence.lastSeen > user2.presence.lastSeen ? NSOrderedAscending : NSOrderedDescending;
     }];
     
-    NSString *title = @"";
-    if (sortedUsers.count == 1)
-        title = TGLocalized(@"GroupInfo.ParticipantCount_1");
-    else if (sortedUsers.count == 2)
-        title = TGLocalized(@"GroupInfo.ParticipantCount_2");
-    else if (sortedUsers.count >= 3 && sortedUsers.count <= 10)
-        title = [NSString localizedStringWithFormat:TGLocalized(@"GroupInfo.ParticipantCount_3_10"), [TGStringUtils stringWithLocalizedNumber:sortedUsers.count]];
-    else
-        title = [NSString localizedStringWithFormat:TGLocalized(@"GroupInfo.ParticipantCount_any"), [TGStringUtils stringWithLocalizedNumber:sortedUsers.count]];
-    
-    [_usersSectionHeader setTitle:title];
+    if ([self showGroupUpgradeNotice]) {
+        [_usersSectionHeader setTitle:TGLocalized(@"Group.UpgradeNoticeHeader")];
+        
+        if ([_usersSection indexOfItem:_usersSectionUpgradeNotice1] == NSNotFound) {
+            [_usersSection insertItem:_usersSectionUpgradeNotice1 atIndex:1];
+            [_usersSection insertItem:_usersSectionUpgradeNotice2 atIndex:2];
+            forceReload = true;
+        }
+        
+        _addParticipantItem.title = TGLocalized(@"GroupInfo.UpgradeButton");
+        _addParticipantItem.icon = [UIImage imageNamed:@"GroupInfoIconUpgrade"];
+
+    } else {
+        _addParticipantItem.title = TGLocalized(@"GroupInfo.AddParticipant");
+        _addParticipantItem.icon = [UIImage imageNamed:@"GroupInfoIconAddMember.png"];
+        
+        if ([_usersSection indexOfItem:_usersSectionUpgradeNotice1] != NSNotFound) {
+            [_usersSection deleteItem:_usersSectionUpgradeNotice1];
+            [_usersSection deleteItem:_usersSectionUpgradeNotice2];
+            forceReload = true;
+        }
+        
+        NSString *title = @"";
+        if (sortedUsers.count == 1)
+            title = TGLocalized(@"GroupInfo.ParticipantCount_1");
+        else if (sortedUsers.count == 2)
+            title = TGLocalized(@"GroupInfo.ParticipantCount_2");
+        else if (sortedUsers.count >= 3 && sortedUsers.count <= 10)
+            title = [NSString localizedStringWithFormat:TGLocalized(@"GroupInfo.ParticipantCount_3_10"), [TGStringUtils stringWithLocalizedNumber:sortedUsers.count]];
+        else
+            title = [NSString localizedStringWithFormat:TGLocalized(@"GroupInfo.ParticipantCount_any"), [TGStringUtils stringWithLocalizedNumber:sortedUsers.count]];
+        [_usersSectionHeader setTitle:title];
+    }
     
     NSUInteger sectionIndex = [self indexForSection:_usersSection];
     if (sectionIndex != NSNotFound)
     {
         bool haveChanges = false;
         
-        if (_usersSection.items.count - 2 != sortedUsers.count)
+        NSInteger headButtonCount = 0;
+        NSInteger tailButtonCount = 0;
+        for (NSInteger i = 0; i < (NSInteger)_usersSection.items.count; i++) {
+            if ([_usersSection.items[i] isKindOfClass:[TGGroupInfoUserCollectionItem class]]) {
+                break;
+            } else {
+                headButtonCount++;
+            }
+        }
+
+        if (_usersSection.items.count - headButtonCount - tailButtonCount != sortedUsers.count)
             haveChanges = true;
         else
         {
-            for (int i = 1, j = 0; i < (int)_usersSection.items.count - 1; i++, j++)
+            for (int i = (int)headButtonCount, j = 0; i < (int)_usersSection.items.count - headButtonCount - tailButtonCount; i++, j++)
             {
                 TGGroupInfoUserCollectionItem *userItem = _usersSection.items[i];
                 TGUser *user = sortedUsers[j];
@@ -1291,14 +1136,14 @@
         
         if (haveChanges || forceReload)
         {
-            int count = (int)(_usersSection.items.count - 2);
+            int count = (int)(_usersSection.items.count - headButtonCount - tailButtonCount);
             while (count > 0)
             {
-                [self.menuSections deleteItemFromSection:sectionIndex atIndex:1];
+                [self.menuSections deleteItemFromSection:sectionIndex atIndex:headButtonCount];
                 count--;
             }
             
-            int insertIndex = 1;
+            NSInteger insertIndex = headButtonCount;
             for (TGUser *user in sortedUsers)
             {
                 TGGroupInfoUserCollectionItem *userItem = [[TGGroupInfoUserCollectionItem alloc] init];
@@ -1307,7 +1152,18 @@
                 bool disabled = ![_conversation.chatParticipants.chatParticipantUids containsObject:@(user.uid)] || [_soonToBeRemovedUserIds containsObject:@(user.uid)];
                 userItem.selectable = user.uid != selfUid && !disabled;
                 
-                bool canEditInPrinciple = user.uid != selfUid && ((_conversation.chatParticipants.chatAdminId == selfUid || [_conversation.chatParticipants.chatInvitedBy[@(user.uid)] int32Value] == selfUid));
+                bool canEditInPrinciple = false;
+                if (user.uid != selfUid) {
+                    canEditInPrinciple = ((_conversation.chatParticipants.chatAdminId == selfUid || [_conversation.chatParticipants.chatInvitedBy[@(user.uid)] int32Value] == selfUid));
+                    if (!canEditInPrinciple) {
+                        if (_conversation.isCreator) {
+                            canEditInPrinciple = true;
+                        } else if (_conversation.hasAdmins) {
+                            canEditInPrinciple = _conversation.isAdmin && ![_conversation.chatParticipants.chatAdminUids containsObject:@(user.uid)] && _conversation.chatParticipants.chatAdminId != user.uid;
+                        }
+                    }
+                }
+                
                 bool canEdit = userItem.selectable && canEditInPrinciple;
                 [userItem setCanEdit:canEdit];
                 
@@ -1343,7 +1199,17 @@
         {
             TGUser *user = ((TGGroupInfoUserCollectionItem *)item).user;
             
-            bool canEditInPrinciple = user.uid != selfUid && ((_conversation.chatParticipants.chatAdminId == selfUid || [_conversation.chatParticipants.chatInvitedBy[@(user.uid)] int32Value] == selfUid));
+            bool canEditInPrinciple = false;
+            if (user.uid != selfUid) {
+                canEditInPrinciple = ((_conversation.chatParticipants.chatAdminId == selfUid || [_conversation.chatParticipants.chatInvitedBy[@(user.uid)] int32Value] == selfUid));
+                if (!canEditInPrinciple) {
+                    if (_conversation.isCreator) {
+                        canEditInPrinciple = true;
+                    } else if (_conversation.hasAdmins) {
+                        canEditInPrinciple = _conversation.isAdmin && ![_conversation.chatParticipants.chatAdminUids containsObject:@(user.uid)] && _conversation.chatParticipants.chatAdminId != user.uid;
+                    }
+                }
+            }
             
             anyCanEdit |= canEditInPrinciple;
         }
@@ -1411,14 +1277,18 @@
 
 - (void)_updateLeftState
 {
-    if ((_conversation.kickedFromChat || _conversation.leftChat) != (_leftLabel != nil))
+    if ((_conversation.kickedFromChat || _conversation.leftChat || _conversation.isDeactivated) != (_leftLabel != nil))
     {
-        if (_conversation.kickedFromChat || _conversation.leftChat)
+        if (_conversation.kickedFromChat || _conversation.leftChat || _conversation.isDeactivated)
         {
             _leftLabel = [[UILabel alloc] init];
             _leftLabel.backgroundColor = [UIColor clearColor];
             _leftLabel.textColor = UIColorRGB(0x999999);
-            _leftLabel.text = _conversation.kickedFromChat ? TGLocalized(@"GroupInfo.KickedStatus") : TGLocalized(@"GroupInfo.LeftStatus");
+            if (_conversation.isDeactivated) {
+                _leftLabel.text = TGLocalized(@"GroupInfo.DeactivatedStatus");
+            } else {
+                _leftLabel.text = _conversation.kickedFromChat ? TGLocalized(@"GroupInfo.KickedStatus") : TGLocalized(@"GroupInfo.LeftStatus");
+            }
             _leftLabel.font = TGSystemFontOfSize(17.0f);
             _leftLabel.lineBreakMode = NSLineBreakByWordWrapping;
             _leftLabel.numberOfLines = 0;
@@ -1444,7 +1314,7 @@
         }
     }
     
-    self.collectionView.hidden = _conversation.kickedFromChat || _conversation.leftChat;
+    self.collectionView.hidden = _conversation.kickedFromChat || _conversation.leftChat || _conversation.isDeactivated;
 }
 
 #pragma mark -
@@ -1527,7 +1397,7 @@
                     return nil;
                 };
                 
-                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
+                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
                 {
                     __strong TGGroupInfoController *strongSelf = weakSelf;
                     if (strongSelf != nil)
@@ -1669,6 +1539,11 @@
                 }
                 else if (status == -4)
                     errorText = TGLocalized(@"GroupInfo.AddUserLeftError");
+                else if (status == -5) {
+                    NSString *format = TGLocalized(@"Privacy.GroupsAndChannels.InviteToGroupError");
+                    TGUser *user = [TGDatabaseInstance() loadUser:uid];
+                    errorText = [[NSString alloc] initWithFormat:format, user.displayFirstName, user.displayFirstName];
+                }
                 
                 [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
             }
@@ -1773,6 +1648,11 @@
             }
         });
     }
+}
+
+- (void)chatAdminsPressed {
+    TGGroupAdminsController *controller = [[TGGroupAdminsController alloc] initWithPeerId:_conversationId];
+    [self.navigationController pushViewController:controller animated:true];
 }
 
 @end

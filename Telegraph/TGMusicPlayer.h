@@ -15,6 +15,12 @@ typedef struct {
     NSUInteger count;
 } TGMusicPlayerItemPosition;
 
+typedef enum {
+    TGMusicPlayerRepeatTypeNone,
+    TGMusicPlayerRepeatTypeAll,
+    TGMusicPlayerRepeatTypeOne
+} TGMusicPlayerRepeatType;
+
 @interface TGMusicPlayerStatus : NSObject
 
 @property (nonatomic, strong, readonly) TGMusicPlayerItem *item;
@@ -23,10 +29,14 @@ typedef struct {
 @property (nonatomic, readonly) bool paused;
 @property (nonatomic, readonly) CGFloat offset;
 @property (nonatomic, readonly) TGMusicPlayerDownloadingStatus downloadedStatus;
+@property (nonatomic, readonly) bool isVoice;
 
 @property (nonatomic, readonly) CGFloat duration;
 
 @property (nonatomic, readonly) NSTimeInterval timestamp;
+
+@property (nonatomic, readonly) bool shuffle;
+@property (nonatomic, readonly) TGMusicPlayerRepeatType repeatType;
 
 @property (nonatomic, strong, readonly) SSignal *albumArt;
 @property (nonatomic, strong, readonly) SSignal *albumArtSync;
@@ -35,14 +45,24 @@ typedef struct {
 
 @interface TGMusicPlayer : NSObject
 
-- (SSignal *)playingStatus;
+@property (nonatomic, strong, readonly) id playlistMetadata;
 
-- (void)setPlaylist:(SSignal *)playlist initialItemKey:(id<NSCopying>)initialItemKey;
+- (SSignal *)playingStatus;
+- (SSignal *)playlistFinished;
+
+- (void)setPlaylist:(SSignal *)playlist initialItemKey:(id<NSCopying>)initialItemKey metadata:(id)metadata;
 
 - (void)controlPlay;
 - (void)controlPause;
+- (void)controlPause:(void (^)())completion;
 - (void)controlNext;
 - (void)controlPrevious;
 - (void)controlSeekToPosition:(CGFloat)position;
+- (void)_dispatch:(dispatch_block_t)block;
+
+- (void)controlShuffle;
+- (void)controlRepeat;
+
++ (bool)isHeadsetPluggedIn;
 
 @end

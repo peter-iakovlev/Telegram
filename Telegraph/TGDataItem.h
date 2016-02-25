@@ -12,4 +12,6 @@
 - (NSData *)readDataAtOffset:(NSUInteger)offset length:(NSUInteger)length;
 - (NSUInteger)length;
 
+- (NSString *)path;
+
 @end

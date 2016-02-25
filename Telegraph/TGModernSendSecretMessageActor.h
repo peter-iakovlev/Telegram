@@ -16,6 +16,7 @@
 #import "SecretLayer17.h"
 #import "SecretLayer20.h"
 #import "SecretLayer23.h"
+#import "SecretLayer46.h"
 
 @class TGStoredOutgoingMessageFileInfo;
 

@@ -66,6 +66,7 @@
 
 - (bool)containsSubmodel:(TGModernViewModel *)model;
 - (void)addSubmodel:(TGModernViewModel *)model;
+- (void)insertSubmodel:(TGModernViewModel *)model belowSubmodel:(TGModernViewModel *)belowSubmodel;
 - (void)insertSubmodel:(TGModernViewModel *)model aboveSubmodel:(TGModernViewModel *)aboveSubmodel;
 - (void)removeSubmodel:(TGModernViewModel *)model viewStorage:(TGModernViewStorage *)viewStorage;
 - (void)layoutForContainerSize:(CGSize)containerSize;

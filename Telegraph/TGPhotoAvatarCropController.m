@@ -1,5 +1,7 @@
 #import "TGPhotoAvatarCropController.h"
 
+#import "TGAppDelegate.h"
+
 #import "TGPhotoEditorInterfaceAssets.h"
 #import "TGPhotoEditorAnimation.h"
 #import "TGFont.h"
@@ -74,7 +76,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
     [self.view addSubview:_wrapperView];
     
     PGPhotoEditor *photoEditor = self.photoEditor;
-    _cropView = [[TGPhotoAvatarCropView alloc] initWithOriginalSize:photoEditor.originalSize screenSize:[self referenceViewSizeForOrientation:self.interfaceOrientation]];
+    _cropView = [[TGPhotoAvatarCropView alloc] initWithOriginalSize:photoEditor.originalSize screenSize:[self referenceViewSize]];
     [_cropView setCropRect:photoEditor.cropRect];
     [_cropView setCropOrientation:photoEditor.cropOrientation];
     _cropView.croppingChanged = ^
@@ -184,6 +186,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
 - (void)setSnapshotImage:(UIImage *)snapshotImage
 {
     _snapshotImage = snapshotImage;
+    [_cropView _replaceSnapshotImage:snapshotImage];
 }
 
 - (void)setSnapshotView:(UIView *)snapshotView
@@ -219,6 +222,22 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
     [_cropView transitionInFinishedFromCamera:(self.fromCamera && self.initialAppearance)];
 }
 
+- (void)_finishedTransitionIn
+{
+    [_cropView animateTransitionIn];
+    [_cropView transitionInFinishedFromCamera:true];
+}
+
+- (void)prepareForCustomTransitionOut
+{
+    [_cropView hideImageForCustomTransition];
+    [_cropView animateTransitionOutSwitching:false];
+    [UIView animateWithDuration:0.3f animations:^
+    {
+     _buttonsWrapperView.alpha = 0.0f;
+    } completion:nil];
+}
+
 - (void)transitionOutSwitching:(bool)switching completion:(void (^)(void))completion
 {
     _dismissing = true;
@@ -244,7 +263,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
             }
             
             UIImage *croppedImage = [_cropView croppedImageWithMaxSize:TGPhotoEditorScreenImageMaxSize()];
-            [photoEditor setImage:croppedImage forCropRect:_cropView.cropRect cropRotation:0.0f cropOrientation:_cropView.cropOrientation];
+            [photoEditor setImage:croppedImage forCropRect:_cropView.cropRect cropRotation:0.0f cropOrientation:_cropView.cropOrientation fullSize:false];
             
             [photoEditor processAnimated:false completion:^
             {
@@ -419,6 +438,11 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
 }
 
 - (UIView *)transitionOutReferenceView
+{
+    return [_cropView cropSnapshotView];
+}
+
+- (id)currentResultRepresentation
 {
     return [_cropView cropSnapshotView];
 }

@@ -3,6 +3,6 @@
 
 @interface TGGenericPeerPlaylistSignals : NSObject
 
-+ (SSignal *)playlistForPeerId:(int64_t)peerId important:(bool)important atMessageId:(int32_t)messageId;
++ (SSignal *)playlistForPeerId:(int64_t)peerId important:(bool)important atMessageId:(int32_t)messageId voice:(bool)voice;
 
 @end

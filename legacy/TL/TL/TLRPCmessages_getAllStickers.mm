@@ -20,7 +20,7 @@
 
 - (int)layerVersion
 {
-    return 22;
+    return 43;
 }
 
 - (int32_t)TLconstructorSignature
@@ -54,7 +54,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xaa3bc868;
+    return (int32_t)0x1c9618b1;
 }
 
 - (int32_t)TLconstructorName
@@ -65,7 +65,7 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCmessages_getAllStickers$messages_getAllStickers *object = [[TLRPCmessages_getAllStickers$messages_getAllStickers alloc] init];
-    object.n_hash = metaObject->getString((int32_t)0xc152e470);
+    object.n_hash = metaObject->getInt32((int32_t)0xc152e470);
     return object;
 }
 
@@ -73,8 +73,8 @@
 {
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.n_hash;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.n_hash;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc152e470, value));
     }
 }

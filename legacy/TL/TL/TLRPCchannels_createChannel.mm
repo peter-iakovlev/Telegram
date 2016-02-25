@@ -20,7 +20,7 @@
 
 - (int)layerVersion
 {
-    return 38;
+    return 41;
 }
 
 - (int32_t)TLconstructorSignature
@@ -54,7 +54,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x5521d844;
+    return (int32_t)0xf4893d7f;
 }
 
 - (int32_t)TLconstructorName
@@ -68,7 +68,6 @@
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.title = metaObject->getString((int32_t)0xcdebf414);
     object.about = metaObject->getString((int32_t)0xdf4f0b19);
-    object.users = metaObject->getArray((int32_t)0x933e5ff3);
     return object;
 }
 
@@ -91,12 +90,6 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.about;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xdf4f0b19, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeVector;
-        value.nativeObject = self.users;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x933e5ff3, value));
     }
 }
 

@@ -509,4 +509,15 @@
     return _enableItemReorderingGestures;
 }
 
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    if (scrollView == _collectionView) {
+        if (scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.bounds.size.height * 2.0f) {
+            [self loadMore];
+        }
+    }
+}
+
+- (void)loadMore {
+}
+
 @end

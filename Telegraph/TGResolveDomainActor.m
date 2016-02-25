@@ -128,12 +128,17 @@
         conversation.kind = TGConversationKindTemporaryChannel;
         
         TGProgressWindow *progressWindow = _progressWindow;
-        [[[[TGChannelManagementSignals addChannel:conversation] deliverOn:[SQueue mainQueue]] onDispose:^{
+        SSignal *channelSignal = [TGChannelManagementSignals addChannel:conversation];
+        if ([_arguments[@"messageId"] intValue] != 0) {
+            channelSignal = [channelSignal then:[TGChannelManagementSignals preloadedChannelAtMessage:conversation.conversationId messageId:[_arguments[@"messageId"] intValue]]];
+        }
+        
+        [[[[channelSignal deliverOn:[SQueue mainQueue]] onDispose:^{
             TGDispatchOnMainThread(^ {
                 [progressWindow dismiss:true];
             });
-        }] startWithNext:^(TGConversation *next) {
-            [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:next];
+        }] takeLast] startWithNext:^(TGConversation *next) {
+            [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:next performActions:@{} atMessage:@{@"mid": @([_arguments[@"messageId"] intValue])} clearStack:true openKeyboard:false animated:true];
         }error:nil completed:nil];
     }
     

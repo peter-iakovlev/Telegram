@@ -2,10 +2,6 @@
 
 #import "ActionStage.h"
 
-@interface TGOverlayWindowViewController : UIViewController
-
-@end
-
 @interface TGNotificationWindow : UIWindow
 
 @property (nonatomic, readonly) bool isDismissed;

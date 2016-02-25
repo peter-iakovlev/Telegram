@@ -63,7 +63,8 @@
     int peerSoundId = 0;
     int peerMuteUntil = 0;
     bool peerPreviewText = true;
-    bool photoNotificationsEnabled = true;
+    bool messagesMuted = true;
+    
     if ([userDesc.notify_settings isKindOfClass:[TLPeerNotifySettings$peerNotifySettings class]])
     {
         TLPeerNotifySettings$peerNotifySettings *concreteSettings = (TLPeerNotifySettings$peerNotifySettings *)userDesc.notify_settings;
@@ -79,16 +80,15 @@
         if (peerMuteUntil <= [[TGTelegramNetworking instance] approximateRemoteTime])
             peerMuteUntil = 0;
         
-        peerPreviewText = concreteSettings.show_previews;
-        
-        photoNotificationsEnabled = concreteSettings.events_mask & 1;
+        peerPreviewText = concreteSettings.flags & (1 << 0);
+        messagesMuted = concreteSettings.flags & (1 << 1);
     }
     
-    [TGDatabaseInstance() storePeerNotificationSettings:user.uid soundId:peerSoundId muteUntil:peerMuteUntil previewText:peerPreviewText photoNotificationsEnabled:photoNotificationsEnabled writeToActionQueue:false completion:^(bool changed)
+    [TGDatabaseInstance() storePeerNotificationSettings:user.uid soundId:peerSoundId muteUntil:peerMuteUntil previewText:peerPreviewText messagesMuted:messagesMuted writeToActionQueue:false completion:^(bool changed)
     {
         if (changed)
         {
-            NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:peerMuteUntil], @"muteUntil", [NSNumber numberWithInt:peerSoundId], @"soundId", [[NSNumber alloc] initWithBool:photoNotificationsEnabled], @"photoNotificationsEnabled", nil];
+            NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:peerMuteUntil], @"muteUntil", [NSNumber numberWithInt:peerSoundId], @"soundId", [[NSNumber alloc] initWithBool:messagesMuted], @"messagesMuted", nil];
             [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/peerSettings/(%d)", user.uid] resource:[[SGraphObjectNode alloc] initWithObject:dict]];
         }
     }];

@@ -38,6 +38,8 @@
                 [messages addObject:((TLUpdate$updateNewMessage *)update).message];
             else if ([update isKindOfClass:[TLUpdate$updateNewChannelMessage class]])
                 [messages addObject:((TLUpdate$updateNewChannelMessage *)update).message];
+            else if ([update isKindOfClass:[TLUpdate$updateEditChannelMessage class]])
+                [messages addObject:((TLUpdate$updateEditChannelMessage *)update).message];
         }
         
         return messages;

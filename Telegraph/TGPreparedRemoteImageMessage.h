@@ -9,6 +9,7 @@
 #import "TGPreparedMessage.h"
 
 @class TGImageInfo;
+@class TGBotContextResultAttachment;
 
 @interface TGPreparedRemoteImageMessage : TGPreparedMessage
 
@@ -18,9 +19,7 @@
 
 @property (nonatomic, strong) NSString *caption;
 
-@property (nonatomic, strong) TGMessage *replyMessage;
-
-- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage;
+- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult;
 
 + (NSString *)filePathForRemoteImageId:(int64_t)imageId;
 

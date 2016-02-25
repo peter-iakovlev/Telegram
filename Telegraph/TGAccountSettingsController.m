@@ -17,6 +17,7 @@
 #import "TGSwitchCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 #import "TGVariantCollectionItem.h"
+#import "TGVersionCollectionItem.h"
 
 #import "TGWallpaperListController.h"
 #import "TGWallpaperController.h"
@@ -35,17 +36,6 @@
 #import "TGAlertView.h"
 #import "TGPhoneUtils.h"
 #import "TGImageUtils.h"
-#import "UIDevice+PlatformInfo.h"
-
-#import "TGLegacyCameraController.h"
-#import "TGImagePickerController.h"
-#import "TGWebSearchController.h"
-
-#import "TGOverlayFormsheetWindow.h"
-#import "TGMediaFoldersController.h"
-#import "TGModernMediaPickerController.h"
-
-#import "TGCameraController.h"
 
 #import "TGOverlayControllerWindow.h"
 #import "TGModernGalleryController.h"
@@ -64,16 +54,12 @@
 
 #import "TGFaqController.h"
 
-#import "TGAccessChecker.h"
+#import "TGBridgeServer.h"
+#import "TGWatchController.h"
 
-#import "TGAttachmentSheetView.h"
-#import "TGAttachmentSheetWindow.h"
-#import "TGAttachmentSheetButtonItemView.h"
-#import "TGAttachmentSheetRecentItemView.h"
-#import "TGAttachmentSheetRecentCameraView.h"
-#import "TGCameraPreviewView.h"
+#import "TGMediaAvatarMenuMixin.h"
 
-@interface TGAccountSettingsController () <TGImagePickerControllerDelegate, TGLegacyCameraControllerDelegate, TGWallpaperControllerDelegate>
+@interface TGAccountSettingsController () <TGWallpaperControllerDelegate>
 {
     int32_t _uid;
     
@@ -81,8 +67,6 @@
     
     TGAccountInfoCollectionItem *_profileDataItem;
     TGButtonCollectionItem *_setProfilePhotoItem;
-    
-    TGSwitchCollectionItem *_autosavePhotosItem;
     
     TGWallpapersCollectionItem *_wallpapersItem;
     
@@ -94,10 +78,15 @@
     TGDisclosureActionCollectionItem *_chatSettingsItem;
     TGDisclosureActionCollectionItem *_supportItem;
     TGDisclosureActionCollectionItem *_faqItem;
+    TGVersionCollectionItem *_versionItem;
     
     UIBarButtonItem *_accountEditingBarButtonItem;
     
-    TGAttachmentSheetWindow *_attachmentSheetWindow;
+    TGCollectionMenuSection *_watchSection;
+    TGDisclosureActionCollectionItem *_watchItem;
+    SMetaDisposable *_watchAppInstalledDisposable;
+    
+    TGMediaAvatarMenuMixin *_avatarMixin;
 }
 
 @property (nonatomic, strong) TGProgressWindow *progressWindow;
@@ -145,13 +134,41 @@
         ]];
         [self.menuSections addSection:settingsSection];
         
+        _watchItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.AppleWatch") action:@selector(watchPressed)];
+        
+        __weak TGAccountSettingsController *weakSelf = self;
+        _watchAppInstalledDisposable = [[SMetaDisposable alloc] init];
+        [_watchAppInstalledDisposable setDisposable:[[[TGBridgeServer instance] watchAppInstalledSignal] startWithNext:^(NSNumber *next)
+        {
+            __strong TGAccountSettingsController *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            [strongSelf.menuSections beginRecordingChanges];
+            if (next.boolValue)
+            {
+                if (strongSelf->_watchSection == nil)
+                {
+                    strongSelf->_watchSection = [[TGCollectionMenuSection alloc] initWithItems:@[strongSelf->_watchItem]];
+                    [strongSelf.menuSections insertSection:strongSelf->_watchSection atIndex:2];
+                }
+            }
+            else
+            {
+                if (strongSelf->_watchSection != nil)
+                {
+                    [strongSelf.menuSections deleteSection:2];
+                    strongSelf->_watchSection = nil;
+                }
+            }
+
+            [strongSelf.menuSections commitRecordedChanges:strongSelf.collectionView];
+        }]];
+        
         _phoneNumberItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.PhoneNumber") action:@selector(phoneNumberPressed)];
         _usernameItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.Username") action:@selector(usernamePressed)];
         TGCollectionMenuSection *usernameSection = [[TGCollectionMenuSection alloc] initWithItems:@[_phoneNumberItem, _usernameItem]];
         [self.menuSections addSection:usernameSection];
-        
-        _autosavePhotosItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.SaveIncomingPhotos") isOn:TGAppDelegateInstance.autosavePhotos];
-        _autosavePhotosItem.interfaceHandle = _actionHandle;
         
         _supportItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.Support") action:@selector(supportPressed)];
         _supportItem.deselectAutomatically = true;
@@ -159,19 +176,26 @@
         _faqItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.FAQ") action:@selector(faqPressed)];
         _faqItem.deselectAutomatically = true;
         
-        TGCollectionMenuSection *downloadSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+        NSString *version = [NSString stringWithFormat:@"v%@", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]];
+#ifdef INTERNAL_RELEASE
+        version = [NSString stringWithFormat:@"%@ (%@)", version, [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString *)kCFBundleVersionKey]];
+#endif
+        
+        _versionItem = [[TGVersionCollectionItem alloc] initWithVersion:version];
+        
+        TGCollectionMenuSection *infoSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             _supportItem,
             _faqItem,
-            _autosavePhotosItem,
-            [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"Settings.SaveIncomingPhotosHelp")]
+            //_versionItem
         ]];
-        [self.menuSections addSection:downloadSection];
+        [self.menuSections addSection:infoSection];
     }
     return self;
 }
 
 - (void)dealloc
 {
+    [_watchAppInstalledDisposable dispose];
     [_actionHandle reset];
     [ActionStageInstance() removeWatcher:self];
 }
@@ -281,293 +305,29 @@
 
 - (void)setProfilePhotoPressed
 {
-    {
-        NSMutableArray *actions = [[NSMutableArray alloc] init];
-        
-        if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera])
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.TakePhoto") action:@"camera"]];
-        
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.ChoosePhoto") action:@"choosePhoto"]];
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.SearchWebImages") action:@"searchWeb"]];
-        
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
-        
-        TGActionSheet *actionSheet = [[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGAccountSettingsController *controller, NSString *action)
-        {
-            if ([action isEqualToString:@"camera"])
-                [controller _displayCameraWithView:nil];
-            else if ([action isEqualToString:@"choosePhoto"])
-                [controller _displayImagePicker:false];
-            else if ([action isEqualToString:@"searchWeb"])
-                [controller _displayImagePicker:true];
-            else if ([action isEqualToString:@"delete"])
-                [controller _commitDeleteAvatar];
-        } target:self];
-        
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-            [actionSheet showInView:self.view];
-        else
-        {
-            NSIndexPath *indexPath = [self indexPathForItem:_setProfilePhotoItem];
-            UIView *cell = [self.collectionView cellForItemAtIndexPath:indexPath];
-            
-            [actionSheet showFromRect:CGRectInset([cell convertRect:cell.bounds toView:self.view], 0.0f, -4.0f) inView:self.view animated:true];
-        }
-    }
-}
-
-- (void)_displayCameraWithView:(TGAttachmentSheetRecentCameraView *)cameraView
-{
-    if (![TGAccessChecker checkCameraAuthorizationStatusWithAlertDismissComlpetion:nil])
-        return;
-    
-    if (TGAppDelegateInstance.rootController.isSplitView)
-        return;
-    
-    if (iosMajorVersion() < 7 || [UIDevice currentDevice].platformType == UIDevice4iPhone || [UIDevice currentDevice].platformType == UIDevice4GiPod)
-    {
-        [self _displayLegacyCamera];
-        [_attachmentSheetWindow dismissAnimated:true completion:nil];
-        return;
-    }
-    
-    TGCameraController *controller = nil;
-    CGSize screenSize = TGScreenSize();
-    
-    if (cameraView.previewView != nil)
-        controller = [[TGCameraController alloc] initWithCamera:cameraView.previewView.camera previewView:cameraView.previewView intent:TGCameraControllerAvatarIntent];
-    else
-        controller = [[TGCameraController alloc] initWithIntent:TGCameraControllerAvatarIntent];
-    
-    controller.shouldStoreCapturedAssets = true;
-    
-    TGCameraControllerWindow *controllerWindow = [[TGCameraControllerWindow alloc] initWithParentController:self contentController:controller];
-    if (_attachmentSheetWindow != nil)
-        controllerWindow.windowLevel = _attachmentSheetWindow.windowLevel + 0.0001f;
-    controllerWindow.hidden = false;
-    controllerWindow.clipsToBounds = true;
-    controllerWindow.frame = CGRectMake(0, 0, screenSize.width, screenSize.height);
-    
-    bool standalone = true;
-    CGRect startFrame = CGRectMake(0, screenSize.height, screenSize.width, screenSize.height);
-    if (cameraView != nil)
-    {
-        standalone = false;
-        startFrame = [controller.view convertRect:cameraView.previewView.frame fromView:cameraView];
-    }
-    
-    [cameraView detachPreviewView];
-    [controller beginTransitionInFromRect:startFrame];
+    if (_editing)
+        [self editButtonPressed];
     
     __weak TGAccountSettingsController *weakSelf = self;
-    __weak TGCameraController *weakCameraController = controller;
-    __weak TGAttachmentSheetRecentCameraView *weakCameraView = cameraView;
-    
-    controller.beginTransitionOut = ^CGRect
-    {
-        __strong TGCameraController *strongCameraController = weakCameraController;
-        if (strongCameraController == nil)
-            return CGRectZero;
-        
-        if (!standalone)
-        {
-            __strong TGAttachmentSheetRecentCameraView *strongCameraView = weakCameraView;
-            if (strongCameraView != nil)
-                return [strongCameraController.view convertRect:strongCameraView.frame fromView:strongCameraView.superview];
-        }
-        
-        return CGRectZero;
-    };
-    
-    controller.finishedTransitionOut = ^
-    {
-        __strong TGAttachmentSheetRecentCameraView *strongCameraView = weakCameraView;
-        if (strongCameraView == nil)
-            return;
-        
-        [strongCameraView attachPreviewViewAnimated:true];
-    };
-    
-    controller.finishedWithPhoto = ^(UIImage *resultImage, __unused NSString *caption)
+    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithParentController:self hasDeleteButton:false personalPhoto:true];
+    _avatarMixin.didFinishWithImage = ^(UIImage *image)
     {
         __strong TGAccountSettingsController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
-        [strongSelf _updateProfileImage:resultImage];
-        [strongSelf->_attachmentSheetWindow dismissAnimated:false completion:nil];
+        [strongSelf _updateProfileImage:image];
+        strongSelf->_avatarMixin = nil;
     };
-}
-
-- (void)_displayLegacyCamera
-{
-    TGLegacyCameraController *legacyCameraController = [[TGLegacyCameraController alloc] init];
-    legacyCameraController.sourceType = UIImagePickerControllerSourceTypeCamera;
-    legacyCameraController.avatarMode = true;
-    legacyCameraController.completionDelegate = self;
-    
-    [self presentViewController:legacyCameraController animated:true completion:nil];
-}
-
-- (void)_displayImagePicker:(bool)openWebSearch
-{
-    __weak TGAccountSettingsController *weakSelf = self;
-    
-    TGNavigationController *navigationController = nil;
-    
-    if (openWebSearch)
+    _avatarMixin.didDismiss = ^
     {
-        TGWebSearchController *controller = [[TGWebSearchController alloc] initForAvatarSelection:true];
-        __weak TGWebSearchController *weakController = controller;
-        controller.avatarCreated = ^(UIImage *image)
-        {
-            __strong TGAccountSettingsController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf _updateProfileImage:image];
-                        
-            __strong TGWebSearchController *strongController = weakController;
-            if (strongController != nil && strongController.dismiss != nil)
-                strongController.dismiss();
-        };
+        __strong TGAccountSettingsController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
         
-        navigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];
-        
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        {
-            void (^dismiss)(void) = ^
-            {
-                __strong TGAccountSettingsController *strongSelf = weakSelf;
-                if (strongSelf == nil)
-                    return;
-                
-                [strongSelf dismissViewControllerAnimated:true completion:nil];
-            };
-            
-            [self presentViewController:navigationController animated:true completion:nil];
-            
-            controller.dismiss = dismiss;
-        }
-        else
-        {
-            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-            
-            TGOverlayFormsheetWindow *formSheetWindow = [[TGOverlayFormsheetWindow alloc] initWithParentController:self contentController:navigationController];
-            [formSheetWindow showAnimated:true];
-            
-            __weak TGNavigationController *weakNavController = navigationController;
-            __weak TGOverlayFormsheetWindow *weakFormSheetWindow = formSheetWindow;
-            void (^dismiss)(void) = ^
-            {
-                __strong TGOverlayFormsheetWindow *strongFormSheetWindow = weakFormSheetWindow;
-                if (strongFormSheetWindow == nil)
-                    return;
-                
-                __strong TGNavigationController *strongNavController = weakNavController;
-                if (strongNavController != nil)
-                {
-                    if (strongNavController.presentingViewController != nil)
-                        [strongNavController.presentingViewController dismissViewControllerAnimated:true completion:nil];
-                    else
-                        [strongFormSheetWindow dismissAnimated:true];
-                }
-            };
-            
-            controller.dismiss = dismiss;
-        }
-    }
-    else
-    {
-        TGMediaFoldersController *mediaFoldersController = [[TGMediaFoldersController alloc] initWithIntent:TGModernMediaPickerControllerSetProfilePhotoIntent];
-        TGModernMediaPickerController *mediaPickerController = [[TGModernMediaPickerController alloc] initWithAssetsGroup:nil intent:TGModernMediaPickerControllerSetProfilePhotoIntent];
-        
-        navigationController = [TGNavigationController navigationControllerWithControllers:@[ mediaFoldersController, mediaPickerController ]];
-        
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        {
-            void (^dismiss)(void) = ^
-            {
-                __strong TGAccountSettingsController *strongSelf = weakSelf;
-                if (strongSelf == nil)
-                    return;
-                
-                [strongSelf dismissViewControllerAnimated:true completion:nil];
-            };
-            
-            mediaFoldersController.dismiss = dismiss;
-            mediaPickerController.dismiss = dismiss;
-            
-            [self presentViewController:navigationController animated:true completion:nil];
-        }
-        else
-        {
-            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-            
-            TGOverlayFormsheetWindow *formSheetWindow = [[TGOverlayFormsheetWindow alloc] initWithParentController:self contentController:navigationController];
-            [formSheetWindow showAnimated:true];
-            
-            __weak TGNavigationController *weakNavController = navigationController;
-            __weak TGOverlayFormsheetWindow *weakFormSheetWindow = formSheetWindow;
-            void (^dismiss)(void) = ^
-            {
-                __strong TGOverlayFormsheetWindow *strongFormSheetWindow = weakFormSheetWindow;
-                if (strongFormSheetWindow == nil)
-                    return;
-                
-                __strong TGNavigationController *strongNavController = weakNavController;
-                if (strongNavController != nil)
-                {
-                    if (strongNavController.presentingViewController != nil)
-                        [strongNavController.presentingViewController dismissViewControllerAnimated:true completion:nil];
-                    else
-                        [strongFormSheetWindow dismissAnimated:true];
-                }
-            };
-            
-            mediaFoldersController.dismiss = dismiss;
-            mediaPickerController.dismiss = dismiss;
-        }
-        
-        __weak TGMediaFoldersController *weakMediaFoldersController = mediaFoldersController;
-        void(^avatarCreated)(UIImage *) = ^(UIImage *image)
-        {
-            __strong TGAccountSettingsController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf _updateProfileImage:image];
-            
-            __strong TGMediaFoldersController *strongMediaFoldersController = weakMediaFoldersController;
-            if (strongMediaFoldersController != nil && strongMediaFoldersController.dismiss != nil)
-                strongMediaFoldersController.dismiss();
-        };
-        
-        mediaFoldersController.avatarCreated = avatarCreated;
-        mediaPickerController.avatarCreated = avatarCreated;
-    }
-}
-
-- (void)imagePickerController:(TGImagePickerController *)__unused imagePicker didFinishPickingWithAssets:(NSArray *)assets
-{
-    UIImage *image = nil;
-    
-    if (assets.count != 0)
-    {
-        if ([assets[0] isKindOfClass:[UIImage class]])
-            image = assets[0];
-    }
-    
-    [self _updateProfileImage:image];
-    
-    [self dismissViewControllerAnimated:true completion:nil];
-}
-
-- (void)legacyCameraControllerCompletedWithNoResult
-{
-    [self dismissViewControllerAnimated:true completion:nil];
+        strongSelf->_avatarMixin = nil;        
+    };
+    [_avatarMixin present];
 }
 
 - (void)_updateProfileImage:(UIImage *)image
@@ -702,7 +462,7 @@
     }
     
     [_profileDataItem setEditing:_editing animated:true];
-    _profileDataItem.additinalHeight = _editing ? 30.0f : 0.0f;
+    //_profileDataItem.additinalHeight = _editing ? 30.0f : 0.0f;
     
     if (![self.menuSections commitRecordedChanges:self.collectionView])
         [self _resetCollectionView];
@@ -960,86 +720,93 @@
         }
         else
         {
-            TGRemoteImageView *avatarView = [_profileDataItem visibleAvatarView];
-            
-            if (user != nil && user.photoUrlBig != nil && avatarView.currentImage != nil)
+            if (!_editing)
             {
-                TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+                TGRemoteImageView *avatarView = [_profileDataItem visibleAvatarView];
                 
-                TGProfileUserAvatarGalleryModel *model = [[TGProfileUserAvatarGalleryModel alloc] initWithCurrentAvatarLegacyThumbnailImageUri:user.photoUrlSmall currentAvatarLegacyImageUri:user.photoUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
-                
-                __weak TGAccountSettingsController *weakSelf = self;
-                
-                model.deleteCurrentAvatar = ^
+                if (user != nil && user.photoUrlBig != nil && avatarView.currentImage != nil)
                 {
-                    __strong TGAccountSettingsController *strongSelf = weakSelf;
-                    [strongSelf _commitDeleteAvatar];
-                };
-                
-                modernGallery.model = model;
-                
-                modernGallery.itemFocused = ^(id<TGModernGalleryItem> item)
-                {
-                    __strong TGAccountSettingsController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                    {
-                        if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
-                        {
-                            if (((TGUserAvatarGalleryItem *)item).isCurrent)
-                            {
-                                ((UIView *)strongSelf->_profileDataItem.visibleAvatarView).hidden = true;
-                            }
-                            else
-                                ((UIView *)strongSelf->_profileDataItem.visibleAvatarView).hidden = false;
-                        }
-                    }
-                };
-                
-                modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
-                {
-                    __strong TGAccountSettingsController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                    {
-                        if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
-                        {
-                            if (((TGUserAvatarGalleryItem *)item).isCurrent)
-                            {
-                                return strongSelf->_profileDataItem.visibleAvatarView;
-                            }
-                        }
-                    }
+                    TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
                     
-                    return nil;
-                };
-                
-                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
-                {
-                    __strong TGAccountSettingsController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
+                    TGProfileUserAvatarGalleryModel *model = [[TGProfileUserAvatarGalleryModel alloc] initWithCurrentAvatarLegacyThumbnailImageUri:user.photoUrlSmall currentAvatarLegacyImageUri:user.photoUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
+                    
+                    __weak TGAccountSettingsController *weakSelf = self;
+                    
+                    model.deleteCurrentAvatar = ^
                     {
-                        if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
+                        __strong TGAccountSettingsController *strongSelf = weakSelf;
+                        [strongSelf _commitDeleteAvatar];
+                    };
+                    
+                    modernGallery.model = model;
+                    
+                    modernGallery.itemFocused = ^(id<TGModernGalleryItem> item)
+                    {
+                        __strong TGAccountSettingsController *strongSelf = weakSelf;
+                        if (strongSelf != nil)
                         {
-                            if (((TGUserAvatarGalleryItem *)item).isCurrent)
+                            if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
                             {
-                                return strongSelf->_profileDataItem.visibleAvatarView;
+                                if (((TGUserAvatarGalleryItem *)item).isCurrent)
+                                {
+                                    ((UIView *)strongSelf->_profileDataItem.visibleAvatarView).hidden = true;
+                                }
+                                else
+                                    ((UIView *)strongSelf->_profileDataItem.visibleAvatarView).hidden = false;
                             }
                         }
-                    }
+                    };
                     
-                    return nil;
-                };
-                
-                modernGallery.completedTransitionOut = ^
-                {
-                    __strong TGAccountSettingsController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
+                    modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
                     {
-                        ((UIView *)strongSelf->_profileDataItem.visibleAvatarView).hidden = false;
-                    }
-                };
-                
-                TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
-                controllerWindow.hidden = false;
+                        __strong TGAccountSettingsController *strongSelf = weakSelf;
+                        if (strongSelf != nil)
+                        {
+                            if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
+                            {
+                                if (((TGUserAvatarGalleryItem *)item).isCurrent)
+                                {
+                                    return strongSelf->_profileDataItem.visibleAvatarView;
+                                }
+                            }
+                        }
+                        
+                        return nil;
+                    };
+                    
+                    modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
+                    {
+                        __strong TGAccountSettingsController *strongSelf = weakSelf;
+                        if (strongSelf != nil)
+                        {
+                            if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
+                            {
+                                if (((TGUserAvatarGalleryItem *)item).isCurrent)
+                                {
+                                    return strongSelf->_profileDataItem.visibleAvatarView;
+                                }
+                            }
+                        }
+                        
+                        return nil;
+                    };
+                    
+                    modernGallery.completedTransitionOut = ^
+                    {
+                        __strong TGAccountSettingsController *strongSelf = weakSelf;
+                        if (strongSelf != nil)
+                        {
+                            ((UIView *)strongSelf->_profileDataItem.visibleAvatarView).hidden = false;
+                        }
+                    };
+                    
+                    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+                    controllerWindow.hidden = false;
+                }
+            }
+            else
+            {
+                [self setProfilePhotoPressed];
             }
         }
     }
@@ -1064,14 +831,12 @@
     {
         _accountEditingBarButtonItem.enabled = [_profileDataItem editingFirstName].length != 0;
     }
-    else if ([action isEqualToString:@"switchItemChanged"])
-    {
-        if (options[@"item"] == _autosavePhotosItem)
-        {
-            TGAppDelegateInstance.autosavePhotos = [options[@"value"] boolValue];
-            [TGAppDelegateInstance saveSettings];
-        }
-    }
+}
+
+- (void)watchPressed
+{
+    TGWatchController *controller = [[TGWatchController alloc] init];
+    [self.navigationController pushViewController:controller animated:true];
 }
 
 - (void)phoneNumberPressed
@@ -1128,7 +893,6 @@
     _chatSettingsItem.title = TGLocalized(@"Settings.ChatSettings");
     
     _setProfilePhotoItem.title = TGLocalized(@"Settings.SetProfilePhoto");
-    _autosavePhotosItem.title = TGLocalized(@"Settings.SaveIncomingPhotos");
     _wallpapersItem.title = TGLocalized(@"Settings.ChatBackground");
     _usernameItem.title = TGLocalized(@"Settings.Username");
     _phoneNumberItem.title = TGLocalized(@"Settings.PhoneNumber");

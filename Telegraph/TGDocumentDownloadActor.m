@@ -25,10 +25,16 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGDocumentHttpFileReference.h"
+#import "PSKeyValueDecoder.h"
+
+#import "TGRemoteHttpLocationSignal.h"
+
 @interface TGDocumentDownloadActor ()
 {
     TGDocumentMediaAttachment *_documentAttachment;
     NSString *_storeFilePath;
+    SDisposableSet *_disposables;
 }
 
 @end
@@ -41,6 +47,7 @@
     if (self != nil)
     {
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:false];
+        _disposables = [[SDisposableSet alloc] init];
     }
     return self;
 }
@@ -49,6 +56,7 @@
 {
     [_actionHandle reset];
     [ActionStageInstance() removeWatcher:self];
+    [_disposables dispose];
 }
 
 + (NSString *)genericPath
@@ -167,6 +175,8 @@
 - (void)cancel
 {
     [ActionStageInstance() removeWatcher:self];
+    
+    [_disposables dispose];
     
     [super cancel];
 }

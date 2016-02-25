@@ -127,6 +127,7 @@
 - (UIImage *)systemReplyBackground;
 - (UIColor *)systemMessageBackgroundColor;
 - (UIImage *)dateListMessageBackground;
+- (UIImage *)systemShareButton;
 
 - (UIEdgeInsets)messageBodyMargins;
 - (CGSize)messageMinimalBodySize;

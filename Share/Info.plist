@@ -21,11 +21,11 @@
 	<key>CFBundlePackageType</key>
 	<string>XPC!</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.3</string>
+	<string>3.6</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>4</string>
+	<string>5</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>
@@ -38,17 +38,20 @@
         $extensionItem.attachments,
         $attachment,
         ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.file-url" ||
+        ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.movie" ||
         ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.image" ||
 		ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.url" ||
 		ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.text" ||
-		ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.audio"
+		ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.audio" ||
+        ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.data" ||
+        ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.vcard"
     ).@count == $extensionItem.attachments.@count
 ).@count &gt; 0</string>
 		</dict>
-		<key>NSExtensionMainStoryboard</key>
-		<string>MainInterface</string>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.share-services</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>TGShareController</string>
 	</dict>
 </dict>
 </plist>

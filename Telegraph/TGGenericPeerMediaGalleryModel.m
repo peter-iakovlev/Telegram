@@ -24,12 +24,15 @@
 #import "ActionStage.h"
 
 #import "TGAccessChecker.h"
-#import "TGMediaPickerAssetsLibrary.h"
 
 #import "TGForwardTargetController.h"
 #import "TGProgressWindow.h"
 
 #import "TGAlertView.h"
+
+#import "TGModernConversationController.h"
+
+#import "TGMediaAssetsLibrary.h"
 
 @interface TGGenericPeerMediaGalleryModel () <ASWatcher>
 {
@@ -555,20 +558,13 @@
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     [progressWindow show:true];
 
-    [[TGMediaPickerAssetsLibrary sharedLibrary] saveAssetWithImageData:data completionBlock:^(bool success, __unused NSString *uniqueId, __unused NSError *error)
+    [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImageData:data] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
     {
-        TGDispatchOnMainThread(^
-        {
-            if (!success)
-            {
-                [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
-                [progressWindow dismiss:true];
-            }
-            else
-            {
-                [progressWindow dismissWithSuccess];
-            }
-        });
+        [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
+        [progressWindow dismiss:true];
+    } completed:^
+    {
+        [progressWindow dismissWithSuccess];
     }];
 }
 
@@ -583,20 +579,13 @@
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     [progressWindow show:true];
     
-    [[TGMediaPickerAssetsLibrary sharedLibrary] saveAssetWithVideoAtURL:[NSURL fileURLWithPath:filePath] completionBlock:^(bool success, __unused NSString *uniqueId, __unused NSError *error)
+    [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithVideoAtUrl:[NSURL fileURLWithPath:filePath]] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
     {
-        TGDispatchOnMainThread(^
-        {
-            if (!success)
-            {
-                [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
-                [progressWindow dismiss:true];
-            }
-            else
-            {
-                [progressWindow dismissWithSuccess];
-            }
-        });
+        [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
+        [progressWindow dismiss:true];
+    } completed:^
+    {
+        [progressWindow dismissWithSuccess];
     }];
 }
 
@@ -614,8 +603,12 @@
         [ActionStageInstance() dispatchOnStageQueue:^
         {
             TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:[concreteItem messageId] peerId:_peerId];
-            if (message == nil)
+            if (message == nil) {
+                message = [TGDatabaseInstance() loadMessageWithMid:[concreteItem messageId] - migratedMessageIdOffset peerId:_attachedPeerId];
+            }
+            if (message == nil) {
                 message = [TGDatabaseInstance() loadMediaMessageWithMid:[concreteItem messageId]];
+            }
             
             TGDispatchOnMainThread(^
             {
@@ -627,7 +620,7 @@
                 
                 if (viewController != nil && message != nil)
                 {
-                    TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:[[NSArray alloc] initWithObjects:message, nil] sendMessages:nil showSecretChats:true];
+                    TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:[[NSArray alloc] initWithObjects:message, nil] sendMessages:nil shareLink:nil showSecretChats:true];
                     forwardController.skipConfirmation = true;
                     forwardController.watcherHandle = _actionHandle;
                     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:forwardController];

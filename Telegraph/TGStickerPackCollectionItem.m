@@ -30,12 +30,14 @@
     
     view.enableEditing = _enableEditing;
     view.deleteStickerPack = _deleteStickerPack;
+    view.addStickerPack = _addStickerPack;
     [view setStickerPack:_stickerPack];
 }
 
 - (void)unbindView
 {
     ((TGStickerPackCollectionItemView *)self.boundView).deleteStickerPack = nil;
+    ((TGStickerPackCollectionItemView *)self.boundView).addStickerPack = nil;
     [super unbindView];
 }
 
@@ -43,6 +45,11 @@
 {
     if (_previewStickerPack)
         _previewStickerPack();
+}
+
+- (void)setStickerPack:(TGStickerPack *)stickerPack {
+    _stickerPack = stickerPack;
+    [((TGStickerPackCollectionItemView *)self.boundView) setStickerPack:_stickerPack];
 }
 
 @end

@@ -50,6 +50,7 @@
     [view setTitleColor:_titleColor];
     [view setTitleAlignment:_alignment];
     [view setEnabled:_enabled];
+    [view setIcon:_icon];
     
     view.leftInset = _leftInset;
     [view setAdditionalSeparatorInset:_additionalSeparatorInset];

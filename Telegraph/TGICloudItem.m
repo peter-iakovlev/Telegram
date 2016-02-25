@@ -84,24 +84,43 @@
     request->_url = url;
     request->_completionBlock = completion;
 
-    NSString *fileName = [url.absoluteString.lastPathComponent stringByRemovingPercentEncoding];
+    //NSString *fileName = [url.absoluteString.lastPathComponent stringByRemovingPercentEncoding];
     
     request->_query = [[NSMetadataQuery alloc] init];
-    [request->_query setSearchScopes:@[ NSMetadataQueryAccessibleUbiquitousExternalDocumentsScope ]];
-    [request->_query setPredicate:[NSPredicate predicateWithFormat:@"%K == %@", NSMetadataItemFSNameKey, fileName]];
+    [request->_query setSearchScopes:@[ NSMetadataQueryUbiquitousDocumentsScope, NSMetadataQueryAccessibleUbiquitousExternalDocumentsScope ]];
+    //[request->_query setPredicate:[NSPredicate predicateWithFormat:@"%K == %@", NSMetadataItemFSNameKey, fileName]];
+    [request->_query setPredicate:[NSPredicate predicateWithFormat:@"%K.lastPathComponent = %@", NSMetadataItemURLKey, url.lastPathComponent]];
     [request->_query setValueListAttributes:@[ NSMetadataItemFSSizeKey ]];
     
     [[NSNotificationCenter defaultCenter] addObserver:request selector:@selector(metadataQueryDidFinishGathering:) name:NSMetadataQueryDidFinishGatheringNotification object:request->_query];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:request selector:@selector(metadataQueryDidUpdate:) name:NSMetadataQueryDidUpdateNotification object:request->_query];
     
     [request->_query startQuery];
     
     return request;
 }
 
+- (void)metadataQueryDidUpdate:(NSNotification *)__unused notification
+{
+    NSLog(@"a");
+}
+
 - (void)metadataQueryDidFinishGathering:(NSNotification *)__unused notification
 {
+    [_query disableUpdates];
+    
     NSMetadataItem *metadataItem = _query.results.firstObject;
+    if (metadataItem == nil)
+    {
+        [_query enableUpdates];
+        return;
+    }
+    
+    [_query stopQuery];
+    
     [[NSNotificationCenter defaultCenter] removeObserver:self name:NSMetadataQueryDidFinishGatheringNotification object:_query];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:NSMetadataQueryDidUpdateNotification object:_query];
     _query = nil;
 
     if (self.completionBlock == nil)

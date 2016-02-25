@@ -135,15 +135,14 @@
     {
         super.hidden = false;
         
-        [UIView animateWithDuration:0.25f
-                         animations:^
-         {
-             self.alpha = hidden ? 0.0f : 1.0f;
-         } completion:^(BOOL finished)
-         {
-             if (finished)
-                 self.hidden = hidden;
-         }];
+        [UIView animateWithDuration:0.25f animations:^
+        {
+            self.alpha = hidden ? 0.0f : 1.0f;
+        } completion:^(BOOL finished)
+        {
+            if (finished)
+                self.hidden = hidden;
+        }];
     }
     else
     {

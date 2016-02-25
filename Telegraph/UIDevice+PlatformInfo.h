@@ -35,6 +35,7 @@
 #define IPAD_3G_NAMESTRING              @"iPad 3G"
 #define IPAD_4G_NAMESTRING              @"iPad 4G"
 #define IPAD_5G_NAMESTRING              @"iPad Air 2"
+#define IPAD_6G_NAMESTRING  @"iPad Pro"
 #define IPAD_UNKNOWN_NAMESTRING         @"Unknown iPad"
 
 #define APPLETV_2G_NAMESTRING           @"Apple TV 2G"
@@ -80,6 +81,7 @@ typedef enum {
     UIDevice3GiPad,
     UIDevice4GiPad,
     UIDevice5GiPad,
+    UIDevice6GiPad,
     
     UIDeviceAppleTV2,
     UIDeviceAppleTV3,

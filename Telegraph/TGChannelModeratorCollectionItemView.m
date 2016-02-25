@@ -21,6 +21,7 @@
     self = [super initWithFrame:frame];
     if (self != nil) {
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(15.0f, 10.0f, 66.0f, 66.0f)];
+        [_avatarView setSingleFontSize:14.0f doubleFontSize:14.0f useBoldFont:false];
         [self.contentView addSubview:_avatarView];
         
         _nameLabel = [[UILabel alloc] init];

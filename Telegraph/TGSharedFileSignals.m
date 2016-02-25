@@ -12,6 +12,99 @@
 
 #import "TGAppDelegate.h"
 
+#import <AVFoundation/AVFoundation.h>
+
+#import "ActionStage.h"
+
+#import "TGPreparedLocalDocumentMessage.h"
+
+@interface TGDownloadDocumentHelper : NSObject <ASWatcher> {
+    void (^_completion)(id);
+    void (^_error)();
+    void (^_progress)(float);
+    bool _path;
+    TGDocumentMediaAttachment *_document;
+}
+
+@property (nonatomic, strong) ASHandle *actionHandle;
+
+@end
+
+@implementation TGDownloadDocumentHelper
+
+- (instancetype)initWithDocument:(TGDocumentMediaAttachment *)document priority:(bool)priority path:(bool)path completion:(void (^)(id))completion error:(void (^)())error progress:(void (^)(float))progress {
+    self = [super init];
+    if (self != nil) {
+        _completion = [completion copy];
+        _error = [error copy];
+        _progress = [progress copy];
+        _path = path;
+        _document = document;
+        
+        _actionHandle = [[ASHandle alloc] initWithDelegate:self];
+        
+        if (document.documentId != 0) {
+            NSString *filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId] stringByAppendingPathComponent:[document safeFileName]];
+            bool download = false;
+            if (path) {
+                if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+                    completion(filePath);
+                } else {
+                    download = true;
+                }
+            } else {
+                NSData *data = [NSData dataWithContentsOfFile:filePath options:NSDataReadingMappedIfSafe error:nil];
+                if (data != nil) {
+                    completion(data);
+                } else {
+                    download = true;
+                }
+            }
+            
+            if (download) {
+                NSString *path = [NSString stringWithFormat:@"/tg/media/document/(%d:%" PRId64 ":%@)", document.datacenterId, document.documentId, document.documentUri.length != 0 ? document.documentUri : @""];
+                [ActionStageInstance() requestActor:path options:@{@"documentAttachment": document} flags:priority ? TGActorRequestChangePriority : 0 watcher:self];
+            }
+        } else {
+            error();
+        }
+    }
+    return self;
+}
+
+- (void)dealloc {
+    [_actionHandle reset];
+    [ActionStageInstance() removeWatcher:self];
+}
+
+- (void)actorMessageReceived:(NSString *)__unused path messageType:(NSString *)messageType message:(id)message {
+    if ([messageType isEqualToString:@"progress"]) {
+        _progress([message floatValue]);
+    }
+}
+
+- (void)actorCompleted:(int)status path:(NSString *)__unused path result:(id)__unused result {
+    if (status == ASStatusSuccess) {
+        NSString *filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:_document.documentId] stringByAppendingPathComponent:_document.safeFileName];
+        if (_path) {
+            if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+                _completion(filePath);
+            } else {
+                _error();
+            }
+        } else {
+            NSData *data = [NSData dataWithContentsOfFile:filePath options:NSDataReadingMappedIfSafe error:nil];
+            if (data != nil) {
+                _completion(data);
+            } else {
+                _error();
+            }
+        }
+    }
+}
+
+@end
+
 @implementation TGSharedFileSignals
 
 + (NSString *)pathForFileDirectory:(TGDocumentMediaAttachment *)documentAttachment
@@ -89,8 +182,35 @@
             [subscriber putNext:fullImage];
             [subscriber putCompletion];
         }
-        else
+        else {
+            if ([documentAttachment.mimeType isEqualToString:@"video/mp4"]) {
+                NSString *videoPath = [fileDirectoryPath stringByAppendingPathComponent:documentAttachment.safeFileName];
+                if ([videoPath pathExtension].length == 0) {
+                    [[NSFileManager defaultManager] createSymbolicLinkAtPath:[videoPath stringByAppendingPathExtension:@"mov"] withDestinationPath:[videoPath lastPathComponent] error:nil];
+                    videoPath = [videoPath stringByAppendingPathExtension:@"mov"];
+                }
+                
+                AVAsset *asset = [AVAsset assetWithURL:[NSURL fileURLWithPath:videoPath]];
+                
+                AVAssetImageGenerator *imageGenerator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
+                imageGenerator.maximumSize = CGSizeMake(800, 800);
+                imageGenerator.appliesPreferredTrackTransform = true;
+                NSError *imageError = nil;
+                CGImageRef imageRef = [imageGenerator copyCGImageAtTime:CMTimeMake(0, asset.duration.timescale) actualTime:NULL error:&imageError];
+                UIImage *image = [[UIImage alloc] initWithCGImage:imageRef];
+                if (imageRef != NULL) {
+                    CGImageRelease(imageRef);
+                }
+                
+                if (image != nil) {
+                    [subscriber putNext:image];
+                    [subscriber putCompletion];
+                    return nil;
+                }
+            }
+            
             [subscriber putError:nil];
+        }
         
         return nil;
     }];
@@ -106,6 +226,10 @@
         if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]])
         {
             imageSize = ((TGDocumentAttributeImageSize *)attribute).size;
+            break;
+        }
+        else if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+            imageSize = ((TGDocumentAttributeVideo *)attribute).size;
             break;
         }
     }
@@ -134,6 +258,7 @@
 
         return [[SSignal single:cachedImage] then:[[fetchFullSizeImageInBackground mapToSignal:^SSignal *(UIImage *image)
         {
+            cacheResult = true;
             CGSize optimizedSize = size;
             return [[TGListThumbnailSignals signalForListThumbnail:optimizedSize image:image blurImage:false pixelProcessingBlock:pixelProcessingBlock calculateAverageColor:false] filter:^bool (id next)
             {
@@ -141,6 +266,15 @@
             }];
         }] map:^UIImage *(UIImage *image)
         {
+            if (cacheResult) {
+                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+                {
+                    NSString *fileDirectoryPath = [self pathForFileDirectory:documentAttachment];
+                    NSString *cachedSizePath = [fileDirectoryPath stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"thumbnail-%dx%d-%dx%d%@.jpg", (int)size.width, (int)size.height, (int)renderSize.width, (int)renderSize.height, lowQuality ? @"-low" : @""]];
+                    [UIImageJPEGRepresentation(image, 0.8f) writeToFile:cachedSizePath atomically:true];
+                });
+            }
+            
             [memoryCache setImage:image forKey:cachedSizePath attributes:nil];
             return image;
         }]];
@@ -192,7 +326,7 @@
     }] mapToSignal:^SSignal *(UIImage *image)
     {
         CGSize optimizedSize = size;
-        if (lowQuality)
+        if (lowQuality && pixelProcessingBlock == nil)
             optimizedSize = TGFitSize(size, CGSizeMake(25.0f, 25.0f));
         return [[TGListThumbnailSignals signalForListThumbnail:optimizedSize image:image blurImage:lowQuality && !alreadyBlurred pixelProcessingBlock:pixelProcessingBlock calculateAverageColor:!averageColorCalculated] filter:^bool(id next)
         {
@@ -222,6 +356,48 @@
         return [[SSignal single:TGAverageColorImage(UIColorRGB(averageColor))] then:signal];
     
     return signal;
+}
+
++ (SSignal *)documentData:(TGDocumentMediaAttachment *)document priority:(bool)priority {
+    return [SSignal defer:^SSignal *{
+        SPipe *progressPipe = [[SPipe alloc] init];
+        
+        return [SSignal single:@[[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+            TGDownloadDocumentHelper *helper = [[TGDownloadDocumentHelper alloc] initWithDocument:document priority:priority path:false completion:^(NSData *data) {
+                [subscriber putNext:data];
+                [subscriber putCompletion];
+            } error:^{
+                [subscriber putError:nil];
+            } progress:^(float progress) {
+                progressPipe.sink(@(progress));
+            }];
+            
+            return [[SBlockDisposable alloc] initWithBlock:^{
+                [helper description]; // keep reference
+            }];
+        }], progressPipe.signalProducer()]];
+    }];
+}
+
++ (SSignal *)documentPath:(TGDocumentMediaAttachment *)document priority:(bool)priority {
+    return [SSignal defer:^SSignal *{
+        SPipe *progressPipe = [[SPipe alloc] init];
+        
+        return [SSignal single:@[[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+            TGDownloadDocumentHelper *helper = [[TGDownloadDocumentHelper alloc] initWithDocument:document priority:priority path:true completion:^(NSString *path) {
+                [subscriber putNext:path];
+                [subscriber putCompletion];
+            } error:^{
+                [subscriber putError:nil];
+            } progress:^(float progress) {
+                progressPipe.sink(@(progress));
+            }];
+            
+            return [[SBlockDisposable alloc] initWithBlock:^{
+                [helper description]; // keep reference
+            }];
+        }], progressPipe.signalProducer()]];
+    }];
 }
 
 @end

@@ -297,4 +297,27 @@ const CGFloat TGGoogleMapsRadius = TGGoogleMapsOffset / (CGFloat)M_PI;
     return [[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"yandexnavi://"]];
 }
 
+#pragma mark - Waze
+
++ (void)openWazeWithCoordinate:(CLLocationCoordinate2D)coordinate withDirections:(bool)withDirections
+{
+    NSURL *url = nil;
+    
+    if (withDirections)
+    {
+        url = [NSURL URLWithString:[[NSString alloc] initWithFormat:@"waze://?ll=%f,%f&navigate=yes", coordinate.latitude, coordinate.longitude]];
+    }
+    else
+    {
+        url = [NSURL URLWithString:[[NSString alloc] initWithFormat:@"waze://?ll=%f,%f", coordinate.latitude, coordinate.longitude]];
+    }
+    
+    [[UIApplication sharedApplication] openURL:url];
+}
+
++ (bool)isWazeInstalled
+{
+    return [[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"waze://"]];
+}
+
 @end

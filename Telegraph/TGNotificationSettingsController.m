@@ -113,10 +113,9 @@
         [inAppNotificationsSectionItems addObject:_inAppSounds];
         
         if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        {
             [inAppNotificationsSectionItems addObject:_inAppVibrate];
-            [inAppNotificationsSectionItems addObject:_inAppPreview];
-        }
+
+        [inAppNotificationsSectionItems addObject:_inAppPreview];
         
         TGCollectionMenuSection *inAppNotificationsSection = [[TGCollectionMenuSection alloc] initWithItems:inAppNotificationsSectionItems];
         [self.menuSections addSection:inAppNotificationsSection];

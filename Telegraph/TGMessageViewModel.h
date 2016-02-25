@@ -69,6 +69,7 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize);
 - (void)setAuthorAvatarUrl:(NSString *)authorAvatarUrl groupId:(int64_t)groupId;
 - (void)setAuthorAvatarUrl:(NSString *)authorAvatarUrl;
 - (void)setAuthorNameColor:(UIColor *)authorNameColor;
+- (void)setAuthorSignature:(NSString *)authorSignature;
 
 - (void)updateAssets;
 - (void)refreshMetrics;
@@ -82,13 +83,14 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize);
 - (void)clearHighlights;
 
 - (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated;
-- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)viewStorage;
+- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)viewStorage delayDisplay:(bool)delayDisplay;
 - (void)updateMediaVisibility;
 - (void)updateMessageAttributes;
 - (void)updateEditingState:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage animationDelay:(NSTimeInterval)animationDelay;
 - (void)updateInlineMediaContext;
 - (void)updateAnimationsEnabled;
 - (void)stopInlineMedia;
+- (void)resumeInlineMedia;
 
 - (NSString *)linkAtPoint:(CGPoint)point;
 

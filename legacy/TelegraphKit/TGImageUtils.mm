@@ -1,6 +1,7 @@
 #import "TGImageUtils.h"
 
 #import <Accelerate/Accelerate.h>
+#import <CommonCrypto/CommonCrypto.h>
 
 #import <libkern/OSAtomic.h>
 #include <map>
@@ -633,12 +634,16 @@ static int32_t get_bits(uint8_t const *bytes, unsigned int bitOffset, unsigned i
     return (*((int*)data) >> bitOffset) & numBits;
 }
 
-UIImage *TGIdenticonImage(NSData *data, CGSize size)
+UIImage *TGIdenticonImage(NSData *data, NSData *additionalData, CGSize size)
 {
     uint8_t bits[128];
     memset(bits, 0, 128);
     
+    uint8_t additionalBits[256 * 8];
+    memset(additionalBits, 0, 256 * 8);
+    
     [data getBytes:bits length:MIN((NSUInteger)128, data.length)];
+    [additionalData getBytes:additionalBits length:MIN((NSUInteger)256, additionalData.length)];
     
     static CGColorRef colors[6];
     
@@ -662,20 +667,63 @@ UIImage *TGIdenticonImage(NSData *data, CGSize size)
     UIGraphicsBeginImageContextWithOptions(size, true, 0.0f);
     CGContextRef context = UIGraphicsGetCurrentContext();
     
-    int bitPointer = 0;
+    CGContextSetFillColorWithColor(context, colors[0]);
+    CGContextFillRect(context, CGRectMake(0.0f, 0.0f, size.width, size.height));
     
-    CGFloat rectSize = CGFloor(size.width / 8.0f);
-    
-    for (int iy = 0; iy < 8; iy++)
-    {
-        for (int ix = 0; ix < 8; ix++)
+    if (additionalData == nil) {
+        int bitPointer = 0;
+        
+        CGFloat rectSize = size.width / 8.0f;
+        
+        for (int iy = 0; iy < 8; iy++)
         {
-            int32_t byteValue = get_bits(bits, bitPointer, 2);
-            bitPointer += 2;
-            int colorIndex = ABS(byteValue) % 4;
-            
-            CGContextSetFillColorWithColor(context, colors[colorIndex]);
-            CGContextFillRect(context, CGRectMake(ix * rectSize, iy * rectSize, rectSize, rectSize));
+            for (int ix = 0; ix < 8; ix++)
+            {
+                int32_t byteValue = get_bits(bits, bitPointer, 2);
+                bitPointer += 2;
+                int colorIndex = ABS(byteValue) % 4;
+                
+                CGContextSetFillColorWithColor(context, colors[colorIndex]);
+                
+                CGRect rect = CGRectMake(ix * rectSize, iy * rectSize, rectSize, rectSize);
+                if (size.width > 200) {
+                    rect.origin.x = CGCeil(rect.origin.x);
+                    rect.origin.y = CGCeil(rect.origin.y);
+                    rect.size.width = CGCeil(rect.size.width);
+                    rect.size.height = CGCeil(rect.size.height);
+                }
+                CGContextFillRect(context, rect);
+            }
+        }
+    } else {
+        int bitPointer = 0;
+        
+        CGFloat rectSize = size.width / 12.0f;
+        
+        for (int iy = 0; iy < 12; iy++)
+        {
+            for (int ix = 0; ix < 12; ix++)
+            {
+                int32_t byteValue = 0;
+                if (bitPointer < 128) {
+                    byteValue = get_bits(bits, bitPointer, 2);
+                } else {
+                    byteValue = get_bits(additionalBits, bitPointer - 128, 2);
+                }
+                bitPointer += 2;
+                int colorIndex = ABS(byteValue) % 4;
+                
+                CGContextSetFillColorWithColor(context, colors[colorIndex]);
+                
+                CGRect rect = CGRectMake(ix * rectSize, iy * rectSize, rectSize, rectSize);
+                if (size.width > 200) {
+                    rect.origin.x = CGCeil(rect.origin.x);
+                    rect.origin.y = CGCeil(rect.origin.y);
+                    rect.size.width = CGCeil(rect.size.width);
+                    rect.size.height = CGCeil(rect.size.height);
+                }
+                CGContextFillRect(context, rect);
+            }
         }
     }
     
@@ -697,6 +745,34 @@ UIImage *TGCircleImage(CGFloat radius, UIColor *color)
     UIGraphicsEndImageContext();
     
     return image;
+}
+
+UIImage *TGTintedImage(UIImage *image, UIColor *color)
+{
+    UIGraphicsBeginImageContextWithOptions(image.size, false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    [image drawInRect:CGRectMake(0, 0, image.size.width, image.size.height)];
+    CGContextSetBlendMode (context, kCGBlendModeSourceAtop);
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillRect(context, CGRectMake(0, 0, image.size.width, image.size.height));
+    
+    UIImage *tintedImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return tintedImage;
+}
+
+NSString *TGImageHash(NSData *data)
+{    
+    CC_MD5_CTX md5;
+    CC_MD5_Init(&md5);
+    CC_MD5_Update(&md5, [data bytes], (CC_LONG)data.length);
+    
+    unsigned char md5Buffer[16];
+    CC_MD5_Final(md5Buffer, &md5);
+    NSString *hash = [[NSString alloc] initWithFormat:@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", md5Buffer[0], md5Buffer[1], md5Buffer[2], md5Buffer[3], md5Buffer[4], md5Buffer[5], md5Buffer[6], md5Buffer[7], md5Buffer[8], md5Buffer[9], md5Buffer[10], md5Buffer[11], md5Buffer[12], md5Buffer[13], md5Buffer[14], md5Buffer[15]];
+    
+    return hash;
 }
 
 @implementation UIImage (Preloading)
@@ -919,4 +995,85 @@ CGSize TGScreenSize()
     });
     
     return size;
+}
+
+static bool readCGFloat(NSString *string, int &position, CGFloat &result) {
+    int start = position;
+    bool seenDot = false;
+    int length = (int)string.length;
+    while (position < length) {
+        unichar c = [string characterAtIndex:position];
+        position++;
+        
+        if (c == '.') {
+            if (seenDot) {
+                return false;
+            } else {
+                seenDot = true;
+            }
+        } else if (c < '0' || c > '9') {
+            if (position == start) {
+                result = 0.0f;
+                return true;
+            } else {
+                result = [[string substringWithRange:NSMakeRange(start, position - start)] floatValue];
+                return true;
+            }
+        }
+    }
+    if (position == start) {
+        result = 0.0f;
+        return true;
+    } else {
+        result = [[string substringWithRange:NSMakeRange(start, position - start)] floatValue];
+        return true;
+    }
+    return true;
+}
+
+void TGDrawSvgPath(CGContextRef context, NSString *path) {
+    int position = 0;
+    int length = (int)path.length;
+    
+    while (position < length) {
+        unichar c = [path characterAtIndex:position];
+        position++;
+        
+        if (c == ' ') {
+            continue;
+        }
+        
+        if (c == 'M') { // M
+            CGFloat x = 0.0f;
+            CGFloat y = 0.0f;
+            readCGFloat(path, position, x);
+            readCGFloat(path, position, y);
+            CGContextMoveToPoint(context, x, y);
+        } else if (c == 'L') { // L
+            CGFloat x = 0.0f;
+            CGFloat y = 0.0f;
+            readCGFloat(path, position, x);
+            readCGFloat(path, position, y);
+            CGContextAddLineToPoint(context, x, y);
+        } else if (c == 'C') { // C
+            CGFloat x1 = 0.0f;
+            CGFloat y1 = 0.0f;
+            CGFloat x2 = 0.0f;
+            CGFloat y2 = 0.0f;
+            CGFloat x = 0.0f;
+            CGFloat y = 0.0f;
+            readCGFloat(path, position, x1);
+            readCGFloat(path, position, y1);
+            readCGFloat(path, position, x2);
+            readCGFloat(path, position, y2);
+            readCGFloat(path, position, x);
+            readCGFloat(path, position, y);
+            
+            CGContextAddCurveToPoint(context, x1, y1, x2, y2, x, y);
+        } else if (c == 'Z') { // Z
+            CGContextClosePath(context);
+            CGContextFillPath(context);
+            CGContextBeginPath(context);
+        }
+    }
 }

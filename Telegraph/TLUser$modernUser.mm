@@ -46,6 +46,14 @@
     if (object.flags & (1 << 14))
         object.bot_info_version = [is readInt32];
     
+    if (object.flags & (1 << 18)) {
+        object.restriction_reason = [is readString];
+    }
+    
+    if (object.flags & (1 << 19)) {
+        object.inlineBotPlaceholder = [is readString];
+    }
+    
     return object;
 }
 

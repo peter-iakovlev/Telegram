@@ -41,6 +41,7 @@
     [super bindView:view];
     
     [view setTitle:_title];
+    [view setIcon:_icon];
 }
 
 - (void)setTitle:(NSString *)title
@@ -49,6 +50,14 @@
     
     if (self.view != nil)
         [(TGDisclosureActionCollectionItemView *)self.view setTitle:title];
+}
+
+- (void)setIcon:(UIImage *)icon
+{
+    _icon = icon;
+    
+    if (self.view != nil)
+        [(TGDisclosureActionCollectionItemView *)self.view setIcon:icon];
 }
 
 @end

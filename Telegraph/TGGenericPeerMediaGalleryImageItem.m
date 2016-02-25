@@ -58,6 +58,7 @@
     {
         _imageId = imageId;
         _legacyImageInfo = legacyImageInfo;
+        _messageId = messageId;
     }
     return self;
 }

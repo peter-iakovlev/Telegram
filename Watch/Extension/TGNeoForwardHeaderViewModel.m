@@ -2,6 +2,7 @@
 #import "TGNeoLabelViewModel.h"
 
 #import "TGBridgeUser.h"
+#import "TGBridgeChat.h"
 
 const CGFloat TGNeoForwardHeaderHeight = 29;
 
@@ -14,16 +15,36 @@ const CGFloat TGNeoForwardHeaderHeight = 29;
 
 @implementation TGNeoForwardHeaderViewModel
 
-- (instancetype)initWithForwardAttachment:(TGBridgeForwardedMessageMediaAttachment *)attachment user:(TGBridgeUser *)user outgoing:(bool)outgoing
+- (instancetype)initWithOutgoing:(bool)outgoing
 {
     self = [super init];
     if (self != nil)
     {
-        _forwardedModel = [[TGNeoLabelViewModel alloc] initWithText:TGLocalized(@"Message.ForwardedMessage") font:[UIFont systemFontOfSize:12] color:[self subtitleColorForOutgoing:outgoing] attributes:nil];
+        _forwardedModel = [[TGNeoLabelViewModel alloc] initWithText:TGLocalized(@"Watch.Message.ForwardedFrom") font:[UIFont systemFontOfSize:12] color:[self subtitleColorForOutgoing:outgoing] attributes:nil];
         _forwardedModel.multiline = false;
         [self addSubmodel:_forwardedModel];
-        
+    }
+    return self;
+}
+
+- (instancetype)initWithForwardAttachment:(TGBridgeForwardedMessageMediaAttachment *)attachment user:(TGBridgeUser *)user outgoing:(bool)outgoing
+{
+    self = [self initWithOutgoing:outgoing];
+    if (self != nil)
+    {
         _authorNameModel = [[TGNeoLabelViewModel alloc] initWithText:[user displayName] font:[UIFont systemFontOfSize:12 weight:UIFontWeightMedium] color:[self normalColorForOutgoing:outgoing] attributes:nil];
+        _authorNameModel.multiline = false;
+        [self addSubmodel:_authorNameModel];
+    }
+    return self;
+}
+
+- (instancetype)initWithForwardAttachment:(TGBridgeForwardedMessageMediaAttachment *)attachment chat:(TGBridgeChat *)chat outgoing:(bool)outgoing
+{
+    self = [self initWithOutgoing:outgoing];
+    if (self != nil)
+    {
+        _authorNameModel = [[TGNeoLabelViewModel alloc] initWithText:chat.groupTitle font:[UIFont systemFontOfSize:12 weight:UIFontWeightMedium] color:[self normalColorForOutgoing:outgoing] attributes:nil];
         _authorNameModel.multiline = false;
         [self addSubmodel:_authorNameModel];
     }

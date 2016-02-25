@@ -1,9 +1,5 @@
-#import <Foundation/Foundation.h>
+#import "TGBridgeService.h"
 
-@class TGBridgeServer;
-
-@interface TGBridgeStickersService : NSObject
-
-- (instancetype)initWithServer:(TGBridgeServer *)server;
+@interface TGBridgeStickersService : TGBridgeService
 
 @end

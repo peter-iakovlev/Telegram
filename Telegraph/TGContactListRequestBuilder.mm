@@ -51,7 +51,7 @@ static int _phonebookVersion = 0;
     {
         _phonebookVersion++;
         
-        NSDictionary *newPhonebook = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:_phonebookVersion], @"version", [TGDatabaseInstance() loadPhonebookContacts], @"phonebook", nil];
+        NSDictionary *newPhonebook = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:_phonebookVersion], @"version", [TGDatabaseInstance() loadPhonebookContacts:false], @"phonebook", nil];
         dispatch_async(dispatch_get_main_queue(), ^
         {
             _cachedPhonebookForMainThread = newPhonebook;
@@ -83,7 +83,7 @@ static int _phonebookVersion = 0;
 {
     if ([self.path hasSuffix:@"phonebook)"])
     {
-        NSDictionary *newPhonebook = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:_phonebookVersion], @"version", [TGDatabaseInstance() loadPhonebookContacts], @"phonebook", nil];
+        NSDictionary *newPhonebook = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:_phonebookVersion], @"version", [TGDatabaseInstance() loadPhonebookContacts:[options[@"force"] boolValue]], @"phonebook", nil];
         
         [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphObjectNode alloc] initWithObject:newPhonebook]];
     }

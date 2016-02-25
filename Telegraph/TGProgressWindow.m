@@ -4,7 +4,7 @@
 
 #import "TGAppDelegate.h"
 
-#import "TGNotificationWindow.h"
+#import "TGOverlayControllerWindow.h"
 
 @interface TGProgressWindowController : TGOverlayWindowViewController
 
@@ -142,7 +142,7 @@
     self = [super initWithFrame:frame];
     if (self)
     {
-        self.windowLevel = UIWindowLevelStatusBar;
+        self.windowLevel = UIWindowLevelStatusBar + 10000000.0f;
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         
         TGProgressWindowController *controller = [[TGProgressWindowController alloc] init];;
@@ -176,16 +176,21 @@
 
 - (void)dismiss:(bool)animated
 {
-    _dismissed = true;
-    self.userInteractionEnabled = false;
-    
-    [((TGProgressWindowController *)self.rootViewController) dismiss:animated];
+    if (!_dismissed) {
+        _dismissed = true;
+        self.userInteractionEnabled = false;
+        
+        [((TGProgressWindowController *)self.rootViewController) dismiss:animated];
+    }
 }
 
 - (void)dismissWithSuccess
 {
-    _dismissed = true;
-    [((TGProgressWindowController *)self.rootViewController) dismissWithSuccess];
+    if (!_dismissed) {
+        _dismissed = true;
+        [self show:false];
+        [((TGProgressWindowController *)self.rootViewController) dismissWithSuccess];
+    }
 }
 
 @end

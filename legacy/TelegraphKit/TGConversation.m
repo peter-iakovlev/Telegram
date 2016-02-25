@@ -4,13 +4,6 @@
 
 #import "PSKeyValueCoder.h"
 
-typedef enum {
-    TGConversationFlagDisplayExpanded = (1 << 0),
-    TGConversationFlagPostAsChannel = (1 << 1),
-    TGConversationFlagKicked = (1 << 2),
-    TGConversationFlagVerified = (1 << 3)
-} TGConversationFlags;
-
 @implementation TGEncryptedConversationData
 
 - (BOOL)isEqualToEncryptedData:(TGEncryptedConversationData *)other
@@ -149,6 +142,7 @@ typedef enum {
     participantsData.chatParticipantUids = _chatParticipantUids;
     participantsData.chatParticipantSecretChatPeerIds = _chatParticipantSecretChatPeerIds;
     participantsData.chatParticipantChatPeerIds = _chatParticipantChatPeerIds;
+    participantsData.chatAdminUids = _chatAdminUids;
     participantsData.version = _version;
     participantsData.exportedChatInviteString = _exportedChatInviteString;
     
@@ -186,6 +180,10 @@ typedef enum {
     NSMutableDictionary *chatInvitedDates = [[NSMutableDictionary alloc] initWithDictionary:_chatInvitedDates];
     [chatInvitedDates removeObjectForKey:@(uid)];
     _chatInvitedDates = chatInvitedDates;
+    
+    NSMutableSet *chatAdminUids = [[NSMutableSet alloc] initWithSet:_chatAdminUids];
+    [chatAdminUids removeObject:@(uid)];
+    _chatAdminUids = chatAdminUids;
 }
 
 - (void)addSecretChatPeerWithId:(int64_t)peerId
@@ -356,6 +354,22 @@ typedef enum {
         participantsData.exportedChatInviteString = [[NSString alloc] initWithData:linkData encoding:NSUTF8StringEncoding];
     }
     
+    if (formatVersion >= 4) {
+        int32_t length = 0;
+        [data getBytes:&length range:NSMakeRange(ptr, 4)];
+        ptr += 4;
+        
+        NSMutableSet *chatAdminUids = [[NSMutableSet alloc] init];
+        for (int32_t i = 0; i < length; i++) {
+            int32_t item = 0;
+            [data getBytes:&item range:NSMakeRange(ptr, 4)];
+            ptr += 4;
+            [chatAdminUids addObject:@(item)];
+        }
+        
+        participantsData.chatAdminUids = chatAdminUids;
+    }
+    
     participantsData.version = version;
     participantsData.chatAdminId = adminId;
     participantsData.chatParticipantUids = uids;
@@ -376,7 +390,7 @@ typedef enum {
         int32_t magic = 0xabcdef12;
         [data appendBytes:&magic length:4];
         
-        int32_t formatVersion = 3;
+        int32_t formatVersion = 4;
         [data appendBytes:&formatVersion length:4];
         
         [data appendBytes:&_version length:4];
@@ -418,6 +432,13 @@ typedef enum {
         [data appendBytes:&linkLength length:4];
         if (linkLength != 0)
             [data appendData:[_exportedChatInviteString dataUsingEncoding:NSUTF8StringEncoding]];
+        
+        int32_t chatAdminUidsCount = (int32_t)_chatAdminUids.count;
+        [data appendBytes:&chatAdminUidsCount length:4];
+        for (NSNumber *nUid in _chatAdminUids) {
+            int32_t uid = [nUid intValue];
+            [data appendBytes:&uid length:4];
+        }
         
         _serializedData = data;
     }
@@ -486,6 +507,9 @@ typedef enum {
         _isDeleted = false;
         _encryptedData = nil;
         _isBroadcast = false;
+        _migratedToChannelId = [coder decodeInt32ForCKey:"mtci"];
+        _migratedToChannelAccessHash = [coder decodeInt64ForCKey:"mtch"];
+        _restrictionReason = [coder decodeStringForCKey:"rr"];
     }
     return self;
 }
@@ -522,6 +546,9 @@ typedef enum {
     [coder encodeInt32:_channelIsReadOnly ? 1 : 0 forCKey:"ro"];
     [coder encodeInt64:_flags forCKey:"flags"];
     [coder encodeInt32:_kickedFromChat forCKey:"kk"];
+    [coder encodeInt32:_migratedToChannelId forCKey:"mtci"];
+    [coder encodeInt64:_migratedToChannelAccessHash forCKey:"mtch"];
+    [coder encodeString:_restrictionReason forCKey:"rr"];
 }
 
 - (id)copyWithZone:(NSZone *)__unused zone
@@ -563,6 +590,7 @@ typedef enum {
     conversation.dialogListData = _dialogListData;
     conversation.isChat = _isChat;
     conversation.isDeleted = _isDeleted;
+    conversation.restrictionReason = _restrictionReason;
     
     conversation.encryptedData = _encryptedData == nil ? nil : [_encryptedData copy];
     
@@ -570,6 +598,8 @@ typedef enum {
     conversation.isChannel = _isChannel;
     conversation.channelIsReadOnly = _channelIsReadOnly;
     conversation.flags = _flags;
+    conversation.migratedToChannelId = _migratedToChannelId;
+    conversation.migratedToChannelAccessHash = _migratedToChannelAccessHash;
     
     return conversation;
 }
@@ -640,6 +670,14 @@ typedef enum {
         if ((_encryptedData != nil) != (other->_encryptedData != nil) || (_encryptedData != nil && ![_encryptedData isEqualToEncryptedData:other->_encryptedData]))
             return false;
     }
+    
+    if (_flags != other->_flags) {
+        return false;
+    }
+    
+    if (!TGStringCompare(_restrictionReason, other->_restrictionReason)) {
+        return false;
+    }
         
     return true;
 }
@@ -663,12 +701,25 @@ typedef enum {
             return false;
     }
     
+    if (_flags != other->_flags) {
+        return false;
+    }
+    
+    if (!TGStringCompare(_restrictionReason, other->_restrictionReason)) {
+        return false;
+    }
+    
     return true;
 }
 
 - (NSData *)serializeChatPhoto
 {
     NSMutableData *data = [[NSMutableData alloc] init];
+    
+    int32_t magic = 0x7acde441;
+    [data appendBytes:&magic length:4];
+    int32_t version = 4;
+    [data appendBytes:&version length:4];
     
     for (int i = 0; i < 3; i++)
     {
@@ -687,8 +738,15 @@ typedef enum {
             [data appendData:valueData];
     }
     
+    int8_t hasEncryptedData = _encryptedData != nil ? 1 : 0;
+    [data appendBytes:&hasEncryptedData length:1];
     if (_encryptedData != nil)
         [_encryptedData serialize:data];
+    
+    [data appendBytes:&_flags length:4];
+    
+    [data appendBytes:&_migratedToChannelId length:4];
+    [data appendBytes:&_migratedToChannelAccessHash length:8];
     
     return data;
 }
@@ -696,6 +754,18 @@ typedef enum {
 - (void)deserializeChatPhoto:(NSData *)data
 {
     int ptr = 0;
+    
+    int32_t version = 1;
+    if (data.length >= 4) {
+        int32_t magic = 0;
+        [data getBytes:&magic length:4];
+        if (magic == 0x7acde441) {
+            ptr += 4;
+            
+            [data getBytes:&version range:NSMakeRange(ptr, 4)];
+            ptr += 4;
+        }
+    }
     
     for (int i = 0; i < 3; i++)
     {
@@ -716,9 +786,30 @@ typedef enum {
             _chatPhotoBig = value;
     }
     
-    if (ptr + 4 <= (int)data.length)
-    {
-        _encryptedData = [TGEncryptedConversationData deserialize:data ptr:&ptr];
+    if (version == 1) {
+        if (ptr + 4 <= (int)data.length) {
+            _encryptedData = [TGEncryptedConversationData deserialize:data ptr:&ptr];
+        }
+    } else {
+        if (version >= 2) {
+            int8_t hasEncryptedData = 0;
+            [data getBytes:&hasEncryptedData range:NSMakeRange(ptr, 1)];
+            ptr += 1;
+            
+            if (hasEncryptedData) {
+                _encryptedData = [TGEncryptedConversationData deserialize:data ptr:&ptr];
+            }
+            
+            [data getBytes:&_flags range:NSMakeRange(ptr, 4)];
+            ptr += 4;
+            
+            if (version >= 4) {
+                [data getBytes:&_migratedToChannelId range:NSMakeRange(ptr, 4)];
+                ptr += 4;
+                [data getBytes:&_migratedToChannelAccessHash range:NSMakeRange(ptr, 8)];
+                ptr += 8;
+            }
+        }
     }
 }
 
@@ -737,14 +828,22 @@ typedef enum {
     _username = channel.username;
     _chatIsAdmin = channel.chatIsAdmin;
     self.channelRole = channel.channelRole;
+    self.hasExplicitContent = channel.hasExplicitContent;
+    self.everybodyCanAddMembers = channel.everybodyCanAddMembers;
+    self.signaturesEnabled = channel.signaturesEnabled;
+    self.restrictionReason = channel.restrictionReason;
     _channelIsReadOnly = channel.channelIsReadOnly;
     _leftChat = channel.leftChat;
     _kickedFromChat = channel.kickedFromChat;
-    self.kind = channel.leftChat ? TGConversationKindTemporaryChannel : TGConversationKindPersistentChannel;
+    self.kind = channel.leftChat || channel.kickedFromChat ? TGConversationKindTemporaryChannel : TGConversationKindPersistentChannel;
     self.isVerified = channel.isVerified;
 }
 
 - (bool)currentUserCanSendMessages {
+    if (self.isChannelGroup) {
+        return true;
+    }
+    
     return (_channelRole == TGChannelRoleCreator || _channelRole == TGChannelRolePublisher || !_channelIsReadOnly) && !_leftChat && !_kickedFromChat;
 }
 
@@ -785,6 +884,102 @@ typedef enum {
         _flags |= TGConversationFlagVerified;
     } else {
         _flags &= ~TGConversationFlagVerified;
+    }
+}
+
+- (bool)hasExplicitContent {
+    return _flags & TGConversationFlagHasExplicitContent;
+}
+
+- (void)setHasExplicitContent:(bool)hasExplicitContent {
+    if (hasExplicitContent) {
+        _flags |= TGConversationFlagHasExplicitContent;
+    } else {
+        _flags &= ~TGConversationFlagHasExplicitContent;
+    }
+}
+
+- (bool)hasAdmins {
+    return _flags & TGConversationFlagHasAdmins;
+}
+
+- (void)setHasAdmins:(bool)hasAdmins {
+    if (hasAdmins) {
+        _flags |= TGConversationFlagHasAdmins;
+    } else {
+        _flags &= ~TGConversationFlagHasAdmins;
+    }
+}
+
+- (bool)isAdmin {
+    return _flags & TGConversationFlagIsAdmin;
+}
+
+- (void)setIsAdmin:(bool)isAdmin {
+    if (isAdmin) {
+        _flags |= TGConversationFlagIsAdmin;
+    } else {
+        _flags &= ~TGConversationFlagIsAdmin;
+    }
+}
+
+- (bool)isCreator {
+    return _flags & TGConversationFlagIsCreator;
+}
+
+- (void)setIsCreator:(bool)isCreator {
+    if (isCreator) {
+        _flags |= TGConversationFlagIsCreator;
+    } else {
+        _flags &= ~TGConversationFlagIsCreator;
+    }
+}
+
+- (bool)isChannelGroup {
+    return _flags & TGConversationFlagIsChannelGroup;
+}
+
+- (void)setIsChannelGroup:(bool)isChannelGroup {
+    if (isChannelGroup) {
+        _flags |= TGConversationFlagIsChannelGroup;
+    } else {
+        _flags &= ~TGConversationFlagIsChannelGroup;
+    }
+}
+
+- (bool)everybodyCanAddMembers {
+    return _flags & TGConversationFlagEverybodyCanAddMembers;
+}
+
+- (void)setEverybodyCanAddMembers:(bool)everybodyCanAddMembers {
+    if (everybodyCanAddMembers) {
+        _flags |= TGConversationFlagEverybodyCanAddMembers;
+    } else {
+        _flags &= ~TGConversationFlagEverybodyCanAddMembers;
+    }
+}
+
+- (bool)signaturesEnabled {
+    return _flags & TGConversationFlagSignaturesEnabled;
+}
+
+- (void)setSignaturesEnabled:(bool)signaturesEnabled {
+    if (signaturesEnabled) {
+        _flags |= TGConversationFlagSignaturesEnabled;
+    } else {
+        _flags &= ~TGConversationFlagSignaturesEnabled;
+    }
+}
+
+- (bool)isDeactivated {
+    return _flags & TGConversationFlagIsDeactivated;
+}
+
+- (void)setIsDeactivated:(bool)isDeactivated {
+    if (isDeactivated) {
+        _flags |= TGConversationFlagIsDeactivated;
+    } else {
+        _flags &= ~TGConversationFlagIsDeactivated;
     }
 }
 

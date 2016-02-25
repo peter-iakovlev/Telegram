@@ -14,8 +14,8 @@ NSString *const TGStickerPackRowIdentifier = @"TGStickerPackRow";
 - (void)updateWithStickerPack:(TGBridgeStickerPack *)stickerPack
 {
     [self.image setSignal:[TGBridgeMediaSignals stickerWithDocumentAttachment:stickerPack.documents.firstObject type:TGMediaStickerImageTypeList] isVisible:self.isVisible];
-    self.nameLabel.text = stickerPack.isBuiltIn ? TGLocalized(@"Stickers.BuiltinPackName") : stickerPack.title;
-    self.countLabel.text = [[NSString alloc] initWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"Stickers.StickerCount_" value:stickerPack.documents.count]), [[NSString alloc] initWithFormat:@"%d", (int)stickerPack.documents.count]];
+    self.nameLabel.text = stickerPack.title;
+    self.countLabel.text = [[NSString alloc] initWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"StickerPack.StickerCount_" value:stickerPack.documents.count]), [[NSString alloc] initWithFormat:@"%d", (int)stickerPack.documents.count]];
 }
 
 - (void)notifyVisiblityChange

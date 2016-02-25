@@ -32,6 +32,7 @@
     
     TGWorkerPool *_workerPool;
     TGWorkerTask *_workerTask;
+    SThreadPoolTask *_task;
     NSString *_uri;
     NSString *_targetFilePath;
 }
@@ -56,11 +57,11 @@
 
 - (void)executeWithWorkerTask:(TGWorkerTask *)workerTask threadPool:(SThreadPool *)threadPool
 {
-    [threadPool addTask:[[SThreadPoolTask alloc] initWithBlock:^(bool (^cancelled)())
-    {
+    _task = [[SThreadPoolTask alloc] initWithBlock:^(bool (^cancelled)()) {
         if (!cancelled())
             [workerTask execute];
-    }]];
+    }];
+    [threadPool addTask:_task];
 }
 
 - (void)executeWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask
@@ -165,6 +166,8 @@
     
     [_workerTask cancel];
     [_workerPool removeTask:_workerTask];
+    
+    [_task cancel];
     
     if (_actionHandle != nil)
         [ActionStageInstance() removeWatcherByHandle:_actionHandle];

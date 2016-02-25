@@ -6,12 +6,34 @@
 #import "TGTelegraph.h"
 
 #import "TL/TLMetaScheme.h"
+#import "TLChat$chat.h"
 
 #import "TLUpdates+TG.h"
 #import "TGUserDataRequestBuilder.h"
 #import "TGMessage+Telegraph.h"
 #import "TGConversation+Telegraph.h"
 #import "TGConversationAddMessagesActor.h"
+
+#import "TGPeerIdAdapter.h"
+
+#import "TGBotContextResults.h"
+#import "TGBotContextExternalResult.h"
+#import "TGBotContextDocumentResult.h"
+#import "TGBotContextImageResult.h"
+
+#import "TLWebPage$webPageExternal.h"
+#import "TGWebPageMediaAttachment+Telegraph.h"
+#import "TGDocumentMediaAttachment+Telegraph.h"
+#import "TGImageMediaAttachment+Telegraph.h"
+
+#import "TLMessages_BotResults$botResults.h"
+
+#import "TLWebPage_manual.h"
+#import "TLBotInlineResult$botInlineResult.h"
+#import "TLBotInlineMessage$botInlineMessageText.h"
+
+#import "TGBotContextResultSendMessageAuto.h"
+#import "TGBotContextResultSendMessageText.h"
 
 @implementation TGBotSignals
 
@@ -52,7 +74,7 @@
         if (onlyIfRelevantToUser)
             *onlyIfRelevantToUser = concreteMarkup.flags & (1 << 2);
         
-        return [[TGBotReplyMarkup alloc] initWithUserId:userId messageId:messageId rows:rows matchDefaultHeight:(concreteMarkup.flags & (1 << 0)) == 0 hideKeyboardOnActivation:(concreteMarkup.flags & (1 << 1)) != 0 alreadyActivated:false];
+        return [[TGBotReplyMarkup alloc] initWithUserId:userId messageId:messageId rows:rows matchDefaultHeight:(concreteMarkup.flags & (1 << 0)) == 0 hideKeyboardOnActivation:(concreteMarkup.flags & (1 << 1)) != 0 alreadyActivated:false manuallyHidden:false];
     }
     else if ([markup isKindOfClass:[TLReplyMarkup$replyKeyboardHide class]])
     {
@@ -119,7 +141,7 @@
 {
     TLRPCmessages_startBot$messages_startBot *startBot = [[TLRPCmessages_startBot$messages_startBot alloc] init];
     startBot.bot = [TGTelegraphInstance createInputUserForUid:userId];
-    startBot.chat_id = 0;
+    startBot.peer = [TGTelegraphInstance createInputPeerForConversation:userId accessHash:0];
     int64_t randomId = 0;
     arc4random_buf(&randomId, 8);
     startBot.random_id = randomId;
@@ -133,11 +155,10 @@
     }];
 }
 
-+ (SSignal *)botInviteUserId:(int32_t)userId toGroupId:(int32_t)groupId payload:(NSString *)payload
-{
++ (SSignal *)botInviteUserId:(int32_t)userId toPeerId:(int64_t)peerId accessHash:(int64_t)accessHash payload:(NSString *)payload {
     TLRPCmessages_startBot$messages_startBot *startBot = [[TLRPCmessages_startBot$messages_startBot alloc] init];
     startBot.bot = [TGTelegraphInstance createInputUserForUid:userId];
-    startBot.chat_id = -groupId;
+    startBot.peer = [TGTelegraphInstance createInputPeerForConversation:peerId accessHash:accessHash];
     int64_t randomId = 0;
     arc4random_buf(&randomId, 8);
     startBot.random_id = randomId;
@@ -147,62 +168,128 @@
     {
         [TGUserDataRequestBuilder executeUserDataUpdate:updates.users];
         
-        TGConversation *chatConversation = nil;
-        
-        if (updates.chats.count != 0)
-        {
-            NSMutableDictionary *chats = [[NSMutableDictionary alloc] init];
-            
-            TGMessage *message = updates.messages.count == 0 ? nil : [[TGMessage alloc] initWithTelegraphMessageDesc:updates.messages.firstObject];
-            
-            for (TLChat *chatDesc in updates.chats)
-            {
-                TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:chatDesc];
-                if (conversation != nil)
-                {
-                    if (chatConversation == nil)
-                    {
-                        chatConversation = conversation;
-                        
-                        TGConversation *oldConversation = [TGDatabaseInstance() loadConversationWithId:chatConversation.conversationId];
-                        chatConversation.chatParticipants = [oldConversation.chatParticipants copy];
-                        
-                        if ([chatDesc isKindOfClass:[TLChat$chat class]])
-                        {
-                            chatConversation.chatParticipants.version = ((TLChat$chat *)chatDesc).version;
-                            chatConversation.chatVersion = ((TLChat$chat *)chatDesc).version;
-                        }
-                        
-                        if (![chatConversation.chatParticipants.chatParticipantUids containsObject:@(userId)])
-                        {
-                            NSMutableArray *newUids = [[NSMutableArray alloc] initWithArray:chatConversation.chatParticipants.chatParticipantUids];
-                            [newUids addObject:@(userId)];
-                            chatConversation.chatParticipants.chatParticipantUids = newUids;
-                            
-                            NSMutableDictionary *newInvitedBy = [[NSMutableDictionary alloc] initWithDictionary:chatConversation.chatParticipants.chatInvitedBy];
-                            [newInvitedBy setObject:@(TGTelegraphInstance.clientUserId) forKey:@(userId)];
-                            chatConversation.chatParticipants.chatInvitedBy = newInvitedBy;
-                            
-                            NSMutableDictionary *newInvitedDates = [[NSMutableDictionary alloc] initWithDictionary:chatConversation.chatParticipants.chatInvitedDates];
-                            [newInvitedDates setObject:@(message.date) forKey:@(userId)];
-                            chatConversation.chatParticipants.chatInvitedDates = newInvitedDates;
-                        }
-                        
-                        conversation = chatConversation;
-                    }
-                    
-                    [chats setObject:conversation forKey:[[NSNumber alloc] initWithLongLong:conversation.conversationId]];
-                }
+        NSMutableArray<TGConversation *> *channelConversations = [[NSMutableArray alloc] init];
+        for (TLChat *chat in [updates chats]) {
+            TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:chat];
+            if (conversation.isChannel) {
+                [channelConversations addObject:conversation];
             }
+        }
+        
+        if (channelConversations.count != 0) {
+            [TGDatabaseInstance() updateChannels:channelConversations];
+        }
+        
+        if (!TGPeerIdIsChannel(peerId)) {
+            TGConversation *chatConversation = nil;
             
-            static int actionId = 0;
-            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(addMember%d)", actionId++] ] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", message == nil ? @[] : @[message], @"messages", nil]];
+            if (updates.chats.count != 0)
+            {
+                NSMutableDictionary *chats = [[NSMutableDictionary alloc] init];
+                
+                TGMessage *message = updates.messages.count == 0 ? nil : [[TGMessage alloc] initWithTelegraphMessageDesc:updates.messages.firstObject];
+                
+                for (TLChat *chatDesc in updates.chats)
+                {
+                    TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:chatDesc];
+                    if (conversation != nil)
+                    {
+                        if (chatConversation == nil)
+                        {
+                            chatConversation = conversation;
+                            
+                            TGConversation *oldConversation = [TGDatabaseInstance() loadConversationWithId:chatConversation.conversationId];
+                            chatConversation.chatParticipants = [oldConversation.chatParticipants copy];
+                            
+                            if ([chatDesc isKindOfClass:[TLChat$chat class]])
+                            {
+                                chatConversation.chatParticipants.version = ((TLChat$chat *)chatDesc).version;
+                                chatConversation.chatVersion = ((TLChat$chat *)chatDesc).version;
+                            }
+                            
+                            if (![chatConversation.chatParticipants.chatParticipantUids containsObject:@(userId)])
+                            {
+                                NSMutableArray *newUids = [[NSMutableArray alloc] initWithArray:chatConversation.chatParticipants.chatParticipantUids];
+                                [newUids addObject:@(userId)];
+                                chatConversation.chatParticipants.chatParticipantUids = newUids;
+                                
+                                NSMutableDictionary *newInvitedBy = [[NSMutableDictionary alloc] initWithDictionary:chatConversation.chatParticipants.chatInvitedBy];
+                                [newInvitedBy setObject:@(TGTelegraphInstance.clientUserId) forKey:@(userId)];
+                                chatConversation.chatParticipants.chatInvitedBy = newInvitedBy;
+                                
+                                NSMutableDictionary *newInvitedDates = [[NSMutableDictionary alloc] initWithDictionary:chatConversation.chatParticipants.chatInvitedDates];
+                                [newInvitedDates setObject:@(message.date) forKey:@(userId)];
+                                chatConversation.chatParticipants.chatInvitedDates = newInvitedDates;
+                            }
+                            
+                            conversation = chatConversation;
+                        }
+                        
+                        [chats setObject:conversation forKey:[[NSNumber alloc] initWithLongLong:conversation.conversationId]];
+                    }
+                }
+                
+                static int actionId = 0;
+                [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(addMember%d)", actionId++] ] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", message == nil ? @[] : @[message], @"messages", nil]];
+            }
         }
         
         [[TGTelegramNetworking instance] addUpdates:updates];
         
         return nil;
     }];
+}
+
++ (SSignal *)botContextResultForUserId:(int32_t)userId query:(NSString *)query offset:(NSString *)offset {
+    return [[TGDatabaseInstance() modify:^id{
+        return [TGDatabaseInstance() loadUser:userId];
+    }] mapToSignal:^SSignal *(TGUser *user) {
+        if (user != nil) {
+            TLRPCmessages_getInlineBotResults$messages_getInlineBotResults *getContextBotResults = [[TLRPCmessages_getInlineBotResults$messages_getInlineBotResults alloc] init];
+            TLInputUser$inputUser *inputUser = [[TLInputUser$inputUser alloc] init];
+            inputUser.user_id = user.uid;
+            inputUser.access_hash = user.phoneNumberHash;
+            getContextBotResults.bot = inputUser;
+            getContextBotResults.query = query;
+            getContextBotResults.offset = offset;
+            return [[[TGTelegramNetworking instance] requestSignal:getContextBotResults] map:^id(TLMessages_BotResults$botResults *result) {
+                NSMutableArray *array = [[NSMutableArray alloc] init];
+                
+                for (TLBotInlineResult *item in result.results) {
+                    if ([item isKindOfClass:[TLBotInlineResult$botInlineMediaResultDocument class]]) {
+                        TLBotInlineResult$botInlineMediaResultDocument *concreteResult = (TLBotInlineResult$botInlineMediaResultDocument *)item;
+                        TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:concreteResult.document];
+                        if (document.documentId != 0) {
+                            [array addObject:[[TGBotContextDocumentResult alloc] initWithQueryId:result.query_id resultId:concreteResult.n_id type:concreteResult.type document:document sendMessage:[self parseBotContextSendMessage:concreteResult.send_message]]];
+                        }
+                    } else if ([item isKindOfClass:[TLBotInlineResult$botInlineMediaResultPhoto class]]) {
+                        TLBotInlineResult$botInlineMediaResultPhoto *concreteResult = (TLBotInlineResult$botInlineMediaResultPhoto *)item;
+                        TGImageMediaAttachment *image = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:concreteResult.photo];
+                        if (image.imageId != 0) {
+                            [array addObject:[[TGBotContextImageResult alloc] initWithQueryId:result.query_id resultId:concreteResult.n_id type:concreteResult.type image:image sendMessage:[self parseBotContextSendMessage:concreteResult.send_message]]];
+                        }
+                    } else if ([item isKindOfClass:[TLBotInlineResult$botInlineResult class]]) {
+                        TLBotInlineResult$botInlineResult *concreteResult = (TLBotInlineResult$botInlineResult *)item;
+                        [array addObject:[[TGBotContextExternalResult alloc] initWithQueryId:result.query_id resultId:concreteResult.n_id sendMessage:[self parseBotContextSendMessage:concreteResult.send_message] url:concreteResult.url displayUrl:concreteResult.url type:concreteResult.type title:concreteResult.title pageDescription:concreteResult.n_description thumbUrl:concreteResult.thumb_url originalUrl:concreteResult.content_url contentType:concreteResult.content_type size:CGSizeMake(concreteResult.w, concreteResult.h) duration:concreteResult.duration]];
+                    }
+                }
+                
+                return [[TGBotContextResults alloc] initWithUserId:userId isMedia:result.isMedia query:query nextOffset:result.next_offset results:array];
+            }];
+        } else {
+            return [SSignal fail:nil];
+        }
+    }];
+}
+                        
++ (id)parseBotContextSendMessage:(TLBotInlineMessage *)message {
+    if ([message isKindOfClass:[TLBotInlineMessage$botInlineMessageMediaAuto class]]) {
+        return [[TGBotContextResultSendMessageAuto alloc] initWithCaption:((TLBotInlineMessage$botInlineMessageMediaAuto *)message).caption];
+    } else if ([message isKindOfClass:[TLBotInlineMessage$botInlineMessageText class]]) {
+        TLBotInlineMessage$botInlineMessageText *concreteMessage = (TLBotInlineMessage$botInlineMessageText *)message;
+        return [[TGBotContextResultSendMessageText alloc] initWithMessage:concreteMessage.message entities:[TGMessage parseTelegraphEntities:concreteMessage.entities] noWebpage:concreteMessage.no_webpage];
+    }
+    return nil;
 }
 
 @end

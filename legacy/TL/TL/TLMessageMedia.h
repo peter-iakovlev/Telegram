@@ -4,11 +4,9 @@
 #import "TLMetaRpc.h"
 
 @class TLGeoPoint;
-@class TLDocument;
-@class TLAudio;
 @class TLWebPage;
 @class TLPhoto;
-@class TLVideo;
+@class TLDocument;
 
 @interface TLMessageMedia : NSObject <TLObject>
 
@@ -35,18 +33,6 @@
 
 @end
 
-@interface TLMessageMedia$messageMediaDocument : TLMessageMedia
-
-@property (nonatomic, retain) TLDocument *document;
-
-@end
-
-@interface TLMessageMedia$messageMediaAudio : TLMessageMedia
-
-@property (nonatomic, retain) TLAudio *audio;
-
-@end
-
 @interface TLMessageMedia$messageMediaUnsupported : TLMessageMedia
 
 
@@ -65,13 +51,6 @@
 
 @end
 
-@interface TLMessageMedia$messageMediaVideo : TLMessageMedia
-
-@property (nonatomic, retain) TLVideo *video;
-@property (nonatomic, retain) NSString *caption;
-
-@end
-
 @interface TLMessageMedia$messageMediaVenue : TLMessageMedia
 
 @property (nonatomic, retain) TLGeoPoint *geo;
@@ -79,6 +58,13 @@
 @property (nonatomic, retain) NSString *address;
 @property (nonatomic, retain) NSString *provider;
 @property (nonatomic, retain) NSString *venue_id;
+
+@end
+
+@interface TLMessageMedia$messageMediaDocument : TLMessageMedia
+
+@property (nonatomic, retain) TLDocument *document;
+@property (nonatomic, retain) NSString *caption;
 
 @end
 

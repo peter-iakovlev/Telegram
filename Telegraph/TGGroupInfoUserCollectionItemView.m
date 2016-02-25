@@ -88,6 +88,7 @@
     int32_t _uidForPlaceholderCalculation;
     TGLetteredAvatarView *_avatarView;
     TGGroupInfoUserCollectionItemViewContent *_content;
+    UISwitch *_switchView;
     
     UIView *_disabledOverlayView;
 }
@@ -177,6 +178,47 @@
     }
 }
 
+- (void)setDisplaySwitch:(bool)displaySwitch {
+    if (displaySwitch && _switchView == nil) {
+        _switchView = [[UISwitch alloc] init];
+        _switchView.layer.allowsGroupOpacity = true;
+        [_switchView addTarget:self action:@selector(switchValueChanged) forControlEvents:UIControlEventValueChanged];
+    }
+    
+    if (displaySwitch) {
+        if (_switchView.superview == nil) {
+            [self addSubview:_switchView];
+            [self setNeedsLayout];
+        }
+    } else {
+        if (_switchView.superview != nil) {
+            [_switchView removeFromSuperview];
+        }
+    }
+}
+
+- (void)switchValueChanged {
+    id<TGGroupInfoUserCollectionItemViewDelegate> delegate = _delegate;
+    if ([delegate respondsToSelector:@selector(switchValueChanged:)]) {
+        [delegate switchValueChanged:_switchView.on];
+    }
+}
+
+- (void)setEnableSwitch:(bool)enableSwitch animated:(bool)animated {
+    _switchView.userInteractionEnabled = enableSwitch;
+    if (animated) {
+         [UIView animateWithDuration:0.3 animations:^{
+            _switchView.alpha = enableSwitch ? 1.0f : 0.4f;
+         }];
+    } else {
+        _switchView.alpha = enableSwitch ? 1.0f : 0.4f;
+    }
+}
+
+- (void)setSwitchIsOn:(bool)switchIsOn animated:(bool)animated {
+    [_switchView setOn:switchIsOn animated:animated];
+}
+
 - (void)setDisabled:(bool)disabled animated:(bool)animated
 {
     if (disabled)
@@ -229,6 +271,14 @@
     CGFloat leftInset = self.showsDeleteIndicator ? 38.0f : 0.0f;
     self.separatorInset = 65.0f + leftInset;
     
+    CGFloat rightInset = 0.0f;
+    if (_switchView != nil && _switchView.superview != nil) {
+        rightInset = _switchView.frame.size.width + 20.0f;
+        
+        CGSize switchSize = _switchView.bounds.size;
+        _switchView.frame = CGRectMake(self.bounds.size.width - switchSize.width - 15.0f, 6.0f, switchSize.width, switchSize.height);
+    }
+    
     [super layoutSubviews];
     
     CGRect bounds = self.bounds;
@@ -238,7 +288,7 @@
     
     _avatarView.frame = CGRectMake(leftInset + 14.0f, 4.0f + TGRetinaPixel, 40.0f, 40.0f);
     
-    CGRect contentFrame = CGRectMake(65.0f + leftInset, 4.0f, bounds.size.width - 65.0f, bounds.size.height - 8.0f);
+    CGRect contentFrame = CGRectMake(65.0f + leftInset, 4.0f, bounds.size.width - 65.0f - rightInset, bounds.size.height - 8.0f);
     if (!CGSizeEqualToSize(_content.frame.size, contentFrame.size))
         [_content setNeedsDisplay];
     _content.frame = contentFrame;

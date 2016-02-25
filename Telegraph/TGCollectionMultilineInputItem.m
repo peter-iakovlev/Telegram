@@ -86,4 +86,15 @@
     }
 }
 
+- (void)itemSelected:(id)__unused actionTarget
+{
+    if (_selected) {
+        _selected();
+    }
+}
+
+- (void)becomeFirstResponder {
+    [(TGCollectionMultilineInputItemView *)[self boundView] becomeFirstResponder];
+}
+
 @end

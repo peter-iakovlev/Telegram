@@ -202,3 +202,29 @@ static bool isEmojiCharacter(NSString *singleChar)
 }
 
 @end
+
+
+@implementation NSString (NSArrayFormatExtension)
+
++ (instancetype)stringWithFormat:(NSString *)format array:(NSArray *)arguments
+{
+    switch (arguments.count)
+    {
+        case 1:
+            return [NSString stringWithFormat:TGLocalized(format), arguments[0]];
+            
+        case 2:
+            return [NSString stringWithFormat:TGLocalized(format), arguments[0], arguments[1]];
+            
+        case 3:
+            return [NSString stringWithFormat:TGLocalized(format), arguments[0], arguments[1], arguments[2]];
+            
+        case 4:
+            return [NSString stringWithFormat:TGLocalized(format), arguments[0], arguments[1], arguments[2], arguments[3]];
+            
+        default:
+            return format;
+    }
+}
+
+@end

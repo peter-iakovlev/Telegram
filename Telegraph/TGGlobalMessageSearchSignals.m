@@ -11,6 +11,9 @@
 
 #import "TGRecentHashtagsSignal.h"
 
+NSString *const TGRecentSearchDefaultsKey = @"Telegram_recentSearch_peers";
+const NSInteger TGRecentSearchLimit = 20;
+
 @implementation TGGlobalMessageSearchSignals
 
 + (SSignal *)search:(NSString *)query includeMessages:(bool)includeMessages itemMapping:(id (^)(id))itemMapping
@@ -147,6 +150,28 @@
     }];
 }
 
++ (SSignal *)searchDialogs:(NSString *)query itemMapping:(id (^)(id))itemMapping {
+    return [[self searchDialogs:query] map:^id (NSDictionary *dict) {
+        NSMutableArray *result = [[NSMutableArray alloc] init];
+        
+        for (id item in dict[@"chats"]) {
+            id mappedItem = itemMapping(item);
+            if (mappedItem != nil) {
+                [result addObject:mappedItem];
+            }
+        }
+        
+        for (id item in dict[@"users"]) {
+            id mappedItem = itemMapping(item);
+            if (mappedItem != nil) {
+                [result addObject:mappedItem];
+            }
+        }
+        
+        return result;
+    }];
+}
+
 + (SSignal *)searchDialogs:(NSString *)query
 {
     return [[SSignal alloc] initWithGenerator:^(SSubscriber *subscriber)
@@ -219,20 +244,32 @@
 {
     SSignal *(^remoteSignalGenerator)(NSSet *) = ^SSignal *(NSSet *currentMessageIds)
     {
-        TLRPCmessages_search$messages_search *search = [[TLRPCmessages_search$messages_search alloc] init];
-        if (peerId == 0)
-            search.peer = [[TLInputPeer$inputPeerEmpty alloc] init];
-        else
-            search.peer = [TGTelegraphInstance createInputPeerForConversation:peerId accessHash:accessHash];
+        id requestBody = nil;
         
-        search.q = query;
-        search.filter = [[TLMessagesFilter$inputMessagesFilterEmpty alloc] init];
-        search.min_date = 0;
-        search.max_date = 0;
-        search.offset = 0;
-        search.limit = peerId == 0 ? 100 : 160;
-        search.max_id = 0;
-        SSignal *requestSignal = [[[TGTelegramNetworking instance] requestSignal:search] map:^id(TLmessages_Messages *result)
+        if (peerId == 0) {
+            TLRPCmessages_searchGlobal$messages_searchGlobal *searchGlobal = [[TLRPCmessages_searchGlobal$messages_searchGlobal alloc] init];
+            searchGlobal.q = query;
+            searchGlobal.offset_date = 0;
+            searchGlobal.offset_id = 0;
+            searchGlobal.offset_peer = [[TLInputPeer$inputPeerEmpty alloc] init];
+            searchGlobal.limit = 100;
+            
+            requestBody = searchGlobal;
+        } else {
+            TLRPCmessages_search$messages_search *search = [[TLRPCmessages_search$messages_search alloc] init];
+            search.peer = [TGTelegraphInstance createInputPeerForConversation:peerId accessHash:accessHash];
+            
+            search.q = query;
+            search.filter = [[TLMessagesFilter$inputMessagesFilterEmpty alloc] init];
+            search.min_date = 0;
+            search.max_date = 0;
+            search.offset = 0;
+            search.limit = 160;
+            search.max_id = 0;
+            requestBody = search;
+        }
+        
+        SSignal *requestSignal = [[[TGTelegramNetworking instance] requestSignal:requestBody] map:^id(TLmessages_Messages *result)
         {
             [TGUserDataRequestBuilder executeUserDataUpdate:result.users];
             
@@ -269,7 +306,7 @@
                             conversation.conversationId = message.cid;
                         }
                         
-                        if (conversation != nil)
+                        if (conversation != nil && !conversation.isDeactivated)
                         {
                             [conversation mergeMessage:message];
                             conversation.additionalProperties = @{@"searchMessageId": @(message.mid)};
@@ -327,36 +364,79 @@
     return [[SSignal single:@[]] then:combinedSignal];
 }
 
++ (void)moveRecentToContainer
+{
+    if (iosMajorVersion() < 8)
+        return;
+    
+    NSUserDefaults *localDefaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *containerDefaults = [self _containerDefaults];
+    
+    NSArray *localItems = [localDefaults objectForKey:TGRecentSearchDefaultsKey];
+    if (localItems.count > 0)
+    {
+        [containerDefaults setObject:localItems forKey:TGRecentSearchDefaultsKey];
+        [containerDefaults synchronize];
+        
+        [localDefaults removeObjectForKey:TGRecentSearchDefaultsKey];
+        [localDefaults synchronize];
+    }
+}
+
++ (NSUserDefaults *)userDefaults
+{
+    static dispatch_once_t onceToken;
+    static NSUserDefaults *userDefaults;
+    dispatch_once(&onceToken, ^
+    {
+        if (iosMajorVersion() >= 8)
+        {
+            userDefaults = [self _containerDefaults];
+            [self moveRecentToContainer];
+        }
+        else
+        {
+            userDefaults = [NSUserDefaults standardUserDefaults];;
+        }
+    });
+    return userDefaults;
+}
+
++ (NSUserDefaults *)_containerDefaults
+{
+    return [[NSUserDefaults alloc] initWithSuiteName:[@"group." stringByAppendingString:[[NSBundle mainBundle] bundleIdentifier]]];
+}
+
 + (void)clearRecentResults
 {
-    [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"Telegram_recentSearch_peers"];
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    [[self userDefaults] removeObjectForKey:TGRecentSearchDefaultsKey];
+    [[self userDefaults] synchronize];
 }
 
 + (void)addRecentPeerResult:(int64_t)peerId
 {
-    NSMutableArray *items = [[NSMutableArray alloc] initWithArray:[[NSUserDefaults standardUserDefaults] objectForKey:@"Telegram_recentSearch_peers"]];
+    NSMutableArray *items = [[NSMutableArray alloc] initWithArray:[[self userDefaults] objectForKey:TGRecentSearchDefaultsKey]];
     [items removeObject:@(peerId)];
     [items insertObject:@(peerId) atIndex:0];
-    if (items.count > 20)
-        [items removeObjectsInRange:NSMakeRange(20, items.count - 20)];
-    [[NSUserDefaults standardUserDefaults] setObject:items forKey:@"Telegram_recentSearch_peers"];
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    if (items.count > TGRecentSearchLimit)
+        [items removeObjectsInRange:NSMakeRange(TGRecentSearchLimit, items.count - TGRecentSearchLimit)];
+    [[self userDefaults] setObject:items forKey:TGRecentSearchDefaultsKey];
+    [[self userDefaults] synchronize];
 }
 
 + (void)removeRecentPeerResult:(int64_t)peerId
 {
-    NSMutableArray *items = [[NSMutableArray alloc] initWithArray:[[NSUserDefaults standardUserDefaults] objectForKey:@"Telegram_recentSearch_peers"]];
+    NSMutableArray *items = [[NSMutableArray alloc] initWithArray:[[self userDefaults] objectForKey:TGRecentSearchDefaultsKey]];
     [items removeObject:@(peerId)];
-    [[NSUserDefaults standardUserDefaults] setObject:items forKey:@"Telegram_recentSearch_peers"];
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    [[self userDefaults] setObject:items forKey:TGRecentSearchDefaultsKey];
+    [[self userDefaults] synchronize];
 }
 
 + (SSignal *)recentPeerResults:(id (^)(id))itemMapping
 {
     return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
-        NSArray *array = [[NSUserDefaults standardUserDefaults] objectForKey:@"Telegram_recentSearch_peers"];
+        NSArray *array = [[self userDefaults] objectForKey:TGRecentSearchDefaultsKey];
         NSMutableArray *peers = [[NSMutableArray alloc] init];
         for (NSNumber *nPeerId in array)
         {
@@ -364,6 +444,10 @@
             TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:peerId];
             if (conversation != nil)
             {
+                if (conversation.isDeactivated) {
+                    continue;
+                }
+                
                 id item = itemMapping(conversation);
                 if (item != nil)
                     [peers addObject:item];

@@ -10,6 +10,13 @@
 
 #import "PSKeyValueCoder.h"
 
+typedef enum {
+    TGUserFlagVerified = (1 << 0),
+    TGUserFlagHasExplicitContent = (1 << 1),
+    TGUserFlagIsContextBot = (1 << 2),
+    TGUserFlagMinimalRepresentation = (1 << 3)
+} TGUserFlags;
+
 @interface TGUser ()
 {
     bool _contactIdInitialized;
@@ -35,6 +42,11 @@
             _botInfoVersion = [coder decodeInt32ForCKey:"biv"];
             _botKind = [coder decodeInt32ForCKey:"bk"];
         }
+        _flags = [coder decodeInt32ForCKey:"f"];
+        _restrictionReason = [coder decodeStringForCKey:"rr"];
+        if ([self isContextBot]) {
+            _contextBotPlaceholder = [coder decodeStringForCKey:"cbp"];
+        }
     }
     return self;
 }
@@ -46,6 +58,11 @@
     {
         [coder encodeInt32:_botInfoVersion forCKey:"biv"];
         [coder encodeInt32:_botKind forCKey:"bk"];
+    }
+    [coder encodeInt32:_flags forCKey:"f"];
+    [coder encodeString:_restrictionReason forCKey:"rr"];
+    if ([self isContextBot]) {
+        [coder encodeString:_contextBotPlaceholder forCKey:"cbp"];
     }
 }
 
@@ -74,6 +91,9 @@
     user->_kind = _kind;
     user->_botInfoVersion = _botInfoVersion;
     user->_botKind = _botKind;
+    user->_flags = _flags;
+    user->_restrictionReason = _restrictionReason;
+    user->_contextBotPlaceholder = _contextBotPlaceholder;
     
     return user;
 }
@@ -225,7 +245,8 @@
         ((anotherUser.photoUrlSmall == nil && _photoUrlSmall == nil) || [anotherUser.photoUrlSmall isEqualToString:_photoUrlSmall]) &&
         ((anotherUser.photoUrlMedium == nil && _photoUrlMedium == nil) || [anotherUser.photoUrlMedium isEqualToString:_photoUrlMedium]) &&
         ((anotherUser.photoUrlBig == nil && _photoUrlBig == nil) || [anotherUser.photoUrlBig isEqualToString:_photoUrlBig]) &&
-        anotherUser.presence.online == _presence.online && anotherUser.presence.lastSeen == _presence.lastSeen && TGStringCompare(_userName, anotherUser.userName) && anotherUser.kind == _kind && anotherUser.botKind == _botKind)
+        anotherUser.presence.online == _presence.online && anotherUser.presence.lastSeen == _presence.lastSeen && TGStringCompare(_userName, anotherUser.userName) && anotherUser.kind == _kind && anotherUser.botKind == _botKind &&
+        TGStringCompare(_restrictionReason, anotherUser.restrictionReason))
     {
         return true;
     }
@@ -284,6 +305,18 @@
     if (anotherUser.botKind != _botKind)
         difference |= TGUserFieldOther;
     
+    if (anotherUser.flags != _flags) {
+        difference |= TGUserFieldOther;
+    }
+    
+    if (!TGStringCompare(anotherUser.restrictionReason, _restrictionReason)) {
+        difference |= TGUserFieldOther;
+    }
+    
+    if (!TGStringCompare(anotherUser.contextBotPlaceholder, _contextBotPlaceholder)) {
+        difference |= TGUserFieldOther;
+    }
+    
     return difference;
 }
 
@@ -341,6 +374,54 @@
     }
     
     return self;
+}
+
+- (bool)isVerified {
+    return _flags & TGUserFlagVerified;
+}
+
+- (void)setIsVerified:(bool)isVerified {
+    if (isVerified) {
+        _flags |= TGUserFlagVerified;
+    } else {
+        _flags &= ~TGUserFlagVerified;
+    }
+}
+
+- (bool)isContextBot {
+    return _flags & TGUserFlagIsContextBot;
+}
+
+- (void)setIsContextBot:(bool)isContextBot {
+    if (isContextBot) {
+        _flags |= TGUserFlagIsContextBot;
+    } else {
+        _flags &= ~TGUserFlagIsContextBot;
+    }
+}
+
+- (bool)hasExplicitContent {
+    return _flags & TGConversationFlagHasExplicitContent;
+}
+
+- (void)setHasExplicitContent:(bool)hasExplicitContent {
+    if (hasExplicitContent) {
+        _flags |= TGConversationFlagHasExplicitContent;
+    } else {
+        _flags &= ~TGConversationFlagHasExplicitContent;
+    }
+}
+
+- (bool)minimalRepresentation {
+    return _flags & TGUserFlagMinimalRepresentation;
+}
+
+- (void)setMinimalRepresentation:(bool)minimalRepresentation {
+    if (minimalRepresentation) {
+        _flags |= TGUserFlagMinimalRepresentation;
+    } else {
+        _flags &= ~TGUserFlagMinimalRepresentation;
+    }
 }
 
 @end

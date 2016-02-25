@@ -40,6 +40,8 @@
 #import "TLUser$modernUser.h"
 #import "TLUpdates+TG.h"
 
+#import "TLMessageFwdHeader$messageFwdHeader.h"
+
 #import <set>
 #import <map>
 
@@ -855,7 +857,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
             if (([message isKindOfClass:[TLMessage$modernMessage class]] || [message isKindOfClass:[TLMessage$modernMessageService class]]) && !(((TLMessage$modernMessage *)message).flags & 2))
             {
                 TGMessage *parsedMessage = [[TGMessage alloc] initWithTelegraphMessageDesc:message];
-                if (parsedMessage.unread)
+                if (parsedMessage.unread && !parsedMessage.outgoing && !parsedMessage.isSilent)
                 {
                     auto maxIt = maxInboxReadMessageIdByPeerId.find(parsedMessage.cid);
                     if (!(maxIt != maxInboxReadMessageIdByPeerId.end() && parsedMessage.mid <= maxIt->second))
@@ -924,34 +926,33 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
             {
                 if ([message isKindOfClass:[TLMessage$modernMessage class]])
                 {
-                    TLPeer *fwd_from_id = ((TLMessage$modernMessage *)message).fwd_from_id;
-                    if ([fwd_from_id isKindOfClass:[TLPeer$peerUser class]]) {
-                        int32_t forwardUid = ((TLPeer$peerUser *)fwd_from_id).user_id;
-                        if (forwardUid != 0)
-                        {
-                            if (knownUsers.find(forwardUid) == knownUsers.end() && processedUsers.find(forwardUid) == processedUsers.end())
+                    TLMessageFwdHeader$messageFwdHeader *fwd_header = (TLMessageFwdHeader$messageFwdHeader *)((TLMessage$modernMessage *)message).fwd_header;
+                    if (fwd_header != nil) {
+                        if (fwd_header.from_id != 0) {
+                            if (knownUsers.find(fwd_header.from_id) == knownUsers.end() && processedUsers.find(fwd_header.from_id) == processedUsers.end())
                             {
-                                bool contains = [TGDatabaseInstance() loadUser:forwardUid];
+                                bool contains = [TGDatabaseInstance() loadUser:fwd_header.from_id];
                                 if (contains)
-                                    knownUsers.insert(forwardUid);
+                                    knownUsers.insert(fwd_header.from_id);
                                 else
                                 {
-                                    TGLog(@"Unknown user %" PRId32 "", forwardUid);
+                                    TGLog(@"Unknown user %" PRId32 "", fwd_header.from_id);
                                     failedProcessing = true;
                                 }
                             }
                         }
-                    } else if ([fwd_from_id isKindOfClass:[TLPeer$peerChannel class]]) {
-                        int64_t peerId = TGPeerIdFromChannelId(((TLPeer$peerChannel *)fwd_from_id).channel_id);
-                        if (peerId != 0) {
-                            if (knownChats.find(peerId) == knownChats.end() && processedChats.find(TGChannelIdFromPeerId(peerId)) == processedChats.end()) {
-                                bool contains = [TGDatabaseInstance() _channelExists:peerId];
-                                if (contains)
-                                    knownChats.insert(TGChannelIdFromPeerId(peerId));
-                                else
-                                {
-                                    TGLog(@"Unknown channel %" PRId64 "", peerId);
-                                    failedProcessing = true;
+                        if (fwd_header.channel_id != 0) {
+                            int64_t peerId = TGPeerIdFromChannelId(fwd_header.channel_id);
+                            if (peerId != 0) {
+                                if (knownChats.find(peerId) == knownChats.end() && processedChats.find(TGChannelIdFromPeerId(peerId)) == processedChats.end()) {
+                                    bool contains = [TGDatabaseInstance() _channelExists:peerId];
+                                    if (contains)
+                                        knownChats.insert(TGChannelIdFromPeerId(peerId));
+                                    else
+                                    {
+                                        TGLog(@"Unknown channel %" PRId64 "", peerId);
+                                        failedProcessing = true;
+                                    }
                                 }
                             }
                         }
@@ -1188,7 +1189,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                 bool globalMessagePreviewText = true;
                 int globalMessageMuteUntil = 0;
                 bool notFound = false;
-                [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 1 soundId:&globalMessageSoundId muteUntil:&globalMessageMuteUntil previewText:&globalMessagePreviewText photoNotificationsEnabled:NULL notFound:&notFound];
+                [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 1 soundId:&globalMessageSoundId muteUntil:&globalMessageMuteUntil previewText:&globalMessagePreviewText messagesMuted:NULL notFound:&notFound];
                 if (notFound)
                 {
                     globalMessageSoundId = 1;
@@ -1199,7 +1200,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                 bool globalGroupPreviewText = true;
                 int globalGroupMuteUntil = 0;
                 notFound = false;
-                [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 2 soundId:&globalGroupSoundId muteUntil:&globalGroupMuteUntil previewText:&globalGroupPreviewText photoNotificationsEnabled:NULL notFound:&notFound];
+                [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 2 soundId:&globalGroupSoundId muteUntil:&globalGroupMuteUntil previewText:&globalGroupPreviewText messagesMuted:NULL notFound:&notFound];
                 if (notFound)
                 {
                     globalGroupSoundId = 1;
@@ -1394,6 +1395,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                         NSString *text = nil;
                         
                         bool attachmentFound = false;
+                        bool migrationFound = false;
                         
                         for (TGMediaAttachment *attachment in message.mediaAttachments)
                         {
@@ -1418,18 +1420,44 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                     }
                                     case TGMessageActionChatAddMember:
                                     {
-                                        NSNumber *nUid = [actionAttachment.actionData objectForKey:@"uid"];
-                                        if (nUid != nil)
-                                        {
-                                            TGUser *subjectUser = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                                        NSArray *uids = actionAttachment.actionData[@"uids"];
+                                        if (uids != nil) {
+                                            TGUser *authorUser = user;
+                                            NSMutableArray *subjectUsers = [[NSMutableArray alloc] init];
+                                            for (NSNumber *nUid in uids) {
+                                                TGUser *subjectUser = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                                                if (user != nil) {
+                                                    [subjectUsers addObject:subjectUser];
+                                                }
+                                            }
                                             
-                                            if (subjectUser.uid == user.uid)
-                                                text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_RETURNED"), user.displayName, chatName];
-                                            else if (subjectUser.uid == TGTelegraphInstance.clientUserId)
-                                                text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_ADD_YOU"), user.displayName, chatName];
-                                            else
-                                                text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_ADD_MEMBER"), user.displayName, chatName, subjectUser.displayName];
+                                            if (subjectUsers.count == 1 && authorUser.uid == ((TGUser *)subjectUsers[0]).uid) {
+                                                text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_RETURNED"), authorUser.displayName, chatName];
+                                            } else {
+                                                NSMutableString *subjectNames = [[NSMutableString alloc] init];
+                                                for (TGUser *subjectUser in subjectUsers) {
+                                                    if (subjectNames.length != 0) {
+                                                        [subjectNames appendString:@", "];
+                                                    }
+                                                    [subjectNames appendString:subjectUser.displayName];
+                                                }
+                                                text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_ADD_MEMBER"), authorUser.displayName, chatName, subjectNames];
+                                            }
                                             attachmentFound = true;
+                                        } else {
+                                            NSNumber *nUid = [actionAttachment.actionData objectForKey:@"uid"];
+                                            if (nUid != nil)
+                                            {
+                                                TGUser *subjectUser = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                                                
+                                                if (subjectUser.uid == user.uid)
+                                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_RETURNED"), user.displayName, chatName];
+                                                else if (subjectUser.uid == TGTelegraphInstance.clientUserId)
+                                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_ADD_YOU"), user.displayName, chatName];
+                                                else
+                                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_ADD_MEMBER"), user.displayName, chatName, subjectUser.displayName];
+                                                attachmentFound = true;
+                                            }
                                         }
                                         
                                         break;
@@ -1476,7 +1504,13 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                     case TGMessageActionJoinedByLink:
                                     {
                                         text = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.JoinedGroupByLink"), user.displayName];
+                                        attachmentFound = true;
                                         
+                                        break;
+                                    }
+                                    case TGMessageActionGroupMigratedTo:
+                                    {
+                                        migrationFound = true;
                                         break;
                                     }
                                     default:
@@ -1530,6 +1564,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             else if (attachment.type == TGDocumentMediaAttachmentType)
                             {
                                 bool isAnimated = false;
+                                bool isVoice = false;
                                 CGSize imageSize = CGSizeZero;
                                 bool isSticker = false;
                                 for (id attribute in ((TGDocumentMediaAttachment *)attachment).attributes)
@@ -1542,9 +1577,15 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                     {
                                         imageSize = ((TGDocumentAttributeImageSize *)attribute).size;
                                     }
+                                    else if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                                        imageSize = ((TGDocumentAttributeVideo *)attribute).size;
+                                    }
                                     else if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
                                     {
                                         isSticker = true;
+                                    }
+                                    else if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                                        isVoice = ((TGDocumentAttributeAudio *)attribute).isVoice;
                                     }
                                 }
                                 
@@ -1554,6 +1595,18 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                         text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_STICKER"), user.displayName];
                                     else
                                         text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_STICKER"), user.displayName, chatName];
+                                }
+                                else if (isAnimated) {
+                                    if (message.cid > 0)
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_GIF"), user.displayName];
+                                    else
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_GIF"), user.displayName, chatName];
+                                }
+                                else if (isVoice) {
+                                    if (message.cid > 0)
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_AUDIO"), user.displayName];
+                                    else
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_AUDIO"), user.displayName, chatName];
                                 }
                                 else
                                 {
@@ -1580,9 +1633,13 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             }
                         }
                         
+                        if (migrationFound) {
+                            continue;
+                        }
+                        
                         int soundId = 1;
                         bool notFound = false;
-                        [TGDatabaseInstance() loadPeerNotificationSettings:notificationPeerId soundId:&soundId muteUntil:NULL previewText:NULL photoNotificationsEnabled:NULL notFound:&notFound];
+                        [TGDatabaseInstance() loadPeerNotificationSettings:notificationPeerId soundId:&soundId muteUntil:NULL previewText:NULL messagesMuted:NULL notFound:&notFound];
                         if (notFound)
                         {
                             soundId = 1;
@@ -1627,13 +1684,24 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             }
                         }
                         
-                        if ([TGAppDelegateInstance isCurrentlyLocked])
+                        bool isLocked = [TGAppDelegateInstance isCurrentlyLocked];
+                        if (isLocked)
                         {
                             text = [[NSString alloc] initWithFormat:TGLocalized(@"LOCKED_MESSAGE"), @""];
                         }
                         
+                        static dispatch_once_t onceToken;
+                        static NSString *tokenString = nil;
+                        dispatch_once(&onceToken, ^
+                        {
+                            unichar tokenChar = 0x2026;
+                            tokenString = [[NSString alloc] initWithCharacters:&tokenChar length:1];
+                        });
+                        
                         if (text.length > 256)
-                            text = [text substringToIndex:256];
+                        {
+                            text = [NSString stringWithFormat:@"%@%@", [text substringToIndex:255], tokenString];
+                        }
                         
                         text = [text stringByReplacingOccurrencesOfString:@"%" withString:@"%%"];
                         
@@ -1643,7 +1711,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                         localNotification.alertBody = text;
                         localNotification.userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:message.cid], @"cid", @(message.mid), @"mid", nil];
                         
-                        if (iosMajorVersion() >= 8)
+                        if (iosMajorVersion() >= 8 && !isLocked)
                         {
                             if (TGPeerIdIsGroup(message.cid))
                                 localNotification.category = @"m";

@@ -5,6 +5,7 @@
 #import "TGPagerView.h"
 
 #import "TGStickerPreviewPagingScrollView.h"
+#import "TGSingleStickerPreviewWindow.h"
 
 @interface TGStickerPackPreviewView ()
 {
@@ -21,6 +22,8 @@
     
     TGPagerView *_pageControl;
     TGStickerPreviewPagingScrollView *_pagingView;
+    
+    TGSingleStickerPreviewWindow *_stickerPreviewWindow;
 }
 
 @end
@@ -138,6 +141,10 @@
         
         _dimView.alpha = 0.0f;
         _backgroundView.alpha = 0.0f;
+        
+        UILongPressGestureRecognizer *tapRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longTapGesture:)];
+        tapRecognizer.minimumPressDuration = 0.25;
+        [_pagingView addGestureRecognizer:tapRecognizer];
     }
     return self;
 }
@@ -268,6 +275,29 @@
         [_actionButton sizeToFit];
         CGFloat actionButtonPadding = 18.0f;
         _actionButton.frame = CGRectMake(contentOrigin.x + CGFloor((contentSize.width - _actionButton.frame.size.width - actionButtonPadding * 2.0f) / 2.0f), contentOrigin.y + contentSize.height - (reducedMode ? 4.0f : 14.0f) - 36.0f, _actionButton.frame.size.width + actionButtonPadding * 2.0f, 36.0f);
+    }
+}
+
+- (void)longTapGesture:(UILongPressGestureRecognizer *)recognizer {
+    if (recognizer.state == UIGestureRecognizerStateBegan) {
+        _stickerPreviewWindow.hidden = true;
+        
+        __strong TGViewController *controller = _controller;
+        TGDocumentMediaAttachment *document = [_pagingView documentAtPoint:[recognizer locationInView:_pagingView]];
+        if (document != nil && controller != nil) {
+            _stickerPreviewWindow = [[TGSingleStickerPreviewWindow alloc] initWithParentController:controller];
+            _stickerPreviewWindow.userInteractionEnabled = false;
+            [_stickerPreviewWindow.view setDocument:document];
+            _stickerPreviewWindow.hidden = false;
+        }
+    } else if (recognizer.state == UIGestureRecognizerStateEnded || recognizer.state == UIGestureRecognizerStateCancelled)
+    {
+        __weak UIWindow *weakWindow = _stickerPreviewWindow;
+        [_stickerPreviewWindow.view animateDismiss:^{
+            __strong UIWindow *strongWindow = weakWindow;
+            strongWindow.hidden = true;
+        }];
+        _stickerPreviewWindow = nil;
     }
 }
 

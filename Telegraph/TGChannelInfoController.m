@@ -44,15 +44,6 @@
 #import "TGAlertSoundController.h"
 
 #import "TGRemoteImageView.h"
-#import "TGLegacyCameraController.h"
-#import "TGImagePickerController.h"
-
-#import "TGOverlayFormsheetWindow.h"
-#import "TGMediaFoldersController.h"
-#import "TGModernMediaPickerController.h"
-#import "TGWebSearchController.h"
-#import "TGCameraController.h"
-
 #import "TGImageUtils.h"
 
 #import "TGAlertView.h"
@@ -67,15 +58,6 @@
 #import "TGUserInfoTextCollectionItem.h"
 #import "TGUserInfoUsernameCollectionItem.h"
 #import "TGUserInfoButtonCollectionItem.h"
-
-#import "TGAccessChecker.h"
-
-#import "TGAttachmentSheetView.h"
-#import "TGAttachmentSheetWindow.h"
-#import "TGAttachmentSheetButtonItemView.h"
-#import "TGAttachmentSheetRecentItemView.h"
-#import "TGAttachmentSheetRecentCameraView.h"
-#import "TGCameraPreviewView.h"
 
 #import "TGSharedMediaController.h"
 
@@ -93,7 +75,17 @@
 
 #import "TGChannelMembersController.h"
 
-@interface TGChannelInfoController () <TGGroupInfoSelectContactControllerDelegate, TGAlertSoundControllerDelegate, TGLegacyCameraControllerDelegate, TGImagePickerControllerDelegate, ASWatcher>
+#import "TGAccountSignals.h"
+
+#import "TGReportPeerOtherTextController.h"
+
+#import "TGMediaAvatarMenuMixin.h"
+
+#import "TGCollectionMultilineInputItem.h"
+
+#import "TGHashtagSearchController.h"
+
+@interface TGChannelInfoController () <TGGroupInfoSelectContactControllerDelegate, TGAlertSoundControllerDelegate, ASWatcher>
 {
     bool _editing;
     
@@ -118,9 +110,12 @@
     TGUserInfoVariantCollectionItem *_infoMembersItem;
     
     TGCollectionMenuSection *_editingInfoSection;
-    TGVariantCollectionItem *_channelAboutItem;
+    TGCollectionMultilineInputItem *_channelAboutItem;
     TGVariantCollectionItem *_channelLinkItem;
     TGSwitchCollectionItem *_channelCommentsItem;
+    
+    TGCollectionMenuSection *_editingSignMessagesSection;
+    TGSwitchCollectionItem *_signMessagesItem;
     
     TGCollectionMenuSection *_deleteChannelSection;
     
@@ -133,12 +128,13 @@
     
     NSTimer *_muteExpirationTimer;
     
-    TGAttachmentSheetWindow *_attachmentSheetWindow;
-    
     id<SDisposable> _completeInfoDisposable;
     id<SDisposable> _cachedDataDisposable;
+    SDisposableSet *_genericDisposables;
     
     NSString *_privateLink;
+    
+    TGMediaAvatarMenuMixin *_avatarMixin;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -152,6 +148,8 @@
     self = [super init];
     if (self != nil)
     {
+        __weak TGChannelInfoController *weakSelf = self;
+        
         self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Back") style:UIBarButtonItemStylePlain target:self action:@selector(backPressed)];
         
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
@@ -187,16 +185,25 @@
         _aboutItem = [[TGUserInfoTextCollectionItem alloc] init];
         _aboutItem.title = TGLocalized(@"Channel.Info.Description");
         _aboutItem.text = _conversation.about;
+        _aboutItem.followLink = ^(NSString *link) {
+            TGChannelInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf followLink:link];
+            }
+        };
         _linkItem = [[TGUserInfoUsernameCollectionItem alloc] initWithLabel:TGLocalized(@"Channel.LinkItem") username:linkText];
         _linkItem.action = @selector(sharePressed);
         _infoSection = [[TGCollectionMenuSection alloc] initWithItems:@[_aboutItem, _linkItem]];
         _infoSection.insets = UIEdgeInsetsMake(1.0f, 0.0f, 22.0f, 0.0f);
         
+        TGUserInfoButtonCollectionItem *reportChannelItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ReportPeer.Report") action:@selector(reportChannelPressed)];
+        reportChannelItem.deselectAutomatically = true;
+        
         _leaveItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.LeaveChannel") action:@selector(leavePressed)];
         _leaveItem.titleColor = TGDestructiveAccentColor();
         _leaveItem.deselectAutomatically = true;
-        _leaveSection = [[TGCollectionMenuSection alloc] initWithItems:@[_leaveItem]];
-
+        _leaveSection = [[TGCollectionMenuSection alloc] initWithItems:@[reportChannelItem, _leaveItem]];
+        
         TGButtonCollectionItem *deleteChannelItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ChannelInfo.DeleteChannel") action:@selector(deleteChannelPressed)];
         deleteChannelItem.titleColor = TGDestructiveAccentColor();
         deleteChannelItem.deselectAutomatically = true;
@@ -207,12 +214,22 @@
         _infoMembersItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Info.Members") variant:@"" action:@selector(infoMembersPressed)];
         _adminInfoSection = [[TGCollectionMenuSection alloc] initWithItems:@[_infoManagementItem, _infoMembersItem]];
         
-        _channelAboutItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Edit.AboutItem") action:@selector(aboutPressed)];
-        _channelAboutItem.variant = _conversation.about;
+        _channelAboutItem = [[TGCollectionMultilineInputItem alloc] init];
+        _channelAboutItem.placeholder = TGLocalized(@"Channel.About.Placeholder");
+        _channelAboutItem.text = _conversation.about;
+        _channelAboutItem.textChanged = ^(__unused NSString *text) {
+            __strong TGChannelInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf.collectionLayout invalidateLayout];
+                [strongSelf.collectionView layoutSubviews];
+            }
+        };
+        _channelAboutItem.maxLength = 200;
+        
         _channelLinkItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Edit.LinkItem") action:@selector(linkPressed)];
         _channelLinkItem.variant = _conversation.username.length == 0 ? @"" : [@"/" stringByAppendingString:_conversation.username];
+        
         _channelCommentsItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Edit.EnableComments") isOn:!_conversation.channelIsReadOnly];
-        __weak TGChannelInfoController *weakSelf = self;
         _channelCommentsItem.toggled = ^(bool value){
             __strong TGChannelInfoController *strongSelf = weakSelf;
             if (strongSelf != nil) {
@@ -220,7 +237,16 @@
             }
         };
         __unused TGCommentCollectionItem *commentsHelp = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.Username.CreateCommentsHelp")];
-        _editingInfoSection = [[TGCollectionMenuSection alloc] initWithItems:@[_channelAboutItem, _channelLinkItem]];
+        _editingInfoSection = [[TGCollectionMenuSection alloc] initWithItems:@[_channelLinkItem, _channelAboutItem, [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.About.Help")]]];
+        
+        _signMessagesItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.SignMessages") isOn:false];
+        _signMessagesItem.toggled = ^(bool value) {
+            __strong TGChannelInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf updateSignMessages:value];
+            }
+        };
+        _editingSignMessagesSection = [[TGCollectionMenuSection alloc] initWithItems:@[_signMessagesItem, [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.SignMessages.Help")]]];
         
         _notificationsItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Notifications") variant:nil action:@selector(notificationsPressed)];
         _notificationsItem.deselectAutomatically = true;
@@ -303,6 +329,8 @@
             }
         }];
         
+        _genericDisposables = [[SDisposableSet alloc] init];
+        
         [self _setupSections:false];
     }
     return self;
@@ -322,6 +350,10 @@
         
         [self.menuSections addSection:_groupInfoSection];
         [self.menuSections addSection:_editingInfoSection];
+        
+        if (_conversation.channelRole == TGChannelRoleCreator) {
+            [self.menuSections addSection:_editingSignMessagesSection];
+        }
         
         if (_conversation.channelRole == TGChannelRoleCreator) {
             [self.menuSections addSection:_deleteChannelSection];
@@ -360,6 +392,7 @@
     
     [_completeInfoDisposable dispose];
     [_cachedDataDisposable dispose];
+    [_genericDisposables dispose];
 }
 
 #pragma mark -
@@ -394,6 +427,8 @@
         [_groupInfoItem setEditing:true animated:false];
         [self _setupSections:true];
         [self enterEditingMode:true];
+        
+        [self animateCollectionCrossfade];
     }
 }
 
@@ -401,14 +436,39 @@
 {
     if (_editing)
     {
-        _editing = false;
+        __weak TGChannelInfoController *weakSelf = self;
+        void (^block)() = ^{
+            __strong TGChannelInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                strongSelf->_editing = false;
+                
+                if (!TGStringCompare(strongSelf->_conversation.chatTitle, [strongSelf->_groupInfoItem editingTitle]) && [strongSelf->_groupInfoItem editingTitle] != nil)
+                    [strongSelf _commitUpdateTitle:[strongSelf->_groupInfoItem editingTitle]];
+                
+                [strongSelf->_groupInfoItem setEditing:false animated:false];
+                [strongSelf _setupSections:false];
+                [strongSelf leaveEditingMode:true];
+                
+                [strongSelf animateCollectionCrossfade];
+            }
+        };
         
-        if (!TGStringCompare(_conversation.chatTitle, [_groupInfoItem editingTitle]) && [_groupInfoItem editingTitle] != nil)
-            [self _commitUpdateTitle:[_groupInfoItem editingTitle]];
-        
-        [_groupInfoItem setEditing:false animated:false];
-        [self _setupSections:false];
-        [self leaveEditingMode:true];
+        if (!TGStringCompare(_channelAboutItem.text, _conversation.about)) {
+            TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+            [progressWindow showWithDelay:0.2];
+            
+            [[[[TGChannelManagementSignals updateChannelAbout:_conversation.conversationId accessHash:_conversation.accessHash about:_channelAboutItem.text] deliverOn:[SQueue mainQueue]] onDispose:^{
+                TGDispatchOnMainThread(^{
+                    [progressWindow dismiss:true];
+                });
+            }] startWithNext:nil error:^(__unused id error) {
+                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Channel.About.Error") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            } completed:^{
+                block();
+            }];
+        } else {
+            block();
+        }
     }
     
     [self leaveEditingMode:true];
@@ -430,352 +490,38 @@
 
 - (void)setGroupPhotoPressed
 {
-    if (!_conversation.chatIsAdmin) {
+    if (!_conversation.chatIsAdmin)
         return;
-    }
-    
-    if (false && iosMajorVersion() >= 7 && !TGIsPad())
-    {
-        __weak TGChannelInfoController *weakSelf = self;
-        _attachmentSheetWindow = [[TGAttachmentSheetWindow alloc] init];
-        _attachmentSheetWindow.dismissalBlock = ^
-        {
-            __strong TGChannelInfoController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            strongSelf->_attachmentSheetWindow.rootViewController = nil;
-            strongSelf->_attachmentSheetWindow = nil;
-        };
-        
-        NSMutableArray *items = [[NSMutableArray alloc] init];
-        
-        TGAttachmentSheetRecentItemView *recentView = [[TGAttachmentSheetRecentItemView alloc] initWithParentController:self mode:TGAttachmentSheetItemViewSetGroupPhotoMode];
-        recentView.openCamera = ^(TGAttachmentSheetRecentCameraView *cameraView)
-        {
-            __strong TGChannelInfoController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                [strongSelf.view endEditing:true];
-                [strongSelf _displayCameraWithView:cameraView];
-            }
-        };
-        recentView.avatarCreated = ^(UIImage *resultImage)
-        {
-            __strong TGChannelInfoController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-                [strongSelf _updateGroupProfileImage:resultImage];
-            }
-        };
-        [items addObject:recentView];
-        
-        [items addObject:[[TGAttachmentSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.ChoosePhoto") pressed:^
-                          {
-                              __strong TGChannelInfoController *strongSelf = weakSelf;
-                              if (strongSelf != nil)
-                              {
-                                  [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-                                  [strongSelf _displayImagePicker:false];
-                              }
-                          }]];
-        
-        [items addObject:[[TGAttachmentSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Conversation.SearchWebImages") pressed:^
-                          {
-                              __strong TGChannelInfoController *strongSelf = weakSelf;
-                              if (strongSelf != nil)
-                              {
-                                  [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-                                  [strongSelf _displayImagePicker:true];
-                              }
-                          }]];
-        
-        if (_conversation.chatPhotoSmall.length != 0)
-        {
-            TGAttachmentSheetButtonItemView *deleteItem = [[TGAttachmentSheetButtonItemView alloc] initWithTitle:TGLocalized(@"GroupInfo.SetGroupPhotoDelete") pressed:^
-                                                           {
-                                                               __strong TGChannelInfoController *strongSelf = weakSelf;
-                                                               if (strongSelf != nil)
-                                                               {
-                                                                   [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-                                                                   [strongSelf _commitDeleteAvatar];
-                                                               }
-                                                           }];
-            [deleteItem setDestructive:true];
-            [items addObject:deleteItem];
-        }
-        
-        TGAttachmentSheetButtonItemView *cancelItem =[[TGAttachmentSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") pressed:^
-                                                      {
-                                                          __strong TGChannelInfoController *strongSelf = weakSelf;
-                                                          if (strongSelf != nil)
-                                                              [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-                                                      }];
-        [cancelItem setBold:true];
-        [items addObject:cancelItem];
-        
-        _attachmentSheetWindow.view.items = items;
-        [_attachmentSheetWindow showAnimated:true completion:nil];
-    }
-    else
-    {
-        NSMutableArray *actions = [[NSMutableArray alloc] init];
-        
-        if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera])
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.TakePhoto") action:@"camera"]];
-        
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.ChoosePhoto") action:@"choosePhoto"]];
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.SearchWebImages") action:@"searchWeb"]];
-        
-        if (_conversation.chatPhotoSmall.length != 0)
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"GroupInfo.SetGroupPhotoDelete") action:@"delete" type:TGActionSheetActionTypeDestructive]];
-        
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
-        
-        [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGChannelInfoController *controller, NSString *action)
-          {
-              if ([action isEqualToString:@"camera"])
-                  [controller _displayCameraWithView:nil];
-              else if ([action isEqualToString:@"choosePhoto"])
-                  [controller _displayImagePicker:false];
-              else if ([action isEqualToString:@"searchWeb"])
-                  [controller _displayImagePicker:true];
-              else if ([action isEqualToString:@"delete"])
-                  [controller _commitDeleteAvatar];
-          } target:self] showInView:self.view];
-    }
-}
-
-- (void)_displayCameraWithView:(TGAttachmentSheetRecentCameraView *)cameraView
-{
-    if (![TGAccessChecker checkCameraAuthorizationStatusWithAlertDismissComlpetion:nil])
-        return;
-    
-    if (iosMajorVersion() < 7 || [UIDevice currentDevice].platformType == UIDevice4iPhone || [UIDevice currentDevice].platformType == UIDevice4GiPod)
-    {
-        [self _displayLegacyCamera];
-        [_attachmentSheetWindow dismissAnimated:true completion:nil];
-        return;
-    }
-    
-    TGCameraController *controller = nil;
-    CGSize screenSize = TGScreenSize();
-    
-    if (cameraView.previewView != nil)
-        controller = [[TGCameraController alloc] initWithCamera:cameraView.previewView.camera previewView:cameraView.previewView intent:TGCameraControllerAvatarIntent];
-    else
-        controller = [[TGCameraController alloc] initWithIntent:TGCameraControllerAvatarIntent];
-    
-    controller.shouldStoreCapturedAssets = true;
-    
-    TGCameraControllerWindow *controllerWindow = [[TGCameraControllerWindow alloc] initWithParentController:self contentController:controller];
-    if (_attachmentSheetWindow != nil)
-        controllerWindow.windowLevel = _attachmentSheetWindow.windowLevel + 0.0001f;
-    controllerWindow.hidden = false;
-    controllerWindow.clipsToBounds = true;
-    controllerWindow.frame = CGRectMake(0, 0, screenSize.width, screenSize.height);
-    
-    bool standalone = true;
-    CGRect startFrame = CGRectMake(0, screenSize.height, screenSize.width, screenSize.height);
-    if (cameraView != nil)
-    {
-        standalone = false;
-        startFrame = [controller.view convertRect:cameraView.previewView.frame fromView:cameraView];
-    }
-    
-    [cameraView detachPreviewView];
-    [controller beginTransitionInFromRect:startFrame];
     
     __weak TGChannelInfoController *weakSelf = self;
-    __weak TGCameraController *weakCameraController = controller;
-    __weak TGAttachmentSheetRecentCameraView *weakCameraView = cameraView;
-    
-    controller.beginTransitionOut = ^CGRect
-    {
-        __strong TGCameraController *strongCameraController = weakCameraController;
-        if (strongCameraController == nil)
-            return CGRectZero;
-        
-        if (!standalone)
-        {
-            __strong TGAttachmentSheetRecentCameraView *strongCameraView = weakCameraView;
-            if (strongCameraView != nil)
-                return [strongCameraController.view convertRect:strongCameraView.frame fromView:strongCameraView.superview];
-        }
-        
-        return CGRectZero;
-    };
-    
-    controller.finishedTransitionOut = ^
-    {
-        __strong TGAttachmentSheetRecentCameraView *strongCameraView = weakCameraView;
-        if (strongCameraView == nil)
-            return;
-        
-        [strongCameraView attachPreviewViewAnimated:true];
-    };
-    
-    controller.finishedWithPhoto = ^(UIImage *resultImage, __unused NSString *caption)
+    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithParentController:self hasDeleteButton:(_conversation.chatPhotoSmall.length != 0)];
+    _avatarMixin.didFinishWithImage = ^(UIImage *image)
     {
         __strong TGChannelInfoController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
-        [strongSelf _updateGroupProfileImage:resultImage];
-        [strongSelf->_attachmentSheetWindow dismissAnimated:false completion:nil];
+        [strongSelf _updateGroupProfileImage:image];
+        strongSelf->_avatarMixin = nil;
     };
-}
-
-- (void)_displayLegacyCamera
-{
-    TGLegacyCameraController *legacyCameraController = [[TGLegacyCameraController alloc] init];
-    legacyCameraController.sourceType = UIImagePickerControllerSourceTypeCamera;
-    legacyCameraController.avatarMode = true;
-    
-    legacyCameraController.completionDelegate = self;
-    
-    [self presentViewController:legacyCameraController animated:true completion:nil];
-}
-
-- (void)_displayImagePicker:(bool)openWebSearch
-{
-    __weak TGChannelInfoController *weakSelf = self;
-    
-    TGNavigationController *navigationController = nil;
-    
-    if (openWebSearch)
+    _avatarMixin.didFinishWithDelete = ^
     {
-        TGWebSearchController *controller = [[TGWebSearchController alloc] initForAvatarSelection:true];
-        __weak TGWebSearchController *weakController = controller;
-        controller.avatarCreated = ^(UIImage *image)
-        {
-            __strong TGChannelInfoController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf _updateGroupProfileImage:image];
-            
-            __strong TGWebSearchController *strongController = weakController;
-            if (strongController != nil && strongController.dismiss != nil)
-                strongController.dismiss();
-        };
+        __strong TGChannelInfoController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
         
-        navigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];
-        
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        {
-            void (^dismiss)(void) = ^
-            {
-                __strong TGChannelInfoController *strongSelf = weakSelf;
-                if (strongSelf == nil)
-                    return;
-                
-                [strongSelf dismissViewControllerAnimated:true completion:nil];
-            };
-            
-            [self presentViewController:navigationController animated:true completion:nil];
-            
-            controller.dismiss = dismiss;
-        }
-        else
-        {
-            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-            
-            TGOverlayFormsheetWindow *formSheetWindow = [[TGOverlayFormsheetWindow alloc] initWithParentController:self contentController:navigationController];
-            [formSheetWindow showAnimated:true];
-            
-            __weak TGOverlayFormsheetWindow *weakFormSheetWindow = formSheetWindow;
-            void (^dismiss)(void) = ^
-            {
-                __strong TGOverlayFormsheetWindow *strongFormSheetWindow = weakFormSheetWindow;
-                if (strongFormSheetWindow == nil)
-                    return;
-                
-                [strongFormSheetWindow dismissAnimated:true];
-            };
-            
-            controller.dismiss = dismiss;
-        }
-    }
-    else
+        [strongSelf _commitDeleteAvatar];
+        strongSelf->_avatarMixin = nil;
+    };
+    _avatarMixin.didDismiss = ^
     {
-        TGMediaFoldersController *mediaFoldersController = [[TGMediaFoldersController alloc] initWithIntent:TGModernMediaPickerControllerSetProfilePhotoIntent];
-        TGModernMediaPickerController *mediaPickerController = [[TGModernMediaPickerController alloc] initWithAssetsGroup:nil intent:TGModernMediaPickerControllerSetProfilePhotoIntent];
+        __strong TGChannelInfoController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
         
-        navigationController = [TGNavigationController navigationControllerWithControllers:@[ mediaFoldersController, mediaPickerController ]];
-        
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        {
-            void (^dismiss)(void) = ^
-            {
-                __strong TGChannelInfoController *strongSelf = weakSelf;
-                if (strongSelf == nil)
-                    return;
-                
-                [strongSelf dismissViewControllerAnimated:true completion:nil];
-            };
-            
-            mediaFoldersController.dismiss = dismiss;
-            mediaPickerController.dismiss = dismiss;
-            
-            [self presentViewController:navigationController animated:true completion:nil];
-        }
-        else
-        {
-            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-            
-            TGOverlayFormsheetWindow *formSheetWindow = [[TGOverlayFormsheetWindow alloc] initWithParentController:self contentController:navigationController];
-            [formSheetWindow showAnimated:true];
-            
-            __weak TGOverlayFormsheetWindow *weakFormSheetWindow = formSheetWindow;
-            void (^dismiss)(void) = ^
-            {
-                __strong TGOverlayFormsheetWindow *strongFormSheetWindow = weakFormSheetWindow;
-                if (strongFormSheetWindow == nil)
-                    return;
-                
-                [strongFormSheetWindow dismissAnimated:true];
-            };
-            
-            mediaFoldersController.dismiss = dismiss;
-            mediaPickerController.dismiss = dismiss;
-        }
-        
-        __weak TGMediaFoldersController *weakMediaFoldersController = mediaFoldersController;
-        void(^avatarCreated)(UIImage *) = ^(UIImage *image)
-        {
-            __strong TGChannelInfoController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf _updateGroupProfileImage:image];
-            
-            __strong TGMediaFoldersController *strongMediaFoldersController = weakMediaFoldersController;
-            if (strongMediaFoldersController != nil && strongMediaFoldersController.dismiss != nil)
-                strongMediaFoldersController.dismiss();
-        };
-        
-        mediaFoldersController.avatarCreated = avatarCreated;
-        mediaPickerController.avatarCreated = avatarCreated;
-    }
-}
-
-- (void)imagePickerController:(TGImagePickerController *)__unused imagePicker didFinishPickingWithAssets:(NSArray *)assets
-{
-    UIImage *image = nil;
-    
-    if (assets.count != 0)
-    {
-        if ([assets[0] isKindOfClass:[UIImage class]])
-            image = assets[0];
-    }
-    
-    [self _updateGroupProfileImage:image];
-    
-    [self dismissViewControllerAnimated:true completion:nil];
+        strongSelf->_avatarMixin = nil;
+    };
+    [_avatarMixin present];
 }
 
 - (void)_updateGroupProfileImage:(UIImage *)image
@@ -1004,7 +750,7 @@
     NSMutableArray *infoList = [[NSMutableArray alloc] init];
     
     int defaultSoundId = 1;
-    [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 2 soundId:&defaultSoundId muteUntil:NULL previewText:NULL photoNotificationsEnabled:NULL notFound:NULL];
+    [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 2 soundId:&defaultSoundId muteUntil:NULL previewText:NULL messagesMuted:NULL notFound:NULL];
     NSString *defaultSoundTitle = [self soundNameFromId:defaultSoundId];
     
     int index = -1;
@@ -1159,10 +905,16 @@
             [_channelCommentsItem setIsOn:!conversation.channelIsReadOnly animated:true];
         }
         
-        _channelAboutItem.variant = conversation.about;
+        if (!_editing) {
+            _channelAboutItem.text = conversation.about;
+        }
         _channelLinkItem.variant = conversation.username.length == 0 ? @"" : [@"/" stringByAppendingString:conversation.username];
         
         bool forceReload = false;
+        
+        if (_signMessagesItem.isOn != _conversation.signaturesEnabled) {
+            _signMessagesItem.isOn = _conversation.signaturesEnabled;
+        }
         
         [self _updateConversationWithLoadedUsers:nil forceReload:forceReload];
         
@@ -1254,7 +1006,7 @@
                     return nil;
                 };
                 
-                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
+                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
                 {
                     __strong TGChannelInfoController *strongSelf = weakSelf;
                     if (strongSelf != nil)
@@ -1411,7 +1163,17 @@
 
 - (void)sharePressed {
     if (_conversation.username.length != 0) {
-        NSArray *dataToShare = @[[NSURL URLWithString:[@"https://telegram.me/" stringByAppendingString:_conversation.username]]];
+        NSString *aboutText = _conversation.about;
+        if (aboutText == nil) {
+            aboutText = @"";
+        }
+        if (aboutText.length > 200) {
+            aboutText = [[aboutText substringToIndex:200] stringByAppendingString:@"..."];
+        }
+        NSString *linkText = [[NSString alloc] initWithFormat:@"https://telegram.me/%@%@%@", _conversation.username, aboutText.length == 0 ? @"" : @"\n", aboutText];
+        
+        NSArray *dataToShare = @[linkText];
+        
         UIActivityViewController *activityViewController = [[UIActivityViewController alloc] initWithActivityItems:dataToShare applicationActivities:nil];
         [self presentViewController:activityViewController animated:YES completion:nil];
     } else {
@@ -1515,7 +1277,9 @@
 }
 
 - (void)sharedMediaPressed {
-    [self.navigationController pushViewController:[[TGSharedMediaController alloc] initWithPeerId:_peerId accessHash:_conversation.accessHash important:true] animated:true];
+    TGSharedMediaController *controller = [[TGSharedMediaController alloc] initWithPeerId:_peerId accessHash:_conversation.accessHash important:true];
+    controller.channelAllowDelete = _conversation.channelRole == TGChannelRoleCreator;
+    [self.navigationController pushViewController:controller animated:true];
 }
 
 - (void)deleteChannelPressed {
@@ -1532,6 +1296,123 @@
             [strongSelf _commitDeleteChannel];
         }
     } target:self] showInView:self.view];
+}
+
+- (void)reportChannelPressed {
+    __weak TGChannelInfoController *weakSelf = self;
+    [[[TGActionSheet alloc] initWithTitle:nil actions:@[
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonSpam") action:@"spam"],
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonViolence") action:@"violence"],
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonPornography") action:@"pornography"],
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonOther") action:@"other"],
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]] actionBlock:^(__unused id target, NSString *action) {
+        __strong TGChannelInfoController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            if (![action isEqualToString:@"cancel"]) {
+                TGReportPeerReason reason = TGReportPeerReasonSpam;
+                if ([action isEqualToString:@"spam"]) {
+                    reason = TGReportPeerReasonSpam;
+                } else if ([action isEqualToString:@"violence"]) {
+                    reason = TGReportPeerReasonViolence;
+                } else if ([action isEqualToString:@"pornography"]) {
+                    reason = TGReportPeerReasonPornography;
+                } else if ([action isEqualToString:@"other"]) {
+                    reason = TGReportPeerReasonOther;
+                }
+                
+                void (^reportBlock)(NSString *) = ^(NSString *otherText) {
+                    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+                    [progressWindow showWithDelay:0.1];
+                    
+                    [[[[TGAccountSignals reportPeer:strongSelf->_conversation.conversationId accessHash:strongSelf->_conversation.accessHash reason:reason otherText:otherText] deliverOn:[SQueue mainQueue]] onDispose:^{
+                        TGDispatchOnMainThread(^{
+                            [progressWindow dismiss:true];
+                        });
+                    }] startWithNext:nil error:^(__unused id error) {
+                        if (NSClassFromString(@"UIAlertController") != nil) {
+                            
+                        } else {
+                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.GenericError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                        }
+                    } completed:^{
+                        __strong TGChannelInfoController *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            [strongSelf dismissViewControllerAnimated:true completion:nil];
+                        }
+                        
+                        if (NSClassFromString(@"UIAlertController") != nil) {
+                            UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:nil message:TGLocalized(@"ReportPeer.AlertSuccess") preferredStyle:UIAlertControllerStyleAlert];
+                            
+                            UIAlertAction *doneAction = [UIAlertAction actionWithTitle:TGLocalized(@"Common.OK") style:UIAlertActionStyleDefault handler:nil];
+                            [alertVC addAction:doneAction];
+                            
+                            [strongSelf presentViewController:alertVC animated:true completion:nil];
+                        } else {
+                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"ReportPeer.AlertSuccess") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                        }
+                    }];
+                };
+                
+                if (reason == TGReportPeerReasonOther) {
+                    TGReportPeerOtherTextController *controller = [[TGReportPeerOtherTextController alloc] initWithCompletion:^(NSString *text) {
+                        if (text.length != 0) {
+                            reportBlock(text);
+                        }
+                    }];
+                    __strong TGChannelInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        [strongSelf presentViewController:[TGNavigationController navigationControllerWithControllers:@[controller]] animated:true completion:nil];
+                    }
+                } else {
+                    reportBlock(nil);
+                }
+            }
+        }
+    } target:self] showInView:self.view];
+}
+
+- (void)updateSignMessages:(bool)value {
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+    [progressWindow showWithDelay:0.2];
+    
+    [[[[TGChannelManagementSignals updateChannelSignaturesEnabled:_conversation.conversationId accessHash:_conversation.accessHash enabled:value] deliverOn:[SQueue mainQueue]] onDispose:^{
+        TGDispatchOnMainThread(^{
+            [progressWindow dismiss:true];
+        });
+    }] startWithNext:nil];
+}
+
+- (void)followLink:(NSString *)link {
+    if ([link hasPrefix:@"mention://"])
+    {
+        NSString *domain = [link substringFromIndex:@"mention://".length];
+        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/resolveDomain/(%@,profile)", domain] options:@{@"domain": domain, @"profile": @true} flags:0 watcher:TGTelegraphInstance];
+    }
+    else if ([link hasPrefix:@"hashtag://"])
+    {
+        NSString *hashtag = [link substringFromIndex:@"hashtag://".length];
+        
+        TGHashtagSearchController *hashtagController = [[TGHashtagSearchController alloc] initWithQuery:[@"#" stringByAppendingString:hashtag] peerId:0 accessHash:0];
+        //__weak TGChannelInfoController *weakSelf = self;
+       /*hashtagController.customResultBlock = ^(int32_t messageId) {
+            __strong TGChannelInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf navigateToMessageId:messageId scrollBackMessageId:0 animated:true];
+                TGModernConversationController *controller = strongSelf.controller;
+                [controller.navigationController popToViewController:controller animated:true];
+            }
+        };*/
+        
+        [self.navigationController pushViewController:hashtagController animated:true];
+    } else {
+        @try {
+            NSURL *url = [NSURL URLWithString:link];
+            if (url != nil) {
+                [[UIApplication sharedApplication] openURL:url];
+            }
+        } @catch (NSException *e) {
+        }
+    }
 }
 
 @end

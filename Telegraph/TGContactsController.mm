@@ -254,7 +254,7 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
 
 #pragma mark -
 
-@interface TGContactsController () <UITableViewDelegate, UITableViewDataSource, UISearchDisplayDelegate, MFMessageComposeViewControllerDelegate, TGTokenFieldViewDelegate, TGSearchDisplayMixinDelegate, TGCreateContactControllerDelegate>
+@interface TGContactsController () <UITableViewDelegate, UITableViewDataSource, UISearchDisplayDelegate, MFMessageComposeViewControllerDelegate, TGTokenFieldViewDelegate, TGSearchDisplayMixinDelegate, TGCreateContactControllerDelegate, TGKeyCommandResponder>
 {
     std::vector<std::tr1::shared_ptr<TGContactListSection> > _sectionList;
     
@@ -525,6 +525,7 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
         _tokenFieldView = [[TGTokenFieldView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 44)];
         _tokenFieldView.placeholder = _composePlaceholder;
         _tokenFieldView.frame = CGRectMake(0, [self tokenFieldOffset], self.view.frame.size.width, [_tokenFieldView preferredHeight]);
+        _tokenFieldView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _tokenFieldView.delegate = self;
         [self.view addSubview:_tokenFieldView];
         
@@ -772,6 +773,9 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    
+    if (_shouldOpenSearch)
+        [_searchBar becomeFirstResponder];
 }
 
 - (void)viewDidUnload
@@ -833,7 +837,7 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
             }
             
             if (_contactsMode & TGContactsModePhonebook)
-                [ActionStageInstance() requestActor:@"/tg/contactlist/(phonebook)" options:nil watcher:self];
+                [ActionStageInstance() requestActor:@"/tg/contactlist/(phonebook)" options:@{@"force": @([self forceLoadPhonebook])} watcher:self];
         }
         
         _onceLoaded = true;
@@ -1046,11 +1050,11 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
     {    
         [_tokenFieldView beginTransition:duration];
         
-        _tokenFieldView.frame = CGRectMake(0, [self tokenFieldOffset], screenSize.width, [_tokenFieldView preferredHeight]);
+        _tokenFieldView.frame = CGRectMake(0, [self tokenFieldOffset], self.view.frame.size.width, [_tokenFieldView preferredHeight]);
         [UIView setAnimationsEnabled:false];
         [_tokenFieldView layoutSubviews];
         [UIView setAnimationsEnabled:true];
-        _tokenFieldView.frame = CGRectMake(0, [self tokenFieldOffset]/* + ([_tokenFieldView searchIsActive] ? (44 - [_tokenFieldView preferredHeight]) : 0)*/, screenSize.width, [_tokenFieldView preferredHeight]);
+        _tokenFieldView.frame = CGRectMake(0, [self tokenFieldOffset]/* + ([_tokenFieldView searchIsActive] ? (44 - [_tokenFieldView preferredHeight]) : 0)*/, self.view.frame.size.width, [_tokenFieldView preferredHeight]);
         [self updateTableFrame:false collapseSearch:false];
     }
     
@@ -1573,7 +1577,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             user = [_globalSearchResults objectAtIndex:indexPath.row];
     }
     
-    if (user != nil && (user.uid == INT_MAX || user.uid == INT_MAX - 1 || user.uid == INT_MAX - 2))
+    if (user != nil && (user.uid == INT_MAX || user.uid == INT_MAX - 1 || user.uid == INT_MAX - 2 || user.uid == INT_MAX - 3))
     {
         static NSString *actionCellIdentifier = @"AC";
         TGFlatActionCell *actionCell = (TGFlatActionCell *)[_tableView dequeueReusableCellWithIdentifier:actionCellIdentifier];
@@ -1599,6 +1603,10 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
                 mode = TGFlatActionCellModeCreateChannel;
             else
                 mode = TGFlatActionCellModeChannels;
+        }
+        else if (user.uid == INT_MAX - 3)
+        {
+            mode = TGFlatActionCellModeCreateChannelGroup;
         }
         else
             mode = TGFlatActionCellModeCreateGroup;
@@ -1704,14 +1712,16 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             [_searchMixin.searchBar endEditing:true];
     }
     
-    if (user != nil && (user.uid == INT_MAX || user.uid == INT_MAX - 1 || user.uid == INT_MAX - 2))
+    if (user != nil && (user.uid == INT_MAX || user.uid == INT_MAX - 1 || user.uid == INT_MAX - 2 || user.uid == INT_MAX - 3))
     {
-        if (indexPath.row == 0 || indexPath.row == 1 || indexPath.row == 2)
+        if (indexPath.row == 0 || indexPath.row == 1 || indexPath.row == 2 || indexPath.row == 3)
         {
             if (user.uid == INT_MAX - 1)
                 [self encryptionItemSelected];
             else if (user.uid == INT_MAX - 2)
                 [self channelsItemSelected];
+            else if (user.uid == INT_MAX - 3)
+                [self channelGroupItemSelected];
             else
                 [self actionItemSelected];
         }
@@ -1755,10 +1765,16 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
     
     TGViewController *controller = nil;
     if (didShowIntro || TGIsPad())
-        controller = [[TGCreateGroupController alloc] initWithCreateChannel:true];
+        controller = [[TGCreateGroupController alloc] initWithCreateChannel:true createChannelGroup:false];
     else
         controller = [[TGChannelIntroController alloc] init];
     
+    [TGAppDelegateInstance.rootController pushContentController:controller];
+}
+
+- (void)channelGroupItemSelected
+{
+    TGViewController *controller = [[TGCreateGroupController alloc] initWithCreateChannel:false createChannelGroup:true];
     [TGAppDelegateInstance.rootController pushContentController:controller];
 }
 
@@ -1837,31 +1853,32 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
     return _tableView;
 }
 
+- (void)_setIndexViewHidden:(bool)hidden animated:(bool)animated
+{
+    UIView *indexView = [_tableView valueForKey:TGEncodeText(@"`joefy", -1)];
+    
+    void (^changeBlock)(void) = ^
+    {
+        indexView.alpha = hidden ? 0.0f : 1.0f;
+    };
+    
+    if (animated)
+        [UIView animateWithDuration:0.15f animations:changeBlock];
+    else
+        changeBlock();
+}
+
 - (void)searchMixinWillActivate:(bool)animated
 {
     _tableView.scrollEnabled = false;
-    
-    UIView *indexView = [_tableView valueForKey:TGEncodeText(@"`joefy", -1)];
-    
-    [UIView animateWithDuration:0.15f animations:^
-    {
-        indexView.alpha = 0.0f;
-    }];
-    
+    [self _setIndexViewHidden:true animated:animated];
     [self setNavigationBarHidden:true animated:animated];
 }
 
 - (void)searchMixinWillDeactivate:(bool)animated
 {
     _tableView.scrollEnabled = true;
-    
-    UIView *indexView = [_tableView valueForKey:TGEncodeText(@"`joefy", -1)];
-    
-    [UIView animateWithDuration:0.15f animations:^
-    {
-        indexView.alpha = 1.0f;
-    }];
-    
+    [self _setIndexViewHidden:false animated:animated];
     [self setNavigationBarHidden:false animated:animated];
 }
 
@@ -1985,6 +2002,10 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
                                 match = user.botKind != TGBotKindPrivate;
                             }
                             
+                            if (match && _ignoreBots) {
+                                match = user.kind != TGUserKindGeneric;
+                            }
+                            
                             if (match)
                                 [filteredGlobalSearchResults addObject:user];
                         }
@@ -2022,6 +2043,12 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             {
                 return *itemIt;
             }
+        }
+    }
+    
+    for (TGUser *user in _globalSearchResults) {
+        if (user.uid == uid) {
+            return user;
         }
     }
     
@@ -2565,6 +2592,10 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
         {
             [(TGContactCell *)options[@"cell"] updateFlags:selected force:true];
             
+            if (self.usersSelectedLimitAlert != nil) {
+                [[[TGAlertView alloc] initWithTitle:nil message:self.usersSelectedLimitAlert cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            }
+            
             return;
         }
         
@@ -2829,8 +2860,11 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
         else if ([messageType isEqualToString:@"globalResults"])
         {
             NSArray *users = [message objectForKey:@"users"];
-            if ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose)
-                users = @[];
+            if ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose) {
+                if ((_contactsMode & TGContactsModeSearchGlobal) != TGContactsModeSearchGlobal) {
+                    users = @[];
+                }
+            }
             
             dispatch_async(dispatch_get_main_queue(), ^
             {
@@ -2850,6 +2884,10 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
     }
 }
 
+- (bool)forceLoadPhonebook {
+    return (_contactsMode & TGContactsModePhonebook) != 0 && (_contactsMode & TGContactsModeRegistered) == 0;
+}
+
 - (void)updateContactList
 {
     //TGLog(@"Updating contact list view");
@@ -2863,7 +2901,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
     NSArray *addressBook = _currentAddressBook;
     
     if (addressBook == nil)
-        addressBook = [TGDatabaseInstance() loadPhonebookContacts];
+        addressBook = [TGDatabaseInstance() loadPhonebookContacts:[self forceLoadPhonebook]];
     
     std::map<int, NSString *> phoneIdToLabel;
     
@@ -3330,6 +3368,9 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             }
             
             [_tableView layoutSubviews];
+            
+            if (_searchMixin.isActive)
+                [self _setIndexViewHidden:true animated:false];
         }
         
         TGLog(@"Updated contact list");
@@ -3433,6 +3474,112 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
 
 - (void)commitDeleteItemInFirstSection:(NSInteger)__unused row
 {
+}
+
+- (void)selectPreviousSearchItem
+{
+    if (!_searchMixin.isActive)
+        return;
+    
+    UITableView *tableView = _searchMixin.searchResultsTableView;
+    NSIndexPath *newIndexPath = tableView.indexPathForSelectedRow;
+    
+    if (newIndexPath == nil)
+    {
+        newIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+    }
+    else if (newIndexPath.row > 0)
+    {
+        newIndexPath = [NSIndexPath indexPathForRow:newIndexPath.row - 1 inSection:newIndexPath.section];
+    }
+    else if (newIndexPath.section > 0)
+    {
+        if ([self tableView:tableView numberOfRowsInSection:newIndexPath.section - 1] > 0)
+            newIndexPath = [NSIndexPath indexPathForRow:[self tableView:tableView numberOfRowsInSection:newIndexPath.section - 1] - 1 inSection:newIndexPath.section - 1];
+    }
+    
+    if (tableView.indexPathForSelectedRow != nil)
+        [tableView deselectRowAtIndexPath:tableView.indexPathForSelectedRow animated:false];
+    
+    if (newIndexPath != nil)
+        [tableView selectRowAtIndexPath:newIndexPath animated:false scrollPosition:UITableViewScrollPositionMiddle];
+}
+
+- (void)selectNextSearchItem
+{
+    if (!_searchMixin.isActive)
+        return;
+    
+    UITableView *tableView = _searchMixin.searchResultsTableView;
+    NSIndexPath *newIndexPath = tableView.indexPathForSelectedRow;
+    
+    if (newIndexPath == nil)
+    {
+        newIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+    }
+    else if (newIndexPath.row < [self tableView:tableView numberOfRowsInSection:newIndexPath.section] - 1)
+    {
+        newIndexPath = [NSIndexPath indexPathForRow:newIndexPath.row + 1 inSection:newIndexPath.section];
+    }
+    else if (newIndexPath.section < [self numberOfSectionsInTableView:tableView] - 1)
+    {
+        if ([self tableView:tableView numberOfRowsInSection:newIndexPath.section + 1] > 0)
+            newIndexPath = [NSIndexPath indexPathForRow:0 inSection:newIndexPath.section + 1];
+    }
+    
+    if (_searchMixin.searchResultsTableView.indexPathForSelectedRow != nil)
+        [_searchMixin.searchResultsTableView deselectRowAtIndexPath:_searchMixin.searchResultsTableView.indexPathForSelectedRow animated:false];
+    
+    if (newIndexPath != nil)
+        [_searchMixin.searchResultsTableView selectRowAtIndexPath:newIndexPath animated:false scrollPosition:UITableViewScrollPositionMiddle];
+}
+
+- (void)openSelectedSearchItem
+{
+    if (!_searchMixin.isActive)
+        return;
+    
+    if (_localSearchResults.count == 0 && _globalSearchResults.count == 0)
+        return;
+    
+    NSIndexPath *selectedIndexPath = _searchMixin.searchResultsTableView.indexPathForSelectedRow;
+    if (selectedIndexPath == nil)
+        selectedIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+    
+    [self tableView:_searchMixin.searchResultsTableView didSelectRowAtIndexPath:selectedIndexPath];
+    
+    [self.searchBar resignFirstResponder];
+    [_searchMixin setIsActive:false animated:true];
+}
+
+- (void)processKeyCommand:(UIKeyCommand *)keyCommand
+{
+    if ([keyCommand.input isEqualToString:@"\r"])
+    {
+        [self openSelectedSearchItem];
+    }
+    else if ([keyCommand.input isEqualToString:UIKeyInputUpArrow])
+    {
+        [self selectPreviousSearchItem];
+    }
+    else if ([keyCommand.input isEqualToString:UIKeyInputDownArrow])
+    {
+        [self selectNextSearchItem];
+    }
+}
+
+- (NSArray *)availableKeyCommands
+{
+    NSMutableArray *keyCommands = [[NSMutableArray alloc] init];
+    
+    if (_searchBar.isFirstResponder)
+    {
+        [keyCommands addObject:[TGKeyCommand keyCommandWithTitle:nil input:@"\r" modifierFlags:0]];
+        [keyCommands addObject:[TGKeyCommand keyCommandWithTitle:nil input:UIKeyInputUpArrow modifierFlags:0]];
+        [keyCommands addObject:[TGKeyCommand keyCommandWithTitle:nil input:UIKeyInputDownArrow modifierFlags:0]];
+    }
+    
+    return keyCommands;
 }
 
 @end

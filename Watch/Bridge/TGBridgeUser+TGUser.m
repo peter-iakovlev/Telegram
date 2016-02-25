@@ -25,6 +25,7 @@
     bridgeUser->_kind = user.kind;
     bridgeUser->_botKind = user.botKind;
     bridgeUser->_botVersion = user.botInfoVersion;
+    bridgeUser->_verified = user.isVerified;
     
     return bridgeUser;
 }

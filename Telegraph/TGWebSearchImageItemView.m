@@ -1,63 +1,94 @@
 #import "TGWebSearchImageItemView.h"
 
-#import "TGEditablePhotoItem.h"
+#import "TGMediaEditingContext.h"
 #import "TGWebSearchImageItem.h"
+#import "PGPhotoEditorValues.h"
 
 #import "TGStringUtils.h"
 
-#import "TGImagePickerCellCheckButton.h"
+#import "TGCheckButtonView.h"
 
 #import "TGImageView.h"
 
 @interface TGWebSearchImageItemView ()
 {
-    TGImagePickerCellCheckButton *_checkButton;
+    TGCheckButtonView *_checkButton;
+    
+    SMetaDisposable *_imageDisposable;
+    SMetaDisposable *_itemSelectedDisposable;
 }
-
-@property (nonatomic, copy) bool (^isEditing)();
-@property (nonatomic, copy) void (^toggleEditing)();
-@property (nonatomic, copy) void (^itemSelected)(id<TGWebSearchListItem>);
-@property (nonatomic, copy) bool (^isItemSelected)(id<TGWebSearchListItem>);
-@property (nonatomic, copy) bool (^isItemHidden)(id<TGWebSearchListItem>);
-
 @end
 
 @implementation TGWebSearchImageItemView
 
-- (instancetype)initWithFrame:(CGRect)frame
+- (void)dealloc
 {
-    self = [super initWithFrame:frame];
-    if (self != nil)
-    {
-        
-    }
-    return self;
-}
-
-- (void)setHiddenAsBeingEdited:(bool)hidden
-{
-    self.imageView.hidden = hidden;
+    [_imageDisposable dispose];
+    [_itemSelectedDisposable dispose];
 }
 
 - (void)setItem:(TGWebSearchImageItem *)item synchronously:(bool)synchronously
 {
     [super setItem:item synchronously:synchronously];
     
-    self.isEditing = item.isEditing;
-    self.toggleEditing = item.toggleEditing;
-    self.itemSelected = item.itemSelected;
-    self.isItemSelected = item.isItemSelected;
-    self.isItemHidden = item.isItemHidden;
+    if (item.selectionContext != nil)
+    {
+        if (_checkButton == nil)
+        {
+            _checkButton = [[TGCheckButtonView alloc] initWithStyle:TGCheckButtonStyleMedia];
+            [_checkButton addTarget:self action:@selector(checkButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+            [self addSubview:_checkButton];
+        }
+        
+        if (_itemSelectedDisposable == nil)
+            _itemSelectedDisposable = [[SMetaDisposable alloc] init];
+        
+        __weak TGWebSearchImageItemView *weakSelf = self;
+        [_checkButton setSelected:[item.selectionContext isItemSelected:item.selectableMediaItem] animated:false];
+        [_itemSelectedDisposable setDisposable:[[item.selectionContext itemInformativeSelectedSignal:item.selectableMediaItem] startWithNext:^(TGMediaSelectionChange *next)
+        {
+            __strong TGWebSearchImageItemView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if (next.sender != strongSelf->_checkButton)
+                [strongSelf->_checkButton setSelected:next.selected animated:next.animated];
+        }]];
+    }
     
-    [self updateItemHiddenAnimated:false];
-    [self updateItemSelected];
+    __weak TGWebSearchImageItemView *weakSelf = self;
+    void (^setOriginalImage)(void) = ^
+    {
+        __strong TGWebSearchImageItemView *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        [strongSelf.imageView loadUri:[[NSString alloc] initWithFormat:@"web-search-thumbnail://?url=%@&width=90&height=90", [TGStringUtils stringByEscapingForURL:item.previewUrl]] withOptions:nil];
+    };
     
-    [self updateItem];
-    
-    if (self.window != nil && _isEditing && _isEditing())
-        [self startShakeAnimation:false];
+    if ([item conformsToProtocol:@protocol(TGModernMediaListEditableItem)])
+    {
+        id<TGMediaEditableItem> editableItem = item.editableMediaItem;
+        
+        if (_imageDisposable == nil)
+            _imageDisposable = [[SMetaDisposable alloc] init];
+        
+        [_imageDisposable setDisposable:[[item.editingContext thumbnailImageSignalForItem:editableItem] startWithNext:^(id next)
+        {
+            __strong TGWebSearchImageItemView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if ([next isKindOfClass:[UIImage class]])
+                [strongSelf.imageView loadUri:@"embedded-image://" withOptions:@{ TGImageViewOptionEmbeddedImage: next }];
+            else
+                setOriginalImage();
+        }]];
+    }
     else
-        [self stopShakeAnimation:false];
+    {
+        setOriginalImage();
+    }
 }
 
 - (void)layoutSubviews
@@ -67,202 +98,52 @@
     _checkButton.frame = (CGRect){{self.frame.size.width - _checkButton.frame.size.width - 2.0f, 2.0f}, _checkButton.frame.size};
 }
 
-- (void)setIsHidden:(bool)isHidden
-{
-    [super setIsHidden:isHidden];
-    
-    self.hidden = isHidden;
-}
-
 - (void)checkButtonPressed
 {
-    if (_isItemSelected && _itemSelected)
-    {
-        _itemSelected((id<TGWebSearchListItem>)self.item);
-        [_checkButton setChecked:_isItemSelected((id<TGWebSearchListItem>)self.item) animated:true];
-    }
-}
-
-- (void)updateItem
-{
-    if (![self.item isKindOfClass:[TGWebSearchImageItem class]])
-        return;
-    
     TGWebSearchImageItem *item = (TGWebSearchImageItem *)self.item;
     
-    void(^loadOriginalThumbnail)(void) = ^
-    {
-        [self setImageUri:[[NSString alloc] initWithFormat:@"web-search-thumbnail://?url=%@&width=90&height=90", [TGStringUtils stringByEscapingForURL:item.previewUrl]] synchronously:false];
-    };
-    
-    if ([item conformsToProtocol:@protocol(TGModernMediaListEditableItem)])
-    {
-        id<TGEditablePhotoItem> editableMediaItem = item.editableMediaItem;
-        
-        if (editableMediaItem.fetchEditorValues != nil)
-        {
-            PGPhotoEditorValues *editorValues = (PGPhotoEditorValues *)editableMediaItem.fetchEditorValues(editableMediaItem);
-            
-            if (editorValues != nil && editableMediaItem.fetchThumbnailImage != nil)
-            {
-                UIImage *image = editableMediaItem.fetchThumbnailImage(editableMediaItem);
-                if (image != nil)
-                    [self.imageView loadUri:@"embedded://" withOptions:@{TGImageViewOptionEmbeddedImage: image}];
-                else
-                    [self.imageView reset];
-            }
-            else
-            {
-                loadOriginalThumbnail();
-            }
-        }
-        else
-        {
-            loadOriginalThumbnail();
-        }
-    }
-    else
-    {
-        loadOriginalThumbnail();
-    }
+    [_checkButton setSelected:!_checkButton.selected animated:true];
+    [item.selectionContext setItem:item.selectableMediaItem selected:_checkButton.selected animated:false sender:_checkButton];
 }
 
-- (void)updateItemHiddenAnimated:(bool)animated
+- (void)setHidden:(bool)hidden animated:(bool)animated
 {
-    if (_isItemHidden)
-    {
-        bool hidden = _isItemHidden((id<TGWebSearchListItem>)self.item);
-        if (hidden != self.imageView.hidden)
-        {
-            self.imageView.hidden = hidden;
-            
-            if (animated)
-            {
-                if (!hidden)
-                    _checkButton.alpha = 0.0f;
-                [UIView animateWithDuration:0.2 animations:^
-                 {
-                     if (!hidden)
-                         _checkButton.alpha = 1.0f;
-                 }];
-            }
-            else
-            {
-                self.imageView.hidden = hidden;
-                _checkButton.alpha = hidden ? 0.0f : 1.0f;
-            }
-        }
-    }
-}
-
-- (void)updateItemSelected
-{
-    if (_isItemSelected != nil)
-    {
-        if (_checkButton == nil)
-        {
-            _checkButton = [[TGImagePickerCellCheckButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 33.0f, 33.0f)];
-            [_checkButton setChecked:false animated:false];
-            [_checkButton addTarget:self action:@selector(checkButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-            [self addSubview:_checkButton];
-        }
-        [_checkButton setChecked:_isItemSelected((id<TGWebSearchListItem>)self.item) animated:false];
-    }
-}
-
-- (void)updateIsEditing
-{
-    if (self.window != nil && _isEditing && _isEditing())
-        [self startShakeAnimation:true];
-    else
-        [self stopShakeAnimation:true];
-}
-
-#define Y_OFFSET 0.5f
-#define X_OFFSET 0.5f
-#define ANGLE_OFFSET ((CGFloat)M_PI_4*0.07f)
-
--(void)startShakeAnimation:(bool)animated
-{
-    if ([self.layer animationForKey:@"shake_translation_x"] != nil)
+    if (hidden == self.imageView.hidden)
         return;
     
-    CFTimeInterval offset=(double)arc4random()/(double)RAND_MAX;
-    
-    CGAffineTransform transform = CGAffineTransformIdentity;
-    transform = CGAffineTransformRotate(transform, -ANGLE_OFFSET*0.5f);
-    transform = CGAffineTransformTranslate(transform, -X_OFFSET*0.5f, -Y_OFFSET*0.5f);
-    transform = CGAffineTransformScale(transform, 0.8f, 0.8f);
+    self.imageView.hidden = hidden;
     
     if (animated)
     {
-        [UIView animateWithDuration:0.15 animations:^
+        if (!hidden)
         {
-            self.imageView.transform = transform;
-            _checkButton.alpha = 0.0f;
+            for (UIView *view in self.subviews)
+            {
+                if (view != self.imageView)
+                    view.alpha = 0.0f;
+            }
+        }
+        
+        [UIView animateWithDuration:0.2 animations:^
+        {
+            if (!hidden)
+            {
+                for (UIView *view in self.subviews)
+                {
+                    if (view != self.imageView)
+                        view.alpha = 1.0f;
+                }
+            }
         }];
     }
     else
     {
-        self.imageView.transform = transform;
-        _checkButton.alpha = 0.0f;
-    }
-    
-    CABasicAnimation *tAnim=[CABasicAnimation animationWithKeyPath:@"position.x"];
-    tAnim.repeatCount=HUGE_VALF;
-    tAnim.byValue=[NSNumber numberWithFloat:X_OFFSET];
-    tAnim.duration=0.07f;
-    tAnim.autoreverses=YES;
-    tAnim.timeOffset=offset;
-    [self.imageView.layer addAnimation:tAnim forKey:@"shake_translation_x"];
-    
-    CABasicAnimation *tyAnim=[CABasicAnimation animationWithKeyPath:@"position.y"];
-    tyAnim.repeatCount=HUGE_VALF;
-    tyAnim.byValue=[NSNumber numberWithFloat:Y_OFFSET];
-    tyAnim.duration=0.07f;
-    tyAnim.autoreverses=YES;
-    tyAnim.timeOffset=offset;
-    [self.imageView.layer addAnimation:tyAnim forKey:@"shake_translation_y"];
-    
-    CABasicAnimation *rAnim=[CABasicAnimation animationWithKeyPath:@"transform.rotation"];
-    rAnim.repeatCount=HUGE_VALF;
-    rAnim.byValue=[NSNumber numberWithFloat:(float)ANGLE_OFFSET];
-    rAnim.duration=0.11f;
-    rAnim.autoreverses=YES;
-    rAnim.timeOffset=offset;
-    rAnim.speed = 1.0f + arc4random_uniform(200) / 1000.0f;
-    [self.imageView.layer addAnimation:rAnim forKey:@"shake_rotation"];
-}
-
--(void)stopShakeAnimation:(bool)animated
-{
-    [self.imageView.layer removeAnimationForKey:@"shake_translation_x"];
-    [self.imageView.layer removeAnimationForKey:@"shake_translation_y"];
-    [self.imageView.layer removeAnimationForKey:@"shake_rotation"];
- 
-    if (animated)
-    {
-        [UIView animateWithDuration:0.15 animations:^
+        for (UIView *view in self.subviews)
         {
-            self.imageView.transform = CGAffineTransformIdentity;
-            _checkButton.alpha = 1.0f;
-        }];
+            if (view != self.imageView)
+                view.alpha = hidden ? 0.0f : 1.0f;
+        }
     }
-    else
-    {
-        self.imageView.transform = CGAffineTransformIdentity;
-        _checkButton.alpha = 1.0f;
-    }
-}
-
-- (void)didMoveToWindow
-{
-    [super didMoveToWindow];
-    
-    if (self.window != nil && _isEditing && _isEditing())
-        [self startShakeAnimation:false];
-    else
-        [self stopShakeAnimation:false];
 }
 
 @end

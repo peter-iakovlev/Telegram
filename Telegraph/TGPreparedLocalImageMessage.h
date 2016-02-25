@@ -19,8 +19,6 @@
 
 @property (nonatomic, strong) NSString *caption;
 
-@property (nonatomic, strong) TGMessage *replyMessage;
-
 + (instancetype)messageWithImageData:(NSData *)imageData imageSize:(CGSize)imageSize thumbnailData:(NSData *)thumbnailData thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage;
 + (instancetype)messageWithLocalImageDataPath:(NSString *)localImageDataPath imageSize:(CGSize)imageSize localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage;
 + (instancetype)messageByCopyingMessageData:(TGPreparedLocalImageMessage *)source;

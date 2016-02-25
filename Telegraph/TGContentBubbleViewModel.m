@@ -41,10 +41,15 @@
 #import "TGReplyHeaderStickerModel.h"
 #import "TGReplyHeaderActionModel.h"
 
-#import "TGPendingWebpageFooterModel.h"
 #import "TGArticleWebpageFooterModel.h"
 
 #import "TGMessageViewsViewModel.h"
+#import "TGModernButtonViewModel.h"
+#import "TGModernButtonView.h"
+
+#import "TGTextCheckingResult.h"
+
+#import "TGFont.h"
 
 bool debugShowMessageIds = false;
 
@@ -55,6 +60,13 @@ bool debugShowMessageIds = false;
     
     TGModernImageViewModel *_broadcastIconModel;
     CGPoint _itemPosition;
+    
+    TGModernButtonViewModel *_shareButtonModel;
+    
+    bool _boundToContainer;
+    bool _mediaIsAvailable;
+    bool _mediaProgressVisible;
+    float _mediaProgress;
 }
 
 @end
@@ -66,7 +78,7 @@ bool debugShowMessageIds = false;
     debugShowMessageIds = true;
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer context:(TGModernViewContext *)context
+- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer viaUser:(TGUser *)viaUser context:(TGModernViewContext *)context
 {
     self = [super initWithAuthorPeer:authorPeer context:context];
     if (self != nil)
@@ -114,16 +126,64 @@ bool debugShowMessageIds = false;
             } else if ([authorPeer isKindOfClass:[TGConversation class]]) {
                 title = ((TGConversation *)authorPeer).chatTitle;
             }
+            //title = @"QFHEWPIHPIQEWHFIOHQEWIOFHQWHFIOQEWHPOIFHQWEOIHF";
             _authorNameModel = [[TGModernTextViewModel alloc] initWithText:title font:[assetsSource messageAuthorNameFont]];
             [_contentModel addSubmodel:_authorNameModel];
             
             if ([authorPeer isKindOfClass:[TGUser class]]) {
                 _hasAvatar = true;
             }
+            
+            static CTFontRef dateFont = NULL;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^
+            {
+                if (iosMajorVersion() >= 7) {
+                    dateFont = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGItalicSystemFontOfSize(12.0f) fontDescriptor], 0.0f, NULL);
+                } else {
+                    UIFont *font = TGItalicSystemFontOfSize(12.0f);
+                    dateFont = CTFontCreateWithName((__bridge CFStringRef)font.fontName, font.pointSize, nil);
+                }
+            });
+            _authorSignatureModel = [[TGModernTextViewModel alloc] initWithText:@"" font:dateFont];
+            _authorSignatureModel.ellipsisString = @"\u2026,";
+            _authorSignatureModel.textColor = _incomingAppearance ? incomingDateColor : outgoingDateColor;
+            [_contentModel addSubmodel:_authorSignatureModel];
         }
         
-        if (isChannel) {
+        if (viaUser != nil && viaUser.userName.length != 0) {
+            NSString *formatString = TGLocalized(@"Conversation.MessageViaUser");
+            NSString *viaUserName = [@"@" stringByAppendingString:viaUser.userName];
+            NSRange range = [formatString rangeOfString:@"%@"];
+            
+            _viaUserModel = [[TGModernTextViewModel alloc] initWithText:[[NSString alloc] initWithFormat:formatString, viaUserName] font:[assetsSource messageAuthorNameFont]];
+            if (range.location != NSNotFound) {
+                _viaUserModel.textCheckingResults = @[[[TGTextCheckingResult alloc] initWithRange:NSMakeRange(range.location, viaUserName.length) type:TGTextCheckingResultTypeBold contents:nil]];
+            }
+            _viaUserModel.textColor = _incomingAppearance ? TGAccentColor() : UIColorRGB(0x00a700);
+            [_contentModel addSubmodel:_viaUserModel];
+            
+            _viaUser = viaUser;
+        }
+        
+        bool isBot = false;
+        if ([authorPeer isKindOfClass:[TGUser class]]) {
+            if (((TGUser *)authorPeer).kind == TGUserKindBot || ((TGUser *)authorPeer).kind ==  TGUserKindSmartBot) {
+                isBot = true;
+            }
+        }
+        
+        if (isChannel || _context.isBot || isBot) {
             [_backgroundModel setPartialMode:false];
+            
+            _shareButtonModel = [[TGModernButtonViewModel alloc] init];
+            _shareButtonModel.image = [[TGTelegraphConversationMessageAssetsSource instance] systemShareButton];
+            _shareButtonModel.modernHighlight = true;
+            _shareButtonModel.frame = CGRectMake(0.0f, 0.0f, 29.0f, 29.0f);
+            if (!isChannel) {
+                _shareButtonModel.hidden = true;
+            }
+            [self addSubmodel:_shareButtonModel];
         }
         
         int daytimeVariant = 0;
@@ -219,7 +279,12 @@ bool debugShowMessageIds = false;
     _authorNameModel.textColor = authorNameColor;
 }
 
-- (void)setForwardHeader:(id)forwardPeer messageId:(int32_t)messageId
+- (void)setAuthorSignature:(NSString *)authorSignature {
+    _authorSignatureModel.text = [authorSignature stringByAppendingString:@","];
+    _authorSignature = authorSignature;
+}
+
+- (void)setForwardHeader:(id)forwardPeer forwardAuthor:(id)forwardAuthor messageId:(int32_t)messageId
 {
     if (_forwardedHeaderModel == nil)
     {
@@ -248,34 +313,66 @@ bool debugShowMessageIds = false;
             _forwardedPeerId = ((TGConversation *)forwardPeer).conversationId;
             authorName = ((TGConversation *)forwardPeer).chatTitle;
         }
+        
+        if ([forwardAuthor isKindOfClass:[TGUser class]]) {
+            authorName = [[NSString alloc] initWithFormat:@"%@ (%@)", authorName, ((TGUser *)forwardAuthor).displayName];
+        }
+        
+        NSMutableArray *additionalAttributes = [[NSMutableArray alloc] init];
+        NSMutableArray *textCheckingResults = [[NSMutableArray alloc] init];
 
+        NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageForwardNameFont], (NSString *)kCTFontAttributeName, nil];
+        
         NSString *text = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Message.ForwardedMessage"), authorName];
+        if (_viaUser != nil && _viaUser.userName.length != 0) {
+            NSString *formatString = [@" " stringByAppendingString:TGLocalized(@"Conversation.MessageViaUser")];
+            NSString *viaUserName = [@"@" stringByAppendingString:_viaUser.userName];
+            NSRange range = [formatString rangeOfString:@"%@"];
+            NSString *finalString = [[NSString alloc] initWithFormat:formatString, viaUserName];
+            
+            if (range.location != NSNotFound) {
+                range.location += text.length;
+                range.length = viaUserName.length;
+                [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:range type:TGTextCheckingResultTypeLink contents:@"via"]];
+                [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:range type:TGTextCheckingResultTypeUltraBold contents:nil]];
+            }
+            
+            text = [text stringByAppendingString:finalString];
+        }
         
         _forwardedHeaderModel = [[TGModernTextViewModel alloc] initWithText:text font:[[TGTelegraphConversationMessageAssetsSource instance] messageForwardTitleFont]];
         _forwardedHeaderModel.textColor = _incomingAppearance ? incomingForwardColor : outgoingForwardColor;
         _forwardedHeaderModel.layoutFlags = TGReusableLabelLayoutMultiline;
         if (formatNameRange.location != NSNotFound && authorName.length != 0)
         {
-            NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageForwardNameFont], (NSString *)kCTFontAttributeName, nil];
             NSRange range = NSMakeRange(formatNameRange.location, authorName.length);
-            _forwardedHeaderModel.additionalAttributes = [[NSArray alloc] initWithObjects:[[NSValue alloc] initWithBytes:&range objCType:@encode(NSRange)], fontAttributes, nil];
+            [additionalAttributes addObjectsFromArray:@[[[NSValue alloc] initWithBytes:&range objCType:@encode(NSRange)], fontAttributes]];
         }
         
+        _forwardedHeaderModel.additionalAttributes = additionalAttributes;
+        _forwardedHeaderModel.textCheckingResults = textCheckingResults;
+        
         [_contentModel addSubmodel:_forwardedHeaderModel];
+    }
+    
+    if (_viaUserModel != nil) {
+        [_contentModel removeSubmodel:_viaUserModel viewStorage:nil];
+        _viaUserModel = nil;
     }
 }
 
 + (TGReplyHeaderModel *)replyHeaderModelFromMessage:(TGMessage *)replyHeader peer:(id)peer incoming:(bool)incoming system:(bool)system
 {
+    bool isSecret = replyHeader.messageLifetime > 0 && replyHeader.messageLifetime <= 60;
     for (id attachment in replyHeader.mediaAttachments)
     {
         if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
         {
-            return [[TGReplyHeaderPhotoModel alloc] initWithPeer:peer imageMedia:(TGImageMediaAttachment *)attachment incoming:incoming system:system];
+            return [[TGReplyHeaderPhotoModel alloc] initWithPeer:peer imageMedia:isSecret ? nil : (TGImageMediaAttachment *)attachment incoming:incoming system:system];
         }
         else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
         {
-            return [[TGReplyHeaderVideoModel alloc] initWithPeer:peer videoMedia:(TGVideoMediaAttachment *)attachment incoming:incoming system:system];
+            return [[TGReplyHeaderVideoModel alloc] initWithPeer:peer videoMedia:isSecret ? nil : (TGVideoMediaAttachment *)attachment incoming:incoming system:system];
         }
         else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
         {
@@ -336,10 +433,18 @@ bool debugShowMessageIds = false;
     else
     {
         bool imageInText = true;
-        if ([webPage.pageType isEqualToString:@"photo"] || [webPage.pageType isEqualToString:@"video"])
+        if ([webPage.pageType isEqualToString:@"photo"] || [webPage.pageType isEqualToString:@"video"] || [webPage.pageType isEqualToString:@"gif"]) {
             imageInText = false;
+        }
         
-        _webPageFooterModel = [[TGArticleWebpageFooterModel alloc] initWithWithIncoming:_incomingAppearance webPage:webPage imageInText:imageInText hasViews:_messageViews != nil];
+        if ([webPage.document.mimeType isEqualToString:@"image/gif"]) {
+            imageInText = false;
+        }
+        
+        _webPageFooterModel = [[TGArticleWebpageFooterModel alloc] initWithContext:_context incoming:_incomingAppearance webPage:webPage imageInText:imageInText hasViews:_messageViews != nil];
+        _webPageFooterModel.mediaIsAvailable = _mediaIsAvailable;
+        [_webPageFooterModel updateMediaProgressVisible:_mediaProgressVisible mediaProgress:_mediaProgress animated:false];
+        _webPageFooterModel.boundToContainer = _boundToContainer;
         [_contentModel addSubmodel:_webPageFooterModel];
     }
     
@@ -347,6 +452,8 @@ bool debugShowMessageIds = false;
     {
         [_webPageFooterModel bindSpecialViewsToContainer:_contentModel.boundView viewStorage:viewStorage atItemPosition:CGPointMake(_itemPosition.x + _webPageFooterModel.frame.origin.x, _itemPosition.y + _webPageFooterModel.frame.origin.y)];
     }
+    
+    _shareButtonModel.hidden = webPage == nil;
 }
 
 - (UIView *)referenceViewForImageTransition
@@ -378,6 +485,24 @@ bool debugShowMessageIds = false;
     return _unsentButtonModel;
 }
 
+- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage delayDisplay:(bool)delayDisplay {
+    [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage delayDisplay:delayDisplay];
+    
+    _mediaIsAvailable = mediaIsAvailable;
+    _webPageFooterModel.mediaIsAvailable = mediaIsAvailable;
+}
+
+- (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated {
+    [super updateProgress:progressVisible progress:progress viewStorage:viewStorage animated:animated];
+    
+    _mediaProgressVisible = progressVisible;
+    _mediaProgress = progress;
+    
+    if (_webPageFooterModel != nil) {
+        [_webPageFooterModel updateMediaProgressVisible:progressVisible mediaProgress:progress animated:animated];
+    }
+}
+
 - (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
 {
     [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
@@ -388,17 +513,22 @@ bool debugShowMessageIds = false;
         _messageViewsModel.count = message.viewCount.viewCount;
     }
     
+    bool foundWebpage = false;
     for (id attachment in message.mediaAttachments)
     {
         if ([attachment isKindOfClass:[TGWebPageMediaAttachment class]])
         {
+            foundWebpage = true;
             if (_webPageFooterModel == nil)
             {
                 if (![_webPage isEqual:attachment])
                 {
-                    [self setWebPageFooter:attachment viewStorage:viewStorage];
-                    if (sizeUpdated)
-                        *sizeUpdated = true;
+                    TGWebPageMediaAttachment *webPage = attachment;
+                    if (webPage.title.length != 0 || webPage.pageDescription.length != 0 || webPage.siteName.length != 0 || [webPage.photo.imageInfo imageUrlForLargestSize:NULL] != nil || [webPage.document.thumbnailInfo imageUrlForLargestSize:NULL] != nil) {
+                        [self setWebPageFooter:attachment viewStorage:viewStorage];
+                        if (sizeUpdated)
+                            *sizeUpdated = true;
+                    }
                 }
             }
             else if (![_webPage isEqual:attachment])
@@ -412,6 +542,15 @@ bool debugShowMessageIds = false;
             }
             break;
         }
+    }
+    
+    if (!foundWebpage && _webPageFooterModel != nil) {
+        [_contentModel removeSubmodel:_webPageFooterModel viewStorage:viewStorage];
+        _webPageFooterModel = nil;
+        
+        [self setWebPageFooter:nil viewStorage:viewStorage];
+        if (sizeUpdated)
+            *sizeUpdated = true;
     }
     
     if (_deliveryState != message.deliveryState || (!_incoming && _read != !message.unread))
@@ -544,11 +683,17 @@ bool debugShowMessageIds = false;
                 if (!_incomingAppearance && previousDeliveryState == TGMessageDeliveryStateFailed)
                     unsentOffset = 29.0f;
                 
-                _progressModel = [[TGModernClockProgressViewModel alloc] initWithType:TGModernClockProgressTypeOutgoingClock];
+                bool hasSignature = false;
+                if (_authorSignature.length != 0) {
+                    hasSignature = true;
+                }
+                CGFloat signatureSize = (hasSignature ? (_authorSignatureModel.frame.size.width + 8.0f) : 0.0f);
+                
+                _progressModel = [[TGModernClockProgressViewModel alloc] initWithType:_incomingAppearance ? TGModernClockProgressTypeIncomingClock : TGModernClockProgressTypeOutgoingClock];
                 if (_incomingAppearance) {
-                    _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 27.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
+                    _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 27.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f) - signatureSize, _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
                 } else {
-                    _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - 23.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
+                    _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - 23.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f) - signatureSize, _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
                 }
                 [self addSubmodel:_progressModel];
                 
@@ -702,6 +847,7 @@ bool debugShowMessageIds = false;
 {
     [self _maybeRestructureStateModels:viewStorage];
     
+    _boundToContainer = true;
     _itemPosition = CGPointZero;
     
     [self updateEditingState:nil viewStorage:nil animationDelay:-1.0];
@@ -710,6 +856,7 @@ bool debugShowMessageIds = false;
     
     [_replyHeaderModel bindSpecialViewsToContainer:_contentModel.boundView viewStorage:viewStorage atItemPosition:CGPointMake(_replyHeaderModel.frame.origin.x, _replyHeaderModel.frame.origin.y)];
     
+    _webPageFooterModel.boundToContainer = true;
     [_webPageFooterModel bindSpecialViewsToContainer:_contentModel.boundView viewStorage:viewStorage atItemPosition:CGPointMake(_webPageFooterModel.frame.origin.x, _webPageFooterModel.frame.origin.y)];
     
     _boundDoubleTapRecognizer = [[TGDoubleTapGestureRecognizer alloc] initWithTarget:self action:@selector(messageDoubleTapGesture:)];
@@ -723,6 +870,10 @@ bool debugShowMessageIds = false;
     {
         _unsentButtonTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(unsentButtonTapGesture:)];
         [[_unsentButtonModel boundView] addGestureRecognizer:_unsentButtonTapRecognizer];
+    }
+    
+    if (_shareButtonModel != nil) {
+        [(TGModernButtonView *)_shareButtonModel.boundView addTarget:self action:@selector(sharePressed) forControlEvents:UIControlEventTouchUpInside];
     }
 }
 
@@ -738,6 +889,14 @@ bool debugShowMessageIds = false;
         [[_unsentButtonModel boundView] removeGestureRecognizer:_unsentButtonTapRecognizer];
         _unsentButtonTapRecognizer = nil;
     }
+    
+    if (_shareButtonModel != nil)
+    {
+        [(TGModernButtonView *)_shareButtonModel.boundView removeTarget:self action:@selector(sharePressed) forControlEvents:UIControlEventTouchUpInside];
+    }
+    
+    _boundToContainer = false;
+    _webPageFooterModel.boundToContainer = false;
     
     [super unbindView:viewStorage];
 }
@@ -848,20 +1007,58 @@ bool debugShowMessageIds = false;
     }
     
     CGSize contentContainerSize = CGSizeMake(MIN(420.0f, containerSize.width - 80.0f - (_hasAvatar ? 38.0f : 0.0f)), containerSize.height);
+    if (_shareButtonModel != nil && !_shareButtonModel.hidden) {
+        contentContainerSize.width -= 20.0f;
+    }
     
     bool updateContents = false;
+    
+    bool hasSignature = false;
+    if (_authorSignature.length != 0) {
+        hasSignature = true;
+        if ([_authorSignatureModel layoutNeedsUpdatingForContainerSize:CGSizeMake(contentContainerSize.width - 80.0f, CGFLOAT_MAX)]) {
+            updateContents = true;
+            [_authorSignatureModel layoutForContainerSize:CGSizeMake(contentContainerSize.width - 80.0f, CGFLOAT_MAX)];
+        }
+    } else {
+        _authorSignatureModel.frame = CGRectZero;
+    }
     
     CGSize headerSize = CGSizeZero;
     if (_authorNameModel != nil)
     {
+        CGFloat maxWidth = contentContainerSize.width;
+        CGFloat maxNameWidth = _viaUserModel == nil ? maxWidth : maxWidth - 46.0f;
+        
         if (_authorNameModel.frame.size.width < FLT_EPSILON)
-            [_authorNameModel layoutForContainerSize:CGSizeMake(320.0f - 80.0f - (_hasAvatar ? 38.0f : 0.0f), 0.0f)];
+            [_authorNameModel layoutForContainerSize:CGSizeMake(maxNameWidth, 0.0f)];
         
         CGRect authorNameFrame = _authorNameModel.frame;
         authorNameFrame.origin = CGPointMake(1.0f, 1.0f + TGRetinaPixel);
         _authorNameModel.frame = authorNameFrame;
         
         headerSize = CGSizeMake(_authorNameModel.frame.size.width, _authorNameModel.frame.size.height + 1.0f);
+        
+        if (_viaUserModel != nil) {
+            [_viaUserModel layoutForContainerSize:CGSizeMake(maxWidth - _authorNameModel.frame.size.width, 0.0f)];
+            CGRect viaUserFrame = _viaUserModel.frame;
+            viaUserFrame.origin = CGPointMake(CGRectGetMaxX(_authorNameModel.frame) + 4.0f, 1.0f + TGRetinaPixel);
+            _viaUserModel.frame = viaUserFrame;
+            
+            headerSize.width += viaUserFrame.size.width + 4.0f;
+        }
+    } else if (_viaUserModel != nil) {
+        [_viaUserModel layoutForContainerSize:CGSizeMake(320.0f - 80.0f - (_hasAvatar ? 38.0f : 0.0f), 0.0f)];
+        
+        CGRect viaUserFrame = _viaUserModel.frame;
+        viaUserFrame.origin = CGPointMake(1.0f, 1.0f + TGRetinaPixel);
+        _viaUserModel.frame = viaUserFrame;
+        
+        headerSize = CGSizeMake(_viaUserModel.frame.size.width, _viaUserModel.frame.size.height + 1.0f);
+    }
+    
+    if (hasSignature) {
+        headerSize.width = MAX(_authorSignatureModel.frame.size.width + 100.0f, headerSize.width);
     }
     
     if (_forwardedHeaderModel != nil)
@@ -895,18 +1092,19 @@ bool debugShowMessageIds = false;
     CGSize webPageSize = CGSizeZero;
     if (_webPageFooterModel != nil)
     {
+        bool webpageHasBottomInset = false;
         if ([_webPageFooterModel preferWebpageSize])
         {
-            [_webPageFooterModel layoutForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) contentSize:CGSizeZero needsContentUpdate:&updateContents];
+            [_webPageFooterModel layoutForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) contentSize:CGSizeZero needsContentUpdate:&updateContents bottomInset:&webpageHasBottomInset];
             contentContainerWidth = _webPageFooterModel.frame.size.width;
             
-            contentSize = [self contentSizeForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) needsContentsUpdate:&updateContents hasDate:_webPageFooterModel == nil hasViews:_messageViews != nil];
+            contentSize = [self contentSizeForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) needsContentsUpdate:&updateContents hasDate:!hasSignature && _webPageFooterModel == nil hasViews:!hasSignature && _messageViews != nil];
         }
         else
         {
-            contentSize = [self contentSizeForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) needsContentsUpdate:&updateContents hasDate:_webPageFooterModel == nil hasViews:_messageViews != nil];
+            contentSize = [self contentSizeForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) needsContentsUpdate:&updateContents hasDate:!hasSignature && _webPageFooterModel == nil hasViews:!hasSignature && _messageViews != nil];
             
-            [_webPageFooterModel layoutForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) contentSize:contentSize needsContentUpdate:&updateContents];
+            [_webPageFooterModel layoutForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) contentSize:contentSize needsContentUpdate:&updateContents bottomInset:&webpageHasBottomInset];
         }
         
         webPageSize = _webPageFooterModel.frame.size;
@@ -914,10 +1112,18 @@ bool debugShowMessageIds = false;
             contentContainerWidth = webPageSize.width;
         
         headerSize.width = MAX(headerSize.width, webPageSize.width);
+        
+        if (hasSignature && !webpageHasBottomInset) {
+            webPageSize.height += 14.0f;
+        }
     }
     else
     {
-        contentSize = [self contentSizeForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) needsContentsUpdate:&updateContents hasDate:_webPageFooterModel == nil hasViews:_messageViews != nil];
+        contentSize = [self contentSizeForContainerSize:CGSizeMake(contentContainerWidth, contentContainerSize.height) needsContentsUpdate:&updateContents hasDate:!hasSignature && _webPageFooterModel == nil hasViews:!hasSignature && _messageViews != nil];
+    }
+    
+    if (hasSignature && _webPageFooterModel == nil) {
+        contentSize.height += 14.0f;
     }
     
     CGFloat avatarOffset = 0.0f;
@@ -942,11 +1148,15 @@ bool debugShowMessageIds = false;
     
     _backgroundModel.frame = backgroundFrame;
     
+    if (_shareButtonModel != nil) {
+        _shareButtonModel.frame = CGRectOffset(_shareButtonModel.bounds, CGRectGetMaxX(backgroundFrame) + 7.0f, CGRectGetMaxY(backgroundFrame) - 29.0f - 1.0f);
+    }
+    
     if (_webPageFooterModel != nil)
     {
         [_webPageFooterModel updateSpecialViewsPositions:CGPointMake(_itemPosition.x + _webPageFooterModel.frame.origin.x, _itemPosition.y + headerSize.height + contentSize.height)];
         
-        [_webPageFooterModel layoutForContainerSize:contentContainerSize contentSize:contentSize needsContentUpdate:&updateContents];
+        [_webPageFooterModel layoutForContainerSize:contentContainerSize contentSize:contentSize needsContentUpdate:&updateContents bottomInset:NULL];
         
         _webPageFooterModel.frame = CGRectMake(0.0f, headerSize.height + contentSize.height, _webPageFooterModel.frame.size.width, _webPageFooterModel.frame.size.height);
     }
@@ -956,6 +1166,14 @@ bool debugShowMessageIds = false;
         CGRect authorModelFrame = _authorNameModel.frame;
         authorModelFrame.origin.x = isRTL ? (_contentModel.frame.size.width - authorModelFrame.size.width - 1.0f) : 1.0f;
         _authorNameModel.frame = authorModelFrame;
+        
+        CGRect viaUserFrame = _viaUserModel.frame;
+        viaUserFrame.origin.x = isRTL ? authorModelFrame.origin.x - viaUserFrame.size.width - 4.0f : (CGRectGetMaxX(authorModelFrame) + 4.0f);
+        _viaUserModel.frame = viaUserFrame;
+    } else if (_viaUserModel != nil) {
+        CGRect viaUserFrame = _viaUserModel.frame;
+        viaUserFrame.origin.x = isRTL ? (_contentModel.frame.size.width - viaUserFrame.size.width - 1.0f) : 1.0f;
+        _viaUserModel.frame = viaUserFrame;
     }
     
     if (_forwardedHeaderModel != nil)
@@ -981,16 +1199,24 @@ bool debugShowMessageIds = false;
         _broadcastIconModel.frame = (CGRect){{_dateModel.frame.origin.x - 5.0f - _broadcastIconModel.frame.size.width, _dateModel.frame.origin.y + 3.0f + TGRetinaPixel}, _broadcastIconModel.frame.size};
     }
     
+    CGFloat signatureSize = (hasSignature ? (_authorSignatureModel.frame.size.width + 8.0f) : 0.0f);
+    
     if (_progressModel != nil) {
         if (_incomingAppearance) {
-            _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 27.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
+            _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 27.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f) - signatureSize, _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
         } else {
-            _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - 23.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
+            _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - 23.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f) - signatureSize, _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
         }
     }
     
+    if (_authorSignature.length != 0) {
+        _authorSignatureModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 22.0f - (_incomingAppearance ? 0.0f : 14.0f) - _authorSignatureModel.frame.size.width - 12.0f - (TGIsPad() ? 12.0f : 0.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f - 7.0f - (TGIsPad() ? 1.0f : 0.0f), _authorSignatureModel.frame.size.width, _authorSignatureModel.frame.size.height);
+    } else {
+        _authorSignatureModel.frame = CGRectZero;
+    }
+    
     if (_messageViewsModel != nil) {
-        _messageViewsModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 22.0f - (_incomingAppearance ? 0.0f : 14.0f), _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f + TGRetinaPixel, 1.0f, 1.0f);
+        _messageViewsModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 22.0f - (_incomingAppearance ? 0.0f : 14.0f) - signatureSize, _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f + TGRetinaPixel, 1.0f, 1.0f);
     }
     
     CGPoint stateOffset = _contentModel.frame.origin;
@@ -1018,6 +1244,29 @@ bool debugShowMessageIds = false;
     }
     
     [super layoutForContainerSize:containerSize];
+}
+
+- (void)updateAssets {
+    [super updateAssets];
+    
+    _shareButtonModel.image = [[TGTelegraphConversationMessageAssetsSource instance] systemShareButton];
+}
+
+- (void)sharePressed {
+    [_context.companionHandle requestAction:@"fastForwardMessage" options:@{@"mid": @(_mid)}];
+}
+
+- (void)imageDataInvalidated:(NSString *)imageUrl {
+    [_webPageFooterModel imageDataInvalidated:imageUrl];
+}
+
+- (void)stopInlineMedia
+{
+    [_webPageFooterModel stopInlineMedia];
+}
+
+- (void)resumeInlineMedia {
+    [_webPageFooterModel resumeInlineMedia];
 }
 
 @end

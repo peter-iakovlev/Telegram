@@ -71,7 +71,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>3.2.1</string>
+	<string>3.6</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -108,9 +108,24 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>50712</string>
+	<string>55195</string>
 	<key>LSApplicationCategoryType</key>
 	<string></string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>dbapi-3</string>
+		<string>instagram</string>
+		<string>googledrive</string>
+		<string>comgooglemaps-x-callback</string>
+		<string>foursquare</string>
+		<string>here-location</string>
+		<string>yandexmaps</string>
+		<string>yandexnavi</string>
+		<string>comgooglemaps</string>
+		<string>youtube-x-callback</string>
+		<string>twitter</string>
+		<string>vk</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>

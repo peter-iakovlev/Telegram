@@ -233,11 +233,12 @@
 
 - (void)dealloc
 {
-    [self stopPlayer];
+    [self stop];
     
     [_actionHandle reset];
     [ActionStageInstance() removeWatcher:self];
-    [_currentAudioSession dispose];
+    
+    [_currentAudioSession dispose];;
 }
 
 - (void)setFrame:(CGRect)frame
@@ -283,51 +284,47 @@
 
 - (void)cleanupCurrentPlayer
 {
-    [self stopPlayer];
+    [self stop];
     
-    _videoDimenstions = CGSizeZero;
+    _videoDimensions = CGSizeZero;
     
     [_imageView reset];
 }
 
-- (void)stopPlayer
+- (void)stop
 {
     if (_player != nil)
     {
         _didPlayToEndObserver = nil;
         
+        [_player pause];
         [_player replaceCurrentItemWithPlayerItem:nil];
-        //[_player pause];
         _player = nil;
     }
     
     if (_videoView != nil)
     {
+        SMetaDisposable *currentAudioSession = _currentAudioSession;
+        if (currentAudioSession)
+        {
+            _videoView.deallocBlock = ^
+            {
+                [[SQueue concurrentDefaultQueue] dispatch:^
+                {
+                    [currentAudioSession setDisposable:nil];
+                }];
+            };
+        }
+        [_videoView cleanupPlayer];
         [_videoView removeFromSuperview];
         _videoView = nil;
     }
-    
-    [_currentAudioSession setDisposable:nil];
     
     [_positionTimer invalidate];
     _positionTimer = nil;
     
     self.isPlaying = false;
     [self updatePosition:false forceZero:true];
-}
-
-- (void)addPlayerObserver
-{
-    if (_player != nil)
-    {
-    }
-}
-
-- (void)removePlayerObserver
-{
-    if (_player != nil)
-    {
-    }
 }
 
 - (void)_joinDownload
@@ -402,9 +399,10 @@
     
     NSString *videoPath = [TGVideoDownloadActor localPathForVideoUrl:[item.videoMedia.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL]];
     
-    if (videoPath != nil && item.videoMedia.dimensions.width > FLT_EPSILON && item.videoMedia.dimensions.height > FLT_EPSILON)
+    if (videoPath != nil)
     {
-        _videoDimenstions = item.videoMedia.dimensions;
+        _videoDimensions = item.videoMedia.dimensions;
+        
         _duration = item.videoMedia.duration;
         
         [_imageView loadUri:item.previewUri withOptions:@{TGImageViewOptionSynchronous: @(synchronously)}];
@@ -483,31 +481,41 @@
             
             NSString *videoPath = [TGVideoDownloadActor localPathForVideoUrl:[item.videoMedia.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL]];
             
-            if (videoPath != nil && item.videoMedia.dimensions.width > FLT_EPSILON && item.videoMedia.dimensions.height > FLT_EPSILON)
+            if (videoPath != nil)
             {
-                _videoDimenstions = item.videoMedia.dimensions;
+                _videoDimensions = item.videoMedia.dimensions;
                 
                 __weak TGModernGalleryVideoItemView *weakSelf = self;
-                [_currentAudioSession setDisposable:[[TGAudioSessionManager instance] requestSessionWithType:TGAudioSessionTypePlayVideo interrupted:^
+                [[SQueue concurrentDefaultQueue] dispatch:^
                 {
-                    TGDispatchOnMainThread(^
+                    [_currentAudioSession setDisposable:[[TGAudioSessionManager instance] requestSessionWithType:TGAudioSessionTypePlayVideo interrupted:^
                     {
-                        __strong TGModernGalleryVideoItemView *strongSelf = weakSelf;
-                        if (strongSelf != nil)
-                            [strongSelf pausePressed];
-                    });
-                }]];
-                [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:nil];
+                        TGDispatchOnMainThread(^
+                        {
+                            __strong TGModernGalleryVideoItemView *strongSelf = weakSelf;
+                            if (strongSelf != nil)
+                                [strongSelf pausePressed];
+                        });
+                    }]];
+                }];
                 
                 _player = [[AVPlayer alloc] initWithURL:[NSURL fileURLWithPath:videoPath]];
                 _player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
                 
                 _didPlayToEndObserver = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(playerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:[_player currentItem]];
-                                
+                
+                if (_videoView != nil)
+                    [_videoView removeFromSuperview];
+                
                 _videoView = [[TGModernGalleryVideoView alloc] initWithFrame:_playerView.bounds player:_player];
                 _videoView.frame = _playerView.bounds;
                 _videoView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-                _videoView.playerLayer.videoGravity = AVLayerVideoGravityResize;
+                if (_videoDimensions.width > FLT_EPSILON && _videoDimensions.height > FLT_EPSILON) {
+                    _videoView.playerLayer.videoGravity = AVLayerVideoGravityResize;
+                } else {
+                    _videoView.playerLayer.videoGravity = AVLayerVideoGravityResizeAspect;
+                }
+                
                 _videoView.playerLayer.opaque = false;
                 _videoView.playerLayer.backgroundColor = nil;
                 [_playerView addSubview:_videoView];
@@ -596,15 +604,15 @@
 {
     [super layoutSubviews];
     
-    if (_videoDimenstions.width > FLT_EPSILON && _videoDimenstions.height > FLT_EPSILON)
+    if (_videoDimensions.width > FLT_EPSILON && _videoDimensions.height > FLT_EPSILON)
     {
-        CGSize fittedSize = TGFitSize(TGFillSize(_videoDimenstions, self.bounds.size), self.bounds.size);
+        CGSize fittedSize = TGFitSize(TGFillSize(_videoDimensions, self.bounds.size), self.bounds.size);
         
         CGFloat normalizedRotation = CGFloor(_playerLayerRotation / (CGFloat)M_PI) * (CGFloat)M_PI;
         
         if (ABS(_playerLayerRotation - normalizedRotation) > FLT_EPSILON)
         {
-            fittedSize = TGFitSize(TGFillSize(_videoDimenstions, CGSizeMake(self.bounds.size.height, self.bounds.size.width)), CGSizeMake(self.bounds.size.height, self.bounds.size.width));
+            fittedSize = TGFitSize(TGFillSize(_videoDimensions, CGSizeMake(self.bounds.size.height, self.bounds.size.width)), CGSizeMake(self.bounds.size.height, self.bounds.size.width));
         }
         
         CGRect playerFrame = CGRectMake(CGFloor((self.bounds.size.width - fittedSize.width) / 2.0f), CGFloor((self.bounds.size.height - fittedSize.height) / 2.0f), fittedSize.width, fittedSize.height);
@@ -619,7 +627,7 @@
     }
     else
     {
-        CGSize fittedSize = CGSizeMake(128.0f, 128.0f);
+        CGSize fittedSize = self.bounds.size;
         
         CGRect playerFrame = CGRectMake(CGFloor((self.bounds.size.width - fittedSize.width) / 2.0f), CGFloor((self.bounds.size.height - fittedSize.height) / 2.0f), fittedSize.width, fittedSize.height);
         CGRect playerBounds = playerFrame;
@@ -764,7 +772,7 @@
     [super setIsVisible:isVisible];
     
     if (!isVisible && _player != nil)
-        [self stopPlayer];
+        [self stop];
 }
 
 - (void)setProgressVisible:(bool)progressVisible value:(float)value animated:(bool)animated

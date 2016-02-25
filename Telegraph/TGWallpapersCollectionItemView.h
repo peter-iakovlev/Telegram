@@ -17,6 +17,7 @@
 @property (nonatomic, strong) ASHandle *itemHandle;
 
 - (void)setTitle:(NSString *)title;
+- (void)setIcon:(UIImage *)icon;
 - (void)setSelectedWallpaperInfo:(TGWallpaperInfo *)selectedWallpaperInfo;
 - (void)setWallpaperInfos:(NSArray *)wallpaperInfos synchronous:(bool)synchronous;
 

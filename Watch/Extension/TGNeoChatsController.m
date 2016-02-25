@@ -22,6 +22,9 @@
 
 NSString *const TGNeoChatsControllerIdentifier = @"TGNeoChatsController";
 
+NSString *const TGContextNotification = @"TGContextNotification";
+NSString *const TGContextNotificationKey = @"context";
+
 NSString *const TGSynchronizationStateNotification = @"TGSynchronizationStateNotification";
 NSString *const TGSynchronizationStateKey = @"state";
 
@@ -122,6 +125,11 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
         if (strongSelf == nil || [strongSelf->_context isEqual:next])
             return;
         
+        if (strongSelf->_context.micAccessAllowed != next.micAccessAllowed)
+        {
+            [[NSNotificationCenter defaultCenter] postNotificationName:TGContextNotification object:nil userInfo:@{ TGContextNotificationKey: next }];
+        }
+        
         strongSelf->_initialized = true;
         strongSelf->_context = next;
         
@@ -144,15 +152,10 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
             
             if (!strongSelf->_loadedStartup)
             {
-                NSDictionary *localStartupData = [TGBridgeClient instance].startupData;
                 NSDictionary *contextStartupData = next.startupData;
                 
-                if (localStartupData != nil || contextStartupData != nil)
-                {
-                    NSDictionary *startupData = [localStartupData[TGBridgeContextStartupDataVersion] int32Value] > [contextStartupData[TGBridgeContextStartupDataVersion] int32Value] ? localStartupData : contextStartupData;
-                    
-                    updateBlock(startupData);
-                }
+                if (contextStartupData != nil)
+                    updateBlock(contextStartupData);
                 
                 strongSelf->_loadedStartup = true;
             }
@@ -160,7 +163,6 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
             [strongSelf->_chatsDisposable setDisposable:[[[TGBridgeChatListSignals chatListWithLimit:TGNeoChatsControllerLimit] deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *models)
             {
                 updateBlock(models);
-                [[TGBridgeClient instance] saveStartupData:models];
             }]];
         }
         else
@@ -233,6 +235,16 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
     [self dismissTextInputController];
 }
 
+- (void)resetLocalization
+{
+    [self popAllControllers];
+    
+    [self performInterfaceUpdate:^(bool animated)
+    {
+        [self reloadData];        
+    }];
+}
+
 - (void)reloadData
 {
     [[TGBridgeClient instance] updateReachability];
@@ -249,8 +261,8 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
         self.authAlertGroup.hidden = false;
         self.authAlertImageGroup.hidden = true;
         self.authAlertDescLabel.hidden = false;
-        self.authAlertLabel.text = TGLocalized(@"App.NoConnection");
-        self.authAlertDescLabel.text = TGLocalized(@"App.ConnectionDescription");
+        self.authAlertLabel.text = TGLocalized(@"Watch.NoConnection");
+        self.authAlertDescLabel.text = TGLocalized(@"Watch.ConnectionDescription");
         
         return;
     }
@@ -279,8 +291,8 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
             self.authAlertGroup.hidden = false;
             self.authAlertImageGroup.hidden = true;
             self.authAlertDescLabel.hidden = false;
-            self.authAlertLabel.text = TGLocalized(@"ChatList.NoConversationsTitle");
-            self.authAlertDescLabel.text = TGLocalized(@"ChatList.NoConversationsText");
+            self.authAlertLabel.text = TGLocalized(@"Watch.ChatList.NoConversationsTitle");
+            self.authAlertDescLabel.text = TGLocalized(@"Watch.ChatList.NoConversationsText");
             return;
         }
         
@@ -341,7 +353,7 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
             self.activityIndicator.hidden = true;
             self.table.hidden = true;
             self.authAlertGroup.hidden = false;
-            self.authAlertLabel.text = TGLocalized(@"Passcode.UnlockRequired");
+            self.authAlertLabel.text = TGLocalized(@"Watch.UnlockRequired");
             self.authAlertImageGroup.hidden = false;
             [self.authAlertImage setImageNamed:@"PasscodeIcon"];
             self.authAlertDescLabel.hidden = true;
@@ -351,7 +363,7 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
             self.activityIndicator.hidden = true;
             self.table.hidden = true;
             self.authAlertGroup.hidden = false;
-            self.authAlertLabel.text = TGLocalized(@"Auth.LoginRequired");
+            self.authAlertLabel.text = TGLocalized(@"Watch.AuthRequired");
             self.authAlertImageGroup.hidden = false;
             [self.authAlertImage setImageNamed:@"LoginIcon"];
             self.authAlertDescLabel.hidden = true;
@@ -366,7 +378,7 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
     
     NSString *state = [TGNeoChatsController stringForSyncState:_syncState];
     if (!_context.authorized || state == nil || !_reachable)
-        self.title = TGLocalized(@"App.Name");
+        self.title = TGLocalized(@"Watch.AppName");
     else
         self.title = state;
 }
@@ -379,13 +391,13 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
             return nil;
             
         case TGBridgeSynchronizationStateConnecting:
-            return TGLocalized(@"State.Connecting");
+            return TGLocalized(@"Watch.State.Connecting");
             
         case TGBridgeSynchronizationStateUpdating:
-            return TGLocalized(@"State.Updating");
+            return TGLocalized(@"Watch.State.Updating");
             
         case TGBridgeSynchronizationStateWaitingForNetwork:
-            return TGLocalized(@"State.WaitingForNetwork");
+            return TGLocalized(@"Watch.State.WaitingForNetwork");
             
         default:
             break;
@@ -409,7 +421,7 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
     NSMutableArray *menuItems = [[NSMutableArray alloc] init];
     
     __weak TGNeoChatsController *weakSelf = self;
-    TGInterfaceMenuItem *composeItem = [[TGInterfaceMenuItem alloc] initWithImageNamed:@"Compose" title:TGLocalized(@"ChatList.Compose") actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
+    TGInterfaceMenuItem *composeItem = [[TGInterfaceMenuItem alloc] initWithImageNamed:@"Compose" title:TGLocalized(@"Watch.ChatList.Compose") actionBlock:^(TGInterfaceController *controller, TGInterfaceMenuItem *sender)
     {
         __strong TGNeoChatsController *strongSelf = weakSelf;
         if (strongSelf == nil)

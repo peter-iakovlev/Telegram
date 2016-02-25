@@ -34,7 +34,7 @@
     
 }
 
-- (void)composeMessage
+- (void)composeMessageAndOpenSearch:(bool)__unused openSearch
 {
     
 }

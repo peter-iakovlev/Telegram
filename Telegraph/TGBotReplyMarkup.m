@@ -4,7 +4,7 @@
 
 @implementation TGBotReplyMarkup
 
-- (instancetype)initWithUserId:(int32_t)userId messageId:(int32_t)messageId rows:(NSArray *)rows matchDefaultHeight:(bool)matchDefaultHeight hideKeyboardOnActivation:(bool)hideKeyboardOnActivation alreadyActivated:(bool)alreadyActivated
+- (instancetype)initWithUserId:(int32_t)userId messageId:(int32_t)messageId rows:(NSArray *)rows matchDefaultHeight:(bool)matchDefaultHeight hideKeyboardOnActivation:(bool)hideKeyboardOnActivation alreadyActivated:(bool)alreadyActivated manuallyHidden:(bool)manuallyHidden
 {
     self = [super init];
     if (self != nil)
@@ -15,13 +15,14 @@
         _matchDefaultHeight = matchDefaultHeight;
         _hideKeyboardOnActivation = hideKeyboardOnActivation;
         _alreadyActivated = alreadyActivated;
+        _manuallyHidden = manuallyHidden;
     }
     return self;
 }
 
 - (instancetype)initWithKeyValueCoder:(PSKeyValueCoder *)coder
 {
-    return [self initWithUserId:[coder decodeInt32ForCKey:"userId"] messageId:[coder decodeInt32ForCKey:"messageId"] rows:[coder decodeArrayForCKey:"rows"] matchDefaultHeight:[coder decodeInt32ForCKey:"matchDefaultHeight"] hideKeyboardOnActivation:[coder decodeInt32ForCKey:"hideKeyboardOnActivation"] alreadyActivated:[coder decodeInt32ForCKey:"alreadyActivated"]];
+    return [self initWithUserId:[coder decodeInt32ForCKey:"userId"] messageId:[coder decodeInt32ForCKey:"messageId"] rows:[coder decodeArrayForCKey:"rows"] matchDefaultHeight:[coder decodeInt32ForCKey:"matchDefaultHeight"] hideKeyboardOnActivation:[coder decodeInt32ForCKey:"hideKeyboardOnActivation"] alreadyActivated:[coder decodeInt32ForCKey:"alreadyActivated"] manuallyHidden:[coder decodeInt32ForCKey:"manuallyHidden"]];
 }
 
 - (void)encodeWithKeyValueCoder:(PSKeyValueCoder *)coder
@@ -32,6 +33,7 @@
     [coder encodeInt32:_matchDefaultHeight forCKey:"matchDefaultHeight"];
     [coder encodeInt32:_hideKeyboardOnActivation forCKey:"hideKeyboardOnActivation"];
     [coder encodeInt32:_alreadyActivated forCKey:"alreadyActivated"];
+    [coder encodeInt32:_manuallyHidden forCKey:"manuallyHidden"];
 }
 
 - (BOOL)isEqual:(id)object
@@ -44,7 +46,25 @@
     if (_alreadyActivated)
         return self;
     
-    return [[TGBotReplyMarkup alloc] initWithUserId:_userId messageId:_messageId rows:_rows matchDefaultHeight:_matchDefaultHeight hideKeyboardOnActivation:_hideKeyboardOnActivation alreadyActivated:true];
+    return [[TGBotReplyMarkup alloc] initWithUserId:_userId messageId:_messageId rows:_rows matchDefaultHeight:_matchDefaultHeight hideKeyboardOnActivation:_hideKeyboardOnActivation alreadyActivated:true manuallyHidden:_manuallyHidden];
+}
+
+- (TGBotReplyMarkup *)manuallyHide
+{
+    if (_manuallyHidden) {
+        return self;
+    }
+    
+    return [[TGBotReplyMarkup alloc] initWithUserId:_userId messageId:_messageId rows:_rows matchDefaultHeight:_matchDefaultHeight hideKeyboardOnActivation:_hideKeyboardOnActivation alreadyActivated:_alreadyActivated manuallyHidden:true];
+}
+
+- (TGBotReplyMarkup *)manuallyUnhide
+{
+    if (!_manuallyHidden) {
+        return self;
+    }
+    
+    return [[TGBotReplyMarkup alloc] initWithUserId:_userId messageId:_messageId rows:_rows matchDefaultHeight:_matchDefaultHeight hideKeyboardOnActivation:_hideKeyboardOnActivation alreadyActivated:_alreadyActivated manuallyHidden:false];
 }
 
 @end

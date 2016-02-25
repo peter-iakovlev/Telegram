@@ -1,13 +1,12 @@
 #import "TGOverlayController.h"
 
-#import "TGEditablePhotoItem.h"
-#import "TGEditablePhotoItem.h"
+#import "TGMediaEditingContext.h"
 
 #import "TGPhotoToolbarView.h"
 
 @class SSignal;
-@class PGPhotoEditorValues;
 @class PGCameraShotMetadata;
+@class TGSuggestionContext;
 @class TGPhotoEditorController;
 
 typedef enum {
@@ -20,34 +19,46 @@ typedef enum {
 
 @interface TGPhotoEditorController : TGOverlayController
 
+@property (nonatomic, strong) TGSuggestionContext *suggestionContext;
+
 @property (nonatomic, copy) UIView *(^beginTransitionIn)(CGRect *referenceFrame, UIView **parentView);
 @property (nonatomic, copy) void (^finishedTransitionIn)(void);
 @property (nonatomic, copy) UIView *(^beginTransitionOut)(CGRect *referenceFrame, UIView **parentView);
 @property (nonatomic, copy) void (^finishedTransitionOut)(bool saved);
+
+@property (nonatomic, copy) void (^beginCustomTransitionOut)(CGRect, UIView *, void(^)(void));
+
+@property (nonatomic, copy) SSignal *(^requestThumbnailImage)(id<TGMediaEditableItem> item);
+@property (nonatomic, copy) SSignal *(^requestOriginalScreenSizeImage)(id<TGMediaEditableItem> item);
+@property (nonatomic, copy) SSignal *(^requestOriginalFullSizeImage)(id<TGMediaEditableItem> item);
+@property (nonatomic, copy) SSignal *(^requestMetadata)(id<TGMediaEditableItem> item);
+@property (nonatomic, copy) id<TGMediaEditAdjustments> (^requestAdjustments)(id<TGMediaEditableItem> item);
 
 @property (nonatomic, copy) UIImage *(^requestImage)(void);
 @property (nonatomic, copy) void (^requestToolbarsHidden)(bool hidden, bool animated);
 
 @property (nonatomic, copy) void (^captionSet)(NSString *caption);
 
-@property (nonatomic, copy) void (^finishedEditing)(id<TGMediaEditAdjustments> adjustments, UIImage *resultImage, UIImage *thumbnailImage, bool noChanges);
+@property (nonatomic, copy) void (^willFinishEditing)(id<TGMediaEditAdjustments> adjustments, id temporaryRep, bool hasChanges);
+@property (nonatomic, copy) void (^didFinishRenderingFullSizeImage)(UIImage *fullSizeImage);
+@property (nonatomic, copy) void (^didFinishEditing)(id<TGMediaEditAdjustments> adjustments, UIImage *resultImage, UIImage *thumbnailImage, bool hasChanges);
 
+@property (nonatomic, assign) bool skipInitialTransition;
 @property (nonatomic, assign) bool dontHideStatusBar;
 @property (nonatomic, strong) PGCameraShotMetadata *metadata;
 
-@property (nonatomic, copy) SSignal *(^userListSignal)(NSString *mention);
-@property (nonatomic, copy) SSignal *(^hashtagListSignal)(NSString *hashtag);
+- (instancetype)initWithItem:(id<TGMediaEditableItem>)item intent:(TGPhotoEditorControllerIntent)intent adjustments:(id<TGMediaEditAdjustments>)adjustments caption:(NSString *)caption screenImage:(UIImage *)screenImage availableTabs:(TGPhotoEditorTab)availableTabs selectedTab:(TGPhotoEditorTab)selectedTab;
 
-- (instancetype)initWithItem:(id<TGEditablePhotoItem>)item
-                      intent:(TGPhotoEditorControllerIntent)intent
-                 adjustments:(id<TGMediaEditAdjustments>)adjustments
-                     caption:(NSString *)caption
-                 screenImage:(UIImage *)screenImage
-               availableTabs:(NSArray *)availableTabs
-                 selectedTab:(TGPhotoEditorTab)selectedTab;
+- (void)dismissAnimated:(bool)animated;
 
 - (void)updateStatusBarAppearanceForDismiss;
+- (CGSize)referenceViewSize;
 
-+ (NSArray *)defaultTabsForAvatarIntent;
+- (void)_setScreenImage:(UIImage *)screenImage;
+- (void)_finishedTransitionIn;
+- (UIView *)transitionWrapperView;
+- (CGFloat)toolbarLandscapeSize;
+
++ (TGPhotoEditorTab)defaultTabsForAvatarIntent;
 
 @end

@@ -6,9 +6,10 @@
 @interface TGAccountSettings : NSObject <NSCoding>
 
 @property (nonatomic, strong, readonly) TGNotificationPrivacyAccountSetting *notificationSettings;
+@property (nonatomic, strong, readonly) TGNotificationPrivacyAccountSetting *groupsAndChannelsSettings;
 @property (nonatomic, strong, readonly) TGAccountTTLSetting *accountTTLSetting;
 
 - (instancetype)initWithDefaultValues;
-- (instancetype)initWithNotificationSettings:(TGNotificationPrivacyAccountSetting *)notificationSettings accountTTLSetting:(TGAccountTTLSetting *)accountTTLSetting;
+- (instancetype)initWithNotificationSettings:(TGNotificationPrivacyAccountSetting *)notificationSettings groupsAndChannelsSettings:(TGNotificationPrivacyAccountSetting *)groupsAndChannelsSettings accountTTLSetting:(TGAccountTTLSetting *)accountTTLSetting;
 
 @end

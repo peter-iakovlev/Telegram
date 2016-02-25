@@ -14,7 +14,7 @@
 
 - (instancetype)initWithMessage:(TGMessage *)message contact:(TGUser *)contact authorPeer:(id)authorPeer context:(TGModernViewContext *)context;
 
-- (void)setForwardHeader:(id)forwardPeer;
+- (void)setForwardHeader:(id)forwardPeer forwardAuthor:(id)forwardAuthor messageId:(int32_t)messageId;
 - (void)setReplyHeader:(TGMessage *)replyHeader peer:(id)peer;
 
 @end

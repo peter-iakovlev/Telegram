@@ -27,6 +27,13 @@
     {
         int uid = [[_actionData objectForKey:@"uid"] intValue];
         [data appendBytes:&uid length:4];
+        NSArray *uids = _actionData[@"uids"];
+        int32_t uidsCount = (int32_t)uids.count;
+        [data appendBytes:&uidsCount length:4];
+        for (NSNumber *nUid in uids) {
+            int32_t listUid = [nUid intValue];
+            [data appendBytes:&listUid length:4];
+        }
     }
     else if (actionType == TGMessageActionJoinedByLink)
     {
@@ -135,8 +142,24 @@
     } else if (actionType == TGMessageActionChannelInviter) {
         int32_t inviter = [_actionData[@"uid"] intValue];
         [data appendBytes:&inviter length:4];
+    } else if (actionType == TGMessageActionGroupMigratedTo) {
+        int32_t channelId = [_actionData[@"channelId"] intValue];
+        [data appendBytes:&channelId length:4];
+    } else if (actionType == TGMessageActionGroupDeactivated) {
+        
+    } else if (actionType == TGMessageActionGroupActivated) {
+        
+    } else if (actionType == TGMessageActionChannelMigratedFrom) {
+        NSString *title = [_actionData objectForKey:@"title"];
+        NSData *titleData = [title dataUsingEncoding:NSUTF8StringEncoding];
+        int length = (int)titleData.length;
+        [data appendBytes:&length length:4];
+        [data appendData:titleData];
+        
+        int32_t channelId = [_actionData[@"groupId"] intValue];
+        [data appendBytes:&channelId length:4];
     }
-    
+
     int dataLength = (int)data.length - dataLengthPtr - 4;
     [data replaceBytesInRange:NSMakeRange(dataLengthPtr, 4) withBytes:&dataLength];
 }
@@ -150,13 +173,34 @@
     
     int actionType = 0;
     [is read:(uint8_t *)&actionType maxLength:4];
+    dataLength -= 4;
     actionAttachment.actionType = (TGMessageAction)actionType;
     
     if (actionType == TGMessageActionChatAddMember || actionType == TGMessageActionChatDeleteMember)
     {
         int uid = 0;
         [is read:(uint8_t *)&uid maxLength:4];
-        actionAttachment.actionData = [NSDictionary dictionaryWithObject:[NSNumber numberWithInt:uid] forKey:@"uid"];
+        dataLength -= 4;
+        
+        NSMutableArray *uids = [[NSMutableArray alloc] init];
+        if (dataLength >= 4) {
+            int32_t uidsCount = 0;
+            [is read:(uint8_t *)&uidsCount maxLength:4];
+            dataLength -= 4;
+            
+            for (int32_t i = 0; dataLength > 0 && i < uidsCount; i++) {
+                int32_t listUid = 0;
+                [is read:(uint8_t *)&listUid maxLength:4];
+                [uids addObject:@(listUid)];
+                dataLength -= 4;
+            }
+        }
+        
+        if (uids.count != 0) {
+            actionAttachment.actionData = @{@"uid": @(uid), @"uids": uids};
+        } else {
+            actionAttachment.actionData = @{@"uid": @(uid)};
+        }
     }
     else if (actionType == TGMessageActionJoinedByLink)
     {
@@ -274,6 +318,21 @@
         int32_t uid = 0;
         [is read:(uint8_t *)&uid maxLength:4];
         actionAttachment.actionData = @{@"uid": @(uid)};
+    } else if (actionType == TGMessageActionGroupMigratedTo) {
+        int32_t channelId = 0;
+        [is read:(uint8_t *)&channelId maxLength:4];
+        actionAttachment.actionData = @{@"channelId": @(channelId)};
+    } else if (actionType == TGMessageActionChannelMigratedFrom) {
+        int length = 0;
+        [is read:(uint8_t *)&length maxLength:4];
+        uint8_t *titleBytes = malloc(length);
+        [is read:titleBytes maxLength:length];
+        NSString *title = [[NSString alloc] initWithBytesNoCopy:titleBytes length:length encoding:NSUTF8StringEncoding freeWhenDone:true];
+        
+        int32_t groupId = 0;
+        [is read:(uint8_t *)&groupId maxLength:4];
+        
+        actionAttachment.actionData = @{@"groupId": @(groupId), @"title": title};
     }
     
     return actionAttachment;

@@ -10,6 +10,7 @@
 
 #import "HPTextViewInternal.h"
 
+#import "TGModernConversationInputTextPanel.h"
 #import "TGModernConversationAssociatedInputPanel.h"
 
 const NSInteger TGMediaPickerCaptionInputPanelCaptionLimit = 140;
@@ -322,26 +323,6 @@ static void setViewFrame(UIView *view, CGRect frame)
         changeBlock();
 }
 
-- (void)shrinkToSingleLineWithDuration:(NSTimeInterval)duration animationCurve:(NSInteger)animationCurve
-{
-    return;
-    void(^changeBlock)(void) = ^
-    {
-        CGFloat inputContainerHeight = [self heightForInputFieldHeight:0];
-        CGSize screenSize = TGScreenSize();
-        
-        self.frame = CGRectMake(self.frame.origin.x, screenSize.height - self.bottomMargin - inputContainerHeight, self.frame.size.width, inputContainerHeight);
-        _backgroundView.backgroundColor = [TGPhotoEditorInterfaceAssets toolbarTransparentBackgroundColor];
-        
-        [self layoutSubviews];
-    };
-    
-    if (duration > DBL_EPSILON)
-        [UIView animateWithDuration:duration delay:0.0f options:UIViewAnimationOptionBeginFromCurrentState | animationCurve animations:changeBlock completion:nil];
-    else
-        changeBlock();
-}
-
 #pragma mark -
 
 - (NSString *)caption
@@ -506,7 +487,7 @@ static void setViewFrame(UIView *view, CGRect frame)
     if (_keyboardHeight < FLT_EPSILON)
         [self adjustForOrientation:UIInterfaceOrientationPortrait keyboardHeight:0 duration:0.25f animationCurve:[TGViewController preferredAnimationCurve]];
     
-     [_inputField refreshHeight];
+    [_inputField refreshHeight:false];
 }
 
 -(void)growingTextViewDidEndEditing:(HPGrowingTextView *)__unused growingTextView
@@ -528,7 +509,6 @@ static void setViewFrame(UIView *view, CGRect frame)
         }
     }];
     
-    [self shrinkToSingleLineWithDuration:0.25f animationCurve:[TGViewController preferredAnimationCurve]];
     [self setAssociatedPanel:nil animated:true];
 }
 
@@ -557,6 +537,7 @@ static void setViewFrame(UIView *view, CGRect frame)
     idx--;
     
     NSString *candidateMention = nil;
+    bool candidateMentionStartOfLine = false;
     NSString *candidateHashtag = nil;
     
     if (idx >= 0 && idx < textLength)
@@ -566,12 +547,15 @@ static void setViewFrame(UIView *view, CGRect frame)
             unichar c = [text characterAtIndex:i];
             if (c == '@')
             {
-                if (i == idx)
+                if (i == idx){
                     candidateMention = @"";
+                    candidateMentionStartOfLine = i == 0;
+                }
                 else
                 {
                     @try {
                         candidateMention = [text substringWithRange:NSMakeRange(i + 1, idx - i)];
+                        candidateMentionStartOfLine = i == 0;
                     } @catch(NSException *e) { }
                 }
                 break;
@@ -616,8 +600,8 @@ static void setViewFrame(UIView *view, CGRect frame)
         }
     }
     
-    if ([delegate respondsToSelector:@selector(inputPanelMentionEntered:mention:)])
-        [delegate inputPanelMentionEntered:self mention:candidateMention];
+    if ([delegate respondsToSelector:@selector(inputPanelMentionEntered:mention:startOfLine:)])
+        [delegate inputPanelMentionEntered:self mention:candidateMention startOfLine:candidateMentionStartOfLine];
     
     if ([delegate respondsToSelector:@selector(inputPanelHashtagEntered:hashtag:)])
         [delegate inputPanelHashtagEntered:self hashtag:candidateHashtag];
@@ -636,8 +620,15 @@ static void setViewFrame(UIView *view, CGRect frame)
 
 - (void)growingTextView:(HPGrowingTextView *)__unused growingTextView receivedReturnKeyCommandWithModifierFlags:(UIKeyModifierFlags)flags
 {
-    if (flags & UIKeyModifierCommand)
+    if (flags & UIKeyModifierAlternate)
+        [self addNewLine];
+    else
         [self setButtonPressed];
+}
+
+- (void)addNewLine
+{
+    self.caption = [NSString stringWithFormat:@"%@\n", self.caption];
 }
 
 - (NSString *)oneLinedCaptionForText:(NSString *)text
@@ -671,89 +662,12 @@ static void setViewFrame(UIView *view, CGRect frame)
 
 - (void)replaceMention:(NSString *)mention
 {
-    NSString *replacementText = [mention stringByAppendingString:@" "];
-    
-    NSString *text = _inputField.text;
-    
-    UITextRange *selRange = _inputField.internalTextView.selectedTextRange;
-    UITextPosition *selStartPos = selRange.start;
-    NSInteger idx = [_inputField.internalTextView offsetFromPosition:_inputField.internalTextView.beginningOfDocument toPosition:selStartPos];
-    idx--;
-    NSRange candidateMentionRange = NSMakeRange(NSNotFound, 0);
-    
-    if (idx >= 0 && idx < (int)text.length)
-    {
-        for (NSInteger i = idx; i >= 0; i--)
-        {
-            unichar c = [text characterAtIndex:i];
-            if (c == '@')
-            {
-                if (i == idx)
-                    candidateMentionRange = NSMakeRange(i + 1, 0);
-                else
-                    candidateMentionRange = NSMakeRange(i + 1, idx - i);
-                break;
-            }
-            
-            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'))
-                break;
-        }
-    }
-    
-    if (candidateMentionRange.location != NSNotFound)
-    {
-        text = [text stringByReplacingCharactersInRange:candidateMentionRange withString:replacementText];
-        [_inputField setText:text];
-        UITextPosition *textPosition = [_inputField.internalTextView positionFromPosition:_inputField.internalTextView.beginningOfDocument offset:candidateMentionRange.location + replacementText.length];
-        [_inputField.internalTextView setSelectedTextRange:[_inputField.internalTextView textRangeFromPosition:textPosition toPosition:textPosition]];
-    }
+    [TGModernConversationInputTextPanel replaceMention:mention inputField:_inputField];
 }
 
 - (void)replaceHashtag:(NSString *)hashtag
 {
-    static NSCharacterSet *characterSet = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        characterSet = [NSCharacterSet alphanumericCharacterSet];
-    });
-    
-    NSString *replacementText = [hashtag stringByAppendingString:@" "];
-    
-    NSString *text = _inputField.text;
-    
-    UITextRange *selRange = _inputField.internalTextView.selectedTextRange;
-    UITextPosition *selStartPos = selRange.start;
-    NSInteger idx = [_inputField.internalTextView offsetFromPosition:_inputField.internalTextView.beginningOfDocument toPosition:selStartPos];
-    idx--;
-    NSRange candidateHashtagRange = NSMakeRange(NSNotFound, 0);
-    
-    if (idx >= 0 && idx < (int)text.length)
-    {
-        for (NSInteger i = idx; i >= 0; i--)
-        {
-            unichar c = [text characterAtIndex:i];
-            if (c == '#')
-            {
-                if (i == idx)
-                    candidateHashtagRange = NSMakeRange(i + 1, 0);
-                else
-                    candidateHashtagRange = NSMakeRange(i + 1, idx - i);
-                break;
-            }
-            
-            if (c == ' ' || (![characterSet characterIsMember:c] && c != '_'))
-                break;
-        }
-    }
-    
-    if (candidateHashtagRange.location != NSNotFound)
-    {
-        text = [text stringByReplacingCharactersInRange:candidateHashtagRange withString:replacementText];
-        [_inputField setText:text];
-        UITextPosition *textPosition = [_inputField.internalTextView positionFromPosition:_inputField.internalTextView.beginningOfDocument offset:candidateHashtagRange.location + replacementText.length];
-        [_inputField.internalTextView setSelectedTextRange:[_inputField.internalTextView textRangeFromPosition:textPosition toPosition:textPosition]];
-    }
+    [TGModernConversationInputTextPanel replaceHashtag:hashtag inputField:_inputField];
 }
 
 - (bool)shouldDisplayPanels
@@ -965,7 +879,7 @@ static void setViewFrame(UIView *view, CGRect frame)
     setViewFrame(_inputFieldClippingContainer, inputFieldClippingFrame);
 
     CGFloat inputFieldWidth = _inputFieldClippingContainer.frame.size.width - inputFieldInternalEdgeInsets.left - 24;
-    if (ABS(inputFieldWidth - _inputField.frame.size.width))
+    if (fabs(inputFieldWidth - _inputField.frame.size.width) > FLT_EPSILON)
     {
         CGRect inputFieldFrame = CGRectMake(inputFieldInternalEdgeInsets.left, inputFieldInternalEdgeInsets.top + TGRetinaPixel, inputFieldWidth, _inputFieldClippingContainer.frame.size.height);
         setViewFrame(_inputField, inputFieldFrame);

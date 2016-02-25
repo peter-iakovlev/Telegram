@@ -30,7 +30,20 @@ NSString *const TGUserInfoHeaderIdentifier = @"TGUserInfoHeader";
     {
         self.avatarButton.enabled = true;
         self.avatarInitialsLabel.hidden = true;
-        self.avatarGroup.backgroundColor = [UIColor hexColor:0x1a1a1a];
+        
+        if (user.isVerified)
+        {
+            self.avatarGroup.backgroundColor = [UIColor clearColor];
+            [self.avatarGroup setCornerRadius:0];
+            self.avatarVerified.hidden = false;
+        }
+        else
+        {
+            self.avatarGroup.backgroundColor = [UIColor hexColor:0x1a1a1a];
+            [self.avatarGroup setCornerRadius:22];
+            self.avatarVerified.hidden = true;
+        }
+        
         if (![_currentAvatarPhoto isEqualToString:user.photoSmall])
         {
             _currentAvatarPhoto = user.photoSmall;
@@ -58,7 +71,7 @@ NSString *const TGUserInfoHeaderIdentifier = @"TGUserInfoHeader";
     if (user.identifier == 777000)
     {
         self.lastSeenLabel.textColor = [TGColor subtitleColor];
-        self.lastSeenLabel.text = TGLocalized(@"UserInfo.Service");
+        self.lastSeenLabel.text = TGLocalized(@"Watch.UserInfo.Service");
     }
     else if (user.kind != TGBridgeUserKindGeneric)
     {
@@ -81,7 +94,22 @@ NSString *const TGUserInfoHeaderIdentifier = @"TGUserInfoHeader";
 {
     self.nameLabel.text = channel.groupTitle;
     self.lastSeenLabel.textColor = [TGColor subtitleColor];
-    self.lastSeenLabel.text = TGLocalized(@"Channel.GenericChannelStatus");
+    
+    if (!channel.isChannelGroup)
+    {
+        self.lastSeenLabel.text = TGLocalized(@"Channel.Status");
+    }
+    else
+    {
+        if (channel.participantsCount == 0)
+        {
+            self.lastSeenLabel.text = @"";
+        }
+        else
+        {
+            self.lastSeenLabel.text = [NSString stringWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"Conversation.StatusMembers_" value:channel.participantsCount]), [NSString stringWithFormat:@"%d", (int32_t)channel.participantsCount]];
+        }
+    }
     
     if (channel.groupPhotoSmall.length > 0)
     {

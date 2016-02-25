@@ -115,6 +115,7 @@ typedef void (^TGRemoteImageDownloadCompletionBlock)(NSData *data);
     if (attachment.type == TGImageMediaAttachmentType)
     {
         TGImageMediaAttachment *imageAttachment = (TGImageMediaAttachment *)attachment;
+        imageAttachment.caption = nil;
         dict = [[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:imageAttachment.imageId], @"imageId", [[NSNumber alloc] initWithLongLong:imageAttachment.accessHash], @"accessHash", imageAttachment, @"imageAttachment", nil];
         [serverAssetData() setObject:dict forKey:assetUrl];
         return dict;
@@ -122,6 +123,7 @@ typedef void (^TGRemoteImageDownloadCompletionBlock)(NSData *data);
     else if (attachment.type == TGVideoMediaAttachmentType)
     {
         TGVideoMediaAttachment *videoAttachment = (TGVideoMediaAttachment *)attachment;
+        videoAttachment.caption = nil;
         dict = [[NSDictionary alloc] initWithObjectsAndKeys:videoAttachment, @"videoAttachment", nil];
         [serverAssetData() setObject:dict forKey:assetUrl];
         return dict;

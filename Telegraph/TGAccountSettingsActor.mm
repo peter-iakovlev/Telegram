@@ -17,6 +17,7 @@
 {
     bool _accountTtlReceived;
     bool _privacySettingsReceived;
+    bool _groupsAndChannelsSettingsReceived;
     
     TGAccountSettings *_accountSettings;
 }
@@ -69,7 +70,7 @@
 
 - (void)_maybeComplete
 {
-    if (_accountTtlReceived && _privacySettingsReceived)
+    if (_accountTtlReceived && _privacySettingsReceived && _groupsAndChannelsSettingsReceived)
     {
         [TGDatabaseInstance() setLocalUserStatusPrivacyRules:_accountSettings.notificationSettings changedLoadedUsers:^(__unused NSArray *users)
         {
@@ -142,11 +143,37 @@
         
         [[TGTelegramNetworking instance] addRequest:request];
     }
+    
+    {
+        MTRequest *request = [[MTRequest alloc] init];
+        
+        TLRPCaccount_getPrivacy$account_getPrivacy *getPrivacy = [[TLRPCaccount_getPrivacy$account_getPrivacy alloc] init];
+        getPrivacy.key = [[TLInputPrivacyKey$inputPrivacyKeyChatInvite alloc] init];
+        request.body = getPrivacy;
+        
+        __weak TGAccountSettingsActor *weakSelf = self;
+        [request setCompleted:^(id result, __unused NSTimeInterval timestamp, id error)
+         {
+             __strong TGAccountSettingsActor *strongSelf = weakSelf;
+             if (strongSelf != nil)
+             {
+                 [ActionStageInstance() dispatchOnStageQueue:^
+                  {
+                      if (error == nil)
+                          [strongSelf groupsAndChannelsSettingsRequestSuccess:result];
+                      else
+                          [strongSelf groupsAndChannelsSettingsRequestFailed];
+                  }];
+             }
+         }];
+        
+        [[TGTelegramNetworking instance] addRequest:request];
+    }
 }
 
 - (void)accountTtlRequestSuccess:(TLAccountDaysTTL *)accountDaysTTL
 {
-    _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:_accountSettings.notificationSettings accountTTLSetting:[[TGAccountTTLSetting alloc] initWithAccountTTL:@(accountDaysTTL.days * 24 * 60 * 60)]];
+    _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:_accountSettings.notificationSettings groupsAndChannelsSettings:_accountSettings.groupsAndChannelsSettings accountTTLSetting:[[TGAccountTTLSetting alloc] initWithAccountTTL:@(accountDaysTTL.days * 24 * 60 * 60)]];
     _accountTtlReceived = true;
     [self _maybeComplete];
 }
@@ -195,15 +222,64 @@
         }
     }
     
-    _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:[privacySettings normalize] accountTTLSetting:_accountSettings.accountTTLSetting];
+    _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:[privacySettings normalize] groupsAndChannelsSettings:_accountSettings.groupsAndChannelsSettings accountTTLSetting:_accountSettings.accountTTLSetting];
     
     _privacySettingsReceived = true;
+    [self _maybeComplete];
+}
+
+- (void)groupsAndChannelsSettingsRequestSuccess:(TLaccount_PrivacyRules *)privacyRules
+{
+    [TGUserDataRequestBuilder executeUserDataUpdate:privacyRules.users];
+    
+    TGNotificationPrivacyAccountSetting *privacySettings = [[TGNotificationPrivacyAccountSetting alloc] initWithDefaultValues];
+    
+    privacySettings = [privacySettings modifyLastSeenPrimarySetting:TGPrivacySettingsLastSeenPrimarySettingNobody];
+    
+    for (TLPrivacyRule *rule in privacyRules.rules)
+    {
+        if ([rule isKindOfClass:[TLPrivacyRule$privacyValueAllowAll class]])
+        {
+            privacySettings = [privacySettings modifyLastSeenPrimarySetting:TGPrivacySettingsLastSeenPrimarySettingEverybody];
+        }
+        else if ([rule isKindOfClass:[TLPrivacyRule$privacyValueAllowContacts class]])
+        {
+            privacySettings = [privacySettings modifyLastSeenPrimarySetting:TGPrivacySettingsLastSeenPrimarySettingContacts];
+        }
+        else if ([rule isKindOfClass:[TLPrivacyRule$privacyValueAllowUsers class]])
+        {
+            TLPrivacyRule$privacyValueAllowUsers *allowUsers = (TLPrivacyRule$privacyValueAllowUsers *)rule;
+            privacySettings = [privacySettings modifyAlwaysShareWithUserIds:allowUsers.users];
+        }
+        else if ([rule isKindOfClass:[TLPrivacyRule$privacyValueDisallowAll class]])
+        {
+            privacySettings = [privacySettings modifyLastSeenPrimarySetting:TGPrivacySettingsLastSeenPrimarySettingNobody];
+        }
+        else if ([rule isKindOfClass:[TLPrivacyRule$privacyValueDisallowContacts class]])
+        {
+        }
+        else if ([rule isKindOfClass:[TLPrivacyRule$privacyValueDisallowUsers class]])
+        {
+            privacySettings = [privacySettings modifyLastSeenPrimarySetting:TGPrivacySettingsLastSeenPrimarySettingNobody];
+            TLPrivacyRule$privacyValueDisallowUsers *disallowUsers = (TLPrivacyRule$privacyValueDisallowUsers *)rule;
+            privacySettings = [privacySettings modifyNeverShareWithUserIds:disallowUsers.users];
+        }
+    }
+    
+    _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:_accountSettings.notificationSettings groupsAndChannelsSettings:[privacySettings normalize] accountTTLSetting:_accountSettings.accountTTLSetting];
+    
+    _groupsAndChannelsSettingsReceived = true;
     [self _maybeComplete];
 }
 
 - (void)privacySettingsRequestFailed
 {
     _privacySettingsReceived = true;
+    [self _maybeComplete];
+}
+
+- (void)groupsAndChannelsSettingsRequestFailed {
+    _groupsAndChannelsSettingsReceived = true;
     [self _maybeComplete];
 }
 

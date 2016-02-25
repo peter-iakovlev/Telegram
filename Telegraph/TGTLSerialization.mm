@@ -191,7 +191,7 @@
             {
                 if (dcOption.n_id == datacenterId)
                 {
-                    MTDatacenterAddress *address = [[MTDatacenterAddress alloc] initWithIp:dcOption.ip_address port:(uint16_t)dcOption.port preferForMedia:dcOption.flags & (1 << 1)];
+                    MTDatacenterAddress *address = [[MTDatacenterAddress alloc] initWithIp:dcOption.ip_address port:(uint16_t)dcOption.port preferForMedia:dcOption.flags & (1 << 1) restrictToTcp:dcOption.flags & (1 << 2)];
                     [addressList addObject:address];
                 }
             }
@@ -204,7 +204,7 @@
 
 - (NSUInteger)currentLayer
 {
-    return 39;
+    return 48;
 }
 
 @end

@@ -4,6 +4,7 @@
 #import "../NSOutputStream+TL.h"
 
 #import "TLInputUser.h"
+#import "TLInputPeer.h"
 #import "TLUpdates.h"
 
 @implementation TLRPCmessages_startBot
@@ -21,7 +22,7 @@
 
 - (int)layerVersion
 {
-    return 31;
+    return 41;
 }
 
 - (int32_t)TLconstructorSignature
@@ -55,7 +56,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x1b3e0ffc;
+    return (int32_t)0xe6df7378;
 }
 
 - (int32_t)TLconstructorName
@@ -67,7 +68,7 @@
 {
     TLRPCmessages_startBot$messages_startBot *object = [[TLRPCmessages_startBot$messages_startBot alloc] init];
     object.bot = metaObject->getObject((int32_t)0x5b476acc);
-    object.chat_id = metaObject->getInt32((int32_t)0x7234457c);
+    object.peer = metaObject->getObject((int32_t)0x9344c37d);
     object.random_id = metaObject->getInt64((int32_t)0xca5a160a);
     object.start_param = metaObject->getString((int32_t)0x90d398cb);
     return object;
@@ -83,9 +84,9 @@
     }
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.chat_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7234457c, value));
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.peer;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9344c37d, value));
     }
     {
         TLConstructedValue value;

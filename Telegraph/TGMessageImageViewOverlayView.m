@@ -7,6 +7,8 @@
  */
 
 #import "TGMessageImageViewOverlayView.h"
+#import "TGColor.h"
+#import "TGImageUtils.h"
 
 #import <pop/POP.h>
 
@@ -299,19 +301,19 @@ typedef enum {
         {
             CGFloat diameter = _overlayStyle == TGMessageImageViewOverlayStyleList ? 30.0f : self.radius;
             CGFloat lineWidth = _overlayStyle == TGMessageImageViewOverlayStyleList ? 1.4f : 2.0f;
-            CGFloat height = _overlayStyle == TGMessageImageViewOverlayStyleList ? 18.0f : (CGCeil(self.radius / 2.0f) - 1.0f);
-            CGFloat width = _overlayStyle == TGMessageImageViewOverlayStyleList ? 17.0f : CGCeil(self.radius / 2.5f);
+            CGFloat height = _overlayStyle == TGMessageImageViewOverlayStyleList ? 18.0f : (ceil(self.radius / 2.0f) - 1.0f);
+            CGFloat width = _overlayStyle == TGMessageImageViewOverlayStyleList ? 17.0f : ceil(self.radius / 2.5f);
             
             CGContextSetBlendMode(context, kCGBlendModeCopy);
             
             if (_overlayStyle == TGMessageImageViewOverlayStyleDefault)
             {
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 0.8f).CGColor);
+                CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0xffffffff, 0.8f).CGColor);
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             }
             else if (_overlayStyle == TGMessageImageViewOverlayStyleAccent)
             {
-                CGContextSetStrokeColorWithColor(context, UIColorRGB(0xeaeaea).CGColor);
+                CGContextSetStrokeColorWithColor(context, TGColorWithHex(0xeaeaea).CGColor);
                 CGContextSetLineWidth(context, 1.5f);
                 CGContextStrokeEllipseInRect(context, CGRectMake(1.5f / 2.0f, 1.5f / 2.0f, diameter - 1.5f, diameter - 1.5f));
             }
@@ -320,21 +322,39 @@ typedef enum {
             }
             else if (_overlayStyle == TGMessageImageViewOverlayStyleIncoming)
             {
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0x85baf2, 0.15f).CGColor);
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
+                } else {
+                    CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0x85baf2, 0.15f).CGColor);
+                }
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             }
             else if (_overlayStyle == TGMessageImageViewOverlayStyleOutgoing)
             {
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0x4fb212, 0.15f).CGColor);
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextSetFillColorWithColor(context, TGColorWithHex(0x3fc33b).CGColor);
+                } else {
+                    CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0x4fb212, 0.15f).CGColor);
+                }
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             }
             
             if (_overlayStyle == TGMessageImageViewOverlayStyleDefault)
-                CGContextSetStrokeColorWithColor(context, UIColorRGBA(0xff000000, 0.55f).CGColor);
-            else if (_overlayStyle == TGMessageImageViewOverlayStyleIncoming)
-                CGContextSetStrokeColorWithColor(context, UIColorRGB(0x4f9ef3).CGColor);
-            else if (_overlayStyle == TGMessageImageViewOverlayStyleOutgoing)
-                CGContextSetStrokeColorWithColor(context, UIColorRGB(0x64b15e).CGColor);
+                CGContextSetStrokeColorWithColor(context, TGColorWithHexAndAlpha(0xff000000, 0.55f).CGColor);
+            else if (_overlayStyle == TGMessageImageViewOverlayStyleIncoming) {
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextSetStrokeColorWithColor(context, [UIColor clearColor].CGColor);
+                } else {
+                    CGContextSetStrokeColorWithColor(context, TGColorWithHex(0x4f9ef3).CGColor);
+                }
+            }
+            else if (_overlayStyle == TGMessageImageViewOverlayStyleOutgoing) {
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextSetStrokeColorWithColor(context, [UIColor clearColor].CGColor);
+                } else {
+                    CGContextSetStrokeColorWithColor(context, TGColorWithHex(0x64b15e).CGColor);
+                }
+            }
             else
                 CGContextSetStrokeColorWithColor(context, TGAccentColor().CGColor);
             
@@ -361,7 +381,7 @@ typedef enum {
             if (_overlayStyle == TGMessageImageViewOverlayStyleDefault)
             {
                 CGContextSetBlendMode(context, kCGBlendModeNormal);
-                CGContextSetStrokeColorWithColor(context, UIColorRGBA(0x000000, 0.55f).CGColor);
+                CGContextSetStrokeColorWithColor(context, TGColorWithHexAndAlpha(0x000000, 0.55f).CGColor);
                 CGContextStrokeLineSegments(context, arrowLine, sizeof(arrowLine) / sizeof(arrowLine[0]));
                 
                 CGContextSetBlendMode(context, kCGBlendModeCopy);
@@ -378,6 +398,11 @@ typedef enum {
             CGFloat lineWidth = _overlayStyle == TGMessageImageViewOverlayStyleList ? 1.5f : 2.0f;
             CGFloat crossSize = _overlayStyle == TGMessageImageViewOverlayStyleList ? 10.0f : 16.0f;
             
+            if (ABS(diameter - 37.0f) < 0.1) {
+                crossSize = 10.0f;
+                inset = 2.0;
+            }
+            
             CGContextSetBlendMode(context, kCGBlendModeCopy);
             
             if (_overlayStyle == TGMessageImageViewOverlayStyleDefault)
@@ -385,22 +410,30 @@ typedef enum {
                 if (_overlayBackgroundColorHint != nil)
                     CGContextSetFillColorWithColor(context, _overlayBackgroundColorHint.CGColor);
                 else
-                    CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.7f).CGColor);
+                    CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0x000000, 0.7f).CGColor);
                 CGContextFillEllipseInRect(context, CGRectMake(inset, inset, diameter - inset * 2.0f, diameter - inset * 2.0f));
             }
             else if (_overlayStyle == TGMessageImageViewOverlayStyleIncoming)
             {
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0x85baf2, 0.15f).CGColor);
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
+                } else {
+                    CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0x85baf2, 0.15f).CGColor);
+                }
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             }
             else if (_overlayStyle == TGMessageImageViewOverlayStyleOutgoing)
             {
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0x4fb212, 0.15f).CGColor);
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextSetFillColorWithColor(context, TGColorWithHex(0x3fc33b).CGColor);
+                } else {
+                    CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0x4fb212, 0.15f).CGColor);
+                }
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             }
             else if (_overlayStyle == TGMessageImageViewOverlayStyleAccent)
             {
-                CGContextSetStrokeColorWithColor(context, UIColorRGB(0xeaeaea).CGColor);
+                CGContextSetStrokeColorWithColor(context, TGColorWithHex(0xeaeaea).CGColor);
                 CGContextSetLineWidth(context, 1.5f);
                 CGContextStrokeEllipseInRect(context, CGRectMake(1.5f / 2.0f, 1.5f / 2.0f, diameter - 1.5f, diameter - 1.5f));
             }
@@ -417,10 +450,20 @@ typedef enum {
             
             if (_overlayStyle == TGMessageImageViewOverlayStyleDefault)
                 CGContextSetStrokeColorWithColor(context, [UIColor clearColor].CGColor);
-            else if (_overlayStyle == TGMessageImageViewOverlayStyleIncoming)
-                CGContextSetStrokeColorWithColor(context, UIColorRGB(0x4f9ef3).CGColor);
-            else if (_overlayStyle == TGMessageImageViewOverlayStyleOutgoing)
-                CGContextSetStrokeColorWithColor(context, UIColorRGB(0x64b15e).CGColor);
+            else if (_overlayStyle == TGMessageImageViewOverlayStyleIncoming) {
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextSetStrokeColorWithColor(context, [UIColor whiteColor].CGColor);
+                } else {
+                    CGContextSetStrokeColorWithColor(context, TGColorWithHex(0x4f9ef3).CGColor);
+                }
+            }
+            else if (_overlayStyle == TGMessageImageViewOverlayStyleOutgoing) {
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextSetStrokeColorWithColor(context, TGColorWithHex(0xe1ffc7).CGColor);
+                } else {
+                    CGContextSetStrokeColorWithColor(context, TGColorWithHex(0x64b15e).CGColor);
+                }
+            }
             else
                 CGContextSetStrokeColorWithColor(context, TGAccentColor().CGColor);
             
@@ -430,7 +473,7 @@ typedef enum {
             if (_overlayStyle == TGMessageImageViewOverlayStyleDefault)
             {
                 CGContextSetBlendMode(context, kCGBlendModeNormal);
-                CGContextSetStrokeColorWithColor(context, UIColorRGBA(0xffffff, 1.0f).CGColor);
+                CGContextSetStrokeColorWithColor(context, TGColorWithHexAndAlpha(0xffffff, 1.0f).CGColor);
                 if (_type == TGMessageImageViewOverlayViewTypeProgressCancel)
                     CGContextStrokeLineSegments(context, crossLine, sizeof(crossLine) / sizeof(crossLine[0]));
             }
@@ -449,17 +492,27 @@ typedef enum {
             
             if (_overlayStyle == TGMessageImageViewOverlayStyleDefault)
                 CGContextSetStrokeColorWithColor(context, [UIColor clearColor].CGColor);
-            else if (_overlayStyle == TGMessageImageViewOverlayStyleIncoming)
-                CGContextSetStrokeColorWithColor(context, UIColorRGB(0x4f9ef3).CGColor);
-            else if (_overlayStyle == TGMessageImageViewOverlayStyleOutgoing)
-                CGContextSetStrokeColorWithColor(context, UIColorRGB(0x64b15e).CGColor);
+            else if (_overlayStyle == TGMessageImageViewOverlayStyleIncoming) {
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextSetStrokeColorWithColor(context, [UIColor whiteColor].CGColor);
+                } else {
+                    CGContextSetStrokeColorWithColor(context, TGColorWithHex(0x4f9ef3).CGColor);
+                }
+            }
+            else if (_overlayStyle == TGMessageImageViewOverlayStyleOutgoing) {
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextSetStrokeColorWithColor(context, TGColorWithHex(0xe1ffc7).CGColor);
+                } else {
+                    CGContextSetStrokeColorWithColor(context, TGColorWithHex(0x64b15e).CGColor);
+                }
+            }
             else
                 CGContextSetStrokeColorWithColor(context, TGAccentColor().CGColor);
             
             if (_overlayStyle == TGMessageImageViewOverlayStyleDefault)
             {
                 CGContextSetBlendMode(context, kCGBlendModeNormal);
-                CGContextSetStrokeColorWithColor(context, UIColorRGBA(0xffffff, 1.0f).CGColor);
+                CGContextSetStrokeColorWithColor(context, TGColorWithHexAndAlpha(0xffffff, 1.0f).CGColor);
             }
             
             CGContextSetBlendMode(context, kCGBlendModeCopy);
@@ -471,6 +524,12 @@ typedef enum {
             if (_overlayStyle == TGMessageImageViewOverlayStyleList)
                 pathLineWidth = 1.4f;
             CGFloat pathDiameter = diameter - pathLineWidth;
+            
+            if (ABS(diameter - 37.0f) < 0.1) {
+                pathLineWidth = 2.5f;
+                pathDiameter = diameter - pathLineWidth - 2.5f;
+            }
+            
             UIBezierPath *path = [UIBezierPath bezierPathWithArcCenter:CGPointMake(diameter / 2.0f, diameter / 2.0f) radius:pathDiameter / 2.0f startAngle:start_angle endAngle:end_angle clockwise:true];
             path.lineWidth = pathLineWidth;
             path.lineCapStyle = kCGLineCapRound;
@@ -481,39 +540,48 @@ typedef enum {
         case TGMessageImageViewOverlayViewTypePlay:
         {
             const CGFloat diameter = self.radius;
-            const CGFloat width = 20.0f;
-            const CGFloat height = width + 4.0f;
-            const CGFloat offset = 3.0f;
+            CGFloat width = round(diameter * 0.4);
+            CGFloat height = round(width * 1.2f);
+            CGFloat offset = round(50.0f * 0.06f);
+            CGFloat verticalOffset = 0.0f;
+            CGFloat alpha = 0.8f;
+            UIColor *iconColor = TGColorWithHexAndAlpha(0xff000000, 0.45f);
+            if (diameter <= 25.0f + FLT_EPSILON) {
+                offset -= 1.0f;
+                verticalOffset += 0.5f;
+                alpha = 1.0f;
+                iconColor = TGColorWithHex(0x434344);
+            }
             
             CGContextSetBlendMode(context, kCGBlendModeCopy);
             
             if (_overlayStyle == TGMessageImageViewOverlayStyleIncoming)
             {
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0x85baf2, 0.15f).CGColor);
+                CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0x85baf2, 0.15f).CGColor);
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
                 
                 UIImage *iconImage = [UIImage imageNamed:@"ModernMessageDocumentIconIncoming.png"];
-                [iconImage drawAtPoint:CGPointMake(CGFloor((diameter - iconImage.size.width) / 2.0f), CGFloor((diameter - iconImage.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:1.0f];
+                [iconImage drawAtPoint:CGPointMake(floor((diameter - iconImage.size.width) / 2.0f), floor((diameter - iconImage.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:1.0f];
             }
             else if (_overlayStyle == TGMessageImageViewOverlayStyleOutgoing)
             {
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0x4fb212, 0.15f).CGColor);
+                CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0x4fb212, 0.15f).CGColor);
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
                 
                 UIImage *iconImage = [UIImage imageNamed:@"ModernMessageDocumentIconOutgoing.png"];
-                [iconImage drawAtPoint:CGPointMake(CGFloor((diameter - iconImage.size.width) / 2.0f), CGFloor((diameter - iconImage.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:1.0f];
+                [iconImage drawAtPoint:CGPointMake(floor((diameter - iconImage.size.width) / 2.0f), floor((diameter - iconImage.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:1.0f];
             }
             else
             {
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 0.8f).CGColor);
+                CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0xffffffff, alpha).CGColor);
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
                 
                 CGContextBeginPath(context);
-                CGContextMoveToPoint(context, offset + CGFloor((diameter - width) / 2.0f), CGFloor((diameter - height) / 2.0f));
-                CGContextAddLineToPoint(context, offset + CGFloor((diameter - width) / 2.0f) + width, CGFloor(diameter / 2.0f));
-                CGContextAddLineToPoint(context, offset + CGFloor((diameter - width) / 2.0f), CGFloor((diameter + height) / 2.0f));
+                CGContextMoveToPoint(context, offset + floor((diameter - width) / 2.0f), verticalOffset + floor((diameter - height) / 2.0f));
+                CGContextAddLineToPoint(context, offset + floor((diameter - width) / 2.0f) + width, verticalOffset + floor(diameter / 2.0f));
+                CGContextAddLineToPoint(context, offset + floor((diameter - width) / 2.0f), verticalOffset + floor((diameter + height) / 2.0f));
                 CGContextClosePath(context);
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0xff000000, 0.45f).CGColor);
+                CGContextSetFillColorWithColor(context, iconColor.CGColor);
                 CGContextFillPath(context);
             }
             
@@ -534,39 +602,56 @@ typedef enum {
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
                 
                 CGContextSetBlendMode(context, kCGBlendModeCopy);
-                
-                CGContextBeginPath(context);
-                CGContextMoveToPoint(context, 17.0f, 13.0f);
-                CGContextAddLineToPoint(context, 32.0f, 22.0f);
-                CGContextAddLineToPoint(context, 17.0f, 32.0f);
-                CGContextClosePath(context);
                 CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
-                CGContextFillPath(context);
+                
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextTranslateCTM(context, -TGRetinaPixel, TGRetinaPixel);
+                    CGFloat factor = 28.0f / 34.0f;
+                    CGContextScaleCTM(context, 0.5f * factor, 0.5f * factor);
+                    
+                    TGDrawSvgPath(context, @"M39.4267651,27.0560591 C37.534215,25.920529 36,26.7818508 36,28.9948438 L36,59.0051562 C36,61.2114475 37.4877047,62.0081969 39.3251488,60.7832341 L62.6748512,45.2167659 C64.5112802,43.9924799 64.4710515,42.0826309 62.5732349,40.9439409 L39.4267651,27.0560591 Z");
+                } else {
+                    CGContextBeginPath(context);
+                    CGContextMoveToPoint(context, 17.0f, 13.0f);
+                    CGContextAddLineToPoint(context, 32.0f, 22.0f);
+                    CGContextAddLineToPoint(context, 17.0f, 32.0f);
+                    CGContextClosePath(context);
+                    CGContextFillPath(context);
+                }
             }
             else if (_overlayStyle == TGMessageImageViewOverlayStyleOutgoing)
             {
-                CGContextSetFillColorWithColor(context, UIColorRGB(0x3fc33b).CGColor);
+                CGContextSetFillColorWithColor(context, TGColorWithHex(0x3fc33b).CGColor);
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-                
-                CGContextBeginPath(context);
-                CGContextMoveToPoint(context, 17.0f, 13.0f);
-                CGContextAddLineToPoint(context, 32.0f, 22.0f);
-                CGContextAddLineToPoint(context, 17.0f, 32.0f);
-                CGContextClosePath(context);
                 CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
-                CGContextFillPath(context);
+                CGContextSetBlendMode(context, kCGBlendModeCopy);
+                
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGContextTranslateCTM(context, -TGRetinaPixel, TGRetinaPixel);
+                    CGFloat factor = 28.0f / 34.0f;
+                    CGContextScaleCTM(context, 0.5f * factor, 0.5f * factor);
+                    
+                    TGDrawSvgPath(context, @"M39.4267651,27.0560591 C37.534215,25.920529 36,26.7818508 36,28.9948438 L36,59.0051562 C36,61.2114475 37.4877047,62.0081969 39.3251488,60.7832341 L62.6748512,45.2167659 C64.5112802,43.9924799 64.4710515,42.0826309 62.5732349,40.9439409 L39.4267651,27.0560591 Z");
+                } else {
+                    CGContextBeginPath(context);
+                    CGContextMoveToPoint(context, 17.0f, 13.0f);
+                    CGContextAddLineToPoint(context, 32.0f, 22.0f);
+                    CGContextAddLineToPoint(context, 17.0f, 32.0f);
+                    CGContextClosePath(context);
+                    CGContextFillPath(context);
+                }
             }
             else
             {
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 0.8f).CGColor);
+                CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0xffffffff, 0.8f).CGColor);
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
                 
                 CGContextBeginPath(context);
-                CGContextMoveToPoint(context, offset + CGFloor((diameter - width) / 2.0f), CGFloor((diameter - height) / 2.0f));
-                CGContextAddLineToPoint(context, offset + CGFloor((diameter - width) / 2.0f) + width, CGFloor(diameter / 2.0f));
-                CGContextAddLineToPoint(context, offset + CGFloor((diameter - width) / 2.0f), CGFloor((diameter + height) / 2.0f));
+                CGContextMoveToPoint(context, offset + floor((diameter - width) / 2.0f), floor((diameter - height) / 2.0f));
+                CGContextAddLineToPoint(context, offset + floor((diameter - width) / 2.0f) + width, floor(diameter / 2.0f));
+                CGContextAddLineToPoint(context, offset + floor((diameter - width) / 2.0f), floor((diameter + height) / 2.0f));
                 CGContextClosePath(context);
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0xff000000, 0.45f).CGColor);
+                CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0xff000000, 0.45f).CGColor);
                 CGContextFillPath(context);
             }
             
@@ -587,31 +672,47 @@ typedef enum {
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
                 
                 CGContextSetBlendMode(context, kCGBlendModeCopy);
-                
                 CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
-                CGContextFillRect(context, CGRectMake(15.5f, 14.5f, 4.0f, 15.0f));
-                CGContextFillRect(context, CGRectMake(24.5f, 14.5f, 4.0f, 15.0f));
+                
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGFloat factor = 28.0f / 34.0f;
+                    CGContextTranslateCTM(context, TGRetinaPixel, TGRetinaPixel);
+                    CGContextScaleCTM(context, 0.5f * factor, 0.5f * factor);
+                    
+                    TGDrawSvgPath(context, @"M29,30.0017433 C29,28.896211 29.8874333,28 30.999615,28 L37.000385,28 C38.1047419,28 39,28.8892617 39,30.0017433 L39,57.9982567 C39,59.103789 38.1125667,60 37.000385,60 L30.999615,60 C29.8952581,60 29,59.1107383 29,57.9982567 L29,30.0017433 Z M49,30.0017433 C49,28.896211 49.8874333,28 50.999615,28 L57.000385,28 C58.1047419,28 59,28.8892617 59,30.0017433 L59,57.9982567 C59,59.103789 58.1125667,60 57.000385,60 L50.999615,60 C49.8952581,60 49,59.1107383 49,57.9982567 L49,30.0017433 Z");
+                } else {
+                    CGContextFillRect(context, CGRectMake(15.5f, 14.5f, 4.0f, 15.0f));
+                    CGContextFillRect(context, CGRectMake(24.5f, 14.5f, 4.0f, 15.0f));
+                }
             }
             else if (_overlayStyle == TGMessageImageViewOverlayStyleOutgoing)
             {
-                CGContextSetFillColorWithColor(context, UIColorRGB(0x3fc33b).CGColor);
+                CGContextSetFillColorWithColor(context, TGColorWithHex(0x3fc33b).CGColor);
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-                
                 CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
-                CGContextFillRect(context, CGRectMake(15.5f, 14.5f, 4.0f, 15.0f));
-                CGContextFillRect(context, CGRectMake(24.5f, 14.5f, 4.0f, 15.0f));
+                
+                if (ABS(diameter - 37.0f) < 0.1) {
+                    CGFloat factor = 28.0f / 34.0f;
+                    CGContextTranslateCTM(context, TGRetinaPixel, TGRetinaPixel);
+                    CGContextScaleCTM(context, 0.5f * factor, 0.5f * factor);
+                    
+                    TGDrawSvgPath(context, @"M29,30.0017433 C29,28.896211 29.8874333,28 30.999615,28 L37.000385,28 C38.1047419,28 39,28.8892617 39,30.0017433 L39,57.9982567 C39,59.103789 38.1125667,60 37.000385,60 L30.999615,60 C29.8952581,60 29,59.1107383 29,57.9982567 L29,30.0017433 Z M49,30.0017433 C49,28.896211 49.8874333,28 50.999615,28 L57.000385,28 C58.1047419,28 59,28.8892617 59,30.0017433 L59,57.9982567 C59,59.103789 58.1125667,60 57.000385,60 L50.999615,60 C49.8952581,60 49,59.1107383 49,57.9982567 L49,30.0017433 Z");
+                } else {
+                    CGContextFillRect(context, CGRectMake(15.5f, 14.5f, 4.0f, 15.0f));
+                    CGContextFillRect(context, CGRectMake(24.5f, 14.5f, 4.0f, 15.0f));
+                }
             }
             else
             {
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 0.8f).CGColor);
+                CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0xffffffff, 0.8f).CGColor);
                 CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
                 
                 CGContextBeginPath(context);
-                CGContextMoveToPoint(context, offset + CGFloor((diameter - width) / 2.0f), CGFloor((diameter - height) / 2.0f));
-                CGContextAddLineToPoint(context, offset + CGFloor((diameter - width) / 2.0f) + width, CGFloor(diameter / 2.0f));
-                CGContextAddLineToPoint(context, offset + CGFloor((diameter - width) / 2.0f), CGFloor((diameter + height) / 2.0f));
+                CGContextMoveToPoint(context, offset + floor((diameter - width) / 2.0f), floor((diameter - height) / 2.0f));
+                CGContextAddLineToPoint(context, offset + floor((diameter - width) / 2.0f) + width, floor(diameter / 2.0f));
+                CGContextAddLineToPoint(context, offset + floor((diameter - width) / 2.0f), floor((diameter + height) / 2.0f));
                 CGContextClosePath(context);
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0xff000000, 0.45f).CGColor);
+                CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0xff000000, 0.45f).CGColor);
                 CGContextFillPath(context);
             }
             
@@ -624,7 +725,7 @@ typedef enum {
             
             CGContextSetBlendMode(context, kCGBlendModeCopy);
             
-            CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 0.7f).CGColor);
+            CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0xffffffff, 0.7f).CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             
             static UIImage *fireIconMask = nil;
@@ -642,14 +743,14 @@ typedef enum {
             
             if (_type == TGMessageImageViewOverlayViewTypeSecret)
             {
-                [fireIconMask drawAtPoint:CGPointMake(CGFloor((diameter - fireIcon.size.width) / 2.0f), CGFloor((diameter - fireIcon.size.height) / 2.0f)) blendMode:kCGBlendModeDestinationIn alpha:1.0f];
-                [fireIcon drawAtPoint:CGPointMake(CGFloor((diameter - fireIcon.size.width) / 2.0f), CGFloor((diameter - fireIcon.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:0.4f];
+                [fireIconMask drawAtPoint:CGPointMake(floor((diameter - fireIcon.size.width) / 2.0f), floor((diameter - fireIcon.size.height) / 2.0f)) blendMode:kCGBlendModeDestinationIn alpha:1.0f];
+                [fireIcon drawAtPoint:CGPointMake(floor((diameter - fireIcon.size.width) / 2.0f), floor((diameter - fireIcon.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:0.4f];
             }
             else
             {
                 CGPoint offset = CGPointMake(1.0f, 2.0f);
-                [viewedIconMask drawAtPoint:CGPointMake(offset.x + CGFloor((diameter - viewedIcon.size.width) / 2.0f), offset.y + CGFloor((diameter - viewedIcon.size.height) / 2.0f)) blendMode:kCGBlendModeDestinationIn alpha:1.0f];
-                [viewedIcon drawAtPoint:CGPointMake(offset.x + CGFloor((diameter - viewedIcon.size.width) / 2.0f), offset.y + CGFloor((diameter - viewedIcon.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:0.3f];
+                [viewedIconMask drawAtPoint:CGPointMake(offset.x + floor((diameter - viewedIcon.size.width) / 2.0f), offset.y + floor((diameter - viewedIcon.size.height) / 2.0f)) blendMode:kCGBlendModeDestinationIn alpha:1.0f];
+                [viewedIcon drawAtPoint:CGPointMake(offset.x + floor((diameter - viewedIcon.size.width) / 2.0f), offset.y + floor((diameter - viewedIcon.size.height) / 2.0f)) blendMode:kCGBlendModeNormal alpha:0.3f];
             }
             
             break;
@@ -659,12 +760,12 @@ typedef enum {
             const CGFloat diameter = self.radius;
             
             [_blurredBackgroundImage drawInRect:CGRectMake(0.0f, 0.0f, diameter, diameter) blendMode:kCGBlendModeCopy alpha:1.0f];
-            CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 0.5f).CGColor);
+            CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0xffffffff, 0.5f).CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             
             CGContextSetBlendMode(context, kCGBlendModeClear);
             
-            CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffffff, 1.0f).CGColor);
+            CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0xffffffff, 1.0f).CGColor);
             
             CGPoint center = CGPointMake(diameter / 2.0f, diameter / 2.0f);
             CGFloat radius = diameter / 2.0f + 0.25f;
@@ -692,6 +793,7 @@ typedef enum {
     CALayer *_blurredBackgroundLayer;
     TGMessageImageViewOverlayLayer *_contentLayer;
     TGMessageImageViewOverlayLayer *_progressLayer;
+    CGFloat _progress;
 }
 
 @end
@@ -837,6 +939,8 @@ typedef enum {
         _progressLayer.transform = CATransform3DIdentity;
         _progressLayer.frame = CGRectMake(0.0f, 0.0f, _contentLayer.frame.size.width, _contentLayer.frame.size.height);
     }
+    
+    _progress = progress;
     
     [_progressLayer setProgress:progress animated:animated];
     

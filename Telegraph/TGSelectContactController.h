@@ -22,7 +22,8 @@
 @property (nonatomic, strong) NSString *channelLink;
 
 @property (nonatomic, copy) void (^onChannelMembersInvited)(NSArray *users);
+@property (nonatomic, copy) void (^onCreateLink)();
 
-- (id)initWithCreateGroup:(bool)createGroup createEncrypted:(bool)createEncrypted createBroadcast:(bool)createBroadcast createChannel:(bool)createChannel inviteToChannel:(bool)inviteToChannel;
+- (id)initWithCreateGroup:(bool)createGroup createEncrypted:(bool)createEncrypted createBroadcast:(bool)createBroadcast createChannel:(bool)createChannel inviteToChannel:(bool)inviteToChannel showLink:(bool)showLink;
 
 @end

@@ -17,8 +17,6 @@
 
 @property (nonatomic, strong) TGVenueAttachment *venue;
 
-@property (nonatomic, strong) TGMessage *replyMessage;
-
 - (instancetype)initWithLatitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue replyMessage:(TGMessage *)replyMessage;
 
 @end

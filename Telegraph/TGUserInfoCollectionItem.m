@@ -53,7 +53,7 @@
 
 - (CGSize)itemSizeForContainerSize:(CGSize)containerSize
 {
-    return CGSizeMake(containerSize.width, 93.0f + (_editing ? 0.0f : -3.0f) + _additinalHeight);
+    return CGSizeMake(containerSize.width, 97.0f + _additinalHeight);
 }
 
 - (NSString *)currentFirstName
@@ -75,6 +75,7 @@
     [view setAvatarOffset:_avatarOffset];
     [view setNameOffset:_nameOffset];
     [view setFirstName:[self currentFirstName] lastName:[self currentLastName] uidForPlaceholderCalculation:_user.uid];
+    view.isVerified = _user.isVerified;
     
     if (!_disableAvatar)
     {
@@ -143,6 +144,8 @@
             NSString *status = [self stringForPresence:_user.presence accentColored:&active];
             [view setStatus:status active:active];
         }
+        
+        view.isVerified = _user.isVerified;
     }
 }
 

@@ -1,10 +1,12 @@
 #import "TGModernMediaListItem.h"
 
-@protocol TGEditablePhotoItem;
+@protocol TGMediaEditableItem;
+@class TGMediaEditingContext;
 
 @protocol TGModernMediaListEditableItem <TGModernMediaListItem>
 
-- (id<TGEditablePhotoItem>)editableMediaItem;
-- (NSString *)uniqueId;
+@property (nonatomic, strong) TGMediaEditingContext *editingContext;
+
+- (id<TGMediaEditableItem>)editableMediaItem;
 
 @end

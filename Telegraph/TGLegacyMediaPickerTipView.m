@@ -5,13 +5,12 @@
 #import "TGStringUtils.h"
 #import "TGViewController.h"
 
-#import "TGAttachmentSheetFileInstructionSchemeView.h"
 #import "TGModernButton.h"
 
 @interface TGLegacyMediaPickerTipView ()
 {
     UIView *_wrapperView;
-    TGAttachmentSheetFileInstructionSchemeView *_instructionImageView;
+    UIImageView *_imageView;
     UILabel *_titleLabel;
     UILabel *_textLabel;
     TGModernButton *_doneButton;
@@ -31,8 +30,8 @@
         _wrapperView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, 0)];
         [self addSubview:_wrapperView];
         
-        _instructionImageView = [[TGAttachmentSheetFileInstructionSchemeView alloc] initWithFrame:CGRectMake(0, 0, 320, 133)];
-        [_wrapperView addSubview:_instructionImageView];
+        _imageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"AttachmentTipIcons"]];
+        [self addSubview:_imageView];
         
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.backgroundColor = [UIColor clearColor];
@@ -47,7 +46,7 @@
         _textLabel.font = TGSystemFontOfSize(15.0f + TGRetinaPixel);
         
         NSString *shareTipText = [[NSString alloc] initWithFormat:TGLocalized(@"ShareFileTip.Text"), [TGStringUtils stringForDeviceType]];
-        _textLabel.attributedText = [shareTipText attributedStringWithFormattingAndFontSize:15.0f + TGRetinaPixel lineSpacing:3.0f paragraphSpacing:-1.0f];
+        _textLabel.attributedText = [shareTipText attributedFormattedStringWithRegularFont:TGSystemFontOfSize(15.0f + TGRetinaPixel) boldFont:TGBoldSystemFontOfSize(15.0f + TGRetinaPixel) lineSpacing:3.0f paragraphSpacing:-1.0f alignment:NSTextAlignmentCenter];
         _textLabel.numberOfLines = 0;
         _textLabel.lineBreakMode = NSLineBreakByWordWrapping;
         [_wrapperView addSubview:_textLabel];
@@ -79,12 +78,12 @@
 {
     [super layoutSubviews];
     
-    _instructionImageView.frame = CGRectMake((self.frame.size.width - _instructionImageView.frame.size.width) / 2, 0, _instructionImageView.frame.size.width, _instructionImageView.frame.size.height);
+    _imageView.frame = CGRectMake((self.frame.size.width - _imageView.frame.size.width) / 2, 0, _imageView.frame.size.width, _imageView.frame.size.height);
     
     CGFloat padding = 22.0f;
     
     CGSize titleSize = [_titleLabel sizeThatFits:CGSizeMake(self.bounds.size.width - padding * 2.0f, CGFLOAT_MAX)];
-    _titleLabel.frame = CGRectMake(padding, CGRectGetMaxY(_instructionImageView.frame) + 22.0f + TGRetinaPixel, titleSize.width, titleSize.height);
+    _titleLabel.frame = CGRectMake(padding, CGRectGetMaxY(_imageView.frame) + 22.0f + TGRetinaPixel, titleSize.width, titleSize.height);
     
     CGSize textSize = [_textLabel sizeThatFits:CGSizeMake(self.bounds.size.width - padding * 2.0f, CGFLOAT_MAX)];
     _textLabel.frame = CGRectMake(padding, CGRectGetMaxY(_titleLabel.frame) + 15.0f + TGRetinaPixel, textSize.width, textSize.height);

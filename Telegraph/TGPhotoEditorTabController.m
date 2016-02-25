@@ -1,6 +1,5 @@
 #import "TGPhotoEditorTabController.h"
-
-#import "TGAppDelegate.h"
+#import "TGPhotoEditorController.h"
 
 #import "TGPhotoEditorAnimation.h"
 
@@ -163,6 +162,11 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
         [self _finishedTransitionInWithView:transitionView];
     };
     [_transitionView pop_addAnimation:animation forKey:@"frame"];
+}
+
+- (void)prepareForCustomTransitionOut
+{
+    
 }
 
 - (void)transitionOutSwitching:(bool)__unused switching completion:(void (^)(void))__unused completion
@@ -330,10 +334,13 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
 
 - (CGSize)referenceViewSize
 {
-    if ([self inFormSheet])
-        return CGSizeMake(540.0f, 620.0f);
-    
-    return TGAppDelegateInstance.rootController.view.bounds.size;
+    if (self.parentViewController != nil)
+    {
+        TGPhotoEditorController *controller = (TGPhotoEditorController *)self.parentViewController;
+        return [controller referenceViewSize];
+    }
+
+    return CGSizeZero;
 }
 
 - (void)animateTransitionOutToRect:(CGRect)__unused fromRect saving:(bool)__unused saving duration:(CGFloat)__unused duration
@@ -371,6 +378,11 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
     return true;
 }
 
+- (id)currentResultRepresentation
+{
+    return nil;
+}
+
 + (CGRect)photoContainerFrameForParentViewFrame:(CGRect)parentViewFrame toolbarLandscapeSize:(CGFloat)toolbarLandscapeSize orientation:(UIInterfaceOrientation)orientation includePanel:(bool)includePanel
 {
     CGFloat panelToolbarPortraitSize = TGPhotoEditorToolbarSize;
@@ -395,9 +407,9 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
     }
 }
 
-+ (NSInteger)highlightedButtonsForEditorValues:(id<TGMediaEditAdjustments>)editorValues forAvatar:(bool)forAvatar hasCaption:(bool)hasCaption
++ (TGPhotoEditorTab)highlightedButtonsForEditorValues:(id<TGMediaEditAdjustments>)editorValues forAvatar:(bool)forAvatar hasCaption:(bool)hasCaption
 {
-    NSInteger highlightedButtons = 0;
+    TGPhotoEditorTab highlightedButtons = TGPhotoEditorNoneTab;
     
     if (hasCaption)
         highlightedButtons |= TGPhotoEditorCaptionTab;

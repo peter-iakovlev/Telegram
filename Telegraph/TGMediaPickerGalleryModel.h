@@ -8,25 +8,39 @@
 @class TGModernGalleryController;
 @class TGMediaPickerGallerySelectedItemsModel;
 @protocol TGMediaEditAdjustments;
-@protocol TGModernMediaListItem;
+
+@class TGMediaSelectionContext;
+@protocol TGMediaSelectableItem;
+
+@class TGSuggestionContext;
 
 @interface TGMediaPickerGalleryModel : TGModernGalleryModel
 
-@property (nonatomic, copy) void(^saveEditedItem)(id<TGEditablePhotoItem> item, id<TGMediaEditAdjustments> editorValues, UIImage *resultImage, UIImage *thumbnailImage);
-@property (nonatomic, copy) void(^saveItemCaption)(id<TGEditablePhotoItem> item, NSString *caption);
+@property (nonatomic, copy) void (^willFinishEditingItem)(id<TGMediaEditableItem> item, id<TGMediaEditAdjustments> adjustments, id temporaryRep, bool hasChanges);
+@property (nonatomic, copy) void (^didFinishEditingItem)(id<TGMediaEditableItem>item, id<TGMediaEditAdjustments> adjustments, UIImage *resultImage, UIImage *thumbnailImage);
+@property (nonatomic, copy) void (^didFinishRenderingFullSizeImage)(id<TGMediaEditableItem> item, UIImage *fullSizeImage);
 
-@property (nonatomic, copy) void(^storeOriginalImageForItem)(id<TGEditablePhotoItem> item, UIImage *originalImage);
+@property (nonatomic, copy) void (^saveItemCaption)(id<TGMediaEditableItem> item, NSString *caption);
+
+@property (nonatomic, copy) void (^storeOriginalImageForItem)(id<TGMediaEditableItem> item, UIImage *originalImage);
+
+@property (nonatomic, copy) id<TGMediaEditAdjustments> (^requestAdjustments)(id<TGMediaEditableItem> item);
+
+@property (nonatomic, copy) void (^editorOpened)(void);
+@property (nonatomic, copy) void (^editorClosed)(void);
 
 @property (nonatomic, assign) bool useGalleryImageAsEditableItemImage;
 @property (nonatomic, weak) TGModernGalleryController *controller;
-@property (nonatomic, strong) TGMediaPickerGallerySelectedItemsModel *selectedItemsModel;
-@property (nonatomic, strong, readonly) TGMediaPickerGalleryInterfaceView *interfaceView;
 
-@property (nonatomic, copy) SSignal *(^userListSignal)(NSString *mention);
-@property (nonatomic, copy) SSignal *(^hashtagListSignal)(NSString *hashtag);
+@property (nonatomic, readonly, strong) TGMediaPickerGalleryInterfaceView *interfaceView;
+@property (nonatomic, readonly, strong) TGMediaPickerGallerySelectedItemsModel *selectedItemsModel;
 
-- (instancetype)initWithItems:(NSArray *)items focusItem:(id<TGModernGalleryItem>)focusItem allowsSelection:(bool)allowsSelection allowsEditing:(bool)allowsEditing hasCaptions:(bool)hasCaptions forVideo:(bool)forVideo;
+@property (nonatomic, copy) NSInteger (^externalSelectionCount)(void);
 
-- (void)setCurrentItemWithListItem:(id<TGModernMediaListItem>)listItem direction:(TGModernGalleryScrollAnimationDirection)direction;
+@property (nonatomic, strong) TGSuggestionContext *suggestionContext;
+
+- (instancetype)initWithItems:(NSArray *)items focusItem:(id<TGModernGalleryItem>)focusItem selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext hasCaptions:(bool)hasCaptions hasSelectionPanel:(bool)hasSelectionPanel;
+
+- (void)setCurrentItem:(id<TGMediaSelectableItem>)item direction:(TGModernGalleryScrollAnimationDirection)direction;
 
 @end

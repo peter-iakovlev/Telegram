@@ -22,7 +22,9 @@
 
 #import "TGFont.h"
 
-static const CGFloat timestampWidth = 120.0f;
+#import "TGInlineVideoView.h"
+
+static const CGFloat timestampWidth = 200.0f;
 static const CGFloat timestampHeight = 18.0f;
 static const CGFloat timestampRightPadding = 6.0f;
 static const CGFloat timestampBottomPadding = 6.0f;
@@ -55,6 +57,8 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     int _timestampPosition;
     
     CGFloat _overlayDiameter;
+    
+    TGInlineVideoView *_inlineVideoView;
 }
 
 @property (nonatomic, strong) NSString *viewIdentifier;
@@ -80,6 +84,11 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     [_timestampView setDisplayProgress:false];
     
     [self reset];
+    
+    [_inlineVideoView setVideoPathSignal:nil];
+    
+    [_inlineVideoView removeFromSuperview];
+    _inlineVideoView = nil;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -150,22 +159,30 @@ static const CGFloat additionalDataTopPadding = 6.0f;
         CGFloat height = _detailStringsBackground.frame.size.height;
         _detailStringsBackground.frame = CGRectMake(_detailStringsEdgeInsets.left, self.frame.size.height - height - _detailStringsEdgeInsets.bottom + 1, self.frame.size.width - _detailStringsEdgeInsets.left - _detailStringsEdgeInsets.right, height);
     }
+    
+    CGRect bounds = self.bounds;
+    bounds.origin.x += _inlineVideoInsets.left;
+    bounds.origin.y += _inlineVideoInsets.top;
+    bounds.size.width -= _inlineVideoInsets.left + _inlineVideoInsets.right;
+    bounds.size.height -= _inlineVideoInsets.top + _inlineVideoInsets.bottom;
+    _inlineVideoView.frame = bounds;
 }
 
 - (void)_updateTimestampViewFrame
 {
-    CGSize currentSize = [_timestampView currentSize];
+    CGFloat maxTimestampWidth = self.frame.size.width - 20.0f;
+    CGSize currentSize = [_timestampView sizeForMaxWidth:maxTimestampWidth];
     if (_timestampPosition == TGMessageImageViewTimestampPositionDefault)
     {
-        _timestampView.frame = CGRectMake(self.frame.size.width - timestampWidth - timestampRightPadding, self.frame.size.height - timestampHeight - timestampBottomPadding, timestampWidth, timestampHeight);
+        _timestampView.frame = CGRectMake(self.frame.size.width - currentSize.width - timestampRightPadding, self.frame.size.height - timestampHeight - timestampBottomPadding, currentSize.width, timestampHeight);
     }
     else if (_timestampPosition == TGMessageImageViewTimestampPositionLeft)
     {
-        _timestampView.frame = CGRectMake(-timestampWidth, self.frame.size.height - timestampHeight - timestampBottomPadding, timestampWidth, timestampHeight);
+        _timestampView.frame = CGRectMake(-currentSize.width, self.frame.size.height - timestampHeight - timestampBottomPadding, currentSize.width, timestampHeight);
     }
     else if (_timestampPosition == TGMessageImageViewTimestampPositionRight)
     {
-        _timestampView.frame = CGRectMake(self.frame.size.width - (timestampWidth - currentSize.width), self.frame.size.height - timestampHeight - timestampBottomPadding, timestampWidth, timestampHeight);
+        _timestampView.frame = CGRectMake(self.frame.size.width - currentSize.width, self.frame.size.height - timestampHeight - timestampBottomPadding, currentSize.width, timestampHeight);
     }
 }
 
@@ -319,6 +336,8 @@ static const CGFloat additionalDataTopPadding = 6.0f;
             case TGMessageImageViewOverlayNone:
             default:
             {
+                [_overlayView setNone];
+                
                 if (_buttonView.superview != nil)
                 {
                     if (animated)
@@ -390,9 +409,11 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     [self _updateTimestampViewFrame];
 }
 
-- (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated
+- (void)setTimestampString:(NSString *)timestampString signatureString:(NSString *)signatureString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated
 {
-    [_timestampView setTimestampString:timestampString displayCheckmarks:displayCheckmarks checkmarkValue:checkmarkValue displayViews:displayViews viewsValue:viewsValue animated:animated];
+    [_timestampView setTimestampString:timestampString signatureString:signatureString displayCheckmarks:displayCheckmarks checkmarkValue:checkmarkValue displayViews:displayViews viewsValue:viewsValue animated:animated];
+    
+    [self _updateTimestampViewFrame];
 }
 
 - (void)setAdditionalDataString:(NSString *)additionalDataString animated:(bool)animated
@@ -585,6 +606,20 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     id<TGMessageImageViewDelegate> delegate = _delegate;
     if ([delegate respondsToSelector:@selector(messageImageViewActionButtonPressed:withAction:)])
         [delegate messageImageViewActionButtonPressed:self withAction:action];
+}
+
+- (void)setVideoPathSignal:(SSignal *)signal {
+    if (_inlineVideoView == nil) {
+        CGRect frame = self.bounds;
+        frame.origin.x += _inlineVideoInsets.left;
+        frame.origin.y += _inlineVideoInsets.top;
+        frame.size.width -= _inlineVideoInsets.left + _inlineVideoInsets.right;
+        frame.size.height -= _inlineVideoInsets.top + _inlineVideoInsets.bottom;
+        _inlineVideoView = [[TGInlineVideoView alloc] initWithFrame:frame];
+        _inlineVideoView.videoSize = _inlineVideoSize;
+        [self insertSubview:_inlineVideoView atIndex:0];
+    }
+    [_inlineVideoView setVideoPathSignal:signal];
 }
 
 @end

@@ -6,6 +6,7 @@ extern "C" {
 #endif
     
 CGSize TGFitSize(CGSize size, CGSize maxSize);
+bool TGOrientationIsSideward(UIImageOrientation orientation, bool *mirrored);
     
 #ifdef __cplusplus
 }

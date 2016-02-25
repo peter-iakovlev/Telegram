@@ -4,6 +4,10 @@
 
 #import "TGShareContext.h"
 
+@interface TGUnauthorizedShareContext : NSObject
+
+@end
+
 @interface TGEncryptedShareContext : NSObject
 
 @property (nonatomic, readonly) bool simplePassword;

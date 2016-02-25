@@ -4,14 +4,20 @@
 #import "TGWebSearchResultsGalleryImageItem.h"
 #import "TGWebSearchResultsGalleryInternalImageItem.h"
 
-#import "TGBingSearchResultItem+TGEditablePhotoItem.h"
-#import "TGWebSearchInternalImageResult+TGEditablePhotoItem.h"
-
 #import "TGImageUtils.h"
+#import "TGPhotoEditorUtils.h"
 
 #import "TGWebSearchResult.h"
-#import "TGEditablePhotoItem.h"
 #import "PGPhotoEditorValues.h"
+
+#import "TGBingSearchResultItem+TGMediaItem.h"
+#import "TGWebSearchInternalImageResult+TGMediaItem.h"
+
+@interface TGWebSearchResultsGalleryImageItemView ()
+{
+    UIView *_temporaryRepView;
+}
+@end
 
 @implementation TGWebSearchResultsGalleryImageItemView
 
@@ -24,67 +30,94 @@
 {
     if (item == nil)
     {
+        [self.imageView setSignal:nil];
         [super setItem:item synchronously:synchronously];
     }
     else if ([item isKindOfClass:[TGWebSearchResultsGalleryImageItem class]] || [item isKindOfClass:[TGWebSearchResultsGalleryInternalImageItem class]])
     {
         _item = item;
         
-        id<TGWebSearchResult> searchResult = [(id)item webSearchResult];
+        id<TGModernGalleryEditableItem> editableItem = (id<TGModernGalleryEditableItem>)item;
+        self.imageSize = TGFitSize(editableItem.editableMediaItem.originalSize, CGSizeMake(1600, 1600));
         
-        if ([searchResult conformsToProtocol:@protocol(TGEditablePhotoItem)])
+        __weak TGWebSearchResultsGalleryImageItemView *weakSelf = self;
+        void (^fadeOutRepView)(void) = ^
         {
-            id<TGEditablePhotoItem> editableMediaItem = (id<TGEditablePhotoItem>)searchResult;
-            CGSize imageSize = TGFitSize(editableMediaItem.originalSize, CGSizeMake(1600, 1600));
-            PGPhotoEditorValues *editorValues = nil;
-            if (editableMediaItem.fetchEditorValues != nil)
-                editorValues = editableMediaItem.fetchEditorValues(editableMediaItem);
+            __strong TGWebSearchResultsGalleryImageItemView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
             
-            if (editorValues != nil)
+            if (strongSelf->_temporaryRepView == nil)
+                return;
+            
+            UIView *repView = strongSelf->_temporaryRepView;
+            strongSelf->_temporaryRepView = nil;
+            [UIView animateWithDuration:0.2f animations:^
             {
-                imageSize = editorValues.cropRect.size;
-                
-                self.imageSize = imageSize;
-                
-                UIImage *image = editableMediaItem.fetchScreenImage(editableMediaItem);
-                if (image != nil)
-                    [self.imageView loadUri:@"embedded://" withOptions:@{ TGImageViewOptionEmbeddedImage:image }];
-                else
-                    [self.imageView reset];
-                
-                [self reset];
+                repView.alpha = 0.0f;
+            } completion:^(__unused BOOL finished)
+            {
+                [repView removeFromSuperview];
+            }];
+        };
+        
+        SSignal *imageSignal = [[editableItem.editingContext imageSignalForItem:editableItem.editableMediaItem] mapToSignal:^SSignal *(id result)
+        {
+            __strong TGWebSearchResultsGalleryImageItemView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return [SSignal complete];
+            
+            if ([result isKindOfClass:[UIImage class]] || [result isKindOfClass:[NSNumber class]])
+            {
+                return [[[SSignal single:result] deliverOn:[SQueue mainQueue]] afterNext:^(__unused id next)
+                {
+                    fadeOutRepView();
+                }];
+            }
+            else if ([result isKindOfClass:[UIView class]])
+            {
+                [strongSelf _setTemporaryRepView:result];
+                return [[SSignal single:nil] deliverOn:[SQueue mainQueue]];
             }
             else
             {
-                if (editableMediaItem.fetchOriginalImage != nil)
+                return [[editableItem.editableMediaItem originalImageSignal] afterNext:^(__unused id next)
                 {
-                    self.imageSize = imageSize;
-                    editableMediaItem.fetchOriginalImage(editableMediaItem, ^(UIImage *image)
-                    {
-                        if (item != self.item)
-                            return;
-                        
-                        TGDispatchOnMainThread(^
-                        {
-                            if (image != nil)
-                                [self.imageView loadUri:@"embedded://" withOptions:@{ TGImageViewOptionEmbeddedImage:image }];
-                            else
-                                [super setItem:item synchronously:synchronously];
-                        });
-                    });
-                    [self reset];
-                }
-                else
-                {
-                    [super setItem:item synchronously:synchronously];
-                }
+                    fadeOutRepView();
+                }];
             }
-        }
-        else
+            
+            return [SSignal complete];
+        }];
+        
+        
+        [self.imageView setSignal:[[imageSignal deliverOn:[SQueue mainQueue]] afterNext:^(id next)
         {
-            [super setItem:item synchronously:synchronously];
-        }
+            __strong TGWebSearchResultsGalleryImageItemView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if ([next isKindOfClass:[UIImage class]])
+                strongSelf.imageSize = ((UIImage *)next).size;
+            
+            [strongSelf reset];
+        }]];
+
+        [self reset];
     }
+}
+
+- (void)_setTemporaryRepView:(UIView *)view
+{
+    [_temporaryRepView removeFromSuperview];
+    _temporaryRepView = view;
+    
+    self.imageSize = TGScaleToSize(view.frame.size, self.containerView.frame.size);
+    
+    view.hidden = self.imageView.hidden;
+    view.frame = CGRectMake((self.containerView.frame.size.width - self.imageSize.width) / 2.0f, (self.containerView.frame.size.height - self.imageSize.height) / 2.0f, self.imageSize.width, self.imageSize.height);
+    
+    [self.containerView addSubview:view];
 }
 
 - (void)singleTap
@@ -92,9 +125,7 @@
     if ([self.item conformsToProtocol:@protocol(TGModernGallerySelectableItem)])
     {
         id<TGModernGallerySelectableItem> item = (id<TGModernGallerySelectableItem>)self.item;
-        
-        if (item.itemSelected != nil)
-            item.itemSelected(item);
+        [item.selectionContext setItem:item.selectableMediaItem selected:true];
     }
     else
     {
@@ -102,6 +133,25 @@
         if ([delegate respondsToSelector:@selector(itemViewDidRequestInterfaceShowHide:)])
             [delegate itemViewDidRequestInterfaceShowHide:self];
     }
+}
+
+- (UIView *)contentView
+{
+    return self.imageView;
+}
+
+- (UIView *)transitionContentView
+{
+    if (_temporaryRepView != nil)
+        return _temporaryRepView;
+    
+    return [self contentView];
+}
+
+- (CGRect)transitionViewContentRect
+{
+    UIView *contentView = [self transitionContentView];
+    return [contentView convertRect:contentView.bounds toView:[self transitionView]];
 }
 
 @end

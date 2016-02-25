@@ -3,7 +3,7 @@
 
 @implementation TGMediaPickerGalleryItem
 
-- (instancetype)initWithAsset:(TGMediaPickerAsset *)asset
+- (instancetype)initWithAsset:(TGMediaAsset *)asset
 {    
     self = [super init];
     if (self != nil)

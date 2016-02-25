@@ -417,7 +417,8 @@ typedef enum
     if ([dataSource respondsToSelector:@selector(videoScrubber:evenlySpacedTimestamps:startingAt:endingAt:)])
         _zoomedTimestamps = [dataSource videoScrubber:self evenlySpacedTimestamps:thumbnailCount startingAt:leftTimestamp endingAt:rightTimestamp];
     
-    thumbnailImageSize = CGSizeMake(thumbnailImageSize.width * TGScreenScaling(), thumbnailImageSize.height * TGScreenScaling());
+    CGFloat scale = MIN(2.0f, TGScreenScaling());
+    thumbnailImageSize = CGSizeMake(thumbnailImageSize.width * scale, thumbnailImageSize.height * scale);
     
     _zoomedThumbnailViews = [[NSMutableArray alloc] init];
     
@@ -553,7 +554,8 @@ typedef enum
         _summaryTimestamps = [dataSource videoScrubber:self evenlySpacedTimestamps:thumbnailCount startingAt:0 endingAt:_duration];
     
     CGSize thumbnailImageSize = [self _thumbnailSizeWithAspectRatio:originalAspectRatio orientation:UIImageOrientationUp];
-    thumbnailImageSize = CGSizeMake(thumbnailImageSize.width * TGScreenScaling(), thumbnailImageSize.height * TGScreenScaling());
+    CGFloat scale = MIN(2.0f, TGScreenScaling());
+    thumbnailImageSize = CGSizeMake(thumbnailImageSize.width * scale, thumbnailImageSize.height * scale);
     
     if ([dataSource respondsToSelector:@selector(videoScrubber:requestThumbnailImagesForTimestamps:size:isSummaryThumbnails:)])
         [dataSource videoScrubber:self requestThumbnailImagesForTimestamps:_summaryTimestamps size:thumbnailImageSize isSummaryThumbnails:true];
@@ -733,7 +735,7 @@ typedef enum
 
 - (void)_layoutZoomedThumbnailViewsStacked:(bool)stacked
 {
-    if (_zoomedThumbnailViews.count == 0)
+    if (_zoomedThumbnailViews.count == 0 || _summaryThumbnailViews.count == 0)
         return;
     
     CGSize thumbnailViewSize = [self _thumbnailSize];

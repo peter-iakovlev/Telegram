@@ -108,7 +108,7 @@
 
 - (void)drawInContext:(CGContextRef)__unused context
 {
-    if (!self.skipDrawInContext && self.alpha > FLT_EPSILON)
+    if (!self.skipDrawInContext && self.alpha > FLT_EPSILON && !self.hidden)
     {
         if (_backgroundImage != nil)
             [_backgroundImage drawInRect:self.bounds blendMode:kCGBlendModeNormal alpha:1.0f];

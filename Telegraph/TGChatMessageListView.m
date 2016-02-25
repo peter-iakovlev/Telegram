@@ -14,4 +14,12 @@
     return self;
 }
 
+- (NSArray *)clippedMessages
+{
+    if (_messages.count > self.rangeCount)
+        return [_messages subarrayWithRange:NSMakeRange(0, self.rangeCount)];
+    
+    return _messages;
+}
+
 @end

@@ -35,4 +35,6 @@
 
 - (void)animateCollectionCrossfade;
 
+- (void)loadMore;
+
 @end

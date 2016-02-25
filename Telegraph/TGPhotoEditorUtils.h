@@ -11,7 +11,8 @@ CGSize TGScaleToFillSize(CGSize size, CGSize maxSize);
 CGFloat TGDegreesToRadians(CGFloat degrees);
 CGFloat TGRadiansToDegrees(CGFloat radians);
     
-UIImage *TGPhotoEditorCrop(UIImage *image, UIImageOrientation orientation, CGFloat rotation, CGRect rect, CGSize maxSize, CGSize originalSize);
+UIImage *TGPhotoEditorCrop(UIImage *image, UIImageOrientation orientation, CGFloat rotation, CGRect rect, CGSize maxSize, CGSize originalSize, bool shouldResize);
+UIImage *TGPhotoEditorFitImage(UIImage *image, CGSize maxSize);
 CGSize TGRotatedContentSize(CGSize contentSize, CGFloat rotation);
     
 UIImageOrientation TGNextCCWOrientationForOrientation(UIImageOrientation orientation);

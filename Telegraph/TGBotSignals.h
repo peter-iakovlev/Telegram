@@ -12,6 +12,8 @@
 
 + (SSignal *)botInfoForUserId:(int32_t)userId;
 + (SSignal *)botStartForUserId:(int32_t)userId payload:(NSString *)payload;
-+ (SSignal *)botInviteUserId:(int32_t)userId toGroupId:(int32_t)groupId payload:(NSString *)payload;
++ (SSignal *)botInviteUserId:(int32_t)userId toPeerId:(int64_t)peerId accessHash:(int64_t)accessHash payload:(NSString *)payload;
+
++ (SSignal *)botContextResultForUserId:(int32_t)userId query:(NSString *)query offset:(NSString *)offset;
 
 @end

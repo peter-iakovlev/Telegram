@@ -16,7 +16,8 @@
 @property (nonatomic) int soundId;
 @property (nonatomic) bool previewText;
 @property (nonatomic) bool photoNotificationsEnabled;
+@property (nonatomic) bool messagesMuted;
 
-- (id)initWithPeerId:(int64_t)peerId muteUntil:(int)muteUntil soundId:(int)soundId previewText:(bool)previewText photoNotificationsEnabled:(bool)photoNotificationsEnabled;
+- (id)initWithPeerId:(int64_t)peerId muteUntil:(int)muteUntil soundId:(int)soundId previewText:(bool)previewText photoNotificationsEnabled:(bool)photoNotificationsEnabled messagesMuted:(bool)messagesMuted;
 
 @end

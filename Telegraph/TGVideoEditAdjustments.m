@@ -30,7 +30,28 @@
     return adjustments;
 }
 
-- (bool)cropAppliedForAvatar:(bool)__unused forAvatar
++ (instancetype)editAdjustmentsWithDictionary:(NSDictionary *)dictionary
+{
+    if (dictionary.count == 0)
+        return nil;
+    
+    TGVideoEditAdjustments *adjustments = [[[self class] alloc] init];
+    if (dictionary[@"cropOrientation"])
+        adjustments->_cropOrientation = [dictionary[@"cropOrientation"] integerValue];
+    if (dictionary[@"cropRect"])
+        adjustments->_cropRect = [dictionary[@"cropRect"] CGRectValue];
+    if (dictionary[@"trimStart"] || dictionary[@"trimEnd"])
+    {
+        adjustments->_trimStartValue = [dictionary[@"trimStart"] doubleValue];
+        adjustments->_trimEndValue = [dictionary[@"trimEnd"] doubleValue];
+    }
+    if (dictionary[@"originalSize"])
+        adjustments->_originalSize = [dictionary[@"originalSize"] CGSizeValue];
+    
+    return adjustments;
+}
+
+- (bool)cropAppliedForAvatar:(bool)__unused forAvatar 
 {
     CGRect defaultCropRect = CGRectMake(0, 0, _originalSize.width, _originalSize.height);
     
@@ -43,17 +64,52 @@
     return false;
 }
 
+- (bool)cropOrRotationAppliedForAvatar:(bool)forAvatar
+{
+    return [self cropAppliedForAvatar:forAvatar] || [self rotationApplied];
+}
+
 - (bool)rotationApplied
 {
-    if (self.cropOrientation != UIImageOrientationUp)
-        return true;
-    
-    return false;
+    return (self.cropOrientation != UIImageOrientationUp);
+}
+
+- (bool)trimApplied
+{
+    return (self.trimStartValue > DBL_EPSILON || self.trimEndValue > DBL_EPSILON);
 }
 
 - (bool)isDefaultValuesForAvatar:(bool)forAvatar
 {
     return ![self cropAppliedForAvatar:forAvatar];
+}
+
+- (NSDictionary *)dictionary
+{
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+    dict[@"cropOrientation"] = @(self.cropOrientation);
+    if ([self cropAppliedForAvatar:false])
+        dict[@"cropRect"] = [NSValue valueWithCGRect:self.cropRect];
+    
+    if (self.trimStartValue > DBL_EPSILON || self.trimEndValue > DBL_EPSILON)
+    {
+        dict[@"trimStart"] = @(self.trimStartValue);
+        dict[@"trimEnd"] = @(self.trimEndValue);
+    }
+    
+    dict[@"originalSize"] = [NSValue valueWithCGSize:self.originalSize];
+    
+    return dict;
+}
+
+- (bool)isCropEqualWith:(id<TGMediaEditAdjustments>)adjusments
+{
+    return (_CGRectEqualToRectWithEpsilon(self.cropRect, adjusments.cropRect, [self _cropRectEpsilon]));
+}
+
+- (bool)isCropAndRotationEqualWith:(id<TGMediaEditAdjustments>)adjusments
+{
+    return (_CGRectEqualToRectWithEpsilon(self.cropRect, adjusments.cropRect, [self _cropRectEpsilon])) && self.cropOrientation == ((TGVideoEditAdjustments *)adjusments).cropOrientation;
 }
 
 - (BOOL)isEqual:(id)object

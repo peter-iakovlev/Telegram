@@ -97,7 +97,12 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue-Medium"), 15, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGMediumSystemFontOfSize(15.0f) fontDescriptor], 0.0f, NULL);
+        } else {
+            UIFont *systemFont = TGMediumSystemFontOfSize(15.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
+        }
     });
     
     return font;
@@ -110,7 +115,12 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        font = CFRetain(CTFontCreateWithName(CFSTR("HelveticaNeue-Italic"), 15, NULL));
+        if (iosMajorVersion() >= 7) {
+            font = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGItalicSystemFontOfSize(15.0f) fontDescriptor], 0.0f, NULL);
+        } else {
+            UIFont *systemFont = TGItalicSystemFontOfSize(15.0f);
+            font = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
+        }
     });
     
     return font;

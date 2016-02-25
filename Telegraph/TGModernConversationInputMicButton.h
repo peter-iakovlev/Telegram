@@ -25,4 +25,10 @@
 
 @property (nonatomic, weak) id<TGModernConversationInputMicButtonDelegate> delegate;
 
+@property (nonatomic, strong) UIImageView *iconView;
+
+- (void)animateIn;
+- (void)animateOut;
+- (void)addMicLevel:(CGFloat)level;
+
 @end

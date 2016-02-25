@@ -56,4 +56,8 @@
     });
 }
 
+- (bool)isEmpty {
+    return _holders.count == 0;
+}
+
 @end

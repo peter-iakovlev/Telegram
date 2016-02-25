@@ -7,7 +7,6 @@
     NSString *_text;
     CTLineRef _line;
     CTFontRef _font;
-    CGFloat _maxWidth;
     bool _truncateInTheMiddle;
     
     CGSize _lastSize;

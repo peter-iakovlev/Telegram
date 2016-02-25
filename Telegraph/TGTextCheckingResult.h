@@ -3,7 +3,12 @@
 typedef enum {
     TGTextCheckingResultTypeMention,
     TGTextCheckingResultTypeHashtag,
-    TGTextCheckingResultTypeCommand
+    TGTextCheckingResultTypeCommand,
+    TGTextCheckingResultTypeBold,
+    TGTextCheckingResultTypeUltraBold,
+    TGTextCheckingResultTypeItalic,
+    TGTextCheckingResultTypeCode,
+    TGTextCheckingResultTypeLink
 } TGTextCheckingResultType;
 
 @interface TGTextCheckingResult : NSObject

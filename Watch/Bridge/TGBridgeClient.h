@@ -8,9 +8,6 @@
 - (SSignal *)requestSignalWithSubscription:(TGBridgeSubscription *)subscription;
 - (SSignal *)contextSignal;
 
-@property (nonatomic, readonly) NSDictionary *startupData;
-- (void)saveStartupData:(NSDictionary *)dataObject;
-
 - (SSignal *)fileSignalForKey:(NSString *)key;
 - (NSArray *)stickerPacks;
 

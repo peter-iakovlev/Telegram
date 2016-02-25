@@ -1,5 +1,7 @@
 #import "TGModernMediaListItemContentView.h"
 
+#import <SSignalKit/SSignalKit.h>
+
 @class TGImageView;
 
 @interface TGModernMediaListThumbnailItemView : TGModernMediaListItemContentView
@@ -8,5 +10,6 @@
 
 - (void)setImageUri:(NSString *)imageUri;
 - (void)setImageUri:(NSString *)imageUri synchronously:(bool)synchronously;
+- (void)setImageSignal:(SSignal *)signal;
 
 @end

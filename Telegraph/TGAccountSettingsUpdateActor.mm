@@ -94,12 +94,12 @@
         [[TGTelegramNetworking instance] cancelRpc:self.cancelToken];
     
     NSMutableArray *requestList = [[NSMutableArray alloc] init];
-    for (id<TGAccountSetting> setting in options[@"settingList"])
+    for (NSDictionary *desc in options[@"settingList"])
     {
-        if ([setting isKindOfClass:[TGNotificationPrivacyAccountSetting class]])
+        if (desc[@"notifications"] != nil)
         {
-            TGNotificationPrivacyAccountSetting *privacySettings = (TGNotificationPrivacyAccountSetting *)setting;
-            _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:privacySettings accountTTLSetting:_accountSettings.accountTTLSetting];
+            TGNotificationPrivacyAccountSetting *privacySettings = (TGNotificationPrivacyAccountSetting *)desc[@"notifications"];
+            _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:privacySettings groupsAndChannelsSettings:_accountSettings.groupsAndChannelsSettings accountTTLSetting:_accountSettings.accountTTLSetting];
             [_remainingSettingKeys addObject:@"notificationPrivacySettings"];
             
             MTRequest *request = [[MTRequest alloc] init];
@@ -158,9 +158,9 @@
                      [ActionStageInstance() dispatchOnStageQueue:^
                       {
                           if (error == nil)
-                              [strongSelf setPrivacySuccess];
+                              [strongSelf setNotificationsPrivacySuccess];
                           else
-                              [strongSelf setPrivacyFailed];
+                              [strongSelf setNotificationPrivacyFailed];
                       }];
                  }
              }];
@@ -172,10 +172,86 @@
             
             [requestList addObject:request];
         }
-        else if ([setting isKindOfClass:[TGAccountTTLSetting class]])
+        else if (desc[@"groupsAndChannels"] != nil)
         {
-            TGAccountTTLSetting *accountTTLSetting = (TGAccountTTLSetting *)setting;
-            _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:_accountSettings.notificationSettings accountTTLSetting:accountTTLSetting];
+            TGNotificationPrivacyAccountSetting *privacySettings = (TGNotificationPrivacyAccountSetting *)desc[@"groupsAndChannels"];
+            _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:_accountSettings.notificationSettings groupsAndChannelsSettings:privacySettings accountTTLSetting:_accountSettings.accountTTLSetting];
+            [_remainingSettingKeys addObject:@"groupsAndChannelsPrivacySettings"];
+            
+            MTRequest *request = [[MTRequest alloc] init];
+            
+            TLRPCaccount_setPrivacy$account_setPrivacy *setPrivacy = [[TLRPCaccount_setPrivacy$account_setPrivacy alloc] init];
+            setPrivacy.key = [[TLInputPrivacyKey$inputPrivacyKeyChatInvite alloc] init];
+            
+            NSMutableArray *rules = [[NSMutableArray alloc] init];
+            
+            if (privacySettings.alwaysShareWithUserIds.count != 0)
+            {
+                if (privacySettings.lastSeenPrimarySetting != TGPrivacySettingsLastSeenPrimarySettingEverybody)
+                {
+                    TLInputPrivacyRule$inputPrivacyValueAllowUsers *allowUsers = [[TLInputPrivacyRule$inputPrivacyValueAllowUsers alloc] init];
+                    allowUsers.users = [self inputUsersFromUserIds:privacySettings.alwaysShareWithUserIds];
+                    [rules addObject:allowUsers];
+                }
+            }
+            if (privacySettings.neverShareWithUserIds.count != 0)
+            {
+                if (privacySettings.lastSeenPrimarySetting != TGPrivacySettingsLastSeenPrimarySettingNobody)
+                {
+                    TLInputPrivacyRule$inputPrivacyValueDisallowUsers *disallowUsers = [[TLInputPrivacyRule$inputPrivacyValueDisallowUsers alloc] init];
+                    disallowUsers.users = [self inputUsersFromUserIds:privacySettings.neverShareWithUserIds];
+                    [rules addObject:disallowUsers];
+                }
+            }
+            switch (privacySettings.lastSeenPrimarySetting)
+            {
+                case TGPrivacySettingsLastSeenPrimarySettingContacts:
+                {
+                    [rules addObject:[[TLInputPrivacyRule$inputPrivacyValueAllowContacts alloc] init]];
+                    break;
+                }
+                case TGPrivacySettingsLastSeenPrimarySettingEverybody:
+                {
+                    [rules addObject:[[TLInputPrivacyRule$inputPrivacyValueAllowAll alloc] init]];
+                    break;
+                }
+                case TGPrivacySettingsLastSeenPrimarySettingNobody:
+                {
+                    [rules addObject:[[TLInputPrivacyRule$inputPrivacyValueDisallowAll alloc] init]];
+                    break;
+                }
+            }
+            
+            setPrivacy.rules = rules;
+            request.body = setPrivacy;
+            
+            __weak TGAccountSettingsUpdateActor *weakSelf = self;
+            [request setCompleted:^(__unused id result, __unused NSTimeInterval timestamp, id error)
+             {
+                 __strong TGAccountSettingsUpdateActor *strongSelf = weakSelf;
+                 if (strongSelf != nil)
+                 {
+                     [ActionStageInstance() dispatchOnStageQueue:^
+                      {
+                          if (error == nil)
+                              [strongSelf setGroupsAndChannelsPrivacySuccess];
+                          else
+                              [strongSelf setGroupsAndChannelsPrivacyFailed];
+                      }];
+                 }
+             }];
+            
+            [request setShouldContinueExecutionWithErrorContext:^bool(__unused MTRequestErrorContext *context)
+             {
+                 return false;
+             }];
+            
+            [requestList addObject:request];
+        }
+        else if (desc[@"accountTTL"] != nil)
+        {
+            TGAccountTTLSetting *accountTTLSetting = (TGAccountTTLSetting *)desc[@"accountTTL"];
+            _accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:_accountSettings.notificationSettings groupsAndChannelsSettings:_accountSettings.groupsAndChannelsSettings accountTTLSetting:accountTTLSetting];
             [_remainingSettingKeys addObject:@"accountTTLSetting"];
             
             MTRequest *request = [[MTRequest alloc] init];
@@ -218,7 +294,7 @@
     }
 }
 
-- (void)setPrivacySuccess
+- (void)setNotificationsPrivacySuccess
 {
     [TGDatabaseInstance() setLocalUserStatusPrivacyRules:_accountSettings.notificationSettings changedLoadedUsers:^(NSArray *users)
     {
@@ -237,9 +313,21 @@
     [TGUpdateStateRequestBuilder invalidateStateVersion];
 }
 
-- (void)setPrivacyFailed
+- (void)setNotificationPrivacyFailed
 {
     [_remainingSettingKeys removeObject:@"notificationPrivacySettings"];
+    [self _maybeComplete:false];
+}
+
+- (void)setGroupsAndChannelsPrivacySuccess
+{
+    [_remainingSettingKeys removeObject:@"groupsAndChannelsPrivacySettings"];
+    [self _maybeComplete:true];
+}
+
+- (void)setGroupsAndChannelsPrivacyFailed
+{
+    [_remainingSettingKeys removeObject:@"groupsAndChannelsPrivacySettings"];
     [self _maybeComplete:false];
 }
 

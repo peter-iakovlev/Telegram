@@ -1,15 +1,22 @@
 #import "TGStickerKeyboardTabPanel.h"
 
 #import "TGStickerKeyboardTabCell.h"
+#import "TGStickerKeyboardTabSettingsCell.h"
 
 #import "TGStickerPack.h"
 #import "TGDocumentMediaAttachment.h"
 
 #import "TGImageUtils.h"
 
+#import "TGStickerPacksSettingsController.h"
+#import "TGAppDelegate.h"
+
 @interface TGStickerKeyboardTabPanel () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout>
 {
+    TGStickerKeyboardViewStyle _style;
+    
     bool _showRecent;
+    bool _showGifs;
     NSArray *_stickerPacks;
     
     UICollectionView *_collectionView;
@@ -23,10 +30,20 @@
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
+    return [self initWithFrame:frame style:TGStickerKeyboardViewDefaultStyle];
+}
+
+- (instancetype)initWithFrame:(CGRect)frame style:(TGStickerKeyboardViewStyle)style
+{
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        self.backgroundColor = UIColorRGB(0xfafafa);
+        _style = style;
+        
+        if (style == TGStickerKeyboardViewDarkBlurredStyle)
+            self.backgroundColor = UIColorRGB(0x444444);
+        else
+            self.backgroundColor = UIColorRGB(0xfafafa);
         
         _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
         _collectionLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
@@ -39,12 +56,14 @@
         _collectionView.showsVerticalScrollIndicator = false;
         _collectionView.contentInset = UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, 0.0f);
         [_collectionView registerClass:[TGStickerKeyboardTabCell class] forCellWithReuseIdentifier:@"TGStickerKeyboardTabCell"];
+        [_collectionView registerClass:[TGStickerKeyboardTabSettingsCell class] forCellWithReuseIdentifier:@"TGStickerKeyboardTabSettingsCell"];
         [self addSubview:_collectionView];
         
         CGFloat stripeHeight = TGIsRetina() ? 0.5f : 1.0f;
         _bottomStripe = [[UIView alloc] initWithFrame:CGRectMake(0.0f, frame.size.height - stripeHeight, frame.size.width, stripeHeight)];
         _bottomStripe.backgroundColor = UIColorRGB(0xd8d8d8);
-        [self addSubview:_bottomStripe];
+        if (style != TGStickerKeyboardViewDarkBlurredStyle)
+            [self addSubview:_bottomStripe];
     }
     return self;
 }
@@ -78,17 +97,25 @@
 
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)__unused collectionView
 {
-    return 1;
+    return 2 + ((_stickerPacks.count > 1 && _style == TGStickerKeyboardViewDefaultStyle) ? 1 : 0);
 }
 
 - (NSInteger)collectionView:(UICollectionView *)__unused collectionView numberOfItemsInSection:(NSInteger)__unused section
 {
-    return 1 + _stickerPacks.count;
+    if (section == 0) {
+        return _showGifs ? 1 : 0;
+    } else if (section == 1) {
+        return 1 + _stickerPacks.count;
+    } else if (section == 2) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 - (CGSize)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout*)__unused collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)__unused indexPath
 {
-    if (indexPath.item == 0 && !_showRecent)
+    if (indexPath.section == 1 && indexPath.item == 0 && !_showRecent)
         return CGSizeMake(0.0f, 45.0f);
     return CGSizeMake(52.0f, 45.0f);
 }
@@ -110,30 +137,52 @@
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    TGStickerKeyboardTabCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGStickerKeyboardTabCell" forIndexPath:indexPath];
-    if (indexPath.item == 0)
-        [cell setRecent];
-    else
-    {
-        if (((TGStickerPack *)_stickerPacks[indexPath.item - 1]).documents.count != 0)
-            [cell setDocumentMedia:((TGStickerPack *)_stickerPacks[indexPath.item - 1]).documents[0]];
+    if (indexPath.section == 0) {
+        TGStickerKeyboardTabSettingsCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGStickerKeyboardTabSettingsCell" forIndexPath:indexPath];
+        [cell setMode:TGStickerKeyboardTabSettingsCellGifs];
+        return cell;
+    } else if (indexPath.section == 1) {
+        TGStickerKeyboardTabCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGStickerKeyboardTabCell" forIndexPath:indexPath];
+        [cell setStyle:_style];
+        
+        if (indexPath.item == 0)
+            [cell setRecent];
         else
-            [cell setNone];
+        {
+            if (((TGStickerPack *)_stickerPacks[indexPath.item - 1]).documents.count != 0)
+                [cell setDocumentMedia:((TGStickerPack *)_stickerPacks[indexPath.item - 1]).documents[0]];
+            else
+                [cell setNone];
+        }
+        
+        return cell;
+    } else if (indexPath.section == 2) {
+        TGStickerKeyboardTabSettingsCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGStickerKeyboardTabSettingsCell" forIndexPath:indexPath];
+        [cell setMode:TGStickerKeyboardTabSettingsCellSettings];
+        cell.pressed = ^{
+            [TGAppDelegateInstance.rootController presentViewController:[TGNavigationController navigationControllerWithControllers:@[[[TGStickerPacksSettingsController alloc] initWithEditing:true]]] animated:true completion:nil];
+        };
+        return cell;
+    } else {
+        return nil;
     }
-    
-    return cell;
 }
 
 - (void)collectionView:(UICollectionView *)__unused collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    if (_currentStickerPackIndexChanged)
-        _currentStickerPackIndexChanged(indexPath.item);
+    if (indexPath.section == 0) {
+        [self scrollToGifsButton];
+    } else if (indexPath.section == 1) {
+        if (_currentStickerPackIndexChanged)
+            _currentStickerPackIndexChanged(indexPath.item);
+    }
 }
 
-- (void)setStickerPacks:(NSArray *)stickerPacks showRecent:(bool)showRecent
+- (void)setStickerPacks:(NSArray *)stickerPacks showRecent:(bool)showRecent showGifs:(bool)showGifs
 {
     _stickerPacks = stickerPacks;
     _showRecent = showRecent;
+    _showGifs = showGifs;
     
     [_collectionView reloadData];
 }
@@ -144,7 +193,7 @@
     if (selectedItems.count == 1 && ((NSIndexPath *)selectedItems[0]).item == (NSInteger)currentStickerPackIndex)
         return;
     
-    UICollectionViewLayoutAttributes *attributes = [_collectionLayout layoutAttributesForItemAtIndexPath:[NSIndexPath indexPathForItem:currentStickerPackIndex inSection:0]];
+    UICollectionViewLayoutAttributes *attributes = [_collectionLayout layoutAttributesForItemAtIndexPath:[NSIndexPath indexPathForItem:currentStickerPackIndex inSection:1]];
     UICollectionViewScrollPosition scrollPosition = UICollectionViewScrollPositionNone;
     if (!CGRectContainsRect(_collectionView.bounds, attributes.frame))
     {
@@ -155,7 +204,30 @@
         else
             scrollPosition = UICollectionViewScrollPositionRight;
     }
-    [_collectionView selectItemAtIndexPath:[NSIndexPath indexPathForItem:currentStickerPackIndex inSection:0] animated:false scrollPosition:scrollPosition];
+    [_collectionView selectItemAtIndexPath:[NSIndexPath indexPathForItem:currentStickerPackIndex inSection:1] animated:false scrollPosition:scrollPosition];
+}
+
+- (void)setCurrentGifsModeSelected {
+    [self scrollToGifsButton];
+}
+
+- (void)scrollToGifsButton {
+    UICollectionViewLayoutAttributes *attributes = [_collectionLayout layoutAttributesForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0]];
+    UICollectionViewScrollPosition scrollPosition = UICollectionViewScrollPositionNone;
+    if (!CGRectContainsRect(_collectionView.bounds, attributes.frame))
+    {
+        if (attributes.frame.origin.x < _collectionView.bounds.origin.x + _collectionView.bounds.size.width / 2.0f)
+        {
+            scrollPosition = UICollectionViewScrollPositionLeft;
+        }
+        else
+            scrollPosition = UICollectionViewScrollPositionRight;
+    }
+    [_collectionView selectItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0] animated:false scrollPosition:scrollPosition];
+    
+    if (_navigateToGifs) {
+        _navigateToGifs();
+    }
 }
 
 @end

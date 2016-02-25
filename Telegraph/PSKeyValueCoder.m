@@ -115,6 +115,12 @@ NSMutableDictionary *classNameCache()
 {
 }
 
+- (void)encodeInt32Dictionary:(NSDictionary *)__unused value forCKey:(const char *)__unused key {
+}
+
+- (void)encodeDouble:(double)__unused value forCKey:(const char *)__unused key {
+}
+
 - (NSString *)decodeStringForCKey:(const char *)__unused key
 {
     return nil;
@@ -161,6 +167,14 @@ NSMutableDictionary *classNameCache()
 
 - (NSArray *)decodeInt32ArrayForCKey:(const char *)__unused key {
     return nil;
+}
+
+- (NSDictionary *)decodeInt32DictionaryForCKey:(const char *)__unused key {
+    return nil;
+}
+
+- (double)decodeDoubleForCKey:(const char *)__unused key {
+    return 0.0f;
 }
 
 @end

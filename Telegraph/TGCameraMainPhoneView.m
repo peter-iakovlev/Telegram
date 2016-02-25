@@ -15,6 +15,7 @@
 #import "TGCameraFlipButton.h"
 #import "TGCameraTimeCodeView.h"
 #import "TGCameraZoomView.h"
+#import "TGCameraSegmentsView.h"
 
 @interface TGCameraTopPanelView : UIView
 
@@ -106,9 +107,7 @@
             if (strongSelf == nil)
                 return false;
             
-            CGRect rect = [strongSelf->_topPanelView convertRect:strongSelf->_flashControl.frame
-                                                        fromView:strongSelf->_flashControl.superview];
-            
+            CGRect rect = [strongSelf->_topPanelView convertRect:strongSelf->_flashControl.frame fromView:strongSelf->_flashControl.superview];
             return CGRectContainsPoint(rect, point);
         };
         [self addSubview:_topPanelView];
@@ -126,16 +125,32 @@
         _cancelButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
         _cancelButton.exclusiveTouch = true;
         _cancelButton.titleLabel.font = TGSystemFontOfSize(18);
-        _cancelButton.contentEdgeInsets = UIEdgeInsetsMake(0, 15, 0, 0);
+        _cancelButton.contentEdgeInsets = UIEdgeInsetsMake(0, 20, 0, 0);
         [_cancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
         [_cancelButton setTintColor:[TGCameraInterfaceAssets normalColor]];
         [_cancelButton sizeToFit];
-        _cancelButton.frame = CGRectMake(0, 0.5f, MAX(60.0f, _cancelButton.frame.size.width), 44);
+        _cancelButton.frame = CGRectMake(0, 0, MAX(60.0f, _cancelButton.frame.size.width), 44);
         [_cancelButton addTarget:self action:@selector(cancelButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_bottomPanelView addSubview:_cancelButton];
         
+        _doneButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 60, 44)];
+        _doneButton.alpha = 0.0f;
+        _doneButton.backgroundColor = [UIColor clearColor];
+        _doneButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
+        _doneButton.exclusiveTouch = true;
+        _doneButton.hidden = true;
+        _doneButton.titleLabel.font = TGMediumSystemFontOfSize(18);
+        _doneButton.contentEdgeInsets = UIEdgeInsetsMake(0, 0, 0, 20);
+        [_doneButton setTitle:TGLocalized(@"Common.Done") forState:UIControlStateNormal];
+        [_doneButton setTintColor:[TGCameraInterfaceAssets normalColor]];
+        [_doneButton sizeToFit];
+        _doneButton.frame = CGRectMake(0, 0, MAX(60.0f, _doneButton.frame.size.width), 44);
+        [_doneButton addTarget:self action:@selector(doneButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [_bottomPanelView addSubview:_doneButton];
+        
         _shutterButton = [[TGCameraShutterButton alloc] initWithFrame:CGRectMake((frame.size.width - 66) / 2, 10, 66, 66)];
         [_shutterButton addTarget:self action:@selector(shutterButtonReleased) forControlEvents:UIControlEventTouchUpInside];
+        [_shutterButton addTarget:self action:@selector(shutterButtonPressed) forControlEvents:UIControlEventTouchDown];
         [_bottomPanelView addSubview:_shutterButton];
         
         _modeControl = [[TGCameraModeControl alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, _modeControlHeight)];
@@ -218,11 +233,41 @@
             if (strongSelf == nil)
                 return;
             
-            if (strongSelf.cameraModeChanged != nil)
-                strongSelf.cameraModeChanged(mode);
+            bool change = true;
+            if (strongSelf.cameraShouldLeaveMode != nil)
+                change = strongSelf.cameraShouldLeaveMode(previousMode);
             
-            [strongSelf updateForCameraModeChangeWithPreviousMode:previousMode];
+            void (^changeBlock)(void) = ^
+            {
+                if (strongSelf.cameraModeChanged != nil)
+                    strongSelf.cameraModeChanged(mode);
+                
+                [strongSelf updateForCameraModeChangeWithPreviousMode:previousMode];
+            };
+            
+            if (change)
+            {
+                changeBlock();
+            }
+            else
+            {
+                [strongSelf showMomentCaptureDismissWarningWithCompletion:^(bool dismiss)
+                {
+                    if (dismiss)
+                        changeBlock();
+                }];
+            }
         };
+        
+        _segmentsView = [[TGCameraSegmentsView alloc] init];
+        _segmentsView.hidden = true;
+        _segmentsView.deletePressed = ^
+        {
+            __strong TGCameraMainPhoneView *strongSelf = weakSelf;
+            if (strongSelf != nil && strongSelf.deleteSegmentButtonPressed != nil)
+                strongSelf.deleteSegmentButtonPressed();
+        };
+        [self addSubview:_segmentsView];
     }
     return self;
 }
@@ -231,7 +276,7 @@
 {
     UIView *view = [super hitTest:point withEvent:event];
     
-    if ([view isDescendantOfView:_topPanelView] || [view isDescendantOfView:_bottomPanelView] || [view isDescendantOfView:_videoLandscapePanelView])
+    if ([view isDescendantOfView:_topPanelView] || [view isDescendantOfView:_bottomPanelView] || [view isDescendantOfView:_videoLandscapePanelView] || [view isDescendantOfView:_segmentsView])
         return view;
     
     return nil;
@@ -591,6 +636,13 @@
     _flipButton.frame = CGRectMake(superviewSize.width - 42, (superviewSize.height - _flipButton.frame.size.height) / 2, _flipButton.frame.size.width, _flipButton.frame.size.height);
 }
 
+- (void)layoutPreviewRelativeViews
+{
+    CGRect segmentsContainerFrame = CGRectMake(0, CGRectGetMaxY(self.previewViewFrame), self.frame.size.width, self.frame.size.height - CGRectGetMaxY(self.previewViewFrame) - _bottomPanelView.frame.size.height);
+    
+    _segmentsView.frame = CGRectMake(0, segmentsContainerFrame.origin.y + (segmentsContainerFrame.size.height - 32) / 2 + 10, _bottomPanelView.frame.size.width, 32);
+}
+
 - (void)layoutSubviews
 {
     _topPanelView.frame = CGRectMake(0, 0, self.frame.size.width, _topPanelHeight);
@@ -600,6 +652,7 @@
     _modeControl.frame = CGRectMake(0, 0, self.frame.size.width, _modeControlHeight);
     _shutterButton.frame = CGRectMake((self.frame.size.width - 66) / 2, _modeControlHeight, _shutterButton.frame.size.width, _shutterButton.frame.size.height);
     _cancelButton.frame = CGRectMake(0, _shutterButton.frame.origin.y + 11, _cancelButton.frame.size.width, _cancelButton.frame.size.height);
+    _doneButton.frame = CGRectMake(_bottomPanelView.frame.size.width - _doneButton.frame.size.width, _shutterButton.frame.origin.y + 11, _doneButton.frame.size.width, _doneButton.frame.size.height);
 }
 
 @end

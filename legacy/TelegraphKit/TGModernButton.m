@@ -84,7 +84,7 @@
     {
         _highlightImageView = [[UIImageView alloc] init];
         _highlightImageView.alpha = 0.0f;
-        [self addSubview:_highlightImageView];
+        [self insertSubview:_highlightImageView belowSubview:self.titleLabel];
     }
     
     _highlightImageView.image = _highlightImage;
@@ -150,7 +150,7 @@
 {
     [super setHighlighted:highlighted];
     
-    if (_highlitedChanged)
+    if (_highlitedChanged && (highlighted || !_animateHighlight))
         _highlitedChanged(highlighted);
     
     if (_modernHighlight)
@@ -166,6 +166,10 @@
                     [UIView animateWithDuration:0.2 animations:^
                     {
                         _highlightImageView.alpha = alpha;
+                    } completion:^(BOOL finished)
+                    {
+                        if (finished && !highlighted && _highlitedChanged)
+                            _highlitedChanged(highlighted);
                     }];
                 }
                 else
@@ -183,6 +187,10 @@
                     [UIView animateWithDuration:0.2 animations:^
                     {
                         _highlightBackgroundView.alpha = alpha;
+                    } completion:^(BOOL finished)
+                    {
+                        if (finished && !highlighted && _highlitedChanged)
+                            _highlitedChanged(highlighted);
                     }];
                 }
                 else
@@ -200,6 +208,10 @@
                     [UIView animateWithDuration:0.2 animations:^
                     {
                         self.alpha = alpha;
+                    } completion:^(BOOL finished)
+                    {
+                        if (finished && !highlighted && _highlitedChanged)
+                            _highlitedChanged(highlighted);
                     }];
                 }
                 else

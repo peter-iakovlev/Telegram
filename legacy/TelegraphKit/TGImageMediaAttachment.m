@@ -77,7 +77,11 @@
 
 - (int64_t)localImageId
 {
-    NSString *legacyCacheUrl = [self.imageInfo imageUrlForLargestSize:NULL];
+    return [TGImageMediaAttachment localImageIdForImageInfo:self.imageInfo];
+}
+
++ (int64_t)localImageIdForImageInfo:(TGImageInfo *)imageInfo {
+    NSString *legacyCacheUrl = [imageInfo imageUrlForLargestSize:NULL];
     int64_t localImageId = 0;
     if (legacyCacheUrl.length != 0)
         localImageId = murMurHash32(legacyCacheUrl);

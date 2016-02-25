@@ -11,6 +11,8 @@
 
 #import "TGNavigationController.h"
 
+#import "TGDateUtils.h"
+
 #import <pop/POP.h>
 
 @interface TGMusicPlayerView ()
@@ -34,6 +36,7 @@
     NSString *_title;
     NSString *_performer;
     CGFloat _playbackOffset;
+    bool _isVoice;
     
     bool _updateLabelsLayout;
 }
@@ -139,26 +142,43 @@
     {
         NSString *title = nil;
         NSString *performer = nil;
-        for (id attribute in status.item.document.attributes)
-        {
-            if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
-            {
-                title = ((TGDocumentAttributeAudio *)attribute).title;
-                performer = ((TGDocumentAttributeAudio *)attribute).performer;
-                
-                break;
-            }
-        }
         
-        if (title.length == 0)
-        {
-            title = status.item.document.fileName;
+        if (status.item.isVoice) {
+            if (status.item.author != nil) {
+                NSString *authorName = [status.item.author displayFirstName];
+                if (TGTelegraphInstance.clientUserId == status.item.author.uid) {
+                    authorName = TGLocalized(@"DialogList.You");
+                }
+                title = authorName;
+                performer = [TGDateUtils stringForApproximateDate:status.item.date];
+            } else {
+                title = TGLocalized(@"MusicPlayer.VoiceNote");
+            }
+        } else {
+            if ([status.item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+                TGDocumentMediaAttachment *document = ((TGDocumentMediaAttachment *)status.item.media);
+                for (id attribute in document.attributes)
+                {
+                    if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
+                    {
+                        title = ((TGDocumentAttributeAudio *)attribute).title;
+                        performer = ((TGDocumentAttributeAudio *)attribute).performer;
+                        
+                        break;
+                    }
+                }
+                
+                if (title.length == 0) {
+                    title = document.fileName;
+                }
+            }
+            
             if (title.length == 0)
                 title = @"Unknown Track";
+            
+            if (performer.length == 0)
+                performer = @"Unknown Artist";
         }
-        
-        if (performer.length == 0)
-            performer = @"Unknown Artist";
         
         if (status != nil)
         {
@@ -197,8 +217,9 @@
     
     _playButton.hidden = !status.paused;
     _pauseButton.hidden = status.paused;
+    _scrubbingIndicator.hidden = status.isVoice;
     
-    if (status == nil || status.paused || status.duration < FLT_EPSILON)
+    if (status == nil || status.paused || status.duration < FLT_EPSILON || status.offset < 0.01)
     {
         [self pop_removeAnimationForKey:@"scrubbingIndicator"];
         
@@ -254,7 +275,7 @@
         performerSize.width = MIN(performerSize.width, maxWidth);
     }
     
-    _titleLabel.frame = CGRectMake(CGFloor((self.frame.size.width - titleSize.width) / 2.0f), 4.0f, titleSize.width, titleSize.height);
+    _titleLabel.frame = CGRectMake(CGFloor((self.frame.size.width - titleSize.width) / 2.0f), _performerLabel.text.length == 0 ? 10.0f : 4.0f, titleSize.width, titleSize.height);
     _performerLabel.frame = CGRectMake(CGFloor((self.frame.size.width - performerSize.width) / 2.0f), 20.0f - TGRetinaPixel, performerSize.width, performerSize.height);
     
     _minimizedButton.frame = CGRectMake(44.0f, 0.0f, _minimizedBar.frame.size.width - 44.0f * 2.0f, _minimizedBar.frame.size.height);
@@ -264,7 +285,7 @@
 
 - (void)closeButtonPressed
 {
-    [TGTelegraphInstance.musicPlayer setPlaylist:nil initialItemKey:nil];
+    [TGTelegraphInstance.musicPlayer setPlaylist:nil initialItemKey:nil metadata:nil];
 }
 
 - (void)pauseButtonPressed
@@ -290,6 +311,10 @@
 
 - (void)minimizedButtonPressed
 {
+    if (_currentStatus.item == nil || _currentStatus.item.isVoice) {
+        return;
+    }
+    
     TGMusicPlayerController *controller = [[TGMusicPlayerController alloc] init];
     
     TGNavigationController *playerNavigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];

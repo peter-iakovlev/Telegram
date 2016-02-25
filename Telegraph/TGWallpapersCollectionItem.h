@@ -17,6 +17,7 @@
 @property (nonatomic, strong) ASHandle *actionHandle;
 @property (nonatomic, strong) ASHandle *interfaceHandle;
 @property (nonatomic, strong) NSString *title;
+@property (nonatomic, strong) UIImage *icon;
 
 - (instancetype)initWithAction:(SEL)action title:(NSString *)title;
 

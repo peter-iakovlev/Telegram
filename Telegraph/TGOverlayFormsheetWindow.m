@@ -19,7 +19,7 @@
 
 - (instancetype)initWithParentController:(TGViewController *)parentController contentController:(UIViewController *)contentController
 {
-    self = [super initWithFrame:[UIScreen mainScreen].bounds];
+    self = [super initWithFrame:TGAppDelegateInstance.rootController.applicationBounds];
     if (self != nil)
     {
         self.windowLevel = parentController.view.window.windowLevel + 0.0001f;

@@ -12,6 +12,7 @@
 #import "TGListThumbnailSignals.h"
 #import "TGImageBlur.h"
 #import "TGImageUtils.h"
+#import "TGModernCache.h"
 
 @implementation TGSharedMediaImageData
 
@@ -98,11 +99,7 @@
 
 - (NSString *)keyForLocation:(TLInputFileLocation *)location
 {
-    if ([location isKindOfClass:[TLInputFileLocation$inputAudioFileLocation class]])
-    {
-        return [[NSString alloc] initWithFormat:@"audio-%" PRId64 "", ((TLInputFileLocation$inputAudioFileLocation *)location).n_id];
-    }
-    else if ([location isKindOfClass:[TLInputFileLocation$inputDocumentFileLocation class]])
+    if ([location isKindOfClass:[TLInputFileLocation$inputDocumentFileLocation class]])
     {
         return [[NSString alloc] initWithFormat:@"document-%" PRId64 "", ((TLInputFileLocation$inputDocumentFileLocation *)location).n_id];
     }
@@ -113,10 +110,6 @@
     else if ([location isKindOfClass:[TLInputFileLocation$inputFileLocation class]])
     {
         return [[NSString alloc] initWithFormat:@"image-%" PRId64 "_%" PRId32, ((TLInputFileLocation$inputFileLocation *)location).volume_id, ((TLInputFileLocation$inputFileLocation *)location).local_id];
-    }
-    else if ([location isKindOfClass:[TLInputFileLocation$inputVideoFileLocation class]])
-    {
-        return [[NSString alloc] initWithFormat:@"video-%" PRId64 "", ((TLInputFileLocation$inputVideoFileLocation *)location).n_id];
     }
     
     return nil;
@@ -430,6 +423,111 @@
         return [[SSignal single:TGAverageColorImage(UIColorRGB(averageColor))] then:signal];
     
     return signal;
+}
+
++ (SSignal *)cachedRemoteThumbnailWithKey:(NSString *)key size:(CGSize)size pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock fetchData:(SSignal *)fetchData originalImage:(SSignal *)originalImage threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache diskCache:(TGModernCache *)diskCache {
+    NSString *hdKey = [key stringByAppendingString:@"-hd"];
+    NSString *ldKey = [key stringByAppendingString:@"-ld"];
+    
+    UIImage *cachedImage = [memoryCache imageForKey:hdKey attributes:NULL];
+    if (cachedImage != nil) {
+        return [SSignal single:cachedImage];
+    }
+    
+    UIImage *(^processOriginal)(UIImage *, bool) = ^UIImage *(UIImage *sourceImage, bool blur) {
+        return [TGListThumbnailSignals listThumbnail:size image:sourceImage blurImage:blur averageColor:NULL pixelProcessingBlock:pixelProcessingBlock];
+    };
+    
+    SSignal *cachedOriginal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+        [diskCache getValueForKey:[hdKey dataUsingEncoding:NSUTF8StringEncoding] completion:^(NSData *data) {
+            UIImage *image = nil;
+            if (data != nil) {
+                UIImage *sourceImage = [[UIImage alloc] initWithData:data];
+                if (sourceImage != nil) {
+                    image = processOriginal(sourceImage, false);
+                }
+            }
+            
+            if (image != nil) {
+                [memoryCache setImage:image forKey:hdKey attributes:nil];
+                [subscriber putNext:image];
+                [subscriber putCompletion];
+            } else {
+                [subscriber putError:nil];
+            }
+        }];
+        
+        return nil;
+    }];
+    
+    SSignal *fetchOriginal = [SSignal defer:^SSignal *{
+        return [cachedOriginal catch:^SSignal *(__unused id error) {
+            return [[originalImage catch:^SSignal *(__unused id error) {
+                return [SSignal fail:nil];
+            }] mapToSignal:^SSignal *(UIImage *sourceImage) {
+                return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+                    UIImage *image = processOriginal(sourceImage, false);
+                    if (image != nil) {
+                        [memoryCache setImage:image forKey:hdKey attributes:nil];
+                        [diskCache setValue:UIImageJPEGRepresentation(image, 0.8f) forKey:[hdKey dataUsingEncoding:NSUTF8StringEncoding]];
+                        [subscriber putNext:image];
+                        [subscriber putCompletion];
+                    } else {
+                        [subscriber putError:nil];
+                    }
+                    
+                    return nil;
+                }];
+            }];
+        }];
+    }];
+    
+    cachedImage = [memoryCache imageForKey:ldKey attributes:NULL];
+    if (cachedImage != nil) {
+        return [[SSignal single:cachedImage] then:[fetchOriginal catch:^SSignal *(__unused id error) {
+            return [SSignal complete];
+        }]];
+    }
+    
+    return [fetchOriginal catch:^SSignal *(__unused id error) {
+        return [[[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+            [diskCache getValueForKey:[ldKey dataUsingEncoding:NSUTF8StringEncoding] completion:^(NSData *data) {
+                if (data != nil) {
+                    [subscriber putNext:data];
+                    [subscriber putCompletion];
+                } else {
+                    [subscriber putError:nil];
+                }
+            }];
+            
+            return nil;
+        }] catch:^SSignal *(__unused id error) {
+            return [fetchData onNext:^(NSData *data) {
+                if (data != nil) {
+                    [diskCache setValue:data forKey:[ldKey dataUsingEncoding:NSUTF8StringEncoding]];
+                }
+            }];
+        }] mapToSignal:^SSignal *(NSData *data) {
+            return [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+                UIImage *sourceImage = [[UIImage alloc] initWithData:data];
+                
+                if (sourceImage == nil) {
+                    [subscriber putError:nil];
+                } else {
+                    UIImage *image = processOriginal(sourceImage, false);
+                    if (image != nil) {
+                        [memoryCache setImage:image forKey:ldKey attributes:nil];
+                        [subscriber putNext:image];
+                        [subscriber putCompletion];
+                    } else {
+                        [subscriber putError:nil];
+                    }
+                }
+                
+                return nil;
+            }] startOnThreadPool:threadPool];
+        }];
+    }];
 }
 
 + (void (^)(void *, int, int, int))pixelProcessingBlockForRoundCornersOfRadius:(CGFloat)radius

@@ -67,6 +67,7 @@
 #import "TGSharedMediaAllFilesEmptyView.h"
 #import "TGSharedMediaFilesEmptyView.h"
 #import "TGSharedMediaLinksEmptyView.h"
+#import "TGSharedMediaMusicEmptyView.h"
 
 #import "TGSharedMediaSelectionPanelView.h"
 
@@ -76,12 +77,15 @@
 #import "TGAttachmentSheetEmbedItemView.h"
 #import "TGAttachmentSheetButtonItemView.h"
 
+#import "TGModernConversationController.h"
+
 typedef enum {
     TGSharedMediaControllerModeAll,
     TGSharedMediaControllerModePhoto,
     TGSharedMediaControllerModeVideo,
     TGSharedMediaControllerModeFile,
-    TGSharedMediaControllerModeLink
+    TGSharedMediaControllerModeLink,
+    TGSharedMediaControllerModeAudio
 } TGSharedMediaControllerMode;
 
 @interface TGSharedMediaController () <ASWatcher, UICollectionViewDataSource, TGSharedMediaCollectionViewDelegate, TGSearchBarDelegate>
@@ -184,7 +188,7 @@ typedef enum {
         _peerId = peerId;
         _accessHash = accessHash;
         _important = important;
-        _allowActions = _peerId > INT_MIN;
+        _allowActions = _peerId > INT_MIN || TGPeerIdIsChannel(_peerId);
         
         CGSize screenSize = TGScreenSize();
         _widescreenWidth = MAX(screenSize.width, screenSize.height);
@@ -448,6 +452,8 @@ typedef enum {
             return TGMessageSearchFilterFile;
         case TGSharedMediaControllerModeLink:
             return TGMessageSearchFilterLink;
+        case TGSharedMediaControllerModeAudio:
+            return TGMessageSearchFilterAudio;
     }
 }
 
@@ -465,6 +471,8 @@ typedef enum {
             return TGLocalized(@"SharedMedia.TitleFile");
         case TGSharedMediaControllerModeLink:
             return TGLocalized(@"SharedMedia.TitleLink");
+        case TGSharedMediaControllerModeAudio:
+            return TGLocalized(@"SharedMedia.TitleAudio");
     }
 }
 
@@ -529,7 +537,7 @@ typedef enum {
         
         SDisposableSet *compositeDisposable = [[SDisposableSet alloc] init];
         
-        SSignal *startSignal = [TGSharedMediaCacheSignals cachedMediaForPeerId:strongSelf->_peerId itemType:[strongSelf cacheItemTypeForFilter:filter] important:true];
+        SSignal *startSignal = [TGSharedMediaCacheSignals cachedMediaForPeerId:strongSelf->_peerId itemType:[strongSelf cacheItemTypeForFilter:filter] important:strongSelf->_important];
         if (maxMessageId != 0)
             startSignal = [SSignal single:@[]];
         
@@ -940,8 +948,8 @@ typedef enum {
     NSMutableArray *menuItems = [[NSMutableArray alloc] init];
     [menuItems addObject:[self titleForMode:TGSharedMediaControllerModeAll]];
     [menuItems addObject:[self titleForMode:TGSharedMediaControllerModeFile]];
-    if (_peerId > INT_MIN || TGPeerIdIsChannel(_peerId))
-        [menuItems addObject:[self titleForMode:TGSharedMediaControllerModeLink]];
+    [menuItems addObject:[self titleForMode:TGSharedMediaControllerModeLink]];
+    [menuItems addObject:[self titleForMode:TGSharedMediaControllerModeAudio]];
     [_menuView setItems:menuItems];
     __weak TGSharedMediaController *weakSelf = self;
     _menuView.willHide = ^
@@ -967,6 +975,8 @@ typedef enum {
                 mode = TGSharedMediaControllerModeFile;
             else if (selectedItemIndex == 2)
                 mode = TGSharedMediaControllerModeLink;
+            else if (selectedItemIndex == 3)
+                mode = TGSharedMediaControllerModeAudio;
             [strongSelf setMode:mode filters:strongSelf->_currentFilters];
         }
     };
@@ -1097,6 +1107,7 @@ typedef enum {
                 if ([entity isKindOfClass:[TGMessageEntityUrl class]] || [entity isKindOfClass:[TGMessageEntityTextUrl class]] || [entity isKindOfClass:[TGMessageEntityEmail class]])
                 {
                     [items addObject:[[TGSharedMediaLinkItem alloc] initWithMessage:message messageId:message.mid date:message.date incoming:!message.outgoing]];
+                    break;
                 }
             }
         }
@@ -1232,7 +1243,7 @@ typedef enum {
 {
     if (collectionView == _collectionView)
     {
-        if (_mode != TGSharedMediaControllerModeFile)
+        if (_mode != TGSharedMediaControllerModeFile && _mode != TGSharedMediaControllerModeAudio)
         {
             NSUInteger itemIndex = (NSUInteger)indexPath.item;
             
@@ -1252,7 +1263,7 @@ typedef enum {
     }
     else
     {
-        if (_mode != TGSharedMediaControllerModeFile)
+        if (_mode != TGSharedMediaControllerModeFile && _mode != TGSharedMediaControllerModeAudio)
         {
             NSUInteger itemIndex = (NSUInteger)indexPath.item;
             
@@ -1276,7 +1287,7 @@ typedef enum {
 {
     if (collectionView == _collectionView)
     {
-        if (_mode == TGSharedMediaControllerModeFile || _mode == TGSharedMediaControllerModeLink)
+        if (_mode == TGSharedMediaControllerModeFile || _mode == TGSharedMediaControllerModeLink || _mode == TGSharedMediaControllerModeAudio)
             return UIEdgeInsetsMake(36.0f + (section == 0 ? 44.0f : 0.0f), 0.0f, 0.0f, 0.0f);
         
         UIEdgeInsets insets = UIEdgeInsetsZero;
@@ -1310,7 +1321,7 @@ typedef enum {
 {
     if (collectionView == _collectionView)
     {
-        if (_mode == TGSharedMediaControllerModeFile || _mode == TGSharedMediaControllerModeLink)
+        if (_mode == TGSharedMediaControllerModeFile || _mode == TGSharedMediaControllerModeLink || _mode == TGSharedMediaControllerModeAudio)
             return 0.0f;
         
         if (ABS(_collectionViewWidth - 540.0f) < FLT_EPSILON)
@@ -1320,7 +1331,7 @@ typedef enum {
     }
     else
     {
-        if (_mode == TGSharedMediaControllerModeFile || _mode == TGSharedMediaControllerModeLink)
+        if (_mode == TGSharedMediaControllerModeFile || _mode == TGSharedMediaControllerModeLink || _mode == TGSharedMediaControllerModeAudio)
             return 0.0f;
         
         if (ABS(_collectionViewWidth - 540.0f) < FLT_EPSILON)
@@ -1401,11 +1412,15 @@ typedef enum {
     id<TGSharedMediaItem> item = nil;
     
     NSUInteger itemIndex = (NSUInteger)indexPath.item;
+    bool lastInSection = false;
     
-    if (collectionView == _collectionView)
+    if (collectionView == _collectionView) {
         item = ((TGSharedMediaGroup *)_filteredItemGroups[indexPath.section]).items[itemIndex];
-    else
+        lastInSection = itemIndex == ((TGSharedMediaGroup *)_filteredItemGroups[indexPath.section]).items.count - 1;
+    } else {
         item = ((TGSharedMediaGroup *)_filteredSearchItemGroups[indexPath.section]).items[itemIndex];
+        lastInSection = itemIndex == ((TGSharedMediaGroup *)_filteredSearchItemGroups[indexPath.section]).items.count - 1;
+    }
     
     id mediaId = mediaIdForItem(item);
     TGSharedMediaAvailabilityState *availabilityState = mediaId == nil ? nil : _itemAvailabilityStates[mediaId];
@@ -1442,7 +1457,7 @@ typedef enum {
     }
     else if ([item isKindOfClass:[TGSharedMediaFileItem class]])
     {
-        if (_mode == TGSharedMediaControllerModeFile)
+        if (_mode == TGSharedMediaControllerModeFile || _mode == TGSharedMediaControllerModeAudio)
         {
             TGSharedMediaFileItemView *fileItemView = (TGSharedMediaFileItemView *)[collectionView dequeueReusableCellWithReuseIdentifier:@"TGSharedMediaFileItemView" forIndexPath:indexPath];
             fileItemView.imageViewQueue = _imageViewQueue;
@@ -1450,7 +1465,7 @@ typedef enum {
             fileItemView.isItemSelected = _isItemSelected;
             fileItemView.toggleItemSelection = _toggleItemSelection;
             fileItemView.item = item;
-            [fileItemView setDocumentMediaAttachment:((TGSharedMediaFileItem *)item).documentMediaAttachment date:(int)[item date] lastInSection:((TGSharedMediaGroup *)self.currentFilteredGroups[indexPath.section]).items.count == (NSUInteger)indexPath.item + 1 availabilityState:availabilityState thumbnailColors:[TGSharedMediaController thumbnailColorsForFileName:((TGSharedMediaFileItem *)item).documentMediaAttachment.fileName]];
+            [fileItemView setDocumentMediaAttachment:((TGSharedMediaFileItem *)item).documentMediaAttachment date:(int)[item date] lastInSection:lastInSection availabilityState:availabilityState thumbnailColors:[TGSharedMediaController thumbnailColorsForFileName:((TGSharedMediaFileItem *)item).documentMediaAttachment.fileName]];
             itemView = fileItemView;
         }
         else
@@ -1568,6 +1583,10 @@ typedef enum {
 
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
+    if (_editing) {
+        [collectionView deselectItemAtIndexPath:indexPath animated:false];
+        return;
+    }
     id<TGSharedMediaItem> item = nil;
     if (collectionView == _collectionView)
         item = ((TGSharedMediaGroup *)_filteredItemGroups[indexPath.section]).items[indexPath.item];
@@ -1603,7 +1622,7 @@ typedef enum {
             
             if (isAudio)
             {
-                [TGTelegraphInstance.musicPlayer setPlaylist:[TGGenericPeerPlaylistSignals playlistForPeerId:_peerId important:true atMessageId:[item messageId]] initialItemKey:@([item messageId])];
+                [TGTelegraphInstance.musicPlayer setPlaylist:[TGGenericPeerPlaylistSignals playlistForPeerId:_peerId important:_important atMessageId:[item messageId] voice:false] initialItemKey:@([item messageId]) metadata:nil];
             }
             else
             {
@@ -1760,15 +1779,12 @@ typedef enum {
         }
     }]];
     
-    TGAttachmentSheetButtonItemView *cancelItem =[[TGAttachmentSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") pressed:^
-    {
+    [items addObject:[[TGAttachmentSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") pressed:^ {
         __strong TGSharedMediaController *strongSelf = weakSelf;
-        if (strongSelf != nil)
+        if (strongSelf != nil) {
             [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-    }];
-    
-    [cancelItem setBold:true];
-    [items addObject:cancelItem];
+        }
+    }]];
     
     _attachmentSheetWindow.view.items = items;
     _attachmentSheetWindow.windowLevel = UIWindowLevelNormal;
@@ -1882,6 +1898,16 @@ typedef enum {
                 [self.view insertSubview:_currentEmptyView aboveSubview:_activityIndicatorView];
             }
         }
+        else if (_mode == TGSharedMediaControllerModeAudio)
+        {
+            if (![_currentEmptyView isKindOfClass:[TGSharedMediaMusicEmptyView class]])
+            {
+                [_currentEmptyView removeFromSuperview];
+                _currentEmptyView = [[TGSharedMediaMusicEmptyView alloc] initWithFrame:self.view.bounds];
+                _currentEmptyView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                [self.view insertSubview:_currentEmptyView aboveSubview:_activityIndicatorView];
+            }
+        }
         else
         {
             if (![_currentEmptyView isKindOfClass:[TGSharedMediaAllFilesEmptyView class]])
@@ -1978,7 +2004,7 @@ typedef enum {
         return nil;
     };
     
-    modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
+    modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
     {
         __strong TGSharedMediaController *strongSelf = weakSelf;
         if (strongSelf != nil && [item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
@@ -2013,7 +2039,7 @@ typedef enum {
         {
             _selectionPanelView = [[TGSharedMediaSelectionPanelView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height, self.view.frame.size.width, 45.0f)];
             _selectionPanelView.shareEnabled = _allowActions;
-            _selectionPanelView.deleteEnabled = !TGPeerIdIsChannel(_peerId);
+            _selectionPanelView.deleteEnabled = !TGPeerIdIsChannel(_peerId) || _channelAllowDelete;
             _selectionPanelView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
             __weak TGSharedMediaController *weakSelf = self;
             _selectionPanelView.deleteSelectedItems = ^
@@ -2103,7 +2129,7 @@ typedef enum {
         CGFloat lastOrigin = 0.0f;
         NSTimeInterval lastDelay = 0.0;
         NSTimeInterval delayIncrement = 0.0115;
-        if (_mode == TGSharedMediaControllerModeFile || _mode == TGSharedMediaControllerModeLink)
+        if (_mode == TGSharedMediaControllerModeFile || _mode == TGSharedMediaControllerModeLink || _mode == TGSharedMediaControllerModeAudio)
             delayIncrement /= 2.0;
         
         for (TGSharedMediaItemView *itemView in [_collectionView.visibleCells sortedArrayUsingComparator:^NSComparisonResult(UIView *view1, UIView *view2)
@@ -2148,8 +2174,16 @@ typedef enum {
     {
         for (id<TGSharedMediaItem> item in group.items)
         {
-            if ([_selectedMessageIds containsObject:@([item messageId])])
-                [messages addObject:[item message]];
+            if ([_selectedMessageIds containsObject:@([item messageId])]) {
+                TGMessage *message = [item message];
+                if (message.cid != _peerId) {
+                    message = [message copy];
+                    message.mid -= migratedMessageIdOffset;
+                    [messages addObject:message];
+                } else {
+                    [messages addObject:message];
+                }
+            }
         }
     }
     
@@ -2160,7 +2194,7 @@ typedef enum {
         return message1.date > message2.date ? NSOrderedAscending : NSOrderedDescending;
     }];
     
-    TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:messages sendMessages:nil showSecretChats:true];
+    TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:messages sendMessages:nil shareLink:nil showSecretChats:true];
     forwardController.skipConfirmation = true;
     forwardController.watcherHandle = _actionHandle;
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:forwardController];
@@ -2227,7 +2261,9 @@ typedef enum {
         {
             UIView *snapshotView = [itemView snapshotViewAfterScreenUpdates:false];
             snapshotView.frame = itemView.frame;
-            [removedViews addObject:snapshotView];
+            if (snapshotView != nil) {
+                [removedViews addObject:snapshotView];
+            }
         }
         else
             previousItemFrames[@([itemView.item messageId])] = [NSValue valueWithCGRect:itemView.frame];
@@ -2254,7 +2290,7 @@ typedef enum {
     
     CGAffineTransform selectedItemsTransform = CGAffineTransformIdentity;
     CGFloat selectedItemsAlpha = 0.0f;
-    if (_mode != TGSharedMediaControllerModeFile && _mode != TGSharedMediaControllerModeLink)
+    if (_mode != TGSharedMediaControllerModeFile && _mode != TGSharedMediaControllerModeLink && _mode != TGSharedMediaControllerModeAudio)
     {
         selectedItemsTransform = CGAffineTransformMakeScale(0.01f, 0.01f);
         selectedItemsAlpha = 1.0f;
@@ -2313,6 +2349,7 @@ static id mediaIdForItem(id<TGSharedMediaItem> item)
         case TGSharedMediaControllerModeAll:
             return [item isKindOfClass:[TGSharedMediaImageItem class]] || [item isKindOfClass:[TGSharedMediaVideoItem class]];
         case TGSharedMediaControllerModeFile:
+        case TGSharedMediaControllerModeAudio:
             return [item isKindOfClass:[TGSharedMediaFileItem class]];
         case TGSharedMediaControllerModeLink:
             return [item isKindOfClass:[TGSharedMediaLinkItem class]];

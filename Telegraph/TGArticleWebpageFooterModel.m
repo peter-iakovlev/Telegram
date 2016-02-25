@@ -14,10 +14,17 @@
 #import "TGSharedMediaUtils.h"
 #import "TGSharedMediaSignals.h"
 #import "TGSharedPhotoSignals.h"
+#import "TGSharedFileSignals.h"
 
 #import "TGReusableLabel.h"
 
 #import "TGMessage.h"
+
+#import "TGImageManager.h"
+
+#import "TGPreparedLocalDocumentMessage.h"
+#import "TGTelegraph.h"
+#import "TGGifConverter.h"
 
 @interface TGArticleWebpageFooterModel ()
 {
@@ -32,6 +39,12 @@
     TGModernImageViewModel *_serviceIconModel;
     bool _imageInText;
     bool _hasViews;
+    
+    NSString *_imageDataInvalidationUrl;
+    void (^_imageDataInvalidationBlock)();
+    
+    bool _isAnimation;
+    bool _activatedMedia;
 }
 
 @end
@@ -92,9 +105,9 @@ static UIImage *durationBackgroundImage()
     return image;
 }
 
-- (instancetype)initWithWithIncoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage imageInText:(bool)imageInText hasViews:(bool)hasViews
+- (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage imageInText:(bool)imageInText hasViews:(bool)hasViews
 {
-    self = [super initWithWithIncoming:incoming];
+    self = [super initWithContext:context incoming:incoming];
     if (self != nil)
     {
         _webPage = webPage;
@@ -129,7 +142,7 @@ static UIImage *durationBackgroundImage()
             _textModel = [[TGModernTextViewModel alloc] initWithText:webPage.pageDescription font:textFont()];
             _textModel.layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks;
             _textModel.textCheckingResults = [TGMessage textCheckingResultsForText:webPage.pageDescription highlightMentionsAndTags:false highlightCommands:false];
-            _textModel.maxNumberOfLines = 20;
+            _textModel.maxNumberOfLines = 16;
             _textModel.textColor = [UIColor blackColor];
             if (_imageInText)
             {
@@ -139,7 +152,35 @@ static UIImage *durationBackgroundImage()
         }
         
         CGSize imageSize = CGSizeZero;
-        [webPage.photo.imageInfo imageUrlForLargestSize:&imageSize];
+        
+        bool hasSize = false;
+        
+        if (!imageInText && webPage.document != nil && ([webPage.document.mimeType isEqualToString:@"image/gif"] || [webPage.document.mimeType isEqualToString:@"video/mp4"]) && [webPage.document isAnimated]) {
+            
+            _isAnimation = true;
+            
+            for (id attribute in webPage.document.attributes) {
+                if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]]) {
+                    imageSize = ((TGDocumentAttributeImageSize *)attribute).size;
+                    hasSize = imageSize.width > 1.0f && imageSize.height >= 1.0f;
+                    break;
+                } else if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                    imageSize = ((TGDocumentAttributeVideo *)attribute).size;
+                    hasSize = imageSize.width > 1.0f && imageSize.height >= 1.0f;
+                    break;
+                }
+            }
+        } else if (!imageInText && webPage.photo != nil) {
+            [webPage.photo.imageInfo closestImageUrlWithSize:CGSizeMake(1136, 1136) resultingSize:&imageSize];
+        } else if (imageInText) {
+            [webPage.photo.imageInfo closestImageUrlWithSize:CGSizeMake(50.0f, 50.0f) resultingSize:&imageSize];
+        }
+        
+        if (_isAnimation) {
+            _imageDataInvalidationUrl = [webPage.document.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL];
+        } else {
+            _imageDataInvalidationUrl = [webPage.photo.imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL];
+        }
         
         if (imageSize.width > FLT_EPSILON)
         {
@@ -148,28 +189,75 @@ static UIImage *durationBackgroundImage()
                 imageSize = CGSizeMake(50.0f, 50.0f);
             else
             {
-                CGFloat imageAspect = imageSize.width / imageSize.height;
-                CGSize fitSize = CGSizeMake(215.0f, 180.0f);
-                if (ABS(imageAspect - 1.0f) < FLT_EPSILON)
-                    fitSize = CGSizeMake(215.0f, 215.0f);
-                    
-                imageSize = TGScaleToFill(imageSize, fitSize);
-                CGSize completeSize = imageSize;
-                imageSize = TGCropSize(imageSize, fitSize);
-                
-                contentFrame = CGRectMake((imageSize.width - completeSize.width) / 2.0f, (imageSize.height - completeSize.height) / 2.0f, completeSize.width, completeSize.height);
+                if (_isAnimation) {
+                    CGSize fitSize = CGSizeMake(220.0f, 220.0f);
+                    imageSize = TGFitSize(TGScaleToFill(imageSize, fitSize), fitSize);
+                    contentFrame = CGRectMake(0.0f, 0.0f, imageSize.width, imageSize.height);
+                } else {
+                    CGFloat imageAspect = imageSize.width / imageSize.height;
+                    CGSize fitSize = CGSizeMake(215.0f, 180.0f);
+                    if (ABS(imageAspect - 1.0f) < FLT_EPSILON)
+                        fitSize = CGSizeMake(215.0f, 215.0f);
+                        
+                    imageSize = TGScaleToFill(imageSize, fitSize);
+                    CGSize completeSize = imageSize;
+                    imageSize = TGCropSize(imageSize, fitSize);
+                    contentFrame = CGRectMake((imageSize.width - completeSize.width) / 2.0f, (imageSize.height - completeSize.height) / 2.0f, completeSize.width, completeSize.height);
+                }
             }
             _imageViewModel = [[TGSignalImageViewModel alloc] init];
             _imageViewModel.viewUserInteractionDisabled = false;
             _imageViewModel.transitionContentRect = contentFrame;
-            NSString *key = [[NSString alloc] initWithFormat:@"webpage-image-%" PRId64 "", webPage.photo.imageId];
-            [_imageViewModel setSignalGenerator:^SSignal *
-            {
-                return [TGSharedPhotoSignals sharedPhotoImage:webPage.photo size:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:8.0f] cacheKey:key];
-            } identifier:key];
+            if (_isAnimation) {
+                NSString *key = [[NSString alloc] initWithFormat:@"webpage-animation-thumbnail-%" PRId64 "", webPage.document.documentId];
+                __weak TGArticleWebpageFooterModel *weakSelf = self;
+                _imageDataInvalidationBlock = ^{
+                    __strong TGArticleWebpageFooterModel *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        [strongSelf->_imageViewModel reload];
+                    }
+                };
+                [_imageViewModel setSignalGenerator:^SSignal *{
+                    return [TGSharedFileSignals squareFileThumbnail:webPage.document ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:8.0f]];
+                } identifier:key];
+            } else {
+                if (imageInText) {
+                    NSString *key = [[NSString alloc] initWithFormat:@"webpage-image-small-thumbnail-%" PRId64 "", webPage.photo.imageId];
+                    __weak TGArticleWebpageFooterModel *weakSelf = self;
+                    _imageDataInvalidationBlock = ^{
+                        __strong TGArticleWebpageFooterModel *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            [strongSelf->_imageViewModel reload];
+                        }
+                    };
+                    [_imageViewModel setSignalGenerator:^SSignal *
+                    {
+                        return [TGSharedPhotoSignals sharedPhotoImage:webPage.photo size:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:8.0f] cacheKey:key];
+                    } identifier:key];
+                } else {
+                    NSString *key = [[NSString alloc] initWithFormat:@"webpage-image-thumbnail-%" PRId64 "", webPage.photo.imageId];
+                    __weak TGArticleWebpageFooterModel *weakSelf = self;
+                    _imageDataInvalidationBlock = ^{
+                        __strong TGArticleWebpageFooterModel *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            [strongSelf->_imageViewModel reload];
+                        }
+                    };
+                    [_imageViewModel setSignalGenerator:^SSignal *
+                    {
+                        return [TGSharedPhotoSignals squarePhotoThumbnail:webPage.photo ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:8.0f] downloadLargeImage: false placeholder:nil];
+                    } identifier:key];
+                }
+            }
             _imageViewModel.frame = CGRectMake(0.0f, 0.0f, imageSize.width, imageSize.height);
             _imageViewModel.skipDrawInContext = true;
-            _imageViewModel.showProgress = !_imageInText;
+            if (imageInText) {
+                _imageViewModel.showProgress = false;
+            } else {
+                [_imageViewModel setManualProgress:true];
+                [_imageViewModel setNone];
+            }
+            
             [self addSubmodel:_imageViewModel];
             
             if (!_imageInText)
@@ -239,6 +327,18 @@ static UIImage *durationBackgroundImage()
 {
     _imageViewModel.parentOffset = itemPosition;
     [_imageViewModel bindViewToContainer:container viewStorage:viewStorage];
+    
+    if (self.context.autoplayAnimations && self.mediaIsAvailable && self.boundToContainer) {
+        [self activateWebpageContents];
+    }
+}
+
+- (void)unbindView:(TGModernViewStorage *)viewStorage {
+    [super unbindView:viewStorage];
+    
+    [_imageViewModel setVideoPathSignal:nil];
+    _activatedMedia = false;
+    [self updateOverlayAnimated:false];
 }
 
 - (void)updateSpecialViewsPositions:(CGPoint)itemPosition
@@ -300,6 +400,10 @@ static UIImage *durationBackgroundImage()
     {
         contentSize.width = MAX(contentSize.width, _siteModel.frame.size.width + 10.0f + imageInset);
         contentSize.height += _siteModel.frame.size.height;
+        
+        if (_titleModel == nil && _textModel == nil && _imageViewModel == nil) {
+            contentSize.height += 14.0f;
+        }
     }
     
     if (_titleModel != nil)
@@ -346,16 +450,34 @@ static UIImage *durationBackgroundImage()
     return _imageViewModel.frame.size.width >= 190.0f;
 }
 
-- (bool)hasWebpageActionAtPoint:(CGPoint)point
+- (TGWebpageFooterModelAction)webpageActionAtPoint:(CGPoint)point
 {
     bool result = _imageViewModel != nil && CGRectContainsPoint(_imageViewModel.frame, point);
+    if (result && _imageInText) {
+        return TGWebpageFooterModelActionOpenURL;
+    }
     
     if (!result && [self linkAtPoint:point regionData:NULL] == nil && CGRectContainsPoint(self.bounds, point))
     {
         if ([_webPage.pageType isEqualToString:@"audio"])
-            return true;
+            return TGWebpageFooterModelActionGeneric;
     }
-    return result;
+    
+    if (result) {
+        if (!_imageInText) {
+            if (!self.mediaIsAvailable) {
+                return TGWebpageFooterModelActionDownload;
+            } else {
+                if (_isAnimation) {
+                    return TGWebpageFooterModelActionPlay;
+                }
+            }
+        }
+        
+        return TGWebpageFooterModelActionGeneric;
+    }
+    
+    return TGWebpageFooterModelActionNone;
 }
 
 - (NSString *)linkAtPoint:(CGPoint)point regionData:(NSArray *__autoreleasing *)regionData
@@ -453,12 +575,164 @@ static UIImage *durationBackgroundImage()
 
 - (bool)activateWebpageContents
 {
+    if (self.mediaIsAvailable && _isAnimation) {
+        if (_activatedMedia && !self.context.autoplayAnimations) {
+            _activatedMedia = false;
+            [_imageViewModel setVideoPathSignal:nil];
+            [self updateOverlayAnimated:false];
+        } else {
+            _activatedMedia = true;
+            [self updateOverlayAnimated:false];
+            
+            TGDocumentMediaAttachment *document = _webPage.document;
+            if (document != nil) {
+                NSString *documentDirectory = nil;
+                if (document.localDocumentId != 0) {
+                    documentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId];
+                } else {
+                    documentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId];
+                }
+                
+                NSString *videoPath = nil;
+                
+                if ([document.mimeType isEqualToString:@"video/mp4"]) {
+                    if (document.localDocumentId != 0) {
+                        videoPath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId] stringByAppendingPathComponent:[document safeFileName]];
+                    } else {
+                        videoPath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId] stringByAppendingPathComponent:[document safeFileName]];
+                    }
+                }
+                
+                if (videoPath != nil) {
+                    [_imageViewModel setVideoPathSignal:[SSignal single:videoPath]];
+                } else {
+                    NSString *filePath = nil;
+                    NSString *videoPath = nil;
+                    
+                    if (document.localDocumentId != 0)
+                    {
+                        filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId] stringByAppendingPathComponent:[document safeFileName]];
+                        videoPath = [filePath stringByAppendingString:@".mov"];
+                    }
+                    else
+                    {
+                        filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId] stringByAppendingPathComponent:[document safeFileName]];
+                        videoPath = [filePath stringByAppendingString:@".mov"];
+                    }
+                    
+                    NSString *key = [@"gif-video-path:" stringByAppendingString:filePath];
+                    
+                    SSignal *videoSignal = [[SSignal defer:^SSignal *{
+                        if ([[NSFileManager defaultManager] fileExistsAtPath:videoPath isDirectory:NULL]) {
+                            return [SSignal single:videoPath];
+                        } else {
+                            return [TGTelegraphInstance.genericTasksSignalManager multicastedSignalForKey:key producer:^SSignal *{
+                                SSignal *dataSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+                                    NSData *data = [NSData dataWithContentsOfFile:filePath options:NSDataReadingMappedIfSafe error:nil];
+                                    if (data != nil) {
+                                        [subscriber putNext:data];
+                                        [subscriber putCompletion];
+                                    } else {
+                                        [subscriber putError:nil];
+                                    }
+                                    return nil;
+                                }];
+                                return [dataSignal mapToSignal:^SSignal *(NSData *data) {
+                                    return [[TGGifConverter convertGifToMp4:data] mapToSignal:^SSignal *(NSString *tempPath) {
+                                        return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subsctiber) {
+                                            NSError *error = nil;
+                                            [[NSFileManager defaultManager] moveItemAtPath:tempPath toPath:videoPath error:&error];
+                                            if (error != nil) {
+                                                [subsctiber putError:nil];
+                                            } else {
+                                                [subsctiber putNext:videoPath];
+                                                [subsctiber putCompletion];
+                                            }
+                                            return nil;
+                                        }];
+                                    }];
+                                }];
+                            }];
+                        }
+                    }] startOn:[SQueue concurrentDefaultQueue]];
+                    
+                    [_imageViewModel setVideoPathSignal:videoSignal];
+                }
+            }
+        }
+    }
+    
     return false;
 }
 
 - (bool)webpageContentsActivated
 {
     return false;
+}
+
+- (void)setMediaIsAvailable:(bool)mediaIsAvailable {
+    bool wasAvailable = self.mediaIsAvailable;
+    
+    [super setMediaIsAvailable:mediaIsAvailable];
+    
+    if (!wasAvailable && mediaIsAvailable && self.boundToContainer) {
+        if ([_imageViewModel boundView] != nil && self.context.autoplayAnimations && mediaIsAvailable) {
+            [self activateWebpageContents];
+        }
+    }
+    
+    [self updateOverlayAnimated:false];
+}
+
+- (void)updateMediaProgressVisible:(bool)mediaProgressVisible mediaProgress:(float)mediaProgress animated:(bool)animated {
+    [super updateMediaProgressVisible:mediaProgressVisible mediaProgress:mediaProgress animated:animated];
+    
+    [self updateOverlayAnimated:animated];
+}
+
+- (void)imageDataInvalidated:(NSString *)imageUrl {
+    if ([_imageDataInvalidationUrl isEqualToString:imageUrl]) {
+        if (_imageDataInvalidationBlock) {
+            _imageDataInvalidationBlock();
+        }
+    }
+}
+
+- (void)stopInlineMedia
+{
+    [_imageViewModel setVideoPathSignal:nil];
+    _activatedMedia = false;
+    if (_isAnimation) {
+        [self updateOverlayAnimated:false];
+    }
+}
+
+- (void)updateOverlayAnimated:(bool)animated {
+    if (_imageViewModel.manualProgress) {
+        if (self.mediaProgressVisible) {
+            [_imageViewModel setProgress:self.mediaProgress animated:animated];
+        } else if (self.mediaIsAvailable) {
+            if (_activatedMedia) {
+                [_imageViewModel setNone];
+            } else {
+                if (self.context.autoplayAnimations) {
+                    [_imageViewModel setNone];
+                } else if (_isAnimation) {
+                    [_imageViewModel setPlay];
+                } else {
+                    [_imageViewModel setNone];
+                }
+            }
+        } else {
+            [_imageViewModel setDownload];
+        }
+    }
+}
+
+- (void)resumeInlineMedia {
+    if (_isAnimation && self.context.autoplayAnimations && self.mediaIsAvailable && !_activatedMedia) {
+        [self activateWebpageContents];
+    }
 }
 
 @end

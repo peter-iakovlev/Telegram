@@ -29,11 +29,15 @@
 
 #import "TGTelegramNetworking.h"
 
+#import "TGGroupInfoContactListCreateLinkCell.h"
+
 @interface TGSelectContactController ()
 {
     UIView *_titleContainer;
     UILabel *_titleLabel;
     UILabel *_counterLabel;
+    
+    int _displayUserCountLimit;
 }
 
 @property (nonatomic, strong) TGCreateGroupController *createGroupController;
@@ -51,7 +55,7 @@
 
 @implementation TGSelectContactController
 
-- (id)initWithCreateGroup:(bool)createGroup createEncrypted:(bool)createEncrypted createBroadcast:(bool)createBroadcast createChannel:(bool)createChannel inviteToChannel:(bool)inviteToChannel
+- (id)initWithCreateGroup:(bool)createGroup createEncrypted:(bool)createEncrypted createBroadcast:(bool)createBroadcast createChannel:(bool)createChannel inviteToChannel:(bool)inviteToChannel showLink:(bool)showLink
 {
     int contactsMode = TGContactsModeRegistered;
     if (createEncrypted)
@@ -67,7 +71,10 @@
         if (createGroup)
             contactsMode |= TGContactsModeCompose;
         else if (createChannel || inviteToChannel) {
-            contactsMode |= TGContactsModeCompose;
+            contactsMode |= (TGContactsModeCompose | TGContactsModeSearchGlobal);
+            if (showLink) {
+                contactsMode |= TGContactsModeCreateGroupLink | TGContactsModeManualFirstSection;
+            }
         }
         else
         {
@@ -87,11 +94,7 @@
             self.usersSelectedLimit = 0;
             self.composePlaceholder = TGLocalized(@"Compose.ChannelTokenListPlaceholder");
         } else {
-    #if TARGET_IPHONE_SIMULATOR
-            self.usersSelectedLimit = 10;
-    #else
             self.usersSelectedLimit = 199;
-    #endif
             
             NSData *data = [TGDatabaseInstance() customProperty:@"maxChatParticipants"];
             if (data.length >= 4)
@@ -103,6 +106,24 @@
                 else
                     self.usersSelectedLimit = MAX(0, maxChatParticipants - 1);
             }
+            
+#if TARGET_IPHONE_SIMULATOR
+            //self.usersSelectedLimit = 10;
+#endif
+            
+            _displayUserCountLimit = self.usersSelectedLimit + 1;
+            
+            data = [TGDatabaseInstance() customProperty:@"maxChannelGroupMembers"];
+            if (data.length >= 4)
+            {
+                int32_t maxChannelGroupMembers = 0;
+                [data getBytes:&maxChannelGroupMembers length:4];
+                if (maxChannelGroupMembers != 0) {
+                    _displayUserCountLimit = MAX(_displayUserCountLimit, maxChannelGroupMembers);
+                }
+            }
+            
+            self.usersSelectedLimitAlert = TGLocalized(@"CreateGroup.SoftUserLimitAlert");
             
             self.composePlaceholder = TGLocalized(@"Compose.TokenListPlaceholder");
         }
@@ -186,10 +207,27 @@
             NSString *errorType = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
             NSString *errorText = TGLocalized(@"Profile.CreateEncryptedChatError");
             if ([errorType isEqual:@"USER_BLOCKED"]) {
-                errorText = TGLocalized(@"Channel.ErrorAddBlocked");
+                errorText = _channelConversation.isChannelGroup ? TGLocalized(@"Group.ErrorAddBlocked") : TGLocalized(@"Channel.ErrorAddBlocked");
             } else if ([errorType isEqual:@"USERS_TOO_MUCH"]) {
-                errorText = TGLocalized(@"Channel.ErrorAddTooMuch");
+                if (_channelConversation.isChannelGroup) {
+                    errorText = TGLocalized(@"Group.ErrorAddTooMuch");
+                } else {
+                    errorText = TGLocalized(@"Channel.ErrorAddTooMuch");
+                }
+            } else if ([errorType isEqual:@"BOTS_TOO_MUCH"]) {
+                errorText = TGLocalized(@"Group.ErrorAddTooMuchBots");
+            } else if ([errorType isEqual:@"USER_NOT_MUTUAL_CONTACT"]) {
+                errorText = TGLocalized(@"Group.ErrorNotMutualContact");
+            } else if ([errorType isEqualToString:@"USER_PRIVACY_RESTRICTED"]) {
+                if (users.count == 1) {
+                    NSString *format = conversation.isChannelGroup ? TGLocalized(@"Privacy.GroupsAndChannels.InviteToGroupError") : TGLocalized(@"Privacy.GroupsAndChannels.InviteToChannelError");
+                    TGUser *user = users.firstObject;
+                    errorText = [[NSString alloc] initWithFormat:format, user.displayFirstName, user.displayFirstName];
+                } else {
+                    errorText = TGLocalized(@"Privacy.GroupsAndChannels.InviteToChannelMultipleError");
+                }
             }
+            
             [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
         } completed:nil];
     }
@@ -206,13 +244,13 @@
         return;
     }
     
-    TGSelectContactController *createGroupController = [[TGSelectContactController alloc] initWithCreateGroup:true createEncrypted:false createBroadcast:false createChannel:false inviteToChannel:false];
+    TGSelectContactController *createGroupController = [[TGSelectContactController alloc] initWithCreateGroup:true createEncrypted:false createBroadcast:false createChannel:false inviteToChannel:false showLink:false];
     [self.navigationController pushViewController:createGroupController animated:true];
 }
 
 - (void)encryptionItemSelected
 {
-    TGSelectContactController *selectContactController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:true createBroadcast:false createChannel:false inviteToChannel:false];
+    TGSelectContactController *selectContactController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:true createBroadcast:false createChannel:false inviteToChannel:false showLink:false];
     [self.navigationController pushViewController:selectContactController animated:true];
 }
 
@@ -259,7 +297,7 @@
         _counterLabel.backgroundColor = [UIColor clearColor];
         _counterLabel.textColor = UIColorRGB(0x8e8e93);
         _counterLabel.font = TGSystemFontOfSize(15.0f);
-        _counterLabel.text = @"0/199";
+        _counterLabel.text = [[NSString alloc] initWithFormat:@"0/%d", _displayUserCountLimit];
         if (!_createChannel && !_inviteToChannel) {
             [_titleContainer addSubview:_counterLabel];
         }
@@ -318,7 +356,7 @@
     
     CGRect titleLabelFrame = _titleLabel.frame;
     
-    if (_createChannel) {
+    if (_createChannel || _inviteToChannel) {
         titleLabelFrame.origin = CGPointMake(CGFloor((_titleContainer.frame.size.width - titleLabelFrame.size.width) / 2.0f), CGFloor((_titleContainer.frame.size.height - titleLabelFrame.size.height) / 2.0f) + (UIInterfaceOrientationIsPortrait(orientation) ? portraitOffset : landscapeOffset));
         _titleLabel.frame = titleLabelFrame;
     } else {
@@ -338,7 +376,7 @@
     {
         if (_createGroupController == nil)
         {
-            _createGroupController = [[TGCreateGroupController alloc] initWithCreateChannel:false];
+            _createGroupController = [[TGCreateGroupController alloc] initWithCreateChannel:false createChannelGroup:false];
         }
         
         NSMutableArray *userIds = [[NSMutableArray alloc] init];
@@ -367,7 +405,7 @@
 
 - (void)updateCount:(int)count
 {
-    _counterLabel.text = [[NSString alloc] initWithFormat:@"%d/%d", count, 199];
+    _counterLabel.text = [[NSString alloc] initWithFormat:@"%d/%d", count, _displayUserCountLimit];
     [self _layoutTitleViews:self.interfaceOrientation];
 }
 
@@ -441,6 +479,37 @@
     
     if ([[self superclass] instancesRespondToSelector:@selector(actorCompleted:path:result:)])
         [super actorCompleted:status path:path result:result];
+}
+
+- (UITableViewCell *)cellForRowInFirstSection:(NSInteger)__unused row
+{
+    TGGroupInfoContactListCreateLinkCell *cell = (TGGroupInfoContactListCreateLinkCell *)[self.tableView dequeueReusableCellWithIdentifier:@"TGGroupInfoContactListCreateLinkCell"];
+    if (cell == nil)
+    {
+        cell = [[TGGroupInfoContactListCreateLinkCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"TGGroupInfoContactListCreateLinkCell"];
+    }
+    
+    return cell;
+}
+
+- (NSInteger)numberOfRowsInFirstSection
+{
+    if (self.contactsMode & TGContactsModeCreateGroupLink)
+        return 1;
+    return 0;
+}
+
+- (CGFloat)itemHeightForFirstSection
+{
+    return 48.0f;
+}
+
+- (void)didSelectRowInFirstSection:(NSInteger)__unused row
+{
+    [self.tableView deselectRowAtIndexPath:[self.tableView indexPathForSelectedRow] animated:true];
+    if (_onCreateLink) {
+        _onCreateLink();
+    }
 }
 
 @end

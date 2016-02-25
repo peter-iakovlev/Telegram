@@ -134,7 +134,7 @@ NSString *const TGFileCacheDomain = @"com.telegram.FileCache";
         NSURL *newUrl = [self urlForKey:key];
         [[NSFileManager defaultManager] copyItemAtURL:url toURL:newUrl error:NULL];
         if (completion != nil)
-            completion(url);
+            completion(newUrl);
         
         if (unserializeBlock != nil && _memoryCache != nil)
         {

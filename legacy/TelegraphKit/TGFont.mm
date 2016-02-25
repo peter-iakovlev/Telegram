@@ -4,14 +4,6 @@
 
 #import <map>
 
-NSString *TGSystemFontBaseName() {
-    if (iosMajorVersion() >= 9) {
-        return @".SFUIText";
-    } else {
-        return @"HelveticaNeue";
-    }
-}
-
 UIFont *TGSystemFontOfSize(CGFloat size)
 {
     static bool useSystem = false;
@@ -104,6 +96,9 @@ UIFont *TGItalicSystemFontOfSize(CGFloat size)
 static std::map<int, CTFontRef> systemFontCache;
 static std::map<int, CTFontRef> lightFontCache;
 static std::map<int, CTFontRef> mediumFontCache;
+static std::map<int, CTFontRef> boldFontCache;
+static std::map<int, CTFontRef> fixedFontCache;
+static std::map<int, CTFontRef> italicFontCache;
 static TG_SYNCHRONIZED_DEFINE(systemFontCache) = PTHREAD_MUTEX_INITIALIZER;
 
 CTFontRef TGCoreTextSystemFontOfSize(CGFloat size)
@@ -117,10 +112,11 @@ CTFontRef TGCoreTextSystemFontOfSize(CGFloat size)
         result = it->second;
     else
     {
-        if (false && iosMajorVersion() >= 9) {
-            result = CTFontCreateWithName(CFSTR(".SFUIText-Regular"), CGFloor(size * 2.0f) / 2.0f, NULL);
+        if (iosMajorVersion() >= 7) {
+            result = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGSystemFontOfSize(size) fontDescriptor], 0.0f, NULL);
         } else {
-            result = CTFontCreateWithName(CFSTR("HelveticaNeue"), CGFloor(size * 2.0f) / 2.0f, NULL);
+            UIFont *systemFont = TGSystemFontOfSize(size);
+            result = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
         systemFontCache[key] = result;
     }
@@ -140,10 +136,11 @@ CTFontRef TGCoreTextLightFontOfSize(CGFloat size)
         result = it->second;
     else
     {
-        if (false && iosMajorVersion() >= 9) {
-            result = CTFontCreateWithName(CFSTR(".SFUIText-Light"), CGFloor(size * 2.0f) / 2.0f, NULL);
+        if (iosMajorVersion() >= 7) {
+            result = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGLightSystemFontOfSize(size) fontDescriptor], 0.0f, NULL);
         } else {
-            result = CTFontCreateWithName(CFSTR("HelveticaNeue-Light"), CGFloor(size * 2.0f) / 2.0f, NULL);
+            UIFont *systemFont = TGLightSystemFontOfSize(size);
+            result = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
         lightFontCache[key] = result;
     }
@@ -163,12 +160,80 @@ CTFontRef TGCoreTextMediumFontOfSize(CGFloat size)
         result = it->second;
     else
     {
-        if (false && iosMajorVersion() >= 9) {
-            result = CTFontCreateWithName(CFSTR(".SFUIText-Medium"), CGFloor(size * 2.0f) / 2.0f, NULL);
+        if (iosMajorVersion() >= 7) {
+            result = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGMediumSystemFontOfSize(size) fontDescriptor], 0.0f, NULL);
         } else {
-            result = CTFontCreateWithName(CFSTR("HelveticaNeue-Medium"), CGFloor(size * 2.0f) / 2.0f, NULL);
+            UIFont *systemFont = TGMediumSystemFontOfSize(size);
+            result = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
         }
         mediumFontCache[key] = result;
+    }
+    TG_SYNCHRONIZED_END(systemFontCache);
+    
+    return result;
+}
+
+CTFontRef TGCoreTextBoldFontOfSize(CGFloat size)
+{
+    int key = (int)(size * 2.0f);
+    CTFontRef result = NULL;
+    
+    TG_SYNCHRONIZED_BEGIN(systemFontCache);
+    auto it = boldFontCache.find(key);
+    if (it != boldFontCache.end())
+        result = it->second;
+    else
+    {
+        if (iosMajorVersion() >= 7) {
+            result = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGBoldSystemFontOfSize(size) fontDescriptor], 0.0f, NULL);
+        } else {
+            UIFont *systemFont = TGBoldSystemFontOfSize(size);
+            result = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
+        }
+        boldFontCache[key] = result;
+    }
+    TG_SYNCHRONIZED_END(systemFontCache);
+    
+    return result;
+}
+
+CTFontRef TGCoreTextFixedFontOfSize(CGFloat size)
+{
+    int key = (int)(size * 2.0f);
+    CTFontRef result = NULL;
+    
+    TG_SYNCHRONIZED_BEGIN(systemFontCache);
+    auto it = fixedFontCache.find(key);
+    if (it != fixedFontCache.end())
+        result = it->second;
+    else
+    {
+        result = CTFontCreateWithName(CFSTR("Courier"), CGFloor(size * 2.0f) / 2.0f, NULL);
+        fixedFontCache[key] = result;
+    }
+    TG_SYNCHRONIZED_END(systemFontCache);
+    
+    return result;
+}
+
+CTFontRef TGCoreTextItalicFontOfSize(CGFloat size)
+{
+    int key = (int)(size * 2.0f);
+    CTFontRef result = NULL;
+    
+    TG_SYNCHRONIZED_BEGIN(systemFontCache);
+    auto it = italicFontCache.find(key);
+    if (it != italicFontCache.end())
+        result = it->second;
+    else
+    {
+        if (iosMajorVersion() >= 7) {
+            result = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGItalicSystemFontOfSize(size) fontDescriptor], 0.0f, NULL);
+        } else {
+            UIFont *systemFont = TGItalicSystemFontOfSize(size);
+            result = CTFontCreateWithName((__bridge CFStringRef)systemFont.fontName, systemFont.pointSize, nil);
+        }
+        italicFontCache[key] = result;
     }
     TG_SYNCHRONIZED_END(systemFontCache);
     

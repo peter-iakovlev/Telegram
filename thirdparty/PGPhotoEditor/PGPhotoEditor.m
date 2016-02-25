@@ -54,6 +54,8 @@
     
     bool _processing;
     bool _needsReprocessing;
+    
+    bool _fullSize;
 }
 @end
 
@@ -108,7 +110,7 @@
     return tools;
 }
 
-- (void)setImage:(UIImage *)image forCropRect:(CGRect)cropRect cropRotation:(CGFloat)cropRotation cropOrientation:(UIImageOrientation)cropOrientation
+- (void)setImage:(UIImage *)image forCropRect:(CGRect)cropRect cropRotation:(CGFloat)cropRotation cropOrientation:(UIImageOrientation)cropOrientation fullSize:(bool)fullSize
 {
     [_toolComposer invalidate];
     _currentProcessChain = nil;
@@ -121,6 +123,8 @@
     _currentInput = [[PGPhotoEditorPicture alloc] initWithImage:image];
     
     _histogramGenerator.imageSize = image.size;
+    
+    _fullSize = fullSize;
 }
 
 #pragma mark - Properties
@@ -162,10 +166,10 @@
 
 - (void)processAnimated:(bool)animated completion:(void (^)(void))completion
 {
-    [self processAnimated:animated capture:false completion:completion];
+    [self processAnimated:animated capture:false synchronous:false completion:completion];
 }
 
-- (void)processAnimated:(bool)animated capture:(bool)capture completion:(void (^)(void))completion
+- (void)processAnimated:(bool)animated capture:(bool)capture synchronous:(bool)synchronous completion:(void (^)(void))completion
 {
     if (self.previewOutput == nil)
         return;
@@ -254,29 +258,36 @@
                 });
             }
             
-            if (_needsReprocessing)
+            if (_needsReprocessing && !synchronous)
             {
                 _needsReprocessing = false;
                 [self processAnimated:false completion:nil];
             }
         }];
-    }];
+    } synchronous:synchronous];
 }
 
 #pragma mark - Result
 
 - (void)createResultImageWithCompletion:(void (^)(UIImage *image))completion
 {
-    [self processAnimated:false capture:true completion:^
+    [self processAnimated:false capture:true synchronous:false completion:^
     {
         UIImage *image = [_finalFilter imageFromCurrentFramebufferWithOrientation:UIImageOrientationUp];
-        
-        //NSData *data = UIImagePNGRepresentation(image);
-        //[data writeToFile:@"/Users/ilyalaktyushin/Desktop/noise.png" atomically:true];
         
         if (completion != nil)
             completion(image);
     }];
+}
+
+- (UIImage *)currentResultImage
+{
+    __block UIImage *image = nil;
+    [self processAnimated:false capture:true synchronous:true completion:^
+    {
+        image = [_finalFilter imageFromCurrentFramebufferWithOrientation:UIImageOrientationUp];
+    }];
+    return image;
 }
 
 #pragma mark - Editor Values

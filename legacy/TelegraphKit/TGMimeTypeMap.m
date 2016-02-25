@@ -30,6 +30,7 @@ static void initializeMapping()
         mimeToExtension[@"application/oda"] = @"oda"; extensionToMime[@"oda"] = @"application/oda";
         mimeToExtension[@"application/ogg"] = @"ogg"; extensionToMime[@"ogg"] = @"application/ogg";
         mimeToExtension[@"application/pdf"] = @"pdf"; extensionToMime[@"pdf"] = @"application/pdf";
+        mimeToExtension[@"application/com.adobe.pdf"] = @"pdf";
         mimeToExtension[@"application/pgp-keys"] = @"key"; extensionToMime[@"key"] = @"application/pgp-keys";
         mimeToExtension[@"application/pgp-signature"] = @"pgp"; extensionToMime[@"pgp"] = @"application/pgp-signature";
         mimeToExtension[@"application/pics-rules"] = @"prf"; extensionToMime[@"prf"] = @"application/pics-rules";
@@ -321,6 +322,7 @@ static void initializeMapping()
         mimeToExtension[@"video/x-sgi-movie"] = @"movie"; extensionToMime[@"movie"] = @"video/x-sgi-movie";
         mimeToExtension[@"x-conference/x-cooltalk"] = @"ice"; extensionToMime[@"ice"] = @"x-conference/x-cooltalk";
         mimeToExtension[@"x-epoc/x-sisx-app"] = @"sisx"; extensionToMime[@"sisx"] = @"x-epoc/x-sisx-app";
+        mimeToExtension[@"application/epub+zip"] = @"epub"; extensionToMime[@"epub"] = @"application/epub+zip";
         
         mimeToExtensionMap = mimeToExtension;
         extensionToMimeMap = extensionToMime;

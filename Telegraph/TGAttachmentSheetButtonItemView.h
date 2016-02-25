@@ -8,6 +8,7 @@
 - (void)setTitle:(NSString *)title;
 - (void)setBold:(bool)bold;
 - (void)setImage:(UIImage *)image;
+- (void)setDisabled:(bool)disabled;
 - (void)setDestructive:(bool)destructive;
 
 - (void)_buttonPressed;

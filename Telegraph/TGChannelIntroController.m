@@ -39,7 +39,6 @@
         arrowImage = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
     });
-
     
     _backButton = [[TGModernButton alloc] initWithFrame:CGRectZero];
     _backButton.exclusiveTouch = true;
@@ -103,7 +102,7 @@
 
 - (void)buttonPressed
 {
-    TGCreateGroupController *controller = [[TGCreateGroupController alloc] initWithCreateChannel:true];
+    TGCreateGroupController *controller = [[TGCreateGroupController alloc] initWithCreateChannel:true createChannelGroup:false];
     [self.navigationController pushViewController:controller animated:true];
     
     [[NSUserDefaults standardUserDefaults] setObject:@true forKey:@"didShowChannelIntro_v1"];

@@ -91,4 +91,14 @@
     return [[TGAudioMediaAttachment localAudioFileDirectoryForRemoteAudioId:_audioId] stringByAppendingPathComponent:@"audio.m4a"];
 }
 
++ (NSString *)localAudioFilePathForLocalAudioId:(int64_t)audioId
+{
+    return [[self localAudioFileDirectoryForLocalAudioId:audioId] stringByAppendingPathComponent:@"audio.m4a"];
+}
+
++ (NSString *)localAudioFilePathForRemoteAudioId:(int64_t)audioId
+{
+    return [[self localAudioFileDirectoryForRemoteAudioId:audioId] stringByAppendingPathComponent:@"audio.m4a"];
+}
+
 @end

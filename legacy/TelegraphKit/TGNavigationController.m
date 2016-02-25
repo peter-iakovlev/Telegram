@@ -102,6 +102,18 @@
 {
     [super loadView];
     
+    if (iosMajorVersion() >= 9 && [UIView userInterfaceLayoutDirectionForSemanticContentAttribute:self.view.semanticContentAttribute] == UIUserInterfaceLayoutDirectionRightToLeft) {
+        SEL selector = NSSelectorFromString(TGEncodeText(@"`tdsffoFehfQboHftuvsfSfdphoj{fs", -1));
+        if ([self respondsToSelector:selector])
+        {
+            UIScreenEdgePanGestureRecognizer *screenPanRecognizer = [self performSelector:selector];
+            if (screenPanRecognizer != nil)
+            {
+                screenPanRecognizer.edges = UIRectEdgeRight;
+                object_setClass(screenPanRecognizer, [TGRTLScreenEdgePanGestureRecognizer class]);
+            }
+        }
+    }
     /*if ([TGViewController useExperimentalRTL])
         ((UIView *)self.view.subviews[0]).transform = CGAffineTransformMakeScale(-1.0f, 1.0f);
     

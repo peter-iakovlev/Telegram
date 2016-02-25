@@ -31,8 +31,7 @@
 
 #import "TGAccessChecker.h"
 #import "TGNavigationController.h"
-#import "TGMediaFoldersController.h"
-#import "TGModernMediaPickerController.h"
+#import "TGMediaAssetsController.h"
 #import "TGLegacyCameraController.h"
 #import "TGImagePickerController.h"
 #import "TGNavigationBar.h"

@@ -47,7 +47,7 @@
         [self addSubview:_timerButton];
         
         _timerIconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernConversationSecretAccessoryTimer.png"]];
-        _timerIconView.frame = CGRectOffset(_timerIconView.frame, CGFloor((_timerButton.frame.size.width - _timerIconView.frame.size.width) / 2.0f) - 6.0f - TGRetinaPixel, 5.0f + TGRetinaPixel);
+        _timerIconView.frame = CGRectOffset(_timerIconView.frame, CGFloor((_timerButton.frame.size.width - _timerIconView.frame.size.width) / 2.0f) - 6.0f - TGRetinaPixel, 5.0f - TGRetinaPixel);
         [_timerButton addSubview:_timerIconView];
         
         _timeLabel = [[UILabel alloc] init];

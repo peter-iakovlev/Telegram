@@ -1,6 +1,7 @@
 #import "TGBridgeConversationHandler.h"
 #import "TGBridgeConversationSubscription.h"
 
+#import "TGDatabase.h"
 #import "TGConversationSignals.h"
 #import "TGUserSignal.h"
 
@@ -14,33 +15,49 @@
     if ([subscription isKindOfClass:[TGBridgeConversationSubscription class]])
     {
         TGBridgeConversationSubscription *conversationSubscription = (TGBridgeConversationSubscription *)subscription;
-        
+                
         return [[TGConversationSignals conversationWithPeerId:conversationSubscription.peerId] mapToSignal:^SSignal *(TGConversation *conversation)
         {
-            TGBridgeChat *bridgeChat = [TGBridgeChat chatWithTGConversation:conversation];
-            NSMutableIndexSet *userIds = [[NSMutableIndexSet alloc] init];
-            [userIds addIndexes:[bridgeChat involvedUserIds]];
-            [userIds addIndexes:[bridgeChat participantsUserIds]];
-            
-            NSMutableArray *userSignals = [[NSMutableArray alloc] init];
-            [userIds enumerateIndexesUsingBlock:^(NSUInteger index, __unused BOOL *stop)
+            SSignal *(^signal)(TGConversation *) = ^SSignal *(TGConversation *conversation)
             {
-                if (index != 0)
-                    [userSignals addObject:[TGUserSignal userWithUserId:(int32_t)index]];
-            }];
-            
-            return [[SSignal combineSignals:userSignals] map:^id(NSArray *users)
-            {
-                NSMutableDictionary *bridgeUsers = [[NSMutableDictionary alloc] init];
-                for (TGUser *user in users)
-                {
-                    TGBridgeUser *bridgeUser = [TGBridgeUser userWithTGUser:user];
-                    if (bridgeUser != nil)
-                        bridgeUsers[@(bridgeUser.identifier)] = bridgeUser;
-                }
+                TGBridgeChat *bridgeChat = [TGBridgeChat chatWithTGConversation:conversation];
+                NSMutableIndexSet *userIds = [[NSMutableIndexSet alloc] init];
+                [userIds addIndexes:[bridgeChat involvedUserIds]];
+                [userIds addIndexes:[bridgeChat participantsUserIds]];
                 
-                return @{ TGBridgeChatKey: bridgeChat, TGBridgeUsersDictionaryKey: bridgeUsers };
-            }];
+                NSMutableArray *userSignals = [[NSMutableArray alloc] init];
+                [userIds enumerateIndexesUsingBlock:^(NSUInteger index, __unused BOOL *stop)
+                 {
+                     if (index != 0)
+                         [userSignals addObject:[TGUserSignal userWithUserId:(int32_t)index]];
+                 }];
+                
+                return [[SSignal combineSignals:userSignals] map:^id(NSArray *users)
+                {
+                    NSMutableDictionary *bridgeUsers = [[NSMutableDictionary alloc] init];
+                    for (TGUser *user in users)
+                    {
+                        TGBridgeUser *bridgeUser = [TGBridgeUser userWithTGUser:user];
+                        if (bridgeUser != nil)
+                            bridgeUsers[@(bridgeUser.identifier)] = bridgeUser;
+                    }
+                    
+                    return @{ TGBridgeChatKey: bridgeChat, TGBridgeUsersDictionaryKey: bridgeUsers };
+                }];
+            };
+            
+            if (conversation.isChannelGroup)
+            {
+                return [[TGDatabaseInstance() channelCachedData:conversation.conversationId] mapToSignal:^SSignal *(TGCachedConversationData *conversationData)
+                {
+                    conversation.chatParticipantCount = conversationData.memberCount;
+                    return signal(conversation);
+                }];
+            }
+            else
+            {
+                return signal(conversation);
+            }
         }];
     }
     

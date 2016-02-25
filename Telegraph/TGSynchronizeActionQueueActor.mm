@@ -292,25 +292,17 @@
     }];
 }
 
-- (void)readMessagesSuccess:(TLmessages_AffectedHistory *)affectedHistory
+- (void)readMessagesSuccess:(TLmessages_AffectedMessages *)affectedMessages
 {
-    if (affectedHistory != nil)
+    if (affectedMessages != nil)
     {
-        TGLog(@"read history, offset = %d", affectedHistory.offset);
-        [[TGTelegramNetworking instance] updatePts:affectedHistory.pts ptsCount:affectedHistory.pts_count seq:0];
+        [[TGTelegramNetworking instance] updatePts:affectedMessages.pts ptsCount:affectedMessages.pts_count seq:0];
     }
     
-    if (affectedHistory.offset > 0)
-    {
-        self.cancelToken = [TGTelegraphInstance doConversationReadHistory:_currentReadConversationId accessHash:0 maxMid:_currentReadMaxMid offset:affectedHistory.offset actor:self];
-    }
-    else
-    {
-        TGDatabaseAction action = { .type = TGDatabaseActionReadConversation, .subject = _currentReadConversationId, .arg0 = _currentReadMaxMid, .arg1 = 0 };
-        [TGDatabaseInstance() confirmQueuedActions:[NSArray arrayWithObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]] requireFullMatch:false];
-        
-        [self execute:nil];
-    }
+    TGDatabaseAction action = { .type = TGDatabaseActionReadConversation, .subject = _currentReadConversationId, .arg0 = _currentReadMaxMid, .arg1 = 0 };
+    [TGDatabaseInstance() confirmQueuedActions:[NSArray arrayWithObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]] requireFullMatch:false];
+    
+    [self execute:nil];
 }
 
 - (void)readMessagesFailed

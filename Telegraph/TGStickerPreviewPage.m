@@ -30,6 +30,7 @@
 {
     NSArray *_imageViews;
     NSArray *_altLabels;
+    NSArray *_documents;
 }
 
 @end
@@ -81,6 +82,8 @@
 
 - (void)setDocuments:(NSArray *)documents stickerAssociations:(NSArray *)stickerAssociations
 {
+    _documents = documents;
+    
     for (NSUInteger i = 0; i < documents.count && i < _imageViews.count; i++)
     {
         TGStickerPreviewPageImageView *imageView = _imageViews[i];
@@ -145,6 +148,19 @@
     }
     
     [self setNeedsLayout];
+}
+
+- (TGDocumentMediaAttachment *)documentAtPoint:(CGPoint)point {
+    NSInteger index = -1;
+    for (TGStickerPreviewPageImageView *imageView in _imageViews) {
+        index++;
+        if (CGRectContainsPoint(imageView.frame, point)) {
+            if (index < (NSInteger)_documents.count) {
+                return _documents[index];
+            }
+        }
+    }
+    return nil;
 }
 
 - (void)layoutSubviews

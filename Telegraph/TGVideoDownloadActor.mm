@@ -691,9 +691,9 @@ public:
             }
             else
             {
-                location = [[TLInputFileLocation$inputVideoFileLocation alloc] init];
-                ((TLInputFileLocation$inputVideoFileLocation *)location).n_id = _videoId;
-                ((TLInputFileLocation$inputVideoFileLocation *)location).access_hash = _accessHash;
+                location = [[TLInputFileLocation$inputDocumentFileLocation alloc] init];
+                ((TLInputFileLocation$inputDocumentFileLocation *)location).n_id = _videoId;
+                ((TLInputFileLocation$inputDocumentFileLocation *)location).access_hash = _accessHash;
             }
 
 #if TGUseModernNetworking

@@ -1,10 +1,10 @@
 #import "TGWebSearchResultsGalleryInternalGifItem.h"
-
+#import "TGWebSearchInternalGifResult+TGMediaItem.h"
 #import "TGWebSearchResultsGalleryInternalGifItemView.h"
 
 @implementation TGWebSearchResultsGalleryInternalGifItem
 
-@synthesize itemSelected = _itemSelected;
+@synthesize selectionContext;
 
 - (instancetype)initWithSearchResult:(TGWebSearchInternalGifResult *)searchResult
 {
@@ -14,6 +14,11 @@
         _webSearchResult = searchResult;
     }
     return self;
+}
+
+- (id<TGMediaSelectableItem>)selectableMediaItem
+{
+    return self.webSearchResult;
 }
 
 - (NSString *)uniqueId

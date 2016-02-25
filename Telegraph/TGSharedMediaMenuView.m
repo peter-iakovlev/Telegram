@@ -4,6 +4,8 @@
 #import "TGImageUtils.h"
 #import "TGModernButton.h"
 
+#import "TGViewController.h"
+
 @interface TGSharedMediaMenuView ()
 {
     UIView *_backgroundView;
@@ -119,7 +121,7 @@
         _dimView.hidden = false;
         _dimView.alpha = 0.0f;
         _backgroundView.frame = CGRectMake(0.0f, -_backgroundView.frame.size.height, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
-        [UIView animateWithDuration:0.18 delay:0.0 options:0 animations:^
+        [UIView animateWithDuration:0.18 delay:0.0 options:[TGViewController preferredAnimationCurve] << 16 | UIViewAnimationOptionAllowUserInteraction animations:^
         {
             _dimView.alpha = 1.0f;
             _backgroundView.frame = CGRectMake(0.0f, 0.0f, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
@@ -141,7 +143,7 @@
     
     if (animated)
     {
-        [UIView animateWithDuration:0.18 delay:0.0 options:0 animations:^
+        [UIView animateWithDuration:0.17 delay:0.0 options:0 animations:^
         {
             _dimView.alpha = 0.0f;
             _backgroundView.frame = CGRectMake(0.0f, -_backgroundView.frame.size.height, _backgroundView.frame.size.width, _backgroundView.frame.size.height);

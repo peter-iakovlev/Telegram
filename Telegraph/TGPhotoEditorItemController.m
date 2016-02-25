@@ -1,7 +1,5 @@
 #import "TGPhotoEditorItemController.h"
 
-#import "TGAppDelegate.h"
-
 #import "TGPhotoEditorTabController.h"
 #import "TGNavigationController.h"
 
@@ -651,10 +649,13 @@
 
 - (CGSize)referenceViewSize
 {
-    if ([(TGViewController *)self.parentViewController inFormSheet])
-        return CGSizeMake(540.0f, 620.0f);
+    if (self.parentViewController != nil)
+    {
+        TGPhotoEditorController *controller = (TGPhotoEditorController *)self.parentViewController;
+        return [controller referenceViewSize];
+    }
     
-    return TGAppDelegateInstance.rootController.view.bounds.size;
+    return CGSizeZero;
 }
 
 - (void)updateLayout:(UIInterfaceOrientation)orientation

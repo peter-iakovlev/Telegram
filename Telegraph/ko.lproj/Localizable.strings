@@ -6,7 +6,8 @@
 "MESSAGE_CONTACT" = "%1$@님이 연락처를 공유했습니다";
 "MESSAGE_GEO" = "%1$@님이 위치를 보냈습니다";
 "MESSAGE_DOC" = "%1$@님이 파일을 보냈습니다";
-"MESSAGE_AUDIO" = "%1$@님이 음성메시지를 보냈습니다";
+"MESSAGE_AUDIO" = "%1$@ 님이 음성 메시지를 보냈습니다";
+"MESSAGE_GIF" = "%1$@ 님께서 GIF파일을 보냈습니다";
 "ENCRYPTED_MESSAGE" = "%1$@ 새 메시지가 있습니다";
 "LOCKED_MESSAGE" = "%1$@ 새 메시지가 있습니다";
 "ENCRYPTION_REQUEST" = "새로운 암호화 요청 %1$@";
@@ -22,14 +23,15 @@
 "CHAT_MESSAGE_CONTACT" = "%1$@님이 %2$@ 그룹에 연락처를 공유했습니다";
 "CHAT_MESSAGE_GEO" = "%1$@님이 %2$@ 그룹으로 위치를 보냈습니다";
 "CHAT_MESSAGE_DOC" = "%1$@님이 %2$@ 그룹에 파일을 보냈습니다";
-"CHAT_MESSAGE_AUDIO" = "%1$@님이 %2$@ 그룹에 음성메시지를 보냈습니다";
+"CHAT_MESSAGE_AUDIO" = "%1$@ 님이 %2$@ 그룹에 음성 메시지를 보냈습니다";
+"CHAT_MESSAGE_GIF" = "%1$@ 님께서 %2$@ 그룹에 GIF파일을 보냈습니다";
 "CHAT_CREATED" = "%1$@님이 %2$@ 그룹으로 초대했습니다";
 "CHAT_TITLE_EDITED" = "%1$@님이 %2$@ 그룹의 이름을 변경했습니다";
 "CHAT_PHOTO_EDITED" = "%1$@님이 %2$@ 그룹의 사진을 변경했습니다";
 "CHAT_ADD_MEMBER" = "%1$@님이 %2$@ 그룹에 %3$@님을 초대했습니다";
 "CHAT_ADD_YOU" = "%1$@님이 %2$@ 그룹에 초대했습니다";
-"CHAT_DELETE_YOU" = "%2$@ 그룹방에서 %1$@님이 회원님을 추방당했습니다.";
-"CHAT_DELETE_MEMBER" = "%2$@ 그룹방에서 %3$@ 님을 %1$@ 님이 추방하였습니다.";
+"CHAT_DELETE_YOU" = "%2$@ 그룹방에서 %1$@님이 회원님을 퇴장 시켰습니다.";
+"CHAT_DELETE_MEMBER" = "%2$@ 그룹방에서 %3$@ 님을 %1$@ 님이 퇴장 시켰습니다.";
 "CHAT_LEFT" = "%1$@님이 %2$@ 그룹을 떠났습니다";
 "CHAT_RETURNED" = "%1$@님이 %2$@ 그룹으로 되돌아왔습니다";
 
@@ -55,6 +57,7 @@
 "CHANNEL_MESSAGE_CONTACT" = "%1$@님이 연락처를 공유했습니다";
 "CHANNEL_MESSAGE_GEO" = "%1$@ 님이 위치를 보냈습니다";
 "CHANNEL_MESSAGE_FWDS" = "%2$@개의 메시지를 %1$@님이 전달하였습니다.";
+"CHANNEL_MESSAGE_GIF" = "%1$@ 님이 GIF파일을 보냈습니다";
 
 // Common
 "Common.OK" = "확인";
@@ -180,7 +183,7 @@
 // Login
 "Login.PhoneAndCountryHelp" = "국가번호와 전화번호를 입력해 주세요.";
 "Login.CodeHelp" = "인증코드 메시지를 아래 번호로 전송했습니다\n%@";
-"Login.CodeSentInternal" = "이전에 사용하던 **텔레그램**에서 받은 코드를 입력해 주세요.";
+"Login.CodeSentInternal" = "회원님 기기에 설치된 **텔레그램** 앱으로 코드를 전송했습니다.";
 "Login.HaveNotReceivedCodeInternal" = "코드를 받지 못하셨나요?";
 "Login.CodeSentSms" = "인증코드를 메시지로 전송했습니다.";
 "Login.Code" = "코드";
@@ -300,7 +303,7 @@
 "Conversation.ForwardTitle" = "전달";
 "Conversation.ForwardChats" = "대화";
 "Conversation.ForwardContacts" = "대화상대";
-"Conversation.StatusKickedFromGroup" = "그룹에서 회원님이 추방당했습니다.";
+"Conversation.StatusKickedFromGroup" = "그룹에서 회원님이 퇴장당했습니다.";
 "Conversation.StatusLeftGroup" = "그룹을 떠났습니다";
 "Conversation.StatusTyping" = "입력 중";
 "Conversation.BroadcastTitle" = "단체 메시지";
@@ -370,9 +373,10 @@
 "Notification.JoinedChat" = "%@님이 그룹에 참여했습니다";
 "Notification.Invited" = "%@님이 %@님을 초대했습니다";
 "Notification.LeftChat" = "%@님이 그룹을 떠났습니다";
-"Notification.Kicked" = "%@ 님이 %@를 추방하였습니다.";
+"Notification.Kicked" = "%@ 님이 %@를 퇴장 시켰습니다.";
 "Notification.CreatedChat" = "%@님이 그룹을 만들었습니다";
 "Notification.CreatedChannel" = "채널 생성됨";
+"Notification.CreatedGroup" = "그룹 생성됨";
 "Notification.CreatedBroadcastList" = "단체 메시지 리스트를 만들었습니다";
 "Notification.CreatedChatWithTitle" = "%@님이 \"%@\" 그룹을 만들었습니다";
 "Notification.Joined" = "%@님이 텔레그램에 가입했습니다";
@@ -398,9 +402,10 @@
 "Message.Contact" = "대화상대";
 "Message.File" = "파일";
 "Message.Sticker" = "스티커";
-"Message.Audio" = "오디오";
+"Message.Audio" = "음성 메시지";
 "Message.ForwardedMessage" = "전달된 메시지\n보낸사람: %@";
 "Message.SharedContact" = "대화상대 공유";
+"Message.Animation" = "GIF파일";
 
 // Conversation Profile
 "ConversationProfile.ErrorCreatingConversation" = "오류 발생";
@@ -521,15 +526,15 @@
 "GroupInfo.ParticipantCount_2" = "2명";
 "GroupInfo.ParticipantCount_3_10" = "%@명";
 "GroupInfo.ParticipantCount_any" = "%@명";
-"GroupInfo.AddParticipant" = "참여자 추가...";
+"GroupInfo.AddParticipant" = "구성원 추가";
 "GroupInfo.AddParticipantTitle" = "대화상대";
 "GroupInfo.AddParticipantConfirmation" = "%@님을 그룹에 추가할까요?";
-"GroupInfo.KickedStatus" = "회원님이 그룹방에서 추방당했습니다.";
+"GroupInfo.KickedStatus" = "회원님이 그룹방에서 퇴당당했습니다.";
 "GroupInfo.LeftStatus" = "그룹에서 나왔습니다";
 
 // Encryption Key
 "EncryptionKey.Title" = "암호화 키";
-"EncryptionKey.Description" = "이 이미지는 %1$@님과의 비밀대화에 사용 중인 암호화 키의 모습입니다.\n\n이 이미지가 %2$@님의 암호화 키와 똑같다면 대화는 200%% 안전합니다.\n\n더 자세한 사항은 telegram.org 를 참고해 주세요.";
+"EncryptionKey.Description" = "이 이미지와 텍스트는 %1$@ 님과의 현재 비밀대화에 대한 비밀키에서 파생된 것입니다.\n\n이 이미지와 텍스트가 %2$@ 님의 휴대전화와 동일하다면 단말기간(end-to-end)의 암호화가 정상적으로 진행되고 있음을 보장합니다.\n\n더 자세한 사항은 telegram.org를 참고해 주세요.";
 
 // Conversation media
 "ConversationMedia.Title" = "사진/동영상";
@@ -803,7 +808,6 @@
 "PrivacySettings.DeleteAccountNever" = "사용 안 함";
 
 "PrivacyLastSeenSettings.Title" = "마지막 접속";
-"PrivacyLastSeenSettings.LastSeenHelp" = "누가 마지막 접속 시간을 볼 수 있는지 변경";
 "PrivacyLastSeenSettings.CustomHelp" = "주의: 회원님의 마지막 접속 시간을 공유받지 않는 사람의 마지막 접속 시간은 확인할 수 없습니다. 대신 일주일 이내, 한달 이내 등으로 간략하게 표시됩니다.";
 "PrivacyLastSeenSettings.AlwaysShareWith" = "항상 공개 대상";
 "PrivacyLastSeenSettings.NeverShareWith" = "공유하지 않을 대상";
@@ -918,6 +922,7 @@
 "SharedMedia.TitlePhoto" = "공유한 사진";
 "SharedMedia.TitleVideo" = "공유한 비디오";
 "SharedMedia.TitleFile" = "공유한 파일";
+"SharedMedia.TitleAudio" = "공유된 음악";
 
 "SharedMedia.All" = "전체";
 "SharedMedia.Incoming" = "받음";
@@ -946,6 +951,7 @@
 "FileSize.B" = "%@ B";
 "FileSize.KB" = "%@ KB";
 "FileSize.MB" = "%@ MB";
+"FileSize.GB" = "%@ GB";
 
 "DownloadingStatus" = "%@중 %@ 다운로드";
 
@@ -1022,7 +1028,7 @@
 "DialogList.SearchSectionGlobal" = "전체 검색";
 "DialogList.SearchSectionMessages" = "메시지";
 
-"Username.LinkHint" = "다음링크는 회원님의 텔레그램 대화창으로 연결됩니다:[\nhttp://telegram.me/%@]";
+"Username.LinkHint" = "이 링크는 회원님의 대화방으로 이동합니다.:[\n https://telegram.me/%@]";
 "Username.LinkCopied" = "클립보드로 링크가 복사되었습니다.";
 
 "SharedMedia.ItemsSelected_1" = "1 개 선택";
@@ -1143,6 +1149,11 @@
 "ForwardedLocations_2" = "2개의 전달된 위치";
 "ForwardedLocations_3_10" = "%@ 개의 전달된 위치";
 "ForwardedLocations_any" = "%@ 개의 전달된 위치";
+
+"ForwardedGifs_1" = "GIF 파일을 전달하였습니다.";
+"ForwardedGifs_2" = "GIF 파일 2개를 전달하였습니다.";
+"ForwardedGifs_3_10" = "GIF파일을 %@님이 전달하였습니다.";
+"ForwardedGifs_any" = "GIF파일을 %@님이 전달하였습니다.";
 
 "ForwardedContacts_1" = "전달된 연락처";
 "ForwardedContacts_2" = "2개의 전달된 연락처";
@@ -1304,8 +1315,6 @@
 "GroupInfo.InvitationLinkDoesNotExist" = "죄송합니다, 그룹방이 더이상 존재하지 않습니다.";
 "GroupInfo.InvitationLinkGroupFull" = "죄송합니다, 그룹방의 인원이 최대치입니다.";
 
-"Core.CurrentUpdateText" = "텔레그램 iOS버전이 업데이트 되었습니다. 새로운 버전은 %@ 입니다: \n- 아이폰 6s 및 6s+ 최적화\n- 아이패드에서 분할 뷰 및 슬라이드 기능 지원\n- WatchOS 2 완벽 지원 (속도 개선, 빠른 답장, 보이스 노트, 봇, 채널)\n\n아이폰 6s의 사진 열기, 전달, 답장등을 포함하여 많은 버그 수정";
-
 "Core.ServiceUserStatus" = "서비스 알림";
 
 "Notification.JoinedGroupByLink" = "초대링크를 통하여 %@님이 그룹에 참여하였습니다.";
@@ -1313,12 +1322,12 @@
 "ChatSettings.Other" = "이외";
 "ChatSettings.Stickers" = "스티커";
 
-"StickerPacksSettings.Title" = "스티커 설정";
+"StickerPacksSettings.Title" = "스티커";
 "StickerPacksSettings.ShowStickersButton" = "스티커 탭 활성화";
 "StickerPacksSettings.ShowStickersButtonHelp" = "입력 필드에 스티커 아이콘이 표시됩니다.";
 
-"StickerPacksSettings.StickerPacksSection" = " 스티커 팩";
-"StickerPacksSettings.ManagingHelp" = "@stickers 봇을 통하여 누구든지 스스로 제작한 스티커를 등록 할 수 있습니다.\n\n스티커는 더블탭하여 \"정보\" - \"스티커 추가\" 를 통하여 추가할 수 있습니다.";
+"StickerPacksSettings.StickerPacksSection" = "스티커 팩";
+"StickerPacksSettings.ManagingHelp" = "@stickers bot 봇을 통하여 누구든지 스스로 제작한 스티커를 등록 할 수 있습니다.\n\n스티커는  더블탭하여 \"스티커 추가\" 를 통하여 추가할 수 있습니다.";
 
 "StickerPack.RemovePrompt" = "\"%@\"를 제거하시겠습니까?";
 "StickerPack.BuiltinPackName" = "Great Minds";
@@ -1409,7 +1418,7 @@
 
 "Channel.Username.Title" = "링크";
 "Channel.Username.Help" = "**Telegram**에서 채널명을 선택 할 수 있습니다. 설정을 하셨을 경우 다른 유저들이 검색할 수 있습니다.\n\n채널명으로  **a-z**, **0-9** 과 _ 를 사용가능하며,  최소 **5** 글자 이상을 기입하셔야 합니다";
-"Channel.Username.LinkHint" = "이 링크는 텔레그램 채널로 이동합니다.:[\nhttp://telegram.me/%@]";
+"Channel.Username.LinkHint" = "이 링크는 회원님의 채널로 이동합니다.:[\nhttps://telegram.me/%@]";
 "Channel.Username.InvalidTooShort" = "채널명은 최소 5 글자 이상 입력해야 합니다.";
 "Channel.Username.InvalidStartsWithNumber" = "채널명은 숫자로 시작 할 수 없습니다.";
 "Channel.Username.InvalidCharacters" = "올바르지 않은 이름입니다.";
@@ -1424,10 +1433,12 @@
 
 "Channel.About.Placeholder" = "설명";
 "Channel.About.Help" = "채널에 추가 설명을 제공 할 수 있습니다";
+"Group.About.Help" = "그룹에 추가 설명을 제공 할 수 있습니다.";
 "Channel.About.Error" = "오류가 발생했습니다.";
 "Channel.ShareNoLink" = "검색에서 유저들이 찾을 수 있게 채널 링크를 선택해 주세요.";
 
 "Channel.Status" = "채널";
+"Group.Status" = "그룹";
 
 "Compose.NewChannel.Members" = "구성원";
 "Compose.NewChannel.AddMember" = "구성원 추가";
@@ -1457,7 +1468,8 @@
 "Channel.NotificationLoading" = "불러오는 중..";
 
 "Conversation.InputTextDisabledPlaceholder" = "코멘트들이 비활성화됨...";
-"Compose.ChannelTokenListPlaceholder" = "채널에 친구 추가";
+"Compose.ChannelTokenListPlaceholder" = "연락처 혹은 아이디 검색";
+"Compose.GroupTokenListPlaceholder" = "연락처 혹은 아이디 검색";
 
 "Compose.ChannelMembers" = "구성원";
 
@@ -1495,7 +1507,7 @@
 "Channel.Management.LabelEditor" = "관리자";
 
 "Channel.Management.AddModerator" = "관리자 추가";
-"Channel.Management.AddModeratorHelp" = "채널 관리를 도울 수 있는 관리자를 추가 할 수 있습니다";
+"Channel.Management.AddModeratorHelp" = "채널 관리를 도울 수 있는 관리자를 추가 할 수 있습니다. ";
 
 "Channel.Members.Kick" = "삭제";
 "Channel.Management.Remove" = "삭제";
@@ -1518,6 +1530,9 @@
 
 "Notification.ChannelInviter" = "%@님이 채널에 초대하였습니다.";
 "Notification.ChannelInviterSelf" = "채널에 참여하였습니다.";
+
+"Notification.GroupInviter" = "그룹에 %@님께서 초대하셨습니다.";
+"Notification.GroupInviterSelf" = "그룹에 참여하였습니다.";
 
 "ChannelInfo.DeleteChannel" = "채널 삭제";
 "ChannelInfo.DeleteChannelConfirmation" = "이 채널을 삭제하실 경우 모든 구성원과 메시지를 삭제를 하게되며 복구가 안됩니다. 그래도 채널을 삭제하시겠습니까?";
@@ -1543,3 +1558,296 @@
 "ChannelIntro.Title" = "채널이 무엇인가요?";
 "ChannelIntro.Text" = "채널은 많은 유저들에게\n메시지를 한번에 전송 할 수 있\n는 새로운 기능입니다.";
 "ChannelIntro.CreateChannel" = "채널 만들기";
+
+"ShareMenu.Send" = "보내기";
+
+"Conversation.ReportSpam" = "스팸 신고";
+"Conversation.ReportSpamConfirmation" = "이 유저 메시지를 스팸신고 하시겠습니까?";
+"SharedMedia.EmptyMusicText" = "이 대화에서 공유된 모든 음악파일이 표시됩니다.";
+
+"ChatSettings.AutoPlayAnimations" = "GIF 자동재생";
+
+"GroupInfo.ChatAdmins" = "관리자 추가";
+
+"ChatAdmins.Title" = "관리자 대화";
+"ChatAdmins.AllMembersAreAdmins" = "모든 구성원을 관리자로 설정";
+"ChatAdmins.AllMembersAreAdminsOnHelp" = "그룹에 있는 모든 구성원은 상대 초대, 이름 및 사진을 수정할 수 있습니다.";
+"ChatAdmins.AllMembersAreAdminsOffHelp" = "그룹에 있는 관리자만 구성원을 초대, 퇴장, 이름 편집 및 사진 수정할 수 있습니다.";
+"ChatAdmins.AdminLabel" = "관리자";
+
+"Group.MessagePhotoUpdated" = "그룹 사진 업데이트됨";
+"Group.MessagePhotoRemoved" = "그룹 사진 삭제됨";
+"Group.MessageTitleUpdated" = "\"%@\"로 그룹명이 변경 됨";
+
+"Group.UpgradeNoticeHeader" = "구성원 한계치 도달";
+
+"Group.UpgradeNoticeText1" = "대화방인원 제한 및 추가 기능을 활용하시려면, 슈퍼그룹으로 업그레이드를 하세요:";
+"Group.UpgradeNoticeText2" = "• 슈퍼그룹은 {supergroup_member_limit}명까지 수용 가능합니다. \n• 새로운 참여자는 모든 대화내역을 볼 수 있습니다.\n• 관리자는 모두에게 메시지 삭제를 할 수 있습니다. \n• 기본값으로 알림이 음소거 됩니다.";
+"GroupInfo.UpgradeButton" = "슈퍼그룹으로 업그레이드하기";
+"Group.UpgradeConfirmation" = "슈퍼그룹을 보려면 구성원들이 최신 텔레그램 버전으로 업데이트 해야합니다.";
+
+"Notification.GroupMigratedToChannel" = "그룹은 슈퍼그룹으로 업그레이드 되었습니다.";
+"Notification.GroupDeactivated" = "그룹이 비활성화 됨";
+"Notification.GroupDeactivated" = "그룹이 비활성화 됨";
+"Notification.ChannelMigratedFrom" = "이 그룹은 슈퍼그룹으로 업그레이드 되었습니다.";
+
+"Conversation.StatusGroupDeactivated" = "그룹이 비활성화 됨";
+"GroupInfo.DeactivatedStatus" = "그룹이 비활성화 됨";
+
+"Notification.RenamedGroup" = "그룹 이름 변경";
+
+"Group.ErrorAddTooMuch" = "죄송합니다, 그룹방의 인원이 최대치입니다.";
+"Group.ErrorAddTooMuchBots" = "죄송합니다, 그룹방의 봇 참여수가 한계치입니다.";
+"Group.ErrorAddTooMuchAdmins" = "죄송합니다, 그룹방의 관리자수가 한계치입니다.";
+"Group.ErrorAddBlocked" = "죄송합니다, 이 유저를 그룹에 초대할 수 없습니다.";
+"Group.ErrorNotMutualContact" = "죄송합니다, 서로 연락처가 추가된 경우에만 그룹에 구성원을 추가 할 수 있습니다.";
+
+"Conversation.SendMessageErrorFlood" = "죄송합니다, 서로 연락처가 추가된 경우에만 메시지 전송이 가능합니다.";
+"Generic.ErrorMoreInfo" = "더 보기";
+
+"Notification.InvitedMany" = "%@님이 %@을 초대했습니다.";
+
+"ChannelMembers.Blacklist.EmptyText" = "그룹방에서 차단되어 퇴장당한 사용자는 관리자가 초대해야지만 그룹방에 입장이 가능합니다. 초대링크로는 초대가 되지 않습니다.";
+
+"ChannelInfo.DeleteGroup" = "그룹 삭제";
+"ChannelInfo.DeleteGroupConfirmation" = "이 그룹방을 삭제하실 경우 모든 구성원과 메시지를 삭제를 하게되며 복구가 안됩니다. 그래도 그룹방을 삭제하시겠습니까?";
+
+"ReportPeer.Report" = "신고하기";
+
+"ReportPeer.ReasonSpam" = "스팸";
+"ReportPeer.ReasonViolence" = "폭력적";
+"ReportPeer.ReasonPornography" = "음란물";
+"ReportPeer.ReasonOther" = "기타";
+
+"ReportPeer.AlertSuccess" = "감사합니다!\n빠른 시일내에 리뷰를 하도록 하겠습니다.";
+
+"Login.TermsOfServiceLabel" = "회원가입시,\n[이용약관]에 동의를 하는 것으로 간주합니다.";
+"Login.TermsOfServiceHeader" = "이용약관";
+
+"ReportPeer.ReasonOther.Placeholder" = "설명";
+"ReportPeer.ReasonOther.Title" = "신고하기";
+"ReportPeer.ReasonOther.Send" = "보낵";
+
+"Group.Management.AddModeratorHelp" = "채널 관리를 도울 수 있는 관리자를 추가 할 수 있습니다. ";
+
+"Watch.AppName" = "Telegram";
+"Watch.Compose.AddContact" = "주소록 선택";
+"Watch.Compose.CreateMessage" = "새 메시지";
+"Watch.Compose.CurrentLocation" = "현재 위치";
+"Watch.Compose.Send" = "보내기";
+"Watch.Contacts.NoResults" = "검색된\n연락처가 업음";
+"Watch.ChatList.NoConversationsTitle" = "대화 없음";
+"Watch.ChatList.NoConversationsText" = "대화를 시작하시려면,\n새 메시지를,\n강하게 누르신 후 탭하세요";
+"Watch.ChatList.Compose" = "새 메시지";
+
+"Watch.Conversation.Reply" = "답장";
+"Watch.Conversation.Unblock" = "차단 해제";
+"Watch.Conversation.UserInfo" = "정보";
+"Watch.Conversation.GroupInfo" = "그룹 정보";
+"Watch.Bot.Restart" = "재시작";
+
+"Watch.UserInfo.Title" = "정보정";
+"Watch.UserInfo.Service" = "서비스 알림";
+
+"Watch.UserInfo.Block" = "차단";
+"Watch.UserInfo.Unblock" = "차단 해제";
+"Watch.UserInfo.Mute_1" = "1시간동안 음소거";
+"Watch.UserInfo.Mute_2" = "2시간동안 음소거";
+"Watch.UserInfo.Mute_3_10" = "%@시간동안 음소거";
+"Watch.UserInfo.Mute_any" = "%@시간동안 음소거";
+"Watch.UserInfo.Mute" = "음소거";
+"Watch.UserInfo.Unmute" = "음소거 햊";
+
+"Watch.GroupInfo.Title" = "그룹 정보";
+"Watch.ChannelInfo.Title" = "채널 정보";
+
+"Watch.Message.ForwardedFrom" = "님으로 부터 전달됨";
+
+"Watch.Notification.Joined" = "님이 Telegram을 가입하였습니다.";
+
+"Watch.MessageView.Title" = "메싲";
+"Watch.MessageView.Forward" = "전달";
+"Watch.MessageView.Reply" = "답장";
+"Watch.MessageView.ViewOnPhone" = "폰에서 보기";
+
+"Watch.PhotoView.Title" = "사진";
+
+"Watch.Stickers.Recents" = "최근";
+"Watch.Stickers.RecentPlaceholder" = "가장 자주 사용하는 스티커가 표시됨";
+"Watch.Stickers.StickerPacks" = "스티커 세트";
+
+"Watch.Location.Current" = "현재 위치";
+"Watch.Location.Access" = "텔레그램이 휴대폰 위치 접근을 허용합니다.";
+
+"Watch.AuthRequired" = "시작하시려면 휴대폰에서 텔레그램에 로그인을 하세요";
+"Watch.UnlockRequired" = "휴대폰에서 텔레그램 보안을 해제";
+
+"Watch.NoConnection" = "네트워크 연결 없음";
+"Watch.ConnectionDescription" = "워치가 연결이 되야 작동이 가능합니다.";
+
+"Watch.State.Connecting" = "연결 중...";
+"Watch.State.Updating" = "업데이트 중...";
+"Watch.State.WaitingForNetwork" = "네트워크 연결 없음";
+
+"Watch.Time.ShortTodayAt" = "오늘 %@";
+"Watch.Time.ShortYesterdayAt" = "어제 %@";
+"Watch.Time.ShortWeekdayAt" = "%1$@ %2$@";
+"Watch.Time.ShortFullAt" = "%1$@ %2$@";
+
+"Watch.LastSeen.JustNow" = "방금 전";
+"Watch.LastSeen.MinutesAgo_1" = "1분 전";
+"Watch.LastSeen.MinutesAgo_2" = "2분 전";
+"Watch.LastSeen.MinutesAgo_3_10" = "%@분 전";
+"Watch.LastSeen.MinutesAgo_any" = "%@분 전";
+"Watch.LastSeen.HoursAgo_1" = "1시간 전";
+"Watch.LastSeen.HoursAgo_2" = "2시간 전";
+"Watch.LastSeen.HoursAgo_3_10" = "%@시간 전";
+"Watch.LastSeen.HoursAgo_any" = "%@ 시간 전";
+"Watch.LastSeen.TodayAt" = "오늘 %@";
+"Watch.LastSeen.YesterdayAt" = "어제 %@";
+"Watch.LastSeen.AtWeekday" = "%@";
+"Watch.LastSeen.AtDate" = "%@";
+"Watch.LastSeen.Lately" = "최근";
+"Watch.LastSeen.WithinAWeek" = "일주일 이내";
+"Watch.LastSeen.WithinAMonth" = "한달 이내";
+"Watch.LastSeen.ALongTimeAgo" = "오래 전에";
+
+"Watch.Suggestion.OK" = "확인";
+"Watch.Suggestion.ThankYou" = "감사합니다.";
+"Watch.Suggestion.Thanks" = "감사합니다!\n";
+"Watch.Suggestion.WhatsUp" = "What's up?";
+"Watch.Suggestion.Yes" = "네";
+"Watch.Suggestion.No" = "아니오";
+"Watch.Suggestion.Absolutely" = "당연합니다";
+"Watch.Suggestion.Nope" = "아니요";
+"Watch.Suggestion.TalkLater" = "나중에 다시 연락할까요?";
+"Watch.Suggestion.CantTalk" = "지금 대화를 할 수 없습니다...";
+"Watch.Suggestion.HoldOn" = "잠시만 기다려주세요...";
+"Watch.Suggestion.CallSoon" = "조금 있다가 연락하겠습니다.";
+"Watch.Suggestion.TextInABit" = "조금 있다가 문자 하겠습니다.";
+"Watch.Suggestion.BRB" = "바로 올께요.";
+"Watch.Suggestion.OnMyWay" = "가고 있습니다.";
+"Cache.Photos" = "사진";
+"Cache.Videos" = "비디오";
+"Cache.Music" = "음악";
+"Cache.Files" = "파일";
+"Cache.Clear" = "지우기 (%@)";
+"Cache.ClearNone" = "지우기";
+"Cache.ClearProgress" = "잠시만 기다려주세요...";
+"Cache.ClearEmpty" = "없음";
+"Cache.ByPeerHeader" = "대화";
+"Cache.Indexing" = "텔레그램이 현재 캐시 크기를 계산중입니다.\n이 작업은 몇 분이 걸릴 수 있습니다.";
+
+"ExplicitContent.AlertTitle" = "죄송합니다.";
+"ExplicitContent.AlertChannel" = "이 채널은 앱 스토어 규정을 위반하였기 떄문에 접근을 할 수 없습니다.";
+"ExplicitContent.AlertUser" = "이 봇은 앱 스토어 규정을 위반하였기 떄문에 접근을 할 수 없습니다.";
+
+"StickerSettings.ContextHide" = "숨김";
+"StickerSettings.ContextShow" = "보기";
+
+"Conversation.LinkDialogSave" = "저장";
+"Conversation.GifTooltip" = "저장된 GIF 파일을 보려면 탭하세요.";
+
+"AttachmentMenu.PhotoOrVideo" = "사진이나 동영상";
+"AttachmentMenu.ImageSearch" = "이미지 검색";
+"AttachmentMenu.File" = "파일";
+
+"AttachmentMenu.SendPhoto_1" = "사진 1장 보내기";
+"AttachmentMenu.SendPhoto_2" = "사진 2장 보내기";
+"AttachmentMenu.SendPhoto_3_10" = "사진 %@장 보내기";
+"AttachmentMenu.SendPhoto_any" = "사진 %@장 보내기";
+
+"AttachmentMenu.SendVideo_1" = "동영상 1개 보내기";
+"AttachmentMenu.SendVideo_2" = "동영상 2개 보내기";
+"AttachmentMenu.SendVideo_3_10" = "동영상 %@ 보내기";
+"AttachmentMenu.SendVideo_any" = "동영상 %@ 보내기";
+
+"AttachmentMenu.SendGif_1" = "GIF 파일 1개 보내기";
+"AttachmentMenu.SendGif_2" = "GIF 파일 2개 보내기";
+"AttachmentMenu.SendGif_3_10" = "GIF 파일 %@개 보내기";
+"AttachmentMenu.SendGif_any" = "GIF 파일 %@개 보내기";
+
+"AttachmentMenu.SendItem_1" = "아이템 1개 보내기";
+"AttachmentMenu.SendItem_2" = "아이템 2개 보내기";
+"AttachmentMenu.SendItem_3_10" = "아이템 %@개 보내기";
+"AttachmentMenu.SendItem_any" = "아이템 %@개 보내기";
+
+"AttachmentMenu.SendAsFile" = "파일로 보내기";
+"AttachmentMenu.SendAsFiles" = "파일로 보내기";
+
+"Conversation.Processing" = "처리중입니다..";
+
+"Conversation.MessageViaUser" = "%@을 통하여";
+
+"CreateGroup.SoftUserLimitAlert" = "이 그룹 생성을 완료하시고 슈퍼그룹으로 전환하시면 더 많은 구성원을 추가 할 수 있습니다.";
+"ChannelMembers.AllMembersMayInvite" = "모든 구성원이 초대 가능";
+"ChannelMembers.AllMembersMayInviteOnHelp" = "모든 구성원이 새로운 구성원 초대가 가능합니다.";
+"ChannelMembers.AllMembersMayInviteOffHelp" = "관리자만 구성원 초대가 가능합니다.";
+
+"Privacy.GroupsAndChannels" = "그룹";
+"Privacy.GroupsAndChannels.WhoCanAddMe" = "그룹 대화방에 초대 가능한 구성원";
+"Privacy.GroupsAndChannels.CustomHelp" = "회원님을 그룹 및 채널에 초대할 수 있는 상대방을 세세하게 설정 가능합니다.";
+"Privacy.GroupsAndChannels.AlwaysAllow" = "항상 허용";
+"Privacy.GroupsAndChannels.NeverAllow" = "항상 거부";
+"Privacy.GroupsAndChannels.CustomShareHelp" = "위의 설정과 무관하게 해당 사용자는 회원님을 그룹 및 채널에 초대 할 수 없습니다.";
+
+"Privacy.GroupsAndChannels.AlwaysAllow.Title" = "항상 허용";
+"Privacy.GroupsAndChannels.AlwaysAllow.Placeholder" = "항상 허용...";
+"Privacy.GroupsAndChannels.NeverAllow.Title" = "항상 거부";
+"Privacy.GroupsAndChannels.NeverAllow.Placeholder" = "항상 거부...";
+
+"Privacy.GroupsAndChannels.InviteToGroupError" = "죄송합니다, %@님의 개인 설정으로 인하여 %@님을 그룹에 초대 할 수 없습니다.";
+"Privacy.GroupsAndChannels.InviteToChannelError" = "죄송합니다, %@님의 개인 설정으로 인하여 %@님을 채널에 초대 할 수 없습니다.";
+"Privacy.GroupsAndChannels.InviteToChannelMultipleError" = "죄송합니다, 이 사용자들의 개인 설정으로 인하여 그룹을 생성 할 수 없습니다.";
+
+"ChannelMembers.WhoCanAddMembers" = "초대가 가능한 구성원";
+"ChannelMembers.WhoCanAddMembers.AllMembers" = "모든 구성원";
+"ChannelMembers.WhoCanAddMembers.Admins" = "관리자만 가능";
+"ChannelMembers.WhoCanAddMembersAllHelp" = "모든 구성원이 새로운 구성원 초대가 가능합니다.";
+"ChannelMembers.WhoCanAddMembersAdminsHelp" = "관리자만 구성원 초대가 가능합니다.";
+
+"ChannelMembers.GroupAdminsTitle" = "그룹 관리자";
+"ChannelMembers.ChannelAdminsTitle" = "채널 관리자";
+"MusicPlayer.VoiceNote" = "음성 메시지";
+
+"PrivacyLastSeenSettings.WhoCanSeeMyTimestamp" = "접속시간 볼 수 있는 이용자";
+
+"PrivacyLastSeenSettings.GroupsAndChannelsHelp" = "그룹 및 채널에 초대가능한 사용자 변경";
+"MusicPlayer.VoiceNote" = "음성 메시지";
+
+"Watch.Microphone.Access" = "텔레그램이 휴대폰 마이크로폰 접근을 허용합니다.";
+
+"Settings.AppleWatch" = "애플 워치";
+"AppleWatch.Title" = "애플 워치";
+"AppleWatch.ReplyPresets" = "답장 프리셋";
+"AppleWatch.ReplyPresetsHelp" = "답장시 기본 답장 멘트를 선택하시던가, 원하시는 답장으로 수정할 수 있습니다.";
+
+"KeyCommand.FocusOnInputField" = "메시지 작성";
+"KeyCommand.Find" = "검색";
+"KeyCommand.ScrollUp" = "스크롤 업";
+"KeyCommand.ScrollDown" = "스크롤 다운";
+"KeyCommand.NewMessage" = "새 메시지";
+"KeyCommand.JumpToPreviousChat" = "기존 대화로 이동";
+"KeyCommand.JumpToNextChat" = "다음 대화로 이동";
+"KeyCommand.JumpToPreviousUnreadChat" = "기존 안 읽은 대화로 이동";
+"KeyCommand.JumpToNextUnreadChat" = "다음 안 읽은 대화로 이동";
+"KeyCommand.SendMessage" = "메시지 전송";
+"KeyCommand.ChatInfo" = "대화 정보";
+
+"Conversation.SecretLinkPreviewAlert" = "비밀대화에서 링크 미리보기를 활성화하시겠습니까? 링크 프리뷰는 텔레그램 서버에서 생성이 됩니다.";
+"Conversation.SecretChatContextBotAlert" = "인라인 봇은 제3자 개발자로 부터 제공이 됩니다. 봇이 작동을 하려면 봇의 아이디 및 뒤의 메시지가 담당 개발자에게 전송이 됩니다.";
+
+"Map.OpenInWaze" = "Waze로 열기";
+
+"ShareMenu.CopyShareLink" = "공유 링크 복사";
+
+"Channel.SignMessages" = "메시지 서명";
+"Channel.SignMessages.Help" = "메시지 작성하는 관리자 추가";
+
+"Channel.EditMessageErrorGeneric" = "죄송합니다, 메시지 수정을 할 수 없습니다.";
+
+"ChannelInfo.InvitationLinkDoesNotExist" = "죄송합니다, 채널이 더이상 존재하지 않습니다.";
+
+"Conversation.InputTextSilentBroadcastPlaceholder" = "Silent Broadcast";
+"Conversation.SilentBroadcastTooltipOn" = "메시지 알림 허용";
+"Conversation.SilentBroadcastTooltipOff" = "메시지 미알림 대상";

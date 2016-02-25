@@ -66,9 +66,9 @@
     return [filesDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@%" PRIx64 ".mov", local ? @"local" : @"remote", documentId]];
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message document:(TGDocumentMediaAttachment *)document authorPeer:(id)authorPeer context:(TGModernViewContext *)context
+- (instancetype)initWithMessage:(TGMessage *)message document:(TGDocumentMediaAttachment *)document authorPeer:(id)authorPeer viaUser:(TGUser *)viaUser context:(TGModernViewContext *)context
 {
-    self = [super initWithMessage:message authorPeer:authorPeer context:context];
+    self = [super initWithMessage:message authorPeer:authorPeer viaUser:viaUser context:context];
     if (self != nil)
     {
         CGSize dimensions = CGSizeZero;
@@ -130,7 +130,11 @@
         [_contentModel addSubmodel:_documentNameModel];
         
         NSString *sizeString = @"";
-        if (document.size >= 1024 * 1024)
+        if (document.size == INT_MAX)
+        {
+            sizeString = TGLocalized(@"Conversation.Processing");
+        }
+        else if (document.size >= 1024 * 1024)
         {
             sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Megabytes"), (float)(float)document.size / (1024 * 1024)];
         }
@@ -170,9 +174,49 @@
     return self;
 }
 
-- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage
+- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
+{
+    [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
+    
+    TGDocumentMediaAttachment *document = nil;
+    for (TGMediaAttachment *attachment in message.mediaAttachments)
+    {
+        if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
+        {
+            document = (TGDocumentMediaAttachment *)attachment;
+            break;
+        }
+    }
+    
+    if (document == nil)
+        return;
+    
+    NSString *sizeString = @"";
+    if (document.size == INT_MAX)
+    {
+        sizeString = TGLocalized(@"Conversation.Processing");
+    }
+    else if (document.size >= 1024 * 1024)
+    {
+        sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Megabytes"), (float)(float)document.size / (1024 * 1024)];
+    }
+    else if (document.size >= 1024)
+    {
+        sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Kilobytes"), (int)(int)(document.size / 1024)];
+    }
+    else
+    {
+        sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Bytes"), (int)(int)(document.size)];
+    }
+    
+    _sizeText = sizeString;
+    if (sizeUpdated != NULL)
+        *sizeUpdated = true;
+}
+
+- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage delayDisplay:(bool)delayDisplay
 {   
-    [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage];
+    [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage delayDisplay:delayDisplay];
     
     _mediaIsAvailable = mediaIsAvailable;
     

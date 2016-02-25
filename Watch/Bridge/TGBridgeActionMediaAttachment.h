@@ -22,7 +22,11 @@ typedef enum
     TGBridgeMessageActionJoinedByLink = 17,
     TGBridgeMessageActionChannelCreated = 18,
     TGBridgeMessageActionChannelCommentsStatusChanged = 19,
-    TGBridgeMessageActionChannelInviter = 20
+    TGBridgeMessageActionChannelInviter = 20,
+    TGBridgeMessageActionGroupMigratedTo = 21,
+    TGBridgeMessageActionGroupDeactivated = 22,
+    TGBridgeMessageActionGroupActivated = 23,
+    TGBridgeMessageActionChannelMigratedFrom = 24
 } TGBridgeMessageAction;
 
 @interface TGBridgeActionMediaAttachment : TGBridgeMediaAttachment

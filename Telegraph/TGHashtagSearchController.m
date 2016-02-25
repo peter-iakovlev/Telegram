@@ -269,12 +269,22 @@ extern NSString *authorNameYou;
             TGActionMediaAttachment *actionAttachment = (TGActionMediaAttachment *)attachment;
             if (actionAttachment.actionType == TGMessageActionChatAddMember || actionAttachment.actionType == TGMessageActionChatDeleteMember)
             {
-                NSNumber *nUid = [actionAttachment.actionData objectForKey:@"uid"];
-                if (nUid != nil)
-                {
-                    TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
-                    if (user != nil)
-                        [messageUsers setObject:user forKey:nUid];
+                NSArray *uids = actionAttachment.actionData[@"uids"];
+                if (uids.count != 0) {
+                    for (NSNumber *nUid in uids) {
+                        TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                        if (user != nil) {
+                            messageUsers[nUid] = user;
+                        }
+                    }
+                } else {
+                    NSNumber *nUid = [actionAttachment.actionData objectForKey:@"uid"];
+                    if (nUid != nil)
+                    {
+                        TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                        if (user != nil)
+                            [messageUsers setObject:user forKey:nUid];
+                    }
                 }
             }
             

@@ -20,6 +20,8 @@
         else if (self.textAlignment == NSTextAlignmentRight)
             placeholderOrigin.x = rect.size.width - placeholderSize.width;
         
+        placeholderOrigin.y += TGRetinaPixel;
+        
         [self.placeholder drawAtPoint:placeholderOrigin withFont:_placeholderFont];
     }
 }

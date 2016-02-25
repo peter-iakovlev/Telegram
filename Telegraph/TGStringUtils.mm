@@ -1,7 +1,5 @@
 #import "TGStringUtils.h"
 
-#import "TGFont.h"
-
 #import <CommonCrypto/CommonDigest.h>
 
 typedef struct {
@@ -491,11 +489,12 @@ static HTMLEscapeMap gAsciiHTMLEscapeMap[] = {
 
     for (NSString *keyValuePair in urlComponents)
     {
-        NSArray *pairComponents = [keyValuePair componentsSeparatedByString:@"="];
-        if (pairComponents.count == 2)
-        {
-            NSString *key = [pairComponents objectAtIndex:0];
-            NSString *value = [[[pairComponents objectAtIndex:1] stringByReplacingOccurrencesOfString:@"+" withString:@" "] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+        NSRange equalsSignRange = [keyValuePair rangeOfString:@"="];
+        if (equalsSignRange.location != NSNotFound) {
+            NSString *key = [keyValuePair substringToIndex:equalsSignRange.location];
+            NSString *value = [[[keyValuePair substringFromIndex:equalsSignRange.location + equalsSignRange.length] stringByReplacingOccurrencesOfString:@"+" withString:@" "] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+
+            
             [queryStringDictionary setObject:value forKey:key];
         }
     }
@@ -894,26 +893,37 @@ static HTMLEscapeMap gAsciiHTMLEscapeMap[] = {
     return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", (int)number]];
 }
 
-+ (NSString *)stringForFileSize:(NSUInteger)size
++ (NSString *)stringForFileSize:(int64_t)size
 {
     NSString *format = @"";
-    if (size < 1024)
+    float floatSize = size;
+    bool useFloat = false;
+    
+    if (floatSize < 1024)
         format = TGLocalized(@"FileSize.B");
     else if (size < 1024 * 1024)
     {
         format = TGLocalized(@"FileSize.KB");
-        size /= 1024;
+        floatSize = size / 1024;
     }
-    else
+    else if (size < 1024 * 1024 * 1024)
     {
         format = TGLocalized(@"FileSize.MB");
-        size /= 1024 * 1024;
+        floatSize = size / (1024 * 1024);
+    } else {
+        format = TGLocalized(@"FileSize.GB");
+        floatSize = size / (1024.0f * 1024.0f * 1024.0f);
+        useFloat = true;
     }
     
-    return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", (int)size]];
+    if (useFloat) {
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%0.1f", floatSize]];
+    } else {
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", (int)floatSize]];
+    }
 }
 
-+ (NSString *)stringForFileSize:(NSUInteger)size precision:(NSInteger)precision
++ (NSString *)stringForFileSize:(int64_t)size precision:(NSInteger)precision
 {
     NSString *string = @"";
     if (size < 1024)
@@ -1296,7 +1306,7 @@ bool TGIsLocaleArabic()
     return hasNonWhitespace;
 }
 
-- (NSAttributedString *)attributedStringWithFormattingAndFontSize:(CGFloat)fontSize lineSpacing:(CGFloat)lineSpacing paragraphSpacing:(CGFloat)paragraphSpacing
+- (NSAttributedString *)attributedFormattedStringWithRegularFont:(UIFont *)regularFont boldFont:(UIFont *)boldFont lineSpacing:(CGFloat)lineSpacing paragraphSpacing:(CGFloat)paragraphSpacing alignment:(NSTextAlignment)alignment
 {
     NSMutableArray *boldRanges = [[NSMutableArray alloc] init];
     
@@ -1321,16 +1331,16 @@ bool TGIsLocaleArabic()
     NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
     style.lineSpacing = lineSpacing;
     style.lineBreakMode = NSLineBreakByWordWrapping;
-    style.alignment = NSTextAlignmentLeft;
+    style.alignment = alignment;
     style.paragraphSpacing = paragraphSpacing;
     
     NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:cleanText attributes:@
     {
     }];
     
-    [attributedString addAttributes:@{NSParagraphStyleAttributeName: style, NSFontAttributeName: TGSystemFontOfSize(fontSize)} range:NSMakeRange(0, attributedString.length)];
+    [attributedString addAttributes:@{NSParagraphStyleAttributeName: style, NSFontAttributeName: regularFont} range:NSMakeRange(0, attributedString.length)];
     
-    NSDictionary *boldAttributes = @{NSFontAttributeName: TGBoldSystemFontOfSize(fontSize)};
+    NSDictionary *boldAttributes = @{NSFontAttributeName: boldFont};
     for (NSValue *nRange in boldRanges)
     {
         [attributedString addAttributes:boldAttributes range:[nRange rangeValue]];

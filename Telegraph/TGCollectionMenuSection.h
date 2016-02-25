@@ -23,5 +23,6 @@
 - (bool)deleteItem:(TGCollectionItem *)item;
 - (NSUInteger)indexOfItem:(TGCollectionItem *)item;
 - (void)addItem:(TGCollectionItem *)item;
+- (void)replaceItems:(NSArray *)items;
 
 @end

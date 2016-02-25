@@ -14,7 +14,7 @@
 
 @implementation TGPreparedRemoteImageMessage
 
-- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage
+- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult
 {
     self = [super init];
     if (self != nil)
@@ -29,7 +29,8 @@
         _accessHash = accessHash;
         _imageInfo = imageInfo;
         _caption = caption;
-        _replyMessage = replyMessage;
+        self.replyMessage = replyMessage;
+        self.botContextResult = botContextResult;
     }
     return self;
 }
@@ -51,12 +52,18 @@
     imageAttachment.caption = _caption;
     [attachments addObject:imageAttachment];
     
-    if (_replyMessage != nil)
+    if (self.replyMessage != nil)
     {
         TGReplyMessageMediaAttachment *replyMedia = [[TGReplyMessageMediaAttachment alloc] init];
-        replyMedia.replyMessageId = _replyMessage.mid;
-        replyMedia.replyMessage = _replyMessage;
+        replyMedia.replyMessageId = self.replyMessage.mid;
+        replyMedia.replyMessage = self.replyMessage;
         [attachments addObject:replyMedia];
+    }
+    
+    if (self.botContextResult != nil) {
+        [attachments addObject:self.botContextResult];
+        
+        [attachments addObject:[[TGViaUserAttachment alloc] initWithUserId:self.botContextResult.userId username:nil]];
     }
     
     message.mediaAttachments = attachments;

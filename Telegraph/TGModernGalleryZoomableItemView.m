@@ -76,6 +76,11 @@
     return nil;
 }
 
+- (UIView *)transitionContentView
+{
+    return [self contentView];
+}
+
 - (void)scrollViewWillBeginZooming:(UIScrollView *)__unused scrollView withView:(UIView *)__unused view
 {
 }

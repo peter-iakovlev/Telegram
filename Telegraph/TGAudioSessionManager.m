@@ -3,6 +3,8 @@
 #import <pthread.h>
 #import <AVFoundation/AVFoundation.h>
 
+#import "TGTelegraph.h"
+
 @interface TGAudioSessionManager ()
 {
     pthread_mutex_t _mutex;
@@ -69,6 +71,10 @@
     NSArray *interruptedToInvoke = nil;
     id<SDisposable> result = nil;
     
+    if (type == TGAudioSessionTypePlayVideo) {
+        [TGTelegraphInstance.musicPlayer controlPause];
+    }
+    
     pthread_mutex_lock(&_mutex);
     {
         if (_isInterrupting)
@@ -96,17 +102,16 @@
                 
                 NSError *error = nil;
                 
-                TGLog(@"(TGAudioSessionManager setting category %d active)", (int)type);
-                [[AVAudioSession sharedInstance] setCategory:[self nativeCategoryForType:type] error:&error];
+                TGLog(@"(TGAudioSessionManager setting category %d active overriding port: %d)", (int)type, ((type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo)) ? 1 : 0);
+                [[AVAudioSession sharedInstance] setCategory:[self nativeCategoryForType:type] withOptions:(type == TGAudioSessionTypePlayAndRecord || type == TGAudioSessionTypePlayAndRecordHeadphones) ? AVAudioSessionCategoryOptionAllowBluetooth : 0 error:&error];
                 if (error != nil)
                     TGLog(@"(TGAudioSessionManager setting category %d error %@)", (int)type, error);
                 [[AVAudioSession sharedInstance] setActive:true error:&error];
                 if (error != nil)
-                    TGLog(@"(TGAudioSessionManager setting active error %@)", (int)type, error);
-                
-                [[AVAudioSession sharedInstance] overrideOutputAudioPort:type == TGAudioSessionTypePlayAndRecordHeadphones ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error];
-                //if (error != nil)
-                //    TGLog(@"(TGAudioSessionManager override port error %@)", error);
+                    TGLog(@"(TGAudioSessionManager setting active error %@)", error);
+                [[AVAudioSession sharedInstance] overrideOutputAudioPort:(type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo) ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error];
+                if (error != nil)
+                    TGLog(@"(TGAudioSessionManager override port error %@)", error);
             }
             
             if (interrupted)

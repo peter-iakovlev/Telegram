@@ -10,16 +10,16 @@
     UIView *_buttonsWrapperView;
     TGModernButton *_cancelButton;
     TGModernButton *_doneButton;
-
-    NSArray *_buttons;
     
     CGFloat _landscapeSize;
+    
+    UILongPressGestureRecognizer *_longPressGestureRecognizer;
 }
 @end
 
 @implementation TGPhotoToolbarView
 
-- (instancetype)initWithBackButtonTitle:(NSString *)backButtonTitle doneButtonTitle:(NSString *)doneButtonTitle accentedDone:(bool)accentedDone solidBackground:(bool)solidBackground tabs:(NSArray *)tabs
+- (instancetype)initWithBackButtonTitle:(NSString *)backButtonTitle doneButtonTitle:(NSString *)doneButtonTitle accentedDone:(bool)accentedDone solidBackground:(bool)solidBackground
 {
     self = [super initWithFrame:CGRectZero];
     if (self != nil)
@@ -58,27 +58,18 @@
         [_doneButton addTarget:self action:@selector(doneButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_backgroundView addSubview:_doneButton];
         
-        NSMutableArray *buttons = [[NSMutableArray alloc] init];
-        for (NSNumber *editorTab in tabs)
-        {
-            TGPhotoEditorButton *button = [TGPhotoToolbarView buttonForEditorTab:(int)editorTab.integerValue];
-            if (button == nil)
-                continue;
-            
-            [button addTarget:self action:@selector(tabButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
-            
-            [buttons addObject:button];
-            [_buttonsWrapperView addSubview:button];
-        }
-        _buttons = buttons;
+        _longPressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(doneButtonLongPressed:)];
+        _longPressGestureRecognizer.minimumPressDuration = 0.65;
+        [_doneButton addGestureRecognizer:_longPressGestureRecognizer];
     }
     return self;
 }
 
-+ (TGPhotoEditorButton *)buttonForEditorTab:(TGPhotoEditorTab)editorTab
+- (TGPhotoEditorButton *)buttonForTab:(TGPhotoEditorTab)editorTab
 {
     TGPhotoEditorButton *button = [[TGPhotoEditorButton alloc] initWithFrame:CGRectMake(0, 0, 28, 28)];
     button.tag = editorTab;
+    [button addTarget:self action:@selector(tabButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
     
     switch (editorTab)
     {
@@ -108,6 +99,50 @@
     return button;
 }
 
+- (void)setToolbarTabs:(TGPhotoEditorTab)tabs animated:(bool)animated
+{
+    if (tabs == _currentTabs)
+        return;
+    
+    UIView *transitionView = nil;
+    if (animated && _currentTabs != TGPhotoEditorNoneTab)
+    {
+        transitionView = [_buttonsWrapperView snapshotViewAfterScreenUpdates:false];
+        transitionView.frame = _buttonsWrapperView.frame;
+        [_buttonsWrapperView.superview addSubview:transitionView];
+    }
+    
+    _currentTabs = tabs;
+    
+    NSArray *buttons = [_buttonsWrapperView.subviews copy];
+    for (UIView *view in buttons)
+        [view removeFromSuperview];
+    
+    if (_currentTabs & TGPhotoEditorCaptionTab)
+        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorCaptionTab]];
+    if (_currentTabs & TGPhotoEditorCropTab)
+        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorCropTab]];
+    if (_currentTabs & TGPhotoEditorToolsTab)
+        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorToolsTab]];
+    if (_currentTabs & TGPhotoEditorRotateTab)
+        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorRotateTab]];
+    
+    [self setNeedsLayout];
+    
+    if (animated)
+    {
+        _buttonsWrapperView.alpha = 0.0f;
+        [UIView animateWithDuration:0.15 animations:^
+        {
+            _buttonsWrapperView.alpha = 1.0f;
+            transitionView.alpha = 0.0f;
+        } completion:^(__unused BOOL finished)
+        {
+            [transitionView removeFromSuperview];
+        }];
+    }
+}
+
 - (CGRect)cancelButtonFrame
 {
     return _cancelButton.frame;
@@ -125,6 +160,15 @@
         self.donePressed();
 }
 
+- (void)doneButtonLongPressed:(UILongPressGestureRecognizer *)gestureRecognizer
+{
+    if (gestureRecognizer.state == UIGestureRecognizerStateBegan)
+    {
+        if (self.doneLongPressed != nil)
+            self.doneLongPressed(_doneButton);
+    }
+}
+
 - (void)tabButtonPressed:(TGPhotoEditorButton *)sender
 {
     if (self.tabPressed != nil)
@@ -133,7 +177,7 @@
 
 - (void)setActiveTab:(TGPhotoEditorTab)tab
 {
-    for (TGPhotoEditorButton *button in _buttons)
+    for (TGPhotoEditorButton *button in _buttonsWrapperView.subviews)
         [button setSelected:(button.tag == tab) animated:false];
 }
 
@@ -177,23 +221,23 @@
     
     if (animated)
     {
-        for (TGPhotoEditorButton *button in _buttons)
+        for (TGPhotoEditorButton *button in _buttonsWrapperView.subviews)
             button.hidden = false;
         
         [UIView animateWithDuration:0.2f
                          animations:^
         {
-            for (TGPhotoEditorButton *button in _buttons)
-                button.alpha = (float)targetAlpha;
+            for (TGPhotoEditorButton *button in _buttonsWrapperView.subviews)
+                button.alpha = targetAlpha;
         } completion:^(__unused BOOL finished)
         {
-            for (TGPhotoEditorButton *button in _buttons)
+            for (TGPhotoEditorButton *button in _buttonsWrapperView.subviews)
                 button.hidden = hidden;
         }];
     }
     else
     {
-        for (TGPhotoEditorButton *button in _buttons)
+        for (TGPhotoEditorButton *button in _buttonsWrapperView.subviews)
         {
             button.alpha = (float)targetAlpha;
             button.hidden = hidden;
@@ -201,37 +245,10 @@
     }
 }
 
-- (void)setEditButtonsHighlighted:(NSInteger)buttons
+- (void)setEditButtonsHighlighted:(TGPhotoEditorTab)buttons
 {
-    for (TGPhotoEditorButton *button in _buttons)
+    for (TGPhotoEditorButton *button in _buttonsWrapperView.subviews)
         button.active = (buttons & button.tag);
-}
-
-- (void)setTab:(TGPhotoEditorTab)tab hidden:(bool)hidden
-{
-    TGPhotoEditorButton *tabButton = nil;
-    for (TGPhotoEditorButton *button in _buttons)
-    {
-        if (button.tag == tab)
-        {
-            tabButton = button;
-            break;
-        }
-    }
-    
-    if (tabButton == nil)
-        return;
-         
-    if (hidden)
-    {
-        if (tabButton.superclass != nil)
-            [tabButton removeFromSuperview];
-    }
-    else
-    {
-        if (tabButton.superview == nil)
-            [_buttonsWrapperView addSubview:tabButton];
-    }
 }
 
 - (void)layoutSubviews
@@ -239,7 +256,7 @@
     _backgroundView.frame = self.bounds;
     _buttonsWrapperView.frame = _backgroundView.bounds;
     
-    NSArray *buttons = _buttons;
+    NSArray *buttons = _buttonsWrapperView.subviews;
     
     if (self.frame.size.width > self.frame.size.height)
     {

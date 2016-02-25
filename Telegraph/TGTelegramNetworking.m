@@ -53,6 +53,9 @@
 
 #import "TLRPCmessages_sendMessage_manual.h"
 #import "TLRPCmessages_sendMedia_manual.h"
+#import "TLRPCmessages_sendInlineBotResult.h"
+
+#import "TGStringUtils.h"
 
 #import "../../config.h"
 
@@ -157,6 +160,26 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
 #endif
         
         MTApiEnvironment *apiEnvironment = [[MTApiEnvironment alloc] init];
+        
+        apiEnvironment.tcpPayloadPrefix = [[[NSUserDefaults standardUserDefaults] objectForKey:@"network_tcpPayloadPrefix"] dataByDecodingHexString];
+        NSMutableDictionary *datacenterAddressOverrides = [[NSMutableDictionary alloc] init];
+        for (int i = 0; i < 5; i++) {
+            NSString *text = [[NSUserDefaults standardUserDefaults] objectForKey:[NSString stringWithFormat:@"network_datacenterAddress_%d", i + 1]];
+            if (text.length != 0) {
+                NSRange portRange = [text rangeOfString:@":"];
+                NSString *ip = nil;
+                uint16_t port = 443;
+                if (portRange.location != NSNotFound) {
+                    ip = [text substringToIndex:portRange.location];
+                    port = (uint16_t)[[text substringFromIndex:portRange.location + 1] intValue];
+                } else {
+                    ip = text;
+                }
+                datacenterAddressOverrides[@(i + 1)] = [[MTDatacenterAddress alloc] initWithIp:ip port:port preferForMedia:false restrictToTcp:false];
+            }
+        }
+        apiEnvironment.datacenterAddressOverrides = datacenterAddressOverrides;
+        
         NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
         
         int32_t apiId = 0;
@@ -175,10 +198,10 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
         if (_isTestingEnvironment)
         {
             [_context setSeedAddressSetForDatacenterWithId:1 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.10" port:443 preferForMedia:false]
+                [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.10" port:443 preferForMedia:false restrictToTcp:false]
             ]]];
             [_context setSeedAddressSetForDatacenterWithId:2 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                                                                                                                  [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.40" port:443 preferForMedia:false]
+                                                                                                                                  [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.40" port:443 preferForMedia:false restrictToTcp:false]
                                                                                                                                   ]]];
         }
         else
@@ -186,23 +209,23 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
             [_context performBatchUpdates:^
             {
                 [_context setSeedAddressSetForDatacenterWithId:1 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.50" port:443 preferForMedia:false]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.50" port:443 preferForMedia:false restrictToTcp:false]
                 ]]];
                 
                 [_context setSeedAddressSetForDatacenterWithId:2 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.51" port:443 preferForMedia:false]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.51" port:443 preferForMedia:false restrictToTcp:false]
                 ]]];
                 
                 [_context setSeedAddressSetForDatacenterWithId:3 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.100" port:443 preferForMedia:false]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.100" port:443 preferForMedia:false restrictToTcp:false]
                 ]]];
 
                 [_context setSeedAddressSetForDatacenterWithId:4 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.91" port:443 preferForMedia:false]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.91" port:443 preferForMedia:false restrictToTcp:false]
                 ]]];
 
                 [_context setSeedAddressSetForDatacenterWithId:5 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.171.5" port:443 preferForMedia:false]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.171.5" port:443 preferForMedia:false restrictToTcp:false]
                 ]]];
             }];
         }
@@ -228,6 +251,10 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
                 nDefaultDatacenterId = @(2);
         }
         [self moveToDatacenterId:[nDefaultDatacenterId integerValue]];
+        
+#ifdef DEBUG
+        TGLog(@"auth key id: %llx", [_context authInfoForDatacenterWithId:[nDefaultDatacenterId integerValue]].authKeyId);
+#endif
         
         [ActionStageInstance() requestActor:@"/tg/datacenterWatchdog" options:nil flags:0 watcher:self];
         
@@ -313,6 +340,7 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
             dict[@"protected"] = @(password != nil);
             if (password != nil)
             {
+                bool touchId = [[[NSUserDefaults standardUserDefaults] objectForKey:@"Passcode_useTouchId"] boolValue];
                 if (isStrong)
                 {
                     NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
@@ -349,11 +377,13 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
                     dict[@"iv"] = iv;
                     dict[@"checksum"] = plainChecksum;
                     dict[@"salt"] = salt;
+                    dict[@"touchId"] = @(touchId);
                 }
                 else
                 {
                     dict[@"data"] = data;
                     dict[@"password"] = password;
+                    dict[@"touchId"] = @(touchId);
                 }
             }
             else
@@ -911,14 +941,14 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
                         
                         id internalId = request.internalId;
                         [currentCollectedForwardMessagesDisposable add:[[SBlockDisposable alloc] initWithBlock:^
-                                                                        {
-                                                                            [_requestService removeRequestByInternalId:internalId];
-                                                                            
-                                                                            for (void (^messageCompletionBlock)(id, NSTimeInterval, id) in messageDescs[@"completions"])
-                                                                            {
-                                                                                messageCompletionBlock(nil, 0, [[TLRpcError$rpc_error alloc] init]);
-                                                                            }
-                                                                        }]];
+                        {
+                            [_requestService removeRequestByInternalId:internalId];
+                            
+                            for (void (^messageCompletionBlock)(id, int64_t, id) in messageDescs[@"completions"])
+                            {
+                                messageCompletionBlock(nil, 0, [[TLRpcError$rpc_error alloc] init]);
+                            }
+                        }]];
                         
                         currentCollectedForwardMessagesDisposable = nil;
                     }
@@ -955,7 +985,8 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
                 [TLRPCmessages_sendMedia_manual class],
                 [TLRPCmessages_forwardMessages class],
                 [TLRPCmessages_sendEncrypted class],
-                [TLRPCmessages_sendEncryptedFile class]
+                [TLRPCmessages_sendEncryptedFile class],
+                [TLRPCmessages_sendInlineBotResult class]
             ];
         });
         
@@ -978,8 +1009,9 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
             }
         }
         
-        if ([request.body isKindOfClass:[TLRPCmessages_sendMessage_manual class]] || [request.body isKindOfClass:[TLRPCmessages_forwardMessages class]] || [request.body isKindOfClass:[TLRPCmessages_sendEncrypted class]])
+        if ([request.body isKindOfClass:[TLRPCmessages_sendMessage_manual class]] || [request.body isKindOfClass:[TLRPCmessages_forwardMessages class]] || [request.body isKindOfClass:[TLRPCmessages_sendEncrypted class]] || [request.body isKindOfClass:[TLRPCmessages_sendInlineBotResult class]]) {
             request.hasHighPriority = true;
+        }
         
         [request setShouldContinueExecutionWithErrorContext:^bool(__unused MTRequestErrorContext *errorContext)
         {
@@ -1258,7 +1290,8 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
                 [TLRPCmessages_sendMedia_manual class],
                 [TLRPCmessages_forwardMessages class],
                 [TLRPCmessages_sendEncrypted class],
-                [TLRPCmessages_sendEncryptedFile class]
+                [TLRPCmessages_sendEncryptedFile class],
+                [TLRPCmessages_sendInlineBotResult class]
             ];
         });
         
@@ -1281,9 +1314,10 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
             }
         }
         
-        if ([request.body isKindOfClass:[TLRPCmessages_sendMessage_manual class]] || [request.body isKindOfClass:[TLRPCmessages_forwardMessages class]] || [request.body isKindOfClass:[TLRPCmessages_sendEncrypted class]])
+        if ([request.body isKindOfClass:[TLRPCmessages_sendMessage_manual class]] || [request.body isKindOfClass:[TLRPCmessages_forwardMessages class]] || [request.body isKindOfClass:[TLRPCmessages_sendEncrypted class]] || [request.body isKindOfClass:[TLRPCmessages_sendInlineBotResult class]]) {
             request.hasHighPriority = true;
-        
+        }
+            
         [request setShouldContinueExecutionWithErrorContext:^bool(__unused MTRequestErrorContext *errorContext)
         {
             if (errorContext.floodWaitSeconds > 0)

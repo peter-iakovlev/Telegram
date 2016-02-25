@@ -29,15 +29,40 @@
     {
         case TGMessageActionChatEditTitle:
         {
-            messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.RenamedChat"), [self titleForPeer:author shortName:false]];
+            if ([author isKindOfClass:[TGConversation class]]) {
+                if (((TGConversation *)author).isChannelGroup) {
+                    messageText = TGLocalized(@"Notification.RenamedGroup");
+                } else {
+                    messageText = TGLocalized(@"Notification.RenamedChannel");
+                }
+            } else {
+                messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.RenamedChat"), [self titleForPeer:author shortName:false]];
+            }
             break;
         }
         case TGMessageActionChatEditPhoto:
         {
-            if ([(TGImageMediaAttachment *)[actionMedia.actionData objectForKey:@"photo"] imageInfo] == nil)
-                messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.RemovedGroupPhoto"), [self titleForPeer:author shortName:false]];
-            else
-                messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.ChangedGroupPhoto"), [self titleForPeer:author shortName:false]];
+            if ([(TGImageMediaAttachment *)[actionMedia.actionData objectForKey:@"photo"] imageInfo] == nil) {
+                if ([author isKindOfClass:[TGConversation class]]) {
+                    if (((TGConversation *)author).isChannelGroup) {
+                        messageText = TGLocalized(@"Group.MessagePhotoRemoved");
+                    } else {
+                        messageText = TGLocalized(@"Channel.MessagePhotoRemoved");
+                    }
+                } else {
+                    messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.RemovedGroupPhoto"), [self titleForPeer:author shortName:false]];
+                }
+            } else {
+                if ([author isKindOfClass:[TGConversation class]]) {
+                    if (((TGConversation *)author).isChannelGroup) {
+                        messageText = TGLocalized(@"Group.MessagePhotoUpdated");
+                    } else {
+                        messageText = TGLocalized(@"Channel.MessagePhotoUpdated");
+                    }
+                } else {
+                    messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.ChangedGroupPhoto"), [self titleForPeer:author shortName:false]];
+                }
+            }
             break;
         }
         case TGMessageActionUserChangedPhoto:
@@ -50,14 +75,44 @@
         }
         case TGMessageActionChatAddMember:
         {
-            NSNumber *nUid = [actionMedia.actionData objectForKey:@"uid"];
-            if (nUid != nil)
-            {
-                TGUser *subjectUser = [TGDatabaseInstance() loadUser:[nUid intValue]];
-                if ([author isKindOfClass:[TGUser class]] && ((TGUser *)author).uid == subjectUser.uid)
+            NSArray *uids = actionMedia.actionData[@"uids"];
+            
+            if (uids != nil) {
+                NSMutableArray *subjectUsers = [[NSMutableArray alloc] init];
+                for (NSNumber *nUid in uids) {
+                    TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                    if (user != nil) {
+                        [subjectUsers addObject:user];
+                    }
+                }
+                
+                int32_t authorUid = 0;
+                if ([author isKindOfClass:[TGUser class]]) {
+                    authorUid = ((TGUser *)author).uid;
+                }
+                
+                if (subjectUsers.count == 1 && authorUid == ((TGUser *)subjectUsers[0]).uid) {
                     messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.JoinedChat"), [self titleForPeer:author shortName:false]];
-                else
-                    messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.Invited"), [self titleForPeer:author shortName:false], subjectUser.displayName];
+                } else {
+                    NSMutableString *subjectNames = [[NSMutableString alloc] init];
+                    for (TGUser *user in subjectUsers) {
+                        if (subjectNames.length != 0) {
+                            [subjectNames appendString:@", "];
+                        }
+                        [subjectNames appendString:user.displayName];
+                    }
+                    messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.Invited"), [self titleForPeer:author shortName:false], subjectNames];
+                }
+            } else {
+                NSNumber *nUid = [actionMedia.actionData objectForKey:@"uid"];
+                if (nUid != nil)
+                {
+                    TGUser *subjectUser = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                    if ([author isKindOfClass:[TGUser class]] && ((TGUser *)author).uid == subjectUser.uid)
+                        messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.JoinedChat"), [self titleForPeer:author shortName:false]];
+                    else
+                        messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.Invited"), [self titleForPeer:author shortName:false], subjectUser.displayName];
+                }
             }
             
             break;
@@ -83,12 +138,23 @@
         }
         case TGMessageActionChannelCreated:
         {
-            messageText = TGLocalized(@"Notification.CreatedChannel");
+            if ([author isKindOfClass:[TGConversation class]] && ((TGConversation *)author).isChannelGroup) {
+                messageText = TGLocalized(@"Notification.CreatedGroup");
+            } else {
+                messageText = TGLocalized(@"Notification.CreatedChannel");
+            }
+
             break;
         }
-        case TGMessageActionChannelCommentsStatusChanged:
+        case TGMessageActionChannelMigratedFrom:
         {
-            messageText = [actionMedia.actionData[@"enabled"] boolValue] ? TGLocalized(@"Channel.NotificationCommentsEnabled") : TGLocalized(@"Channel.NotificationCommentsDisabled");;
+            messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.ChannelMigratedFrom"), actionMedia.actionData[@"title"]];
+            break;
+        }
+        case TGMessageActionJoinedByLink:
+        {
+            messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.JoinedGroupByLink"), [self titleForPeer:author shortName:false]];
+            
             break;
         }
         default:

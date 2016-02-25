@@ -3,7 +3,7 @@
 #import "PGCameraMovieWriter.h"
 #import "PGCameraDeviceAngleSampler.h"
 
-#import "ATQueue.h"
+#import "SQueue.h"
 
 #import "TGAccessChecker.h"
 #import "TGCameraPreviewView.h"
@@ -33,6 +33,7 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
     bool _wasCapturingOnEnterBackground;
     
     bool _capturing;
+    bool _moment;
     
     TGCameraPreviewView *_previewView;
 }
@@ -109,7 +110,7 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
     TGLog(@"ERROR: Camera runtime error: %@", notification.userInfo[AVCaptureSessionErrorKey]);
 
     __weak PGCamera *weakSelf = self;
-    TGDispatchAfter(1.5f, [PGCamera cameraQueue].nativeQueue, ^
+    TGDispatchAfter(1.5f, [PGCamera cameraQueue]._dispatch_queue, ^
     {
         __strong PGCamera *strongSelf = weakSelf;
         if (strongSelf == nil || strongSelf->_invalidated)
@@ -133,6 +134,9 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
 
 - (void)handleInterrupted:(NSNotification *)notification
 {
+    if (iosMajorVersion() < 9)
+        return;
+    
     AVCaptureSessionInterruptionReason reason = [notification.userInfo[AVCaptureSessionInterruptionReasonKey] integerValue];
     TGLog(@"WARNING: Camera was interrupted with reason %d", reason);
     if (self.captureInterrupted != nil)
@@ -201,7 +205,6 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
 - (bool)isCapturing
 {
     return _capturing;
-//    return self.captureSession.isRunning;
 }
 
 - (void)startCaptureForResume:(bool)resume completion:(void (^)(void))completion
@@ -292,7 +295,7 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
 
 - (void)resetTerminal:(bool)__unused terminal synchronous:(bool)synchronous completion:(void (^)(void))completion
 {
-    [[PGCamera cameraQueue] dispatch:^
+    void (^block)(void) = ^
     {
         [self _unsubscribeFromCameraChanges];
         [self.captureSession reset];
@@ -300,7 +303,12 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
         
         if (completion != nil)
             completion();
-    } synchronous:synchronous];
+    };
+    
+    if (synchronous)
+        [[PGCamera cameraQueue] dispatchSync:block];
+    else
+        [[PGCamera cameraQueue] dispatch:block];
 }
 
 #pragma mark - 
@@ -320,7 +328,6 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
         TGCameraPreviewView *previewView = _previewView;
         AVCaptureConnection *previewConnection = previewView.previewLayer.connection;
         AVCaptureConnection *imageConnection = [self.captureSession.imageOutput connectionWithMediaType:AVMediaTypeVideo];
-        //[imageConnection setVideoMirrored:previewConnection.videoMirrored];
         
         bool isMirrored = previewConnection.videoMirrored;
         UIInterfaceOrientation orientation = UIInterfaceOrientationPortrait;
@@ -329,13 +336,11 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
         
         [imageConnection setVideoOrientation:[PGCamera _videoOrientationForInterfaceOrientation:orientation]];
         
-        [self.captureSession.imageOutput captureStillImageAsynchronouslyFromConnection:self.captureSession.imageOutput.connections.firstObject
-                                                                     completionHandler:^(CMSampleBufferRef imageDataSampleBuffer, NSError *error)
+        [self.captureSession.imageOutput captureStillImageAsynchronouslyFromConnection:self.captureSession.imageOutput.connections.firstObject completionHandler:^(CMSampleBufferRef imageDataSampleBuffer, NSError *error)
         {
             if (imageDataSampleBuffer != NULL && error == nil)
             {
                 NSData *imageData = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
-                
                 UIImage *image = [[UIImage alloc] initWithData:imageData];
                 
                 if (self.cameraMode == PGCameraModeSquare)
@@ -351,8 +356,7 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
                 
                 PGCameraShotMetadata *metadata = [[PGCameraShotMetadata alloc] init];
                 metadata.frontal = isMirrored;
-                metadata.deviceAngle = [PGCameraShotMetadata relativeDeviceAngleFromAngle:_deviceAngleSampler.currentDeviceAngle
-                                                                              orientation:orientation];
+                metadata.deviceAngle = [PGCameraShotMetadata relativeDeviceAngleFromAngle:_deviceAngleSampler.currentDeviceAngle orientation:orientation];
                 
                 if (completion != nil)
                     completion(image, metadata);
@@ -361,7 +365,7 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
     }];
 }
 
-- (void)startVideoRecordingWithCompletion:(void (^)(NSURL *, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success))completion
+- (void)startVideoRecordingForMoment:(bool)moment completion:(void (^)(NSURL *, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success))completion
 {
     [[PGCamera cameraQueue] dispatch:^
     {
@@ -373,15 +377,16 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
         
         if (self.requestedCurrentInterfaceOrientation != nil)
             orientation = self.requestedCurrentInterfaceOrientation(&mirrored);
+        mirrored = false;
         
-        [self.captureSession startVideoRecordingWithOrientation:[PGCamera _videoOrientationForInterfaceOrientation:orientation]
-                                                       mirrored:mirrored
-                                                     completion:completion];
+        _moment = moment;
+        
+        [self.captureSession startVideoRecordingWithOrientation:[PGCamera _videoOrientationForInterfaceOrientation:orientation] mirrored:mirrored completion:completion];
         
         TGDispatchOnMainThread(^
         {
             if (self.beganVideoRecording != nil)
-                self.beganVideoRecording();
+                self.beganVideoRecording(moment);
         });
     }];
 }
@@ -395,7 +400,7 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
         TGDispatchOnMainThread(^
         {
             if (self.finishedVideoRecording != nil)
-                self.finishedVideoRecording();
+                self.finishedVideoRecording(_moment);
         });
     }];
 }
@@ -435,15 +440,6 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
              
             if (strongSelf.finishedModeChange != nil)
                 strongSelf.finishedModeChange();
-            
-//            if (cameraMode == PGCameraModeVideo)
-//            {
-//                TGDispatchOnMainThread(^
-//                {
-//                    if (!_shownAudioAccessDisabled)
-//                        _shownAudioAccessDisabled = ![TGAccessChecker checkMicrophoneAuthorizationStatusForIntent:TGMicrophoneAccessIntentVideo alertDismissCompletion:nil];
-//                });
-//            }
         }];
     };
     
@@ -564,7 +560,7 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
 
 - (bool)flashActive
 {
-    if (self.cameraMode == PGCameraModeVideo)
+    if (self.cameraMode == PGCameraModeVideo || self.cameraMode == PGCameraModeClip)
         return self.captureSession.videoDevice.torchActive;
     
     return self.captureSession.videoDevice.flashActive;
@@ -572,7 +568,7 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
 
 - (bool)flashAvailable
 {
-    if (self.cameraMode == PGCameraModeVideo)
+    if (self.cameraMode == PGCameraModeVideo || self.cameraMode == PGCameraModeClip)
         return self.captureSession.videoDevice.torchAvailable;
     
     return self.captureSession.videoDevice.flashAvailable;
@@ -670,6 +666,10 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
 
 + (bool)cameraAvailable
 {
+#if TARGET_IPHONE_SIMULATOR
+    return true;
+#endif
+    
     return [UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera];
 }
 
@@ -683,13 +683,13 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
     return ([PGCameraCaptureSession _deviceWithCameraPosition:PGCameraPositionFront] != nil);
 }
 
-+ (ATQueue *)cameraQueue
++ (SQueue *)cameraQueue
 {
-    static ATQueue *queue = nil;
     static dispatch_once_t onceToken;
+    static SQueue *queue = nil;
     dispatch_once(&onceToken, ^
     {
-        queue = [[ATQueue alloc] initWithName:@"org.telegram.cameraQueue"];
+        queue = [[SQueue alloc] init];
     });
     
     return queue;

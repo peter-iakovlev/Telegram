@@ -30,8 +30,6 @@ typedef NS_OPTIONS(NSUInteger, TGConversationFooterOptions) {
 @property (nonatomic, assign) TGConversationFooterOptions options;
 - (void)setOptions:(TGConversationFooterOptions)options animated:(bool)animated;
 
-- (void)setUnblockTitle:(NSString *)title;
-
 @property (nonatomic, copy) void (^commandsPressed)(void);
 @property (nonatomic, copy) void (^stickerPressed)(void);
 @property (nonatomic, copy) void (^locationPressed)(void);

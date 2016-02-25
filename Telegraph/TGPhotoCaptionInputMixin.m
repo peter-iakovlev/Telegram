@@ -5,6 +5,8 @@
 #import "TGViewController.h"
 
 #import "TGUser.h"
+#import "TGSuggestionContext.h"
+
 #import "TGModernConversationMentionsAssociatedPanel.h"
 #import "TGModernConversationHashtagsAssociatedPanel.h"
 
@@ -108,8 +110,7 @@
     
     _dismissView.hidden = false;
     
-    if (iosMajorVersion() < 7)
-        [self.inputPanel.window makeKeyWindow];
+    [self.inputPanel.window makeKeyWindow];
     
     if (self.panelFocused != nil)
         self.panelFocused();
@@ -125,7 +126,7 @@
         self.finishedWithCaption(text);
 }
 
-- (void)inputPanelMentionEntered:(TGMediaPickerCaptionInputPanel *)__unused inputTextPanel mention:(NSString *)mention
+- (void)inputPanelMentionEntered:(TGMediaPickerCaptionInputPanel *)__unused inputTextPanel mention:(NSString *)mention startOfLine:(bool)__unused startOfLine
 {
     if (mention == nil)
     {
@@ -148,9 +149,7 @@
                 if (strongSelf != nil)
                 {
                     if ([[strongSelf->_inputPanel associatedPanel] isKindOfClass:[TGModernConversationMentionsAssociatedPanel class]])
-                    {
                         [strongSelf->_inputPanel setAssociatedPanel:nil animated:false];
-                    }
                     
                     [strongSelf->_inputPanel replaceMention:user.userName];
                 }
@@ -159,8 +158,8 @@
         }
         
         SSignal *userListSignal = nil;
-        if (self.userListSignal != nil)
-            userListSignal = self.userListSignal(mention);
+        if (self.suggestionContext.userListSignal != nil)
+            userListSignal = self.suggestionContext.userListSignal(mention);
         
         [panel setUserListSignal:userListSignal];
     }
@@ -189,9 +188,7 @@
                 if (strongSelf != nil)
                 {
                     if ([[strongSelf->_inputPanel associatedPanel] isKindOfClass:[TGModernConversationHashtagsAssociatedPanel class]])
-                    {
                         [strongSelf->_inputPanel setAssociatedPanel:nil animated:false];
-                    }
                     
                     [strongSelf->_inputPanel replaceHashtag:hashtag];
                 }
@@ -200,8 +197,8 @@
         }
         
         SSignal *hashtagListSignal = nil;
-        if (self.hashtagListSignal != nil)
-            hashtagListSignal = self.hashtagListSignal(hashtag);
+        if (self.suggestionContext.hashtagListSignal != nil)
+            hashtagListSignal = self.suggestionContext.hashtagListSignal(hashtag);
         
         [panel setHashtagListSignal:hashtagListSignal];
     }

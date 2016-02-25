@@ -10,8 +10,8 @@
 
 #import "TGPeerIdAdapter.h"
 
-const CGFloat TGNeoStickerMessageHeight38mm = 64.0f;
-const CGFloat TGNeoStickerMessageHeight42mm = 72.0f;
+const CGFloat TGNeoStickerMessageHeight38mm = 72.0f;
+const CGFloat TGNeoStickerMessageHeight42mm = 84.0f;
 
 @interface TGNeoStickerMessageViewModel ()
 {
@@ -24,9 +24,9 @@ const CGFloat TGNeoStickerMessageHeight42mm = 72.0f;
 
 @implementation TGNeoStickerMessageViewModel
 
-- (instancetype)initWithMessage:(TGBridgeMessage *)message users:(NSDictionary *)users context:(TGBridgeContext *)context
+- (instancetype)initWithMessage:(TGBridgeMessage *)message type:(TGNeoMessageType)type users:(NSDictionary *)users context:(TGBridgeContext *)context
 {
-    self = [super initWithMessage:message users:users context:context];
+    self = [super initWithMessage:message type:type users:users context:context];
     if (self != nil)
     {
         self.showBubble = false;

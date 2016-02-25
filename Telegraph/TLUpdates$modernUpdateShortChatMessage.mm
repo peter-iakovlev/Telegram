@@ -2,6 +2,8 @@
 
 #import "TLMetaClassStore.h"
 
+//updateShortChatMessage flags:# unread:flags.0?true out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true id:int from_id:int chat_id:int message:string pts:int pts_count:int date:int fwd_from_id:flags.2?Peer fwd_date:flags.2?int via_bot_id:flags.8?int reply_to_msg_id:flags.3?int entities:flags.7?Vector<MessageEntity> = Updates
+
 @implementation TLUpdates$modernUpdateShortChatMessage
 
 - (void)TLserialize:(NSOutputStream *)__unused os
@@ -29,8 +31,11 @@
     if (result.flags & (1 << 2))
     {
         int32_t signature = [is readInt32];
-        result.fwd_from_id = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
-        result.fwd_date = [is readInt32];
+        result.fwd_header = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+    }
+
+    if (result.flags & (1 << 11)) {
+        result.via_bot_id = [is readInt32];
     }
     
     if (result.flags & (1 << 3))

@@ -155,10 +155,18 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
                 self.kind = TGUserKindSmartBot;
             self.botKind = (concreteUser.flags & (1 << 16)) ? TGBotKindPrivate : TGBotKindGeneric;
             self.botInfoVersion = concreteUser.bot_info_version;
+            
+            self.isVerified = concreteUser.flags & (1 << 17);
+            self.hasExplicitContent = concreteUser.flags & (1 << 18);
+            self.restrictionReason = concreteUser.restriction_reason;
+            self.contextBotPlaceholder = concreteUser.inlineBotPlaceholder;
+            self.isContextBot = concreteUser.flags & (1 << 19);
+            self.minimalRepresentation = concreteUser.flags & (1 << 20);
         }
         else if ([user isKindOfClass:[TLUser$userEmpty class]])
         {
             uid = ((TLUser$userEmpty *)user).n_id;
+            self.minimalRepresentation = true;
         }
         
         if (userPhone.length != 0)

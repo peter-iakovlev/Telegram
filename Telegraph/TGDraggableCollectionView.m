@@ -386,7 +386,7 @@ typedef enum
 
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
 {
-    if (gestureRecognizer == _panGestureRecognizer)
+    if (self.draggable && gestureRecognizer == _panGestureRecognizer)
         return (self.draggableLayout.sourceIndexPath != nil);
     
     return true;

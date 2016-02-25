@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import "TGChatTimestamp.h"
 
 typedef enum
 {
@@ -9,6 +10,8 @@ typedef enum
 } TGDateRelativeSpan;
 
 @interface TGDateUtils : NSObject
+
++ (void)reset;
 
 + (NSString *)stringForFullDate:(int)date;
 + (NSString *)stringForShortTime:(int)time;
@@ -21,5 +24,7 @@ typedef enum
 + (NSString *)stringForLastSeen:(int)date;
 + (NSString *)stringForApproximateDate:(int)date;
 + (NSString *)stringForRelativeLastSeen:(int)date;
+
++ (TGChatTimestamp *)timestampForDateIfNeeded:(int)date previousDate:(NSNumber *)previousDate;
 
 @end

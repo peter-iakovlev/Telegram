@@ -1,6 +1,7 @@
 #import <SSignalKit/SSignalKit.h>
 
 @class TGBridgeContext;
+@class TGBridgeMessage;
 
 @interface TGBridgeServer : NSObject
 
@@ -11,13 +12,21 @@
 - (void)startRunning;
 - (void)startServices;
 
+- (SSignal *)watchAppInstalledSignal;
+
 - (void)setAuthorized:(bool)authorized userId:(int32_t)userId;
 - (void)setPasscodeEnabled:(bool)passcodeEnabled passcodeEncrypted:(bool)passcodeEncrypted;
-- (void)setStartupData:(NSDictionary *)dataObject;
+- (void)setMicAccessAllowed:(bool)allowed;
+- (void)setCustomLocalizationEnabled:(bool)enabled;
+- (void)setStartupData:(NSDictionary *)dataObject micAccessAllowed:(bool)micAccessAllowed;
 
-- (void)sendFileWithURL:(NSURL *)url key:(NSString *)key;
+- (void)sendFileWithURL:(NSURL *)url metadata:(NSDictionary *)metadata;
 
 - (SSignal *)serviceSignalForKey:(NSString *)key producer:(SSignal *(^)())producer;
+- (void)startSignalForKey:(NSString *)key producer:(SSignal *(^)())producer;
+
+- (SSignal *)pipeForKey:(NSString *)key;
+- (void)putNext:(id)next forKey:(NSString *)key;
 
 - (NSInteger)wakeupNetwork;
 - (void)suspendNetworkIfReady:(NSInteger)token;

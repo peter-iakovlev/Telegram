@@ -4,6 +4,8 @@
 
 #import "TGImageMediaAttachment+Telegraph.h"
 
+#import "TGDocumentMediaAttachment+Telegraph.h"
+
 /*
  @property (nonatomic) int64_t webPageId;
  @property (nonatomic, strong) NSString *url;
@@ -48,6 +50,13 @@
             self.embedSize = CGSizeMake(webPage.embed_width, webPage.embed_height);
             self.duration = (webPage.flags & (1 << 7)) ? @(webPage.duration) : 0;
             self.author = webPage.author;
+            
+            if (webPage.document != nil) {
+                TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:webPage.document];
+                if (document.documentId != 0) {
+                    self.document = document;
+                }
+            }
         }
         else if ([desc isKindOfClass:[TLWebPage$webPagePending class]])
         {

@@ -1,4 +1,5 @@
 #import "TGBridgeChat.h"
+#import "TGPeerIdAdapter.h"
 
 NSString *const TGBridgeChatIdentifierKey = @"identifier";
 NSString *const TGBridgeChatDateKey = @"date";
@@ -15,6 +16,7 @@ NSString *const TGBridgeChatIsGroupKey = @"isGroup";
 NSString *const TGBridgeChatHasLeftGroupKey = @"hasLeftGroup";
 NSString *const TGBridgeChatIsKickedFromGroupKey = @"isKickedFromGroup";
 NSString *const TGBridgeChatIsChannelKey = @"isChannel";
+NSString *const TGBridgeChatIsChannelGroupKey = @"isChannelGroup";
 NSString *const TGBridgeChatUserNameKey = @"userName";
 NSString *const TGBridgeChatAboutKey = @"about";
 NSString *const TGBridgeChatVerifiedKey = @"verified";
@@ -52,6 +54,7 @@ NSString *const TGBridgeChatsArrayKey = @"chats";
         _hasLeftGroup = [aDecoder decodeBoolForKey:TGBridgeChatHasLeftGroupKey];
         _isKickedFromGroup = [aDecoder decodeBoolForKey:TGBridgeChatIsKickedFromGroupKey];
         _isChannel = [aDecoder decodeBoolForKey:TGBridgeChatIsChannelKey];
+        _isChannelGroup = [aDecoder decodeBoolForKey:TGBridgeChatIsChannelGroupKey];
         _userName = [aDecoder decodeObjectForKey:TGBridgeChatUserNameKey];
         _about = [aDecoder decodeObjectForKey:TGBridgeChatAboutKey];
         _isVerified = [aDecoder decodeBoolForKey:TGBridgeChatVerifiedKey];
@@ -83,6 +86,7 @@ NSString *const TGBridgeChatsArrayKey = @"chats";
     [aCoder encodeBool:self.isKickedFromGroup forKey:TGBridgeChatIsKickedFromGroupKey];
     
     [aCoder encodeBool:self.isChannel forKey:TGBridgeChatIsChannelKey];
+    [aCoder encodeBool:self.isChannelGroup forKey:TGBridgeChatIsChannelGroupKey];
     [aCoder encodeObject:self.userName forKey:TGBridgeChatUserNameKey];
     [aCoder encodeObject:self.about forKey:TGBridgeChatAboutKey];
     [aCoder encodeBool:self.isVerified forKey:TGBridgeChatVerifiedKey];
@@ -96,7 +100,7 @@ NSString *const TGBridgeChatsArrayKey = @"chats";
     NSMutableIndexSet *userIds = [[NSMutableIndexSet alloc] init];
     if (!self.isGroup && !self.isChannel && self.identifier != 0)
         [userIds addIndex:(int32_t)self.identifier];
-    if (!self.isChannel && self.fromUid != self.identifier && self.fromUid != 0)
+    if ((!self.isChannel || self.isChannelGroup) && self.fromUid != self.identifier && self.fromUid != 0 && !TGPeerIdIsChannel(self.fromUid))
         [userIds addIndex:self.fromUid];
     
     for (TGBridgeMediaAttachment *attachment in self.media)

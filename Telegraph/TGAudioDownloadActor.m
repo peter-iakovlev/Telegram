@@ -13,13 +13,16 @@
 #import "TL/TLMetaScheme.h"
 
 #import "TGAudioMediaAttachment.h"
-#import "TGPreparedLocalAudioMessage.h"
 
 #import "TGStringUtils.h"
 
 #import <CommonCrypto/CommonDigest.h>
 
 @implementation TGAudioDownloadActor
+
++ (void)load {
+    [ASActor registerActorClass:self];
+}
 
 - (instancetype)initWithPath:(NSString *)path
 {
@@ -64,13 +67,13 @@
         NSString *audioFilePath = nil;
         if (audioAttachment.audioId != 0)
         {
-            storeAudioPathDirectory = [TGPreparedLocalAudioMessage localAudioFileDirectoryForRemoteAudioId:audioAttachment.audioId];
-            audioFilePath = [TGPreparedLocalAudioMessage localAudioFilePathForRemoteAudioId1:audioAttachment.audioId];
+            storeAudioPathDirectory = [TGAudioMediaAttachment localAudioFileDirectoryForRemoteAudioId:audioAttachment.audioId];
+            audioFilePath = [TGAudioMediaAttachment localAudioFilePathForRemoteAudioId:audioAttachment.audioId];
         }
         else
         {
-            storeAudioPathDirectory = [TGPreparedLocalAudioMessage localAudioFileDirectoryForLocalAudioId:audioAttachment.localAudioId];
-            audioFilePath = [TGPreparedLocalAudioMessage localAudioFilePathForLocalAudioId1:audioAttachment.localAudioId];
+            storeAudioPathDirectory = [TGAudioMediaAttachment localAudioFileDirectoryForLocalAudioId:audioAttachment.localAudioId];
+            audioFilePath = [TGAudioMediaAttachment localAudioFilePathForLocalAudioId:audioAttachment.localAudioId];
         }
         
         [[NSFileManager defaultManager] createDirectoryAtPath:storeAudioPathDirectory withIntermediateDirectories:true attributes:nil error:nil];
@@ -121,10 +124,10 @@
         }
         else
         {
-            TLInputFileLocation$inputAudioFileLocation *inputAudioLocation = [[TLInputFileLocation$inputAudioFileLocation alloc] init];
-            inputAudioLocation.n_id = audioAttachment.audioId;
-            inputAudioLocation.access_hash = audioAttachment.accessHash;
-            inputFileLocation = inputAudioLocation;
+            TLInputFileLocation$inputDocumentFileLocation *inputDocumentLocation = [[TLInputFileLocation$inputDocumentFileLocation alloc] init];
+            inputDocumentLocation.n_id = audioAttachment.audioId;
+            inputDocumentLocation.access_hash = audioAttachment.accessHash;
+            inputFileLocation = inputDocumentLocation;
             
             datacenterId = audioAttachment.datacenterId;
         }

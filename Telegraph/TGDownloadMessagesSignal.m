@@ -27,6 +27,10 @@
 
 + (SSignal *)downloadMessages:(NSArray *)messages
 {
+    if (messages.count == 0) {
+        return [SSignal single:messages];
+    }
+    
     SSignal *channelSignal = [SSignal single:@[]];
     SSignal *genericSignal = [SSignal single:@[]];
     
@@ -107,12 +111,14 @@
         }];
     }
     
-    return [[SSignal combineSignals:@[genericSignal, channelSignal]] map:^id(NSArray *messageLists) {
+    return [[[SSignal combineSignals:@[genericSignal, channelSignal]] map:^id(NSArray *messageLists) {
         NSMutableArray *messages = [[NSMutableArray alloc] init];
         for (NSArray *array in messageLists) {
             [messages addObjectsFromArray:array];
         }
         return messages;
+    }] catch:^SSignal *(__unused id error) {
+        return [SSignal single:@[]];
     }];
 }
 

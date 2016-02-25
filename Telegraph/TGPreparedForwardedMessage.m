@@ -10,6 +10,8 @@
 
 #import "TGMessage.h"
 
+#import "TGPeerIdAdapter.h"
+
 @interface TGPreparedForwardedMessage ()
 {
     bool _keepForwarded;
@@ -43,6 +45,8 @@
                 if (forwardedMessageAttachment.forwardMid != 0) {
                     _forwardMid = forwardedMessageAttachment.forwardMid;
                     _forwardPeerId = forwardedMessageAttachment.forwardPeerId;
+                    _forwardAuthorUserId = forwardedMessageAttachment.forwardAuthorUserId;
+                    _forwardPostId = forwardedMessageAttachment.forwardPostId;
                 }
             }
             else if ([attachment isKindOfClass:[TGReplyMessageMediaAttachment class]])
@@ -56,8 +60,18 @@
         _innerMessage = innerMessage;
         if (_forwardMid == 0) {
             _forwardMid = innerMessage.mid;
-            _forwardPeerId = innerMessage.toUid;
+            if (TGPeerIdIsChannel(innerMessage.cid) && TGMessageSortKeySpace(innerMessage.sortKey) == TGMessageSpaceImportant) {
+                _forwardPeerId = innerMessage.cid;
+                _forwardPostId = innerMessage.mid;
+                if (!TGPeerIdIsChannel(innerMessage.fromUid) && innerMessage.fromUid != 0) {
+                    _forwardAuthorUserId = (int32_t)innerMessage.fromUid;
+                }
+            } else {
+                _forwardPeerId = innerMessage.fromUid;
+            }
         }
+        
+        _forwardSourcePeerId = innerMessage.cid;
     }
     return self;
 }
@@ -74,9 +88,11 @@
     if (_keepForwarded)
     {
         forwardAttachment = [[TGForwardedMessageMediaAttachment alloc] init];
-        forwardAttachment.forwardPeerId = _innerMessage.fromUid;
+        forwardAttachment.forwardPeerId = _forwardPeerId;
         forwardAttachment.forwardDate = (int32_t)_innerMessage.date;
         forwardAttachment.forwardMid = _forwardMid;
+        forwardAttachment.forwardPostId = _forwardPostId;
+        forwardAttachment.forwardAuthorUserId = _forwardAuthorUserId;
     }
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];

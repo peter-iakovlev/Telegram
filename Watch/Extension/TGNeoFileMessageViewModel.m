@@ -14,9 +14,9 @@
 
 @implementation TGNeoFileMessageViewModel
 
-- (instancetype)initWithMessage:(TGBridgeMessage *)message users:(NSDictionary *)users context:(TGBridgeContext *)context
+- (instancetype)initWithMessage:(TGBridgeMessage *)message type:(TGNeoMessageType)type users:(NSDictionary *)users context:(TGBridgeContext *)context
 {
-    self = [super initWithMessage:message users:users context:context];
+    self = [super initWithMessage:message type:type users:users context:context];
     if (self != nil)
     {
         TGBridgeDocumentMediaAttachment *documentAttachment = nil;

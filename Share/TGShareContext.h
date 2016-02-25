@@ -4,7 +4,7 @@
 #import <MTProtoKit/MTProto.h>
 #import <MTProtoKit/MTRequestMessageService.h>
 #import <SSignalKit/SSignalKit.h>
-#import "ApiLayer38.h"
+#import "ApiLayer48.h"
 
 #import "TGModernCache.h"
 #import "TGMemoryImageCache.h"
@@ -27,8 +27,8 @@
 
 - (instancetype)initWithContainerUrl:(NSURL *)containerUrl mtContext:(MTContext *)mtContext mtProto:(MTProto *)mtProto mtRequestService:(MTRequestMessageService *)mtRequestService;
 
-- (SSignal *)function:(Api38_FunctionContext *)functionContext;
-- (SSignal *)datacenter:(NSInteger)datacenterId function:(Api38_FunctionContext *)functionContext;
+- (SSignal *)function:(Api48_FunctionContext *)functionContext;
+- (SSignal *)datacenter:(NSInteger)datacenterId function:(Api48_FunctionContext *)functionContext;
 
 - (SSignal *)connectionContextForDatacenter:(NSInteger)datacenterId;
 

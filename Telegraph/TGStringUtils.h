@@ -45,8 +45,8 @@ bool TGIsLocaleArabic();
 + (NSString *)stringForShortMessageTimerSeconds:(NSUInteger)seconds;
 + (NSArray *)stringComponentsForMessageTimerSeconds:(NSUInteger)seconds;
 + (NSString *)stringForUserCount:(NSUInteger)userCount;
-+ (NSString *)stringForFileSize:(NSUInteger)size;
-+ (NSString *)stringForFileSize:(NSUInteger)size precision:(NSInteger)precision;
++ (NSString *)stringForFileSize:(int64_t)size;
++ (NSString *)stringForFileSize:(int64_t)size precision:(NSInteger)precision;
 
 + (NSString *)integerValueFormat:(NSString *)prefix value:(NSInteger)value;
 + (NSString *)stringForMuteInterval:(int)value;
@@ -68,7 +68,7 @@ bool TGIsLocaleArabic();
 
 - (bool)hasNonWhitespaceCharacters;
 
-- (NSAttributedString *)attributedStringWithFormattingAndFontSize:(CGFloat)fontSize lineSpacing:(CGFloat)lineSpacing paragraphSpacing:(CGFloat)paragraphSpacing;
+- (NSAttributedString *)attributedFormattedStringWithRegularFont:(UIFont *)regularFont boldFont:(UIFont *)boldFont lineSpacing:(CGFloat)lineSpacing paragraphSpacing:(CGFloat)paragraphSpacing alignment:(NSTextAlignment)alignment;
 
 @end
 

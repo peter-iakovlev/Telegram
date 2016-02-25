@@ -55,7 +55,12 @@
         [self addSubview:_progressView];
         
         _cancelButton = [[UIButton alloc] init];
-        [_cancelButton setTitle:NSLocalizedString(@"Share.Cancel", nil) forState:UIControlStateNormal];
+        NSString *cancelText = NSLocalizedString(@"Common.Cancel", nil);
+        if (cancelText.length == 0 || [cancelText isEqualToString:@"Common.Cancel"]) {
+            cancelText = NSLocalizedString(@"Share.Cancel", nil);
+        }
+        
+        [_cancelButton setTitle:cancelText forState:UIControlStateNormal];
         [_cancelButton addTarget:self action:@selector(cancelPressed) forControlEvents:UIControlEventTouchUpInside];
         [_cancelButton setTitleColor:TGColorWithHex(0x007ee5) forState:UIControlStateNormal];
         [_cancelButton setTitleColor:[TGColorWithHex(0x007ee5) colorWithAlphaComponent:0.6f] forState:UIControlStateHighlighted];

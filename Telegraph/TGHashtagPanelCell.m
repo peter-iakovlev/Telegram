@@ -33,6 +33,12 @@ NSString *const TGHashtagPanelCellKind = @"TGHashtagPanelCell";
             textColor = [UIColor whiteColor];
             selectionColor = UIColorRGB(0x292929);
         }
+        else if (style == TGModernConversationAssociatedInputPanelDarkBlurredStyle)
+        {
+            backgroundColor = [UIColor clearColor];
+            textColor = [UIColor whiteColor];
+            selectionColor = UIColorRGB(0x3d3d3d);
+        }
         
         self.backgroundColor = backgroundColor;
         self.backgroundView = [[UIView alloc] init];

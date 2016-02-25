@@ -8,5 +8,8 @@
 @property (nonatomic) NSUInteger maxLength;
 @property (nonatomic, copy) void (^textChanged)(NSString *);
 @property (nonatomic, copy) void (^heightChanged)();
+@property (nonatomic, copy) void (^selected)();
+
+- (void)becomeFirstResponder;
 
 @end

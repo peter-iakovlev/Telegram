@@ -2,6 +2,7 @@
 
 #import "Freedom.h"
 
+#import "TGTabletMainView.h"
 #import "TGToolbarButton.h"
 #import "TGLabel.h"
 
@@ -231,6 +232,13 @@
 {
     if ([TGViewController useExperimentalRTL])
         center.x = CGFloor(self.bounds.size.width) - center.x;
+    
+    bool shouldFix = (iosMajorVersion() >= 7);
+    if (shouldFix && [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
+        shouldFix = [[[[self superview] superview] superview] isKindOfClass:[TGTabletMainView class]];
+
+    if (shouldFix && center.y <= self.frame.size.height / 2)
+        center.y = center.y + 20.0f;
     
     [super setCenter:center];
     

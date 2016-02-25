@@ -16,6 +16,8 @@
 
 #import "TGPeerIdAdapter.h"
 
+#import "TGRecentGifsSignal.h"
+
 #include <set>
 
 @interface TGConversationAddMessagesActor ()
@@ -85,15 +87,63 @@
     
     int maxMid = 0;
     
+    NSMutableArray *remoteGifDocuments = [[NSMutableArray alloc] init];
+    
     for (TGMessage *message in messages)
     {
-        if (TGPeerIdIsChannel(message.cid) && TGMessageSortKeySpace(message.sortKey) != TGMessageSpaceImportant) {
-            continue;
+        if (message.outgoing) {
+            bool isForward = false;
+            for (TGMediaAttachment *attachment in message.mediaAttachments) {
+                if (attachment.type == TGForwardedMessageMediaAttachmentType) {
+                    isForward = true;
+                    break;
+                }
+            }
+        
+            if (!isForward) {
+                for (TGMediaAttachment *attachment in message.mediaAttachments) {
+                    if (attachment.type == TGDocumentMediaAttachmentType) {
+                        if ([((TGDocumentMediaAttachment *)attachment).mimeType isEqualToString:@"video/mp4"]) {
+                            for (id attribute in ((TGDocumentMediaAttachment *)attachment).attributes) {
+                                if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]]) {
+                                    [remoteGifDocuments addObject:attachment];
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (TGPeerIdIsChannel(message.cid) && TGMessageSortKeySpace(message.sortKey) != TGMessageSpaceImportant)
+        {
+            TGConversation *chat = [TGDatabaseInstance() loadConversationWithId:message.cid];
+            if (chat != nil && !chat.isChannelGroup)
+            {
+                if (message.date > currentTime - 20)
+                {
+                    std::map<int64_t, std::set<int> >::iterator it = pProcessedUsersStoppedTyping->find(message.cid);
+                    if (it == pProcessedUsersStoppedTyping->end())
+                    {
+                        std::set<int> usersStoppedTypingInConversation;
+                        usersStoppedTypingInConversation.insert((int)message.fromUid);
+                        pProcessedUsersStoppedTyping->insert(std::make_pair(message.cid, usersStoppedTypingInConversation));
+                    }
+                    else
+                    {
+                        it->second.insert((int)message.fromUid);
+                    }
+                }
+                
+                continue;
+            }
         }
         
         TGMessage *storeMessage = message;
         
-        if (!message.outgoing && (message.unread || TGPeerIdIsChannel(message.cid)) && (message.toUid != message.fromUid || TGPeerIdIsChannel(message.cid)))
+        if (!message.isSilent && !message.outgoing && (message.unread || TGPeerIdIsChannel(message.cid)) && (message.toUid != message.fromUid || TGPeerIdIsChannel(message.cid)))
         {
             if (message.mid < TGMessageLocalMidBaseline && message.actionInfo == nil)
             {
@@ -135,7 +185,7 @@
             }
         }
         
-        if (conversationId <= INT_MIN)
+        if (conversationId <= INT_MIN && !TGPeerIdIsChannel(conversationId))
         {
             if (messageLifetimeByConversation.find(conversationId) == messageLifetimeByConversation.end())
                 messageLifetimeByConversation[conversationId] = [TGDatabaseInstance() messageLifetimeForPeerId:conversationId];
@@ -246,7 +296,7 @@
     bool playChatSound = false;
     TGMessage *messageForNotification = nil;
     
-    if (playNotification)
+    if (playNotification && !TGAppDelegateInstance.deviceProximityState)
     {
         playNotification = false;
         bool supposedToPlaySound = needsSound;
@@ -255,7 +305,9 @@
         {
             int64_t notificationPeerId = (!TGPeerIdIsChannel(*it) && *it <= INT_MIN) ? [TGDatabaseInstance() encryptedParticipantIdForConversationId:*it] : *it;
             int64_t mutePeerId = notificationPeerId;
-            if (!TGPeerIdIsChannel(notificationPeerId) && notificationPeerId < 0)
+
+            bool isGroup = TGPeerIdIsGroup(notificationPeerId) || (TGPeerIdIsChannel(notificationPeerId) && [TGDatabaseInstance() loadConversationWithId:notificationPeerId].isChannelGroup);
+            if (isGroup)
             {
                 TGMessage *message = lastIncomingMessageByConversation[@(*it)];
                 if (message.containsMention)
@@ -281,7 +333,7 @@
         }
     }
     
-    if (playNotification)
+    if (playNotification && !TGAppDelegateInstance.deviceProximityState)
     {
         if (needsSound)
         {
@@ -317,6 +369,10 @@
                 [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/messages/reportDelivery/(messages)"] options:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithInt:maxMid], @"mid", nil] watcher:TGTelegraphInstance];
             }
         }];
+    }
+    
+    if (remoteGifDocuments.count != 0) {
+        [TGRecentGifsSignal addRemoteRecentGifFromDocuments:remoteGifDocuments];
     }
     
     [ActionStageInstance() actionCompleted:self.path result:nil];

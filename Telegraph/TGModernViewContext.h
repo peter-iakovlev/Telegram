@@ -13,6 +13,12 @@
 @class TGModernViewInlineMediaContext;
 @class TGConversation;
 
+typedef struct {
+    int32_t mid;
+    bool paused;
+    float position;
+} TGPlayingMessageStatus;
+
 @interface TGModernViewContext : NSObject
 
 @property (nonatomic) bool contentUpdatesDisabled;
@@ -23,8 +29,10 @@
 @property (nonatomic) bool commandsEnabled;
 @property (nonatomic, strong) NSString *searchText;
 @property (nonatomic, strong) TGConversation *conversation;
+@property (nonatomic) bool isBot;
+@property (nonatomic) bool autoplayAnimations;
 
-@property (nonatomic, strong) SSignal *playingAudioMessageId;
+@property (nonatomic, strong) SSignal *playingAudioMessageStatus;
 @property (nonatomic, copy) void (^playAudioMessageId)(int32_t);
 @property (nonatomic, copy) void (^resumeAudioMessage)();
 @property (nonatomic, copy) void (^pauseAudioMessage)();
@@ -34,7 +42,5 @@
 - (bool)isSecretMessageViewed:(int32_t)messageId;
 - (bool)isSecretMessageScreenshotted:(int32_t)messageId;
 - (NSTimeInterval)secretMessageViewDate:(int32_t)messageId;
-
-- (TGModernViewInlineMediaContext *)inlineMediaContext:(int32_t)messageId;
 
 @end

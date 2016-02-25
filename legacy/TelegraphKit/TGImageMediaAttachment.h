@@ -26,4 +26,6 @@
 
 @property (nonatomic, readonly) NSArray *textCheckingResults;
 
++ (int64_t)localImageIdForImageInfo:(TGImageInfo *)imageInfo;
+
 @end

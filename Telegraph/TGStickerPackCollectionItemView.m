@@ -83,6 +83,22 @@
     
     _subtitleLabel.text = [[NSString alloc] initWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"StickerPack.StickerCount_" value:stickerPack.documents.count]), [[NSString alloc] initWithFormat:@"%d", (int)stickerPack.documents.count]];
     
+    if (stickerPack.hidden) {
+        [self setOptionText:TGLocalized(@"StickerSettings.ContextShow")];
+        [self setIndicatorMode:TGEditableCollectionItemViewIndicatorAdd];
+    } else {
+        if (((TGStickerPackIdReference *)stickerPack.packReference).shortName.length == 0) {
+            [self setOptionText:TGLocalized(@"StickerSettings.ContextHide")];
+        } else {
+            [self setOptionText:TGLocalized(@"Common.Delete")];
+        }
+        [self setIndicatorMode:TGEditableCollectionItemViewIndicatorDelete];
+    }
+    
+    _titleLabel.alpha = stickerPack.hidden ? 0.4f : 1.0f;
+    _subtitleLabel.alpha = _titleLabel.alpha;
+    _imageView.alpha = _titleLabel.alpha;
+    
     if (stickerPack.documents.count != 0)
     {
         TGDocumentMediaAttachment *documentMedia = stickerPack.documents[0];
@@ -127,7 +143,7 @@
     _titleLabel.frame = CGRectMake(leftInset + 60.0f, verticalOrigin, titleSize.width, titleSize.height);
     _subtitleLabel.frame = CGRectMake(leftInset + 60.0f, verticalOrigin + 2.0f + titleSize.height + titleSubtitleSpacing, subtitleSize.width, subtitleSize.height);
     
-    _reorderingControl.alpha = 0.0f;//self.showsDeleteIndicator ? 1.0f : 0.0f;
+    _reorderingControl.alpha = self.showsDeleteIndicator ? 1.0f : 0.0f;
     _reorderingControl.frame = CGRectMake(self.contentView.frame.size.width - 15.0f - _reorderingControl.frame.size.width, CGFloor((self.contentView.frame.size.height - _reorderingControl.frame.size.height) / 2.0f), _reorderingControl.frame.size.width, _reorderingControl.frame.size.height);
 }
 

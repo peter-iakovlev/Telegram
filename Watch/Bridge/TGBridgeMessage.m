@@ -16,6 +16,12 @@ NSString *const TGBridgeMessageForceReplyKey = @"forceReply";
 NSString *const TGBridgeMessageKey = @"message";
 NSString *const TGBridgeMessagesArrayKey = @"messages";
 
+@interface TGBridgeMessage ()
+{
+    NSArray *_textCheckingResults;
+}
+@end
+
 @implementation TGBridgeMessage
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder
@@ -70,8 +76,8 @@ NSString *const TGBridgeMessagesArrayKey = @"messages";
         else if ([attachment isKindOfClass:[TGBridgeForwardedMessageMediaAttachment class]])
         {
             TGBridgeForwardedMessageMediaAttachment *forwardAttachment = (TGBridgeForwardedMessageMediaAttachment *)attachment;
-            if (forwardAttachment.uid != 0 && !TGPeerIdIsChannel(forwardAttachment.uid))
-                [userIds addIndex:forwardAttachment.uid];
+            if (forwardAttachment.peerId != 0 && !TGPeerIdIsChannel(forwardAttachment.peerId))
+                [userIds addIndex:(int32_t)forwardAttachment.peerId];
         }
         else if ([attachment isKindOfClass:[TGBridgeReplyMessageMediaAttachment class]])
         {
@@ -88,6 +94,46 @@ NSString *const TGBridgeMessagesArrayKey = @"messages";
     }
     
     return userIds;
+}
+
+- (NSArray *)textCheckingResults
+{
+    if (_textCheckingResults == nil)
+    {
+        NSMutableArray *results = [[NSMutableArray alloc] init];
+        
+        NSArray *entities = nil;
+        for (TGBridgeMediaAttachment *attachment in self.media)
+        {
+            if ([attachment isKindOfClass:[TGBridgeMessageEntitiesAttachment class]])
+            {
+                entities = ((TGBridgeMessageEntitiesAttachment *)attachment).entities;
+                break;
+            }
+        }
+        
+        for (TGBridgeMessageEntity *entity in entities)
+        {
+            TGBridgeTextCheckingResult *result = [[TGBridgeTextCheckingResult alloc] init];
+            result.range = entity.range;
+            
+            if ([entity isKindOfClass:[TGBridgeMessageEntityBold class]])
+                result.type = TGBridgeTextCheckingResultTypeBold;
+            else if ([entity isKindOfClass:[TGBridgeMessageEntityItalic class]])
+                result.type = TGBridgeTextCheckingResultTypeItalic;
+            else if ([entity isKindOfClass:[TGBridgeMessageEntityCode class]])
+                result.type = TGBridgeTextCheckingResultTypeCode;
+            else if ([entity isKindOfClass:[TGBridgeMessageEntityPre class]])
+                result.type = TGBridgeTextCheckingResultTypePre;
+        
+            if (result.type != TGBridgeTextCheckingResultTypeUndefined)
+                [results addObject:result];
+        }
+        
+        _textCheckingResults = results;
+    }
+    
+    return _textCheckingResults;
 }
 
 - (BOOL)isEqual:(id)object
@@ -127,6 +173,7 @@ NSString *const TGBridgeMessagesArrayKey = @"messages";
     message->_outgoing = true;
     message->_deliveryState = TGBridgeMessageDeliveryStatePending;
     message->_text = text;
+    message->_date = [[NSDate date] timeIntervalSince1970];
     
     if (replyToMessage != nil)
     {
@@ -150,12 +197,15 @@ NSString *const TGBridgeMessagesArrayKey = @"messages";
     return [self _temporaryNewMessageForMediaAttachment:location userId:userId];
 }
 
-+ (instancetype)temporaryNewMessageForAudioWithDuration:(int32_t)duration userId:(int32_t)userId
++ (instancetype)temporaryNewMessageForAudioWithDuration:(int32_t)duration userId:(int32_t)userId localAudioId:(int64_t)localAudioId
 {
-    TGBridgeAudioMediaAttachment *audio = [[TGBridgeAudioMediaAttachment alloc] init];
-    audio.duration = duration;
+    TGBridgeDocumentMediaAttachment *document = [[TGBridgeDocumentMediaAttachment alloc] init];
+    document.isAudio = true;
+    document.isVoice = true;
+    document.localDocumentId = localAudioId;
+    document.duration = duration;
     
-    return [self _temporaryNewMessageForMediaAttachment:audio userId:userId];
+    return [self _temporaryNewMessageForMediaAttachment:document userId:userId];
 }
 
 + (instancetype)_temporaryNewMessageForMediaAttachment:(TGBridgeMediaAttachment *)attachment userId:(int32_t)userId
@@ -172,10 +222,16 @@ NSString *const TGBridgeMessagesArrayKey = @"messages";
     message->_unread = true;
     message->_outgoing = true;
     message->_deliveryState = TGBridgeMessageDeliveryStatePending;
+    message->_date = [[NSDate date] timeIntervalSince1970];
     
     message->_media = @[ attachment ];
     
     return message;
 }
+
+@end
+
+
+@implementation TGBridgeTextCheckingResult
 
 @end

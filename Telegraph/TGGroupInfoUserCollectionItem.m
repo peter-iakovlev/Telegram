@@ -97,6 +97,10 @@
         view.optionText = _optionTitle;
     }
     
+    [view setDisplaySwitch:_displaySwitch];
+    [view setEnableSwitch:_enableSwitch animated:false];
+    [view setSwitchIsOn:_switchIsOn animated:false];
+    
     [(TGGroupInfoUserCollectionItemView *)[self boundView] setDisabled:_disabled animated:false];
 }
 
@@ -105,6 +109,50 @@
     ((TGGroupInfoUserCollectionItemView *)[self boundView]).delegate = nil;
     
     [super unbindView];
+}
+
+- (void)setDisplaySwitch:(bool)displaySwitch {
+    _displaySwitch = displaySwitch;
+    
+    [(TGGroupInfoUserCollectionItemView *)[self boundView] setDisplaySwitch:_displaySwitch];
+}
+
+- (void)setEnableSwitch:(bool)enableSwitch {
+    _enableSwitch = enableSwitch;
+    
+    [(TGGroupInfoUserCollectionItemView *)[self boundView] setEnableSwitch:_enableSwitch animated:true];
+}
+
+- (void)setSwitchIsOn:(bool)switchIsOn {
+    _switchIsOn = switchIsOn;
+    
+    [(TGGroupInfoUserCollectionItemView *)[self boundView] setSwitchIsOn:_switchIsOn animated:true];
+}
+
+- (void)setCustomStatus:(NSString *)customStatus {
+    _customStatus = customStatus;
+    
+    TGGroupInfoUserCollectionItemView *view = (TGGroupInfoUserCollectionItemView *)[self boundView];
+    
+    if (_customStatus != nil) {
+        [view setStatus:_customStatus active:false];
+    } else {
+        if (_user.kind == TGUserKindBot || _user.kind == TGUserKindSmartBot)
+        {
+            NSString *botStatus = nil;
+            if (_user.kind == TGUserKindBot)
+                botStatus = TGLocalized(@"Bot.GroupStatusDoesNotReadHistory");
+            else
+                botStatus = TGLocalized(@"Bot.GroupStatusReadsHistory");
+            [view setStatus:botStatus active:false];
+        }
+        else
+        {
+            bool active = false;
+            NSString *status = [self _statusStringFromUserPresence:_user.presence active:&active];
+            [view setStatus:status active:active];
+        }
+    }
 }
 
 - (NSString *)_statusStringFromUserPresence:(TGUserPresence)presence active:(out bool *)active
@@ -239,6 +287,12 @@
             [_interfaceHandle requestAction:@"deleteUser" options:@{@"uid": @(_user.uid)}];
         else
             [_interfaceHandle requestAction:@"deleteConversation" options:@{@"conversationId": @(_conversation.conversationId)}];
+    }
+}
+
+- (void)switchValueChanged:(bool)switchValue {
+    if (_toggled) {
+        _toggled(switchValue);
     }
 }
 

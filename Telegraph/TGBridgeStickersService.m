@@ -1,5 +1,4 @@
 #import "TGBridgeStickersService.h"
-#import "TGBridgeServer.h"
 
 #import "TGStickersSignals.h"
 #import "TGBridgeStickerPack+TGStickerPack.h"
@@ -12,9 +11,6 @@ NSString *const TGBridgeStickersSentImagesFileName = @"stickers.imgs";
     SSignal *_stickersSignal;
     SMetaDisposable *_disposable;
 }
-
-@property (nonatomic, weak) TGBridgeServer *server;
-
 @end
 
 
@@ -22,11 +18,9 @@ NSString *const TGBridgeStickersSentImagesFileName = @"stickers.imgs";
 
 - (instancetype)initWithServer:(TGBridgeServer *)server
 {
-    self = [super init];
+    self = [super initWithServer:server];
     if (self != nil)
     {
-        self.server = server;
-        
         _stickersSignal = [server serviceSignalForKey:@"stickers" producer:^SSignal *
         {
             return [TGStickersSignals stickerPacks];
@@ -54,7 +48,7 @@ NSString *const TGBridgeStickersSentImagesFileName = @"stickers.imgs";
             NSURL *url = [NSURL URLWithString:TGBridgeStickersDataFileName relativeToURL:strongSelf.server.temporaryFilesURL];
             [data writeToURL:url atomically:true];
             
-            [server sendFileWithURL:url key:@"stickers"];
+            [strongSelf.server sendFileWithURL:url metadata:@{ TGBridgeIncomingFileIdentifierKey: @"stickers" }];
         }]];
     }
     return self;

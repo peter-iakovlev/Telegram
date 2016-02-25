@@ -82,6 +82,11 @@
     [self setNeedsLayout];
 }
 
+- (void)setDisabled:(bool)disabled {
+    [_button setTitleColor:disabled ? UIColorRGB(0x8f8f8f) : TGAccentColor()];
+    _button.userInteractionEnabled = !disabled;
+}
+
 - (void)setDestructive:(bool)destructive
 {
     [_button setTitleColor:destructive ? TGDestructiveAccentColor() : TGAccentColor()];

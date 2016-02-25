@@ -58,6 +58,7 @@
 @property (nonatomic, strong) id selectedTarget;
 
 @property (nonatomic, strong) NSArray *forwardMessages;
+@property (nonatomic, strong) NSDictionary *shareLink;
 @property (nonatomic, strong) NSArray *sendMessages;
 @property (nonatomic, strong) NSURL *documentFileUrl;
 @property (nonatomic, strong) NSArray *documentFileDescs;
@@ -68,7 +69,7 @@
 
 @implementation TGForwardTargetController
 
-- (id)initWithForwardMessages:(NSArray *)forwardMessages sendMessages:(NSArray *)sendMessages showSecretChats:(bool)showSecretChats
+- (id)initWithForwardMessages:(NSArray *)forwardMessages sendMessages:(NSArray *)sendMessages shareLink:(NSDictionary *)shareLink showSecretChats:(bool)showSecretChats
 {
     self = [super init];
     if (self)
@@ -93,6 +94,7 @@
         
         _forwardMessages = forwardMessages;
         _sendMessages = sendMessages;
+        _shareLink = shareLink;
     }
     return self;
 }
@@ -185,6 +187,7 @@
         _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
         _dialogListCompanion.forwardMode = true;
         _dialogListCompanion.showGroupsOnly = true;
+        _dialogListCompanion.botStartMode = true;
         _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
         _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
         _dialogListController.customParentViewController = self;
@@ -721,12 +724,12 @@
             if ([_selectedTarget isKindOfClass:[TGUser class]])
             {
                 TGUser *user = (TGUser *)_selectedTarget;
-                [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}]} animated:false];
+                [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}], @"shareLink": _shareLink == nil ? @{} : _shareLink} animated:false];
             }
             else if ([_selectedTarget isKindOfClass:[TGConversation class]])
             {
                 TGConversation *conversation = (TGConversation *)_selectedTarget;
-                [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}]} animated:false];
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}], @"shareLink": _shareLink == nil ? @{} : _shareLink} animated:false];
             }
         }
     }

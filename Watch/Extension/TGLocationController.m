@@ -72,7 +72,7 @@ const NSUInteger TGLocationControllerBatchLimit = 16;
                 if ([next isEqualToString:TGBridgeLocationAccessRequiredKey])
                 {
                     strongSelf.alertGroup.hidden = false;
-                    strongSelf.alertLabel.text = TGLocalized(@"Location.Access");
+                    strongSelf.alertLabel.text = TGLocalized(@"Watch.Location.Access");
                     strongSelf.activityGroup.hidden = true;
                 }
                 else if ([next isEqualToString:TGBridgeLocationLoadingKey])

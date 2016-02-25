@@ -2,10 +2,13 @@
 
 #import "TGImageUtils.h"
 
+#import "TGModernButton.h"
+
 #import "TGCameraShutterButton.h"
 #import "TGCameraModeControl.h"
 #import "TGCameraTimeCodeView.h"
 #import "TGCameraZoomView.h"
+#import "TGCameraSegmentsView.h"
 
 @implementation TGCameraMainView
 
@@ -24,18 +27,44 @@
 
 - (void)updateForCameraModeChangeWithPreviousMode:(PGCameraMode)__unused previousMode
 {
-    if (_modeControl.cameraMode == PGCameraModePhoto)
+    switch (_modeControl.cameraMode)
     {
-        [_shutterButton setButtonMode:TGCameraShutterButtonNormalMode animated:true];
-        [_timecodeView setHidden:true animated:true];
-    }
-    else if (_modeControl.cameraMode == PGCameraModeVideo)
-    {
-        [_shutterButton setButtonMode:TGCameraShutterButtonVideoMode animated:true];
-        [_timecodeView setHidden:false animated:true];
+        case PGCameraModePhoto:
+        case PGCameraModeSquare:
+        {
+            [_shutterButton setButtonMode:TGCameraShutterButtonNormalMode animated:true];
+            [_timecodeView setHidden:true animated:true];
+            [_segmentsView setHidden:true animated:true delay:0.0];
+        }
+            break;
+            
+        case PGCameraModeVideo:
+        {
+            [_shutterButton setButtonMode:TGCameraShutterButtonVideoMode animated:true];
+            [_timecodeView setHidden:false animated:true];
+            [_segmentsView setHidden:true animated:true delay:0.0];
+        }
+            break;
+            
+        case PGCameraModeClip:
+        {
+            [_shutterButton setButtonMode:TGCameraShutterButtonVideoMode animated:true];
+            [_timecodeView setHidden:true animated:true];
+
+        }
+            break;
+            
+        default:
+            break;
     }
     
     [_zoomView hideAnimated:true];
+}
+
+- (void)updateForCameraModeChangeAfterResize
+{
+    if (_modeControl.cameraMode == PGCameraModeClip)
+        [_segmentsView setHidden:false animated:true delay:0.1];
 }
 
 - (void)setHasModeControl:(bool)hasModeControl
@@ -68,15 +97,41 @@
 
 #pragma mark - Actions
 
+- (void)setDoneButtonHidden:(bool)hidden animated:(bool)animated
+{
+    if (animated)
+    {
+        _doneButton.hidden = false;
+        [UIView animateWithDuration:0.3 animations:^
+        {
+            _doneButton.alpha = hidden ? 0.0f : 1.0f;
+        } completion:^(BOOL finished)
+        {
+            if (finished)
+                _doneButton.hidden = hidden;
+        }];
+    }
+    else
+    {
+        _doneButton.hidden = hidden;
+        _doneButton.alpha = hidden ? 0.0f : 1.0f;
+    }
+}
+
 - (void)setShutterButtonHighlighted:(bool)highlighted
 {
     [_shutterButton setHighlighted:highlighted];
 }
 
+- (void)setShutterButtonEnabled:(bool)enabled
+{
+    [_shutterButton setEnabled:enabled animated:true];
+}
+
 - (void)shutterButtonPressed
 {
-    if (self.shutterReleased != nil)
-        self.shutterReleased(false);
+    if (self.shutterPressed != nil)
+        self.shutterPressed(false);
 }
 
 - (void)shutterButtonReleased
@@ -89,6 +144,12 @@
 {
     if (self.cancelPressed != nil)
         self.cancelPressed();
+}
+
+- (void)doneButtonPressed
+{
+    if (self.donePressed != nil)
+        self.donePressed();
 }
 
 - (void)flipButtonPressed
@@ -142,6 +203,46 @@
 - (void)setInterfaceOrientation:(UIInterfaceOrientation)orientation animated:(bool)__unused animated
 {
     _interfaceOrientation = orientation;
+}
+
+#pragma mark - 
+
+- (void)setStartedSegmentCapture
+{
+    [_segmentsView startCurrentSegment];
+}
+
+- (void)setCurrentSegmentLength:(CGFloat)length
+{
+    [_segmentsView setCurrentSegment:length];
+}
+
+- (void)setCommitSegmentCapture
+{
+    [_segmentsView commitCurrentSegmentWithCompletion:nil];
+}
+
+- (void)previewLastSegment
+{
+    [_segmentsView highlightLastSegment];
+}
+
+- (void)removeLastSegment
+{
+    [_segmentsView removeLastSegment];
+}
+
+#pragma mark - 
+
+- (void)showMomentCaptureDismissWarningWithCompletion:(void (^)(bool dismiss))completion
+{
+    if (completion != nil)
+        completion(true);
+}
+
+- (void)layoutPreviewRelativeViews
+{
+    
 }
 
 @end

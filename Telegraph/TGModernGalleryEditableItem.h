@@ -1,10 +1,15 @@
 #import "TGModernGalleryItem.h"
+#import "TGPhotoToolbarView.h"
 
-@protocol TGEditablePhotoItem;
+@protocol TGMediaEditableItem;
+@class TGMediaEditingContext;
 
 @protocol TGModernGalleryEditableItem <TGModernGalleryItem>
 
-- (id<TGEditablePhotoItem>)editableMediaItem;
+@property (nonatomic, strong) TGMediaEditingContext *editingContext;
+
+- (id<TGMediaEditableItem>)editableMediaItem;
+- (TGPhotoEditorTab)toolbarTabs;
 - (NSString *)uniqueId;
 
 @end

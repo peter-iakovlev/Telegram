@@ -12,6 +12,7 @@
     NSString *_path;
     NSNumber *_size;
     NSString *_httpAuth;
+    bool _returnPath;
 }
 
 @end
@@ -43,6 +44,7 @@
     _path = options[@"path"];
     _size = options[@"size"];
     _httpAuth = options[@"httpAuth"];
+    _returnPath = [options[@"returnPath"] boolValue];
     
     self.cancelToken = [TGTelegraphInstance doRequestRawHttp:_url maxRetryCount:0 acceptCodes:@[@200] httpAuth:_httpAuth expectedFileSize:_size != nil ? _size.integerValue : -1 actor:self];
 }
@@ -52,9 +54,21 @@
     if (_cache)
         [_cache setValue:response forKey:[_url dataUsingEncoding:NSUTF8StringEncoding]];
     if (_path.length != 0)
-        [response writeToFile:_path atomically:false];
+        [response writeToFile:_path atomically:true];
     
-    [ActionStageInstance() actionCompleted:self.path result:response];
+    if (_returnPath) {
+        if (_path.length != 0) {
+            [ActionStageInstance() actionCompleted:self.path result:_path];
+        } else if (_cache != nil) {
+            [_cache getValuePathForKey:[_url dataUsingEncoding:NSUTF8StringEncoding] completion:^(NSString *path) {
+                [ActionStageInstance() actionCompleted:self.path result:path];
+            }];
+        } else {
+            [ActionStageInstance() actionFailed:self.path reason:-1];
+        }
+    } else {
+        [ActionStageInstance() actionCompleted:self.path result:response];
+    }
 }
 
 - (void)httpRequestFailed:(NSString *)__unused url

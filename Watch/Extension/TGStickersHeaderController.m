@@ -6,7 +6,7 @@ NSString *const TGStickersHeaderIdentifier = @"TGStickersHeader";
 
 - (void)update
 {
-    self.nameLabel.text = TGLocalized(@"Stickers.StickerPacks");
+    self.nameLabel.text = TGLocalized(@"Watch.Stickers.StickerPacks");
 }
 
 + (NSString *)identifier

@@ -63,6 +63,12 @@
     [self.navigationController setNavigationBarHidden:false animated:animated];
 }
 
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+    [self.navigationController setToolbarHidden:true animated:animated];
+}
+
 - (void)donePressed
 {
     if (iosMajorVersion() >= 8)

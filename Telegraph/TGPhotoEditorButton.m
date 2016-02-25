@@ -29,9 +29,7 @@
             CGContextRef context = UIGraphicsGetCurrentContext();
             CGContextSetFillColorWithColor(context, [TGPhotoEditorInterfaceAssets editorButtonSelectionBackgroundColor].CGColor);
             
-            UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, frame.size.width, frame.size.height)
-                                                            cornerRadius:2];
-            
+            UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, frame.size.width, frame.size.height) cornerRadius:2];
             [path fill];
             
             selectionBackground = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(frame.size.height / 4.0f, frame.size.height / 4.0f, frame.size.height / 4.0f, frame.size.height / 4.0f)];
@@ -41,13 +39,13 @@
         self.hitTestEdgeInsets = UIEdgeInsetsMake(-16, -16, -16, -16);
         
         _selectionView = [[UIImageView alloc] initWithFrame:self.bounds];
-        _selectionView.hidden = YES;
+        _selectionView.hidden = true;
         _selectionView.image = selectionBackground;
         [self addSubview:_selectionView];
         
         _button = [[TGModernButton alloc] initWithFrame:self.bounds];
         _button.hitTestEdgeInsets = self.hitTestEdgeInsets;
-        _button.exclusiveTouch = YES;
+        _button.exclusiveTouch = true;
         [_button addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];        
         [self addSubview:_button];
     }

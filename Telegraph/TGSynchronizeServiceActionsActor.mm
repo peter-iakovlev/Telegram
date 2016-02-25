@@ -133,7 +133,7 @@
                         } synchronous:true];
                     }
                     
-                    self.cancelToken = [TGTelegraphInstance doChangePeerNotificationSettings:notificationSettingsAction.uniqueId accessHash:accessHash muteUntil:notificationSettingsAction.muteUntil soundId:peerSoundId previewText:notificationSettingsAction.previewText photoNotificationsEnabled:notificationSettingsAction.photoNotificationsEnabled actor:self];
+                    self.cancelToken = [TGTelegraphInstance doChangePeerNotificationSettings:notificationSettingsAction.uniqueId accessHash:accessHash muteUntil:notificationSettingsAction.muteUntil soundId:peerSoundId previewText:notificationSettingsAction.previewText messagesMuted:notificationSettingsAction.messagesMuted actor:self];
                     
                     break;
                 }
@@ -258,6 +258,8 @@
                     NSUInteger peerLayer = [TGDatabaseInstance() peerLayer:peerId];
                     
                     NSData *messageData = [TGModernSendSecretMessageActor decryptedServiceMessageActionWithLayer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) notifyLayer:[TGModernSendSecretMessageActor currentLayer] randomId:settingsAction.messageRandomId];
+                    
+                    [TGDatabaseInstance() maybeCreateAdditionalEncryptedHashForPeer:peerId];
                     
                     if (messageData != nil)
                     {

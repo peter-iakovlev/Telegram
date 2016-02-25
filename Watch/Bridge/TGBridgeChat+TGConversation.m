@@ -37,10 +37,11 @@
     chat->_isKickedFromGroup = conversation.kickedFromChat;
     
     chat->_isChannel = conversation.isChannel;
+    chat->_isChannelGroup = conversation.isChannelGroup;
     
     chat->_userName = conversation.username;
     chat->_about = conversation.about;
-    chat->_isVerified = conversation.flags & (1 << 7);
+    chat->_isVerified = conversation.isVerified;
     
     chat->_participantsCount = conversation.chatParticipantCount;
     chat->_participants = [conversation.chatParticipants.chatParticipantUids copy];

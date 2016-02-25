@@ -34,6 +34,8 @@
 extern NSInteger TGModernConversationControllerUnloadHistoryLimit;
 extern NSInteger TGModernConversationControllerUnloadHistoryThreshold;
 
+#define migratedMessageIdOffset ((int32_t)1000000)
+
 typedef enum {
     TGModernConversationInsertItemIntentGeneric = 0,
     TGModernConversationInsertItemIntentSendTextMessage = 1,
@@ -54,8 +56,8 @@ typedef enum {
 - (TGMessage *)latestVisibleMessage;
 - (NSArray *)visibleMessageIds;
 - (NSArray *)_currentItems;
-- (void)replaceItems:(NSArray *)newItems;
-- (void)replaceItems:(NSArray *)newItems positionAtMessageId:(int32_t)positionAtMessageId expandAt:(int32_t)expandMessageId jump:(bool)jump;
+- (void)replaceItems:(NSArray *)newItems messageIdForVisibleHoleDirection:(int32_t)messageIdForVisibleHoleDirection;
+- (void)replaceItems:(NSArray *)newItems positionAtMessageId:(int32_t)positionAtMessageId expandAt:(int32_t)expandMessageId jump:(bool)jump top:(bool)top messageIdForVisibleHoleDirection:(int32_t)messageIdForVisibleHoleDirection scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated;
 - (void)replaceItemsWithFastScroll:(NSArray *)newItems intent:(TGModernConversationInsertItemIntent)intent scrollToMessageId:(int32_t)scrollToMessageId scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated;
 - (void)replaceItems:(NSArray *)items atIndices:(NSIndexSet *)indices;
 - (void)insertItems:(NSArray *)insertItems atIndices:(NSIndexSet *)indices animated:(bool)animated intent:(TGModernConversationInsertItemIntent)intent;
@@ -63,7 +65,8 @@ typedef enum {
 - (void)deleteItemsAtIndices:(NSIndexSet *)indices animated:(bool)animated;
 - (void)_deleteItemsAtIndices:(NSIndexSet *)indices animated:(bool)animated animationFactor:(CGFloat)animationFactor;
 - (void)moveItems:(NSArray *)moveIndexPairs;
-- (void)updateItemAtIndex:(NSUInteger)index toItem:(TGModernConversationItem *)updatedItem;
+- (void)updateItemAtIndex:(NSUInteger)index toItem:(TGModernConversationItem *)updatedItem delayAvailability:(bool)delayAvailability;
+- (void)updateItemAtIndex:(NSUInteger)index toItem:(TGModernConversationItem *)updatedItem delayAvailability:(bool)delayAvailability animated:(bool)animated;
 - (void)updateItemProgressAtIndex:(NSUInteger)index toProgress:(CGFloat)progress animated:(bool)animated;
 - (void)imageDataInvalidated:(NSString *)imageUrl;
 - (void)updateCheckedMessages;
@@ -79,7 +82,7 @@ typedef enum {
 - (void)showActionsMenuForUnsentMessage:(int32_t)messageId;
 - (void)highlightAndShowActionsMenuForMessage:(int32_t)messageId;
 - (void)temporaryHighlightMessage:(int32_t)messageId automatically:(bool)automatically;
-- (void)showActionsMenuForLink:(NSString *)url;
+- (void)showActionsMenuForLink:(NSString *)url webPage:(TGWebPageMediaAttachment *)webPage;
 - (void)showActionsMenuForContact:(TGUser *)contact isContact:(bool)isContact;
 - (void)showAddContactMenu:(TGUser *)contact;
 - (void)showCallNumberMenu:(NSArray *)phoneNumbers;
@@ -90,8 +93,10 @@ typedef enum {
 
 - (void)reloadBackground;
 - (void)refreshMetrics;
-- (void)setInputText:(NSString *)inputText replace:(bool)replace;
+- (void)setInputText:(NSString *)inputText replace:(bool)replace selectRange:(NSRange)selectRange;
+- (void)setMessageEditingContext:(TGMessageEditingContext *)messageEditingContext;
 - (NSString *)inputText;
+- (void)updateWebpageLinks;
 - (void)setReplyMessage:(TGMessage *)replyMessage animated:(bool)animated;
 - (void)setForwardMessages:(NSArray *)forwardMessages animated:(bool)animated;
 - (void)setInlineStickerList:(NSArray *)inlineStickerList;
@@ -122,8 +127,6 @@ typedef enum {
 
 - (bool)canReadHistory;
 
-- (TGModernViewInlineMediaContext *)inlineMediaContext:(int32_t)messageId;
-
 - (NSArray *)_items;
 - (int32_t)_currentReplyMessageId;
 - (NSArray *)_currentForwardMessageDescs;
@@ -143,5 +146,9 @@ typedef enum {
 - (void)hideKeyboard;
 
 - (void)activateSearch;
+- (void)forwardMessages:(NSArray *)messageIds fastForward:(bool)fastForward;
+
+- (void)setLoadingMessages:(bool)loadingMessages;
+- (void)messagesDeleted:(NSArray *)messageIds;
 
 @end

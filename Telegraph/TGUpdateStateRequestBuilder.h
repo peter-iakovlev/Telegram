@@ -34,6 +34,7 @@
 
 + (TGWebPageMediaAttachment *)webPageWithId:(int64_t)webPageId;
 + (TGWebPageMediaAttachment *)webPageWithLink:(NSString *)link;
++ (void)addWebPageWithLink:(NSString *)link webPage:(TGWebPageMediaAttachment *)webPage;
 + (SSignal *)requestWebPageByText:(NSString *)text;
 
 + (void)applyUpdates:(NSArray *)addedMessagesDesc otherUpdates:(NSArray *)otherUpdates usersDesc:(NSArray *)usersDesc chatsDesc:(NSArray *)chatsDesc chatParticipantsDesc:(NSArray *)chatParticipantsDesc updatesWithDates:(NSArray *)updatesWithDates addedEncryptedActionsByPeerId:(NSDictionary *)addedEncryptedActionsByPeerId addedEncryptedUnparsedActionsByPeerId:(NSDictionary *)addedEncryptedUnparsedActionsByPeerId completion:(void (^)(bool))completion;

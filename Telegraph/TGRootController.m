@@ -1,6 +1,7 @@
 #import "TGRootController.h"
 
 #import "TGAppDelegate.h"
+#import "TGImageUtils.h"
 
 #import "TGTabletMainView.h"
 #import "TGNavigationController.h"
@@ -10,6 +11,8 @@
 #import "TGContactsController.h"
 #import "TGAccountSettingsController.h"
 #import "TGMainTabsController.h"
+
+#import "TGKeyCommand.h"
 
 @interface TGRootController ()
 {
@@ -50,12 +53,33 @@
         _masterNavigationController = [TGNavigationController navigationControllerWithControllers:@[]];
         _detailNavigationController = [TGNavigationController navigationControllerWithControllers:@[]];
         [_detailNavigationController setDisplayPlayer:true];
-        _currentSizeClass = UIUserInterfaceSizeClassCompact;
+
+        if (iosMajorVersion() >= 8)
+        {
+            _currentSizeClass = UIUserInterfaceSizeClassCompact;
+        }
+        else
+        {
+            switch ([UIDevice currentDevice].userInterfaceIdiom)
+            {
+                case UIUserInterfaceIdiomPad:
+                    _currentSizeClass = UIUserInterfaceSizeClassRegular;
+                    break;
+                    
+                default:
+                    _currentSizeClass = UIUserInterfaceSizeClassCompact;
+                    break;
+            }
+        }
         
         _sizeClassVariable = [[SVariable alloc] init];
         [_sizeClassVariable set:[SSignal single:@(_currentSizeClass)]];
     }
     return self;
+}
+
+- (bool)shouldAutorotate {
+    return [(UIViewController *)[self viewControllers].lastObject shouldAutorotate];
 }
 
 - (void)loadView
@@ -247,6 +271,27 @@
         return true;
     
     return false;
+}
+
+- (CGRect)applicationBounds {
+    CGSize screenSize = TGScreenSize();
+    CGFloat min = MIN(screenSize.width, screenSize.height);
+    CGFloat max = MAX(screenSize.width, screenSize.height);
+    
+    CGSize size = CGSizeZero;
+    CGSize (^sizeByDeviceOrientation)(void) = ^CGSize {
+        if (UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation))
+            return CGSizeMake(min, max);
+        else
+            return CGSizeMake(max, min);
+    };
+    
+    if (![self isSplitView])
+        size = sizeByDeviceOrientation();
+    else
+        size = self.view.frame.size;
+    
+    return (CGRect){ CGPointZero, size };
 }
 
 - (UIUserInterfaceSizeClass)currentSizeClass {

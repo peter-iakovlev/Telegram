@@ -109,5 +109,6 @@ inline void TGDispatchAfter(double delay, dispatch_queue_t queue, dispatch_block
 #define CGOdd(x) ((((int)x) & 1) ? x : (x + 1))
 
 #import "TGAppearance.h"
+#import "TGColor.h"
 
 #endif

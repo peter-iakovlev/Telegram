@@ -29,6 +29,7 @@
         _title = title;
         _variant = variant;
         _action = action;
+        _enabled = true;
     }
     return self;
 }
@@ -49,11 +50,13 @@
     
     [((TGVariantCollectionItemView *)view) setTitle:_title];
     [((TGVariantCollectionItemView *)view) setVariant:_variant];
+    [((TGVariantCollectionItemView *)view) setIcon:_icon];
+    [((TGVariantCollectionItemView *)view) setEnabled:_enabled];
 }
 
 - (void)itemSelected:(id)actionTarget
 {
-    if (_action != NULL && [actionTarget respondsToSelector:_action])
+    if (_action != NULL && [actionTarget respondsToSelector:_action] && _enabled)
     {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
@@ -82,6 +85,19 @@
         if ([self boundView] != nil)
             [((TGVariantCollectionItemView *)[self boundView]) setVariant:_variant];
     }
+}
+
+- (void)setIcon:(UIImage *)icon
+{
+    _icon = icon;
+    
+    if (self.view != nil)
+        [(TGVariantCollectionItemView *)self.view setIcon:icon];
+}
+
+- (void)setEnabled:(bool)enabled {
+    _enabled = enabled;
+    [((TGVariantCollectionItemView *)[self boundView]) setEnabled:enabled];
 }
 
 @end

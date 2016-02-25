@@ -19,10 +19,12 @@
     self = [super initWithPeer:peer incoming:incoming text:text truncateTextInTheMiddle:truncateTextInTheMiddle textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:44.0f system:system];
     if (self != nil)
     {
-        _imageModel = [[TGSignalImageViewModel alloc] init];
-        [_imageModel setSignalGenerator:imageSignalGenerator identifier:imageSignalIdentifier];
-        _imageModel.skipDrawInContext = true;
-        [self addSubmodel:_imageModel];
+        if (imageSignalGenerator != nil) {
+            _imageModel = [[TGSignalImageViewModel alloc] init];
+            [_imageModel setSignalGenerator:imageSignalGenerator identifier:imageSignalIdentifier];
+            _imageModel.skipDrawInContext = true;
+            [self addSubmodel:_imageModel];
+        }
         
         if (icon != nil)
         {
@@ -47,7 +49,7 @@
 
 - (void)layoutForContainerSize:(CGSize)containerSize updateContent:(bool *)updateContent
 {
-    if (containerSize.width < 90.0f)
+    if (containerSize.width < 90.0f || (_imageModel == nil && _iconModel == nil))
     {
         _leftInset = 0.0f;
         _imageModel.hidden = true;

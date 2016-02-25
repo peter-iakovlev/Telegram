@@ -34,7 +34,7 @@ NSString *const TGGroupInfoHeaderIdentifier = @"TGGroupInfoHeader";
             onlineCount++;
     }
     
-    NSString *membersText = [NSString stringWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"GroupInfo.ParticipantCount_" value:chat.participantsCount]), [NSString stringWithFormat:@"%d", (int32_t)chat.participantsCount]];
+    NSString *membersText = [NSString stringWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"Conversation.StatusMembers_" value:chat.participantsCount]), [NSString stringWithFormat:@"%d", (int32_t)chat.participantsCount]];
     
     if (onlineCount > 1)
         membersText = [NSString stringWithFormat:@"%@,", membersText];
@@ -44,7 +44,7 @@ NSString *const TGGroupInfoHeaderIdentifier = @"TGGroupInfoHeader";
     self.onlineLabel.hidden = (onlineCount <= 1);
     if (!self.onlineLabel.hidden)
     {
-        self.onlineLabel.text = [NSString stringWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"GroupInfo.StatusOnline_" value:onlineCount]), [NSString stringWithFormat:@"%d", (int32_t)onlineCount]];
+        self.onlineLabel.text = [NSString stringWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"Conversation.StatusOnline_" value:onlineCount]), [NSString stringWithFormat:@"%d", (int32_t)onlineCount]];
     }
     
     if (chat.groupPhotoSmall.length > 0)

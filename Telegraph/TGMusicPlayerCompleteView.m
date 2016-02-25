@@ -5,6 +5,7 @@
 #import "TGImageUtils.h"
 #import "TGFont.h"
 #import "TGModernButton.h"
+#import "TGMusicPlayerModeButton.h"
 
 #import "TGMusicPlayer.h"
 #import "TGTelegraph.h"
@@ -47,6 +48,9 @@
     TGModernButton *_controlForwardButton;
     TGModernButton *_controlPlayButton;
     TGModernButton *_controlPauseButton;
+    
+    TGMusicPlayerModeButton *_controlShuffleButton;
+    TGMusicPlayerModeButton *_controlRepeatButton;
     
     CGFloat _labelsEdge;
     UILabel *_positionLabel;
@@ -245,6 +249,16 @@
         [_controlForwardButton setImage:[UIImage imageNamed:@"MusicPlayerControlForward.png"] forState:UIControlStateNormal];
         [_controlForwardButton addTarget:self action:@selector(controlForward) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_controlForwardButton];
+        
+        _controlShuffleButton = [[TGMusicPlayerModeButton alloc] init];
+        [_controlShuffleButton setImage:[UIImage imageNamed:@"MusicPlayerControlShuffle.png"] forState:UIControlStateNormal];
+        [_controlShuffleButton addTarget:self action:@selector(controlShuffle) forControlEvents:UIControlEventTouchUpInside];
+        //[self addSubview:_controlShuffleButton];
+        
+        _controlRepeatButton = [[TGMusicPlayerModeButton alloc] init];
+        [_controlRepeatButton setImage:[UIImage imageNamed:@"MusicPlayerControlRepeat.png"] forState:UIControlStateNormal];
+        [_controlRepeatButton addTarget:self action:@selector(controlRepeat) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_controlRepeatButton];
         
 #if TARGET_IPHONE_SIMULATOR
         UISlider *sliderView = [[UISlider alloc] init];
@@ -500,7 +514,7 @@ typedef enum {
     CGFloat titleOffset = albumArtEdge + 31.0f;
     CGFloat controlButtonsOffset = albumArtEdge + 76.0f;
     CGFloat controlButtonSize = 60.0f;
-    CGFloat controlButtonSpread = 76.0f;
+    CGFloat controlButtonSpread = 100.0f;
     CGFloat volumeControlBottomOffset = 58.0f;
     CGFloat volumeControlSideInset = 47.0f;
     CGFloat volumeControlOffset = 0.0f;
@@ -555,6 +569,10 @@ typedef enum {
     _controlBackButton.frame = CGRectMake(CGFloor((self.bounds.size.width - controlButtonSpread) / 2.0f) - controlButtonSize, controlButtonsOffset, controlButtonSize, controlButtonSize);
     _controlForwardButton.frame = CGRectMake(CGFloor((self.bounds.size.width + controlButtonSpread) / 2.0f), controlButtonsOffset, controlButtonSize, controlButtonSize);
     
+    CGSize modeButtonSize = CGSizeMake(28.0f, 21.0f);
+    _controlShuffleButton.frame = CGRectMake(16.0f, _controlPlayButton.frame.origin.y + 19.0f, modeButtonSize.width, modeButtonSize.height);
+    _controlRepeatButton.frame = CGRectMake(self.bounds.size.width - 44.0f, _controlShuffleButton.frame.origin.y, modeButtonSize.width, modeButtonSize.height);
+    
     [UIView performWithoutAnimation:^
     {
         _volumeView.frame = CGRectMake(volumeControlSideInset, self.frame.size.height - volumeControlBottomOffset + volumeControlOffset, self.bounds.size.width - volumeControlSideInset * 2.0f, 50.0f);
@@ -582,23 +600,27 @@ typedef enum {
     {
         NSString *title = nil;
         NSString *performer = nil;
-        for (id attribute in status.item.document.attributes)
-        {
-            if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
+        if ([status.item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+            TGDocumentMediaAttachment *document = status.item.media;
+            for (id attribute in document.attributes)
             {
-                title = ((TGDocumentAttributeAudio *)attribute).title;
-                performer = ((TGDocumentAttributeAudio *)attribute).performer;
-                
-                break;
+                if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
+                {
+                    title = ((TGDocumentAttributeAudio *)attribute).title;
+                    performer = ((TGDocumentAttributeAudio *)attribute).performer;
+                    
+                    break;
+                }
+            }
+        
+            if (title.length == 0)
+            {
+                title = document.fileName;
             }
         }
         
         if (title.length == 0)
-        {
-            title = status.item.document.fileName;
-            if (title.length == 0)
-                title = @"Unknown Track";
-        }
+            title = @"Unknown Track";
         
         if (performer.length == 0)
             performer = @"Unknown Artist";
@@ -632,6 +654,28 @@ typedef enum {
     
     _controlPlayButton.hidden = !status.paused;
     _controlPauseButton.hidden = status.paused;
+    
+    _controlShuffleButton.selected = status.shuffle;
+    if (status.repeatType != previousStatus.repeatType)
+    {
+        switch (status.repeatType)
+        {
+            case TGMusicPlayerRepeatTypeNone:
+                [_controlRepeatButton setImage:[UIImage imageNamed:@"MusicPlayerControlRepeat.png"] forState:UIControlStateNormal];
+                _controlRepeatButton.selected = false;
+                break;
+                
+            case TGMusicPlayerRepeatTypeAll:
+                [_controlRepeatButton setImage:[UIImage imageNamed:@"MusicPlayerControlRepeat.png"] forState:UIControlStateNormal];
+                _controlRepeatButton.selected = true;
+                break;
+                
+            case TGMusicPlayerRepeatTypeOne:
+                [_controlRepeatButton setImage:[UIImage imageNamed:@"MusicPlayerControlRepeatOne.png"] forState:UIControlStateNormal];
+                _controlRepeatButton.selected = true;
+                break;
+        }
+    }
     
     CGFloat disabledAlpha = 0.6f;
     
@@ -806,6 +850,16 @@ typedef enum {
 - (void)controlForward
 {
     [TGTelegraphInstance.musicPlayer controlNext];
+}
+
+- (void)controlShuffle
+{
+    [TGTelegraphInstance.musicPlayer controlShuffle];
+}
+
+- (void)controlRepeat
+{
+    [TGTelegraphInstance.musicPlayer controlRepeat];
 }
 
 @end

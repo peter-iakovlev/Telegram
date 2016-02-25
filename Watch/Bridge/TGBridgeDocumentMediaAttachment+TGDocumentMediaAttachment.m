@@ -9,6 +9,7 @@
     
     TGBridgeDocumentMediaAttachment *bridgeAttachment = [[TGBridgeDocumentMediaAttachment alloc] init];
     bridgeAttachment.documentId = attachment.documentId;
+    bridgeAttachment.localDocumentId = attachment.localDocumentId;
     bridgeAttachment.accessHash = attachment.accessHash;
     bridgeAttachment.datacenterId = attachment.datacenterId;
     bridgeAttachment.legacyThumbnailUri = [attachment.thumbnailInfo imageUrlForLargestSize:NULL];
@@ -21,6 +22,9 @@
         if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]])
         {
             bridgeAttachment.imageSize = [NSValue valueWithCGSize:((TGDocumentAttributeImageSize *)attribute).size];
+        }
+        if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+            bridgeAttachment.imageSize = [NSValue valueWithCGSize:((TGDocumentAttributeVideo *)attribute).size];
         }
         if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]])
         {
@@ -39,6 +43,8 @@
             bridgeAttachment.isAudio = true;
             bridgeAttachment.title = audioAttribute.title;
             bridgeAttachment.performer = audioAttribute.performer;
+            bridgeAttachment.isVoice = audioAttribute.isVoice;
+            bridgeAttachment.duration = audioAttribute.duration;
         }
     }
     
@@ -52,6 +58,7 @@
     
     TGDocumentMediaAttachment *attachment = [[TGDocumentMediaAttachment alloc] init];
     attachment.documentId = bridgeAttachment.documentId;
+    attachment.localDocumentId = bridgeAttachment.localDocumentId;
     attachment.accessHash = bridgeAttachment.accessHash;
     attachment.datacenterId = bridgeAttachment.datacenterId;
     
@@ -62,6 +69,11 @@
 
     if (bridgeAttachment.imageSize != nil)
         [attributes addObject:[[TGDocumentAttributeImageSize alloc] initWithSize:bridgeAttachment.imageSize.CGSizeValue]];
+    
+    if (bridgeAttachment.isAudio)
+    {
+        [attributes addObject:[[TGDocumentAttributeAudio alloc] initWithIsVoice:bridgeAttachment.isVoice title:bridgeAttachment.title performer:bridgeAttachment.performer duration:bridgeAttachment.duration waveform:nil]];
+    }
     
     attachment.attributes = attributes;
     

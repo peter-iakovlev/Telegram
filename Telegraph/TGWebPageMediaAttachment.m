@@ -22,6 +22,7 @@
         self.type = TGWebPageMediaAttachmentType;
         
         _webPageId = [aDecoder decodeInt64ForKey:@"webPageId"];
+        _webPageLocalId = [aDecoder decodeInt64ForKey:@"webPageLocalId"];
         _pendingDate = [aDecoder decodeInt32ForKey:@"pendingDate"];
         _url = [aDecoder decodeObjectForKey:@"url"];
         _displayUrl = [aDecoder decodeObjectForKey:@"displayUrl"];
@@ -35,6 +36,7 @@
         _embedSize = [[aDecoder decodeObjectForKey:@"embedSize"] CGSizeValue];
         _duration = [aDecoder decodeObjectForKey:@"duration"];
         _author = [aDecoder decodeObjectForKey:@"author"];
+        _document = [aDecoder decodeObjectForKey:@"document"];
     }
     return self;
 }
@@ -42,6 +44,7 @@
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
     [aCoder encodeInt64:_webPageId forKey:@"webPageId"];
+    [aCoder encodeInt64:_webPageLocalId forKey:@"webPageLocalId"];
     [aCoder encodeInt32:_pendingDate forKey:@"pendingDate"];
     if (_url != nil)
         [aCoder encodeObject:_url forKey:@"url"];
@@ -66,12 +69,16 @@
         [aCoder encodeObject:_duration forKey:@"duration"];
     if (_author != nil)
         [aCoder encodeObject:_author forKey:@"author"];
+    if (_document != nil) {
+        [aCoder encodeObject:_document forKey:@"document"];
+    }
 }
 
 - (BOOL)isEqual:(id)object
 {
     return [object isKindOfClass:[TGWebPageMediaAttachment class]] &&
         ((TGWebPageMediaAttachment *)object)->_webPageId == _webPageId &&
+        ((TGWebPageMediaAttachment *)object)->_webPageLocalId == _webPageLocalId &&
         ((TGWebPageMediaAttachment *)object)->_pendingDate == _pendingDate &&
         TGStringCompare(((TGWebPageMediaAttachment *)object)->_url, _url) &&
         TGStringCompare(((TGWebPageMediaAttachment *)object)->_displayUrl, _displayUrl) &&
@@ -97,7 +104,11 @@
 {
     int32_t length = [is readInt32];
     NSData *data = [is readData:length];
-    return [NSKeyedUnarchiver unarchiveObjectWithData:data];
+    @try {
+        return [NSKeyedUnarchiver unarchiveObjectWithData:data];
+    } @catch (NSException *e) {
+    }
+    return nil;
 }
 
 @end

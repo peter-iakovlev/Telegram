@@ -26,6 +26,7 @@
 @property (nonatomic) bool showBroadcastsMenu;
 @property (nonatomic) bool showSecretInForwardMode;
 @property (nonatomic) bool showGroupsOnly;
+@property (nonatomic) bool botStartMode;
 
 @property (nonatomic) int unreadCount;
 
@@ -39,7 +40,7 @@
 
 - (void)loadMoreItems;
 
-- (void)composeMessage;
+- (void)composeMessageAndOpenSearch:(bool)openSearch;
 - (void)navigateToBroadcastLists;
 - (void)navigateToNewGroup;
 

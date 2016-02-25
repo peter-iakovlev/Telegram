@@ -11,4 +11,6 @@
 - (void)addHolder:(TGHolder *)holder;
 - (void)removeHolder:(TGHolder *)holder;
 
+- (bool)isEmpty;
+
 @end

@@ -2,14 +2,14 @@
 
 @class SSignal;
 @class PGPhotoEditor;
+@class TGSuggestionContext;
 @class TGPhotoEditorPreviewView;
 
 @interface TGPhotoCaptionController : TGPhotoEditorTabController
 
 @property (nonatomic, copy) void (^captionSet)(NSString *caption);
 
-@property (nonatomic, copy) SSignal *(^userListSignal)(NSString *mention);
-@property (nonatomic, copy) SSignal *(^hashtagListSignal)(NSString *hashtag);
+@property (nonatomic, strong) TGSuggestionContext *suggestionContext;
 
 - (instancetype)initWithPhotoEditor:(PGPhotoEditor *)photoEditor previewView:(TGPhotoEditorPreviewView *)previewView caption:(NSString *)caption;
 

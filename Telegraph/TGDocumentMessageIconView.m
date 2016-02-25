@@ -24,6 +24,29 @@
 
 @implementation TGDocumentMessageIconView
 
+static UIImage *highlightImageForDiameter(CGFloat diameter) {
+    static NSMutableDictionary *dict = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        dict = [[NSMutableDictionary alloc] init];
+    });
+    UIImage *cachedImage = dict[@((int)diameter)];
+    if (cachedImage != nil) {
+        return cachedImage;
+    } else {
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.2f).CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+        cachedImage = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        if (cachedImage != nil) {
+            dict[@((int)diameter)] = cachedImage;
+        }
+        return cachedImage;
+    }
+}
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
@@ -44,37 +67,44 @@
         _extensionLabel.font = TGSystemFontOfSize(19.0f);
         [self addSubview:_extensionLabel];
         
-        CGFloat diameter = 44.0f;
+        _diameter = 44.0f;
         
-        _buttonView = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, diameter, diameter)];
+        _buttonView = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _diameter, _diameter)];
         _buttonView.exclusiveTouch = true;
         _buttonView.modernHighlight = true;
         [_buttonView addTarget:self action:@selector(actionButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         
-        _overlayView = [[TGMessageImageViewOverlayView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, diameter, diameter)];
-        [_overlayView setRadius:diameter];
+        _overlayView = [[TGMessageImageViewOverlayView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _diameter, _diameter)];
+        [_overlayView setRadius:_diameter];
         _overlayView.userInteractionEnabled = false;
         [_buttonView addSubview:_overlayView];
         
-        static UIImage *highlightImage = nil;
-        static dispatch_once_t onceToken2;
-        dispatch_once(&onceToken2, ^
-        {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.4f).CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-            highlightImage = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-        });
-        
-        _buttonView.highlightImage = highlightImage;
+        _buttonView.highlightImage = highlightImageForDiameter(_diameter);
     }
     return self;
 }
 
 - (void)willBecomeRecycled
 {
+}
+
+- (void)setDiameter:(CGFloat)diameter {
+    if (ABS(_diameter - diameter) > FLT_EPSILON) {
+        _diameter = diameter;
+        [_overlayView setRadius:diameter];
+        
+        _buttonView.highlightImage = highlightImageForDiameter(_diameter);
+        
+        CGRect frame = self.frame;
+        CGRect buttonFrame = _buttonView.frame;
+        buttonFrame.size.width = diameter;
+        buttonFrame.size.height = diameter;
+        buttonFrame.origin = CGPointMake(CGFloor(frame.size.width - buttonFrame.size.width) / 2.0f, CGFloor(frame.size.height - buttonFrame.size.height) / 2.0f);
+        if (!CGRectEqualToRect(_buttonView.frame, buttonFrame))
+        {
+            _buttonView.frame = buttonFrame;
+        }
+    }
 }
 
 - (void)setFrame:(CGRect)frame

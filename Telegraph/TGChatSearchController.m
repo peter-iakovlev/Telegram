@@ -69,7 +69,7 @@ extern NSString *authorNameYou;
     _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     [self.view addSubview:_tableView];
     
-    _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, 20.0f, self.view.frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleLight];
+    _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, 20.0f, self.view.frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleLightAlwaysPlain];
     _searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     _searchBar.delegate = self;
     [_searchBar setShowsCancelButton:true animated:false];
@@ -307,12 +307,21 @@ extern NSString *authorNameYou;
             TGActionMediaAttachment *actionAttachment = (TGActionMediaAttachment *)attachment;
             if (actionAttachment.actionType == TGMessageActionChatAddMember || actionAttachment.actionType == TGMessageActionChatDeleteMember)
             {
-                NSNumber *nUid = [actionAttachment.actionData objectForKey:@"uid"];
-                if (nUid != nil)
-                {
-                    TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
-                    if (user != nil)
-                        [messageUsers setObject:user forKey:nUid];
+                NSArray *uids = actionAttachment.actionData[@"uids"];
+                if (uids != nil) {
+                    for (NSNumber *nUid in uids) {
+                        TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                        if (user != nil)
+                            [messageUsers setObject:user forKey:nUid];
+                    }
+                } else {
+                    NSNumber *nUid = [actionAttachment.actionData objectForKey:@"uid"];
+                    if (nUid != nil)
+                    {
+                        TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
+                        if (user != nil)
+                            [messageUsers setObject:user forKey:nUid];
+                    }
                 }
             }
             

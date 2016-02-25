@@ -16,6 +16,7 @@
 
 - (SSignal *)sizeClass;
 - (bool)isSplitView;
+- (CGRect)applicationBounds;
 
 - (void)pushContentController:(UIViewController *)contentController;
 - (void)replaceContentController:(UIViewController *)contentController;

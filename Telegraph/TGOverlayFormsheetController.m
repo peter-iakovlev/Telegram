@@ -99,7 +99,7 @@ const CGSize TGOverlayFormsheetControllerReferenceSize = { 540.0f, 620.0f };
 
 - (void)updateLayout:(UIInterfaceOrientation)__unused orientation
 {
-    CGSize referenceSize = TGAppDelegateInstance.rootController.view.frame.size;
+    CGSize referenceSize = TGAppDelegateInstance.rootController.applicationBounds.size;
     _wrapperView.frame = CGRectMake((referenceSize.width - _wrapperView.frame.size.width) / 2, (referenceSize.height - _wrapperView.frame.size.height) / 2, _wrapperView.frame.size.width, _wrapperView.frame.size.height);
 }
 

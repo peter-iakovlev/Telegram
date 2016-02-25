@@ -34,7 +34,6 @@
 
 @property (nonatomic, weak) IBOutlet WKInterfaceGroup *fileGroup;
 @property (nonatomic, weak) IBOutlet WKInterfaceGroup *fileIconGroup;
-@property (nonatomic, weak) IBOutlet WKInterfaceLabel *extensionLabel;
 @property (nonatomic, weak) IBOutlet WKInterfaceImage *venueIcon;
 
 @property (nonatomic, weak) IBOutlet WKInterfaceGroup *stickerWrapperGroup;

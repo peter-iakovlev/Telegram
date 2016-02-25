@@ -14,7 +14,7 @@
 
 @interface TGSynchronizeActionQueueActor : TGActor <TGDeleteChatMemberProtocol>
 
-- (void)readMessagesSuccess:(TLmessages_AffectedHistory *)affectedHistory;
+- (void)readMessagesSuccess:(TLmessages_AffectedMessages *)affectedMessages;
 - (void)readMessagesFailed;
 
 - (void)deleteMessagesSuccess:(TLmessages_AffectedMessages *)result;

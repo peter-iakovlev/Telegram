@@ -14,9 +14,10 @@ typedef enum {
 
 @interface TGChannelManagementSignals : NSObject
 
-+ (SSignal *)makeChannelWithTitle:(NSString *)title about:(NSString *)about userIds:(NSArray *)userIds;
++ (SSignal *)makeChannelWithTitle:(NSString *)title about:(NSString *)about group:(bool)group;
 + (SSignal *)addChannel:(TGConversation *)conversation;
 + (SSignal *)synchronizedChannelList;
++ (bool)_containsPreloadedHistoryForPeerId:(int64_t)peerId aroundMessageId:(int32_t)messageId;
 + (SSignal *)preloadedHistoryForPeerId:(int64_t)peerId accessHash:(int64_t)accessHash aroundMessageId:(int32_t)messageId;
 + (SSignal *)preloadedChannelAtMessage:(int64_t)peerId messageId:(int32_t)messageId;
 + (SSignal *)preloadedChannel:(int64_t)peerId;
@@ -39,6 +40,7 @@ typedef enum {
 + (SSignal *)consumeMessages:(int64_t)peerId accessHash:(int64_t)accessHash messageIds:(NSArray *)messageIds;
 
 + (SSignal *)toggleChannelCommentsEnabled:(int64_t)peerId accessHash:(int64_t)accessHash enabled:(bool)enabled;
++ (SSignal *)toggleChannelEverybodyCanInviteMembers:(int64_t)peerId accessHash:(int64_t)accessHash enabled:(bool)enabled;
 
 + (SSignal *)channelChangeMemberKicked:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user kicked:(bool)kicked;
 + (SSignal *)channelChangeRole:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user role:(TGChannelRole)role;
@@ -50,5 +52,10 @@ typedef enum {
 
 + (SSignal *)deleteChannel:(int64_t)peerId accessHash:(int64_t)accessHash;
 + (SSignal *)canMakePublicChannels;
+
++ (SSignal *)updateChannelSignaturesEnabled:(int64_t)peerId accessHash:(int64_t)accessHash enabled:(bool)enabled;
+
++ (SSignal *)messageEditData:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId;
++ (SSignal *)editMessage:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId text:(NSString *)text disableLinksPreview:(bool)disableLinksPreview;
 
 @end

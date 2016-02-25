@@ -14,5 +14,6 @@
 @property (nonatomic, strong) TLChatPhoto *photo;
 @property (nonatomic) int32_t date;
 @property (nonatomic) int32_t version;
+@property (nonatomic, strong) NSString *restriction_reason;
 
 @end

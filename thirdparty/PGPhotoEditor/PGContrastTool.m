@@ -64,7 +64,7 @@
 {
     return PGShaderString
     (
-        result = vec4(((result.rgb - vec3(0.5)) * contrast + vec3(0.5)), result.a);
+        result = vec4(clamp(((result.rgb - vec3(0.5)) * contrast + vec3(0.5)), 0.0, 1.0), result.a);
     );
 }
 

@@ -5,8 +5,6 @@
 
 #import <AVFoundation/AVFoundation.h>
 
-NSString *const PGCameraReadyForMoreMediaData = @"readyForMoreMediaData";
-
 @interface PGCameraMovieWriter ()
 {
     AVAssetWriter *_assetWriter;
@@ -52,9 +50,7 @@ NSString *const PGCameraReadyForMoreMediaData = @"readyForMoreMediaData";
     if ([[NSFileManager defaultManager] fileExistsAtPath:path])
         [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
     
-    _assetWriter = [[AVAssetWriter alloc] initWithURL:[NSURL fileURLWithPath:path]
-                                             fileType:[PGCameraMovieWriter outputFileType]
-                                                error:&error];
+    _assetWriter = [[AVAssetWriter alloc] initWithURL:[NSURL fileURLWithPath:path] fileType:[PGCameraMovieWriter outputFileType] error:&error];
 
     if (_assetWriter == nil && error != nil)
     {
@@ -113,15 +109,16 @@ NSString *const PGCameraReadyForMoreMediaData = @"readyForMoreMediaData";
             return;
         
         strongSelf->_finishedWriting = true;
-        
+
         TGDispatchOnMainThread(^
         {
             if (strongSelf->_assetWriter.status == AVAssetWriterStatusCompleted)
             {
                 if (strongSelf.finishedWithMovieAtURL != nil)
                 {
-                    CGSize dimensions = CGSizeMake([strongSelf->_videoOutputSettings[AVVideoWidthKey] floatValue], [strongSelf->_videoOutputSettings[AVVideoHeightKey] floatValue]);
-                    dimensions = TGTransformDimensionsWithTransform(dimensions, strongSelf->_videoTransform);
+                    AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:strongSelf->_assetWriter.outputURL options:nil];
+                    AVAssetTrack *track = [[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];
+                    CGSize dimensions = TGTransformDimensionsWithTransform(track.naturalSize, strongSelf->_videoTransform);
                     strongSelf.finishedWithMovieAtURL(strongSelf->_assetWriter.outputURL, strongSelf->_videoTransform, dimensions, strongSelf.currentDuration, true);
                 }
             }

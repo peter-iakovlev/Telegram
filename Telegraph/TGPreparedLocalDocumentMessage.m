@@ -16,7 +16,55 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGDataItem.h"
+
 @implementation TGPreparedLocalDocumentMessage
+
++ (instancetype)messageWithTempDataItem:(TGDataItem *)tempDataItem size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage {
+#ifdef DEBUG
+    NSAssert(tempDataItem != nil, @"tempDataItem should not be nil");
+#endif
+    
+    TGPreparedLocalDocumentMessage *message = [[TGPreparedLocalDocumentMessage alloc] init];
+    
+    int64_t localDocumentId = 0;
+    arc4random_buf(&localDocumentId, 8);
+    
+    NSString *currentDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localDocumentId];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:currentDocumentDirectory])
+        [[NSFileManager defaultManager] createDirectoryAtPath:currentDocumentDirectory withIntermediateDirectories:true attributes:nil error:nil];
+    
+    NSString *fileName = @"file";
+    for (id attribute in attributes)
+    {
+        if ([attribute isKindOfClass:[TGDocumentAttributeFilename class]])
+            fileName = ((TGDocumentAttributeFilename *)attribute).filename;
+    }
+    
+    NSString *uploadDocumentFile = [currentDocumentDirectory stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:fileName]];
+    [tempDataItem moveToPath:uploadDocumentFile];
+    
+    message.localDocumentId = localDocumentId;
+    message.size = size;
+    message.attributes = attributes;
+    
+    if (mimeType.length != 0)
+        message.mimeType = mimeType;
+    else
+        message.mimeType = [TGMimeTypeMap mimeTypeForExtension:[fileName pathExtension]];
+    
+    if (thumbnailImage != nil)
+    {
+        NSData *thumbnailData = UIImageJPEGRepresentation(thumbnailImage, 0.9f);
+        message.localThumbnailDataPath = [self _fileUrlForStoredData:thumbnailData];
+        CGSize networkThumbnailSize = TGFitSize(thumbnailSize, CGSizeMake(90, 90));
+        message.thumbnailSize = networkThumbnailSize;
+    }
+    
+    message.replyMessage = replyMessage;
+    
+    return message;
+}
 
 + (instancetype)messageWithTempDocumentPath:(NSString *)tempDocumentPath size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage
 {
@@ -229,17 +277,34 @@
     }
     [attachments addObject:documentAttachment];
     
-    if (_replyMessage != nil)
+    if (self.replyMessage != nil)
     {
         TGReplyMessageMediaAttachment *replyAttachment = [[TGReplyMessageMediaAttachment alloc] init];
-        replyAttachment.replyMessageId = _replyMessage.mid;
-        replyAttachment.replyMessage = _replyMessage;
+        replyAttachment.replyMessageId = self.replyMessage.mid;
+        replyAttachment.replyMessage = self.replyMessage;
         [attachments addObject:replyAttachment];
     }
     
     message.mediaAttachments = attachments;
     
     return message;
+}
+
+- (TGDocumentMediaAttachment *)document {
+    TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
+    documentAttachment.localDocumentId = _localDocumentId;
+    documentAttachment.size = _size;
+    documentAttachment.attributes = _attributes;
+    documentAttachment.mimeType = _mimeType;
+    
+    if (_localThumbnailDataPath != nil)
+    {
+        TGImageInfo *thumbnailInfo = [[TGImageInfo alloc] init];
+        [thumbnailInfo addImageWithSize:_thumbnailSize url:_localThumbnailDataPath];
+        documentAttachment.thumbnailInfo = thumbnailInfo;
+    }
+    
+    return documentAttachment;
 }
 
 @end

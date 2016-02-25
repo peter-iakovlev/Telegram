@@ -19,7 +19,14 @@
 
 - (instancetype)initWithPeer:(id)peer fileMedia:(TGDocumentMediaAttachment *)fileMedia incoming:(bool)incoming system:(bool)system
 {
-    self = [super initWithPeer:peer incoming:incoming text:fileMedia.fileName truncateTextInTheMiddle:true textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:0.0f system:system];
+    bool isVoice = false;
+    for (id attribute in fileMedia.attributes) {
+        if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+            isVoice = ((TGDocumentAttributeAudio *)attribute).isVoice;
+            break;
+        }
+    }
+    self = [super initWithPeer:peer incoming:incoming text:isVoice ? TGLocalized(@"Message.Audio") : ([fileMedia isAnimated] ? TGLocalized(@"Message.Animation") : fileMedia.fileName) truncateTextInTheMiddle:true textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:0.0f system:system];
     if (self != nil)
     {
         /*_imageModel = [[TGSignalImageViewModel alloc] init];

@@ -11,6 +11,10 @@
 @class TGViewController;
 @class TGOverlayController;
 
+@interface TGOverlayWindowViewController : UIViewController
+
+@end
+
 @interface TGOverlayControllerWindow : UIWindow
 
 @property (nonatomic) bool keepKeyboard;

@@ -252,7 +252,7 @@
     
     if (hasNew)
     {
-        [[TGInterfaceManager instance] displayNearbyBannerIdNeeded:(int)usersLocated.count];
+        //[[TGInterfaceManager instance] displayNearbyBannerIdNeeded:(int)usersLocated.count];
     }
 }
 

@@ -8,6 +8,10 @@
 @property (nonatomic, assign) bool passcodeEnabled;
 @property (nonatomic, assign) bool passcodeEncrypted;
 
+@property (nonatomic, assign) bool customLocalizationEnabled;
+
+@property (nonatomic, assign) bool micAccessAllowed;
+
 @property (nonatomic, readonly) NSDictionary *startupData;
 
 - (instancetype)initWithDictionary:(NSDictionary *)dictionary;

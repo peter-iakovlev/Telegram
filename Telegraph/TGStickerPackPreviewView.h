@@ -2,8 +2,11 @@
 
 #import "TGStickerPack.h"
 
+@class TGViewController;
+
 @interface TGStickerPackPreviewView : UIView
 
+@property (nonatomic, weak) TGViewController *controller;
 @property (nonatomic, copy) void (^dismiss)();
 
 - (void)animateAppear;

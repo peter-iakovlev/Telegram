@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder.WatchKit.Storyboard" version="3.0" toolsVersion="9046" systemVersion="15A263e" targetRuntime="watchKit" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="umr-Wa-jBL">
+<document type="com.apple.InterfaceBuilder.WatchKit.Storyboard" version="3.0" toolsVersion="9531" systemVersion="15A279b" targetRuntime="watchKit" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="umr-Wa-jBL">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9035"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBWatchKitPlugin" version="9013"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9529"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBWatchKitPlugin" version="9515"/>
     </dependencies>
     <scenes>
         <!--TGNeoConversationController-->
@@ -10,7 +10,7 @@
             <objects>
                 <controller identifier="TGNeoConversationController" hidesWhenLoading="NO" id="HwQ-Ni-22Z" customClass="TGNeoConversationController">
                     <items>
-                        <table alignment="left" hidden="YES" alpha="0.0" id="vyx-cG-8b6">
+                        <table alignment="left" alpha="0.0" id="vyx-cG-8b6">
                             <items>
                                 <tableRow identifier="TGNeoConversationSimpleRow" id="a2T-99-Tw5" customClass="TGNeoConversationSimpleRowController">
                                     <group key="rootItem" width="1" height="0.0" alignment="left" radius="0.0" spacing="0.0" id="9by-9u-mzO">
@@ -101,6 +101,7 @@
                                     </group>
                                     <connections>
                                         <outlet property="audioButton" destination="avd-iG-3mQ" id="uCa-AQ-bCI"/>
+                                        <outlet property="audioButtonGroup" destination="37m-z9-XMo" id="3dZ-Qw-CNY"/>
                                         <outlet property="audioIcon" destination="FIz-kT-nhD" id="kQy-TS-2e0"/>
                                         <outlet property="avatarGroup" destination="hK6-bY-tFN" id="41q-tM-Q2v"/>
                                         <outlet property="avatarLabel" destination="9dN-wn-ef3" id="Vz3-iN-OOu"/>
@@ -193,6 +194,21 @@
                                         <outlet property="contentGroup" destination="RkQ-Xv-mjJ" id="cP0-3h-fl5"/>
                                     </connections>
                                 </tableRow>
+                                <tableRow identifier="TGNeoConversationTimeRow" selectable="NO" id="nW5-1j-Pxb" customClass="TGNeoConversationTimeRowController">
+                                    <group key="rootItem" width="1" height="0.0" alignment="left" radius="0.0" spacing="0.0" id="8Km-Yw-bup">
+                                        <items>
+                                            <label alignment="center" text="Timestamp" textAlignment="center" id="TLa-17-wWa">
+                                                <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                                <fontDescription key="font" type="system" pointSize="12"/>
+                                            </label>
+                                        </items>
+                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+                                        <edgeInsets key="margins" left="0.0" right="0.0" top="3" bottom="3"/>
+                                    </group>
+                                    <connections>
+                                        <outlet property="label" destination="TLa-17-wWa" id="0ax-Ey-TGV"/>
+                                    </connections>
+                                </tableRow>
                                 <tableRow identifier="TGConversationFooter" selectable="NO" id="Sk9-TZ-rcT" customClass="TGConversationFooterController">
                                     <group key="rootItem" width="1" height="0.0" alignment="left" layout="vertical" spacing="2" id="3fN-q5-T3U" userLabel="RowGroup">
                                         <items>
@@ -248,6 +264,7 @@
                                                 <edgeInsets key="margins" left="0.0" right="0.0" top="0.0" bottom="0.0"/>
                                             </group>
                                             <button width="1" alignment="left" title="Reply" id="2iG-T9-riG" userLabel="ReplyButton">
+                                                <fontDescription key="font" style="UICTFontTextStyleBody"/>
                                                 <connections>
                                                     <action selector="bottomButtonPressedAction" destination="Sk9-TZ-rcT" id="Iax-Ma-NTR"/>
                                                 </connections>
@@ -798,7 +815,7 @@
                     </connections>
                 </controller>
             </objects>
-            <point key="canvasLocation" x="1130" y="678.5"/>
+            <point key="canvasLocation" x="1130" y="723.5"/>
         </scene>
         <!--TGComposeController-->
         <scene sceneID="ep3-eK-xyh">
@@ -975,7 +992,30 @@
                     </connections>
                 </controller>
             </objects>
-            <point key="canvasLocation" x="897" y="1038"/>
+            <point key="canvasLocation" x="937" y="1037.5"/>
+        </scene>
+        <!--TGAudioMicAlertController-->
+        <scene sceneID="jSo-I9-2xp">
+            <objects>
+                <controller identifier="TGAudioMicAlertController" hidesWhenLoading="NO" id="IcI-Dt-5wg" customClass="TGAudioMicAlertController">
+                    <items>
+                        <group width="1" alignment="left" verticalAlignment="center" layout="vertical" spacing="15" id="70q-st-Qhh" userLabel="AlertGroup">
+                            <items>
+                                <imageView alignment="center" image="MicAccessIcon" id="DZS-iA-Gg7"/>
+                                <label alignment="center" text="Alert" textAlignment="center" numberOfLines="0" id="aKc-bd-iJw" userLabel="AlertLabel">
+                                    <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                    <fontDescription key="font" type="system" pointSize="12"/>
+                                </label>
+                            </items>
+                            <edgeInsets key="margins" left="2" right="2" top="0.0" bottom="0.0"/>
+                        </group>
+                    </items>
+                    <connections>
+                        <outlet property="alertLabel" destination="aKc-bd-iJw" id="rqO-ki-JKR"/>
+                    </connections>
+                </controller>
+            </objects>
+            <point key="canvasLocation" x="1130" y="1037.5"/>
         </scene>
         <!--TGContactsController-->
         <scene sceneID="0Pd-U9-NmH">
@@ -1058,7 +1098,7 @@ contacts found.</string>
                     </connections>
                 </controller>
             </objects>
-            <point key="canvasLocation" x="1130" y="433"/>
+            <point key="canvasLocation" x="1130" y="463"/>
         </scene>
         <!--Static M-->
         <scene sceneID="AEw-b0-oYE">
@@ -1227,7 +1267,7 @@ contacts found.</string>
                                         </group>
                                         <group width="1" alignment="left" spacing="0.0" id="JwB-Mx-wo3" userLabel="StickerWrapper">
                                             <items>
-                                                <group width="0.5" height="64" alignment="left" contentMode="center" id="l8v-gE-XXa" userLabel="StickerGroup">
+                                                <group width="0.5" height="64" alignment="left" contentMode="scaleAspectFit" id="l8v-gE-XXa" userLabel="StickerGroup">
                                                     <variation key="device=watch42mm" height="72"/>
                                                 </group>
                                             </items>
@@ -1409,7 +1449,7 @@ contacts found.</string>
                                         </group>
                                         <group width="1" alignment="left" spacing="0.0" id="WVZ-hR-PhJ" userLabel="StickerWrapper">
                                             <items>
-                                                <group width="0.5" height="64" alignment="left" contentMode="center" id="AzN-iK-uh2" userLabel="StickerGroup">
+                                                <group width="0.5" height="64" alignment="left" contentMode="scaleAspectFit" id="AzN-iK-uh2" userLabel="StickerGroup">
                                                     <variation key="device=watch42mm" height="72"/>
                                                 </group>
                                             </items>
@@ -1508,9 +1548,9 @@ contacts found.</string>
                         <table alignment="left" id="qs4-cZ-Fvg">
                             <items>
                                 <tableRow identifier="TGNeoChatRow" id="nkH-dz-a10" customClass="TGNeoChatRowController">
-                                    <group key="rootItem" width="1" height="57" alignment="left" spacing="0.0" id="o87-aq-68R">
+                                    <group key="rootItem" width="1" height="0.0" alignment="left" spacing="0.0" id="o87-aq-68R">
                                         <items>
-                                            <group width="1" height="1" alignment="left" layout="vertical" id="wUQ-wj-fEK">
+                                            <group width="1" height="57" alignment="left" layout="vertical" spacing="0.0" id="wUQ-wj-fEK">
                                                 <items>
                                                     <group width="19" height="19" alignment="left" radius="10" spacing="0.0" id="2JW-gM-0L8" userLabel="AvatarGroup">
                                                         <items>
@@ -1717,18 +1757,20 @@ contacts found.</string>
                                                         <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                                     </imageView>
                                                     <button alignment="left" verticalAlignment="center" hidden="YES" id="CKs-Ha-1tZ" userLabel="AudioButton">
-                                                        <group key="contentGroup" width="26" height="26" alignment="left" radius="13" spacing="0.0" id="ZKr-oa-tPu">
+                                                        <group key="contentGroup" width="26" height="26" alignment="left" radius="0.0" spacing="0.0" id="ZKr-oa-tPu">
                                                             <items>
-                                                                <imageView width="26" height="26" alignment="left" image="RemotePlayAudio" contentMode="center" id="R5l-WM-ym7"/>
+                                                                <imageView width="26" height="26" alignment="left" image="MediaAudioPlay" contentMode="center" id="R5l-WM-ym7">
+                                                                    <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                                                </imageView>
                                                             </items>
-                                                            <color key="backgroundColor" red="0.41960784309999999" green="0.74509803919999995" blue="0.93333333330000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                            <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                                             <edgeInsets key="margins" left="0.0" right="0.0" top="0.0" bottom="0.0"/>
                                                         </group>
                                                         <connections>
                                                             <action selector="playButtonPressedAction" destination="NIk-WK-rUi" id="3B1-SZ-sCn"/>
                                                         </connections>
                                                     </button>
-                                                    <group width="26" height="26" alignment="left" verticalAlignment="center" backgroundImage="File.png" contentMode="center" radius="4" id="jfK-ua-sLy" userLabel="FileIconGroup">
+                                                    <group width="26" height="26" alignment="left" verticalAlignment="center" backgroundImage="File.png" contentMode="center" radius="0.0" id="jfK-ua-sLy" userLabel="FileIconGroup">
                                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                                     </group>
                                                     <group alignment="left" verticalAlignment="center" layout="vertical" spacing="0.0" id="v57-8E-T5L" userLabel="FileMetaGroup">
@@ -1754,7 +1796,7 @@ contacts found.</string>
                                                 <items>
                                                     <label alignment="left" text="Text" textAlignment="left" numberOfLines="0" id="yZh-D1-dhw" userLabel="MessageText">
                                                         <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
-                                                        <fontDescription key="font" style="UICTFontTextStyleBody"/>
+                                                        <fontDescription key="font" type="system" pointSize="16"/>
                                                     </label>
                                                 </items>
                                                 <edgeInsets key="margins" left="3" right="3" top="0.0" bottom="0.0"/>
@@ -1766,6 +1808,7 @@ contacts found.</string>
                                     <connections>
                                         <outlet property="activityIndicator" destination="GNc-BX-GpO" id="orK-ju-Ius"/>
                                         <outlet property="audioButton" destination="CKs-Ha-1tZ" id="ADg-9M-EQE"/>
+                                        <outlet property="audioIcon" destination="R5l-WM-ym7" id="cVq-kZ-wmu"/>
                                         <outlet property="avatarGroup" destination="mVM-IY-f3h" id="tlo-wf-SiC"/>
                                         <outlet property="avatarInitialsLabel" destination="hD9-Rb-Ne1" id="muc-J1-OIT"/>
                                         <outlet property="contactButton" destination="1dD-q9-1ZG" id="UlD-Us-DVE"/>
@@ -1949,7 +1992,7 @@ contacts found.</string>
                     </connections>
                 </controller>
             </objects>
-            <point key="canvasLocation" x="729" y="696.25"/>
+            <point key="canvasLocation" x="729" y="757.25"/>
         </scene>
     </scenes>
     <color key="tintColor" red="0.18039215689999999" green="0.64313725489999995" blue="0.8980392157" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>

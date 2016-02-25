@@ -23,7 +23,6 @@ NSString *TGImageViewOptionSynchronous = @"TGImageViewOptionSynchronous";
     volatile int _version;
     SMetaDisposable *_disposable;
     
-    UIImageView *_extendedInsetsImageView;
     UIImageView *_transitionOverlayView;
 }
 
@@ -320,7 +319,7 @@ NSString *TGImageViewOptionSynchronous = @"TGImageViewOptionSynchronous";
             if (strongSelf != nil && strongSelf->_version == version)
             {
                 if ([next isKindOfClass:[UIImage class]])
-                    [strongSelf _commitImage:next partial:false loadTime:synchronous ? 0.0 : 1.0];
+                    [strongSelf _commitImage:next partial:[next degraded] && ![next edited] loadTime:synchronous ? 0.0 : 1.0];
                 else if ([next respondsToSelector:@selector(floatValue)])
                     [strongSelf _updateProgress:[next floatValue]];
             }

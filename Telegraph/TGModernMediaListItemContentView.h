@@ -12,4 +12,6 @@
 
 - (void)setItem:(id<TGModernMediaListItem>)item synchronously:(bool)synchronously;
 
+- (void)setHidden:(bool)hidden animated:(bool)animated;
+
 @end

@@ -59,3 +59,29 @@
 
 @end
 
+@implementation TLInputPrivacyKey$inputPrivacyKeyChatInvite : TLInputPrivacyKey
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xbdfb0426;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x60d4dc4b;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLInputPrivacyKey$inputPrivacyKeyChatInvite *object = [[TLInputPrivacyKey$inputPrivacyKeyChatInvite alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+

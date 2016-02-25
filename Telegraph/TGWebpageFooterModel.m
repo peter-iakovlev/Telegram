@@ -25,11 +25,12 @@ static UIColor *colorForLine(bool incoming)
     return incoming ? incomingColor : outgoingColor;
 }
 
-- (instancetype)initWithWithIncoming:(bool)incoming
+- (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming
 {
     self = [super init];
     if (self != nil)
     {
+        _context = context;
         _lineModel = [[TGModernColorViewModel alloc] initWithColor:colorForLine(incoming)];
         [self addSubmodel:_lineModel];
     }
@@ -45,13 +46,16 @@ static UIColor *colorForLine(bool incoming)
 {
 }
 
-- (void)layoutForContainerSize:(CGSize)containerSize contentSize:(CGSize)contentSize needsContentUpdate:(bool *)needsContentUpdate
+- (void)layoutForContainerSize:(CGSize)containerSize contentSize:(CGSize)contentSize needsContentUpdate:(bool *)needsContentUpdate bottomInset:(bool *)hasBottomInset
 {
     CGSize webpageSize = [self contentSizeForContainerSize:CGSizeMake(containerSize.width - 2.0f - 2.0f, containerSize.height) contentSize:contentSize needsContentsUpdate:needsContentUpdate];
     CGFloat bottomInset = 0.0f;
     [self layoutContentInRect:CGRectMake(2.0f, 7.0f, MAX(webpageSize.width, contentSize.width), webpageSize.height) bottomInset:&bottomInset];
     _lineModel.frame = CGRectMake(2.0f, 7.0f, 2.0f, webpageSize.height - 7.0f - 2.0f - bottomInset);
     self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, webpageSize.width + 0.0f, webpageSize.height);
+    if (hasBottomInset) {
+        *hasBottomInset = bottomInset > FLT_EPSILON;
+    }
 }
 
 - (void)bindSpecialViewsToContainer:(UIView *)__unused container viewStorage:(TGModernViewStorage *)__unused viewStorage atItemPosition:(CGPoint)__unused itemPosition
@@ -67,9 +71,9 @@ static UIColor *colorForLine(bool incoming)
     return false;
 }
 
-- (bool)hasWebpageActionAtPoint:(CGPoint)__unused point
+- (TGWebpageFooterModelAction)webpageActionAtPoint:(CGPoint)__unused point
 {
-    return false;
+    return TGWebpageFooterModelActionNone;
 }
 
 - (bool)activateWebpageContents
@@ -107,6 +111,20 @@ static UIColor *colorForLine(bool incoming)
         outgoingColor = UIColorRGB(0x00a700);
     });
     return incoming ? incomingColor : outgoingColor;
+}
+
+- (void)updateMediaProgressVisible:(bool)mediaProgressVisible mediaProgress:(float)mediaProgress animated:(bool)__unused animated {
+    _mediaProgressVisible = mediaProgressVisible;
+    _mediaProgress = mediaProgress;
+}
+
+- (void)imageDataInvalidated:(NSString *)__unused imageUrl {
+}
+
+- (void)stopInlineMedia {
+}
+
+- (void)resumeInlineMedia {
 }
 
 @end

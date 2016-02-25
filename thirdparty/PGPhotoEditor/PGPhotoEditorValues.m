@@ -59,6 +59,11 @@
     return ![self cropAppliedForAvatar:forAvatar] && ![self toolsApplied];
 }
 
+- (bool)isCropEqualWith:(id<TGMediaEditAdjustments>)adjusments
+{
+    return (_CGRectEqualToRectWithEpsilon(self.cropRect, adjusments.cropRect, [self _cropRectEpsilon]));
+}
+
 - (BOOL)isEqual:(id)object
 {
     if (object == self)

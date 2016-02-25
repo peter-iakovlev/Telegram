@@ -27,7 +27,7 @@
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions;
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions animated:(bool)animated;
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions atMessage:(NSDictionary *)atMessage clearStack:(bool)clearStack openKeyboard:(bool)openKeyboard animated:(bool)animated;
-- (TGModernConversationController *)configuredConversationControlerWithId:(int64_t)conversationId;
+- (TGModernConversationController *)configuredPreviewConversationControlerWithId:(int64_t)conversationId;
 
 - (TGModernConversationController *)currentControllerWithPeerId:(int64_t)peerId;
 - (void)dismissConversation;
@@ -40,7 +40,8 @@
 
 - (void)displayBannerIfNeeded:(TGMessage *)message conversationId:(int64_t)conversationId;
 - (void)dismissBannerForConversationId:(int64_t)conversationId;
+- (void)dismissAllBanners;
 
-- (void)displayNearbyBannerIdNeeded:(int)peopleCount;
+- (void)localizationUpdated;
 
 @end

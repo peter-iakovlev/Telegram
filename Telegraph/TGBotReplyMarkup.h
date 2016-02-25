@@ -12,9 +12,12 @@
 @property (nonatomic) bool matchDefaultHeight;
 @property (nonatomic) bool hideKeyboardOnActivation;
 @property (nonatomic) bool alreadyActivated;
+@property (nonatomic) bool manuallyHidden;
 
-- (instancetype)initWithUserId:(int32_t)userId messageId:(int32_t)messageId rows:(NSArray *)rows matchDefaultHeight:(bool)matchDefaultHeight hideKeyboardOnActivation:(bool)hideKeyboardOnActivation alreadyActivated:(bool)alreadyActivated;
+- (instancetype)initWithUserId:(int32_t)userId messageId:(int32_t)messageId rows:(NSArray *)rows matchDefaultHeight:(bool)matchDefaultHeight hideKeyboardOnActivation:(bool)hideKeyboardOnActivation alreadyActivated:(bool)alreadyActivated manuallyHidden:(bool)manuallyHidden;
 
 - (TGBotReplyMarkup *)activatedMarkup;
+- (TGBotReplyMarkup *)manuallyHide;
+- (TGBotReplyMarkup *)manuallyUnhide;
 
 @end

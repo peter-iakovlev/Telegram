@@ -52,7 +52,7 @@
 
 - (CGSize)itemSizeForContainerSize:(CGSize)containerSize
 {
-    return CGSizeMake(containerSize.width, (_isChannel && !_editing) ? 88.0f : 93.0f);
+    return CGSizeMake(containerSize.width, (self.transparent && _isChannel && !_editing) ? 88.0f : 93.0f);
 }
 
 - (void)bindView:(TGGroupInfoCollectionItemView *)view

@@ -78,7 +78,7 @@ static NSMutableDictionary *extendedChatDataDictionary()
     int peerSoundId = 0;
     int peerMuteUntil = 0;
     bool peerPreviewText = true;
-    bool photoNotificationsEnabled = true;
+    bool messagesMuted = false;
     
     if ([settings isKindOfClass:[TLPeerNotifySettings$peerNotifySettings class]])
     {
@@ -95,19 +95,18 @@ static NSMutableDictionary *extendedChatDataDictionary()
         else
             peerSoundId = [concreteSettings.sound intValue];
         
-        peerPreviewText = concreteSettings.show_previews;
-        
-        photoNotificationsEnabled = concreteSettings.events_mask & 1;
+        peerPreviewText = concreteSettings.flags & (1 << 0);
+        messagesMuted = concreteSettings.flags & (1 << 1);
     }
     
     int64_t conversationId = _conversationId;
-    [TGDatabaseInstance() storePeerNotificationSettings:_conversationId soundId:peerSoundId muteUntil:peerMuteUntil previewText:peerPreviewText photoNotificationsEnabled:photoNotificationsEnabled writeToActionQueue:false completion:^(bool changed)
+    [TGDatabaseInstance() storePeerNotificationSettings:_conversationId soundId:peerSoundId muteUntil:peerMuteUntil previewText:peerPreviewText messagesMuted:messagesMuted writeToActionQueue:false completion:^(bool changed)
     {
         if (changed)
         {
             [ActionStageInstance() dispatchOnStageQueue:^
             {
-                NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:peerMuteUntil], @"muteUntil", [NSNumber numberWithInt:peerSoundId], @"soundId", [[NSNumber alloc] initWithBool:peerPreviewText], @"previewText", [[NSNumber alloc] initWithBool:photoNotificationsEnabled], @"photoNotificationsEnabled", nil];
+                NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:peerMuteUntil], @"muteUntil", [NSNumber numberWithInt:peerSoundId], @"soundId", [[NSNumber alloc] initWithBool:peerPreviewText], @"previewText", [[NSNumber alloc] initWithBool:messagesMuted], @"messagesMuted", nil];
                 [extendedChatDataDictionary() setObject:dict forKey:[[NSNumber alloc] initWithLongLong:conversationId]];
                 
                 [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/peerSettings/(%lld)", conversationId] resource:[[SGraphObjectNode alloc] initWithObject:dict]];

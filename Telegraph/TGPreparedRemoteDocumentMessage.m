@@ -14,7 +14,7 @@
 
 @implementation TGPreparedRemoteDocumentMessage
 
-- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia replyMessage:(TGMessage *)replyMessage
+- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult
 {
     self = [super init];
     if (self != nil)
@@ -28,8 +28,10 @@
         _size = documentMedia.size;
         _thumbnailInfo = documentMedia.thumbnailInfo;
         _attributes = documentMedia.attributes;
+        _caption = documentMedia.caption;
         
-        _replyMessage = replyMessage;
+        self.replyMessage = replyMessage;
+        self.botContextResult = botContextResult;
     }
     return self;
 }
@@ -54,19 +56,41 @@
     documentAttachment.mimeType = _mimeType;
     documentAttachment.size = _size;
     documentAttachment.thumbnailInfo = _thumbnailInfo;
+    documentAttachment.caption = _caption;
     [attachments addObject:documentAttachment];
     
-    if (_replyMessage != nil)
+    if (self.replyMessage != nil)
     {
         TGReplyMessageMediaAttachment *replyMedia = [[TGReplyMessageMediaAttachment alloc] init];
-        replyMedia.replyMessageId = _replyMessage.mid;
-        replyMedia.replyMessage = _replyMessage;
+        replyMedia.replyMessageId = self.replyMessage.mid;
+        replyMedia.replyMessage = self.replyMessage;
         [attachments addObject:replyMedia];
+    }
+    
+    if (self.botContextResult != nil) {
+        [attachments addObject:self.botContextResult];
+        
+        [attachments addObject:[[TGViaUserAttachment alloc] initWithUserId:self.botContextResult.userId username:nil]];
     }
     
     message.mediaAttachments = attachments;
     
     return message;
+}
+
+- (TGDocumentMediaAttachment *)document {
+    TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
+    documentAttachment.documentId = _documentId;
+    documentAttachment.accessHash = _accessHash;
+    documentAttachment.datacenterId = _datacenterId;
+    documentAttachment.userId = _userId;
+    documentAttachment.date = _documentDate;
+    documentAttachment.attributes = _attributes;
+    documentAttachment.mimeType = _mimeType;
+    documentAttachment.size = _size;
+    documentAttachment.thumbnailInfo = _thumbnailInfo;
+    documentAttachment.caption = _caption;
+    return documentAttachment;
 }
 
 @end

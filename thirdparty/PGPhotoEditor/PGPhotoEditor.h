@@ -21,11 +21,12 @@
 
 - (instancetype)initWithOriginalSize:(CGSize)originalSize adjustments:(id<TGMediaEditAdjustments>)adjustments forVideo:(bool)forVideo;
 
-- (void)setImage:(UIImage *)image forCropRect:(CGRect)cropRect cropRotation:(CGFloat)cropRotation cropOrientation:(UIImageOrientation)cropOrientation;
+- (void)setImage:(UIImage *)image forCropRect:(CGRect)cropRect cropRotation:(CGFloat)cropRotation cropOrientation:(UIImageOrientation)cropOrientation fullSize:(bool)fullSize;
 
 - (void)processAnimated:(bool)animated completion:(void (^)(void))completion;
 
 - (void)createResultImageWithCompletion:(void (^)(UIImage *image))completion;
+- (UIImage *)currentResultImage;
 
 - (bool)needsImageRecropping;
 - (bool)hasDefaultCropping;

@@ -6,6 +6,13 @@
 #import "TGSharedMediaCacheSignals.h"
 #import "TGMessage.h"
 
+#import "TGDatabase.h"
+
+#import "TGMessageViewedContentProperty.h"
+#import "TGTelegraph.h"
+
+#import "TGPeerIdAdapter.h"
+
 @interface TGGenericPeerPlaylistHelper : NSObject <ASWatcher>
 {
     int64_t _peerId;
@@ -16,6 +23,7 @@
     
     NSMutableArray *_currentMessages;
     NSMutableDictionary *_currentItemKeyAliases;
+    bool _voice;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -48,14 +56,18 @@
     NSMutableArray *items = [[NSMutableArray alloc] init];
     for (TGMessage *message in messages)
     {
-        TGMusicPlayerItem *item = [TGMusicPlayerItem itemWithMessage:message];
+        TGUser *author = nil;
+        if (!TGPeerIdIsChannel(message.fromUid)) {
+            author = [TGDatabaseInstance() loadUser:(int32_t)message.fromUid];
+        }
+        TGMusicPlayerItem *item = [TGMusicPlayerItem itemWithMessage:message author:author];
         if (item != nil)
             [items addObject:item];
     }
     return items;
 }
 
-- (instancetype)initWithPeerId:(int64_t)peerId important:(bool)important atMessageId:(int32_t)atMessageId updated:(void (^)(TGMusicPlayerPlaylist *))updated
+- (instancetype)initWithPeerId:(int64_t)peerId important:(bool)important atMessageId:(int32_t)atMessageId voice:(bool)voice updated:(void (^)(TGMusicPlayerPlaylist *))updated
 {
     self = [super init];
     if (self != nil)
@@ -64,6 +76,7 @@
         _important = important;
         _atMessageId = atMessageId;
         _updated = [updated copy];
+        _voice = voice;
         
         _currentMessages = [[NSMutableArray alloc] init];
         _currentItemKeyAliases = [[NSMutableDictionary alloc] init];
@@ -72,7 +85,16 @@
         
         __weak TGGenericPeerPlaylistHelper *weakSelf = self;
         
-        _cachedMediaDisposable = [[[TGSharedMediaCacheSignals cachedMediaForPeerId:peerId itemType:TGSharedMediaCacheItemTypeAudio important:_important] filter:^bool (id next)
+        SSignal *initialSignal = [[TGDatabaseInstance() modify:^id{
+            TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:atMessageId peerId:peerId];
+            if (message != nil) {
+                return [SSignal single:@[message]];
+            } else {
+                return [SSignal complete];
+            }
+        }] switchToLatest];
+        
+        _cachedMediaDisposable = [[initialSignal then:[[TGSharedMediaCacheSignals cachedMediaForPeerId:peerId itemType:voice ? TGSharedMediaCacheItemTypeVoiceNote : TGSharedMediaCacheItemTypeAudio important:_important] filter:^bool (id next)
         {
             if ([next respondsToSelector:@selector(objectAtIndex:)])
             {
@@ -84,7 +106,7 @@
             }
             
             return false;
-        }] startWithNext:^(NSArray *messages)
+        }]] startWithNext:^(NSArray *messages)
         {
             [ActionStageInstance() dispatchOnStageQueue:^
             {
@@ -114,6 +136,37 @@
     [ActionStageInstance() removeWatcher:self];
 }
 
++ (void)markItemAsViewed:(TGMusicPlayerItem *)item {
+    [TGDatabaseInstance() dispatchOnDatabaseThread:^{
+        if ([item.key respondsToSelector:@selector(intValue)]) {
+            TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:[(NSNumber *)item.key intValue] peerId:item.peerId];
+            if (message != nil && !message.outgoing) {
+                if (TGPeerIdIsSecretChat(message.cid)) {
+                    int32_t flags = [TGDatabaseInstance() secretMessageFlags:message.mid];
+                    if ((flags & TGSecretMessageFlagViewed) == 0) {
+                        [TGDatabaseInstance() messageCountdownLocalTime:message.mid enqueueIfNotQueued:true initiatedCountdown:NULL];
+                        [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
+                    }
+                } else {
+                    if (message.contentProperties[@"contentsRead"] == nil) {
+                        NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
+                        contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
+                        message.contentProperties = contentProperties;
+                        
+                        TGDatabaseAction action = { .type = TGDatabaseActionReadMessageContents, .subject = message.mid, .arg0 = 0, .arg1 = 0};
+                        [TGDatabaseInstance() storeQueuedActions:[NSArray arrayWithObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]]];
+                        [ActionStageInstance() requestActor:@"/tg/service/synchronizeactionqueue/(global)" options:nil watcher:TGTelegraphInstance];
+                        
+                        [TGDatabaseInstance() updateMessage:message.mid peerId:message.cid withMessage:message];
+                        
+                        [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/conversation/*/readmessageContents"] resource:@{@"messageIds": @[@(message.mid)]}];
+                    }
+                }
+            }
+        }
+    } synchronous:false];
+}
+
 - (void)replaceMessages:(NSArray *)messages
 {
     [_currentItemKeyAliases removeAllObjects];
@@ -123,7 +176,9 @@
     
     if (_updated)
     {
-        _updated([[TGMusicPlayerPlaylist alloc] initWithItems:[self itemListFromMessages:_currentMessages] itemKeyAliases:[[NSDictionary alloc] initWithDictionary:_currentItemKeyAliases]]);
+        _updated([[TGMusicPlayerPlaylist alloc] initWithVoice:_voice items:[self itemListFromMessages:_currentMessages] itemKeyAliases:[[NSDictionary alloc] initWithDictionary:_currentItemKeyAliases] markItemAsViewed:^(TGMusicPlayerItem *item) {
+            [TGGenericPeerPlaylistHelper markItemAsViewed:item];
+        }]);
     }
 }
 
@@ -141,7 +196,7 @@
         if (![currentMessageIds containsObject:@(message.mid)])
         {
             [currentMessageIds addObject:@(message.mid)];
-            if ([TGMusicPlayerItem itemWithMessage:message] != nil)
+            if ([TGMusicPlayerItem itemWithMessage:message author:nil] != nil)
             {
                 [_currentMessages addObject:message];
                 added = true;
@@ -156,7 +211,9 @@
         [_currentMessages addObjectsFromArray:sortedMessages];
         if (_updated)
         {
-            _updated([[TGMusicPlayerPlaylist alloc] initWithItems:[self itemListFromMessages:_currentMessages] itemKeyAliases:[[NSDictionary alloc] initWithDictionary:_currentItemKeyAliases]]);
+            _updated([[TGMusicPlayerPlaylist alloc] initWithVoice:_voice items:[self itemListFromMessages:_currentMessages] itemKeyAliases:[[NSDictionary alloc] initWithDictionary:_currentItemKeyAliases] markItemAsViewed:^(TGMusicPlayerItem *item) {
+                [TGGenericPeerPlaylistHelper markItemAsViewed:item];
+            }]);
         }
     }
 }
@@ -180,7 +237,9 @@
     
     if (_updated)
     {
-        _updated([[TGMusicPlayerPlaylist alloc] initWithItems:[self itemListFromMessages:_currentMessages] itemKeyAliases:[[NSDictionary alloc] initWithDictionary:_currentItemKeyAliases]]);
+        _updated([[TGMusicPlayerPlaylist alloc] initWithVoice:_voice items:[self itemListFromMessages:_currentMessages] itemKeyAliases:[[NSDictionary alloc] initWithDictionary:_currentItemKeyAliases] markItemAsViewed:^(TGMusicPlayerItem *item) {
+            [TGGenericPeerPlaylistHelper markItemAsViewed:item];
+        }]);
     }
 }
 
@@ -201,7 +260,9 @@
     [_currentMessages addObjectsFromArray:sortedMessages];
     if (_updated)
     {
-        _updated([[TGMusicPlayerPlaylist alloc] initWithItems:[self itemListFromMessages:_currentMessages] itemKeyAliases:[[NSDictionary alloc] initWithDictionary:_currentItemKeyAliases]]);
+        _updated([[TGMusicPlayerPlaylist alloc] initWithVoice:_voice items:[self itemListFromMessages:_currentMessages] itemKeyAliases:[[NSDictionary alloc] initWithDictionary:_currentItemKeyAliases] markItemAsViewed:^(TGMusicPlayerItem *item) {
+            [TGGenericPeerPlaylistHelper markItemAsViewed:item];
+        }]);
     }
 }
 
@@ -233,11 +294,11 @@
 
 @implementation TGGenericPeerPlaylistSignals
 
-+ (SSignal *)playlistForPeerId:(int64_t)peerId important:(bool)important atMessageId:(int32_t)messageId
++ (SSignal *)playlistForPeerId:(int64_t)peerId important:(bool)important atMessageId:(int32_t)messageId voice:(bool)voice
 {
     return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
-        TGGenericPeerPlaylistHelper *helper = [[TGGenericPeerPlaylistHelper alloc] initWithPeerId:peerId important:important atMessageId:messageId updated:^(TGMusicPlayerPlaylist *playlist)
+        TGGenericPeerPlaylistHelper *helper = [[TGGenericPeerPlaylistHelper alloc] initWithPeerId:peerId important:important atMessageId:messageId voice:voice updated:^(TGMusicPlayerPlaylist *playlist)
         {
             [subscriber putNext:playlist];
         }];

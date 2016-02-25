@@ -4,6 +4,7 @@
 
 #import "TGFileCache.h"
 #import "TGExtensionDelegate.h"
+#import "TGBridgePresetsSignals.h"
 
 @implementation TGInputController
 
@@ -29,7 +30,7 @@
 {
     NSDictionary *options = @
     {
-        WKAudioRecorderControllerOptionsActionTitleKey: TGLocalized(@"Compose.Send"),
+        WKAudioRecorderControllerOptionsActionTitleKey: TGLocalized(@"Watch.Compose.Send"),
     };
     
     int64_t randomId = 0;
@@ -50,7 +51,7 @@
     return [self customSuggestions];
 }
 
-+ (NSArray *)customSuggestions
++ (NSArray *)old_customSuggestions
 {
     NSString *groupName = [TGBridgeCommon groupName];
     NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:groupName];
@@ -69,18 +70,72 @@
     return finalSuggestions;
 }
 
++ (NSArray *)customSuggestions
+{
+    NSArray *presetIdentifiers = [self presetIdentifiers];
+    
+    NSMutableArray *suggestions = [[NSMutableArray alloc] init];
+    NSDictionary *customPresets = [self customPresets];
+    for (NSString *identifier in presetIdentifiers)
+    {
+        NSString *preset = customPresets[identifier];
+        if (preset == nil)
+            preset = TGLocalized([NSString stringWithFormat:@"Watch.%@", identifier]);
+        
+        [suggestions addObject:preset];
+    }
+    
+    return suggestions;
+}
+
++ (NSDictionary *)customPresets
+{
+    NSData *data = [NSData dataWithContentsOfURL:[TGBridgePresetsSignals presetsURL]];
+    
+    @try
+    {
+        id presets = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+        if ([presets isKindOfClass:[NSDictionary class]])
+            return presets;
+        
+        return nil;
+    }
+    @catch (NSException *exception)
+    {
+        return nil;
+    }
+}
+
++ (NSArray *)presetIdentifiers
+{
+    return @
+    [
+     @"Suggestion.OK",
+     @"Suggestion.Thanks",
+     @"Suggestion.WhatsUp",
+     @"Suggestion.TalkLater",
+     @"Suggestion.CantTalk",
+     @"Suggestion.HoldOn",
+     @"Suggestion.BRB",
+     @"Suggestion.OnMyWay"
+    ];
+}
+
 + (NSArray *)composeSuggestions
 {
     static NSArray *suggestions;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        suggestions = @[ TGLocalized(@"Suggestion.WhatsUp"),
-                         TGLocalized(@"Suggestion.OnMyWay"),
-                         TGLocalized(@"Suggestion.OK"),
-                         TGLocalized(@"Suggestion.CantTalk"),
-                         TGLocalized(@"Suggestion.CallSoon"),
-                         TGLocalized(@"Suggestion.Thanks") ];
+        suggestions = @
+        [
+         TGLocalized(@"Watch.Suggestion.WhatsUp"),
+         TGLocalized(@"Watch.Suggestion.OnMyWay"),
+         TGLocalized(@"Watch.Suggestion.OK"),
+         TGLocalized(@"Watch.Suggestion.CantTalk"),
+         TGLocalized(@"Watch.Suggestion.CallSoon"),
+         TGLocalized(@"Watch.Suggestion.Thanks")
+        ];
     });
     return suggestions;
 }
@@ -91,9 +146,12 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        suggestions = @[ TGLocalized(@"Suggestion.OK"),
-                         TGLocalized(@"Suggestion.Thanks"),
-                         TGLocalized(@"Suggestion.WhatsUp") ];
+        suggestions = @
+        [
+         TGLocalized(@"Watch.Suggestion.OK"),
+         TGLocalized(@"Watch.Suggestion.Thanks"),
+         TGLocalized(@"Watch.Suggestion.WhatsUp")
+        ];
     });
     return suggestions;
 }
@@ -104,10 +162,13 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        suggestions = @[ TGLocalized(@"Suggestion.Yes"),
-                         TGLocalized(@"Suggestion.No"),
-                         TGLocalized(@"Suggestion.Absolutely"),
-                         TGLocalized(@"Suggestion.Nope") ];
+        suggestions = @
+        [
+         TGLocalized(@"Watch.Suggestion.Yes"),
+         TGLocalized(@"Watch.Suggestion.No"),
+         TGLocalized(@"Watch.Suggestion.Absolutely"),
+         TGLocalized(@"Watch.Suggestion.Nope")
+        ];
     });
     return suggestions;
 }
@@ -118,11 +179,14 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        suggestions = @[ TGLocalized(@"Suggestion.TalkLater"),
-                         TGLocalized(@"Suggestion.CantTalk"),
-                         TGLocalized(@"Suggestion.HoldOn"),
-                         TGLocalized(@"Suggestion.BRB"),
-                         TGLocalized(@"Suggestion.OnMyWay") ];
+        suggestions = @
+        [
+         TGLocalized(@"Watch.Suggestion.TalkLater"),
+         TGLocalized(@"Watch.Suggestion.CantTalk"),
+         TGLocalized(@"Watch.Suggestion.HoldOn"),
+         TGLocalized(@"Watch.Suggestion.BRB"),
+         TGLocalized(@"Watch.Suggestion.OnMyWay")
+        ];
     });
     return suggestions;
 }

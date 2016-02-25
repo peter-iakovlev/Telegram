@@ -1,13 +1,12 @@
 #import <Foundation/Foundation.h>
+#import "TGMediaSelectionContext.h"
 
 @protocol TGModernMediaListItem;
 
 @protocol TGModernMediaListSelectableItem <TGModernMediaListItem, NSCopying>
 
-@property (nonatomic, copy) void (^itemSelected)(id<TGModernMediaListItem> item);
-@property (nonatomic, copy) bool (^isItemSelected)(id<TGModernMediaListItem> item);
-@property (nonatomic, copy) bool (^isItemHidden)(id<TGModernMediaListItem> item);
+@property (nonatomic, strong) TGMediaSelectionContext *selectionContext;
 
-- (NSString *)uniqueId;
+- (id<TGMediaSelectableItem>)selectableMediaItem;
 
 @end

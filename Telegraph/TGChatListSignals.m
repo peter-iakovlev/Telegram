@@ -51,21 +51,16 @@
 {
     if ([path isEqualToString:@"/dialogListReloaded"])
     {
-        [TGDatabaseInstance() loadConversationListFromDate:INT_MAX limit:(int)_limit excludeConversationIds:@[] completion:^(NSArray *chatList)
+        [TGDatabaseInstance() loadConversationListFromDate:INT_MAX limit:(int)_limit excludeConversationIds:@[] completion:^(NSArray *chatList, __unused bool loadedAllRegular)
         {
             [ActionStageInstance() dispatchOnStageQueue:^
             {
-                NSMutableArray *filteredList = [[NSMutableArray alloc] initWithArray:chatList];
-//                for (NSInteger i = 0; i < (NSInteger)filteredList.count; i++) {
-//                    TGConversation *conversation = filteredList[i];
-//                    if (conversation.isChannel) {
-//                        [filteredList removeObjectAtIndex:i];
-//                        i--;
-//                    }
-//                }
-                
                 [_list removeAllObjects];
-                [_list addObjectsFromArray:filteredList];
+                for (TGConversation *conversation in chatList) {
+                    if (!conversation.isDeactivated) {
+                        [_list addObject:conversation];
+                    }
+                }
                 NSArray *items = [NSArray arrayWithArray:_list];
                 if (_listUpdated)
                     _listUpdated(items);
@@ -81,8 +76,11 @@
         for (NSInteger i = 0; i < (NSInteger)conversations.count; i++)
         {
             TGConversation *conversation = conversations[i];
-            if (conversation.isChannel && conversation.kind != TGConversationKindPersistentChannel)
-            {
+            if (conversation.isChannel && conversation.kind != TGConversationKindPersistentChannel) {
+                [conversations removeObjectAtIndex:i];
+                i--;
+            }
+            if (conversation.isDeactivated) {
                 [conversations removeObjectAtIndex:i];
                 i--;
             }
@@ -181,7 +179,7 @@
 {
     return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
-        [TGDatabaseInstance() loadConversationListFromDate:INT_MAX limit:(int)limit excludeConversationIds:@[] completion:^(NSArray *chatList)
+        [TGDatabaseInstance() loadConversationListFromDate:INT_MAX limit:(int)limit excludeConversationIds:@[] completion:^(NSArray *chatList, __unused bool loadedAllRegular)
         {
             NSMutableArray *filteredResult = [[NSMutableArray alloc] initWithArray:chatList];
             [filteredResult sortUsingComparator:^NSComparisonResult(TGConversation *lhs, TGConversation *rhs) {

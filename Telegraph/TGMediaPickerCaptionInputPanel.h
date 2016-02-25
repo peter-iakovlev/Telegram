@@ -36,7 +36,7 @@
 - (bool)inputPanelShouldBecomeFirstResponder:(TGMediaPickerCaptionInputPanel *)inputPanel;
 - (void)inputPanelFocused:(TGMediaPickerCaptionInputPanel *)inputPanel;
 - (void)inputPanelRequestedSetCaption:(TGMediaPickerCaptionInputPanel *)inputPanel text:(NSString *)text;
-- (void)inputPanelMentionEntered:(TGMediaPickerCaptionInputPanel *)inputTextPanel mention:(NSString *)mention;
+- (void)inputPanelMentionEntered:(TGMediaPickerCaptionInputPanel *)inputTextPanel mention:(NSString *)mention startOfLine:(bool)startOfLine;
 - (void)inputPanelHashtagEntered:(TGMediaPickerCaptionInputPanel *)inputTextPanel hashtag:(NSString *)hashtag;
 - (void)inputPanelWillChangeHeight:(TGMediaPickerCaptionInputPanel *)inputPanel height:(CGFloat)height duration:(NSTimeInterval)duration animationCurve:(int)animationCurve;
 

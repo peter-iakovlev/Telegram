@@ -100,6 +100,7 @@
     
     [((TGWallpapersCollectionItemView *)self.view) setSelectedWallpaperInfo:_selectedWallpaperInfo];
     [view setTitle:_title];
+    [view setIcon:_icon];
     [view setWallpaperInfos:_wallpaperItems synchronous:_firstBind];
     _firstBind = false;
     
@@ -127,6 +128,13 @@
     _title = title;
     
     [((TGWallpapersCollectionItemView *)self.view) setTitle:_title];
+}
+
+- (void)setIcon:(UIImage *)icon
+{
+    _icon = icon;
+    
+    [((TGWallpapersCollectionItemView *)self.view) setIcon:_icon];
 }
 
 - (void)setCurrentWallpaperInfo:(TGWallpaperInfo *)currentWallpaperInfo

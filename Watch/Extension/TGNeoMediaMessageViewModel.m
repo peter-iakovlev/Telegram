@@ -20,9 +20,9 @@ const CGFloat TGNeoMediaCaptionSpacing = 3.0f;
 
 @implementation TGNeoMediaMessageViewModel
 
-- (instancetype)initWithMessage:(TGBridgeMessage *)message users:(NSDictionary *)users context:(TGBridgeContext *)context
+- (instancetype)initWithMessage:(TGBridgeMessage *)message type:(TGNeoMessageType)type users:(NSDictionary *)users context:(TGBridgeContext *)context
 {
-    self = [super initWithMessage:message users:users context:context];
+    self = [super initWithMessage:message type:type users:users context:context];
     if (self != nil)
     {
         bool hasHeader = (self.forwardHeaderModel != nil || self.replyHeaderModel != nil);
@@ -50,7 +50,7 @@ const CGFloat TGNeoMediaCaptionSpacing = 3.0f;
         
         if (caption != nil)
         {
-            _textModel = [[TGNeoLabelViewModel alloc] initWithText:caption font:[UIFont systemFontOfSize:16] color:[self normalColorForMessage:message] attributes:nil];
+            _textModel = [[TGNeoLabelViewModel alloc] initWithText:caption font:[UIFont systemFontOfSize:[TGNeoBubbleMessageViewModel bodyTextFontSize]] color:[self normalColorForMessage:message] attributes:nil];
             [self addSubmodel:_textModel];
         }
         
@@ -158,8 +158,11 @@ const CGFloat TGNeoMediaCaptionSpacing = 3.0f;
     }
     
     if (!self.showBubble)
+    {
+        contentSize.width = containerSize.width;
         contentSize.height += 3.5f;
-        
+    }
+    
     [super layoutWithContainerSize:contentSize];
     
     return contentSize;

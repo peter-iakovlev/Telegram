@@ -12,6 +12,7 @@
 
 #import <MTProtoKit/MTEncryption.h>
 #import "TGImageUtils.h"
+#import "TGStringUtils.h"
 
 #import "TGDatabase.h"
 
@@ -22,6 +23,7 @@
 
 @property (nonatomic, strong) UIImageView *keyImageView;
 
+@property (nonatomic, strong) UILabel *fingerprintLabel;
 @property (nonatomic, strong) UILabel *descriptionLabel;
 @property (nonatomic, strong) NSString *userName;
 
@@ -54,6 +56,17 @@
     
     _keyImageView = [[UIImageView alloc] init];
     [self.view addSubview:_keyImageView];
+    
+    _fingerprintLabel = [[UILabel alloc] init];
+    _fingerprintLabel.textColor = [UIColor blackColor];
+    _fingerprintLabel.backgroundColor = [UIColor clearColor];
+    NSString *fontName = @"CourierNew-Bold";
+    if (iosMajorVersion() >= 7) {
+        fontName = @"Menlo-Bold";
+    }
+    _fingerprintLabel.font = [UIFont fontWithName:fontName size:14];
+    _fingerprintLabel.numberOfLines = 4;
+    [self.view addSubview:_fingerprintLabel];
     
     _descriptionLabel = [[UILabel alloc] init];
     _descriptionLabel.textColor = [UIColor blackColor];
@@ -92,14 +105,39 @@
         [_descriptionLabel setText:baseText];
     }
     
-    
-    NSData *keySignatureData = [TGDatabaseInstance() encryptionKeySignatureForConversationId:[TGDatabaseInstance() peerIdForEncryptedConversationId:_encryptedConversationId]];
+    NSData *additionalSignature = nil;
+    NSData *keySignatureData = [TGDatabaseInstance() encryptionKeySignatureForConversationId:[TGDatabaseInstance() peerIdForEncryptedConversationId:_encryptedConversationId] additionalSignature:&additionalSignature];
     if (keySignatureData != nil)
     {
         NSData *hashData = keySignatureData;
         if (hashData != nil)
         {
-            UIImage *image = TGIdenticonImage(hashData, CGSizeMake(264, 264));
+            if (additionalSignature != nil) {
+                NSMutableData *data = [[NSMutableData alloc] init];
+                [data appendData:keySignatureData];
+                [data appendData:additionalSignature];
+                
+                NSString *s1 = [[data subdataWithRange:NSMakeRange(0, 8)] stringByEncodingInHex];
+                NSString *s2 = [[data subdataWithRange:NSMakeRange(8, 8)] stringByEncodingInHex];
+                NSString *s3 = [[additionalSignature subdataWithRange:NSMakeRange(0, 8)] stringByEncodingInHex];
+                NSString *s4 = [[additionalSignature subdataWithRange:NSMakeRange(8, 8)] stringByEncodingInHex];
+                NSString *text = [[NSString alloc] initWithFormat:@"%@\n%@\n%@\n%@", s1, s2, s3, s4];
+                
+                if (![TGViewController isWidescreen]) {
+                    text = [[NSString alloc] initWithFormat:@"%@%@\n%@%@", s1, s2, s3, s4];
+                }
+                
+                NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
+                style.lineSpacing = 3.0f;
+                style.lineBreakMode = NSLineBreakByWordWrapping;
+                style.alignment = NSTextAlignmentCenter;
+                
+                NSAttributedString *attributedString = [[NSAttributedString alloc] initWithString:text attributes:@{NSParagraphStyleAttributeName: style, NSFontAttributeName: _fingerprintLabel.font, NSForegroundColorAttributeName: UIColorRGB(0x222222)}];
+                
+                _fingerprintLabel.attributedText = attributedString;
+            }
+            
+            UIImage *image = TGIdenticonImage(hashData, additionalSignature, CGSizeMake(264, 264));
             _keyImageView.image = image;
         }
     }
@@ -134,17 +172,50 @@
 {
     CGSize screenSize = size;
     
-    CGFloat screenWidth = MIN(screenSize.width, screenSize.height);
+    CGFloat keySize = [TGViewController isWidescreen] ? 264 : 220;
     
-    if (screenSize.width < screenWidth + FLT_EPSILON)
+    _fingerprintLabel.alpha = 1.0f;
+    
+    if (screenSize.width < screenSize.height)
     {
+        CGFloat keyOffset = 0.0f;
+        CGFloat topInset = 0.0f;
+        CGFloat fingerpringOffset = 0.0f;
+        
+        if (TGIsPad()) {
+            keyOffset += 12.0f;
+            fingerpringOffset += -12.0f;
+            topInset += 70.0f;
+        } else if ([TGViewController hasVeryLargeScreen]) {
+            keyOffset += 60.0f;
+            fingerpringOffset += 3.0f;
+            topInset += 102.0f;
+        } else if ([TGViewController hasLargeScreen]) {
+            keyOffset += 50.0f;
+            fingerpringOffset += -1.0f;
+            topInset += 89.0f;
+        } else if ([TGViewController isWidescreen]) {
+            keyOffset += 12.0f;
+            fingerpringOffset += -12.0f;
+            topInset += 70.0f;
+        } else {
+            keyOffset += 12.0f;
+            fingerpringOffset += -10.0f;
+            topInset += 30.0f;
+        }
+        
+        if (_fingerprintLabel.text.length != 0) {
+            [_fingerprintLabel sizeToFit];
+            CGSize fingerprintSize = _fingerprintLabel.frame.size;
+            
+            _fingerprintLabel.frame = CGRectMake(CGFloor((screenSize.width - fingerprintSize.width) / 2), fingerpringOffset + self.controllerInset.top + keyOffset + keySize + 24, fingerprintSize.width, fingerprintSize.height);
+        }
+        
         CGSize labelSize = [_descriptionLabel sizeThatFits:CGSizeMake(screenSize.width - 20, 1000)];
-     
-        CGFloat keySize = [TGViewController isWidescreen] ? 264 : 220;
         
-        _keyImageView.frame = CGRectMake(CGFloor((self.view.frame.size.width - keySize) / 2), self.controllerInset.top + 28, keySize, keySize);
+        _keyImageView.frame = CGRectMake(CGFloor((self.view.frame.size.width - keySize) / 2), self.controllerInset.top + keyOffset, keySize, keySize);
         
-        _descriptionLabel.frame = CGRectMake(CGFloor((screenSize.width - labelSize.width) / 2), _keyImageView.frame.origin.y + _keyImageView.frame.size.height + 24, labelSize.width, labelSize.height);
+        _descriptionLabel.frame = CGRectMake(CGFloor((screenSize.width - labelSize.width) / 2), _keyImageView.frame.origin.y + _keyImageView.frame.size.height + 24 + topInset, labelSize.width, labelSize.height);
         
         NSString *lineText = @"Learn more at telegram.org";
         CGFloat lastWidth = [lineText sizeWithFont:_descriptionLabel.font].width;
@@ -155,11 +226,34 @@
     }
     else
     {
-        _keyImageView.frame = CGRectMake(10, self.controllerInset.top + 10, 248, 248);
+        if (TGIsPad()) {
+        } else if ([TGViewController hasVeryLargeScreen]) {
+        } else if ([TGViewController hasLargeScreen]) {
+        } else if ([TGViewController isWidescreen]) {
+        } else {
+            _fingerprintLabel.alpha = 0.0f;
+        }
+        
+        _keyImageView.frame = CGRectMake(10, self.controllerInset.top + (size.height - self.controllerInset.top - 248.0f) / 2.0f, 248, 248);
         
         CGSize labelSize = [_descriptionLabel sizeThatFits:CGSizeMake(200, 1000)];
         
-        _descriptionLabel.frame = CGRectMake(_keyImageView.frame.origin.x + _keyImageView.frame.size.width + CGFloor((screenSize.width - (_keyImageView.frame.origin.x + _keyImageView.frame.size.width) - labelSize.width) / 2), self.controllerInset.top + CGFloor(((screenSize.height - self.controllerInset.top) - labelSize.height) / 2), labelSize.width, labelSize.height);
+        CGFloat labelAdditionalHeight = 0.0f;
+        
+        if (_fingerprintLabel.text.length != 0) {
+            [_fingerprintLabel sizeToFit];
+            CGSize fingerprintSize = _fingerprintLabel.frame.size;
+            
+            _fingerprintLabel.frame = CGRectMake(CGFloor((screenSize.width - fingerprintSize.width) / 2), 0.0f, fingerprintSize.width, fingerprintSize.height);
+            
+            labelAdditionalHeight += fingerprintSize.height + 20.0f;
+        }
+        
+        _descriptionLabel.frame = CGRectMake(_keyImageView.frame.origin.x + _keyImageView.frame.size.width + CGFloor((screenSize.width - (_keyImageView.frame.origin.x + _keyImageView.frame.size.width) - labelSize.width) / 2), self.controllerInset.top + CGFloor(((screenSize.height - self.controllerInset.top) - (labelSize.height +- labelAdditionalHeight)) / 2), labelSize.width, labelSize.height);
+        
+        if (_fingerprintLabel.text.length != 0) {
+            _fingerprintLabel.frame = CGRectMake(_descriptionLabel.frame.origin.x + CGFloor((_descriptionLabel.frame.size.width - _fingerprintLabel.frame.size.width) / 2), _descriptionLabel.frame.origin.y - 20.0f - _fingerprintLabel.frame.size.height, _fingerprintLabel.frame.size.width, _fingerprintLabel.frame.size.height);
+        }
         
         NSString *lineText = @"Learn more at telegram.org";
         CGFloat lastWidth = [lineText sizeWithFont:_descriptionLabel.font].width;
@@ -172,7 +266,7 @@
 
 - (void)linkButtonPressed
 {
-    [[UIApplication sharedApplication] openURL:[[NSURL alloc] initWithString:@"http://telegram.org"]];
+    [[UIApplication sharedApplication] openURL:[[NSURL alloc] initWithString:@"https://telegram.org/faq#secret-chats"]];
 }
 
 @end

@@ -43,11 +43,3 @@
 
 @end
 
-@interface TLDocumentAttribute$documentAttributeAudio : TLDocumentAttribute
-
-@property (nonatomic) int32_t duration;
-@property (nonatomic, retain) NSString *title;
-@property (nonatomic, retain) NSString *performer;
-
-@end
-

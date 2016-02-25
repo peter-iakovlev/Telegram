@@ -31,7 +31,11 @@ typedef enum {
     TGMessageActionJoinedByLink = 17,
     TGMessageActionChannelCreated = 18,
     TGMessageActionChannelCommentsStatusChanged = 19,
-    TGMessageActionChannelInviter = 20
+    TGMessageActionChannelInviter = 20,
+    TGMessageActionGroupMigratedTo = 21,
+    TGMessageActionGroupDeactivated = 22,
+    TGMessageActionGroupActivated = 23,
+    TGMessageActionChannelMigratedFrom = 24
 } TGMessageAction;
 
 @interface TGActionMediaAttachment : TGMediaAttachment <TGMediaAttachmentParser>

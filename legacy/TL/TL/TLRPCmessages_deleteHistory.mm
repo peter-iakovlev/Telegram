@@ -21,7 +21,7 @@
 
 - (int)layerVersion
 {
-    return 8;
+    return 40;
 }
 
 - (int32_t)TLconstructorSignature
@@ -55,7 +55,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xf4f8fb61;
+    return (int32_t)0xb7c13bd9;
 }
 
 - (int32_t)TLconstructorName
@@ -67,7 +67,7 @@
 {
     TLRPCmessages_deleteHistory$messages_deleteHistory *object = [[TLRPCmessages_deleteHistory$messages_deleteHistory alloc] init];
     object.peer = metaObject->getObject((int32_t)0x9344c37d);
-    object.offset = metaObject->getInt32((int32_t)0xfc56269);
+    object.max_id = metaObject->getInt32((int32_t)0xe2c00ace);
     return object;
 }
 
@@ -82,8 +82,8 @@
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.offset;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xfc56269, value));
+        value.primitive.int32Value = self.max_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe2c00ace, value));
     }
 }
 

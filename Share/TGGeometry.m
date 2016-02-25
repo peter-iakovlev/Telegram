@@ -19,3 +19,23 @@ CGSize TGFitSize(CGSize size, CGSize maxSize)
     }
     return size;
 }
+
+bool TGOrientationIsSideward(UIImageOrientation orientation, bool *mirrored)
+{
+    if (orientation == UIImageOrientationLeft || orientation == UIImageOrientationRight)
+    {
+        if (mirrored != NULL)
+            *mirrored = false;
+        
+        return true;
+    }
+    else if (orientation == UIImageOrientationLeftMirrored || orientation == UIImageOrientationRightMirrored)
+    {
+        if (mirrored != NULL)
+            *mirrored = true;
+        
+        return true;
+    }
+    
+    return false;
+}

@@ -4,14 +4,15 @@
 
 @implementation TGBridgeChatMessageListView (TGChatMessageListView)
 
-+ (TGBridgeChatMessageListView *)chatMessageListViewWithTGChatMessageListView:(TGChatMessageListView *)messageListView isChannel:(bool)isChannel
++ (TGBridgeChatMessageListView *)chatMessageListViewWithTGChatMessageListView:(TGChatMessageListView *)messageListView
 {
     TGBridgeChatMessageListView *bridgeMessageListView = [[TGBridgeChatMessageListView alloc] init];
     
     NSMutableArray *bridgeMessages = [[NSMutableArray alloc] init];
-    for (TGMessage *message in messageListView.messages)
+    NSArray *clippedMessages = messageListView.clippedMessages;
+    for (TGMessage *message in clippedMessages)
     {
-        TGBridgeMessage *bridgeMessage = isChannel ? [TGBridgeMessage channelMessageWithTGMessage:message] : [TGBridgeMessage messageWithTGMessage:message];
+        TGBridgeMessage *bridgeMessage = (messageListView.isChannel && !messageListView.isChannelGroup) ? [TGBridgeMessage channelMessageWithTGMessage:message] : [TGBridgeMessage messageWithTGMessage:message];
         if (bridgeMessage != nil)
             [bridgeMessages addObject:bridgeMessage];
     }

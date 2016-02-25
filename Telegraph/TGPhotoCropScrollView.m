@@ -30,7 +30,7 @@ typedef struct {
     
     CGFloat _pinchStartScale;
     
-    CGFloat _minimumZoomScale;
+    CGFloat _rotationStartScale;
 }
 @end
 
@@ -46,6 +46,8 @@ typedef struct {
         _maximumZoomScale = 10.0f;
         
         _wrapperView = [[UIView alloc] initWithFrame:CGRectZero];
+        if (iosMajorVersion() >= 7)
+            _wrapperView.layer.allowsEdgeAntialiasing = true;
         [self addSubview:_wrapperView];
         
         _pressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handlePress:)];
@@ -93,10 +95,10 @@ typedef struct {
 
 - (void)setContentRotation:(CGFloat)contentRotation
 {
-    [self setContentRotation:contentRotation resetting:false];
+    [self setContentRotation:contentRotation maximize:false resetting:false];
 }
 
-- (void)setContentRotation:(CGFloat)contentRotation resetting:(bool)resetting
+- (void)setContentRotation:(CGFloat)contentRotation maximize:(bool)maximize resetting:(bool)resetting
 {
     CGPoint rotationCenter = [self convertPoint:CGPointMake(self.bounds.size.width / 2, self.bounds.size.height / 2) toView:_wrapperView];
     
@@ -111,7 +113,7 @@ typedef struct {
     _snapshotView.layer.transform = transform;
     
     if (!resetting)
-        [self fitContentInsideBoundsAllowScale:true animated:false completion:nil];
+        [self fitContentInsideBoundsAllowScale:true maximize:maximize animated:false completion:nil];
 }
 
 - (void)setContentView:(UIView *)contentView
@@ -171,8 +173,12 @@ typedef struct {
     _snapshotView.transform = _wrapperView.transform;
 }
 
-
 - (void)fitContentInsideBoundsAllowScale:(bool)allowScale animated:(bool)animated completion:(void (^)(void))completion
+{
+    [self fitContentInsideBoundsAllowScale:allowScale maximize:false animated:animated completion:completion];
+}
+
+- (void)fitContentInsideBoundsAllowScale:(bool)allowScale maximize:(bool)maximize animated:(bool)animated completion:(void (^)(void))completion
 {
     CGRect boundsRect = [self boundingBoxForRect:self.bounds withRotation:self.contentRotation];
     CGRect initialRect = CGRectMake(0, 0, _contentSize.width, _contentSize.height);
@@ -203,20 +209,13 @@ typedef struct {
     __block CGFloat targetScale = contentScale;
     __block CATransform3D targetTransform = _wrapperView.layer.transform;
     
-    void (^fitScaleBlock)(CGFloat, CGPoint) = ^(CGFloat ratio, __unused CGPoint scaleCenter)
+    void (^fitScaleBlock)(CGFloat) = ^(CGFloat ratio)
     {
         CGSize scaledSize = CGSizeMake(contentRect.size.width * ratio, contentRect.size.height * ratio);
         CGPoint scaledOffset = CGPointMake((contentRect.size.width - scaledSize.width) / 2, (contentRect.size.height - scaledSize.height) / 2);
         contentRect = CGRectMake(contentRect.origin.x + scaledOffset.x, contentRect.origin.y + scaledOffset.y, scaledSize.width, scaledSize.height);
-        
-        //CGPoint delta = CGPointMake(scaleCenter.x - _wrapperView.bounds.size.width / 2.0f, scaleCenter.y - _wrapperView.bounds.size.height / 2.0f);
-        
-        //targetTransform = CATransform3DTranslate(targetTransform, delta.x, delta.y, 0);
+    
         targetTransform = CATransform3DScale(targetTransform, ratio, ratio, 1.0f);
-        //targetTransform = CATransform3DTranslate(targetTransform, -delta.x, -delta.y, 0);
-
-        //targetTranslation.x += (delta.x - delta.x / ratio);
-        //targetTranslation.y += (delta.y - delta.y / ratio);
         
         targetScale *= ratio;
     };
@@ -312,23 +311,24 @@ typedef struct {
     if (!CGRectContainsRect(contentRect, boundsRect))
     {
         if (allowScale && (boundsRect.size.width > contentRect.size.width || boundsRect.size.height > contentRect.size.height))
-            fitScaleBlock(boundsRect.size.width / TGScaleToSize(boundsRect.size, contentRect.size).width, CGPointMake(_wrapperView.bounds.size.width / 2, _wrapperView.bounds.size.height / 2));
-        
-        fitTranslationBlock();
-        applyBlock();
-    }
-    else if (self.contentScale > self.maximumZoomScale)
-    {
-        return;
-        fitScaleBlock(self.maximumZoomScale / self.contentScale, _pinchCenter);
+            fitScaleBlock(boundsRect.size.width / TGScaleToSize(boundsRect.size, contentRect.size).width);
         
         fitTranslationBlock();
         applyBlock();
     }
     else
     {
-        if (completion != nil)
-            completion();
+        if (maximize && _rotationStartScale > FLT_EPSILON)
+        {
+            CGFloat ratio = boundsRect.size.width / TGScaleToSize(boundsRect.size, contentRect.size).width;
+            CGFloat newScale = self.contentScale * ratio;
+            if (newScale < _rotationStartScale)
+                ratio = 1.0f;
+
+            fitScaleBlock(ratio);
+            fitTranslationBlock();
+            applyBlock();
+        }
     }
 }
 
@@ -766,6 +766,19 @@ typedef struct {
         if (completion != nil)
             completion();
     }
+}
+
+#pragma mark - 
+
+- (void)storeRotationStartValues
+{
+    if (_rotationStartScale < FLT_EPSILON)
+        _rotationStartScale = self.contentScale;
+}
+
+- (void)resetRotationStartValues
+{
+    _rotationStartScale = 0.0f;
 }
 
 #pragma mark - Misc

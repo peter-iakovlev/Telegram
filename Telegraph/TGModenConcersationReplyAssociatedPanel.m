@@ -79,8 +79,8 @@
         
         NSString *title = @"";
         id author = nil;
-        if (TGPeerIdIsChannel(message.fromUid)) {
-            TGConversation *conversation = [TGDatabaseInstance() loadChannels:@[@(message.fromUid)]][@(message.fromUid)];
+        if (TGPeerIdIsChannel(message.cid) && TGMessageSortKeySpace(message.sortKey) == TGMessageSpaceImportant) {
+            TGConversation *conversation = [TGDatabaseInstance() loadChannels:@[@(message.cid)]][@(message.cid)];
             author = conversation;
             if (conversation != nil) {
                 title = conversation.chatTitle;
@@ -132,12 +132,16 @@
             else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
             {
                 bool isSticker = false;
+                bool isVoice = false;
                 for (id attribute in ((TGDocumentMediaAttachment *)attachment).attributes)
                 {
                     if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
                     {
                         isSticker = true;
                         break;
+                    }
+                    else if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                        isVoice = ((TGDocumentAttributeAudio *)attribute).isVoice;
                     }
                 }
                 
@@ -148,6 +152,14 @@
                         text = [[NSString alloc] initWithFormat:@"%@ %@", stickerRepresentation, TGLocalized(@"Message.Sticker")];
                     else
                         text = TGLocalized(@"Message.Sticker");
+                    textColor = mediaTextColor;
+                }
+                else if ([(TGDocumentMediaAttachment *)attachment isAnimated]) {
+                    text = TGLocalized(@"Message.Animation");
+                    textColor = mediaTextColor;
+                }
+                else if (isVoice) {
+                    text = TGLocalized(@"Message.Audio");
                     textColor = mediaTextColor;
                 }
                 else
@@ -171,6 +183,10 @@
             {
                 text = [TGReplyHeaderActionModel messageTextForActionMedia:(TGActionMediaAttachment *)attachment author:author];
             }
+        }
+        
+        if (message.messageLifetime > 0 && message.messageLifetime <= 60) {
+            imageSignal = nil;
         }
         
         if (imageSignal != nil)

@@ -18,15 +18,17 @@
 
 @implementation TGPreparedTextMessage
 
-- (instancetype)initWithText:(NSString *)text replyMessage:(TGMessage *)replyMessage disableLinkPreviews:(bool)disableLinkPreviews parsedWebpage:(TGWebPageMediaAttachment *)parsedWebpage
+- (instancetype)initWithText:(NSString *)text replyMessage:(TGMessage *)replyMessage disableLinkPreviews:(bool)disableLinkPreviews parsedWebpage:(TGWebPageMediaAttachment *)parsedWebpage entities:(NSArray *)entities botContextResult:(TGBotContextResultAttachment *)botContextResult
 {
     self = [super init];
     if (self != nil)
     {
         _text = text;
-        _replyMessage = replyMessage;
+        self.replyMessage = replyMessage;
         _disableLinkPreviews = disableLinkPreviews;
         _parsedWebpage = parsedWebpage;
+        _entities = entities;
+        self.botContextResult = botContextResult;
     }
     return self;
 }
@@ -42,11 +44,11 @@
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
-    if (_replyMessage != nil)
+    if (self.replyMessage != nil)
     {
         TGReplyMessageMediaAttachment *replyMedia = [[TGReplyMessageMediaAttachment alloc] init];
-        replyMedia.replyMessageId = _replyMessage.mid;
-        replyMedia.replyMessage = _replyMessage;
+        replyMedia.replyMessageId = self.replyMessage.mid;
+        replyMedia.replyMessage = self.replyMessage;
         [attachments addObject:replyMedia];
     }
     
@@ -56,6 +58,18 @@
     if (_disableLinkPreviews)
     {
         message.contentProperties = @{@"linkPreviews": [[TGLinkPreviewsContentProperty alloc] initWithDisableLinkPreviews:_disableLinkPreviews]};
+    }
+    
+    if (_entities.count != 0) {
+        TGMessageEntitiesAttachment *attachment = [[TGMessageEntitiesAttachment alloc] init];
+        attachment.entities = _entities;
+        [attachments addObject:attachment];
+    }
+    
+    if (self.botContextResult != nil) {
+        [attachments addObject:self.botContextResult];
+        
+        [attachments addObject:[[TGViaUserAttachment alloc] initWithUserId:self.botContextResult.userId username:nil]];
     }
     
     message.mediaAttachments = attachments.count == 0 ? nil : attachments;

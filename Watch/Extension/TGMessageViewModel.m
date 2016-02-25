@@ -7,6 +7,7 @@
 #import "WKInterfaceGroup+Signals.h"
 
 #import "TGBridgeUser.h"
+#import "TGBridgeChat.h"
 #import "TGBridgeMessage.h"
 #import "TGBridgeUserCache.h"
 
@@ -157,21 +158,23 @@
     }
 }
 
-+ (void)updateForwardHeaderGroup:(WKInterfaceGroup *)forwardHeaderGroup titleLabel:(WKInterfaceLabel *)titleLabel fromLabel:(WKInterfaceLabel *)fromLabel forwardAttachment:(TGBridgeForwardedMessageMediaAttachment *)forwardAttachment textColor:(UIColor *)textColor
++ (void)updateForwardHeaderGroup:(WKInterfaceGroup *)forwardHeaderGroup titleLabel:(WKInterfaceLabel *)titleLabel fromLabel:(WKInterfaceLabel *)fromLabel forwardAttachment:(TGBridgeForwardedMessageMediaAttachment *)forwardAttachment forwardPeer:(id)forwardPeer textColor:(UIColor *)textColor
 {
     forwardHeaderGroup.hidden = (forwardAttachment == nil);
     if (forwardHeaderGroup.hidden)
         return;
     
-    titleLabel.text = TGLocalized(@"Message.ForwardedMessage");
+    titleLabel.text = TGLocalized(@"Watch.Message.ForwardedFrom");
+
+    NSString *authorName = nil;
+    if ([forwardPeer isKindOfClass:[TGBridgeUser class]])
+        authorName = ((TGBridgeUser *)forwardPeer).displayName;
+    else if ([forwardPeer isKindOfClass:[TGBridgeChat class]])
+        authorName = ((TGBridgeChat *)forwardPeer).groupTitle;
     
-    TGBridgeUser *author = [[TGBridgeUserCache instance] userWithId:forwardAttachment.uid];
-    NSString *authorName = author.displayName;
-    NSString *formatString = TGLocalized(@"Message.ForwardedFrom");
+    NSMutableAttributedString *forwardAttributedText = [[NSMutableAttributedString alloc] initWithString:authorName attributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:12], NSForegroundColorAttributeName:textColor }];
     
-    NSMutableAttributedString *forwardAttributedText = [[NSMutableAttributedString alloc] initWithString:[[NSString alloc] initWithFormat:formatString, authorName] attributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:12], NSForegroundColorAttributeName:textColor }];
-    
-    NSRange formatNameRange = [formatString rangeOfString:@"%@"];
+    NSRange formatNameRange = NSMakeRange(0, authorName.length);
     if (formatNameRange.location != NSNotFound)
     {
         [forwardAttributedText addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:12 weight:UIFontWeightMedium] range:NSMakeRange(formatNameRange.location, authorName.length)];
@@ -250,82 +253,7 @@
             hasAttachment = true;
             
             TGBridgeActionMediaAttachment *actionAttachment = (TGBridgeActionMediaAttachment *)attachment;
-            
-            TGBridgeUser *author = [[TGBridgeUserCache instance] userWithId:(int32_t)message.fromUid];
-            
-            switch (actionAttachment.actionType)
-            {
-                case TGBridgeMessageActionChatEditTitle:
-                {
-                    NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
-                    NSString *formatString = TGLocalized(@"Notification.RenamedChat");
-                    
-                    messageText = [NSString stringWithFormat:formatString, authorName];
-                }
-                    break;
-                    
-                case TGBridgeMessageActionChatEditPhoto:
-                {
-                    NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
-                    bool changed = actionAttachment.actionData[@"photo"];
-                    
-                    NSString *formatString = changed ? TGLocalized(@"Notification.ChangedGroupPhoto") : TGLocalized(@"Notification.RemovedGroupPhoto");
-                    
-                    messageText = [NSString stringWithFormat:formatString, authorName];
-                }
-                    break;
-                    
-                case TGBridgeMessageActionUserChangedPhoto:
-                {
-                    
-                }
-                    break;
-                    
-                case TGBridgeMessageActionChatAddMember:
-                case TGBridgeMessageActionChatDeleteMember:
-                {
-                    NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
-                    TGBridgeUser *user = [[TGBridgeUserCache instance] userWithId:[actionAttachment.actionData[@"uid"] int32Value]];
-                    
-                    if (user.identifier == author.identifier)
-                    {
-                        NSString *formatString = (actionAttachment.actionType == TGBridgeMessageActionChatAddMember) ? TGLocalized(@"Notification.JoinedChat") : TGLocalized(@"Notification.LeftChat");
-                        messageText = [[NSString alloc] initWithFormat:formatString, authorName];
-                    }
-                    else
-                    {
-                        NSString *userName = [TGStringUtils initialsForFirstName:user.firstName lastName:user.lastName single:false];
-                        NSString *formatString = (actionAttachment.actionType == TGBridgeMessageActionChatAddMember) ? TGLocalized(@"Notification.Invited") : TGLocalized(@"Notification.Kicked");
-                        messageText = [[NSString alloc] initWithFormat:formatString, authorName, userName];
-                    }
-                }
-                    break;
-                    
-                case TGBridgeMessageActionJoinedByLink:
-                {
-                    NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
-                    NSString *formatString = TGLocalizedStatic(@"Notification.JoinedGroupByLink");
-                    messageText = [[NSString alloc] initWithFormat:formatString, authorName, actionAttachment.actionData[@"title"]];
-                }
-                    break;
-                    
-                case TGBridgeMessageActionCreateChat:
-                {
-                    NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
-                    NSString *formatString = TGLocalizedStatic(@"Notification.CreatedChatWithTitle");
-                    messageText = [[NSString alloc] initWithFormat:formatString, authorName, actionAttachment.actionData[@"title"]];
-                }
-                    break;
-                    
-                case TGBridgeMessageActionContactRegistered:
-                {
-                    messageText = TGLocalized(@"Notification.Joined");
-                }
-                    break;
-                    
-                default:
-                    break;
-            }
+            [self stringForActionAttachment:actionAttachment message:message users:nil forChannel:false];
         }
     }
     
@@ -393,7 +321,164 @@
     }
 }
 
++ (NSString *)stringForActionAttachment:(TGBridgeActionMediaAttachment *)actionAttachment message:(TGBridgeMessage *)message users:(NSDictionary *)users forChannel:(bool)forChannel
+{
+    NSString *messageText = nil;
+    TGBridgeUser *author = (users != nil) ? users[@(message.fromUid)] : [[TGBridgeUserCache instance] userWithId:(int32_t)message.fromUid];
+    
+    switch (actionAttachment.actionType)
+    {
+        case TGBridgeMessageActionChatEditTitle:
+        {
+            if (forChannel)
+            {
+                messageText = TGLocalized(@"Notification.RenamedChannel");
+            }
+            else
+            {
+                NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
+                NSString *formatString = TGLocalized(@"Notification.RenamedChat");
+                
+                messageText = [NSString stringWithFormat:formatString, authorName];
+            }
+        }
+            break;
+            
+        case TGBridgeMessageActionChatEditPhoto:
+        {
+            NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
+            bool changed = actionAttachment.actionData[@"photo"];
+            
+            if (forChannel)
+            {
+                messageText = changed ? TGLocalized(@"Channel.MessagePhotoUpdated") : TGLocalized(@"Channel.MessagePhotoRemoved");
+            }
+            else
+            {
+                NSString *formatString = changed ? TGLocalized(@"Notification.ChangedGroupPhoto") : TGLocalized(@"Notification.RemovedGroupPhoto");
+                
+                messageText = [NSString stringWithFormat:formatString, authorName];
+            }
+        }
+            break;
+            
+        case TGBridgeMessageActionUserChangedPhoto:
+        {
+            
+        }
+            break;
+            
+        case TGBridgeMessageActionChatAddMember:
+        case TGBridgeMessageActionChatDeleteMember:
+        {
+            NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
+            TGBridgeUser *user = (users != nil) ? users[actionAttachment.actionData[@"uid"]] : [[TGBridgeUserCache instance] userWithId:[actionAttachment.actionData[@"uid"] int32Value]];
+            
+            if (user.identifier == author.identifier)
+            {
+                NSString *formatString = (actionAttachment.actionType == TGBridgeMessageActionChatAddMember) ? TGLocalized(@"Notification.JoinedChat") : TGLocalized(@"Notification.LeftChat");
+                messageText = [[NSString alloc] initWithFormat:formatString, authorName];
+            }
+            else
+            {
+                NSString *userName = [TGStringUtils initialsForFirstName:user.firstName lastName:user.lastName single:false];
+                NSString *formatString = (actionAttachment.actionType == TGBridgeMessageActionChatAddMember) ? TGLocalized(@"Notification.Invited") : TGLocalized(@"Notification.Kicked");
+                messageText = [[NSString alloc] initWithFormat:formatString, authorName, userName];
+            }
+        }
+            break;
+            
+        case TGBridgeMessageActionJoinedByLink:
+        {
+            NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
+            NSString *formatString = TGLocalizedStatic(@"Notification.JoinedGroupByLink");
+            messageText = [[NSString alloc] initWithFormat:formatString, authorName, actionAttachment.actionData[@"title"]];
+        }
+            break;
+            
+        case TGBridgeMessageActionCreateChat:
+        {
+            NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
+            NSString *formatString = TGLocalizedStatic(@"Notification.CreatedChatWithTitle");
+            messageText = [[NSString alloc] initWithFormat:formatString, authorName, actionAttachment.actionData[@"title"]];
+        }
+            break;
+            
+        case TGBridgeMessageActionContactRegistered:
+        {
+            messageText = TGLocalized(@"Watch.Notification.Joined");
+        }
+            break;
+            
+        case TGBridgeMessageActionChannelCreated:
+        {
+            messageText = TGLocalized(@"Notification.CreatedChannel");
+        }
+            break;
+            
+        case TGBridgeMessageActionChannelInviter:
+        {
+            TGBridgeUser *user = (users != nil) ? users[actionAttachment.actionData[@"uid"]] : [[TGBridgeUserCache instance] userWithId:[actionAttachment.actionData[@"uid"] int32Value]];
+            NSString *authorName = [TGStringUtils initialsForFirstName:user.firstName lastName:user.lastName single:false];
+            NSString *formatString = TGLocalizedStatic(@"Notification.ChannelInviter");
+            
+            messageText = [[NSString alloc] initWithFormat:formatString, authorName];
+        }
+            
+        case TGBridgeMessageActionGroupMigratedTo:
+        {
+            messageText = TGLocalized(@"Notification.GroupMigratedToChannel");
+        }
+            break;
+            
+        case TGBridgeMessageActionGroupActivated:
+        {
+            messageText = TGLocalized(@"Notification.GroupActivated");
+        }
+            break;
+            
+        case TGBridgeMessageActionGroupDeactivated:
+        {
+            messageText = TGLocalized(@"Notification.GroupDeactivated");
+        }
+            break;
+            
+        case TGBridgeMessageActionChannelMigratedFrom:
+        {
+            messageText = TGLocalized(@"Notification.ChannelMigratedFrom");
+        }
+            break;
+            
+        default:
+            break;
+    }
+
+    return messageText;
+}
+
++ (NSAttributedString *)attributedTextForMessage:(TGBridgeMessage *)message fontSize:(CGFloat)fontSize textColor:(UIColor *)textColor
+{
+    NSArray *textCheckingResults = [message textCheckingResults];
+    
+    NSString *messageText = message.text ?: @"";
+    
+    NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:messageText attributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:fontSize], NSForegroundColorAttributeName: textColor }];
+    
+    for (TGBridgeTextCheckingResult *result in textCheckingResults)
+    {
+        if (result.type == TGBridgeTextCheckingResultTypeBold)
+            [string addAttributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:fontSize weight:UIFontWeightMedium] } range:result.range];
+        else if (result.type == TGBridgeTextCheckingResultTypeItalic)
+            [string addAttributes:@{ NSFontAttributeName: [UIFont italicSystemFontOfSize:fontSize] } range:result.range];
+        else if (result.type == TGBridgeTextCheckingResultTypeCode || result.type == TGBridgeTextCheckingResultTypePre)
+            [string addAttributes:@{ NSFontAttributeName: [UIFont fontWithName:@"Courier" size:fontSize] } range:result.range];
+    }
+    
+    return string;
+}
+
 @end
+
 
 @implementation TGStickerViewModel
 
@@ -407,21 +492,25 @@
         {
             TGBridgeDocumentMediaAttachment *documentAttachment = (TGBridgeDocumentMediaAttachment *)attachment;
             
-            if (*currentDocumentId != documentAttachment.documentId)
+            if (currentDocumentId == NULL || *currentDocumentId != documentAttachment.documentId)
             {
-                *currentDocumentId = documentAttachment.documentId;
+                if (currentDocumentId != NULL)
+                    *currentDocumentId = documentAttachment.documentId;
+                
                 [imageGroup setBackgroundImageSignal:[[[TGBridgeMediaSignals stickerWithDocumentAttachment:documentAttachment type:TGMediaStickerImageTypeNormal] onNext:^(id next)
                 {
                     if (completion != nil)
                         completion();
                 }] onError:^(id error)
                 {
-                    *currentDocumentId = 0;
+                    if (currentDocumentId != NULL)
+                        *currentDocumentId = 0;
                     
                     if (completion != nil)
                         completion();
                 }] isVisible:isVisible];
             }
+            break;
         }
     }
 }

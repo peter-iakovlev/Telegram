@@ -1,12 +1,12 @@
 #import "TGModernGalleryImageItem.h"
-#import "TGMediaPickerAsset.h"
+#import "TGMediaAsset.h"
 
 @interface TGMediaPickerGalleryItem : NSObject <TGModernGalleryItem>
 
-@property (nonatomic, strong) TGMediaPickerAsset *asset;
+@property (nonatomic, strong) TGMediaAsset *asset;
 @property (nonatomic, strong) UIImage *immediateThumbnailImage;
 @property (nonatomic, assign) bool asFile;
 
-- (instancetype)initWithAsset:(TGMediaPickerAsset *)asset;
+- (instancetype)initWithAsset:(TGMediaAsset *)asset;
 
 @end

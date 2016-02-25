@@ -7,10 +7,15 @@
 #import "TGLiveUploadActor.h"
 
 #import "TGDataItem.h"
-#import "TGPreparedLocalAudioMessage.h"
 
-#import "TGAudioMediaAttachment.h"
+#import "TGDocumentMediaAttachment.h"
 #import "TLInputMedia.h"
+
+#import "TLDocumentAttribute$documentAttributeAudio.h"
+
+#import "TGPreparedLocalDocumentMessage.h"
+
+#import "TGAudioWaveformSignal.h"
 
 @interface TGUploadFileAdapter : NSObject <ASWatcher>
 {
@@ -106,28 +111,28 @@
 
 @implementation TGSendAudioSignal
 
-+ (SSignal *)sendAudioWithPeerId:(int64_t)peerId tempDataItem:(TGDataItem *)tempDataItem liveData:(TGLiveUploadActorData *)liveData duration:(int32_t)duration replyToMid:(int32_t)replyToMid
++ (SSignal *)sendAudioWithPeerId:(int64_t)peerId tempDataItem:(TGDataItem *)tempDataItem liveData:(TGLiveUploadActorData *)liveData duration:(int32_t)duration localAudioId:(int64_t)localAudioId replyToMid:(int32_t)replyToMid
 {
     int fileSize = (int)[tempDataItem length];
     
     if (fileSize == 0)
         return nil;
     
-    int64_t localAudioId = 0;
-    arc4random_buf(&localAudioId, 8);
+    TGAudioWaveform *waveform = [TGAudioWaveformSignal waveformForPath:[tempDataItem path]];
     
-    TGAudioMediaAttachment *audioAttachment = [[TGAudioMediaAttachment alloc] init];
-    audioAttachment.localAudioId = localAudioId;
-    audioAttachment.duration = duration;
-    audioAttachment.fileSize = fileSize;
+    TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
+    documentAttachment.localDocumentId = localAudioId;
+    documentAttachment.attributes = @[[[TGDocumentAttributeFilename alloc] initWithFilename:@"audio.ogg"], [[TGDocumentAttributeAudio alloc] initWithIsVoice:true title:nil performer:nil duration:duration waveform:waveform]];
+    documentAttachment.size = fileSize;
+    documentAttachment.mimeType = @"audio/ogg";
     
-    NSString *audioFileDirectory = [TGPreparedLocalAudioMessage localAudioFileDirectoryForLocalAudioId:localAudioId];
-    NSString *audioFilePath = [TGPreparedLocalAudioMessage localAudioFilePathForLocalAudioId1:localAudioId];
+    NSString *audioFileDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localAudioId];
+    NSString *audioFilePath = [audioFileDirectory stringByAppendingPathComponent:@"audio.ogg"];
     
     [[NSFileManager defaultManager] createDirectoryAtPath:audioFileDirectory withIntermediateDirectories:true attributes:nil error:NULL];
     [tempDataItem moveToPath:audioFilePath];
     
-    SSignal *addToDatabaseSignal = [TGSendMessageSignals _addMessageToDatabaseWithPeerId:peerId replyToMid:replyToMid text:nil attachment:audioAttachment];
+    SSignal *addToDatabaseSignal = [TGSendMessageSignals _addMessageToDatabaseWithPeerId:peerId replyToMid:replyToMid text:nil attachment:documentAttachment];
     
     return [addToDatabaseSignal mapToSignal:^SSignal *(TGMessage *message)
     {
@@ -157,11 +162,22 @@
         {
             return [TGSendMessageSignals _sendMediaWithMessage:message replyToMid:replyToMid mediaProducer:^TLInputMedia *
             {
-                TLInputMedia$inputMediaUploadedAudio *uploadedAudio = [[TLInputMedia$inputMediaUploadedAudio alloc] init];
-                uploadedAudio.file = result[@"file"];
-                uploadedAudio.duration = duration;
+                TLInputMedia$inputMediaUploadedDocument *uploadedDocument = [[TLInputMedia$inputMediaUploadedDocument alloc] init];
+                uploadedDocument.file = result[@"file"];
+                TLDocumentAttribute$documentAttributeAudio *audio = [[TLDocumentAttribute$documentAttributeAudio alloc] init];
+                audio.duration = duration;
+                audio.flags |= (1 << 10);
+                if (waveform != nil) {
+                    audio.waveform = [waveform bitstream];
+                    audio.flags |= (1 << 2);
+                }
                 
-                return uploadedAudio;
+                TLDocumentAttribute$documentAttributeFilename *filename = [[TLDocumentAttribute$documentAttributeFilename alloc] init];
+                filename.file_name = @"audio.ogg";
+                
+                uploadedDocument.attributes = @[audio, filename];
+                
+                return uploadedDocument;
             }];
         }];
     }];

@@ -8,10 +8,16 @@
 
 #import "TGCollectionItemView.h"
 
+typedef enum {
+    TGEditableCollectionItemViewIndicatorDelete,
+    TGEditableCollectionItemViewIndicatorAdd
+} TGEditableCollectionItemViewIndicator;
+
 @interface TGEditableCollectionItemView : TGCollectionItemView
 
 @property (nonatomic, readonly) UIView *editingContentView;
 
+@property (nonatomic) TGEditableCollectionItemViewIndicator indicatorMode;
 @property (nonatomic) bool showsDeleteIndicator;
 
 @property (nonatomic) bool enableEditing;

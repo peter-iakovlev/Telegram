@@ -6,16 +6,21 @@
 #import <libkern/OSAtomic.h>
 #import <CommonCrypto/CommonDigest.h>
 
+static OSSpinLock imageDataLock;
+
 @implementation TGChatListAvatarSignal
 
 + (SSignal *)remoteChatListAvatarWithContext:(TGShareContext *)context location:(TGFileLocation *)location
 {
-    Api38_InputFileLocation_inputFileLocation *inputFileLocation = [Api38_InputFileLocation inputFileLocationWithVolumeId:@(location.volumeId) localId:@(location.localId) secret:@(location.secret)];
-    return [[context datacenter:location.datacenterId function:[Api38 upload_getFileWithLocation:inputFileLocation offset:@(0) limit:@(1024 * 1024)]] map:^id(Api38_upload_File *result)
+    Api48_InputFileLocation_inputFileLocation *inputFileLocation = [Api48_InputFileLocation inputFileLocationWithVolumeId:@(location.volumeId) localId:@(location.localId) secret:@(location.secret)];
+    return [[context datacenter:location.datacenterId function:[Api48 upload_getFileWithLocation:inputFileLocation offset:@(0) limit:@(1024 * 1024)]] map:^id(Api48_upload_File *result)
     {
         [context.persistentCache setValue:result.bytes forKey:[[location description] dataUsingEncoding:NSUTF8StringEncoding]];
         
+        OSSpinLockLock(&imageDataLock);
         UIImage *image = [[UIImage alloc] initWithData:result.bytes];
+        OSSpinLockUnlock(&imageDataLock);
+        
         image = TGRoundImage(image, CGSizeMake(40.0f, 40.0f));
         [context.memoryImageCache setImage:image forKey:[location description] attributes:nil];
         return image;
@@ -36,7 +41,10 @@
             [subscriber putError:nil];
         else
         {
+            OSSpinLockLock(&imageDataLock);
             UIImage *image = [[UIImage alloc] initWithData:data];
+            OSSpinLockUnlock(&imageDataLock);
+            
             image = TGRoundImage(image, CGSizeMake(40.0f, 40.0f));
             [context.memoryImageCache setImage:image forKey:[location description] attributes:nil];
             [subscriber putNext:image];

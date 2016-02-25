@@ -1,6 +1,7 @@
 #import "TGModernGalleryVideoScrubbingInterfaceView.h"
 
 #import "TGFont.h"
+#import "TGImageUtils.h"
 
 #import "TGAudioSliderArea.h"
 
@@ -32,6 +33,8 @@ static CGFloat scrubberInternalInset = 4.0f;
     bool _isPlaying;
     MTAbsoluteTime _positionTimestamp;
     NSTimeInterval _duration;
+    
+    CGFloat _currentTimeMinWidth;
 }
 
 @end
@@ -75,6 +78,14 @@ static CGFloat scrubberInternalInset = 4.0f;
         _sliderArea.delegate = self;
         _sliderArea.userInteractionEnabled = false;
         [self addSubview:_sliderArea];
+        
+        static dispatch_once_t onceToken;
+        static CGFloat currentTimeMinWidth;
+        dispatch_once(&onceToken, ^
+        {
+            currentTimeMinWidth = floor([[[NSAttributedString alloc] initWithString:@"0:00" attributes:@{ NSFontAttributeName: _currentTimeLabel.font }] boundingRectWithSize:CGSizeMake(FLT_MAX, FLT_MAX) options:NSStringDrawingUsesLineFragmentOrigin context:nil].size.width) + TGRetinaPixel;
+        });
+        _currentTimeMinWidth = currentTimeMinWidth;
     }
     return self;
 }
@@ -228,7 +239,7 @@ static CGFloat scrubberInternalInset = 4.0f;
     
     CGFloat progressValue = _isScrubbing ? _scrubbingPosition : _position;
     
-    _currentTimeLabel.frame = (CGRect){{insetLeft, CGFloor((self.frame.size.height - _currentTimeLabel.frame.size.height) / 2.0f)}, _currentTimeLabel.frame.size};
+    _currentTimeLabel.frame = (CGRect){{insetLeft, CGFloor((self.frame.size.height - _currentTimeLabel.frame.size.height) / 2.0f)}, { MAX(_currentTimeMinWidth, _currentTimeLabel.frame.size.width), _currentTimeLabel.frame.size.height }};
     
     _durationLabel.frame = (CGRect){{self.frame.size.width - insetRight - _durationLabel.frame.size.width, CGFloor((self.frame.size.height - _durationLabel.frame.size.height) / 2.0f)}, _durationLabel.frame.size};
     

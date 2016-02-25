@@ -35,7 +35,7 @@
         _textLabel.textAlignment = NSTextAlignmentLeft;
         _textLabel.backgroundColor = [UIColor clearColor];
         _textLabel.textColor = UIColorRGB(0x959595);
-        _textLabel.attributedText = [TGLocalized(@"AuthSessions.EmptyText") attributedStringWithFormattingAndFontSize:14.0f lineSpacing:2.0f paragraphSpacing:0.0f];
+        _textLabel.attributedText = [TGLocalized(@"AuthSessions.EmptyText") attributedFormattedStringWithRegularFont:TGSystemFontOfSize(14.0f) boldFont:TGBoldSystemFontOfSize(14.0f) lineSpacing:2.0f paragraphSpacing:0.0f alignment:NSTextAlignmentCenter];
         _textLabel.lineBreakMode = NSLineBreakByWordWrapping;
         _textLabel.numberOfLines = 0;
         _textLabel.textAlignment = NSTextAlignmentCenter;

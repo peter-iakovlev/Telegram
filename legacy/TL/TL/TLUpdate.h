@@ -20,6 +20,7 @@
 @class TLContactLink;
 @class TLWebPage;
 @class TLMessageGroup;
+@class TLmessages_StickerSet;
 
 @interface TLUpdate : NSObject <TLObject>
 
@@ -329,6 +330,53 @@
 @property (nonatomic) int32_t channel_id;
 @property (nonatomic) int32_t n_id;
 @property (nonatomic) int32_t views;
+
+@end
+
+@interface TLUpdate$updateChatAdmins : TLUpdate
+
+@property (nonatomic) int32_t chat_id;
+@property (nonatomic) bool enabled;
+@property (nonatomic) int32_t version;
+
+@end
+
+@interface TLUpdate$updateChatParticipantAdmin : TLUpdate
+
+@property (nonatomic) int32_t chat_id;
+@property (nonatomic) int32_t user_id;
+@property (nonatomic) bool is_admin;
+@property (nonatomic) int32_t version;
+
+@end
+
+@interface TLUpdate$updateNewStickerSet : TLUpdate
+
+@property (nonatomic, retain) TLmessages_StickerSet *stickerset;
+
+@end
+
+@interface TLUpdate$updateStickerSetsOrder : TLUpdate
+
+@property (nonatomic, retain) NSArray *order;
+
+@end
+
+@interface TLUpdate$updateStickerSets : TLUpdate
+
+
+@end
+
+@interface TLUpdate$updateSavedGifs : TLUpdate
+
+
+@end
+
+@interface TLUpdate$updateEditChannelMessage : TLUpdate
+
+@property (nonatomic, retain) TLMessage *message;
+@property (nonatomic) int32_t pts;
+@property (nonatomic) int32_t pts_count;
 
 @end
 

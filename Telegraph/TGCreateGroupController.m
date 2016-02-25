@@ -42,23 +42,9 @@
 
 #import "TGSetupChannelAfterCreationController.h"
 
-#import "TGLegacyCameraController.h"
-#import "TGImagePickerController.h"
-
-#import "TGOverlayFormsheetWindow.h"
-#import "TGMediaFoldersController.h"
-#import "TGModernMediaPickerController.h"
-#import "TGWebSearchController.h"
-#import "TGCameraController.h"
-#import "TGAttachmentSheetRecentCameraView.h"
-#import "TGAttachmentSheetView.h"
-
+#import "UIDevice+PlatformInfo.h"
 #import "TGImageUtils.h"
 #import "TGActionSheet.h"
-#import "TGAccessChecker.h"
-#import "TGCameraController.h"
-#import "TGCameraPreviewView.h"
-#import "TGAttachmentSheetWindow.h"
 
 #import "TGRemoteImageView.h"
 
@@ -68,10 +54,15 @@
 
 #import "TGGroupManagementSignals.h"
 
-@interface TGCreateGroupController () <TGGroupInfoSelectContactControllerDelegate, TGLegacyCameraControllerDelegate, ASWatcher>
+#import "TGMediaAvatarMenuMixin.h"
+
+#import "TGTelegramNetworking.h"
+
+@interface TGCreateGroupController () <TGGroupInfoSelectContactControllerDelegate, ASWatcher>
 {
     NSArray *_userIds;
     bool _createChannel;
+    bool _createChannelGroup;
     
     TGGroupInfoCollectionItem *_groupInfoItem;
     TGButtonCollectionItem *_setGroupPhotoItem;
@@ -84,10 +75,11 @@
     bool _makeFieldFirstResponder;
     
     TGButtonCollectionItem *_addParticipantItem;
-    TGAttachmentSheetWindow *_attachmentSheetWindow;
     
     SVariable *_uploadedPhotoFile;
     SVariable *_canCreatePublic;
+    
+    TGMediaAvatarMenuMixin *_avatarMixin;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -98,15 +90,16 @@
 
 - (instancetype)init
 {
-    return [self initWithCreateChannel:false];
+    return [self initWithCreateChannel:false createChannelGroup:false];
 }
 
-- (instancetype)initWithCreateChannel:(bool)createChannel
+- (instancetype)initWithCreateChannel:(bool)createChannel createChannelGroup:(bool)createChannelGroup
 {
     self = [super init];
     if (self)
     {
         _createChannel = createChannel;
+        _createChannelGroup = createChannelGroup;
         
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
@@ -202,7 +195,7 @@
             [progressWindow show:true];
             __weak TGCreateGroupController *weakSelf = self;
             
-            SSignal *createSignal = [TGChannelManagementSignals makeChannelWithTitle:_groupInfoItem.editingTitle about:_aboutInputItem.text userIds:@[]];
+            SSignal *createSignal = [TGChannelManagementSignals makeChannelWithTitle:_groupInfoItem.editingTitle about:_aboutInputItem.text group:false];
             
             SSignal *createAndExportLink = [createSignal mapToSignal:^SSignal *(TGConversation *conversation) {
                 return [[TGChannelManagementSignals exportChannelInvitationLink:conversation.conversationId accessHash:conversation.accessHash] map:^id(NSString *link) {
@@ -249,48 +242,109 @@
             } error:^(__unused id error) {
             } completed:^{
             }];
-        } else if (_userIds.count != 0 && (_groupInfoItem.editingTitle.length != 0))
+        } else if ((_userIds.count != 0 || _createChannelGroup) && (_groupInfoItem.editingTitle.length != 0))
         {
-            TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-            [progressWindow show:true];
-            __weak TGCreateGroupController *weakSelf = self;
-            
-            NSMutableArray *users = [[NSMutableArray alloc] init];
-            for (NSNumber *nUserId in _userIds) {
-                TGUser *user = [TGDatabaseInstance() loadUser:[nUserId intValue]];
-                if (user != nil) {
-                    [users addObject:user];
-                }
-            }
-            
-            SSignal *createSignal = [TGGroupManagementSignals makeGroupWithTitle:_groupInfoItem.editingTitle users:users];
-            
-            SSignal *uploadedPhotoFileSignal = [[_uploadedPhotoFile signal] take:1];
-            
-            SSignal *createAndUpdatePhoto = [createSignal mapToSignal:^SSignal *(TGConversation *conversation) {
-                return [uploadedPhotoFileSignal mapToSignal:^SSignal *(id inputFile) {
-                    if (inputFile == nil) {
-                        return [SSignal single:conversation];
-                    } else {
-                        return [[[TGGroupManagementSignals updateGroupPhoto:conversation.conversationId uploadedFile:[SSignal single:inputFile]] mapToSignal:^SSignal *(__unused id next) {
-                            return [SSignal complete];
-                        }] then:[SSignal single:conversation]];
-                    }
+            if (_createChannelGroup) {
+                TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                [progressWindow show:true];
+                __weak TGCreateGroupController *weakSelf = self;
+                
+                SSignal *createSignal = [TGChannelManagementSignals makeChannelWithTitle:_groupInfoItem.editingTitle about:_aboutInputItem.text group:true];
+                
+                SSignal *createAndExportLink = [createSignal mapToSignal:^SSignal *(TGConversation *conversation) {
+                    return [[TGChannelManagementSignals exportChannelInvitationLink:conversation.conversationId accessHash:conversation.accessHash] map:^id(NSString *link) {
+                        return @{@"conversation": conversation, @"link": link};
+                    }];
                 }];
-            }];
-            
-            [[[createAndUpdatePhoto deliverOn:[SQueue mainQueue]] onDispose:^{
-                TGDispatchOnMainThread(^{
-                    [progressWindow dismiss:true];
-                });
-            }] startWithNext:^(TGConversation *conversation) {
-                __strong TGCreateGroupController *strongSelf = weakSelf;
-                if (strongSelf != nil) {
-                    [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil];
+                
+                SSignal *uploadedPhotoFileSignal = [[_uploadedPhotoFile signal] take:1];
+                
+                SSignal *createAndUpdatePhoto = [createAndExportLink mapToSignal:^SSignal *(NSDictionary *dict) {
+                    TGConversation *conversation = dict[@"conversation"];
+                    
+                    return [uploadedPhotoFileSignal mapToSignal:^SSignal *(id inputFile) {
+                        if (inputFile == nil) {
+                            return [SSignal single:dict];
+                        } else {
+                            return [[[TGChannelManagementSignals updateChannelPhoto:conversation.conversationId accessHash:conversation.accessHash uploadedFile:[SSignal single:inputFile]] mapToSignal:^SSignal *(__unused id next) {
+                                return [SSignal complete];
+                            }] then:[SSignal single:dict]];
+                        }
+                    }];
+                }];
+                
+                [[[createAndUpdatePhoto deliverOn:[SQueue mainQueue]] onDispose:^{
+                    TGDispatchOnMainThread(^{
+                        [progressWindow dismiss:true];
+                    });
+                }] startWithNext:^(NSDictionary *dict) {
+                    TGConversation *conversation = dict[@"conversation"];
+                    NSString *link = dict[@"link"];
+                    
+                    __strong TGCreateGroupController *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        TGSetupChannelAfterCreationController *setupController = [[TGSetupChannelAfterCreationController alloc] initWithConversation:conversation exportedLink:link];
+                        
+                        NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:strongSelf.navigationController.viewControllers];
+                        if (viewControllers.count != 1) {
+                            [viewControllers removeObjectsInRange:NSMakeRange(1, viewControllers.count - 1)];
+                        }
+                        [viewControllers addObject:setupController];
+                        
+                        [strongSelf.navigationController setViewControllers:viewControllers animated:true];
+                    }
+                } error:^(__unused id error) {
+                } completed:^{
+                }];
+            } else {
+                TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                [progressWindow show:true];
+                __weak TGCreateGroupController *weakSelf = self;
+                
+                NSMutableArray *users = [[NSMutableArray alloc] init];
+                for (NSNumber *nUserId in _userIds) {
+                    TGUser *user = [TGDatabaseInstance() loadUser:[nUserId intValue]];
+                    if (user != nil) {
+                        [users addObject:user];
+                    }
                 }
-            } error:^(__unused id error) {
-            } completed:^{
-            }];
+                
+                SSignal *createSignal = [TGGroupManagementSignals makeGroupWithTitle:_groupInfoItem.editingTitle users:users];
+                
+                SSignal *uploadedPhotoFileSignal = [[_uploadedPhotoFile signal] take:1];
+                
+                SSignal *createAndUpdatePhoto = [createSignal mapToSignal:^SSignal *(TGConversation *conversation) {
+                    return [uploadedPhotoFileSignal mapToSignal:^SSignal *(id inputFile) {
+                        if (inputFile == nil) {
+                            return [SSignal single:conversation];
+                        } else {
+                            return [[[TGGroupManagementSignals updateGroupPhoto:conversation.conversationId uploadedFile:[SSignal single:inputFile]] mapToSignal:^SSignal *(__unused id next) {
+                                return [SSignal complete];
+                            }] then:[SSignal single:conversation]];
+                        }
+                    }];
+                }];
+                
+                [[[createAndUpdatePhoto deliverOn:[SQueue mainQueue]] onDispose:^{
+                    TGDispatchOnMainThread(^{
+                        [progressWindow dismiss:true];
+                    });
+                }] startWithNext:^(TGConversation *conversation) {
+                    __strong TGCreateGroupController *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil];
+                    }
+                } error:^(id error) {
+                    NSString *errorType = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                    NSString *errorText = TGLocalized(@"Profile.CreateEncryptedChatError");
+                    if ([errorType isEqualToString:@"USERS_TOO_FEW"] || [errorType isEqualToString:@"USER_PRIVACY_RESTRICTED"]) {
+                        errorText = TGLocalized(@"Privacy.GroupsAndChannels.InviteToChannelMultipleError");
+                    }
+                    
+                    [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                } completed:^{
+                }];
+            }
         }
     }
 }
@@ -319,11 +373,6 @@
         [controllers removeObject:introController];
         self.navigationController.viewControllers = controllers;
     }
-}
-
-- (void)viewDidLayoutSubviews
-{
-    [super viewDidLayoutSubviews];
     
     if (_makeFieldFirstResponder)
     {
@@ -384,256 +433,37 @@
     }
 }
 
-- (void)setGroupPhotoPressed {
-    NSMutableArray *actions = [[NSMutableArray alloc] init];
-    
-    if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera])
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.TakePhoto") action:@"camera"]];
-    
-    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.ChoosePhoto") action:@"choosePhoto"]];
-    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.SearchWebImages") action:@"searchWeb"]];
-    
-    if ([_groupInfoItem staticAvatar] != nil) {
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"GroupInfo.SetGroupPhotoDelete") action:@"delete" type:TGActionSheetActionTypeDestructive]];
-    }
-    
-    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
-    
-    [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGCreateGroupController *controller, NSString *action)
-    {
-        if ([action isEqualToString:@"camera"])
-            [controller _displayCameraWithView:nil];
-        else if ([action isEqualToString:@"choosePhoto"])
-            [controller _displayImagePicker:false];
-        else if ([action isEqualToString:@"searchWeb"])
-            [controller _displayImagePicker:true];
-        else if ([action isEqualToString:@"delete"])
-            [controller _commitDeleteAvatar];
-    } target:self] showInView:self.view];
-}
-
-- (void)_displayCameraWithView:(TGAttachmentSheetRecentCameraView *)cameraView
+- (void)setGroupPhotoPressed
 {
-    if (![TGAccessChecker checkCameraAuthorizationStatusWithAlertDismissComlpetion:nil])
-        return;
-    
-    TGCameraController *controller = nil;
-    CGSize screenSize = TGScreenSize();
-    
-    if (cameraView.previewView != nil)
-        controller = [[TGCameraController alloc] initWithCamera:cameraView.previewView.camera previewView:cameraView.previewView intent:TGCameraControllerAvatarIntent];
-    else
-        controller = [[TGCameraController alloc] initWithIntent:TGCameraControllerAvatarIntent];
-    
-    controller.shouldStoreCapturedAssets = true;
-    
-    TGCameraControllerWindow *controllerWindow = [[TGCameraControllerWindow alloc] initWithParentController:self contentController:controller];
-    if (_attachmentSheetWindow != nil)
-        controllerWindow.windowLevel = _attachmentSheetWindow.windowLevel + 0.0001f;
-    controllerWindow.hidden = false;
-    controllerWindow.clipsToBounds = true;
-    controllerWindow.frame = CGRectMake(0, 0, screenSize.width, screenSize.height);
-    
-    bool standalone = true;
-    CGRect startFrame = CGRectMake(0, screenSize.height, screenSize.width, screenSize.height);
-    if (cameraView != nil)
-    {
-        standalone = false;
-        startFrame = [controller.view convertRect:cameraView.previewView.frame fromView:cameraView];
-    }
-    
-    [cameraView detachPreviewView];
-    [controller beginTransitionInFromRect:startFrame];
-    
     __weak TGCreateGroupController *weakSelf = self;
-    __weak TGCameraController *weakCameraController = controller;
-    __weak TGAttachmentSheetRecentCameraView *weakCameraView = cameraView;
-    
-    controller.beginTransitionOut = ^CGRect
-    {
-        __strong TGCameraController *strongCameraController = weakCameraController;
-        if (strongCameraController == nil)
-            return CGRectZero;
-        
-        if (!standalone)
-        {
-            __strong TGAttachmentSheetRecentCameraView *strongCameraView = weakCameraView;
-            if (strongCameraView != nil)
-                return [strongCameraController.view convertRect:strongCameraView.frame fromView:strongCameraView.superview];
-        }
-        
-        return CGRectZero;
-    };
-    
-    controller.finishedTransitionOut = ^
-    {
-        __strong TGAttachmentSheetRecentCameraView *strongCameraView = weakCameraView;
-        if (strongCameraView == nil)
-            return;
-        
-        [strongCameraView attachPreviewViewAnimated:true];
-    };
-    
-    controller.finishedWithPhoto = ^(UIImage *resultImage, __unused NSString *caption)
+    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithParentController:self hasDeleteButton:([_groupInfoItem staticAvatar] != nil)];
+    _avatarMixin.didFinishWithImage = ^(UIImage *image)
     {
         __strong TGCreateGroupController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
-        [strongSelf _updateGroupProfileImage:resultImage];
-        [strongSelf->_attachmentSheetWindow dismissAnimated:false completion:nil];
+        [strongSelf _updateGroupProfileImage:image];
+        strongSelf->_avatarMixin = nil;
     };
-}
-
-- (void)_displayLegacyCamera
-{
-    TGLegacyCameraController *legacyCameraController = [[TGLegacyCameraController alloc] init];
-    legacyCameraController.sourceType = UIImagePickerControllerSourceTypeCamera;
-    legacyCameraController.avatarMode = true;
-    
-    legacyCameraController.completionDelegate = self;
-    
-    [self presentViewController:legacyCameraController animated:true completion:nil];
-}
-
-- (void)_displayImagePicker:(bool)openWebSearch
-{
-    __weak TGCreateGroupController *weakSelf = self;
-    
-    TGNavigationController *navigationController = nil;
-    
-    if (openWebSearch)
+    _avatarMixin.didFinishWithDelete = ^
     {
-        TGWebSearchController *controller = [[TGWebSearchController alloc] initForAvatarSelection:true];
-        __weak TGWebSearchController *weakController = controller;
-        controller.avatarCreated = ^(UIImage *image)
-        {
-            __strong TGCreateGroupController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf _updateGroupProfileImage:image];
-            
-            __strong TGWebSearchController *strongController = weakController;
-            if (strongController != nil && strongController.dismiss != nil)
-                strongController.dismiss();
-        };
+        __strong TGCreateGroupController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
         
-        navigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];
-        
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        {
-            void (^dismiss)(void) = ^
-            {
-                __strong TGCreateGroupController *strongSelf = weakSelf;
-                if (strongSelf == nil)
-                    return;
-                
-                [strongSelf dismissViewControllerAnimated:true completion:nil];
-            };
-            
-            [self presentViewController:navigationController animated:true completion:nil];
-            
-            controller.dismiss = dismiss;
-        }
-        else
-        {
-            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-            
-            TGOverlayFormsheetWindow *formSheetWindow = [[TGOverlayFormsheetWindow alloc] initWithParentController:self contentController:navigationController];
-            [formSheetWindow showAnimated:true];
-            
-            __weak TGOverlayFormsheetWindow *weakFormSheetWindow = formSheetWindow;
-            void (^dismiss)(void) = ^
-            {
-                __strong TGOverlayFormsheetWindow *strongFormSheetWindow = weakFormSheetWindow;
-                if (strongFormSheetWindow == nil)
-                    return;
-                
-                [strongFormSheetWindow dismissAnimated:true];
-            };
-            
-            controller.dismiss = dismiss;
-        }
-    }
-    else
+        [strongSelf _commitDeleteAvatar];
+        strongSelf->_avatarMixin = nil;
+    };
+    _avatarMixin.didDismiss = ^
     {
-        TGMediaFoldersController *mediaFoldersController = [[TGMediaFoldersController alloc] initWithIntent:TGModernMediaPickerControllerSetProfilePhotoIntent];
-        TGModernMediaPickerController *mediaPickerController = [[TGModernMediaPickerController alloc] initWithAssetsGroup:nil intent:TGModernMediaPickerControllerSetProfilePhotoIntent];
+        __strong TGCreateGroupController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
         
-        navigationController = [TGNavigationController navigationControllerWithControllers:@[ mediaFoldersController, mediaPickerController ]];
-        
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        {
-            void (^dismiss)(void) = ^
-            {
-                __strong TGCreateGroupController *strongSelf = weakSelf;
-                if (strongSelf == nil)
-                    return;
-                
-                [strongSelf dismissViewControllerAnimated:true completion:nil];
-            };
-            
-            mediaFoldersController.dismiss = dismiss;
-            mediaPickerController.dismiss = dismiss;
-            
-            [self presentViewController:navigationController animated:true completion:nil];
-        }
-        else
-        {
-            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-            
-            TGOverlayFormsheetWindow *formSheetWindow = [[TGOverlayFormsheetWindow alloc] initWithParentController:self contentController:navigationController];
-            [formSheetWindow showAnimated:true];
-            
-            __weak TGOverlayFormsheetWindow *weakFormSheetWindow = formSheetWindow;
-            void (^dismiss)(void) = ^
-            {
-                __strong TGOverlayFormsheetWindow *strongFormSheetWindow = weakFormSheetWindow;
-                if (strongFormSheetWindow == nil)
-                    return;
-                
-                [strongFormSheetWindow dismissAnimated:true];
-            };
-            
-            mediaFoldersController.dismiss = dismiss;
-            mediaPickerController.dismiss = dismiss;
-        }
-        
-        __weak TGMediaFoldersController *weakMediaFoldersController = mediaFoldersController;
-        void(^avatarCreated)(UIImage *) = ^(UIImage *image)
-        {
-            __strong TGCreateGroupController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf _updateGroupProfileImage:image];
-            
-            __strong TGMediaFoldersController *strongMediaFoldersController = weakMediaFoldersController;
-            if (strongMediaFoldersController != nil && strongMediaFoldersController.dismiss != nil)
-                strongMediaFoldersController.dismiss();
-        };
-        
-        mediaFoldersController.avatarCreated = avatarCreated;
-        mediaPickerController.avatarCreated = avatarCreated;
-    }
-}
-
-- (void)imagePickerController:(TGImagePickerController *)__unused imagePicker didFinishPickingWithAssets:(NSArray *)assets
-{
-    UIImage *image = nil;
-    
-    if (assets.count != 0)
-    {
-        if ([assets[0] isKindOfClass:[UIImage class]])
-            image = assets[0];
-    }
-    
-    [self _updateGroupProfileImage:image];
-    
-    [self dismissViewControllerAnimated:true completion:nil];
+        strongSelf->_avatarMixin = nil;
+    };
+    [_avatarMixin present];
 }
 
 - (void)_updateGroupProfileImage:(UIImage *)image

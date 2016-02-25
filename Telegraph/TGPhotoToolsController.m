@@ -262,6 +262,16 @@
     [previewView performTransitionInIfNeeded];
 }
 
+- (void)prepareForCustomTransitionOut
+{
+    _previewView.hidden = true;
+    [UIView animateWithDuration:0.3f animations:^
+    {
+        _portraitToolsWrapperView.alpha = 0.0f;
+        _landscapeToolsWrapperView.alpha = 0.0f;
+    } completion:nil];
+}
+
 - (CGRect)transitionOutReferenceFrame
 {
     TGPhotoEditorPreviewView *previewView = _previewView;
@@ -277,6 +287,11 @@
 {
     TGPhotoEditorPreviewView *previewView = self.previewView;
     return [previewView originalSnapshotView];
+}
+
+- (id)currentResultRepresentation
+{
+    return self.photoEditor.currentResultImage;
 }
 
 #pragma mark - Data Source and Delegate

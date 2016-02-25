@@ -12,7 +12,6 @@
 #import "TGPreparedForwardedMessage.h"
 #import "TGPreparedContactMessage.h"
 #import "TGPreparedLocalDocumentMessage.h"
-#import "TGPreparedLocalAudioMessage.h"
 #import "TGPreparedDownloadImageMessage.h"
 #import "TGPreparedDownloadDocumentMessage.h"
 #import "TGPreparedCloudDocumentMessage.h"
@@ -96,7 +95,7 @@
     {
         TGPreparedTextMessage *preparedTextMessage = (TGPreparedTextMessage *)preparedMessage;
         
-        TGPreparedTextMessage *copyMessage = [[TGPreparedTextMessage alloc] initWithText:preparedTextMessage.text replyMessage:preparedTextMessage.replyMessage disableLinkPreviews:preparedTextMessage.disableLinkPreviews parsedWebpage:nil];
+        TGPreparedTextMessage *copyMessage = [[TGPreparedTextMessage alloc] initWithText:preparedTextMessage.text replyMessage:preparedTextMessage.replyMessage disableLinkPreviews:preparedTextMessage.disableLinkPreviews parsedWebpage:nil entities:nil botContextResult:nil];
         return copyMessage;
     }
     else if ([preparedMessage isKindOfClass:[TGPreparedLocalImageMessage class]])
@@ -110,12 +109,6 @@
         TGPreparedLocalVideoMessage *preparedLocalVideoMessage = (TGPreparedLocalVideoMessage *)preparedMessage;
         
         return [TGPreparedLocalVideoMessage messageByCopyingDataFromMessage:preparedLocalVideoMessage];
-    }
-    else if ([preparedMessage isKindOfClass:[TGPreparedLocalAudioMessage class]])
-    {
-        TGPreparedLocalAudioMessage *preparedLocalAudioMessage = (TGPreparedLocalAudioMessage *)preparedMessage;
-        
-        return [TGPreparedLocalAudioMessage messageByCopyingDataFromMessage:preparedLocalAudioMessage];
     }
     else if ([preparedMessage isKindOfClass:[TGPreparedLocalDocumentMessage class]])
     {
@@ -346,17 +339,7 @@
     }
     else if ([self.preparedMessage isKindOfClass:[TGPreparedRemoteVideoMessage class]])
     {
-        TGPreparedRemoteVideoMessage *remoteVideoMessage = (TGPreparedRemoteVideoMessage *)self.preparedMessage;
-        
-        TLInputMedia$inputMediaVideo *remoteVideo = [[TLInputMedia$inputMediaVideo alloc] init];
-        TLInputVideo$inputVideo *inputVideo = [[TLInputVideo$inputVideo alloc] init];
-        inputVideo.n_id = remoteVideoMessage.videoId;
-        inputVideo.access_hash = remoteVideoMessage.accessHash;
-        remoteVideo.n_id = inputVideo;
-        remoteVideo.caption = remoteVideoMessage.caption;
-        
-        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
-        self.cancelToken = [TGTelegraphInstance doBroadcastSendMedia:_userIds media:remoteVideo tmpId:remoteVideoMessage.randomId actor:self];
+        [self _fail];
     }
     else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalDocumentMessage class]])
     {
@@ -395,21 +378,6 @@
         inputContact.phone_number = contactMessage.phoneNumber;
         
         self.cancelToken = [TGTelegraphInstance doBroadcastSendMedia:_userIds media:inputContact tmpId:contactMessage.randomId actor:self];
-    }
-    else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalAudioMessage class]])
-    {
-        TGPreparedLocalAudioMessage *localAudioMessage = (TGPreparedLocalAudioMessage *)self.preparedMessage;
-        
-        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
-        
-        NSString *pathExtension = [[localAudioMessage localAudioFilePath1] pathExtension];
-        if (pathExtension.length == 0)
-            pathExtension = @"m4a";
-        
-        NSMutableArray *desc = [[NSMutableArray alloc] initWithArray:@[[localAudioMessage localAudioFilePath1], pathExtension, @(true)]];
-        if (localAudioMessage.liveData != nil)
-            [desc addObject:localAudioMessage.liveData];
-        [self uploadFilesWithExtensions:@[desc]];
     }
     else if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadImageMessage class]])
     {
@@ -779,24 +747,7 @@
     }
     else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalVideoMessage class]])
     {
-        TGPreparedLocalVideoMessage *localVideoMessage = (TGPreparedLocalVideoMessage *)self.preparedMessage;
-        
-        NSDictionary *videoFileInfo = filePathToUploadedFile[[localVideoMessage localVideoPath]];
-        NSDictionary *thumbnailFileInfo = filePathToUploadedFile[@"embedded-data://0"];
-        if (videoFileInfo != nil && thumbnailFileInfo != nil)
-        {
-            TLInputMedia$inputMediaUploadedThumbVideo *uploadedVideo = [[TLInputMedia$inputMediaUploadedThumbVideo alloc] init];
-            uploadedVideo.file = videoFileInfo[@"file"];
-            uploadedVideo.thumb = thumbnailFileInfo[@"file"];
-            uploadedVideo.duration = (int32_t)localVideoMessage.duration;
-            uploadedVideo.w = (int32_t)localVideoMessage.videoSize.width;
-            uploadedVideo.h = (int32_t)localVideoMessage.videoSize.height;
-            uploadedVideo.caption = localVideoMessage.caption;
-            
-            self.cancelToken = [TGTelegraphInstance doBroadcastSendMedia:_userIds media:uploadedVideo tmpId:localVideoMessage.randomId actor:self];
-        }
-        else
-            [self _fail];
+        [self _fail];
     }
     else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalDocumentMessage class]])
     {
@@ -830,22 +781,6 @@
             }
             
             self.cancelToken = [TGTelegraphInstance doBroadcastSendMedia:_userIds media:uploadedDocument tmpId:localDocumentMessage.randomId actor:self];
-        }
-        else
-            [self _fail];
-    }
-    else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalAudioMessage class]])
-    {
-        TGPreparedLocalAudioMessage *localAudioMessage = (TGPreparedLocalAudioMessage *)self.preparedMessage;
-        
-        NSDictionary *audioFileInfo = filePathToUploadedFile[[localAudioMessage localAudioFilePath1]];
-        if (audioFileInfo != nil)
-        {
-            TLInputMedia$inputMediaUploadedAudio *uploadedAudio = [[TLInputMedia$inputMediaUploadedAudio alloc] init];
-            uploadedAudio.file = audioFileInfo[@"file"];
-            uploadedAudio.duration = localAudioMessage.duration;
-            
-            self.cancelToken = [TGTelegraphInstance doBroadcastSendMedia:_userIds media:uploadedAudio tmpId:localAudioMessage.randomId actor:self];
         }
         else
             [self _fail];
@@ -1134,41 +1069,6 @@
                         
                         NSString *updatedDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:documentAttachment.documentId];
                         [[NSFileManager defaultManager] moveItemAtPath:[localDocumentMessage localDocumentDirectory] toPath:updatedDocumentDirectory error:nil];
-                    }
-                }
-                
-                if (dataFilePaths.count != 0)
-                {
-                    NSMutableArray *absolutePathsToRemove = [[NSMutableArray alloc] init];
-                    for (NSString *path in dataFilePaths)
-                    {
-                        [absolutePathsToRemove addObject:[self pathForLocalImagePath:path]];
-                    }
-                    
-                    dispatch_async([TGCache diskCacheQueue], ^
-                    {
-                        for (NSString *path in absolutePathsToRemove)
-                        {
-                            [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
-                        }
-                    });
-                }
-            }
-            else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalAudioMessage class]])
-            {
-                TGPreparedLocalAudioMessage *localAudioMessage = (TGPreparedLocalAudioMessage *)self.preparedMessage;
-                
-                NSMutableArray *dataFilePaths = [[NSMutableArray alloc] init];
-                if ([localAudioMessage localAudioFileDirectory] != nil)
-                    [dataFilePaths addObject:[localAudioMessage localAudioFileDirectory]];
-                
-                for (TGMediaAttachment *attachment in message.mediaAttachments)
-                {
-                    if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
-                    {
-                        TGAudioMediaAttachment *audioAttachment = (TGAudioMediaAttachment *)attachment;
-                        
-                        [[NSFileManager defaultManager] moveItemAtPath:[localAudioMessage localAudioFileDirectory] toPath:[TGPreparedLocalAudioMessage localAudioFileDirectoryForRemoteAudioId:audioAttachment.audioId] error:nil];
                     }
                 }
                 

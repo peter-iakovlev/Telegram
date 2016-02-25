@@ -15,6 +15,7 @@ typedef enum {
     TGFlatActionCellModeCreateGroupContacts = 3,
     TGFlatActionCellModeChannels = 4,
     TGFlatActionCellModeCreateChannel = 5,
+    TGFlatActionCellModeCreateChannelGroup = 6
 } TGFlatActionCellMode;
 
 @interface TGFlatActionCell : UITableViewCell

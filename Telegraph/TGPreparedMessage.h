@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 
 @class TGMessage;
+@class TGBotContextResultAttachment;
 
 @interface TGPreparedMessage : NSObject
 
@@ -20,6 +21,11 @@
 @property (nonatomic) int32_t replacingMid;
 
 @property (nonatomic) int32_t messageLifetime;
+
+@property (nonatomic, strong) TGMessage *replyMessage;
+@property (nonatomic, strong) TGBotContextResultAttachment *botContextResult;
+
+@property (nonatomic, copy) void (^executeOnAdd)();
 
 - (TGMessage *)message;
 

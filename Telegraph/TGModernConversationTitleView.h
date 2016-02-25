@@ -46,6 +46,7 @@ typedef enum {
 - (void)setIcons:(NSArray *)icons;
 - (void)setModalProgressStatus:(NSString *)modalProgressStatus;
 - (void)setUnreadCount:(int)unreadCount;
+- (void)setShowUnreadCount:(bool)showUnreadCount;
 
 - (void)suspendAnimations;
 - (void)resumeAnimations;

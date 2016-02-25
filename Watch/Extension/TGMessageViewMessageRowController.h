@@ -30,8 +30,8 @@
 
 @property (nonatomic, weak) IBOutlet WKInterfaceGroup *fileGroup;
 @property (nonatomic, weak) IBOutlet WKInterfaceGroup *fileIconGroup;
-@property (nonatomic, weak) IBOutlet WKInterfaceLabel *extensionLabel;
 @property (nonatomic, weak) IBOutlet WKInterfaceButton *audioButton;
+@property (nonatomic, weak) IBOutlet WKInterfaceImage *audioIcon;
 @property (nonatomic, weak) IBOutlet WKInterfaceImage *venueIcon;
 
 @property (nonatomic, weak) IBOutlet WKInterfaceButton *contactButton;
@@ -52,6 +52,8 @@
 - (IBAction)playButtonPressedAction;
 - (IBAction)contactButtonPressedAction;
 
-- (void)updateWithMessage:(TGBridgeMessage *)message context:(TGBridgeContext *)context;
+- (void)setProcessingState:(bool)processing;
+
+- (void)updateWithMessage:(TGBridgeMessage *)message context:(TGBridgeContext *)context additionalPeers:(NSDictionary *)additionalPeers;
 
 @end

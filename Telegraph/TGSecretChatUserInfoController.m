@@ -30,7 +30,8 @@
     int _selfDestructTimer;
     int64_t _peerId;
     int64_t _encryptedConversationId;
-    
+
+    NSData *_additionalSignature;
     NSData *_encryptionKeySignature;
 }
 
@@ -48,7 +49,9 @@
         _peerId = peerId;
         _encryptedConversationId = encryptedConversationId;
         
-        _encryptionKeySignature = [TGDatabaseInstance() encryptionKeySignatureForConversationId:_peerId];
+        NSData *additionalSignature = nil;
+        _encryptionKeySignature = [TGDatabaseInstance() encryptionKeySignatureForConversationId:_peerId additionalSignature:&additionalSignature];
+        _additionalSignature = additionalSignature;
         
         [self setTitleText:TGLocalized(@"SecretChat.Title")];
         
@@ -114,7 +117,7 @@
         else
         {
             NSData *hashData = _encryptionKeySignature;
-            _encryptionKeyItem.variantImage = TGIdenticonImage(hashData, CGSizeMake(24, 24));
+            _encryptionKeyItem.variantImage = TGIdenticonImage(hashData, _additionalSignature, CGSizeMake(24, 24));
         }
     }
     
@@ -131,12 +134,14 @@
 {
     if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/conversation", _peerId]])
     {
-        NSData *keySignatureData = [TGDatabaseInstance() encryptionKeySignatureForConversationId:_peerId];
+        NSData *additionalSignature = nil;
+        NSData *keySignatureData = [TGDatabaseInstance() encryptionKeySignatureForConversationId:_peerId additionalSignature:&additionalSignature];
         TGDispatchOnMainThread(^
         {
             if ((keySignatureData != nil) != (_encryptionKeySignature != nil))
             {
                 _encryptionKeySignature = keySignatureData;
+                _additionalSignature = additionalSignature;
                 
                 [self _updateSecretDataItems];
             }

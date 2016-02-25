@@ -10,6 +10,9 @@
 {
     SMetaDisposable *_disposable;
     NSArray *_userList;
+ 
+    UIView *_backgroundView;
+    UIView *_effectView;
     
     UITableView *_tableView;
     UIView *_stripeView;
@@ -41,6 +44,30 @@
             separatorColor = UIColorRGB(0x292929);
             cellSeparatorColor = separatorColor;
         }
+        else if (self.style == TGModernConversationAssociatedInputPanelDarkBlurredStyle)
+        {
+            backgroundColor = [UIColor clearColor];
+            separatorColor = UIColorRGBA(0xb2b2b2, 0.7f);
+            cellSeparatorColor = UIColorRGBA(0xb2b2b2, 0.4f);
+            bottomColor = [UIColor clearColor];
+            
+            CGFloat backgroundAlpha = 0.8f;
+            if (iosMajorVersion() >= 8)
+            {
+                UIVisualEffectView *blurEffectView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
+                blurEffectView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                blurEffectView.frame = self.bounds;
+                [self addSubview:blurEffectView];
+                _effectView = blurEffectView;
+                
+                backgroundAlpha = 0.4f;
+            }
+            
+            _backgroundView = [[UIView alloc] initWithFrame:self.bounds];
+            _backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            _backgroundView.backgroundColor = [UIColor colorWithWhite:0.0f alpha:backgroundAlpha];
+            [self addSubview:_backgroundView];
+        }
         
         self.backgroundColor = backgroundColor;
         
@@ -68,9 +95,12 @@
         _stripeView.backgroundColor = separatorColor;
         [self addSubview:_stripeView];
         
-        _separatorView = [[UIView alloc] init];
-        _separatorView.backgroundColor = separatorColor;
-        [self addSubview:_separatorView];
+        if (self.style != TGModernConversationAssociatedInputPanelDarkBlurredStyle)
+        {
+            _separatorView = [[UIView alloc] init];
+            _separatorView.backgroundColor = separatorColor;
+            [self addSubview:_separatorView];
+        }
     }
     return self;
 }
@@ -102,7 +132,7 @@
     else
     {
         __weak TGModernConversationMentionsAssociatedPanel *weakSelf = self;
-        [_disposable setDisposable:[userListSignal startWithNext:^(NSArray *userList)
+        [_disposable setDisposable:[[userListSignal deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *userList)
         {
             __strong TGModernConversationMentionsAssociatedPanel *strongSelf = weakSelf;
             if (strongSelf != nil)
@@ -151,6 +181,9 @@
 {
     [super layoutSubviews];
     
+    _backgroundView.frame = CGRectMake(-1000, 0, self.frame.size.width + 2000, self.frame.size.height);
+    _effectView.frame = CGRectMake(-1000, 0, self.frame.size.width + 2000, self.frame.size.height);
+    
     CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
     _stripeView.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, separatorHeight);
     _separatorView.frame = CGRectMake(0.0f, self.frame.size.height - separatorHeight, self.frame.size.width, separatorHeight);
@@ -158,6 +191,56 @@
     _tableView.frame = CGRectMake(0.0f, separatorHeight, self.frame.size.width, self.frame.size.height - separatorHeight);
     
     _bottomView.frame = CGRectMake(0.0f, self.frame.size.height, self.frame.size.width, 4.0f);
+}
+
+- (void)selectPreviousItem
+{
+    if ([self tableView:_tableView numberOfRowsInSection:0] == 0)
+        return;
+    
+    NSIndexPath *newIndexPath = _tableView.indexPathForSelectedRow;
+    
+    if (newIndexPath == nil)
+        newIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+    else if (newIndexPath.row > 0)
+        newIndexPath = [NSIndexPath indexPathForRow:newIndexPath.row - 1 inSection:0];
+    
+    if (_tableView.indexPathForSelectedRow != nil)
+        [_tableView deselectRowAtIndexPath:_tableView.indexPathForSelectedRow animated:false];
+    
+    if (newIndexPath != nil)
+        [_tableView selectRowAtIndexPath:newIndexPath animated:false scrollPosition:UITableViewScrollPositionBottom];
+}
+
+- (void)selectNextItem
+{
+    if ([self tableView:_tableView numberOfRowsInSection:0] == 0)
+        return;
+    
+    NSIndexPath *newIndexPath = _tableView.indexPathForSelectedRow;
+    
+    if (newIndexPath == nil)
+        newIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+    else if (newIndexPath.row < [self tableView:_tableView numberOfRowsInSection:newIndexPath.section] - 1)
+        newIndexPath = [NSIndexPath indexPathForRow:newIndexPath.row + 1 inSection:0];
+    
+    if (_tableView.indexPathForSelectedRow != nil)
+        [_tableView deselectRowAtIndexPath:_tableView.indexPathForSelectedRow animated:false];
+    
+    if (newIndexPath != nil)
+        [_tableView selectRowAtIndexPath:newIndexPath animated:false scrollPosition:UITableViewScrollPositionBottom];
+}
+
+- (void)commitSelectedItem
+{
+    if ([self tableView:_tableView numberOfRowsInSection:0] == 0)
+        return;
+    
+    NSIndexPath *selectedIndexPath = _tableView.indexPathForSelectedRow;
+    if (selectedIndexPath == nil)
+        selectedIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+    
+    [self tableView:_tableView didSelectRowAtIndexPath:selectedIndexPath];
 }
 
 @end

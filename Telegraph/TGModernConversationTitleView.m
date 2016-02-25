@@ -45,6 +45,8 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     
     UIImageView *_toggleIcon;
     UILabel *_toggleLabel;
+    
+    bool _showUnreadCount;
 }
 
 @end
@@ -57,6 +59,7 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     if (self)
     {
         [self addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapGesture:)]];
+        _showUnreadCount = true;
     }
     return self;
 }
@@ -484,6 +487,11 @@ static UIView *findNavigationBar(UIView *view)
     }
 }
 
+- (void)setShowUnreadCount:(bool)showUnreadCount {
+    _showUnreadCount = showUnreadCount;
+    _unreadContainer.alpha = self.alpha * (showUnreadCount ? 1.0f : 0.0f);
+}
+
 - (void)willMoveToSuperview:(UIView *)newSuperview
 {
     [super willMoveToSuperview:newSuperview];
@@ -510,7 +518,7 @@ static UIView *findNavigationBar(UIView *view)
 {
     [super setAlpha:alpha];
     
-    _unreadContainer.alpha = alpha;
+    _unreadContainer.alpha = alpha * (_showUnreadCount ? 1.0f : 0.0f);
 }
 
 - (void)_animateStatus

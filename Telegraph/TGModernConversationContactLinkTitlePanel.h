@@ -16,6 +16,7 @@
 
 - (void)contactLinkTitlePanelShareContactPressed:(TGModernConversationContactLinkTitlePanel *)panel;
 - (void)contactLinkTitlePanelAddContactPressed:(TGModernConversationContactLinkTitlePanel *)panel;
+- (void)contactLinkTitlePanelBlockContactPressed:(TGModernConversationContactLinkTitlePanel *)panel;
 - (void)contactLinkTitlePanelDismissed:(TGModernConversationContactLinkTitlePanel *)panel;
 
 @end
@@ -24,7 +25,7 @@
 
 @property (nonatomic, weak) id<TGModernConversationContactLinkTitlePanelDelegate> delegate;
 
-- (void)setShareContact:(bool)shareContact;
+- (void)setShareContact:(bool)shareContact addContact:(bool)addContact reportSpam:(bool)reportSpam;
 - (bool)shareContact;
 
 @end

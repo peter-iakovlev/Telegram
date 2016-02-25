@@ -12,6 +12,7 @@
 {
     @public
     int64_t _conversationId;
+    int64_t _attachedConversationId;
     int64_t _accessHash;
     
     bool _everyMessageNeedsAuthor;
@@ -50,5 +51,7 @@
 - (void)shareVCard;
 
 - (void)scheduleReadHistory;
+
+- (bool)shouldFastScrollDown;
 
 @end

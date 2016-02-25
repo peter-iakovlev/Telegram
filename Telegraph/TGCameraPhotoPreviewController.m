@@ -2,15 +2,14 @@
 
 #import <objc/runtime.h>
 
-#import "UIImage+TGEditablePhotoItem.h"
-
 #import "PGCameraShotMetadata.h"
 #import "PGPhotoEditorValues.h"
 #import "TGPhotoEditorUtils.h"
 #import "TGImageUtils.h"
 #import "TGHacks.h"
-#import "ATQueue.h"
+#import "UIImage+TG.h"
 
+#import "TGImageView.h"
 #import "TGModernGalleryZoomableScrollView.h"
 
 #import "TGFullscreenContainerView.h"
@@ -19,6 +18,9 @@
 #import "TGPhotoEditorTabController.h"
 #import "TGPhotoToolbarView.h"
 #import "TGPhotoEditorAnimation.h"
+
+#import "TGMediaAssetsLibrary.h"
+#import "UIImage+TGMediaEditableItem.h"
 
 @interface TGCameraPhotoPreviewWrapperView : UIView
 
@@ -39,18 +41,18 @@
 
 @interface TGCameraPhotoPreviewController () <UIScrollViewDelegate>
 {
+    TGMediaEditingContext *_editingContext;
+    
     UIImage *_image;
-    UIImage *_editedImage;
-    PGPhotoEditorValues *_editorValues;
     PGCameraShotMetadata *_metadata;
-    NSString *_caption;
     
     TGCameraPhotoPreviewWrapperView *_wrapperView;
     UIView *_transitionParentView;
     TGModernGalleryZoomableScrollView *_scrollView;
-    UIImageView *_imageView;
+    TGImageView *_imageView;
+    UIView *_temporaryRepView;
+    CGSize _imageSize;
 
-    NSArray *_availableTabs;
     TGPhotoToolbarView *_portraitToolbarView;
     TGPhotoToolbarView *_landscapeToolbarView;
     
@@ -71,6 +73,9 @@
     {
         _image = image;
         _metadata = metadata;
+        _imageSize = image.size;
+        
+        _editingContext = [[TGMediaEditingContext alloc] init];
         
         self.automaticallyManageScrollViewInsets = false;
     }
@@ -99,17 +104,81 @@
     _scrollView.showsVerticalScrollIndicator = false;
     [self.view addSubview:_scrollView];
     
-    _imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, fittedSize.width, fittedSize.height)];
-    _imageView.image = _image;
+    _imageView = [[TGImageView alloc] initWithFrame:CGRectMake(0, 0, fittedSize.width, fittedSize.height)];
     [self.view addSubview:_imageView];
     
+    __weak TGCameraPhotoPreviewController *weakSelf = self;
+    void (^fadeOutRepView)(void) = ^
+    {
+        __strong TGCameraPhotoPreviewController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        if (strongSelf->_temporaryRepView == nil)
+            return;
+        
+        UIView *repView = strongSelf->_temporaryRepView;
+        strongSelf->_temporaryRepView = nil;
+        [UIView animateWithDuration:0.2f animations:^
+        {
+            repView.alpha = 0.0f;
+        } completion:^(__unused BOOL finished)
+        {
+            [repView removeFromSuperview];
+        }];
+    };
+    
+    TGMediaEditingContext *editingContext = _editingContext;
+    
+    SSignal *assetSignal = [SSignal single:_image];
+    SSignal *imageSignal = assetSignal;
+    if (editingContext != nil)
+    {
+        imageSignal = [[[editingContext imageSignalForItem:_image] deliverOn:[SQueue mainQueue]] mapToSignal:^SSignal *(id result)
+        {
+            __strong TGCameraPhotoPreviewController *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return [SSignal complete];
+            
+            if (result == nil)
+            {
+                return [[assetSignal deliverOn:[SQueue mainQueue]] afterNext:^(__unused id next)
+                {
+                    fadeOutRepView();
+                }];
+            }
+            else if ([result isKindOfClass:[UIView class]])
+            {
+                [strongSelf _setTemporaryRepView:result];
+                return [[SSignal single:nil] deliverOn:[SQueue mainQueue]];
+            }
+            else
+            {
+                return [[[SSignal single:result] deliverOn:[SQueue mainQueue]] afterNext:^(__unused id next)
+                {
+                    fadeOutRepView();
+                }];
+            }
+        }];
+    }
+    
+    [_imageView setSignal:[[imageSignal deliverOn:[SQueue mainQueue]] afterNext:^(id next)
+    {
+        __strong TGCameraPhotoPreviewController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        if ([next isKindOfClass:[UIImage class]])
+            strongSelf->_imageSize = ((UIImage *)next).size;
+        
+        [strongSelf reset];
+    }]];
+
     if (_metadata.frontal)
         _imageView.transform = CGAffineTransformMakeScale(-1, 1);
     
     _wrapperView = [[TGCameraPhotoPreviewWrapperView alloc] initWithFrame:CGRectZero];
     [self.view addSubview:_wrapperView];
-    
-    __weak TGCameraPhotoPreviewController *weakSelf = self;
     
     void (^cancelPressed)(void) = ^
     {
@@ -135,19 +204,56 @@
         strongSelf->_dismissing = true;
         strongSelf.view.userInteractionEnabled = false;
         
-        if (strongSelf->_editorValues != nil)
+        if (strongSelf.shouldStoreAssets)
         {
-            strongSelf.sendPressed(strongSelf->_image, strongSelf->_editedImage, strongSelf->_editorValues, strongSelf->_caption);
-        }
-        else
-        {
-            [[ATQueue concurrentDefaultQueue] dispatch:^
+            [[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:strongSelf->_image] startWithNext:nil];
+            
+            [[[[[[editingContext fullSizeImageUrlForItem:strongSelf->_image] filter:^bool(id result)
             {
-                UIImage *image = TGPhotoEditorCrop(strongSelf->_image, UIImageOrientationUp, 0, CGRectMake(0, 0, strongSelf->_image.size.width, strongSelf->_image.size.height), CGSizeMake(1280, 1280), strongSelf->_image.size);
-                
-                strongSelf.sendPressed(strongSelf->_image, image, nil, strongSelf->_caption);
+                return [result isKindOfClass:[NSURL class]];
+            }] startOn:[SQueue concurrentDefaultQueue]] deliverOn:[SQueue mainQueue]] mapToSignal:^SSignal *(NSURL *url)
+            {
+                return [[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImageAtUrl:url] onCompletion:^
+                {
+                    __strong TGMediaEditingContext *strongEditingContext = editingContext;
+                    [strongEditingContext description];
+                }];
+            }] startWithNext:nil];
+        }
+        
+        SSignal *originalSignal = [[[SSignal single:strongSelf->_image] map:^id(UIImage *image)
+        {
+            return TGPhotoEditorCrop(image, UIImageOrientationUp, 0, CGRectMake(0, 0, image.size.width, image.size.height), CGSizeMake(1280, 1280), image.size, true);
+        }] startOn:[SQueue concurrentDefaultQueue]];
+        
+        SSignal *imageSignal = originalSignal;
+        if (editingContext != nil)
+        {
+            imageSignal = [[[[editingContext imageSignalForItem:strongSelf->_image withUpdates:true] filter:^bool(id result)
+            {
+                return result == nil || ([result isKindOfClass:[UIImage class]] && !((UIImage *)result).degraded);
+            }] take:1] mapToSignal:^SSignal *(id result)
+            {
+                if (result == nil)
+                {
+                    return originalSignal;
+                }
+                else if ([result isKindOfClass:[UIImage class]])
+                {
+                    UIImage *image = (UIImage *)result;
+                    image.edited = true;
+                    return [SSignal single:image];
+                }
+
+                return [SSignal complete];
             }];
         }
+        
+        NSString *caption = [editingContext captionForItem:strongSelf->_image];
+        [[imageSignal deliverOn:[SQueue mainQueue]] startWithNext:^(UIImage *result)
+        {
+            strongSelf.sendPressed(result, caption);
+        }];
     };
     
     void (^tabPressed)(TGPhotoEditorTab) = ^(TGPhotoEditorTab tab)
@@ -159,28 +265,62 @@
         [strongSelf presentPhotoEditorWithTab:tab];
     };
     
-    NSMutableArray *tabs = [[NSMutableArray alloc] init];
-    if (!self.disallowCaptions)
-        [tabs addObject:@(TGPhotoEditorCaptionTab)];
+    TGPhotoEditorTab tabs = TGPhotoEditorNoneTab;
+    if (self.allowCaptions)
+        tabs |= TGPhotoEditorCaptionTab;
     
-    [tabs addObject:@(TGPhotoEditorCropTab)];
+    tabs |= TGPhotoEditorCropTab;
     
     if (iosMajorVersion() >= 7)
-        [tabs addObject:@(TGPhotoEditorToolsTab)];
+        tabs |= TGPhotoEditorToolsTab;
     
-    _availableTabs = tabs;
-    
-    _portraitToolbarView = [[TGPhotoToolbarView alloc] initWithBackButtonTitle:TGLocalized(@"Camera.Retake") doneButtonTitle:TGLocalized(@"MediaPicker.Send") accentedDone:false solidBackground:false tabs:tabs];
+    _portraitToolbarView = [[TGPhotoToolbarView alloc] initWithBackButtonTitle:TGLocalized(@"Camera.Retake") doneButtonTitle:TGLocalized(@"MediaPicker.Send") accentedDone:false solidBackground:false];
+    [_portraitToolbarView setToolbarTabs:tabs animated:false];
     _portraitToolbarView.cancelPressed = cancelPressed;
     _portraitToolbarView.donePressed = donePressed;
     _portraitToolbarView.tabPressed = tabPressed;
     [_wrapperView addSubview:_portraitToolbarView];
     
-    _landscapeToolbarView = [[TGPhotoToolbarView alloc] initWithBackButtonTitle:TGLocalized(@"Camera.Retake") doneButtonTitle:TGLocalized(@"MediaPicker.Send") accentedDone:false solidBackground:false tabs:tabs];
+    _landscapeToolbarView = [[TGPhotoToolbarView alloc] initWithBackButtonTitle:TGLocalized(@"Camera.Retake") doneButtonTitle:TGLocalized(@"MediaPicker.Send") accentedDone:false solidBackground:false];
+    [_landscapeToolbarView setToolbarTabs:tabs animated:false];
     _landscapeToolbarView.cancelPressed = cancelPressed;
     _landscapeToolbarView.donePressed = donePressed;
     _landscapeToolbarView.tabPressed = tabPressed;
     [_wrapperView addSubview:_landscapeToolbarView];
+}
+
+- (void)_setTemporaryRepView:(UIView *)view
+{
+    [_temporaryRepView removeFromSuperview];
+    _temporaryRepView = view;
+    
+    _imageSize = TGScaleToSize(view.frame.size, self.view.frame.size);
+    
+    view.hidden = _imageView.hidden;
+    view.frame = CGRectMake((self.view.frame.size.width - _imageSize.width) / 2.0f, (self.view.frame.size.height - _imageSize.height) / 2.0f, _imageSize.width, _imageSize.height);
+    
+    [self.view insertSubview:view belowSubview:_wrapperView];
+}
+
+- (void)dismiss
+{
+    if (self.overlayWindow != nil)
+    {
+        [super dismiss];
+    }
+    else
+    {
+        [self.view removeFromSuperview];
+        [self removeFromParentViewController];
+    }
+}
+
+- (BOOL)prefersStatusBarHidden
+{
+    if (self.childViewControllers.count > 0)
+        return [self.childViewControllers.lastObject prefersStatusBarHidden];
+    
+    return [super prefersStatusBarHidden];
 }
 
 - (UIBarStyle)requiredNavigationBarStyle
@@ -387,10 +527,7 @@
 
 - (CGSize)contentSize
 {
-    if (_editorValues != nil)
-        return _editedImage.size;
-    
-    return _image.size;
+    return _imageSize;
 }
 
 - (void)reset
@@ -450,30 +587,68 @@
 
 - (void)updateEditorButtonsForEditorValues:(PGPhotoEditorValues *)editorValues hasCaption:(bool)hasCaption
 {
-    NSInteger highlightedButtons = [TGPhotoEditorTabController highlightedButtonsForEditorValues:editorValues forAvatar:false hasCaption:hasCaption];
+    TGPhotoEditorTab highlightedButtons = [TGPhotoEditorTabController highlightedButtonsForEditorValues:editorValues forAvatar:false hasCaption:hasCaption];
     [_portraitToolbarView setEditButtonsHighlighted:highlightedButtons];
     [_landscapeToolbarView setEditButtonsHighlighted:highlightedButtons];
+}
+
+- (UIView *)transitionContentView
+{
+    if (_temporaryRepView != nil)
+        return _temporaryRepView;
+    
+    return _imageView;
+}
+
+- (CGRect)transitionViewContentRect
+{
+    UIView *contentView = [self transitionContentView];
+    return [self.view convertRect:contentView.frame fromView:contentView.superview];
 }
 
 - (void)presentPhotoEditorWithTab:(TGPhotoEditorTab)tab
 {
     __weak TGCameraPhotoPreviewController *weakSelf = self;
     
-    id<TGEditablePhotoItem> editableMediaItem = _image;
+    id<TGMediaEditableItem> editableMediaItem = _image;
     
-    UIView *referenceView = _imageView;
-    CGRect refFrame = [self.view convertRect:_imageView.frame fromView:_scrollView];
-    UIImage *screenImage = [(UIImageView *)referenceView image];
+    UIView *referenceView = [self transitionContentView];
+    CGRect refFrame = [self transitionViewContentRect];
+    UIImage *screenImage = nil;
+    if ([referenceView isKindOfClass:[UIImageView class]])
+        screenImage = [(UIImageView *)referenceView image];
     
-    TGPhotoEditorController *controller = [[TGPhotoEditorController alloc] initWithItem:editableMediaItem intent:TGPhotoEditorControllerFromCameraIntent adjustments:_editorValues caption:_caption screenImage:screenImage availableTabs:_availableTabs selectedTab:tab];
+    PGPhotoEditorValues *editorValues = (PGPhotoEditorValues *)[_editingContext adjustmentsForItem:_image];
+    NSString *caption = [_editingContext captionForItem:_image];
+    
+    TGPhotoEditorController *controller = [[TGPhotoEditorController alloc] initWithItem:editableMediaItem intent:TGPhotoEditorControllerFromCameraIntent adjustments:editorValues caption:caption screenImage:screenImage availableTabs:_portraitToolbarView.currentTabs selectedTab:tab];
     self.editorController = controller;
     controller.metadata = _metadata;
-    controller.userListSignal = self.userListSignal;
-    controller.hashtagListSignal = self.hashtagListSignal;
-    controller.finishedEditing = ^(PGPhotoEditorValues *editorValues, UIImage *resultImage, __unused UIImage *thumbnailImage, bool noChanges)
+    controller.suggestionContext = self.suggestionContext;
+    controller.didFinishRenderingFullSizeImage = ^(UIImage *image)
+    {
+        __strong TGCameraPhotoPreviewController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        [strongSelf->_editingContext setFullSizeImage:image forItem:strongSelf->_image];
+    };
+    controller.willFinishEditing = ^(PGPhotoEditorValues *editorValues, id temporaryRep, bool hasChanges)
+    {
+        __strong TGCameraPhotoPreviewController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        if (hasChanges)
+        {
+            [strongSelf->_editingContext setAdjustments:editorValues forItem:strongSelf->_image];
+            [strongSelf->_editingContext setTemporaryRep:temporaryRep forItem:strongSelf->_image];
+        }
+    };
+    controller.didFinishEditing = ^(PGPhotoEditorValues *editorValues, UIImage *resultImage, __unused UIImage *thumbnailImage, bool hasChanges)
     {
 #ifdef DEBUG
-        if (editorValues != nil && !noChanges)
+        if (editorValues != nil && hasChanges)
             NSAssert(resultImage != nil, @"resultImage should not be nil");
 #endif
         
@@ -481,19 +656,11 @@
         if (strongSelf == nil)
             return;
         
-        if (!noChanges)
-        {
-            strongSelf->_editorValues = editorValues;
-            strongSelf->_editedImage = resultImage;
+        if (hasChanges)
+            [strongSelf->_editingContext setImage:resultImage thumbnailImage:nil forItem:strongSelf->_image synchronous:false];
         
-            if (editorValues != nil)
-                strongSelf->_imageView.image = strongSelf->_editedImage;
-            else
-                strongSelf->_imageView.image = strongSelf->_image;
-        }
-        
-        PGPhotoEditorValues *values = noChanges ? strongSelf->_editorValues : editorValues;
-        [strongSelf updateEditorButtonsForEditorValues:values hasCaption:strongSelf->_caption.length > 0];
+        PGPhotoEditorValues *values = !hasChanges ? (PGPhotoEditorValues *)[strongSelf->_editingContext adjustmentsForItem:strongSelf->_image] : editorValues;
+        [strongSelf updateEditorButtonsForEditorValues:values hasCaption:[strongSelf->_editingContext captionForItem:strongSelf->_image].length > 0];
         
         [strongSelf reset];
     };
@@ -506,7 +673,7 @@
         
         [strongSelf reset];
         
-        strongSelf->_caption = caption;
+        [strongSelf->_editingContext setCaption:caption forItem:strongSelf->_image];
     };
     
     controller.requestToolbarsHidden = ^(bool hidden, bool animated)
@@ -528,11 +695,17 @@
             strongSelf.photoEditorShown();
         
         strongSelf->_imageView.hidden = true;
-
+        strongSelf->_temporaryRepView.hidden = true;
+        
         *parentView = strongSelf->_transitionParentView;
         *referenceFrame = refFrame;
         
         [strongSelf reset];
+        
+        if (iosMajorVersion() >= 7)
+            [strongSelf setNeedsStatusBarAppearanceUpdate];
+        else
+            [[UIApplication sharedApplication] setStatusBarHidden:true];
         
         return referenceView;
     };
@@ -544,9 +717,9 @@
             return nil;
         
         *parentView = strongSelf->_transitionParentView;
-        *referenceFrame = [strongSelf.view convertRect:strongSelf->_imageView.frame fromView:strongSelf->_scrollView];
+        *referenceFrame = [strongSelf transitionViewContentRect];
         
-        return strongSelf->_imageView;
+        return [strongSelf transitionContentView];
     };
     
     controller.finishedTransitionOut = ^(__unused bool saved)
@@ -559,11 +732,31 @@
             strongSelf.photoEditorHidden();
         
         strongSelf->_imageView.hidden = false;
+        strongSelf->_temporaryRepView.hidden = false;
+        
+        if (iosMajorVersion() >= 7)
+            [strongSelf setNeedsStatusBarAppearanceUpdate];
+        else
+            [[UIApplication sharedApplication] setStatusBarHidden:false];
     };
     
-    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
-    controllerWindow.windowLevel = self.view.window.windowLevel + 0.0001f;
-    controllerWindow.hidden = false;
+    controller.requestThumbnailImage = ^(id<TGMediaEditableItem> editableItem)
+    {
+        return [editableItem thumbnailImageSignal];
+    };
+    
+    controller.requestOriginalScreenSizeImage = ^(id<TGMediaEditableItem> editableItem)
+    {
+        return [editableItem screenImageSignal];
+    };
+    
+    controller.requestOriginalFullSizeImage = ^(id<TGMediaEditableItem> editableItem)
+    {
+        return [editableItem originalImageSignal];
+    };
+    
+    [self addChildViewController:controller];
+    [self.view addSubview:controller.view];
     controller.view.clipsToBounds = true;
 }
 
@@ -643,12 +836,6 @@
         _scrollView.frame = self.view.bounds;
         [self reset];
     }
-//    CGRect containerFrame = CGRectMake(0, 0, referenceSize.width, referenceSize.height);
-//    CGSize fittedSize = TGScaleToSize(_imageView.image.size, containerFrame.size);
-//    _scrollView.frame = CGRectMake(containerFrame.origin.x + (containerFrame.size.width - fittedSize.width) / 2,
-//                                   containerFrame.origin.y + (containerFrame.size.height - fittedSize.height) / 2,
-//                                   fittedSize.width,
-//                                   fittedSize.height);
 }
 
 @end

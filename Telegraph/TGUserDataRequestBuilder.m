@@ -80,6 +80,7 @@
         int difference = [originalUser differenceFromUser:user];
         if (originalUser == nil || difference != 0)
         {
+            TGUser *updatedUser = user;
             if (originalUser != nil)
             {
                 if (!TGStringCompare(originalUser.phoneNumber, user.phoneNumber) && user.phoneNumber.length != 0 && [TGDatabaseInstance() uidIsRemoteContact:user.uid])
@@ -94,11 +95,18 @@
                     }
                 }
                 
-                [updateUsers addObject:user];
-                [updateUserChanges addObject:[[NSNumber alloc] initWithInt:[user differenceFromUser:originalUser]]];
+                if (user.minimalRepresentation) {
+                    updatedUser = [user copy];
+                    updatedUser.phoneNumberHash = originalUser.phoneNumberHash;
+                    updatedUser.userName = originalUser.userName;
+                    updatedUser.presence = originalUser.presence;
+                }
+                
+                [updateUsers addObject:updatedUser];
+                [updateUserChanges addObject:[[NSNumber alloc] initWithInt:[updatedUser differenceFromUser:originalUser]]];
             }
             
-            [storeUsers addObject:user];
+            [storeUsers addObject:updatedUser];
         }
     }
     

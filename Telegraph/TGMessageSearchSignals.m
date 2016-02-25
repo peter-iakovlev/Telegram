@@ -7,6 +7,8 @@
 #import "TGMessage+Telegraph.h"
 #import "TGUserDataRequestBuilder.h"
 
+#import "TGPeerIdAdapter.h"
+
 @implementation TGMessageSearchSignals
 
 + (TLMessagesFilter *)nativeFilterForFilter:(TGMessageSearchFilter)filter
@@ -24,7 +26,7 @@
         case TGMessageSearchFilterFile:
             return [[TLMessagesFilter$inputMessagesFilterDocument alloc] init];
         case TGMessageSearchFilterAudio:
-            return [[TLMessagesFilter$inputMessagesFilterAudio alloc] init];
+            return [[TLMessagesFilter$inputMessagesFilterMusic alloc] init];
         case TGMessageSearchFilterPhotoVideoFile:
             return [[TLMessagesFilter$inputMessagesFilterPhotoVideoDocuments alloc] init];
         case TGMessageSearchFilterLink:
@@ -111,6 +113,26 @@
         
         return messages;
     }];
+}
+
++ (SSignal *)shareLinkForChannelMessage:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId {
+    TLRPCchannels_exportMessageLink$channels_exportMessageLink *exportMessageLink = [[TLRPCchannels_exportMessageLink$channels_exportMessageLink alloc] init];
+    TLInputChannel$inputChannel *inputChannel = [[TLInputChannel$inputChannel alloc] init];
+    inputChannel.channel_id = TGChannelIdFromPeerId(peerId);
+    inputChannel.access_hash = accessHash;
+    exportMessageLink.channel = inputChannel;
+    
+    exportMessageLink.n_id = messageId;
+    
+    if (false) {
+        return [[[TGDatabaseInstance() existingChannel:peerId] take:1] map:^id(TGConversation *conversation) {
+            return [NSString stringWithFormat:@"https://telegram.me/%@/%d", conversation.username, messageId];
+        }];
+    } else {
+        return [[[TGTelegramNetworking instance] requestSignal:exportMessageLink] map:^id(TLExportedMessageLink *result) {
+            return result.link;
+        }];
+    }
 }
 
 @end

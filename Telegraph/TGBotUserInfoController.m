@@ -57,6 +57,14 @@
 
 #import "TGPeerIdAdapter.h"
 
+#import "TGChannelManagementSignals.h"
+
+#import "TGAccountSignals.h"
+
+#import "TGReportPeerOtherTextController.h"
+
+#import "TGHashtagSearchController.h"
+
 @interface TGBotUserInfoController () <TGAlertSoundControllerDelegate, TGUserInfoEditingPhoneCollectionItemDelegate, TGPhoneLabelPickerControllerDelegate, TGCreateContactControllerDelegate, TGAddToExistingContactControllerDelegate>
 {
     int32_t _uid;
@@ -91,6 +99,7 @@
     TGUserInfoButtonCollectionItem *_shareContactItem;
     
     TGCollectionMenuSection *_blockUserSection;
+    TGUserInfoButtonCollectionItem *_reportUserItem;
     TGUserInfoButtonCollectionItem *_blockUserItem;
     
     void (^_sendCommand)(NSString *);
@@ -149,11 +158,15 @@
         
         _shareContactItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"UserInfo.ShareBot") action:@selector(shareContactPressed)];
         _shareContactItem.deselectAutomatically = true;
+
+        _reportUserItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ReportPeer.Report") action:@selector(reportUserPressed)];
+        _reportUserItem.deselectAutomatically = true;
         
         _blockUserItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:@"" action:@selector(blockUserPressed)];
         _blockUserItem.deselectAutomatically = true;
         _blockUserItem.titleColor = TGDestructiveAccentColor();
-        _blockUserSection = [[TGCollectionMenuSection alloc] initWithItems:@[_blockUserItem]];
+        
+        _blockUserSection = [[TGCollectionMenuSection alloc] initWithItems:@[_reportUserItem, _blockUserItem]];
         _blockUserSection.insets = UIEdgeInsetsMake(22.0f, 0.0f, 44.0f, 0.0f);
         
         [self _updatePhonesAndActions];
@@ -249,6 +262,13 @@
         {
             TGUserInfoTextCollectionItem *infoItem = [[TGUserInfoTextCollectionItem alloc] init];
             infoItem.text = shortDescription;
+            __weak TGBotUserInfoController *weakSelf = self;
+            infoItem.followLink = ^(NSString *link) {
+                TGBotUserInfoController *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    [strongSelf followLink:link];
+                }
+            };
             [self.menuSections addItemToSection:usernameSectionIndex item:infoItem];
         }
         
@@ -794,7 +814,7 @@ static UIView *_findBackArrow(UIView *view)
     NSMutableArray *infoList = [[NSMutableArray alloc] init];
     
     int defaultSoundId = 1;
-    [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 1 soundId:&defaultSoundId muteUntil:NULL previewText:NULL photoNotificationsEnabled:NULL notFound:NULL];
+    [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 1 soundId:&defaultSoundId muteUntil:NULL previewText:NULL messagesMuted:NULL notFound:NULL];
     NSString *defaultSoundTitle = [self soundNameFromId:defaultSoundId];
     
     int index = -1;
@@ -850,13 +870,13 @@ static UIView *_findBackArrow(UIView *view)
     if ([_shareContactItem boundView] != nil)
     {
         UIActivityViewController *activityViewController = [[UIActivityViewController alloc] initWithActivityItems:dataToShare applicationActivities:nil];
-        if (iosMajorVersion() >= 7 && [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
+        if (iosMajorVersion() >= 8 && [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
         {
             UIView *sourceView = [_shareContactItem boundView];
             activityViewController.popoverPresentationController.sourceView = sourceView;
             activityViewController.popoverPresentationController.sourceRect = sourceView.bounds;
         }
-        [self presentViewController:activityViewController animated:YES completion:nil];
+        [self presentViewController:activityViewController animated:true completion:nil];
     }
 }
 
@@ -885,6 +905,81 @@ static UIView *_findBackArrow(UIView *view)
     [self.navigationController pushViewController:[[TGSharedMediaController alloc] initWithPeerId:_sharedMediaPeerId accessHash:0 important:true] animated:true];
     
     //[[TGInterfaceManager instance] navigateToMediaListOfConversation:_sharedMediaPeerId navigationController:self.navigationController];
+}
+
+- (void)reportUserPressed {
+    __weak TGBotUserInfoController *weakSelf = self;
+    [[[TGActionSheet alloc] initWithTitle:nil actions:@[
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonSpam") action:@"spam"],
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonViolence") action:@"violence"],
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonPornography") action:@"pornography"],
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonOther") action:@"other"],
+        
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]
+    ] actionBlock:^(__unused id target, NSString *action) {
+        __strong TGBotUserInfoController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            if (![action isEqualToString:@"cancel"]) {
+                TGReportPeerReason reason = TGReportPeerReasonSpam;
+                if ([action isEqualToString:@"spam"]) {
+                    reason = TGReportPeerReasonSpam;
+                } else if ([action isEqualToString:@"violence"]) {
+                    reason = TGReportPeerReasonViolence;
+                } else if ([action isEqualToString:@"pornography"]) {
+                    reason = TGReportPeerReasonPornography;
+                } else if ([action isEqualToString:@"other"]) {
+                    reason = TGReportPeerReasonOther;
+                }
+                
+                void (^reportBlock)(NSString *) = ^(NSString *otherText) {
+                    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+                    [progressWindow showWithDelay:0.1];
+                    
+                    [[[[TGAccountSignals reportPeer:strongSelf->_uid accessHash:0 reason:reason otherText:otherText] deliverOn:[SQueue mainQueue]] onDispose:^{
+                        TGDispatchOnMainThread(^{
+                            [progressWindow dismiss:true];
+                        });
+                    }] startWithNext:nil error:^(__unused id error) {
+                        if (NSClassFromString(@"UIAlertController") != nil) {
+                            
+                        } else {
+                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.GenericError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                        }
+                    } completed:^{
+                        __strong TGBotUserInfoController *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            [strongSelf dismissViewControllerAnimated:true completion:nil];
+                        }
+                        
+                        if (NSClassFromString(@"UIAlertController") != nil) {
+                            UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:nil message:TGLocalized(@"ReportPeer.AlertSuccess") preferredStyle:UIAlertControllerStyleAlert];
+                            
+                            UIAlertAction *doneAction = [UIAlertAction actionWithTitle:TGLocalized(@"Common.OK") style:UIAlertActionStyleDefault handler:nil];
+                            [alertVC addAction:doneAction];
+                            
+                            [strongSelf presentViewController:alertVC animated:true completion:nil];
+                        } else {
+                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"ReportPeer.AlertSuccess") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                        }
+                    }];
+                };
+                
+                if (reason == TGReportPeerReasonOther) {
+                    TGReportPeerOtherTextController *controller = [[TGReportPeerOtherTextController alloc] initWithCompletion:^(NSString *text) {
+                        if (text.length != 0) {
+                            reportBlock(text);
+                        }
+                    }];
+                    __strong TGBotUserInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        [strongSelf presentViewController:[TGNavigationController navigationControllerWithControllers:@[controller]] animated:true completion:nil];
+                    }
+                } else {
+                    reportBlock(nil);
+                }
+            }
+        }
+    } target:self] showInView:self.view];
 }
 
 - (void)blockUserPressed
@@ -1014,24 +1109,46 @@ static UIView *_findBackArrow(UIView *view)
         
         TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
         [progressWindow show:true];
-        [[[[TGGroupManagementSignals inviteUserWithId:_uid toGroupWithId:TGGroupIdFromPeerId(conversation.conversationId)] deliverOn:[SQueue mainQueue]] onDispose:^
-        {
-            [progressWindow dismiss:true];
-        }] startWithNext:^(__unused id next)
-        {
-            __strong TGBotUserInfoController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                [strongSelf dismissViewControllerAnimated:true completion:nil];
-            [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil];
-        } error:^(id error)
-        {
-            NSString *errorDescription = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
-            NSString *alertText = TGLocalized(@"ConversationProfile.UnknownAddMemberError");
-            if ([errorDescription isEqualToString:@"USER_ALREADY_PARTICIPANT"])
-                alertText = TGLocalized(@"Target.InviteToGroupErrorAlreadyInvited");
+        
+        if (conversation.isChannel) {
+            [[[[TGChannelManagementSignals inviteUsers:conversation.conversationId accessHash:conversation.accessHash users:@[_user]] deliverOn:[SQueue mainQueue]] onDispose:^{
+                TGDispatchOnMainThread(^{
+                    [progressWindow dismiss:true];
+                });
+            }] startWithNext:nil error:^(id error) {
+                NSString *errorDescription = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                NSString *alertText = TGLocalized(@"ConversationProfile.UnknownAddMemberError");
+                if ([errorDescription isEqualToString:@"USER_ALREADY_PARTICIPANT"])
+                    alertText = TGLocalized(@"Target.InviteToGroupErrorAlreadyInvited");
+                
+                [[[TGAlertView alloc] initWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            } completed:^{
+                __strong TGBotUserInfoController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf dismissViewControllerAnimated:true completion:nil];
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil];
+            }];
             
-            [[[TGAlertView alloc] initWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
-        } completed:nil];
+        } else {
+            [[[[TGGroupManagementSignals inviteUserWithId:_uid toGroupWithId:TGGroupIdFromPeerId(conversation.conversationId)] deliverOn:[SQueue mainQueue]] onDispose:^
+            {
+                [progressWindow dismiss:true];
+            }] startWithNext:^(__unused id next)
+            {
+                __strong TGBotUserInfoController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf dismissViewControllerAnimated:true completion:nil];
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil];
+            } error:^(id error)
+            {
+                NSString *errorDescription = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                NSString *alertText = TGLocalized(@"ConversationProfile.UnknownAddMemberError");
+                if ([errorDescription isEqualToString:@"USER_ALREADY_PARTICIPANT"])
+                    alertText = TGLocalized(@"Target.InviteToGroupErrorAlreadyInvited");
+                
+                [[[TGAlertView alloc] initWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            } completed:nil];
+        }
     }
     else if ([action isEqualToString:@"editingNameChanged"])
     {
@@ -1090,7 +1207,7 @@ static UIView *_findBackArrow(UIView *view)
                     return nil;
                 };
                 
-                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item)
+                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
                 {
                     __strong TGBotUserInfoController *strongSelf = weakSelf;
                     if (strongSelf != nil)
@@ -1316,6 +1433,39 @@ static UIView *_findBackArrow(UIView *view)
     message.text = text;
     
     [[TGInterfaceManager instance] navigateToConversationWithId:_uid conversation:nil performActions:@{@"sendMessages": @[message]}];
+}
+
+- (void)followLink:(NSString *)link {
+    if ([link hasPrefix:@"mention://"])
+    {
+        NSString *domain = [link substringFromIndex:@"mention://".length];
+        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/resolveDomain/(%@,profile)", domain] options:@{@"domain": domain, @"profile": @true} flags:0 watcher:TGTelegraphInstance];
+    }
+    else if ([link hasPrefix:@"hashtag://"])
+    {
+        NSString *hashtag = [link substringFromIndex:@"hashtag://".length];
+        
+        TGHashtagSearchController *hashtagController = [[TGHashtagSearchController alloc] initWithQuery:[@"#" stringByAppendingString:hashtag] peerId:0 accessHash:0];
+        //__weak TGChannelInfoController *weakSelf = self;
+        /*hashtagController.customResultBlock = ^(int32_t messageId) {
+         __strong TGChannelInfoController *strongSelf = weakSelf;
+         if (strongSelf != nil) {
+         [strongSelf navigateToMessageId:messageId scrollBackMessageId:0 animated:true];
+         TGModernConversationController *controller = strongSelf.controller;
+         [controller.navigationController popToViewController:controller animated:true];
+         }
+         };*/
+        
+        [self.navigationController pushViewController:hashtagController animated:true];
+    } else {
+        @try {
+            NSURL *url = [NSURL URLWithString:link];
+            if (url != nil) {
+                [[UIApplication sharedApplication] openURL:url];
+            }
+        } @catch (NSException *e) {
+        }
+    }
 }
 
 @end

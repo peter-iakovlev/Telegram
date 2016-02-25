@@ -34,6 +34,7 @@
 @property (nonatomic, readonly) bool isRTL;
 @property (nonatomic, strong) TGModernTextViewLinesInset *linesInset;
 @property (nonatomic, readonly) bool containsEmptyNewline;
+@property (nonatomic, strong) NSString *ellipsisString;
 
 - (instancetype)initWithText:(NSString *)text font:(CTFontRef)font;
 

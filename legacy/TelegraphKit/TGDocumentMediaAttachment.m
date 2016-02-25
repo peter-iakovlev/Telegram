@@ -12,6 +12,14 @@
 #import "PSKeyValueEncoder.h"
 #import "PSKeyValueDecoder.h"
 
+#import "TGMessage.h"
+
+@interface TGDocumentMediaAttachment () {
+    NSArray *_textCheckingResults;
+}
+
+@end
+
 @implementation TGDocumentMediaAttachment
 
 - (id)init
@@ -22,6 +30,26 @@
         self.type = TGDocumentMediaAttachmentType;
     }
     return self;
+}
+
+- (instancetype)copyWithZone:(NSZone *)__unused zone {
+    TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] init];
+    
+    document->_documentId = _documentId;
+    document->_localDocumentId = _localDocumentId;
+    document->_accessHash = _accessHash;
+    document->_datacenterId = _datacenterId;
+    document->_userId = _userId;
+    document->_date = _date;
+    document->_mimeType = _mimeType;
+    document->_size = _size;
+    document->_thumbnailInfo = _thumbnailInfo;
+    document->_documentUri = _documentUri;
+    document->_attributes = _attributes;
+    document->_caption = _caption;
+    document->_textCheckingResults = _textCheckingResults;
+    
+    return document;
 }
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder
@@ -42,6 +70,7 @@
         _thumbnailInfo = [aDecoder decodeObjectForKey:@"thumbnailInfo"];
         _documentUri = [aDecoder decodeObjectForKey:@"documentUri"];
         _attributes = [aDecoder decodeObjectForKey:@"attributes"];
+        _caption = [aDecoder decodeObjectForKey:@"caption"];
     }
     return self;
 }
@@ -63,6 +92,9 @@
         [aCoder encodeObject:_documentUri forKey:@"documentUri"];
     if (_attributes != nil)
         [aCoder encodeObject:_attributes forKey:@"attributes"];
+    if (_caption != nil) {
+        [aCoder encodeObject:_caption forKey:@"caption"];
+    }
 }
 
 - (BOOL)isEqual:(id)object
@@ -74,7 +106,7 @@
         return false;
     
     TGDocumentMediaAttachment *other = object;
-    if (_documentId == other->_documentId && _localDocumentId == other->_localDocumentId && _accessHash == other->_accessHash && _datacenterId == other->_datacenterId && _userId == other->_userId && _date == other->_date && TGObjectCompare(_mimeType, other->_mimeType) && _size == other->_size && TGObjectCompare(_thumbnailInfo, other->_thumbnailInfo) && TGObjectCompare(_documentUri, other->_documentUri) && TGObjectCompare(_attributes, other->_attributes))
+    if (_documentId == other->_documentId && _localDocumentId == other->_localDocumentId && _accessHash == other->_accessHash && _datacenterId == other->_datacenterId && _userId == other->_userId && _date == other->_date && TGObjectCompare(_mimeType, other->_mimeType) && _size == other->_size && TGObjectCompare(_thumbnailInfo, other->_thumbnailInfo) && TGObjectCompare(_documentUri, other->_documentUri) && TGObjectCompare(_attributes, other->_attributes) && TGStringCompare(_caption, other->_caption))
         return true;
     return false;
 }
@@ -85,7 +117,7 @@
     int zero = 0;
     [data appendBytes:&zero length:4];
     
-    uint8_t version = 4;
+    uint8_t version = 5;
     [data appendBytes:&version length:sizeof(version)];
     
     [data appendBytes:&_localDocumentId length:sizeof(_localDocumentId)];
@@ -123,6 +155,13 @@
     int32_t attributesLength = (int32_t)encoder.data.length;
     [data appendBytes:&attributesLength length:4];
     [data appendData:encoder.data];
+    
+    NSData *captionData = [_caption dataUsingEncoding:NSUTF8StringEncoding];
+    int32_t captionLength = (int)captionData.length;
+    [data appendBytes:&captionLength length:sizeof(captionLength)];
+    if (captionData != nil) {
+        [data appendData:captionData];
+    }
 
     int dataLength = (int)(data.length - dataLengthPtr - 4);
     [data replaceBytesInRange:NSMakeRange(dataLengthPtr, 4) withBytes:&dataLength];
@@ -135,7 +174,7 @@
     
     uint8_t version = 0;
     [is read:&version maxLength:sizeof(version)];
-    if (version != 1 && version != 2 && version != 3 && version != 4)
+    if (version != 1 && version != 2 && version != 3 && version != 4 && version != 5)
     {
         TGLog(@"***** Document serialized version mismatch");
         return nil;
@@ -206,6 +245,17 @@
         }
     }
     
+    if (version >= 5) {
+        int32_t captionLength = 0;
+        [is read:(uint8_t *)&captionLength maxLength:sizeof(captionLength)];
+        if (captionLength > 0)
+        {
+            uint8_t *captionBytes = malloc(captionLength);
+            [is read:captionBytes maxLength:captionLength];
+            documentAttachment.caption = [[NSString alloc] initWithBytesNoCopy:captionBytes length:captionLength encoding:NSUTF8StringEncoding freeWhenDone:true];
+        }
+    }
+    
     bool hasFilenameAttribute = false;
     for (id attribute in documentAttachment.attributes)
     {
@@ -252,6 +302,42 @@
         return @"file";
     
     return [fileName stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+}
+
+- (bool)isAnimated {
+    for (id attribute in _attributes) {
+        if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]]) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+- (CGSize)pictureSize {
+    for (id attribute in _attributes) {
+        if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]]) {
+            return ((TGDocumentAttributeImageSize *)attribute).size;
+        } else if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+            return ((TGDocumentAttributeVideo *)attribute).size;
+        }
+    }
+    
+    return CGSizeZero;
+}
+
+- (NSArray *)textCheckingResults
+{
+    if (_caption.length < 2)
+        _textCheckingResults = [NSArray array];
+    
+    if (_textCheckingResults == nil)
+    {
+        NSArray *textCheckingResults = [TGMessage textCheckingResultsForText:_caption highlightMentionsAndTags:true highlightCommands:true];
+        _textCheckingResults = textCheckingResults ?: [NSArray array];
+    }
+    
+    return _textCheckingResults;
 }
 
 @end

@@ -7,6 +7,7 @@
 
 #import "TGHacks.h"
 #import "TGImageUtils.h"
+#import "TGAppDelegate.h"
 #import <objc/runtime.h>
 #import <objc/message.h>
 
@@ -190,11 +191,38 @@
     return result;
 }
 
+- (void)toggleBoldface:(id)__unused sender
+{
+    [TGAppDelegateInstance.keyCommandController performActionForKeyCommand:[TGKeyCommand keyCommandForSystemActionSelector:@selector(toggleBoldface:)]];
+}
+
+- (void)toggleItalics:(id)__unused sender
+{
+    [TGAppDelegateInstance.keyCommandController performActionForKeyCommand:[TGKeyCommand keyCommandForSystemActionSelector:@selector(toggleItalics:)]];
+}
+
+- (void)toggleUnderline:(id)__unused sender
+{
+    [TGAppDelegateInstance.keyCommandController performActionForKeyCommand:[TGKeyCommand keyCommandForSystemActionSelector:@selector(toggleUnderline:)]];
+}
+
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender
 {
     if (action == @selector(paste:))
         return true;
+    
+    if (action == @selector(toggleItalics:))
+        return true;
+    
     return [super canPerformAction:action withSender:sender];
+}
+
+- (id)targetForAction:(SEL)action withSender:(id)__unused sender
+{
+    if (action == @selector(processKeyCommand:))
+        return [TGAppDelegateInstance.keyCommandController targetForAction:action withSender:sender];
+    
+    return [super targetForAction:action withSender:sender];
 }
 
 - (void)paste:(id)sender

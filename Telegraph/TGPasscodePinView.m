@@ -49,7 +49,7 @@
         screenSize.height = tmp;
     }
     
-    if ((int)screenSize.height == 1024)
+    if ((int)screenSize.height == 1024 || (int)screenSize.height == 1366)
         displayLimit = 22;
     else if ((int)screenSize.height == 736)
         displayLimit = 26;
@@ -117,7 +117,7 @@
         screenSize.height = tmp;
     }
     
-    if ((int)screenSize.height == 1024)
+    if ((int)screenSize.height == 1024 || (int)screenSize.height == 1366)
     {
         dotSimpleSize = 16.0f;
         dotComplexSize = 7.0f;

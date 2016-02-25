@@ -10,10 +10,11 @@
 #import "PGPhotoEditor.h"
 #import "TGPhotoCaptionInputMixin.h"
 
+#import "TGSuggestionContext.h"
+
 #import "TGOverlayControllerWindow.h"
 #import "TGPhotoEditorController.h"
 #import "TGPhotoEditorPreviewView.h"
-
 
 @interface TGPhotoCaptionController ()
 {
@@ -122,10 +123,9 @@
 {
     [super viewDidAppear:animated];
     
-    _captionMixin.userListSignal = self.userListSignal;
-    _captionMixin.hashtagListSignal = self.hashtagListSignal;
-    
+    _captionMixin.suggestionContext = self.suggestionContext;
     [_captionMixin beginEditingWithCaption:_initialCaption];
+    
     if (_keyboardHeight == 0 && !_transitionedIn)
     {
         [_captionMixin.inputPanel setCollapsed:true];
@@ -315,6 +315,11 @@
 {
     TGPhotoEditorPreviewView *previewView = self.previewView;
     return [previewView originalSnapshotView];
+}
+
+- (id)currentResultRepresentation
+{
+    return self.photoEditor.currentResultImage;
 }
 
 - (void)viewWillLayoutSubviews

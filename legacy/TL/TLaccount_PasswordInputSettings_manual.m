@@ -11,7 +11,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)-1124314324;
+    return (int32_t)0x86916DEB;
 }
 
 - (void)TLserialize:(NSOutputStream *)os

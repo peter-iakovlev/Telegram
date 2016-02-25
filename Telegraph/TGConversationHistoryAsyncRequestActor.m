@@ -12,6 +12,7 @@
 #import "TGMessage+Telegraph.h"
 
 #import "TGDownloadMessagesSignal.h"
+#import "TGConversationAddMessagesActor.h"
 
 @interface TGConversationHistoryAsyncRequestActor ()
 {
@@ -87,14 +88,15 @@
     range = [self.path rangeOfString:@"/asyncHistory/("];
     
     TGConversation *conversation = nil;
+    NSMutableDictionary *otherConversations = [[NSMutableDictionary alloc] init];
     
     for (TLChat *chatDesc in messages.chats)
     {
         TGConversation *chatConversation = [[TGConversation alloc] initWithTelegraphChatDesc:chatDesc];
-        if (chatConversation.conversationId != 0)
-        {
+        if (chatConversation.conversationId == conversationId) {
             conversation = chatConversation;
-            break;
+        } else if (chatConversation.conversationId != 0) {
+            otherConversations[@(chatConversation.conversationId)] = chatConversation;
         }
     }
     
@@ -121,6 +123,10 @@
     dispatch_block_t continueBlock = ^
     {
         [[TGDatabase instance] addMessagesToConversation:messageItems conversationId:conversationId updateConversation:conversation dispatch:true countUnread:false];
+        
+        if (otherConversations.count != 0) {
+            [[[TGConversationAddMessagesActor alloc] initWithPath:[NSString stringWithFormat:@"/tg/addmessage/(%dcf)", 0]] execute:[NSDictionary dictionaryWithObjectsAndKeys:otherConversations, @"chats", nil]];
+        }
         
         if (_down && maxRemoteMid >= _fromMid)
         {

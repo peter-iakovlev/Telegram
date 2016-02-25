@@ -2,16 +2,17 @@
 
 #import "TGFont.h"
 #import "TGStringUtils.h"
+#import "TGMediaAssetImageSignals.h"
+
+#import "TGPhotoEditorUtils.h"
 
 #import "TGModernGalleryZoomableScrollView.h"
+#import "TGMessageImageViewOverlayView.h"
+#import "TGImageView.h"
+
+#import "TGMediaSelectionContext.h"
 
 #import "TGMediaPickerGalleryPhotoItem.h"
-
-#import "TGMediaPickerAsset+TGEditablePhotoItem.h"
-
-#import "TGMessageImageViewOverlayView.h"
-
-#import "TGAssetImageView.h"
 
 @interface TGMediaPickerGalleryPhotoItemView ()
 {
@@ -19,9 +20,11 @@
     
     TGMessageImageViewOverlayView *_progressView;
     bool _progressVisible;
+    void (^_currentAvailabilityObserver)(bool);
     
-    NSUInteger _attributesRequestToken;
-    volatile NSInteger _attributesVersion;
+    UIView *_temporaryRepView;
+    
+    SMetaDisposable *_attributesDisposable;
 }
 @end
 
@@ -32,7 +35,22 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        _imageView = [[TGAssetImageView alloc] init];
+        __weak TGMediaPickerGalleryPhotoItemView *weakSelf = self;
+        _imageView = [[TGModernGalleryImageItemImageView alloc] init];
+        _imageView.progressChanged = ^(CGFloat value)
+        {
+            __strong TGMediaPickerGalleryPhotoItemView *strongSelf = weakSelf;
+            [strongSelf setProgressVisible:value < 1.0f - FLT_EPSILON value:value animated:true];
+        };
+        _imageView.availabilityStateChanged = ^(bool available)
+        {
+            __strong TGMediaPickerGalleryPhotoItemView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                if (strongSelf->_currentAvailabilityObserver)
+                    strongSelf->_currentAvailabilityObserver(available);
+            }
+        };
         [self.scrollView addSubview:_imageView];
         
         _fileInfoLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 200, 20)];
@@ -44,9 +62,15 @@
     return self;
 }
 
+- (void)dealloc
+{
+    [_attributesDisposable dispose];
+}
+
 - (void)setHiddenAsBeingEdited:(bool)hidden
 {
-    _imageView.hidden = hidden;
+    self.imageView.hidden = hidden;
+    _temporaryRepView.hidden = hidden;
 }
 
 - (void)prepareForRecycle
@@ -65,69 +89,119 @@
     
     if (item.asset == nil)
     {
-        [_imageView reset];
+        [self.imageView reset];
     }
     else
     {
-        if (item.immediateThumbnailImage != nil)
-            _imageView.image = item.immediateThumbnailImage;
-        
-        id<TGEditablePhotoItem> editableMediaItem = [item editableMediaItem];
-        PGPhotoEditorValues *editorValues = nil;
-        if (editableMediaItem.fetchEditorValues != nil)
-            editorValues = (PGPhotoEditorValues *)editableMediaItem.fetchEditorValues(editableMediaItem);
-        
-        if (editorValues != nil)
-        {
-            UIImage *image = editableMediaItem.fetchScreenImage(editableMediaItem);
-            [_imageView loadWithImage:image];
-            _imageSize = image.size;
-            [self reset];
-        }
-        else
-        {
-            if (_imageView.image == nil)
-                [_imageView loadWithAsset:item.asset imageType:TGAssetImageTypeAspectRatioThumbnail size:CGSizeZero];
-            
-            __weak TGMediaPickerGalleryPhotoItemView *weakSelf = self;
-            [_imageView loadWithAsset:item.asset imageType:TGAssetImageTypeScreen size:CGSizeMake(1280, 1280) completionBlock:^(UIImage *result)
-            {
-                __strong TGMediaPickerGalleryPhotoItemView *strongSelf = weakSelf;
-                if (strongSelf == nil)
-                    return;
-                
-                strongSelf->_imageSize = result.size;
-                [strongSelf reset];
-            }];
-        }
-        
-        if (_attributesRequestToken != 0)
-        {
-            [TGAssetImageManager cancelRequestWithToken:_attributesRequestToken];
-            _attributesRequestToken = 0;
-        }
-        
-        _attributesVersion++;
-        NSInteger version = _attributesVersion;
-        
         __weak TGMediaPickerGalleryPhotoItemView *weakSelf = self;
-        _attributesRequestToken = [TGAssetImageManager requestFileAttributesForAsset:item.asset completion:^(NSString *fileName, __unused NSString *dataUTI, CGSize dimensions, NSUInteger fileSize)
+        void (^fadeOutRepView)(void) = ^
         {
             __strong TGMediaPickerGalleryPhotoItemView *strongSelf = weakSelf;
             if (strongSelf == nil)
                 return;
             
-            if (version == strongSelf->_attributesVersion)
+            if (strongSelf->_temporaryRepView == nil)
+                return;
+            
+            UIView *repView = strongSelf->_temporaryRepView;
+            strongSelf->_temporaryRepView = nil;
+            [UIView animateWithDuration:0.2f animations:^
             {
-                NSString *extension = [fileName.pathExtension uppercaseString];
-                strongSelf->_fileInfoLabel.text = [[NSString alloc] initWithFormat:@"%@ • %@ • %dx%d", extension, [TGStringUtils stringForFileSize:fileSize precision:2], (int)dimensions.width, (int)dimensions.height];
-                strongSelf->_attributesRequestToken = 0;
-            }
-        }];
+                repView.alpha = 0.0f;
+            } completion:^(__unused BOOL finished)
+            {
+                [repView removeFromSuperview];
+            }];
+        };
+
+        SSignal *assetSignal = [TGMediaAssetImageSignals imageForAsset:item.asset imageType:(item.immediateThumbnailImage != nil) ? TGMediaAssetImageTypeScreen : TGMediaAssetImageTypeFastScreen size:CGSizeMake(1280, 1280)];
+        
+        SSignal *imageSignal = assetSignal;
+        if (item.editingContext != nil)
+        {
+            imageSignal = [[[item.editingContext imageSignalForItem:item.editableMediaItem] deliverOn:[SQueue mainQueue]] mapToSignal:^SSignal *(id result)
+            {
+                __strong TGMediaPickerGalleryPhotoItemView *strongSelf = weakSelf;
+                if (strongSelf == nil)
+                    return [SSignal complete];
+                
+                if (result == nil)
+                {
+                    return [[assetSignal deliverOn:[SQueue mainQueue]] afterNext:^(__unused id next)
+                    {
+                        fadeOutRepView();
+                    }];
+                }
+                else if ([result isKindOfClass:[UIView class]])
+                {
+                    [strongSelf _setTemporaryRepView:result];
+                    return [[SSignal single:nil] deliverOn:[SQueue mainQueue]];
+                }
+                else
+                {
+                    return [[[SSignal single:result] deliverOn:[SQueue mainQueue]] afterNext:^(__unused id next)
+                    {
+                        fadeOutRepView();
+                    }];
+                }
+            }];
+        }
+        
+        if (item.immediateThumbnailImage != nil)
+        {
+            imageSignal = [[SSignal single:item.immediateThumbnailImage] then:imageSignal];
+            item.immediateThumbnailImage = nil;
+        }
+        
+        [self.imageView setSignal:[[imageSignal deliverOn:[SQueue mainQueue]] afterNext:^(id next)
+        {
+            __strong TGMediaPickerGalleryPhotoItemView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if ([next isKindOfClass:[UIImage class]])
+                strongSelf->_imageSize = ((UIImage *)next).size;
+            
+            [strongSelf reset];
+        }]];
+        
+        if (!item.asFile)
+            return;
+        
+        _fileInfoLabel.text = nil;
+        
+        if (_attributesDisposable == nil)
+            _attributesDisposable = [[SMetaDisposable alloc] init];
+        
+        [_attributesDisposable setDisposable:[[[TGMediaAssetImageSignals fileAttributesForAsset:item.asset] deliverOn:[SQueue mainQueue]] startWithNext:^(TGMediaAssetImageFileAttributes *next)
+        {
+            __strong TGMediaPickerGalleryPhotoItemView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            NSString *extension = next.fileName.pathExtension.uppercaseString;
+            NSString *fileSize = [TGStringUtils stringForFileSize:next.fileSize precision:2];
+            NSString *dimensions = [NSString stringWithFormat:@"%dx%d", (int)next.dimensions.width, (int)next.dimensions.height];
+            
+            strongSelf->_fileInfoLabel.text = [NSString stringWithFormat:@"%@ • %@ • %@", extension, fileSize, dimensions];
+        }]];
     }
 }
 
-- (void)setProgressVisible:(bool)progressVisible value:(float)value animated:(bool)animated
+- (void)_setTemporaryRepView:(UIView *)view
+{
+    [_temporaryRepView removeFromSuperview];
+    _temporaryRepView = view;
+    
+    _imageSize = TGScaleToSize(view.frame.size, self.containerView.frame.size);
+    
+    view.hidden = self.imageView.hidden;
+    view.frame = CGRectMake((self.containerView.frame.size.width - _imageSize.width) / 2.0f, (self.containerView.frame.size.height - _imageSize.height) / 2.0f, _imageSize.width, _imageSize.height);
+    
+    [self.containerView addSubview:view];
+}
+
+- (void)setProgressVisible:(bool)progressVisible value:(CGFloat)value animated:(bool)animated
 {
     _progressVisible = progressVisible;
     
@@ -170,10 +244,10 @@
 {
     if ([self.item conformsToProtocol:@protocol(TGModernGallerySelectableItem)])
     {
-        id<TGModernGallerySelectableItem> item = (id<TGModernGallerySelectableItem>)self.item;
+        TGMediaSelectionContext *selectionContext = ((id<TGModernGallerySelectableItem>)self.item).selectionContext;
+        id<TGMediaSelectableItem> item = ((id<TGModernGallerySelectableItem>)self.item).selectableMediaItem;
         
-        if (item.itemSelected != nil)
-            item.itemSelected(item);
+        [selectionContext toggleItemSelection:item animated:true sender:nil];
     }
     else
     {
@@ -191,6 +265,25 @@
     return nil;
 }
 
+- (SSignal *)contentAvailabilityStateSignal
+{
+    __weak TGMediaPickerGalleryPhotoItemView *weakSelf = self;
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+    {
+        __strong TGMediaPickerGalleryPhotoItemView *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            [subscriber putNext:@([strongSelf->_imageView isAvailableNow])];
+            strongSelf->_currentAvailabilityObserver = ^(bool available)
+            {
+                [subscriber putNext:@(available)];
+            };
+        }
+
+        return nil;
+    }];
+}
+
 - (CGSize)contentSize
 {
     return _imageSize;
@@ -201,6 +294,14 @@
     return _imageView;
 }
 
+- (UIView *)transitionContentView
+{
+    if (_temporaryRepView != nil)
+        return _temporaryRepView;
+    
+    return [self contentView];
+}
+
 - (UIView *)transitionView
 {
     return self.containerView;
@@ -208,7 +309,8 @@
 
 - (CGRect)transitionViewContentRect
 {
-    return [_imageView convertRect:_imageView.bounds toView:[self transitionView]];
+    UIView *contentView = [self transitionContentView];
+    return [contentView convertRect:contentView.bounds toView:[self transitionView]];
 }
 
 @end

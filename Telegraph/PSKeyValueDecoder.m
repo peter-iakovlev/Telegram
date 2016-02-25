@@ -87,6 +87,15 @@ static  int64_t readInt64(uint8_t const **currentPtr)
     return number;
 }
 
+static double readDouble(uint8_t const **currentPtr)
+{
+    double number;
+    memcpy(&number, *currentPtr, 8);
+    
+    (*currentPtr) += 8;
+    return number;
+}
+
 static void skipInt64(uint8_t const **currentPtr)
 {
     (*currentPtr) += 8;
@@ -152,7 +161,40 @@ static  NSArray *readArray(uint8_t const **currentPtr, PSKeyValueDecoder *tempCo
 
 static void skipArray(uint8_t const **currentPtr)
 {
-    uint32_t objectLength = *((uint32_t *)currentPtr);
+    uint32_t objectLength = ((uint32_t *)*currentPtr)[0];
+    (*currentPtr) += 4 + objectLength;
+}
+
+static NSDictionary *readInt32Dictionary(uint8_t const **currentPtr, PSKeyValueDecoder *tempCoder)
+{
+    uint32_t objectLength = *((uint32_t *)(*currentPtr));
+    (*currentPtr) += 4;
+    
+    uint8_t const *objectEnd = (*currentPtr) + objectLength;
+    
+    uint32_t count = readLength(currentPtr);
+    
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithCapacity:count];
+    
+    for (uint32_t i = 0; i < count; i++)
+    {
+        int32_t key = *((int32_t *)(*currentPtr));
+        (*currentPtr) += 4;
+        
+        id<PSCoding> object = readObject(currentPtr, tempCoder);
+        if (object != nil) {
+            dict[@(key)] = object;
+        }
+    }
+    
+    *currentPtr = objectEnd;
+    
+    return dict;
+}
+
+static void skipInt32Dictionary(uint8_t const **currentPtr)
+{
+    uint32_t objectLength = ((uint32_t *)*currentPtr)[0];
     (*currentPtr) += 4 + objectLength;
 }
 
@@ -217,6 +259,16 @@ static  void skipField(uint8_t const **currentPtr)
         case PSKeyValueCoderFieldTypeData:
         {
             skipData(currentPtr);
+            break;
+        }
+        case PSKeyValueCoderFieldTypeInt32Dictionary:
+        {
+            skipInt32Dictionary(currentPtr);
+            break;
+        }
+        case PSKeyValueCoderFieldTypeDouble:
+        {
+            skipInt64(currentPtr);
             break;
         }
         default:
@@ -594,6 +646,49 @@ static void decodeBytesForRawKey(PSKeyValueDecoder *self, uint8_t const *key, NS
     } else {
         return nil;
     }
+}
+
+- (NSDictionary *)decodeInt32DictionaryForCKey:(const char *)key {
+    if (skipToValueForRawKey(self, (uint8_t const *)key, strlen(key))) {
+        uint8_t fieldType = *self->_currentPtr;
+        self->_currentPtr++;
+        
+        if (fieldType == PSKeyValueCoderFieldTypeInt32Dictionary) {
+            if (self->_tempCoder == nil)
+                self->_tempCoder = [[PSKeyValueDecoder alloc] init];
+            return readInt32Dictionary(&self->_currentPtr, self->_tempCoder);
+        }
+        else {
+            skipField(&self->_currentPtr);
+        }
+    }
+    
+    return nil;
+}
+
+- (double)decodeDoubleForCKey:(const char *)key {
+    if (skipToValueForRawKey(self, (uint8_t const *)key, strlen(key)))
+    {
+        uint8_t fieldType = *self->_currentPtr;
+        self->_currentPtr++;
+        
+        if (fieldType == PSKeyValueCoderFieldTypeString)
+            return (int32_t)[readString(&self->_currentPtr) doubleValue];
+        else if (fieldType == PSKeyValueCoderFieldTypeInt32)
+            return readInt32(&self->_currentPtr);
+        else if (fieldType == PSKeyValueCoderFieldTypeInt64)
+            return (double)readInt64(&self->_currentPtr);
+        else if (fieldType == PSKeyValueCoderFieldTypeDouble)
+            return readDouble(&self->_currentPtr);
+        else
+        {
+            skipField(&self->_currentPtr);
+            
+            return 0;
+        }
+    }
+    
+    return 0.0;
 }
 
 @end

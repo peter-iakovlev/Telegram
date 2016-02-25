@@ -359,35 +359,21 @@
     }
 }
 
-
-- (void)linkButtonLongPressed:(TGModernButton *)button
-{
-    NSInteger index = -1;
-    for (TGModernButton *listButton in _linkButtons)
-    {
-        index++;
-        if (listButton == button)
-        {
-            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:_links[index]]];
-            
-            break;
-        }
-    }
-}
-
 - (void)longPress:(UILongPressGestureRecognizer *)recognizer
 {
-    if (recognizer.state == UIGestureRecognizerStateBegan)
-    {
-        NSInteger index = -1;
-        for (TGModernButton *listButton in _linkButtons)
+    if (!self.editing) {
+        if (recognizer.state == UIGestureRecognizerStateBegan)
         {
-            index++;
-            if (listButton == recognizer.view)
+            NSInteger index = -1;
+            for (TGModernButton *listButton in _linkButtons)
             {
-                [self showActionsMenuForLink:_links[index]];
-                
-                break;
+                index++;
+                if (listButton == recognizer.view)
+                {
+                    [self showActionsMenuForLink:_links[index]];
+                    
+                    break;
+                }
             }
         }
     }

@@ -1,41 +1,55 @@
 #import "TGMediaPickerGallerySelectedItemsModel.h"
 
-#import "TGModernMediaListSelectableItem.h"
-
 @interface TGMediaPickerGallerySelectedItemsModel ()
 {
+    TGMediaSelectionContext *_selectionContext;
+    SMetaDisposable *_selectionChangedDisposable;
+    
     NSMutableArray *_items;
 }
 @end
 
 @implementation TGMediaPickerGallerySelectedItemsModel
 
-- (instancetype)initWithSelectedItems:(NSArray *)selectedItems itemSelected:(void (^)(id<TGModernMediaListSelectableItem>))itemSelected isItemSelected:(bool (^)(id<TGModernMediaListSelectableItem>))isItemSelected
+- (instancetype)initWithSelectionContext:(TGMediaSelectionContext *)selectionContext
 {
     self = [super init];
     if (self != nil)
     {
-        self.itemSelected = itemSelected;
-        self.isItemSelected = isItemSelected;
-     
-        [self setItems:selectedItems];
+        _items = [selectionContext.selectedItems mutableCopy];
+        
+        _selectionContext = selectionContext;
+        
+        __weak TGMediaPickerGallerySelectedItemsModel *weakSelf = self;
+        _selectionChangedDisposable = [[SMetaDisposable alloc] init];
+        [_selectionChangedDisposable setDisposable:[[selectionContext selectionChangedSignal] startWithNext:^(TGMediaSelectionChange *next)
+        {
+            __strong TGMediaPickerGallerySelectedItemsModel *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if (next.sender == strongSelf)
+                return;
+            
+            if (next.selected)
+                [strongSelf addSelectedItem:next.item];
+            else
+                [strongSelf removeSelectedItem:next.item];
+        }]];
     }
     return self;
 }
 
-- (void)exchangeItemAtIndex:(NSUInteger)index1 withItemAtIndex:(NSUInteger)index2
+- (void)dealloc
 {
-    [_items exchangeObjectAtIndex:index1 withObjectAtIndex:index2];
-    
-    if (self.selectedItemsReordered != nil)
-        self.selectedItemsReordered(self.selectedItems);
+    [_selectionChangedDisposable dispose];
 }
 
-- (void)addSelectedItem:(id<TGModernMediaListSelectableItem>)selectedItem
+- (void)addSelectedItem:(id<TGMediaSelectableItem>)selectedItem
 {
-    for (id<TGModernMediaListSelectableItem> item in _items)
+    for (id<TGMediaSelectableItem> item in _items)
     {
-        if ([item isEqual:selectedItem])
+        if ([item.uniqueIdentifier isEqualToString:selectedItem.uniqueIdentifier])
         {
             if (self.selectionUpdated != nil)
                 self.selectionUpdated(false, false, false, 0);
@@ -44,16 +58,13 @@
         }
     }
     
-    id<TGModernMediaListSelectableItem> newItem = [(NSObject *)selectedItem copy];
-    newItem.itemSelected = self.itemSelected;
-    newItem.isItemSelected = self.isItemSelected;
-    [_items addObject:newItem];
+    [_items addObject:selectedItem];
     
     if (self.selectionUpdated != nil)
         self.selectionUpdated(true, true, true, _items.count - 1);
 }
 
-- (void)removeSelectedItem:(id<TGModernMediaListSelectableItem>)selectedItem
+- (void)removeSelectedItem:(id<TGMediaSelectableItem>)selectedItem
 {
     NSInteger index = [_items indexOfObject:selectedItem];
     if (index != NSNotFound)
@@ -68,9 +79,9 @@
 - (NSInteger)selectedCount
 {
     NSInteger count = 0;
-    for (id<TGModernMediaListSelectableItem> item in _items)
+    for (id<TGMediaSelectableItem> item in _items)
     {
-        if (item.isItemSelected != nil && item.isItemSelected(item))
+        if ([_selectionContext isItemSelected:item])
             count++;
     }
     return count;
@@ -78,7 +89,7 @@
 
 - (NSInteger)totalCount
 {
-    return self.items.count;
+    return _items.count;
 }
 
 - (NSArray *)items
@@ -86,31 +97,31 @@
     return _items;
 }
 
-- (void)setItems:(NSArray *)items
-{
-    _items = [[NSMutableArray alloc] init];
-    
-    for (id<TGModernMediaListSelectableItem> item in items)
-    {
-        id<TGModernMediaListSelectableItem> newItem = [(NSObject *)item copy];
-        newItem.itemSelected = self.itemSelected;
-        newItem.isItemSelected = self.isItemSelected;
-        [_items addObject:newItem];
-    }
-    
-    if (self.selectionUpdated != nil)
-        self.selectionUpdated(true, false, false, 0);
-}
-
 - (NSArray *)selectedItems
 {
-    NSMutableArray *selectedItems = [[NSMutableArray alloc] init];
-    for (id<TGModernMediaListSelectableItem> item in _items)
+    NSMutableArray *items = [[NSMutableArray alloc] init];
+    for (id<TGMediaSelectableItem> item in _items)
     {
-        if (item.isItemSelected != nil && item.isItemSelected(item))
-            [selectedItems addObject:item];
+        if ([_selectionContext isItemSelected:item])
+            [items addObject:item];
     }
-    return selectedItems;
+    return items;
+}
+
+- (void)setItems:(NSArray *)items
+{
+//    _items = [[NSMutableArray alloc] init];
+//    
+//    for (id<TGModernMediaListSelectableItem> item in items)
+//    {
+//        id<TGModernMediaListSelectableItem> newItem = [(NSObject *)item copy];
+//        newItem.itemSelected = self.itemSelected;
+//        newItem.isItemSelected = self.isItemSelected;
+//        [_items addObject:newItem];
+//    }
+//    
+//    if (self.selectionUpdated != nil)
+//        self.selectionUpdated(true, false, false, 0);
 }
 
 @end

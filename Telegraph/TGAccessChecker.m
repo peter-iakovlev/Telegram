@@ -1,11 +1,11 @@
 #import "TGAccessChecker.h"
 
-#import "TGAccessRequiredAlertView.h"
-
 #import <CoreLocation/CoreLocation.h>
 #import "TGSynchronizeContactsActor.h"
-#import "TGMediaPickerAssetsLibrary.h"
+#import "TGMediaAssetsLibrary.h"
 #import "PGCamera.h"
+
+#import "TGAccessRequiredAlertView.h"
 
 @implementation TGAccessChecker
 
@@ -24,9 +24,9 @@
 
 + (bool)checkPhotoAuthorizationStatusForIntent:(TGPhotoAccessIntent)intent alertDismissCompletion:(void (^)(void))alertDismissCompletion
 {
-    switch ([[TGMediaPickerAssetsLibrary sharedLibrary] authorizationStatus])
+    switch ([TGMediaAssetsLibrary authorizationStatus])
     {
-        case TGMediaPickerAuthorizationStatusDenied:
+        case TGMediaLibraryAuthorizationStatusDenied:
         {
             NSString *message = @"";
             switch (intent)
@@ -53,7 +53,7 @@
         }
             return false;
             
-        case TGMediaPickerAuthorizationStatusRestricted:
+        case TGMediaLibraryAuthorizationStatusRestricted:
         {
             [[[TGAccessRequiredAlertView alloc] initWithMessage:TGLocalized(@"AccessDenied.PhotosRestricted")
                                              showSettingsButton:false

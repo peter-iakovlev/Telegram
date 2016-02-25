@@ -26,7 +26,7 @@
         NSString *imageUrl = [attachment.imageInfo closestImageUrlWithSize:CGSizeMake(320.0f, 320.0f) resultingSize:NULL];
         return [[[TGMediaSignals photoThumbnailPathWithImageMedia:attachment targetSize:mediaSubscription.size] mapToSignal:^SSignal *(NSString *path)
         {
-            [server sendFileWithURL:[NSURL fileURLWithPath:path] key:imageUrl];
+            [self _sendFileWithURL:[NSURL fileURLWithPath:path] key:imageUrl server:server];
             return [SSignal single:imageUrl];
         }] startOn:[SQueue concurrentDefaultQueue]];
     }
@@ -39,7 +39,7 @@
         NSString *imageUrl = [attachment.thumbnailInfo closestImageUrlWithSize:CGSizeMake(320.0f, 320.0f) resultingSize:NULL];
         return [[[TGMediaSignals videoThumbnailPathWithVideoMedia:attachment targetSize:mediaSubscription.size] mapToSignal:^SSignal *(NSString *path)
         {
-            [server sendFileWithURL:[NSURL fileURLWithPath:path] key:imageUrl];
+            [self _sendFileWithURL:[NSURL fileURLWithPath:path] key:imageUrl server:server];
             return [SSignal single:imageUrl];
         }] startOn:[SQueue concurrentDefaultQueue]];
     }
@@ -86,7 +86,7 @@
             NSData *imageData = UIImageJPEGRepresentation(resizedImage, compressionRate);
         
             [imageData writeToURL:url atomically:true];
-            [server sendFileWithURL:url key:key];
+            [self _sendFileWithURL:url key:key server:server];
 
             return [SSignal single:key];
         }] startOn:[SQueue concurrentDefaultQueue]];
@@ -101,13 +101,18 @@
             NSString *key = [NSString stringWithFormat:@"sticker-%lld-%dx%d", mediaSubscription.documentId, (int)mediaSubscription.size.width, (int)mediaSubscription.size.height];
             NSURL *url = [NSURL fileURLWithPath:key relativeToURL:server.temporaryFilesURL];
             [imageData writeToURL:url atomically:true];
-            [server sendFileWithURL:url key:key];
+            [self _sendFileWithURL:url key:key server:server];
             
             return [SSignal single:key];
         }] startOn:[SQueue concurrentDefaultQueue]];
     }
     
     return [SSignal fail:nil];
+}
+
++ (void)_sendFileWithURL:(NSURL *)url key:(NSString *)key server:(TGBridgeServer *)server
+{
+    [server sendFileWithURL:url metadata:@{ TGBridgeIncomingFileTypeKey: TGBridgeIncomingFileTypeImage, TGBridgeIncomingFileIdentifierKey: key }];
 }
 
 + (NSArray *)handledSubscriptions

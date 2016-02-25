@@ -80,6 +80,7 @@ static ASQueue *taskManagementQueue()
     
     NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"video-thumbnail://?".length]];
     bool isFlat = [args[@"flat"] boolValue];
+    int cornerRadius = [args[@"cornerRadius"] intValue];
     
     [taskManagementQueue() dispatchOnQueue:^
     {
@@ -94,7 +95,7 @@ static ASQueue *taskManagementQueue()
                 return;
             
             if (completion != nil)
-                completion(result != nil ? result : [TGVideoThumbnailDataSource resultForUnavailableImage:isFlat]);
+                completion(result != nil ? result : [TGVideoThumbnailDataSource resultForUnavailableImage:isFlat cornerRadius:cornerRadius]);
         }];
         
         if ([TGVideoThumbnailDataSource _isDataLocallyAvailableForUri:uri])
@@ -141,14 +142,14 @@ static ASQueue *taskManagementQueue()
                     else
                     {
                         if (completion != nil)
-                            completion([TGVideoThumbnailDataSource resultForUnavailableImage:isFlat]);
+                            completion([TGVideoThumbnailDataSource resultForUnavailableImage:isFlat cornerRadius:cornerRadius]);
                     }
                 } workerTask:workerTask];
             }
             else
             {
                 if (completion != nil)
-                    completion([TGVideoThumbnailDataSource resultForUnavailableImage:isFlat]);
+                    completion([TGVideoThumbnailDataSource resultForUnavailableImage:isFlat cornerRadius:cornerRadius]);
             }
         }
     }];
@@ -208,7 +209,14 @@ static ASQueue *taskManagementQueue()
     
     if ([args[@"legacy-thumbnail-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
     {
-        NSString *legacyThumbnailImagePath = [[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]];
+        NSString *legacyThumbnailImagePath = nil;
+        NSString *legacyThumbnailUrl = args[@"legacy-thumbnail-cache-url"];
+        
+        if ([legacyThumbnailUrl hasPrefix:@"file://"])
+            legacyThumbnailImagePath = [legacyThumbnailUrl substringFromIndex:@"file://".length];
+        else
+            legacyThumbnailImagePath = [[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]];
+        
         if ([[NSFileManager defaultManager] fileExistsAtPath:legacyThumbnailImagePath isDirectory:NULL])
             return true;
     }
@@ -228,18 +236,39 @@ static ASQueue *taskManagementQueue()
     }];
 }
 
-+ (TGDataResource *)resultForUnavailableImage:(bool)isFlat
++ (TGDataResource *)resultForUnavailableImage:(bool)isFlat cornerRadius:(int)cornerRadius
 {
     static TGDataResource *normalData = nil;
-    static TGDataResource *flatData = nil;
+    static NSMutableDictionary *flatDatas = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        normalData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor blackColor], true) decoded:true];
-        flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor blackColor], false) decoded:true];
+        normalData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true) decoded:true];
+        flatDatas = [[NSMutableDictionary alloc] init];
     });
     
-    return isFlat ? flatData : normalData;
+    if (isFlat)
+    {
+        TGDataResource *flatData = flatDatas[@(cornerRadius)];
+        if (flatData == nil)
+        {
+            if (cornerRadius == 0)
+            {
+                flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], false) decoded:true];
+            }
+            else
+            {
+                flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], false, cornerRadius) decoded:true];
+            }
+            
+            flatDatas[@(cornerRadius)] = flatData;
+        }
+        return flatData;
+    }
+    else
+    {
+        return normalData;
+    }
 }
 
 - (id)loadAttributeSyncForUri:(NSString *)uri attribute:(NSString *)attribute
@@ -248,8 +277,9 @@ static ASQueue *taskManagementQueue()
     {
         NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"video-thumbnail://?".length]];
         bool isFlat = [args[@"flat"] boolValue];
+        int cornerRadius = [args[@"cornerRadius"] intValue];
         
-        UIImage *reducedImage = [[TGMediaStoreContext instance] mediaReducedImage:uri attributes:nil];
+        UIImage *reducedImage = [[TGMediaStoreContext instance] mediaReducedImage:uri attributes:NULL];
         
         if (reducedImage != nil)
             return reducedImage;
@@ -257,20 +287,41 @@ static ASQueue *taskManagementQueue()
         NSNumber *averageColor = [[TGMediaStoreContext instance] mediaImageAverageColor:uri];
         if (averageColor != nil)
         {
-            UIImage *image = TGAverageColorAttachmentImage(UIColorRGB([averageColor intValue]), !isFlat);
+            UIImage *image = nil;
+            if (isFlat && cornerRadius > 0)
+                image = TGAverageColorAttachmentWithCornerRadiusImage(UIColorRGB([averageColor intValue]), !isFlat, cornerRadius);
+            else
+                image = TGAverageColorAttachmentImage(UIColorRGB([averageColor intValue]), !isFlat);
             return image;
         }
         
         static UIImage *normalPlaceholder = nil;
-        static UIImage *flatPlaceholder = nil;
+        static NSMutableDictionary *flatPlaceholders = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
             normalPlaceholder = TGAverageColorAttachmentImage([UIColor whiteColor], true);
-            flatPlaceholder = TGAverageColorAttachmentImage([UIColor whiteColor], false);
+            flatPlaceholders = [[NSMutableDictionary alloc] init];
         });
         
-        return isFlat ? flatPlaceholder : normalPlaceholder;
+        if (isFlat)
+        {
+            UIImage *flatPlaceholder = flatPlaceholders[@(cornerRadius)];
+            if (flatPlaceholder == nil)
+            {
+                if (cornerRadius == 0)
+                    flatPlaceholder = TGAverageColorAttachmentImage([UIColor whiteColor], false);
+                else
+                    flatPlaceholder = TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], false, cornerRadius);
+                
+                flatPlaceholders[@(cornerRadius)] = flatPlaceholder;
+            }
+            return flatPlaceholder;
+        }
+        else
+        {
+            return normalPlaceholder;
+        }
     }
     
     return nil;
@@ -314,6 +365,7 @@ static ASQueue *taskManagementQueue()
     });
     
     NSString *videoDirectoryName = nil;
+    bool isLocal = false;
     if (args[@"id"] != nil)
     {
         videoDirectoryName = [[NSString alloc] initWithFormat:@"video-remote-%" PRIx64 "", (int64_t)[args[@"id"] longLongValue]];
@@ -321,6 +373,7 @@ static ASQueue *taskManagementQueue()
     else
     {
         videoDirectoryName = [[NSString alloc] initWithFormat:@"video-local-%" PRIx64 "", (int64_t)[args[@"local-id"] longLongValue]];
+        isLocal = true;
     }
     NSString *videoDirectory = [filesDirectory stringByAppendingPathComponent:videoDirectoryName];
     
@@ -370,7 +423,14 @@ static ASQueue *taskManagementQueue()
             {
                 if ([args[@"legacy-thumbnail-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
                 {
-                    NSString *legacyThumbnailImagePath = [[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]];
+                    NSString *legacyThumbnailImagePath = nil;
+                    NSString *legacyThumbnailUrl = args[@"legacy-thumbnail-cache-url"];
+                    
+                    if ([legacyThumbnailUrl hasPrefix:@"file://"])
+                        legacyThumbnailImagePath = [legacyThumbnailUrl substringFromIndex:@"file://".length];
+                    else
+                        legacyThumbnailImagePath = [[TGRemoteImageView sharedCache] pathForCachedData:args[@"legacy-thumbnail-cache-url"]];
+                    
                     image = [[UIImage alloc] initWithContentsOfFile:legacyThumbnailImagePath];
                     
                     if (image != nil)
@@ -380,7 +440,8 @@ static ASQueue *taskManagementQueue()
                 }
             }
             
-            lowQualityThumbnail = true;
+            if (!isLocal)
+                lowQualityThumbnail = true;
         }
         
         if (image != nil)
@@ -415,6 +476,7 @@ static ASQueue *taskManagementQueue()
     }
     
     bool isFlat = [args[@"flat"] boolValue];
+    int cornerRadius = [args[@"cornerRadius"] intValue];
     
     if (thumbnailSourceImage != nil)
     {
@@ -423,15 +485,26 @@ static ASQueue *taskManagementQueue()
         NSNumber *averageColor = [[TGMediaStoreContext instance] mediaImageAverageColor:uri];
         bool needsAverageColor = averageColor == nil;
         uint32_t averageColorValue = [averageColor intValue];
+        uint32_t *averageColorPtr = needsAverageColor ? &averageColorValue : NULL;
         
         if ([args[@"secret"] boolValue])
-            thumbnailImage = TGSecretBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL);
+            thumbnailImage = TGSecretBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, ![args[@"flat"] boolValue]);
         else
         {
             if (lowQualityThumbnail)
-                thumbnailImage = TGBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, !isFlat);
+            {
+                if (isFlat && cornerRadius > 0)
+                    thumbnailImage = TGBlurredAttachmentWithCornerRadiusImage(thumbnailSourceImage, size, averageColorPtr, !isFlat, cornerRadius);
+                else
+                    thumbnailImage = TGBlurredAttachmentImage(thumbnailSourceImage, size, averageColorPtr, !isFlat);
+            }
             else
-                thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, !isFlat);
+            {
+                if (isFlat && cornerRadius > 0)
+                    thumbnailImage  =TGLoadedAttachmentWithCornerRadiusImage(thumbnailSourceImage, size, averageColorPtr, !isFlat, cornerRadius);
+                else
+                    thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, averageColorPtr, !isFlat);
+            }
         }
         
         if (thumbnailImage != nil)
@@ -450,7 +523,11 @@ static ASQueue *taskManagementQueue()
                 
                 if (!alreadyCached || (cachedLowQualityThumbnail && !lowQualityThumbnail))
                 {
-                    UIImage *cachedImage = TGReducedAttachmentImage(thumbnailImage, size, !isFlat);
+                    UIImage *cachedImage = nil;
+                    if (isFlat && cornerRadius > 0)
+                        cachedImage = TGReducedAttachmentWithCornerRadiusImage(thumbnailImage, size, !isFlat, cornerRadius);
+                    else
+                        cachedImage = TGReducedAttachmentImage(thumbnailImage, size, !isFlat);
                     [cachedImage setAttachmentsFromDictionary:imageAttachments];
                     
                     if (cachedImage != nil)

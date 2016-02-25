@@ -11,5 +11,6 @@
 @interface TGDisclosureActionCollectionItemView : TGCollectionItemView
 
 - (void)setTitle:(NSString *)title;
+- (void)setIcon:(UIImage *)icon;
 
 @end

@@ -1,5 +1,6 @@
 #import "TGNeoTextMessageViewModel.h"
 #import "TGNeoLabelViewModel.h"
+#import "TGMessageViewModel.h"
 
 #import "TGBridgeMessage.h"
 
@@ -11,17 +12,31 @@
 
 @implementation TGNeoTextMessageViewModel
 
-- (instancetype)initWithMessage:(TGBridgeMessage *)message users:(NSDictionary *)users context:(TGBridgeContext *)context
+- (instancetype)initWithMessage:(TGBridgeMessage *)message type:(TGNeoMessageType)type users:(NSDictionary *)users context:(TGBridgeContext *)context
 {
-    self = [super initWithMessage:message users:users context:context];
+    self = [super initWithMessage:message type:type users:users context:context];
     if (self != nil)
     {
         NSString *text = [message.text stringByReplacingOccurrencesOfString:@"/" withString:@"/\u2060"];
-        _textModel = [[TGNeoLabelViewModel alloc] initWithText:text font:[UIFont systemFontOfSize:16] color:[self normalColorForMessage:message] attributes:nil];
+        CGFloat fontSize = [TGNeoBubbleMessageViewModel bodyTextFontSize];
+        UIColor *textColor = [self normalColorForMessage:message];
+                
+        if (message.textCheckingResults.count > 0)
+        {
+            _textModel = [[TGNeoLabelViewModel alloc] initWithAttributedText:[TGMessageViewModel attributedTextForMessage:message fontSize:fontSize textColor:textColor]];
+        }
+        else
+        {
+            _textModel = [[TGNeoLabelViewModel alloc] initWithText:text font:[UIFont systemFontOfSize:fontSize] color:textColor attributes:nil];
+        }
+        
+        _textModel.multiline = true;
+
         [self addSubmodel:_textModel];
     }
     return self;
 }
+
 - (CGSize)layoutWithContainerSize:(CGSize)containerSize
 {
     CGSize contentContainerSize = [self contentContainerSizeWithContainerSize:containerSize];

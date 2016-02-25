@@ -32,7 +32,7 @@ NSString *const TGConversationFooterIdentifier = @"TGConversationFooter";
         {
             self.attachmentsGroup.hidden = false;
             self.bottomButton.hidden = false;
-            self.bottomButton.title = TGLocalized(@"Conversation.Reply");
+            self.bottomButton.title = TGLocalized(@"Watch.Conversation.Reply");
             
             NSInteger buttonCount = 2;
             CGFloat buttonWidth = 0.5f;
@@ -65,13 +65,13 @@ NSString *const TGConversationFooterIdentifier = @"TGConversationFooter";
         {
             self.attachmentsGroup.hidden = true;
             self.bottomButton.hidden = false;
-            self.bottomButton.title = TGLocalized(@"Bot.Restart");
+            self.bottomButton.title = TGLocalized(@"Watch.Bot.Restart");
         }
         else if (isUnblock)
         {
             self.attachmentsGroup.hidden = true;
             self.bottomButton.hidden = false;
-            self.bottomButton.title = TGLocalized(@"Conversation.Unblock");
+            self.bottomButton.title = TGLocalized(@"Watch.Conversation.Unblock");
         }
         else if (isInactive)
         {

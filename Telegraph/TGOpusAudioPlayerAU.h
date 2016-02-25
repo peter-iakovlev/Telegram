@@ -12,6 +12,6 @@
 
 + (bool)canPlayFile:(NSString *)path;
 
-- (instancetype)initWithPath:(NSString *)path;
+- (instancetype)initWithPath:(NSString *)path music:(bool)music controlAudioSession:(bool)controlAudioSession;
 
 @end

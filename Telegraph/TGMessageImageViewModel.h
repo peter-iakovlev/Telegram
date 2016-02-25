@@ -29,6 +29,8 @@ typedef enum {
 @property (nonatomic) CGFloat progress;
 @property (nonatomic) bool timestampHidden;
 @property (nonatomic) bool isBroadcast;
+@property (nonatomic) UIEdgeInsets inlineVideoInsets;
+@property (nonatomic) CGSize inlineVideoSize;
 
 @property (nonatomic, strong) NSArray *detailStrings;
 @property (nonatomic) UIEdgeInsets detailStringsInsets;
@@ -42,7 +44,7 @@ typedef enum {
 - (void)setProgress:(CGFloat)progress animated:(bool)animated;
 - (void)setSecretProgress:(CGFloat)progress completeDuration:(NSTimeInterval)completeDuration animated:(bool)animated;
 - (void)setTimestampColor:(UIColor *)color;
-- (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated;
+- (void)setTimestampString:(NSString *)timestampString signatureString:(NSString *)signatureString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated;
 - (void)setTimestampPosition:(TGMessageImageViewTimestampPosition)timestampPosition;
 - (void)setDisplayTimestampProgress:(bool)displayTimestampProgress;
 - (void)setAdditionalDataString:(NSString *)additionalDataString;

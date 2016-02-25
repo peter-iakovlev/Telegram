@@ -140,6 +140,14 @@
     return false;
 }
 
+- (bool)allowReplies {
+    return [self layer] >= 45;
+}
+
+- (bool)allowMessageEntities {
+    return [self layer] >= 45;
+}
+
 - (bool)allowContactSharing
 {
     return false;
@@ -147,12 +155,12 @@
 
 - (bool)allowVenueSharing
 {
-    return false;
+    return [self layer] >= 45;
 }
 
 - (bool)allowCaptionedMedia
 {
-    return false;
+    return [self layer] >= 45;
 }
 
 - (bool)encryptUploads
@@ -518,25 +526,38 @@
 
 - (TGMessageModernConversationItem *)_updateMediaStatusData:(TGMessageModernConversationItem *)item
 {
-    if (item->_message.messageLifetime > 0 && item->_message.messageLifetime <= 60 && item->_message.mediaAttachments.count != 0)
+    if (item->_message.mediaAttachments.count != 0)
     {
+        bool canBeRead = false;
         for (TGMediaAttachment *attachment in item->_message.mediaAttachments)
         {
             switch (attachment.type)
             {
                 case TGImageMediaAttachmentType:
                 case TGVideoMediaAttachmentType:
-                {
-                    int flags = [TGDatabaseInstance() secretMessageFlags:item->_message.mid];
-                    NSTimeInterval viewDate = [TGDatabaseInstance() messageCountdownLocalTime:item->_message.mid enqueueIfNotQueued:false initiatedCountdown:NULL];
-                    
-                    if (flags != 0 || ABS(viewDate - DBL_EPSILON) > 0.0)
-                        [self _setMessageFlagsAndViewDate:item->_message.mid flags:flags viewDate:viewDate];
+                    canBeRead = item->_message.messageLifetime > 0 && item->_message.messageLifetime <= 60;
                     break;
-                }
+                case TGAudioMediaAttachmentType:
+                    canBeRead = true;
+                    break;
+                case TGDocumentMediaAttachmentType:
+                    for (id attribute in ((TGDocumentMediaAttachment *)attachment).attributes) {
+                        if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                            canBeRead = ((TGDocumentAttributeAudio *)attribute).isVoice;
+                            break;
+                        }
+                    }
+                    break;
                 default:
                     break;
             }
+        }
+        if (canBeRead) {
+            int flags = [TGDatabaseInstance() secretMessageFlags:item->_message.mid];
+            NSTimeInterval viewDate = [TGDatabaseInstance() messageCountdownLocalTime:item->_message.mid enqueueIfNotQueued:false initiatedCountdown:NULL];
+            
+            if (flags != 0 || ABS(viewDate - DBL_EPSILON) > 0.0)
+                [self _setMessageFlagsAndViewDate:item->_message.mid flags:flags viewDate:viewDate];
         }
     }
     
@@ -647,9 +668,8 @@
         [super controllerDidChangeInputText:inputText];
 }
 
-- (bool)allowReplies
-{
-    return false;
+- (bool)allowExternalContent {
+    return true;
 }
 
 @end

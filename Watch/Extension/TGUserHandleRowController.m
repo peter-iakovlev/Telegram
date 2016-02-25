@@ -7,7 +7,7 @@ NSString *const TGUserHandleRowIdentifier = @"TGUserHandleRow";
 
 - (void)updateWithUserHandle:(TGUserHandle *)userHandle
 {
-    bool useRegularFont = userHandle.handleType == TGUserHandleTypeDescription;
+    bool useRegularFont = (userHandle.handleType == TGUserHandleTypeDescription);
     
     NSMutableDictionary *attributes = [[NSMutableDictionary alloc] init];
     attributes[NSFontAttributeName] = useRegularFont ? [UIFont systemFontOfSize:16.0f weight:UIFontWeightRegular] : [UIFont systemFontOfSize:16.0f weight:UIFontWeightMedium];

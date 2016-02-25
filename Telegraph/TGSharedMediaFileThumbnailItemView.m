@@ -95,7 +95,7 @@
         [_imageView setSignal:[self _imageSignal]];
     }
     
-    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:_documentAttachment.fileName attributes:@{}];
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:_documentAttachment.fileName == nil ? @" " : _documentAttachment.fileName attributes:@{}];
     
     [attributedString addAttributes:@{
         NSFontAttributeName: TGSystemFontOfSize(12.0f),

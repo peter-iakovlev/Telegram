@@ -20,6 +20,21 @@
 #define TGChannelDisplayVariantImportant 0
 #define TGChannelDisplayVariantAll 1
 
+typedef enum {
+    TGConversationFlagDisplayExpanded = (1 << 0),
+    TGConversationFlagPostAsChannel = (1 << 1),
+    TGConversationFlagKicked = (1 << 2),
+    TGConversationFlagVerified = (1 << 3),
+    TGConversationFlagHasAdmins = (1 << 4),
+    TGConversationFlagIsAdmin = (1 << 5),
+    TGConversationFlagIsCreator = (1 << 6),
+    TGConversationFlagIsChannelGroup = (1 << 7),
+    TGConversationFlagIsDeactivated = (1 << 8),
+    TGConversationFlagHasExplicitContent = (1 << 9),
+    TGConversationFlagEverybodyCanAddMembers = (1 << 10),
+    TGConversationFlagSignaturesEnabled = (1 << 11)
+} TGConversationFlags;
+
 typedef struct {
     uint8_t key[9];
 } TGConversationSortKey;
@@ -107,6 +122,7 @@ typedef enum {
 @property (nonatomic, strong) NSArray *chatParticipantUids;
 @property (nonatomic, strong) NSDictionary *chatInvitedBy;
 @property (nonatomic, strong) NSDictionary *chatInvitedDates;
+@property (nonatomic, strong) NSSet *chatAdminUids;
 
 @property (nonatomic, strong) NSArray *chatParticipantSecretChatPeerIds;
 @property (nonatomic, strong) NSArray *chatParticipantChatPeerIds;
@@ -193,6 +209,8 @@ typedef enum {
 @property (nonatomic) bool chatIsAdmin;
 @property (nonatomic) bool channelIsReadOnly;
 @property (nonatomic) bool isVerified;
+@property (nonatomic) bool hasExplicitContent;
+@property (nonatomic, strong) NSString *restrictionReason;
 
 @property (nonatomic, strong) TGConversationParticipantsData *chatParticipants;
 
@@ -205,6 +223,17 @@ typedef enum {
 
 @property (nonatomic) bool displayExpanded;
 @property (nonatomic) bool postAsChannel;
+@property (nonatomic) bool hasAdmins;
+@property (nonatomic) bool isAdmin;
+@property (nonatomic) bool isCreator;
+@property (nonatomic) bool isChannelGroup;
+@property (nonatomic) bool everybodyCanAddMembers;
+@property (nonatomic) bool signaturesEnabled;
+
+@property (nonatomic) bool isDeactivated;
+@property (nonatomic) bool isMigrated;
+@property (nonatomic) int32_t migratedToChannelId;
+@property (nonatomic) int64_t migratedToChannelAccessHash;
 
 @property (nonatomic) int64_t flags;
 

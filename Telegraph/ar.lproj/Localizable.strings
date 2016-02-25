@@ -6,7 +6,8 @@
 "MESSAGE_CONTACT" = "%1$@ قام بإرسال جهة اتصال";
 "MESSAGE_GEO" = "%1$@ شارك موقعه معك";
 "MESSAGE_DOC" = "%1$@ قام بإرسال ملف لك";
-"MESSAGE_AUDIO" = "%1$@ قام بإرسال مقطع صوتي";
+"MESSAGE_AUDIO" = "%1$@ قام بإرسال رسالة صوتية لك";
+"MESSAGE_GIF" = "%1$@ أرسل لك صورة متحركة";
 "ENCRYPTED_MESSAGE" = "لديك رسالة جديدة%1$@";
 "LOCKED_MESSAGE" = "لديك رسالة جديدة%1$@";
 "ENCRYPTION_REQUEST" = "طلب تشفير جديد%1$@";
@@ -22,7 +23,8 @@
 "CHAT_MESSAGE_CONTACT" = "%1$@ قام بإرسال جهة إتصال %2$@";
 "CHAT_MESSAGE_GEO" = "%1$@ شارك موقعه معك %2$@";
 "CHAT_MESSAGE_DOC" = "%1$@ قام بإرسال ملف للمجموعة %2$@";
-"CHAT_MESSAGE_AUDIO" = "%1$@ قام بإرسال مقطع صوتي للمجموعة %2$@";
+"CHAT_MESSAGE_AUDIO" = "%1$@ قام بإرسال رسالة صوتية للمجموعة %2$@";
+"CHAT_MESSAGE_GIF" = "%1$@ قام بإرسال صورة متحركة للمجموعة %2$@";
 "CHAT_CREATED" = "%1$@ قام بدعوتك للمجموعة %2$@";
 "CHAT_TITLE_EDITED" = "%1$@ قام بتعديل عنوان المجموعة %2$@";
 "CHAT_PHOTO_EDITED" = "%1$@ قام تغيير صورة المجموعة %2$@";
@@ -55,6 +57,7 @@
 "CHANNEL_MESSAGE_CONTACT" = "%1$@ أرسل جهة اتصال";
 "CHANNEL_MESSAGE_GEO" = "%1$@ أرسل خريطة";
 "CHANNEL_MESSAGE_FWDS" = "%1$@ أرسل %2$@ رسائل معاد إرسالها";
+"CHANNEL_MESSAGE_GIF" = "%1$@ أرسل صورة متحركة";
 
 // Common
 "Common.OK" = "موافق";
@@ -180,7 +183,7 @@
 // Login
 "Login.PhoneAndCountryHelp" = "يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول.";
 "Login.CodeHelp" = "تم إرسال رسالة قصيرة تحتوي على رمز التفعيل الخاص بك للرقم %@";
-"Login.CodeSentInternal" = "يرجى إدخال الرمز الذي استقبلته للتو على تطبيق **تيليجرام** السابق الخاص بك";
+"Login.CodeSentInternal" = "لقد قمنا بإرسال رمز الدخول إلى تطبيق **تيليجرام** على جهازك الآخر";
 "Login.HaveNotReceivedCodeInternal" = "لم تستقبل رمز التفعيل بعد؟";
 "Login.CodeSentSms" = "تم إرسال رسالة قصيرة تحتوي على رمز التفعيل";
 "Login.Code" = "الرمز";
@@ -373,6 +376,7 @@
 "Notification.Kicked" = "%@ أزال %@";
 "Notification.CreatedChat" = "%@ قام بإنشاء مجموعة";
 "Notification.CreatedChannel" = "تم إنشاء القناة";
+"Notification.CreatedGroup" = "تم إنشاء مجموعة";
 "Notification.CreatedBroadcastList" = "لقد قمت بإنشاء قائمة رسائل جماعية";
 "Notification.CreatedChatWithTitle" = "%@ قام بإنشاء المجموعة \"%@\"";
 "Notification.Joined" = "%@ انضم لتيليجرام";
@@ -398,9 +402,10 @@
 "Message.Contact" = "جهة اتصال";
 "Message.File" = "ملف";
 "Message.Sticker" = "ملصق";
-"Message.Audio" = "مقطع صوتي";
+"Message.Audio" = "رسالة صوتية";
 "Message.ForwardedMessage" = "رسالة محولة\nمن %@";
 "Message.SharedContact" = "جهات الاتصال المرسلة";
+"Message.Animation" = "صورة متحركة";
 
 // Conversation Profile
 "ConversationProfile.ErrorCreatingConversation" = "حدث خطأ";
@@ -521,7 +526,7 @@
 "GroupInfo.ParticipantCount_2" = "عضوان";
 "GroupInfo.ParticipantCount_3_10" = "%@ أعضاء";
 "GroupInfo.ParticipantCount_any" = "%@ عضو";
-"GroupInfo.AddParticipant" = "إضافة عضو...";
+"GroupInfo.AddParticipant" = "إضافة عضو";
 "GroupInfo.AddParticipantTitle" = "جهات الاتصال";
 "GroupInfo.AddParticipantConfirmation" = "إضافة %@ للمجموعة؟";
 "GroupInfo.KickedStatus" = "لقد تمت إزالتك من المجموعة";
@@ -529,7 +534,7 @@
 
 // Encryption Key
 "EncryptionKey.Title" = "مفتاح التشفير";
-"EncryptionKey.Description" = "هذه الصورة هي تصور لمفتاح التشفير لهذه المحادثة السرية مع %1$@.\n\nإذا كانت مطابقة للصورة التي في جهاز  %2$@, , فمحادثتكم آمنة ٢٠٠٪.\n\nللمزيد يرجى الذهاب إلى telegram.org";
+"EncryptionKey.Description" = "هذه الصورة والنص تم اشتقاقهم من مفتاح التشفير لهذه المحادثة السرية مع %1$@.\n\nإذا كانت مطابقة لما يظهر على جهاز %2$@ ، التشفير من البداية للنهاية مضمون.\n\nللإستزادة، إطلع على telegram.org ";
 
 // Conversation media
 "ConversationMedia.Title" = "الوسائط";
@@ -803,7 +808,6 @@
 "PrivacySettings.DeleteAccountNever" = "للأبد";
 
 "PrivacyLastSeenSettings.Title" = "آخر ظهور";
-"PrivacyLastSeenSettings.LastSeenHelp" = "قم بتغيير من يستطيع رؤية آخر ظهور خاص بك.";
 "PrivacyLastSeenSettings.CustomHelp" = "هام: لن تستطيع رؤية آخر ظهور للأشخاص اللذين اخترت ألا يروا آخر ظهور لك. سيتم عرض آخر ظهور تقريبي كبديل (قريبًا، خلال أسبوع، خلال شهر).";
 "PrivacyLastSeenSettings.AlwaysShareWith" = "دائمًا شارك معه";
 "PrivacyLastSeenSettings.NeverShareWith" = "لا تشارك أبدًا مع";
@@ -918,6 +922,7 @@
 "SharedMedia.TitlePhoto" = "الصور المشاركة";
 "SharedMedia.TitleVideo" = "المقاطع المرئية المشاركة";
 "SharedMedia.TitleFile" = "الملفات المشاركة";
+"SharedMedia.TitleAudio" = "الموسيقى المشتركة";
 
 "SharedMedia.All" = "الكل";
 "SharedMedia.Incoming" = "الوارد";
@@ -946,6 +951,7 @@
 "FileSize.B" = "%@ ب";
 "FileSize.KB" = "%@ ك.ب";
 "FileSize.MB" = "%@ م.ب";
+"FileSize.GB" = "%@ جيجابايت";
 
 "DownloadingStatus" = "جاري تنزيل %@ من %@";
 
@@ -1022,7 +1028,7 @@
 "DialogList.SearchSectionGlobal" = "بحث شامل";
 "DialogList.SearchSectionMessages" = "الرسائل";
 
-"Username.LinkHint" = "هذا الرابط يقوم بفتح محادثة معك في تيليجرام:[\nhttp://telegram.me/%@]";
+"Username.LinkHint" = "هذا الرابط سيفتح محادثة معك في تيليجرام\n:[https://telegram.me/%@]";
 "Username.LinkCopied" = "تم نسخ الرابط إلى الحافظة";
 
 "SharedMedia.ItemsSelected_1" = "١ محدد";
@@ -1143,6 +1149,11 @@
 "ForwardedLocations_2" = "موقعان معاد توجيههما";
 "ForwardedLocations_3_10" = "%@ مواقع معاد توجيهها";
 "ForwardedLocations_any" = "%@ موقع معاد توجيهها";
+
+"ForwardedGifs_1" = "صورة متحركة معاد توجيهها";
+"ForwardedGifs_2" = "صورتان متحركة معاد توجيههما";
+"ForwardedGifs_3_10" = "%@ صور متحركة معاد توجيهها";
+"ForwardedGifs_any" = "%@ صورة متحركة معاد توجيهها";
 
 "ForwardedContacts_1" = "جهة اتصال معاد توجيهها";
 "ForwardedContacts_2" = "جهتا اتصال معاد توجيههما";
@@ -1304,8 +1315,6 @@
 "GroupInfo.InvitationLinkDoesNotExist" = "المعذرة، هذه المجموعة غير موجودة.";
 "GroupInfo.InvitationLinkGroupFull" = "المعذرة، هذه المجموعة ممتلئة.";
 
-"Core.CurrentUpdateText" = "تم تحديث تيليجرام. الجديد في نسخة %@:\n\n- دعم كامل لللآيفون 6s و 6s+\n- دعم للخصائص الجديدة في الآيباد كتقسيم الشاشة\n- دعم كامل لنظام تشغيل الساعة الجديد (تحسين في السرعة، الرد السريع، الملاحظات الصوتية، البوت، والقنوات).\n\nتم حل الكثير من المشاكل، بما فيها فتح الصور وإعادة الإرسال والرد على الآيفون 6s الجديد.";
-
 "Core.ServiceUserStatus" = "إشعارات الخدمة";
 
 "Notification.JoinedGroupByLink" = "%@ قام بالدخول للمجموعة باستخدام رابط الدعوة";
@@ -1313,7 +1322,7 @@
 "ChatSettings.Other" = "أخرى";
 "ChatSettings.Stickers" = "ملصقات";
 
-"StickerPacksSettings.Title" = "إعدادات الملصقات";
+"StickerPacksSettings.Title" = "ملصقات";
 "StickerPacksSettings.ShowStickersButton" = "أظهر شريط الملصقات";
 "StickerPacksSettings.ShowStickersButtonHelp" = "أيقونة الملصقات ستظهر في خانة الكتابة";
 
@@ -1409,7 +1418,7 @@
 
 "Channel.Username.Title" = "الرابط";
 "Channel.Username.Help" = "يمكنك اختيار اسم القناة في **تيليجرام**. إذا قمت بذلك، سيستطيع الناس إيجاد قناتك باستخدام هذا الاسم.\n\nتستطيع استخدام حروف اللغة الإنجليزية وأرقامها وكذلك الخط. لا بد من استخدام ٥ حروف على الأقل.";
-"Channel.Username.LinkHint" = "هذا الرابط سيفتح قناتك في تيليجرام:[\nhttp://telegram.me/%@]";
+"Channel.Username.LinkHint" = "هذا الرابط سيقوم بفتح قناتك في تيليجرام:\n[https://telegram.me/%@]";
 "Channel.Username.InvalidTooShort" = "اسم القناة يجب أن يتكوّن من ٥ حروف على الأقل.";
 "Channel.Username.InvalidStartsWithNumber" = "أسماء القنوات لا يمكن أن تبدأ برقم.";
 "Channel.Username.InvalidCharacters" = "المعذرة، الاسم غير مقبول.";
@@ -1424,10 +1433,12 @@
 
 "Channel.About.Placeholder" = "الوصف";
 "Channel.About.Help" = "يمكنك كتابة وصف اختياري لقناتك.";
+"Group.About.Help" = "يمكنك كتابة وصف اختياري لمجموعتك.";
 "Channel.About.Error" = "حدث خطأ.";
 "Channel.ShareNoLink" = "فضلًا اختر رابط لقناتك ليتمكن الناس من البحث عنها والدخول إليها.";
 
 "Channel.Status" = "قناة";
+"Group.Status" = "مجموعة";
 
 "Compose.NewChannel.Members" = "أعضاء";
 "Compose.NewChannel.AddMember" = "إضافة عضو...";
@@ -1457,7 +1468,8 @@
 "Channel.NotificationLoading" = "جاري التحميل ...";
 
 "Conversation.InputTextDisabledPlaceholder" = "التعليقات معطلة";
-"Compose.ChannelTokenListPlaceholder" = "إضافة جهات اتصال لقناتك";
+"Compose.ChannelTokenListPlaceholder" = "البحث عن جهات الاتصال والمعرفات";
+"Compose.GroupTokenListPlaceholder" = "البحث عن جهات الاتصال والمعرفات";
 
 "Compose.ChannelMembers" = "الأعضاء";
 
@@ -1481,21 +1493,21 @@
 
 "Channel.Info.Description" = "الوصف";
 
-"Channel.Info.Management" = "الإداريون";
+"Channel.Info.Management" = "المشرفون";
 "Channel.Info.BlackList" = "قائمة المحظورين";
 "Channel.Info.Members" = "الأعضاء";
 
 "Channel.Members.AddMembers" = "إضافة أعضاء";
-"Channel.Members.AddMembersHelp" = "فقط الإداريّون يمكنهم مشاهدة هذه القائمة.";
+"Channel.Members.AddMembersHelp" = "فقط المشرفون يمكنهم مشاهدة هذه القائمة.";
 "Channel.Members.Title" = "الأعضاء";
 "Channel.BlackList.Title" = "قائمة المحظورين";
-"Channel.Management.Title" = "الإداريون";
+"Channel.Management.Title" = "المشرفون";
 "Channel.Management.LabelCreator" = "المنشئ";
 "Channel.Management.LabelModerator" = "المراقب";
-"Channel.Management.LabelEditor" = "إداري";
+"Channel.Management.LabelEditor" = "مشرف";
 
-"Channel.Management.AddModerator" = "إضافة إداري";
-"Channel.Management.AddModeratorHelp" = "يمكنك إضافة إداريّون لمساعدتك في إدارة القناة.";
+"Channel.Management.AddModerator" = "إضافة مشرف";
+"Channel.Management.AddModeratorHelp" = "يمكنك إضافة مشرفون لمساعدتك في إدارة قناتك.";
 
 "Channel.Members.Kick" = "حذف";
 "Channel.Management.Remove" = "حذف";
@@ -1518,6 +1530,9 @@
 
 "Notification.ChannelInviter" = "%@ قام بدعوتك لهذه القناة";
 "Notification.ChannelInviterSelf" = "لقد قمت بالإشتراك في لقناة.";
+
+"Notification.GroupInviter" = "%@ قام بدعوتك لهذه المجموعة";
+"Notification.GroupInviterSelf" = "لقد قمت بالدخول لهذه المجموعة";
 
 "ChannelInfo.DeleteChannel" = "حذف القناة";
 "ChannelInfo.DeleteChannelConfirmation" = "لحظة! حذف هذه القناة سيزيل كافة الأعضاء والرسائل سيتم حذفها. هل أنت متأكد من رغبتك في حذف القناة؟";
@@ -1543,3 +1558,296 @@
 "ChannelIntro.Title" = "ما هي القنوات؟";
 "ChannelIntro.Text" = "القنوات هي أداة جديدة\nللرسائل الجماعية\nلمجموعة كبيرة من المستقبلين.";
 "ChannelIntro.CreateChannel" = "إنشاء قناة";
+
+"ShareMenu.Send" = "إرسال";
+
+"Conversation.ReportSpam" = "الإبلاغ عن إزعاج";
+"Conversation.ReportSpamConfirmation" = "هل أنت متأكد من رغبتك في الإبلاغ عن هذا المستخدم كغير مرغوب به؟";
+"SharedMedia.EmptyMusicText" = "كافة الموسيقى المرسلة في هذه المحادثة ستظهر هنا";
+
+"ChatSettings.AutoPlayAnimations" = "تشغيل تلقائي للصور المتحركة";
+
+"GroupInfo.ChatAdmins" = "إضافة مشرف";
+
+"ChatAdmins.Title" = "مشرفو المحادثة";
+"ChatAdmins.AllMembersAreAdmins" = "جميع الأعضاء مشرفين";
+"ChatAdmins.AllMembersAreAdminsOnHelp" = "جميع أعضاء القناة يستطيعون إضافة وحذف الأعضاء، والتعديل على اسم وصورة المجموعة.";
+"ChatAdmins.AllMembersAreAdminsOffHelp" = "فقط مشرفو القناة يستطيعون حذف الأعضاء، والتعديل على اسم وصورة المجموعة.";
+"ChatAdmins.AdminLabel" = "مشرف";
+
+"Group.MessagePhotoUpdated" = "تم تحديث صورة المجموعة";
+"Group.MessagePhotoRemoved" = "تم حذف صورة المجموعة";
+"Group.MessageTitleUpdated" = "تم تغيير صورة المجموعة إلى \"%@\"";
+
+"Group.UpgradeNoticeHeader" = "تم الوصول للحد الأعلى للأعضاء";
+
+"Group.UpgradeNoticeText1" = "لتستطيع تخطي الحد الأعلى للأعضاء وتحصل على خصائص إضافية، قم بالترقية لمجموعة خارقة.";
+"Group.UpgradeNoticeText2" = "• الحد الأعلى للأعضاء يصبح {supergroup_member_limit} عضو\n• الأعضاء الجدد يرون تاريخ محادثات المجموعة بشكل كامل\n• المشرفون يمكنهم حذف رسائل كافة الأعضاء\n• الإشعارات على وضع الصامت بشكل تلقائي";
+"GroupInfo.UpgradeButton" = "قم بالتحديث لمجموعة خارقة";
+"Group.UpgradeConfirmation" = "فضلًا تذكر أن أعضاء هذه المجموعة يلزمهم تحديث تطبيقات تيليجرام لأحدث النسخ ليتمكنوا من الإستفادة من المجموعات الخارقة.";
+
+"Notification.GroupMigratedToChannel" = "تم ترقية هذه المجموعة لتصبح مجموعة خارقة";
+"Notification.GroupDeactivated" = "تم تعطيل المجموعة";
+"Notification.GroupDeactivated" = "تم تعطيل المجموعة";
+"Notification.ChannelMigratedFrom" = "تم ترقية هذه المجموعة لتصبح مجموعة خارقة";
+
+"Conversation.StatusGroupDeactivated" = "تم تعطيل المجموعة";
+"GroupInfo.DeactivatedStatus" = "تم تعطيل المجموعة";
+
+"Notification.RenamedGroup" = "تم تغيير اسم المجموعة";
+
+"Group.ErrorAddTooMuch" = "المعذرة، المجموعة ممتلئة.";
+"Group.ErrorAddTooMuchBots" = "المعذرة، لقد وصلت الحد للأعلى للبوتات في هذه المجموعة.";
+"Group.ErrorAddTooMuchAdmins" = "المعذرة، لقد وصلت للحد الأعلى من المشرفين لهذا المجموعة.";
+"Group.ErrorAddBlocked" = "المعذرة، لا يمكنك إضافة هذا المستخدم للمجموعات.";
+"Group.ErrorNotMutualContact" = "المعذرة، فقط يمكنك إضافة جهات الاتصال المشتركة للمجموعات في الوقت الحالي.";
+
+"Conversation.SendMessageErrorFlood" = "المعذرة، فقط يمكنك مراسلة جهات الاتصال المشتركة في الوقت الحالي.";
+"Generic.ErrorMoreInfo" = "معلومات أكثر";
+
+"Notification.InvitedMany" = "%@ قام بدعوة %@";
+
+"ChannelMembers.Blacklist.EmptyText" = "أعضاء القائمة السوداء هم أعضاء تم حذفهم من المجموعة ولا يمكنهم العودة لها إلى بدعوة من المشرف. روابط الدعوة لن تمكنهم من العودة للمجموعة.";
+
+"ChannelInfo.DeleteGroup" = "حذف المجموعة";
+"ChannelInfo.DeleteGroupConfirmation" = "لحظة! حذف هذه المجموعة سيزيل كافة الأعضاء والرسائل سيتم حذفها. هل أنت متأكد من رغبتك في حذف المجموعة؟";
+
+"ReportPeer.Report" = "إبلاغ";
+
+"ReportPeer.ReasonSpam" = "مزعج";
+"ReportPeer.ReasonViolence" = "عنف";
+"ReportPeer.ReasonPornography" = "إباحية";
+"ReportPeer.ReasonOther" = "أخرى";
+
+"ReportPeer.AlertSuccess" = "شكرًا لك!\nسيقوم فريق العمل لدينا بمراجعة بلاغك قريبًا.";
+
+"Login.TermsOfServiceLabel" = "بالتسجيل في تيليجرام،\nأنت توافق على [شروط الإستخدام].";
+"Login.TermsOfServiceHeader" = "شروط الإستخدام";
+
+"ReportPeer.ReasonOther.Placeholder" = "الوصف";
+"ReportPeer.ReasonOther.Title" = "إبلاغ";
+"ReportPeer.ReasonOther.Send" = "إرسال";
+
+"Group.Management.AddModeratorHelp" = "يمكنك إضافة مشرفون لمساعدتك في إدارة مجموعتك.";
+
+"Watch.AppName" = "تيليجرام";
+"Watch.Compose.AddContact" = "اختر جهة اتصال";
+"Watch.Compose.CreateMessage" = "أنشئ رسالة";
+"Watch.Compose.CurrentLocation" = "الموقع الحالي";
+"Watch.Compose.Send" = "إرسال";
+"Watch.Contacts.NoResults" = "لا يوجد جهة\nاتصال متطابقة";
+"Watch.ChatList.NoConversationsTitle" = "لا توجد محادثات";
+"Watch.ChatList.NoConversationsText" = "للبدء\nاضغط بقوة، ثم\nاختر رسالة جديدة";
+"Watch.ChatList.Compose" = "رسالة جديدة";
+
+"Watch.Conversation.Reply" = "الرد";
+"Watch.Conversation.Unblock" = "إلغاء الحظر";
+"Watch.Conversation.UserInfo" = "معلومات";
+"Watch.Conversation.GroupInfo" = "معلومات المجموعة";
+"Watch.Bot.Restart" = "إعادة التشغيل";
+
+"Watch.UserInfo.Title" = "معلومات";
+"Watch.UserInfo.Service" = "إشعارات الخدمة";
+
+"Watch.UserInfo.Block" = "حظر";
+"Watch.UserInfo.Unblock" = "إلغاء الحظر";
+"Watch.UserInfo.Mute_1" = "ضعه على الصامت لمدة ساعة واحدة";
+"Watch.UserInfo.Mute_2" = "ضعه على الصامت لمدة ساعتين";
+"Watch.UserInfo.Mute_3_10" = "ضعه على الصامت لمدة %@ ساعات";
+"Watch.UserInfo.Mute_any" = "ضعه على الصامت لمدة %@ ساعات";
+"Watch.UserInfo.Mute" = "كتم الصوت";
+"Watch.UserInfo.Unmute" = "إزالة كتم الصوت";
+
+"Watch.GroupInfo.Title" = "معلومات المجموعة";
+"Watch.ChannelInfo.Title" = "معلومات القناة";
+
+"Watch.Message.ForwardedFrom" = "معاد توجيهها من";
+
+"Watch.Notification.Joined" = "انضم لتيليجرام";
+
+"Watch.MessageView.Title" = "الرسالة";
+"Watch.MessageView.Forward" = "إعادة توجيه";
+"Watch.MessageView.Reply" = "الرد";
+"Watch.MessageView.ViewOnPhone" = "فتح في الجوال";
+
+"Watch.PhotoView.Title" = "صورة";
+
+"Watch.Stickers.Recents" = "الحديثة";
+"Watch.Stickers.RecentPlaceholder" = "الملصقات الأكثر استخدامًا ستظهر هنا";
+"Watch.Stickers.StickerPacks" = "حزم الملصقات";
+
+"Watch.Location.Current" = "الموقع الحالي";
+"Watch.Location.Access" = "قم بالسماح لتيليجرام بتحديد موقعك من جوالك";
+
+"Watch.AuthRequired" = "سجل الدخول على تيليجرام من جوالك لتبدأ";
+"Watch.UnlockRequired" = "قم بإلغاء قفل تيليجرام على جوالك";
+
+"Watch.NoConnection" = "لا يوجد اتصال";
+"Watch.ConnectionDescription" = "لا بد أن تكون ساعتك متصلة ليعمل التطبيق";
+
+"Watch.State.Connecting" = "جاري الاتصال...";
+"Watch.State.Updating" = "جاري التحديث...";
+"Watch.State.WaitingForNetwork" = "لا يوجد شبكة";
+
+"Watch.Time.ShortTodayAt" = "اليوم %@";
+"Watch.Time.ShortYesterdayAt" = "آمس %@";
+"Watch.Time.ShortWeekdayAt" = "%1$@ %2$@";
+"Watch.Time.ShortFullAt" = "%1$@ %2$@";
+
+"Watch.LastSeen.JustNow" = "قبل قليل";
+"Watch.LastSeen.MinutesAgo_1" = "قبل دقيقة";
+"Watch.LastSeen.MinutesAgo_2" = "قبل دقيقتين";
+"Watch.LastSeen.MinutesAgo_3_10" = "قبل %@ دقائق";
+"Watch.LastSeen.MinutesAgo_any" = "قبل %@ دقائق";
+"Watch.LastSeen.HoursAgo_1" = "قبل ساعة";
+"Watch.LastSeen.HoursAgo_2" = "قبل ساعتين";
+"Watch.LastSeen.HoursAgo_3_10" = "قبل %@ ساعات";
+"Watch.LastSeen.HoursAgo_any" = "قبل %@ ساعات";
+"Watch.LastSeen.TodayAt" = "اليوم الساعة %@";
+"Watch.LastSeen.YesterdayAt" = "أمس الساعة %@";
+"Watch.LastSeen.AtWeekday" = "%@";
+"Watch.LastSeen.AtDate" = "%@";
+"Watch.LastSeen.Lately" = "حديثًا";
+"Watch.LastSeen.WithinAWeek" = "خلال أسبوع";
+"Watch.LastSeen.WithinAMonth" = "خلال شهر";
+"Watch.LastSeen.ALongTimeAgo" = "قبل فترة طويلة";
+
+"Watch.Suggestion.OK" = "موافق";
+"Watch.Suggestion.ThankYou" = "شكرًا لك.";
+"Watch.Suggestion.Thanks" = "شكرًا!";
+"Watch.Suggestion.WhatsUp" = "ما الجديد؟";
+"Watch.Suggestion.Yes" = "نعم";
+"Watch.Suggestion.No" = "لا";
+"Watch.Suggestion.Absolutely" = "بالطبع";
+"Watch.Suggestion.Nope" = "لا";
+"Watch.Suggestion.TalkLater" = "نتحدث لاحقًا؟";
+"Watch.Suggestion.CantTalk" = "لا أستطيع التحدث الآن...";
+"Watch.Suggestion.HoldOn" = "انتظر قليلًا...";
+"Watch.Suggestion.CallSoon" = "سأتصل بك قريبًا.";
+"Watch.Suggestion.TextInABit" = "سأراسلك بعد قليل.";
+"Watch.Suggestion.BRB" = "برب";
+"Watch.Suggestion.OnMyWay" = "أنا في الطريق.";
+"Cache.Photos" = "الصور";
+"Cache.Videos" = "المقاطع المرئية";
+"Cache.Music" = "موسيقى";
+"Cache.Files" = "ملفات";
+"Cache.Clear" = "مسح (%@)";
+"Cache.ClearNone" = "مسح";
+"Cache.ClearProgress" = "يرجى الإنتظار...";
+"Cache.ClearEmpty" = "إفراغ";
+"Cache.ByPeerHeader" = "المحادثات";
+"Cache.Indexing" = "تيليجرام يقوم بحساب حجم الذاكرة المخبئية الحالية.\nيمكن أن يستغرق هذا عدة دقائق.";
+
+"ExplicitContent.AlertTitle" = "عذرًا";
+"ExplicitContent.AlertChannel" = "لا يمكنك الوصول لهذه القناة لأنها تخالف قوانين متجر التطبيقات.";
+"ExplicitContent.AlertUser" = "لا يمكنك الوصول لهذا البوت لأنه يخالف قوانين متجر التطبيقات.";
+
+"StickerSettings.ContextHide" = "إخفاء";
+"StickerSettings.ContextShow" = "إظهار";
+
+"Conversation.LinkDialogSave" = "حفظ";
+"Conversation.GifTooltip" = "اضغط هنا للوصول للصور المتحركة المحفوظة";
+
+"AttachmentMenu.PhotoOrVideo" = "صورة أو مقطع مرئي";
+"AttachmentMenu.ImageSearch" = "بحث الصور";
+"AttachmentMenu.File" = "ملف";
+
+"AttachmentMenu.SendPhoto_1" = "أرسل صورة";
+"AttachmentMenu.SendPhoto_2" = "أرسل صورتين";
+"AttachmentMenu.SendPhoto_3_10" = "أرسل %@ صور";
+"AttachmentMenu.SendPhoto_any" = "أرسل %@ صورة";
+
+"AttachmentMenu.SendVideo_1" = "أرسل مقطع مرئي";
+"AttachmentMenu.SendVideo_2" = "أرسل مقطعين مرئيين";
+"AttachmentMenu.SendVideo_3_10" = "أرسل %@ مقاطع مرئية";
+"AttachmentMenu.SendVideo_any" = "أرسل %@ مقطع مرئي";
+
+"AttachmentMenu.SendGif_1" = "أرسل صورة متحركة";
+"AttachmentMenu.SendGif_2" = "أرسل صورتين متحركتين";
+"AttachmentMenu.SendGif_3_10" = "أرسل %@ صور متحركة";
+"AttachmentMenu.SendGif_any" = "أرسل %@ صورة متحركة";
+
+"AttachmentMenu.SendItem_1" = "أرسل رسالة";
+"AttachmentMenu.SendItem_2" = "أرسل رسالتين";
+"AttachmentMenu.SendItem_3_10" = "أرسل %@ رسائل";
+"AttachmentMenu.SendItem_any" = "أرسل %@ رسالة";
+
+"AttachmentMenu.SendAsFile" = "أرسل كملف";
+"AttachmentMenu.SendAsFiles" = "أرسل كملفات";
+
+"Conversation.Processing" = "جاري المعالجة...";
+
+"Conversation.MessageViaUser" = "من خلال %@";
+
+"CreateGroup.SoftUserLimitAlert" = "ستتمكن من إضافة أعضاء جدد بعد الإنتهاء من إنشاء المجموعة وتحويلها لمجموعة خارقة.";
+"ChannelMembers.AllMembersMayInvite" = "جميع المشرفون يمكنهم دعوة الأعضاء";
+"ChannelMembers.AllMembersMayInviteOnHelp" = "الجميع يمكنهم إضافة أعضاء";
+"ChannelMembers.AllMembersMayInviteOffHelp" = "فقط المشرفون يمكنهم إضافة أعضاء.";
+
+"Privacy.GroupsAndChannels" = "المجموعات";
+"Privacy.GroupsAndChannels.WhoCanAddMe" = "من يستطيع إضافتي للمجموعات";
+"Privacy.GroupsAndChannels.CustomHelp" = "يمكنك تخصيص من يستطيع إضافتك للمجموعات والقنوات بدقة تناسبك.";
+"Privacy.GroupsAndChannels.AlwaysAllow" = "اسمح دائمًا";
+"Privacy.GroupsAndChannels.NeverAllow" = "لا تسمح أبدًا";
+"Privacy.GroupsAndChannels.CustomShareHelp" = "هؤلاء المستخدمين بإمكانهم أو ليس بإمكانهم إضافتك للمجموعات والقنوات بغض النظر عن الإعدادات أعلاه.";
+
+"Privacy.GroupsAndChannels.AlwaysAllow.Title" = "اسمح دائمًا";
+"Privacy.GroupsAndChannels.AlwaysAllow.Placeholder" = "اسمح دائمًا...";
+"Privacy.GroupsAndChannels.NeverAllow.Title" = "لا تسمح أبدًا";
+"Privacy.GroupsAndChannels.NeverAllow.Placeholder" = "لا تسمح أبدًا...";
+
+"Privacy.GroupsAndChannels.InviteToGroupError" = "المعذرة، لا يمكنك إضافة %@ للمجموعات بسبب إعدادات الخصوصية الخاصة بـ%@.";
+"Privacy.GroupsAndChannels.InviteToChannelError" = "المعذرة، لا يمكنك إضافة %@ للقنوات بسبب إعدادات الخصوصية الخاصة بـ%@.";
+"Privacy.GroupsAndChannels.InviteToChannelMultipleError" = "المعذرة، لا يمكنك إنشاء مجموعة مع هؤلاء المستخدمين نظرًا لإعدادات الخصوصية المتعلقة بهم.";
+
+"ChannelMembers.WhoCanAddMembers" = "من يستطيع إضافة أعضاء";
+"ChannelMembers.WhoCanAddMembers.AllMembers" = "جميع الأعضاء";
+"ChannelMembers.WhoCanAddMembers.Admins" = "فقط الأعضاء";
+"ChannelMembers.WhoCanAddMembersAllHelp" = "الجميع يمكنهم إضافة أعضاء";
+"ChannelMembers.WhoCanAddMembersAdminsHelp" = "فقط المشرفون يمكنهم إضافة أعضاء.";
+
+"ChannelMembers.GroupAdminsTitle" = "مشرفي المجموعات";
+"ChannelMembers.ChannelAdminsTitle" = "مشرفي القناة";
+"MusicPlayer.VoiceNote" = "رسالة صوتية";
+
+"PrivacyLastSeenSettings.WhoCanSeeMyTimestamp" = "من يستطيع مشاهدة آخر ظهور خاص بي";
+
+"PrivacyLastSeenSettings.GroupsAndChannelsHelp" = "غيّر من يستطيع إضافتك للمجموعات والقنوات.";
+"MusicPlayer.VoiceNote" = "رسالة صوتية";
+
+"Watch.Microphone.Access" = "اسمح لتيليجرام باستخدام المايكروفون الخاص بجهازك";
+
+"Settings.AppleWatch" = "ساعة آبل";
+"AppleWatch.Title" = "ساعة آبل";
+"AppleWatch.ReplyPresets" = "الردود الجاهزة";
+"AppleWatch.ReplyPresetsHelp" = "يمكنك اختيار أحد هذه الردود التلقائية عندما تبدأ أو ترد على رسالة، كما يمكنك تغيير هذه الرسائل كما تحب.";
+
+"KeyCommand.FocusOnInputField" = "اكتب رسالة";
+"KeyCommand.Find" = "بحث";
+"KeyCommand.ScrollUp" = "انتقل إلى الأعلى";
+"KeyCommand.ScrollDown" = "انتقل إلى الأسفل";
+"KeyCommand.NewMessage" = "رسائل جديدة";
+"KeyCommand.JumpToPreviousChat" = "عد إلى المحادثة السابقة";
+"KeyCommand.JumpToNextChat" = "اذهب للمحادثة التالية";
+"KeyCommand.JumpToPreviousUnreadChat" = "عد إلى آخر رسالة غير مقروءة";
+"KeyCommand.JumpToNextUnreadChat" = "اذهب إلى آخر رسالة غير مقروءة";
+"KeyCommand.SendMessage" = "أرسل رسالة";
+"KeyCommand.ChatInfo" = "معلومات المحادثة";
+
+"Conversation.SecretLinkPreviewAlert" = "هل ترغب في تفعيل المعاينة المطولة للروابط في المحادثات السرية؟ يرجى ملاحظة أن معاينات الروابط يتم صنعها في خوادم تيليجرام.";
+"Conversation.SecretChatContextBotAlert" = "يرجى ملاحظة أن البوتات أثناء الكتابة يتم تطويرها من مطورين مستقلين. لكي تعمل هذه البوتات، ما تكتبه بعد معرف البوت يذهب لمطور البوت.";
+
+"Map.OpenInWaze" = "افتح في تطبيق Waze";
+
+"ShareMenu.CopyShareLink" = "نسخ رابط المشاركة";
+
+"Channel.SignMessages" = "وقّع الرسائل";
+"Channel.SignMessages.Help" = "قم بإضافة أسماء المشرفين للرسائل التي يرسلونها.";
+
+"Channel.EditMessageErrorGeneric" = "المعذرة، لا يمكنك التعديل على هذه الرسالة.";
+
+"ChannelInfo.InvitationLinkDoesNotExist" = "المعذرة، هذه الرسالة غير موجودة.";
+
+"Conversation.InputTextSilentBroadcastPlaceholder" = "رسالة جماعية صامتة";
+"Conversation.SilentBroadcastTooltipOn" = "سيتم إشعار الأعضاء عند إرسال الرسائل.";
+"Conversation.SilentBroadcastTooltipOff" = "لن يتم إشعار الأعضاء عند إرسال الرسائل.";

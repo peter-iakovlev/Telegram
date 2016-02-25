@@ -2,6 +2,9 @@
 
 #import "TGBridgeSendMessageSignals.h"
 #import "TGBridgeRemoteSignals.h"
+#import "TGBridgeAudioSignals.h"
+
+#import "TGPeerIdAdapter.h"
 
 #import "TGBridgeChat.h"
 #import "TGBridgeUser.h"
@@ -57,6 +60,9 @@ NSString *const TGMessageViewControllerIdentifier = @"TGMessageViewController";
     
     SMetaDisposable *_sendMessageDisposable;
     SMetaDisposable *_remoteActionDisposable;
+    SMetaDisposable *_playAudioDisposable;
+    
+    TGBridgeMediaAttachment *_pendingAudioAttachment;
 }
 @end
 
@@ -69,6 +75,7 @@ NSString *const TGMessageViewControllerIdentifier = @"TGMessageViewController";
     {
         _sendMessageDisposable = [[SMetaDisposable alloc] init];
         _remoteActionDisposable = [[SMetaDisposable alloc] init];
+        _playAudioDisposable = [[SMetaDisposable alloc] init];
         
         [self.table _setInitialHidden:true];
         self.table.tableDataSource = self;
@@ -80,6 +87,7 @@ NSString *const TGMessageViewControllerIdentifier = @"TGMessageViewController";
 {
     [_sendMessageDisposable dispose];
     [_remoteActionDisposable dispose];
+    [_playAudioDisposable dispose];
 }
 
 - (void)configureWithContext:(TGMessageViewControllerContext *)context
@@ -88,7 +96,7 @@ NSString *const TGMessageViewControllerIdentifier = @"TGMessageViewController";
     
     [self configureHandoff];
     
-    self.title = TGLocalized(@"MessageView.Title");
+    self.title = TGLocalized(@"Watch.MessageView.Title");
 
     __weak TGMessageViewController *weakSelf = self;
     [self performInterfaceUpdate:^(bool animated)
@@ -258,18 +266,25 @@ NSString *const TGMessageViewControllerIdentifier = @"TGMessageViewController";
     
     if ([rowController isKindOfClass:[TGMessageViewMessageRowController class]])
     {
-        TGMessageViewMessageRowController *controller = (TGMessageViewMessageRowController *)rowController;
-        [controller updateWithMessage:_context.message context:_context.context];
+        TGBridgeMessage *message = _context.message;
         
-        void (^openUserInfo)(int32_t) = ^(int32_t userId)
+        TGMessageViewMessageRowController *controller = (TGMessageViewMessageRowController *)rowController;
+        [controller updateWithMessage:message context:_context.context additionalPeers:_context.additionalPeers];
+        
+        void (^openUserInfo)(int64_t) = ^(int64_t peerId)
         {
             __strong TGMessageViewController *strongSelf = weakSelf;
             if (strongSelf == nil)
                 return;
             
-            if (userId != 0)
+            if (peerId != 0)
             {
-                TGUserInfoControllerContext *context = [[TGUserInfoControllerContext alloc] initWithUserId:userId];
+                TGUserInfoControllerContext *context = nil;
+                if (TGPeerIdIsChannel(peerId))
+                    context = [[TGUserInfoControllerContext alloc] initWithChannel:_context.additionalPeers[@(peerId)]];
+                else
+                    context = [[TGUserInfoControllerContext alloc] initWithUserId:(int32_t)peerId];
+                
                 [strongSelf pushControllerWithClass:[TGUserInfoController class] context:context];
             }
         };
@@ -280,13 +295,13 @@ NSString *const TGMessageViewControllerIdentifier = @"TGMessageViewController";
             if (strongSelf == nil)
                 return;
             
-            [strongSelf->_remoteActionDisposable setDisposable:[[TGBridgeRemoteSignals openRemoteMessageWithPeerId:strongSelf->_context.peerId messageId:strongSelf->_context.message.identifier type:0 autoPlay:true] startWithNext:^(id next)
+            [strongSelf->_remoteActionDisposable setDisposable:[[TGBridgeRemoteSignals openRemoteMessageWithPeerId:strongSelf->_context.peerId messageId:message.identifier type:0 autoPlay:true] startWithNext:^(id next)
             {
                 
             }]];
         };
         
-        for (TGBridgeMediaAttachment *attachment in _context.message.media)
+        for (TGBridgeMediaAttachment *attachment in message.media)
         {
             if ([attachment isKindOfClass:[TGBridgeForwardedMessageMediaAttachment class]])
             {
@@ -294,7 +309,7 @@ NSString *const TGMessageViewControllerIdentifier = @"TGMessageViewController";
                 
                 controller.forwardPressed = ^
                 {
-                    openUserInfo(forwardAttachment.uid);
+                    openUserInfo(forwardAttachment.peerId);
                 };
             }
             else if ([attachment isKindOfClass:[TGBridgeContactMediaAttachment class]])
@@ -315,9 +330,66 @@ NSString *const TGMessageViewControllerIdentifier = @"TGMessageViewController";
             }
             else if ([attachment isKindOfClass:[TGBridgeAudioMediaAttachment class]])
             {
+                __weak TGMessageViewMessageRowController *weakMessageRow = controller;
                 controller.playPressed = ^
                 {
-                    openRemote();
+                    __strong TGMessageViewController *strongSelf = weakSelf;
+                    if (strongSelf == nil)
+                        return;
+                    
+                    TGBridgeMediaAttachment *audioAttachment = nil;
+                    for (TGBridgeMediaAttachment *attachment in message.media)
+                    {
+                        if ([attachment isKindOfClass:[TGBridgeAudioMediaAttachment class]])
+                        {
+                            audioAttachment = (TGBridgeAudioMediaAttachment *)attachment;
+                        }
+                        else if ([attachment isKindOfClass:[TGBridgeDocumentMediaAttachment class]])
+                        {
+                            TGBridgeDocumentMediaAttachment *documentAttachment = (TGBridgeDocumentMediaAttachment *)attachment;
+                            if (documentAttachment.isVoice)
+                                audioAttachment = documentAttachment;
+                        }
+                    }
+                    
+                    if (audioAttachment != nil)
+                    {
+                        __strong TGMessageViewMessageRowController *strongConversationRow = weakMessageRow;
+                        if ([strongSelf->_pendingAudioAttachment isEqual:audioAttachment])
+                        {
+                            if (strongConversationRow != nil)
+                                [strongConversationRow setProcessingState:false];
+                            
+                            strongSelf->_pendingAudioAttachment = nil;
+                            
+                            [strongSelf->_playAudioDisposable setDisposable:nil];
+                        }
+                        else
+                        {
+                            if (strongConversationRow != nil)
+                                [strongConversationRow setProcessingState:true];
+                            
+                            strongSelf->_pendingAudioAttachment = audioAttachment;
+                            
+                            [strongSelf->_playAudioDisposable setDisposable:[[[TGBridgeAudioSignals audioForAttachment:audioAttachment conversationId:message.cid messageId:message.identifier] deliverOn:[SQueue mainQueue]] startWithNext:^(NSURL *url)
+                            {
+                                if (url == nil)
+                                    return;
+                                
+                                __strong TGMessageViewController *strongSelf = weakSelf;
+                                if (strongSelf == nil)
+                                    return;
+                                
+                                __strong TGMessageViewMessageRowController *strongConversationRow = weakMessageRow;
+                                if (strongConversationRow != nil)
+                                    [strongConversationRow setProcessingState:false];
+                                
+                                strongSelf->_pendingAudioAttachment = nil;
+                                
+                                [strongSelf presentMediaPlayerControllerWithURL:url options:@{ WKMediaPlayerControllerOptionsAutoplayKey: @true } completion:^(BOOL didPlayToEnd, NSTimeInterval endTime, NSError *error) {}];
+                            }]];
+                        }
+                    }
                 };
             }
         }
@@ -345,7 +417,13 @@ NSString *const TGMessageViewControllerIdentifier = @"TGMessageViewController";
     for (TGBridgeMediaAttachment *attachment in _context.message.media)
     {
         if ([attachment isKindOfClass:[TGBridgeWebPageMediaAttachment class]])
+        {
+            TGBridgeWebPageMediaAttachment *webAttachment = (TGBridgeWebPageMediaAttachment *)attachment;
+            if (webAttachment.title.length == 0 && webAttachment.pageDescription.length == 0)
+                return false;
+            
             return true;
+        }
     }
     
     return false;

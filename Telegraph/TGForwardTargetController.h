@@ -25,7 +25,7 @@
 
 @property (nonatomic) bool skipConfirmation;
 
-- (id)initWithForwardMessages:(NSArray *)forwardMessages sendMessages:(NSArray *)sendMessages showSecretChats:(bool)showSecretChats;
+- (id)initWithForwardMessages:(NSArray *)forwardMessages sendMessages:(NSArray *)sendMessages shareLink:(NSDictionary *)shareLink showSecretChats:(bool)showSecretChats;
 - (id)initWithSelectBlockTarget;
 - (id)initWithSelectPrivacyTarget:(NSString *)title placeholder:(NSString *)placeholder;
 - (id)initWithSelectTarget;

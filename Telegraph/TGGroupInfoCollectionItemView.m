@@ -273,6 +273,8 @@
     {
         _editing = editing;
         
+        _verifiedIcon.hidden = _editing;
+        
         if (_editing)
         {
             if (_titleField == nil)

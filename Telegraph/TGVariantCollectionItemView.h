@@ -12,5 +12,7 @@
 
 - (void)setTitle:(NSString *)title;
 - (void)setVariant:(NSString *)variant;
+- (void)setIcon:(UIImage *)icon;
+- (void)setEnabled:(bool)enabled;
 
 @end

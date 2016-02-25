@@ -10,5 +10,6 @@
 @property (nonatomic) int32_t reply_to_msg_id;
 @property (nonatomic, strong) NSString *message;
 @property (nonatomic) int64_t random_id;
+@property (nonatomic, strong) NSArray *entities;
 
 @end

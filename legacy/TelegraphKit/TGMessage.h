@@ -23,6 +23,8 @@
 #import "TGWebPageMediaAttachment.h"
 #import "TGReplyMarkupAttachment.h"
 #import "TGMessageEntitiesAttachment.h"
+#import "TGBotContextResultAttachment.h"
+#import "TGViaUserAttachment.h"
 
 #import "TGMessageViewCountContentProperty.h"
 
@@ -171,6 +173,16 @@ static inline NSData *TGTaggedMessageSortKeyData(int32_t tag, TGMessageSortKey k
     return [[NSData alloc] initWithBytes:data length:4 + 8 + 1 + 4 + 4];
 }
 
+static inline TGMessageSortKey TGTaggedMessageSortKeyExtract(NSData *data, int32_t *outTag) {
+    if (outTag != NULL) {
+        [data getBytes:(void *)outTag range:NSMakeRange(0, 4)];
+    }
+    
+    TGMessageSortKey sortKey;
+    [data getBytes:sortKey.key range:NSMakeRange(4, 17)];
+    return sortKey;
+}
+
 @interface TGMessage : NSObject <NSCopying, PSCoding>
 
 @property (nonatomic) int mid;
@@ -179,7 +191,6 @@ static inline NSData *TGTaggedMessageSortKeyData(int32_t tag, TGMessageSortKey k
 @property (nonatomic, readonly) TGMessageTransparentSortKey transparentSortKey;
 
 @property (nonatomic) int32_t pts;
-@property (nonatomic) int32_t ptsCount;
 
 @property (nonatomic) bool unread;
 @property (nonatomic) bool outgoing;
@@ -214,6 +225,8 @@ static inline NSData *TGTaggedMessageSortKeyData(int32_t tag, TGMessageSortKey k
 @property (nonatomic) bool hideReplyMarkup;
 @property (nonatomic) bool forceReply;
 
+@property (nonatomic) bool isSilent;
+
 @property (nonatomic, strong) TGMessageViewCountContentProperty *viewCount;
 
 @property (nonatomic, strong) NSArray *entities;
@@ -227,6 +240,7 @@ static inline NSData *TGTaggedMessageSortKeyData(int32_t tag, TGMessageSortKey k
 
 + (void)registerMediaAttachmentParser:(int)type parser:(id<TGMediaAttachmentParser>)parser;
 + (NSArray *)textCheckingResultsForText:(NSString *)text highlightMentionsAndTags:(bool)highlightMentionsAndTags highlightCommands:(bool)highlightCommands;
++ (NSArray *)entitiesForMarkedUpText:(NSString *)text resultingText:(__autoreleasing NSString **)resultingText;
 
 - (NSData *)serializeMediaAttachments:(bool)includeMeta;
 + (NSData *)serializeMediaAttachments:(bool)includeMeta attachments:(NSArray *)attachments;

@@ -23,6 +23,7 @@
 #import "TGMusicPlayer.h"
 
 #import <SSignalKit/SSignalKit.h>
+#import "TGDialogListRemoteOffset.h"
 
 #ifdef __cplusplus
 #include <map>
@@ -130,7 +131,7 @@ extern TGTelegraph *TGTelegraphInstance;
 - (void)cancelRequestByToken:(NSObject *)token;
 - (void)cancelRequestByToken:(NSObject *)token softCancel:(bool)softCancel;
 
-- (TGModernConversationActivityManager *)activityManagerForConversationId:(int64_t)conversationId;
+- (TGModernConversationActivityManager *)activityManagerForConversationId:(int64_t)conversationId accessHash:(int64_t)accessHash;
 
 - (void)doLogout:(NSString *)currentPhoneNumber;
 - (void)doLogout;
@@ -208,16 +209,17 @@ extern TGTelegraph *TGTelegraphInstance;
 - (NSObject *)doDeclineContactRequest:(int)uid actor:(TGContactRequestActionActor *)actor;
 - (NSObject *)doDeleteContacts:(NSArray *)uids actor:(id<TGContactDeleteActorProtocol>)actor;
 
-- (NSObject *)doRequestDialogsList:(int)offset limit:(int)limit requestBuilder:(TGDialogListRequestBuilder *)requestBuilder;
+- (NSObject *)doRequestDialogsListWithOffset:(TGDialogListRemoteOffset *)offset limit:(int)limit requestBuilder:(TGDialogListRequestBuilder *)requestBuilder;
 
 - (NSObject *)doRequestConversationHistory:(int64_t)conversationId accessHash:(int64_t)accessHash maxMid:(int)maxMid orOffset:(int)offset limit:(int)limit actor:(TGConversationHistoryAsyncRequestActor *)actor;
 - (NSObject *)doRequestConversationMediaHistory:(int64_t)conversationId accessHash:(int64_t)accessHash maxMid:(int)maxMid maxDate:(int)maxDate limit:(int)limit actor:(TGUpdateMediaHistoryActor *)actor;
-- (NSObject *)doConversationSendMessage:(int64_t)conversationId accessHash:(int64_t)accessHash messageText:(NSString *)messageText messageGuid:(NSString *)messageGuid tmpId:(int64_t)tmpId replyMessageId:(int32_t)replyMessageId disableLinkPreviews:(bool)disableLinkPreviews postAsChannel:(bool)postAsChannel actor:(TGModernSendCommonMessageActor *)actor;
+- (NSObject *)doConversationSendMessage:(int64_t)conversationId accessHash:(int64_t)accessHash messageText:(NSString *)messageText messageGuid:(NSString *)messageGuid tmpId:(int64_t)tmpId replyMessageId:(int32_t)replyMessageId disableLinkPreviews:(bool)disableLinkPreviews postAsChannel:(bool)postAsChannel notifyMembers:(bool)notifyMembers entities:(NSArray *)entities actor:(TGModernSendCommonMessageActor *)actor;
 - (NSObject *)doBroadcastSendMessage:(NSArray *)userIds messageText:(NSString *)messageText geo:(TLInputGeoPoint *)geo tmpId:(int64_t)tmpId actor:(TGModernSendBroadcastMessageActor *)actor;
-- (NSObject *)doConversationSendLocation:(int64_t)conversationId accessHash:(int64_t)accessHash latitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue messageGuid:(NSString *)messageGuid tmpId:(int64_t)tmpId replyMessageId:(int32_t)replyMessageId postAsChannel:(bool)postAsChannel actor:(TGModernSendCommonMessageActor *)actor;
+- (NSObject *)doConversationSendLocation:(int64_t)conversationId accessHash:(int64_t)accessHash latitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue messageGuid:(NSString *)messageGuid tmpId:(int64_t)tmpId replyMessageId:(int32_t)replyMessageId postAsChannel:(bool)postAsChannel notifyMembers:(bool)notifyMembers actor:(TGModernSendCommonMessageActor *)actor;
 - (NSObject *)doBroadcastSendMedia:(NSArray *)userIds media:(TLInputMedia *)media tmpId:(int64_t)__unused tmpId actor:(TGModernSendBroadcastMessageActor *)actor;
-- (NSObject *)doConversationSendMedia:(int64_t)conversationId accessHash:(int64_t)accessHash media:(TLInputMedia *)media messageGuid:(NSString *)messageGuid tmpId:(int64_t)tmpId replyMessageId:(int32_t)replyMessageId postAsChannel:(bool)postAsChannel actor:(TGModernSendCommonMessageActor *)actor;
-- (NSObject *)doConversationForwardMessage:(int64_t)conversationId accessHash:(int64_t)accessHash messageId:(int)messageId fromPeer:(int64_t)fromPeer fromPeerAccessHash:(int64_t)fromPeerAccessHash postAsChannel:(bool)postAsChannel tmpId:(int64_t)tmpId actor:(TGModernSendCommonMessageActor *)actor;
+- (NSObject *)doConversationSendMedia:(int64_t)conversationId accessHash:(int64_t)accessHash media:(TLInputMedia *)media messageGuid:(NSString *)messageGuid tmpId:(int64_t)tmpId replyMessageId:(int32_t)replyMessageId postAsChannel:(bool)postAsChannel notifyMembers:(bool)notifyMembers actor:(TGModernSendCommonMessageActor *)actor;
+- (NSObject *)doConversationBotContextResult:(int64_t)conversationId accessHash:(int64_t)accessHash botContextResult:(TGBotContextResultAttachment *)botContextResult tmpId:(int64_t)tmpId replyMessageId:(int32_t)replyMessageId postAsChannel:(bool)postAsChannel notifyMembers:(bool)notifyMembers actor:(TGModernSendCommonMessageActor *)actor;
+- (NSObject *)doConversationForwardMessage:(int64_t)conversationId accessHash:(int64_t)accessHash messageId:(int)messageId fromPeer:(int64_t)fromPeer fromPeerAccessHash:(int64_t)fromPeerAccessHash postAsChannel:(bool)postAsChannel notifyMembers:(bool)notifyMembers tmpId:(int64_t)tmpId actor:(TGModernSendCommonMessageActor *)actor;
 - (NSObject *)doConversationReadHistory:(int64_t)conversationId accessHash:(int64_t)accessHash maxMid:(int)maxMid offset:(int)offset actor:(TGSynchronizeActionQueueActor *)actor;
 - (NSObject *)doReportDelivery:(int)maxMid actor:(TGReportDeliveryActor *)actor;
 - (NSObject *)doReportConversationActivity:(int64_t)conversationId accessHash:(int64_t)accessHash activity:(id)activity actor:(TGConversationActivityRequestBuilder *)actor;
@@ -237,7 +239,7 @@ extern TGTelegraph *TGTelegraphInstance;
 - (NSObject *)doSaveGeocodingResult:(double)latitude longitude:(double)longitude components:(NSDictionary *)components actor:(TGSaveGeocodingResultActor *)actor;
 
 - (NSObject *)doRequestPeerNotificationSettings:(int64_t)peerId accessHash:(int64_t)accessHash actor:(id<TGPeerSettingsActorProtocol>)actor;
-- (NSObject *)doChangePeerNotificationSettings:(int64_t)peerId accessHash:(int64_t)accessHash muteUntil:(int)muteUntil soundId:(int)soundId previewText:(bool)previewText photoNotificationsEnabled:(bool)photoNotificationsEnabled actor:(TGSynchronizeServiceActionsActor *)actor;
+- (NSObject *)doChangePeerNotificationSettings:(int64_t)peerId accessHash:(int64_t)accessHash muteUntil:(int)muteUntil soundId:(int)soundId previewText:(bool)previewText messagesMuted:(bool)messagesMuted actor:(TGSynchronizeServiceActionsActor *)actor;
 - (NSObject *)doResetPeerNotificationSettings:(TGSynchronizeServiceActionsActor *)actor;
 - (NSObject *)doRequestConversationData:(int64_t)conversationId actor:(TGExtendedChatDataRequestActor *)actor;
 
@@ -268,5 +270,7 @@ extern TGTelegraph *TGTelegraphInstance;
 
 - (TLInputPeer *)createInputPeerForConversation:(int64_t)conversationId accessHash:(int64_t)accessHash;
 - (TLInputUser *)createInputUserForUid:(int)uid;
+
+- (NSString *)currentDeviceModel;
 
 @end

@@ -15,6 +15,8 @@
 
 #import "TGDatabase.h"
 
+#import "TGNetworkOverridesController.h"
+
 @interface TGDebugController ()
 {
     TGSwitchCollectionItem *_logsEnabledItem;
@@ -46,10 +48,19 @@
         
         TGButtonCollectionItem *markEverythingAsReadItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Sync Unread" action:@selector(syncUnreadPressed)];
         markEverythingAsReadItem.deselectAutomatically = true;
+        TGButtonCollectionItem *resetPermissionsItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Reset Permissions" action:@selector(resetPermissionsPressed)];
+        TGButtonCollectionItem *resetTooltipsItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Reset Tooltips" action:@selector(resetTooltipsPressed)];
+        markEverythingAsReadItem.deselectAutomatically = true;
         TGCollectionMenuSection *unreadSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            markEverythingAsReadItem
+            markEverythingAsReadItem,
+            resetPermissionsItem,
+            resetTooltipsItem
         ]];
         [self.menuSections addSection:unreadSection];
+        
+        TGButtonCollectionItem *networkOverridesItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Network Overrides" action:@selector(networkOverridesPressed)];
+        TGCollectionMenuSection *networkOverridesSection = [[TGCollectionMenuSection alloc] initWithItems:@[networkOverridesItem]];
+        [self.menuSections addSection:networkOverridesSection];
     }
     return self;
 }
@@ -143,6 +154,23 @@
         } synchronous:false];
     }];
     
+}
+
+- (void)networkOverridesPressed {
+    TGNetworkOverridesController *controller = [[TGNetworkOverridesController alloc] init];
+    [self.navigationController pushViewController:controller animated:true];
+}
+
+- (void)resetPermissionsPressed {
+    TGAppDelegateInstance.allowSecretWebpages = false;
+    TGAppDelegateInstance.allowSecretWebpagesInitialized = false;
+    TGAppDelegateInstance.secretInlineBotsInitialized = false;
+    [TGAppDelegateInstance saveSettings];
+}
+
+- (void)resetTooltipsPressed {
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"TG_didShowSilentBroadcastTooltip"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 @end

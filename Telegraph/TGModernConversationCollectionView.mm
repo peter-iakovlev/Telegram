@@ -40,6 +40,8 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
     
     TGModernViewStorage *_viewStorage;
     __weak id<TGModernConversationCollectionTouchBehaviour> _currentInstantPreviewTarget;
+    
+    NSTimeInterval _ignoreBackgroundTouchBeforeDate;
 }
 
 @property (nonatomic, copy) void (^touchCompletion)();
@@ -161,6 +163,8 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
         self.touchCompletion();
         self.touchCompletion = nil;
         self.scrollEnabled = true;
+        
+        _ignoreBackgroundTouchBeforeDate = CACurrentMediaTime() + 0.1;
     }
     
     _currentInstantPreviewTarget = nil;
@@ -219,8 +223,13 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
 {
     [super touchesEnded:touches withEvent:event];
     
-    if (self.delegate != nil && [self.delegate respondsToSelector:@selector(touchedTableBackground)])
+    if (CACurrentMediaTime() < _ignoreBackgroundTouchBeforeDate) {
+        return;
+    }
+    
+    if (self.delegate != nil && [self.delegate respondsToSelector:@selector(touchedTableBackground)]) {
         [self.delegate performSelector:@selector(touchedTableBackground)];
+    }
 }
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event

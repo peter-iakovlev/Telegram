@@ -17,5 +17,6 @@
 - (void)setTitleColor:(UIColor *)titleColor;
 - (void)setTitleAlignment:(NSTextAlignment)alignment;
 - (void)setEnabled:(bool)enabled;
+- (void)setIcon:(UIImage *)icon;
 
 @end

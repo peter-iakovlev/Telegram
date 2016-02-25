@@ -6,13 +6,14 @@
 #import "TLInputChannel.h"
 #import "TLInputUser.h"
 #import "TLChannelParticipantRole.h"
+#import "TLUpdates.h"
 
 @implementation TLRPCchannels_editAdmin
 
 
 - (Class)responseClass
 {
-    return [NSNumber class];
+    return [TLUpdates class];
 }
 
 - (int)impliedResponseSignature
@@ -22,7 +23,7 @@
 
 - (int)layerVersion
 {
-    return 38;
+    return 41;
 }
 
 - (int32_t)TLconstructorSignature
@@ -56,7 +57,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x52b16962;
+    return (int32_t)0xeb7611d0;
 }
 
 - (int32_t)TLconstructorName

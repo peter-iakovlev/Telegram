@@ -6,6 +6,12 @@
 @property (nonatomic, readonly) NSTimeInterval trimEndValue;
 
 - (bool)rotationApplied;
+- (bool)trimApplied;
+
+- (NSDictionary *)dictionary;
+
+- (bool)cropOrRotationAppliedForAvatar:(bool)__unused forAvatar;
+- (bool)isCropAndRotationEqualWith:(id<TGMediaEditAdjustments>)adjusments;
 
 + (instancetype)editAdjustmentsWithOriginalSize:(CGSize)originalSize
                                        cropRect:(CGRect)cropRect
@@ -14,4 +20,8 @@
                                  trimStartValue:(NSTimeInterval)trimStartValue
                                    trimEndValue:(NSTimeInterval)trimEndValue;
 
++ (instancetype)editAdjustmentsWithDictionary:(NSDictionary *)dictionary;
+
 @end
+
+typedef TGVideoEditAdjustments TGMediaVideoEditAdjustments;

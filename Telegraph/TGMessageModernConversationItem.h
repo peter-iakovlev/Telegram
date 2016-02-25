@@ -39,7 +39,7 @@ extern int32_t TGMessageModernConversationItemLocalUserId;
 - (void)updateAssets;
 - (void)refreshMetrics;
 - (void)updateSearchText:(bool)animated;
-- (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated;
+- (void)updateMessage:(TGMessage *)message fromMessage:(TGMessage *)fromMessage viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated;
 - (void)updateMediaVisibility;
 - (void)updateMessageAttributes;
 - (void)updateEditingState:(TGModernViewStorage *)viewStorage animationDelay:(NSTimeInterval)animationDelay;

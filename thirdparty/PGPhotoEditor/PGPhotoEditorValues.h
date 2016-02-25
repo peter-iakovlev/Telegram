@@ -8,11 +8,8 @@
 
 - (bool)toolsApplied;
 
-+ (instancetype)editorValuesWithOriginalSize:(CGSize)originalSize
-                                    cropRect:(CGRect)cropRect
-                                cropRotation:(CGFloat)cropRotation
-                             cropOrientation:(UIImageOrientation)cropOrientation
-                       cropLockedAspectRatio:(CGFloat)cropLockedAspectRatio
-                                  toolValues:(NSDictionary *)toolValues;
+- (bool)isCropEqualWith:(id<TGMediaEditAdjustments>)adjusments;
+
++ (instancetype)editorValuesWithOriginalSize:(CGSize)originalSize cropRect:(CGRect)cropRect cropRotation:(CGFloat)cropRotation cropOrientation:(UIImageOrientation)cropOrientation cropLockedAspectRatio:(CGFloat)cropLockedAspectRatio toolValues:(NSDictionary *)toolValues;
 
 @end

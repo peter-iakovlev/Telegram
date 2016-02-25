@@ -16,6 +16,10 @@
 
 @interface TGModernConversationAudioPlayer () <TGAudioPlayerDelegate>
 {
+    NSString *_filePath;
+    bool _music;
+    bool _controlAudioSession;
+    
     TGAudioPlayer *_audioPlayer;
     NSTimer *_timer;
     
@@ -28,13 +32,18 @@
 
 @implementation TGModernConversationAudioPlayer
 
-- (instancetype)initWithFilePath:(NSString *)filePath
+- (instancetype)initWithFilePath:(NSString *)filePath music:(bool)music controlAudioSession:(bool)controlAudioSession
 {
     self = [super init];
     if (self != nil)
     {
-        _audioPlayer = [TGAudioPlayer audioPlayerForPath:filePath];
+        _filePath = filePath;
+        _music = music;
+        _controlAudioSession = controlAudioSession;
+        
+        _audioPlayer = [TGAudioPlayer audioPlayerForPath:filePath music:music controlAudioSession:controlAudioSession];
         _audioPlayer.delegate = self;
+        _queue = [SQueue mainQueue];
     }
     return self;
 }
@@ -70,6 +79,11 @@
 
 - (void)play
 {
+    if (_audioPlayer == nil) {
+        _audioPlayer = [TGAudioPlayer audioPlayerForPath:_filePath music:_music controlAudioSession:_controlAudioSession];
+        _audioPlayer.delegate = self;
+    }
+    
     _isPaused = false;
     
     if (_timer != nil)
@@ -81,7 +95,7 @@
     [_audioPlayer play];
     
     [self updateCurrentTime];
-    _timer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(updateCurrentTime) interval:0.25 repeat:true];
+    _timer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(updateCurrentTime) interval:0.01 repeat:true];
 }
 
 - (void)play:(float)playbackPosition
@@ -106,7 +120,7 @@
         [self updateCurrentTime];
     }
     
-    _timer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(updateCurrentTime) interval:0.25 repeat:true];
+    _timer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(updateCurrentTime) interval:0.01 repeat:true];
 }
 
 - (void)updateCurrentTime
@@ -114,11 +128,15 @@
     [_inlineMediaContext postUpdatePlaybackPosition:false];
 }
 
-- (void)pause
+- (void)pause {
+    [self pause:^{}];
+}
+
+- (void)pause:(void (^)())completion
 {
     _isPaused = true;
     
-    [_audioPlayer pause];
+    [_audioPlayer pause:completion];
     
     if (_timer != nil)
     {
@@ -158,6 +176,10 @@
     return 0.0f;
 }
 
+- (NSTimeInterval)absolutePlaybackPosition {
+    return [_audioPlayer currentPositionSync:true];
+}
+
 - (NSTimeInterval)duration
 {
     return [_audioPlayer duration];
@@ -166,6 +188,20 @@
 - (bool)isPaused
 {
     return _isPaused;
+}
+
+- (void)audioPlayerDidPause:(TGAudioPlayer *)__unused audioPlayer {
+    TGDispatchOnMainThread(^{
+        _isPaused = true;
+        
+        if (_timer != nil)
+        {
+            [_timer invalidate];
+            _timer = nil;
+        }
+        
+        [_inlineMediaContext postUpdatePlaybackPosition:false];
+    });
 }
 
 - (void)audioPlayerDidFinishPlaying:(TGAudioPlayer *)__unused audioPlayer

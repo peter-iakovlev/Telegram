@@ -19,6 +19,11 @@
 @property (nonatomic, strong) TGConversation *conversation;
 @property (nonatomic, strong) NSString *optionTitle;
 @property (nonatomic, strong) NSString *customStatus;
+@property (nonatomic) bool displaySwitch;
+@property (nonatomic) bool enableSwitch;
+@property (nonatomic) bool switchIsOn;
+
+@property (nonatomic, copy) void (^toggled)(bool value);
 
 - (void)setCanEdit:(bool)canEdit;
 - (void)setCanEdit:(bool)canEdit animated:(bool)animated;

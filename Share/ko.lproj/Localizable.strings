@@ -1,13 +1,25 @@
-"Share.Cancel" = "Cancel";
-"Share.Next" = "Next";
-"Share.OK" = "OK";
-"Share.Search" = "Search";
+"Share.Cancel" = "취소";
+"Share.Next" = "다음";
+"Share.OK" = "확인";
+"Share.Search" = "검색";
 
-"Share.Title" = "Share";
-"Share.ShareWithPerson" = "Share with %@?";
-"Share.ShareWithGroup" = "Share with %@?";
-"Share.Sharing" = "Sharing...";
+"Share.Title" = "공유";
+"Share.ShareWithPerson" = "%@님에게 공유하시겠습니까?";
+"Share.ShareWithGroup" = "%@님에게 공유하시겠습니까?";
+"Share.ShareWithMultiple" = "%@님에게 공유하시겠습니까?";
+"Share.Sharing" = "공유 중..";
 
-"Share.PasscodeTitle" = "Passcode";
-"Share.EnterPasscode" = "Enter passcode";
-"Share.ErrorInvalidPasscode" = "Invalid passcode";
+"Share.PasscodeTitle" = "잠금코드";
+"Share.EnterPasscode" = "잠금코드 입력";
+"Share.ErrorInvalidPasscode" = "올바르지 않은 잠금코드";
+
+"Share.Select" = "선택";
+"Share.Done" = "완료";
+
+"Share.AuthTitle" = "텔레그램 로그인";
+"Share.AuthText" = "텔레그램으로 로그인을 하여 공유";
+
+"Share.ChoosePhoneNumber" = "공유할 전화번호 선택";
+
+"Share.RecentSection" = "최근";
+"Share.RecentSectionClear" = "지우기";

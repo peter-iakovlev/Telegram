@@ -80,14 +80,14 @@ static NSString * const kLXCollectionViewKeyPath = @"collectionView";
 @implementation TGCollectionMenuLayout
 
 - (void)setDefaults {
-    _scrollingSpeed = 300.0f;
-    _scrollingTriggerEdgeInsets = UIEdgeInsetsMake(50.0f, 50.0f, 50.0f, 50.0f);
+    _scrollingSpeed = 1750.0f;
+    _scrollingTriggerEdgeInsets = UIEdgeInsetsMake(80.0f, 50.0f, 80.0f, 50.0f);
 }
 
 - (void)setupCollectionView {
     _longPressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self
                                                                                 action:@selector(handleLongPressGesture:)];
-    _longPressGestureRecognizer.minimumPressDuration = 0.3;
+    _longPressGestureRecognizer.minimumPressDuration = 0.2;
     _longPressGestureRecognizer.delegate = self;
     
     // Links the default long press gesture recognizer to the custom long press gesture recognizer we are creating now
@@ -171,7 +171,7 @@ static NSString * const kLXCollectionViewKeyPath = @"collectionView";
     return (id<TGCollectionMenuLayoutDelegateFlowLayout>)self.collectionView.delegate;
 }
 
-- (void)invalidateLayoutIfNecessary {
+- (void)invalidateLayoutIfNecessary:(bool)animated {
     NSIndexPath *newIndexPath = [self.collectionView indexPathForItemAtPoint:self.currentView.center];
     NSIndexPath *previousIndexPath = self.selectedItemIndexPath;
     
@@ -190,21 +190,28 @@ static NSString * const kLXCollectionViewKeyPath = @"collectionView";
         [self.dataSource collectionView:self.collectionView itemAtIndexPath:previousIndexPath willMoveToIndexPath:newIndexPath];
     }
     
-    __weak typeof(self) weakSelf = self;
-    [self.collectionView performBatchUpdates:^{
-        __strong typeof(self) strongSelf = weakSelf;
-        if (strongSelf) {
-            [strongSelf.collectionView deleteItemsAtIndexPaths:@[ previousIndexPath ]];
-            [strongSelf.collectionView insertItemsAtIndexPaths:@[ newIndexPath ]];
+    void (^animationBlock)() = ^{
+        __weak typeof(self) weakSelf = self;
+        [self.collectionView performBatchUpdates:^{
+            __strong typeof(self) strongSelf = weakSelf;
+            if (strongSelf) {
+                [strongSelf.collectionView deleteItemsAtIndexPaths:@[ previousIndexPath ]];
+                [strongSelf.collectionView insertItemsAtIndexPaths:@[ newIndexPath ]];
+            }
+        } completion:^(__unused BOOL finished) {
+            __strong typeof(self) strongSelf = weakSelf;
+            if ([strongSelf.dataSource respondsToSelector:@selector(collectionView:itemAtIndexPath:didMoveToIndexPath:)]) {
+                [strongSelf.dataSource collectionView:strongSelf.collectionView itemAtIndexPath:previousIndexPath didMoveToIndexPath:newIndexPath];
+            }
+        }];
+        if ([self.dataSource respondsToSelector:@selector(collectionView:itemAtIndexPath:willBeginMovingToIndexPath:)]) {
+            [self.dataSource collectionView:self.collectionView itemAtIndexPath:previousIndexPath willBeginMovingToIndexPath:newIndexPath];
         }
-    } completion:^(__unused BOOL finished) {
-        __strong typeof(self) strongSelf = weakSelf;
-        if ([strongSelf.dataSource respondsToSelector:@selector(collectionView:itemAtIndexPath:didMoveToIndexPath:)]) {
-            [strongSelf.dataSource collectionView:strongSelf.collectionView itemAtIndexPath:previousIndexPath didMoveToIndexPath:newIndexPath];
-        }
-    }];
-    if ([self.dataSource respondsToSelector:@selector(collectionView:itemAtIndexPath:willBeginMovingToIndexPath:)]) {
-        [self.dataSource collectionView:self.collectionView itemAtIndexPath:previousIndexPath willBeginMovingToIndexPath:newIndexPath];
+    };
+    if (animated) {
+        animationBlock();
+    } else {
+        [UIView performWithoutAnimation:animationBlock];
     }
 }
 
@@ -297,6 +304,7 @@ static NSString * const kLXCollectionViewKeyPath = @"collectionView";
     self.currentViewCenter = LXS_CGPointAdd(self.currentViewCenter, translation);
     self.currentView.center = LXS_CGPointAdd(self.currentViewCenter, self.panTranslationInCollectionView);
     self.collectionView.contentOffset = LXS_CGPointAdd(contentOffset, translation);
+    [self.collectionView setNeedsLayout];
 }
 
 
@@ -422,14 +430,16 @@ static NSString * const kLXCollectionViewKeyPath = @"collectionView";
             self.panTranslationInCollectionView = [gestureRecognizer translationInView:self.collectionView];
             CGPoint viewCenter = self.currentView.center = LXS_CGPointAdd(self.currentViewCenter, self.panTranslationInCollectionView);
             
-            [self invalidateLayoutIfNecessary];
+            bool animated = true;
             
             switch (self.scrollDirection) {
                 case UICollectionViewScrollDirectionVertical: {
                     if (viewCenter.y < (CGRectGetMinY(self.collectionView.bounds) + self.scrollingTriggerEdgeInsets.top)) {
+                        animated = false;
                         [self setupScrollTimerInDirection:LXScrollingDirectionUp];
                     } else {
                         if (viewCenter.y > (CGRectGetMaxY(self.collectionView.bounds) - self.scrollingTriggerEdgeInsets.bottom)) {
+                            animated = false;
                             [self setupScrollTimerInDirection:LXScrollingDirectionDown];
                         } else {
                             [self invalidatesScrollTimer];
@@ -441,6 +451,7 @@ static NSString * const kLXCollectionViewKeyPath = @"collectionView";
                         [self setupScrollTimerInDirection:LXScrollingDirectionLeft];
                     } else {
                         if (viewCenter.x > (CGRectGetMaxX(self.collectionView.bounds) - self.scrollingTriggerEdgeInsets.right)) {
+                            animated = false;
                             [self setupScrollTimerInDirection:LXScrollingDirectionRight];
                         } else {
                             [self invalidatesScrollTimer];
@@ -448,6 +459,8 @@ static NSString * const kLXCollectionViewKeyPath = @"collectionView";
                     }
                 } break;
             }
+            
+            [self invalidateLayoutIfNecessary:animated];
         } break;
         case UIGestureRecognizerStateCancelled:
         case UIGestureRecognizerStateEnded: {

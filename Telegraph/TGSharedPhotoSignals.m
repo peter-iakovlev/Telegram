@@ -8,7 +8,15 @@
 #import "TGImageInfo+Telegraph.h"
 #import "TGRemoteImageView.h"
 
+#import "TGRemoteHttpLocationSignal.h"
+
 #import "TGAppDelegate.h"
+
+#import "TGImageInfo+Telegraph.h"
+
+#import "TGDocumentMediaAttachment.h"
+
+#import <AVFoundation/AVFoundation.h>
 
 @implementation TGSharedPhotoSignals
 
@@ -87,6 +95,13 @@
             NSString *imageUrl = [imageAttachment.imageInfo imageUrlForLargestSize:NULL];
             NSString *legacyFilePath = [[TGRemoteImageView sharedCache] pathForCachedData:imageUrl];
             fullImage = [[UIImage alloc] initWithContentsOfFile:legacyFilePath];
+            
+            if (fullImage == nil) {
+                NSString *displayImageUrl = [imageAttachment.imageInfo closestImageUrlWithSize:(CGSizeMake(1136, 1136)) resultingSize:NULL pickLargest:true];
+                NSString *legacyFilePath = [[TGRemoteImageView sharedCache] pathForCachedData:displayImageUrl];
+                fullImage = [[UIImage alloc] initWithContentsOfFile:legacyFilePath];
+            }
+            
         }
         if (fullImage != nil)
         {
@@ -300,6 +315,122 @@
     {
         return [self localCachedImageForPhotoThumbnail:imageAttachment ofSize:size renderSize:renderSize lowQuality:lowQuality];
     } lowQualityImagePath:genericThumbnailPath lowQualityImageUrl:[imageAttachment.imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL] highQualityImageUrl:highQualityUrl highQualityImageIdentifier:highQualityIdentifier threadPool:threadPool memoryCache:memoryCache placeholder:nil];
+}
+
++ (SSignal *)cachedRemoteThumbnail:(TGImageInfo *)imageInfo size:(CGSize)size pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock cacheVariantKey:(NSString *)cacheVariantKey threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache diskCache:(TGModernCache *)diskCache {
+    NSString *imageUrl = [imageInfo imageUrlForSizeLargerThanSize:CGSizeMake(size.width, size.height) actualSize:NULL];
+    if (imageUrl == nil) {
+        return nil;
+    }
+    
+    NSString *key = [[NSString alloc] initWithFormat:@"cached-image-%@-%dx%d-%@", imageUrl, (int)size.width, (int)size.height, cacheVariantKey];
+    
+    return [TGSharedMediaSignals cachedRemoteThumbnailWithKey:key size:size pixelProcessingBlock:pixelProcessingBlock fetchData:[SSignal defer:^SSignal *{
+        int datacenterId = 0;
+        int64_t volumeId = 0;
+        int localId = 0;
+        int64_t secret = 0;
+        if (extractFileUrlComponents(imageUrl, &datacenterId, &volumeId, &localId, &secret)) {
+            TLInputFileLocation$inputFileLocation *location = [[TLInputFileLocation$inputFileLocation alloc] init];
+            location.volume_id = volumeId;
+            location.local_id = localId;
+            location.secret = secret;
+            
+            return [TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false];
+        } else {
+            return [SSignal fail:nil];
+        }
+    }] originalImage:[SSignal fail:nil] threadPool:threadPool memoryCache:memoryCache diskCache:diskCache];
+}
+
++ (SSignal *)cachedRemoteDocumentThumbnail:(TGDocumentMediaAttachment *)document size:(CGSize)size pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock cacheVariantKey:(NSString *)cacheVariantKey threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache diskCache:(TGModernCache *)diskCache {
+    NSString *imageUrl = [document.thumbnailInfo imageUrlForSizeLargerThanSize:CGSizeMake(size.width, size.height) actualSize:NULL];
+    if (imageUrl == nil) {
+        return nil;
+    }
+    
+    NSString *key = [[NSString alloc] initWithFormat:@"cached-image-%@-%dx%d-%@", imageUrl, (int)size.width, (int)size.height, cacheVariantKey];
+    
+    return [TGSharedMediaSignals cachedRemoteThumbnailWithKey:key size:size pixelProcessingBlock:pixelProcessingBlock fetchData:[SSignal defer:^SSignal *{
+        int datacenterId = 0;
+        int64_t volumeId = 0;
+        int localId = 0;
+        int64_t secret = 0;
+        if (extractFileUrlComponents(imageUrl, &datacenterId, &volumeId, &localId, &secret)) {
+            TLInputFileLocation$inputFileLocation *location = [[TLInputFileLocation$inputFileLocation alloc] init];
+            location.volume_id = volumeId;
+            location.local_id = localId;
+            location.secret = secret;
+            
+            return [TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false];
+        } else {
+            return [SSignal fail:nil];
+        }
+    }] originalImage:[SSignal defer:^SSignal *{
+        return [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+            static NSString *filesDirectory = nil;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^ {
+                filesDirectory = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"files"];
+            });
+            
+            NSString *fileDirectoryName = nil;
+            if (document.documentId != 0) {
+                fileDirectoryName = [[NSString alloc] initWithFormat:@"%" PRIx64 "", document.documentId];
+            } else {
+                fileDirectoryName = [[NSString alloc] initWithFormat:@"local%" PRIx64 "", document.localDocumentId];
+            }
+            NSString *fileDirectory = [filesDirectory stringByAppendingPathComponent:fileDirectoryName];
+            NSString *filePath = [fileDirectory stringByAppendingPathComponent:document.safeFileName];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+                if ([document.mimeType hasPrefix:@"image/"]) {
+                    UIImage *image = [[UIImage alloc] initWithContentsOfFile:filePath];
+                    if (image != nil) {
+                        [subscriber putNext:image];
+                        [subscriber putCompletion];
+                    } else {
+                        [subscriber putError:nil];
+                    }
+                } else if ([document.mimeType isEqualToString:@"video/mp4"]) {
+                    AVAsset *asset = [AVAsset assetWithURL:[NSURL fileURLWithPath:filePath]];
+                    
+                    AVAssetImageGenerator *imageGenerator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
+                    imageGenerator.maximumSize = CGSizeMake(500, 500);
+                    imageGenerator.appliesPreferredTrackTransform = true;
+                    NSError *imageError = nil;
+                    CGImageRef imageRef = [imageGenerator copyCGImageAtTime:CMTimeMake(0, asset.duration.timescale) actualTime:NULL error:&imageError];
+                    UIImage *image = [[UIImage alloc] initWithCGImage:imageRef];
+                    if (imageRef != NULL) {
+                        CGImageRelease(imageRef);
+                    }
+                    
+                    if (image != nil) {
+                        [subscriber putNext:image];
+                        [subscriber putCompletion];
+                    } else {
+                        [subscriber putError:nil];
+                    }
+                }
+            } else {
+                [subscriber putError:nil];
+            }
+            
+            return nil;
+        }] startOnThreadPool:threadPool];
+    }] threadPool:threadPool memoryCache:memoryCache diskCache:diskCache];
+}
+
++ (SSignal *)cachedExternalThumbnail:(NSString *)url size:(CGSize)size pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock cacheVariantKey:(NSString *)cacheVariantKey threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache diskCache:(TGModernCache *)diskCache {
+    
+    NSString *key = [[NSString alloc] initWithFormat:@"cached-external-image-%@-%dx%d-%@", url, (int)size.width, (int)size.height, cacheVariantKey];
+    
+    return [TGSharedMediaSignals cachedRemoteThumbnailWithKey:key size:size pixelProcessingBlock:pixelProcessingBlock fetchData:[SSignal defer:^SSignal *{
+        if (url.length != 0) {
+            return [TGRemoteHttpLocationSignal dataForHttpLocation:url];
+        } else {
+            return [SSignal fail:nil];
+        }
+    }] originalImage:[SSignal fail:nil] threadPool:threadPool memoryCache:memoryCache diskCache:diskCache];
 }
 
 @end

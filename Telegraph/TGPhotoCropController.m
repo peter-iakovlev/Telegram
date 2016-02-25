@@ -330,7 +330,7 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
                 }
                 
                 UIImage *croppedImage = [_cropView croppedImageWithMaxSize:TGPhotoEditorScreenImageMaxSize()];
-                [photoEditor setImage:croppedImage forCropRect:_cropView.cropRect cropRotation:_cropView.rotation cropOrientation:_cropView.cropOrientation];
+                [photoEditor setImage:croppedImage forCropRect:_cropView.cropRect cropRotation:_cropView.rotation cropOrientation:_cropView.cropOrientation fullSize:false];
                 
                 [photoEditor processAnimated:false completion:^
                 {
@@ -512,7 +512,7 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
         
         [_cropView performConfirmAnimated:false updateInterface:false];
      
-        _transitionOutView = [_cropView cropSnapshotView];
+        _transitionOutView = [[UIImageView alloc] initWithImage:[_cropView croppedImageWithMaxSize:CGSizeMake(1280, 1280)]];
         _transitionOutView.frame = _transitionOutFrame;
         
         [self.view addSubview:_transitionOutView];
@@ -521,6 +521,14 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
         
         [self _updateEditorValues];
     }
+}
+
+- (id)currentResultRepresentation
+{
+    if (_transitionOutView != nil && [_transitionOutView isKindOfClass:[UIImageView class]])
+        return ((UIImageView *)_transitionOutView).image;
+    else
+        return [_cropView croppedImageWithMaxSize:CGSizeMake(750, 750)];
 }
 
 #pragma mark - Actions

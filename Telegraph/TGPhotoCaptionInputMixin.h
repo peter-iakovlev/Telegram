@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "TGMediaPickerCaptionInputPanel.h"
 
-@class SSignal;
+@class TGSuggestionContext;
 
 @interface TGPhotoCaptionInputMixin : NSObject
 
@@ -11,8 +11,7 @@
 @property (nonatomic, assign) UIInterfaceOrientation interfaceOrientation;
 @property (nonatomic, readonly) CGFloat keyboardHeight;
 
-@property (nonatomic, copy) SSignal *(^userListSignal)(NSString *mention);
-@property (nonatomic, copy) SSignal *(^hashtagListSignal)(NSString *hashtag);
+@property (nonatomic, strong) TGSuggestionContext *suggestionContext;
 
 @property (nonatomic, copy) UIView *(^panelParentView)(void);
 

@@ -66,7 +66,10 @@ NSString *const TGNeoChatRowIdentifier = @"TGNeoChatRow";
     {
         _viewModel = [[TGNeoChatViewModel alloc] initWithChat:chat users:_currentUsers context:context];
         CGSize containerSize = [[WKInterfaceDevice currentDevice] screenBounds].size;
-        [_viewModel layoutWithContainerSize:containerSize];
+        CGSize contentSize = [_viewModel layoutWithContainerSize:containerSize];
+        
+        self.contentGroup.width = contentSize.width;
+        self.contentGroup.height = contentSize.height;
         
         SSignal *signal = [TGNeoRenderableViewModel renderSignalForViewModel:_viewModel];
         
@@ -144,7 +147,7 @@ NSString *const TGNeoChatRowIdentifier = @"TGNeoChatRow";
     if (oldChat.identifier != newChat.identifier)
         return true;
     
-    if (newChat.isGroup)
+    if (newChat.isGroup || newChat.isChannelGroup)
     {
         if (![oldChat.groupTitle isEqualToString:newChat.groupTitle])
             return true;

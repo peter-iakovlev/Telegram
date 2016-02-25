@@ -57,9 +57,9 @@ int cachedGroupSettingsVersion = -1;
     int soundId = 0;
     int muteUntil = 0;
     bool previewText = true;
-    bool photoNotificationsEnabled = true;
+    bool messagesMuted = false;
     
-    [TGDatabaseInstance() loadPeerNotificationSettings:_peerId soundId:&soundId muteUntil:&muteUntil previewText:&previewText photoNotificationsEnabled:&photoNotificationsEnabled notFound:&notFound];
+    [TGDatabaseInstance() loadPeerNotificationSettings:_peerId soundId:&soundId muteUntil:&muteUntil previewText:&previewText messagesMuted:&messagesMuted notFound:&notFound];
     
     if ((notFound || _force) && !cachedOnly)
     {
@@ -67,7 +67,7 @@ int cachedGroupSettingsVersion = -1;
     }
     else
     {
-        NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:muteUntil], @"muteUntil", [NSNumber numberWithInt:soundId], @"soundId", [NSNumber numberWithBool:previewText], @"previewText", [[NSNumber alloc] initWithBool:photoNotificationsEnabled], @"photoNotificationsEnabled", nil];
+        NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:muteUntil], @"muteUntil", [NSNumber numberWithInt:soundId], @"soundId", [NSNumber numberWithBool:previewText], @"previewText", [[NSNumber alloc] initWithBool:messagesMuted], @"messagesMuted", nil];
         
         [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphObjectNode alloc] initWithObject:dict]];
         
@@ -83,7 +83,7 @@ int cachedGroupSettingsVersion = -1;
     int peerSoundId = 0;
     int muteUntil = 0;
     bool previewText = true;
-    bool photoNotificationsEnabled = true;
+    bool messagesMuted = true;
     
     if ([settings isKindOfClass:[TLPeerNotifySettings$peerNotifySettings class]])
     {
@@ -99,9 +99,8 @@ int cachedGroupSettingsVersion = -1;
         else
             peerSoundId = [concreteSettings.sound intValue];
         
-        photoNotificationsEnabled = concreteSettings.events_mask & 1;
-        
-        previewText = concreteSettings.show_previews;
+        previewText = concreteSettings.flags & (1 << 0);
+        messagesMuted = concreteSettings.flags & (1 << 1);
     }
     
     TGChangeNotificationSettingsFutureAction *action = (TGChangeNotificationSettingsFutureAction *)[TGDatabaseInstance() loadFutureAction:_peerId type:TGChangeNotificationSettingsFutureActionType];
@@ -111,14 +110,14 @@ int cachedGroupSettingsVersion = -1;
         muteUntil = action.muteUntil;
         peerSoundId = action.soundId;
         previewText = action.previewText;
-        photoNotificationsEnabled = action.photoNotificationsEnabled;
+        messagesMuted = action.messagesMuted;
     }
     else if ([TGDatabaseInstance() loadFutureAction:0 type:TGClearNotificationsFutureActionType] != nil)
     {
         muteUntil = 0;
         peerSoundId = 1;
         previewText = true;
-        photoNotificationsEnabled = true;
+        messagesMuted = false;
     }
     
     if (_peerId == INT_MAX - 1)
@@ -129,20 +128,20 @@ int cachedGroupSettingsVersion = -1;
     bool force = _force;
     int64_t peerId = _peerId;
     
-    [TGDatabaseInstance() storePeerNotificationSettings:_peerId soundId:peerSoundId muteUntil:muteUntil previewText:previewText photoNotificationsEnabled:photoNotificationsEnabled writeToActionQueue:false completion:^(bool changed)
+    [TGDatabaseInstance() storePeerNotificationSettings:_peerId soundId:peerSoundId muteUntil:muteUntil previewText:previewText messagesMuted:messagesMuted writeToActionQueue:false completion:^(bool changed)
     {
         if (changed && force)
         {
             [ActionStageInstance() dispatchOnStageQueue:^
             {
-                NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:muteUntil], @"muteUntil", [NSNumber numberWithInt:peerSoundId], @"soundId", [[NSNumber alloc] initWithBool:previewText], @"previewText", [[NSNumber alloc] initWithBool:photoNotificationsEnabled], @"photoNotificationsEnabled", nil];
+                NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:muteUntil], @"muteUntil", [NSNumber numberWithInt:peerSoundId], @"soundId", [[NSNumber alloc] initWithBool:previewText], @"previewText", [[NSNumber alloc] initWithBool:messagesMuted], @"messagesMuted", nil];
                 
                 [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/peerSettings/(%lld)", peerId] resource:[[SGraphObjectNode alloc] initWithObject:dict]];
             }];
         }
     }];
     
-    NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:muteUntil], @"muteUntil", [NSNumber numberWithInt:peerSoundId], @"soundId", [NSNumber numberWithBool:previewText], @"previewText", [[NSNumber alloc] initWithBool:photoNotificationsEnabled], @"photoNotificationsEnabled", nil];
+    NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:muteUntil], @"muteUntil", [NSNumber numberWithInt:peerSoundId], @"soundId", [NSNumber numberWithBool:previewText], @"previewText", [[NSNumber alloc] initWithBool:messagesMuted], @"messagesMuted", nil];
     
     [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphObjectNode alloc] initWithObject:dict]];
 }

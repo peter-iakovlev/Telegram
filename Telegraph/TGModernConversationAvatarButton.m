@@ -161,7 +161,7 @@
     }
     else
     {
-        CGFloat rtlOffset = 11.0f;
+        CGFloat rtlOffset = -10.0f;
         if (TGAppDelegateInstance.rootController.isRTL) {
             rtlOffset = -12.0f;
         }

@@ -11,8 +11,11 @@
 
 #import "TGStringUtils.h"
 
+#import "TGHeaderCollectionItem.h"
+
 @interface TGPrivacyLastSeenController ()
 {
+    TGPrivacySettingsMode _mode;
     TGNotificationPrivacyAccountSetting *_savedPrivacySettings;
     TGNotificationPrivacyAccountSetting *_privacySettings;
     bool _settingsModified;
@@ -33,12 +36,21 @@
 
 @implementation TGPrivacyLastSeenController
 
-- (instancetype)initWithPrivacySettings:(TGNotificationPrivacyAccountSetting *)privacySettings privacySettingsChanged:(void (^)(TGNotificationPrivacyAccountSetting *))privacySettingsChanged
+- (instancetype)initWithMode:(TGPrivacySettingsMode)mode privacySettings:(TGNotificationPrivacyAccountSetting *)privacySettings privacySettingsChanged:(void (^)(TGNotificationPrivacyAccountSetting *))privacySettingsChanged
 {
     self = [super init];
     if (self != nil)
     {
-        self.title = TGLocalized(@"PrivacyLastSeenSettings.Title");
+        _mode = mode;
+        
+        switch (_mode) {
+            case TGPrivacySettingsModeLastSeen:
+                self.title = TGLocalized(@"PrivacyLastSeenSettings.Title");
+                break;
+            case TGPrivacySettingsModeGroupsAndChannels:
+                self.title = TGLocalized(@"Privacy.GroupsAndChannels");
+                break;
+        }
         
         _privacySettingsChanged = [privacySettingsChanged copy];
         
@@ -48,21 +60,54 @@
         _contactsItem.alignToRight = true;
         _nobodyItem = [[TGCheckCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.LastSeenNobody") action:@selector(nobodyPressed)];
         _nobodyItem.alignToRight = true;
-        TGCollectionMenuSection *topSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            _everybodyItem,
-            _contactsItem,
-            _nobodyItem,
-            [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"PrivacyLastSeenSettings.CustomHelp")]
-        ]];
+        NSString *customHelpText = nil;
+        NSString *headerString = nil;
+        switch (_mode) {
+            case TGPrivacySettingsModeLastSeen:
+                customHelpText = TGLocalized(@"PrivacyLastSeenSettings.CustomHelp");
+                headerString = TGLocalized(@"PrivacyLastSeenSettings.WhoCanSeeMyTimestamp");
+                break;
+            case TGPrivacySettingsModeGroupsAndChannels:
+                customHelpText = TGLocalized(@"Privacy.GroupsAndChannels.CustomHelp");
+                headerString = TGLocalized(@"Privacy.GroupsAndChannels.WhoCanAddMe");
+                break;
+        }
+        
+        NSMutableArray *topSectionItems = [[NSMutableArray alloc] init];
+        [topSectionItems addObject:[[TGHeaderCollectionItem alloc] initWithTitle:headerString]];
+        [topSectionItems addObject:_everybodyItem];
+        [topSectionItems addObject:_contactsItem];
+        if (_mode == TGPrivacySettingsModeLastSeen) {
+            [topSectionItems addObject:_nobodyItem];
+        }
+        [topSectionItems addObject:[[TGCommentCollectionItem alloc] initWithText:customHelpText]];
+        TGCollectionMenuSection *topSection = [[TGCollectionMenuSection alloc] initWithItems:topSectionItems];
         UIEdgeInsets topSectionInsets = topSection.insets;
         topSectionInsets.top = 32.0f;
         topSection.insets = topSectionInsets;
         [self.menuSections addSection:topSection];
         
-        _alwaysShareWithItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacyLastSeenSettings.AlwaysShareWith") action:@selector(alwaysShareWithPressed)];
-        _neverShareWithItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacyLastSeenSettings.NeverShareWith") action:@selector(neverShareWithPressed)];
+        NSString *alwaysString = nil;
+        NSString *neverString = nil;
+        NSString *helpText = nil;
+        switch (_mode) {
+            case TGPrivacySettingsModeLastSeen:
+                alwaysString = TGLocalized(@"PrivacyLastSeenSettings.AlwaysShareWith");
+                neverString = TGLocalized(@"PrivacyLastSeenSettings.NeverShareWith");
+                helpText = TGLocalized(@"PrivacyLastSeenSettings.CustomShareSettingsHelp");
+                break;
+                
+            case TGPrivacySettingsModeGroupsAndChannels:
+                alwaysString = TGLocalized(@"Privacy.GroupsAndChannels.AlwaysAllow");
+                neverString = TGLocalized(@"Privacy.GroupsAndChannels.NeverAllow");
+                helpText = TGLocalized(@"Privacy.GroupsAndChannels.CustomShareHelp");
+                break;
+        }
+        
+        _alwaysShareWithItem = [[TGVariantCollectionItem alloc] initWithTitle:alwaysString action:@selector(alwaysShareWithPressed)];
+        _neverShareWithItem = [[TGVariantCollectionItem alloc] initWithTitle:neverString action:@selector(neverShareWithPressed)];
         _customShareSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"PrivacyLastSeenSettings.CustomShareSettingsHelp")]
+            [[TGCommentCollectionItem alloc] initWithText:helpText]
         ]];
         [self.menuSections addSection:_customShareSection];
         
@@ -128,13 +173,14 @@
         default:
             break;
     }
-    [UIView performWithoutAnimation:^
-    {
-        [TGHacks setAnimationDurationFactor:0.01f];
-        [self.collectionView reloadSections:[NSIndexSet indexSetWithIndex:sectionIndex]];
-        [self.collectionView layoutSubviews];
-        [TGHacks setAnimationDurationFactor:1.0f];
-    }];
+    //[TGHacks setAnimationDurationFactor:0.01f];
+    //[self.collectionView reloadSections:[NSIndexSet indexSetWithIndex:sectionIndex]];
+    //[self.collectionView layoutSubviews];
+    //[TGHacks setAnimationDurationFactor:1.0f];
+    NSIndexPath *indexPath = [self.collectionView indexPathsForSelectedItems].firstObject;
+    [self.collectionView reloadData];
+    [self.collectionView selectItemAtIndexPath:indexPath animated:false scrollPosition:UICollectionViewScrollPositionNone];
+    [self.collectionView deselectItemAtIndexPath:indexPath animated:true];
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -236,10 +282,23 @@ static UIView *_findBackArrow(UIView *view)
 
 - (void)alwaysShareWithPressed
 {
+    NSString *titleString = nil;
+    NSString *placeholderString = nil;
+    switch (_mode) {
+        case TGPrivacySettingsModeLastSeen:
+            titleString = TGLocalized(@"PrivacyLastSeenSettings.AlwaysShareWith.Title");
+            placeholderString = TGLocalized(@"PrivacyLastSeenSettings.AlwaysShareWith.Placeholder");
+            break;
+        case TGPrivacySettingsModeGroupsAndChannels:
+            titleString = TGLocalized(@"Privacy.GroupsAndChannels.AlwaysAllow.Title");
+            placeholderString = TGLocalized(@"Privacy.GroupsAndChannels.AlwaysAllow.Placeholder");
+            break;
+    }
+    
     __weak TGPrivacyLastSeenController *weakSelf = self;
     if (_privacySettings.alwaysShareWithUserIds.count == 0)
     {
-        _addInterfaceCoordinator = [TGPrivacyCustomShareListController presentAddInterfaceWithTitle:TGLocalized(@"PrivacyLastSeenSettings.AlwaysShareWith.Title") contactSearchPlaceholder:TGLocalized(@"PrivacyLastSeenSettings.AlwaysShareWith.Placeholder") onController:self completion:^(NSArray *userIds)
+        _addInterfaceCoordinator = [TGPrivacyCustomShareListController presentAddInterfaceWithTitle:titleString contactSearchPlaceholder:placeholderString onController:self completion:^(NSArray *userIds)
         {
             __strong TGPrivacyLastSeenController *strongSelf = weakSelf;
             if (strongSelf != nil)
@@ -249,7 +308,7 @@ static UIView *_findBackArrow(UIView *view)
                 
                 if (userIds.count != 0)
                 {
-                    [strongSelf.navigationController pushViewController:[[TGPrivacyCustomShareListController alloc] initWithTitle:TGLocalized(@"PrivacyLastSeenSettings.AlwaysShareWith.Title") contactSearchPlaceholder:TGLocalized(@"PrivacyLastSeenSettings.AlwaysShareWith.Placeholder") userIds:strongSelf->_privacySettings.alwaysShareWithUserIds userIdsChanged:^(NSArray *userIds)
+                    [strongSelf.navigationController pushViewController:[[TGPrivacyCustomShareListController alloc] initWithTitle:titleString contactSearchPlaceholder:placeholderString userIds:strongSelf->_privacySettings.alwaysShareWithUserIds userIdsChanged:^(NSArray *userIds)
                     {
                         __strong TGPrivacyLastSeenController *strongSelf = weakSelf;
                         if (strongSelf != nil)
@@ -263,7 +322,7 @@ static UIView *_findBackArrow(UIView *view)
     }
     else
     {
-        [self.navigationController pushViewController:[[TGPrivacyCustomShareListController alloc] initWithTitle:TGLocalized(@"PrivacyLastSeenSettings.AlwaysShareWith.Title") contactSearchPlaceholder:TGLocalized(@"PrivacyLastSeenSettings.AlwaysShareWith.Placeholder") userIds:_privacySettings.alwaysShareWithUserIds userIdsChanged:^(NSArray *userIds)
+        [self.navigationController pushViewController:[[TGPrivacyCustomShareListController alloc] initWithTitle:titleString contactSearchPlaceholder:placeholderString userIds:_privacySettings.alwaysShareWithUserIds userIdsChanged:^(NSArray *userIds)
         {
             __strong TGPrivacyLastSeenController *strongSelf = weakSelf;
             if (strongSelf != nil)
@@ -274,11 +333,23 @@ static UIView *_findBackArrow(UIView *view)
 
 - (void)neverShareWithPressed
 {
-    __weak TGPrivacyLastSeenController *weakSelf = self;
+    NSString *titleString = nil;
+    NSString *placeholderString = nil;
+    switch (_mode) {
+        case TGPrivacySettingsModeLastSeen:
+            titleString = TGLocalized(@"PrivacyLastSeenSettings.NeverShareWith.Title");
+            placeholderString = TGLocalized(@"PrivacyLastSeenSettings.NeverShareWith.Placeholder");
+            break;
+        case TGPrivacySettingsModeGroupsAndChannels:
+            titleString = TGLocalized(@"Privacy.GroupsAndChannels.NeverAllow.Title");
+            placeholderString = TGLocalized(@"Privacy.GroupsAndChannels.NeverAllow.Placeholder");
+            break;
+    }
     
+    __weak TGPrivacyLastSeenController *weakSelf = self;
     if (_privacySettings.neverShareWithUserIds.count == 0)
     {
-        _addInterfaceCoordinator = [TGPrivacyCustomShareListController presentAddInterfaceWithTitle:TGLocalized(@"PrivacyLastSeenSettings.NeverShareWith.Title") contactSearchPlaceholder:TGLocalized(@"PrivacyLastSeenSettings.NeverShareWith.Placeholder") onController:self completion:^(NSArray *userIds)
+        _addInterfaceCoordinator = [TGPrivacyCustomShareListController presentAddInterfaceWithTitle:titleString contactSearchPlaceholder:placeholderString onController:self completion:^(NSArray *userIds)
         {
             __strong TGPrivacyLastSeenController *strongSelf = weakSelf;
             if (strongSelf != nil)
@@ -288,7 +359,7 @@ static UIView *_findBackArrow(UIView *view)
                 
                 if (userIds.count != 0)
                 {
-                    [strongSelf.navigationController pushViewController:[[TGPrivacyCustomShareListController alloc] initWithTitle:TGLocalized(@"PrivacyLastSeenSettings.NeverShareWith.Title") contactSearchPlaceholder:TGLocalized(@"PrivacyLastSeenSettings.NeverShareWith.Placeholder") userIds:strongSelf->_privacySettings.neverShareWithUserIds userIdsChanged:^(NSArray *userIds)
+                    [strongSelf.navigationController pushViewController:[[TGPrivacyCustomShareListController alloc] initWithTitle:titleString contactSearchPlaceholder:placeholderString userIds:strongSelf->_privacySettings.neverShareWithUserIds userIdsChanged:^(NSArray *userIds)
                     {
                         __strong TGPrivacyLastSeenController *strongSelf = weakSelf;
                         if (strongSelf != nil)
@@ -302,7 +373,7 @@ static UIView *_findBackArrow(UIView *view)
     }
     else
     {
-        [self.navigationController pushViewController:[[TGPrivacyCustomShareListController alloc] initWithTitle:TGLocalized(@"PrivacyLastSeenSettings.NeverShareWith.Title") contactSearchPlaceholder:TGLocalized(@"PrivacyLastSeenSettings.NeverShareWith.Placeholder") userIds:_privacySettings.neverShareWithUserIds userIdsChanged:^(NSArray *userIds)
+        [self.navigationController pushViewController:[[TGPrivacyCustomShareListController alloc] initWithTitle:titleString contactSearchPlaceholder:placeholderString userIds:_privacySettings.neverShareWithUserIds userIdsChanged:^(NSArray *userIds)
         {
             __strong TGPrivacyLastSeenController *strongSelf = weakSelf;
             if (strongSelf != nil)

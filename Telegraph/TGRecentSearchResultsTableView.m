@@ -48,7 +48,7 @@
     UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, sectionView.frame.origin.y - (first ? separatorHeight : 0.0f), 10, separatorHeight)];
     separatorView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     separatorView.backgroundColor = TGSeparatorColor();
-    [sectionContainer addSubview:separatorView];
+    //[sectionContainer addSubview:separatorView];
     
     UILabel *sectionLabel = [[UILabel alloc] init];
     sectionLabel.tag = 100;
@@ -62,7 +62,7 @@
     sectionLabel.text = TGLocalized(@"WebSearch.RecentSectionTitle");
     sectionLabel.textColor = [UIColor blackColor];
     [sectionLabel sizeToFit];
-    sectionLabel.frame = CGRectMake(14.0f, 2.0f + TGRetinaPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
+    sectionLabel.frame = CGRectMake(14.0f, 3.0f + TGRetinaPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
     
     TGModernButton *clearButton = [[TGModernButton alloc] init];
     [clearButton setTitle:TGLocalized(@"WebSearch.RecentSectionClear") forState:UIControlStateNormal];

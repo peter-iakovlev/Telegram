@@ -14,6 +14,8 @@
 #import "TGContactsController.h"
 #import "TGAccountSettingsController.h"
 #import "TGRootController.h"
+#import "TGNotificationController.h"
+#import "TGKeyCommandController.h"
 
 #import "ActionStage.h"
 
@@ -71,6 +73,12 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 @property (nonatomic) bool autoDownloadAudioInPrivateChats;
 
 @property (nonatomic) bool autoPlayAudio;
+@property (nonatomic) bool autoPlayAnimations;
+
+@property (nonatomic) bool allowSecretWebpages;
+@property (nonatomic) bool allowSecretWebpagesInitialized;
+
+@property (nonatomic) bool secretInlineBotsInitialized;
 
 @property (nonatomic) int alwaysShowStickersMode;
 
@@ -79,6 +87,8 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 @property (nonatomic, strong) TGNavigationController *loginNavigationController;
 
 @property (nonatomic, strong) TGRootController *rootController;
+
+@property (nonatomic, readonly) TGKeyCommandController *keyCommandController;
 
 @property (nonatomic) bool deviceProximityState;
 @property (nonatomic) TGHolderSet *deviceProximityListeners;
@@ -111,9 +121,6 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 
 - (void)playSound:(NSString *)name vibrate:(bool)vibrate;
 - (void)playNotificationSound:(NSString *)name;
-- (void)displayNotification:(NSString *)identifier timeout:(NSTimeInterval)timeout constructor:(UIView *(^)(UIView *existingView))constructor watcher:(ASHandle *)watcher watcherAction:(NSString *)watcherAction watcherOptions:(NSDictionary *)watcherOptions;
-- (void)dismissNotification;
-- (UIView *)currentNotificationView;
 
 - (void)requestDeviceToken:(id<TGDeviceTokenListener>)listener;
 

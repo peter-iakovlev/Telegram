@@ -16,6 +16,7 @@
 #import "TGBridgeMessage.h"
 #import "TGBridgeChat.h"
 #import "TGBridgeUser.h"
+#import "TGBridgeUserCache.h"
 
 #import "TGPeerIdAdapter.h"
 
@@ -62,7 +63,8 @@
     int64_t peerId = (chatId != nil) ? [chatId integerValue] : [fromId integerValue];
     int32_t messageId = (int32_t)[mid integerValue];
     
-    [self processMessageWithId:messageId peerId:peerId defaultText:remoteNotification[@"aps"][@"alert"] completion:completionHandler];
+    NSString *defaultText = [NSString stringWithFormat:remoteNotification[@"aps"][@"alert"][@"loc-key"] array:remoteNotification[@"aps"][@"alert"][@"loc-args"]];
+    [self processMessageWithId:messageId peerId:peerId defaultText:defaultText completion:completionHandler];
 }
 
 - (void)processMessageWithId:(int32_t)messageId peerId:(int64_t)peerId defaultText:(NSString *)defaultText completion:(void (^)(WKUserNotificationInterfaceType))completionHandler
@@ -108,16 +110,16 @@
         if (strongSelf == nil)
             return;
         
-        if ([messageData isKindOfClass:[NSNumber class]])
-        {
-            self.messageTextLabel.text = defaultText;
-            completionHandler(WKUserNotificationInterfaceTypeCustom);            
-        }
-        else
+        if ([messageData isKindOfClass:[NSData class]])
         {
             TGBridgeResponse *response = [NSKeyedUnarchiver unarchiveObjectWithData:messageData];
             NSDictionary *message = response.next;
             [strongSelf updateWithMessage:message[TGBridgeMessageKey] users:message[TGBridgeUsersDictionaryKey] chat:message[TGBridgeChatKey] completion:completionHandler];
+        }
+        else
+        {
+            self.messageTextLabel.text = defaultText;
+            completionHandler(WKUserNotificationInterfaceTypeCustom);
         }
     } error:^(id error)
     {
@@ -219,15 +221,24 @@
                 
                 [TGStickerViewModel updateWithMessage:message isGroup:false context:nil currentDocumentId:NULL authorLabel:nil imageGroup:self.stickerGroup isVisible:nil completion:completionBlock];
             }
+            else if (documentAttachment.isAudio && documentAttachment.isVoice)
+            {
+                fileGroupHidden = false;
+                
+                self.titleLabel.text = TGLocalized(@"Message.Audio");
+                
+                NSInteger durationMinutes = floor(documentAttachment.duration / 60.0);
+                NSInteger durationSeconds = documentAttachment.duration % 60;
+                self.subtitleLabel.text = [NSString stringWithFormat:@"%ld:%02ld", (long)durationMinutes, (long)durationSeconds];
+                
+                self.audioGroup.hidden = false;
+                self.fileIconGroup.hidden = true;
+                self.venueIcon.hidden = true;
+            }
             else
             {
                 fileGroupHidden = false;
                 
-                NSString *extension = [[documentAttachment.fileName pathExtension] lowercaseString];
-                if (extension.length == 0)
-                    extension = @"file";
-                
-                self.extensionLabel.text = extension;
                 self.titleLabel.text = documentAttachment.fileName;
                 self.subtitleLabel.text = [TGStringUtils stringForFileSize:documentAttachment.fileSize precision:2];
                 
@@ -287,12 +298,24 @@
             self.titleLabel.text = [contactAttachment displayName];
             self.subtitleLabel.text = contactAttachment.prettyPhoneNumber;
         }
+        else if ([attachment isKindOfClass:[TGBridgeActionMediaAttachment class]])
+        {
+            messageText = [TGMessageViewModel stringForActionAttachment:(TGBridgeActionMediaAttachment *)attachment message:message users:users forChannel:(chat.isChannel && !chat.isChannelGroup)];
+        }
     }
     
     if (messageText == nil)
         messageText = message.text;
     
-    [TGMessageViewModel updateForwardHeaderGroup:self.forwardHeaderGroup titleLabel:self.forwardTitleLabel fromLabel:self.forwardFromLabel forwardAttachment:forwardAttachment textColor:[UIColor blackColor]];
+    id forwardPeer = nil;
+    if (forwardAttachment != nil)
+    {
+        if (TGPeerIdIsChannel(forwardAttachment.peerId))
+            forwardPeer = users[@(forwardAttachment.peerId)];
+        else
+            forwardPeer = [[TGBridgeUserCache instance] userWithId:(int32_t)forwardAttachment.peerId];
+    }
+    [TGMessageViewModel updateForwardHeaderGroup:self.forwardHeaderGroup titleLabel:self.forwardTitleLabel fromLabel:self.forwardFromLabel forwardAttachment:forwardAttachment forwardPeer:forwardPeer textColor:[UIColor blackColor]];
     
     if (replyAttachment != nil)
         completionCount++;

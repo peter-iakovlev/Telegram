@@ -1,6 +1,7 @@
 #import "TGNeoBubbleMessageViewModel.h"
 #import "TGNeoBackgroundViewModel.h"
 
+#import "TGExtensionDelegate.h"
 #import "TGColor.h"
 
 #import "TGBridgeContext.h"
@@ -21,14 +22,14 @@ const CGFloat TGNeoBubbleHeaderSpacing = 2.0f;
 
 @implementation TGNeoBubbleMessageViewModel
 
-- (instancetype)initWithMessage:(TGBridgeMessage *)message users:(NSDictionary *)users context:(TGBridgeContext *)context
+- (instancetype)initWithMessage:(TGBridgeMessage *)message type:(TGNeoMessageType)type users:(NSDictionary *)users context:(TGBridgeContext *)context
 {
-    self = [super initWithMessage:message users:users context:context];
+    self = [super initWithMessage:message type:type users:users context:context];
     if (self != nil)
     {
         self.showBubble = true;
         
-        if (message.cid < 0 && !TGPeerIdIsChannel(message.cid) && !message.outgoing)
+        if (!message.outgoing && type == TGNeoMessageTypeGroup)
         {
             _authorNameModel = [[TGNeoLabelViewModel alloc] initWithText:[users[@(message.fromUid)] displayName] font:[UIFont systemFontOfSize:14] color:[TGColor colorForUserId:(int32_t)message.fromUid myUserId:context.userId] attributes:nil];
             [self addSubmodel:_authorNameModel];
@@ -46,7 +47,14 @@ const CGFloat TGNeoBubbleHeaderSpacing = 2.0f;
         
         if (forwardAttachment != nil)
         {
-            _forwardHeaderModel = [[TGNeoForwardHeaderViewModel alloc] initWithForwardAttachment:forwardAttachment user:users[@(forwardAttachment.uid)] outgoing:message.outgoing];
+            if (TGPeerIdIsChannel(forwardAttachment.peerId))
+            {
+                _forwardHeaderModel = [[TGNeoForwardHeaderViewModel alloc] initWithForwardAttachment:forwardAttachment chat:users[@(forwardAttachment.peerId)] outgoing:message.outgoing];
+            }
+            else
+            {
+                _forwardHeaderModel = [[TGNeoForwardHeaderViewModel alloc] initWithForwardAttachment:forwardAttachment user:users[@(forwardAttachment.peerId)] outgoing:message.outgoing];
+            }
             [self addSubmodel:_forwardHeaderModel];
         }
         
@@ -141,6 +149,37 @@ const CGFloat TGNeoBubbleHeaderSpacing = 2.0f;
     self.contentSize = containerSize;
             
     return CGSizeZero;
+}
+
++ (CGFloat)bodyTextFontSize
+{
+    TGContentSizeCategory category = [TGExtensionDelegate instance].contentSizeCategory;
+    
+    switch (category)
+    {
+        case TGContentSizeCategoryXS:
+            return 14.0f;
+            
+        case TGContentSizeCategoryS:
+            return 15.0f;
+            
+        case TGContentSizeCategoryL:
+            return 16.0f;
+            
+        case TGContentSizeCategoryXL:
+            return 17.0f;
+            
+        case TGContentSizeCategoryXXL:
+            return 18.0f;
+            
+        case TGContentSizeCategoryXXXL:
+            return 19.0f;
+            
+        default:
+            break;
+    }
+    
+    return 16.0f;
 }
 
 @end

@@ -163,32 +163,6 @@
 
 @end
 
-@implementation TLMessagesFilter$inputMessagesFilterAudio : TLMessagesFilter
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0xcfc87522;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0xd0436d20;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
-{
-    TLMessagesFilter$inputMessagesFilterAudio *object = [[TLMessagesFilter$inputMessagesFilterAudio alloc] init];
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
-{
-}
-
-
-@end
-
 @implementation TLMessagesFilter$inputMessagesFilterPhotoVideoDocuments : TLMessagesFilter
 
 
@@ -231,6 +205,58 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLMessagesFilter$inputMessagesFilterUrl *object = [[TLMessagesFilter$inputMessagesFilterUrl alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLMessagesFilter$inputMessagesFilterVoice : TLMessagesFilter
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x50f5c392;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xcb0789b9;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLMessagesFilter$inputMessagesFilterVoice *object = [[TLMessagesFilter$inputMessagesFilterVoice alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLMessagesFilter$inputMessagesFilterMusic : TLMessagesFilter
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x3751b49e;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x951de5b3;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLMessagesFilter$inputMessagesFilterMusic *object = [[TLMessagesFilter$inputMessagesFilterMusic alloc] init];
     return object;
 }
 

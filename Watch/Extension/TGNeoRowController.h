@@ -1,4 +1,5 @@
 #import "WKInterfaceTable+TGDataDrivenTable.h"
+#import "TGNeoMessageViewModel.h"
 
 @class TGBridgeMessage;
 @class TGNeoMessageViewModel;
@@ -9,6 +10,8 @@
 @property (nonatomic, copy) bool (^shouldRenderContent)(void);
 @property (nonatomic, copy) bool (^shouldRenderOnMainThread)(void);
 @property (nonatomic, copy) void (^animate)(void (^)(void));
+
+@property (nonatomic, strong) NSDictionary *additionalPeers;
 
 @property (nonatomic, weak) IBOutlet WKInterfaceGroup *bubbleGroup;
 @property (nonatomic, weak) IBOutlet WKInterfaceGroup *contentGroup;
@@ -26,15 +29,18 @@
 @property (nonatomic, weak) IBOutlet WKInterfaceGroup *avatarGroup;
 @property (nonatomic, weak) IBOutlet WKInterfaceLabel *avatarLabel;
 @property (nonatomic, weak) IBOutlet WKInterfaceButton *audioButton;
+@property (nonatomic, weak) IBOutlet WKInterfaceGroup *audioButtonGroup;
 @property (nonatomic, weak) IBOutlet WKInterfaceImage *audioIcon;
 
 @property (nonatomic, weak) IBOutlet WKInterfaceGroup *statusGroup;
 @property (nonatomic, weak) IBOutlet WKInterfaceImage *statusIcon;
 
-@property (nonatomic, copy) void (^remotePressed)(void);
+@property (nonatomic, copy) void (^buttonPressed)(void);
 
-- (void)updateWithMessage:(TGBridgeMessage *)message context:(TGBridgeContext *)context index:(NSInteger)index channel:(bool)channel;
+- (void)updateWithMessage:(TGBridgeMessage *)message context:(TGBridgeContext *)context index:(NSInteger)index type:(TGNeoMessageType)type;
 - (void)applyAdditionalLayoutForViewModel:(TGNeoMessageViewModel *)viewModel;
+
+- (void)setProcessingState:(bool)processing;
 
 - (IBAction)remotePressedAction;
 

@@ -4,16 +4,15 @@
 
 #import "UIControl+HitTestEdgeInsets.h"
 
-const CGFloat TGCameraModeControlInteritemSpace = 19.0f;
 const CGFloat TGCameraModeControlVerticalInteritemSpace = 29.0f;
 
 @interface TGCameraModeControl ()
 {
     UIImageView *_dotView;
     UIControl *_wrapperView;
-    UIButton *_photoModeButton;
-    UIButton *_videoModeButton;
-    UIButton *_squareModeButton;
+    
+    CGFloat _kerning;
+    NSArray *_buttons;
     
     UIView *_maskView;
     CAGradientLayer *_maskLayer;
@@ -43,68 +42,44 @@ const CGFloat TGCameraModeControlVerticalInteritemSpace = 29.0f;
         
         _dotView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 6, 6)];
         _dotView.image = dotImage;
-        [self addSubview:_dotView];
+        //[self addSubview:_dotView];
         
-        CGFloat kerning = 0.0f;
         if (frame.size.width > frame.size.height)
-            kerning = 3.5f;
+            _kerning = 3.5f;
         else
-            kerning = 2.0f;
-                
-        _videoModeButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 64, 20)];
-        _videoModeButton.backgroundColor = [UIColor clearColor];
-        _videoModeButton.exclusiveTouch = true;
-        _videoModeButton.hitTestEdgeInsets = UIEdgeInsetsMake(-10, -10, -10, -10);
-        _videoModeButton.tag = PGCameraModeVideo;
-        _videoModeButton.titleLabel.font = [TGCameraInterfaceAssets normalFontOfSize:13];
-        [_videoModeButton setAttributedTitle:[[NSAttributedString alloc] initWithString:TGLocalized(@"Camera.VideoMode") attributes:@{ NSForegroundColorAttributeName: [TGCameraInterfaceAssets normalColor], NSKernAttributeName: @(kerning) }] forState:UIControlStateNormal];
-        [_videoModeButton setAttributedTitle:[[NSAttributedString alloc] initWithString:TGLocalized(@"Camera.VideoMode") attributes:@{ NSForegroundColorAttributeName: [TGCameraInterfaceAssets accentColor], NSKernAttributeName: @(kerning) }] forState:UIControlStateSelected];
-        [_videoModeButton setAttributedTitle:[_videoModeButton attributedTitleForState:UIControlStateSelected] forState:UIControlStateHighlighted | UIControlStateSelected];
-        [_videoModeButton sizeToFit];
-        [_videoModeButton addTarget:self action:@selector(buttonPressed:) forControlEvents:UIControlEventTouchUpInside];
-        
-        _photoModeButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 64, 20)];
-        _photoModeButton.backgroundColor = [UIColor clearColor];
-        _photoModeButton.exclusiveTouch = true;
-        _photoModeButton.hitTestEdgeInsets = UIEdgeInsetsMake(-10, -10, -10, -10);
-        _photoModeButton.tag = PGCameraModePhoto;
-        _photoModeButton.titleLabel.font = [TGCameraInterfaceAssets normalFontOfSize:13];
-        [_photoModeButton setAttributedTitle:[[NSAttributedString alloc] initWithString:TGLocalized(@"Camera.PhotoMode") attributes:@{ NSForegroundColorAttributeName: [TGCameraInterfaceAssets normalColor], NSKernAttributeName: @(kerning) }] forState:UIControlStateNormal];
-        [_photoModeButton setAttributedTitle:[[NSAttributedString alloc] initWithString:TGLocalized(@"Camera.PhotoMode") attributes:@{ NSForegroundColorAttributeName: [TGCameraInterfaceAssets accentColor], NSKernAttributeName: @(kerning) }] forState:UIControlStateSelected];
-        [_photoModeButton setAttributedTitle:[_photoModeButton attributedTitleForState:UIControlStateSelected] forState:UIControlStateHighlighted | UIControlStateSelected];
-        [_photoModeButton sizeToFit];
-        [_photoModeButton addTarget:self action:@selector(buttonPressed:) forControlEvents:UIControlEventTouchUpInside];
-        
-        _squareModeButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 64, 20)];
-        _squareModeButton.backgroundColor = [UIColor clearColor];
-        _squareModeButton.exclusiveTouch = true;
-        _squareModeButton.hitTestEdgeInsets = UIEdgeInsetsMake(-10, -10, -10, -10);
-        _squareModeButton.tag = PGCameraModeSquare;
-        _squareModeButton.titleLabel.font = [TGCameraInterfaceAssets normalFontOfSize:13];
-        [_squareModeButton setAttributedTitle:[[NSAttributedString alloc] initWithString:TGLocalized(@"Camera.SquareMode") attributes:@{ NSForegroundColorAttributeName: [TGCameraInterfaceAssets normalColor], NSKernAttributeName: @(kerning) }] forState:UIControlStateNormal];
-        [_squareModeButton setAttributedTitle:[[NSAttributedString alloc] initWithString:TGLocalized(@"Camera.SquareMode") attributes:@{ NSForegroundColorAttributeName: [TGCameraInterfaceAssets accentColor], NSKernAttributeName: @(kerning) }] forState:UIControlStateSelected];
-        [_squareModeButton setAttributedTitle:[_photoModeButton attributedTitleForState:UIControlStateSelected] forState:UIControlStateHighlighted | UIControlStateSelected];
-        [_squareModeButton sizeToFit];
-        [_squareModeButton addTarget:self action:@selector(buttonPressed:) forControlEvents:UIControlEventTouchUpInside];
+            _kerning = 2.0f;
         
         _maskView = [[UIView alloc] initWithFrame:self.bounds];
         _maskView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [self addSubview:_maskView];
         
         _wrapperView = [[UIControl alloc] initWithFrame:CGRectZero];
+        _wrapperView.backgroundColor = [UIColor clearColor];
         _wrapperView.hitTestEdgeInsets = UIEdgeInsetsMake(-10, -10, -10, -10);
         _wrapperView.opaque = false;
-        [_wrapperView addSubview:_videoModeButton];
-        [_wrapperView addSubview:_photoModeButton];
-        [_wrapperView addSubview:_squareModeButton];
         [_maskView addSubview:_wrapperView];
+        
+        _buttons = @
+        [
+         [self _createButtonForMode:PGCameraModeVideo title:TGLocalized(@"Camera.VideoMode")],
+         [self _createButtonForMode:PGCameraModePhoto title:TGLocalized(@"Camera.PhotoMode")],
+         [self _createButtonForMode:PGCameraModeSquare title:TGLocalized(@"Camera.SquareMode")],
+        // [self _createButtonForMode:PGCameraModeClip title:TGLocalized(@"Camera.MomentMode")]
+        ];
+        
+        for (UIButton *button in _buttons)
+            [_wrapperView addSubview:button];
         
         if (frame.size.width > frame.size.height)
         {
-            _videoModeButton.frame = CGRectMake(0, 0, CGFloor(_videoModeButton.frame.size.width), 20);
-            _photoModeButton.frame = CGRectMake(_videoModeButton.frame.size.width + TGCameraModeControlInteritemSpace, 0, CGFloor(_photoModeButton.frame.size.width), 20);
-            _squareModeButton.frame = CGRectMake(_videoModeButton.frame.size.width + TGCameraModeControlInteritemSpace + _photoModeButton.frame.size.width + TGCameraModeControlInteritemSpace, 0, CGFloor(_squareModeButton.frame.size.width), 20);
-            _wrapperView.frame = CGRectMake(0, 0, _videoModeButton.frame.size.width + TGCameraModeControlInteritemSpace + _photoModeButton.frame.size.width + TGCameraModeControlInteritemSpace + _squareModeButton.frame.size.width, 20);
+            CGFloat leftOffset = 0;
+            for (UIButton *button in _buttons)
+            {
+                button.frame = CGRectMake(leftOffset, 0, CGFloor(button.frame.size.width), 20.0f);
+                leftOffset += button.frame.size.width + [TGCameraModeControl _buttonHorizontalSpacing];
+            }
+            
+            _wrapperView.frame = CGRectMake(0, 0, leftOffset - [TGCameraModeControl _buttonHorizontalSpacing], 20);
             
             _maskLayer = [CAGradientLayer layer];
             _maskLayer.colors = @[ (id)[UIColor clearColor].CGColor, (id)[UIColor whiteColor].CGColor, (id)[UIColor whiteColor].CGColor, (id)[UIColor clearColor].CGColor ];
@@ -115,15 +90,52 @@ const CGFloat TGCameraModeControlVerticalInteritemSpace = 29.0f;
         }
         else
         {
-            _videoModeButton.frame = CGRectMake(0, 0, _videoModeButton.frame.size.width, _videoModeButton.frame.size.height);
-            _photoModeButton.frame = CGRectMake(0, _videoModeButton.frame.size.height + TGCameraModeControlVerticalInteritemSpace, _photoModeButton.frame.size.width, _photoModeButton.frame.size.height);
-            _squareModeButton.frame = CGRectMake(0, _videoModeButton.frame.size.height + TGCameraModeControlVerticalInteritemSpace + _photoModeButton.frame.size.height + TGCameraModeControlVerticalInteritemSpace, _squareModeButton.frame.size.width, _squareModeButton.frame.size.height);
-            _wrapperView.frame = CGRectMake(33, 0, self.frame.size.width, _videoModeButton.frame.size.height + TGCameraModeControlVerticalInteritemSpace + _photoModeButton.frame.size.height + TGCameraModeControlVerticalInteritemSpace + _squareModeButton.frame.size.height);
+            CGFloat topOffset = 0;
+            for (UIButton *button in _buttons)
+            {
+                button.frame = CGRectMake(0, topOffset, CGFloor(button.frame.size.width), CGFloor(button.frame.size.height));
+                topOffset += button.frame.size.height + TGCameraModeControlVerticalInteritemSpace;
+            }
+            
+            _wrapperView.frame = CGRectMake(33, 0, self.frame.size.width, topOffset - TGCameraModeControlVerticalInteritemSpace);
         }
         
         self.cameraMode = PGCameraModePhoto;
     }
     return self;
+}
+
++ (UIFont *)_buttonFont
+{
+    return [UIFont fontWithName:@"SFCompactText-Regular" size:14];
+}
+
++ (CGFloat)_buttonHorizontalSpacing
+{
+    //return 22;
+    return 19;
+}
+
++ (CGFloat)_buttonVerticalSpacing
+{
+    return 19;
+}
+
+- (UIButton *)_createButtonForMode:(PGCameraMode)mode title:(NSString *)title
+{
+    UIButton *button = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 64, 20)];
+    button.backgroundColor = [UIColor clearColor];
+    button.exclusiveTouch = true;
+    button.hitTestEdgeInsets = UIEdgeInsetsMake(-10, -10, -10, -10);
+    button.tag = mode;
+    button.titleLabel.font = [TGCameraInterfaceAssets normalFontOfSize:13];
+    [button setAttributedTitle:[[NSAttributedString alloc] initWithString:title attributes:@{ NSForegroundColorAttributeName: [TGCameraInterfaceAssets normalColor], NSKernAttributeName: @(_kerning) }] forState:UIControlStateNormal];
+    [button setAttributedTitle:[[NSAttributedString alloc] initWithString:title attributes:@{ NSForegroundColorAttributeName: [TGCameraInterfaceAssets accentColor], NSKernAttributeName: @(_kerning) }] forState:UIControlStateSelected];
+    [button setAttributedTitle:[button attributedTitleForState:UIControlStateSelected] forState:UIControlStateHighlighted | UIControlStateSelected];
+    [button sizeToFit];
+    [button addTarget:self action:@selector(buttonPressed:) forControlEvents:UIControlEventTouchUpInside];
+    
+    return button;
 }
 
 - (void)setCameraMode:(PGCameraMode)mode
@@ -141,31 +153,13 @@ const CGFloat TGCameraModeControlVerticalInteritemSpace = 29.0f;
     
     if (self.frame.size.width > self.frame.size.height)
     {
-        if (mode == PGCameraModeVideo)
-            targetPosition = _videoModeButton.center.x - _wrapperView.frame.size.width / 2;
-        else if (mode == PGCameraModePhoto)
-            targetPosition = _photoModeButton.center.x - _wrapperView.frame.size.width / 2;
-        else
-            targetPosition = _squareModeButton.center.x - _wrapperView.frame.size.width / 2;
-        
-        targetFrame = CGRectMake((self.frame.size.width - _wrapperView.frame.size.width) / 2 - targetPosition + 1,
-                                 (self.frame.size.height - _wrapperView.frame.size.height / 2) / 2,
-                                 _wrapperView.frame.size.width,
-                                 _wrapperView.frame.size.height);
+        targetPosition = [self _buttonForMode:self.cameraMode].center.x - _wrapperView.frame.size.width / 2;
+        targetFrame = CGRectMake((self.frame.size.width - _wrapperView.frame.size.width) / 2 - targetPosition + 1, (self.frame.size.height - _wrapperView.frame.size.height) / 2, _wrapperView.frame.size.width, _wrapperView.frame.size.height);
     }
     else
     {
-        if (mode == PGCameraModeVideo)
-            targetPosition = _videoModeButton.center.y - _wrapperView.frame.size.height / 2;
-        else if (mode == PGCameraModePhoto)
-            targetPosition = _photoModeButton.center.y - _wrapperView.frame.size.height / 2;
-        else
-            targetPosition = _squareModeButton.center.y - _wrapperView.frame.size.height / 2;
-        
-        targetFrame = CGRectMake(33,
-                                 (self.frame.size.height - _wrapperView.frame.size.height) / 2 - targetPosition + 1,
-                                 _wrapperView.frame.size.width,
-                                 _wrapperView.frame.size.height);
+        targetPosition = [self _buttonForMode:self.cameraMode].center.y - _wrapperView.frame.size.height / 2;
+        targetFrame = CGRectMake(33, (self.frame.size.height - _wrapperView.frame.size.height) / 2 - targetPosition + 1, _wrapperView.frame.size.width, _wrapperView.frame.size.height);
     }
 
     if (animated)
@@ -200,9 +194,8 @@ const CGFloat TGCameraModeControlVerticalInteritemSpace = 29.0f;
 {
     CGFloat targetCenter = targetFrame.origin.x - self.frame.size.width / 2;
 
-    _videoModeButton.layer.transform = [self _transformForItemWithOffset:targetCenter + _videoModeButton.center.x];
-    _photoModeButton.layer.transform = [self _transformForItemWithOffset:targetCenter + _photoModeButton.center.x];
-    _squareModeButton.layer.transform = [self _transformForItemWithOffset:targetCenter + _squareModeButton.center.x];
+    for (UIButton *button in _buttons)
+        button.layer.transform = [self _transformForItemWithOffset:targetCenter + button.center.x];
 }
 
 - (CATransform3D)_transformForItemWithOffset:(CGFloat)offset
@@ -233,9 +226,8 @@ const CGFloat TGCameraModeControlVerticalInteritemSpace = 29.0f;
 
 - (void)_updateButtonsHighlight
 {
-    _photoModeButton.selected = (_cameraMode == PGCameraModePhoto);
-    _videoModeButton.selected = (_cameraMode == PGCameraModeVideo);
-    _squareModeButton.selected = (_cameraMode == PGCameraModeSquare);
+    for (UIButton *button in _buttons)
+        button.selected = (_cameraMode == button.tag);
 }
 
 - (void)buttonPressed:(UIButton *)sender
@@ -260,8 +252,7 @@ const CGFloat TGCameraModeControlVerticalInteritemSpace = 29.0f;
         super.hidden = false;
         self.userInteractionEnabled = false;
         
-        [UIView animateWithDuration:0.25f
-                         animations:^
+        [UIView animateWithDuration:0.25f animations:^
         {
             self.alpha = hidden ? 0.0f : 1.0f;
         } completion:^(BOOL finished)

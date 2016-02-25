@@ -80,23 +80,29 @@
             if (strongSelf != nil) {
                 if (status.downloadedStatus.downloaded) {
                     NSString *path = nil;
-                    if (status.item.document.documentId != 0) {
-                        path = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:status.item.document.documentId] stringByAppendingPathComponent:[status.item.document safeFileName]];
-                    } else {
-                        path = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:status.item.document.localDocumentId] stringByAppendingPathComponent:[status.item.document safeFileName]];
+                    if ([status.item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+                        TGDocumentMediaAttachment *document = status.item.media;
+                        if (document.documentId != 0) {
+                            path = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId] stringByAppendingPathComponent:[document safeFileName]];
+                        } else {
+                            path = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId] stringByAppendingPathComponent:[document safeFileName]];
+                        }
+                    } else if ([status.item.media isKindOfClass:[TGAudioMediaAttachment class]]) {
+                        TGAudioMediaAttachment *audio = status.item.media;
+                        path = [audio localFilePath];
                     }
                     
                     if (path != nil && [[NSFileManager defaultManager] fileExistsAtPath:path]) {
                         NSURL *url = [NSURL fileURLWithPath:path];
                         NSArray *dataToShare = @[url];
                         UIActivityViewController *activityViewController = [[UIActivityViewController alloc] initWithActivityItems:dataToShare applicationActivities:nil];
-                        if (iosMajorVersion() >= 7 && [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
+                        if (iosMajorVersion() >= 8 && [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
                         {
                             //activityViewController.popoverPresentationController.sourceView = sourceView;
                             //activityViewController.popoverPresentationController.sourceRect = sourceView.bounds;
                             activityViewController.popoverPresentationController.barButtonItem = _shareItem;
                         }
-                        [self presentViewController:activityViewController animated:YES completion:nil];
+                        [self presentViewController:activityViewController animated:true completion:nil];
                     }
                 }
             }

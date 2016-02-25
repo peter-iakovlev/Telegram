@@ -80,7 +80,7 @@ NSString *const TGStickersControllerIdentifier = @"TGStickersController";
             if (recent && strongSelf->_stickerModels.count == 0)
             {
                 strongSelf.alertGroup.hidden = false;
-                strongSelf.alertLabel.text = TGLocalized(@"Stickers.RecentPlaceholder");
+                strongSelf.alertLabel.text = TGLocalized(@"Watch.Stickers.RecentPlaceholder");
             }
             else
             {
@@ -156,9 +156,9 @@ NSString *const TGStickersControllerIdentifier = @"TGStickersController";
     if (section == 0)
     {
         if (_stickerPack == nil)
-            controller.title = [TGLocalized(@"Stickers.Recents") uppercaseString];
+            controller.title = [TGLocalized(@"Watch.Stickers.Recents") uppercaseString];
         else
-            controller.title = [[_stickerPack isBuiltIn] ? TGLocalized(@"Stickers.BuiltinPackName") : _stickerPack.title uppercaseString];
+            controller.title = [_stickerPack.title uppercaseString];
     }
 }
 

@@ -69,7 +69,6 @@
             [_description addAttributes:boldAttributes range:[nRange rangeValue]];
         }
         
-        
         [_description addAttribute:NSParagraphStyleAttributeName
                              value:style
                              range:NSMakeRange(0, _description.length)];

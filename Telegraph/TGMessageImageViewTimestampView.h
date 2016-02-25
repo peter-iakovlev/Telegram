@@ -16,10 +16,10 @@
 
 - (void)setBackdropArea:(TGStaticBackdropAreaData *)backdropArea transitionDuration:(NSTimeInterval)transitionDuration;
 - (void)setTimestampColor:(UIColor *)timestampColor;
-- (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated;
+- (void)setTimestampString:(NSString *)timestampString signatureString:(NSString *)signatureString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated;
 - (void)setDisplayProgress:(bool)displayProgress;
 - (void)setIsBroadcast:(bool)setIsBroadcast;
 - (void)setTransparent:(bool)transparent;
-- (CGSize)currentSize;
+- (CGSize)sizeForMaxWidth:(CGFloat)maxWidth;
 
 @end

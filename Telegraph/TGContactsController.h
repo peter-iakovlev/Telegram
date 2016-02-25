@@ -31,7 +31,8 @@ typedef enum {
     TGContactsModeManualFirstSection = 8192,
     TGContactsModeCreateGroupLink = (2 << 14),
     TGContactsModeSortByLastSeen = (2 << 15),
-    TGContactsModeIgnorePrivateBots = (2 << 16)
+    TGContactsModeIgnorePrivateBots = (2 << 16),
+    TGContactsModeSearchGlobal = (2 << 17)
 } TGContactsMode;
 
 @interface TGContactsController : TGViewController <TGViewControllerNavigationBarAppearance, ASWatcher>
@@ -50,6 +51,7 @@ typedef enum {
 
 @property (nonatomic, readonly) int contactsMode;
 @property (nonatomic) int usersSelectedLimit;
+@property (nonatomic, strong) NSString *usersSelectedLimitAlert;
 
 @property (nonatomic, strong) NSArray *disabledUsers;
 
@@ -58,6 +60,9 @@ typedef enum {
 @property (nonatomic, strong) NSString *composePlaceholder;
 
 @property (nonatomic) bool deselectAutomatically;
+@property (nonatomic) bool ignoreBots;
+
+@property (nonatomic, assign) bool shouldOpenSearch;
 
 - (id)initWithContactsMode:(int)contactsMode;
 
@@ -74,6 +79,7 @@ typedef enum {
 - (void)actionItemSelected;
 - (void)encryptionItemSelected;
 - (void)channelsItemSelected;
+- (void)channelGroupItemSelected;
 - (void)singleUserSelected:(TGUser *)user;
 
 - (void)contactActionButtonPressed:(TGUser *)user;

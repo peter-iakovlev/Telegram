@@ -8,7 +8,7 @@
 #import <Accelerate/Accelerate.h>
 
 #import <AVFoundation/AVFoundation.h>
-#import "ATQueue.h"
+#import "SQueue.h"
 
 const CGSize PGCameraVideoCaptureSize = { 640, 480 };
 const NSInteger PGCameraFrameRate = 24;
@@ -27,8 +27,8 @@ const NSInteger PGCameraFrameRate = 24;
         
     AVCaptureDevice *_audioDevice;
     
-    ATQueue *_videoQueue;
-    ATQueue *_audioQueue;
+    SQueue *_videoQueue;
+    SQueue *_audioQueue;
     
     bool _captureNextFrame;
     bool _capturingForVideoThumbnail;
@@ -56,8 +56,8 @@ const NSInteger PGCameraFrameRate = 24;
         _photoFlashMode = PGCameraFlashModeOff;
         _videoFlashMode = PGCameraFlashModeOff;
         
-        _videoQueue = [[ATQueue alloc] initWithName:@"org.telegram.cameraVideoCaptureQueue"];
-        _audioQueue = [[ATQueue alloc] initWithName:@"org.telegram.cameraAudioCaptureQueue"];
+        _videoQueue = [[SQueue alloc] init];
+        _audioQueue = [[SQueue alloc] init];
         
         _preferredCameraPosition = position;
     }
@@ -67,8 +67,8 @@ const NSInteger PGCameraFrameRate = 24;
 - (void)dealloc
 {
     NSLog(@"Camera session: deaalloc");
-    [_videoOutput setSampleBufferDelegate:nil queue:[ATQueue mainQueue].nativeQueue];
-    [_audioOutput setSampleBufferDelegate:nil queue:[ATQueue mainQueue].nativeQueue];
+    [_videoOutput setSampleBufferDelegate:nil queue:[SQueue mainQueue]._dispatch_queue];
+    [_audioOutput setSampleBufferDelegate:nil queue:[SQueue mainQueue]._dispatch_queue];
 }
 
 - (void)performInitialConfigurationWithCompletion:(void (^)(void))completion
@@ -115,7 +115,7 @@ const NSInteger PGCameraFrameRate = 24;
     if ([self canAddOutput:videoOutput])
     {
         videoOutput.alwaysDiscardsLateVideoFrames = true;
-        [videoOutput setSampleBufferDelegate:self queue:_videoQueue.nativeQueue];
+        [videoOutput setSampleBufferDelegate:self queue:_videoQueue._dispatch_queue];
 
         //videoOutput.videoSettings = @{ (id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange) };
         videoOutput.videoSettings = @{ (id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA) };
@@ -134,14 +134,7 @@ const NSInteger PGCameraFrameRate = 24;
             device.automaticallyEnablesLowLightBoostWhenAvailable = true;
     }];
     
-    AVCaptureConnection *videoConnection = [_videoOutput connectionWithMediaType:AVMediaTypeVideo];
-    if (videoConnection.supportsVideoStabilization)
-    {
-        if ([videoConnection respondsToSelector:@selector(setPreferredVideoStabilizationMode:)])
-            videoConnection.preferredVideoStabilizationMode = AVCaptureVideoStabilizationModeAuto;
-        else
-            videoConnection.enablesVideoStabilizationWhenAvailable = true;
-    }
+    [self _enableVideoStabilization];
     
     if (completion != nil)
         completion();
@@ -152,7 +145,7 @@ const NSInteger PGCameraFrameRate = 24;
     if (self.currentCameraPosition != _preferredCameraPosition)
         return true;
     
-    if (self.currentMode == PGCameraModeVideo)
+    if (self.currentMode == PGCameraModeVideo || self.currentMode == PGCameraModeClip)
         return true;
     
     if (self.zoomLevel > FLT_EPSILON)
@@ -165,16 +158,7 @@ const NSInteger PGCameraFrameRate = 24;
 {
     [self beginConfiguration];
     
-    if (_audioDevice != nil)
-    {
-        [self removeInput:_audioInput];
-        _audioInput = nil;
-        
-        [_audioOutput setSampleBufferDelegate:nil queue:[ATQueue mainQueue].nativeQueue];
-        [self removeOutput:_audioOutput];
-        
-        _audioDevice = nil;
-    }
+    [self _removeAudioInput];
     
     if (self.currentCameraPosition != _preferredCameraPosition)
     {
@@ -185,11 +169,9 @@ const NSInteger PGCameraFrameRate = 24;
             targetDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
         
         _videoDevice = targetDevice;
-        
-        NSError *error = nil;
         if (_videoDevice != nil)
         {
-            _videoInput = [AVCaptureDeviceInput deviceInputWithDevice:_videoDevice error:&error];
+            _videoInput = [AVCaptureDeviceInput deviceInputWithDevice:_videoDevice error:nil];
             if (_videoInput != nil)
                 [self addInput:_videoInput];
         }
@@ -199,7 +181,7 @@ const NSInteger PGCameraFrameRate = 24;
     
     if (self.currentMode != PGCameraModePhoto)
     {
-        if (self.currentMode == PGCameraModeVideo)
+        if (self.currentMode == PGCameraModeVideo || self.currentMode == PGCameraModeClip)
             self.sessionPreset = AVCaptureSessionPresetPhoto;
         
         _currentMode = PGCameraModePhoto;
@@ -237,53 +219,17 @@ const NSInteger PGCameraFrameRate = 24;
         case PGCameraModePhoto:
         case PGCameraModeSquare:
         {
-            if (_audioDevice != nil)
-            {
-                [self removeInput:_audioInput];
-                _audioInput = nil;
-                
-                [_audioOutput setSampleBufferDelegate:nil queue:[ATQueue mainQueue].nativeQueue];
-                [self removeOutput:_audioOutput];
-                _audioOutput = nil;
-                
-                _audioDevice = nil;
-            }
-            
+            [self _removeAudioInput];
             self.sessionPreset = AVCaptureSessionPresetPhoto;
-            
             [self setFrameRate:0];
         }
             break;
             
         case PGCameraModeVideo:
+        case PGCameraModeClip:
         {
-            self.sessionPreset = AVCaptureSessionPreset640x480;
-            
-            if (_audioDevice == nil)
-            {
-                AVCaptureDevice *audioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
-
-                NSError *error = nil;
-                if (audioDevice != nil)
-                {
-                    _audioDevice = audioDevice;
-                    AVCaptureDeviceInput *audioInput = [AVCaptureDeviceInput deviceInputWithDevice:_audioDevice error:&error];
-                    if ([self canAddInput:audioInput])
-                    {
-                        [self addInput:audioInput];
-                        _audioInput = audioInput;
-                    }
-                }
-             
-                AVCaptureAudioDataOutput *audioOutput = [[AVCaptureAudioDataOutput alloc] init];
-                if ([self canAddOutput:audioOutput])
-                {
-                    [audioOutput setSampleBufferDelegate:self queue:_audioQueue.nativeQueue];
-                    [self addOutput:audioOutput];
-                    _audioOutput = audioOutput;
-                }
-            }
-            
+            self.sessionPreset = AVCaptureSessionPresetMedium;
+            [self _addAudioInput];
             [self setFrameRate:PGCameraFrameRate];
         }
             break;
@@ -292,6 +238,13 @@ const NSInteger PGCameraFrameRate = 24;
             break;
     }
     
+    [self _enableVideoStabilization];
+    
+    [self commitConfiguration];
+}
+
+- (void)_enableVideoStabilization
+{
     AVCaptureConnection *videoConnection = [_videoOutput connectionWithMediaType:AVMediaTypeVideo];
     if (videoConnection.supportsVideoStabilization)
     {
@@ -300,8 +253,49 @@ const NSInteger PGCameraFrameRate = 24;
         else
             videoConnection.enablesVideoStabilizationWhenAvailable = true;
     }
+}
+
+- (void)_addAudioInput
+{
+    if (_audioDevice != nil)
+        return;
     
-    [self commitConfiguration];
+    AVCaptureDevice *audioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
+    
+    NSError *error = nil;
+    if (audioDevice != nil)
+    {
+        _audioDevice = audioDevice;
+        AVCaptureDeviceInput *audioInput = [AVCaptureDeviceInput deviceInputWithDevice:_audioDevice error:&error];
+        if ([self canAddInput:audioInput])
+        {
+            [self addInput:audioInput];
+            _audioInput = audioInput;
+        }
+    }
+    
+    AVCaptureAudioDataOutput *audioOutput = [[AVCaptureAudioDataOutput alloc] init];
+    if ([self canAddOutput:audioOutput])
+    {
+        [audioOutput setSampleBufferDelegate:self queue:_audioQueue._dispatch_queue];
+        [self addOutput:audioOutput];
+        _audioOutput = audioOutput;
+    }
+}
+
+- (void)_removeAudioInput
+{
+    if (_audioDevice == nil)
+        return;
+    
+    [self removeInput:_audioInput];
+    _audioInput = nil;
+    
+    [_audioOutput setSampleBufferDelegate:nil queue:[SQueue mainQueue]._dispatch_queue];
+    [self removeOutput:_audioOutput];
+    _audioOutput = nil;
+    
+    _audioDevice = nil;
 }
 
 #pragma mark - Zoom
@@ -325,7 +319,6 @@ const NSInteger PGCameraFrameRate = 24;
         return;
     
     __weak PGCameraCaptureSession *weakSelf = self;
-    
     [self _reconfigureDevice:self.videoDevice withBlock:^(AVCaptureDevice *device)
     {
         __strong PGCameraCaptureSession *strongSelf = weakSelf;
@@ -392,10 +385,8 @@ const NSInteger PGCameraFrameRate = 24;
     [self _reconfigureDevice:self.videoDevice withBlock:^(AVCaptureDevice *device)
     {
         CGFloat value = 0.0f;
-        if (bias >= 0)
-            value = ABS(bias) * device.maxExposureTargetBias * 0.85f;
-        else if (bias < 0)
-            value = ABS(bias) * device.minExposureTargetBias * 0.85f;
+        CGFloat extremum = (bias >= 0) ? device.maxExposureTargetBias : device.minExposureTargetBias;
+        value = fabs(bias) * extremum * 0.85f;
         
         [device setExposureTargetBias:(float)value completionHandler:nil];
     }];
@@ -408,6 +399,7 @@ const NSInteger PGCameraFrameRate = 24;
     switch (self.currentMode)
     {
         case PGCameraModeVideo:
+        case PGCameraModeClip:
             return _videoFlashMode;
             
         default:
@@ -422,6 +414,7 @@ const NSInteger PGCameraFrameRate = 24;
         switch (self.currentMode)
         {
             case PGCameraModeVideo:
+            case PGCameraModeClip:
             {
                 AVCaptureTorchMode torchMode = [PGCameraCaptureSession _deviceTorchModeForCameraFlashMode:mode];
                 if (device.hasTorch && [device isTorchModeSupported:torchMode])
@@ -524,7 +517,7 @@ const NSInteger PGCameraFrameRate = 24;
         if (self.changingPosition != nil)
             self.changingPosition();
         
-        if (self.currentMode == PGCameraModeVideo)
+        if (self.currentMode == PGCameraModeVideo || self.currentMode == PGCameraModeClip)
             [self setFrameRate:PGCameraFrameRate];
         else
             [self setFrameRate:0];
@@ -540,14 +533,7 @@ const NSInteger PGCameraFrameRate = 24;
             device.automaticallyEnablesLowLightBoostWhenAvailable = true;
     }];
     
-    AVCaptureConnection *videoConnection = [_videoOutput connectionWithMediaType:AVMediaTypeVideo];
-    if (videoConnection.supportsVideoStabilization)
-    {
-        if ([videoConnection respondsToSelector:@selector(setPreferredVideoStabilizationMode:)])
-            videoConnection.preferredVideoStabilizationMode = AVCaptureVideoStabilizationModeAuto;
-        else
-            videoConnection.enablesVideoStabilizationWhenAvailable = true;
-    }
+    [self _enableVideoStabilization];
 }
 
 + (AVCaptureDevice *)_deviceWithCameraPosition:(PGCameraPosition)position
@@ -845,8 +831,8 @@ static UIImageOrientation TGCapturedImageOrientationForVideoOrientation(AVCaptur
         CFRetain(sampleBuffer);
         void(^capturedFrameCompletion)(UIImage *image) = self.capturedFrameCompletion;
         self.capturedFrameCompletion = nil;
-     
-        [[ATQueue concurrentDefaultQueue] dispatch:^
+        
+        [[SQueue concurrentDefaultQueue] dispatch:^
         {
             CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
             CVPixelBufferLockBaseAddress(imageBuffer, 0);

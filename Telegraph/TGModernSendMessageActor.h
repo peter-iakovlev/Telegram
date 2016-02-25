@@ -10,6 +10,8 @@
 
 #import "ASWatcher.h"
 
+#import <SSignalKit/SSignalKit.h>
+
 @class TGPreparedMessage;
 
 @interface TGModernSendMessageActor : TGActor <ASWatcher>
@@ -19,6 +21,9 @@
 @property (nonatomic, readonly) TGPreparedMessage *preparedMessage;
 @property (nonatomic) float uploadProgress;
 @property (nonatomic) bool uploadProgressContainsPreDownloads;
+@property (nonatomic) bool sendActivity;
+@property (nonatomic, strong, readonly) SDisposableSet *disposables;
+@property (nonatomic) bool checkUploadDataWithServer;
 
 + (NSTimeInterval)defaultTimeoutInterval;
 
@@ -26,6 +31,7 @@
 - (void)restartFailTimeoutIfRunning;
 - (NSString *)pathForLocalImagePath:(NSString *)path;
 - (int64_t)conversationIdForActivity;
+- (int64_t)accessHashForActivity;
 
 - (bool)_encryptUploads;
 - (void)_commitSend;
@@ -43,3 +49,13 @@
 - (int64_t)peerId;
 
 @end
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
+SSignalQueue *videoDownloadQueue();
+
+#ifdef __cplusplus
+}
+#endif

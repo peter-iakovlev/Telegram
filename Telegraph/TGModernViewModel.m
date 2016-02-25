@@ -269,6 +269,20 @@
     [_submodels addObject:model];
 }
 
+- (void)insertSubmodel:(TGModernViewModel *)model belowSubmodel:(TGModernViewModel *)belowSubmodel {
+    if (model == nil)
+        return;
+    
+    if (_submodels == nil)
+        _submodels = [[NSMutableArray alloc] init];
+    
+    NSUInteger index = [_submodels indexOfObject:belowSubmodel];
+    if (index != NSNotFound)
+        [_submodels insertObject:model atIndex:index];
+    else
+        [_submodels addObject:model];
+}
+
 - (void)insertSubmodel:(TGModernViewModel *)model aboveSubmodel:(TGModernViewModel *)aboveSubmodel
 {
     if (model == nil)

@@ -6,10 +6,9 @@
 
 @interface TLInputPeerNotifySettings : NSObject <TLObject>
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic) int32_t mute_until;
 @property (nonatomic, retain) NSString *sound;
-@property (nonatomic) bool show_previews;
-@property (nonatomic) int32_t events_mask;
 
 @end
 

@@ -6,8 +6,20 @@
 "Share.Title" = "Teilen";
 "Share.ShareWithPerson" = "Mit %@ teilen?";
 "Share.ShareWithGroup" = "Mit %@ teilen?";
+"Share.ShareWithMultiple" = "Mit %@ Empfängern teilen?";
 "Share.Sharing" = "Teile...";
 
 "Share.PasscodeTitle" = "Pincode";
 "Share.EnterPasscode" = "Pincode eingeben";
 "Share.ErrorInvalidPasscode" = "Ungültiger Pincode";
+
+"Share.Select" = "Auswählen";
+"Share.Done" = "Fertig";
+
+"Share.AuthTitle" = "Bei Telegram anmelden";
+"Share.AuthText" = "Um zu teilen, Telegram öffnen und anmelden.";
+
+"Share.ChoosePhoneNumber" = "Wähle eine Telefonnummer um zu teilen";
+
+"Share.RecentSection" = "Letzte";
+"Share.RecentSectionClear" = "Leeren";

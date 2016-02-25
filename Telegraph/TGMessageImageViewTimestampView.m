@@ -200,12 +200,14 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     
     UIColor *_timestampColor;
     NSString *_timestampString;
+    NSString *_signatureString;
     bool _displayCheckmarks;
     int _checkmarkValue;
     int _checkmarkDisplayValue;
     
     bool _timestampStringSizeCalculated;
     CGSize _timestampStringSize;
+    CGSize _signatureStringSize;
     
     CALayer *_chechmarkFirstLayer;
     CALayer *_chechmarkSecondLayer;
@@ -218,6 +220,7 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     bool _transparent;
     
     NSString *_viewsString;
+    CGFloat _maxWidth;
 }
 
 @end
@@ -237,6 +240,17 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
         self.opaque = false;
     }
     return self;
+}
+
+- (void)setFrame:(CGRect)frame {
+    bool update = CGSizeEqualToSize(self.frame.size, frame.size);
+    
+    [super setFrame:frame];
+    
+    if (update) {
+        _timestampStringSizeCalculated = false;
+        [self setNeedsDisplay];
+    }
 }
 
 - (void)setBackdropArea:(TGStaticBackdropAreaData *)backdropArea transitionDuration:(NSTimeInterval)transitionDuration
@@ -316,7 +330,7 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     }
 }
 
-- (void)setTimestampString:(NSString *)timestampString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated
+- (void)setTimestampString:(NSString *)timestampString signatureString:(NSString *)signatureString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated
 {
     NSString *viewsString = nil;
     if (displayViews) {
@@ -360,9 +374,10 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     if (!animated)
         [self _removeCheckmarks];
     
-    if (!TGStringCompare(_timestampString, timestampString) || _displayCheckmarks != displayCheckmarks)
+    if (!TGStringCompare(_timestampString, timestampString) || !TGStringCompare(_signatureString, signatureString) || _displayCheckmarks != displayCheckmarks)
     {
         _timestampString = timestampString;
+        _signatureString = signatureString;
         _timestampStringSizeCalculated = false;
         
         _displayCheckmarks = displayCheckmarks;
@@ -595,6 +610,12 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     {
         _timestampStringSizeCalculated = true;
         _timestampStringSize = [_timestampString sizeWithFont:[self timestampFont]];
+        _signatureStringSize = [_signatureString sizeWithFont:[self timestampFont]];
+        _signatureStringSize.width = MIN(_maxWidth - 8.0f - _timestampStringSize.width - (_displayCheckmarks ? 20.0f : 0.0f) - (_viewsString.length == 0 ? 0 : 40.0f), _signatureStringSize.width);
+        if (_signatureString != nil) {
+            _signatureStringSize.width += 8.0f;
+        }
+        _timestampStringSize.width += _signatureStringSize.width;
     }
     
     return _timestampStringSize;
@@ -700,7 +721,11 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
         }
     }
     
-    [_timestampString drawAtPoint:CGPointMake(backgroundRect.origin.x + viewsWidth + 6.0f - TGRetinaPixel, backgroundRect.origin.y + 2.0f) withFont:[self timestampFont]];
+    if (_signatureString != nil) {
+        [_signatureString drawInRect:CGRectMake(backgroundRect.origin.x + viewsWidth + 6.0f - TGRetinaPixel, backgroundRect.origin.y + 2.0f, _signatureStringSize.width, _signatureStringSize.height) withFont:[self timestampFont] lineBreakMode:NSLineBreakByTruncatingTail];
+    }
+    
+    [_timestampString drawAtPoint:CGPointMake(backgroundRect.origin.x + viewsWidth + _signatureStringSize.width + 6.0f - TGRetinaPixel, backgroundRect.origin.y + 2.0f) withFont:[self timestampFont]];
     
     if (_displayCheckmarks && _viewsString == nil)
     {
@@ -744,8 +769,12 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     }
 }
 
-- (CGSize)currentSize
+- (CGSize)sizeForMaxWidth:(CGFloat)maxWidth
 {
+    if (ABS(_maxWidth - maxWidth) > FLT_EPSILON) {
+        _maxWidth = maxWidth;
+        _timestampStringSizeCalculated = false;
+    }
     return [self timestampSize];
 }
 

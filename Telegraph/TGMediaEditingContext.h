@@ -1,4 +1,16 @@
-#import <Foundation/Foundation.h>
+#import <SSignalKit/SSignalKit.h>
+
+@protocol TGMediaEditableItem <NSObject>
+
+@property (nonatomic, readonly) NSString *uniqueIdentifier;
+@property (nonatomic, readonly) CGSize originalSize;
+
+- (SSignal *)thumbnailImageSignal;
+- (SSignal *)screenImageSignal;
+- (SSignal *)originalImageSignal;
+
+@end
+
 
 @protocol TGMediaEditAdjustments <NSObject>
 
@@ -10,24 +22,38 @@
 - (bool)cropAppliedForAvatar:(bool)forAvatar;
 - (bool)isDefaultValuesForAvatar:(bool)forAvatar;
 
+- (bool)isCropEqualWith:(id<TGMediaEditAdjustments>)adjusments;
+
 @end
+
 
 @interface TGMediaEditingContext : NSObject
 
-- (NSString *)captionForItemId:(NSString *)itemId;
-- (void)setCaption:(NSString *)caption forItemId:(NSString *)itemId synchronous:(bool)synchronous;
+- (SSignal *)imageSignalForItem:(NSObject<TGMediaEditableItem> *)item;
+- (SSignal *)imageSignalForItem:(NSObject<TGMediaEditableItem> *)item withUpdates:(bool)withUpdates;
+- (SSignal *)thumbnailImageSignalForItem:(NSObject<TGMediaEditableItem> *)item;
+- (SSignal *)thumbnailImageSignalForItem:(id<TGMediaEditableItem>)item withUpdates:(bool)withUpdates synchronous:(bool)synchronous;
+- (SSignal *)fastImageSignalForItem:(NSObject<TGMediaEditableItem> *)item withUpdates:(bool)withUpdates;
 
-- (id<TGMediaEditAdjustments>)adjustmentsForItemId:(NSString *)itemId;
-- (void)setAdjustments:(id<TGMediaEditAdjustments>)editorValues forItemId:(NSString *)itemId synchronous:(bool)synchronous;
+- (void)setImage:(UIImage *)image thumbnailImage:(UIImage *)thumbnailImage forItem:(id<TGMediaEditableItem>)item synchronous:(bool)synchronous;
+- (void)setFullSizeImage:(UIImage *)image forItem:(id<TGMediaEditableItem>)item;
 
-- (UIImage *)imageForItemId:(NSString *)itemId;
-- (UIImage *)thumbnailImageForItemId:(NSString *)itemId;
-- (void)setImage:(UIImage *)image thumbnailImage:(UIImage *)thumbnailImage forItemId:(NSString *)itemId synchronous:(bool)synchronous;
+- (void)setTemporaryRep:(id)rep forItem:(id<TGMediaEditableItem>)item;
 
-- (void)requestOriginalThumbnailImageForItemId:(NSString *)itemId completion:(void (^)(UIImage *image))completion;
-- (void)requestOriginalImageForItemId:(NSString *)itemId completion:(void (^)(UIImage *image))completion;
-- (void)setOriginalImage:(UIImage *)image forItemId:(NSString *)itemId synchronous:(bool)synchronous;
+- (SSignal *)fullSizeImageUrlForItem:(id<TGMediaEditableItem>)item;
 
-- (void)cleanup;
+- (NSString *)captionForItem:(NSObject<TGMediaEditableItem> *)item;
+- (SSignal *)captionSignalForItem:(NSObject<TGMediaEditableItem> *)item;
+- (void)setCaption:(NSString *)caption forItem:(NSObject<TGMediaEditableItem> *)item;
+
+- (NSObject<TGMediaEditAdjustments> *)adjustmentsForItem:(NSObject<TGMediaEditableItem> *)item;
+- (SSignal *)adjustmentsSignalForItem:(NSObject<TGMediaEditableItem> *)item;
+- (void)setAdjustments:(NSObject<TGMediaEditAdjustments> *)adjustments forItem:(NSObject<TGMediaEditableItem> *)item;
+
+- (SSignal *)cropAdjustmentsUpdatedSignal;
+
+- (void)requestOriginalThumbnailImageForItem:(id<TGMediaEditableItem>)item completion:(void (^)(UIImage *))completion;
+- (void)requestOriginalImageForItem:(id<TGMediaEditableItem>)itemId completion:(void (^)(UIImage *image))completion;
+- (void)setOriginalImage:(UIImage *)image forItem:(id<TGMediaEditableItem>)item synchronous:(bool)synchronous;
 
 @end

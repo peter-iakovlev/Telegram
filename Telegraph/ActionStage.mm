@@ -248,7 +248,7 @@ ActionStage *ActionStageInstance()
     int newLength = 0;
     
     SEL sel = @selector(characterAtIndex:);
-    unichar (*characterAtIndexImp)(id, SEL, NSUInteger) = (typeof(characterAtIndexImp))[path methodForSelector:sel];
+    unichar (*characterAtIndexImp)(id, SEL, NSUInteger) = (unichar (*)(id, SEL, NSUInteger))[path methodForSelector:sel];
     
     bool skipCharacters = false;
     bool skippedCharacters = false;

@@ -135,14 +135,40 @@ CGImageRef TGPhotoLanczosResize(UIImage *image, CGSize targetSize)
     return destRef;
 }
 
-UIImage *TGPhotoEditorLegacyCrop(UIImage *image, UIImageOrientation orientation, CGFloat rotation, CGRect rect, CGSize maxSize)
+UIImage *TGPhotoEditorFitImage(UIImage *image, CGSize maxSize)
 {
-    CGSize fittedImageSize = TGFitSize(rect.size, maxSize);
+    CGSize fittedImageSize = TGFitSize(image.size, maxSize);
+    
+    if (iosMajorVersion() >= 7)
+    {
+        CGImageRef imageRef = TGPhotoLanczosResize(image, fittedImageSize);
+        
+        UIImage *resizedImage = [[UIImage alloc] initWithCGImage:imageRef scale:image.scale orientation:image.imageOrientation];
+        CGImageRelease(imageRef);
+        
+        return resizedImage;
+    }
+    else
+    {
+        UIGraphicsBeginImageContextWithOptions(fittedImageSize, true, 1.0f);
+        
+        [image drawInRect:CGRectMake(0, 0, fittedImageSize.width, fittedImageSize.height)];
+        
+        UIImage *resizedImage = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        
+        return resizedImage;
+    }
+}
+
+UIImage *TGPhotoEditorLegacyCrop(UIImage *image, UIImageOrientation orientation, CGFloat rotation, CGRect rect, CGSize maxSize, bool shouldResize)
+{
+    CGSize fittedImageSize = shouldResize ? TGFitSize(rect.size, maxSize) : rect.size;
     
     CGSize outputImageSize = fittedImageSize;
     outputImageSize.width = CGFloor(outputImageSize.width);
     outputImageSize.height = CGFloor(outputImageSize.height);
-    if (orientation == UIImageOrientationLeft || orientation == UIImageOrientationRight)
+    if (TGOrientationIsSideward(orientation, NULL))
         outputImageSize = CGSizeMake(outputImageSize.height, outputImageSize.width);
     
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(outputImageSize.width, outputImageSize.height), true, 1.0f);
@@ -152,7 +178,6 @@ UIImage *TGPhotoEditorLegacyCrop(UIImage *image, UIImageOrientation orientation,
     CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
     
     CGSize rotatedContentSize = TGRotatedContentSize(image.size, rotation);
-    
     CGAffineTransform transform = CGAffineTransformIdentity;
     transform = CGAffineTransformTranslate(transform, outputImageSize.width / 2, outputImageSize.height / 2);
     
@@ -170,12 +195,12 @@ UIImage *TGPhotoEditorLegacyCrop(UIImage *image, UIImageOrientation orientation,
     return croppedImage;
 }
 
-UIImage *TGPhotoEditorCrop(UIImage *image, UIImageOrientation orientation, CGFloat rotation, CGRect rect, CGSize maxSize, CGSize originalSize)
+UIImage *TGPhotoEditorCrop(UIImage *inputImage, UIImageOrientation orientation, CGFloat rotation, CGRect rect, CGSize maxSize, CGSize originalSize, bool shouldResize)
 {
     if (iosMajorVersion() < 7)
-        return TGPhotoEditorLegacyCrop(image, orientation, rotation, rect, maxSize);
+        return TGPhotoEditorLegacyCrop(inputImage, orientation, rotation, rect, maxSize, shouldResize);
     
-    CGSize fittedImageSize = TGFitSize(rect.size, maxSize);
+    CGSize fittedImageSize = shouldResize ? TGFitSize(rect.size, maxSize) : rect.size;
     
     CGSize outputImageSize = fittedImageSize;
     outputImageSize.width = CGFloor(outputImageSize.width);
@@ -189,23 +214,28 @@ UIImage *TGPhotoEditorCrop(UIImage *image, UIImageOrientation orientation, CGFlo
     CGContextFillRect(context, CGRectMake(0, 0, outputImageSize.width, outputImageSize.height));
     CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
     
+    CGSize scales = CGSizeMake(fittedImageSize.width / rect.size.width, fittedImageSize.height / rect.size.height);
+    CGSize rotatedContentSize = TGRotatedContentSize(inputImage.size, rotation);
     CGAffineTransform transform = CGAffineTransformIdentity;
     transform = CGAffineTransformTranslate(transform, outputImageSize.width / 2, outputImageSize.height / 2);
-    
-    CGSize scales = CGSizeMake(fittedImageSize.width / rect.size.width, fittedImageSize.height / rect.size.height);
-
-    CGSize rotatedContentSize = TGRotatedContentSize(image.size, rotation);
     transform = CGAffineTransformRotate(transform, TGRotationForOrientation(orientation));
     transform = CGAffineTransformTranslate(transform, (rotatedContentSize.width / 2 - CGRectGetMidX(rect)) * scales.width, (rotatedContentSize.height / 2 - CGRectGetMidY(rect)) * scales.height);
     transform = CGAffineTransformRotate(transform, rotation);
     CGContextConcatCTM(context, transform);
     
-    CGSize resizedSize = CGSizeMake(originalSize.width * fittedImageSize.width / rect.size.width, originalSize.height * fittedImageSize.height / rect.size.height);
-    CGImageRef resizedImage = TGPhotoLanczosResize(image, resizedSize);
-    UIImage *uiImage = [UIImage imageWithCGImage:resizedImage scale:image.scale orientation:image.imageOrientation];
-    CGImageRelease(resizedImage);
-    
-    [uiImage drawAtPoint:CGPointMake(-uiImage.size.width / 2, -uiImage.size.height / 2)];
+    UIImage *image = nil;
+    if (shouldResize)
+    {
+        CGSize resizedSize = CGSizeMake(originalSize.width * fittedImageSize.width / rect.size.width, originalSize.height * fittedImageSize.height / rect.size.height);
+        CGImageRef resizedImage = TGPhotoLanczosResize(inputImage, resizedSize);
+        image = [UIImage imageWithCGImage:resizedImage scale:inputImage.scale orientation:inputImage.imageOrientation];
+        CGImageRelease(resizedImage);
+    }
+    else
+    {
+        image = inputImage;
+    }
+    [image drawAtPoint:CGPointMake(-image.size.width / 2, -image.size.height / 2)];
 
     UIImage *croppedImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();

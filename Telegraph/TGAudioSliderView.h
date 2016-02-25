@@ -8,14 +8,24 @@
 
 #import "TGModernView.h"
 
+#import <SSignalKit/SSignalKit.h>
+
 @class TGAudioSliderView;
+@class TGMusicPlayerStatus;
+
+typedef enum
+{
+    TGAudioSliderViewStyleOutgoing,
+    TGAudioSliderViewStyleIncoming,
+    TGAudioSliderViewStyleNotification
+} TGAudioSliderViewStyle;
 
 @protocol TGAudioSliderViewDelegate <NSObject>
 
 @optional
 
 - (void)audioSliderViewDidBeginPositionAdjustment:(TGAudioSliderView *)audioSliderView;
-- (void)audioSliderViewDidEndPositionAdjustment:(TGAudioSliderView *)audioSliderView atPosition:(CGFloat)position;
+- (void)audioSliderViewDidEndPositionAdjustment:(TGAudioSliderView *)audioSliderView atPosition:(CGFloat)position smallChange:(bool)smallChange;
 - (void)audioSliderViewDidCancelPositionAdjustment:(TGAudioSliderView *)audioSliderView;
 
 @end
@@ -24,15 +34,12 @@
 
 @property (nonatomic, weak) id<TGAudioSliderViewDelegate> delegate;
 
-@property (nonatomic) NSTimeInterval duration;
-@property (nonatomic) bool incoming;
-@property (nonatomic, strong) NSString *audioDurationText;
+@property (nonatomic) TGAudioSliderViewStyle style;
+@property (nonatomic) int32_t duration;
 @property (nonatomic) bool manualPositionAdjustmentEnabled;
-@property (nonatomic) bool progressMode;
-@property (nonatomic) NSTimeInterval preciseDuration;
 @property (nonatomic) bool listenedStatus;
 
-- (void)setAudioPosition:(float)audioPosition animated:(bool)animated timestamp:(NSTimeInterval)timestamp isPlaying:(bool)isPlaying immediate:(bool)immediate;
-- (void)stopAnimations;
+- (void)setStatus:(TGMusicPlayerStatus *)status;
+- (void)setWaveformSignal:(SSignal *)waveformSignal;
 
 @end

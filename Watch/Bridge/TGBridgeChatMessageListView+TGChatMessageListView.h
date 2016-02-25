@@ -4,6 +4,6 @@
 
 @interface TGBridgeChatMessageListView (TGChatMessageListView)
 
-+ (TGBridgeChatMessageListView *)chatMessageListViewWithTGChatMessageListView:(TGChatMessageListView *)messageListView isChannel:(bool)isChannel;
++ (TGBridgeChatMessageListView *)chatMessageListViewWithTGChatMessageListView:(TGChatMessageListView *)messageListView;
 
 @end

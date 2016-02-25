@@ -7,9 +7,22 @@
 
 #import "TGGiphySearchResultItem.h"
 
+#import "TGTelegramNetworking.h"
+
+#import "TGExternalGifSearchResult.h"
+#import "TGInternalGifSearchResult.h"
+#import "TGDocumentMediaAttachment+Telegraph.h"
+#import "TGWebPageMediaAttachment+Telegraph.h"
+
+#import "TLWebPage$webPageExternal.h"
+#import "TLWebPage_manual.h"
+
+#import "TGImageMediaAttachment+Telegraph.h"
+
 @interface TGGiphySearchActor () <TGRawHttpActor>
 {
     NSArray *_currentItems;
+    id<SDisposable> _disposable;
 }
 
 @end
@@ -28,6 +41,46 @@
 
 - (void)execute:(NSDictionary *)options
 {
+    TLRPCmessages_searchGifs$messages_searchGifs *searchGifs = [[TLRPCmessages_searchGifs$messages_searchGifs alloc] init];
+    searchGifs.q = options[@"query"];
+    searchGifs.offset = [options[@"moreResultsOffset"] intValue];
+    
+    NSString *path = self.path;
+    _disposable = [[[[TGTelegramNetworking instance] requestSignal:searchGifs] map:^id(TLmessages_FoundGifs *result) {
+        NSMutableArray *items = [[NSMutableArray alloc] initWithArray:options[@"currentItems"]];
+        NSMutableSet *processedItems = [[NSMutableSet alloc] initWithArray:items];
+        
+        for (TLFoundGif *gif in result.results) {
+            if ([gif isKindOfClass:[TLFoundGif$foundGifCached class]]) {
+                TLFoundGif$foundGifCached *concreteGif = (TLFoundGif$foundGifCached *)gif;
+                TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:concreteGif.document];
+                TGImageMediaAttachment *image = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:concreteGif.photo];
+                if (document.documentId != 0) {
+                    TGInternalGifSearchResult *item = [[TGInternalGifSearchResult alloc] initWithUrl:concreteGif.url document:document photo:image.imageId == 0 ? nil : image];
+                    if (![processedItems containsObject:item]) {
+                        [processedItems addObject:item];
+                        [items addObject:item];
+                    }
+                }
+            } else if ([gif isKindOfClass:[TLFoundGif$foundGif class]]) {
+                TLFoundGif$foundGif *concreteGif = (TLFoundGif$foundGif *)gif;
+                TGExternalGifSearchResult *item = [[TGExternalGifSearchResult alloc] initWithUrl:concreteGif.url originalUrl:concreteGif.content_url thumbnailUrl:concreteGif.thumb_url size:CGSizeMake(concreteGif.w, concreteGif.h)];
+                if (![processedItems containsObject:item]) {
+                    [processedItems addObject:item];
+                    [items addObject:item];
+                }
+            }
+        }
+        
+        return @{@"items": items, @"nextOffset": @(result.next_offset)};;
+    }] startWithNext:^(NSDictionary *dict) {
+        [ActionStageInstance() actionCompleted:path result:@{@"items": dict[@"items"], @"moreResultsAvailable": @([dict[@"nextOffset"] intValue] != 0), @"moreResultsOffset": dict[@"nextOffset"]}];
+    } error:^(__unused id error) {
+        [ActionStageInstance() actionFailed:self.path reason:-1];
+    } completed:nil];
+    
+    return;
+    
     _currentItems = options[@"currentItems"];
     NSString *url = [[NSString alloc] initWithFormat:@"https://api.giphy.com/v1/gifs/search?q=%@&offset=%d&limit=60&api_key=141Wa2KDAfNfxu", [TGStringUtils stringByEscapingForURL:options[@"query"]], (int)_currentItems.count];
     self.cancelToken = [TGTelegraphInstance doRequestRawHttp:url maxRetryCount:0 acceptCodes:@[@200] actor:self];
@@ -92,6 +145,10 @@
 - (void)httpRequestFailed:(NSString *)__unused url
 {
     [ActionStageInstance() actionFailed:self.path reason:-1];
+}
+
+- (void)cancel {
+    [_disposable dispose];
 }
 
 @end

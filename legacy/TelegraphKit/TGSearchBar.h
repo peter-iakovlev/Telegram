@@ -14,7 +14,9 @@ typedef enum {
     TGSearchBarStyleDefault = 0,
     TGSearchBarStyleDark = 1,
     TGSearchBarStyleLight = 2,
-    TGSearchBarStyleLightPlain = 3
+    TGSearchBarStyleLightPlain = 3,
+    TGSearchBarStyleLightAlwaysPlain = 4,
+    TGSearchBarStyleHeader = 5,
 } TGSearchBarStyle;
 
 @protocol TGSearchBarDelegate <UISearchBarDelegate>
@@ -27,15 +29,24 @@ typedef enum {
 
 + (CGFloat)searchBarBaseHeight;
 + (CGFloat)searchBarScopeHeight;
+- (CGFloat)baseHeight;
 
 @property (nonatomic, weak) id<TGSearchBarDelegate> delegate;
+
+@property (nonatomic, strong) UITextField *customTextField;
+@property (nonatomic, readonly) UITextField *maybeCustomTextField;
+
+@property (nonatomic, strong) UIImageView *customBackgroundView;
+@property (nonatomic, strong) UIImageView *customActiveBackgroundView;
 
 @property (nonatomic, strong) NSArray *customScopeButtonTitles;
 @property (nonatomic) NSInteger selectedScopeButtonIndex;
 @property (nonatomic) bool showsScopeBar;
+@property (nonatomic) bool scopeBarCollapsed;
 
 @property (nonatomic) bool searchBarShouldShowScopeControl;
 @property (nonatomic) bool alwaysExtended;
+@property (nonatomic) bool hidesCancelButton;
 
 @property (nonatomic) TGSearchBarStyle style;
 @property (nonatomic, strong) NSString *text;
@@ -47,6 +58,8 @@ typedef enum {
 - (instancetype)initWithFrame:(CGRect)frame style:(TGSearchBarStyle)style;
 
 - (void)setShowsCancelButton:(bool)showsCancelButton animated:(bool)animated;
+
+- (void)setCustomScopeBarHidden:(bool)hidden;
 
 - (void)updateClipping:(CGFloat)clippedHeight;
 

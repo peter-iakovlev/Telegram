@@ -132,7 +132,7 @@ NSString *const PGPhotoEnhanceColorSwapShaderString = PGShaderString
     else
     {
         if (self.count > 0)
-            return [NSString stringWithFormat:@"uniform %@ %@[%d]", _type, _name, _count];
+            return [NSString stringWithFormat:@"uniform %@ %@[%ld]", _type, _name, _count];
         else
             return [NSString stringWithFormat:@"uniform %@ %@", _type, _name];
     }

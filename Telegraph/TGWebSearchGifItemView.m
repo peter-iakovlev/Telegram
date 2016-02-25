@@ -4,19 +4,16 @@
 
 #import "TGStringUtils.h"
 
-#import "TGImagePickerCellCheckButton.h"
+#import "TGCheckButtonView.h"
 
 #import "TGImageView.h"
 
 @interface TGWebSearchGifItemView ()
 {
-    TGImagePickerCellCheckButton *_checkButton;
+    TGCheckButtonView *_checkButton;
+    
+    SMetaDisposable *_itemSelectedDisposable;
 }
-
-@property (nonatomic, copy) void (^itemSelected)(id<TGModernMediaListItem>);
-@property (nonatomic, copy) bool (^isItemSelected)(id<TGModernMediaListItem>);
-@property (nonatomic, copy) bool (^isItemHidden)(id<TGModernMediaListItem>);
-
 @end
 
 @implementation TGWebSearchGifItemView
@@ -26,24 +23,46 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        _checkButton = [[TGImagePickerCellCheckButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 33.0f, 33.0f)];
-        [_checkButton setChecked:false animated:false];
+        _checkButton = [[TGCheckButtonView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 33.0f, 33.0f)];
         [_checkButton addTarget:self action:@selector(checkButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_checkButton];
     }
     return self;
 }
 
+- (void)dealloc
+{
+    [_itemSelectedDisposable dispose];
+}
+
 - (void)setItem:(TGWebSearchGifItem *)item synchronously:(bool)synchronously
 {
     [super setItem:item synchronously:synchronously];
     
-    self.itemSelected = item.itemSelected;
-    self.isItemSelected = item.isItemSelected;
-    self.isItemHidden = item.isItemHidden;
-    
-    [self updateItemHiddenAnimated:false];
-    [self updateItemSelected];
+    if (item.selectionContext != nil)
+    {
+        if (_checkButton == nil)
+        {
+            _checkButton = [[TGCheckButtonView alloc] initWithStyle:TGCheckButtonStyleMedia];
+            [_checkButton addTarget:self action:@selector(checkButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+            [self addSubview:_checkButton];
+        }
+        
+        if (_itemSelectedDisposable == nil)
+            _itemSelectedDisposable = [[SMetaDisposable alloc] init];
+        
+        __weak TGWebSearchGifItemView *weakSelf = self;
+        [_checkButton setSelected:[item.selectionContext isItemSelected:item.selectableMediaItem] animated:false];
+        [_itemSelectedDisposable setDisposable:[[item.selectionContext itemInformativeSelectedSignal:item.selectableMediaItem] startWithNext:^(TGMediaSelectionChange *next)
+        {
+            __strong TGWebSearchGifItemView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if (next.sender != strongSelf->_checkButton)
+                [strongSelf->_checkButton setSelected:next.selected animated:next.animated];
+        }]];
+    }
     
     [self setImageUri:[[NSString alloc] initWithFormat:@"web-search-thumbnail://?url=%@&width=90&height=90", [TGStringUtils stringByEscapingForURL:item.previewUrl]] synchronously:synchronously];
 }
@@ -57,45 +76,50 @@
 
 - (void)checkButtonPressed
 {
-    if (_isItemSelected && _itemSelected)
-    {
-        _itemSelected(self.item);
-        [_checkButton setChecked:_isItemSelected(self.item) animated:true];
-    }
+    TGWebSearchGifItem *item = (TGWebSearchGifItem *)self.item;
+    
+    [_checkButton setSelected:!_checkButton.selected animated:true];
+    [item.selectionContext setItem:item.selectableMediaItem selected:_checkButton.selected animated:false sender:_checkButton];
 }
 
-- (void)updateItemHiddenAnimated:(bool)animated
+- (void)setHidden:(bool)hidden animated:(bool)animated
 {
-    if (_isItemHidden)
+    if (hidden == self.imageView.hidden)
+        return;
+    
+    self.imageView.hidden = hidden;
+    
+    if (animated)
     {
-        bool hidden = _isItemHidden((id<TGWebSearchListItem>)self.item);
-        if (hidden != self.imageView.hidden)
+        if (!hidden)
         {
-            self.imageView.hidden = hidden;
-            
-            if (animated)
+            for (UIView *view in self.subviews)
             {
-                if (!hidden)
-                    _checkButton.alpha = 0.0f;
-                [UIView animateWithDuration:0.2 animations:^
-                 {
-                     if (!hidden)
-                         _checkButton.alpha = 1.0f;
-                 }];
-            }
-            else
-            {
-                self.imageView.hidden = hidden;
-                _checkButton.alpha = hidden ? 0.0f : 1.0f;
+                if (view != self.imageView)
+                    view.alpha = 0.0f;
             }
         }
+        
+        [UIView animateWithDuration:0.2 animations:^
+        {
+            if (!hidden)
+            {
+                for (UIView *view in self.subviews)
+                {
+                    if (view != self.imageView)
+                        view.alpha = 1.0f;
+                }
+            }
+        }];
     }
-}
-
-- (void)updateItemSelected
-{
-    if (_isItemSelected)
-        [_checkButton setChecked:_isItemSelected(self.item) animated:false];
+    else
+    {
+        for (UIView *view in self.subviews)
+        {
+            if (view != self.imageView)
+                view.alpha = hidden ? 0.0f : 1.0f;
+        }
+    }
 }
 
 @end

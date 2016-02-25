@@ -14,16 +14,16 @@
   },
   "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "434B2FF1-4AD6-463C-8DD5-2C570944FB50",
   "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
-    "4F84751366314673FAED5BDE91D377A6883A3535" : "Telegraphsubmodules\/elements",
-    "7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C" : "MtProtoKit",
-    "4BAB8F3E22C4829A7272C753E8D316047BC55F8C" : "TelegraphShare\/submodules\/lmdb",
-    "E860E73EA92362394DE531098D73ED96B22811B3" : "Telegraphthirdparty\/SSignalKit",
-    "9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B" : "Telegraph",
-    "F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3" : "Telegraphthirdparty\/pop",
-    "55011AEBD444630C0E9DF47BD2E18FDBBDCC285D" : "Telegraphthirdparty\/sqlcipher"
+    "4F84751366314673FAED5BDE91D377A6883A3535" : "telegramprivate\/submodules\/elements\/",
+    "7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C" : "MtProtoKit\/",
+    "4BAB8F3E22C4829A7272C753E8D316047BC55F8C" : "telegramprivate\/Share\/submodules\/lmdb\/",
+    "E860E73EA92362394DE531098D73ED96B22811B3" : "telegramprivate\/thirdparty\/SSignalKit\/",
+    "9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B" : "telegramprivate\/",
+    "F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3" : "telegramprivate\/thirdparty\/pop\/",
+    "55011AEBD444630C0E9DF47BD2E18FDBBDCC285D" : "telegramprivate\/thirdparty\/sqlcipher\/"
   },
   "DVTSourceControlWorkspaceBlueprintNameKey" : "Telegraph",
-  "DVTSourceControlWorkspaceBlueprintVersion" : 203,
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
   "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "Telegraph.xcodeproj",
   "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
     {
@@ -47,12 +47,12 @@
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C"
     },
     {
-      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "bitbucket.org:iakovlevpeterp\/telegramprivate.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/bitbucket.org\/iakovlevpeterp\/telegramprivate.git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B"
     },
     {
-      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "bitbucket.org:iakovlevpeterp\/ssignalkit.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/bitbucket.org\/iakovlevpeterp\/ssignalkit.git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "E860E73EA92362394DE531098D73ED96B22811B3"
     },

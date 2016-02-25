@@ -8,6 +8,9 @@
 #import "TGStringUtils.h"
 #import "TGImageUtils.h"
 #import "TGFont.h"
+#import "UIImage+TG.h"
+
+#import "TGNavigationController.h"
 
 #import "TGModernMediaCollectionView.h"
 #import "TGModernMediaListLayout.h"
@@ -17,19 +20,27 @@
 
 #import "TGImageView.h"
 
-#import "TGGiphySearchResultItem.h"
+#import "TGGiphySearchResultItem+TGMediaItem.h"
 #import "TGWebSearchGifItem.h"
 #import "TGWebSearchGifItemView.h"
 
-#import "TGBingSearchResultItem.h"
+#import "TGBingSearchResultItem+TGMediaItem.h"
 #import "TGWebSearchImageItem.h"
 #import "TGWebSearchImageItemView.h"
 
-#import "TGWebSearchInternalImageResult.h"
+#import "TGInternalGifSearchResult+TGMediaItem.h"
+#import "TGInternalGifSearchResultItem.h"
+#import "TGInternalGifSearchResultItemView.h"
+
+#import "TGExternalGifSearchResult+TGMediaItem.h"
+#import "TGExternalGifSearchResultItem.h"
+#import "TGExternalGifSearchResultItemView.h"
+
+#import "TGWebSearchInternalImageResult+TGMediaItem.h"
 #import "TGWebSearchInternalImageItem.h"
 #import "TGWebSearchInternalImageItemView.h"
 
-#import "TGWebSearchInternalGifResult.h"
+#import "TGWebSearchInternalGifResult+TGMediaItem.h"
 #import "TGWebSearchInternalGifItem.h"
 #import "TGWebSearchInternalGifItemView.h"
 
@@ -39,17 +50,22 @@
 #import "TGWebSearchResultsGalleryInternalImageItem.h"
 #import "TGWebSearchResultsGalleryInternalGifItem.h"
 
+#import "TGInternalGifSearchResultGalleryItem.h"
+#import "TGExternalGifSearchResultGalleryItem.h"
+
 #import "TGMediaPickerGalleryModel.h"
 #import "TGMediaPickerGallerySelectedItemsModel.h"
 
 #import "TGActionSheet.h"
 
-#import "TGMediaPickerAssetsLibrary.h"
-#import "PGPhotoEditorValues.h"
+#import "TGMediaAssetsLibrary.h"
+
+#import "TGMediaSelectionContext.h"
 #import "TGMediaEditingContext.h"
+
+#import "PGPhotoEditorValues.h"
+
 #import "TGPhotoEditorController.h"
-#import "TGBingSearchResultItem+TGEditablePhotoItem.h"
-#import "TGWebSearchInternalImageResult+TGEditablePhotoItem.h"
 
 #import "TGOverlayControllerWindow.h"
 
@@ -57,16 +73,11 @@
 
 #import "TGDoubleTapGestureRecognizer.h"
 
+#import "TGMediaPickerLayoutMetrics.h"
+
 @interface TGWebSearchController () <TGSearchBarDelegate, ASWatcher, UICollectionViewDataSource, UICollectionViewDelegate>
 {
-    CGSize _normalItemSize;
-    CGSize _wideItemSize;
-    CGFloat _widescreenWidth;
-    CGFloat _normalLineSpacing;
-    CGFloat _wideLineSpacing;
-    
-    UIEdgeInsets _normalEdgeInsets;
-    UIEdgeInsets _wideEdgeInsets;
+    TGMediaPickerLayoutMetrics *_layoutMetrics;
     
     TGSearchBar *_searchBar;
     UIView *_toolbarView;
@@ -83,18 +94,19 @@
     
     NSArray *_imageSearchResults;
     NSArray *_rawImageSearchResults;
-    NSArray *_selectedImageItems;
+    TGMediaSelectionContext *_imageSelectionContext;
     bool _imageMoreResultsAvailable;
     bool _searchingImage;
     
     NSArray *_gifSearchResults;
     NSArray *_rawGifSearchResults;
-    NSArray *_selectedGifItems;
     bool _gifMoreResultsAvailable;
+    TGMediaSelectionContext *_gifSelectionContext;
+    int32_t _gifMoreResultsOffset;
     bool _searchingGif;
 
     NSArray *_recentSearchResults;
-    NSArray *_selectedRecentItems;
+    TGMediaSelectionContext *_recentSelectionContext;
     
     NSArray *_selectedItems;
     
@@ -113,29 +125,23 @@
     
     id<TGModernMediaListItem> _hiddenItem;
     
+    bool _embedded;
+    NSArray *_scopeButtonTitles;
+    
     void (^_recycleItemContentView)(TGModernMediaListItemContentView *);
     NSMutableArray *_storedItemContentViews;
     
     __weak TGMediaPickerGalleryModel *_galleryModel;
     
-    void (^_changeGalleryItemSelection)(id<TGWebSearchResultsGalleryItem>, TGMediaPickerGallerySelectedItemsModel *);
-    
     TGMediaEditingContext *_editingContext;
-    PGPhotoEditorValues *(^_fetchEditorValues)(id<TGEditablePhotoItem>);
-    NSString *(^_fetchCaption)(id<TGEditablePhotoItem>);
-    UIImage *(^_fetchThumbnailImage)(id<TGEditablePhotoItem>);
-    UIImage *(^_fetchScreenImage)(id<TGEditablePhotoItem>);
-    void(^_fetchOriginalImage)(id<TGEditablePhotoItem>, void(^)(UIImage *));
-    void(^_fetchOriginalThumbnailImage)(id<TGEditablePhotoItem>, void(^)(UIImage *));
+    
+    SMetaDisposable *_selectionChangedDisposable;
+    
+    void(^_fetchOriginalImage)(id<TGMediaEditableItem>, void(^)(UIImage *));
+    void(^_fetchOriginalThumbnailImage)(id<TGMediaEditableItem>, void(^)(UIImage *));
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
-
-@property (nonatomic, copy) bool (^isEditing)();
-@property (nonatomic, copy) void (^toggleEditing)();
-@property (nonatomic, copy) void (^itemSelected)(id<TGWebSearchListItem>);
-@property (nonatomic, copy) bool (^isItemSelected)(id<TGWebSearchListItem>);
-@property (nonatomic, copy) bool (^isItemHidden)(id<TGWebSearchListItem>);
 
 @end
 
@@ -143,10 +149,10 @@
 
 - (instancetype)init
 {
-    return [self initForAvatarSelection:false];
+    return [self initForAvatarSelection:false embedded:false];
 }
 
-- (instancetype)initForAvatarSelection:(bool)avatarSelection
+- (instancetype)initForAvatarSelection:(bool)avatarSelection embedded:(bool)embedded
 {
     self = [super init];
     if (self != nil)
@@ -155,9 +161,16 @@
      
         _avatarSelection = avatarSelection;
         
+        if (!avatarSelection)
+        {
+            _imageSelectionContext = [[TGMediaSelectionContext alloc] init];
+            _gifSelectionContext = [[TGMediaSelectionContext alloc] init];
+            _recentSelectionContext = [[TGMediaSelectionContext alloc] init];
+        }
         _editingContext = [[TGMediaEditingContext alloc] init];
         
-        self.navigationBarShouldBeHidden = true;
+        if (!embedded)
+            self.navigationBarShouldBeHidden = true;
         
         _reusableItemContentViewsByIdentifier = [[NSMutableDictionary alloc] init];
         _storedItemContentViews = [[NSMutableArray alloc] init];
@@ -169,166 +182,24 @@
             [strongSelf enqueueView:itemContentView];
         };
         
-        CGSize screenSize = TGScreenSize();
-        _widescreenWidth = MAX(screenSize.width, screenSize.height);
+        _layoutMetrics = [TGMediaPickerLayoutMetrics defaultLayoutMetrics];
         
-        if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
-        {
-            if (_widescreenWidth >= 736.0f - FLT_EPSILON)
-            {
-                _normalItemSize = CGSizeMake(103.0f, 103.0f);
-                _wideItemSize = CGSizeMake(103.0f, 103.0f);
-                _normalEdgeInsets = UIEdgeInsetsMake(4.0f, 0.0f, 2.0f, 0.0f);
-                _wideEdgeInsets = UIEdgeInsetsMake(4.0f, 2.0f, 1.0f, 2.0f);
-                _normalLineSpacing = 1.0f;
-                _wideLineSpacing = 2.0f;
-            }
-            else if (_widescreenWidth >= 667.0f - FLT_EPSILON)
-            {
-                _normalItemSize = CGSizeMake(93.0f, 93.5f);
-                _wideItemSize = CGSizeMake(93.0f, 93.0f);
-                _normalEdgeInsets = UIEdgeInsetsMake(4.0f, 0.0f, 2.0f, 0.0f);
-                _wideEdgeInsets = UIEdgeInsetsMake(4.0f, 2.0f, 1.0f, 2.0f);
-                _normalLineSpacing = 1.0f;
-                _wideLineSpacing = 2.0f;
-            }
-            else
-            {
-                _normalItemSize = CGSizeMake(78.5f, 78.5f);
-                _wideItemSize = CGSizeMake(78.0f, 78.0f);
-                _normalEdgeInsets = UIEdgeInsetsMake(4.0f, 0.0f, 2.0f, 0.0f);
-                _wideEdgeInsets = UIEdgeInsetsMake(4.0f, 1.0f, 1.0f, 1.0f);
-                _normalLineSpacing = 2.0f;
-                _wideLineSpacing = 3.0f;
-            }
-        }
-        else
-        {
-            _normalItemSize = CGSizeMake(78.5f, 78.5f);
-            _wideItemSize = CGSizeMake(78.0f, 78.0f);
-            _normalEdgeInsets = UIEdgeInsetsMake(4.0f, 0.0f, 2.0f, 0.0f);
-            _wideEdgeInsets = UIEdgeInsetsMake(4.0f, 1.0f, 1.0f, 1.0f);
-            _normalLineSpacing = 2.0f;
-            _wideLineSpacing = 2.0f;
-        }
-        
-        self.isEditing = ^bool()
-        {
-            __strong TGWebSearchController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                //return strongSelf->_searchBar.selectedScopeButtonIndex == 2 && strongSelf->_editingRecents;
-            }
-            
-            return false;
-        };
-        self.toggleEditing = ^
-        {
-            __strong TGWebSearchController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                if (strongSelf->_searchBar.selectedScopeButtonIndex == [strongSelf recentScopeIndex])
-                {
-                    //strongSelf->_editingRecents = !strongSelf->_editingRecents;
-                    //[strongSelf updateItemsEditing];
-                }
-            }
-        };
-        self.itemSelected = ^(id<TGWebSearchListItem> item)
-        {
-            __strong TGWebSearchController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                [strongSelf toggleItemSelected:item updateInterface:true];
-        };
-        self.isItemSelected = ^bool (id<TGWebSearchListItem> item)
-        {
-            __strong TGWebSearchController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                return [[strongSelf scopeSelectedItems] containsObject:item];
-            }
-            return false;
-        };
-        self.isItemHidden = ^bool (id<TGWebSearchListItem> item)
-        {
-            __strong TGWebSearchController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                return [item isEqual:strongSelf->_hiddenItem];
-            }
-            return false;
-        };
-        
-        _changeGalleryItemSelection = ^(id<TGWebSearchResultsGalleryItem> item, TGMediaPickerGallerySelectedItemsModel *gallerySelectedItems)
-        {
-            __strong TGWebSearchController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                id<TGWebSearchListItem> listItem = [strongSelf listItemForSearchResult:[item webSearchResult]];
-                
-                if (listItem != nil)
-                {
-                    bool added = [strongSelf toggleItemSelected:listItem updateInterface:true];
-                    
-                    if (gallerySelectedItems != nil)
-                    {
-                        if (added)
-                            [gallerySelectedItems addSelectedItem:listItem];
-                        else
-                            [gallerySelectedItems removeSelectedItem:listItem];
-                    }
-                }
-            }
-        };
-        
-        _fetchEditorValues = ^PGPhotoEditorValues *(id<TGEditablePhotoItem> item)
-        {
-            __strong TGWebSearchController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                return [strongSelf->_editingContext adjustmentsForItemId:item.uniqueId];
-            return nil;
-        };
-        
-        _fetchThumbnailImage = ^UIImage *(id<TGEditablePhotoItem> item)
-        {
-            __strong TGWebSearchController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                return [strongSelf->_editingContext thumbnailImageForItemId:item.uniqueId];
-            return nil;
-        };
-        
-        _fetchCaption = ^NSString *(id<TGEditablePhotoItem> item)
-        {
-            __strong TGWebSearchController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                return [strongSelf->_editingContext captionForItemId:item.uniqueId];
-            return nil;
-        };
-        
-        _fetchScreenImage = ^UIImage *(id<TGEditablePhotoItem> item)
-        {
-            __strong TGWebSearchController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                return [strongSelf->_editingContext imageForItemId:item.uniqueId];
-            return nil;
-        };
-        
-        _fetchOriginalImage = ^void(id<TGEditablePhotoItem> item, void(^completion)(UIImage *))
+        _fetchOriginalImage = ^void(id<TGMediaEditableItem> item, void(^completion)(UIImage *))
         {
             __strong TGWebSearchController *strongSelf = weakSelf;
             if (strongSelf == nil)
                 return;
             
-            [strongSelf->_editingContext requestOriginalImageForItemId:item.uniqueId completion:completion];
+            [strongSelf->_editingContext requestOriginalImageForItem:item completion:completion];
         };
         
-        _fetchOriginalThumbnailImage = ^void(id<TGEditablePhotoItem> item, void(^completion)(UIImage *))
+        _fetchOriginalThumbnailImage = ^void(id<TGMediaEditableItem> item, void(^completion)(UIImage *))
         {
             __strong TGWebSearchController *strongSelf = weakSelf;
             if (strongSelf == nil)
                 return;
             
-            [strongSelf->_editingContext requestOriginalThumbnailImageForItemId:item.uniqueId completion:completion];
+            [strongSelf->_editingContext requestOriginalThumbnailImageForItem:item completion:completion];
         };
         
         _recentSearchResults = [self _listItemsFromResults:[TGWebSearchController recentSelectedItems]];
@@ -340,57 +211,6 @@
 {
     [_actionHandle reset];
     [ActionStageInstance() removeWatcher:self];
-}
-
-- (bool)toggleItemSelected:(id<TGModernMediaListSelectableItem>)item updateInterface:(bool)updateInterface
-{
-    bool addedItem = false;
-    if ([[self scopeSelectedItems] containsObject:item])
-    {
-        NSMutableArray *array = [[NSMutableArray alloc] initWithArray:[self scopeSelectedItems]];
-        [array removeObject:item];
-        [self setScopeSelectedItems:array animated:true];
-    }
-    else
-    {
-        NSMutableArray *array = [[NSMutableArray alloc] initWithArray:[self scopeSelectedItems]];
-        [array addObject:item];
-        [self setScopeSelectedItems:array animated:true];
-        
-        addedItem = true;
-    }
-    
-    if (updateInterface)
-        [self updateItemsSelected];
-    
-    TGMediaPickerGalleryModel *galleryModel = _galleryModel;
-    [galleryModel.interfaceView updateSelectionInterface:[self selectedItemsCount]
-                                          counterVisible:([self selectedItemsCount] > 0)
-                                                animated:true];
-    
-    return addedItem;
-}
-
-- (NSArray *)scopeSelectedItems
-{
-    if (_searchBar.selectedScopeButtonIndex == [self imagesScopeIndex])
-        return _selectedImageItems;
-    else if (_searchBar.selectedScopeButtonIndex == [self gifsScopeIndex])
-        return _selectedGifItems;
-    else
-        return _selectedRecentItems;
-}
-
-- (void)setScopeSelectedItems:(NSArray *)selectedItems animated:(bool)animated
-{
-    if (_searchBar.selectedScopeButtonIndex == [self imagesScopeIndex])
-        _selectedImageItems = selectedItems;
-    else if (_searchBar.selectedScopeButtonIndex == [self gifsScopeIndex])
-        _selectedGifItems = selectedItems;
-    else
-        _selectedRecentItems = selectedItems;
-    
-    [self updateSelectionInterface:animated];
 }
 
 - (NSArray *)scopeSearchResults
@@ -421,6 +241,15 @@
         return _gifMoreResultsAvailable;
     else
         return false;
+}
+
+- (int32_t)scopeMoreResultsOffset {
+    if (_searchBar.selectedScopeButtonIndex == [self imagesScopeIndex])
+        return 0;
+    else if (_searchBar.selectedScopeButtonIndex == [self gifsScopeIndex])
+        return _gifMoreResultsOffset;
+    else
+        return 0;
 }
 
 - (NSString *)scopeSearchPath
@@ -468,9 +297,11 @@
 {
     [super loadView];
     
+    self.view.clipsToBounds = true;
     self.view.backgroundColor = [UIColor whiteColor];
     
     _collectionContainer = [[UIView alloc] initWithFrame:self.view.bounds];
+    _collectionContainer.backgroundColor = [UIColor whiteColor];
     _collectionContainer.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_collectionContainer];
     
@@ -486,15 +317,6 @@
     _collectionView.dataSource = self;
     [_collectionView registerClass:[TGModernMediaListItemView class] forCellWithReuseIdentifier:@"TGModernMediaListItemView"];
     [_collectionContainer addSubview:_collectionView];
-    
-    /*UILongPressGestureRecognizer* longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPressGesture:)];
-    longPressGesture.minimumPressDuration = 0.5;
-    [_collectionView addGestureRecognizer:longPressGesture];
-    for (UIGestureRecognizer* recognizer in [_collectionView gestureRecognizers])
-    {
-        if ([recognizer isKindOfClass:[UILongPressGestureRecognizer class]])
-            [recognizer requireGestureRecognizerToFail:longPressGesture];
-    }*/
     
     _recentSearchResultsTableView = [[TGRecentSearchResultsTableView alloc] initWithFrame:_collectionView.frame style:UITableViewStylePlain];
     _recentSearchResultsTableView.items = [self _recentSearchItems];
@@ -521,14 +343,14 @@
     
     self.scrollViewsForAutomaticInsetsAdjustment = @[_collectionView, _recentSearchResultsTableView];
     
-    NSArray *scopeButtonTitles = nil;
     if (self.avatarSelection)
-        scopeButtonTitles = @[TGLocalized(@"WebSearch.Images"), TGLocalized(@"WebSearch.RecentSectionTitle")];
+        _scopeButtonTitles = @[TGLocalized(@"WebSearch.Images"), TGLocalized(@"WebSearch.RecentSectionTitle")];
     else
-        scopeButtonTitles = @[TGLocalized(@"WebSearch.Images"), TGLocalized(@"WebSearch.GIFs"), TGLocalized(@"WebSearch.RecentSectionTitle")];
+        _scopeButtonTitles = @[TGLocalized(@"WebSearch.Images"), TGLocalized(@"WebSearch.GIFs"), TGLocalized(@"WebSearch.RecentSectionTitle")];
     
-    _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frameSize.width, 0.0f) style:TGSearchBarStyleLight];
-    _searchBar.customScopeButtonTitles = scopeButtonTitles;
+    _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frameSize.width, 0.0f) style:TGSearchBarStyleHeader];
+    _searchBar.customScopeButtonTitles = _scopeButtonTitles;
+    _searchBar.scopeBarCollapsed = _embedded;
     _searchBar.showsScopeBar = true;
     [_searchBar setAlwaysExtended:true];
     [_searchBar setShowsCancelButton:true animated:false];
@@ -605,29 +427,34 @@
         _countLabel.font = TGLightSystemFontOfSize(14);
         [_countBadge addSubview:_countLabel];
         [_doneButton addSubview:_countBadge];
+        
+        _selectionChangedDisposable = [[SMetaDisposable alloc] init];
+        SSignal *combinedSignal = [TGMediaSelectionContext combinedSelectionChangedSignalForContexts:@[ _imageSelectionContext, _gifSelectionContext, _recentSelectionContext ]];
+        [_selectionChangedDisposable setDisposable:[combinedSignal startWithNext:^(TGMediaSelectionChange *next)
+        {
+            __strong TGWebSearchController *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            [strongSelf updateSelectionInterface:![next.sender isKindOfClass:[TGMediaSelectionContext class]]];
+        }]];
     }
     
-    self.explicitTableInset = UIEdgeInsetsMake(_searchBar.frame.size.height, 0.0f, (_toolbarView != nil) ? 44.0f : 0.0f, 0.0f);
-
-    self.explicitScrollIndicatorInset = self.explicitTableInset;
+    [self _updateExplicitTableInset];
     
     if (![self _updateControllerInset:false])
         [self controllerInsetUpdated:UIEdgeInsetsZero];
 }
 
-- (void)handleLongPressGesture:(UILongPressGestureRecognizer *)recognizer
+- (void)_updateExplicitTableInset
 {
-    if (recognizer.state == UIGestureRecognizerStateRecognized)
-    {
-        NSIndexPath *indexPath = [_collectionView indexPathForItemAtPoint:[recognizer locationInView:_collectionView]];
-        if (indexPath != nil)
-        {
-            if ([_collectionView cellForItemAtIndexPath:indexPath] != nil && _searchBar.selectedScopeButtonIndex == [self recentScopeIndex])
-            {
-                //_toggleEditing();
-            }
-        }
-    }
+    self.explicitTableInset = UIEdgeInsetsMake(_searchBar.frame.size.height, 0.0f, (_toolbarView != nil) ? 44.0f : 0.0f, 0.0f);
+    self.explicitScrollIndicatorInset = self.explicitTableInset;
+}
+
+- (CGFloat)_searchBarHeight
+{
+    return MAX(88.0f, _searchBar.frame.size.height);
 }
 
 + (NSString *)recentSelectedItemsKey
@@ -658,7 +485,11 @@
     NSData *data = [[NSUserDefaults standardUserDefaults] objectForKey:[self recentSelectedItemsKey]];
     if (data != nil)
     {
-        return [NSKeyedUnarchiver unarchiveObjectWithData:data];
+        @try {
+            return [NSKeyedUnarchiver unarchiveObjectWithData:data];
+        } @catch (NSException *e) {
+            return @[];
+        }
     }
     return @[];
 }
@@ -671,27 +502,24 @@
 
 - (NSArray *)_listItemsFromResults:(NSArray *)results
 {
-    bool (^isItemSelected)(id<TGWebSearchListItem>) = !self.avatarSelection ? _isItemSelected : nil;
-    void (^itemSelected)(id<TGWebSearchListItem>) = !self.avatarSelection ? _itemSelected : nil;
-    
     NSMutableArray *items = [[NSMutableArray alloc] init];
     for (id item in results)
     {
         if ([item isKindOfClass:[TGGiphySearchResultItem class]] && !self.avatarSelection)
         {
             TGGiphySearchResultItem *concreteItem = item;
-            [items addObject:[[TGWebSearchGifItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:item itemSelected:itemSelected isItemSelected:isItemSelected isItemHidden:_isItemHidden]];
+            TGWebSearchGifItem *listItem = [[TGWebSearchGifItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:item];
+            listItem.selectionContext = _recentSelectionContext;
+            [items addObject:listItem];
         }
         else if ([item isKindOfClass:[TGBingSearchResultItem class]])
         {
             TGBingSearchResultItem *concreteItem = item;
-            [items addObject:[[TGWebSearchImageItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:item isEditing:_isEditing toggleEditing:_toggleEditing itemSelected:itemSelected isItemSelected:isItemSelected isItemHidden:_isItemHidden]];
+            TGWebSearchImageItem *listItem = [[TGWebSearchImageItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:item];
+            listItem.selectionContext = _recentSelectionContext;
+            listItem.editingContext = _editingContext;
+            [items addObject:listItem];
             
-            concreteItem.fetchEditorValues = _fetchEditorValues;
-            concreteItem.fetchCaption = _fetchCaption;
-            concreteItem.fetchScreenImage = _fetchScreenImage;
-            concreteItem.fetchThumbnailImage = _fetchThumbnailImage;
-
             if (!self.avatarSelection)
             {
                 concreteItem.fetchOriginalImage = _fetchOriginalImage;
@@ -701,13 +529,11 @@
         else if ([item isKindOfClass:[TGWebSearchInternalImageResult class]])
         {
             TGWebSearchInternalImageResult *concreteItem = item;
-            [items addObject:[[TGWebSearchInternalImageItem alloc] initWithSearchResult:concreteItem isEditing:_isEditing toggleEditing:_toggleEditing itemSelected:itemSelected isItemSelected:isItemSelected isItemHidden:_isItemHidden]];
-            
-            concreteItem.fetchEditorValues = _fetchEditorValues;
-            concreteItem.fetchCaption = _fetchCaption;
-            concreteItem.fetchScreenImage = _fetchScreenImage;
-            concreteItem.fetchThumbnailImage = _fetchThumbnailImage;
-
+            TGWebSearchInternalImageItem *listItem = [[TGWebSearchInternalImageItem alloc] initWithSearchResult:concreteItem];
+            listItem.selectionContext = _recentSelectionContext;
+            listItem.editingContext = _editingContext;
+            [items addObject:listItem];
+        
             if (!self.avatarSelection)
             {
                 concreteItem.fetchOriginalImage = _fetchOriginalImage;
@@ -716,8 +542,21 @@
         }
         else if ([item isKindOfClass:[TGWebSearchInternalGifResult class]] && !self.avatarSelection)
         {
-            TGWebSearchInternalGifResult *concreteResult = item;
-            [items addObject:[[TGWebSearchInternalGifItem alloc] initWithSearchResult:concreteResult isEditing:_isEditing toggleEditing:_toggleEditing itemSelected:itemSelected isItemSelected:isItemSelected isItemHidden:_isItemHidden]];
+            TGWebSearchInternalGifItem *listItem = [[TGWebSearchInternalGifItem alloc] initWithSearchResult:item];
+            listItem.selectionContext = _recentSelectionContext;
+            [items addObject:listItem];
+        }
+        else if ([item isKindOfClass:[TGInternalGifSearchResult class]] && !self.avatarSelection)
+        {
+            TGInternalGifSearchResultItem *listItem = [[TGInternalGifSearchResultItem alloc] initWithSearchResult:item];
+            listItem.selectionContext = _recentSelectionContext;
+            [items addObject:listItem];
+        }
+        else if ([item isKindOfClass:[TGExternalGifSearchResult class]] && !self.avatarSelection)
+        {
+            TGExternalGifSearchResultItem *listItem = [[TGExternalGifSearchResultItem alloc] initWithSearchResult:item];
+            listItem.selectionContext = _recentSelectionContext;
+            [items addObject:listItem];
         }
     }
     return items;
@@ -763,8 +602,21 @@
     
     if (!_appeared)
     {
+        [UIView performWithoutAnimation:^
+        {
+            [_searchBar layoutSubviews];
+        }];
+        
         if (_searchBar.selectedScopeButtonIndex != [self recentScopeIndex])
             [_searchBar becomeFirstResponder];
+        
+        if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad || _searchBar.selectedScopeButtonIndex == [self recentScopeIndex])
+        {
+            dispatch_async(dispatch_get_main_queue(), ^
+            {
+                [self _performEmbeddedTransitionIn];
+            });
+        }
         
         _appeared = true;
     }
@@ -775,28 +627,34 @@
     return true;
 }
 
+- (bool)shouldIgnoreNavigationBar
+{
+    return _embedded;
+}
+
 - (void)controllerInsetUpdated:(UIEdgeInsets)previousInset
 {
     CGRect navigationBarFrame = _searchBar.frame;
     navigationBarFrame.origin.y = self.controllerCleanInset.top;
     _searchBar.frame = navigationBarFrame;
-    
+        
     [super controllerInsetUpdated:previousInset];
 }
 
-- (void)layoutControllerForSize:(CGSize)size duration:(NSTimeInterval)duration {
+- (void)layoutControllerForSize:(CGSize)size duration:(NSTimeInterval)duration
+{
     [super layoutControllerForSize:size duration:duration];
     
     UIView *snapshotView = [_collectionContainer snapshotViewAfterScreenUpdates:false];
     snapshotView.frame = _collectionContainer.frame;
     [self.view insertSubview:snapshotView aboveSubview:_collectionContainer];
     [UIView animateWithDuration:duration animations:^
-     {
-         snapshotView.alpha = 0.0f;
-     } completion:^(__unused BOOL finished)
-     {
-         [snapshotView removeFromSuperview];
-     }];
+    {
+        snapshotView.alpha = 0.0f;
+    } completion:^(__unused BOOL finished)
+    {
+        [snapshotView removeFromSuperview];
+    }];
     
     CGSize screenSize = size;
     
@@ -814,28 +672,47 @@
     [_collectionLayout invalidateLayout];
     [_collectionView layoutSubviews];
     
-    if (duration > DBL_EPSILON) {
-        [UIView animateWithDuration:duration animations:^{
-            _searchBar.frame = CGRectMake(_searchBar.frame.origin.x, _searchBar.frame.origin.y, size.width, 0.0f);
-            [_searchBar sizeToFit];
-        }];
-    } else {
+    void (^changeBlock)(void) = ^
+    {
         _searchBar.frame = CGRectMake(_searchBar.frame.origin.x, _searchBar.frame.origin.y, size.width, 0.0f);
         [_searchBar sizeToFit];
+    };
+    
+    if (duration > DBL_EPSILON)
+    {
+        [UIView animateWithDuration:duration animations:changeBlock];
+    }
+    else
+    {
+        changeBlock();
     }
     
-    self.explicitTableInset = UIEdgeInsetsMake(_searchBar.frame.size.height, 0.0f, 44.0f, 0.0f);
-    self.explicitScrollIndicatorInset = self.explicitTableInset;
+    [self _updateExplicitTableInset];
+}
+
+- (NSInteger)totalSelectionCount
+{
+    return _imageSelectionContext.count + _gifSelectionContext.count + _recentSelectionContext.count;
+}
+
+- (NSMutableArray *)selectedItems
+{
+    NSMutableArray *items = [[NSMutableArray alloc] init];
+    [items addObjectsFromArray:_imageSelectionContext.selectedItems];
+    [items addObjectsFromArray:_gifSelectionContext.selectedItems];
+    [items addObjectsFromArray:_recentSelectionContext.selectedItems];
+    
+    return items;
 }
 
 - (void)updateSelectionInterface:(bool)animated
 {
-    NSUInteger selectedCount = (_selectedImageItems.count + _selectedGifItems.count + _selectedRecentItems.count);
+    NSUInteger selectedCount = [self totalSelectionCount];
     _doneButton.enabled = selectedCount != 0;
     
     bool incremented = true;
     
-    float badgeAlpha = 0.0f;
+    CGFloat badgeAlpha = 0.0f;
     if (selectedCount != 0)
     {
         badgeAlpha = 1.0f;
@@ -949,7 +826,7 @@
 
 - (CGSize)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)__unused indexPath
 {
-    return (_collectionViewWidth >= _widescreenWidth - FLT_EPSILON) ? _wideItemSize : _normalItemSize;
+    return (_collectionViewWidth >= _layoutMetrics.widescreenWidth - FLT_EPSILON) ? _layoutMetrics.wideItemSize : _layoutMetrics.normalItemSize;
 }
 
 - (UIEdgeInsets)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout insetForSectionAtIndex:(NSInteger)__unused section
@@ -957,12 +834,12 @@
     if (ABS(_collectionViewWidth - 540.0f) < FLT_EPSILON)
         return UIEdgeInsetsMake(10.0f, 10.0f, 10.0f, 10.0f);
     
-    return (_collectionViewWidth >= _widescreenWidth - FLT_EPSILON) ? _wideEdgeInsets : _normalEdgeInsets;
+    return (_collectionViewWidth >= _layoutMetrics.widescreenWidth - FLT_EPSILON) ? _layoutMetrics.wideEdgeInsets : _layoutMetrics.normalEdgeInsets;
 }
 
 - (CGFloat)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout minimumLineSpacingForSectionAtIndex:(NSInteger)__unused section
 {
-    return (_collectionViewWidth >= _widescreenWidth - FLT_EPSILON) ? _wideLineSpacing : _normalLineSpacing;
+    return (_collectionViewWidth >= _layoutMetrics.widescreenWidth - FLT_EPSILON) ? _layoutMetrics.wideLineSpacing : _layoutMetrics.normalLineSpacing;
 }
 
 - (CGFloat)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout minimumInteritemSpacingForSectionAtIndex:(NSInteger)__unused section
@@ -1019,6 +896,7 @@
             views = [[NSMutableArray alloc] init];
             _reusableItemContentViewsByIdentifier[identifier] = views;
         }
+        [itemView prepareForReuse];
         [views addObject:itemView];
     }
 }
@@ -1063,10 +941,8 @@
         
         [itemView setItemContentView:itemContentView];
         
-        if (_hiddenItem == nil)
-            itemContentView.isHidden = false;
-        else
-            itemContentView.isHidden = [_hiddenItem isEqual:itemContentView.item];
+        bool hidden = (_hiddenItem != nil && [_hiddenItem isEqual:itemContentView.item]);
+        [itemContentView setHidden:hidden animated:false];
         
         return itemView;
     }
@@ -1118,27 +994,25 @@
     {
         return [[TGWebSearchResultsGalleryGifItem alloc] initWithGiphySearchResultItem:(TGGiphySearchResultItem *)result];
     }
+    else if ([result isKindOfClass:[TGInternalGifSearchResult class]]) {
+        return [[TGInternalGifSearchResultGalleryItem alloc] initWithSearchResult:(TGInternalGifSearchResult *)result];
+    } else if ([result isKindOfClass:[TGExternalGifSearchResult class]]) {
+        return [[TGExternalGifSearchResultGalleryItem alloc] initWithSearchResultItem:(TGExternalGifSearchResult *)result];
+    }
     
     return nil;
 }
 
 - (NSArray *)prepareGalleryItemsWithEnumerationBlock:(void (^)(id<TGWebSearchResultsGalleryItem> item))enumerationBlock
 {
-    __weak TGWebSearchController *weakSelf = self;
-    
     NSMutableArray *galleryItems = [[NSMutableArray alloc] init];
     
     for (id<TGWebSearchListItem> item in [self scopeSearchResults])
     {
         id<TGWebSearchResultsGalleryItem> galleryItem = [self galleryItemForWebSearchResult:[item webSearchResult]];
-        galleryItem.itemSelected = ^(id<TGModernGallerySelectableItem> item)
-        {
-            __strong TGWebSearchController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            strongSelf->_changeGalleryItemSelection((id<TGWebSearchResultsGalleryItem>)item, nil);
-        };
+        galleryItem.selectionContext = item.selectionContext;
+        if ([galleryItem conformsToProtocol:@protocol(TGModernGalleryEditableItem)])
+            ((id<TGModernGalleryEditableItem>)galleryItem).editingContext = _editingContext;
         
         if (galleryItem != nil)
         {
@@ -1149,11 +1023,6 @@
         }
     }
     return galleryItems;
-}
-
-- (NSInteger)selectedItemsCount
-{
-    return _selectedImageItems.count + _selectedGifItems.count + _selectedRecentItems.count;
 }
 
 - (TGModernGalleryController *)createGalleryControllerForItem:(id<TGWebSearchListItem>)item
@@ -1167,85 +1036,74 @@
         if ([[galleryItem webSearchResult] isEqual:[item webSearchResult]])
             focusItem = galleryItem;
     }];
-    
-    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:galleryItems focusItem:focusItem allowsSelection:true allowsEditing:true hasCaptions:!self.disallowCaptions forVideo:false];
+
+    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:galleryItems focusItem:focusItem selectionContext:item.selectionContext editingContext:_editingContext hasCaptions:self.captionsEnabled hasSelectionPanel:false];
+    model.suggestionContext = self.suggestionContext;
     model.controller = modernGallery;
+    model.externalSelectionCount = ^NSInteger
+    {
+        __strong TGWebSearchController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return 0;
+        
+        return [strongSelf totalSelectionCount];
+    };
     model.useGalleryImageAsEditableItemImage = true;
-    [model.interfaceView updateSelectionInterface:[self selectedItemsCount] counterVisible:([self selectedItemsCount] > 0) animated:false];
-    model.storeOriginalImageForItem = ^(id<TGEditablePhotoItem> editableItem, UIImage *originalImage)
+    model.storeOriginalImageForItem = ^(id<TGMediaEditableItem> editableItem, UIImage *originalImage)
     {
         __strong TGWebSearchController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
-        [strongSelf->_editingContext setOriginalImage:originalImage forItemId:editableItem.uniqueId synchronous:false];
+        [strongSelf->_editingContext setOriginalImage:originalImage forItem:editableItem synchronous:false];
     };
-    model.saveEditedItem = ^(id<TGEditablePhotoItem> editableItem, id<TGMediaEditAdjustments> editorValues, UIImage *resultImage, UIImage *thumbnailImage)
+    model.willFinishEditingItem = ^(id<TGMediaEditableItem> editableItem, id<TGMediaEditAdjustments> adjustments, id representation, bool hasChanges)
     {
         __strong TGWebSearchController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
-        [strongSelf->_editingContext setAdjustments:editorValues forItemId:editableItem.uniqueId synchronous:true];
-        [strongSelf->_editingContext setImage:resultImage thumbnailImage:thumbnailImage forItemId:editableItem.uniqueId synchronous:true];
+        if (hasChanges)
+            [strongSelf->_editingContext setAdjustments:adjustments forItem:editableItem];
         
-        id<TGWebSearchListItem> listItem = [strongSelf listItemForSearchResult:(id<TGWebSearchResult>)editableItem];
-        [strongSelf updateEditedItem:listItem];
+        [strongSelf->_editingContext setTemporaryRep:representation forItem:editableItem];
         
-        if (editorValues != nil)
-            [strongSelf _selectItemIfApplicable:editableItem];
+        if (item.selectionContext != nil && adjustments != nil && [editableItem conformsToProtocol:@protocol(TGMediaSelectableItem)])
+            [item.selectionContext setItem:(id<TGMediaSelectableItem>)editableItem selected:true];
     };
-    model.saveItemCaption = ^(id<TGEditablePhotoItem> editableItem, NSString *caption)
+    model.didFinishEditingItem = ^(id<TGMediaEditableItem> editableItem, __unused id<TGMediaEditAdjustments> adjustments, UIImage *resultImage, UIImage *thumbnailImage)
     {
         __strong TGWebSearchController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
-        [strongSelf->_editingContext setCaption:caption forItemId:editableItem.uniqueId synchronous:true];
-        
-        if (caption.length > 0)
-            [strongSelf _selectItemIfApplicable:editableItem];
+        [strongSelf->_editingContext setImage:resultImage thumbnailImage:thumbnailImage forItem:editableItem synchronous:true];
     };
-    
-    model.interfaceView.itemSelected = ^(id<TGWebSearchResultsGalleryItem> item)
+    model.saveItemCaption = ^(id<TGMediaEditableItem> editableItem, NSString *caption)
     {
         __strong TGWebSearchController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
-        strongSelf->_changeGalleryItemSelection(item, nil);
-    };
-    model.interfaceView.isItemSelected = ^bool (id<TGWebSearchResultsGalleryItem> item)
-    {
-        __strong TGWebSearchController *strongSelf = weakSelf;
-        if (strongSelf != nil)
-        {
-            id<TGWebSearchListItem> listItem = [strongSelf listItemForSearchResult:[item webSearchResult]];
-            
-            if (listItem != nil)
-                return strongSelf.isItemSelected(listItem);
-        }
+        [strongSelf->_editingContext setCaption:caption forItem:editableItem];
         
-        return false;
+        if (item.selectionContext != nil && caption.length > 0 && [editableItem conformsToProtocol:@protocol(TGMediaSelectableItem)])
+            [item.selectionContext setItem:(id<TGMediaSelectableItem>)editableItem selected:true];
     };
+    [model.interfaceView updateSelectionInterface:[self totalSelectionCount] counterVisible:([self totalSelectionCount] > 0) animated:false];
     model.interfaceView.donePressed = ^(id<TGWebSearchResultsGalleryItem> item)
     {
         __strong TGWebSearchController *strongSelf = weakSelf;
-        if (strongSelf != nil)
-        {
-            id<TGWebSearchListItem> listItem = [strongSelf listItemForSearchResult:[item webSearchResult]];
-            
-            NSMutableArray *selectedItems = [[NSMutableArray alloc] init];
-            [selectedItems addObjectsFromArray:_selectedImageItems];
-            [selectedItems addObjectsFromArray:_selectedGifItems];
-            [selectedItems addObjectsFromArray:_selectedRecentItems];
-            
-            if (listItem != nil && ![selectedItems containsObject:listItem])
-                [selectedItems addObject:listItem];
-            
-            _selectedItems = selectedItems;
-            [strongSelf complete];
-        }
+        if (strongSelf == nil)
+            return;
+    
+        NSMutableArray *selectedItems = [strongSelf selectedItems];
+        
+        if (selectedItems.count == 0)
+            [selectedItems addObject:[item webSearchResult]];
+        
+        strongSelf->_selectedItems = selectedItems;
+        [strongSelf complete];
     };
     _galleryModel = model;
     modernGallery.model = model;
@@ -1260,7 +1118,7 @@
             [strongSelf updateHiddenItemAnimated:false];
         }
     };
-    
+
     modernGallery.beginTransitionIn = ^UIView *(id<TGWebSearchResultsGalleryItem> item, __unused TGModernGalleryItemView *itemView)
     {
         __strong TGWebSearchController *strongSelf = weakSelf;
@@ -1271,8 +1129,8 @@
         
         return nil;
     };
-    
-    modernGallery.beginTransitionOut = ^UIView *(id<TGWebSearchResultsGalleryItem> item)
+
+    modernGallery.beginTransitionOut = ^UIView *(id<TGWebSearchResultsGalleryItem> item, __unused TGModernGalleryItemView *itemView)
     {
         __strong TGWebSearchController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -1282,7 +1140,7 @@
         
         return nil;
     };
-    
+
     modernGallery.completedTransitionOut = ^
     {
         __strong TGWebSearchController *strongSelf = weakSelf;
@@ -1292,97 +1150,16 @@
             [strongSelf updateHiddenItemAnimated:true];
         }
     };
-    
+
     return modernGallery;
-}
-
-- (void)_selectItemIfApplicable:(id<TGEditablePhotoItem>)item
-{
-    id<TGWebSearchListItem> listItem = [self listItemForSearchResult:(id<TGWebSearchResult>)item];
-    
-    if (listItem.isItemSelected != nil && !listItem.isItemSelected(listItem) && listItem.itemSelected != nil)
-    {
-        listItem.itemSelected(listItem);
-        TGMediaPickerGalleryModel *galleryModel = _galleryModel;
-        
-        [galleryModel.interfaceView updateSelectionInterface:[self selectedItemsCount]
-                                              counterVisible:[self selectedItemsCount] > 0
-                                                    animated:true];
-    }
-}
-
-- (void)updateEditedItem:(id<TGWebSearchListItem>)item
-{
-    for (TGModernMediaListItemView *itemView in [_collectionView visibleCells])
-    {
-        if ([itemView.itemContentView.item isEqual:item])
-            [itemView.itemContentView updateItem];
-    }
 }
 
 - (void)updateHiddenItemAnimated:(bool)animated
 {
     for (TGModernMediaListItemView *itemView in [_collectionView visibleCells])
     {
-        if ([itemView.itemContentView isKindOfClass:[TGWebSearchImageItemView class]])
-        {
-            [(TGWebSearchImageItemView *)itemView.itemContentView updateItemHiddenAnimated:animated];
-        }
-        else if ([itemView.itemContentView isKindOfClass:[TGWebSearchGifItemView class]])
-        {
-            [(TGWebSearchGifItemView *)itemView.itemContentView updateItemHiddenAnimated:animated];
-        }
-        else if ([itemView.itemContentView isKindOfClass:[TGWebSearchInternalImageItemView class]])
-        {
-            [(TGWebSearchInternalImageItemView *)itemView.itemContentView updateItemHiddenAnimated:animated];
-        }
-        else if ([itemView.itemContentView isKindOfClass:[TGWebSearchInternalGifItemView class]])
-        {
-            [(TGWebSearchInternalGifItemView *)itemView.itemContentView updateItemHiddenAnimated:animated];
-        }
-    }
-}
-
-- (void)updateItemsSelected
-{
-    for (TGModernMediaListItemView *itemView in [_collectionView visibleCells])
-    {
-        if ([itemView.itemContentView isKindOfClass:[TGWebSearchImageItemView class]])
-        {
-            [(TGWebSearchImageItemView *)itemView.itemContentView updateItemSelected];
-        }
-        else if ([itemView.itemContentView isKindOfClass:[TGWebSearchGifItemView class]])
-        {
-            [(TGWebSearchGifItemView *)itemView.itemContentView updateItemSelected];
-        }
-        else if ([itemView.itemContentView isKindOfClass:[TGWebSearchInternalImageItemView class]])
-        {
-            [(TGWebSearchInternalImageItemView *)itemView.itemContentView updateItemSelected];
-        }
-        else if ([itemView.itemContentView isKindOfClass:[TGWebSearchInternalGifItemView class]])
-        {
-            [(TGWebSearchInternalGifItemView *)itemView.itemContentView updateItemSelected];
-        }
-    }
-}
-
-- (void)updateItemsEditing
-{
-    for (TGModernMediaListItemView *itemView in [_collectionView visibleCells])
-    {
-        if ([itemView.itemContentView isKindOfClass:[TGWebSearchImageItemView class]])
-        {
-            [(TGWebSearchImageItemView *)itemView.itemContentView updateIsEditing];
-        }
-        else if ([itemView.itemContentView isKindOfClass:[TGWebSearchGifItemView class]])
-        {
-        }
-        else if ([itemView.itemContentView isKindOfClass:[TGWebSearchInternalImageItemView class]])
-        {
-        }
-        else if ([itemView.itemContentView isKindOfClass:[TGWebSearchInternalGifItemView class]])
-        {
-        }
+        bool hidden = (_hiddenItem != nil && [_hiddenItem isEqual:itemView.itemContentView.item]);
+        [itemView.itemContentView setHidden:hidden animated:animated];
     }
 }
 
@@ -1392,7 +1169,7 @@
     
     if (self.avatarSelection)
     {
-        if (![[item webSearchResult] conformsToProtocol:@protocol(TGEditablePhotoItem)])
+        if (![[item webSearchResult] conformsToProtocol:@protocol(TGMediaEditableItem)])
             return;
         
         UIImage *thumbnailImage = nil;
@@ -1404,19 +1181,38 @@
             thumbnailImage = itemContentView.imageView.image;
         }
         
-        TGPhotoEditorController *controller = [[TGPhotoEditorController alloc] initWithItem:(id<TGEditablePhotoItem>)item.webSearchResult intent:TGPhotoEditorControllerAvatarIntent | TGPhotoEditorControllerWebIntent adjustments:nil caption:nil screenImage:thumbnailImage availableTabs:[TGPhotoEditorController defaultTabsForAvatarIntent] selectedTab:TGPhotoEditorCropTab];
-        controller.finishedEditing = ^(PGPhotoEditorValues *editorValues, UIImage *resultImage, __unused UIImage *thumbnailImage, bool noChanges)
+        __weak TGWebSearchController *weakSelf = self;
+        TGPhotoEditorController *controller = [[TGPhotoEditorController alloc] initWithItem:(id<TGMediaEditableItem>)item.webSearchResult intent:TGPhotoEditorControllerAvatarIntent | TGPhotoEditorControllerWebIntent adjustments:nil caption:nil screenImage:thumbnailImage availableTabs:[TGPhotoEditorController defaultTabsForAvatarIntent] selectedTab:TGPhotoEditorCropTab];
+        controller.didFinishEditing = ^(PGPhotoEditorValues *editorValues, UIImage *resultImage, __unused UIImage *thumbnailImage, bool hasChanges)
         {
-            if (noChanges)
+            if (!hasChanges)
+                return;
+         
+            __strong TGWebSearchController *strongSelf = weakSelf;
+            if (strongSelf == nil)
                 return;
             
-            if (self.avatarCreated != nil)
-                self.avatarCreated(resultImage);
+            if (strongSelf.avatarCompletionBlock != nil)
+                strongSelf.avatarCompletionBlock(resultImage);
             
             if ([editorValues toolsApplied])
-                [[TGMediaPickerAssetsLibrary sharedLibrary] saveAssetWithImage:resultImage completionBlock:nil];
+                [[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:resultImage] startWithNext:nil];
         };
-        [self.navigationController pushViewController:controller animated:true];
+        controller.requestThumbnailImage = ^SSignal *(id<TGMediaEditableItem> editableItem)
+        {
+            return [editableItem thumbnailImageSignal];
+        };
+        controller.requestOriginalScreenSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem)
+        {
+            return [editableItem screenImageSignal];
+        };
+        controller.requestOriginalFullSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem)
+        {
+            return [editableItem originalImageSignal];
+        };
+        
+        UINavigationController *navController = self.parentNavigationController ? : self.navigationController;
+        [navController pushViewController:controller animated:true];
     }
     else
     {
@@ -1436,7 +1232,7 @@
     {
         _searchBar.showActivity = true;
         
-        [ActionStageInstance() requestActor:[self scopeSearchPath] options:@{@"query": _searchString, @"currentItems": [self scopeRawSearchResults]} flags:0 watcher:self];
+        [ActionStageInstance() requestActor:[self scopeSearchPath] options:@{@"query": _searchString, @"currentItems": [self scopeRawSearchResults], @"moreResultsOffset": @([self scopeMoreResultsOffset])} flags:0 watcher:self];
     }
 }
 
@@ -1457,15 +1253,16 @@
         _searchString = nil;
         _imageMoreResultsAvailable = false;
         _gifMoreResultsAvailable = false;
+        _gifMoreResultsOffset = 0;
         _searchBar.showActivity = false;
         
         _rawImageSearchResults = nil;
         _imageSearchResults = nil;
-        _selectedImageItems = nil;
+        [_imageSelectionContext clear];
         
         _rawGifSearchResults = nil;
         _gifSearchResults = nil;
-        _selectedGifItems = nil;
+        [_gifSelectionContext clear];
         
         [self updateSelectionInterface:false];
         
@@ -1485,17 +1282,18 @@
     {
         _rawImageSearchResults = nil;
         _imageSearchResults = nil;
-        _selectedImageItems = nil;
+        [_imageSelectionContext clear];
 
         _rawGifSearchResults = nil;
         _gifSearchResults = nil;
-        _selectedGifItems = nil;
+        [_gifSelectionContext clear];
         
         [self updateSelectionInterface:false];
         
         _searchString = query;
         _imageMoreResultsAvailable = false;
         _gifMoreResultsAvailable = false;
+        _gifMoreResultsOffset = 0;
         
         if (_imageSearchPath.length != 0)
         {
@@ -1566,11 +1364,17 @@
     if (_searchBar.selectedScopeButtonIndex == [self imagesScopeIndex])
         searching = _searchingImage;
     else if (_searchBar.selectedScopeButtonIndex == [self gifsScopeIndex])
-        searching = _selectedGifItems;
+        searching = _searchingGif;
     if ([self scopeSearchPath].length != 0 && !searching && [self scopeSearchResults].count == 0 && _searchBar.selectedScopeButtonIndex != [self recentScopeIndex])
         [self nothingFoundView].hidden = false;
     else
         _nothingFoundView.hidden = true;
+}
+
+- (void)searchBarTextDidBeginEditing:(UISearchBar *)__unused searchBar
+{
+    if ([UIDevice currentDevice].userInterfaceIdiom != UIUserInterfaceIdiomPad)
+        [self _performEmbeddedTransitionIn];
 }
 
 - (void)updateToolbarItemsAnimated:(bool)animated
@@ -1586,7 +1390,6 @@
         [UIView animateWithDuration:0.15f animations:^
         {
             _toolbarLogoView.alpha = logoViewHidden ? 0.0f : 1.0f;
-            //_clearButton.alpha = clearButtonHidden ? 0.0f : 1.0f;
         } completion:^(BOOL finished)
         {
             if (finished)
@@ -1601,7 +1404,6 @@
         _toolbarLogoView.hidden = logoViewHidden;
         _toolbarLogoView.alpha = _toolbarLogoView.hidden ? 0.0f : 1.0f;
         _clearButton.hidden = clearButtonHidden;
-//        _clearButton.alpha = _clearButton.hidden ? 0.0f : 1.0f;
     }
 }
 
@@ -1629,8 +1431,7 @@
             strongSelf->_recentSearchResults = nil;
             [strongSelf reloadData];
             
-            strongSelf->_selectedRecentItems = nil;
-            [strongSelf updateSelectionInterface:true];
+            [strongSelf->_recentSelectionContext clear];
             
             strongSelf->_clearButton.hidden = true;
         }
@@ -1644,26 +1445,17 @@
 
 - (void)doneButtonPressed
 {
-    NSMutableArray *selectedItems = [[NSMutableArray alloc] init];
-    [selectedItems addObjectsFromArray:_selectedImageItems];
-    [selectedItems addObjectsFromArray:_selectedGifItems];
-    [selectedItems addObjectsFromArray:_selectedRecentItems];
-
-    _selectedItems = selectedItems;
+    _selectedItems = [self selectedItems];
     
     [self complete];
 }
 
 - (void)complete
 {
-    NSMutableArray *searchItems = [[NSMutableArray alloc] init];
-    for (id<TGWebSearchListItem> item in _selectedItems)
-        [searchItems addObject:[item webSearchResult]];
+    [TGWebSearchController addRecentSelectedItems:_selectedItems];
     
-    [TGWebSearchController addRecentSelectedItems:searchItems];
-    
-    if (_completion)
-        _completion(self);
+    if (self.completionBlock != nil)
+        self.completionBlock(self);
     
     TGMediaPickerGalleryModel *galleryModel = _galleryModel;
     if (galleryModel != nil)
@@ -1677,52 +1469,57 @@
 
 - (NSArray *)selectedItemSignals:(id (^)(id, NSString *))imageDescriptionGenerator
 {
-    NSMutableArray *result = [[NSMutableArray alloc] init];
+    NSMutableArray *resultSignals = [[NSMutableArray alloc] init];
     
-    TGMediaEditingContext *editingContext = _editingContext;
-    for (id<TGWebSearchListItem> listItem in _selectedItems)
+    for (id<TGWebSearchResult> item in _selectedItems)
     {
-        id<TGWebSearchResult> item = [listItem webSearchResult];
         NSString *caption = nil;
-        if ([item conformsToProtocol:@protocol(TGEditablePhotoItem)])
-            caption = [editingContext captionForItemId:[(id<TGEditablePhotoItem>)item uniqueId]];
+        if ([item conformsToProtocol:@protocol(TGMediaEditableItem)])
+            caption = [_editingContext captionForItem:(id<TGMediaEditableItem>)item];
 
         if (caption.length == 0)
             caption = nil;
         
-        if ([item conformsToProtocol:@protocol(TGEditablePhotoItem)] && [_editingContext adjustmentsForItemId:((id<TGEditablePhotoItem>)item).uniqueId] != nil)
+        SSignal *signal = [SSignal single:item];
+        
+        if ([item conformsToProtocol:@protocol(TGMediaEditableItem)])
         {
-            id<TGEditablePhotoItem> editableItem = (id<TGEditablePhotoItem>)item;
-            [result addObject:[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+            signal = [[[[_editingContext imageSignalForItem:(id<TGMediaEditableItem>)item] filter:^bool(id result)
             {
-                UIImage *image = [editingContext imageForItemId:editableItem.uniqueId];
-                if (image != nil)
+                return result == nil || ([result isKindOfClass:[UIImage class]] && !((UIImage *)result).degraded);
+            }] take:1] mapToSignal:^SSignal *(id result)
+            {
+                if (result == nil)
                 {
-                    id generatedItem = imageDescriptionGenerator(image, caption);
-                    if (generatedItem != nil)
-                        [subscriber putNext:generatedItem];
+                    return [SSignal single:item];
                 }
-                [subscriber putCompletion];
+                else if ([result isKindOfClass:[UIImage class]])
+                {
+                    UIImage *image = (UIImage *)result;
+                    image.edited = true;
+                    return [SSignal single:image];
+                }
                 
-                return nil;
-            }]];
+                return [SSignal complete];
+            }];
         }
-        else
+        
+        signal = [signal mapToSignal:^SSignal *(id item)
         {
-            [result addObject:[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-            {
-                id generatedItem = imageDescriptionGenerator(item, caption);
-                if (generatedItem != nil)
-                    [subscriber putNext:generatedItem];
-                
-                [subscriber putCompletion];
-                
-                return nil;
-            }]];
-        }
+            if (item == nil)
+                return [SSignal complete];
+            
+            id generatedItem = imageDescriptionGenerator(item, caption);
+            if (generatedItem == nil)
+                return [SSignal complete];
+            
+            return [SSignal single:generatedItem];
+        }];
+        
+        [resultSignals addObject:signal];
     }
     
-    return result;
+    return resultSignals;
 }
 
 - (NSArray *)uniqueItemsInArray:(NSArray *)array
@@ -1755,31 +1552,40 @@
             {
                 NSMutableArray *searchResults = [[NSMutableArray alloc] init];
                 
-                bool (^isItemSelected)(id<TGWebSearchListItem>) = !self.avatarSelection ? _isItemSelected : nil;
-                void (^itemSelected)(id<TGWebSearchListItem>) = !self.avatarSelection ? _itemSelected : nil;
-                
                 for (id item in result[@"items"])
                 {
                     if ([item isKindOfClass:[TGGiphySearchResultItem class]])
                     {
                         TGGiphySearchResultItem *concreteItem = item;
-                        [searchResults addObject:[[TGWebSearchGifItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:item itemSelected:itemSelected isItemSelected:isItemSelected isItemHidden:_isItemHidden]];
+                        TGWebSearchGifItem *listItem = [[TGWebSearchGifItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:concreteItem];
+                        listItem.selectionContext = _gifSelectionContext;
+                        [searchResults addObject:listItem];
                     }
                     else if ([item isKindOfClass:[TGBingSearchResultItem class]])
                     {
                         TGBingSearchResultItem *concreteItem = item;
-                        [searchResults addObject:[[TGWebSearchImageItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:item isEditing:_isEditing toggleEditing:_toggleEditing itemSelected:itemSelected isItemSelected:isItemSelected isItemHidden:_isItemHidden]];
-                        
-                        concreteItem.fetchEditorValues = _fetchEditorValues;
-                        concreteItem.fetchCaption = _fetchCaption;
-                        concreteItem.fetchScreenImage = _fetchScreenImage;
-                        concreteItem.fetchThumbnailImage = _fetchThumbnailImage;
+                        TGWebSearchImageItem *listItem = [[TGWebSearchImageItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:concreteItem];
+                        listItem.selectionContext = _imageSelectionContext;
+                        listItem.editingContext = _editingContext;
+                        [searchResults addObject:listItem];
                         
                         if (!self.avatarSelection)
                         {
                             concreteItem.fetchOriginalImage = _fetchOriginalImage;
                             concreteItem.fetchOriginalThumbnailImage = _fetchOriginalThumbnailImage;
                         }
+                    }
+                    else if ([item isKindOfClass:[TGInternalGifSearchResult class]] && !self.avatarSelection)
+                    {
+                        TGInternalGifSearchResultItem *listItem = [[TGInternalGifSearchResultItem alloc] initWithSearchResult:item];
+                        listItem.selectionContext = _gifSelectionContext;
+                        [searchResults addObject:listItem];
+                    }
+                    else if ([item isKindOfClass:[TGExternalGifSearchResult class]] && !self.avatarSelection)
+                    {
+                        TGExternalGifSearchResultItem *listItem = [[TGExternalGifSearchResultItem alloc] initWithSearchResult:item];
+                        listItem.selectionContext = _gifSelectionContext;
+                        [searchResults addObject:listItem];
                     }
                 }
                 
@@ -1805,17 +1611,17 @@
                     if ([item isKindOfClass:[TGGiphySearchResultItem class]])
                     {
                         TGGiphySearchResultItem *concreteItem = item;
-                        [searchResults addObject:[[TGWebSearchGifItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:item itemSelected:_itemSelected isItemSelected:_isItemSelected isItemHidden:_isItemHidden]];
+                        TGWebSearchGifItem *listItem = [[TGWebSearchGifItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:concreteItem];
+                        listItem.selectionContext = _gifSelectionContext;
+                        [searchResults addObject:listItem];
                     }
                     else if ([item isKindOfClass:[TGBingSearchResultItem class]])
                     {
                         TGBingSearchResultItem *concreteItem = item;
-                        [searchResults addObject:[[TGWebSearchImageItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:item isEditing:_isEditing toggleEditing:_toggleEditing itemSelected:_itemSelected isItemSelected:_isItemSelected isItemHidden:_isItemHidden]];
-                        
-                        concreteItem.fetchEditorValues = _fetchEditorValues;
-                        concreteItem.fetchCaption = _fetchCaption;
-                        concreteItem.fetchScreenImage = _fetchScreenImage;
-                        concreteItem.fetchThumbnailImage = _fetchThumbnailImage;
+                        TGWebSearchImageItem *listItem = [[TGWebSearchImageItem alloc] initWithPreviewUrl:concreteItem.previewUrl searchResultItem:concreteItem];
+                        listItem.selectionContext = _imageSelectionContext;
+                        listItem.editingContext = _editingContext;
+                        [searchResults addObject:listItem];
                         
                         if (!self.avatarSelection)
                         {
@@ -1823,11 +1629,24 @@
                             concreteItem.fetchOriginalThumbnailImage = _fetchOriginalThumbnailImage;
                         }
                     }
+                    else if ([item isKindOfClass:[TGInternalGifSearchResult class]] && !self.avatarSelection)
+                    {
+                        TGInternalGifSearchResultItem *listItem = [[TGInternalGifSearchResultItem alloc] initWithSearchResult:item];
+                        listItem.selectionContext = _gifSelectionContext;
+                        [searchResults addObject:listItem];
+                    }
+                    else if ([item isKindOfClass:[TGExternalGifSearchResult class]] && !self.avatarSelection)
+                    {
+                        TGExternalGifSearchResultItem *listItem = [[TGExternalGifSearchResultItem alloc] initWithSearchResult:item];
+                        listItem.selectionContext = _gifSelectionContext;
+                        [searchResults addObject:listItem];
+                    }
                 }
                 
                 _gifSearchResults = [self uniqueItemsInArray:searchResults];
                 _rawGifSearchResults = result[@"items"];
                 _gifMoreResultsAvailable = [result[@"moreResultsAvailable"] boolValue];
+                _gifMoreResultsOffset = [result[@"moreResultsOffset"] intValue];
                 
                 if (_searchBar.selectedScopeButtonIndex == [self gifsScopeIndex])
                     [self reloadData];
@@ -1855,6 +1674,108 @@
         return 1;
     
     return 2;
+}
+
+- (void)presentEmbeddedInController:(UIViewController *)controller animated:(bool)__unused animated
+{
+    _embedded = true;
+    //[controller addChildViewController:self];
+    
+    self.view.frame = controller.view.bounds;
+    
+    [self beginAppearanceTransition:true animated:false];
+    [controller.view addSubview:self.view];
+    
+    self.view.backgroundColor = [UIColor clearColor];
+    _collectionContainer.alpha = 0.0f;
+    _searchBar.alpha = 0.0f;
+    _toolbarView.alpha = 0.0f;
+    _recentSearchResultsTableView.alpha = 0.0f;
+    
+    [self endAppearanceTransition];
+}
+
+- (void)_performEmbeddedTransitionIn
+{
+    if (!_embedded || !_searchBar.scopeBarCollapsed)
+        return;
+    
+    CGRect recentTableFrame = _recentSearchResultsTableView.frame;
+    CGRect collectionFrame = _collectionContainer.frame;
+    [UIView performWithoutAnimation:^
+    {
+        [_searchBar setCustomScopeBarHidden:true];
+        [_searchBar layoutSubviews];
+        
+        _recentSearchResultsTableView.frame = CGRectOffset(_recentSearchResultsTableView.frame, 0, -44);
+        _collectionContainer.frame = CGRectOffset(_collectionContainer.frame, 0, -44);
+    }];
+    
+    TGDispatchAfter(0.015, dispatch_get_main_queue(), ^
+    {
+        [UIView animateWithDuration:0.2 animations:^
+        {
+            _searchBar.alpha = 1.0f;
+        }];
+        
+        [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 | UIViewAnimationOptionLayoutSubviews | UIViewAnimationOptionAllowAnimatedContent animations:^
+        {
+            _searchBar.scopeBarCollapsed = false;
+            [_searchBar setSearchBarShouldShowScopeControl:true];
+            
+            _collectionContainer.alpha = 1.0f;
+            _collectionContainer.frame = collectionFrame;
+            
+            _toolbarView.alpha = 1.0f;
+            
+            if (_recentSearchResultsTableView.items.count > 0)
+                _recentSearchResultsTableView.alpha = 1.0f;
+            _recentSearchResultsTableView.frame = recentTableFrame;
+        } completion:^(__unused BOOL finished)
+        {
+            self.view.backgroundColor = [UIColor whiteColor];
+        }];
+        
+        [UIView animateWithDuration:0.2 delay:0.08 options:UIViewAnimationOptionAllowAnimatedContent animations:^
+        {
+            [_searchBar setCustomScopeBarHidden:false];
+        } completion:nil];
+        
+        [self _updateExplicitTableInset];
+    });
+}
+
+- (void)dismissEmbeddedAnimated:(bool)__unused animated
+{
+    [self beginAppearanceTransition:false animated:false];
+    
+    self.view.backgroundColor = [UIColor clearColor];
+    
+    [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionAllowAnimatedContent animations:^
+    {
+        _searchBar.alpha = 0.0f;
+        [_searchBar setCustomScopeBarHidden:true];
+    } completion:nil];
+    
+    [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 | UIViewAnimationOptionLayoutSubviews | UIViewAnimationOptionAllowAnimatedContent animations:^
+    {
+        _searchBar.scopeBarCollapsed = true;
+        [_searchBar setSearchBarShouldShowScopeControl:false];
+        
+        _collectionContainer.alpha = 0.0f;
+        _collectionContainer.frame = CGRectOffset(_collectionContainer.frame, 0, -44);
+        
+        _toolbarView.alpha = 0.0f;
+        
+        _recentSearchResultsTableView.alpha = 0.0f;
+        _recentSearchResultsTableView.frame = CGRectOffset(_recentSearchResultsTableView.frame, 0, -44);
+    } completion:^(__unused BOOL finished)
+    {
+        [self.view removeFromSuperview];
+        
+        [self endAppearanceTransition];
+        [self removeFromParentViewController];
+    }];
 }
 
 @end

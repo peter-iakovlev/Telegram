@@ -16,6 +16,7 @@ NSString *const TGBridgeUserPhotoBigKey = @"photoBig";
 NSString *const TGBridgeUserKindKey = @"kind";
 NSString *const TGBridgeUserBotKindKey = @"botKind";
 NSString *const TGBridgeUserBotVersionKey = @"botVersion";
+NSString *const TGBridgeUserVerifiedKey = @"verified";
 NSString *const TGBridgeUserVersionKey = @"version";
 
 NSString *const TGBridgeUsersDictionaryKey = @"users";
@@ -40,6 +41,7 @@ NSString *const TGBridgeUsersDictionaryKey = @"users";
         _kind = [aDecoder decodeInt32ForKey:TGBridgeUserKindKey];
         _botKind = [aDecoder decodeInt32ForKey:TGBridgeUserBotKindKey];
         _botVersion = [aDecoder decodeInt32ForKey:TGBridgeUserBotVersionKey];
+        _verified = [aDecoder decodeBoolForKey:TGBridgeUserVerifiedKey];
         _userVersion = [aDecoder decodeInt32ForKey:TGBridgeUserVersionKey];
     }
     return self;
@@ -60,6 +62,7 @@ NSString *const TGBridgeUsersDictionaryKey = @"users";
     [aCoder encodeInt32:self.kind forKey:TGBridgeUserKindKey];
     [aCoder encodeInt32:self.botKind forKey:TGBridgeUserBotKindKey];
     [aCoder encodeInt32:self.botVersion forKey:TGBridgeUserBotVersionKey];
+    [aCoder encodeBool:self.verified forKey:TGBridgeUserVerifiedKey];
     [aCoder encodeInt32:self.userVersion forKey:TGBridgeUserVersionKey];
 }
 
@@ -79,6 +82,7 @@ NSString *const TGBridgeUsersDictionaryKey = @"users";
     user->_kind = self.kind;
     user->_botKind = self.botKind;
     user->_botVersion = self.botVersion;
+    user->_verified = self.verified;
     user->_userVersion = self.userVersion;
     
     return user;
@@ -136,6 +140,9 @@ NSString *const TGBridgeUsersDictionaryKey = @"users";
     
     if (self.botVersion != user.botVersion)
         fields[TGBridgeUserBotVersionKey] = @(self.botVersion);
+    
+    if (self.verified != user.verified)
+        fields[TGBridgeUserVerifiedKey] = @(self.verified);
     
     if (fields.count == 0)
         return nil;
@@ -211,6 +218,10 @@ NSString *const TGBridgeUsersDictionaryKey = @"users";
     NSNumber *botVersionChange = change.fields[TGBridgeUserBotVersionKey];
     if (botVersionChange != nil)
         user->_botVersion = [botVersionChange int32Value];
+    
+    NSNumber *verifiedChange = change.fields[TGBridgeUserVerifiedKey];
+    if (verifiedChange != nil)
+        user->_verified = [verifiedChange boolValue];
     
     return user;
 }

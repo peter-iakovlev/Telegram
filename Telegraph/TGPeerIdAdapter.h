@@ -33,4 +33,8 @@ static inline int32_t TGGroupIdFromPeerId(int64_t peerId) {
     }
 }
 
+static inline bool TGPeerIdIsSecretChat(int64_t peerId) {
+    return peerId <= ((int64_t)INT32_MIN) && peerId > ((int64_t)INT32_MIN) * 2;
+}
+
 #endif

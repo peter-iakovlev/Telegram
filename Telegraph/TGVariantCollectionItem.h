@@ -12,7 +12,9 @@
 
 @property (nonatomic, strong) NSString *title;
 @property (nonatomic, strong) NSString *variant;
+@property (nonatomic, strong) UIImage *icon;
 @property (nonatomic) SEL action;
+@property (nonatomic) bool enabled;
 
 - (instancetype)initWithTitle:(NSString *)title action:(SEL)action;
 - (instancetype)initWithTitle:(NSString *)title variant:(NSString *)variant action:(SEL)action;

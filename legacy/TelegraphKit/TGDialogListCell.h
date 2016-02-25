@@ -62,6 +62,7 @@
 
 @property (nonatomic) bool isBroadcast;
 @property (nonatomic) bool isChannel;
+@property (nonatomic) bool isChannelGroup;
 
 @property (nonatomic) bool isVerified;
 

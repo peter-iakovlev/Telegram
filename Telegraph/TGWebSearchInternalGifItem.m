@@ -2,32 +2,30 @@
 
 #import "TGWebSearchInternalGifItemView.h"
 
+#import "TGWebSearchInternalGifResult+TGMediaItem.h"
+
 @implementation TGWebSearchInternalGifItem
 
-- (instancetype)initWithSearchResult:(TGWebSearchInternalGifResult *)searchResult isEditing:(bool (^)())isEditing toggleEditing:(void (^)())toggleEditing itemSelected:(void (^)(id<TGWebSearchListItem>))itemSelected isItemSelected:(bool (^)(id<TGWebSearchListItem>))isItemSelected isItemHidden:(bool (^)(id<TGWebSearchListItem>))isItemHidden
+@synthesize selectionContext;
+
+- (instancetype)initWithSearchResult:(TGWebSearchInternalGifResult *)searchResult
 {
     self = [super init];
     if (self != nil)
     {
         _webSearchResult = searchResult;
-        
-        _isEditing = [isEditing copy];
-        _toggleEditing = [toggleEditing copy];
-        _itemSelected = [itemSelected copy];
-        _isItemSelected = [isItemSelected copy];
-        _isItemHidden = [isItemHidden copy];
     }
     return self;
-}
-
-- (NSString *)uniqueId
-{
-    return [[NSString alloc] initWithFormat:@"TGWebSearchInternalGifItem_%lld", (long long)_webSearchResult.documentId];
 }
 
 - (instancetype)copyWithZone:(NSZone *)__unused zone
 {
     return self;
+}
+
+- (id<TGMediaSelectableItem>)selectableMediaItem
+{
+    return self.webSearchResult;
 }
 
 - (Class)viewClass

@@ -2,8 +2,8 @@
 
 #import "TGMediaPickerGalleryVideoItemView.h"
 
-#import "TGMediaPickerAsset+TGEditablePhotoItem.h"
-#import "AVURLAsset+TGEditablePhotoItem.h"
+#import "TGMediaAsset+TGMediaEditableItem.h"
+#import "AVURLAsset+TGMediaItem.h"
 
 @interface TGMediaPickerGalleryVideoItem ()
 {
@@ -14,7 +14,8 @@
 
 @implementation TGMediaPickerGalleryVideoItem
 
-@synthesize itemSelected = _itemSelected;
+@synthesize selectionContext;
+@synthesize editingContext;
 
 - (instancetype)initWithFileURL:(NSURL *)fileURL dimensions:(CGSize)dimensions duration:(NSTimeInterval)duration
 {
@@ -36,25 +37,25 @@
     return _dimensions;
 }
 
-- (NSTimeInterval)duration
+- (SSignal *)durationSignal
 {
     if (self.asset != nil)
         return self.asset.actualVideoDuration;
     
-    return _duration;
+    return [SSignal single:@(_duration)];
 }
 
 - (NSString *)uniqueId
 {
     if (self.asset != nil)
-        return self.asset.uniqueId;
+        return self.asset.identifier;
     else if (self.avAsset != nil)
         return self.avAsset.URL.absoluteString;
     
     return nil;
 }
 
-- (id<TGEditablePhotoItem>)editableMediaItem
+- (id<TGMediaSelectableItem>)selectableMediaItem
 {
     if (self.asset != nil)
         return self.asset;
@@ -62,6 +63,21 @@
         return self.avAsset;
     
     return nil;
+}
+
+- (id<TGMediaEditableItem>)editableMediaItem
+{
+    if (self.asset != nil)
+        return self.asset;
+    else if (self.avAsset != nil)
+        return self.avAsset;
+    
+    return nil;
+}
+
+- (TGPhotoEditorTab)toolbarTabs
+{
+    return TGPhotoEditorCaptionTab | TGPhotoEditorCropTab | TGPhotoEditorRotateTab;
 }
 
 - (Class)viewClass
