@@ -32,6 +32,7 @@ typedef enum {
 - (CGFloat)baseHeight;
 
 @property (nonatomic, weak) id<TGSearchBarDelegate> delegate;
+@property (nonatomic) bool highContrast;
 
 @property (nonatomic, strong) UITextField *customTextField;
 @property (nonatomic, readonly) UITextField *maybeCustomTextField;
@@ -47,6 +48,8 @@ typedef enum {
 @property (nonatomic) bool searchBarShouldShowScopeControl;
 @property (nonatomic) bool alwaysExtended;
 @property (nonatomic) bool hidesCancelButton;
+
+@property (nonatomic, strong) UIButton *customCancelButton;
 
 @property (nonatomic) TGSearchBarStyle style;
 @property (nonatomic, strong) NSString *text;

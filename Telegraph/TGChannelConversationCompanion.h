@@ -4,6 +4,6 @@
 
 @interface TGChannelConversationCompanion : TGGenericModernConversationCompanion
 
-- (instancetype)initWithPeerId:(int64_t)peerId conversation:(TGConversation *)conversation userActivities:(NSDictionary *)userActivities;
+- (instancetype)initWithConversation:(TGConversation *)conversation userActivities:(NSDictionary *)userActivities;
 
 @end

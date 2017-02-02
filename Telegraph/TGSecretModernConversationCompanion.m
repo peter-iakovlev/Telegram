@@ -61,9 +61,9 @@
 
 @implementation TGSecretModernConversationCompanion
 
-- (instancetype)initWithEncryptedConversationId:(int64_t)encryptedConversationId accessHash:(int64_t)accessHash conversationId:(int64_t)conversationId uid:(int)uid activity:(NSString *)activity mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
+- (instancetype)initWithConversation:(TGConversation *)conversation encryptedConversationId:(int64_t)encryptedConversationId accessHash:(int64_t)accessHash uid:(int)uid activity:(NSString *)activity mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
 {
-    self = [super initWithConversationId:conversationId uid:uid activity:activity mayHaveUnreadMessages:mayHaveUnreadMessages];
+    self = [super initWithConversation:conversation uid:uid activity:activity mayHaveUnreadMessages:mayHaveUnreadMessages];
     if (self != nil)
     {
         _encryptedConversationId = encryptedConversationId;
@@ -282,7 +282,7 @@
 
 - (bool)shouldDisplayContactLinkPanel
 {
-    return false;
+    return true;
 }
 
 #pragma mark -
@@ -425,7 +425,6 @@
 {
     [ActionStageInstance() watchForPaths:@[
         [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId],
-        [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/readByDateMessages", _conversationId],
         [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messageFlagChanges", _conversationId],
         [[NSString alloc] initWithFormat:@"/tg/conversation/messageViewDateChanges"],
         [[NSString alloc] initWithFormat:@"/tg/encrypted/messageLifetime/(%" PRId64 ")", _conversationId],
@@ -591,33 +590,7 @@
 
 - (void)actionStageResourceDispatched:(NSString *)path resource:(id)resource arguments:(id)arguments
 {
-    if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/readByDateMessages", _conversationId]])
-    {
-        int maxDate = [resource[@"maxDate"] intValue];
-        
-        [TGModernConversationCompanion dispatchOnMessageQueue:^
-        {
-            NSMutableArray *messageIds = [[NSMutableArray alloc] init];
-            
-            for (TGMessageModernConversationItem *messageItem in _items)
-            {
-                if (messageItem->_message.deliveryState == TGMessageDeliveryStateDelivered)
-                {
-                    if (messageItem->_additionalDate != 0)
-                    {
-                        if (messageItem->_additionalDate <= maxDate)
-                            [messageIds addObject:[[NSNumber alloc] initWithInt:messageItem->_message.mid]];
-                    }
-                    else if (messageItem->_message.date <= maxDate)
-                        [messageIds addObject:[[NSNumber alloc] initWithInt:messageItem->_message.mid]];
-                }
-            }
-            
-            if (messageIds.count != 0)
-                [self _updateMessagesRead:messageIds];
-        }];
-    }
-    else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId]])
+    if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId]])
     {
         TGDispatchOnMainThread(^
         {

@@ -6,6 +6,7 @@
 
 @interface TLRPCmessages_reorderStickerSets : TLMetaRpc
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic, retain) NSArray *order;
 
 - (Class)responseClass;

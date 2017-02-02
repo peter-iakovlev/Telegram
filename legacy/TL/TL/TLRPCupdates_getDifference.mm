@@ -20,7 +20,7 @@
 
 - (int)layerVersion
 {
-    return 8;
+    return 58;
 }
 
 - (int32_t)TLconstructorSignature
@@ -54,7 +54,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xa041495;
+    return (int32_t)0x25939651;
 }
 
 - (int32_t)TLconstructorName
@@ -65,6 +65,7 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCupdates_getDifference$updates_getDifference *object = [[TLRPCupdates_getDifference$updates_getDifference alloc] init];
+    object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.pts = metaObject->getInt32((int32_t)0x4fc5f572);
     object.date = metaObject->getInt32((int32_t)0xb76958ba);
     object.qts = metaObject->getInt32((int32_t)0x3c528e55);
@@ -73,6 +74,12 @@
 
 - (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
 {
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.flags;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x81915c23, value));
+    }
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypePrimitiveInt32;

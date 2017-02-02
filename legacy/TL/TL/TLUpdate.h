@@ -13,7 +13,6 @@
 @class TLNotifyPeer;
 @class TLPeerNotifySettings;
 @class TLSendMessageAction;
-@class TLMessageMedia;
 @class TLPrivacyKey;
 @class TLMessage;
 @class TLPeer;
@@ -21,6 +20,8 @@
 @class TLWebPage;
 @class TLMessageGroup;
 @class TLmessages_StickerSet;
+@class TLDraftMessage;
+@class TLMessageMedia;
 
 @interface TLUpdate : NSObject <TLObject>
 
@@ -70,15 +71,6 @@
 @interface TLUpdate$updateActivation : TLUpdate
 
 @property (nonatomic) int32_t user_id;
-
-@end
-
-@interface TLUpdate$updateNewAuthorization : TLUpdate
-
-@property (nonatomic) int64_t auth_key_id;
-@property (nonatomic) int32_t date;
-@property (nonatomic, retain) NSString *device;
-@property (nonatomic, retain) NSString *location;
 
 @end
 
@@ -191,15 +183,6 @@
 
 @end
 
-@interface TLUpdate$updateServiceNotification : TLUpdate
-
-@property (nonatomic, retain) NSString *type;
-@property (nonatomic, retain) NSString *message;
-@property (nonatomic, retain) TLMessageMedia *media;
-@property (nonatomic) bool popup;
-
-@end
-
 @interface TLUpdate$updatePrivacy : TLUpdate
 
 @property (nonatomic, retain) TLPrivacyKey *key;
@@ -282,12 +265,6 @@
 
 @end
 
-@interface TLUpdate$updateChannelTooLong : TLUpdate
-
-@property (nonatomic) int32_t channel_id;
-
-@end
-
 @interface TLUpdate$updateChannel : TLUpdate
 
 @property (nonatomic) int32_t channel_id;
@@ -356,12 +333,6 @@
 
 @end
 
-@interface TLUpdate$updateStickerSetsOrder : TLUpdate
-
-@property (nonatomic, retain) NSArray *order;
-
-@end
-
 @interface TLUpdate$updateStickerSets : TLUpdate
 
 
@@ -377,6 +348,107 @@
 @property (nonatomic, retain) TLMessage *message;
 @property (nonatomic) int32_t pts;
 @property (nonatomic) int32_t pts_count;
+
+@end
+
+@interface TLUpdate$updateChannelPinnedMessage : TLUpdate
+
+@property (nonatomic) int32_t channel_id;
+@property (nonatomic) int32_t n_id;
+
+@end
+
+@interface TLUpdate$updateChannelTooLongMeta : TLUpdate
+
+
+@end
+
+@interface TLUpdate$updateEditMessage : TLUpdate
+
+@property (nonatomic, retain) TLMessage *message;
+@property (nonatomic) int32_t pts;
+@property (nonatomic) int32_t pts_count;
+
+@end
+
+@interface TLUpdate$updateReadChannelOutbox : TLUpdate
+
+@property (nonatomic) int32_t channel_id;
+@property (nonatomic) int32_t max_id;
+
+@end
+
+@interface TLUpdate$updateDraftMessage : TLUpdate
+
+@property (nonatomic, retain) TLPeer *peer;
+@property (nonatomic, retain) TLDraftMessage *draft;
+
+@end
+
+@interface TLUpdate$updateReadFeaturedStickers : TLUpdate
+
+
+@end
+
+@interface TLUpdate$updateRecentStickers : TLUpdate
+
+
+@end
+
+@interface TLUpdate$updateConfig : TLUpdate
+
+
+@end
+
+@interface TLUpdate$updatePtsChanged : TLUpdate
+
+
+@end
+
+@interface TLUpdate$updateStickerSetsOrder : TLUpdate
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic, retain) NSArray *order;
+
+@end
+
+@interface TLUpdate$updateChannelWebPage : TLUpdate
+
+@property (nonatomic) int32_t channel_id;
+@property (nonatomic, retain) TLWebPage *webpage;
+@property (nonatomic) int32_t pts;
+@property (nonatomic) int32_t pts_count;
+
+@end
+
+@interface TLUpdate$updateServiceNotificationMeta : TLUpdate
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic) int32_t inbox_date;
+@property (nonatomic, retain) NSString *type;
+@property (nonatomic, retain) NSString *message;
+@property (nonatomic, retain) TLMessageMedia *media;
+@property (nonatomic, retain) NSArray *entities;
+
+@end
+
+@interface TLUpdate$updatePhoneCall : TLUpdate
+
+@property (nonatomic, retain) TLPhoneCall *phone_call;
+
+@end
+
+@interface TLUpdate$updateDialogPinned : TLUpdate
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic, retain) TLPeer *peer;
+
+@end
+
+@interface TLUpdate$updatePinnedDialogsMeta : TLUpdate
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic, retain) NSArray *order;
 
 @end
 

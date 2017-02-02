@@ -10,6 +10,7 @@
 {
     TGImageView *_imageView;
     TGStickerKeyboardViewStyle _style;
+    bool _recent;
 }
 
 @end
@@ -41,26 +42,50 @@
     [_imageView reset];
 }
 
+- (void)_updateRecentIcon
+{
+    UIImage *recentTabImage = [UIImage imageNamed:@"StickerKeyboardRecentTab.png"];
+    if (_style == TGStickerKeyboardViewPaintDarkStyle)
+    {
+        UIColor *color = self.selected ? [UIColor blackColor] : UIColorRGB(0xb4b5b5);
+        _imageView.image = TGTintedImage(recentTabImage, color);
+    }
+    else
+    {
+        _imageView.image = recentTabImage;
+    }
+}
+
+- (void)setSelected:(BOOL)selected
+{
+    [super setSelected:selected];
+    
+    if (_recent)
+        [self _updateRecentIcon];
+}
+
 - (void)setRecent
 {
+    _recent = true;
+    
     [_imageView reset];
     _imageView.contentMode = UIViewContentModeCenter;
     
-    UIImage *recentTabImage = [UIImage imageNamed:@"StickerKeyboardRecentTab.png"];
-    if (_style == TGStickerKeyboardViewDarkBlurredStyle)
-        _imageView.image = TGTintedImage(recentTabImage, UIColorRGB(0xb4b5b5));
-    else
-        _imageView.image = recentTabImage;
+    [self _updateRecentIcon];
 }
 
 - (void)setNone
 {
+    _recent = false;
+    
     [_imageView reset];
     _imageView.image = nil;
 }
 
 - (void)setDocumentMedia:(TGDocumentMediaAttachment *)documentMedia
 {
+    _recent = false;
+    
     _imageView.contentMode = UIViewContentModeScaleAspectFit;
     
     NSMutableString *uri = [[NSMutableString alloc] initWithString:@"sticker-preview://?"];
@@ -83,14 +108,39 @@
 
 - (void)setStyle:(TGStickerKeyboardViewStyle)style
 {
+    _style = style;
+    
     switch (style)
     {
         case TGStickerKeyboardViewDarkBlurredStyle:
+        {
             self.selectedBackgroundView.backgroundColor = UIColorRGB(0x393939);
+        }
+            break;
+            
+        case TGStickerKeyboardViewPaintStyle:
+        {
+            self.selectedBackgroundView.backgroundColor = UIColorRGB(0xdadada);
+            self.selectedBackgroundView.layer.cornerRadius = 8.0f;
+            self.selectedBackgroundView.clipsToBounds = true;
+        }
+            break;
+            
+        case TGStickerKeyboardViewPaintDarkStyle:
+        {
+            self.selectedBackgroundView.backgroundColor = UIColorRGBA(0xfbfffe, 0.47f);
+            self.selectedBackgroundView.layer.cornerRadius = 8.0f;
+            self.selectedBackgroundView.clipsToBounds = true;
+            
+            if (_recent)
+                [self _updateRecentIcon];
+        }
             break;
             
         default:
+        {
             self.selectedBackgroundView.backgroundColor = UIColorRGB(0xe6e6e6);
+        }
             break;
     }
 }
@@ -101,6 +151,11 @@
     
     CGFloat imageSide = 33.0f;
     _imageView.frame = CGRectMake(CGFloor((self.frame.size.width - imageSide) / 2.0f), 6.0f, imageSide, imageSide);
+    
+    if (_style == TGStickerKeyboardViewPaintStyle)
+    {
+        self.selectedBackgroundView.frame = CGRectMake(ceil((self.frame.size.width - self.frame.size.height) / 2.0f), 0, self.frame.size.height, self.frame.size.height);
+    }
 }
 
 @end

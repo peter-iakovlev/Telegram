@@ -74,7 +74,16 @@
 
 #import "TGMediaAvatarMenuMixin.h"
 
-static const NSUInteger keepCachedMemberCount = 32;
+#import "TGCollectionStaticMultilineTextItem.h"
+
+#import "TGHashtagSearchController.h"
+
+#import "TGSetupChannelAfterCreationController.h"
+
+#import "TGShareMenu.h"
+#import "TGSendMessageSignals.h"
+
+static const NSUInteger keepCachedMemberCount = 200;
 static const NSUInteger loadMoreMemberCount = 100;
 
 @interface TGChannelGroupInfoController () <TGGroupInfoSelectContactControllerDelegate, TGAlertSoundControllerDelegate, ASWatcher>
@@ -97,7 +106,11 @@ static const NSUInteger loadMoreMemberCount = 100;
     TGVariantCollectionItem *_infoBlacklistItem;
     
     TGCollectionMenuSection *_descriptionSection;
-    TGCollectionMultilineInputItem *_descriptionItem;
+    TGCollectionStaticMultilineTextItem *_descriptionItem;
+    
+    TGCollectionMenuSection *_editDescriptionSection;
+    TGVariantCollectionItem *_editGroupTypeItem;
+    TGCollectionMultilineInputItem *_editDescriptionItem;
     
     TGCollectionMultilineInputItem *_linkItem;
     TGCollectionMenuSection *_linkSection;
@@ -125,6 +138,7 @@ static const NSUInteger loadMoreMemberCount = 100;
     
     NSArray *_users;
     NSDictionary *_memberDatas;
+    bool _sortUsersByPresence;
     
     SDisposableSet *_kickDisposables;
     SPipe *_loadMoreMembersPipe;
@@ -133,6 +147,8 @@ static const NSUInteger loadMoreMemberCount = 100;
     bool _shouldLoadMore;
     
     TGMediaAvatarMenuMixin *_avatarMixin;
+    
+    bool _checked3dTouch;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -173,20 +189,45 @@ static const NSUInteger loadMoreMemberCount = 100;
         _groupInfoSection.insets = UIEdgeInsetsMake(0.0f, 0.0f, 35.0f, 0.0f);
         
         TGHeaderCollectionItem *descriptionHeaderItem = [[TGHeaderCollectionItem alloc] initWithTitle:[TGLocalized(@"Channel.Info.Description") uppercaseString]];
-        _descriptionItem = [[TGCollectionMultilineInputItem alloc] init];
-        _descriptionItem.placeholder = TGLocalized(@"Channel.About.Placeholder");
-        _descriptionItem.editable = false;
+        _descriptionItem = [[TGCollectionStaticMultilineTextItem alloc] init];
         _descriptionItem.deselectAutomatically = true;
-        _descriptionItem.selected = ^{
-            __strong TGChannelGroupInfoController *strongSelf = weakSelf;
+        _descriptionItem.followLink = ^(NSString *link) {
+            TGChannelGroupInfoController *strongSelf = weakSelf;
             if (strongSelf != nil) {
-                [strongSelf aboutPressed];
+                [strongSelf followLink:link];
             }
         };
         
         _descriptionSection = [[TGCollectionMenuSection alloc] initWithItems:@[descriptionHeaderItem, _descriptionItem]];
         
+        _editGroupTypeItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.GroupType") action:@selector(editGroupTypePressed)];
+        
+        _editDescriptionItem = [[TGCollectionMultilineInputItem alloc] init];
+        _editDescriptionItem.selectable = false;
+        _editDescriptionItem.editable = true;
+        _editDescriptionItem.placeholder = TGLocalized(@"Channel.About.Placeholder");
+        _editDescriptionItem.textChanged = ^(__unused NSString *text) {
+            __strong TGChannelGroupInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf.collectionLayout invalidateLayout];
+                [strongSelf.collectionView layoutSubviews];
+            }
+        };
+        _editDescriptionItem.maxLength = 200;
+        
+        TGCommentCollectionItem *editDescriptionComment = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Group.About.Help")];
+        
+        _editDescriptionSection = [[TGCollectionMenuSection alloc] initWithItems:@[_editDescriptionItem, editDescriptionComment]];
+        
         _linkItem = [[TGCollectionMultilineInputItem alloc] init];
+        _linkItem.editable = false;
+        _linkItem.deselectAutomatically = true;
+        _linkItem.selected = ^{
+            __strong TGChannelGroupInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf sharePressed];
+            }
+        };
         _linkSection = [[TGCollectionMenuSection alloc] initWithItems:@[_linkItem]];
         
         _leaveItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.LeaveChannel") action:@selector(leavePressed)];
@@ -293,12 +334,30 @@ static const NSUInteger loadMoreMemberCount = 100;
                 strongSelf->_privateLink = cachedData.privateLink;
                 
                 [strongSelf->_usersHeaderItem setTitle:[strongSelf titleStringForMemberCount:cachedData.memberCount]];
+                
+                bool sortUsersByPresence = cachedData.memberCount != 0 && cachedData.memberCount <= 200;
+                if (strongSelf->_sortUsersByPresence != sortUsersByPresence) {
+                    strongSelf->_sortUsersByPresence = sortUsersByPresence;
+                    [strongSelf _setUsers:strongSelf->_users memberDatas:strongSelf->_memberDatas];
+                } else {
+                    NSMutableDictionary *memberDatas = [[NSMutableDictionary alloc] init];
+                    for (TGCachedConversationMember *member in cachedData.generalMembers) {
+                        memberDatas[@(member.uid)] = member;
+                    }
+                    [strongSelf _updateMemberDatas:memberDatas];
+                }
             }
         }];
         
         SSignal *updatedMembersSignal = [[[[TGDatabaseInstance() channelCachedData:_conversation.conversationId] deliverOn:[SQueue mainQueue]] mapToSignal:^SSignal *(TGCachedConversationData *cachedData) {
             __strong TGChannelGroupInfoController *strongSelf = weakSelf;
             if (strongSelf != nil) {
+                bool sortUsersByPresence = cachedData.memberCount != 0 && cachedData.memberCount <= 200;
+                if (strongSelf->_sortUsersByPresence != sortUsersByPresence) {
+                    strongSelf->_sortUsersByPresence = sortUsersByPresence;
+                    [strongSelf _setUsers:strongSelf->_users memberDatas:strongSelf->_memberDatas];
+                }
+                
                 NSMutableArray *updatedUsers = [[NSMutableArray alloc] initWithArray:strongSelf->_users];
                 
                 NSMutableArray *users = [[NSMutableArray alloc] init];
@@ -424,6 +483,12 @@ static const NSUInteger loadMoreMemberCount = 100;
             if (strongSelf != nil) {
                 [strongSelf->_usersHeaderItem setTitle:[strongSelf titleStringForMemberCount:[dict[@"count"] intValue]]];
                 
+                NSInteger memberCount = [dict[@"count"] integerValue];
+                
+                bool sortUsersByPresence = memberCount != 0 && memberCount <= 200;
+                if (strongSelf->_sortUsersByPresence != sortUsersByPresence) {
+                    strongSelf->_sortUsersByPresence = sortUsersByPresence;
+                }
                 [strongSelf _setUsers:dict[@"users"] memberDatas:dict[@"memberDatas"]];
             }
         }];
@@ -462,8 +527,17 @@ static const NSUInteger loadMoreMemberCount = 100;
         
         [self.menuSections addSection:_groupInfoSection];
 
-        _groupInfoSection.insets = UIEdgeInsetsMake(0.0f, 0.0f, 18.0f, 0.0f);
-        [self.menuSections addSection:_descriptionSection];
+        //_groupInfoSection.insets = UIEdgeInsetsMake(0.0f, 0.0f, 32.0f, 0.0f);
+        
+        if (_conversation.channelRole == TGChannelRoleCreator) {
+            if ([_editDescriptionSection indexOfItem:_editGroupTypeItem] == NSNotFound) {
+                [_editDescriptionSection insertItem:_editGroupTypeItem atIndex:0];
+            }
+        } else if ([_editDescriptionSection indexOfItem:_editGroupTypeItem] != NSNotFound) {
+            [_editDescriptionSection deleteItem:_editGroupTypeItem];
+        }
+        
+        [self.menuSections addSection:_editDescriptionSection];
         
         if (_conversation.channelRole == TGChannelRoleCreator || _conversation.channelRole == TGChannelRoleModerator || _conversation.channelRole == TGChannelRolePublisher) {
             [self.menuSections addSection:_adminInfoSection];
@@ -484,6 +558,13 @@ static const NSUInteger loadMoreMemberCount = 100;
         }
         
         if (_conversation.username.length != 0) {
+            UIEdgeInsets linkSectionInsets = _linkSection.insets;
+            if (_descriptionItem.text.length != 0) {
+                linkSectionInsets.top = 0.0;                
+            } else {
+                linkSectionInsets.top = 17.0;
+            }
+            _linkSection.insets = linkSectionInsets;
             [self.menuSections addSection:_linkSection];
         }
         
@@ -546,6 +627,8 @@ static const NSUInteger loadMoreMemberCount = 100;
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    
+    [self check3DTouch];
 }
 
 - (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
@@ -575,14 +658,29 @@ static const NSUInteger loadMoreMemberCount = 100;
     {
         _editing = false;
         
-        if (!TGStringCompare(_conversation.chatTitle, [_groupInfoItem editingTitle]) && [_groupInfoItem editingTitle] != nil)
-            [self _commitUpdateTitle:[_groupInfoItem editingTitle]];
+        NSMutableArray *applySignals = [[NSMutableArray alloc] init];
         
-        [_groupInfoItem setEditing:false animated:false];
-        [self _setupSections:false];
-        [self leaveEditingMode:false];
+        if (!TGStringCompare(_editDescriptionItem.text, _conversation.about)) {
+            SSignal *signal = [TGChannelManagementSignals updateChannelAbout:_conversation.conversationId accessHash:_conversation.accessHash about:_editDescriptionItem.text];
+            [applySignals addObject:signal];
+        }
         
-        [self animateCollectionCrossfade];
+        TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+        [progressWindow showWithDelay:0.2];
+        [[[[[SSignal combineSignals:applySignals] timeout:5.0 onQueue:[SQueue mainQueue] orSignal:[SSignal fail:@"timeout"]] deliverOn:[SQueue mainQueue]] onDispose:^{
+            [progressWindow dismiss:true];
+        }] startWithNext:nil error:^(__unused id error) {
+            
+        } completed:^{
+            if (!TGStringCompare(_conversation.chatTitle, [_groupInfoItem editingTitle]) && [_groupInfoItem editingTitle] != nil)
+                [self _commitUpdateTitle:[_groupInfoItem editingTitle]];
+            
+            [_groupInfoItem setEditing:false animated:false];
+            [self _setupSections:false];
+            [self leaveEditingMode:false];
+            
+            [self animateCollectionCrossfade];
+        }];
     }
     
     [self leaveEditingMode:true];
@@ -599,9 +697,7 @@ static const NSUInteger loadMoreMemberCount = 100;
 {
     [super didLeaveEditingMode:animated];
     
-    if ([self canEditChannel]) {
-        [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Edit") style:UIBarButtonItemStylePlain target:self action:@selector(editPressed)] animated:animated];
-    }
+    [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Edit") style:UIBarButtonItemStylePlain target:self action:@selector(editPressed)] animated:animated];
 }
 
 - (bool)canEditChannel {
@@ -613,7 +709,7 @@ static const NSUInteger loadMoreMemberCount = 100;
 }
 
 - (bool)canKickMembers {
-    return [self canInviteToChannel];
+    return [self canEditChannel];
 }
 
 - (void)setGroupPhotoPressed
@@ -982,6 +1078,10 @@ static const NSUInteger loadMoreMemberCount = 100;
             reloadData = true;
         }
         
+        if (!_editing) {
+            _editDescriptionItem.text = _conversation.about;
+        }
+        
         NSString *linkText = @"";
         if (_conversation.username.length != 0) {
             linkText = [@"https://telegram.me/" stringByAppendingString:_conversation.username];
@@ -993,12 +1093,56 @@ static const NSUInteger loadMoreMemberCount = 100;
             }
         }
         
+        _editGroupTypeItem.variant = _conversation.username.length == 0 ? TGLocalized(@"Channel.Setup.TypePrivate") : TGLocalized(@"Channel.Setup.TypePublic");
+        
         [_groupInfoItem setConversation:_conversation];
         
         if (reloadData) {
             [self _setupSections:_editing];
         }
     });
+}
+
+- (NSArray *)sortedUsers:(NSArray *)users {
+    if (_sortUsersByPresence) {
+        int32_t selfUid = TGTelegraphInstance.clientUserId;
+        return [users sortedArrayUsingComparator:^NSComparisonResult(TGUser *user1, TGUser *user2) {
+            if (user1.botKind != user2.botKind)
+            {
+                return user1.botKind < user2.botKind ? NSOrderedAscending : NSOrderedDescending;
+            }
+            
+            if (user1.kind != user2.kind)
+            {
+                return user1.kind < user2.kind ? NSOrderedAscending : NSOrderedDescending;
+            }
+            
+            if (user1.uid == selfUid)
+                return NSOrderedAscending;
+            else if (user2.uid == selfUid)
+                return NSOrderedDescending;
+            
+            if (user1.presence.online != user2.presence.online)
+                return user1.presence.online ? NSOrderedAscending : NSOrderedDescending;
+            
+            if ((user1.presence.lastSeen < 0) != (user2.presence.lastSeen < 0))
+                return user1.presence.lastSeen >= 0 ? NSOrderedAscending : NSOrderedDescending;
+            
+            if (user1.presence.online)
+            {
+                return user1.uid < user2.uid ? NSOrderedAscending : NSOrderedDescending;
+            }
+            
+            if (user1.presence.lastSeen < 0)
+            {
+                return user1.uid < user2.uid ? NSOrderedAscending : NSOrderedDescending;
+            }
+            
+            return user1.presence.lastSeen > user2.presence.lastSeen ? NSOrderedAscending : NSOrderedDescending;
+        }];
+    } else {
+        return users;
+    }
 }
 
 - (void)_setUsers:(NSArray *)filteredUsers memberDatas:(NSDictionary *)memberDatas {
@@ -1028,9 +1172,10 @@ static const NSUInteger loadMoreMemberCount = 100;
     }
     
     if ([currentUserIds isEqualToSet:updatedUserIds]) {
-        NSArray *sortedUsers = filteredUsers;//[self sortedUsers:filteredUsers chatAdminUids:_referenceChatAdminUids];
-        NSUInteger sectionIndex = [self indexForSection:_usersSection];
+        NSArray *sortedUsers = [self sortedUsers:filteredUsers];
+        //NSUInteger sectionIndex = [self indexForSection:_usersSection];
         NSInteger index = -1 + headButtonCount;
+        bool hadUpdates = false;
         for (TGUser *user in sortedUsers) {
             index++;
             
@@ -1038,18 +1183,38 @@ static const NSUInteger loadMoreMemberCount = 100;
                 TGGroupInfoUserCollectionItem *userItem = _usersSection.items[currentIndex];
                 
                 if (userItem.user.uid == user.uid) {
+                    if (userItem.user != nil) {
+                        TGCachedConversationMember *member = memberDatas[@(userItem.user.uid)];
+                        if (member != nil && (member.role == TGChannelRoleCreator || member.role == TGChannelRoleModerator || member.role == TGChannelRolePublisher)) {
+                            userItem.customLabel = TGLocalized(@"GroupInfo.LabelAdmin");
+                        } else {
+                            userItem.customLabel = nil;
+                        }
+                        
+                        userItem.user = user;
+                    }
+                    
                     if (currentIndex != index) {
                         [_usersSection deleteItemAtIndex:currentIndex];
                         [_usersSection insertItem:userItem atIndex:index];
+                        hadUpdates = true;
                         
+                        /*[self.collectionView layoutSubviews];
                         [UIView performWithoutAnimation:^{
-                            [self.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:currentIndex inSection:sectionIndex] toIndexPath:[NSIndexPath indexPathForItem:index inSection:sectionIndex]];
-                        }];
+                            [self.collectionView performBatchUpdates:^{
+                                [self.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:currentIndex inSection:sectionIndex] toIndexPath:[NSIndexPath indexPathForItem:index inSection:sectionIndex]];
+                            } completion:nil];
+                        }];*/
                     }
                     
                     break;
                 }
             }
+        }
+        if (hadUpdates) {
+            [self.collectionView reloadData];
+            [self.collectionView setNeedsLayout];
+            [self.collectionView layoutSubviews];
         }
         
         [self updateItemPositions];
@@ -1058,15 +1223,34 @@ static const NSUInteger loadMoreMemberCount = 100;
             [_usersSection deleteItemAtIndex:_usersSection.items.count - 1];
         }
         
-        for (TGUser *user in filteredUsers) {
+        NSArray *sortedUsers = [self sortedUsers:filteredUsers];
+        
+        for (TGUser *user in sortedUsers) {
             TGGroupInfoUserCollectionItem *userItem = [[TGGroupInfoUserCollectionItem alloc] init];
             userItem.interfaceHandle = _actionHandle;
             
             userItem.selectable = user.uid != TGTelegraphInstance.clientUserId;
             
-            [userItem setCanEdit:[self canKickMembers] && user.uid != TGTelegraphInstance.clientUserId];
+            TGCachedConversationMember *member = memberDatas[@(user.uid)];
+            
+            bool canEdit = false;
+            if ([self canKickMembers] && user.uid != TGTelegraphInstance.clientUserId) {
+                if (_conversation.channelRole == TGChannelRoleCreator) {
+                    canEdit = true;
+                } else {
+                    canEdit = member.role == TGChannelRoleMember;
+                }
+            }
+            [userItem setCanEdit:canEdit];
             
             [userItem setUser:user];
+            
+            if (member != nil && (member.role == TGChannelRoleCreator || member.role == TGChannelRoleModerator || member.role == TGChannelRolePublisher)) {
+                userItem.customLabel = TGLocalized(@"GroupInfo.LabelAdmin");
+            } else {
+                userItem.customLabel = nil;
+            }
+            
             [_usersSection addItem:userItem];
         }
         
@@ -1074,8 +1258,141 @@ static const NSUInteger loadMoreMemberCount = 100;
     }
 }
 
+- (void)_updateMemberDatas:(NSDictionary *)memberDatas {
+    NSMutableDictionary *updatedMemberDatas = [[NSMutableDictionary alloc] initWithDictionary:_memberDatas];
+    [memberDatas enumerateKeysAndObjectsUsingBlock:^(NSNumber *nUid, TGCachedConversationMember *member, __unused BOOL *stop) {
+        if (updatedMemberDatas[nUid] != nil) {
+            updatedMemberDatas[nUid] = member;
+        }
+    }];
+    _memberDatas = updatedMemberDatas;
+    
+    NSInteger headButtonCount = 0;
+    for (NSInteger i = 0; i < (NSInteger)_usersSection.items.count; i++) {
+        id item = _usersSection.items[i];
+        if ([item isKindOfClass:[TGGroupInfoUserCollectionItem class]]) {
+            break;
+        } else {
+            headButtonCount++;
+        }
+    }
+    
+    for (NSInteger currentIndex = headButtonCount; currentIndex < (NSInteger)_usersSection.items.count; currentIndex++) {
+        TGGroupInfoUserCollectionItem *userItem = _usersSection.items[currentIndex];
+        
+        if (userItem.user != nil) {
+            TGCachedConversationMember *member = _memberDatas[@(userItem.user.uid)];
+            if (member != nil && (member.role == TGChannelRoleCreator || member.role == TGChannelRoleModerator || member.role == TGChannelRolePublisher)) {
+                userItem.customLabel = TGLocalized(@"GroupInfo.LabelAdmin");
+            } else {
+                userItem.customLabel = nil;
+            }
+            
+            bool canEdit = false;
+            if ([self canKickMembers] && userItem.user.uid != TGTelegraphInstance.clientUserId) {
+                if (_conversation.channelRole == TGChannelRoleCreator) {
+                    canEdit = true;
+                } else {
+                    canEdit = member.role == TGChannelRoleMember;
+                }
+            }
+            [userItem setCanEdit:canEdit];
+        }
+    }
+}
+
 - (void)_updateRelativeTimestamps
 {
+}
+
+- (TGModernGalleryController *)createAvatarGalleryControllerForPreviewMode:(bool)previewMode
+{
+    TGRemoteImageView *avatarView = [_groupInfoItem avatarView];
+    
+    if (avatarView != nil && avatarView.image != nil)
+    {
+        TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+        modernGallery.previewMode = previewMode;
+        if (previewMode)
+            modernGallery.showInterface = false;
+        
+        modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithPeerId:_conversation.conversationId accessHash:_conversation.accessHash messageId:0 legacyThumbnailUrl:_conversation.chatPhotoSmall legacyUrl:_conversation.chatPhotoBig imageSize:CGSizeMake(640.0f, 640.0f)];
+        
+        __weak TGChannelGroupInfoController *weakSelf = self;
+        __weak TGModernGalleryController *weakGallery = modernGallery;
+        
+        modernGallery.itemFocused = ^(id<TGModernGalleryItem> item)
+        {
+            __strong TGChannelGroupInfoController *strongSelf = weakSelf;
+            __strong TGModernGalleryController *strongGallery = weakGallery;
+            if (strongSelf != nil)
+            {
+                if (strongGallery.previewMode)
+                    return;
+                
+                if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
+                {
+                    ((UIView *)strongSelf->_groupInfoItem.avatarView).hidden = true;
+                }
+            }
+        };
+        
+        modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
+        {
+            __strong TGChannelGroupInfoController *strongSelf = weakSelf;
+            __strong TGModernGalleryController *strongGallery = weakGallery;
+            if (strongSelf != nil)
+            {
+                if (strongGallery.previewMode)
+                    return nil;
+                
+                if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
+                {
+                    return strongSelf->_groupInfoItem.avatarView;
+                }
+            }
+            
+            return nil;
+        };
+        
+        modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
+        {
+            __strong TGChannelGroupInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
+                {
+                    return strongSelf->_groupInfoItem.avatarView;
+                }
+            }
+            
+            return nil;
+        };
+        
+        modernGallery.completedTransitionOut = ^
+        {
+            __strong TGChannelGroupInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                ((UIView *)strongSelf->_groupInfoItem.avatarView).hidden = false;
+            }
+        };
+        
+        if (!previewMode)
+        {
+            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+            controllerWindow.hidden = false;
+        }
+        else
+        {
+            CGFloat side = MIN(self.view.frame.size.width, self.view.frame.size.height);
+            modernGallery.preferredContentSize = CGSizeMake(side, side);
+        }
+        
+        return modernGallery;
+    }
+    
+    return nil;
 }
 
 #pragma mark -
@@ -1122,68 +1439,7 @@ static const NSUInteger loadMoreMemberCount = 100;
         }
         else
         {
-            TGRemoteImageView *avatarView = [_groupInfoItem avatarView];
-            
-            if (avatarView != nil && avatarView.image != nil)
-            {
-                TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
-                
-                modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithMessageId:0 legacyThumbnailUrl:_conversation.chatPhotoSmall legacyUrl:_conversation.chatPhotoBig imageSize:CGSizeMake(640.0f, 640.0f)];
-                
-                __weak TGChannelGroupInfoController *weakSelf = self;
-                
-                modernGallery.itemFocused = ^(id<TGModernGalleryItem> item)
-                {
-                    __strong TGChannelGroupInfoController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                    {
-                        if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
-                        {
-                            ((UIView *)strongSelf->_groupInfoItem.avatarView).hidden = true;
-                        }
-                    }
-                };
-                
-                modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
-                {
-                    __strong TGChannelGroupInfoController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                    {
-                        if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
-                        {
-                            return strongSelf->_groupInfoItem.avatarView;
-                        }
-                    }
-                    
-                    return nil;
-                };
-                
-                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
-                {
-                    __strong TGChannelGroupInfoController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                    {
-                        if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
-                        {
-                            return strongSelf->_groupInfoItem.avatarView;
-                        }
-                    }
-                    
-                    return nil;
-                };
-                
-                modernGallery.completedTransitionOut = ^
-                {
-                    __strong TGChannelGroupInfoController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                    {
-                        ((UIView *)strongSelf->_groupInfoItem.avatarView).hidden = false;
-                    }
-                };
-                
-                TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
-                controllerWindow.hidden = false;
-            }
+            [self createAvatarGalleryControllerForPreviewMode:false];
         }
     }
     else if ([action isEqualToString:@"showUpdatingAvatarOptions"])
@@ -1222,12 +1478,30 @@ static const NSUInteger loadMoreMemberCount = 100;
     }
     else if ([path isEqualToString:@"/tg/userdatachanges"] || [path isEqualToString:@"/tg/userpresencechanges"])
     {
-        //NSArray *users = ((SGraphObjectNode *)resource).object;
+        NSArray *users = ((SGraphObjectNode *)resource).object;
         
         TGDispatchOnMainThread(^
-                               {
-                                   //[self _updateUsers:users];
-                               });
+        {
+            NSMutableArray *updatedUsers = [[NSMutableArray alloc] initWithArray:_users];
+            NSMutableDictionary *userIdToIndex = [[NSMutableDictionary alloc] init];
+            NSUInteger index = 0;
+            for (TGUser *user in updatedUsers) {
+                userIdToIndex[@(user.uid)] = @(index);
+                index++;
+            }
+            
+            bool hadUpdates = false;
+            for (TGUser *user in users) {
+                NSNumber *nIndex = userIdToIndex[@(user.uid)];
+                if (nIndex != nil) {
+                    updatedUsers[[nIndex intValue]] = user;
+                    hadUpdates = true;
+                }
+            }
+            if (hadUpdates) {
+                [self _setUsers:updatedUsers memberDatas:_memberDatas];
+            }
+        });
     }
 }
 
@@ -1307,19 +1581,39 @@ static const NSUInteger loadMoreMemberCount = 100;
     [self presentViewController:navigationController animated:true completion:nil];
 }
 
-- (void)sharePressed {
-    if (_conversation.username.length != 0) {
-        NSArray *dataToShare = @[[NSURL URLWithString:[@"https://telegram.me/" stringByAppendingString:_conversation.username]]];
-        UIActivityViewController *activityViewController = [[UIActivityViewController alloc] initWithActivityItems:dataToShare applicationActivities:nil];
-        [self presentViewController:activityViewController animated:YES completion:nil];
-    } else {
-        __weak TGChannelGroupInfoController *weakSelf = self;
-        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Channel.ShareNoLink") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed) {
+- (void)sharePressed
+{
+    __weak TGChannelGroupInfoController *weakSelf = self;
+    if (_conversation.username.length != 0)
+    {
+        NSString *linkString = [NSString stringWithFormat:@"https://telegram.me/%@", _conversation.username];
+        NSString *shareString = linkString;
+
+        CGRect (^sourceRect)(void) = ^CGRect
+        {
             __strong TGChannelGroupInfoController *strongSelf = weakSelf;
-            if (strongSelf != nil) {
-                [strongSelf linkPressed];
-            }
-        }] show];
+            if (strongSelf == nil)
+                return CGRectZero;
+            
+            return [strongSelf->_linkItem.view convertRect:strongSelf->_linkItem.view.bounds toView:strongSelf.view];
+        };
+        
+        [TGShareMenu presentInParentController:self menuController:nil buttonTitle:TGLocalized(@"ShareMenu.CopyShareLink") buttonAction:^
+        {
+            [[UIPasteboard generalPasteboard] setString:linkString];
+        } shareAction:^(NSArray *peerIds, NSString *caption)
+        {
+            [[TGShareSignals shareText:shareString toPeerIds:peerIds caption:caption] startWithNext:nil];
+        } externalShareItemSignal:[SSignal single:shareString] sourceView:self.view sourceRect:sourceRect barButtonItem:nil];
+    }
+    else
+    {
+        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Channel.ShareNoLink") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed)
+          {
+              __strong TGChannelGroupInfoController *strongSelf = weakSelf;
+              if (strongSelf != nil)
+                  [strongSelf linkPressed];
+          }] show];
     }
 }
 
@@ -1389,6 +1683,7 @@ static const NSUInteger loadMoreMemberCount = 100;
 - (void)sharedMediaPressed {
     TGSharedMediaController *controller = [[TGSharedMediaController alloc] initWithPeerId:_peerId accessHash:_conversation.accessHash important:false];
     controller.channelAllowDelete = _conversation.channelRole == TGChannelRoleCreator;
+    controller.isChannelGroup = true;
     [self.navigationController pushViewController:controller animated:true];
 }
 
@@ -1579,6 +1874,110 @@ static const NSUInteger loadMoreMemberCount = 100;
             _canLoadMore = false;
             _loadMoreMembersPipe.sink(@true);
         }
+    }
+}
+
+- (void)editGroupTypePressed {
+    int64_t conversationId = _conversation.conversationId;
+    int64_t accessHash = _conversation.accessHash;
+    
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+    [progressWindow showWithDelay:0.2];
+    
+    __weak TGChannelGroupInfoController *weakSelf = self;
+    [[[[[[[TGDatabaseInstance() channelCachedData:_conversation.conversationId] take:1] mapToSignal:^SSignal *(TGCachedConversationData *cachedData) {
+        if (cachedData.privateLink.length != 0) {
+            return [SSignal single:cachedData.privateLink];
+        } else {
+            return [TGChannelManagementSignals exportChannelInvitationLink:conversationId accessHash:accessHash];
+        }
+    }] deliverOn:[SQueue mainQueue]] onDispose:^{
+        TGDispatchOnMainThread(^{
+            [progressWindow dismiss:true];
+        });
+    }] timeout:5.0 onQueue:[SQueue mainQueue] orSignal:[SSignal fail:nil]] startWithNext:^(NSString *link) {
+        __strong TGChannelGroupInfoController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            TGSetupChannelAfterCreationController *controller = [[TGSetupChannelAfterCreationController alloc] initWithConversation:strongSelf->_conversation exportedLink:link modal:true conversationsToDeleteForPublicUsernames:@[] checkConversationsToDeleteForPublicUsernames:true];
+            TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[controller] navigationBarClass:[TGWhiteNavigationBar class]];
+            if ([strongSelf inPopover])
+            {
+                navigationController.modalPresentationStyle = UIModalPresentationCurrentContext;
+                navigationController.presentationStyle = TGNavigationControllerPresentationStyleChildInPopover;
+            }
+            [strongSelf presentViewController:navigationController animated:true completion:nil];
+        }
+    }];
+}
+
+- (void)followLink:(NSString *)link {
+    if ([link hasPrefix:@"mention://"])
+    {
+        NSString *domain = [link substringFromIndex:@"mention://".length];
+        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/resolveDomain/(%@,profile)", domain] options:@{@"domain": domain, @"profile": @true} flags:0 watcher:TGTelegraphInstance];
+    }
+    else if ([link hasPrefix:@"hashtag://"])
+    {
+        NSString *hashtag = [link substringFromIndex:@"hashtag://".length];
+        
+        TGHashtagSearchController *hashtagController = [[TGHashtagSearchController alloc] initWithQuery:[@"#" stringByAppendingString:hashtag] peerId:0 accessHash:0];
+        //__weak TGChannelInfoController *weakSelf = self;
+        /*hashtagController.customResultBlock = ^(int32_t messageId) {
+         __strong TGChannelInfoController *strongSelf = weakSelf;
+         if (strongSelf != nil) {
+         [strongSelf navigateToMessageId:messageId scrollBackMessageId:0 animated:true];
+         TGModernConversationController *controller = strongSelf.controller;
+         [controller.navigationController popToViewController:controller animated:true];
+         }
+         };*/
+        
+        [self.navigationController pushViewController:hashtagController animated:true];
+    } else {
+        @try {
+            NSURL *url = [NSURL URLWithString:link];
+            if (url != nil) {
+                [[UIApplication sharedApplication] openURL:url];
+            }
+        } @catch (NSException *e) {
+        }
+    }
+}
+
+- (void)check3DTouch
+{
+    if (_checked3dTouch)
+        return;
+    
+    _checked3dTouch = true;
+    if (iosMajorVersion() >= 9)
+    {
+        if (self.traitCollection.forceTouchCapability == UIForceTouchCapabilityAvailable)
+        {
+            [self registerForPreviewingWithDelegate:(id)self sourceView:_groupInfoItem.avatarView];
+        }
+    }
+}
+
+- (UIViewController *)previewingContext:(id<UIViewControllerPreviewing>)previewingContext viewControllerForLocation:(CGPoint)__unused location
+{
+    if (_conversation.chatPhotoSmall.length > 0)
+    {
+        previewingContext.sourceRect = previewingContext.sourceView.bounds;
+        return [self createAvatarGalleryControllerForPreviewMode:true];
+    }
+    
+    return nil;
+}
+
+- (void)previewingContext:(id<UIViewControllerPreviewing>)__unused previewingContext commitViewController:(UIViewController *)viewControllerToCommit
+{
+    if ([viewControllerToCommit isKindOfClass:[TGModernGalleryController class]])
+    {
+        TGModernGalleryController *controller = (TGModernGalleryController *)viewControllerToCommit;
+        controller.previewMode = false;
+        
+        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
+        controllerWindow.hidden = false;
     }
 }
 

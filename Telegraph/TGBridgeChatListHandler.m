@@ -18,7 +18,9 @@
     {
         TGBridgeChatListSubscription *chatListSubscription = (TGBridgeChatListSubscription *)subscription;
         
-        return [[server serviceSignalForKey:@"chatList" producer:nil] mapToSignal:^SSignal *(NSArray *chats)
+        return [[[server server] mapToSignal:^SSignal *(TGBridgeServer *server) {
+            return [server serviceSignalForKey:@"chatList" producer:nil];
+        }] mapToSignal:^SSignal *(NSArray *chats)
         {
             NSMutableArray *bridgeChats = [[NSMutableArray alloc] init];
             

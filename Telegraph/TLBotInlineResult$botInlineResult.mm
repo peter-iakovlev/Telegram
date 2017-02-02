@@ -2,6 +2,8 @@
 
 #import "TLMetaClassStore.h"
 
+//botInlineResult#9bebaeb9 flags:# id:string type:string title:flags.1?string description:flags.2?string url:flags.3?string thumb_url:flags.4?string content_url:flags.5?string content_type:flags.5?string w:flags.6?int h:flags.6?int duration:flags.7?int send_message:BotInlineMessage = BotInlineResult;
+
 @implementation TLBotInlineResult$botInlineResult
 
 - (void)TLserialize:(NSOutputStream *)__unused os
@@ -52,6 +54,9 @@
     {
         int32_t signature = [is readInt32];
         result.send_message = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
     
     return result;

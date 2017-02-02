@@ -2,5 +2,10 @@
 
 "CFBundleDisplayName" = "Telegram";
 
-"NSContactsUsageDescription" = "Telegram archivia i tuoi contatti sul cloud cifrandoli, per metterti in contatto con tuoi amici tramite tutti i tuoi dispositivi.";
-"NSLocationWhenInUseUsageDescription" = "Quando invii la tua posizione ai tuoi amici, Telegram ha bisogno dell'accesso per mostrare loro la mappa";
+"NSContactsUsageDescription" = "Telegram archivia i tuoi contatti nel cloud criptandoli per farti connettere con i tuoi amici in tutti i tuoi dispositivi.";
+"NSLocationWhenInUseUsageDescription" = "Quando invii la tua posizione ai tuoi amici, Telegram ha bisogno di accedere per mostrare loro la mappa.";
+"NSLocationAlwaysUsageDescription" = "Quando invii la tua posizione ai tuoi amici, Telegram ha bisogno di accedere per mostrare loro la mappa. Ti serve anche per inviare posizioni da Apple Watch.";
+"NSCameraUsageDescription" = "Ci serve per farti scattare, registrare e condividere foto e video.";
+"NSPhotoLibraryUsageDescription" = "Ci serve per farti condividere foto e video dalla tua libreria foto.";
+"NSMicrophoneUsageDescription" = "Ci serve per farti registrare e condividere messaggi vocali e video con il sonoro.";
+"NSSiriUsageDescription" = "Puoi usare Siri per inviare messaggi.";

@@ -7,11 +7,23 @@
 
 #import "TGTelegraph.h"
 
+#import "TGRecentPeersSignals.h"
+
+@interface TGChangePeerBlockStatusActor () {
+    id<SDisposable> _resetPeerRatingDisposable;
+}
+
+@end
+
 @implementation TGChangePeerBlockStatusActor
 
 + (NSString *)genericPath
 {
     return @"/tg/changePeerBlockedStatus/@";
+}
+
+- (void)dealloc {
+    [_resetPeerRatingDisposable dispose];
 }
 
 - (void)execute:(NSDictionary *)options
@@ -35,7 +47,22 @@
         [ActionStageInstance() dispatchResource:@"/tg/blockedUsers" resource:[[SGraphObjectNode alloc] initWithObject:users]];
     }];
     
-    [ActionStageInstance() actionCompleted:self.path result:nil];
+    TGUser *user = [TGDatabaseInstance() loadUser:(int)peerId];
+    if (user != nil && block) {
+        _resetPeerRatingDisposable = [[TGRecentPeersSignals resetGenericPeerRating:user.uid accessHash:user.phoneNumberHash] startWithNext:nil error:^(__unused id error) {
+            [ActionStageInstance() actionCompleted:self.path result:nil];
+        } completed:^{
+            [ActionStageInstance() actionCompleted:self.path result:nil];
+        }];
+    } else {
+        [ActionStageInstance() actionCompleted:self.path result:nil];
+    }
+}
+
+- (void)cancel {
+    [super cancel];
+    
+    [_resetPeerRatingDisposable dispose];
 }
 
 @end

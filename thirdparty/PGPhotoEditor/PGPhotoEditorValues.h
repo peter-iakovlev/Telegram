@@ -1,15 +1,14 @@
 #import "TGMediaEditingContext.h"
 
+@class TGPaintingData;
+
 @interface PGPhotoEditorValues : NSObject <TGMediaEditAdjustments>
 
 @property (nonatomic, readonly) CGFloat cropRotation;
-
 @property (nonatomic, readonly) NSDictionary *toolValues;
 
 - (bool)toolsApplied;
 
-- (bool)isCropEqualWith:(id<TGMediaEditAdjustments>)adjusments;
-
-+ (instancetype)editorValuesWithOriginalSize:(CGSize)originalSize cropRect:(CGRect)cropRect cropRotation:(CGFloat)cropRotation cropOrientation:(UIImageOrientation)cropOrientation cropLockedAspectRatio:(CGFloat)cropLockedAspectRatio toolValues:(NSDictionary *)toolValues;
++ (instancetype)editorValuesWithOriginalSize:(CGSize)originalSize cropRect:(CGRect)cropRect cropRotation:(CGFloat)cropRotation cropOrientation:(UIImageOrientation)cropOrientation cropLockedAspectRatio:(CGFloat)cropLockedAspectRatio cropMirrored:(bool)cropMirrored toolValues:(NSDictionary *)toolValues paintingData:(TGPaintingData *)paintingData;
 
 @end

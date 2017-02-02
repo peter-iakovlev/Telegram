@@ -1,8 +1,11 @@
 #import <SSignalKit/SSignalKit.h>
 
 @class TGMediaAttachment;
+@class TGImageMediaAttachment;
+@class TGVideoMediaAttachment;
 @class TGLocationMediaAttachment;
 @class TGDocumentMediaAttachment;
+@class TGContactMediaAttachment;
 
 @class TGMessage;
 @class TLInputMedia;
@@ -19,7 +22,18 @@
 + (SSignal *)forwardMessagesWithMessageIds:(NSArray *)messageIds toPeerIds:(NSArray *)peerIds fromPeerId:(int64_t)fromPeerId fromPeerAccessHash:(int64_t)fromPeerAccessHash;
 + (SSignal *)broadcastMessageWithText:(NSString *)text toPeerIds:(NSArray *)peerIds;
 
-+ (SSignal *)_addMessageToDatabaseWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid text:(NSString *)text attachment:(TGMediaAttachment *)attachment;
-+ (SSignal *)_sendMediaWithMessage:(TGMessage *)message replyToMid:(int32_t)replyToMid mediaProducer:(TLInputMedia *(^)(void))mediaProducer;
++ (SSignal *)sendMediaWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid attachment:(TGMediaAttachment *)attachment uploadSignal:(SSignal *)uploadSignal mediaProducer:(TLInputMedia *(^)(NSDictionary *uploadInfo))mediaProducer;
+
+@end
+
+
+@interface TGShareSignals : NSObject
+
++ (SSignal *)shareText:(NSString *)text toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
++ (SSignal *)sharePhoto:(TGImageMediaAttachment *)photo toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
++ (SSignal *)shareVideo:(TGVideoMediaAttachment *)document toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
++ (SSignal *)shareContact:(TGContactMediaAttachment *)contact toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
++ (SSignal *)shareLocation:(TGLocationMediaAttachment *)location toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
++ (SSignal *)shareDocument:(TGDocumentMediaAttachment *)document toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
 
 @end

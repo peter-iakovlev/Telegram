@@ -224,7 +224,7 @@
     return nil;
 }
 
-- (void)uploadFilesWithExtensions:(NSArray *)filePathsAndExtensions
+- (void)uploadFilesWithExtensions:(NSArray *)filePathsAndExtensions mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag
 {
     if (filePathsAndExtensions.count == 0)
         return;
@@ -277,6 +277,8 @@
         
         if (itemDesc.count >= 4)
             options[@"liveData"] = itemDesc[3];
+        
+        options[@"mediaTypeTag"] = @(mediaTypeTag);
         
         [ActionStageInstance() requestActor:actorPath options:options watcher:self];
     }

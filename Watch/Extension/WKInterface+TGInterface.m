@@ -199,8 +199,8 @@
 
 - (MKCoordinateRegion)region
 {
-    MKCoordinateRegion region;
-    
+    MKCoordinateRegion region = MKCoordinateRegionMake(CLLocationCoordinate2DMake(0.0, 0.0), MKCoordinateSpanMake(0.0, 0.0));
+
     NSArray *values = objc_getAssociatedObject(self, @selector(region));
     if (values != nil)
         region = MKCoordinateRegionMake([values.firstObject MKCoordinateValue], [values.lastObject MKCoordinateSpanValue]);

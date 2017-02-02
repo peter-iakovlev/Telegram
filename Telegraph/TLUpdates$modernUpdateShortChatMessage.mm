@@ -32,6 +32,9 @@
     {
         int32_t signature = [is readInt32];
         result.fwd_header = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
 
     if (result.flags & (1 << 11)) {
@@ -50,6 +53,9 @@
         {
             int32_t signature = [is readInt32];
             id entity = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (entity != nil)
                 [entities addObject:entity];
         }

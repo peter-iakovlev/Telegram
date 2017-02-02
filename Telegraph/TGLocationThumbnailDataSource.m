@@ -255,8 +255,8 @@ static ASQueue *taskManagementQueue()
         
         UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
         UIImage *image = nil;
-        if (isFlat && cornerRadius > 0)
-            image = TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], !isFlat, cornerRadius);
+        if (isFlat && (cornerRadius > 0 || cornerRadius == -1))
+            image = TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], !isFlat, cornerRadius == -1 ? 0 : cornerRadius);
         else
             image = TGAverageColorAttachmentImage([UIColor whiteColor], !isFlat);
         [image drawInRect:CGRectMake(0.0f, 0.0f, size.width, size.height) blendMode:kCGBlendModeCopy alpha:1.0f];
@@ -339,8 +339,8 @@ static ASQueue *taskManagementQueue()
         uint32_t *averageColorPtr = needsAverageColor ? &averageColorValue : NULL;
         
         UIImage *thumbnailImage = nil;
-        if (isFlat && cornerRadius > 0)
-            thumbnailImage = TGLoadedAttachmentWithCornerRadiusImage(image, size, averageColorPtr, !isFlat, cornerRadius);
+        if (isFlat && (cornerRadius > 0 || cornerRadius == -1))
+            thumbnailImage = TGLoadedAttachmentWithCornerRadiusImage(image, size, averageColorPtr, !isFlat, cornerRadius == -1 ? 0 : cornerRadius);
         else
             thumbnailImage = TGLoadedAttachmentImage(image, size, averageColorPtr, !isFlat);
         

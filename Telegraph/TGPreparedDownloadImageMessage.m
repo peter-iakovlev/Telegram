@@ -4,7 +4,7 @@
 
 @implementation TGPreparedDownloadImageMessage
 
-- (instancetype)initWithImageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage
+- (instancetype)initWithImageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
     self = [super init];
     if (self != nil)
@@ -16,6 +16,7 @@
         _imageInfo = imageInfo;
         _caption = caption;
         self.replyMessage = replyMessage;
+        self.replyMarkup = replyMarkup;
     }
     return self;
 }
@@ -41,6 +42,10 @@
         replyMedia.replyMessageId = self.replyMessage.mid;
         replyMedia.replyMessage = self.replyMessage;
         [attachments addObject:replyMedia];
+    }
+    
+    if (self.replyMarkup != nil) {
+        [attachments addObject:self.replyMarkup];
     }
     
     message.mediaAttachments = attachments;

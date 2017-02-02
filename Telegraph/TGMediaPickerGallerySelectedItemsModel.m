@@ -108,20 +108,4 @@
     return items;
 }
 
-- (void)setItems:(NSArray *)items
-{
-//    _items = [[NSMutableArray alloc] init];
-//    
-//    for (id<TGModernMediaListSelectableItem> item in items)
-//    {
-//        id<TGModernMediaListSelectableItem> newItem = [(NSObject *)item copy];
-//        newItem.itemSelected = self.itemSelected;
-//        newItem.isItemSelected = self.isItemSelected;
-//        [_items addObject:newItem];
-//    }
-//    
-//    if (self.selectionUpdated != nil)
-//        self.selectionUpdated(true, false, false, 0);
-}
-
 @end

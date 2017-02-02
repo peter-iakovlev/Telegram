@@ -12,5 +12,7 @@
 
 - (void)setTitle:(NSString *)title;
 - (void)setIcon:(UIImage *)icon;
+- (void)setBadge:(NSString *)badge;
+- (void)setHideArrow:(bool)hideArrow;
 
 @end

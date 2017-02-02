@@ -14,11 +14,15 @@
 
 #import "PSKeyValueCoder.h"
 
+#import "TGDatabaseMessageDraft.h"
+
 #define TGConversationKindPersistentChannel 0
 #define TGConversationKindTemporaryChannel 1
 
 #define TGChannelDisplayVariantImportant 0
 #define TGChannelDisplayVariantAll 1
+
+#define TGConversationPinnedDateBase 1600000000
 
 typedef enum {
     TGConversationFlagDisplayExpanded = (1 << 0),
@@ -32,7 +36,10 @@ typedef enum {
     TGConversationFlagIsDeactivated = (1 << 8),
     TGConversationFlagHasExplicitContent = (1 << 9),
     TGConversationFlagEverybodyCanAddMembers = (1 << 10),
-    TGConversationFlagSignaturesEnabled = (1 << 11)
+    TGConversationFlagSignaturesEnabled = (1 << 11),
+    TGConversationFlagPinnedMessageHidden = (1 << 12),
+    TGConversationFlagIsMin = (1 << 13),
+    TGConversationFlagCanNotSetUsername = (1 << 14)
 } TGConversationFlags;
 
 typedef struct {
@@ -168,12 +175,19 @@ typedef enum {
 @property (nonatomic) int32_t displayVariant;
 @property (nonatomic) uint8_t kind;
 
+@property (nonatomic, readonly) TGConversationSortKey databaseSortKey;
 @property (nonatomic) TGConversationSortKey variantSortKey;
 @property (nonatomic) TGConversationSortKey importantSortKey;
 @property (nonatomic) TGConversationSortKey unimportantSortKey;
 @property (nonatomic) int32_t pts;
 
 @property (nonatomic) int32_t maxReadMessageId;
+@property (nonatomic) int32_t maxOutgoingReadMessageId;
+@property (nonatomic) int32_t maxKnownMessageId;
+@property (nonatomic) int32_t maxLocallyReadMessageId;
+
+@property (nonatomic) int32_t maxReadDate;
+@property (nonatomic) int32_t maxOutgoingReadDate;
 
 @property (nonatomic, strong) NSString *about;
 @property (nonatomic, strong) NSString *username;
@@ -184,7 +198,9 @@ typedef enum {
 @property (nonatomic) bool unread;
 @property (nonatomic) bool deliveryError;
 @property (nonatomic) TGMessageDeliveryState deliveryState;
-@property (nonatomic) int date;
+@property (nonatomic) int32_t messageDate;
+@property (nonatomic) int32_t minMessageDate;
+@property (nonatomic) int32_t pinnedDate;
 @property (nonatomic) int fromUid;
 @property (nonatomic, strong) NSString *text;
 @property (nonatomic, strong) NSArray *media;
@@ -205,6 +221,7 @@ typedef enum {
 
 @property (nonatomic) TGChannelRole channelRole;
 
+@property (nonatomic) int chatCreationDate;
 @property (nonatomic) int chatVersion;
 @property (nonatomic) bool chatIsAdmin;
 @property (nonatomic) bool channelIsReadOnly;
@@ -235,13 +252,25 @@ typedef enum {
 @property (nonatomic) int32_t migratedToChannelId;
 @property (nonatomic) int64_t migratedToChannelAccessHash;
 
+@property (nonatomic) int32_t pinnedMessageId;
+@property (nonatomic) bool pinnedMessageHidden;
+
 @property (nonatomic) int64_t flags;
 
+@property (nonatomic) bool isMin;
+@property (nonatomic) bool canNotSetUsername;
+
 @property (nonatomic, strong) TGEncryptedConversationData *encryptedData;
+
+@property (nonatomic, strong, readonly) TGDatabaseMessageDraft *draft;
+
+@property (nonatomic, readonly) int32_t date;
+@property (nonatomic, readonly) int32_t unpinnedDate;
 
 - (id)initWithConversationId:(int64_t)conversationId unreadCount:(int)unreadCount serviceUnreadCount:(int)serviceUnreadCount;
 
 - (void)mergeMessage:(TGMessage *)message;
+- (void)mergeEmptyMessage;
 
 - (BOOL)isEqualToConversation:(TGConversation *)other;
 - (BOOL)isEqualToConversationIgnoringMessage:(TGConversation *)other;
@@ -251,10 +280,17 @@ typedef enum {
 
 - (bool)isEncrypted;
 
+- (void)mergeConversation:(TGConversation *)conversation;
 - (void)mergeChannel:(TGConversation *)channel;
+- (void)mergeDraft:(TGDatabaseMessageDraft *)draft;
 
 - (bool)currentUserCanSendMessages;
 
 + (NSString *)chatTitleForDecoder:(PSKeyValueCoder *)coder;
+
+- (bool)isMessageUnread:(TGMessage *)message;
+- (bool)isMessageUnread:(int32_t)messageId date:(int32_t)messageDate outgoing:(bool)outgoing;
+
+- (bool)pinnedToTop;
 
 @end

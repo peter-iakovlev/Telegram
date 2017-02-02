@@ -27,11 +27,17 @@
     
     int32_t peerSignature = [is readInt32];
     result.to_id = TLMetaClassStore::constructObject(is, peerSignature, environment, nil, error);
+    if (error != nil && *error != nil) {
+        return nil;
+    }
     
     if (flags & (1 << 2))
     {
         int32_t signature = [is readInt32];
         result.fwd_header = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
     
     if (flags & (1 << 11))
@@ -52,12 +58,18 @@
     {
         int32_t mediaSignature = [is readInt32];
         result.media = TLMetaClassStore::constructObject(is, mediaSignature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
     
     if (flags & (1 << 6))
     {
         int32_t replyMarkupSignature = [is readInt32];
         result.replyMarkup = TLMetaClassStore::constructObject(is, replyMarkupSignature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
     
     if (flags & (1 << 7))
@@ -69,6 +81,9 @@
         {
             int32_t signature = [is readInt32];
             id entity = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (entity != nil)
                 [entities addObject:entity];
         }

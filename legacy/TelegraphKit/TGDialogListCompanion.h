@@ -63,4 +63,6 @@
 - (bool)isConversationOpened:(int64_t)conversationId;
 - (int64_t)openedConversationId;
 
+- (void)hintMoveConversationAtIndex:(NSUInteger)fromIndex toIndex:(NSUInteger)toIndex;
+
 @end

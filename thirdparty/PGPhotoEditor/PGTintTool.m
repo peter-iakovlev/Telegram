@@ -27,6 +27,31 @@
     return value;
 }
 
+- (BOOL)isEqual:(id)object
+{
+    if (object == self)
+        return true;
+    
+    if (!object || ![object isKindOfClass:[self class]])
+        return false;
+    
+    PGTintToolValue *value = (PGTintToolValue *)object;
+    
+    if (![value.shadowsColor isEqual:self.shadowsColor])
+        return false;
+    
+    if (value.shadowsIntensity != self.shadowsIntensity)
+        return false;
+    
+    if (![value.highlightsColor isEqual:self.highlightsColor])
+        return false;
+    
+    if (value.highlightsIntensity != self.highlightsIntensity)
+        return false;
+        
+    return true;
+}
+
 @end
 
 
@@ -137,6 +162,15 @@
     CGFloat highlightsIntensity = [value.highlightsColor isEqual:[UIColor clearColor]] ? 0 : value.highlightsIntensity;
     [_highlightsIntensityParameter setFloatValue:highlightsIntensity / 100.0f];
 }
+
+- (NSString *)stringValue
+{
+    if (![self shouldBeSkipped])
+        return @"◆";
+    
+    return nil;
+}
+
 
 - (NSString *)ancillaryShaderString
 {

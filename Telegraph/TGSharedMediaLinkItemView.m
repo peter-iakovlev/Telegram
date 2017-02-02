@@ -451,4 +451,22 @@
     }
 }
 
+- (NSURL *)urlForLocation:(CGPoint)location
+{
+    if (_links.count == 0)
+        return nil;
+    
+    NSInteger index = -1;
+    for (TGModernButton *listButton in _linkButtons)
+    {
+        index++;
+        if (CGRectContainsPoint(listButton.frame, location))
+        {
+            return [NSURL URLWithString:_links[index]];
+        }
+    }
+    
+    return [NSURL URLWithString:_links.firstObject];
+}
+
 @end

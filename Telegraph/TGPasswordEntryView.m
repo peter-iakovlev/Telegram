@@ -107,8 +107,7 @@
         __weak TGPasswordEntryView *weakSelf = self;
         _simpleKeyboardView.characterEntered = ^(NSString *text)
         {
-            //[[UIDevice currentDevice] playInputClick];
-            AudioServicesPlaySystemSound(0x450);
+            //AudioServicesPlaySystemSound(0x450);
             
             __strong TGPasswordEntryView *strongSelf = weakSelf;
             if (strongSelf != nil)

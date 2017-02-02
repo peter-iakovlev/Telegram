@@ -4,4 +4,6 @@
 
 + (SSignal *)instagramMediaIdForShortcode:(NSString *)shortcode;
 
++ (NSString *)instagramShortcodeFromText:(NSString *)text;
+
 @end

@@ -63,7 +63,7 @@
         orientation = UIInterfaceOrientationPortrait;
     
     CGSize referenceViewSize = [_controller referenceViewSizeForOrientation:orientation];
-    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceViewSize.width, referenceViewSize.height) toolbarLandscapeSize:_controller.toolbarLandscapeSize orientation:orientation includePanel:true];
+    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceViewSize.width, referenceViewSize.height) toolbarLandscapeSize:_controller.toolbarLandscapeSize orientation:orientation panelSize:0.0f];
     
     CGFloat shortSide = MIN(referenceViewSize.width, referenceViewSize.height);
     CGFloat diameter = shortSide - [TGPhotoAvatarCropView areaInsetSize].width * 2;

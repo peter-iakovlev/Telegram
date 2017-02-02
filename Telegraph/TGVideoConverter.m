@@ -7,6 +7,7 @@
 #import "TGPhotoEditorUtils.h"
 
 #import "TGVideoEditAdjustments.h"
+#import "TGPaintingData.h"
 
 #import <SSignalKit/SSignalKit.h>
 #import <AVFoundation/AVFoundation.h>
@@ -19,7 +20,13 @@
 
 #import "TGLiveUploadActor.h"
 
+#import "TGTelegramNetworking.h"
+
 const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
+const NSInteger TGVideoConverterVideoBitrate = 800000;
+
+const CGSize TGVideoConverterGifResultSize = { 640.0f, 640.0f };
+const NSInteger TGVideoConverterGifVideoBitrate = 500000;
 
 @interface TGVideoConverter () <ASWatcher>
 {
@@ -36,54 +43,30 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
     
     NSString *_liveUploadPath;
     
-    bool _passThrough;
-    bool _highDefinition;
-    
     __volatile bool _isCancelled;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
 
+@property (nonatomic, assign) bool liveUpload;
+@property (nonatomic, assign) CMTimeRange trimRange;
+@property (nonatomic, assign) CGRect cropRect;
+@property (nonatomic, assign) UIImageOrientation cropOrientation;
+@property (nonatomic, assign) bool cropMirorred;
+@property (nonatomic, strong) NSString *overlayImagePath;
+@property (nonatomic, assign) bool asGif;
+
 @end
 
 @implementation TGVideoConverter
 
-- (instancetype)initForConvertationWithAVAsset:(AVAsset *)asset liveUpload:(bool)liveUpload highDefinition:(bool)highDefinition
+- (instancetype)initForConvertationWithAVAsset:(AVAsset *)asset liveUpload:(bool)liveUpload
 {
     self = [super init];
     if (self != nil)
     {
         _asset = asset;
         _liveUpload = liveUpload;
-        _highDefinition = highDefinition;
-        
-        [self commonInit];
-    }
-    return self;
-}
-
-- (instancetype)initForPassthroughWithItemURL:(NSURL *)url liveUpload:(bool)liveUpload
-{
-    self = [super init];
-    if (self != nil)
-    {
-        _itemURL = url;
-        _liveUpload = liveUpload;
-        _passThrough = true;
-        
-        [self commonInit];
-    }
-    return self;
-}
-
-- (instancetype)initForPassthroughWithAVAsset:(AVAsset *)avAsset liveUpload:(bool)liveUpload
-{
-    self = [super init];
-    if (self != nil)
-    {
-        _asset = avAsset;
-        _liveUpload = liveUpload;
-        _passThrough = true;
         
         [self commonInit];
     }
@@ -133,7 +116,8 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
            @"unlinkFileAfterCompletion": @true,
            @"encryptFile": @false,
            @"lateHeader": @true,
-           @"dataProvider": [dataProvider copy]
+           @"dataProvider": [dataProvider copy],
+           @"mediaTypeTag": @(TGNetworkMediaTypeTagVideo)
            } flags:0 watcher:self];
     }
 }
@@ -277,18 +261,20 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
 {
     [_queue dispatch:^
     {
-        NSURL *fullPath = [NSURL fileURLWithPath:_tempFilePath];
-        
-        NSLog(@"Write Started");
-        
-        NSError *error = nil;
-        
-        _assetWriter = [[AVAssetWriter alloc] initWithURL:fullPath fileType:AVFileTypeMPEG4 error:&error];
-        
-        if (_assetWriter == nil)
+        void (^fail)(void) = ^
         {
             if (completion != nil)
                 completion(nil, CGSizeZero, 0.0, nil, nil);
+        };
+        
+        TGLog(@"[VideoConverter] Conversion Started: %@", _tempFilePath);
+        
+        NSURL *fullPath = [NSURL fileURLWithPath:_tempFilePath];
+        NSError *error = nil;
+        _assetWriter = [[AVAssetWriter alloc] initWithURL:fullPath fileType:AVFileTypeMPEG4 error:&error];
+        if (_assetWriter == nil)
+        {
+            fail();
             return;
         }
         
@@ -299,12 +285,35 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
             avAsset = [AVURLAsset assetWithURL:_itemURL];
         
         AVAssetTrack *videoTrack = [[avAsset tracksWithMediaType:AVMediaTypeVideo] firstObject];
+        if (videoTrack == nil)
+        {
+            TGLog(@"[VideoConverter] ERROR: Video track is nil");
+            fail();
+            return;
+        }
+        
         CGSize normalizedVideoSize = CGRectApplyAffineTransform((CGRect){CGPointZero, videoTrack.naturalSize}, videoTrack.preferredTransform).size;
+        if (CGSizeEqualToSize(normalizedVideoSize, CGSizeZero))
+        {
+            if (CGSizeEqualToSize(videoTrack.naturalSize, CGSizeZero))
+            {
+                TGLog(@"[VideoConverter] ERROR: Video track natural size is zero");
+                fail();
+                return;
+            }
+            else
+            {
+                TGLog(@"[VideoConverter] WARNING: Setting natural size as normalized");
+                normalizedVideoSize = videoTrack.naturalSize;
+            }
+        }
         
         bool hasCropping = !CGRectEqualToRect(_cropRect, CGRectZero);
         CGRect cropRect = hasCropping ? [self _normalizeCropRect:_cropRect] : CGRectMake(0, 0, normalizedVideoSize.width, normalizedVideoSize.height);
         
-        CGSize outputVideoDimensions = TGFitSize(cropRect.size, TGVideoConverterResultSize);
+        CGSize resultSize = _asGif ? TGVideoConverterGifResultSize : TGVideoConverterResultSize;
+        CGSize outputVideoDimensions = TGFitSizeF(cropRect.size, resultSize);
+        outputVideoDimensions = CGSizeMake(ceil(outputVideoDimensions.width), ceil(outputVideoDimensions.height));
         if (hasCropping)
             outputVideoDimensions = [self _renderSizeWithCropSize:outputVideoDimensions];
         
@@ -327,7 +336,7 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
         
         NSDictionary *codecSettings =
         @{
-          AVVideoAverageBitRateKey: @(_highDefinition ? ((NSInteger)(750000 * 2.0)) : 750000),
+          AVVideoAverageBitRateKey: @(_asGif ? TGVideoConverterGifVideoBitrate : TGVideoConverterVideoBitrate),
           AVVideoCleanApertureKey: videoCleanApertureSettings,
           AVVideoPixelAspectRatioKey: videoAspectRatioSettings
         };
@@ -388,16 +397,49 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
         bool mirrored = false;
         UIImageOrientation videoOrientation = TGVideoOrientationForAsset(avAsset, &mirrored);
         CGAffineTransform transform = TGVideoTransformForOrientation(videoOrientation, videoTrack.naturalSize, cropRect, mirrored);
-        CGAffineTransform rotationTransform = TGVideoCropTransformForOrientation(_cropOrientation, cropRect.size, true);
+        CGAffineTransform rotationTransform = TGVideoTransformForCrop(_cropOrientation, cropRect.size, _cropMirorred);
         CGAffineTransform finalTransform = CGAffineTransformConcat(transform, rotationTransform);
         [transformer setTransform:finalTransform atTime:kCMTimeZero];
         
         instruction.layerInstructions = [NSArray arrayWithObject:transformer];
         videoComposition.instructions = [NSArray arrayWithObject:instruction];
         
+        UIImage *overlayImage = (_overlayImagePath != nil) ? [UIImage imageWithContentsOfFile:_overlayImagePath] : nil;
+        if (overlayImage != nil)
+        {
+            CALayer *parentLayer = [CALayer layer];
+            parentLayer.frame = CGRectMake(0, 0, videoComposition.renderSize.width, videoComposition.renderSize.height);
+            
+            CALayer *videoLayer = [CALayer layer];
+            videoLayer.frame = parentLayer.frame;
+            [parentLayer addSublayer:videoLayer];
+            
+            CGSize parentSize = CGSizeMake(TGOrientationIsSideward(_cropOrientation, NULL) ? parentLayer.bounds.size.height : parentLayer.bounds.size.width, TGOrientationIsSideward(_cropOrientation, NULL) ? parentLayer.bounds.size.width : parentLayer.bounds.size.height);
+            CGSize size = CGSizeMake(parentSize.width * normalizedVideoSize.width / cropRect.size.width, parentSize.height * normalizedVideoSize.height / cropRect.size.height);
+            CGPoint origin = CGPointMake(-parentSize.width / cropRect.size.width * cropRect.origin.x,  -parentSize.height / cropRect.size.height * (normalizedVideoSize.height - cropRect.size.height - cropRect.origin.y));
+             
+            CALayer *rotationLayer = [CALayer layer];
+            rotationLayer.frame = CGRectMake(0, 0, parentSize.width, parentSize.height);
+            [parentLayer addSublayer:rotationLayer];
+            
+            UIImageOrientation orientation = TGMirrorSidewardOrientation(_cropOrientation);
+            CATransform3D transform = CATransform3DMakeTranslation(rotationLayer.frame.size.width / 2.0f, rotationLayer.frame.size.height / 2.0f, 0.0f);
+            transform = CATransform3DRotate(transform, TGRotationForOrientation(orientation), 0.0f, 0.0f, 1.0f);
+            transform = CATransform3DTranslate(transform, -parentLayer.bounds.size.width / 2.0f, -parentLayer.bounds.size.height / 2.0f, 0.0f);
+            rotationLayer.transform = transform;
+            rotationLayer.frame = parentLayer.frame;
+            
+            CALayer *overlayLayer = [CALayer layer];
+            overlayLayer.contents = (id)overlayImage.CGImage;
+            overlayLayer.frame = CGRectMake(origin.x, origin.y, size.width, size.height);
+            [rotationLayer addSublayer:overlayLayer];
+                        
+            videoComposition.animationTool = [AVVideoCompositionCoreAnimationTool videoCompositionCoreAnimationToolWithPostProcessingAsVideoLayer:videoLayer inLayer:parentLayer];
+        }
+        
         AVAssetImageGenerator *imageGenerator = [[AVAssetImageGenerator alloc] initWithAsset:composition];
         imageGenerator.videoComposition = videoComposition;
-        imageGenerator.maximumSize = TGVideoConverterResultSize;
+        imageGenerator.maximumSize = resultSize;
         CGImageRef imageRef = [imageGenerator copyCGImageAtTime:range.start actualTime:NULL error:NULL];
         previewImage = [UIImage imageWithCGImage:imageRef];
         CGImageRelease(imageRef);
@@ -429,7 +471,7 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
         AVAssetReaderTrackOutput *readerOutput = nil;
         AVAssetReader *audioReader = nil;
         
-        if (audioTrack != nil)
+        if (!_asGif && audioTrack != nil)
         {
             AVAssetTrack *readedAudioTrack = audioTrack;
             if (composition != nil)
@@ -749,19 +791,19 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
     return hash;
 }
 
-+ (SSignal *)convertSignalForAVAsset:(AVAsset *)asset adjustments:(TGVideoEditAdjustments *)adjustments liveUpload:(bool)liveUpload passthrough:(bool)passthrough
++ (SSignal *)convertSignalForAVAsset:(AVAsset *)asset adjustments:(TGVideoEditAdjustments *)adjustments liveUpload:(bool)liveUpload passthrough:(bool)__unused passthrough
 {
+    if (asset == nil)
+        return [SSignal fail:nil];
+    
     return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
-        TGVideoConverter *videoConverter = nil;
-        if (passthrough)
-            videoConverter = [[TGVideoConverter alloc] initForPassthroughWithAVAsset:asset liveUpload:liveUpload];
-        else
-            videoConverter = [[TGVideoConverter alloc] initForConvertationWithAVAsset:asset liveUpload:liveUpload highDefinition:false];
+        TGVideoConverter *videoConverter = [[TGVideoConverter alloc] initForConvertationWithAVAsset:asset liveUpload:liveUpload];
         
         if (adjustments != nil)
         {
             videoConverter.cropOrientation = adjustments.cropOrientation;
+            videoConverter.cropMirorred = adjustments.cropMirrored;
             if ([adjustments cropAppliedForAvatar:false])
             {
                 videoConverter.cropRect = adjustments.cropRect;
@@ -770,6 +812,8 @@ const CGSize TGVideoConverterResultSize = { 640.0f, 640.0f };
             {
                 videoConverter.trimRange = CMTimeRangeMake(CMTimeMakeWithSeconds(adjustments.trimStartValue , NSEC_PER_SEC), CMTimeMakeWithSeconds((adjustments.trimEndValue - adjustments.trimStartValue), NSEC_PER_SEC));
             }
+            videoConverter.overlayImagePath = adjustments.paintingData.imagePath;
+            videoConverter.asGif = adjustments.sendAsGif;
         }
         
         [videoConverter processWithCompletion:^(NSString *filePath, CGSize dimensions, NSTimeInterval duration, UIImage *previewImage, TGLiveUploadActorData *liveUploadData)

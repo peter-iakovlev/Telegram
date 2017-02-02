@@ -39,3 +39,9 @@
 
 @end
 
+@interface TLupdates_Difference$updates_differenceTooLong : TLupdates_Difference
+
+@property (nonatomic) int32_t pts;
+
+@end
+

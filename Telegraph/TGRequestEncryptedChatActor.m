@@ -116,11 +116,10 @@
     {
         [TGDatabaseInstance() setConversationCustomProperty:conversation.conversationId name:murMurHash32(@"a") value:_aBytes];
         
-        conversation.date = date;
+        conversation.messageDate = date;
         conversation.encryptedData.handshakeState = 1;
         
-        static int actionId = 0;
-        [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(requestEncryption%d)", actionId++]] execute:@{@"chats": @{@(conversation.conversationId): conversation}}];
+        [TGDatabaseInstance() transactionAddMessages:nil updateConversationDatas:@{@(conversation.conversationId): conversation} notifyAdded:true];
         
         [ActionStageInstance() actionCompleted:self.path result:@{@"conversation": conversation}];
     }

@@ -17,7 +17,7 @@
 
 @implementation TGPreparedLocalVideoMessage
 
-+ (instancetype)messageWithTempVideoPath:(NSString *)tempVideoPath videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration previewImage:(UIImage *)previewImage thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage
++ (instancetype)messageWithTempVideoPath:(NSString *)tempVideoPath videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration previewImage:(UIImage *)previewImage thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
 #ifdef DEBUG
     NSAssert(tempVideoPath != nil, @"tempVideoPath should not be nil");
@@ -57,11 +57,12 @@
     message.caption = caption;
     
     message.replyMessage = replyMessage;
+    message.replyMarkup = replyMarkup;
     
     return message;
 }
 
-+ (instancetype)messageWithLocalVideoId:(int64_t)localVideoId videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage
++ (instancetype)messageWithLocalVideoId:(int64_t)localVideoId videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
 #ifdef DEBUG
     NSAssert(localThumbnailDataPath != nil, @"localThumbnailDataPath should not be nil");
@@ -78,6 +79,7 @@
     message.assetUrl = assetUrl;
     message.caption = caption;
     message.replyMessage = replyMessage;
+    message.replyMarkup = replyMarkup;
     
     return message;
 }
@@ -85,11 +87,15 @@
 + (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalVideoMessage *)source
 {
     TGMessage *replyMessage = nil;
+    TGReplyMarkupAttachment *replyMarkup = nil;
     for (id mediaAttachment in source.message.mediaAttachments)
     {
         if ([mediaAttachment isKindOfClass:[TGReplyMessageMediaAttachment class]])
         {
             replyMessage = ((TGReplyMessageMediaAttachment *)mediaAttachment).replyMessage;
+        }
+        else if ([mediaAttachment isKindOfClass:[TGReplyMarkupAttachment class]]) {
+            replyMarkup = mediaAttachment;
         }
     }
     
@@ -97,14 +103,14 @@
     {
         if ([mediaAttachment isKindOfClass:[TGVideoMediaAttachment class]])
         {
-            return [self messageByCopyingDataFromMedia:mediaAttachment replyMessage:replyMessage];
+            return [self messageByCopyingDataFromMedia:mediaAttachment replyMessage:replyMessage replyMarkup:replyMarkup];
         }
     }
     
     return nil;
 }
 
-+ (instancetype)messageByCopyingDataFromMedia:(TGVideoMediaAttachment *)videoAttachment replyMessage:(TGMessage *)replyMessage
++ (instancetype)messageByCopyingDataFromMedia:(TGVideoMediaAttachment *)videoAttachment replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
 #ifdef DEBUG
     NSAssert(videoAttachment != nil, @"videoAttachment should not be nil");
@@ -153,6 +159,7 @@
     message.caption = videoAttachment.caption;
     
     message.replyMessage = replyMessage;
+    message.replyMarkup = replyMarkup;
     
     return message;
 }
@@ -185,7 +192,7 @@
     arc4random_buf(&randomId, sizeof(randomId));
     NSString *imagePathComponent = [[NSString alloc] initWithFormat:@"%" PRIx64 ".bin", randomId];
     NSString *filePath = [uploadDirectory stringByAppendingPathComponent:imagePathComponent];
-    [data writeToFile:filePath atomically:false];
+    [data writeToFile:filePath atomically:true];
     
     return [@"file://" stringByAppendingString:filePath];
 }
@@ -235,6 +242,10 @@
         replyMedia.replyMessageId = self.replyMessage.mid;
         replyMedia.replyMessage = self.replyMessage;
         [attachments addObject:replyMedia];
+    }
+    
+    if (self.replyMarkup != nil) {
+        [attachments addObject:self.replyMarkup];
     }
     
     message.mediaAttachments = attachments;

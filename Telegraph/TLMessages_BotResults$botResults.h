@@ -1,6 +1,6 @@
 #import "TLmessages_BotResults.h"
 
-//messages.botResults flags:# query_id:long media:flags.0?true next_offset:flags.1?string results:Vector<BotContextResult> = messages.BotResults
+@class TLInlineBotSwitchPM;
 
 @interface TLMessages_BotResults$botResults : TLmessages_BotResults
 
@@ -8,6 +8,8 @@
 @property (nonatomic, readonly) bool isMedia;
 @property (nonatomic) int64_t query_id;
 @property (nonatomic, strong) NSString *next_offset;
+@property (nonatomic, strong) TLInlineBotSwitchPM *switch_pm;
 @property (nonatomic, strong) NSArray *results;
+@property (nonatomic) int32_t cache_time;
 
 @end

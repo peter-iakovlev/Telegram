@@ -2,6 +2,7 @@
 
 #import "TGTelegramNetworking.h"
 #import <MTProtoKit/MTRequest.h>
+#import <MTProtoKit/MTRpcError.h>
 
 #import "TL/TLMetaScheme.h"
 

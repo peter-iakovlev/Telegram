@@ -29,6 +29,12 @@
 
 #import "TGViewController.h"
 
+#import "TGMessageReplyButtonsModel.h"
+
+#import "TGModernTextViewModel.h"
+
+#import "TGTextCheckingResult.h"
+
 @interface TGStickerMessageViewModel () <TGDoubleTapGestureRecognizerDelegate, UIGestureRecognizerDelegate>
 {
     bool _incoming;
@@ -44,6 +50,7 @@
     TGDocumentMediaAttachment *_document;
     TGMessageImageViewModel *_imageModel;
     
+    UITapGestureRecognizer *_tapGestureRecognizer;
     TGDoubleTapGestureRecognizer *_boundDoubleTapRecognizer;
     UITapGestureRecognizer *_replyTapRecognizer;
     
@@ -55,12 +62,19 @@
     TGModernFlatteningViewModel *_contentModel;
     TGModernImageViewModel *_replyBackgroundModel;
     TGReplyHeaderModel *_replyHeaderModel;
+    TGModernTextViewModel *_replyHeaderViaUserModel;
     
     int32_t _replyMessageId;
     TGMessageViewCountContentProperty *_messageViews;
     
     TGMessage *_message;
     NSString *_authorSignature;
+    
+    TGMessageReplyButtonsModel *_replyButtonsModel;
+    TGBotReplyMarkup *_replyMarkup;
+    SMetaDisposable *_callbackButtonInProgressDisposable;
+    
+    TGUser *_viaUser;
 }
 
 @end
@@ -73,14 +87,16 @@
     return TGFitSize(CGSizeMake(size.width / 2.0f, size.height / 2.0f), maxSize);
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message document:(TGDocumentMediaAttachment *)document size:(CGSize)size authorPeer:(id)authorPeer context:(TGModernViewContext *)context replyHeader:(TGMessage *)replyHeader replyPeer:(id)replyPeer
+- (instancetype)initWithMessage:(TGMessage *)message document:(TGDocumentMediaAttachment *)document size:(CGSize)size authorPeer:(id)authorPeer context:(TGModernViewContext *)context replyHeader:(TGMessage *)replyHeader replyPeer:(id)replyPeer viaUser:(TGUser *)viaUser
 {
     self = [super initWithAuthorPeer:authorPeer context:context];
     if (self != nil)
     {
+        _callbackButtonInProgressDisposable = [[SMetaDisposable alloc] init];
+        
         _mid = message.mid;
         _incoming = !message.outgoing;
-        _read = !message.unread;
+        _read = ![_context isMessageUnread:message];
         _deliveryState = message.deliveryState;
         _hasAvatar = authorPeer != nil && [authorPeer isKindOfClass:[TGUser class]];
         _messageViews = message.viewCount;
@@ -120,6 +136,7 @@
         _imageModel.skipDrawInContext = true;
         [self addSubmodel:_imageModel];
         
+        _imageModel.flexibleTimestamp = true;
         [_imageModel setTimestampColor:[[TGTelegraphConversationMessageAssetsSource instance] systemMessageBackgroundColor]];
         [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)message.date] signatureString:nil displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:false];
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
@@ -150,6 +167,8 @@
             }
         }
         
+        _viaUser = viaUser;
+        
         if (replyHeader != nil)
         {
             _replyMessageId = replyHeader.mid;
@@ -163,9 +182,68 @@
             
             _replyHeaderModel = [TGContentBubbleViewModel replyHeaderModelFromMessage:replyHeader peer:replyPeer incoming:_incomingAppearance system:true];
             [_contentModel addSubmodel:_replyHeaderModel];
+            
+            if (viaUser != nil && viaUser.userName.length != 0) {
+                NSString *formatString = TGLocalized(@"Conversation.MessageViaUser");
+                NSString *viaUserName = [@"@" stringByAppendingString:viaUser.userName];
+                NSRange range = [formatString rangeOfString:@"%@"];
+                
+                _replyHeaderViaUserModel = [[TGModernTextViewModel alloc] initWithText:[[NSString alloc] initWithFormat:formatString, viaUserName] font:[[TGTelegraphConversationMessageAssetsSource instance] messageAuthorNameFont]];
+                if (range.location != NSNotFound) {
+                    _replyHeaderViaUserModel.textCheckingResults = @[[[TGTextCheckingResult alloc] initWithRange:NSMakeRange(range.location, viaUserName.length) type:TGTextCheckingResultTypeBold contents:nil]];
+                }
+                _replyHeaderViaUserModel.textColor = [UIColor whiteColor];
+                [_contentModel addSubmodel:_replyHeaderViaUserModel];
+                
+                _viaUser = viaUser;
+            }
+        } else if (viaUser != nil && viaUser.userName.length != 0) {
+            _replyBackgroundModel = [[TGModernImageViewModel alloc] initWithImage:[[TGTelegraphConversationMessageAssetsSource instance] systemReplyBackground]];
+            _replyBackgroundModel.skipDrawInContext = true;
+            [self addSubmodel:_replyBackgroundModel];
+            
+            _contentModel = [[TGModernFlatteningViewModel alloc] init];
+            [self addSubmodel:_contentModel];
+            
+            NSString *formatString = TGLocalized(@"Conversation.MessageViaUser");
+            NSString *viaUserName = [@"@" stringByAppendingString:viaUser.userName];
+            NSRange range = [formatString rangeOfString:@"%@"];
+            
+            _replyHeaderViaUserModel = [[TGModernTextViewModel alloc] initWithText:[[NSString alloc] initWithFormat:formatString, viaUserName] font:[[TGTelegraphConversationMessageAssetsSource instance] messageAuthorNameFont]];
+            if (range.location != NSNotFound) {
+                _replyHeaderViaUserModel.textCheckingResults = @[[[TGTextCheckingResult alloc] initWithRange:NSMakeRange(range.location, viaUserName.length) type:TGTextCheckingResultTypeBold contents:nil]];
+            }
+            _replyHeaderViaUserModel.textColor = [UIColor whiteColor];
+            [_contentModel addSubmodel:_replyHeaderViaUserModel];
+            
+            _viaUser = viaUser;
+        }
+        
+        TGBotReplyMarkup *replyMarkup = message.replyMarkup;
+        if (replyMarkup != nil && replyMarkup.isInline) {
+            _replyMarkup = replyMarkup;
+            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] init];
+            __weak TGStickerMessageViewModel *weakSelf = self;
+            _replyButtonsModel.buttonActivated = ^(TGBotReplyMarkupButton *button, NSInteger index) {
+                __strong TGStickerMessageViewModel *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:@{@"mid": @(strongSelf->_mid), @"command": button.text}];
+                    if (button.action != nil) {
+                        dict[@"action"] = button.action;
+                    }
+                    dict[@"index"] = @(index);
+                    [strongSelf->_context.companionHandle requestAction:@"activateCommand" options:dict];
+                }
+            };
+            _replyButtonsModel.replyMarkup = replyMarkup;
+            [self addSubmodel:_replyButtonsModel];
         }
     }
     return self;
+}
+
+- (void)dealloc {
+    [_callbackButtonInProgressDisposable dispose];
 }
 
 - (void)setAuthorSignature:(NSString *)authorSignature {
@@ -223,17 +301,32 @@
     }
 }
 
+- (void)updateMessageAttributes
+{
+    [super updateMessageAttributes];
+    
+    bool previousRead = _read;
+    _read = ![_context isMessageUnread:_message];
+    if (previousRead != _read) {
+        [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)_message.date] signatureString:_authorSignature displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:true];
+        [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
+    }
+}
+
 - (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
 {
     [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
     
     _mid = message.mid;
+    _message = message;
     
-    if (_deliveryState != message.deliveryState || (!_incoming && _read != !message.unread) || (_messageViews != nil && _messageViews.viewCount != message.viewCount.viewCount))
+    bool messageUnread = [_context isMessageUnread:message];
+    
+    if (_deliveryState != message.deliveryState || (!_incoming && _read != !messageUnread) || (_messageViews != nil && _messageViews.viewCount != message.viewCount.viewCount))
     {
         _messageViews = message.viewCount;
         _deliveryState = message.deliveryState;
-        _read = !message.unread;
+        _read = !messageUnread;
         
         [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)message.date] signatureString:_authorSignature displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:true];
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
@@ -351,6 +444,39 @@
     [imageUri appendFormat:@"&mime-type=%@", [TGStringUtils stringByEscapingForURL:_document.mimeType]];
     
     [_imageModel setUri:imageUri];
+    
+    TGBotReplyMarkup *replyMarkup = message.replyMarkup != nil && message.replyMarkup.isInline ? message.replyMarkup : nil;
+    if (!TGObjectCompare(_replyMarkup, replyMarkup)) {
+        _replyMarkup = replyMarkup;
+        
+        if (_replyButtonsModel == nil) {
+            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] init];
+            __weak TGStickerMessageViewModel *weakSelf = self;
+            _replyButtonsModel.buttonActivated = ^(TGBotReplyMarkupButton *button, NSInteger index) {
+                __strong TGStickerMessageViewModel *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:@{@"mid": @(strongSelf->_mid), @"command": button.text}];
+                    if (button.action != nil) {
+                        dict[@"action"] = button.action;
+                    }
+                    dict[@"index"] = @(index);
+                    [strongSelf->_context.companionHandle requestAction:@"activateCommand" options:dict];
+                }
+            };
+            
+            [self addSubmodel:_replyButtonsModel];
+        }
+        if (_imageModel.boundView != nil) {
+            [_replyButtonsModel unbindView:viewStorage];
+            _replyButtonsModel.replyMarkup = replyMarkup;
+            [_replyButtonsModel bindViewToContainer:_imageModel.boundView.superview viewStorage:viewStorage];
+        } else {
+            _replyButtonsModel.replyMarkup = replyMarkup;
+        }
+        if (sizeUpdated) {
+            *sizeUpdated = true;
+        }
+    }
 }
 
 - (CGRect)effectiveContentFrame
@@ -372,6 +498,30 @@
     [_contentModel bindViewToContainer:container viewStorage:viewStorage];
     
     [_replyHeaderModel bindSpecialViewsToContainer:container viewStorage:viewStorage atItemPosition:CGPointMake(itemPosition.x + _contentModel.frame.origin.x + _replyHeaderModel.frame.origin.x, itemPosition.y + _contentModel.frame.origin.y + _replyHeaderModel.frame.origin.y)];
+    
+    [_replyButtonsModel bindSpecialViewsToContainer:container viewStorage:viewStorage atItemPosition:CGPointMake(itemPosition.x, itemPosition.y)];
+    
+    [self subscribeToCallbackButtonInProgress];
+}
+
+- (void)subscribeToCallbackButtonInProgress {
+    if (_replyButtonsModel != nil) {
+        __weak TGStickerMessageViewModel *weakSelf = self;
+        [_callbackButtonInProgressDisposable setDisposable:[[[_context callbackInProgress] deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *next) {
+            __strong TGStickerMessageViewModel *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                if (next != nil) {
+                    if ([next[@"mid"] intValue] == strongSelf->_mid) {
+                        [strongSelf->_replyButtonsModel setButtonIndexInProgress:[next[@"buttonIndex"] intValue]];
+                    } else {
+                        [strongSelf->_replyButtonsModel setButtonIndexInProgress:NSNotFound];
+                    }
+                } else {
+                    [strongSelf->_replyButtonsModel setButtonIndexInProgress:NSNotFound];
+                }
+            }
+        }]];
+    }
 }
 
 - (void)bindViewToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage
@@ -385,10 +535,14 @@
     
     [_replyHeaderModel bindSpecialViewsToContainer:_contentModel.boundView viewStorage:viewStorage atItemPosition:CGPointMake(_replyHeaderModel.frame.origin.x, _replyHeaderModel.frame.origin.y)];
     
+    _tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(messageTapGesture:)];
+    _tapGestureRecognizer.delegate = self;
+    
     _boundDoubleTapRecognizer = [[TGDoubleTapGestureRecognizer alloc] initWithTarget:self action:@selector(messageDoubleTapGesture:)];
+    _boundDoubleTapRecognizer.consumeSingleTap = false;
     _boundDoubleTapRecognizer.delegate = self;
     
-    if (_replyHeaderModel != nil)
+    if (_contentModel != nil)
     {
         _replyTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(replyHeaderTapGesture:)];
         [[_contentModel boundView] addGestureRecognizer:_replyTapRecognizer];
@@ -401,12 +555,19 @@
     }
     
     UIView *backgroundView = [_imageModel boundView];
+    [backgroundView addGestureRecognizer:_tapGestureRecognizer];
     [backgroundView addGestureRecognizer:_boundDoubleTapRecognizer];
+    
+    [self subscribeToCallbackButtonInProgress];
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
 {
     UIView *imageView = [_imageModel boundView];
+    [imageView removeGestureRecognizer:_tapGestureRecognizer];
+    _tapGestureRecognizer.delegate = nil;
+    _tapGestureRecognizer = nil;
+    
     [imageView removeGestureRecognizer:_boundDoubleTapRecognizer];
     _boundDoubleTapRecognizer.delegate = nil;
     _boundDoubleTapRecognizer = nil;
@@ -427,6 +588,8 @@
     }
     
     [super unbindView:viewStorage];
+    
+    [_callbackButtonInProgressDisposable setDisposable:nil];
 }
 
 - (void)unsentButtonTapGesture:(UITapGestureRecognizer *)recognizer
@@ -441,15 +604,26 @@
 {
     if (recognizer.state == UIGestureRecognizerStateEnded)
     {
-        [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
+        CGPoint location = [recognizer locationInView:_contentModel.boundView];
+        if (_replyHeaderViaUserModel != nil && (CGRectContainsPoint(_replyHeaderViaUserModel.frame, location) || _replyHeaderModel == nil)) {
+            [_context.companionHandle requestAction:@"useContextBot" options:@{@"uid": @((int32_t)_viaUser.uid), @"username": _viaUser.userName == nil ? @"" : _viaUser.userName}];
+        } else if (_replyHeaderModel != nil) {
+            [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
+        }
     }
+}
+
+- (void)messageTapGesture:(UITapGestureRecognizer *)recognizer
+{
+    if (recognizer.state == UIGestureRecognizerStateRecognized)
+        [_context.companionHandle requestAction:@"stickerPackInfoRequested" options:@{@"mid": @(_mid)}];
 }
 
 - (void)messageDoubleTapGesture:(TGDoubleTapGestureRecognizer *)recognizer
 {
     if (recognizer.state == UIGestureRecognizerStateRecognized)
     {
-        if (recognizer.longTapped || recognizer.doubleTapped)
+        if (recognizer.longTapped)
             [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
     }
 }
@@ -548,16 +722,44 @@
         CGFloat availableWidth = containerSize.width - imageFrame.size.width - 40.0f - avatarOffset;
         
         bool updateContent = false;
-        [_replyHeaderModel layoutForContainerSize:CGSizeMake(availableWidth, 0.0f) updateContent:&updateContent];
-        CGRect contentFrame = CGRectMake(0.0f, CGRectGetMaxY(imageFrame) - _replyHeaderModel.frame.size.height - 8.0f, _replyHeaderModel.frame.size.width + 14.0f, _replyHeaderModel.frame.size.height + 4.0f);
+        CGRect contentFrame = CGRectZero;
+        if (_replyHeaderModel != nil) {
+            [_replyHeaderModel layoutForContainerSize:CGSizeMake(availableWidth, 0.0f) updateContent:&updateContent];
+            contentFrame = CGRectMake(0.0f, 0.0f, _replyHeaderModel.frame.size.width + 14.0f, _replyHeaderModel.frame.size.height + 4.0f);
+            
+            if (_replyHeaderViaUserModel != nil) {
+                if ([_replyHeaderViaUserModel layoutNeedsUpdatingForContainerSize:CGSizeMake(availableWidth, 0.0f)]) {
+                    updateContent = true;
+                    [_replyHeaderViaUserModel layoutForContainerSize:CGSizeMake(availableWidth, 0.0f)];
+                }
+                
+                _replyHeaderViaUserModel.frame = CGRectMake(5.0f, 2.0f, _replyHeaderViaUserModel.frame.size.width, _replyHeaderViaUserModel.frame.size.height);
+                contentFrame.size.height += _replyHeaderViaUserModel.frame.size.height + 4.0f;
+                contentFrame.size.width = MAX(contentFrame.size.width, _replyHeaderViaUserModel.frame.size.width + 14.0f);
+            }
+        } else {
+            if (_replyHeaderViaUserModel != nil) {
+                if ([_replyHeaderViaUserModel layoutNeedsUpdatingForContainerSize:CGSizeMake(availableWidth, 0.0f)]) {
+                    updateContent = true;
+                    [_replyHeaderViaUserModel layoutForContainerSize:CGSizeMake(availableWidth, 0.0f)];
+                }
+                
+                _replyHeaderViaUserModel.frame = CGRectMake(5.0f, 2.0f, _replyHeaderViaUserModel.frame.size.width, _replyHeaderViaUserModel.frame.size.height);
+                contentFrame.size.width = _replyHeaderViaUserModel.frame.size.width + 14.0f;
+                contentFrame.size.height += _replyHeaderViaUserModel.frame.size.height + 9.0f;
+            }
+        }
+        
         if (_incomingAppearance)
             contentFrame.origin.x = containerSize.width - contentFrame.size.width - 7.0f;
         else
             contentFrame.origin.x = 9.0f + (_editing ? 42.0f : 0.0f);
         
+        contentFrame.origin.y = CGRectGetMaxY(imageFrame) - contentFrame.size.height - 4.0f - 8.0f;
+        
         _contentModel.frame = contentFrame;
-        _replyHeaderModel.frame = CGRectMake(5.0f, 0.0f, _replyHeaderModel.frame.size.width, _replyHeaderModel.frame.size.height);
-        _replyBackgroundModel.frame = CGRectMake(contentFrame.origin.x, contentFrame.origin.y + 3.0f, _replyHeaderModel.frame.size.width + 12.0f, _replyHeaderModel.frame.size.height - 1.0f);
+        _replyHeaderModel.frame = CGRectMake(5.0f, _replyHeaderViaUserModel == nil ? 0.0f : (_replyHeaderViaUserModel.frame.size.height + 2.0), _replyHeaderModel.frame.size.width, _replyHeaderModel.frame.size.height);
+        _replyBackgroundModel.frame = CGRectMake(contentFrame.origin.x, contentFrame.origin.y + 3.0f, contentFrame.size.width - 2.0f, contentFrame.size.height - 5.0f);
         
         if ((_incomingAppearance && _replyBackgroundModel.frame.origin.x < CGRectGetMaxX(imageFrame)) || (!_incomingAppearance && CGRectGetMaxX(_replyBackgroundModel.frame) > imageFrame.origin.x))
         {
@@ -582,8 +784,19 @@
         _unsentButtonModel.frame = CGRectMake(containerSize.width - _unsentButtonModel.frame.size.width - 9, _imageModel.frame.size.height + topSpacing + bottomSpacing - _unsentButtonModel.frame.size.height - ((_collapseFlags & TGModernConversationItemCollapseBottom) ? 5 : 6), _unsentButtonModel.frame.size.width, _unsentButtonModel.frame.size.height);
     }
     
+    CGFloat replyButtonsHeight = 0.0f;
+    if (_replyButtonsModel != nil) {
+        CGRect backgroundFrame = _imageModel.frame;
+        
+        [_replyButtonsModel layoutForContainerSize:CGSizeMake(MIN(MAX([_replyButtonsModel minimumWidth], backgroundFrame.size.width + 10.0f), containerSize.width - 38.0f), containerSize.height)];
+        
+        _replyButtonsModel.frame = CGRectMake((_incomingAppearance ? backgroundFrame.origin.x : (CGRectGetMaxX(backgroundFrame) - _replyButtonsModel.frame.size.width)) + (_incomingAppearance ? -5.0f : 5.0f), CGRectGetMaxY(backgroundFrame), _replyButtonsModel.frame.size.width, _replyButtonsModel.frame.size.height);
+        replyButtonsHeight = _replyButtonsModel.frame.size.height;
+        self.avatarOffset = replyButtonsHeight;
+    }
+    
     CGRect frame = self.frame;
-    frame.size = CGSizeMake(containerSize.width, _imageModel.frame.size.height + topSpacing + bottomSpacing);
+    frame.size = CGSizeMake(containerSize.width, _imageModel.frame.size.height + topSpacing + bottomSpacing + replyButtonsHeight);
     self.frame = frame;
     
     [super layoutForContainerSize:containerSize];

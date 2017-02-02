@@ -108,7 +108,7 @@ bool extractFileUrlComponents(NSString *fileUrl, int *datacenterId, int64_t *vol
                 }
 #endif
                 
-                [self addImageWithSize:CGSizeMake(concreteSize.w, concreteSize.h) url:urlLocation];
+                [self addImageWithSize:CGSizeMake(concreteSize.w, concreteSize.h) url:urlLocation fileSize:concreteSize.size];
             }
             else if ([sizeDesc isKindOfClass:[TLPhotoSize$photoCachedSize class]])
             {
@@ -116,7 +116,7 @@ bool extractFileUrlComponents(NSString *fileUrl, int *datacenterId, int64_t *vol
                 
                 NSString *url = extractFileUrl(concreteSize.location);
                 
-                [self addImageWithSize:CGSizeMake(concreteSize.w, concreteSize.h) url:url];
+                [self addImageWithSize:CGSizeMake(concreteSize.w, concreteSize.h) url:url fileSize:(int32_t)concreteSize.bytes.length];
                 
                 if (concreteSize.bytes.length != 0)
                 {

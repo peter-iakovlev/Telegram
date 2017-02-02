@@ -1,27 +1,43 @@
 #import "TGStickerAssociatedInputPanel.h"
 
+#import <AudioToolbox/AudioToolbox.h>
+
 #import "TGStickerAssociatedPanelCollectionLayout.h"
 #import "TGStickerAssociatedInputPanelCell.h"
 
 #import "TGImageUtils.h"
 
-#import "TGSingleStickerPreviewWindow.h"
+#import "TGDocumentMediaAttachment.h"
+
+#import "TGItemPreviewController.h"
+#import "TGStickerItemPreviewView.h"
+#import "TGItemMenuSheetPreviewView.h"
+#import "TGMenuSheetButtonItemView.h"
 
 #import "TGDoubleTapGestureRecognizer.h"
+#import "TGForceTouchGestureRecognizer.h"
+#import "TGOverlayControllerWindow.h"
 
-@interface TGStickerAssociatedInputPanel () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, TGDoubleTapGestureRecognizerDelegate>
+#import "TGStickersMenu.h"
+
+@interface TGStickerAssociatedInputPanel () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, TGDoubleTapGestureRecognizerDelegate, UIGestureRecognizerDelegate>
 {
     UICollectionView *_collectionView;
     TGStickerAssociatedPanelCollectionLayout *_layout;
     
     NSArray *_documentList;
+    NSDictionary *_associations;
+    NSDictionary *_stickerPacks;
     
     CGFloat _targetOffset;
     UIImageView *_leftBackgroundView;
     UIImageView *_rightBackgroundView;
     UIImageView *_middleBackgroundView;
     
-    TGSingleStickerPreviewWindow *_stickerPreviewWindow;
+    __weak TGItemPreviewController *_previewController;
+    
+    UILongPressGestureRecognizer *_pressGestureRecognizer;
+    TGForceTouchGestureRecognizer *_forceTouchRecognizer;
 }
 
 @end
@@ -69,10 +85,10 @@
             forCellWithReuseIdentifier:@"TGStickerAssociatedInputPanelCell"];
         [self addSubview:_collectionView];
         
-        UILongPressGestureRecognizer *tapRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longTapGesture:)];
-        tapRecognizer.minimumPressDuration = 0.25;
+        _pressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+        _pressGestureRecognizer.minimumPressDuration = 0.25;
         
-        [_collectionView addGestureRecognizer:tapRecognizer];
+        [_collectionView addGestureRecognizer:_pressGestureRecognizer];
     }
     return self;
 }
@@ -87,11 +103,17 @@
     return _documentList;
 }
 
-- (void)setDocumentList:(NSArray *)documentList
+- (void)setDocumentList:(NSDictionary *)dictionary
 {
-    if (!TGObjectCompare(_documentList, documentList))
+    NSArray *documents = dictionary[@"documents"];
+    NSDictionary *associations = dictionary[@"associations"];
+    NSDictionary *stickerPacks = dictionary[@"stickerPacks"];
+    
+    if (!TGObjectCompare(_documentList, documents))
     {
-        _documentList = documentList;
+        _documentList = documents;
+        _associations = associations;
+        _stickerPacks = stickerPacks;
         [_collectionView reloadData];
         [_collectionView layoutSubviews];
     }
@@ -177,28 +199,191 @@
         _documentSelected(_documentList[indexPath.row]);
 }
 
-- (void)longTapGesture:(UILongPressGestureRecognizer *)recognizer {
-    if (recognizer.state == UIGestureRecognizerStateBegan) {
-        _stickerPreviewWindow.hidden = true;
+- (void)handleLongPress:(UILongPressGestureRecognizer *)gestureRecognizer
+{
+    if (gestureRecognizer.state == UIGestureRecognizerStateBegan)
+    {
+        __strong TGViewController *parentController = _controller;
         
-        __strong TGViewController *controller = _controller;
-        NSIndexPath *indexPath = [_collectionView indexPathForItemAtPoint:[recognizer locationInView:_collectionView]];
-        if (indexPath != nil && controller != nil) {
-            TGDocumentMediaAttachment *document = _documentList[indexPath.item];
-            _stickerPreviewWindow = [[TGSingleStickerPreviewWindow alloc] initWithParentController:controller];
-            _stickerPreviewWindow.userInteractionEnabled = false;
-            [_stickerPreviewWindow.view setDocument:document];
-            _stickerPreviewWindow.hidden = false;
-        }
-    } else if (recognizer.state == UIGestureRecognizerStateEnded || recognizer.state == UIGestureRecognizerStateCancelled)
+        NSIndexPath *indexPath = [_collectionView indexPathForItemAtPoint:[gestureRecognizer locationInView:_collectionView]];
+        if (indexPath != nil && parentController != nil)
         {
-        __weak UIWindow *weakWindow = _stickerPreviewWindow;
-        [_stickerPreviewWindow.view animateDismiss:^{
-            __strong UIWindow *strongWindow = weakWindow;
-            strongWindow.hidden = true;
-        }];
-        _stickerPreviewWindow = nil;
+            TGDocumentMediaAttachment *document = _documentList[indexPath.item];
+            
+            TGStickerItemPreviewView *previewView = [[TGStickerItemPreviewView alloc] initWithFrame:CGRectZero];
+            
+            __weak TGStickerAssociatedInputPanel *weakSelf = self;
+            __weak TGStickerItemPreviewView *weakPreviewView = previewView;
+            NSMutableArray *actions = [[NSMutableArray alloc] init];
+            TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Conversation.Send") type:TGMenuSheetButtonTypeSend action:^
+            {
+                __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                __strong TGStickerAssociatedInputPanel *strongSelf = weakSelf;
+                if (strongSelf == nil || strongPreviewView == nil)
+                    return;
+                
+                [strongPreviewView performCommit];
+                
+                TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                {
+                    if (strongSelf->_documentSelected)
+                        strongSelf->_documentSelected(strongPreviewView.item);
+                });
+            }];
+            [actions addObject:sendItem];
+            
+            TGMenuSheetButtonItemView *viewItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"StickerPack.ViewPack") type:TGMenuSheetButtonTypeDefault action:^
+            {
+                __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                __strong TGStickerAssociatedInputPanel *strongSelf = weakSelf;
+                if (strongSelf == nil || strongPreviewView == nil)
+                    return;
+                
+                [strongPreviewView performDismissal];
+                
+                TGDocumentMediaAttachment *sticker = (TGDocumentMediaAttachment *)strongPreviewView.item;
+                TGStickerPack *stickerPack = strongSelf->_stickerPacks[@(sticker.documentId)];
+                
+                TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                {
+                    [strongSelf previewStickerPack:stickerPack sticker:sticker];
+                });
+            }];
+            [actions addObject:viewItem];
+            
+            TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeDefault action:^
+            {
+                __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                if (strongPreviewView == nil)
+                    return;
+                
+                [strongPreviewView performDismissal];
+            }];
+            [actions addObject:cancelItem];
+            
+            [previewView setupWithMainItemViews:nil actionItemViews:actions];
+            
+            TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithParentController:parentController previewView:previewView];
+            _previewController = controller;
+            
+            controller.sourcePointForItem = ^(id item)
+            {
+                __strong TGStickerAssociatedInputPanel *strongSelf = weakSelf;
+                if (strongSelf == nil)
+                    return CGPointZero;
+                
+                for (TGStickerAssociatedInputPanelCell *cell in strongSelf->_collectionView.visibleCells)
+                {
+                    if ([cell.document isEqual:item])
+                    {
+                        NSIndexPath *indexPath = [strongSelf->_collectionView indexPathForCell:cell];
+                        if (indexPath != nil)
+                            return [strongSelf->_collectionView convertPoint:cell.center toView:nil];
+                    }
+                }
+                
+                return CGPointZero;
+            };
+            
+            [previewView setSticker:document associations:_associations[@(document.documentId)]];
+            
+            TGStickerAssociatedInputPanelCell *cell = (TGStickerAssociatedInputPanelCell *)[_collectionView cellForItemAtIndexPath:indexPath];
+            [cell setHighlighted:true animated:true];
+
+        }
     }
+    else if (gestureRecognizer.state == UIGestureRecognizerStateChanged)
+    {
+        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        
+        NSIndexPath *cellIndexPath = [_collectionView indexPathForItemAtPoint:[gestureRecognizer locationInView:_collectionView]];
+        if (cellIndexPath != nil)
+        {
+            TGDocumentMediaAttachment *document = _documentList[cellIndexPath.item];
+            [previewView setSticker:document associations:_associations[@(document.documentId)]];
+            
+            for (NSIndexPath *indexPath in [_collectionView indexPathsForVisibleItems])
+            {
+                TGStickerAssociatedInputPanelCell *cell = (TGStickerAssociatedInputPanelCell *)[_collectionView cellForItemAtIndexPath:indexPath];
+                [cell setHighlighted:[indexPath isEqual:cellIndexPath] animated:true];
+            }
+        }
+    }
+    else if (gestureRecognizer.state == UIGestureRecognizerStateEnded || gestureRecognizer.state == UIGestureRecognizerStateCancelled)
+    {
+        for (TGStickerAssociatedInputPanelCell *cell in _collectionView.visibleCells)
+            [cell setHighlighted:false animated:true];
+        
+        TGItemPreviewController *controller = _previewController;
+        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        if (previewView.isLocked)
+            return;
+        
+        [controller dismiss];
+    }
+}
+
+- (void)handleForceTouch:(TGForceTouchGestureRecognizer *)gestureRecognizer
+{
+    if (_previewController != nil && gestureRecognizer.state == UIGestureRecognizerStateRecognized)
+    {
+        AudioServicesPlaySystemSound(1519);
+        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        [previewView presentActions];
+    }
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
+{
+    if (gestureRecognizer == _pressGestureRecognizer || otherGestureRecognizer == _pressGestureRecognizer)
+        return true;
+    
+    if (gestureRecognizer == _forceTouchRecognizer || otherGestureRecognizer == _forceTouchRecognizer)
+        return true;
+    
+    return false;
+}
+
+- (void)didMoveToSuperview
+{
+    [super didMoveToSuperview];
+    
+    if (_forceTouchRecognizer == nil)
+    {
+        _forceTouchRecognizer = [[TGForceTouchGestureRecognizer alloc] initWithTarget:self action:@selector(handleForceTouch:)];
+        _forceTouchRecognizer.delegate = self;
+        [_collectionView addGestureRecognizer:_forceTouchRecognizer];
+        
+        if (![_forceTouchRecognizer forceTouchAvailable])
+            _forceTouchRecognizer.enabled = false;
+    }
+}
+
+- (void)previewStickerPack:(TGStickerPack *)stickerPack sticker:(TGDocumentMediaAttachment *)sticker {
+    TGViewController *parentViewController = _controller;
+    
+    TGOverlayController *innerController = [[TGOverlayController alloc] init];
+    innerController.view.backgroundColor = [UIColor clearColor];
+    
+    __weak TGStickerAssociatedInputPanel *weakSelf = self;
+    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:parentViewController contentController:innerController keepKeyboard:true];
+    controllerWindow.dismissByMenuSheet = true;
+    controllerWindow.windowLevel = 100000000.0f + 0.002f;
+    controllerWindow.hidden = false;
+    
+    CGRect sourceRect = CGRectMake(CGFloor(self.bounds.size.width / 2.0f), [UIScreen mainScreen].bounds.size.height, 0.0f, 0.0f);
+    
+    id<TGStickerPackReference> packReference = stickerPack == nil ? sticker.stickerPackReference : nil;
+    [TGStickersMenu presentWithParentController:innerController packReference:packReference stickerPack:stickerPack showShareAction:false sendSticker:^(TGDocumentMediaAttachment *document) {
+        __strong TGStickerAssociatedInputPanel *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            if (strongSelf.documentSelected) {
+                strongSelf.documentSelected(document);
+            }
+        }
+    } stickerPackRemoved:nil stickerPackHidden:nil stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:innerController.view sourceRect:^CGRect{
+        return sourceRect;
+    } centered:true existingController:nil];
 }
 
 @end

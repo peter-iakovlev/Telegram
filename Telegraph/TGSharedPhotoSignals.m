@@ -92,7 +92,7 @@
         UIImage *fullImage = [[UIImage alloc] initWithContentsOfFile:fullImagePath];
         if (fullImage == nil)
         {
-            NSString *imageUrl = [imageAttachment.imageInfo imageUrlForLargestSize:NULL];
+            NSString *imageUrl = [imageAttachment.imageInfo imageUrlForLargestSize:nil];
             NSString *legacyFilePath = [[TGRemoteImageView sharedCache] pathForCachedData:imageUrl];
             fullImage = [[UIImage alloc] initWithContentsOfFile:legacyFilePath];
             
@@ -101,7 +101,6 @@
                 NSString *legacyFilePath = [[TGRemoteImageView sharedCache] pathForCachedData:displayImageUrl];
                 fullImage = [[UIImage alloc] initWithContentsOfFile:legacyFilePath];
             }
-            
         }
         if (fullImage != nil)
         {
@@ -173,7 +172,7 @@
     
     if (location != nil)
     {
-        SSignal *signal = [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:reportProgress] map:^id (id next)
+        SSignal *signal = [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:reportProgress mediaTypeTag:TGNetworkMediaTypeTagImage] map:^id (id next)
         {
             if ([next isKindOfClass:[NSData class]])
             {
@@ -301,7 +300,7 @@
             pixelSize.height *= 2.0f;
         }
         CGSize highQualitySize = CGSizeZero;
-        highQualityUrl = [imageAttachment.imageInfo closestImageUrlWithSize:pixelSize resultingSize:&highQualitySize];
+        highQualityUrl = [imageAttachment.imageInfo closestImageUrlWithSize:pixelSize resultingSize:&highQualitySize pickLargest:downloadLargeImage];
         highQualityIdentifier = [[NSString alloc] initWithFormat:@"%dx%d", (int)highQualitySize.width, (int)highQualitySize.height];
     }
     
@@ -314,11 +313,11 @@
     } localCachedImageSignalGenerator:^SSignal *(CGSize size, CGSize renderSize, bool lowQuality)
     {
         return [self localCachedImageForPhotoThumbnail:imageAttachment ofSize:size renderSize:renderSize lowQuality:lowQuality];
-    } lowQualityImagePath:genericThumbnailPath lowQualityImageUrl:[imageAttachment.imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL] highQualityImageUrl:highQualityUrl highQualityImageIdentifier:highQualityIdentifier threadPool:threadPool memoryCache:memoryCache placeholder:nil];
+    } lowQualityImagePath:genericThumbnailPath lowQualityImageUrl:[imageAttachment.imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL] highQualityImageUrl:highQualityUrl highQualityImageIdentifier:highQualityIdentifier threadPool:threadPool memoryCache:memoryCache placeholder:nil blurLowQuality:size.width > 40 || size.height > 40];
 }
 
 + (SSignal *)cachedRemoteThumbnail:(TGImageInfo *)imageInfo size:(CGSize)size pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock cacheVariantKey:(NSString *)cacheVariantKey threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache diskCache:(TGModernCache *)diskCache {
-    NSString *imageUrl = [imageInfo imageUrlForSizeLargerThanSize:CGSizeMake(size.width, size.height) actualSize:NULL];
+    NSString *imageUrl = [imageInfo imageUrlForSizeLargerThanSize:CGSizeMake(size.width * 2.0f, size.height * 2.0f) actualSize:NULL];
     if (imageUrl == nil) {
         return nil;
     }
@@ -336,7 +335,7 @@
             location.local_id = localId;
             location.secret = secret;
             
-            return [TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false];
+            return [TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage];
         } else {
             return [SSignal fail:nil];
         }
@@ -362,7 +361,7 @@
             location.local_id = localId;
             location.secret = secret;
             
-            return [TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false];
+            return [TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage];
         } else {
             return [SSignal fail:nil];
         }

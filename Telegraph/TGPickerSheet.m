@@ -12,10 +12,12 @@
 
 @interface TGPickerSheetOverlayController () <UIPickerViewDelegate, UIPickerViewDataSource>
 {
+    bool _dateMode;
     UIView *_backgroundView;
     UIView *_containerView;
     UIImageView *_containerBackgroundView;
     UIButton *_cancelButton;
+    UIDatePicker *_datePicker;
     UIPickerView *_pickerView;
     TGModernButton *_doneButton;
 }
@@ -23,12 +25,29 @@
 @property (nonatomic, strong) NSString *emptyValue;
 @property (nonatomic, copy) void (^onDismiss)();
 @property (nonatomic, copy) void (^onDone)(id item);
+@property (nonatomic, copy) void (^onDate)(NSTimeInterval);
 @property (nonatomic, strong) NSArray *timerValues;
 @property (nonatomic) NSUInteger selectedIndex;
 
 @end
 
 @implementation TGPickerSheetOverlayController
+
+- (instancetype)init {
+    self = [super init];
+    if (self != nil) {
+        
+    }
+    return self;
+}
+
+- (instancetype)initWithDateMode {
+    self = [super init];
+    if (self != nil) {
+        _dateMode = true;
+    }
+    return self;
+}
 
 - (void)dealloc
 {
@@ -74,12 +93,23 @@
     
     CGFloat buttonInset = 10.0f;
     
-    _pickerView = [[UIPickerView alloc] initWithFrame:CGRectMake(0.0f, 32.0f + CGFloor((_containerView.frame.size.height - 44.0f - 216.0f) / 2.0f), _containerView.frame.size.width, 216.0)];
-    _pickerView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    _pickerView.dataSource = self;
-    _pickerView.delegate = self;
-    [_pickerView reloadAllComponents];
-    [_containerView addSubview:_pickerView];
+    if (_dateMode) {
+        _datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(0.0f, 32.0f + CGFloor((_containerView.frame.size.height - 44.0f - 216.0f) / 2.0f), _containerView.frame.size.width, 216.0)];
+        _datePicker.datePickerMode = UIDatePickerModeDate;
+        
+        _datePicker.maximumDate = [NSDate dateWithTimeIntervalSinceNow:2.0];
+        _datePicker.minimumDate = [NSDate dateWithTimeIntervalSince1970:1376438400];
+        
+        _datePicker.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        [_containerView addSubview:_datePicker];
+    } else {
+        _pickerView = [[UIPickerView alloc] initWithFrame:CGRectMake(0.0f, 32.0f + CGFloor((_containerView.frame.size.height - 44.0f - 216.0f) / 2.0f), _containerView.frame.size.width, 216.0)];
+        _pickerView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        _pickerView.dataSource = self;
+        _pickerView.delegate = self;
+        [_pickerView reloadAllComponents];
+        [_containerView addSubview:_pickerView];
+    }
     
     _cancelButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 100.0f, 44.0f)];
     [_cancelButton setTitleEdgeInsets:UIEdgeInsetsMake(0.0f, buttonInset, 0.0f, buttonInset)];
@@ -90,11 +120,15 @@
     [_cancelButton addTarget:self action:@selector(cancelButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [_containerView addSubview:_cancelButton];
     
-    _doneButton = [[TGModernButton alloc] initWithFrame:CGRectMake(_containerView.frame.size.width - 100.0f, 0.0f, 100.0f, 44.0f)];
+    _doneButton = [[TGModernButton alloc] initWithFrame:CGRectMake(_containerView.frame.size.width - 140.0f, 0.0f, 140.0f, 44.0f)];
     [_doneButton setTitleEdgeInsets:UIEdgeInsetsMake(0.0f, buttonInset, 0.0f, buttonInset)];
     _doneButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
     _doneButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
-    [_doneButton setTitle:TGLocalized(@"Common.Done") forState:UIControlStateNormal];
+    if (_dateMode) {
+        [_doneButton setTitle:TGLocalized(@"Conversation.JumpToDate") forState:UIControlStateNormal];
+    } else {
+        [_doneButton setTitle:TGLocalized(@"Common.Done") forState:UIControlStateNormal];
+    }
     [_doneButton setTitleColor:TGAccentColor() forState:UIControlStateNormal];
     _doneButton.titleLabel.font = TGBoldSystemFontOfSize(16.0f);
     [_doneButton addTarget:self action:@selector(doneButtonPressed) forControlEvents:UIControlEventTouchUpInside];
@@ -118,8 +152,9 @@
 
 - (void)doneButtonPressed
 {
-    if (_onDone)
-    {
+    if (_dateMode && _onDate) {
+        _onDate([_datePicker.date timeIntervalSince1970]);
+    } else if (!_dateMode && _onDone) {
         NSInteger index = [_pickerView selectedRowInComponent:0];
         if (index >= 0 && index < (NSInteger)_timerValues.count)
         {
@@ -132,8 +167,12 @@
 {
     [super viewDidAppear:animated];
     
-    [_pickerView reloadAllComponents];
-    [_pickerView selectRow:_selectedIndex inComponent:0 animated:false];
+    if (_dateMode) {
+        
+    } else {
+        [_pickerView reloadAllComponents];
+        [_pickerView selectRow:_selectedIndex inComponent:0 animated:false];
+    }
 }
 
 - (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)__unused pickerView
@@ -329,6 +368,7 @@
 
 @interface TGPickerSheet ()
 {
+    bool _dateSelection;
     NSArray *_items;
     NSUInteger _selectedIndex;
     
@@ -336,6 +376,7 @@
     TGPickerSheetPopoverController *_popoverController;
     
     void (^_action)(id);
+    void (^_dateAction)(NSTimeInterval);
 }
 
 @end
@@ -354,6 +395,15 @@
     return self;
 }
 
+- (instancetype)initWithDateSelection:(void (^)(NSTimeInterval item))action {
+    self = [super init];
+    if (self != nil) {
+        _dateSelection = true;
+        _dateAction = [action copy];
+    }
+    return self;
+}
+
 - (void)show
 {
     if (_controllerWindow == nil)
@@ -362,7 +412,11 @@
         _controllerWindow.windowLevel = UIWindowLevelAlert;
         _controllerWindow.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         _controllerWindow.hidden = false;
-        _controllerWindow.rootViewController = [[TGPickerSheetOverlayController alloc] init];
+        if (_dateSelection) {
+            _controllerWindow.rootViewController = [[TGPickerSheetOverlayController alloc] initWithDateMode];
+        } else {
+            _controllerWindow.rootViewController = [[TGPickerSheetOverlayController alloc] init];
+        }
         __weak TGPickerSheet *weakSelf = self;
         ((TGPickerSheetOverlayController *)_controllerWindow.rootViewController).emptyValue = _emptyValue;
         ((TGPickerSheetOverlayController *)_controllerWindow.rootViewController).timerValues = _items;
@@ -382,6 +436,17 @@
             {
                 if (strongSelf->_action)
                     strongSelf->_action(item);
+                
+                [strongSelf dismiss];
+            }
+        };
+        ((TGPickerSheetOverlayController *)_controllerWindow.rootViewController).onDate = ^(NSTimeInterval date)
+        {
+            __strong TGPickerSheet *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                if (strongSelf->_dateAction)
+                    strongSelf->_dateAction(date);
                 
                 [strongSelf dismiss];
             }

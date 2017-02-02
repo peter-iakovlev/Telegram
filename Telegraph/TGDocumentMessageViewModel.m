@@ -31,6 +31,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGReusableLabel.h"
+
 @interface TGDocumentMessageViewModel () <TGMessageImageViewDelegate>
 {
     NSString *_legacyThumbnailCacheUri;
@@ -38,6 +40,7 @@
     bool _progressVisible;
     float _progress;
     
+    TGModernTextViewModel *_textModel;
     TGModernLabelViewModel *_documentNameModel;
     TGModernLabelViewModel *_documentSizeModel;
     TGMessageImageViewModel *_imageModel;
@@ -49,22 +52,21 @@
 
 @end
 
-@implementation TGDocumentMessageViewModel
-
-- (NSString *)filePathForDocumentId:(int64_t)documentId local:(bool)local
+static CTFontRef textFontForSize(CGFloat size)
 {
-    static NSString *filesDirectory = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        NSString *documentsDirectory = [TGAppDelegate documentsPath];
-        filesDirectory = [documentsDirectory stringByAppendingPathComponent:@"file"];
-        if (![[NSFileManager defaultManager] fileExistsAtPath:filesDirectory])
-            [[NSFileManager defaultManager] createDirectoryAtPath:filesDirectory withIntermediateDirectories:true attributes:nil error:nil];
-    });
+    static CTFontRef font = NULL;
+    static int cachedSize = 0;
     
-    return [filesDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@%" PRIx64 ".mov", local ? @"local" : @"remote", documentId]];
+    if ((int)size != cachedSize || font == NULL)
+    {
+        font = TGCoreTextSystemFontOfSize(size);
+        cachedSize = (int)size;
+    }
+    
+    return font;
 }
+
+@implementation TGDocumentMessageViewModel
 
 - (instancetype)initWithMessage:(TGMessage *)message document:(TGDocumentMediaAttachment *)document authorPeer:(id)authorPeer viaUser:(TGUser *)viaUser context:(TGModernViewContext *)context
 {
@@ -149,6 +151,19 @@
         
         _sizeText = sizeString;
         
+        static TGTelegraphConversationMessageAssetsSource *assetsSource = nil;
+        static dispatch_once_t onceToken2;
+        dispatch_once(&onceToken2, ^
+        {
+            assetsSource = [TGTelegraphConversationMessageAssetsSource instance];
+        });
+        
+        _textModel = [[TGModernTextViewModel alloc] initWithText:document.caption font:textFontForSize(TGGetMessageViewModelLayoutConstants()->textFontSize)];
+        _textModel.textColor = [assetsSource messageTextColor];
+        if (message.isBroadcast)
+            _textModel.additionalTrailingWidth += 10.0f;
+        [_contentModel addSubmodel:_textModel];
+        
         _documentSizeModel = [[TGModernLabelViewModel alloc] initWithText:@"" textColor:!_incomingAppearance ? outgoingSizeColor : incomingSizeColor font:TGCoreTextSystemFontOfSize(13.0f) maxWidth:145.0f];
         [_contentModel addSubmodel:_documentSizeModel];
         
@@ -207,6 +222,12 @@
     else
     {
         sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Bytes"), (int)(int)(document.size)];
+    }
+    
+    if (!TGStringCompare(_textModel.text, document.caption)) {
+        _textModel.text = document.caption;
+        if (sizeUpdated != NULL)
+            *sizeUpdated = true;
     }
     
     _sizeText = sizeString;
@@ -330,10 +351,42 @@
     
     _imageModel.frame = CGRectMake(_backgroundModel.frame.origin.x + 9.0f + (_incomingAppearance ? 5.0f : 0.0f), _backgroundModel.frame.origin.y + 9.0f + headerHeight, _imageModel.frame.size.width, _imageModel.frame.size.height);
     _iconModel.frame = CGRectMake(_backgroundModel.frame.origin.x + 4.0f + (_incomingAppearance ? 5.0f : 0.0f), _backgroundModel.frame.origin.y + 4.0f + headerHeight, _iconModel.frame.size.width, _iconModel.frame.size.height);
+    
+    if (_textModel.text.length != 0 && ![_textModel.text isEqualToString:@" "]) {
+        CGRect textFrame = _textModel.frame;
+        
+        CGFloat textInset = 0.0f;
+        if (_imageModel != nil) {
+            textInset = CGRectGetMaxY(_imageModel.frame) - 2.0f;
+        } else {
+            textInset = CGRectGetMaxY(_iconModel.frame) - 8.0f;
+        }
+        textFrame.origin = CGPointMake(1, textInset);
+        _textModel.frame = textFrame;
+        headerHeight += textFrame.size.height;
+    } else {
+        _textModel.frame = CGRectZero;
+    }
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)containerSize needsContentsUpdate:(bool *)needsContentsUpdate hasDate:(bool)__unused hasDate hasViews:(bool)__unused hasViews
+- (CGSize)contentSizeForContainerSize:(CGSize)containerSize needsContentsUpdate:(bool *)needsContentsUpdate infoWidth:(CGFloat)infoWidth
 {
+    CGSize textSize = CGSizeZero;
+    
+    int layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks;
+    
+    if (_context.commandsEnabled)
+        layoutFlags |= TGReusableLabelLayoutHighlightCommands;
+    
+    bool updateContents = [_textModel layoutNeedsUpdatingForContainerSize:containerSize additionalTrailingWidth:infoWidth layoutFlags:layoutFlags];
+    _textModel.layoutFlags = layoutFlags;
+    _textModel.additionalTrailingWidth = infoWidth;
+    if (updateContents)
+        [_textModel layoutForContainerSize:containerSize];
+    
+    if (needsContentsUpdate != NULL && updateContents)
+        *needsContentsUpdate = updateContents;
+    
     CGSize previewSize = CGSizeZero;
     if (_imageModel != nil)
     {
@@ -354,7 +407,22 @@
     CGFloat nameWidth = _documentNameModel.frame.size.width;
     CGFloat sizeWidth = _documentSizeModel.frame.size.width;
     
-    return CGSizeMake(MAX(nameWidth, sizeWidth) + previewSize.width + 14.0f, previewSize.height + 10.0f);
+    if (_textModel.text.length != 0 && ![_textModel.text isEqualToString:@" "]) {
+        textSize = _textModel.frame.size;
+        if (_imageModel != nil) {
+            textSize.height += 2.0f;
+        } else {
+            textSize.height += 8.0f;
+        }
+    } else {
+        textSize.width = MAX(textSize.width, MIN(containerSize.width, infoWidth + sizeWidth + previewSize.width + 16.0f));
+    }
+    
+    if (_authorSignatureModel != nil) {
+        previewSize.height += 14.0f;
+    }
+    
+    return CGSizeMake(MAX(textSize.width, MAX(nameWidth, sizeWidth) + previewSize.width + 14.0f), previewSize.height + 10.0f + textSize.height);
 }
 
 - (void)messageImageViewActionButtonPressed:(TGMessageImageView *)messageImageView withAction:(TGMessageImageViewActionType)action
@@ -390,6 +458,10 @@
 
 - (int)gestureRecognizer:(TGDoubleTapGestureRecognizer *)__unused recognizer shouldFailTap:(CGPoint)__unused point
 {
+    point = [recognizer locationInView:[_contentModel boundView]];
+    if (_textModel.frame.size.height > FLT_EPSILON && point.y >= CGRectGetMinY(_textModel.frame)) {
+        return false;
+    }
     return 3;
 }
 
@@ -414,10 +486,22 @@
             }
             else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
                 [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
-            else
+            else if (_textModel.frame.size.height <= FLT_EPSILON || point.y < CGRectGetMinY(_textModel.frame)) {
                 [self activateMedia];
+            }
         }
     }
+}
+
+- (bool)isPreviewableAtPoint:(CGPoint)__unused point
+{
+    return (_imageModel != nil);
+}
+
+- (NSString *)linkAtPoint:(CGPoint)point {
+    point.x -= _contentModel.frame.origin.x;
+    point.y -= _contentModel.frame.origin.y;
+    return [_textModel linkAtPoint:CGPointMake(point.x - _textModel.frame.origin.x, point.y - _textModel.frame.origin.y) regionData:NULL];
 }
 
 @end

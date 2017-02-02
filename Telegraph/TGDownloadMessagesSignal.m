@@ -9,6 +9,8 @@
 
 #import "TGPeerIdAdapter.h"
 
+#import "TGStickersSignals.h"
+
 @implementation TGDownloadMessage
 
 - (instancetype)initWithPeerId:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId {
@@ -119,6 +121,42 @@
         return messages;
     }] catch:^SSignal *(__unused id error) {
         return [SSignal single:@[]];
+    }];
+}
+
++ (SSignal *)mediaStickerpacks:(TGMediaAttachment *)attachment {
+    SSignal *request = nil;
+    if ([attachment isKindOfClass:[TGImageMediaAttachment class]]) {
+        TGImageMediaAttachment *image = (TGImageMediaAttachment *)attachment;
+        TLRPCmessages_getAttachedStickers$messages_getAttachedStickers *getAttachedStickers = [[TLRPCmessages_getAttachedStickers$messages_getAttachedStickers alloc] init];
+        TLInputStickeredMedia$inputStickeredMediaPhoto *inputStickeredPhoto = [[TLInputStickeredMedia$inputStickeredMediaPhoto alloc] init];
+        TLInputPhoto$inputPhoto *inputPhoto = [[TLInputPhoto$inputPhoto alloc] init];
+        inputPhoto.n_id = image.imageId;
+        inputPhoto.access_hash = image.accessHash;
+        inputStickeredPhoto.n_id = inputPhoto;
+        getAttachedStickers.media = inputStickeredPhoto;
+        request = [[TGTelegramNetworking instance] requestSignal:getAttachedStickers];
+    } else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]]) {
+        TGVideoMediaAttachment *video = (TGVideoMediaAttachment *)attachment;
+        TLRPCmessages_getAttachedStickers$messages_getAttachedStickers *getAttachedStickers = [[TLRPCmessages_getAttachedStickers$messages_getAttachedStickers alloc] init];
+        TLInputStickeredMedia$inputStickeredMediaDocument *inputStickeredDocument = [[TLInputStickeredMedia$inputStickeredMediaDocument alloc] init];
+        TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
+        inputDocument.n_id = video.videoId;
+        inputDocument.access_hash = video.accessHash;
+        inputStickeredDocument.n_id = inputDocument;
+        getAttachedStickers.media = inputStickeredDocument;
+        request = [[TGTelegramNetworking instance] requestSignal:getAttachedStickers];
+    } else {
+        return [SSignal single:@[]];
+    }
+    
+    return [request mapToSignal:^SSignal *(NSArray<TLStickerSetCovered *> *result) {
+        NSMutableArray *signals = [[NSMutableArray alloc] init];
+        for (TLStickerSetCovered *coveredSet in result) {
+            TGStickerPackIdReference *reference = [[TGStickerPackIdReference alloc] initWithPackId:coveredSet.set.n_id packAccessHash:coveredSet.set.access_hash shortName:coveredSet.set.short_name];
+            [signals addObject:[TGStickersSignals stickerPackInfo:reference]];
+        }
+        return [SSignal combineSignals:signals];
     }];
 }
 

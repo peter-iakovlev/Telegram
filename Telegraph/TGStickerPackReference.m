@@ -9,6 +9,10 @@
     return [self init];
 }
 
+- (instancetype)copyWithZone:(NSZone *)__unused zone {
+    return self;
+}
+
 - (instancetype)initWithKeyValueCoder:(PSKeyValueCoder *)__unused coder
 {
     return [self init];
@@ -27,6 +31,10 @@
     return [object isKindOfClass:[TGStickerPackBuiltinReference class]];
 }
 
+- (NSUInteger)hash {
+    return 1;
+}
+
 @end
 
 @implementation TGStickerPackIdReference
@@ -40,6 +48,10 @@
         _packAccessHash = packAccessHash;
         _shortName = shortName;
     }
+    return self;
+}
+
+- (instancetype)copyWithZone:(NSZone *)__unused zone {
     return self;
 }
 
@@ -73,6 +85,14 @@
     return [object isKindOfClass:[TGStickerPackIdReference class]] && ((TGStickerPackIdReference *)object)->_packId == _packId && ((TGStickerPackIdReference *)object)->_packAccessHash == _packAccessHash;
 }
 
+- (NSString *)description {
+    return [[NSString alloc] initWithFormat:@"(TGStickerPackIdReference packId: %lld, %lld, %@)", _packId, _packAccessHash, _shortName];
+}
+
+- (NSUInteger)hash {
+    return (NSUInteger)_packId;
+}
+
 @end
 
 @implementation TGStickerPackShortnameReference
@@ -84,6 +104,10 @@
     {
         _shortName = shortName;
     }
+    return self;
+}
+
+- (instancetype)copyWithZone:(NSZone *)__unused zone {
     return self;
 }
 
@@ -110,6 +134,10 @@
 - (BOOL)isEqual:(id)object
 {
     return [object isKindOfClass:[TGStickerPackShortnameReference class]] && TGStringCompare(((TGStickerPackShortnameReference *)object)->_shortName, _shortName);
+}
+
+- (NSUInteger)hash {
+    return 2;
 }
 
 @end

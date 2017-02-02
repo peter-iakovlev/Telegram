@@ -169,6 +169,11 @@ static inline NSString *weekdayNameFull(int number)
     return value_weekdayNamesFull[number];
 }
 
+NSString *TGWeekdayNameFull(int number)
+{
+    return weekdayNameFull(number);
+}
+
 static inline NSString *monthNameGenFull(int number)
 {
     if (!TGDateUtilsInitialized)
@@ -180,6 +185,29 @@ static inline NSString *monthNameGenFull(int number)
         number = 11;
     
     return value_monthNamesGenFull[number];
+}
+
+static inline NSString *monthNameGenShort(int number)
+{
+    if (!TGDateUtilsInitialized)
+        initializeTGDateUtils();
+    
+    if (number < 0)
+        number = 0;
+    if (number > 11)
+        number = 11;
+    
+    return value_monthNamesGenShort[number];
+}
+
+NSString *TGMonthNameFull(int number)
+{
+    return monthNameGenFull(number);
+}
+
+NSString *TGMonthNameShort(int number)
+{
+    return monthNameGenShort(number);
 }
 
 static inline NSString *dialogTimeFormat()
@@ -308,6 +336,14 @@ static inline NSString *dialogTimeFormat()
     return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", timeinfo.tm_mday], [[NSString alloc] initWithFormat:@"%d", (int)(2000 + timeinfo.tm_year - 100)], [self stringForShortTimeWithHours:timeinfo.tm_hour minutes:timeinfo.tm_min]];
 }
 
++ (NSString *)stringForFullDate:(int)date {
+    time_t t = date;
+    struct tm timeinfo;
+    localtime_r(&t, &timeinfo);
+    
+    return [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year];
+}
+
 + (NSString *)stringForMessageListDate:(int)date
 {   
     time_t t = date;
@@ -361,8 +397,6 @@ static inline NSString *dialogTimeFormat()
         
         if(dayDiff == 0 || dayDiff == -1)
             return [self stringForTodayOrYesterday:dayDiff == 0 hours:timeinfo.tm_hour minutes:timeinfo.tm_min];
-        else if (false && dayDiff > -7 && dayDiff <= -2)
-            return weekdayNameShort(timeinfo.tm_wday);
         else
             return [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year];
     }
@@ -403,8 +437,6 @@ static inline NSString *dialogTimeFormat()
         
         if(dayDiff == 0 || dayDiff == -1)
             return [self stringForLastSeenTodayOrYesterday:dayDiff == 0 hours:timeinfo.tm_hour minutes:timeinfo.tm_min];
-        else if (false && dayDiff > -7 && dayDiff <= -2)
-            return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"LastSeen.AtWeekday"), weekdayNameShort(timeinfo.tm_wday)];
         else
             return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"LastSeen.AtDate"), [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year]];
     }

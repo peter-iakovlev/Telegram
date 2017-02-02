@@ -6,6 +6,9 @@
 
 #import "TGDatabase.h"
 
+#import "TGTelegraph.h"
+#import "TGStringUtils.h"
+
 @implementation TGReplyHeaderActionModel
 
 + (NSString *)titleForPeer:(id)peer shortName:(bool)shortName {
@@ -21,7 +24,7 @@
     return @"";
 }
 
-+ (NSString *)messageTextForActionMedia:(TGActionMediaAttachment *)actionMedia author:(id)author
++ (NSString *)messageTextForActionMedia:(TGActionMediaAttachment *)actionMedia otherAttachments:(NSArray *)__unused otherAttachments author:(id)author
 {
     NSString *messageText = @"";
     
@@ -157,6 +160,112 @@
             
             break;
         }
+        case TGMessageActionPinnedMessage:
+        {
+            messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.PinnedMessage"), [self titleForPeer:author shortName:false]];
+            break;
+        }
+        case TGMessageActionGameScore:
+        {
+            NSString *gameTitle = nil;
+            
+            int scoreCount = (int)[actionMedia.actionData[@"score"] intValue];
+            
+            int32_t authorUid = 0;
+            if ([author isKindOfClass:[TGUser class]]) {
+                authorUid = ((TGUser *)author).uid;
+            }
+            
+            NSString *formatStringBase = @"";
+            if (gameTitle != nil) {
+                if (authorUid == TGTelegraphInstance.clientUserId) {
+                    formatStringBase = [TGStringUtils integerValueFormat:@"ServiceMessage.GameScoreSelfExtended_" value:scoreCount];
+                } else {
+                    formatStringBase = [TGStringUtils integerValueFormat:@"ServiceMessage.GameScoreExtended_" value:scoreCount];
+                }
+            } else {
+                if (authorUid == TGTelegraphInstance.clientUserId) {
+                    formatStringBase = [TGStringUtils integerValueFormat:@"ServiceMessage.GameScoreSelfSimple_" value:scoreCount];
+                } else {
+                    formatStringBase = [TGStringUtils integerValueFormat:@"ServiceMessage.GameScoreSimple_" value:scoreCount];
+                }
+            }
+            
+            NSMutableString *formatString = [[NSMutableString alloc] initWithString:TGLocalized(formatStringBase)];
+            
+            NSString *authorName = [self titleForPeer:author shortName:false];
+            
+            for (int i = 0; i < 3; i++) {
+                NSRange nameRange = [formatString rangeOfString:@"{name}"];
+                NSRange scoreRange = [formatString rangeOfString:@"{score}"];
+                NSRange gameTitleRange = [formatString rangeOfString:@"{game}"];
+                
+                if (nameRange.location != NSNotFound) {
+                    if (scoreRange.location == NSNotFound || scoreRange.location > nameRange.location) {
+                        scoreRange.location = NSNotFound;
+                    }
+                    if (gameTitleRange.location == NSNotFound || gameTitleRange.location > nameRange.location) {
+                        gameTitleRange.location = NSNotFound;
+                    }
+                }
+                
+                if (scoreRange.location != NSNotFound) {
+                    if (nameRange.location == NSNotFound || nameRange.location > scoreRange.location) {
+                        nameRange.location = NSNotFound;
+                    }
+                    if (gameTitleRange.location == NSNotFound || gameTitleRange.location > scoreRange.location) {
+                        gameTitleRange.location = NSNotFound;
+                    }
+                }
+                
+                if (gameTitleRange.location != NSNotFound) {
+                    if (scoreRange.location == NSNotFound || scoreRange.location > gameTitleRange.location) {
+                        scoreRange.location = NSNotFound;
+                    }
+                    if (nameRange.location == NSNotFound || nameRange.location > gameTitleRange.location) {
+                        nameRange.location = NSNotFound;
+                    }
+                }
+                
+                if (nameRange.location != NSNotFound) {
+                    [formatString replaceCharactersInRange:nameRange withString:authorName];
+                }
+                
+                if (scoreRange.location != NSNotFound) {
+                    [formatString replaceCharactersInRange:scoreRange withString:[NSString stringWithFormat:@"%d", scoreCount]];
+                }
+                
+                if (gameTitleRange.location != NSNotFound) {
+                    [formatString replaceCharactersInRange:gameTitleRange withString:gameTitle];
+                }
+            }
+            
+            messageText = formatString;
+            
+            break;
+        }
+        case TGMessageActionPhoneCall:
+        {
+            int32_t authorUid = 0;
+            if ([author isKindOfClass:[TGUser class]]) {
+                authorUid = ((TGUser *)author).uid;
+            }
+
+            
+            bool outgoing = authorUid == TGTelegraphInstance.clientUserId;
+            int reason = [actionMedia.actionData[@"reason"] intValue];
+            bool missed = reason == TGCallDiscardReasonMissed || reason == TGCallDiscardReasonBusy;
+            
+            NSString *type = TGLocalized(missed ? (outgoing ? @"Notification.CallCanceled" : @"Notification.CallMissed") : (outgoing ? @"Notification.CallOutgoing" : @"Notification.CallIncoming"));
+            
+            NSString *duration = nil;
+            if (!missed)
+                duration = [TGStringUtils stringForCallDurationSeconds:[actionMedia.actionData[@"duration"] intValue]];
+            
+            messageText = missed ? type : [NSString stringWithFormat:TGLocalized(@"Notification.CallTimeFormat"), type, duration];
+            
+            break;
+        }
         default:
             break;
     }
@@ -164,9 +273,9 @@
     return messageText;
 }
 
-- (instancetype)initWithPeer:(id)peer actionMedia:(TGActionMediaAttachment *)actionMedia incoming:(bool)incoming system:(bool)system
+- (instancetype)initWithPeer:(id)peer actionMedia:(TGActionMediaAttachment *)actionMedia otherAttachments:(NSArray *)otherAttachments incoming:(bool)incoming system:(bool)system
 {
-    self = [super initWithPeer:peer incoming:incoming text:[TGReplyHeaderActionModel messageTextForActionMedia:actionMedia author:peer] truncateTextInTheMiddle:false textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:0.0f system:system];
+    self = [super initWithPeer:peer incoming:incoming text:[TGReplyHeaderActionModel messageTextForActionMedia:actionMedia otherAttachments:otherAttachments author:peer] truncateTextInTheMiddle:false textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:0.0f system:system];
     if (self != nil)
     {
     }

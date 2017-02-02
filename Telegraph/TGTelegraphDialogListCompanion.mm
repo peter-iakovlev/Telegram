@@ -26,8 +26,6 @@
 
 #import "TGModernConversationCompanion.h"
 
-#import "TGBroadcastModernConversationCompanion.h"
-
 #import "TGStringUtils.h"
 
 #import "TGProgressWindow.h"
@@ -202,7 +200,7 @@ typedef enum {
 }
 
 - (void)conversationSelected:(TGConversation *)conversation
-{
+{    
     if (self.forwardMode || self.privacyMode)
     {
         [_conversatioSelectedWatcher requestAction:@"conversationSelected" options:[[NSDictionary alloc] initWithObjectsAndKeys:conversation, @"conversation", nil]];
@@ -211,12 +209,7 @@ typedef enum {
     {
         if (conversation.isBroadcast)
         {
-            TGBroadcastModernConversationCompanion *broadcastCompanion = [[TGBroadcastModernConversationCompanion alloc] initWithConversationId:conversation.conversationId conversation:conversation];
-            TGModernConversationController *conversationController = [[TGModernConversationController alloc] init];
-            conversationController.companion = broadcastCompanion;
-            [broadcastCompanion bindController:conversationController];
             
-            [TGAppDelegateInstance.rootController replaceContentController:conversationController];
         }
         else
         {
@@ -229,10 +222,10 @@ typedef enum {
                         [progressWindow dismiss:true];
                     });
                 }] startWithNext:nil completed:^{
-                    [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation];                    
+                    [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:nil clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:true animated:true];
                 }];
             } else {
-                [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation];
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:nil clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:true animated:true];
             }
         }
     }
@@ -250,7 +243,7 @@ typedef enum {
         if ([TGDatabaseInstance() loadMessageWithMid:messageId peerId:conversation.conversationId] != nil)
         {
             int64_t conversationId = conversation.conversationId;
-            [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false animated:true];
+            [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
         }
         else
         {
@@ -291,6 +284,19 @@ typedef enum {
     }
     
     return 0;
+}
+
+- (void)hintMoveConversationAtIndex:(NSUInteger)fromIndex toIndex:(NSUInteger)toIndex
+{
+    [ActionStageInstance() dispatchOnStageQueue:^{
+        if (fromIndex < toIndex) {
+            //toIndex--;
+        }
+        
+        id object = [_conversationList objectAtIndex:fromIndex];
+        [_conversationList removeObjectAtIndex:fromIndex];
+        [_conversationList insertObject:object atIndex:toIndex];
+    }];
 }
 
 - (bool)isConversationOpened:(int64_t)conversationId
@@ -512,6 +518,8 @@ typedef enum {
     
     int64_t mutePeerId = conversation.conversationId;
     
+    dict[@"authorIsSelf"] = @(conversation.fromUid == TGTelegraphInstance.clientUserId);
+    
     if (conversation.isChannel) {
         dict[@"isChannel"] = @true;
         
@@ -583,6 +591,10 @@ typedef enum {
             title = user.formattedPhoneNumber;
         else
             title = [user displayName];
+        
+        if (user.kind == TGUserKindBot || user.kind == TGUserKindSmartBot) {
+            dict[@"isBot"] = @true;
+        }
         
         if (user.firstName.length != 0 && user.lastName.length != 0)
             titleLetters = [[NSArray alloc] initWithObjects:user.firstName, user.lastName, nil];
@@ -696,6 +708,10 @@ typedef enum {
             [dict setObject:authorName forKey:@"authorName"];
     }
     
+    if (conversation.draft != nil) {
+        dict[@"draft"] = conversation.draft;
+    }
+    
     NSMutableDictionary *messageUsers = [[NSMutableDictionary alloc] init];
     for (TGMediaAttachment *attachment in conversation.media)
     {
@@ -790,6 +806,11 @@ typedef enum {
         if ((forwardMode || privacyMode) && conversation.isBroadcast)
             return nil;
         
+        if (showGroupsOnly && conversation.isChannel && conversation.isChannelGroup) {
+            [self initializeDialogListData:conversation customUser:nil selfUser:[TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId]];
+            return conversation;
+        }
+        
         if (showGroupsOnly && (conversation.conversationId > 0 || conversation.conversationId <= INT_MIN))
             return nil;
         
@@ -870,8 +891,9 @@ typedef enum {
     {
         if (resultCode == 0)
         {
-            if (TGTelegraphInstance.clientUserId != 0) {
-                [_channelsDisposable setDisposable:[[TGChannelManagementSignals synchronizedChannelList] startWithNext:nil]];
+            NSMutableArray *conversationIds = [[NSMutableArray alloc] init];
+            for (TGConversation *conversation in _conversationList) {
+                [conversationIds addObject:@(conversation.conversationId)];
             }
             
             SGraphListNode *listNode = (SGraphListNode *)result;
@@ -983,15 +1005,35 @@ typedef enum {
             
             _canLoadMore = canLoadMore;
             
-            dispatch_async(dispatch_get_main_queue(), ^
-            {
-                TGDialogListController *controller = self.dialogListController;
-                if (controller != nil)
-                {
-                    controller.canLoadMore = canLoadMore;
-                    [controller dialogListFullyReloaded:items];
+            NSMutableArray *currentConversationIds = [[NSMutableArray alloc] init];
+            for (TGConversation *conversation in _conversationList) {
+                [currentConversationIds addObject:@(conversation.conversationId)];
+            }
+            
+            if ([currentConversationIds isEqualToArray:conversationIds]) {
+                NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                for (TGConversation *conversation in _conversationList) {
+                    dict[@(conversation.conversationId)] = conversation;
                 }
-            });
+                TGDispatchOnMainThread(^{
+                    TGDialogListController *controller = self.dialogListController;
+                    if (currentConversationIds.count == 0) {
+                        [controller dialogListFullyReloaded:items];
+                    } else {
+                        [controller updateConversations:dict];
+                    }
+                });
+            } else {
+                dispatch_async(dispatch_get_main_queue(), ^
+                {
+                    TGDialogListController *controller = self.dialogListController;
+                    if (controller != nil)
+                    {
+                        controller.canLoadMore = canLoadMore;
+                        [controller dialogListFullyReloaded:items];
+                    }
+                });
+            }
             
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
@@ -1066,7 +1108,7 @@ typedef enum {
                 TGConversation *conversation = result[@"conversation"];
                 int32_t messageId = [result[@"messageId"] intValue];
                 
-                [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false animated:true];
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
             }
         });
     }
@@ -1080,6 +1122,11 @@ typedef enum {
     }
     else if ([path isEqualToString:@"/tg/conversations"] || [path isEqualToString:@"/tg/broadcastConversations"])
     {
+        NSMutableArray *conversationIds = [[NSMutableArray alloc] init];
+        for (TGConversation *conversation in _conversationList) {
+            [conversationIds addObject:@(conversation.conversationId)];
+        }
+        
         NSMutableArray *conversations = [((SGraphObjectNode *)resource).object mutableCopy];
         
         for (NSInteger i = 0; i < (NSInteger)conversations.count; i++) {
@@ -1274,7 +1321,7 @@ typedef enum {
             }
         }
         
-        if (candidatesForCutoff.count != 0) {
+        if (candidatesForCutoff.count != 0 && _canLoadMore) {
             for (NSInteger i = _conversationList.count - 1; i >= 0; i--) {
                 TGConversation *conversation = _conversationList[i];
                 if ([candidatesForCutoff containsObject:@(conversation.conversationId)]) {
@@ -1296,19 +1343,35 @@ typedef enum {
             }
         }
         
-        NSArray *items = [NSArray arrayWithArray:_conversationList];
+        NSMutableArray *currentConversationIds = [[NSMutableArray alloc] init];
+        for (TGConversation *conversation in _conversationList) {
+            [currentConversationIds addObject:@(conversation.conversationId)];
+        }
         
-        dispatch_async(dispatch_get_main_queue(), ^
-        {
-            TGDialogListController *controller = self.dialogListController;
-            if (controller != nil)
-            {
-                [controller dialogListFullyReloaded:items];
-                if (!self.forwardMode && !self.privacyMode) {
-                    [controller selectConversationWithId:[self openedConversationId]];
-                }
+        if ([currentConversationIds isEqualToArray:conversationIds]) {
+            NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+            for (TGConversation *conversation in _conversationList) {
+                dict[@(conversation.conversationId)] = conversation;
             }
-        });
+            TGDispatchOnMainThread(^{
+                TGDialogListController *controller = self.dialogListController;
+                [controller updateConversations:dict];
+            });
+        } else {
+            NSArray *items = [NSArray arrayWithArray:_conversationList];
+            
+            dispatch_async(dispatch_get_main_queue(), ^
+            {
+                TGDialogListController *controller = self.dialogListController;
+                if (controller != nil)
+                {
+                    [controller dialogListFullyReloaded:items];
+                    if (!self.forwardMode && !self.privacyMode) {
+                        [controller selectConversationWithId:[self openedConversationId]];
+                    }
+                }
+            });
+        }
     }
     else if ([path isEqualToString:@"/tg/userdatachanges"])
     {
@@ -1572,6 +1635,8 @@ typedef enum {
         return TGLocalized(@"DialogList.SingleUploadingVideoSuffix");
     else if ([activity isEqualToString:@"uploadingDocument"])
         return TGLocalized(@"DialogList.SingleUploadingFileSuffix");
+    else if ([activity isEqualToString:@"playingGame"])
+        return TGLocalized(@"DialogList.SinglePlayingGameSuffix");
     
     return TGLocalized(@"DialogList.SingleTypingSuffix");
 }
@@ -1586,6 +1651,8 @@ typedef enum {
         return TGLocalized(@"Activity.UploadingVideo");
     else if ([activity isEqualToString:@"uploadingDocument"])
         return TGLocalized(@"Activity.UploadingDocument");
+    else if ([activity isEqualToString:@"playingGame"])
+        return TGLocalized(@"Activity.PlayingGame");
     
     return TGLocalized(@"DialogList.Typing");
 }

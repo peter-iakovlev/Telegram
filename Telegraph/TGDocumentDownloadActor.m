@@ -30,6 +30,8 @@
 
 #import "TGRemoteHttpLocationSignal.h"
 
+#import "TGTelegramNetworking.h"
+
 @interface TGDocumentDownloadActor ()
 {
     TGDocumentMediaAttachment *_documentAttachment;
@@ -154,13 +156,21 @@
         
         if (inputFileLocation != nil)
         {
+            TGNetworkMediaTypeTag mediaTypeTag = TGNetworkMediaTypeTagDocument;
+            for (id attribute in documentAttachment.attributes) {
+                if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                    mediaTypeTag = TGNetworkMediaTypeTagAudio;
+                    break;
+                }
+            }
             [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/multipart-file/(document:%" PRId64 ":%d:%@)", documentAttachment.documentId, documentAttachment.datacenterId, documentAttachment.documentUri.length != 0 ? documentAttachment.documentUri : @""] options:@{
                 @"fileLocation": inputFileLocation,
                 @"encryptedSize": @(encryptedSize),
                 @"decryptedSize": @(decryptedSize),
                 @"storeFilePath": _storeFilePath,
                 @"datacenterId": @(datacenterId),
-                @"encryptionArgs": encryptionArgs
+                @"encryptionArgs": encryptionArgs,
+                @"mediaTypeTag": @(mediaTypeTag)
             } watcher:self];
         }
         else

@@ -30,4 +30,17 @@
     [coder encodeString:_url forCKey:"url"];
 }
 
+- (instancetype)initWithCoder:(NSCoder *)aDecoder {
+    self = [super initWithCoder:aDecoder];
+    if (self != nil) {
+        _url = [aDecoder decodeObjectForKey:@"url"];
+    }
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder {
+    [super encodeWithCoder:aCoder];
+    [aCoder encodeObject:_url forKey:@"url"];
+}
+
 @end

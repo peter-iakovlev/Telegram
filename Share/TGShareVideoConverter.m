@@ -1,7 +1,7 @@
 #import "TGShareVideoConverter.h"
 #import <UIKit/UIKit.h>
 
-#import "TGGeometry.h"
+#import <LegacyDatabase/LegacyDatabase.h>
 
 #import "MP4Atom.h"
 

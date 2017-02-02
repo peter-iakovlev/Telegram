@@ -1,5 +1,7 @@
 #import "TGSecretIncomingQueueActor.h"
 
+#import "TGCommon.h"
+
 #import "ActionStage.h"
 #import "SGraphObjectNode.h"
 
@@ -287,7 +289,7 @@
                     message.fromUid = _userId;
                     message.toUid = TGTelegraphInstance.clientUserId;
                     message.date = [actionDesc[@"date"] intValue];
-                    message.unread = false;
+                    //message.unread = false;
                     message.outgoing = false;
                     message.cid = _peerId;
                     
@@ -437,7 +439,8 @@
                                 encryptedData.currentRekeyIsInitiatedByLocalClient = false;
                                 conversation = [conversation copy];
                                 conversation.encryptedData = encryptedData;
-                                [TGDatabaseInstance() addMessagesToConversation:nil conversationId:_peerId updateConversation:conversation dispatch:true countUnread:false];
+                                
+                                [TGDatabaseInstance() transactionAddMessages:nil updateConversationDatas:@{@(conversation.conversationId): conversation} notifyAdded:true];
                                 
                                 NSData *messageData = [TGModernSendSecretMessageActor decryptedServiceMessageActionWithLayer:peerLayer acceptKey:[actionDesc[@"exchangeId"] longLongValue] g_b:gBBytes keyFingerprint:keyId randomId:randomId];
                                 if (messageData != nil)
@@ -532,7 +535,7 @@
                                         }
                                     }
                                     
-                                    [TGDatabaseInstance() addMessagesToConversation:nil conversationId:_peerId updateConversation:conversation dispatch:true countUnread:false];
+                                    [TGDatabaseInstance() transactionAddMessages:nil updateConversationDatas:@{@(conversation.conversationId): conversation} notifyAdded:true];
                                     
                                     pollAtTheEnd = true;
                                 }
@@ -576,7 +579,7 @@
                                 [TGModernSendSecretMessageActor enqueueOutgoingServiceMessageForPeerId:_peerId layer:peerLayer keyId:0 randomId:randomId messageData:messageData];
                             }
                             
-                            [TGDatabaseInstance() addMessagesToConversation:nil conversationId:_peerId updateConversation:conversation dispatch:true countUnread:false];
+                            [TGDatabaseInstance() transactionAddMessages:nil updateConversationDatas:@{@(conversation.conversationId): conversation} notifyAdded:true];
                             
                             pollAtTheEnd = true;
                         }
@@ -612,8 +615,7 @@
                     }
                 }
                 
-                static int messageActionId = 0;
-                [[[TGConversationAddMessagesActor alloc] initWithPath:[NSString stringWithFormat:@"/tg/addmessage/(%dsecretIncoming)", messageActionId++]] execute:[NSDictionary dictionaryWithObjectsAndKeys:addedMessages, @"messages", nil]];
+                [TGDatabaseInstance() transactionAddMessages:addedMessages updateConversationDatas:nil notifyAdded:true];
             }
             
             if (layerUpdate != 0 && layerUpdate > [TGDatabaseInstance() peerLayer:_peerId])
@@ -638,14 +640,8 @@
             
             if (deleteMessageIds.count != 0)
             {
-                NSMutableDictionary *messagesByConversation = [[NSMutableDictionary alloc] init];
-                [TGDatabaseInstance() deleteMessages:deleteMessageIds populateActionQueue:false fillMessagesByConversationId:messagesByConversation];
-                [messagesByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSArray *messagesInConversation, __unused BOOL *stop)
-                 {
-                     [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messagesDeleted", [nConversationId longLongValue]] resource:[[SGraphObjectNode alloc] initWithObject:messagesInConversation]];
-                 }];
+                [TGDatabaseInstance() transactionRemoveMessages:@{@(_peerId): deleteMessageIds} updateConversationDatas:nil];
             }
-            
             
             if (initiateSelfDestructMessageRandomIds.count != 0)
             {
@@ -717,7 +713,7 @@
         conversation = [conversation copy];
         conversation.encryptedData = encryptedData;
         
-        [TGDatabaseInstance() addMessagesToConversation:nil conversationId:_peerId updateConversation:conversation dispatch:true countUnread:false];
+        [TGDatabaseInstance() transactionAddMessages:nil updateConversationDatas:@{@(conversation.conversationId): conversation} notifyAdded:true];
     }
 }
 

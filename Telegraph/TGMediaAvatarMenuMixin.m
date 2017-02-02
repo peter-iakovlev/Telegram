@@ -126,22 +126,7 @@
         [strongSelf _displayMediaPicker];
     }];
     [itemViews addObject:galleryItem];
-    
-    TGMenuSheetButtonItemView *searchItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Conversation.SearchWebImages") type:TGMenuSheetButtonTypeDefault action:^
-    {
-        __strong TGMediaAvatarMenuMixin *strongSelf = weakSelf;
-        if (strongSelf == nil)
-            return;
         
-        __strong TGMenuSheetController *strongController = weakController;
-        if (strongController == nil)
-            return;
-        
-        [strongController dismissAnimated:true];
-        [strongSelf _displayWebSearch];
-    }];
-//    [itemViews addObject:searchItem];
-    
     if (_hasDeleteButton)
     {
         TGMenuSheetButtonItemView *deleteItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"GroupInfo.SetGroupPhotoDelete") type:TGMenuSheetButtonTypeDestructive action:^
@@ -291,7 +276,7 @@
         [strongCameraView attachPreviewViewAnimated:true];
     };
     
-    controller.finishedWithPhoto = ^(UIImage *resultImage, __unused NSString *caption)
+    controller.finishedWithPhoto = ^(UIImage *resultImage, __unused NSString *caption, __unused NSArray *stickers)
     {
         __strong TGMediaAvatarMenuMixin *strongSelf = weakSelf;
         if (strongSelf == nil)

@@ -7,12 +7,17 @@
 
 #import "TGDocumentMediaAttachment.h"
 
+#import "TGStickerPackStatusView.h"
+
 @interface TGStickerPackCollectionItemView ()
 {
+    UIImageView *_unreadView;
     TGImageView *_imageView;
     UILabel *_titleLabel;
     UILabel *_subtitleLabel;
     UIImageView *_reorderingControl;
+    
+    TGStickerPackStatusView *_statusView;
 }
 
 @end
@@ -83,7 +88,7 @@
     
     _subtitleLabel.text = [[NSString alloc] initWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"StickerPack.StickerCount_" value:stickerPack.documents.count]), [[NSString alloc] initWithFormat:@"%d", (int)stickerPack.documents.count]];
     
-    if (stickerPack.hidden) {
+    if (false && stickerPack.hidden) {
         [self setOptionText:TGLocalized(@"StickerSettings.ContextShow")];
         [self setIndicatorMode:TGEditableCollectionItemViewIndicatorAdd];
     } else {
@@ -95,7 +100,7 @@
         [self setIndicatorMode:TGEditableCollectionItemViewIndicatorDelete];
     }
     
-    _titleLabel.alpha = stickerPack.hidden ? 0.4f : 1.0f;
+    _titleLabel.alpha = (false && stickerPack.hidden) ? 0.4f : 1.0f;
     _subtitleLabel.alpha = _titleLabel.alpha;
     _imageView.alpha = _titleLabel.alpha;
     
@@ -122,8 +127,58 @@
     [self setNeedsLayout];
 }
 
+- (void)setUnread:(bool)unread {
+    if ((_unreadView != nil) != unread) {
+        if (unread) {
+            if (_unreadView == nil) {
+                static UIImage *dotImage = nil;
+                static dispatch_once_t onceToken;
+                dispatch_once(&onceToken, ^{
+                    UIGraphicsBeginImageContextWithOptions(CGSizeMake(6.0f, 6.0f), false, 0.0f);
+                    CGContextRef context = UIGraphicsGetCurrentContext();
+                    
+                    CGContextSetFillColorWithColor(context, UIColorRGB(0x0f94f3).CGColor);
+                    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 6.0f, 6.0f));
+                    
+                    dotImage = UIGraphicsGetImageFromCurrentImageContext();
+                    UIGraphicsEndImageContext();
+                });
+                _unreadView = [[UIImageView alloc] initWithImage:dotImage];
+                [self addSubview:_unreadView];
+            }
+        } else {
+            [_unreadView removeFromSuperview];
+            _unreadView = nil;
+        }
+        [self setNeedsLayout];
+    }
+}
+
+- (void)setStatus:(TGStickerPackItemStatus)status {
+    if (status == TGStickerPackItemStatusNone) {
+        [_statusView removeFromSuperview];
+        _statusView = nil;
+    } else {
+        if (_statusView == nil) {
+            _statusView = [[TGStickerPackStatusView alloc] init];
+            __weak TGStickerPackCollectionItemView *weakSelf = self;
+            _statusView.install = ^{
+                __strong TGStickerPackCollectionItemView *strongSelf = weakSelf;
+                if (strongSelf != nil && strongSelf->_addStickerPack) {
+                    strongSelf->_addStickerPack();
+                }
+            };
+            [self addSubview:_statusView];
+        }
+        [_statusView setStatus:status];
+    }
+    [self setNeedsLayout];
+}
+
 - (void)layoutSubviews
 {
+    CGRect bounds = self.bounds;
+    
     CGFloat leftInset = self.showsDeleteIndicator ? 38.0f : 0.0f;
     CGFloat rightInset = self.showsDeleteIndicator ? 38.0f : 0.0f;
     self.separatorInset = 60.0f + leftInset;
@@ -133,18 +188,31 @@
     _imageView.frame = CGRectMake(13.0f + leftInset, CGFloor((self.frame.size.height - 34.0f) / 2.0f), 34.0f, 34.0f);
     
     CGFloat titleSubtitleSpacing = 2.0f;
+    CGFloat titleInset = 0.0f;
+    if (_unreadView != nil) {
+        titleInset = 11.0f;
+    }
     
     CGSize titleSize = [_titleLabel.text sizeWithFont:_titleLabel.font];
-    titleSize.width = MIN(self.frame.size.width - leftInset - 60.0f - 8.0f - rightInset, titleSize.width);
+    titleSize.width = MIN(self.frame.size.width - leftInset - 60.0f - 8.0f - rightInset - titleInset, titleSize.width);
     CGSize subtitleSize = [_subtitleLabel.text sizeWithFont:_subtitleLabel.font];
     
     CGFloat verticalOrigin = CGFloor((self.frame.size.height - titleSize.height - subtitleSize.height - titleSubtitleSpacing) / 2.0f);
     
-    _titleLabel.frame = CGRectMake(leftInset + 60.0f, verticalOrigin, titleSize.width, titleSize.height);
+    if (_unreadView != nil) {
+        titleInset = 11.0f;
+        _unreadView.frame = CGRectMake(leftInset + 60.0f + 1.0f, verticalOrigin + 7.0f, 6.0f, 6.0f);
+    }
+    
+    _titleLabel.frame = CGRectMake(leftInset + 60.0f + titleInset, verticalOrigin, titleSize.width, titleSize.height);
     _subtitleLabel.frame = CGRectMake(leftInset + 60.0f, verticalOrigin + 2.0f + titleSize.height + titleSubtitleSpacing, subtitleSize.width, subtitleSize.height);
     
     _reorderingControl.alpha = self.showsDeleteIndicator ? 1.0f : 0.0f;
     _reorderingControl.frame = CGRectMake(self.contentView.frame.size.width - 15.0f - _reorderingControl.frame.size.width, CGFloor((self.contentView.frame.size.height - _reorderingControl.frame.size.height) / 2.0f), _reorderingControl.frame.size.width, _reorderingControl.frame.size.height);
+    
+    if (_statusView != nil) {
+        _statusView.frame = CGRectMake(bounds.size.width - _statusView.frame.size.width, CGFloor((bounds.size.height - _statusView.frame.size.height) / 2.0f), _statusView.frame.size.width, _statusView.frame.size.height);
+    }
 }
 
 - (void)deleteAction

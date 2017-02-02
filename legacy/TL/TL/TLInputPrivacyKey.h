@@ -19,3 +19,8 @@
 
 @end
 
+@interface TLInputPrivacyKey$inputPrivacyKeyPhoneCall : TLInputPrivacyKey
+
+
+@end
+

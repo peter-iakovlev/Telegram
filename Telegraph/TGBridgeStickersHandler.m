@@ -16,7 +16,9 @@
         TGBridgeRecentStickersSubscription *recentStickersSubscription = (TGBridgeRecentStickersSubscription *)subscription;
         NSUInteger limit = recentStickersSubscription.limit;
         
-        return [[server serviceSignalForKey:@"stickers" producer:nil] map:^NSArray *(NSDictionary *dict)
+        return [[[server server] mapToSignal:^SSignal *(TGBridgeServer *server) {
+            return [server serviceSignalForKey:@"stickers" producer:nil];
+        }] map:^NSArray *(NSDictionary *dict)
         {
             NSArray *stickerPacks = dict[@"packs"];
             NSDictionary *documentIdsUseCount = dict[@"documentIdsUseCount"];

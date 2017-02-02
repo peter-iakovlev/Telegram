@@ -3,9 +3,11 @@
 
 #import "TGFont.h"
 #import "TGPhotoEditorUtils.h"
+#import "TGPaintUtils.h"
 
 #import "TGMediaAsset+TGMediaEditableItem.h"
 #import "TGVideoEditAdjustments.h"
+#import "TGPaintingData.h"
 
 #import "TGVTAcceleratedVideoView.h"
 
@@ -110,16 +112,33 @@ NSString *const TGAttachmentVideoCellIdentifier = @"AttachmentVideoCell";
     *inCropRect = cropRect;
 }
 
+- (CGPoint)fittedCropCenterRect:(CGRect)cropRect scale:(CGFloat)scale
+{
+    CGSize size = CGSizeMake(cropRect.size.width * scale, cropRect.size.height * scale);
+    CGRect rect = CGRectMake(cropRect.origin.x * scale, cropRect.origin.y * scale, size.width, size.height);
+    
+    return CGPointMake(CGRectGetMidX(rect), CGRectGetMidY(rect));
+}
+
 - (void)_layoutImageForOriginalSize:(CGSize)originalSize cropRect:(CGRect)cropRect cropOrientation:(UIImageOrientation)cropOrientation
 {
     self.imageView.transform = CGAffineTransformMakeRotation(TGRotationForOrientation(cropOrientation));
     
     [self _transformLayoutForOrientation:cropOrientation originalSize:&originalSize cropRect:&cropRect];
     
-    CGFloat ratio = (cropRect.size.width > cropRect.size.height) ? self.frame.size.height / cropRect.size.height : self.frame.size.width / cropRect.size.width;
-    CGSize fillSize = CGSizeMake(cropRect.size.width * ratio, cropRect.size.height * ratio);
+    CGSize scaledSize = TGScaleToFillSize(cropRect.size, self.frame.size);
+    CGFloat ratio = cropRect.size.width > cropRect.size.height ? scaledSize.width / cropRect.size.width : scaledSize.height / cropRect.size.height;
     
-    self.imageView.frame = CGRectMake(-cropRect.origin.x * ratio + (self.frame.size.width - fillSize.width) / 2, -cropRect.origin.y * ratio + (self.frame.size.height - fillSize.height) / 2, originalSize.width * ratio, originalSize.height * ratio);
+    CGSize fittedOriginalSize = CGSizeMake(originalSize.width * ratio, originalSize.height * ratio);
+    CGPoint centerPoint = CGPointMake(fittedOriginalSize.width / 2.0f, fittedOriginalSize.height / 2.0f);
+    
+    CGFloat scale = fittedOriginalSize.width / originalSize.width;
+    CGPoint centerOffset = TGPaintSubtractPoints(centerPoint, [self fittedCropCenterRect:cropRect scale:scale]);
+
+    self.imageView.bounds = CGRectMake(0, 0, fittedOriginalSize.width, fittedOriginalSize.height);
+    self.imageView.center = TGPaintAddPoints(TGPaintCenterOfRect(self.bounds), centerOffset);
+    
+    //self.imageView.frame = CGRectMake(-cropRect.origin.x * ratio + (self.frame.size.width - fillSize.width) / 2, -cropRect.origin.y * ratio + (self.frame.size.height - fillSize.height) / 2, );
 }
 
 - (void)_layoutImageWithoutAdjustments
@@ -195,14 +214,12 @@ NSString *const TGAttachmentVideoCellIdentifier = @"AttachmentVideoCell";
 - (UIImage *)transitionImage
 {
     if (fabs(self.frame.size.width - self.frame.size.height) < FLT_EPSILON)
-    {
         return [self transitionImageSquared];
-    }
     
     UIImage *sourceImage = self.imageView.image;
     
-    CGSize originalSize = CGSizeZero;
-    CGRect cropRect = CGRectZero;
+    CGSize originalSize = self.asset.dimensions;
+    CGRect cropRect = CGRectMake(0, 0, originalSize.width, originalSize.height);
     UIImageOrientation cropOrientation = UIImageOrientationUp;
     
     TGVideoEditAdjustments *adjustments = (TGVideoEditAdjustments *)[self.editingContext adjustmentsForItem:self.asset];
@@ -222,76 +239,58 @@ NSString *const TGAttachmentVideoCellIdentifier = @"AttachmentVideoCell";
             sourceImage = editedImage;
     }
     
-    if (CGRectEqualToRect(cropRect, CGRectZero))
-    {
-        UIGraphicsBeginImageContextWithOptions(self.bounds.size, false, 0.0f);
-        
-        [[UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) cornerRadius:TGAttachmentMenuCellCornerRadius] addClip];
-        
-        CGSize fillSize = TGScaleToFillSize(sourceImage.size, self.bounds.size);
-        [sourceImage drawInRect:CGRectMake((self.bounds.size.width - fillSize.width) / 2, (self.bounds.size.height - fillSize.height) / 2, fillSize.width, fillSize.height)];
-        
-        UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-        
-        return image;
-    }
-    else
-    {
-        //CGFloat maxSide = MAX(sourceImage.size.width, sourceImage.size.height);
-        //CGSize maxSize = CGSizeMake(maxSide, maxSide);
-        UIImage *croppedImage = TGPhotoEditorCrop(sourceImage, cropOrientation, 0, cropRect, CGSizeZero, originalSize, false);
+    CGSize fillSize = TGScaleToFillSize(cropRect.size, self.bounds.size);
+    UIImage *croppedImage = TGPhotoEditorVideoCrop(sourceImage, nil, cropOrientation, 0, cropRect, false, fillSize, originalSize, true, true);
+
+    UIGraphicsBeginImageContextWithOptions(self.bounds.size, false, 0.0f);
     
-        UIGraphicsBeginImageContextWithOptions(self.bounds.size, false, 0.0f);
+    CGFloat scale = 1.0f;
+    CGSize scaledBoundsSize = CGSizeZero;
+    CGSize scaledImageSize = CGSizeZero;
+    
+    if (croppedImage.size.width > croppedImage.size.height)
+    {
+        scale = self.frame.size.height / croppedImage.size.height;
+        scaledBoundsSize = CGSizeMake(self.frame.size.width / scale, croppedImage.size.height);
         
-        CGFloat scale = 1.0f;
-        CGSize scaledBoundsSize = CGSizeZero;
-        CGSize scaledImageSize = CGSizeZero;
+        scaledImageSize = CGSizeMake(croppedImage.size.width * scale, croppedImage.size.height * scale);
         
-        if (croppedImage.size.width > croppedImage.size.height)
-        {
-            scale = self.frame.size.height / croppedImage.size.height;
-            scaledBoundsSize = CGSizeMake(self.frame.size.width / scale, croppedImage.size.height);
-            
-            scaledImageSize = CGSizeMake(croppedImage.size.width * scale, croppedImage.size.height * scale);
-            
-            if (scaledImageSize.width < self.frame.size.width)
-            {
-                scale = self.frame.size.width / croppedImage.size.width;
-                scaledBoundsSize = CGSizeMake(croppedImage.size.width, self.frame.size.height / scale);
-            }
-        }
-        else
+        if (scaledImageSize.width < self.frame.size.width)
         {
             scale = self.frame.size.width / croppedImage.size.width;
             scaledBoundsSize = CGSizeMake(croppedImage.size.width, self.frame.size.height / scale);
-            
-            scaledImageSize = CGSizeMake(croppedImage.size.width * scale, croppedImage.size.height * scale);
-            
-            if (scaledImageSize.width < self.frame.size.width)
-            {
-                scale = self.frame.size.height / croppedImage.size.height;
-                scaledBoundsSize = CGSizeMake(self.frame.size.width / scale, croppedImage.size.height);
-            }
         }
-        
-        CGRect rect = self.bounds;
-        UIGraphicsBeginImageContextWithOptions(rect.size, false, 0.0f);
-        
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        [[UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) cornerRadius:TGAttachmentMenuCellCornerRadius] addClip];
-        
-        CGContextScaleCTM(context, scale, scale);
-        [croppedImage drawInRect:CGRectMake((scaledBoundsSize.width - croppedImage.size.width) / 2,
-                                            (scaledBoundsSize.height - croppedImage.size.height) / 2,
-                                            croppedImage.size.width,
-                                            croppedImage.size.height)];
-        
-        UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-        
-        return image;
     }
+    else
+    {
+        scale = self.frame.size.width / croppedImage.size.width;
+        scaledBoundsSize = CGSizeMake(croppedImage.size.width, self.frame.size.height / scale);
+        
+        scaledImageSize = CGSizeMake(croppedImage.size.width * scale, croppedImage.size.height * scale);
+        
+        if (scaledImageSize.width < self.frame.size.width)
+        {
+            scale = self.frame.size.height / croppedImage.size.height;
+            scaledBoundsSize = CGSizeMake(self.frame.size.width / scale, croppedImage.size.height);
+        }
+    }
+
+    CGRect rect = self.bounds;
+    UIGraphicsBeginImageContextWithOptions(rect.size, false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    [[UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) cornerRadius:TGAttachmentMenuCellCornerRadius] addClip];
+    
+    CGContextScaleCTM(context, scale, scale);
+    [croppedImage drawInRect:CGRectMake((scaledBoundsSize.width - croppedImage.size.width) / 2,
+                                        (scaledBoundsSize.height - croppedImage.size.height) / 2,
+                                        croppedImage.size.width,
+                                        croppedImage.size.height)];
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
 }
 
 @end

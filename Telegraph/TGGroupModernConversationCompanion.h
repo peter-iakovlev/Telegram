@@ -12,6 +12,6 @@
 
 @interface TGGroupModernConversationCompanion : TGGenericModernConversationCompanion
 
-- (instancetype)initWithConversationId:(int64_t)conversationId conversation:(TGConversation *)conversation userActivities:(NSDictionary *)userActivities mayHaveUnreadMessages:(bool)mayHaveUnreadMessages;
+- (instancetype)initWithConversation:(TGConversation *)conversation userActivities:(NSDictionary *)userActivities mayHaveUnreadMessages:(bool)mayHaveUnreadMessages;
 
 @end

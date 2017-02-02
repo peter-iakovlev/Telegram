@@ -104,4 +104,11 @@
     return false;
 }
 
+- (int64_t)openedConversationId {
+    return 0;
+}
+
+- (void)hintMoveConversationAtIndex:(NSUInteger)__unused fromIndex toIndex:(NSUInteger)__unused toIndex {
+}
+
 @end

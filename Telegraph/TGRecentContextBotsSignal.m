@@ -1,5 +1,9 @@
 #import "TGRecentContextBotsSignal.h"
 
+#import "TGDatabase.h"
+
+#import "TGTelegramNetworking.h"
+
 @implementation TGRecentContextBotsSignal
 
 + (SQueue *)queue {
@@ -75,6 +79,8 @@
         
         [self _storeRecentBots:updatedUserIds];
         
+        [TGDatabaseInstance() updatePeerRatings:@[[[TGPeerRatingUpdates alloc] initWithPeerId:userId category:TGPeerRatingCategoryInlineBots timestamps:@[@([TGTelegramNetworking instance].approximateRemoteTime)]]]];
+        
         return updatedUserIds;
     }];
     [signal startWithNext:^(id next) {
@@ -83,7 +89,19 @@
 }
 
 + (SSignal *)recentBots {
-    return [[self _recentBots] signal];
+    return [TGDatabaseInstance() modify:^id{
+        NSMutableArray *userIds = [[NSMutableArray alloc] init];
+        NSInteger count = 0;
+        for (TGUser *user in [TGDatabaseInstance() _syncCachedRecentInlineBots]) {
+            [userIds addObject:@(user.uid)];
+            count++;
+            if (count == 5) {
+                break;
+            }
+        }
+        return userIds;
+    }];
+    //return [[self _recentBots] signal];
 }
 
 @end

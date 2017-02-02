@@ -21,6 +21,8 @@
     int64_t conversationId = [[self.path substringWithRange:NSMakeRange(18, range.location - 18)] longLongValue];
     
     NSString *activity = [self.path substringWithRange:NSMakeRange(range.location + range.length, self.path.length - range.location - range.length - 1)];
+    NSString *previousType = options[@"previousType"];
+    
     if ([activity isEqualToString:@"typing"])
     {
         if ([options[@"encryptedConversationId"] longLongValue] != 0)
@@ -107,8 +109,21 @@
             self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId accessHash:[options[@"accessHash"] longLongValue] activity:[[TLSendMessageAction$sendMessageGeoLocationAction alloc] init] actor:self];
         }
     }
-    else
+    else if ([activity isEqualToString:@"playingGame"])
     {
+        if ([options[@"encryptedConversationId"] longLongValue] != 0)
+        {
+            
+        }
+        else
+        {
+            self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId accessHash:[options[@"accessHash"] longLongValue] activity:[[TLSendMessageAction$sendMessageGamePlayAction alloc] init] actor:self];
+        }
+    }
+    else if (![activity isEqualToString:previousType] && ![previousType isEqualToString:@"typing"])
+    {
+        self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId accessHash:[options[@"accessHash"] longLongValue] activity:[[TLSendMessageAction$sendMessageCancelAction alloc] init] actor:self];
+    } else {
         [ActionStageInstance() actionFailed:self.path reason:-1];
     }
 }

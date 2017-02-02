@@ -46,10 +46,46 @@
     return 0;
 }
 
+- (bool)passPanOffset:(CGFloat)__unused offset
+{
+    return true;
+}
+
 - (void)requestMenuLayoutUpdate
 {
     if (self.layoutUpdateBlock != nil)
         self.layoutUpdateBlock();
+}
+
+- (void)_updateHeightAnimated:(bool)animated
+{
+    if (animated)
+    {
+        UIViewAnimationOptions options = UIViewAnimationOptionAllowAnimatedContent | UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionLayoutSubviews;
+        if (iosMajorVersion() >= 7)
+            options = options | (7 << 16);
+        
+        [UIView animateWithDuration:0.3 delay:0.0 options:options animations:^
+        {
+            [self requestMenuLayoutUpdate];
+        } completion:nil];
+    }
+    else
+    {
+        [self requestMenuLayoutUpdate];
+    }
+}
+
+- (void)_didLayoutSubviews
+{
+}
+
+- (void)_willRotateToInterfaceOrientation:(UIInterfaceOrientation)__unused orientation duration:(NSTimeInterval)__unused duration
+{
+}
+
+- (void)_didRotateToInterfaceOrientation:(UIInterfaceOrientation)__unused orientation
+{
 }
 
 - (void)menuView:(TGMenuSheetView *)__unused menuView willAppearAnimated:(bool)__unused animated
@@ -65,6 +101,22 @@
 }
 
 - (void)menuView:(TGMenuSheetView *)__unused menuView didDisappearAnimated:(bool)__unused animated
+{
+}
+
+#pragma mark - 
+
+- (UIView *)previewSourceView
+{
+    return nil;
+}
+
+- (UIViewController *)previewingContext:(id<UIViewControllerPreviewing>)__unused previewingContext viewControllerForLocation:(CGPoint)__unused location
+{
+    return nil;
+}
+
+- (void)previewingContext:(id<UIViewControllerPreviewing>)__unused previewingContext commitViewController:(UIViewController *)__unused viewControllerToCommit
 {
 }
 

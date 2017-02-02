@@ -33,12 +33,6 @@
 {
     TGLog(@"Method currently unsupported");
     [ActionStageInstance() actionFailed:self.path reason:-1];
-    return;
-    
-    NSRange range = [self.path rangeOfString:@"/assignProfilePhoto/("];
-    int64_t photoId = [[self.path substringWithRange:NSMakeRange(range.location + range.length, self.path.length - 1 - range.location - range.length)] longLongValue];
-    
-    [TGTelegraphInstance doAssignProfilePhoto:photoId accessHash:0 actor:self];
 }
 
 - (void)assignProfilePhotoRequestSuccess:(TLUserProfilePhoto *)photo

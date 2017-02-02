@@ -19,6 +19,9 @@ typedef struct {
     
     UIView *_snapshotClipView;
     UIImageView *_snapshotView;
+    UIImageView *_paintingImageView;
+    
+    UIImage *_paintingImage;
     
     bool _beganInteraction;
     bool _endedInteraction;
@@ -31,6 +34,7 @@ typedef struct {
     CGFloat _pinchStartScale;
     
     CGFloat _rotationStartScale;
+    bool _mirrored;
 }
 @end
 
@@ -67,6 +71,12 @@ typedef struct {
 }
 
 #pragma mark - Content
+
+- (void)setHidden:(BOOL)hidden
+{
+    [super setHidden:hidden];
+    _snapshotClipView.hidden = hidden;
+}
 
 - (void)setContentSize:(CGSize)contentSize
 {
@@ -110,10 +120,16 @@ typedef struct {
     transform = CATransform3DTranslate(transform, -delta.x, -delta.y, 0.0f);
     
     _wrapperView.layer.transform = transform;
-    _snapshotView.layer.transform = transform;
+    _snapshotView.superview.layer.transform = transform;
     
     if (!resetting)
         [self fitContentInsideBoundsAllowScale:true maximize:maximize animated:false completion:nil];
+}
+
+- (void)setContentMirrored:(bool)mirrored
+{
+    _mirrored = mirrored;
+    _contentView.transform = CGAffineTransformMakeScale(mirrored ? -1.0f : 1.0f, 1.0f);
 }
 
 - (void)setContentView:(UIView *)contentView
@@ -124,6 +140,9 @@ typedef struct {
     [_wrapperView addSubview:contentView];
     
     _contentView.frame = CGRectMake(0, 0, _contentSize.width, _contentSize.height);
+    
+    if (_mirrored)
+        _contentView.transform = CGAffineTransformMakeScale(-1.0f, 1.0f);
     
     [self resetAndSetBounds:true];
 }
@@ -170,7 +189,7 @@ typedef struct {
                                 CGSin((CGFloat)M_PI_2 - self.contentRotation) * offset.y);
 
     _wrapperView.transform = CGAffineTransformTranslate(_wrapperView.transform, xComp.x + yComp.x, xComp.y + yComp.y);
-    _snapshotView.transform = _wrapperView.transform;
+    _snapshotView.superview.transform = _wrapperView.transform;
 }
 
 - (void)fitContentInsideBoundsAllowScale:(bool)allowScale animated:(bool)animated completion:(void (^)(void))completion
@@ -294,14 +313,14 @@ typedef struct {
             [_wrapperView.layer pop_addAnimation:translationAnimation forKey:@"translation"];
             [_wrapperView.layer pop_addAnimation:scaleAnimation forKey:@"scale"];
             
-            _snapshotView.layer.transform = _wrapperView.layer.transform;
-            [_snapshotView.layer pop_addAnimation:snapshotTranslationAnimation forKey:@"translation"];
-            [_snapshotView.layer pop_addAnimation:snapshotScaleAnimation forKey:@"scale"];
+            _snapshotView.superview.layer.transform = _wrapperView.layer.transform;
+            [_snapshotView.superview.layer pop_addAnimation:snapshotTranslationAnimation forKey:@"translation"];
+            [_snapshotView.superview.layer pop_addAnimation:snapshotScaleAnimation forKey:@"scale"];
         }
         else
         {
             _wrapperView.layer.transform = targetTransform;
-            _snapshotView.layer.transform = targetTransform;
+            _snapshotView.superview.layer.transform = targetTransform;
             
             if (completion != nil)
                 completion();
@@ -327,8 +346,8 @@ typedef struct {
 
             fitScaleBlock(ratio);
             fitTranslationBlock();
-            applyBlock();
         }
+        applyBlock();
     }
 }
 
@@ -460,7 +479,7 @@ typedef struct {
         case UIGestureRecognizerStateChanged:
         {
             _wrapperView.layer.transform = CATransform3DTranslate(_wrapperView.layer.transform, translation.x, translation.y, 0);
-            _snapshotView.layer.transform = _wrapperView.layer.transform;
+            _snapshotView.superview.layer.transform = _wrapperView.layer.transform;
         
             [gestureRecognizer setTranslation:CGPointZero inView:self];
         }
@@ -534,7 +553,7 @@ typedef struct {
             
             transform = CATransform3DTranslate(transform, -delta.x, -delta.y, 0);
             _wrapperView.layer.transform = transform;
-            _snapshotView.layer.transform = transform;
+            _snapshotView.superview.layer.transform = transform;
         }
             break;
             
@@ -636,7 +655,7 @@ typedef struct {
     _minimumZoomScale = scale;
     
     _wrapperView.layer.transform = CATransform3DMakeScale(scale, scale, 1);
-    _snapshotView.layer.transform = _wrapperView.layer.transform;
+    _snapshotView.superview.layer.transform = _wrapperView.layer.transform;
 }
 
 - (void)reset
@@ -759,9 +778,8 @@ typedef struct {
         transform = CATransform3DRotate(transform, contentRotation, 0.0f, 0.0f, 1.0f);
         _wrapperView.layer.transform = transform;
         
-        _snapshotClipView.frame = self.bounds;
-        _snapshotView.layer.transform = _wrapperView.layer.transform;
-        _snapshotView.center = _wrapperView.center;
+        _snapshotView.superview.layer.transform = _wrapperView.layer.transform;
+        _snapshotView.superview.center = _wrapperView.center;
         
         if (completion != nil)
             completion();
@@ -783,7 +801,12 @@ typedef struct {
 
 #pragma mark - Misc
 
-- (void)setSnapshotViewEnabled:(bool)enabled
+- (void)setPaintingImage:(UIImage *)paintingImage
+{
+    _paintingImage = paintingImage;
+}
+
+- (UIView *)setSnapshotViewEnabled:(bool)enabled
 {
     if (enabled)
     {
@@ -792,14 +815,24 @@ typedef struct {
         
         _snapshotClipView = [[UIView alloc] initWithFrame:self.bounds];
         _snapshotClipView.clipsToBounds = true;
-        [self addSubview:_snapshotClipView];
+        _snapshotClipView.userInteractionEnabled = false;
+    
+        CGRect contentFrame = CGRectMake(0, 0, _contentSize.width, _contentSize.height);
         
-        UIImageView *imageView = self.imageView;
-        _snapshotView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, _contentSize.width, _contentSize.height)];
-        _snapshotView.center = _wrapperView.center;
-        _snapshotView.image = imageView.image;
-        _snapshotView.layer.transform = _wrapperView.layer.transform;
-        [_snapshotClipView addSubview:_snapshotView];
+        UIView *snapshotWrapperView = [[UIView alloc] initWithFrame:contentFrame];
+        [_snapshotClipView addSubview:snapshotWrapperView];
+        
+        _snapshotView = [[UIImageView alloc] initWithFrame:contentFrame];
+        _snapshotView.image = self.imageView.image;
+        _snapshotView.transform = CGAffineTransformMakeScale(_mirrored ? -1.0f : 1.0f, 1.0f);
+        [snapshotWrapperView addSubview:_snapshotView];
+        
+        _paintingImageView = [[UIImageView alloc] initWithFrame:contentFrame];
+        _paintingImageView.image = _paintingImage;
+        [snapshotWrapperView addSubview:_paintingImageView];
+        
+        snapshotWrapperView.center = _wrapperView.center;
+        snapshotWrapperView.layer.transform = _wrapperView.layer.transform;
     }
     else
     {
@@ -809,6 +842,8 @@ typedef struct {
         [_snapshotClipView removeFromSuperview];
         _snapshotClipView = nil;
     }
+    
+    return _snapshotClipView;
 }
 
 - (void)_stopAllContentAnimations

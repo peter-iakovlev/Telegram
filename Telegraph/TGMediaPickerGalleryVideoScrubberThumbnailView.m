@@ -7,6 +7,7 @@
     CGSize _originalSize;
     CGRect _cropRect;
     UIImageOrientation _cropOrientation;
+    bool _cropMirrored;
     
     UIImageView *_imageView;
     UIView *_stripeView;
@@ -33,7 +34,7 @@
     return self;
 }
 
-- (instancetype)initWithImage:(UIImage *)image originalSize:(CGSize)originalSize cropRect:(CGRect)cropRect cropOrientation:(UIImageOrientation)cropOrientation
+- (instancetype)initWithImage:(UIImage *)image originalSize:(CGSize)originalSize cropRect:(CGRect)cropRect cropOrientation:(UIImageOrientation)cropOrientation cropMirrored:(bool)cropMirrored
 {
     self = [self initWithImage:image];
     if (self != nil)
@@ -41,6 +42,7 @@
         _originalSize = originalSize;
         _cropRect = cropRect;
         _cropOrientation = cropOrientation;
+        _cropMirrored = cropMirrored;
     }
     return self;
 }
@@ -52,7 +54,10 @@
     if (_imageView == nil)
         return;
     
-    _imageView.transform = CGAffineTransformMakeRotation(TGRotationForOrientation(_cropOrientation));
+    CGAffineTransform transform = CGAffineTransformMakeRotation(TGRotationForOrientation(_cropOrientation));
+    if (_cropMirrored)
+        transform = CGAffineTransformScale(transform, -1.0f, 1.0f);
+    _imageView.transform = transform;
     
     CGRect cropRect = _cropRect;
     CGSize originalSize = _originalSize;

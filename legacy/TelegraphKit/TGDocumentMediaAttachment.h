@@ -30,6 +30,7 @@
 @property (nonatomic) int date;
 @property (nonatomic, strong) NSString *mimeType;
 @property (nonatomic) int size;
+@property (nonatomic) int32_t version;
 @property (nonatomic, strong) TGImageInfo *thumbnailInfo;
 
 @property (nonatomic, strong) NSString *documentUri;
@@ -44,6 +45,10 @@
 - (NSString *)fileName;
 
 - (bool)isAnimated;
+- (bool)isSticker;
+- (bool)isStickerWithPack;
+- (id<TGStickerPackReference>)stickerPackReference;
+- (bool)isVoice;
 - (CGSize)pictureSize;
 
 @end

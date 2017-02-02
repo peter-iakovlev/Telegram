@@ -12,6 +12,7 @@
 @property (nonatomic, readonly) AVCaptureAudioDataOutput *audioOutput;
 @property (nonatomic, readonly) PGCameraMovieWriter *movieWriter;
 
+@property (nonatomic, assign) bool alwaysSetFlash;
 @property (nonatomic, assign) PGCameraMode currentMode;
 @property (nonatomic, assign) PGCameraFlashMode currentFlashMode;
 
@@ -23,10 +24,12 @@
 
 @property (nonatomic, readonly) CGPoint focusPoint;
 
+@property (nonatomic, copy) void(^outputSampleBuffer)(CMSampleBufferRef sampleBuffer, AVCaptureConnection *connection);
+
 @property (nonatomic, copy) void(^changingPosition)(void);
 @property (nonatomic, copy) bool(^requestPreviewIsMirrored)(void);
 
-- (instancetype)initWithPreferredPosition:(PGCameraPosition)position;
+- (instancetype)initWithMode:(PGCameraMode)mode position:(PGCameraPosition)position;
 
 - (void)performInitialConfigurationWithCompletion:(void (^)(void))completion;
 
@@ -40,7 +43,7 @@
 - (void)startVideoRecordingWithOrientation:(AVCaptureVideoOrientation)orientation mirrored:(bool)mirrored completion:(void (^)(NSURL *outputURL, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success))completion;
 - (void)stopVideoRecording;
 
-- (void)captureNextFrameForVideoThumbnail:(bool)forVideoThumbnail completion:(void (^)(UIImage * image))completion;
+- (void)captureNextFrameCompletion:(void (^)(UIImage * image))completion;
 
 + (AVCaptureDevice *)_deviceWithCameraPosition:(PGCameraPosition)position;
 

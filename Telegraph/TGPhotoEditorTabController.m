@@ -32,6 +32,10 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
 
 @implementation TGPhotoEditorTabController
 
+- (void)handleTabAction:(TGPhotoEditorTab)__unused tab
+{
+}
+
 - (BOOL)prefersStatusBarHidden
 {
     if ([self inFormSheet])
@@ -126,16 +130,15 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
         transitionViewSuperview = self.view;
     }
     
+    
+    _transitionView.hidden = false;
     _transitionView.frame = referenceFrame;
     _transitionTargetFrame = [self _targetFrameForTransitionInFromFrame:referenceFrame];
     [transitionViewSuperview addSubview:_transitionView];
 }
 
 - (void)animateTransitionIn
-{
-    if ([_transitionView isKindOfClass:[TGPhotoEditorPreviewView class]])
-        [(TGPhotoEditorPreviewView *)_transitionView performTransitionToCropAnimated:true];
-    
+{    
     if (_noTransitionView)
         return;
     
@@ -255,13 +258,7 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
         if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
             orientation = UIInterfaceOrientationPortrait;
 
-        CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:self.view.frame toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation includePanel:false];
-        CGSize fittedSize = TGScaleToSize(referenceView.frame.size, containerFrame.size);
-        CGRect sourceFrame = CGRectMake(containerFrame.origin.x + (containerFrame.size.width - fittedSize.width) / 2,
-                                        containerFrame.origin.y + (containerFrame.size.height - fittedSize.height) / 2,
-                                        fittedSize.width,
-                                        fittedSize.height);
-        
+        CGRect sourceFrame = [self transitionOutSourceFrameForReferenceFrame:referenceView.frame orientation:orientation];
         CGRect targetFrame = referenceFrame;
         toTransitionView.frame = sourceFrame;
         
@@ -299,6 +296,18 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
     }
 }
 
+- (CGRect)transitionOutSourceFrameForReferenceFrame:(CGRect)referenceFrame orientation:(UIInterfaceOrientation)orientation
+{
+    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:self.view.frame toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation panelSize:TGPhotoEditorPanelSize];
+    CGSize fittedSize = TGScaleToSize(referenceFrame.size, containerFrame.size);
+    CGRect sourceFrame = CGRectMake(containerFrame.origin.x + (containerFrame.size.width - fittedSize.width) / 2,
+                                    containerFrame.origin.y + (containerFrame.size.height - fittedSize.height) / 2,
+                                    fittedSize.width,
+                                    fittedSize.height);
+    
+    return sourceFrame;
+}
+
 - (void)_animatePreviewViewTransitionOutToFrame:(CGRect)__unused toFrame saving:(bool)__unused saving parentView:(UIView *)__unused parentView completion:(void (^)(void))__unused completion
 {
     
@@ -312,7 +321,7 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
     if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
         orientation = UIInterfaceOrientationPortrait;
     
-    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation includePanel:false];
+    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation panelSize:TGPhotoEditorPanelSize];
     CGSize fittedSize = TGScaleToSize(fromFrame.size, containerFrame.size);
     CGRect toFrame = CGRectMake(containerFrame.origin.x + (containerFrame.size.width - fittedSize.width) / 2,
                                 containerFrame.origin.y + (containerFrame.size.height - fittedSize.height) / 2,
@@ -383,16 +392,10 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
     return nil;
 }
 
-+ (CGRect)photoContainerFrameForParentViewFrame:(CGRect)parentViewFrame toolbarLandscapeSize:(CGFloat)toolbarLandscapeSize orientation:(UIInterfaceOrientation)orientation includePanel:(bool)includePanel
++ (CGRect)photoContainerFrameForParentViewFrame:(CGRect)parentViewFrame toolbarLandscapeSize:(CGFloat)toolbarLandscapeSize orientation:(UIInterfaceOrientation)orientation panelSize:(CGFloat)panelSize
 {
-    CGFloat panelToolbarPortraitSize = TGPhotoEditorToolbarSize;
-    CGFloat panelToolbarLandscapeSize = toolbarLandscapeSize;
-    
-    if (!includePanel)
-    {
-        panelToolbarPortraitSize += TGPhotoEditorPanelSize;
-        panelToolbarLandscapeSize += TGPhotoEditorPanelSize;
-    }
+    CGFloat panelToolbarPortraitSize = TGPhotoEditorToolbarSize + panelSize;
+    CGFloat panelToolbarLandscapeSize = toolbarLandscapeSize + panelSize;
     
     switch (orientation)
     {
@@ -407,15 +410,16 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
     }
 }
 
-+ (TGPhotoEditorTab)highlightedButtonsForEditorValues:(id<TGMediaEditAdjustments>)editorValues forAvatar:(bool)forAvatar hasCaption:(bool)hasCaption
++ (TGPhotoEditorTab)highlightedButtonsForEditorValues:(id<TGMediaEditAdjustments>)editorValues forAvatar:(bool)forAvatar
 {
     TGPhotoEditorTab highlightedButtons = TGPhotoEditorNoneTab;
     
-    if (hasCaption)
-        highlightedButtons |= TGPhotoEditorCaptionTab;
     
     if ([editorValues cropAppliedForAvatar:forAvatar])
         highlightedButtons |= TGPhotoEditorCropTab;
+    
+    if ([editorValues hasPainting])
+        highlightedButtons |= TGPhotoEditorPaintTab;
     
     if ([editorValues isKindOfClass:[PGPhotoEditorValues class]])
     {
@@ -423,9 +427,9 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
             highlightedButtons |= TGPhotoEditorToolsTab;
     }
     else if ([editorValues isKindOfClass:[TGVideoEditAdjustments class]])
-    {
-        if ([(TGVideoEditAdjustments *)editorValues rotationApplied])
-            highlightedButtons |= TGPhotoEditorRotateTab;
+    {        
+        if ([(TGVideoEditAdjustments *)editorValues sendAsGif])
+            highlightedButtons |= TGPhotoEditorGifTab;
     }
     
     return highlightedButtons;

@@ -10,6 +10,7 @@
 @implementation TGExternalGifSearchResultGalleryItem
 
 @synthesize selectionContext;
+@synthesize editingContext;
 
 - (instancetype)initWithSearchResultItem:(TGExternalGifSearchResult *)searchResultItem
 {
@@ -34,6 +35,16 @@
 - (id<TGMediaSelectableItem>)selectableMediaItem
 {
     return self.webSearchResult;
+}
+
+- (id<TGMediaEditableItem>)editableMediaItem
+{
+    return self.webSearchResult;
+}
+
+- (TGPhotoEditorTab)toolbarTabs
+{
+    return TGPhotoEditorNoneTab;
 }
 
 - (NSString *)uniqueId

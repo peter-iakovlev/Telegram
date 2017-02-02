@@ -44,6 +44,8 @@
 #import "TGMessageImageView.h"
 #import "TGDocumentMessageIconView.h"
 
+#import "TGReusableLabel.h"
+
 typedef enum {
     TGAudioMessageButtonPlay = 0,
     TGAudioMessageButtonPause = 1,
@@ -63,6 +65,7 @@ typedef enum {
     
     CGPoint _boundOffset;
     
+    TGModernTextViewModel *_textModel;
     TGDocumentMessageIconModel *_iconModel;
     
     TGAudioSliderViewModel *_sliderModel;
@@ -83,185 +86,21 @@ typedef enum {
 
 @end
 
+static CTFontRef textFontForSize(CGFloat size)
+{
+    static CTFontRef font = NULL;
+    static int cachedSize = 0;
+    
+    if ((int)size != cachedSize || font == NULL)
+    {
+        font = TGCoreTextSystemFontOfSize(size);
+        cachedSize = (int)size;
+    }
+    
+    return font;
+}
+
 @implementation TGAudioMessageViewModel
-
-static UIImage *playImageWithColor(UIColor *color)
-{
-    CGFloat radius = 37.0f;
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius, radius), false, 0.0f);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    CGContextSetFillColorWithColor(context, color.CGColor);
-    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius, radius));
-    
-    CGContextSetBlendMode(context, kCGBlendModeCopy);
-    CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
-    
-    CGContextTranslateCTM(context, -TGRetinaPixel, TGRetinaPixel);
-    CGFloat factor = 28.0f / 34.0f;
-    CGContextScaleCTM(context, 0.5f * factor, 0.5f * factor);
-    
-    TGDrawSvgPath(context, @"M39.4267651,27.0560591 C37.534215,25.920529 36,26.7818508 36,28.9948438 L36,59.0051562 C36,61.2114475 37.4877047,62.0081969 39.3251488,60.7832341 L62.6748512,45.2167659 C64.5112802,43.9924799 64.4710515,42.0826309 62.5732349,40.9439409 L39.4267651,27.0560591 Z");
-    
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    
-    return image;
-}
-
-static UIImage *pauseImageWithColor(UIColor *color)
-{
-    CGFloat radius = 37.0f;
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius, radius), false, 0.0f);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    CGContextSetFillColorWithColor(context, color.CGColor);
-    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius, radius));
-    
-    CGContextSetBlendMode(context, kCGBlendModeCopy);
-    CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
-
-    CGFloat factor = 28.0f / 34.0f;
-    CGContextTranslateCTM(context, TGRetinaPixel, TGRetinaPixel);
-    CGContextScaleCTM(context, 0.5f * factor, 0.5f * factor);
-    
-    TGDrawSvgPath(context, @"M29,30.0017433 C29,28.896211 29.8874333,28 30.999615,28 L37.000385,28 C38.1047419,28 39,28.8892617 39,30.0017433 L39,57.9982567 C39,59.103789 38.1125667,60 37.000385,60 L30.999615,60 C29.8952581,60 29,59.1107383 29,57.9982567 L29,30.0017433 Z M49,30.0017433 C49,28.896211 49.8874333,28 50.999615,28 L57.000385,28 C58.1047419,28 59,28.8892617 59,30.0017433 L59,57.9982567 C59,59.103789 58.1125667,60 57.000385,60 L50.999615,60 C49.8952581,60 49,59.1107383 49,57.9982567 L49,30.0017433 Z");
-    
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    
-    return image;
-}
-
-static UIImage *downloadImageWithColor(UIColor *color, UIColor *backgroundColor)
-{
-    CGFloat radius = 37.0f;
-    CGFloat diameter = radius;
-    CGFloat lineWidth = 2.0f;
-    CGFloat width = CGCeil(radius / 2.5f);
-    CGFloat height = CGCeil(radius / 2.0f) - 1.0f;
-    
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius, radius), false, 0.0f);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
-    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius, radius));
-    
-    CGContextSetStrokeColorWithColor(context, color.CGColor);
-    CGContextSetLineWidth(context, lineWidth);
-    CGContextSetLineCap(context, kCGLineCapRound);
-    
-    CGPoint mainLine[] = {
-        CGPointMake((diameter - lineWidth) / 2.0f + lineWidth / 2.0f, (diameter - height) / 2.0f + lineWidth / 2.0f),
-        CGPointMake((diameter - lineWidth) / 2.0f + lineWidth / 2.0f, (diameter + height) / 2.0f - lineWidth / 2.0f)
-    };
-    
-    CGPoint arrowLine[] = {
-        CGPointMake((diameter - lineWidth) / 2.0f + lineWidth / 2.0f - width / 2.0f, (diameter + height) / 2.0f + lineWidth / 2.0f - width / 2.0f),
-        CGPointMake((diameter - lineWidth) / 2.0f + lineWidth / 2.0f, (diameter + height) / 2.0f + lineWidth / 2.0f),
-        CGPointMake((diameter - lineWidth) / 2.0f + lineWidth / 2.0f, (diameter + height) / 2.0f + lineWidth / 2.0f),
-        CGPointMake((diameter - lineWidth) / 2.0f + lineWidth / 2.0f + width / 2.0f, (diameter + height) / 2.0f + lineWidth / 2.0f - width / 2.0f),
-    };
-    
-    CGContextStrokeLineSegments(context, mainLine, sizeof(mainLine) / sizeof(mainLine[0]));
-    CGContextStrokeLineSegments(context, arrowLine, sizeof(arrowLine) / sizeof(arrowLine[0]));
-    
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    
-    return image;
-}
-
-static UIImage *cancelImageWithColor(UIColor *color, UIColor *backgroundColor)
-{
-    CGFloat radius = 37.0f;
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius, radius), false, 0.0f);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    CGFloat diameter = radius;
-    //tgauCGFloat inset = 0.5f;
-    CGFloat lineWidth = 2.0f;
-    CGFloat crossSize = 16.0f;
-    
-    CGContextSetBlendMode(context, kCGBlendModeCopy);
-    
-    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
-    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius, radius));
-    
-    CGContextSetLineCap(context, kCGLineCapRound);
-    CGContextSetLineWidth(context, lineWidth);
-    
-    CGPoint crossLine[] = {
-        CGPointMake((diameter - crossSize) / 2.0f, (diameter - crossSize) / 2.0f),
-        CGPointMake((diameter + crossSize) / 2.0f, (diameter + crossSize) / 2.0f),
-        CGPointMake((diameter + crossSize) / 2.0f, (diameter - crossSize) / 2.0f),
-        CGPointMake((diameter - crossSize) / 2.0f, (diameter + crossSize) / 2.0f),
-    };
-    
-    CGContextSetStrokeColorWithColor(context, color.CGColor);
-    CGContextStrokeLineSegments(context, crossLine, sizeof(crossLine) / sizeof(crossLine[0]));
-    
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    
-    return image;
-}
-
-- (UIImage *)playImage:(bool)incoming
-{
-    static UIImage *incomingImage = nil;
-    static UIImage *outgoingImage = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        incomingImage = playImageWithColor(TGAccentColor());
-        outgoingImage = playImageWithColor(UIColorRGB(0x3fc33b));
-    });
-    
-    return incoming ? incomingImage : outgoingImage;
-}
-
-- (UIImage *)pauseImage:(bool)incoming
-{
-    static UIImage *incomingImage = nil;
-    static UIImage *outgoingImage = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        incomingImage = pauseImageWithColor(TGAccentColor());
-        outgoingImage = pauseImageWithColor(UIColorRGB(0x3fc33b));
-    });
-    
-    return incoming ? incomingImage : outgoingImage;
-}
-
-- (UIImage *)downloadImage:(bool)incoming
-{
-    static UIImage *incomingImage = nil;
-    static UIImage *outgoingImage = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        incomingImage = downloadImageWithColor(UIColorRGB(0x4f9ef3), UIColorRGBA(0x85baf2, 0.15f));
-        outgoingImage = downloadImageWithColor(UIColorRGB(0x64b15e), UIColorRGBA(0x4fb212, 0.15f));
-    });
-    
-    return incoming ? incomingImage : outgoingImage;
-}
-
-- (UIImage *)cancelImage:(bool)incoming
-{
-    static UIImage *incomingImage = nil;
-    static UIImage *outgoingImage = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        incomingImage = cancelImageWithColor(UIColorRGB(0x4f9ef3), UIColorRGBA(0x85baf2, 0.15f));
-        outgoingImage = cancelImageWithColor(UIColorRGB(0x64b15e), UIColorRGBA(0x4fb212, 0.15f));
-    });
-    
-    return incoming ? incomingImage : outgoingImage;
-}
 
 - (instancetype)initWithMessage:(TGMessage *)message duration:(int32_t)duration size:(int32_t)size fileType:(NSString *)fileType authorPeer:(id)authorPeer viaUser:(TGUser *)viaUser context:(TGModernViewContext *)context
 {
@@ -278,12 +117,26 @@ static UIImage *cancelImageWithColor(UIColor *color, UIColor *backgroundColor)
             }
         }
         
+        static TGTelegraphConversationMessageAssetsSource *assetsSource = nil;
+        static dispatch_once_t onceToken2;
+        dispatch_once(&onceToken2, ^
+        {
+            assetsSource = [TGTelegraphConversationMessageAssetsSource instance];
+        });
+
+        
         _iconModel = [[TGDocumentMessageIconModel alloc] init];
         _iconModel.skipDrawInContext = true;
         _iconModel.frame = CGRectMake(0.0f, 0.0f, 37.0f, 37.0f);
         _iconModel.incoming = _incomingAppearance;
         _iconModel.diameter = 37.0f;
         [self addSubmodel:_iconModel];
+        
+        _textModel = [[TGModernTextViewModel alloc] initWithText:_documentMedia.caption font:textFontForSize(TGGetMessageViewModelLayoutConstants()->textFontSize)];
+        _textModel.textColor = [assetsSource messageTextColor];
+        if (message.isBroadcast)
+            _textModel.additionalTrailingWidth += 10.0f;
+        [_contentModel addSubmodel:_textModel];
         
         _duration = duration;
         _size = size;
@@ -370,6 +223,12 @@ static UIImage *cancelImageWithColor(UIColor *color, UIColor *backgroundColor)
             _documentMedia = attachment;
             break;
         }
+    }
+    
+    if (!TGStringCompare(_textModel.text, _documentMedia.caption)) {
+        _textModel.text = _documentMedia.caption;
+        if (sizeUpdated != NULL)
+            *sizeUpdated = true;
     }
     
     [self updateWaveform];
@@ -520,11 +379,48 @@ static UIImage *cancelImageWithColor(UIColor *color, UIColor *backgroundColor)
 - (void)layoutContentForHeaderHeight:(CGFloat)headerHeight
 {
     _headerHeight = headerHeight;
+    
+    if (_textModel.text.length != 0 && ![_textModel.text isEqualToString:@" "]) {
+        CGRect textFrame = _textModel.frame;
+        
+        CGFloat textInset = 48.0f;
+        textFrame.origin = CGPointMake(1, textInset + headerHeight);
+        _textModel.frame = textFrame;
+        headerHeight += textFrame.size.height;
+    } else {
+        _textModel.frame = CGRectZero;
+    }
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)__unused needsContentsUpdate hasDate:(bool)__unused hasDate hasViews:(bool)__unused hasViews
+- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)__unused needsContentsUpdate infoWidth:(CGFloat)infoWidth
 {
-    return CGSizeMake(MAX(160, MIN(205, _duration * 30)), 50.0f);
+    CGSize textSize = CGSizeZero;
+    
+    int layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks;
+    
+    if (_context.commandsEnabled)
+        layoutFlags |= TGReusableLabelLayoutHighlightCommands;
+    
+    bool updateContents = [_textModel layoutNeedsUpdatingForContainerSize:containerSize additionalTrailingWidth:infoWidth layoutFlags:layoutFlags];
+    _textModel.layoutFlags = layoutFlags;
+    _textModel.additionalTrailingWidth = infoWidth;
+    if (updateContents)
+        [_textModel layoutForContainerSize:containerSize];
+    
+    if (needsContentsUpdate != NULL && updateContents)
+        *needsContentsUpdate = updateContents;
+    
+    CGFloat width = MAX(160, MIN(205, _duration * 30));
+    CGFloat height = 50.0f;
+    
+    if (_textModel.text.length != 0 && ![_textModel.text isEqualToString:@" "]) {
+        textSize = _textModel.frame.size;
+        textSize.height += 10.0f;
+    } else {
+        height += (infoWidth > (width - 80.0f) ? 12.0f : 0.0f);
+    }
+    
+    return CGSizeMake(width, height + textSize.height);
 }
 
 - (void)layoutForContainerSize:(CGSize)containerSize
@@ -570,6 +466,10 @@ static UIImage *cancelImageWithColor(UIColor *color, UIColor *backgroundColor)
 
 - (int)gestureRecognizer:(TGDoubleTapGestureRecognizer *)__unused recognizer shouldFailTap:(CGPoint)__unused point
 {
+    if (_textModel.frame.size.height > FLT_EPSILON && point.y >= CGRectGetMinY(_textModel.frame)) {
+        return false;
+    }
+    
     if ((_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point)) ||
         (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)))
         return 3;
@@ -589,21 +489,30 @@ static UIImage *cancelImageWithColor(UIColor *color, UIColor *backgroundColor)
             else if (recognizer.doubleTapped)
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
             else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
-                if (TGPeerIdIsChannel(_forwardedPeerId)) {
-                    [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+                if (_viaUser != nil && [_forwardedHeaderModel linkAtPoint:CGPointMake(point.x - _forwardedHeaderModel.frame.origin.x, point.y - _forwardedHeaderModel.frame.origin.y) regionData:NULL]) {
+                    [_context.companionHandle requestAction:@"useContextBot" options:@{@"uid": @((int32_t)_viaUser.uid), @"username": _viaUser.userName == nil ? @"" : _viaUser.userName}];
                 } else {
-                    [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                    if (TGPeerIdIsChannel(_forwardedPeerId)) {
+                        [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+                    } else {
+                        [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                    }
                 }
+            }
+            else if (_viaUserModel != nil && CGRectContainsPoint(_viaUserModel.frame, point)) {
+                [_context.companionHandle requestAction:@"useContextBot" options:@{@"uid": @((int32_t)_viaUser.uid), @"username": _viaUser.userName == nil ? @"" : _viaUser.userName}];
             }
             else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
                 [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
-            else if (_status == nil) {
-                [self activateMedia];
-            } else if (_status != nil) {
-                if (!_status.paused) {
+            else if (_textModel.frame.size.height <= FLT_EPSILON || point.y < CGRectGetMinY(_textModel.frame)) {
+                if (_status == nil) {
                     [self activateMedia];
-                } else {
-                    [self activateMedia];
+                } else if (_status != nil) {
+                    if (!_status.paused) {
+                        [self activateMedia];
+                    } else {
+                        [self activateMedia];
+                    }
                 }
             }
         }
@@ -634,9 +543,9 @@ static UIImage *cancelImageWithColor(UIColor *color, UIColor *backgroundColor)
             
             NSString *localFilePath = nil;
             if (_documentMedia.documentId != 0) {
-                localFilePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:_documentMedia.documentId] stringByAppendingPathComponent:[_documentMedia safeFileName]];
+                localFilePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:_documentMedia.documentId version:_documentMedia.version] stringByAppendingPathComponent:[_documentMedia safeFileName]];
             } else {
-                localFilePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:_documentMedia.localDocumentId] stringByAppendingPathComponent:[_documentMedia safeFileName]];
+                localFilePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:_documentMedia.localDocumentId version:_documentMedia.version] stringByAppendingPathComponent:[_documentMedia safeFileName]];
             }
             [_sliderModel setWaveformSignal:[TGAudioWaveformSignal audioWaveformForFileAtPath:localFilePath duration:_duration]];
         }

@@ -53,6 +53,15 @@
             __strong TGModernGalleryZoomableItemView *strongSelf = weakSelf;
             [strongSelf doubleTap:point];
         };
+        
+        ((TGModernGalleryImageItemContainerView *)_containerView).contentView = ^UIView *
+        {
+            __strong TGModernGalleryZoomableItemView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                return [strongSelf contentView];
+            
+            return nil;
+        };
     }
     return self;
 }
@@ -114,20 +123,26 @@
     _internalContainerView.frame = self.bounds;
     _containerView.frame = _internalContainerView.bounds;
     
-    CGSize contentSize = [self contentSize];
     if (!CGSizeEqualToSize(frame.size, _scrollView.frame.size))
     {
-        _scrollView.minimumZoomScale = 1.0f;
-        _scrollView.maximumZoomScale = 1.0f;
-        _scrollView.normalZoomScale = 1.0f;
-        _scrollView.zoomScale = 1.0f;
-        _scrollView.frame = CGRectMake(0, 0, frame.size.width, frame.size.height);
-        _scrollView.contentSize = contentSize;
-        [self contentView].frame = CGRectMake(0.0f, 0.0f, contentSize.width, contentSize.height);
-        
-        [self adjustZoom];
-        _scrollView.zoomScale = _scrollView.normalZoomScale;
+        [self forceUpdateLayout];
     }
+}
+
+- (void)forceUpdateLayout {
+    CGRect frame = self.frame;
+    CGSize contentSize = [self contentSize];
+    
+    _scrollView.minimumZoomScale = 1.0f;
+    _scrollView.maximumZoomScale = 1.0f;
+    _scrollView.normalZoomScale = 1.0f;
+    _scrollView.zoomScale = 1.0f;
+    _scrollView.frame = CGRectMake(0, 0, frame.size.width, frame.size.height);
+    _scrollView.contentSize = contentSize;
+    [self contentView].frame = CGRectMake(0.0f, 0.0f, contentSize.width, contentSize.height);
+    
+    [self adjustZoom];
+    _scrollView.zoomScale = _scrollView.normalZoomScale;
 }
 
 - (void)reset

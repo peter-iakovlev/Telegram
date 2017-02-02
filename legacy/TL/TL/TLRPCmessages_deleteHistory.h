@@ -8,6 +8,7 @@
 
 @interface TLRPCmessages_deleteHistory : TLMetaRpc
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic, retain) TLInputPeer *peer;
 @property (nonatomic) int32_t max_id;
 

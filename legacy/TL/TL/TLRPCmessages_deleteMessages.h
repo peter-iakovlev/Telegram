@@ -7,6 +7,7 @@
 
 @interface TLRPCmessages_deleteMessages : TLMetaRpc
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic, retain) NSArray *n_id;
 
 - (Class)responseClass;

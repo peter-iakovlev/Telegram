@@ -6,5 +6,6 @@
 - (void)setTyping;
 - (void)setAudioRecording;
 - (void)setUploading;
+- (void)setPlaying;
 
 @end

@@ -30,6 +30,16 @@
     return self;
 }
 
+- (instancetype)initWithReplyMarkup:(TGBotReplyMarkup *)replyMarkup {
+    self = [super init];
+    if (self != nil)
+    {
+        _replyMarkup = replyMarkup;
+        self.type = TGReplyMarkupAttachmentType;
+    }
+    return self;
+}
+
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
     PSKeyValueEncoder *encoder = [[PSKeyValueEncoder alloc] init];

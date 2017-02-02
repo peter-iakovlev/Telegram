@@ -18,6 +18,8 @@
 
 #import "TGStringUtils.h"
 
+#import "TGTelegraph.h"
+
 @interface TGGroupInfoUserCollectionItem () <TGGroupInfoUserCollectionItemViewDelegate>
 {
     bool _canEdit;
@@ -61,7 +63,7 @@
         if (_user.kind == TGUserKindBot || _user.kind == TGUserKindSmartBot)
         {
             NSString *botStatus = nil;
-            if (_user.kind == TGUserKindBot)
+            if (_user.kind == TGUserKindBot && _customLabel.length == 0)
                 botStatus = TGLocalized(@"Bot.GroupStatusDoesNotReadHistory");
             else
                 botStatus = TGLocalized(@"Bot.GroupStatusReadsHistory");
@@ -97,6 +99,8 @@
         view.optionText = _optionTitle;
     }
     
+    [view setCustomLabel:_customLabel];
+    
     [view setDisplaySwitch:_displaySwitch];
     [view setEnableSwitch:_enableSwitch animated:false];
     [view setSwitchIsOn:_switchIsOn animated:false];
@@ -124,9 +128,13 @@
 }
 
 - (void)setSwitchIsOn:(bool)switchIsOn {
+    [self setSwitchIsOn:switchIsOn animated:true];
+}
+
+- (void)setSwitchIsOn:(bool)switchIsOn animated:(bool)animated {
     _switchIsOn = switchIsOn;
     
-    [(TGGroupInfoUserCollectionItemView *)[self boundView] setSwitchIsOn:_switchIsOn animated:true];
+    [(TGGroupInfoUserCollectionItemView *)[self boundView] setSwitchIsOn:_switchIsOn animated:animated];
 }
 
 - (void)setCustomStatus:(NSString *)customStatus {
@@ -140,7 +148,7 @@
         if (_user.kind == TGUserKindBot || _user.kind == TGUserKindSmartBot)
         {
             NSString *botStatus = nil;
-            if (_user.kind == TGUserKindBot)
+            if (_user.kind == TGUserKindBot && _customLabel.length == 0)
                 botStatus = TGLocalized(@"Bot.GroupStatusDoesNotReadHistory");
             else
                 botStatus = TGLocalized(@"Bot.GroupStatusReadsHistory");
@@ -183,7 +191,7 @@
             if (_user.kind == TGUserKindBot || _user.kind == TGUserKindSmartBot)
             {
                 NSString *botStatus = nil;
-                if (_user.kind == TGUserKindBot)
+                if (_user.kind == TGUserKindBot && _customLabel.length == 0)
                     botStatus = TGLocalized(@"Bot.GroupStatusDoesNotReadHistory");
                 else
                     botStatus = TGLocalized(@"Bot.GroupStatusReadsHistory");
@@ -191,9 +199,17 @@
             }
             else
             {
-                bool active = false;
-                NSString *status = [self _statusStringFromUserPresence:_user.presence active:&active];
-                [view setStatus:status active:active];
+                if (_user.uid == TGTelegraphInstance.clientUserId) {
+                    bool active = false;
+                    TGUserPresence presence;
+                    presence.online = true;
+                    NSString *status = [self _statusStringFromUserPresence:presence active:&active];
+                    [view setStatus:status active:active];
+                } else {
+                    bool active = false;
+                    NSString *status = [self _statusStringFromUserPresence:_user.presence active:&active];
+                    [view setStatus:status active:active];
+                }
             }
         }
         [view setAvatarUri:_user.photoUrlSmall];
@@ -294,6 +310,12 @@
     if (_toggled) {
         _toggled(switchValue);
     }
+}
+
+- (void)setCustomLabel:(NSString *)customLabel {
+    _customLabel = customLabel;
+    
+    [(TGGroupInfoUserCollectionItemView *)[self boundView] setCustomLabel:_customLabel];
 }
 
 @end

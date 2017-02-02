@@ -20,8 +20,8 @@
 
 @property (nonatomic, weak) id<TGModernConversationInputPanelDelegate> delegate;
 
-- (void)setAvailableSpaceAbove:(CGFloat)availableSpaceAbove;
-- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve;
-- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration;
+- (void)setContentAreaHeight:(CGFloat)contentAreaHeight;
+- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight;
+- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration contentAreaHeight:(CGFloat)contentAreaHeight;
 
 @end

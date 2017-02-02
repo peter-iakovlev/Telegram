@@ -25,8 +25,6 @@
 @property (nonatomic, strong) UIImage *normalTextFieldBackgroundImage;
 @property (nonatomic, strong) UIImage *activeTextFieldBackgroundImage;
 
-@property (nonatomic, strong) TGModernButton *customCancelButton;
-
 @property (nonatomic) bool showsCustomCancelButton;
 @property (nonatomic, strong) UILabel *placeholderLabel;
 @property (nonatomic, strong) UIImageView *customSearchIcon;
@@ -116,16 +114,20 @@
         {
             static UIImage *image = nil;
             static UIImage *imagePlain = nil;
+            static UIImage *imagePlainForced = nil;
             static UIImage *imageHeader = nil;
             
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                UIGraphicsBeginImageContextWithOptions(CGSizeMake(1.0f, 3.0f), true, 0.0f);
+                UIGraphicsBeginImageContextWithOptions(CGSizeMake(1.0f, 3.0f), false, 0.0f);
                 CGContextRef context = UIGraphicsGetCurrentContext();
-                CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
+                CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
                 CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 3.0f));
                 imagePlain = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];
+                CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
+                CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 3.0f));
+                imagePlainForced = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];
                 
                 CGContextSetFillColorWithColor(context, UIColorRGB(0xc8c7cc).CGColor);
                 CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
@@ -156,7 +158,7 @@
             else
             {
                 backgroundManualImage = _style == TGSearchBarStyleLight ? image : imagePlain;
-                backgroundManualActiveImage = _style == TGSearchBarStyleLightAlwaysPlain ? imagePlain : image;
+                backgroundManualActiveImage = _style == TGSearchBarStyleLightAlwaysPlain ? imagePlainForced : image;
             }
         }
         
@@ -226,6 +228,13 @@
     return self;
 }
 
+- (void)setHighContrast:(bool)highContrast {
+    if (_highContrast != highContrast) {
+        _highContrast = highContrast;
+        _textFieldBackground.image = _showsCustomCancelButton ? self.activeTextFieldBackgroundImage : self.normalTextFieldBackgroundImage;
+    }
+}
+
 - (void)setAlwaysExtended:(bool)alwaysExtended
 {
     if (_alwaysExtended != alwaysExtended)
@@ -266,8 +275,21 @@
 
 - (UIImage *)normalTextFieldBackgroundImage
 {
-    if (_normalTextFieldBackgroundImage == nil)
-    {
+    if (_highContrast) {
+        static UIImage *image = nil;
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^
+        {
+            CGFloat diameter = 10.0f;
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetFillColorWithColor(context, UIColorRGB(0xe5e5e5).CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+            image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
+            UIGraphicsEndImageContext();
+        });
+        return image;
+    } else if (_normalTextFieldBackgroundImage == nil) {
         NSString *fileName = nil;
         
         if (_style == TGSearchBarStyleDefault)
@@ -416,7 +438,7 @@
         else if (_style == TGSearchBarStyleDark)
             buttonColor = [UIColor whiteColor];
         
-        [_customCancelButton setTitleColor:buttonColor];
+        [(TGModernButton *)_customCancelButton setTitleColor:buttonColor];
         _customCancelButton.titleLabel.font = TGSystemFontOfSize(17.0f);
         _customCancelButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
         _customCancelButton.hidden = true;

@@ -4,9 +4,10 @@
 #import "TLMetaRpc.h"
 
 @class TLInputGeoPoint;
-@class TLInputFile;
 @class TLInputPhoto;
 @class TLInputDocument;
+@class TLInputFile;
+@class TLInputGame;
 
 @interface TLInputMedia : NSObject <TLObject>
 
@@ -29,13 +30,6 @@
 @property (nonatomic, retain) NSString *phone_number;
 @property (nonatomic, retain) NSString *first_name;
 @property (nonatomic, retain) NSString *last_name;
-
-@end
-
-@interface TLInputMedia$inputMediaUploadedPhoto : TLInputMedia
-
-@property (nonatomic, retain) TLInputFile *file;
-@property (nonatomic, retain) NSString *caption;
 
 @end
 
@@ -63,29 +57,28 @@
 
 @end
 
-@interface TLInputMedia$inputMediaUploadedDocument : TLInputMedia
-
-@property (nonatomic, retain) TLInputFile *file;
-@property (nonatomic, retain) NSString *mime_type;
-@property (nonatomic, retain) NSArray *attributes;
-@property (nonatomic, retain) NSString *caption;
-
-@end
-
-@interface TLInputMedia$inputMediaUploadedThumbDocument : TLInputMedia
-
-@property (nonatomic, retain) TLInputFile *file;
-@property (nonatomic, retain) TLInputFile *thumb;
-@property (nonatomic, retain) NSString *mime_type;
-@property (nonatomic, retain) NSArray *attributes;
-@property (nonatomic, retain) NSString *caption;
-
-@end
-
 @interface TLInputMedia$inputMediaDocument : TLInputMedia
 
 @property (nonatomic, retain) TLInputDocument *n_id;
 @property (nonatomic, retain) NSString *caption;
+
+@end
+
+@interface TLInputMedia$inputMediaPhotoExternal : TLInputMedia
+
+@property (nonatomic, retain) NSString *url;
+
+@end
+
+@interface TLInputMedia$inputMediaDocumentExternal : TLInputMedia
+
+@property (nonatomic, retain) TLInputFile *url;
+
+@end
+
+@interface TLInputMedia$inputMediaGame : TLInputMedia
+
+@property (nonatomic, retain) TLInputGame *n_id;
 
 @end
 

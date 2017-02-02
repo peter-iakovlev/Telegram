@@ -21,6 +21,11 @@
 + (UIImage *)cropIcon;
 + (UIImage *)toolsIcon;
 + (UIImage *)rotateIcon;
++ (UIImage *)paintIcon;
++ (UIImage *)stickerIcon;
++ (UIImage *)textIcon;
++ (UIImage *)gifIcon;
++ (UIImage *)gifActiveIcon;
 
 + (UIColor *)toolbarSelectedIconColor;
 + (UIColor *)toolbarAppliedIconColor;

@@ -1,0 +1,51 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "4F84751366314673FAED5BDE91D377A6883A3535" : 0,
+    "4BAB8F3E22C4829A7272C753E8D316047BC55F8C" : 0,
+    "7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C" : 0,
+    "E860E73EA92362394DE531098D73ED96B22811B3" : 0,
+    "9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "53A5188D-61BA-4EF7-AC90-0A635D987E2E",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "4F84751366314673FAED5BDE91D377A6883A3535" : "Telegraph\/submodules\/elements\/",
+    "4BAB8F3E22C4829A7272C753E8D316047BC55F8C" : "Telegraph\/Share\/submodules\/lmdb\/",
+    "7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C" : "Telegraph\/submodules\/MtProtoKit\/",
+    "E860E73EA92362394DE531098D73ED96B22811B3" : "Telegraph\/thirdparty\/SSignalKit\/",
+    "9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B" : "Telegraph\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "Telegram",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "Telegram.xcworkspace",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/gitorious.org\/mdb\/mdb.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "4BAB8F3E22C4829A7272C753E8D316047BC55F8C"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "bitbucket.org:iakovlevpeterp\/elements.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "4F84751366314673FAED5BDE91D377A6883A3535"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:iakovlev-peter\/MtProtoKit.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "bitbucket.org:iakovlevpeterp\/telegramprivate.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/peter-iakovlev\/Signals.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "E860E73EA92362394DE531098D73ED96B22811B3"
+    }
+  ]
+}

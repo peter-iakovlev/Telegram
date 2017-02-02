@@ -22,8 +22,15 @@
 
 #import "TGMusicPlayer.h"
 
+#import "TGUser.h"
+
+#import "TGReusableLabel.h"
+
+#import "TGTelegraphConversationMessageAssetsSource.h"
+
 @interface TGMusicAudioMessageModel () <TGMessageImageViewDelegate>
 {
+    TGModernTextViewModel *_textModel;
     TGDocumentMessageIconModel *_iconModel;
     TGModernLabelViewModel *_titleModel;
     TGModernLabelViewModel *_performerModel;
@@ -38,9 +45,24 @@
     CGFloat _headerHeight;
     
     id<SDisposable> _playingAudioMessageIdDisposable;
+    CGFloat _previousWidth;
 }
 
 @end
+
+static CTFontRef textFontForSize(CGFloat size)
+{
+    static CTFontRef font = NULL;
+    static int cachedSize = 0;
+    
+    if ((int)size != cachedSize || font == NULL)
+    {
+        font = TGCoreTextSystemFontOfSize(size);
+        cachedSize = (int)size;
+    }
+    
+    return font;
+}
 
 @implementation TGMusicAudioMessageModel
 
@@ -71,11 +93,13 @@
         NSString *performer = @"";
         NSString *title = @"";
         NSString *fileName = @"";
+        NSString *caption = nil;
         for (id attachment in message.mediaAttachments)
         {
             if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
             {
                 fileName = ((TGDocumentMediaAttachment *)attachment).fileName;
+                caption = ((TGDocumentMediaAttachment *)attachment).caption;
                 
                 for (id attribute in ((TGDocumentMediaAttachment *)attachment).attributes)
                 {
@@ -104,11 +128,25 @@
         
         CGFloat maxWidth = [TGViewController hasLargeScreen] ? 170.0f : 150.0f;
         
+        static TGTelegraphConversationMessageAssetsSource *assetsSource = nil;
+        static dispatch_once_t onceToken2;
+        dispatch_once(&onceToken2, ^
+        {
+            assetsSource = [TGTelegraphConversationMessageAssetsSource instance];
+        });
+        
+        _textModel = [[TGModernTextViewModel alloc] initWithText:caption font:textFontForSize(TGGetMessageViewModelLayoutConstants()->textFontSize)];
+        _textModel.textColor = [assetsSource messageTextColor];
+        if (message.isBroadcast)
+            _textModel.additionalTrailingWidth += 10.0f;
+        [_contentModel addSubmodel:_textModel];
+        
         _titleModel = [[TGModernLabelViewModel alloc] initWithText:title textColor:_incomingAppearance ? incomingNameColor : outgoingNameColor font:TGCoreTextSystemFontOfSize(16.0f) maxWidth:maxWidth truncateInTheMiddle:false];
         [_contentModel addSubmodel:_titleModel];
         
         _performerModel = [[TGModernLabelViewModel alloc] initWithText:performer textColor:_incomingAppearance ? incomingSizeColor : outgoingSizeColor font:TGCoreTextSystemFontOfSize(13.0f) maxWidth:maxWidth truncateInTheMiddle:false];
         [_contentModel addSubmodel:_performerModel];
+        _viaUser = viaUser;
     }
     return self;
 }
@@ -139,7 +177,7 @@
 {
     //_iconModel.viewUserInteractionDisabled = (_incoming && _mediaIsAvailable) || !_progressVisible;
     
-    if (_progressVisible)
+    if (_progressVisible || _deliveryState == TGMessageDeliveryStatePending)
     {
         [_iconModel setOverlayType:TGMessageImageViewOverlayProgress animated:false];
         [_iconModel setProgress:_progress animated:animated];
@@ -157,12 +195,46 @@
 
 - (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
 {
+    bool wasDelivering = _deliveryState == TGMessageDeliveryStatePending;
+    
     [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
+    
+    if (wasDelivering != (_deliveryState == TGMessageDeliveryStatePending)) {
+        [self updateImageOverlay:false];
+    }
+    
+    NSString *caption = nil;
+    for (id attachment in message.mediaAttachments)
+    {
+        if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
+        {
+            caption = ((TGDocumentMediaAttachment *)attachment).caption;
+            break;
+        }
+    }
+    
+    if (!TGStringCompare(_textModel.text, caption)) {
+        _textModel.text = caption;
+        if (sizeUpdated != NULL)
+            *sizeUpdated = true;
+    }
 }
 
 - (void)layoutContentForHeaderHeight:(CGFloat)headerHeight
 {
     _headerHeight = headerHeight;
+    
+    if (_textModel.text.length != 0 && ![_textModel.text isEqualToString:@" "]) {
+        CGRect textFrame = _textModel.frame;
+        
+        CGFloat textInset = 0.0f;
+        textInset = CGRectGetMaxY(_iconModel.frame) - 8.0f;
+        textFrame.origin = CGPointMake(1, textInset + headerHeight);
+        _textModel.frame = textFrame;
+        headerHeight += textFrame.size.height;
+    } else {
+        _textModel.frame = CGRectZero;
+    }
 }
 
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition
@@ -226,13 +298,43 @@
     [self updateImageOverlay:false];
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)__unused needsContentsUpdate hasDate:(bool)__unused hasDate hasViews:(bool)__unused hasViews
+- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)needsContentsUpdate infoWidth:(CGFloat)__unused infoWidth
 {
     CGFloat additionalWidth = 0.0f;
     if (_performerModel.frame.size.width < _titleModel.frame.size.width)
         additionalWidth += MAX(0.0f, 30.0f - _titleModel.frame.size.width - _performerModel.frame.size.width);
     
-    return CGSizeMake(57.0f + 10.0f + MAX(_titleModel.frame.size.width, _performerModel.frame.size.width) + 30.0f, 59.0f);
+    if (ABS(_previousWidth - containerSize.width) > FLT_EPSILON) {
+        _previousWidth = containerSize.width;
+        if (needsContentsUpdate) {
+            *needsContentsUpdate = true;
+        }
+    }
+    
+    CGSize textSize = CGSizeZero;
+    
+    int layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks;
+    
+    if (_context.commandsEnabled)
+        layoutFlags |= TGReusableLabelLayoutHighlightCommands;
+    
+    bool updateContents = [_textModel layoutNeedsUpdatingForContainerSize:containerSize additionalTrailingWidth:infoWidth layoutFlags:layoutFlags];
+    _textModel.layoutFlags = layoutFlags;
+    _textModel.additionalTrailingWidth = infoWidth;
+    if (updateContents)
+        [_textModel layoutForContainerSize:containerSize];
+    
+    if (needsContentsUpdate != NULL && updateContents)
+        *needsContentsUpdate = updateContents;
+    
+    if (_textModel.text.length != 0 && ![_textModel.text isEqualToString:@" "]) {
+        textSize = _textModel.frame.size;
+        textSize.height += 8.0f;
+    } else {
+        //textSize.width = MAX(textSize.width, MIN(containerSize.width, infoWidth + sizeWidth + previewSize.width + 16.0f));
+    }
+    
+    return CGSizeMake(57.0f + 10.0f + MAX(_titleModel.frame.size.width, _performerModel.frame.size.width) + 30.0f, 59.0f + textSize.height);
 }
 
 - (void)layoutForContainerSize:(CGSize)containerSize
@@ -248,8 +350,9 @@
 {
     if (messageImageView == [_iconModel boundView])
     {
-        if (action == TGMessageImageViewActionCancelDownload)
+        if (action == TGMessageImageViewActionCancelDownload) {
             [self cancelMediaDownload];
+        }
         else
             [self activateMedia];
     }
@@ -286,6 +389,10 @@
 
 - (int)gestureRecognizer:(TGDoubleTapGestureRecognizer *)__unused recognizer shouldFailTap:(CGPoint)__unused point
 {
+    point = [recognizer locationInView:[_contentModel boundView]];
+    if (_textModel.frame.size.height > FLT_EPSILON && point.y >= CGRectGetMinY(_textModel.frame)) {
+        return false;
+    }
     return 3;
 }
 
@@ -302,16 +409,24 @@
             else if (recognizer.doubleTapped)
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
             else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
-                if (TGPeerIdIsChannel(_forwardedPeerId)) {
-                    [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+                if (_viaUser != nil && [_forwardedHeaderModel linkAtPoint:CGPointMake(point.x - _forwardedHeaderModel.frame.origin.x, point.y - _forwardedHeaderModel.frame.origin.y) regionData:NULL]) {
+                    [_context.companionHandle requestAction:@"useContextBot" options:@{@"uid": @((int32_t)_viaUser.uid), @"username": _viaUser.userName == nil ? @"" : _viaUser.userName}];
                 } else {
-                    [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                    if (TGPeerIdIsChannel(_forwardedPeerId)) {
+                        [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+                    } else {
+                        [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                    }
                 }
+            }
+            else if (_viaUserModel != nil && CGRectContainsPoint(_viaUserModel.frame, point)) {
+                [_context.companionHandle requestAction:@"useContextBot" options:@{@"uid": @((int32_t)_viaUser.uid), @"username": _viaUser.userName == nil ? @"" : _viaUser.userName}];
             }
             else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
                 [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
-            else
+            else if (_textModel.frame.size.height <= FLT_EPSILON || point.y < CGRectGetMinY(_textModel.frame)) {
                 [self activateMedia];
+            }
         }
     }
 }

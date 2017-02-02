@@ -14,8 +14,12 @@ typedef enum {
     TGModernClockProgressTypeIncomingClock = 2
 } TGModernClockProgressType;
 
+@class TGModernClockProgressView;
+
 @interface TGModernClockProgressViewModel : TGModernViewModel
 
 - (instancetype)initWithType:(TGModernClockProgressType)type;
+
++ (void)setupView:(TGModernClockProgressView *)view forType:(TGModernClockProgressType)type;
 
 @end

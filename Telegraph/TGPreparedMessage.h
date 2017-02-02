@@ -10,6 +10,7 @@
 
 @class TGMessage;
 @class TGBotContextResultAttachment;
+@class TGReplyMarkupAttachment;
 
 @interface TGPreparedMessage : NSObject
 
@@ -24,6 +25,7 @@
 
 @property (nonatomic, strong) TGMessage *replyMessage;
 @property (nonatomic, strong) TGBotContextResultAttachment *botContextResult;
+@property (nonatomic, strong) TGReplyMarkupAttachment *replyMarkup;
 
 @property (nonatomic, copy) void (^executeOnAdd)();
 

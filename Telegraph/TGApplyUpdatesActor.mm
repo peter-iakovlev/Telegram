@@ -1,5 +1,7 @@
 #import "TGApplyUpdatesActor.h"
 
+#import "ASCommon.h"
+
 #import "ActionStage.h"
 #import "SGraphObjectNode.h"
 
@@ -20,7 +22,6 @@
 #import "TGTimelineItem.h"
 
 #import "TGConversationAddMessagesActor.h"
-#import "TGConversationReadMessagesActor.h"
 #import "TGApplyStateRequestBuilder.h"
 
 #import "TGUpdateStateRequestBuilder.h"
@@ -39,6 +40,8 @@
 
 #import "TLUser$modernUser.h"
 #import "TLUpdates+TG.h"
+
+#import "TGStringUtils.h"
 
 #import "TLMessageFwdHeader$messageFwdHeader.h"
 
@@ -203,7 +206,7 @@ static NSMutableArray *delayedNotifications()
         }
         if (wrappedUpdates.count != 0)
         {
-            [self _tryApplyingUpdates:wrappedUpdates users:users chats:chats optionalFinalSeq:0 optionalFinalDate:((TGWrappedUpdate *)wrappedUpdates.lastObject).date completion:^(bool)
+            [self _tryApplyingUpdates:wrappedUpdates users:users chats:chats optionalFinalSeq:0 optionalFinalDate:0 completion:^(bool)
             {
             }];
         }
@@ -857,12 +860,19 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
             if (([message isKindOfClass:[TLMessage$modernMessage class]] || [message isKindOfClass:[TLMessage$modernMessageService class]]) && !(((TLMessage$modernMessage *)message).flags & 2))
             {
                 TGMessage *parsedMessage = [[TGMessage alloc] initWithTelegraphMessageDesc:message];
-                if (parsedMessage.unread && !parsedMessage.outgoing && !parsedMessage.isSilent)
+                if (!parsedMessage.outgoing && !parsedMessage.isSilent)
                 {
                     auto maxIt = maxInboxReadMessageIdByPeerId.find(parsedMessage.cid);
+                    if (maxIt == maxInboxReadMessageIdByPeerId.end()) {
+                        TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:parsedMessage.cid];
+                        maxInboxReadMessageIdByPeerId[parsedMessage.cid] = conversation.maxReadMessageId;
+                    }
+                    
                     if (!(maxIt != maxInboxReadMessageIdByPeerId.end() && parsedMessage.mid <= maxIt->second))
                         [messagesForLocalNotification addObject:newMessage.message];
                 }
+                
+                TGLog(@"message date: %d", (int32_t)parsedMessage.date);
             }
             else
                 TGLog(@"Message %d does not match for local notification", (int)message.n_id);
@@ -1345,18 +1355,6 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                 continue;
                         }
                         
-                        
-                        if (message.cid > 0 || message.cid <= INT_MIN)
-                        {
-                            if (globalMessageMuteUntil > 0)
-                                continue;
-                        }
-                        else
-                        {
-                            if (globalGroupMuteUntil > 0)
-                                continue;
-                        }
-                        
                         UILocalNotification *localNotification = [[UILocalNotification alloc] init];
                         if (localNotification == nil)
                             continue;
@@ -1392,10 +1390,37 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                         if ([TGDatabaseInstance() isPeerMuted:notificationPeerId])
                             continue;
                         
+                        int soundId = 1;
+                        bool notFound = false;
+                        int muteUntil = 0;
+                        [TGDatabaseInstance() loadPeerNotificationSettings:notificationPeerId soundId:&soundId muteUntil:&muteUntil previewText:NULL messagesMuted:NULL notFound:&notFound];
+                        if (notFound)
+                        {
+                            soundId = 1;
+                        }
+                        
+                        if (soundId == 1) {
+                            soundId = (message.cid > 0 || message.cid <= INT_MIN) ? globalMessageSoundId : globalGroupSoundId;
+                        }
+                        
+                        if (true) {
+                            if (message.cid > 0 || message.cid <= INT_MIN)
+                            {
+                                if (globalMessageMuteUntil > 0)
+                                    continue;
+                            }
+                            else
+                            {
+                                if (globalGroupMuteUntil > 0)
+                                    continue;
+                            }
+                        }
+                        
                         NSString *text = nil;
                         
                         bool attachmentFound = false;
                         bool migrationFound = false;
+                        bool skipMessage = false;
                         
                         for (TGMediaAttachment *attachment in message.mediaAttachments)
                         {
@@ -1513,16 +1538,120 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                         migrationFound = true;
                                         break;
                                     }
+                                    case TGMessageActionGameScore:
+                                    {
+                                        TGMessage *replyMessage = nil;
+                                        for (id attachment in message.mediaAttachments) {
+                                            if ([attachment isKindOfClass:[TGReplyMessageMediaAttachment class]]) {
+                                                replyMessage = ((TGReplyMessageMediaAttachment *)attachment).replyMessage;
+                                                break;
+                                            }
+                                        }
+                                        
+                                        NSString *gameTitle = nil;
+                                        for (id attachment in replyMessage.mediaAttachments) {
+                                            if ([attachment isKindOfClass:[TGGameMediaAttachment class]]) {
+                                                gameTitle = ((TGGameMediaAttachment *)attachment).title;
+                                                break;
+                                            }
+                                        }
+                                        
+                                        int scoreCount = (int)[actionAttachment.actionData[@"score"] intValue];
+                                        
+                                        NSString *formatStringBase = @"";
+                                        if (gameTitle != nil) {
+                                            if (user.uid == TGTelegraphInstance.clientUserId) {
+                                                formatStringBase = [TGStringUtils integerValueFormat:@"ServiceMessage.GameScoreSelfExtended_" value:scoreCount];
+                                            } else {
+                                                formatStringBase = [TGStringUtils integerValueFormat:@"ServiceMessage.GameScoreExtended_" value:scoreCount];
+                                            }
+                                        } else {
+                                            if (user.uid == TGTelegraphInstance.clientUserId) {
+                                                formatStringBase = [TGStringUtils integerValueFormat:@"ServiceMessage.GameScoreSelfSimple_" value:scoreCount];
+                                            } else {
+                                                formatStringBase = [TGStringUtils integerValueFormat:@"ServiceMessage.GameScoreSimple_" value:scoreCount];
+                                            }
+                                        }
+                                        
+                                        NSMutableString *formatString = [[NSMutableString alloc] initWithString:TGLocalized(formatStringBase)];
+                                        
+                                        NSString *authorName = user.displayFirstName;
+                                        
+                                        for (int i = 0; i < 3; i++) {
+                                            NSRange nameRange = [formatString rangeOfString:@"{name}"];
+                                            NSRange scoreRange = [formatString rangeOfString:@"{score}"];
+                                            NSRange gameTitleRange = [formatString rangeOfString:@"{game}"];
+                                            
+                                            if (nameRange.location != NSNotFound) {
+                                                if (scoreRange.location == NSNotFound || scoreRange.location > nameRange.location) {
+                                                    scoreRange.location = NSNotFound;
+                                                }
+                                                if (gameTitleRange.location == NSNotFound || gameTitleRange.location > nameRange.location) {
+                                                    gameTitleRange.location = NSNotFound;
+                                                }
+                                            }
+                                            
+                                            if (scoreRange.location != NSNotFound) {
+                                                if (nameRange.location == NSNotFound || nameRange.location > scoreRange.location) {
+                                                    nameRange.location = NSNotFound;
+                                                }
+                                                if (gameTitleRange.location == NSNotFound || gameTitleRange.location > scoreRange.location) {
+                                                    gameTitleRange.location = NSNotFound;
+                                                }
+                                            }
+                                            
+                                            if (gameTitleRange.location != NSNotFound) {
+                                                if (scoreRange.location == NSNotFound || scoreRange.location > gameTitleRange.location) {
+                                                    scoreRange.location = NSNotFound;
+                                                }
+                                                if (nameRange.location == NSNotFound || nameRange.location > gameTitleRange.location) {
+                                                    nameRange.location = NSNotFound;
+                                                }
+                                            }
+                                            
+                                            if (nameRange.location != NSNotFound) {
+                                                [formatString replaceCharactersInRange:nameRange withString:authorName];
+                                            }
+                                            
+                                            if (scoreRange.location != NSNotFound) {
+                                                [formatString replaceCharactersInRange:scoreRange withString:[NSString stringWithFormat:@"%d", scoreCount]];
+                                            }
+                                            
+                                            if (gameTitleRange.location != NSNotFound) {
+                                                [formatString replaceCharactersInRange:gameTitleRange withString:gameTitle];
+                                            }
+                                        }
+                                        
+                                        text = formatString;
+                                        attachmentFound = true;
+                                        
+                                        break;
+                                    }
+                                    case TGMessageActionPhoneCall:
+                                    {
+                                        //TGCallDiscardReason reason = (TGCallDiscardReason)[actionAttachment.actionData[@"reason"] intValue];
+                                        skipMessage = true;
+                                        attachmentFound = true;
+                                        break;
+                                    }
                                     default:
                                         break;
                                 }
                             }
                             else if (attachment.type == TGImageMediaAttachmentType)
                             {
-                                if (message.cid > 0)
-                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_PHOTO"), user.displayName];
-                                else
-                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_PHOTO"), user.displayName, chatName];
+                                if (((TGImageMediaAttachment *)attachment).caption.length != 0) {
+                                    if (message.cid > 0) {
+                                        text = [[NSString alloc] initWithFormat:@"%@: 🖼 %@", user.displayName, ((TGImageMediaAttachment *)attachment).caption];
+                                    } else {
+                                        text = [[NSString alloc] initWithFormat:@"%@@%@: 🖼 %@", user.displayName, chatName, ((TGImageMediaAttachment *)attachment).caption];
+                                    }
+                                } else {
+                                    if (message.cid > 0)
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_PHOTO"), user.displayName];
+                                    else
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_PHOTO"), user.displayName, chatName];
+                                }
                                 
                                 attachmentFound = true;
                                 
@@ -1530,10 +1659,18 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             }
                             else if (attachment.type == TGVideoMediaAttachmentType)
                             {
-                                if (message.cid > 0)
-                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_VIDEO"), user.displayName];
-                                else
-                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_VIDEO"), user.displayName, chatName];
+                                if (((TGVideoMediaAttachment *)attachment).caption.length != 0) {
+                                    if (message.cid > 0) {
+                                        text = [[NSString alloc] initWithFormat:@"%@: 📹 %@", user.displayName, ((TGVideoMediaAttachment *)attachment).caption];
+                                    } else {
+                                        text = [[NSString alloc] initWithFormat:@"%@@%@: 📹 %@", user.displayName, chatName, ((TGVideoMediaAttachment *)attachment).caption];
+                                    }
+                                } else {
+                                    if (message.cid > 0)
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_VIDEO"), user.displayName];
+                                    else
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_VIDEO"), user.displayName, chatName];
+                                }
                                 
                                 attachmentFound = true;
                                 
@@ -1567,6 +1704,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                 bool isVoice = false;
                                 CGSize imageSize = CGSizeZero;
                                 bool isSticker = false;
+                                NSString *stickerRepresentation = @"";
                                 for (id attribute in ((TGDocumentMediaAttachment *)attachment).attributes)
                                 {
                                     if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]])
@@ -1583,6 +1721,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                     else if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
                                     {
                                         isSticker = true;
+                                        stickerRepresentation = [((TGDocumentAttributeSticker *)attribute).alt stringByAppendingString:@" "];
                                     }
                                     else if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
                                         isVoice = ((TGDocumentAttributeAudio *)attribute).isVoice;
@@ -1591,10 +1730,11 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                 
                                 if (isSticker)
                                 {
-                                    if (message.cid > 0)
-                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_STICKER"), user.displayName];
-                                    else
-                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_STICKER"), user.displayName, chatName];
+                                    if (message.cid > 0) {
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_STICKER"), user.displayName, stickerRepresentation];
+                                    } else {
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_STICKER"), user.displayName, chatName, stickerRepresentation];
+                                    }
                                 }
                                 else if (isAnimated) {
                                     if (message.cid > 0)
@@ -1610,10 +1750,18 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                 }
                                 else
                                 {
-                                    if (message.cid > 0)
-                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_DOC"), user.displayName];
-                                    else
-                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_DOC"), user.displayName, chatName];
+                                    if (((TGDocumentMediaAttachment *)attachment).caption.length != 0) {
+                                        if (message.cid > 0) {
+                                            text = [[NSString alloc] initWithFormat:@"%@: 📎 %@", user.displayName, ((TGDocumentMediaAttachment *)attachment).caption];
+                                        } else {
+                                            text = [[NSString alloc] initWithFormat:@"%@@%@: 📎 %@", user.displayName, chatName, ((TGDocumentMediaAttachment *)attachment).caption];
+                                        }
+                                    } else {
+                                        if (message.cid > 0)
+                                            text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_DOC"), user.displayName];
+                                        else
+                                            text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_DOC"), user.displayName, chatName];
+                                    }
                                 }
                                 
                                 attachmentFound = true;
@@ -1631,22 +1779,23 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                 
                                 break;
                             }
+                            else if (attachment.type == TGGameAttachmentType) {
+                                NSString *gameTitle = ((TGGameMediaAttachment *)attachment).title;
+                                
+                                if (message.cid > 0) {
+                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_GAME"), user.displayName, gameTitle];
+                                } else {
+                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_GAME"), user.displayName, chatName, gameTitle];
+                                }
+                                
+                                attachmentFound = true;
+                                break;
+                            }
                         }
                         
-                        if (migrationFound) {
+                        if (migrationFound || skipMessage) {
                             continue;
                         }
-                        
-                        int soundId = 1;
-                        bool notFound = false;
-                        [TGDatabaseInstance() loadPeerNotificationSettings:notificationPeerId soundId:&soundId muteUntil:NULL previewText:NULL messagesMuted:NULL notFound:&notFound];
-                        if (notFound)
-                        {
-                            soundId = 1;
-                        }
-                        
-                        if (soundId == 1)
-                            soundId = (message.cid > 0 || message.cid <= INT_MIN) ? globalMessageSoundId : globalGroupSoundId;
                         
                         if (soundId > 0 && ![midsWithoutSound containsObject:@(message.mid)])
                             localNotification.soundName = [[NSString alloc] initWithFormat:@"%d.m4a", soundId];

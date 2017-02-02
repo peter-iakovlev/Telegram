@@ -3,6 +3,8 @@
 @protocol TGMediaEditableItem <NSObject>
 
 @property (nonatomic, readonly) NSString *uniqueIdentifier;
+
+@optional
 @property (nonatomic, readonly) CGSize originalSize;
 
 - (SSignal *)thumbnailImageSignal;
@@ -12,12 +14,18 @@
 @end
 
 
+@class TGPaintingData;
+
 @protocol TGMediaEditAdjustments <NSObject>
 
 @property (nonatomic, readonly) CGSize originalSize;
 @property (nonatomic, readonly) CGRect cropRect;
 @property (nonatomic, readonly) UIImageOrientation cropOrientation;
 @property (nonatomic, readonly) CGFloat cropLockedAspectRatio;
+@property (nonatomic, readonly) bool cropMirrored;
+@property (nonatomic, readonly) TGPaintingData *paintingData;
+
+- (bool)hasPainting;
 
 - (bool)cropAppliedForAvatar:(bool)forAvatar;
 - (bool)isDefaultValuesForAvatar:(bool)forAvatar;
@@ -28,6 +36,10 @@
 
 
 @interface TGMediaEditingContext : NSObject
+
+@property (nonatomic, readonly) bool inhibitEditing;
+
++ (instancetype)contextForCaptionsOnly;
 
 - (SSignal *)imageSignalForItem:(NSObject<TGMediaEditableItem> *)item;
 - (SSignal *)imageSignalForItem:(NSObject<TGMediaEditableItem> *)item withUpdates:(bool)withUpdates;
@@ -49,6 +61,13 @@
 - (NSObject<TGMediaEditAdjustments> *)adjustmentsForItem:(NSObject<TGMediaEditableItem> *)item;
 - (SSignal *)adjustmentsSignalForItem:(NSObject<TGMediaEditableItem> *)item;
 - (void)setAdjustments:(NSObject<TGMediaEditAdjustments> *)adjustments forItem:(NSObject<TGMediaEditableItem> *)item;
+
+- (UIImage *)paintingImageForItem:(NSObject<TGMediaEditableItem> *)item;
+- (bool)setPaintingData:(NSData *)data image:(UIImage *)image forItem:(NSObject<TGMediaEditableItem> *)item dataUrl:(NSURL **)dataOutUrl imageUrl:(NSURL **)imageOutUrl forVideo:(bool)video;
+- (void)clearPaintingData;
+
+- (SSignal *)facesForItem:(NSObject<TGMediaEditableItem> *)item;
+- (void)setFaces:(NSArray *)faces forItem:(NSObject<TGMediaEditableItem> *)item;
 
 - (SSignal *)cropAdjustmentsUpdatedSignal;
 

@@ -20,6 +20,7 @@
     {
         self.clipsToBounds = true;
         self.backgroundColor = [UIColor whiteColor];
+        self.layer.zPosition = -1.0f;
         
         _imageView = [[TGImageView alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, frame.size.height)];
         _imageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;

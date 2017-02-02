@@ -21,7 +21,7 @@
 
 - (int)layerVersion
 {
-    return 40;
+    return 53;
 }
 
 - (int32_t)TLconstructorSignature
@@ -55,7 +55,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xb7c13bd9;
+    return (int32_t)0x1c015b09;
 }
 
 - (int32_t)TLconstructorName
@@ -66,6 +66,7 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCmessages_deleteHistory$messages_deleteHistory *object = [[TLRPCmessages_deleteHistory$messages_deleteHistory alloc] init];
+    object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.peer = metaObject->getObject((int32_t)0x9344c37d);
     object.max_id = metaObject->getInt32((int32_t)0xe2c00ace);
     return object;
@@ -73,6 +74,12 @@
 
 - (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
 {
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.flags;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x81915c23, value));
+    }
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypeObject;

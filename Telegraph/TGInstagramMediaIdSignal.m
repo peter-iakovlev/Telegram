@@ -42,4 +42,67 @@
     }];
 }
 
++ (NSString *)instagramShortcodeFromText:(NSString *)text
+{
+    NSArray *prefixList = @
+    [
+        @"http://instagram.com/p/",
+        @"https://instagram.com/p/",
+        @"http://www.instagram.com/p/",
+        @"https://www.instagram.com/p/",
+        @"instagram.com/p/",
+        @"www.instagram.com/p/",
+    ];
+    
+    NSString *instagramPrefix = nil;
+    for (NSString *prefix in prefixList)
+    {
+        if ([text hasPrefix:prefix])
+        {
+            instagramPrefix = prefix;
+            break;
+        }
+    }
+    
+    if (instagramPrefix.length != 0)
+    {
+        NSString *prefix = instagramPrefix;
+        int length = (int)text.length;
+        bool badCharacters = false;
+        int slashCount = 0;
+        for (int i = (int)prefix.length; i < length; i++)
+        {
+            unichar c = [text characterAtIndex:i];
+            if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '/' || c == '-')
+            {
+                if (c == '/')
+                {
+                    if (slashCount >= 2)
+                    {
+                        badCharacters = true;
+                        break;
+                    }
+                    slashCount++;
+                }
+            }
+            else
+            {
+                badCharacters = true;
+                break;
+            }
+        }
+        
+        if (!badCharacters)
+        {
+            NSString *shortcode = [text substringFromIndex:prefix.length];
+            if ([shortcode hasSuffix:@"/"])
+                shortcode = [shortcode substringToIndex:shortcode.length - 1];
+            
+            return shortcode;
+        }
+    }
+    
+    return nil;
+}
+
 @end

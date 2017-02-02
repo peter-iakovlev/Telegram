@@ -19,6 +19,8 @@
 
 #import "TGModernGalleryTransitionView.h"
 
+#import "TGTelegramNetworking.h"
+
 @interface TGImageView (TransitionView) <TGModernGalleryTransitionView>
 
 @end
@@ -177,7 +179,7 @@
     
     TGWebSearchResultsGalleryGifItem *item = (TGWebSearchResultsGalleryGifItem *)self.item;
     _downloadPath = [[NSString alloc] initWithFormat:@"/temporaryDownload/(%@)", [TGStringUtils stringByEscapingForActorURL:item.webSearchResult.gifUrl]];
-    [ActionStageInstance() requestActor:_downloadPath options:@{@"url": item.webSearchResult.gifUrl, @"cache": [[TGMediaStoreContext instance] temporaryFilesCache]} flags:0 watcher:self];
+    [ActionStageInstance() requestActor:_downloadPath options:@{@"url": item.webSearchResult.gifUrl, @"cache": [[TGMediaStoreContext instance] temporaryFilesCache], @"mediaTypeTag": @(TGNetworkMediaTypeTagImage)} flags:0 watcher:self];
 }
 
 - (void)_playWithData:(NSData *)data

@@ -16,9 +16,11 @@
 
 @interface TLPhoneConnection$phoneConnection : TLPhoneConnection
 
-@property (nonatomic, retain) NSString *server;
+@property (nonatomic) int64_t n_id;
+@property (nonatomic, retain) NSString *ip;
+@property (nonatomic, retain) NSString *ipv6;
 @property (nonatomic) int32_t port;
-@property (nonatomic) int64_t stream_id;
+@property (nonatomic, retain) NSData *peer_tag;
 
 @end
 

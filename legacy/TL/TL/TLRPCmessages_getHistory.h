@@ -10,6 +10,7 @@
 
 @property (nonatomic, retain) TLInputPeer *peer;
 @property (nonatomic) int32_t offset_id;
+@property (nonatomic) int32_t offset_date;
 @property (nonatomic) int32_t add_offset;
 @property (nonatomic) int32_t limit;
 @property (nonatomic) int32_t max_id;

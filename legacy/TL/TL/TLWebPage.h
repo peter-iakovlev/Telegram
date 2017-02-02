@@ -27,3 +27,8 @@
 
 @end
 
+@interface TLWebPage$webPageNotModified : TLWebPage
+
+
+@end
+

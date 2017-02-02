@@ -33,9 +33,6 @@
     _currentQuery = [options objectForKey:@"query"];
     _offset = [[options objectForKey:@"offset"] intValue];
     
-    NSString *authKey = @"dKYt6BjhkmFnJABZI/nWs++mx7owYEKZLcdA3DTOO1s";
-    NSData *authData = [[[NSString alloc] initWithFormat:@"%@:%@", authKey, authKey] dataUsingEncoding:NSUTF8StringEncoding];
-    
     _currentArguments = [[NSString alloc] initWithFormat:@"$skip=%d&$top=%d", [[options objectForKey:@"offset"] intValue], [TGViewController isWidescreen] ? 56 : 48];
     
     NSData *cachedData = [self cachedResponse:_currentQuery arguments:_currentArguments];
@@ -43,7 +40,7 @@
         [self httpRequestSuccess:nil response:cachedData];
     else
     {
-        self.cancelToken = [TGTelegraphInstance doRequestRawHttp:[[NSString alloc] initWithFormat:@"https://api.datamarket.azure.com/Bing/Search/v1/Image?Query='%@'&$skip=%d&$top=%d&$format=json&Adult='Off'", [TGStringUtils stringByEscapingForURL:_currentQuery], [[options objectForKey:@"offset"] intValue], [TGViewController isWidescreen] ? 56 : 48] maxRetryCount:0 acceptCodes:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:400], [[NSNumber alloc] initWithInt:403], nil] httpAuth:(NSString *)authData actor:self];
+        self.cancelToken = [TGTelegraphInstance doRequestRawHttp:[[NSString alloc] initWithFormat:@"https://api.datamarket.azure.com/Bing/Search/v1/Image?Query='%@'&$skip=%d&$top=%d&$format=json&Adult='Off'", [TGStringUtils stringByEscapingForURL:_currentQuery], [[options objectForKey:@"offset"] intValue], [TGViewController isWidescreen] ? 56 : 48] maxRetryCount:0 acceptCodes:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:400], [[NSNumber alloc] initWithInt:403], nil] httpHeaders:nil actor:self];
     }
 }
 
@@ -138,7 +135,7 @@
     
     [data appendData:response];
     
-    [data writeToFile:[[self cachePath] stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@_%@.search", TGStringMD5(query), TGStringMD5(arguments)]] atomically:false];
+    [data writeToFile:[[self cachePath] stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@_%@.search", TGStringMD5(query), TGStringMD5(arguments)]] atomically:true];
 }
 
 - (void)httpRequestSuccess:(NSString *)__unused url response:(NSData *)response

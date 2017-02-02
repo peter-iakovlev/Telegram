@@ -24,7 +24,7 @@
 @property (nonatomic, strong) NSArray *attributes;
 @property (nonatomic, strong) NSString *caption;
 
-- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult;
+- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;;
 
 - (TGDocumentMediaAttachment *)document;
 

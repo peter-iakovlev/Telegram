@@ -132,3 +132,29 @@
 
 @end
 
+@implementation TLWebPage$webPageNotModified : TLWebPage
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x85849473;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x1a1d275f;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLWebPage$webPageNotModified *object = [[TLWebPage$webPageNotModified alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+

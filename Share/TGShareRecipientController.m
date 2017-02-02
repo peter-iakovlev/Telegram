@@ -1,6 +1,8 @@
 #import "TGShareRecipientController.h"
 #import "TGShareController.h"
 
+#import <LegacyDatabase/LegacyDatabase.h>
+
 #import "TGChatListSignal.h"
 #import "TGSearchSignals.h"
 #import "TGShareRecentPeersSignals.h"
@@ -8,6 +10,7 @@
 #import "TGShareChatListCell.h"
 #import "TGShareToolbarView.h"
 #import "TGShareButton.h"
+#import "TGShareSearchBar.h"
 
 #import "TGChatModel.h"
 #import "TGPrivateChatModel.h"
@@ -37,7 +40,7 @@ const CGFloat TGShareBottomInset = 44.0f - 0.5f;
     
     UIView *_fadeView;
     
-    UISearchBar *_searchBar;
+    TGShareSearchBar *_searchBar;
     UIView *_searchDimView;
     
     SMetaDisposable *_chatListDisposable;
@@ -49,6 +52,8 @@ const CGFloat TGShareBottomInset = 44.0f - 0.5f;
     
     bool _selecting;
     NSMutableArray *_recipients;
+    
+    bool _searching;
     
     CGFloat _bottomInset;
 }
@@ -85,28 +90,6 @@ const CGFloat TGShareBottomInset = 44.0f - 0.5f;
     [self setSelecting:!_selecting];
 }
 
-- (UITextField *)findTextField:(UIView *)view
-{
-    if ([view isKindOfClass:[UITextField class]])
-        return (UITextField *)view;
-    
-    for (UIView *subview in view.subviews)
-    {
-        UITextField *result = [self findTextField:subview];
-        if (result != nil)
-            return result;
-    }
-    
-    return nil;
-}
-
-static CGRect UISearchBarTextField_editingRectForBounds(__unused id self, __unused SEL cmd, CGRect bounds)
-{
-    bounds.origin.x += 28.0f;
-    bounds.size.width -= 10.0f;
-    return bounds;
-}
-
 - (void)loadView
 {
     [super loadView];
@@ -123,55 +106,10 @@ static CGRect UISearchBarTextField_editingRectForBounds(__unused id self, __unus
     _tableView.scrollIndicatorInsets = _tableView.contentInset;
     [self.view addSubview:_tableView];
     
-    _searchBar = [[UISearchBar alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _tableView.frame.size.width, 44.0f)];
+    _searchBar = [[TGShareSearchBar alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _tableView.frame.size.width, [TGShareSearchBar searchBarBaseHeight])];
     _searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     [_searchBar setPlaceholder:NSLocalizedString(@"Share.Search", nil)];
     _searchBar.delegate = self;
-
-    static UIImage *searchBarBackgroundImage = nil;
-    static UIImage *searchFieldBackgroundImage = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        {
-            CGFloat radius = 6.0f;
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius * 2.0f + 2.0f, 28.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, TGColorWithHex(0xededed).CGColor);
-            CGContextFillRect(context, CGRectMake(radius, 0.0f, 2.0f, 28.0f));
-            CGContextFillRect(context, CGRectMake(0.0f, radius, radius * 2.0f + 2.0f, 28.0f - radius * 2.0f));
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius * 2.0f, radius * 2.0f));
-            CGContextFillEllipseInRect(context, CGRectMake(radius * 2.0f + 2.0f - radius * 2.0f, 0.0f, radius * 2.0f, radius * 2.0f));
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 28.0f - radius * 2.0f, radius * 2.0f, radius * 2.0f));
-            CGContextFillEllipseInRect(context, CGRectMake(radius * 2.0f + 2.0f - radius * 2.0f, 28.0f - radius * 2.0f, radius * 2.0f, radius * 2.0f));
-            searchFieldBackgroundImage = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-        }
-        {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(2.0f, 44.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-            CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 2.0f, 44.0f));
-            searchBarBackgroundImage = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-        }
-    });
-    [_searchBar setBackgroundImage:searchBarBackgroundImage forBarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
-    [_searchBar setSearchFieldBackgroundImage:searchFieldBackgroundImage forState:UIControlStateNormal];
-    UITextField *searchTextField = [self findTextField:_searchBar];
-    if (searchTextField != nil)
-    {
-        Class newClass = objc_allocateClassPair([searchTextField class], "UISearchBarTextFieldWithInset", 0);
-        Method method_editingRectForBounds = class_getInstanceMethod([UITextField class], @selector(editingRectForBounds:));
-        if (method_editingRectForBounds != NULL)
-        {
-            if (!class_addMethod(newClass, @selector(editingRectForBounds:), (IMP)&UISearchBarTextField_editingRectForBounds, method_getTypeEncoding(method_editingRectForBounds)))
-            {
-                NSLog(@"failed to swizzle");
-            }
-        }
-        object_setClass(searchTextField, newClass);
-    }
     
     _tableView.tableHeaderView = _searchBar;
     
@@ -466,6 +404,11 @@ static CGRect UISearchBarTextField_editingRectForBounds(__unused id self, __unus
 
 - (void)setSearching:(bool)searching
 {
+    if (_searching == searching)
+        return;
+    
+    _searching = searching;
+    
     if (searching)
     {
         _searchResultsTableView.hidden = false;
@@ -543,7 +486,7 @@ static CGRect UISearchBarTextField_editingRectForBounds(__unused id self, __unus
 - (void)searchDimViewTapped:(UITapGestureRecognizer *)recognizer
 {
     if (recognizer.state == UIGestureRecognizerStateEnded)
-        [self searchBarCancelButtonClicked:_searchBar];
+        [self searchBarCancelButtonClicked:(UISearchBar *)_searchBar];
 }
 
 - (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar
@@ -566,7 +509,7 @@ static CGRect UISearchBarTextField_editingRectForBounds(__unused id self, __unus
     }]];
 }
 
-- (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar
+- (void)searchBarCancelButtonClicked:(TGShareSearchBar *)searchBar
 {
     [searchBar setText:@""];
     [searchBar endEditing:true];

@@ -11,6 +11,14 @@
 
 #import "TGRecentHashtagsSignal.h"
 
+#import "TGDialogListRecentPeers.h"
+
+#import "TGRecentPeersSignals.h"
+
+#import "TGRemoteRecentPeer.h"
+#import "TGRemoteRecentPeerSet.h"
+#import "TGRemoteRecentPeerCategories.h"
+
 NSString *const TGRecentSearchDefaultsKey = @"Telegram_recentSearch_peers";
 const NSInteger TGRecentSearchLimit = 20;
 
@@ -432,9 +440,24 @@ const NSInteger TGRecentSearchLimit = 20;
     [[self userDefaults] synchronize];
 }
 
-+ (SSignal *)recentPeerResults:(id (^)(id))itemMapping
++ (NSString *)titleForCategory:(TGPeerRatingCategory)category {
+    switch (category) {
+        case TGPeerRatingCategoryPeople:
+            return TGLocalized(@"DialogList.RecentTitlePeople");
+        case TGPeerRatingCategoryGroups:
+            return TGLocalized(@"DialogList.RecentTitleGroups");
+        case TGPeerRatingCategoryBots:
+            return TGLocalized(@"DialogList.RecentTitleBots");
+        case TGPeerRatingCategoryNone:
+            return nil;
+        case TGPeerRatingCategoryInlineBots:
+            return nil;
+    }
+}
+
++ (SSignal *)recentPeerResults:(id (^)(id))itemMapping ratedPeers:(bool)ratedPeers
 {
-    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+    return [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
         NSArray *array = [[self userDefaults] objectForKey:TGRecentSearchDefaultsKey];
         NSMutableArray *peers = [[NSMutableArray alloc] init];
@@ -460,10 +483,72 @@ const NSInteger TGRecentSearchLimit = 20;
                     [peers addObject:user];
             }
         }
+        
         [subscriber putNext:peers];
         [subscriber putCompletion];
         
         return nil;
+    }] mapToSignal:^SSignal *(NSArray *peers) {
+        if (ratedPeers) {
+            return [[TGRecentPeersSignals recentPeers] mapToSignal:^id(TGRemoteRecentPeerCategories *categories) {
+                return [TGDatabaseInstance() modify:^id{
+                    NSMutableDictionary *parsedCategories = [[NSMutableDictionary alloc] init];
+                    
+                    [categories.categories enumerateKeysAndObjectsUsingBlock:^(NSNumber *category, TGRemoteRecentPeerSet *peers, __unused BOOL *stop) {
+                        NSMutableArray *parsedPeers = [[NSMutableArray alloc] init];
+                        
+                        for (TGRemoteRecentPeer *peer in [peers.peers sortedArrayUsingComparator:^NSComparisonResult(TGRemoteRecentPeer *lhs, TGRemoteRecentPeer *rhs) {
+                            return lhs.rating > rhs.rating ? NSOrderedAscending : NSOrderedDescending;
+                        }]) {
+                            TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:peer.peerId];
+                            if (conversation != nil) {
+                                if (conversation.isDeactivated) {
+                                    continue;
+                                }
+                                
+                                id item = itemMapping(conversation);
+                                if (item != nil) {
+                                    if (TGPeerIdIsUser(conversation.conversationId)) {
+                                        TGUser *user = [TGDatabaseInstance() loadUser:(int)conversation.conversationId];
+                                        if (user != nil) {
+                                            [parsedPeers addObject:user];
+                                        }
+                                    } else {
+                                        [parsedPeers addObject:item];
+                                    }
+                                }
+                            }
+                            
+                            if (conversation == nil) {
+                                TGUser *user = [TGDatabaseInstance() loadUser:(int)peer.peerId];
+                                if (user != nil) {
+                                    [parsedPeers addObject:user];
+                                }
+                            }
+                        }
+                        
+                        parsedCategories[category] = [[TGDialogListRecentPeers alloc] initWithIdentifier:[NSString stringWithFormat:@"%d", [category intValue]] title:[self titleForCategory:[category intValue]] peers:parsedPeers];
+                    }];
+                    
+                    NSMutableArray *result = [[NSMutableArray alloc] init];
+                    
+                    NSArray *categoryOrder = @[@(TGPeerRatingCategoryPeople)/*, @(TGPeerRatingCategoryGroups), @(TGPeerRatingCategoryBots)*/];
+                    
+                    for (NSNumber *category in categoryOrder) {
+                        TGDialogListRecentPeers *parsedCategory = parsedCategories[category];
+                        if (parsedCategory != nil && parsedCategory.peers.count != 0) {
+                            [result addObject:parsedCategory];
+                        }
+                    }
+                    
+                    [result addObjectsFromArray:peers];
+                    
+                    return result;
+                }];
+            }];
+        } else {
+            return [SSignal single:peers];
+        }
     }];
 }
 

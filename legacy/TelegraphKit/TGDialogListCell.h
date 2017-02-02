@@ -14,9 +14,15 @@
 
 #import "TGMessage.h"
 
+@class TGDatabaseMessageDraft;
+
 @interface TGDialogListCell : UITableViewCell
 
 @property (nonatomic, strong) id<TGDialogListCellAssetsSource> assetsSource;
+
+@property (nonatomic, copy) void (^deleteConversation)(int64_t);
+@property (nonatomic, copy) void (^toggleMuteConversation)(int64_t, bool);
+@property (nonatomic, copy) void (^togglePinConversation)(int64_t, bool);
 
 @property (nonatomic, strong) ASHandle *watcherHandle;
 
@@ -35,6 +41,7 @@
 @property (nonatomic) NSTimeInterval date;
 @property (nonatomic) bool outgoing;
 @property (nonatomic) bool unread;
+@property (nonatomic) bool pinnedToTop;
 @property (nonatomic) TGMessageDeliveryState deliveryState;
 @property (nonatomic) int unreadCount;
 @property (nonatomic) int serviceUnreadCount;
@@ -55,6 +62,7 @@
 @property (nonatomic) NSString *encryptionFirstName;
 
 @property (nonatomic) NSString *authorName;
+@property (nonatomic) bool authorIsSelf;
 
 @property (nonatomic) NSString *typingString;
 
@@ -65,6 +73,11 @@
 @property (nonatomic) bool isChannelGroup;
 
 @property (nonatomic) bool isVerified;
+
+@property (nonatomic) bool isLastCell;
+@property (nonatomic) bool disableActions;
+
+@property (nonatomic, strong) TGDatabaseMessageDraft *draft;
 
 - (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier assetsSource:(id<TGDialogListCellAssetsSource>)assetsSource;
 
@@ -80,6 +93,13 @@
 
 - (bool)showingDeleteConfirmationButton;
 
+- (bool)isEditingControlsExpanded;
+- (void)setEditingConrolsExpanded:(bool)expanded animated:(bool)animated;
+
 - (void)resetLocalization;
+
+- (UIView *)avatarSnapshotView;
+- (CGRect)avatarFrame;
+- (CGRect)textContentFrame;
 
 @end

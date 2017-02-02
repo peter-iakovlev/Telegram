@@ -4,7 +4,7 @@
 
 #import "TGBotReplyMarkupButton.h"
 
-@interface TGBotReplyMarkupRow : NSObject <PSCoding>
+@interface TGBotReplyMarkupRow : NSObject <PSCoding, NSCoding>
 
 @property (nonatomic, strong, readonly) NSArray *buttons;
 

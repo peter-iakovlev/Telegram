@@ -38,7 +38,7 @@
 
 - (void)_updateText {
     NSArray *attributes = @[];
-    NSArray *textCheckingResults = [TGMessage textCheckingResultsForText:_text highlightMentionsAndTags:true highlightCommands:false];
+    NSArray *textCheckingResults = [TGMessage textCheckingResultsForText:_text highlightMentionsAndTags:true highlightCommands:false entities:nil];
     NSString *string = _text;
     
     _textModel = [[TGModernTextViewModel alloc] initWithText:string font:TGCoreTextSystemFontOfSize(17.0f)];

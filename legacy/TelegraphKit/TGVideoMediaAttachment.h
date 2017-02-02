@@ -13,7 +13,7 @@
 
 #define TGVideoMediaAttachmentType ((int)0x338EAA20)
 
-@interface TGVideoMediaAttachment : TGMediaAttachment <TGMediaAttachmentParser>
+@interface TGVideoMediaAttachment : TGMediaAttachment <NSCoding, TGMediaAttachmentParser>
 
 @property (nonatomic) int64_t videoId;
 @property (nonatomic) int64_t accessHash;
@@ -27,7 +27,11 @@
 @property (nonatomic, strong) TGImageInfo *thumbnailInfo;
 
 @property (nonatomic) NSString *caption;
+@property (nonatomic) bool hasStickers;
+@property (nonatomic, strong) NSArray *embeddedStickerDocuments;
 
 @property (nonatomic, readonly) NSArray *textCheckingResults;
+
+@property (nonatomic) bool loopVideo;
 
 @end

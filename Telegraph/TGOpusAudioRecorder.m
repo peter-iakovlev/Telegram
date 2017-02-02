@@ -27,6 +27,8 @@
 
 #import "TGAudioWaveform.h"
 
+#import "TGTelegramNetworking.h"
+
 #define kOutputBus 0
 #define kInputBus 1
 static const int TGOpusAudioPlayerSampleRate = 48000; // libopusfile is bound to use 48 kHz
@@ -114,7 +116,8 @@ static dispatch_semaphore_t playSoundSemaphore = nil;
             
             [ActionStageInstance() requestActor:_liveUploadPath options:@{
                 @"fileItem": _tempFileItem,
-                @"encryptFile": @(fileEncryption)
+                @"encryptFile": @(fileEncryption),
+                @"mediaTypeTag": @(TGNetworkMediaTypeTagAudio)
             } flags:0 watcher:self];
         }];
     }

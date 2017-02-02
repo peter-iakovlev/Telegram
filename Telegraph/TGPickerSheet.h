@@ -3,6 +3,9 @@
 
 @interface TGPickerSheetOverlayController : TGOverlayController
 
+- (instancetype)init;
+- (instancetype)initWithDateMode;
+
 @end
 
 
@@ -10,6 +13,7 @@
 
 @property (nonatomic, strong) NSString *emptyValue;
 
+- (instancetype)initWithDateSelection:(void (^)(NSTimeInterval item))action;
 - (instancetype)initWithItems:(NSArray *)items selectedIndex:(NSUInteger)selectedIndex action:(void (^)(id item))action;
 
 - (void)show;

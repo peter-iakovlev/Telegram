@@ -16,13 +16,13 @@
 @property (nonatomic) id object;
 @property (nonatomic, strong) NSDictionary *attributes;
 @property (nonatomic) NSUInteger size;
-@property (nonatomic) MTAbsoluteTime timestamp;
+@property (nonatomic) CFAbsoluteTime timestamp;
 
 @end
 
 @implementation TGMemoryImageCacheItem
 
-- (instancetype)initWithObject:(id)object attributes:(NSDictionary *)attributes size:(NSUInteger)size timestamp:(MTAbsoluteTime)timestamp
+- (instancetype)initWithObject:(id)object attributes:(NSDictionary *)attributes size:(NSUInteger)size timestamp:(CFAbsoluteTime)timestamp
 {
     self = [super init];
     if (self != nil)

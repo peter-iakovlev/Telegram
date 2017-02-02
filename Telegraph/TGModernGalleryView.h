@@ -19,7 +19,7 @@
 @property (nonatomic, strong, readonly) UIView<TGModernGalleryInterfaceView> *interfaceView;
 @property (nonatomic, strong, readonly) TGModernGalleryScrollView *scrollView;
 
-- (instancetype)initWithFrame:(CGRect)frame itemPadding:(CGFloat)itemPadding interfaceView:(UIView<TGModernGalleryInterfaceView> *)interfaceView;
+- (instancetype)initWithFrame:(CGRect)frame itemPadding:(CGFloat)itemPadding interfaceView:(UIView<TGModernGalleryInterfaceView> *)interfaceView previewMode:(bool)previewMode previewSize:(CGSize)previewSize;
 
 - (bool)shouldAutorotate;
 
@@ -37,5 +37,9 @@
 - (void)transitionOutWithDuration:(NSTimeInterval)duration;
 
 - (void)fadeOutWithDuration:(NSTimeInterval)duration completion:(void (^)(void))completion;
+
+- (void)setScrollViewVerticalOffset:(CGFloat)offset;
+
+- (void)setPreviewMode:(bool)previewMode;
 
 @end

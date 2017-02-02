@@ -27,11 +27,12 @@
 {
     NSArray *mids = options[@"mids"];
     
-    self.cancelToken = [TGTelegraphInstance doDownloadMessages:mids actor:self];
+    self.cancelToken = [TGTelegraphInstance doDownloadMessages:mids peerId:[options[@"peerId"] longLongValue] accessHash:[options[@"accessHash"] longLongValue] actor:self];
 }
 
 - (void)messagesRequestSuccess:(TLmessages_Messages *)messages
 {
+    NSMutableArray *parsedMessages = [[NSMutableArray alloc] init];
     NSMutableDictionary *messagesByConversation = [[NSMutableDictionary alloc] init];
     
     for (TLMessage *messageDesc in messages.messages)
@@ -39,6 +40,7 @@
         TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:messageDesc];
         if (message.mid != 0)
         {
+            [parsedMessages addObject:message];
             NSMutableArray *conversationMessages = messagesByConversation[@(message.cid)];
             if (conversationMessages == nil)
             {
@@ -50,10 +52,7 @@
         }
     }
     
-    [messagesByConversation enumerateKeysAndObjectsUsingBlock:^(NSNumber *nConversationId, NSArray *messageList, __unused BOOL *stop)
-    {
-        [[TGDatabase instance] addMessagesToConversation:messageList conversationId:[nConversationId longLongValue] updateConversation:nil dispatch:true countUnread:false];
-    }];
+    [TGDatabaseInstance() transactionAddMessages:parsedMessages updateConversationDatas:nil notifyAdded:false];
     
     [ActionStageInstance() actionCompleted:self.path result:@{@"messagesByConversation": messagesByConversation}];
 }

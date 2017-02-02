@@ -2,7 +2,7 @@
 
 @implementation TGStickerPreviewSignals
 
-+ (SSignal *)stickerThumbnail:(TGDocumentMediaAttachment *)documentAttachment ofSize:(CGSize)size threadPool:(SThreadPool *)threadPool memoryCache:(EMInMemoryImageCache *)memoryCache
++ (SSignal *)stickerThumbnail:(TGDocumentMediaAttachment *)__unused documentAttachment ofSize:(CGSize)__unused size threadPool:(SThreadPool *)__unused threadPool memoryCache:(EMInMemoryImageCache *)__unused memoryCache
 {
     return nil;
 }

@@ -8,6 +8,10 @@
 
 #import "TGModernConversationCompanion.h"
 
+@class TGConversation;
+@class TGConversationScrollState;
+@class TGPIPSourceLocation;
+
 @interface TGGenericModernConversationCompanion : TGModernConversationCompanion
 {
     @public
@@ -15,16 +19,24 @@
     int64_t _attachedConversationId;
     int64_t _accessHash;
     
+    bool _initialMayHaveUnreadMessages;
+    bool _canResetInitialMessagePositioning;
+    
     bool _everyMessageNeedsAuthor;
     bool _manualMessageManagement;
     
     int32_t _preferredInitialPositionedMessageId;
+    TGConversationScrollState *_initialScrollState;
+    TGPIPSourceLocation *_openPIPLocation;
 }
 
-- (instancetype)initWithConversationId:(int64_t)conversationId mayHaveUnreadMessages:(bool)mayHaveUnreadMessages;
+@property (nonatomic, strong) NSNumber *botContextPeerId;
+@property (nonatomic, strong) NSString *replaceInitialText;
+
+- (instancetype)initWithConversation:(TGConversation *)conversation mayHaveUnreadMessages:(bool)mayHaveUnreadMessages;
 
 - (void)setOthersUnreadCount:(int)unreadCount;
-- (void)setPreferredInitialMessagePositioning:(int32_t)messageId;
+- (void)setPreferredInitialMessagePositioning:(int32_t)messageId pipLocation:(TGPIPSourceLocation *)pipLocation;
 - (void)setInitialMessagePayloadWithForwardMessages:(NSArray *)initialForwardMessagePayload sendMessages:(NSArray *)initialSendMessagePayload sendFiles:(NSArray *)initialSendFilePayload;
 
 - (int64_t)conversationId;
@@ -53,5 +65,13 @@
 - (void)scheduleReadHistory;
 
 - (bool)shouldFastScrollDown;
+
+- (void)updateMessagesLive:(NSDictionary *)messageIdToMessage;
+
+- (SSignal *)primaryTitlePanel;
+
+- (bool)canAddNewMessagesToTop;
+
++ (bool)canDeleteMessageForEveryone:(TGMessage *)message peerId:(int64_t)peerId isPeerAdmin:(bool)isPeerAdmin;
 
 @end

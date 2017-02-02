@@ -16,6 +16,7 @@
 
 @property (nonatomic, strong) TGCollectionMenuSection *sharedMediaSection;
 @property (nonatomic, strong) TGUserInfoVariantCollectionItem *sharedMediaItem;
+@property (nonatomic, strong) TGUserInfoVariantCollectionItem *groupsInCommonItem;
 @property (nonatomic, copy) void (^shareVCard)();
 
 - (instancetype)initWithUid:(int32_t)uid;

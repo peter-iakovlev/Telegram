@@ -133,7 +133,7 @@
                 
                 if ((messages.count != 0 || peerMinMid != 0 || [options[@"isEncrypted"] boolValue] || [options[@"isBroadcast"] boolValue]) && !sequenceContainsHoles)
                 {
-                    bool loadedUnread = _loadUnread;
+                    /*bool loadedUnread = _loadUnread;
                     if (loadedUnread && !historyExistsBelow)
                     {
                         bool hasRead = false;
@@ -148,11 +148,10 @@
                         
                         if (!hasRead)
                             loadedUnread = false;
-                    }
+                    }*/
                     
                     [ActionStageInstance() actionCompleted:self.path result:@{
                         @"messages": messages,
-                        @"loadUnread": @(loadedUnread),
                         @"historyExistsBelow": @(historyExistsBelow),
                         @"clearExisting": @(clearExisting)
                      }];

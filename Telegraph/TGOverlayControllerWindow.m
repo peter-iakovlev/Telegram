@@ -1,4 +1,4 @@
-/*
+ /*
  * This is the source code of Telegram for iOS v. 1.1
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
@@ -161,6 +161,19 @@
 - (void)dealloc
 {
 
+}
+
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+{
+    return [super hitTest:point withEvent:event];
+}
+
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    if (iosMajorVersion() < 8 && !self.hidden)
+        return true;
+    
+    return [super pointInside:point withEvent:event];
 }
 
 - (void)dismiss

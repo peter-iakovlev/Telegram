@@ -38,6 +38,10 @@
 @class HPGrowingTextView;
 @class HPTextViewInternal;
 
+extern NSString *TGMentionUidAttributeName;
+extern NSString *TGMentionBoldAttributeName;
+@class TGMessageEntity;
+
 @protocol HPGrowingTextViewDelegate <NSObject>
 
 @optional
@@ -55,10 +59,18 @@
 - (void)growingTextViewDidChangeSelection:(HPGrowingTextView *)growingTextView;
 - (BOOL)growingTextViewShouldReturn:(HPGrowingTextView *)growingTextView;
 
-- (void)growingTextView:(HPGrowingTextView *)growingTextView didPasteImages:(NSArray *)images;
+- (void)growingTextView:(HPGrowingTextView *)growingTextView didPasteImages:(NSArray *)images andText:(NSString *)text;
 - (void)growingTextView:(HPGrowingTextView *)growingTextView didPasteData:(NSData *)data;
 
 - (void)growingTextView:(HPGrowingTextView *)growingTextView receivedReturnKeyCommandWithModifierFlags:(UIKeyModifierFlags)flags;
+
+@end
+
+@interface TGAttributedTextRange : NSObject
+
+@property (nonatomic, strong, readonly) id attachment;
+
+- (instancetype)initWithAttachment:(id)attachment;
 
 @end
 
@@ -79,13 +91,20 @@
 
 @property (nonatomic, weak) id<HPGrowingTextViewDelegate> delegate;
 @property (nonatomic,strong) NSString *text;
+@property (nonatomic, strong) NSAttributedString *attributedText;
 @property (nonatomic,strong) UIFont *font;
 @property (nonatomic,strong) UIColor *textColor;
 @property (nonatomic) NSTextAlignment textAlignment;
 
+@property (nonatomic, assign) bool receiveKeyCommands;
+
 - (void)refreshHeight:(bool)textChanged;
+- (void)notifyHeight;
 
 - (void)setText:(NSString *)newText animated:(bool)animated;
+- (void)setAttributedText:(NSAttributedString *)newText animated:(bool)animated;
 - (void)selectRange:(NSRange)range;
+
+- (NSString *)textWithEntities:(__autoreleasing NSArray<TGMessageEntity *> ** _Nullable)entities;
 
 @end

@@ -132,6 +132,8 @@
     {
         if (client.play)
             client.play();
+        else if (client.pause)
+            client.pause();
     }
 }
 

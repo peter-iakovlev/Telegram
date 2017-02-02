@@ -50,7 +50,7 @@
 
 - (TGPhotoEditorTab)toolbarTabs
 {
-    return TGPhotoEditorCaptionTab | TGPhotoEditorCropTab | TGPhotoEditorToolsTab;
+    return TGPhotoEditorCropTab | TGPhotoEditorPaintTab | TGPhotoEditorToolsTab;
 }
 
 - (NSString *)uniqueId

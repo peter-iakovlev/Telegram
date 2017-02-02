@@ -1,5 +1,6 @@
 #import "TGCheckButtonView.h"
-#import "TGColor.h"
+
+#import <LegacyDatabase/LegacyDatabase.h>
 
 @interface TGCheckButtonView ()
 {
@@ -51,6 +52,7 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
                 insideInset = 3.5f;
                 borderOnTop = true;
             }
+                break;
                 
             case TGCheckButtonStyleMedia:
             {
@@ -62,6 +64,12 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
             case TGCheckButtonStyleBar:
             {
                 insideInset = 2.0f;
+            }
+                break;
+                
+            case TGCheckButtonStyleShare:
+            {
+                insideInset = 4.0f;
             }
                 break;
                 
@@ -120,6 +128,15 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
                     UIGraphicsEndImageContext();
                 }
                     break;
+
+                case TGCheckButtonStyleShare:
+                {
+                    CGRect rect = CGRectMake(0, 0, size.width, size.height);
+                    UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
+                    backgroundImage = UIGraphicsGetImageFromCurrentImageContext();
+                    UIGraphicsEndImageContext();
+                }
+                    break;
                     
                 default:
                 {
@@ -142,14 +159,38 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
         UIImage *fillImage = fillImages[@(style)];
         if (fillImage == nil)
         {
-            CGRect rect = CGRectMake(0, 0, size.width, size.height);
-            UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, TGColorWithHex(0x29c519).CGColor);
-            CGContextFillEllipseInRect(context, CGRectInset(rect, insideInset, insideInset));
-            
-            fillImage = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
+            switch (style)
+            {
+                case TGCheckButtonStyleShare:
+                {
+                    CGRect rect = CGRectMake(0, 0, size.width, size.height);
+                    UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
+                    CGContextRef context = UIGraphicsGetCurrentContext();
+                    CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
+                    CGContextFillEllipseInRect(context, CGRectInset(rect, insideInset + 0.5f, insideInset + 0.5f));
+                    
+                    CGContextSetLineWidth(context, 2.0f);
+                    CGContextSetStrokeColorWithColor(context, [UIColor whiteColor].CGColor);
+                    CGContextStrokeEllipseInRect(context, CGRectInset(rect, insideInset + 1.0f, insideInset + 1.0f));
+                    
+                    fillImage = UIGraphicsGetImageFromCurrentImageContext();
+                    UIGraphicsEndImageContext();
+                }
+                    break;
+                    
+                default:
+                {
+                    CGRect rect = CGRectMake(0, 0, size.width, size.height);
+                    UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
+                    CGContextRef context = UIGraphicsGetCurrentContext();
+                    CGContextSetFillColorWithColor(context, TGColorWithHex(0x29c519).CGColor);
+                    CGContextFillEllipseInRect(context, CGRectInset(rect, insideInset, insideInset));
+                    
+                    fillImage = UIGraphicsGetImageFromCurrentImageContext();
+                    UIGraphicsEndImageContext();
+                }
+                    break;
+            }
             
             fillImages[@(style)] = fillImage;
         }

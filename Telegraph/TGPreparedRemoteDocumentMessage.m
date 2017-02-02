@@ -12,9 +12,15 @@
 #import "TGImageInfo.h"
 #import "TGMessage.h"
 
+#import "TGMediaStoreContext.h"
+
+#import "TGMusicPlayerItemSignals.h"
+
+#import "TGPreparedLocalDocumentMessage.h"
+
 @implementation TGPreparedRemoteDocumentMessage
 
-- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult
+- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
     self = [super init];
     if (self != nil)
@@ -32,6 +38,34 @@
         
         self.replyMessage = replyMessage;
         self.botContextResult = botContextResult;
+        self.replyMarkup = replyMarkup;
+        
+        self.executeOnAdd = ^{
+            NSString *fileName = nil;
+            for (id attribute in documentMedia.attributes) {
+                if ([attribute isKindOfClass:[TGDocumentAttributeFilename class]]) {
+                    fileName = ((TGDocumentAttributeFilename *)attribute).filename;
+                    break;
+                }
+            }
+            
+            if (fileName.length != 0) {
+                NSString *cacheKey = cacheKeyForDocument(documentMedia);
+                NSString *documentFilePath = [[[TGMediaStoreContext instance] temporaryFilesCache] getValuePathForKey:[cacheKey dataUsingEncoding:NSUTF8StringEncoding]];
+                
+                if (documentFilePath != nil) {
+                    NSString *documentPath = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:documentMedia.documentId version:documentMedia.version];
+                    [[NSFileManager defaultManager] createDirectoryAtPath:documentPath withIntermediateDirectories:true attributes:nil error:nil];
+                    NSError *error = nil;
+                    if (![[NSFileManager defaultManager] fileExistsAtPath:[documentPath stringByAppendingPathComponent:fileName]]) {
+                        [[NSFileManager defaultManager] linkItemAtPath:documentFilePath toPath:[documentPath stringByAppendingPathComponent:fileName] error:&error];
+                        if (error != nil) {
+                            TGLog(@"linkItemAtPath error: %@", error);
+                        }
+                    }
+                }
+            }
+        };
     }
     return self;
 }
@@ -71,6 +105,10 @@
         [attachments addObject:self.botContextResult];
         
         [attachments addObject:[[TGViaUserAttachment alloc] initWithUserId:self.botContextResult.userId username:nil]];
+    }
+    
+    if (self.replyMarkup != nil) {
+        [attachments addObject:self.replyMarkup];
     }
     
     message.mediaAttachments = attachments;

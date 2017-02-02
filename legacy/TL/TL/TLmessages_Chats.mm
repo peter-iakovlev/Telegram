@@ -66,3 +66,43 @@
 
 @end
 
+@implementation TLmessages_Chats$messages_chatsSlice : TLmessages_Chats
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x9cd81144;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xf5d77925;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLmessages_Chats$messages_chatsSlice *object = [[TLmessages_Chats$messages_chatsSlice alloc] init];
+    object.count = metaObject->getInt32((int32_t)0x5fa6aa74);
+    object.chats = metaObject->getArray((int32_t)0x4240ad02);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.count;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x5fa6aa74, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.chats;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x4240ad02, value));
+    }
+}
+
+
+@end
+

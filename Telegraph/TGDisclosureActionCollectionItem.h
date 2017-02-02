@@ -12,7 +12,10 @@
 
 @property (nonatomic, strong) NSString *title;
 @property (nonatomic, strong) UIImage *icon;
+@property (nonatomic) bool hideArrow;
 @property (nonatomic) SEL action;
+
+@property (nonatomic, strong) NSString *badge;
 
 - (instancetype)initWithTitle:(NSString *)title action:(SEL)action;
 

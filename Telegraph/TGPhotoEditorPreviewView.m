@@ -1,8 +1,12 @@
 #import "TGPhotoEditorPreviewView.h"
 
 #import "TGFont.h"
+#import "TGPhotoEditorUtils.h"
+#import "TGPaintUtils.h"
 
 #import "PGPhotoEditorView.h"
+#import "PGPhotoEditorValues.h"
+#import "TGPaintingData.h"
 
 @interface TGPhotoEditorPreviewView ()
 {
@@ -15,6 +19,15 @@
     UILongPressGestureRecognizer *_pressGestureRecognizer;
     
     bool _needsTransitionIn;
+    
+    UIView *_paintingContainerView;
+    
+    bool _paintingHidden;
+    CGRect _cropRect;
+    UIImageOrientation _cropOrientation;
+    CGFloat _cropRotation;
+    bool _cropMirrored;
+    CGSize _originalSize;
 }
 @end
 
@@ -29,6 +42,13 @@
         _imageView.alpha = 0.0f;
         _imageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [self addSubview:_imageView];
+        
+        _paintingContainerView = [[UIView alloc] init];
+        _paintingContainerView.userInteractionEnabled = false;
+        [self addSubview:_paintingContainerView];
+        
+        _paintingView = [[UIImageView alloc] init];
+        [_paintingContainerView addSubview:_paintingView];
         
         _pressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handlePress:)];
         _pressGestureRecognizer.minimumPressDuration = 0.1f;
@@ -85,6 +105,39 @@
     [self insertSubview:_snapshotView atIndex:0];
 }
 
+- (void)setPaintingImageWithData:(TGPaintingData *)data
+{
+    if (data == nil)
+    {
+        _paintingView.hidden = true;
+    }
+    else
+    {
+        _paintingView.hidden = false;
+        _paintingView.frame = self.bounds;
+        _paintingView.image = data.image;
+        
+        [self setNeedsLayout];
+    }
+}
+
+- (void)setCropRect:(CGRect)cropRect cropOrientation:(UIImageOrientation)cropOrientation cropRotation:(CGFloat)cropRotation cropMirrored:(bool)cropMirrored originalSize:(CGSize)originalSize
+{
+    _cropRect = cropRect;
+    _cropOrientation = cropOrientation;
+    _cropRotation = cropRotation;
+    _cropMirrored = cropMirrored;
+    _originalSize = originalSize;
+    
+    [self setNeedsLayout];
+}
+
+- (void)setPaintingHidden:(bool)hidden
+{
+    _paintingHidden = hidden;
+    _paintingView.alpha = hidden ? 0.0f : 1.0f;
+}
+
 - (UIView *)originalSnapshotView
 {
     return [_snapshotView snapshotViewAfterScreenUpdates:false];
@@ -92,9 +145,9 @@
 
 - (void)prepareTransitionFadeView
 {
-    _transitionView = [_imageView snapshotViewAfterScreenUpdates:NO];
+    _transitionView = [_imageView snapshotViewAfterScreenUpdates:false];
     _transitionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    [self addSubview:_transitionView];
+    [self insertSubview:_transitionView belowSubview:_paintingContainerView];
 }
 
 - (void)performTransitionFade
@@ -237,13 +290,49 @@
     {
         [UIView animateWithDuration:0.1f delay:0 options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState animations:^
         {
+            _paintingView.alpha = hidden || _paintingHidden ? 0.0f : 1.0f;
             _imageView.alpha = hidden ? 0.0f : 1.0f;
         } completion:nil];
     }
     else
     {
+        _paintingView.alpha = hidden || _paintingHidden ? 0.0f : 1.0f;
         _imageView.alpha = hidden ? 0.0f : 1.0f;
     }
+}
+
+- (CGPoint)fittedCropCenterScale:(CGFloat)scale
+{
+    CGSize size = CGSizeMake(_cropRect.size.width * scale, _cropRect.size.height * scale);
+    CGRect rect = CGRectMake(_cropRect.origin.x * scale, _cropRect.origin.y * scale, size.width, size.height);
+    
+    return CGPointMake(CGRectGetMidX(rect), CGRectGetMidY(rect));
+}
+
+- (void)layoutSubviews
+{
+    CGFloat rotation = TGRotationForOrientation(_cropOrientation);
+    _paintingContainerView.transform = CGAffineTransformMakeRotation(rotation);
+    _paintingContainerView.frame = self.bounds;
+    
+    CGFloat width = TGOrientationIsSideward(_cropOrientation, NULL) ? self.frame.size.height : self.frame.size.width;
+    CGFloat ratio = width / _cropRect.size.width;
+   
+    rotation = _cropRotation;
+    
+    CGRect originalFrame = CGRectMake(-_cropRect.origin.x * ratio, -_cropRect.origin.y * ratio, _originalSize.width * ratio, _originalSize.height * ratio);
+    CGSize fittedOriginalSize = CGSizeMake(_originalSize.width * ratio, _originalSize.height * ratio);
+    CGSize rotatedSize = TGRotatedContentSize(fittedOriginalSize, rotation);
+    CGPoint centerPoint = CGPointMake(rotatedSize.width / 2.0f, rotatedSize.height / 2.0f);
+    
+    CGFloat scale = fittedOriginalSize.width / _originalSize.width;
+    CGPoint centerOffset = TGPaintSubtractPoints(centerPoint, [self fittedCropCenterScale:scale]);
+    
+    _paintingView.transform = CGAffineTransformIdentity;
+    _paintingView.frame = originalFrame;
+    
+    _paintingView.transform = CGAffineTransformMakeRotation(rotation);
+    _paintingView.center = TGPaintAddPoints(TGPaintCenterOfRect(_paintingContainerView.bounds), centerOffset);
 }
 
 @end

@@ -14,7 +14,7 @@
 
 @implementation TGPreparedAssetImageMessage
 
-- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption useMediaCache:(bool)useMediaCache isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage
+- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption useMediaCache:(bool)useMediaCache isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
     self = [self init];
     if (self != nil)
@@ -31,6 +31,7 @@
         _attributes = attributes;
         
         self.replyMessage = replyMessage;
+        self.replyMarkup = replyMarkup;
     }
     return self;
 }
@@ -155,6 +156,7 @@
     documentAttachment.attributes = [self attributes];
     documentAttachment.mimeType = _mimeType;
     documentAttachment.thumbnailInfo = _imageInfo;
+    documentAttachment.caption = self.caption;
     [attachments addObject:documentAttachment];
     
     if (self.replyMessage != nil)
@@ -163,6 +165,10 @@
         replyMedia.replyMessageId = self.replyMessage.mid;
         replyMedia.replyMessage = self.replyMessage;
         [attachments addObject:replyMedia];
+    }
+    
+    if (self.replyMarkup != nil) {
+        [attachments addObject:self.replyMarkup];
     }
 
     message.mediaAttachments = attachments;
@@ -211,7 +217,7 @@
     arc4random_buf(&randomId, sizeof(randomId));
     NSString *imagePathComponent = [[NSString alloc] initWithFormat:@"%" PRIx64 ".bin", randomId];
     NSString *filePath = [uploadDirectory stringByAppendingPathComponent:imagePathComponent];
-    [data writeToFile:filePath atomically:false];
+    [data writeToFile:filePath atomically:true];
     
     return [@"file://" stringByAppendingString:filePath];
 }

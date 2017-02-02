@@ -25,4 +25,17 @@
     [coder encodeString:_language forCKey:"language"];
 }
 
+- (instancetype)initWithCoder:(NSCoder *)aDecoder {
+    self = [super initWithCoder:aDecoder];
+    if (self != nil) {
+        _language = [aDecoder decodeObjectForKey:@"language"];
+    }
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder {
+    [super encodeWithCoder:aCoder];
+    [aCoder encodeObject:_language forKey:@"language"];
+}
+
 @end

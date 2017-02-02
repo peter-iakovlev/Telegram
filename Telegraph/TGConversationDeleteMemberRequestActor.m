@@ -122,8 +122,7 @@
         if (messageDesc != nil)
         {
             TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:messageDesc];
-            static int actionId = 0;
-            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(deleteMember%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", @[message], @"messages", nil]];
+            [TGDatabaseInstance() transactionAddMessages:message == nil ? nil : @[message] updateConversationDatas:chats notifyAdded:true];
         }
     }
     

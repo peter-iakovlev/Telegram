@@ -37,6 +37,9 @@
         _duration = [aDecoder decodeObjectForKey:@"duration"];
         _author = [aDecoder decodeObjectForKey:@"author"];
         _document = [aDecoder decodeObjectForKey:@"document"];
+        _pageDescriptionEntities = [aDecoder decodeObjectForKey:@"pageDescriptionEntities"];
+        _instantPage = [aDecoder decodeObjectForKey:@"page"];
+        _webPageHash = [aDecoder decodeInt32ForKey:@"phash"];
     }
     return self;
 }
@@ -72,10 +75,60 @@
     if (_document != nil) {
         [aCoder encodeObject:_document forKey:@"document"];
     }
+    if (_pageDescriptionEntities != nil) {
+        [aCoder encodeObject:_pageDescriptionEntities forKey:@"pageDescriptionEntities"];
+    }
+    if (_instantPage != nil) {
+        [aCoder encodeObject:_instantPage forKey:@"page"];
+    }
+    [aCoder encodeInt32:_webPageHash forKey:@"phash"];
+}
+
+- (id)copyWithZone:(NSZone *)__unused zone
+{
+    TGWebPageMediaAttachment *attachment = [[TGWebPageMediaAttachment alloc] init];
+    
+    attachment.webPageId = _webPageId;
+    attachment.webPageLocalId = _webPageLocalId;
+    attachment.pendingDate = _pendingDate;
+    attachment.url = _url;
+    attachment.displayUrl = _displayUrl;
+    attachment.pageType = _pageType;
+    attachment.siteName = _siteName;
+    attachment.title = _title;
+    attachment.pageDescription = _pageDescription;
+    attachment.photo = _photo;
+    attachment.embedUrl = _embedUrl;
+    attachment.embedType = _embedType;
+    attachment.embedSize = _embedSize;
+    attachment.duration = _duration;
+    attachment.author = _author;
+    attachment.document = _document;
+    attachment.pageDescriptionEntities = _pageDescriptionEntities;
+    attachment.instantPage = _instantPage;
+    attachment.webPageHash = _webPageHash;
+    
+    return attachment;
 }
 
 - (BOOL)isEqual:(id)object
 {
+    if (![object isKindOfClass:[TGWebPageMediaAttachment class]]) {
+        return false;
+    }
+    TGWebPageMediaAttachment *other = (TGWebPageMediaAttachment *)object;
+    if (other.instantPage != nil && _instantPage != nil) {
+        if (![other.instantPage isEqual:_instantPage]) {
+            return false;
+        }
+    } else if ((other.instantPage != nil) != (_instantPage != nil)) {
+        return false;
+    }
+    
+    if (other->_webPageHash != _webPageHash) {
+        return false;
+    }
+    
     return [object isKindOfClass:[TGWebPageMediaAttachment class]] &&
         ((TGWebPageMediaAttachment *)object)->_webPageId == _webPageId &&
         ((TGWebPageMediaAttachment *)object)->_webPageLocalId == _webPageLocalId &&

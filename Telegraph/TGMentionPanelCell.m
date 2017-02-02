@@ -84,7 +84,7 @@ NSString *const TGMentionPanelCellKind = @"TGMentionPanelCell";
     _user = user;
     
     _nameLabel.text = user.displayName;
-    _usernameLabel.text = [[NSString alloc] initWithFormat:@"@%@", user.userName];
+    _usernameLabel.text = user.userName.length == 0 ? @"" : [[NSString alloc] initWithFormat:@"@%@", user.userName];
     
     NSString *avatarUrl = user.photoUrlSmall;
     

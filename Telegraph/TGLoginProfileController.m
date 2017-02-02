@@ -648,7 +648,7 @@
             NSError *error = nil;
             [fileManager createDirectoryAtPath:tmpImagesPath withIntermediateDirectories:true attributes:nil error:&error];
             NSString *absoluteFilePath = [tmpImagesPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.bin", filePath]];
-            [_dataForPhotoUpload writeToFile:absoluteFilePath atomically:false];
+            [_dataForPhotoUpload writeToFile:absoluteFilePath atomically:true];
             
             [options setObject:filePath forKey:@"originalFileUrl"];
             [options setObject:_imageForPhotoUpload forKey:@"currentPhoto"];

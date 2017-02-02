@@ -26,6 +26,7 @@
         _separatorView = [[UIView alloc] init];
         _separatorView.backgroundColor = TGSeparatorColor();
         [self.contentView addSubview:_separatorView];
+        self.contentView.clipsToBounds = false;
         
         _broadcastListsButton = [[TGModernButton alloc] init];
         [_broadcastListsButton setTitle:TGLocalized(@"Compose.NewChannelButton") forState:UIControlStateNormal];
@@ -51,7 +52,7 @@
     [super layoutSubviews];
     
     CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
-    _separatorView.frame = CGRectMake(0.0f, self.contentView.frame.size.height - separatorHeight, self.contentView.frame.size.width, separatorHeight);
+    _separatorView.frame = CGRectMake(0.0f, self.contentView.frame.size.height, self.contentView.frame.size.width, separatorHeight);
     
     [_newGroupButton sizeToFit];
     _newGroupButton.frame = (CGRect){{CGFloor((self.contentView.frame.size.width / 2.0f - _newGroupButton.frame.size.width) / 2.0f), 0.0f}, {_newGroupButton.frame.size.width, self.contentView.frame.size.height}};

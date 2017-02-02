@@ -44,7 +44,8 @@ NSString *const TGBridgeChannelIdsKey = @"channelIds";
                 }
             }
             
-            TGBridgeChatMessageListView *bridgeMessageListView = [TGBridgeChatMessageListView chatMessageListViewWithTGChatMessageListView:messageListView];
+            TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:messagesListSubscription.peerId];
+            TGBridgeChatMessageListView *bridgeMessageListView = [TGBridgeChatMessageListView chatMessageListViewWithTGChatMessageListView:messageListView conversation:conversation];
             
             NSMutableArray *userSignals = [[NSMutableArray alloc] init];
             [userIds enumerateIndexesUsingBlock:^(NSUInteger index, __unused BOOL *stop)
@@ -122,7 +123,7 @@ NSString *const TGBridgeChannelIdsKey = @"channelIds";
                     [channelIds addObject:channelId];
             }
             
-            TGBridgeMessage *bridgeMessage = [TGBridgeMessage messageWithTGMessage:requiredMessage];
+            TGBridgeMessage *bridgeMessage = [TGBridgeMessage messageWithTGMessage:requiredMessage conversation:nil];
             
             NSMutableArray *userSignals = [[NSMutableArray alloc] init];
             [userIds enumerateIndexesUsingBlock:^(NSUInteger index, __unused BOOL *stop)

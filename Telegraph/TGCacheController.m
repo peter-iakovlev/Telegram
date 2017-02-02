@@ -522,7 +522,7 @@
     
     _progressAlert = [[TGProgressAlert alloc] initWithFrame:self.view.bounds];
     _progressAlert.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    _progressAlert.text = NSLocalizedString(@"Cache.ClearProgress", nil);
+    _progressAlert.text = TGLocalized(@"Cache.ClearProgress");
     _progressAlert.alpha = 0.0f;
     [self.view addSubview:_progressAlert];
     [UIView animateWithDuration:0.3 animations:^

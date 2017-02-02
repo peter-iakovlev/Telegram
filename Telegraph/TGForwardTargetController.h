@@ -24,11 +24,13 @@
 @property (nonatomic, strong) ASHandle *watcherHandle;
 
 @property (nonatomic) bool skipConfirmation;
+@property (nonatomic) bool doNothing;
 
 - (id)initWithForwardMessages:(NSArray *)forwardMessages sendMessages:(NSArray *)sendMessages shareLink:(NSDictionary *)shareLink showSecretChats:(bool)showSecretChats;
 - (id)initWithSelectBlockTarget;
 - (id)initWithSelectPrivacyTarget:(NSString *)title placeholder:(NSString *)placeholder;
 - (id)initWithSelectTarget;
+- (id)initWithSelectTarget:(bool)showSecretChats;
 - (id)initWithSelectGroup;
 - (id)initWithDocumentFile:(NSURL *)fileUrl size:(int)size;
 - (id)initWithDocumentFiles:(NSArray *)fileDescs;

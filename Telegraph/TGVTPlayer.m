@@ -329,11 +329,6 @@ static void TGVTPlayerDecompressionOutputCallback(void *decompressionOutputRefCo
         [_frames removeObjectAtIndex:0];
         _previousPresentationTime = frame->_presentationTime;
         
-        TGDispatchOnMainThread(^{
-            TGVTPlayerView *playerView = _playerView;
-            //[playerView displayPixelBuffer:frame->_pixelBuffer];
-        });
-        
         if (_frames.count != 0 && _frameTimer == nil) {
             TGVTPlayerFrame *nextFrame = _frames[0];
         

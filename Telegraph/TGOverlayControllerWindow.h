@@ -18,6 +18,7 @@
 @interface TGOverlayControllerWindow : UIWindow
 
 @property (nonatomic) bool keepKeyboard;
+@property (nonatomic) bool dismissByMenuSheet;
 
 - (instancetype)initWithParentController:(TGViewController *)parentController contentController:(TGOverlayController *)contentController;
 - (instancetype)initWithParentController:(TGViewController *)parentController contentController:(TGOverlayController *)contentController keepKeyboard:(bool)keepKeyboard;

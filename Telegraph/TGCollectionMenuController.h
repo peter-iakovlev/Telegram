@@ -37,4 +37,6 @@
 
 - (void)loadMore;
 
+- (void)willDisplayItem:(TGCollectionItem *)item;
+
 @end

@@ -21,6 +21,11 @@
 
 - (instancetype)initWithDotColors:(NSArray *)colors dotSize:(CGFloat)dotSize
 {
+    return [self initWithDotColors:colors normalDotColor:UIColorRGB(0xe5e5e5) dotSpacing:9.0f dotSize:dotSize];
+}
+
+- (instancetype)initWithDotColors:(NSArray *)colors normalDotColor:(UIColor *)normalDotColor dotSpacing:(CGFloat)dotSpacing dotSize:(CGFloat)dotSize
+{
     self = [super init];
     if (self != nil)
     {
@@ -28,9 +33,9 @@
         _dotSize = dotSize;
         _dotNormalViews = [[NSMutableArray alloc] init];
         _dotHighlightedViews = [[NSMutableArray alloc] init];
-        _dotSpacing = 9;
+        _dotSpacing = dotSpacing;
         
-        _normalDotImage = [self dotImageWithColor:UIColorRGB(0xe5e5e5)];
+        _normalDotImage = [self dotImageWithColor:normalDotColor];
     }
     return self;
 }

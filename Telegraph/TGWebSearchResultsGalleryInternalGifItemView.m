@@ -160,7 +160,7 @@
     __weak TGWebSearchResultsGalleryInternalGifItemView *weakSelf = self;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
     {
-        NSString *filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:checkingItem.webSearchResult.documentId] stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:checkingItem.webSearchResult.fileName]];
+        NSString *filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:checkingItem.webSearchResult.documentId version:0] stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:checkingItem.webSearchResult.fileName]];
         NSData *data = [[NSData alloc] initWithContentsOfFile:filePath];
         
         TGDispatchOnMainThread(^

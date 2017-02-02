@@ -13,18 +13,19 @@
 
 #import "TGMediaAsset.h"
 #import "TGMediaAssetFetchResult.h"
+#import "TGMediaAssetMomentList.h"
+#import "TGMediaAssetMoment.h"
 
 #import "TGOverlayControllerWindow.h"
 
 @interface TGMediaPickerModernGalleryMixin ()
 {
-    TGMediaSelectionContext *_selectionContext;
     TGMediaEditingContext *_editingContext;
-    TGSuggestionContext *_suggestionContext;
     bool _asFile;
     
-    TGViewController *_parentController;
-    TGModernGalleryController *_galleryController;
+    __weak TGViewController *_parentController;
+    __weak TGModernGalleryController *_galleryController;
+    TGModernGalleryController *_strongGalleryController;
     
     NSUInteger _itemsLimit;
 }
@@ -32,15 +33,23 @@
 
 @implementation TGMediaPickerModernGalleryMixin
 
-- (instancetype)initWithItem:(id)item fetchResult:(TGMediaAssetFetchResult *)fetchResult parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaption:(bool)hasCaption asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit
+- (instancetype)initWithItem:(id)item fetchResult:(TGMediaAssetFetchResult *)fetchResult parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions inhibitDocumentCaptions:(bool)inhibitDocumentCaptions asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit
+{
+    return [self initWithItem:item fetchResult:fetchResult momentList:nil parentController:parentController thumbnailImage:thumbnailImage selectionContext:selectionContext editingContext:editingContext suggestionContext:suggestionContext hasCaptions:hasCaptions inhibitDocumentCaptions:inhibitDocumentCaptions asFile:asFile itemsLimit:itemsLimit];
+}
+
+- (instancetype)initWithItem:(id)item momentList:(TGMediaAssetMomentList *)momentList parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions inhibitDocumentCaptions:(bool)inhibitDocumentCaptions asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit
+{
+    return [self initWithItem:item fetchResult:nil momentList:momentList parentController:parentController thumbnailImage:thumbnailImage selectionContext:selectionContext editingContext:editingContext suggestionContext:suggestionContext hasCaptions:hasCaptions inhibitDocumentCaptions:inhibitDocumentCaptions asFile:asFile itemsLimit:itemsLimit];
+}
+
+- (instancetype)initWithItem:(id)item fetchResult:(TGMediaAssetFetchResult *)fetchResult momentList:(TGMediaAssetMomentList *)momentList parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions inhibitDocumentCaptions:(bool)inhibitDocumentCaptions asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit
 {
     self = [super init];
     if (self != nil)
     {
         _parentController = parentController;
-        _selectionContext = selectionContext;
         _editingContext = asFile ? nil : editingContext;
-        _suggestionContext = suggestionContext;
         _asFile = asFile;
         _itemsLimit = itemsLimit;
         
@@ -48,22 +57,25 @@
         
         TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
         _galleryController = modernGallery;
+        _strongGalleryController = modernGallery;
         modernGallery.isImportant = true;
         
         __block id<TGModernGalleryItem> focusItem = nil;
-        NSArray *galleryItems = [self prepareGalleryItemsForFetchResult:fetchResult selectionContext:selectionContext editingContext:editingContext asFile:asFile enumerationBlock:^(TGMediaPickerGalleryItem *galleryItem)
+        void (^enumerationBlock)(TGMediaPickerGalleryItem *) = ^(TGMediaPickerGalleryItem *galleryItem)
         {
             if (focusItem == nil && [galleryItem.asset isEqual:item])
             {
                 focusItem = galleryItem;
                 galleryItem.immediateThumbnailImage = thumbnailImage;
             }
-        }];
+        };
         
-        TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:galleryItems focusItem:focusItem selectionContext:_selectionContext editingContext:_editingContext hasCaptions:hasCaption hasSelectionPanel:true];
+        NSArray *galleryItems = fetchResult != nil ? [self prepareGalleryItemsForFetchResult:fetchResult selectionContext:selectionContext editingContext:editingContext asFile:asFile enumerationBlock:enumerationBlock] : [self prepareGalleryItemsForMomentList:momentList selectionContext:selectionContext editingContext:editingContext asFile:asFile enumerationBlock:enumerationBlock];
+        
+        TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:galleryItems focusItem:focusItem selectionContext:selectionContext editingContext:editingContext hasCaptions:hasCaptions inhibitDocumentCaptions:inhibitDocumentCaptions hasSelectionPanel:true];
         _galleryModel = model;
         model.controller = modernGallery;
-        model.suggestionContext = _suggestionContext;
+        model.suggestionContext = suggestionContext;
         model.willFinishEditingItem = ^(id<TGMediaEditableItem> editableItem, id<TGMediaEditAdjustments> adjustments, id representation, bool hasChanges)
         {
             __strong TGMediaPickerModernGalleryMixin *strongSelf = weakSelf;
@@ -104,7 +116,7 @@
         };
         
         model.interfaceView.usesSimpleLayout = asFile;
-        [model.interfaceView updateSelectionInterface:_selectionContext.count counterVisible:(_selectionContext.count > 0) animated:false];
+        [model.interfaceView updateSelectionInterface:selectionContext.count counterVisible:(selectionContext.count > 0) animated:false];
         model.interfaceView.donePressed = ^(TGMediaPickerGalleryItem *item)
         {
             __strong TGMediaPickerModernGalleryMixin *strongSelf = weakSelf;
@@ -150,6 +162,12 @@
                 return;
             
             [strongSelf->_galleryModel.interfaceView setSelectedItemsModel:strongSelf->_galleryModel.selectedItemsModel];
+            
+            if ([itemView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]])
+            {
+                if (strongSelf->_galleryController.previewMode)
+                    [(TGMediaPickerGalleryVideoItemView *)itemView playIfAvailable];
+            }
         };
 
         modernGallery.beginTransitionOut = ^UIView *(TGMediaPickerGalleryItem *item, TGModernGalleryItemView *itemView)
@@ -184,9 +202,24 @@
     _galleryModel.editorOpened = self.editorOpened;
     _galleryModel.editorClosed = self.editorClosed;
     
+    [_galleryController setPreviewMode:false];
+    
     TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:_parentController contentController:_galleryController];
     controllerWindow.hidden = false;
     _galleryController.view.clipsToBounds = true;
+    
+    _strongGalleryController = nil;
+}
+
+- (UIViewController *)galleryController
+{
+    return _galleryController;
+}
+
+- (void)setPreviewMode
+{
+    _galleryController.previewMode = true;
+    _strongGalleryController = nil;
 }
 
 - (void)updateWithFetchResult:(TGMediaAssetFetchResult *)fetchResult
@@ -201,7 +234,7 @@
     }
     
     __block id<TGModernGalleryItem> focusItem = nil;
-    NSArray *galleryItems = [self prepareGalleryItemsForFetchResult:fetchResult selectionContext:_selectionContext editingContext:_editingContext asFile:_asFile enumerationBlock:^(TGMediaPickerGalleryItem *item)
+    NSArray *galleryItems = [self prepareGalleryItemsForFetchResult:fetchResult selectionContext:_galleryModel.selectionContext editingContext:_editingContext asFile:_asFile enumerationBlock:^(TGMediaPickerGalleryItem *item)
     {
         if (focusItem == nil && [item isEqual:_galleryController.currentItem])
             focusItem = item;
@@ -213,7 +246,7 @@
 - (NSArray *)prepareGalleryItemsForFetchResult:(TGMediaAssetFetchResult *)fetchResult selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext asFile:(bool)asFile enumerationBlock:(void (^)(TGMediaPickerGalleryItem *))enumerationBlock
 {
     NSMutableArray *galleryItems = [[NSMutableArray alloc] init];
-
+    
     NSUInteger count = fetchResult.count;
     if (_itemsLimit > 0)
         count = MIN(count, _itemsLimit);
@@ -263,6 +296,65 @@
         
         if (galleryItem != nil)
             [galleryItems addObject:galleryItem];
+    }
+    
+    return galleryItems;
+}
+
+- (NSArray *)prepareGalleryItemsForMomentList:(TGMediaAssetMomentList *)momentList selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext asFile:(bool)asFile enumerationBlock:(void (^)(TGMediaPickerGalleryItem *))enumerationBlock
+{
+    NSMutableArray *galleryItems = [[NSMutableArray alloc] init];
+    
+    for (NSUInteger i = 0; i < momentList.count; i++)
+    {
+        TGMediaAssetMoment *moment = momentList[i];
+        
+        for (NSUInteger k = 0; k < moment.assetCount; k++)
+        {
+            TGMediaAsset *asset = [moment.fetchResult assetAtIndex:k];
+            
+            TGMediaPickerGalleryItem *galleryItem = nil;
+            switch (asset.type)
+            {
+                case TGMediaAssetVideoType:
+                {
+                    TGMediaPickerGalleryVideoItem *videoItem = [[TGMediaPickerGalleryVideoItem alloc] initWithAsset:asset];
+                    videoItem.selectionContext = selectionContext;
+                    videoItem.editingContext = editingContext;
+                    
+                    galleryItem = videoItem;
+                }
+                    break;
+                    
+                case TGMediaAssetGifType:
+                {
+                    TGMediaPickerGalleryGifItem *gifItem = [[TGMediaPickerGalleryGifItem alloc] initWithAsset:asset];
+                    gifItem.selectionContext = selectionContext;
+                    gifItem.editingContext = editingContext;
+                    
+                    galleryItem = gifItem;
+                }
+                    break;
+                    
+                default:
+                {
+                    TGMediaPickerGalleryPhotoItem *photoItem = [[TGMediaPickerGalleryPhotoItem alloc] initWithAsset:asset];
+                    photoItem.selectionContext = selectionContext;
+                    photoItem.editingContext = editingContext;
+                    
+                    galleryItem = photoItem;
+                }
+                    break;
+            }
+            
+            if (enumerationBlock != nil)
+                enumerationBlock(galleryItem);
+            
+            galleryItem.asFile = asFile;
+            
+            if (galleryItem != nil)
+                [galleryItems addObject:galleryItem];
+        }
     }
     
     return galleryItems;

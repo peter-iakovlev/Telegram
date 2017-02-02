@@ -3,9 +3,6 @@
 #import "../NSInputStream+TL.h"
 #import "../NSOutputStream+TL.h"
 
-#import "TLDocument.h"
-#import "TLBotInlineMessage.h"
-#import "TLPhoto.h"
 
 @implementation TLBotInlineResult
 
@@ -36,109 +33,27 @@
 
 @end
 
-@implementation TLBotInlineResult$botInlineMediaResultDocument : TLBotInlineResult
+@implementation TLBotInlineResult$botInlineMediaResultMeta : TLBotInlineResult
 
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xf897d33e;
+    return (int32_t)0x13e11ac5;
 }
 
 - (int32_t)TLconstructorName
 {
-    return (int32_t)0xfb6fea40;
+    return (int32_t)0xe1f87296;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
 {
-    TLBotInlineResult$botInlineMediaResultDocument *object = [[TLBotInlineResult$botInlineMediaResultDocument alloc] init];
-    object.n_id = metaObject->getString((int32_t)0x7a5601fb);
-    object.type = metaObject->getString((int32_t)0x9211ab0a);
-    object.document = metaObject->getObject((int32_t)0xf1465b5f);
-    object.send_message = metaObject->getObject((int32_t)0x6d920cae);
+    TLBotInlineResult$botInlineMediaResultMeta *object = [[TLBotInlineResult$botInlineMediaResultMeta alloc] init];
     return object;
 }
 
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
 {
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.n_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.type;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9211ab0a, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.document;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xf1465b5f, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.send_message;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x6d920cae, value));
-    }
-}
-
-
-@end
-
-@implementation TLBotInlineResult$botInlineMediaResultPhoto : TLBotInlineResult
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0xc5528587;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0x9357a2eb;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
-{
-    TLBotInlineResult$botInlineMediaResultPhoto *object = [[TLBotInlineResult$botInlineMediaResultPhoto alloc] init];
-    object.n_id = metaObject->getString((int32_t)0x7a5601fb);
-    object.type = metaObject->getString((int32_t)0x9211ab0a);
-    object.photo = metaObject->getObject((int32_t)0xe6c52372);
-    object.send_message = metaObject->getObject((int32_t)0x6d920cae);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.n_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.type;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9211ab0a, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.photo;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe6c52372, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.send_message;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x6d920cae, value));
-    }
 }
 
 

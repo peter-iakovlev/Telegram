@@ -19,6 +19,7 @@
 @property (nonatomic, strong) TGConversation *conversation;
 @property (nonatomic, strong) NSString *optionTitle;
 @property (nonatomic, strong) NSString *customStatus;
+@property (nonatomic, strong) NSString *customLabel;
 @property (nonatomic) bool displaySwitch;
 @property (nonatomic) bool enableSwitch;
 @property (nonatomic) bool switchIsOn;
@@ -28,6 +29,7 @@
 - (void)setCanEdit:(bool)canEdit;
 - (void)setCanEdit:(bool)canEdit animated:(bool)animated;
 - (void)setDisabled:(bool)disabled;
+- (void)setSwitchIsOn:(bool)switchIsOn animated:(bool)animated;
 
 - (void)updateTimestamp;
 

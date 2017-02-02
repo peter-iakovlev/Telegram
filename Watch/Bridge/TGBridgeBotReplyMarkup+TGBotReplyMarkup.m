@@ -32,7 +32,7 @@
     bridgeReplyMarkup->_rows = rows;
     
     if (message != nil && message.forceReply)
-        bridgeReplyMarkup->_message =  [TGBridgeMessage messageWithTGMessage:message];
+        bridgeReplyMarkup->_message =  [TGBridgeMessage messageWithTGMessage:message conversation:nil];
     
     return bridgeReplyMarkup;
 }

@@ -7,6 +7,7 @@
 @class TLWebPage;
 @class TLPhoto;
 @class TLDocument;
+@class TLGame;
 
 @interface TLMessageMedia : NSObject <TLObject>
 
@@ -65,6 +66,12 @@
 
 @property (nonatomic, retain) TLDocument *document;
 @property (nonatomic, retain) NSString *caption;
+
+@end
+
+@interface TLMessageMedia$messageMediaGame : TLMessageMedia
+
+@property (nonatomic, retain) TLGame *game;
 
 @end
 

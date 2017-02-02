@@ -10,6 +10,8 @@
 
 #import "TGModernGalleryItem.h"
 
+#import "TGViewController.h"
+
 #import <SSignalKit/SSignalKit.h>
 
 @class TGModernGalleryItemView;
@@ -20,6 +22,12 @@
 
 - (void)itemViewIsReadyForScheduledDismiss:(TGModernGalleryItemView *)itemView;
 - (void)itemViewDidRequestInterfaceShowHide:(TGModernGalleryItemView *)itemView;
+
+- (void)itemViewDidRequestGalleryDismissal:(TGModernGalleryItemView *)itemView animated:(bool)animated;
+
+- (UIView *)itemViewDidRequestInterfaceView:(TGModernGalleryItemView *)itemView;
+
+- (TGViewController *)parentControllerForPresentation;
 
 @end
 
@@ -37,6 +45,8 @@
 @property (nonatomic, strong) UIView<TGModernGalleryDefaultFooterAccessoryView> *defaultFooterAccessoryRightView;
 
 - (void)setItem:(id<TGModernGalleryItem>)item synchronously:(bool)synchronously;
+
+- (SSignal *)readyForTransitionIn;
 
 - (void)prepareForRecycle;
 - (void)prepareForReuse;

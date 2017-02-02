@@ -7,7 +7,10 @@ typedef enum {
     TGWebpageFooterModelActionGeneric,
     TGWebpageFooterModelActionOpenURL,
     TGWebpageFooterModelActionDownload,
-    TGWebpageFooterModelActionPlay
+    TGWebpageFooterModelActionPlay,
+    TGWebpageFooterModelActionOpenMedia,
+    TGWebpageFooterModelActionCancel,
+    TGWebpageFooterModelActionCustom
 } TGWebpageFooterModelAction;
 
 @interface TGWebpageFooterModel : TGModernViewModel
@@ -20,14 +23,15 @@ typedef enum {
 
 - (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming;
 
-- (void)layoutForContainerSize:(CGSize)containerSize contentSize:(CGSize)contentSize needsContentUpdate:(bool *)needsContentUpdate bottomInset:(bool *)bottomInset;
+- (void)layoutForContainerSize:(CGSize)containerSize contentSize:(CGSize)contentSize infoWidth:(CGFloat)infoWidth needsContentUpdate:(bool *)needsContentUpdate bottomInset:(bool *)bottomInset;
 
-- (CGSize)contentSizeForContainerSize:(CGSize)containerSize contentSize:(CGSize)contentSize needsContentsUpdate:(bool *)needsContentsUpdate;
+- (CGSize)contentSizeForContainerSize:(CGSize)containerSize contentSize:(CGSize)contentSize infoWidth:(CGFloat)infoWidth needsContentsUpdate:(bool *)needsContentsUpdate;
 - (void)layoutContentInRect:(CGRect)rect bottomInset:(CGFloat *)bottomInset;
 
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition;
 - (void)updateSpecialViewsPositions:(CGPoint)itemPosition;
 - (bool)preferWebpageSize;
+- (bool)fitContentToWebpage;
 
 + (UIColor *)colorForAccentText:(bool)incoming;
 
@@ -44,5 +48,9 @@ typedef enum {
 - (void)imageDataInvalidated:(NSString *)imageUrl;
 - (void)stopInlineMedia;
 - (void)resumeInlineMedia;
+
+- (void)updateMessageId:(int32_t)messageId;
+
+- (bool)isPreviewableAtPoint:(CGPoint)point;
 
 @end

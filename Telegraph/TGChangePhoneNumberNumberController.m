@@ -155,10 +155,11 @@
                 
                 if (occupied)
                 {
-                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:TGLocalized(@"ChangePhone.DeleteHelp") completionBlock:^(bool okButtonPressed)
+                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:TGLocalized(@"Generic.ErrorMoreInfo") completionBlock:^(__unused bool okButtonPressed)
                     {
                         
                     }];
+                    [alertView show];
                 }
                 else
                 {

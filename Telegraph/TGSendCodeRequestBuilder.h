@@ -16,7 +16,8 @@ typedef enum {
     TGSendCodeErrorUnknown = -1,
     TGSendCodeErrorInvalidPhone = -2,
     TGSendCodeErrorFloodWait = -3,
-    TGSendCodeErrorNetwork = -4
+    TGSendCodeErrorNetwork = -4,
+    TGSendCodeErrorPhoneFlood = -5
 } TGSendCodeError;
 
 @interface TGSendCodeRequestBuilder : ASActor <ASWatcher>
@@ -27,7 +28,7 @@ typedef enum {
 - (void)sendCodeRequestFailed:(TGSendCodeError)errorCode;
 - (void)sendCodeRedirect:(NSInteger)datacenterId;
 
-- (void)sendSmsRequestSuccess:(bool)success;
+- (void)sendSmsRequestSuccess:(TLauth_SentCode *)sentCode;
 - (void)sendSmsRequestFailed:(TGSendCodeError)errorCode;
 - (void)sendSmsRedirect:(NSInteger)datacenterId;
 

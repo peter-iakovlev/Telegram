@@ -87,7 +87,7 @@
     } else if (count < 1000 * 1000) {
         return [[NSString alloc] initWithFormat:@"%dk", (int)count / 1000];
     } else {
-        return [[NSString alloc] initWithFormat:@"%dm", (int)count / 1000];
+        return [[NSString alloc] initWithFormat:@"%dm", (int)count / (1000 * 1000)];
     }
 }
 

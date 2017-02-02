@@ -1,6 +1,8 @@
 #import "TGSharePasscodeView.h"
 
-#import "TGColor.h"
+#import <LegacyDatabase/LegacyDatabase.h>
+
+#import <LocalAuthentication/LocalAuthentication.h>
 
 @interface TGSharePasscodeView () <UITextFieldDelegate>
 {
@@ -21,13 +23,17 @@
     CGFloat _keyboardHeight;
     
     __weak UIViewController *_alertPresentationController;
+    
+    bool _allowTouchId;
+    bool _usingTouchId;
+    bool _alternativeMethodSelected;
 }
 
 @end
 
 @implementation TGSharePasscodeView
 
-- (instancetype)initWithSimpleMode:(bool)simpleMode cancel:(void (^)())cancel verify:(TGSharePasscodeViewVerifyBlock)verify alertPresentationController:(UIViewController *)alertPresentationController
+- (instancetype)initWithSimpleMode:(bool)simpleMode cancel:(void (^)())cancel verify:(TGSharePasscodeViewVerifyBlock)verify alertPresentationController:(UIViewController *)alertPresentationController allowTouchId:(bool)allowTouchId
 {
     self = [super init];
     if (self != nil)
@@ -37,9 +43,13 @@
         _verify = [verify copy];
         _alertPresentationController = alertPresentationController;
         
+        _allowTouchId = allowTouchId;
+        
         self.backgroundColor = TGColorWithHex(0xefeff4);
         
         _navigationBar = [[UINavigationBar alloc] init];
+        _navigationBar.shadowImage = [[UIImage alloc] init];
+        _navigationBar.translucent = false;
         _navigationItem = [[UINavigationItem alloc] initWithTitle:NSLocalizedString(@"Share.PasscodeTitle", nil)];
         _cancelItem = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Share.Cancel", nil) style:UIBarButtonItemStylePlain target:self action:@selector(cancelPressed)];
         _nextItem = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Share.Next", nil) style:UIBarButtonItemStyleDone target:self action:@selector(nextPressed)];
@@ -189,6 +199,51 @@
     {
     }]];
     [alertPresentationController presentViewController:alertController animated:true completion:nil];
+}
+
+- (bool)supportsTouchId
+{
+    return [[[LAContext alloc] init] canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:nil];
+}
+
+- (void)refreshTouchId
+{
+    [self resignFirstResponder];
+    [self becomeFirstResponder];
+    
+    if (!_usingTouchId && !_alternativeMethodSelected && _allowTouchId && [self supportsTouchId])
+    {
+        LAContext *context = [[LAContext alloc] init];
+        
+        NSError *error = nil;
+        if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error])
+        {
+            _usingTouchId = true;
+            [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics localizedReason:NSLocalizedString(@"Share.TouchId", nil) reply:^(BOOL success, NSError *error)
+            {
+                dispatch_async(dispatch_get_main_queue(), ^
+                {
+                    if (error != nil)
+                    {
+                        _usingTouchId = false;
+                        _alternativeMethodSelected = true;
+                    }
+                    else
+                    {
+                        if (success)
+                        {
+                            _usingTouchId = false;
+                            //
+                        }
+                        else
+                        {
+                            _usingTouchId = false;
+                        }
+                    }
+                });
+            }];
+        }
+    }
 }
 
 - (void)layoutSubviews

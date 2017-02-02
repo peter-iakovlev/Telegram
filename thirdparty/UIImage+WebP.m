@@ -54,12 +54,12 @@ static int32_t compressedMagic = 0x456ba41;
     
     CGColorSpaceRelease(colorSpace);
     
-    TG_TIMESTAMP_DEFINE(webp)
+    //TG_TIMESTAMP_DEFINE(webp)
     if (WebPDecodeBGRAInto(imgData.bytes, imgData.length, targetMemory, targetBytesPerRow * targetContextSize.height, (int)targetBytesPerRow) == NULL)
     {
         TGLog(@"error decoding webp");
     }
-    TG_TIMESTAMP_MEASURE(webp)
+    //TG_TIMESTAMP_MEASURE(webp)
     
     for (int y = 0; y < targetContextSize.height; y++)
     {
@@ -111,9 +111,9 @@ static int32_t compressedMagic = 0x456ba41;
 
 + (UIImage *)convertFromGZippedData:(NSString *)filePath size:(CGSize)__unused size
 {
-    TG_TIMESTAMP_DEFINE(gzip)
+    //TG_TIMESTAMP_DEFINE(gzip)
     NSData *compressedData = [NSData dataWithContentsOfFile:filePath options:NSDataReadingMappedIfSafe error:nil];
-    if (compressedData == nil)
+    if (compressedData == nil || compressedData.length < 12)
         return nil;
     int32_t magic = 0;
     int width = 0;
@@ -149,7 +149,7 @@ static int32_t compressedMagic = 0x456ba41;
     CGImageRelease(bitmapImage);
     
     CGContextRelease(targetContext);
-    TG_TIMESTAMP_MEASURE(gzip)
+    //TG_TIMESTAMP_MEASURE(gzip)
     
     return image;
 }

@@ -1,7 +1,14 @@
 #import "TGMediaAssetsUtils.h"
+
 #import "UICollectionView+Utils.h"
+#import "TGStringUtils.h"
+#import "TGDateUtils.h"
 
 #import "TGMediaSelectionContext.h"
+
+#import "TGMediaAssetsLibrary.h"
+#import "TGAccessChecker.h"
+#import "TGProgressWindow.h"
 
 @interface TGMediaAssetsPreheatMixin ()
 {
@@ -34,13 +41,13 @@
     {
         case UICollectionViewScrollDirectionHorizontal:
             preheatRect = CGRectInset(preheatRect, -0.5f * preheatRect.size.width, 0.0f);
-            delta = fabs(CGRectGetMidX(preheatRect) - CGRectGetMidX(_previousPreheatRect));
+            delta = (CGFloat)(fabs(CGRectGetMidX(preheatRect) - CGRectGetMidX(_previousPreheatRect)));
             threshold = _collectionView.bounds.size.width / 3.0f;
             break;
             
         case UICollectionViewScrollDirectionVertical:
             preheatRect = CGRectInset(preheatRect, 0.0f, -0.5f * preheatRect.size.height);
-            delta = fabs(CGRectGetMidY(preheatRect) - CGRectGetMidY(_previousPreheatRect));
+            delta = (CGFloat)(fabs(CGRectGetMidY(preheatRect) - CGRectGetMidY(_previousPreheatRect)));
             threshold = _collectionView.bounds.size.height / 3.0f;
             break;
     }
@@ -99,7 +106,7 @@
         NSInteger index = indexPath.row;
         
         if (index < assetCount)
-            [assets addObject:self.assetAtIndex(index)];
+            [assets addObject:self.assetAtIndexPath(indexPath)];
     }
     
     return assets;
@@ -110,15 +117,16 @@
 
 @implementation TGMediaAssetsCollectionViewIncrementalUpdater
 
-+ (void)updateCollectionView:(UICollectionView *)collectionView withChange:(TGMediaAssetFetchResultChange *)change completion:(void (^)(bool incremental))completion
++ (void)updateCollectionView:(UICollectionView *)collectionView withChange:(TGMediaAssetFetchResultChange *)__unused change completion:(void (^)(bool incremental))completion
 {
     [collectionView reloadData];
     if (completion != nil)
         completion(false);
     
-    return;
+    if (true)
+        return;
     
-    if (!change.hasIncrementalChanges)
+    /*if (!change.hasIncrementalChanges)
     {
         [collectionView reloadData];
         if (completion != nil)
@@ -173,7 +181,203 @@
         {
             completion(true);
         }
+    }];*/
+}
+
+@end
+
+
+@implementation TGMediaAssetsSaveToCameraRoll
+
++ (void)saveImageAtURL:(NSURL *)url
+{
+    if (![TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
+        return;
+    
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    [progressWindow show:true];
+    
+    [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImageAtUrl:url] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
+    {
+        [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
+        [progressWindow dismiss:true];
+    } completed:^
+    {
+        [progressWindow dismissWithSuccess];
     }];
+}
+
++ (void)saveImageWithData:(NSData *)imageData
+{
+    if (![TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
+        return;
+    
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    [progressWindow show:true];
+    
+    [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImageData:imageData] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
+     {
+         [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
+         [progressWindow dismiss:true];
+     } completed:^
+     {
+         [progressWindow dismissWithSuccess];
+     }];
+}
+
++ (void)saveVideoAtURL:(NSURL *)url
+{
+    if (![TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
+        return;
+    
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    [progressWindow show:true];
+    
+    [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithVideoAtUrl:url] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
+    {
+        [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
+        [progressWindow dismiss:true];
+    } completed:^
+    {
+        [progressWindow dismissWithSuccess];
+    }];
+}
+
+@end
+
+
+@implementation TGMediaAssetsDateUtils
+
+static bool TGMediaAssetsDateUtilsInitialized = false;
+
+static NSString *value_dateFormat = nil;
+static NSString *value_dateYearFormat = nil;
+
+static NSString *value_dateRangeFormat = nil;
+static NSString *value_dateRangeYearFormat = nil;
+static NSString *value_dateRangeSameMonthFormat = nil;
+static NSString *value_dateRangeSameMonthYearFormat = nil;
+
+static void initializeTGMediaAssetsDateUtils()
+{
+    TGMediaAssetsDateUtilsInitialized = true;
+    
+    value_dateFormat = [[TGLocalized(@"MediaPicker.MomentsDateFormat") stringByReplacingOccurrencesOfString:@"{month}" withString:@"%2$@"] stringByReplacingOccurrencesOfString:@"{day}" withString:@"%1$d"];
+    value_dateYearFormat = [[[TGLocalized(@"MediaPicker.MomentsDateYearFormat") stringByReplacingOccurrencesOfString:@"{month}" withString:@"%2$@"] stringByReplacingOccurrencesOfString:@"{day}" withString:@"%1$d"] stringByReplacingOccurrencesOfString:@"{year}" withString:@"%3$d"];
+    value_dateRangeFormat = [[TGLocalized(@"MediaPicker.MomentsDateRangeFormat") stringByReplacingOccurrencesOfString:@"{date1}" withString:@"%1$@"] stringByReplacingOccurrencesOfString:@"{date2}" withString:@"%2$@"];
+    value_dateRangeYearFormat = [[[TGLocalized(@"MediaPicker.MomentsDateRangeYearFormat") stringByReplacingOccurrencesOfString:@"{date1}" withString:@"%1$@"] stringByReplacingOccurrencesOfString:@"{date2}" withString:@"%2$@"] stringByReplacingOccurrencesOfString:@"{year}" withString:@"%3$@"];
+    value_dateRangeSameMonthFormat = [[[TGLocalized(@"MediaPicker.MomentsDateRangeSameMonthFormat") stringByReplacingOccurrencesOfString:@"{day1}" withString:@"%1$d"] stringByReplacingOccurrencesOfString:@"{day2}" withString:@"%2$d"] stringByReplacingOccurrencesOfString:@"{month}" withString:@"%3$@"];
+    value_dateRangeSameMonthYearFormat = [[[[TGLocalized(@"MediaPicker.MomentsDateRangeSameMonthYearFormat") stringByReplacingOccurrencesOfString:@"{date1}" withString:@"%1$d"] stringByReplacingOccurrencesOfString:@"{date2}" withString:@"%2$d"] stringByReplacingOccurrencesOfString:@"{month}" withString:@"%3$@"] stringByReplacingOccurrencesOfString:@"{year}" withString:@"%4$@"];
+}
+
++ (NSString *)formattedDateRangeWithStartDate:(NSDate *)startDate endDate:(NSDate *)endDate currentDate:(NSDate *)currentDate shortDate:(bool)shortDate
+{
+    if (!TGMediaAssetsDateUtilsInitialized)
+        initializeTGMediaAssetsDateUtils();
+    
+    if (endDate == nil)
+        endDate = startDate;
+    
+    time_t t_start = (long)startDate.timeIntervalSince1970;
+    struct tm timeinfo_start;
+    localtime_r(&t_start, &timeinfo_start);
+    
+    time_t t_end = (long)endDate.timeIntervalSince1970;
+    struct tm timeinfo_end;
+    localtime_r(&t_end, &timeinfo_end);
+    
+    time_t t_now = (long)currentDate.timeIntervalSince1970;
+    struct tm timeinfo_now;
+    localtime_r(&t_now, &timeinfo_now);
+    
+    int yearOffset = 2000 - 100;
+    
+    static NSString *(^monthString)(int, bool) = ^(int number, bool shortDate)
+    {
+        if (shortDate)
+            return TGMonthNameShort(number);
+        else
+            return TGMonthNameFull(number);
+    };
+    
+    if (timeinfo_end.tm_year != timeinfo_now.tm_year)
+    {
+        if (timeinfo_start.tm_year == timeinfo_end.tm_year)
+        {
+            if (timeinfo_start.tm_mon == timeinfo_end.tm_mon)
+            {
+                if (timeinfo_start.tm_yday == timeinfo_end.tm_yday)
+                {
+                    return [TGStringUtils stringWithLocalizedNumberCharacters:[NSString stringWithFormat:value_dateYearFormat, timeinfo_start.tm_mday, monthString(timeinfo_start.tm_mon, shortDate), timeinfo_start.tm_year + yearOffset]];
+                }
+                else
+                {
+                    return [TGStringUtils stringWithLocalizedNumberCharacters:[NSString stringWithFormat:value_dateRangeSameMonthYearFormat, timeinfo_start.tm_mday, timeinfo_end.tm_mday, monthString(timeinfo_start.tm_mon, shortDate), timeinfo_start.tm_year + yearOffset]];
+                }
+            }
+            else
+            {
+                NSString *startDateString = [NSString stringWithFormat:value_dateFormat, timeinfo_start.tm_mday, monthString(timeinfo_start.tm_mon, shortDate)];
+                NSString *endDateString = [NSString stringWithFormat:value_dateFormat, timeinfo_end.tm_mday, monthString(timeinfo_end.tm_mon, shortDate)];
+                
+                return [TGStringUtils stringWithLocalizedNumberCharacters:[NSString stringWithFormat:value_dateRangeYearFormat, startDateString, endDateString, timeinfo_start.tm_year + yearOffset]];
+            }
+        }
+        else
+        {
+            NSString *startDateString = [NSString stringWithFormat:value_dateYearFormat, timeinfo_start.tm_mday, monthString(timeinfo_start.tm_mon, shortDate), timeinfo_start.tm_year + yearOffset];
+            NSString *endDateString = [NSString stringWithFormat:value_dateYearFormat, timeinfo_end.tm_mday, monthString(timeinfo_end.tm_mon, shortDate), timeinfo_end.tm_year + yearOffset];
+            
+            return [TGStringUtils stringWithLocalizedNumberCharacters:[NSString stringWithFormat:value_dateRangeFormat, startDateString, endDateString]];
+        }
+    }
+    else
+    {
+        int dayDiff = timeinfo_start.tm_yday - timeinfo_now.tm_yday;
+        
+        if (dayDiff < -7)
+        {
+            if (timeinfo_start.tm_year == timeinfo_end.tm_year)
+            {
+                if (timeinfo_start.tm_mon == timeinfo_end.tm_mon)
+                {
+                    if (timeinfo_start.tm_yday == timeinfo_end.tm_yday)
+                    {
+                        return [TGStringUtils stringWithLocalizedNumberCharacters:[NSString stringWithFormat:value_dateFormat, timeinfo_start.tm_mday, monthString(timeinfo_start.tm_mon, shortDate)]];
+                    }
+                    else
+                    {
+                        return [TGStringUtils stringWithLocalizedNumberCharacters:[NSString stringWithFormat:value_dateRangeSameMonthFormat, timeinfo_start.tm_mday, timeinfo_end.tm_mday, monthString(timeinfo_start.tm_mon, shortDate)]];
+                    }
+                }
+                else
+                {
+                    NSString *startDateString = [NSString stringWithFormat:value_dateFormat, timeinfo_start.tm_mday, monthString(timeinfo_start.tm_mon, shortDate)];
+                    NSString *endDateString = [NSString stringWithFormat:value_dateFormat, timeinfo_end.tm_mday, monthString(timeinfo_end.tm_mon, shortDate)];
+                    
+                    return [TGStringUtils stringWithLocalizedNumberCharacters:[NSString stringWithFormat:value_dateRangeFormat, startDateString, endDateString]];
+                }
+            }
+            else
+            {
+                NSString *startDateString = [NSString stringWithFormat:value_dateYearFormat, timeinfo_start.tm_mday, monthString(timeinfo_start.tm_mon, shortDate), timeinfo_start.tm_year + yearOffset];
+                NSString *endDateString = [NSString stringWithFormat:value_dateYearFormat, timeinfo_end.tm_mday, monthString(timeinfo_end.tm_mon, shortDate), timeinfo_end.tm_year + yearOffset];
+                
+                return [TGStringUtils stringWithLocalizedNumberCharacters:[NSString stringWithFormat:value_dateRangeFormat, startDateString, endDateString]];
+            }
+        }
+        else
+        {
+            if (dayDiff == 0)
+                return TGLocalized(@"Weekday.Today");
+            else if (dayDiff == -1)
+                return TGLocalized(@"Weekday.Yesterday");
+            if (dayDiff > -7 && dayDiff <= -2)
+                return TGWeekdayNameFull(timeinfo_start.tm_wday);
+        }
+    }
+    
+    return @"";
 }
 
 @end

@@ -37,7 +37,7 @@ static UIColor *colorForLine(bool incoming)
     return self;
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize contentSize:(CGSize)__unused contentSize needsContentsUpdate:(bool *)__unused needsContentsUpdate
+- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize contentSize:(CGSize)__unused contentSize infoWidth:(CGFloat)__unused infoWidth needsContentsUpdate:(bool *)__unused needsContentsUpdate
 {
     return CGSizeMake(32.0f, 32.0f);
 }
@@ -46,9 +46,9 @@ static UIColor *colorForLine(bool incoming)
 {
 }
 
-- (void)layoutForContainerSize:(CGSize)containerSize contentSize:(CGSize)contentSize needsContentUpdate:(bool *)needsContentUpdate bottomInset:(bool *)hasBottomInset
+- (void)layoutForContainerSize:(CGSize)containerSize contentSize:(CGSize)contentSize infoWidth:(CGFloat)infoWidth needsContentUpdate:(bool *)needsContentUpdate bottomInset:(bool *)hasBottomInset
 {
-    CGSize webpageSize = [self contentSizeForContainerSize:CGSizeMake(containerSize.width - 2.0f - 2.0f, containerSize.height) contentSize:contentSize needsContentsUpdate:needsContentUpdate];
+    CGSize webpageSize = [self contentSizeForContainerSize:CGSizeMake(containerSize.width - 2.0f - 2.0f, containerSize.height) contentSize:contentSize infoWidth:infoWidth needsContentsUpdate:needsContentUpdate];
     CGFloat bottomInset = 0.0f;
     [self layoutContentInRect:CGRectMake(2.0f, 7.0f, MAX(webpageSize.width, contentSize.width), webpageSize.height) bottomInset:&bottomInset];
     _lineModel.frame = CGRectMake(2.0f, 7.0f, 2.0f, webpageSize.height - 7.0f - 2.0f - bottomInset);
@@ -68,6 +68,10 @@ static UIColor *colorForLine(bool incoming)
 
 - (bool)preferWebpageSize
 {
+    return false;
+}
+
+- (bool)fitContentToWebpage {
     return false;
 }
 
@@ -125,6 +129,13 @@ static UIColor *colorForLine(bool incoming)
 }
 
 - (void)resumeInlineMedia {
+}
+
+- (void)updateMessageId:(int32_t)__unused messageId {
+}
+
+- (bool)isPreviewableAtPoint:(CGPoint)__unused point {
+    return false;
 }
 
 @end

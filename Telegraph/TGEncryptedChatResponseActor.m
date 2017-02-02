@@ -132,11 +132,10 @@
     {
         [TGDatabaseInstance() storeEncryptionKeyForConversationId:[TGDatabaseInstance() peerIdForEncryptedConversationId:_encryptedConversationId] key:_key keyFingerprint:_keyId firstSeqOut:0];
         
-        conversation.date = date;
+        conversation.messageDate = date;
         conversation.encryptedData.handshakeState = 4;
         
-        static int actionId = 0;
-        [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(requestEncryption%d)", actionId++]] execute:@{@"chats": @{@(conversation.conversationId): conversation}}];
+        [TGDatabaseInstance() transactionAddMessages:nil updateConversationDatas:@{@(conversation.conversationId): conversation} notifyAdded:true];
         
         [ActionStageInstance() actionCompleted:self.path result:@{@"conversation": conversation}];
     }

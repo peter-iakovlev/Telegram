@@ -19,7 +19,6 @@
 - (void)rotate;
 
 - (void)setImage:(UIImage *)image;
-- (void)setBackdropImage:(UIImage *)image;
 - (void)setSnapshotImage:(UIImage *)snapshotImage;
 - (void)setSnapshotView:(UIView *)snapshotView;
 

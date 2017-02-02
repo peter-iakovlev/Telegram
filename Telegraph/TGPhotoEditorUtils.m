@@ -161,7 +161,7 @@ UIImage *TGPhotoEditorFitImage(UIImage *image, CGSize maxSize)
     }
 }
 
-UIImage *TGPhotoEditorLegacyCrop(UIImage *image, UIImageOrientation orientation, CGFloat rotation, CGRect rect, CGSize maxSize, bool shouldResize)
+UIImage *TGPhotoEditorLegacyCrop(UIImage *image, UIImage *paintingImage, UIImageOrientation orientation, CGFloat rotation, CGRect rect, bool mirrored, CGSize maxSize, bool shouldResize)
 {
     CGSize fittedImageSize = shouldResize ? TGFitSize(rect.size, maxSize) : rect.size;
     
@@ -187,7 +187,13 @@ UIImage *TGPhotoEditorLegacyCrop(UIImage *image, UIImageOrientation orientation,
     transform = CGAffineTransformRotate(transform, rotation);
     CGContextConcatCTM(context, transform);
     
-    [image drawInRect:CGRectMake(CGCeil(-image.size.width / 2), CGCeil(-image.size.height / 2), image.size.width, image.size.height)];
+    if (mirrored)
+        CGContextScaleCTM(context, -1.0f, 1.0f);
+    
+    CGRect frame = CGRectMake(CGCeil(-image.size.width / 2), CGCeil(-image.size.height / 2), image.size.width, image.size.height);
+    [image drawInRect:frame];
+    if (paintingImage != nil)
+        [paintingImage drawInRect:frame];
     
     UIImage *croppedImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -195,10 +201,24 @@ UIImage *TGPhotoEditorLegacyCrop(UIImage *image, UIImageOrientation orientation,
     return croppedImage;
 }
 
-UIImage *TGPhotoEditorCrop(UIImage *inputImage, UIImageOrientation orientation, CGFloat rotation, CGRect rect, CGSize maxSize, CGSize originalSize, bool shouldResize)
+UIImage *TGPhotoEditorCrop(UIImage *inputImage, UIImage *paintingImage, UIImageOrientation orientation, CGFloat rotation, CGRect rect, bool mirrored, CGSize maxSize, CGSize originalSize, bool shouldResize)
+{
+    return TGPhotoEditorVideoCrop(inputImage, paintingImage, orientation, rotation, rect, mirrored, maxSize, originalSize, shouldResize, false);
+}
+
+UIImage *TGPhotoEditorVideoCrop(UIImage *inputImage, UIImage *paintingImage, UIImageOrientation orientation, CGFloat rotation, CGRect rect, bool mirrored, CGSize maxSize, CGSize originalSize, bool shouldResize, bool useImageSize)
 {
     if (iosMajorVersion() < 7)
-        return TGPhotoEditorLegacyCrop(inputImage, orientation, rotation, rect, maxSize, shouldResize);
+        return TGPhotoEditorLegacyCrop(inputImage, paintingImage, orientation, rotation, rect, mirrored, maxSize, shouldResize);
+    
+    if (useImageSize)
+    {
+        CGFloat ratio = inputImage.size.width / originalSize.width;
+        rect.origin.x = rect.origin.x * ratio;
+        rect.origin.y = rect.origin.y * ratio;
+        rect.size.width = rect.size.width * ratio;
+        rect.size.height = rect.size.height * ratio;
+    }
     
     CGSize fittedImageSize = shouldResize ? TGFitSize(rect.size, maxSize) : rect.size;
     
@@ -226,17 +246,30 @@ UIImage *TGPhotoEditorCrop(UIImage *inputImage, UIImageOrientation orientation, 
     UIImage *image = nil;
     if (shouldResize)
     {
-        CGSize resizedSize = CGSizeMake(originalSize.width * fittedImageSize.width / rect.size.width, originalSize.height * fittedImageSize.height / rect.size.height);
+        CGSize referenceSize = useImageSize ? inputImage.size : originalSize;
+        CGSize resizedSize = CGSizeMake(referenceSize.width * fittedImageSize.width / rect.size.width, referenceSize.height * fittedImageSize.height / rect.size.height);
         CGImageRef resizedImage = TGPhotoLanczosResize(inputImage, resizedSize);
-        image = [UIImage imageWithCGImage:resizedImage scale:inputImage.scale orientation:inputImage.imageOrientation];
+        image = [UIImage imageWithCGImage:resizedImage scale:0.0f orientation:inputImage.imageOrientation];
         CGImageRelease(resizedImage);
     }
     else
     {
         image = inputImage;
     }
+    
+    if (mirrored)
+        CGContextScaleCTM(context, -1.0f, 1.0f);
+    
     [image drawAtPoint:CGPointMake(-image.size.width / 2, -image.size.height / 2)];
-
+    
+    if (paintingImage != nil)
+    {
+        if (mirrored)
+            CGContextScaleCTM(context, -1.0f, 1.0f);
+        
+        [paintingImage drawInRect:CGRectMake(-image.size.width / 2, -image.size.height / 2, image.size.width, image.size.height)];
+    }
+    
     UIImage *croppedImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     
@@ -275,6 +308,30 @@ UIImageOrientation TGNextCCWOrientationForOrientation(UIImageOrientation orienta
     return UIImageOrientationUp;
 }
 
+
+UIImageOrientation TGNextCWOrientationForOrientation(UIImageOrientation orientation)
+{
+    switch (orientation)
+    {
+        case UIImageOrientationUp:
+        return UIImageOrientationRight;
+        
+        case UIImageOrientationLeft:
+        return UIImageOrientationUp;
+        
+        case UIImageOrientationDown:
+        return UIImageOrientationLeft;
+        
+        case UIImageOrientationRight:
+        return UIImageOrientationDown;
+        
+        default:
+        break;
+    }
+    
+    return UIImageOrientationUp;
+}
+
 CGFloat TGRotationForOrientation(UIImageOrientation orientation)
 {
     switch (orientation)
@@ -287,6 +344,26 @@ CGFloat TGRotationForOrientation(UIImageOrientation orientation)
             
         case UIImageOrientationRight:
             return (CGFloat)M_PI_2;
+            
+        default:
+            break;
+    }
+    
+    return 0.0f;
+}
+
+CGFloat TGCounterRotationForOrientation(UIImageOrientation orientation)
+{
+    switch (orientation)
+    {
+        case UIImageOrientationDown:
+            return (CGFloat)-M_PI;
+            
+        case UIImageOrientationLeft:
+            return (CGFloat)M_PI_2;
+            
+        case UIImageOrientationRight:
+            return (CGFloat)-M_PI_2;
             
         default:
             break;
@@ -317,13 +394,13 @@ CGFloat TGRotationForInterfaceOrientation(UIInterfaceOrientation orientation)
 
 CGAffineTransform TGTransformForVideoOrientation(AVCaptureVideoOrientation orientation, bool mirrored)
 {
-    CGAffineTransform transform = CGAffineTransformIdentity;
+    CGAffineTransform transform = mirrored ? CGAffineTransformMakeRotation((CGFloat)M_PI) : CGAffineTransformIdentity;
     
     switch (orientation)
     {
         case UIDeviceOrientationLandscapeRight:
         {
-            transform = CGAffineTransformMakeRotation((CGFloat)M_PI);
+            transform = mirrored ? CGAffineTransformIdentity : CGAffineTransformMakeRotation((CGFloat)M_PI);
         }
             break;
             
@@ -367,6 +444,16 @@ bool TGOrientationIsSideward(UIImageOrientation orientation, bool *mirrored)
     }
     
     return false;
+}
+
+UIImageOrientation TGMirrorSidewardOrientation(UIImageOrientation orientation)
+{
+    if (orientation == UIImageOrientationLeft)
+        orientation = UIImageOrientationRight;
+    else if (orientation == UIImageOrientationRight)
+        orientation = UIImageOrientationLeft;
+    
+    return orientation;
 }
 
 UIImageOrientation TGVideoOrientationForAsset(AVAsset *asset, bool *mirrored)
@@ -546,6 +633,44 @@ CGAffineTransform TGVideoCropTransformForOrientation(UIImageOrientation orientat
             break;
     }
     
+    return transform;
+}
+
+CGAffineTransform TGVideoTransformForCrop(UIImageOrientation orientation, CGSize size, bool mirrored)
+{
+    CGAffineTransform transform = CGAffineTransformMakeTranslation(size.width / 2.0f, size.height / 2.0f);
+    switch (orientation)
+    {
+        case UIImageOrientationDown:
+        {
+            transform = CGAffineTransformRotate(transform, M_PI);
+        }
+            break;
+            
+        case UIImageOrientationRight:
+        {
+            transform = CGAffineTransformRotate(transform, M_PI_2);
+        }
+            break;
+            
+        case UIImageOrientationLeft:
+        {
+            transform = CGAffineTransformRotate(transform, -M_PI_2);
+        }
+            break;
+            
+        default:
+            break;
+    }
+    
+    if (mirrored)
+        transform = CGAffineTransformScale(transform, -1.0f, 1.0f);
+    
+    if (TGOrientationIsSideward(orientation, NULL))
+        size = CGSizeMake(size.height, size.width);
+    
+    transform = CGAffineTransformTranslate(transform, -size.width / 2.0f, -size.height / 2.0f);
+
     return transform;
 }
 

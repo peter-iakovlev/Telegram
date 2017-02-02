@@ -2,9 +2,15 @@
 
 #import "TGModernButton.h"
 
+#import "TGFont.h"
+#import "TGImageUtils.h"
+
 @interface TGStickerKeyboardTabSettingsCell () {
     TGModernButton *_button;
     UIImageView *_imageView;
+    
+    UILabel *_badgeLabel;
+    UIImageView *_badgeView;
 }
 
 @end
@@ -32,7 +38,15 @@
 }
 
 - (void)setMode:(TGStickerKeyboardTabSettingsCellMode)mode {
-    _imageView.image = mode == TGStickerKeyboardTabSettingsCellSettings ? [UIImage imageNamed:@"StickerKeyboardSettingsIcon.png"] : [UIImage imageNamed:@"StickerKeyboardGifIcon.png"];
+    _mode = mode;
+    
+    if (mode == TGStickerKeyboardTabSettingsCellSettings) {
+        _imageView.image = [UIImage imageNamed:@"StickerKeyboardSettingsIcon.png"];
+    } else if (mode == TGStickerKeyboardTabSettingsCellGifs) {
+        _imageView.image = [UIImage imageNamed:@"StickerKeyboardGifIcon.png"];
+    } else {
+        _imageView.image = [UIImage imageNamed:@"StickerKeyboardTrendingIcon.png"];
+    }
     _button.hidden = mode != TGStickerKeyboardTabSettingsCellSettings;
 }
 
@@ -41,12 +55,57 @@
     
     _button.frame = self.bounds;
     _imageView.frame = self.bounds;
+    
+    if (_badgeLabel != nil) {
+        CGSize labelSize = _badgeLabel.frame.size;
+        CGFloat badgeWidth = MAX(16.0f, labelSize.width + 6.0);
+        _badgeView.frame = CGRectMake(self.frame.size.width - badgeWidth - 4.0, 6.0f, badgeWidth, 16.0f);
+        _badgeLabel.frame = CGRectMake(CGRectGetMinX(_badgeView.frame) + TGRetinaFloor((badgeWidth - labelSize.width) / 2.0f), CGRectGetMinY(_badgeView.frame) + 1.0f, labelSize.width, labelSize.height);
+    }
 }
 
 - (void)buttonPressed {
     if (_pressed) {
         _pressed();
     }
+}
+
+- (void)setBadge:(NSString *)badge {
+    if (badge != nil) {
+        if (_badgeLabel == nil) {
+            _badgeLabel = [[UILabel alloc] init];
+            _badgeLabel.font = TGSystemFontOfSize(12.0);
+            _badgeLabel.backgroundColor = [UIColor clearColor];
+            _badgeLabel.textColor = [UIColor whiteColor];
+            [self addSubview:_badgeLabel];
+            
+            static UIImage *badgeImage = nil;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^{
+                UIGraphicsBeginImageContextWithOptions(CGSizeMake(16.0f, 16.0f), false, 0.0f);
+                CGContextRef context = UIGraphicsGetCurrentContext();
+                
+                CGContextSetFillColorWithColor(context, UIColorRGB(0xff3b30).CGColor);
+                CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 16.0f, 16.0f));
+                
+                badgeImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:7.0f topCapHeight:0.0f];
+                UIGraphicsEndImageContext();
+            });
+            _badgeView = [[UIImageView alloc] initWithImage:badgeImage];
+            
+            [self addSubview:_badgeView];
+            [self addSubview:_badgeLabel];
+        }
+        _badgeLabel.text = badge;
+        [_badgeLabel sizeToFit];
+    } else {
+        [_badgeView removeFromSuperview];
+        _badgeView = nil;
+        [_badgeLabel removeFromSuperview];
+        _badgeLabel = nil;
+    }
+    
+    [self setNeedsLayout];
 }
 
 @end

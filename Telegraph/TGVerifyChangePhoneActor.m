@@ -5,10 +5,14 @@
 #import "TGTelegramNetworking.h"
 
 #import <MTProtoKit/MTRequest.h>
+#import <MTProtoKit/MTRpcError.h>
 
 #import "TL/TLMetaScheme.h"
 
 #import "TGSendCodeRequestBuilder.h"
+
+#import "TLRPCaccount_sendChangePhoneCode.h"
+#import "TLauth_SentCode$auth_sentCode.h"
 
 @implementation TGVerifyChangePhoneActor
 
@@ -28,14 +32,14 @@
     
     if ([options[@"requestCall"] boolValue])
     {
-        TLRPCauth_sendCall$auth_sendCall *sendCall = [[TLRPCauth_sendCall$auth_sendCall alloc] init];
+        TLRPCauth_resendCode$auth_resendCode *sendCall = [[TLRPCauth_resendCode$auth_resendCode alloc] init];
         sendCall.phone_number = options[@"phoneNumber"];
         sendCall.phone_code_hash = options[@"phoneCodeHash"];
         request.body = sendCall;
     }
     else
     {
-        TLRPCaccount_sendChangePhoneCode$account_sendChangePhoneCode *sendChangePhoneCode = [[TLRPCaccount_sendChangePhoneCode$account_sendChangePhoneCode alloc] init];
+        TLRPCaccount_sendChangePhoneCode *sendChangePhoneCode = [[TLRPCaccount_sendChangePhoneCode alloc] init];
         sendChangePhoneCode.phone_number = options[@"phoneNumber"];
         request.body = sendChangePhoneCode;
     }
@@ -73,9 +77,9 @@
     [ActionStageInstance() actionCompleted:self.path result:nil];
 }
 
-- (void)sendRequestCompleted:(TLaccount_SentChangePhoneCode *)sentCode
+- (void)sendRequestCompleted:(TLauth_SentCode$auth_sentCode *)sentCode
 {
-    [ActionStageInstance() actionCompleted:self.path result:@{@"phoneCodeHash": sentCode.phone_code_hash, @"callTimeout": @(sentCode.send_call_timeout)}];
+    [ActionStageInstance() actionCompleted:self.path result:@{@"phoneCodeHash": sentCode.phone_code_hash, @"callTimeout": @(sentCode.timeout)}];
 }
 
 - (void)sendRequestFailed:(NSString *)errorText

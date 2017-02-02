@@ -719,10 +719,7 @@ static inline int colorIndexForGroupId(int64_t groupId)
     if (image == nil)
     {
         UIImage *rawImage = [UIImage imageNamed:@"GroupedCellBottom_Selected.png"];
-        if (false && [rawImage respondsToSelector:@selector(resizableImageWithCapInsets:resizingMode:)])
-            image = [rawImage resizableImageWithCapInsets:UIEdgeInsetsMake(5, 13, 6, rawImage.size.width - 13 - 1) resizingMode:UIImageResizingModeStretch];
-        else
-            image = [rawImage stretchableImageWithLeftCapWidth:(int)((rawImage.size.width / 2)) topCapHeight:1];
+        image = [rawImage stretchableImageWithLeftCapWidth:(int)((rawImage.size.width / 2)) topCapHeight:1];
     }
     return image;
 }

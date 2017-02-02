@@ -210,3 +210,36 @@
 
 @end
 
+@implementation TLupdates_Difference$updates_differenceTooLong : TLupdates_Difference
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x4afe8f6d;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x3105285b;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLupdates_Difference$updates_differenceTooLong *object = [[TLupdates_Difference$updates_differenceTooLong alloc] init];
+    object.pts = metaObject->getInt32((int32_t)0x4fc5f572);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.pts;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x4fc5f572, value));
+    }
+}
+
+
+@end
+

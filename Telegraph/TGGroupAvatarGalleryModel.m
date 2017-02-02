@@ -15,17 +15,68 @@
 #import "TGAccessChecker.h"
 #import "TGMediaAssetsLibrary.h"
 
+#import "TGMessageSearchSignals.h"
+
+@interface TGGroupAvatarGalleryModel () {
+    bool _displayCounter;
+    id<SDisposable> _searchDisposable;
+}
+
+@end
+
 @implementation TGGroupAvatarGalleryModel
 
-- (instancetype)initWithMessageId:(int32_t)messageId legacyThumbnailUrl:(NSString *)legacyThumbnailUrl legacyUrl:(NSString *)legacyUrl imageSize:(CGSize)imageSize
-{
+- (instancetype)initWithPeerId:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId legacyThumbnailUrl:(NSString *)legacyThumbnailUrl legacyUrl:(NSString *)legacyUrl imageSize:(CGSize)imageSize {
     self = [super init];
     if (self != nil)
     {
         TGGroupAvatarGalleryItem *item = [[TGGroupAvatarGalleryItem alloc] initWithMessageId:messageId legacyThumbnailUrl:legacyThumbnailUrl legacyUrl:legacyUrl imageSize:imageSize];
         [self _replaceItems:@[item] focusingOnItem:item];
+        
+        if (peerId != 0) {
+            _displayCounter = true;
+            __weak TGGroupAvatarGalleryModel *weakSelf = self;
+            _searchDisposable = [[[TGMessageSearchSignals searchPeer:peerId accessHash:accessHash query:@"" filter:TGMessageSearchFilterGroupPhotos maxMessageId:0/*messageId*/ limit:32 around:false/*messageId == 0 ? false : true*/] deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *messages) {
+                __strong TGGroupAvatarGalleryModel *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    NSMutableArray *items = [[NSMutableArray alloc] init];
+                    bool addedItem = false;
+                    
+                    for (TGMessage *message in messages) {
+                        TGActionMediaAttachment *actionInfo = message.actionInfo;
+                        if (actionInfo != nil && actionInfo.actionType == TGMessageActionChatEditPhoto) {
+                            TGImageMediaAttachment *imageMedia = actionInfo.actionData[@"photo"];
+                            if (imageMedia != nil) {
+                                NSString *imageLegacyThumbnailUrl = [imageMedia.imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL];
+                                if (TGStringCompare(imageLegacyThumbnailUrl, legacyThumbnailUrl)) {
+                                    [items addObject:item];
+                                    addedItem = legacyThumbnailUrl;
+                                } else {
+                                    CGSize imageSize = CGSizeZero;
+                                    NSString *legacyUrl = [imageMedia.imageInfo imageUrlForSizeLargerThanSize:CGSizeMake(599.0f, 599.0f) actualSize:&imageSize];
+                                    
+                                    TGGroupAvatarGalleryItem *photoItem = [[TGGroupAvatarGalleryItem alloc] initWithMessageId:message.mid legacyThumbnailUrl:imageLegacyThumbnailUrl legacyUrl:legacyUrl imageSize:imageSize];
+                                    [items addObject:photoItem];
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (!addedItem) {
+                        [items insertObject:item atIndex:0];
+                    }
+                    
+                    [strongSelf _replaceItems:items focusingOnItem:item];
+                    
+                }
+            }];
+        }
     }
     return self;
+}
+
+- (void)dealloc {
+    [_searchDisposable dispose];
 }
 
 - (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultLeftAccessoryView
@@ -106,6 +157,30 @@
     {
         [progressWindow dismissWithSuccess];
     }];
+}
+
+- (UIView<TGModernGalleryDefaultHeaderView> *)createDefaultHeaderView
+{
+    if (_displayCounter) {
+        __weak TGGroupAvatarGalleryModel *weakSelf = self;
+        return [[TGGenericPeerMediaGalleryDefaultHeaderView alloc] initWithPositionAndCountBlock:^(id<TGModernGalleryItem> item, NSUInteger *position, NSUInteger *count)
+        {
+            __strong TGGroupAvatarGalleryModel *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                if (position != NULL)
+                {
+                    NSUInteger index = [strongSelf.items indexOfObject:item];
+                    if (index != NSNotFound)
+                        *position = index;
+                }
+                if (count != NULL)
+                    *count = strongSelf.items.count;
+            }
+        }];
+    } else {
+        return nil;
+    }
 }
 
 @end

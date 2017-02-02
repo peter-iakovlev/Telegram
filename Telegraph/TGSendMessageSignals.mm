@@ -20,25 +20,28 @@
 
 #import "TGPeerIdAdapter.h"
 
+NSString *const TGAccessHashKey = @"accessHash";
+NSString *const TGChannelGroupKey = @"channelGroup";
+
 @implementation TGSendMessageSignals
 
 + (SSignal *)sendTextMessageWithPeerId:(int64_t)peerId text:(NSString *)text replyToMid:(int32_t)replyToMid
 {
-    SSignal *accessHashSignal = TGPeerIdIsChannel(peerId) ? [[[TGDatabaseInstance() existingChannel:peerId] take:1] map:^NSNumber *(TGConversation *channel)
-    {
-        return @(channel.accessHash);
-    }] : [SSignal single:nil];
-    
-    SSignal *addToDatabaseSignal = [self _addMessageToDatabaseWithPeerId:peerId replyToMid:replyToMid text:text attachment:nil];
-    
-    SSignal *(^sendMessage)(TGMessage *, int64_t) = ^SSignal *(TGMessage *message, int64_t accessHash)
+    SSignal *(^sendMessage)(TGMessage *, int64_t, bool) = ^SSignal *(TGMessage *message, int64_t accessHash, bool isChannelGroup)
     {
         TLRPCmessages_sendMessage_manual *sendMessage = [[TLRPCmessages_sendMessage_manual alloc] init];
         sendMessage.peer = [TGTelegraphInstance createInputPeerForConversation:peerId accessHash:accessHash];
         sendMessage.message = message.text;
         sendMessage.random_id = message.randomId;
         sendMessage.reply_to_msg_id = replyToMid;
-        sendMessage.flags |= replyToMid != 0 ? (1 << 0) : 0;
+        
+        int32_t flags = 0;
+        if (replyToMid != 0)
+            flags |= (1 << 0);
+        if (TGPeerIdIsChannel(peerId) && !isChannelGroup)
+            flags |= 16;
+        
+        sendMessage.flags = flags;
         
         return [[SSignal single:message] then:[[[[[TGTelegramNetworking instance] requestSignal:sendMessage] mapToSignal:^SSignal *(TLUpdates *updates)
         {
@@ -47,11 +50,6 @@
             if ([updates isKindOfClass:[TLUpdates$updateShortSentMessage class]])
             {
                 TLUpdates$updateShortSentMessage *sentMessage = (TLUpdates$updateShortSentMessage *)updates;
-                
-                std::vector<TGDatabaseMessageFlagValue> flags;
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDeliveryState, .value = TGMessageDeliveryStateDelivered});
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagMid, .value = sentMessage.n_id});
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDate, .value = sentMessage.date});
                 
                 TGMessage *updatedMessage = [message copy];
                 updatedMessage.mid = sentMessage.n_id;
@@ -72,9 +70,10 @@
                     updatedMessage.mediaAttachments = attachments;
                 }
                 
-                [TGDatabaseInstance() updateMessage:message.mid peerId:0 flags:flags media:updatedMessage.mediaAttachments dispatch:true];
-                
                 [TGDatabaseInstance() removeTempIds:@[@(message.randomId)]];
+                
+                TGDatabaseUpdateMessageWithMessage *messageUpdate = [[TGDatabaseUpdateMessageWithMessage alloc] initWithPeerId:0 messageId:message.mid message:updatedMessage dispatchEdited:false];
+                [TGDatabaseInstance() transactionUpdateMessages:@[messageUpdate] updateConversationDatas:nil];
                 
                 [[TGTelegramNetworking instance] updatePts:sentMessage.pts ptsCount:sentMessage.pts_count seq:0];
                 
@@ -85,20 +84,10 @@
             }
             else if (updateMessage != nil)
             {
-                int32_t date = 0;
-                if ([updateMessage isKindOfClass:[TLMessage$modernMessage class]])
-                    date = ((TLMessage$message *)updateMessage).date;
-                else if ([updateMessage isKindOfClass:[TLMessage$modernMessageService class]])
-                    date = ((TLMessage$modernMessageService *)updateMessage).date;
-                
-                std::vector<TGDatabaseMessageFlagValue> flags;
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDeliveryState, .value = TGMessageDeliveryStateDelivered});
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagMid, .value = updateMessage.n_id});
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDate, .value = date});
-                
                 TGMessage *updatedMessage = [[TGMessage alloc] initWithTelegraphMessageDesc:updateMessage];
                 
-                [TGDatabaseInstance() updateMessage:message.mid peerId:0 flags:flags media:updatedMessage.mediaAttachments dispatch:true];
+                TGDatabaseUpdateMessageWithMessage *messageUpdate = [[TGDatabaseUpdateMessageWithMessage alloc] initWithPeerId:0 messageId:message.mid message:updatedMessage dispatchEdited:false];
+                [TGDatabaseInstance() transactionUpdateMessages:@[messageUpdate] updateConversationDatas:nil];
                 
                 [TGDatabaseInstance() removeTempIds:@[@(message.randomId)]];
                 
@@ -119,22 +108,31 @@
         }]];
     };
     
-    return [addToDatabaseSignal mapToSignal:^SSignal *(TGMessage *message)
+    return [[self _channelInfoSignalForPeerId:peerId] mapToSignal:^SSignal *(NSDictionary *info)
     {
-        return [accessHashSignal mapToSignal:^SSignal *(NSNumber *accessHash)
+        return [[self _addMessageToDatabaseWithPeerId:peerId replyToMid:replyToMid text:text attachment:nil isChannelGroup:[info[TGChannelGroupKey] boolValue]] mapToSignal:^SSignal *(TGMessage *message)
         {
-            return sendMessage(message, accessHash.int64Value);
+            return sendMessage(message, [info[TGAccessHashKey] int64Value], [info[TGChannelGroupKey] boolValue]);
         }];
     }];
 }
-+ (SSignal *)_addMessageToDatabaseWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid text:(NSString *)text attachment:(TGMediaAttachment *)attachment
+
++ (SSignal *)_channelInfoSignalForPeerId:(int64_t)peerId
+{
+    return TGPeerIdIsChannel(peerId) ? [[[TGDatabaseInstance() existingChannel:peerId] take:1] map:^NSDictionary *(TGConversation *channel)
+    {
+        return @{ TGAccessHashKey: @(channel.accessHash), TGChannelGroupKey: @(channel.isChannelGroup) };
+    }] : [SSignal single:nil];
+}
+
++ (SSignal *)_addMessageToDatabaseWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid text:(NSString *)text attachment:(TGMediaAttachment *)attachment isChannelGroup:(bool)isChannelGroup
 {
     return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
         TGMessage *message = [[TGMessage alloc] init];
         
+        message.cid = peerId;
         message.outgoing = true;
-        message.unread = true;
         message.fromUid = TGTelegraphInstance.clientUserId;
         message.toUid = peerId;
         message.deliveryState = TGMessageDeliveryStatePending;
@@ -145,6 +143,9 @@
 
         if (text != nil)
             message.text = text;
+        
+        if (isChannelGroup)
+            message.sortKey = TGMessageSortKeyMake(peerId, TGMessageSpaceUnimportant, (int32_t)message.date, message.mid);
         
         NSMutableArray *attachments = [[NSMutableArray alloc] init];
         TGMessage *replyMessage = nil;
@@ -167,7 +168,7 @@
         message.mid = [[[TGDatabaseInstance() generateLocalMids:1] firstObject] intValue];
         message.date = (int)[[TGTelegramNetworking instance] approximateRemoteTime];
         
-        [TGDatabaseInstance() addMessagesToConversation:@[message] conversationId:peerId updateConversation:nil dispatch:true countUnread:false];
+        [TGDatabaseInstance() transactionAddMessages:@[message] updateConversationDatas:nil notifyAdded:true];
         
         [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messages", (long long)peerId] resource:[[SGraphObjectNode alloc] initWithObject:@[message]]];
         
@@ -178,78 +179,84 @@
     }];
 }
 
-+ (SSignal *)_sendMediaWithMessage:(TGMessage *)message replyToMid:(int32_t)replyToMid mediaProducer:(TLInputMedia *(^)(void))mediaProducer
++ (SSignal *)_sendMediaWithMessage:(TGMessage *)message accessHash:(int64_t)accessHash isChannelGroup:(bool)isChannelGroup replyToMid:(int32_t)replyToMid uploadInfo:(NSDictionary *)uploadInfo mediaProducer:(TLInputMedia *(^)(NSDictionary *uploadInfo))mediaProducer
 {
     int64_t peerId = message.toUid;
-    SSignal *accessHashSignal = TGPeerIdIsChannel(peerId) ? [[[TGDatabaseInstance() existingChannel:peerId] take:1] map:^NSNumber *(TGConversation *channel)
-    {
-        return @(channel.accessHash);
-    }] : [SSignal single:nil];
     
-    return [accessHashSignal mapToSignal:^SSignal *(NSNumber *accessHash)
+    TLRPCmessages_sendMedia_manual *sendMedia = [[TLRPCmessages_sendMedia_manual alloc] init];
+    sendMedia.peer = [TGTelegraphInstance createInputPeerForConversation:message.toUid accessHash:accessHash];
+    sendMedia.media = mediaProducer(uploadInfo);
+    sendMedia.random_id = message.randomId;
+    sendMedia.reply_to_msg_id = replyToMid;
+    
+    int32_t flags = 0;
+    if (replyToMid != 0)
+        flags |= (1 << 0);
+    if (TGPeerIdIsChannel(peerId) && !isChannelGroup)
+        flags |= 16;
+    
+    sendMedia.flags = flags;
+    
+    return [[SSignal single:message] then:[[[[[TGTelegramNetworking instance] requestSignal:sendMedia] mapToSignal:^SSignal *(TLUpdates *updates)
     {
-        TLRPCmessages_sendMedia_manual *sendMedia = [[TLRPCmessages_sendMedia_manual alloc] init];
-        sendMedia.peer = [TGTelegraphInstance createInputPeerForConversation:message.toUid accessHash:accessHash.int64Value];
-        sendMedia.media = mediaProducer();
-        sendMedia.random_id = message.randomId;
-        sendMedia.reply_to_msg_id = replyToMid;
-        sendMedia.flags |= replyToMid != 0 ? (1 << 0) : 0;
-        if (TGPeerIdIsChannel(message.toUid)) {
-            
-        }
+        TLMessage *updateMessage = updates.messages.firstObject;
         
-        return [[SSignal single:message] then:[[[[[TGTelegramNetworking instance] requestSignal:sendMedia] mapToSignal:^SSignal *(TLUpdates *updates)
+        if (updateMessage != nil)
         {
-            TLMessage *updateMessage = updates.messages.firstObject;
+            TGMessage *updatedMessage = [[TGMessage alloc] initWithTelegraphMessageDesc:updateMessage];
             
-            if (updateMessage != nil)
-            {
-                int32_t date = 0;
-                if ([updateMessage isKindOfClass:[TLMessage$modernMessage class]])
-                    date = ((TLMessage$message *)updateMessage).date;
-                else if ([updateMessage isKindOfClass:[TLMessage$modernMessageService class]])
-                    date = ((TLMessage$modernMessageService *)updateMessage).date;
-                
-                std::vector<TGDatabaseMessageFlagValue> flags;
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDeliveryState, .value = TGMessageDeliveryStateDelivered});
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagMid, .value = updateMessage.n_id});
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDate, .value = date});
-                
-                TGMessage *updatedMessage = [[TGMessage alloc] initWithTelegraphMessageDesc:updateMessage];
-                
-                [TGDatabaseInstance() updateMessage:message.mid peerId:0 flags:flags media:updatedMessage.mediaAttachments dispatch:true];
-                
-                [TGDatabaseInstance() removeTempIds:@[@(message.randomId)]];
-                
-                id resource = [[SGraphObjectNode alloc] initWithObject:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:message.mid], updatedMessage, nil]];
-                [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messagesChanged", (long long)message.toUid] resource:resource];
-                
-                [[TGTelegramNetworking instance] addUpdates:updates];
-                
-                return [SSignal single:updatedMessage];
-            }
-            else
-                return [SSignal fail:nil];
-        }] take:1] catch:^SSignal *(__unused id error)
-        {
-            TGMessage *updatedMessage = [message copy];
-            updatedMessage.deliveryState = TGMessageDeliveryStateFailed;
+            TGDatabaseUpdateMessageWithMessage *messageUpdate = [[TGDatabaseUpdateMessageWithMessage alloc] initWithPeerId:0 messageId:message.mid message:updatedMessage dispatchEdited:false];
+            [TGDatabaseInstance() transactionUpdateMessages:@[messageUpdate] updateConversationDatas:nil];
+            
+            [TGDatabaseInstance() removeTempIds:@[@(message.randomId)]];
+            
+            id resource = [[SGraphObjectNode alloc] initWithObject:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:message.mid], updatedMessage, nil]];
+            [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messagesChanged", (long long)message.toUid] resource:resource];
+            
+            [[TGTelegramNetworking instance] addUpdates:updates];
+            
             return [SSignal single:updatedMessage];
-        }]];
-    }];
+        }
+        else
+            return [SSignal fail:nil];
+    }] take:1] catch:^SSignal *(__unused id error)
+    {
+        TGMessage *updatedMessage = [message copy];
+        updatedMessage.deliveryState = TGMessageDeliveryStateFailed;
+        return [SSignal single:updatedMessage];
+    }]];
 }
 
-+ (SSignal *)_sendMediaWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid attachment:(TGMediaAttachment *)attachment mediaProducer:(TLInputMedia *(^)(void))mediaProducer
++ (SSignal *)sendMediaWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid attachment:(TGMediaAttachment *)attachment uploadSignal:(SSignal *)uploadSignal mediaProducer:(TLInputMedia *(^)(NSDictionary *uploadInfo))mediaProducer
 {
-    return [[self _addMessageToDatabaseWithPeerId:peerId replyToMid:replyToMid text:nil attachment:attachment] mapToSignal:^SSignal *(TGMessage *message)
+    return [[self _channelInfoSignalForPeerId:peerId] mapToSignal:^SSignal *(NSDictionary *info)
     {
-        return [self _sendMediaWithMessage:message replyToMid:replyToMid mediaProducer:mediaProducer];
+        int64_t accessHash = [info[TGAccessHashKey] int64Value];
+        bool channelGroup = [info[TGChannelGroupKey] boolValue];
+        
+        return [[self _addMessageToDatabaseWithPeerId:peerId replyToMid:replyToMid text:nil attachment:attachment isChannelGroup:channelGroup] mapToSignal:^SSignal *(TGMessage *message)
+        {
+            SSignal *(^sendSignal)(NSDictionary *) = ^SSignal *(NSDictionary *uploadInfo)
+            {
+                return [self _sendMediaWithMessage:message accessHash:accessHash isChannelGroup:channelGroup replyToMid:replyToMid uploadInfo:uploadInfo mediaProducer:mediaProducer];
+            };
+            
+            if (uploadSignal != nil)
+            {
+                return [uploadSignal mapToSignal:^SSignal *(NSDictionary *uploadInfo)
+                {
+                    return sendSignal(uploadInfo);
+                }];
+            }
+            
+            return sendSignal(nil);
+        }];
     }];
 }
 
 + (SSignal *)sendLocationWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid locationAttachment:(TGLocationMediaAttachment *)locationAttachment
 {
-    return [self _sendMediaWithPeerId:peerId replyToMid:replyToMid attachment:locationAttachment mediaProducer:^TLInputMedia *
+    return [self sendMediaWithPeerId:peerId replyToMid:replyToMid attachment:locationAttachment uploadSignal:nil mediaProducer:^TLInputMedia *(__unused NSDictionary *uploadInfo)
     {
         TLInputGeoPoint$inputGeoPoint *geoPoint = [[TLInputGeoPoint$inputGeoPoint alloc] init];
         geoPoint.lat = locationAttachment.latitude;
@@ -299,7 +306,7 @@
         }];
     }
     
-    return [self _sendMediaWithPeerId:peerId replyToMid:replyToMid attachment:documentAttachment mediaProducer:^TLInputMedia *
+    return [self sendMediaWithPeerId:peerId replyToMid:replyToMid attachment:documentAttachment uploadSignal:nil mediaProducer:^TLInputMedia *(__unused NSDictionary *uploadInfo)
     {
         TLInputMedia$inputMediaDocument *remoteDocument = [[TLInputMedia$inputMediaDocument alloc] init];
         
@@ -358,7 +365,6 @@
         }
         
         message.outgoing = true;
-        message.unread = true;
         message.fromUid = TGTelegraphInstance.clientUserId;
         message.toUid = peerId;
         message.deliveryState = TGMessageDeliveryStatePending;
@@ -371,7 +377,7 @@
         message.mid = [[[TGDatabaseInstance() generateLocalMids:1] firstObject] intValue];
         message.date = (int)[[TGTelegramNetworking instance] approximateRemoteTime];
         
-        [TGDatabaseInstance() addMessagesToConversation:@[message] conversationId:peerId updateConversation:nil dispatch:true countUnread:false];
+        [TGDatabaseInstance() transactionAddMessages:@[message] updateConversationDatas:nil notifyAdded:true];
         
         [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messages", (long long)peerId] resource:[[SGraphObjectNode alloc] initWithObject:@[message]]];
         
@@ -395,20 +401,10 @@
             
             if (updateMessage != nil)
             {
-                int32_t date = 0;
-                if ([updateMessage isKindOfClass:[TLMessage$modernMessage class]])
-                    date = ((TLMessage$message *)updateMessage).date;
-                else if ([updateMessage isKindOfClass:[TLMessage$modernMessageService class]])
-                    date = ((TLMessage$modernMessageService *)updateMessage).date;
-                
-                std::vector<TGDatabaseMessageFlagValue> flags;
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDeliveryState, .value = TGMessageDeliveryStateDelivered});
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagMid, .value = updateMessage.n_id});
-                flags.push_back((TGDatabaseMessageFlagValue){.flag = TGDatabaseMessageFlagDate, .value = date});
-                
                 TGMessage *updatedMessage = [[TGMessage alloc] initWithTelegraphMessageDesc:updateMessage];
                 
-                [TGDatabaseInstance() updateMessage:message.mid peerId:0 flags:flags media:updatedMessage.mediaAttachments dispatch:true];
+                TGDatabaseUpdateMessageWithMessage *messageUpdate = [[TGDatabaseUpdateMessageWithMessage alloc] initWithPeerId:0 messageId:message.mid message:updatedMessage dispatchEdited:false];
+                [TGDatabaseInstance() transactionUpdateMessages:@[messageUpdate] updateConversationDatas:nil];
                 
                 [TGDatabaseInstance() removeTempIds:@[@(message.randomId)]];
                 
@@ -533,4 +529,129 @@
     return [SSignal combineSignals:signals];
 }
 
+@end
+
+
+@implementation TGShareSignals
+
++ (SSignal *)shareText:(NSString *)text toPeerIds:(NSArray *)peerIds caption:(NSString *)caption
+{
+    NSMutableArray *signals = [[NSMutableArray alloc] init];
+    
+    for (NSNumber *peerIdVal in peerIds)
+    {
+        int64_t peerId = peerIdVal.int64Value;
+        SSignal *signal = [TGSendMessageSignals sendTextMessageWithPeerId:peerId text:text replyToMid:0];
+        if (caption.length > 0)
+            signal = [[TGSendMessageSignals sendTextMessageWithPeerId:peerId text:caption replyToMid:0] then:signal];
+        
+        [signals addObject:signal];
+    }
+    
+    return [SSignal combineSignals:signals];
+}
+
++ (SSignal *)sharePhoto:(TGImageMediaAttachment *)photo toPeerIds:(NSArray *)peerIds caption:(NSString *)caption
+{
+    TLInputMedia$inputMediaPhoto *remotePhoto = [[TLInputMedia$inputMediaPhoto alloc] init];
+    TLInputPhoto$inputPhoto *inputId = [[TLInputPhoto$inputPhoto alloc] init];
+    inputId.n_id = photo.imageId;
+    inputId.access_hash = photo.accessHash;
+    remotePhoto.n_id = inputId;
+    
+    TGImageMediaAttachment *attachment = [photo copy];
+    attachment.caption = nil;
+    
+    return [self _shareMedia:remotePhoto attachment:attachment toPeerIds:peerIds caption:caption];
+}
+
++ (SSignal *)shareVideo:(TGVideoMediaAttachment *)video toPeerIds:(NSArray *)peerIds caption:(NSString *)caption
+{
+    TLInputMedia$inputMediaDocument *remoteDocument = [[TLInputMedia$inputMediaDocument alloc] init];
+    TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
+    inputDocument.n_id = video.videoId;
+    inputDocument.access_hash = video.accessHash;
+    remoteDocument.n_id = inputDocument;
+    
+    TGVideoMediaAttachment *attachment = [video copy];
+    attachment.caption = nil;
+    
+    return [self _shareMedia:remoteDocument attachment:attachment toPeerIds:peerIds caption:caption];
+}
+
++ (SSignal *)shareContact:(TGContactMediaAttachment *)contact toPeerIds:(NSArray *)peerIds caption:(NSString *)caption
+{
+    TLInputMedia$inputMediaContact *inputContact = [[TLInputMedia$inputMediaContact alloc] init];
+    inputContact.first_name = contact.firstName;
+    inputContact.last_name = contact.lastName;
+    inputContact.phone_number = contact.phoneNumber;
+ 
+    return [self _shareMedia:inputContact attachment:contact toPeerIds:peerIds caption:caption];
+}
+
++ (SSignal *)shareLocation:(TGLocationMediaAttachment *)location toPeerIds:(NSArray *)peerIds caption:(NSString *)caption
+{
+    TLInputGeoPoint$inputGeoPoint *geoPoint = [[TLInputGeoPoint$inputGeoPoint alloc] init];
+    geoPoint.lat = location.latitude;
+    geoPoint.n_long = location.longitude;
+    
+    TLInputMedia *inputLocation = nil;
+    
+    if (location.venue != nil)
+    {
+        TGVenueAttachment *venue = location.venue;
+        
+        TLInputMedia$inputMediaVenue *inputVenue = [[TLInputMedia$inputMediaVenue alloc] init];
+        inputVenue.geo_point = geoPoint;
+        inputVenue.title = venue.title;
+        inputVenue.address = venue.address;
+        inputVenue.provider = venue.provider;
+        inputVenue.venue_id = venue.venueId;
+        inputLocation = inputVenue;
+    }
+    else
+    {
+        TLInputMedia$inputMediaGeoPoint *inputGeoPoint = [[TLInputMedia$inputMediaGeoPoint alloc] init];
+        inputGeoPoint.geo_point = geoPoint;
+        inputLocation = inputGeoPoint;
+    }
+
+    return [self _shareMedia:inputLocation attachment:location toPeerIds:peerIds caption:caption];
+}
+
++ (SSignal *)shareDocument:(TGDocumentMediaAttachment *)document toPeerIds:(NSArray *)peerIds caption:(NSString *)caption
+{
+    TLInputMedia$inputMediaDocument *remoteDocument = [[TLInputMedia$inputMediaDocument alloc] init];
+    TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
+    inputDocument.n_id = document.documentId;
+    inputDocument.access_hash = document.accessHash;
+    remoteDocument.n_id = inputDocument;
+    
+    TGDocumentMediaAttachment *attachment = [document copy];
+    attachment.caption = nil;
+    
+    return [self _shareMedia:remoteDocument attachment:attachment toPeerIds:peerIds caption:caption];
+}
+
++ (SSignal *)_shareMedia:(TLInputMedia *)media attachment:(TGMediaAttachment *)attachment toPeerIds:(NSArray *)peerIds caption:(NSString *)caption
+{
+    NSMutableArray *signals = [[NSMutableArray alloc] init];
+    
+    TLInputMedia *(^mediaProducer)(__unused NSDictionary *) = ^(__unused NSDictionary *uploadInfo)
+    {
+        return media;
+    };
+    
+    for (NSNumber *peerIdVal in peerIds)
+    {
+        int64_t peerId = peerIdVal.int64Value;
+        SSignal *signal = [TGSendMessageSignals sendMediaWithPeerId:peerId replyToMid:0 attachment:attachment uploadSignal:nil mediaProducer:mediaProducer];
+        if (caption.length > 0)
+            signal = [[TGSendMessageSignals sendTextMessageWithPeerId:peerId text:caption replyToMid:0] then:signal];
+        
+        [signals addObject:signal];
+    }
+    
+    return [SSignal combineSignals:signals];
+}
 @end

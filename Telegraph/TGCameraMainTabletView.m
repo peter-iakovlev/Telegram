@@ -59,6 +59,7 @@ const CGFloat TGCameraTabletPanelViewWidth = 102.0f;
         [_panelView addSubview:_cancelButton];
         
         _shutterButton = [[TGCameraShutterButton alloc] initWithFrame:CGRectMake(0, 0, 66, 66)];
+        [_shutterButton addTarget:self action:@selector(shutterButtonPressed) forControlEvents:UIControlEventTouchDown];
         [_shutterButton addTarget:self action:@selector(shutterButtonReleased) forControlEvents:UIControlEventTouchUpInside];
         [_panelView addSubview:_shutterButton];
         

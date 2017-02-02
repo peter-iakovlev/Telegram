@@ -35,4 +35,8 @@
 
 - (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier assetsSource:(id<TGDialogListCellAssetsSource>)assetsSource;
 
+- (UIView *)avatarSnapshotView;
+- (CGRect)avatarFrame;
+- (CGRect)textContentFrame;
+
 @end

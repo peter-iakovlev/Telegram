@@ -30,6 +30,7 @@
 - (void)updateDecorationAssets;
 
 - (bool)performBatchUpdates:(void (^)(void))updates completion:(void (^)(BOOL))completion beforeDecorations:(void (^)())beforeDecorations animated:(bool)animated animationFactor:(float)animationFactor;
+- (bool)performBatchUpdates:(void (^)(void))updates completion:(void (^)(BOOL))completion beforeDecorations:(void (^)())beforeDecorations animated:(bool)animated animationFactor:(float)animationFactor insideAnimation:(void (^)())insideAnimation;
 
 - (CGFloat)implicitTopInset;
 - (void)updateHeaderView;

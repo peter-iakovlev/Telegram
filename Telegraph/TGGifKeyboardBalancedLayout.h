@@ -24,6 +24,8 @@
 // The scroll direction of the grid.
 @property (nonatomic) UICollectionViewScrollDirection scrollDirection;
 
+- (CGSize)standaloneContentSize:(CGSize)viewportSize;
+
 @end
 
 @protocol TGGifKeyboardBalancedLayoutDelegate <NSObject>

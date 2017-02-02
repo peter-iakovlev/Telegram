@@ -18,6 +18,8 @@
 
 #import <CommonCrypto/CommonDigest.h>
 
+#import "TGTelegramNetworking.h"
+
 @implementation TGAudioDownloadActor
 
 + (void)load {
@@ -140,7 +142,8 @@
                 @"decryptedSize": @(decryptedSize),
                 @"storeFilePath": audioFilePath,
                 @"datacenterId": @(datacenterId),
-                @"encryptionArgs": encryptionArgs
+                @"encryptionArgs": encryptionArgs,
+                @"mediaTypeTag": @(TGNetworkMediaTypeTagAudio)
             } watcher:self];
         }
         else

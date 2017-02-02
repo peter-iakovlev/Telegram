@@ -21,9 +21,10 @@ NSString *const TGBridgeStickersSentImagesFileName = @"stickers.imgs";
     self = [super initWithServer:server];
     if (self != nil)
     {
-        _stickersSignal = [server serviceSignalForKey:@"stickers" producer:^SSignal *
-        {
-            return [TGStickersSignals stickerPacks];
+        _stickersSignal = [[server server] mapToSignal:^SSignal *(TGBridgeServer *server) {
+            return [server serviceSignalForKey:@"stickers" producer:^SSignal *{
+                return [TGStickersSignals stickerPacks];
+            }];
         }];
         
         __weak TGBridgeStickersService *weakSelf = self;

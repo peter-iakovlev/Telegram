@@ -14,6 +14,7 @@
 @class MTRequestMessageService;
 @class MTRequest;
 @class TGNetworkWorkerGuard;
+@class MTNetworkUsageCalculationInfo;
 
 @protocol TGNetworkWorkerDelegate <NSObject>
 
@@ -29,6 +30,8 @@
 @property (nonatomic, weak) id<TGNetworkWorkerDelegate> delegate;
 
 @property (nonatomic, readonly) NSInteger datacenterId;
+
+@property (nonatomic, strong) MTNetworkUsageCalculationInfo *usageCalculationInfo;
 
 - (instancetype)initWithContext:(MTContext *)context datacenterId:(NSInteger)datacenterId masterDatacenterId:(NSInteger)masterDatacenterId;
 

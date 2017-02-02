@@ -6,21 +6,14 @@
 
 @interface TLBotInfo : NSObject <TLObject>
 
-
-@end
-
-@interface TLBotInfo$botInfoEmpty : TLBotInfo
-
+@property (nonatomic) int32_t user_id;
+@property (nonatomic, retain) NSString *n_description;
+@property (nonatomic, retain) NSArray *commands;
 
 @end
 
 @interface TLBotInfo$botInfo : TLBotInfo
 
-@property (nonatomic) int32_t user_id;
-@property (nonatomic) int32_t version;
-@property (nonatomic, retain) NSString *share_text;
-@property (nonatomic, retain) NSString *n_description;
-@property (nonatomic, retain) NSArray *commands;
 
 @end
 

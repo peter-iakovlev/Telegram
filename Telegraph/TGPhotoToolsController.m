@@ -10,9 +10,11 @@
 #import "TGImageUtils.h"
 #import "TGPhotoEditorUtils.h"
 #import "UICollectionView+Utils.h"
+#import "TGPaintUtils.h"
 
 #import "PGPhotoEditor.h"
 #import "PGPhotoTool.h"
+#import "TGPaintingData.h"
 
 #import "TGOverlayControllerWindow.h"
 #import "TGPhotoEditorController.h"
@@ -291,7 +293,7 @@
 
 - (id)currentResultRepresentation
 {
-    return self.photoEditor.currentResultImage;
+    return TGPaintCombineCroppedImages(self.photoEditor.currentResultImage, self.photoEditor.paintingData.image, true, self.photoEditor.originalSize, self.photoEditor.cropRect, self.photoEditor.cropOrientation, self.photoEditor.cropRotation, self.photoEditor.cropMirrored);
 }
 
 #pragma mark - Data Source and Delegate
@@ -572,7 +574,7 @@
     if (_dismissing || previewView.superview != self.view)
         return;
     
-    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation includePanel:false];
+    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation panelSize:TGPhotoEditorPanelSize];
     CGSize fittedSize = TGScaleToSize(photoEditor.rotatedCropSize, containerFrame.size);
     previewView.frame = CGRectMake(containerFrame.origin.x + (containerFrame.size.width - fittedSize.width) / 2,
                                    containerFrame.origin.y + (containerFrame.size.height - fittedSize.height) / 2,

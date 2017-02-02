@@ -5,6 +5,7 @@
 @implementation TGWebSearchResultsGalleryInternalGifItem
 
 @synthesize selectionContext;
+@synthesize editingContext;
 
 - (instancetype)initWithSearchResult:(TGWebSearchInternalGifResult *)searchResult
 {
@@ -19,6 +20,16 @@
 - (id<TGMediaSelectableItem>)selectableMediaItem
 {
     return self.webSearchResult;
+}
+
+- (id<TGMediaEditableItem>)editableMediaItem
+{
+    return self.webSearchResult;
+}
+
+- (TGPhotoEditorTab)toolbarTabs
+{
+    return TGPhotoEditorNoneTab;
 }
 
 - (NSString *)uniqueId

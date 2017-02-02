@@ -36,13 +36,13 @@ extern NSString *authorNameYou;
 
 @implementation TGHashtagSearchController
 
-- (instancetype)initWithQuery:(NSString *)query peerId:(int64_t)peerId accessHash:(int64_t)accessHash
+- (instancetype)initWithQuery:(NSString *)query peerId:(int64_t)__unused peerId accessHash:(int64_t)__unused accessHash
 {
     self = [super init];
     if (self != nil)
     {
-        _peerId = peerId;
-        _accessHash = accessHash;
+        _peerId = 0;
+        _accessHash = 0;
         
         [TGRecentHashtagsSignal addRecentHashtagsFromText:query space:TGHashtagSpaceSearchedBy];
         
@@ -51,6 +51,8 @@ extern NSString *authorNameYou;
         
         _query = query;
         self.title = query;
+        
+        self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Back") style:UIBarButtonItemStylePlain target:self action:@selector(backPressed)];
     }
     return self;
 }
@@ -59,6 +61,10 @@ extern NSString *authorNameYou;
 {
     [_searchDisposable dispose];
     [_downloadHistoryDisposable dispose];
+}
+
+- (void)backPressed {
+    [self.navigationController popViewControllerAnimated:true];
 }
 
 - (void)loadView
@@ -73,6 +79,13 @@ extern NSString *authorNameYou;
     _tableView.delegate = self;
     _tableView.rowHeight = 76.0f;
     _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    
+    if (iosMajorVersion() >= 7) {
+        _tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
+        _tableView.separatorColor = TGSeparatorColor();
+        _tableView.separatorInset = UIEdgeInsetsMake(0.0f, 80.0f, 0.0f, 0.0f);
+    }
+    
     [self.view addSubview:_tableView];
     
     [self beginSearchWithQuery:_query];
@@ -304,6 +317,12 @@ extern NSString *authorNameYou;
     conversation.dialogListData = dict;
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    [_tableView deselectRowAtIndexPath:[_tableView indexPathForSelectedRow] animated:animated];
+}
+
 - (void)setSearchResults:(NSArray *)searchResults
 {
     _searchResults = searchResults;
@@ -410,13 +429,13 @@ extern NSString *authorNameYou;
     TGConversation *conversation = _searchResults[indexPath.row];
     int32_t messageId = [conversation.additionalProperties[@"searchMessageId"] intValue];
     
-    if (_customResultBlock) {
+    if (_customResultBlock && conversation.conversationId == _customResultBlockPeerId) {
         _customResultBlock(messageId);
     } else {
         if ([TGDatabaseInstance() loadMessageWithMid:messageId peerId:conversation.conversationId] != nil)
         {
             int64_t conversationId = conversation.conversationId;
-            [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false animated:true];
+            [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:false openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
         }
         else
         {
@@ -428,7 +447,7 @@ extern NSString *authorNameYou;
                 [progressWindow dismiss:true];
                 
                 int64_t conversationId = conversation.conversationId;
-                [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:true openKeyboard:false animated:true];
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:nil atMessage:@{@"mid": @(messageId)} clearStack:false openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
             }]];
         }
     }

@@ -2,27 +2,40 @@
 
 #import "TGPhotoEditorUtils.h"
 
+#import "TGPaintingData.h"
+
+const NSTimeInterval TGVideoEditMinimumTrimmableDuration = 3.0;
+const NSTimeInterval TGVideoEditMaximumGifDuration = 30.5;
+
 @implementation TGVideoEditAdjustments
 
 @synthesize originalSize = _originalSize;
 @synthesize cropRect = _cropRect;
 @synthesize cropOrientation = _cropOrientation;
 @synthesize cropLockedAspectRatio = _cropLockedAspectRatio;
+@synthesize cropMirrored = _cropMirrored;
+@synthesize paintingData = _paintingData;
 
 + (instancetype)editAdjustmentsWithOriginalSize:(CGSize)originalSize
                                        cropRect:(CGRect)cropRect
                                 cropOrientation:(UIImageOrientation)cropOrientation
                           cropLockedAspectRatio:(CGFloat)cropLockedAspectRatio
+                                   cropMirrored:(bool)cropMirrored
                                  trimStartValue:(NSTimeInterval)trimStartValue
                                    trimEndValue:(NSTimeInterval)trimEndValue
+                                   paintingData:(TGPaintingData *)paintingData
+                                      sendAsGif:(bool)sendAsGif
 {
     TGVideoEditAdjustments *adjustments = [[[self class] alloc] init];
     adjustments->_originalSize = originalSize;
     adjustments->_cropRect = cropRect;
     adjustments->_cropOrientation = cropOrientation;
     adjustments->_cropLockedAspectRatio = cropLockedAspectRatio;
+    adjustments->_cropMirrored = cropMirrored;
     adjustments->_trimStartValue = trimStartValue;
     adjustments->_trimEndValue = trimEndValue;
+    adjustments->_paintingData = paintingData;
+    adjustments->_sendAsGif = sendAsGif;
     
     if (trimStartValue > trimEndValue)
         return nil;
@@ -40,6 +53,8 @@
         adjustments->_cropOrientation = [dictionary[@"cropOrientation"] integerValue];
     if (dictionary[@"cropRect"])
         adjustments->_cropRect = [dictionary[@"cropRect"] CGRectValue];
+    if (dictionary[@"cropMirrored"])
+        adjustments->_cropMirrored = [dictionary[@"cropMirrored"] boolValue];
     if (dictionary[@"trimStart"] || dictionary[@"trimEnd"])
     {
         adjustments->_trimStartValue = [dictionary[@"trimStart"] doubleValue];
@@ -47,8 +62,41 @@
     }
     if (dictionary[@"originalSize"])
         adjustments->_originalSize = [dictionary[@"originalSize"] CGSizeValue];
+    if (dictionary[@"paintingImagePath"])
+        adjustments->_paintingData = [TGPaintingData dataWithPaintingImagePath:dictionary[@"paintingImagePath"]];
+    if (dictionary[@"sendAsGif"])
+        adjustments->_sendAsGif = [dictionary[@"sendAsGif"] boolValue];
     
     return adjustments;
+}
+
+- (NSDictionary *)dictionary
+{
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+    dict[@"cropOrientation"] = @(self.cropOrientation);
+    if ([self cropAppliedForAvatar:false])
+        dict[@"cropRect"] = [NSValue valueWithCGRect:self.cropRect];
+    dict[@"cropMirrored"] = @(self.cropMirrored);
+    
+    if (self.trimStartValue > DBL_EPSILON || self.trimEndValue > DBL_EPSILON)
+    {
+        dict[@"trimStart"] = @(self.trimStartValue);
+        dict[@"trimEnd"] = @(self.trimEndValue);
+    }
+    
+    dict[@"originalSize"] = [NSValue valueWithCGSize:self.originalSize];
+    
+    if (self.paintingData.imagePath != nil)
+        dict[@"paintingImagePath"] = self.paintingData.imagePath;
+    
+    dict[@"sendAsGif"] = @(self.sendAsGif);
+    
+    return dict;
+}
+
+- (bool)hasPainting
+{
+    return (_paintingData != nil);
 }
 
 - (bool)cropAppliedForAvatar:(bool)__unused forAvatar 
@@ -61,17 +109,13 @@
     if (self.cropLockedAspectRatio > FLT_EPSILON)
         return true;
     
+    if (self.cropOrientation != UIImageOrientationUp)
+        return true;
+    
+    if (self.cropMirrored)
+        return true;
+    
     return false;
-}
-
-- (bool)cropOrRotationAppliedForAvatar:(bool)forAvatar
-{
-    return [self cropAppliedForAvatar:forAvatar] || [self rotationApplied];
-}
-
-- (bool)rotationApplied
-{
-    return (self.cropOrientation != UIImageOrientationUp);
 }
 
 - (bool)trimApplied
@@ -81,25 +125,7 @@
 
 - (bool)isDefaultValuesForAvatar:(bool)forAvatar
 {
-    return ![self cropAppliedForAvatar:forAvatar];
-}
-
-- (NSDictionary *)dictionary
-{
-    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-    dict[@"cropOrientation"] = @(self.cropOrientation);
-    if ([self cropAppliedForAvatar:false])
-        dict[@"cropRect"] = [NSValue valueWithCGRect:self.cropRect];
-    
-    if (self.trimStartValue > DBL_EPSILON || self.trimEndValue > DBL_EPSILON)
-    {
-        dict[@"trimStart"] = @(self.trimStartValue);
-        dict[@"trimEnd"] = @(self.trimEndValue);
-    }
-    
-    dict[@"originalSize"] = [NSValue valueWithCGSize:self.originalSize];
-    
-    return dict;
+    return ![self cropAppliedForAvatar:forAvatar] && ![self hasPainting] && !_sendAsGif;
 }
 
 - (bool)isCropEqualWith:(id<TGMediaEditAdjustments>)adjusments
@@ -131,10 +157,19 @@
     if (ABS(self.cropLockedAspectRatio - adjustments.cropLockedAspectRatio) > FLT_EPSILON)
         return NO;
     
+    if (self.cropMirrored != adjustments.cropMirrored)
+        return NO;
+    
     if (fabs(self.trimStartValue - adjustments.trimStartValue) > FLT_EPSILON)
         return NO;
     
     if (fabs(self.trimEndValue - adjustments.trimEndValue) > FLT_EPSILON)
+        return NO;
+    
+    if (![self.paintingData isEqual:adjustments.paintingData])
+        return NO;
+    
+    if (self.sendAsGif != adjustments.sendAsGif)
         return NO;
     
     return YES;

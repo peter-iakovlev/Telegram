@@ -219,7 +219,20 @@
                 }];
             }];
             
-            [[[createAndUpdatePhoto deliverOn:[SQueue mainQueue]] onDispose:^{
+            SSignal *createAndCheckUsernames = [createAndUpdatePhoto mapToSignal:^SSignal *(NSDictionary *dict) {
+                TGConversation *conversation = dict[@"conversation"];
+                return [[[TGGroupManagementSignals conversationsToBeRemovedToAssignPublicUsernames:conversation.conversationId accessHash:conversation.accessHash] catch:^SSignal *(__unused id error) {
+                    return [SSignal single:@[]];
+                }] map:^id(NSArray *conversationsToDeleteForPublicUsernames) {
+                    NSMutableDictionary *updatedDict = [[NSMutableDictionary alloc] initWithDictionary:dict];
+                    if (conversationsToDeleteForPublicUsernames != nil) {
+                        updatedDict[@"conversationsToDeleteForPublicUsernames"] = conversationsToDeleteForPublicUsernames;
+                    }
+                    return updatedDict;
+                }];
+            }];
+            
+            [[[createAndCheckUsernames deliverOn:[SQueue mainQueue]] onDispose:^{
                 TGDispatchOnMainThread(^{
                     [progressWindow dismiss:true];
                 });
@@ -229,7 +242,7 @@
                 
                 __strong TGCreateGroupController *strongSelf = weakSelf;
                 if (strongSelf != nil) {
-                    TGSetupChannelAfterCreationController *setupController = [[TGSetupChannelAfterCreationController alloc] initWithConversation:conversation exportedLink:link];
+                    TGSetupChannelAfterCreationController *setupController = [[TGSetupChannelAfterCreationController alloc] initWithConversation:conversation exportedLink:link modal:false conversationsToDeleteForPublicUsernames:dict[@"conversationsToDeleteForPublicUsernames"] checkConversationsToDeleteForPublicUsernames:false];
                     
                     NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:strongSelf.navigationController.viewControllers];
                     if (viewControllers.count != 1) {
@@ -283,7 +296,7 @@
                     
                     __strong TGCreateGroupController *strongSelf = weakSelf;
                     if (strongSelf != nil) {
-                        TGSetupChannelAfterCreationController *setupController = [[TGSetupChannelAfterCreationController alloc] initWithConversation:conversation exportedLink:link];
+                        TGSetupChannelAfterCreationController *setupController = [[TGSetupChannelAfterCreationController alloc] initWithConversation:conversation exportedLink:link modal:false conversationsToDeleteForPublicUsernames:@[] checkConversationsToDeleteForPublicUsernames:false];
                         
                         NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:strongSelf.navigationController.viewControllers];
                         if (viewControllers.count != 1) {
@@ -482,7 +495,7 @@
     UIImage *avatarImage = filter(image);
     
     [_groupInfoItem setStaticAvatar:avatarImage];
-    [_uploadedPhotoFile set:[TGUploadFileSignals uploadedFileWithData:imageData]];
+    [_uploadedPhotoFile set:[TGUploadFileSignals uploadedFileWithData:imageData mediaTypeTag:TGNetworkMediaTypeTagImage]];
 }
 
 - (void)_commitDeleteAvatar

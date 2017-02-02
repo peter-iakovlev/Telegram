@@ -8,6 +8,8 @@
 #import "TGConversation.h"
 #import "TGDateUtils.h"
 
+#import "TGItemCollectionGalleryItem.h"
+
 const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f, -8.0f };
 
 @interface TGGenericPeerMediaGalleryDefaultFooterView ()
@@ -50,6 +52,7 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
         
         _captionLabel = [[UILabel alloc] init];
         _captionLabel.backgroundColor = [UIColor clearColor];
+        _captionLabel.opaque = false;
         _captionLabel.font = TGSystemFontOfSize(16);
         _captionLabel.numberOfLines = 0;
         _captionLabel.textColor = [UIColor whiteColor];
@@ -60,22 +63,26 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
 
 - (void)setItem:(id<TGModernGalleryItem>)item
 {
-    if (![item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+    if (![item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)] && ![item isKindOfClass:[TGItemCollectionGalleryItem class]])
         return;
 
-    id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
-    NSString *title = nil;
-    if ([[concreteItem authorPeer] isKindOfClass:[TGUser class]]) {
-        title = ((TGUser *)[concreteItem authorPeer]).displayName;
-    } else if ([[concreteItem authorPeer] isKindOfClass:[TGConversation class]]) {
-        title = ((TGConversation *)[concreteItem authorPeer]).chatTitle;
-    }
-    _nameLabel.text = title;
-    _dateLabel.text = [TGDateUtils stringForApproximateDate:(int)[concreteItem date]];
-    
     NSString *newCaption = nil;
-    if ([concreteItem respondsToSelector:@selector(caption)])
-        newCaption = [concreteItem performSelector:@selector(caption) withObject:nil];
+    if ([item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)]) {
+        id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
+        NSString *title = nil;
+        if ([[concreteItem authorPeer] isKindOfClass:[TGUser class]]) {
+            title = ((TGUser *)[concreteItem authorPeer]).displayName;
+        } else if ([[concreteItem authorPeer] isKindOfClass:[TGConversation class]]) {
+            title = ((TGConversation *)[concreteItem authorPeer]).chatTitle;
+        }
+        _nameLabel.text = title;
+        _dateLabel.text = [TGDateUtils stringForApproximateDate:(int)[concreteItem date]];
+        
+        if ([concreteItem respondsToSelector:@selector(caption)])
+            newCaption = [concreteItem performSelector:@selector(caption) withObject:nil];
+    } else if ([item isKindOfClass:[TGItemCollectionGalleryItem class]]) {
+        newCaption = [((TGItemCollectionGalleryItem *)item).media caption];
+    }
     
     if ([_captionLabel.text isEqualToString:newCaption])
     {

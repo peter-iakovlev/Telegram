@@ -18,6 +18,8 @@
 #import "TGStringUtils.h"
 #import "TGTimerTarget.h"
 
+#import "TGUser.h"
+
 #import "TGViewController.h"
 
 #import "HPGrowingTextView.h"
@@ -25,6 +27,7 @@
 
 #import "TGModernButton.h"
 #import "TGModernConversationInputMicButton.h"
+#import "TGModernConversationInputAttachButton.h"
 
 #import "TGModernConversationAssociatedInputPanel.h"
 #import "TGStickerAssociatedInputPanel.h"
@@ -32,10 +35,19 @@
 
 #import "TGModenConcersationReplyAssociatedPanel.h"
 #import "TGModernConversationCommandsAssociatedPanel.h"
+#import "TGModernConversationMediaContextResultsAssociatedPanel.h"
+#import "TGModernConversationGenericContextResultsAssociatedPanel.h"
+#import "TGInlineBotsInputPanel.h"
 
 #import "TGAppDelegate.h"
 
 #import "TGMessage.h"
+#import "TGInputTextTag.h"
+
+#import "PSKeyValueEncoder.h"
+#import "PSKeyValueDecoder.h"
+
+#import <MTProtoKit/MTProtoKit.h>
 
 static void setViewFrame(UIView *view, CGRect frame)
 {
@@ -58,10 +70,32 @@ static CGRect viewFrame(UIView *view)
 
 @implementation TGMessageEditingContext
 
-- (instancetype)initWithText:(NSString *)text isCaption:(bool)isCaption messageId:(int32_t)messageId {
++ (NSAttributedString *)attributedStringForText:(NSString *)text entities:(NSArray *)entities {
+    if (text == nil) {
+        return nil;
+    }
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:text];
+    for (id entity in entities) {
+        if ([entity isKindOfClass:[TGMessageEntityMentionName class]]) {
+            TGMessageEntityMentionName *mentionEntity = entity;
+            static int64_t nextId = 1000000;
+            int64_t uniqueId = nextId;
+            nextId++;
+            @try {
+                [attributedString addAttributes:@{TGMentionUidAttributeName: [[TGInputTextTag alloc] initWithUniqueId:uniqueId left:true attachment:@(mentionEntity.userId)]} range:mentionEntity.range];
+            } @catch(NSException *e) {
+                TGLog(@"attributedStringForText exception %@", e);
+            }
+        }
+    }
+    return attributedString;
+}
+
+- (instancetype)initWithText:(NSString *)text entities:(NSArray *)entities isCaption:(bool)isCaption messageId:(int32_t)messageId {
     self = [super init];
     if (self != nil) {
         _text = text;
+        _entities = entities;
         _isCaption = isCaption;
         _messageId = messageId;
     }
@@ -69,17 +103,22 @@ static CGRect viewFrame(UIView *view)
 }
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder {
-    return [self initWithText:[aDecoder decodeObjectForKey:@"text"] isCaption:[aDecoder decodeBoolForKey:@"isCaption"] messageId:[aDecoder decodeInt32ForKey:@"messageId"]];
+    NSData *entitiesData = [aDecoder decodeObjectForKey:@"entities"];
+    NSArray *entities = [[[PSKeyValueDecoder alloc] initWithData:entitiesData] decodeArrayForCKey:"_"];
+    return [self initWithText:[aDecoder decodeObjectForKey:@"text"] entities:entities isCaption:[aDecoder decodeBoolForKey:@"isCaption"] messageId:[aDecoder decodeInt32ForKey:@"messageId"]];
 }
 
 - (void)encodeWithCoder:(NSCoder *)aCoder {
     [aCoder encodeObject:_text forKey:@"text"];
+    PSKeyValueEncoder *coder = [[PSKeyValueEncoder alloc] init];
+    [coder encodeArray:_entities forCKey:"_"];
+    [aCoder encodeObject:[coder data] forKey:@"entities"];
     [aCoder encodeBool:_isCaption forKey:@"isCaption"];
     [aCoder encodeInt32:_messageId forKey:@"messageId"];
 }
 
 - (BOOL)isEqual:(id)object {
-    if ([object isKindOfClass:[TGMessageEditingContext class]] && TGStringCompare(((TGMessageEditingContext *)object)->_text, _text) && ((TGMessageEditingContext *)object)->_isCaption == _isCaption && ((TGMessageEditingContext *)object)->_messageId == _messageId) {
+    if ([object isKindOfClass:[TGMessageEditingContext class]] && TGStringCompare(((TGMessageEditingContext *)object)->_text, _text) && ((TGMessageEditingContext *)object)->_isCaption == _isCaption && ((TGMessageEditingContext *)object)->_messageId == _messageId && TGObjectCompare(_entities, ((TGMessageEditingContext *)object)->_entities)) {
         return true;
     }
     return false;
@@ -87,7 +126,7 @@ static CGRect viewFrame(UIView *view)
 
 @end
 
-@interface TGModernConversationInputTextPanel () <HPGrowingTextViewDelegate, TGModernConversationInputMicButtonDelegate>
+@interface TGModernConversationInputTextPanel () <HPGrowingTextViewDelegate, TGModernConversationInputAttachButtonDelegate, TGModernConversationInputMicButtonDelegate>
 {
     id<SDisposable> _stickerPacksDisposable;
     
@@ -98,6 +137,7 @@ static CGRect viewFrame(UIView *view)
     
     CGSize _messageAreaSize;
     CGFloat _keyboardHeight;
+    CGFloat _contentAreaHeight;
     
 #if TG_ENABLE_AUDIO_NOTES
     TGModernConversationInputMicButton *_micButton;
@@ -117,6 +157,7 @@ static CGRect viewFrame(UIView *view)
     CFAbsoluteTime _recordingInterfaceShowTime;
     
     TGModernConversationAssociatedInputPanel *_associatedPanel;
+    TGModernConversationAssociatedInputPanel *_disappearingAssociatedPanel;
     
     TGModernConversationAssociatedInputPanel *_firstExtendedPanel;
     TGModernConversationAssociatedInputPanel *_secondExtendedPanel;
@@ -129,6 +170,8 @@ static CGRect viewFrame(UIView *view)
     TGModernButton *_slashModeButton;
     TGModernButton *_broadcastButton;
     TGModernButton *_progressButton;
+    TGModernButton *_clearButton;
+    TGModernButton *_atButton;
     UIActivityIndicatorView *_progressButtonIndicator;
     
     NSArray *_modeButtons;
@@ -139,6 +182,7 @@ static CGRect viewFrame(UIView *view)
     UIView *_overlayDisabledView;
     
     CGSize _parentSize;
+    bool _associatedPanelVisible;
     
     bool _removeGifTabTextOnDeactivation;
     
@@ -147,6 +191,8 @@ static CGRect viewFrame(UIView *view)
     
     TGMessageEditingContext *_messageEditingContext;
     bool _messageEditingContextInvalidated;
+    
+    TGInlineBotsInputPanel *_inlineBotsPanel;
 }
 
 @end
@@ -220,12 +266,29 @@ static CGRect viewFrame(UIView *view)
         _broadcastButton.adjustsImageWhenHighlighted = false;
         
         _progressButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 28.0f, 28.0f)];
-        _progressButton.userInteractionEnabled = false;
+        [_progressButton addTarget:self action:@selector(clearButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        _clearButton.extendedEdgeInsets = UIEdgeInsetsMake(4.0f, 4.0f, 4.0f, 4.0f);
         _progressButtonIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:4];
         _progressButtonIndicator.alpha = 0.5f;
         [_progressButton addSubview:_progressButtonIndicator];
         CGPoint progressCenter = _progressButton.center;
         _progressButtonIndicator.center = CGPointMake(progressCenter.x + 8.0f, progressCenter.y + 0.5f);
+        
+        UIImage *clearImage = [UIImage imageNamed:@"SearchBarClearIcon.png"];
+        _clearButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 28.0f, 28.0f)];
+        [_clearButton setContentEdgeInsets:UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, 0.0f)];
+        [_clearButton setImage:clearImage forState:UIControlStateNormal];
+        _clearButton.layer.sublayerTransform = CATransform3DMakeTranslation(7.0f - 1.0f / TGScreenScaling(), 0.0f, 0.0f);
+        [_clearButton addTarget:self action:@selector(clearButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        _clearButton.adjustsImageWhenHighlighted = false;
+        _clearButton.extendedEdgeInsets = UIEdgeInsetsMake(4.0f, 4.0f, 4.0f, 4.0f);
+        
+        UIImage *atImage = [UIImage imageNamed:@"ConversationInputInlineBotButton.png"];
+        _atButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, atImage.size.width, 28.0f)];
+        [_atButton setImage:atImage forState:UIControlStateNormal];
+        [_atButton addTarget:self action:@selector(atButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [_atButton setContentEdgeInsets:UIEdgeInsetsMake(1.0f, 0.0f, 0.0f, 0.0f)];
+        _atButton.adjustsImageWhenHighlighted = false;
         
         UIImage *keyboardModeImage = [UIImage imageNamed:@"ConversationInputFieldKeyboardIcon.png"];
         _keyboardModeButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, keyboardModeImage.size.width, 28.0f)];
@@ -245,10 +308,13 @@ static CGRect viewFrame(UIView *view)
         [_sendButton addTarget:self action:@selector(sendButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_sendButton];
         
-        _attachButton = [[TGModernButton alloc] initWithFrame:CGRectMake(9, 11, attachImage.size.width, attachImage.size.height)];
-        _attachButton.exclusiveTouch = true;
-        [_attachButton setImage:attachImage forState:UIControlStateNormal];
-        [_attachButton addTarget:self action:@selector(attachButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        __weak TGModernConversationInputTextPanel *weakSelf = self;
+        TGModernConversationInputAttachButton *attachButton = [[TGModernConversationInputAttachButton alloc] initWithFrame:CGRectMake(9, 11, attachImage.size.width, attachImage.size.height)];
+        attachButton.delegate = self;
+        attachButton.extendedEdgeInsets = UIEdgeInsetsMake(0, 9, 0, 9);
+        [attachButton setImage:attachImage forState:UIControlStateNormal];
+        [attachButton addTarget:self action:@selector(attachButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        _attachButton = attachButton;
         [self addSubview:_attachButton];
         
         _micButton = [[TGModernConversationInputMicButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _sendButtonWidth, 0.0f)];
@@ -261,7 +327,6 @@ static CGRect viewFrame(UIView *view)
         [self updateSendButtonVisibility];
         [self updateModeButtonVisibility];
         
-        __weak TGModernConversationInputTextPanel *weakSelf = self;
         _stickerPacksDisposable = [[[[TGStickersSignals stickerPacks] startOn:[SQueue concurrentDefaultQueue]] deliverOn:[SQueue mainQueue]] startWithNext:^(__unused NSDictionary *stickerPacks)
         {
             __strong TGModernConversationInputTextPanel *strongSelf = weakSelf;
@@ -282,6 +347,10 @@ static CGRect viewFrame(UIView *view)
 }
 
 - (void)_updatePlaceholderImage {
+    [self _updatePlaceholderImage:false];
+}
+
+- (void)_updatePlaceholderImage:(bool)animated {
     static int localizationVersion = 0;
     static UIImage *placeholderImage = nil;
     static UIImage *placeholderBroadcastImage = nil;
@@ -368,6 +437,18 @@ static CGRect viewFrame(UIView *view)
         localizationVersion = TGLocalizedStaticVersion;
     }
     
+    if (animated) {
+        UIImageView *previousPlaceholder = [[UIImageView alloc] initWithImage:_inputFieldPlaceholder.image];
+        previousPlaceholder.frame = _inputFieldPlaceholder.frame;
+        previousPlaceholder.alpha = _inputFieldPlaceholder.alpha;
+        previousPlaceholder.hidden = _inputFieldPlaceholder.hidden;
+        [_inputFieldPlaceholder.superview insertSubview:previousPlaceholder aboveSubview:_inputFieldPlaceholder];
+        [UIView animateWithDuration:0.25 animations:^{
+            previousPlaceholder.alpha = 0.0f;
+        } completion:^(__unused BOOL finished) {
+            [previousPlaceholder removeFromSuperview];
+        }];
+    }
     if (_inputDisabled) {
         _inputFieldPlaceholder.image = placeholderDisabledImage;
     } else if (_messageEditingContext != nil) {
@@ -380,6 +461,12 @@ static CGRect viewFrame(UIView *view)
         _inputFieldPlaceholder.image = placeholderImage;
     }
     [_inputFieldPlaceholder sizeToFit];
+    if (animated) {
+        _inputFieldPlaceholder.alpha = 0.0;
+        [UIView animateWithDuration:0.25 animations:^{
+            _inputFieldPlaceholder.alpha = 1.0f;
+        }];
+    }
 }
 
 - (HPGrowingTextView *)maybeInputField
@@ -411,6 +498,9 @@ static CGRect viewFrame(UIView *view)
         _inputField.maxNumberOfLines = [self _maxNumberOfLinesForSize:_parentSize];
         _inputField.delegate = self;
         
+        if (TGAppDelegateInstance.keyCommandController == nil)
+            _inputField.receiveKeyCommands = true;
+        
         _inputField.internalTextView.scrollIndicatorInsets = UIEdgeInsetsMake(-inputFieldInternalEdgeInsets.top, 0, 5 - TGRetinaPixel, 0);
         
         [_inputFieldClippingContainer addSubview:_inputField];
@@ -430,23 +520,26 @@ static CGRect viewFrame(UIView *view)
 
 - (void)growingTextViewDidBeginEditing:(HPGrowingTextView *)__unused growingTextView
 {
+    [self updateAssociatedPanelVisibility:true];
+    
     id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
     if ([delegate respondsToSelector:@selector(inputPanelFocused:)])
         [delegate inputPanelFocused:self];
-    
-    [self updateAssociatedPanelVisibility:true];
 }
 
-- (void)replaceMention:(NSString *)mention
-{
-    [TGModernConversationInputTextPanel replaceMention:mention inputField:_inputField];
+- (void)replaceMention:(NSString *)mention username:(bool)username userId:(int32_t)userId {
+    [TGModernConversationInputTextPanel replaceMention:mention inputField:_inputField username:username userId:userId];
 }
 
-+ (void)replaceMention:(NSString *)mention inputField:(HPGrowingTextView *)inputField
++ (void)replaceMention:(NSString *)mention inputField:(HPGrowingTextView *)inputField {
+    [self replaceMention:mention inputField:inputField username:true userId:0];
+}
+
++ (void)replaceMention:(NSString *)mention inputField:(HPGrowingTextView *)inputField username:(bool)username userId:(int32_t)userId
 {
     NSString *replacementText = [mention stringByAppendingString:@" "];
     
-    NSString *text = inputField.text;
+    NSMutableAttributedString *text = inputField.internalTextView.attributedText == nil ? [[NSMutableAttributedString alloc] init] : [[NSMutableAttributedString alloc] initWithAttributedString:inputField.internalTextView.attributedText];
     
     UITextRange *selRange = inputField.internalTextView.selectedTextRange;
     UITextPosition *selStartPos = selRange.start;
@@ -458,7 +551,7 @@ static CGRect viewFrame(UIView *view)
     {
         for (NSInteger i = idx; i >= 0; i--)
         {
-            unichar c = [text characterAtIndex:i];
+            unichar c = [text.string characterAtIndex:i];
             if (c == '@')
             {
                 if (i == idx)
@@ -475,8 +568,20 @@ static CGRect viewFrame(UIView *view)
     
     if (candidateMentionRange.location != NSNotFound)
     {
-        text = [text stringByReplacingCharactersInRange:candidateMentionRange withString:replacementText];
-        [inputField setText:text];
+        if (!username) {
+            candidateMentionRange.location -= 1;
+            candidateMentionRange.length += 1;
+            
+            [text replaceCharactersInRange:candidateMentionRange withString:replacementText];
+            
+            static int64_t nextId = 0;
+            nextId++;
+            [text addAttributes:@{TGMentionUidAttributeName: [[TGInputTextTag alloc] initWithUniqueId:nextId left:true attachment:@(userId)]} range:NSMakeRange(candidateMentionRange.location, replacementText.length - 1)];
+        } else {
+            [text replaceCharactersInRange:candidateMentionRange withString:replacementText];
+        }
+
+        [inputField setAttributedText:text];
         UITextPosition *textPosition = [inputField.internalTextView positionFromPosition:inputField.internalTextView.beginningOfDocument offset:candidateMentionRange.location + replacementText.length];
         [inputField.internalTextView setSelectedTextRange:[inputField.internalTextView textRangeFromPosition:textPosition toPosition:textPosition]];
     }
@@ -489,6 +594,10 @@ static CGRect viewFrame(UIView *view)
 
 + (void)replaceHashtag:(NSString *)hashtag inputField:(HPGrowingTextView *)inputField
 {
+    if (inputField.attributedText == nil) {
+        return;
+    }
+    
     static NSCharacterSet *characterSet = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
@@ -498,19 +607,20 @@ static CGRect viewFrame(UIView *view)
     
     NSString *replacementText = [hashtag stringByAppendingString:@" "];
     
-    NSString *text = inputField.text;
+    NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithAttributedString:inputField.attributedText];
     
     UITextRange *selRange = inputField.internalTextView.selectedTextRange;
     UITextPosition *selStartPos = selRange.start;
     NSInteger idx = [inputField.internalTextView offsetFromPosition:inputField.internalTextView.beginningOfDocument toPosition:selStartPos];
     idx--;
     NSRange candidateHashtagRange = NSMakeRange(NSNotFound, 0);
+    NSString *string = text.string;
     
     if (idx >= 0 && idx < (int)text.length)
     {
         for (NSInteger i = idx; i >= 0; i--)
         {
-            unichar c = [text characterAtIndex:i];
+            unichar c = [string characterAtIndex:i];
             if (c == '#')
             {
                 if (i == idx)
@@ -527,8 +637,8 @@ static CGRect viewFrame(UIView *view)
     
     if (candidateHashtagRange.location != NSNotFound)
     {
-        text = [text stringByReplacingCharactersInRange:candidateHashtagRange withString:replacementText];
-        [inputField setText:text];
+        [text replaceCharactersInRange:candidateHashtagRange withString:replacementText];
+        [inputField setAttributedText:text];
         UITextPosition *textPosition = [inputField.internalTextView positionFromPosition:inputField.internalTextView.beginningOfDocument offset:candidateHashtagRange.location + replacementText.length];
         [inputField.internalTextView setSelectedTextRange:[inputField.internalTextView textRangeFromPosition:textPosition toPosition:textPosition]];
     }
@@ -573,6 +683,9 @@ static CGRect viewFrame(UIView *view)
 
 + (NSString *)linkCandidateInText:(NSString *)text
 {
+    if (text == nil) {
+        return nil;
+    }
     NSString *lowercaseText = [text lowercaseString];
     if ([lowercaseText rangeOfString:@"http://"].location == NSNotFound && [lowercaseText rangeOfString:@"https://"].location == NSNotFound)
     {
@@ -609,8 +722,8 @@ static CGRect viewFrame(UIView *view)
     
     id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
     
-    int textLength = (int)growingTextView.text.length;
     NSString *text = growingTextView.text;
+    int textLength = (int)text.length;
     
     bool hasNonWhitespace = [text hasNonWhitespaceCharacters];
     
@@ -745,11 +858,24 @@ static CGRect viewFrame(UIView *view)
         }
     }
     
-    if ([delegate respondsToSelector:@selector(inputPanelMentionEntered:mention:startOfLine:)])
-        [delegate inputPanelMentionEntered:self mention:candidateMentionText == nil ? candidateMention : nil startOfLine:candidateMentionStartOfLine];
+    if (candidateMention.length != 0 && [candidateMention hasSuffix:@"bot"] && candidateMentionText == nil && _contextBotMode != nil) {
+        candidateMentionText = @"";
+    }
     
-    if ([delegate respondsToSelector:@selector(inputPanelMentionTextEntered:mention:text:)])
-        [delegate inputPanelMentionTextEntered:self mention:candidateMention text:candidateMentionText];
+    if (candidateMentionText == nil) {
+        if ([delegate respondsToSelector:@selector(inputPanelMentionEntered:mention:startOfLine:)])
+            [delegate inputPanelMentionEntered:self mention:candidateMentionText == nil ? candidateMention : nil startOfLine:candidateMentionStartOfLine];
+        
+        if ([delegate respondsToSelector:@selector(inputPanelMentionTextEntered:mention:text:)]) {
+            [delegate inputPanelMentionTextEntered:self mention:candidateMention text:candidateMentionText];
+        }
+    } else {
+        if ([delegate respondsToSelector:@selector(inputPanelMentionTextEntered:mention:text:)])
+            [delegate inputPanelMentionTextEntered:self mention:candidateMention text:candidateMentionText];
+        
+        if ([delegate respondsToSelector:@selector(inputPanelMentionEntered:mention:startOfLine:)])
+            [delegate inputPanelMentionEntered:self mention:candidateMentionText == nil ? candidateMention : nil startOfLine:candidateMentionStartOfLine];
+    }
     
     if ([delegate respondsToSelector:@selector(inputPanelHashtagEntered:hashtag:)])
         [delegate inputPanelHashtagEntered:self hashtag:candidateHashtag];
@@ -802,31 +928,41 @@ static CGRect viewFrame(UIView *view)
 - (void)updateModeButtonVisibility
 {
     NSMutableArray *commands = [[NSMutableArray alloc] init];
-    if (_messageEditingContext == nil) {
-        if (self.maybeInputField.internalTextView.inputView != nil) {
-            [commands addObject:_keyboardModeButton];
-            
-            if (_canBroadcast && !_isAlwaysBroadcasting) {
-                [commands addObject:_broadcastButton];
-            }
-        } else
-        {
-            if (_inputField.text.length == 0)
+    if ([self currentlyDisplayingContextResult]) {
+        if (_displayProgress) {
+            [commands addObject:_progressButton];
+        } else {
+            [commands addObject:_clearButton];
+        }
+    } else {
+        if (_messageEditingContext == nil) {
+            if (self.maybeInputField.internalTextView.inputView != nil) {
+                [commands addObject:_keyboardModeButton];
+                
+                if (_canBroadcast && !_isAlwaysBroadcasting) {
+                    [commands addObject:_broadcastButton];
+                }
+            } else
             {
-                if (!(TGAppDelegateInstance.alwaysShowStickersMode != 2))
-                    [commands addObject:_stickerModeButton];
-                if ([self currentReplyMarkup] != nil)
-                    [commands addObject:_commandModeButton];
-                else if (_hasBots)
-                    [commands addObject:_slashModeButton];
-            }
-            
-            if (_canBroadcast && !_isAlwaysBroadcasting) {
-                [commands addObject:_broadcastButton];
-            }
-            
-            if (_displayProgress) {
-                [commands addObject:_progressButton];
+                if (_inputField.text.length == 0)
+                {
+                    if (!(TGAppDelegateInstance.alwaysShowStickersMode != 2))
+                        [commands addObject:_stickerModeButton];
+                    if ([self currentReplyMarkup] != nil)
+                        [commands addObject:_commandModeButton];
+                    else if (_hasBots)
+                        [commands addObject:_slashModeButton];
+                    
+                    //[commands addObject:_atButton];
+                    
+                    if (_canBroadcast && !_isAlwaysBroadcasting) {
+                        [commands addObject:_broadcastButton];
+                    }
+                }
+                
+                if (_displayProgress) {
+                    [commands addObject:_progressButton];
+                }
             }
         }
     }
@@ -835,6 +971,12 @@ static CGRect viewFrame(UIView *view)
 
 - (void)updateSendButtonVisibility
 {
+    if ([self currentlyDisplayingContextResult]) {
+        _sendButton.hidden = true;
+        _micButton.hidden = true;
+        return;
+    }
+    
     bool hidden = _inputField == nil || _inputField.text.length == 0;
     
     if (!hidden)
@@ -943,8 +1085,13 @@ static CGRect viewFrame(UIView *view)
     if (enableSend)
     {
         id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
-        if ([delegate respondsToSelector:@selector(inputPanelRequestedSendMessage:text:)])
-            [delegate inputPanelRequestedSendMessage:self text:text];
+        if ([delegate respondsToSelector:@selector(inputPanelRequestedSendMessage:text:entities:)]) {
+            __autoreleasing NSArray *entities = nil;
+            NSString *text = [_inputField textWithEntities:&entities];
+            [delegate inputPanelRequestedSendMessage:self text:text entities:entities];
+        } else if ([delegate respondsToSelector:@selector(inputPanelRequestedSendMessage:text:)]) {
+            [delegate inputPanelRequestedSendMessage:self text:[_inputField text]];
+        }
     }
 }
 
@@ -953,6 +1100,27 @@ static CGRect viewFrame(UIView *view)
     id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
     if ([delegate respondsToSelector:@selector(inputPanelRequestedAttachmentsMenu:)])
         [delegate inputPanelRequestedAttachmentsMenu:self];
+}
+
+- (void)attachButtonInteractionBegan
+{
+    id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
+    if ([delegate respondsToSelector:@selector(inputPanelRequestedFastCamera:)])
+        [delegate inputPanelRequestedFastCamera:self];
+}
+
+- (void)attachButtonInteractionUpdate:(CGPoint)location
+{
+    id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
+    if ([delegate respondsToSelector:@selector(inputPanelPannedFastCamera:location:)])
+        [delegate inputPanelPannedFastCamera:self location:location];
+}
+
+- (void)attachButtonInteractionCompleted:(CGPoint)location
+{
+    id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
+    if ([delegate respondsToSelector:@selector(inputPanelReleasedFastCamera:location:)])
+        [delegate inputPanelReleasedFastCamera:self location:location];
 }
 
 - (void)micButtonInteractionBegan
@@ -1055,15 +1223,15 @@ static CGRect viewFrame(UIView *view)
     }
 }
 
-- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve
+- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight
 {
     CGSize previousSize = _parentSize;
     _parentSize = size;
     if (ABS(previousSize.width - size.width) > FLT_EPSILON) {
-        [self changeToSize:size keyboardHeight:keyboardHeight duration:0.0];
+        [self changeToSize:size keyboardHeight:keyboardHeight duration:0.0 contentAreaHeight:contentAreaHeight];
     }
     
-    [self _adjustForSize:size keyboardHeight:keyboardHeight inputFieldHeight:_inputField == nil ? 36.0f : _inputField.frame.size.height duration:duration animationCurve:animationCurve];
+    [self _adjustForSize:size keyboardHeight:keyboardHeight inputFieldHeight:_inputField == nil ? 36.0f : _inputField.frame.size.height duration:duration animationCurve:animationCurve contentAreaHeight:contentAreaHeight];
 }
 
 - (CGFloat)baseHeight
@@ -1164,7 +1332,7 @@ static CGRect viewFrame(UIView *view)
     return offset;
 }
 
-- (void)_adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight inputFieldHeight:(CGFloat)inputFieldHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve
+- (void)_adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight inputFieldHeight:(CGFloat)inputFieldHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight
 {
     dispatch_block_t block = ^
     {
@@ -1172,6 +1340,7 @@ static CGRect viewFrame(UIView *view)
         
         _messageAreaSize = messageAreaSize;
         _keyboardHeight = keyboardHeight;
+        _contentAreaHeight = contentAreaHeight;
         
         CGFloat inputContainerHeight = [self heightForInputFieldHeight:inputFieldHeight];
         self.frame = CGRectMake(0, messageAreaSize.height - keyboardHeight - inputContainerHeight, messageAreaSize.width, inputContainerHeight);
@@ -1192,7 +1361,14 @@ static CGRect viewFrame(UIView *view)
     UIEdgeInsets inputFieldInsets = [self inputFieldInsets];
     UIEdgeInsets inputFieldInternalEdgeInsets = [self inputFieldInternalEdgeInsets];
     
-    CGRect inputFieldClippingFrame = CGRectMake(inputFieldInsets.left, inputFieldInsets.top, _parentSize.width - inputFieldInsets.left - inputFieldInsets.right - _sendButtonWidth - 1 - _panelAccessoryView.frame.size.width, 0.0f);
+    CGFloat sendAreaInset = 0.0f;
+    if ([self currentlyDisplayingContextResult]) {
+        sendAreaInset = 6.0f;
+    } else {
+        sendAreaInset = _sendButtonWidth + 1.0f;
+    }
+    
+    CGRect inputFieldClippingFrame = CGRectMake(inputFieldInsets.left, inputFieldInsets.top, _parentSize.width - inputFieldInsets.left - inputFieldInsets.right - sendAreaInset - _panelAccessoryView.frame.size.width, 0.0f);
     
     CGRect inputFieldFrame = CGRectMake(inputFieldInternalEdgeInsets.left, inputFieldInternalEdgeInsets.top, inputFieldClippingFrame.size.width - inputFieldInternalEdgeInsets.left, 0.0f);
     
@@ -1205,13 +1381,19 @@ static CGRect viewFrame(UIView *view)
     _inputField.delegate = self;
 }
 
-- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration
+- (void)setContentAreaHeight:(CGFloat)contentAreaHeight {
+    _contentAreaHeight = contentAreaHeight;
+    [self setNeedsLayout];
+}
+
+- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration contentAreaHeight:(CGFloat)contentAreaHeight
 {
     _parentSize = size;
     
     CGSize messageAreaSize = size;
     _messageAreaSize = messageAreaSize;
     _keyboardHeight = keyboardHeight;
+    _contentAreaHeight = contentAreaHeight;
     
     UIView *inputFieldSnapshotView = nil;
     if (duration > DBL_EPSILON)
@@ -1268,6 +1450,11 @@ static CGRect viewFrame(UIView *view)
     }
 }
 
+- (void)updateHeight {
+    [_inputField refreshHeight:false];
+    [_inputField notifyHeight];
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
@@ -1290,14 +1477,46 @@ static CGRect viewFrame(UIView *view)
     
     if (_associatedPanel != nil)
     {
-        CGRect associatedPanelFrame = CGRectMake(0.0f, -[_associatedPanel preferredHeight] + _currentExtendedPanel.frame.size.height, frame.size.width, displayPanels ? [_associatedPanel preferredHeight] : 0.0f);
-        if (!CGRectEqualToRect(associatedPanelFrame, _associatedPanel.frame))
+        CGRect associatedPanelFrame = CGRectZero;
+        if ([_associatedPanel fillsAvailableSpace]) {
+            associatedPanelFrame = CGRectMake(0.0f, -_contentAreaHeight + self.frame.size.height, self.frame.size.width, _contentAreaHeight - self.frame.size.height);
+        } else {
+            associatedPanelFrame = CGRectMake(0.0f, -[_associatedPanel preferredHeight] + _currentExtendedPanel.frame.size.height, frame.size.width, displayPanels ? [_associatedPanel preferredHeight] : 0.0f);
+        }
+        if (!CGRectEqualToRect(associatedPanelFrame, _associatedPanel.frame)) {
             _associatedPanel.frame = associatedPanelFrame;
+            [_associatedPanel layoutSubviews];
+        }
+    }
+    
+    if (_disappearingAssociatedPanel != nil) {
+        CGRect associatedPanelFrame = CGRectZero;
+        if ([_disappearingAssociatedPanel fillsAvailableSpace]) {
+            associatedPanelFrame = CGRectMake(0.0f, -_contentAreaHeight + self.frame.size.height, self.frame.size.width, _contentAreaHeight - self.frame.size.height);
+        } else {
+            associatedPanelFrame = CGRectMake(0.0f, -[_disappearingAssociatedPanel preferredHeight] + _currentExtendedPanel.frame.size.height, frame.size.width, displayPanels ? [_disappearingAssociatedPanel preferredHeight] : 0.0f);
+        }
+        if (!CGRectEqualToRect(associatedPanelFrame, _disappearingAssociatedPanel.frame)) {
+            _disappearingAssociatedPanel.frame = associatedPanelFrame;
+            [_disappearingAssociatedPanel layoutSubviews];
+        }
+    }
+    
+    if (_inlineBotsPanel != nil) {
+        _inlineBotsPanel.frame = CGRectMake(0.0f, -_inlineBotsPanel.frame.size.height + _currentExtendedPanel.frame.size.height, self.frame.size.width, _inlineBotsPanel.frame.size.height);
     }
     
     UIEdgeInsets inputFieldInsets = [self inputFieldInsets];
     
-    setViewFrame(_fieldBackground, CGRectMake(inputFieldInsets.left, inputFieldInsets.top + [self extendedPanelHeight], frame.size.width - inputFieldInsets.left - inputFieldInsets.right - _sendButtonWidth - 1, frame.size.height - inputFieldInsets.top - inputFieldInsets.bottom - [self extendedPanelHeight]));
+    CGFloat sendAreaInset = 0.0f;
+    
+    if ([self currentlyDisplayingContextResult]) {
+        sendAreaInset = 6.0f;
+    } else {
+        sendAreaInset = _sendButtonWidth + 1.0f;
+    }
+    
+    setViewFrame(_fieldBackground, CGRectMake(inputFieldInsets.left, inputFieldInsets.top + [self extendedPanelHeight], frame.size.width - inputFieldInsets.left - inputFieldInsets.right - sendAreaInset, frame.size.height - inputFieldInsets.top - inputFieldInsets.bottom - [self extendedPanelHeight]));
     if (_panelAccessoryView != nil)
     {
         setViewFrame(_panelAccessoryView, CGRectMake(CGRectGetMaxX(_fieldBackground.frame) - _panelAccessoryView.frame.size.width - 4.0f, _fieldBackground.frame.origin.y + 1.0f, _panelAccessoryView.frame.size.width, _panelAccessoryView.frame.size.height));
@@ -1348,7 +1567,7 @@ static CGRect viewFrame(UIView *view)
             CGSize labelSize = [_contextPlaceholderLabel.text sizeWithFont:_contextPlaceholderLabel.font];
             labelSize.width = CGCeil(labelSize.width);
             labelSize.height = CGCeil(labelSize.height);
-            _contextPlaceholderLabel.frame = CGRectMake(textWidth + (TGIsPad() ? 8.0f : 4.0f), (TGIsPad() ? 6.0 : 4.0f) + TGRetinaPixel, MIN(labelSize.width, maxWidth), labelSize.height);
+            _contextPlaceholderLabel.frame = CGRectMake(textWidth + (TGIsPad() ? 8.0f : 4.0f), (TGIsPad() ? 6.0f : 4.0f) + TGRetinaPixel, MIN(labelSize.width, maxWidth), labelSize.height);
         } else {
             _contextPlaceholderLabel.frame = CGRectZero;
         }
@@ -1376,6 +1595,8 @@ static CGRect viewFrame(UIView *view)
 - (void)setShowRecordingInterface:(bool)show velocity:(CGFloat)velocity
 {
 #if TG_ENABLE_AUDIO_NOTES
+    CGFloat avoidOffset = 400.0f;
+    
     if (show)
     {
         [_micButton animateIn];
@@ -1440,8 +1661,8 @@ static CGRect viewFrame(UIView *view)
             _slideToCancelArrow.alpha = 0.0f;
             [self addSubview:_slideToCancelArrow];
             
-            _slideToCancelArrow.transform = CGAffineTransformMakeTranslation(320.0f, 0.0f);
-            _slideToCancelLabel.transform = CGAffineTransformMakeTranslation(320.0f, 0.0f);
+            _slideToCancelArrow.transform = CGAffineTransformMakeTranslation(avoidOffset, 0.0f);
+            _slideToCancelLabel.transform = CGAffineTransformMakeTranslation(avoidOffset, 0.0f);
         }
         
         _recordDurationLabel.text = @"0:00,00";
@@ -1465,11 +1686,11 @@ static CGRect viewFrame(UIView *view)
         {
             _inputFieldClippingContainer.alpha = 0.0f;
             _fieldBackground.alpha = 0.0f;
-            _fieldBackground.transform = CGAffineTransformMakeTranslation(-320.0f, 0.0f);
-            _panelAccessoryView.transform = CGAffineTransformMakeTranslation(-320.0f, 0.0f);
+            _fieldBackground.transform = CGAffineTransformMakeTranslation(-avoidOffset, 0.0f);
+            _panelAccessoryView.transform = CGAffineTransformMakeTranslation(-avoidOffset, 0.0f);
             for (UIButton *button in _modeButtons)
             {
-                button.transform = CGAffineTransformMakeTranslation(-320.0f, 0.0f);
+                button.transform = CGAffineTransformMakeTranslation(-avoidOffset, 0.0f);
             }
             _panelAccessoryView.alpha = 0.0f;
             _inputFieldPlaceholder.alpha = 0.0f;
@@ -1480,7 +1701,7 @@ static CGRect viewFrame(UIView *view)
         [UIView animateWithDuration:0.15 animations:^
         {
             _attachButton.alpha = 0.0f;
-            _attachButton.transform = CGAffineTransformMakeTranslation(-320.0f, 0.0f);
+            _attachButton.transform = CGAffineTransformMakeTranslation(-avoidOffset, 0.0f);
         }];
         
         [UIView animateWithDuration:0.25 delay:0.06 options:animationCurveOption animations:^
@@ -1525,8 +1746,8 @@ static CGRect viewFrame(UIView *view)
         }
         else
         {
-            _attachButton.transform = CGAffineTransformMakeTranslation(320.0f, 0.0f);
-            _fieldBackground.transform = CGAffineTransformMakeTranslation(320.0f, 0.0f);
+            _attachButton.transform = CGAffineTransformMakeTranslation(avoidOffset, 0.0f);
+            _fieldBackground.transform = CGAffineTransformMakeTranslation(avoidOffset, 0.0f);
         }
         
         [UIView animateWithDuration:0.25 delay:0.0 options:options animations:^
@@ -1615,7 +1836,7 @@ static CGRect viewFrame(UIView *view)
     if ([delegate respondsToSelector:@selector(inputPanelAudioRecordingDuration:)])
         recordingDuration = [delegate inputPanelAudioRecordingDuration:self];
     
-    MTAbsoluteTime currentTime = MTAbsoluteSystemTime();
+    CFAbsoluteTime currentTime = MTAbsoluteSystemTime();
     NSUInteger currentAudioDurationSeconds = (NSUInteger)recordingDuration;
     NSUInteger currentAudioDurationMilliseconds = (int)(recordingDuration * 100.0f) % 100;
     if (currentAudioDurationSeconds == _audioRecordingDurationSeconds && currentAudioDurationMilliseconds == _audioRecordingDurationMilliseconds)
@@ -1678,6 +1899,10 @@ static CGRect viewFrame(UIView *view)
     return _attachButton.frame;
 }
 
+- (CGRect)micButtonFrame {
+    return _micButton.frame;
+}
+
 - (CGRect)stickerButtonFrame {
     if (_stickerModeButton.superview != nil) {
         return _stickerModeButton.frame;
@@ -1703,18 +1928,21 @@ static CGRect viewFrame(UIView *view)
 {
     if (_associatedPanel != associatedPanel)
     {
+        bool wasDisplayingContextResult = [self currentlyDisplayingContextResult];
+        
         TGModernConversationAssociatedInputPanel *currentPanel = _associatedPanel;
         if (currentPanel != nil)
         {
             if (animated)
             {
-                [UIView animateWithDuration:0.18 animations:^
-                {
-                    currentPanel.alpha = 0.0f;
-                } completion:^(BOOL finished)
-                {
-                    if (finished)
-                        [currentPanel removeFromSuperview];
+                _disappearingAssociatedPanel = currentPanel;
+                __weak TGModernConversationInputTextPanel *weakSelf = self;
+                [currentPanel animateOut:^{
+                    __strong TGModernConversationInputTextPanel *strongSelf = weakSelf;
+                    if (strongSelf->_disappearingAssociatedPanel == currentPanel) {
+                        strongSelf->_disappearingAssociatedPanel = nil;
+                    }
+                    [currentPanel removeFromSuperview];
                 }];
             }
             else
@@ -1724,21 +1952,63 @@ static CGRect viewFrame(UIView *view)
         _associatedPanel = associatedPanel;
         if (_associatedPanel != nil)
         {
-            __weak TGModernConversationInputTextPanel *weakSelf = self;
-            _associatedPanel.preferredHeightUpdated = ^
-            {
-                __strong TGModernConversationInputTextPanel *strongSelf = weakSelf;
-                if (strongSelf != nil)
+            [self updateAssociatedPanelInset:false];
+            
+            if ([_associatedPanel fillsAvailableSpace]) {
+                _associatedPanel.frame = CGRectMake(0.0f, -_contentAreaHeight + self.frame.size.height, self.frame.size.width, _contentAreaHeight - self.frame.size.height);
+            } else {
+                __weak TGModernConversationInputTextPanel *weakSelf = self;
+                _associatedPanel.preferredHeightUpdated = ^
                 {
-                    strongSelf->_associatedPanel.frame = CGRectMake(0.0f, -[strongSelf->_associatedPanel preferredHeight] + strongSelf->_currentExtendedPanel.frame.size.height, strongSelf.frame.size.width, [strongSelf shouldDisplayPanels] ? [strongSelf->_associatedPanel preferredHeight] : 0.0f);
-                }
-            };
-            _associatedPanel.frame = CGRectMake(0.0f, -[_associatedPanel preferredHeight] + _currentExtendedPanel.frame.size.height, self.frame.size.width, [self shouldDisplayPanels] ? [_associatedPanel preferredHeight] : 0.0f);
-            [self addSubview:_associatedPanel];
+                    __strong TGModernConversationInputTextPanel *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        strongSelf->_associatedPanel.frame = CGRectMake(0.0f, -[strongSelf->_associatedPanel preferredHeight] + strongSelf->_currentExtendedPanel.frame.size.height, strongSelf.frame.size.width, [strongSelf shouldDisplayPanels] ? [strongSelf->_associatedPanel preferredHeight] : 0.0f);
+                    }
+                };
+                _associatedPanel.frame = CGRectMake(0.0f, -[_associatedPanel preferredHeight] + _currentExtendedPanel.frame.size.height, self.frame.size.width, [self shouldDisplayPanels] ? [_associatedPanel preferredHeight] : 0.0f);
+            }
+            if (_inlineBotsPanel != nil) {
+                [self insertSubview:_associatedPanel belowSubview:_inlineBotsPanel];
+            } else {
+                [self addSubview:_associatedPanel];
+            }
             _associatedPanel.alpha = 0.0f;
-            [self updateAssociatedPanelVisibility:animated];
+            [self updateAssociatedPanelVisibility:false];
         }
+        
+        if ([self currentlyDisplayingContextResult] != wasDisplayingContextResult) {
+            [UIView performWithoutAnimation:^{
+                [self updateInputFieldLayout];
+                [self updateSendButtonVisibility];
+                [self updateModeButtonVisibility];
+                [self layoutSubviews];
+            }];
+            [self updateHeight];
+        }
+        
+        [self updateInlineBotPanelOffset];
     }
+}
+
+- (void)updateInlineBotPanelOffset {
+    if (_associatedPanel == nil) {
+        [_inlineBotsPanel setBarOffset:0.0f];
+    } else {
+        [_inlineBotsPanel setBarOffset:_associatedPanel.overlayBarOffset];
+        __weak TGModernConversationInputTextPanel *weakSelf = self;
+        __weak TGModernConversationAssociatedInputPanel *panel = _associatedPanel;
+        _associatedPanel.updateOverlayBarOffset = ^(CGFloat offset) {
+            __strong TGModernConversationInputTextPanel *strongSelf = weakSelf;
+            if (strongSelf != nil && strongSelf->_associatedPanel == panel) {
+                [strongSelf->_inlineBotsPanel setBarOffset:offset];
+            }
+        };
+    }
+}
+
+- (void)updateAssociatedPanelInset:(bool)animated {
+    [_associatedPanel setBarInset:_inlineBotsPanel.frame.size.height animated:animated];
 }
 
 - (void)updateAssociatedPanelVisibility:(bool)animated {
@@ -1748,6 +2018,7 @@ static CGRect viewFrame(UIView *view)
             targetAlpha = 0.0f;
         }
     }
+    _associatedPanelVisible = targetAlpha > FLT_EPSILON;
     if (ABS(_associatedPanel.alpha - targetAlpha) > FLT_EPSILON) {
         if (animated) {
             _associatedPanel.alpha = 0.0f;
@@ -1760,14 +2031,29 @@ static CGRect viewFrame(UIView *view)
     }
 }
 
+- (bool)associatedPanelVisible
+{
+    return _associatedPanelVisible;
+}
+
 - (TGBotReplyMarkup *)currentReplyMarkup
 {
     if ([_firstExtendedPanel isKindOfClass:[TGModenConcersationReplyAssociatedPanel class]])
     {
         TGMessage *message = ((TGModenConcersationReplyAssociatedPanel *)_firstExtendedPanel).message;
-        return message.replyMarkup;
+        if (message.replyMarkup != nil && !message.replyMarkup.isInline) {
+            return message.replyMarkup;
+        }
     }
     return _replyMarkup;
+}
+
+- (bool)currentlyDisplayingContextResult {
+    if (_contextBotMode) {
+        return true;
+    }
+    
+    return _associatedPanel != nil && ([_associatedPanel isKindOfClass:[TGModernConversationMediaContextResultsAssociatedPanel class]] || [_associatedPanel isKindOfClass:[TGModernConversationGenericContextResultsAssociatedPanel class]]);
 }
 
 - (bool)shouldDisableAutocorrection
@@ -1837,8 +2123,13 @@ static CGRect viewFrame(UIView *view)
                 
                 if (previousExtendedPanel != nil)
                     [self insertSubview:_currentExtendedPanel aboveSubview:previousExtendedPanel];
-                else
-                    [self insertSubview:_currentExtendedPanel aboveSubview:_backgroundView];
+                else {
+                    if (_inlineBotsPanel != nil) {
+                        [self insertSubview:_currentExtendedPanel belowSubview:_inlineBotsPanel];
+                    } else {
+                        [self insertSubview:_currentExtendedPanel aboveSubview:_backgroundView];
+                    }
+                }
             }
             
             _currentExtendedPanel.alpha = 0.0f;
@@ -1916,19 +2207,20 @@ static CGRect viewFrame(UIView *view)
     return _secondExtendedPanel;
 }
 
-- (void)setAssociatedStickerList:(NSArray *)stickerList stickerSelected:(void (^)(TGDocumentMediaAttachment *))stickerSelected
+- (void)setAssociatedStickerList:(NSDictionary *)dictionary stickerSelected:(void (^)(TGDocumentMediaAttachment *))stickerSelected
 {
-    if (stickerList.count != 0)
+    NSArray *documents = dictionary[@"documents"];
+    if (documents.count != 0)
     {
         if ([_associatedPanel isKindOfClass:[TGStickerAssociatedInputPanel class]])
-            [((TGStickerAssociatedInputPanel *)_associatedPanel) setDocumentList:stickerList];
+            [((TGStickerAssociatedInputPanel *)_associatedPanel) setDocumentList:dictionary];
         else
         {
             TGStickerAssociatedInputPanel *stickerPanel = [[TGStickerAssociatedInputPanel alloc] init];
             id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
             stickerPanel.controller = [delegate inputPanelParentViewController:self];
             stickerPanel.documentSelected = stickerSelected;
-            [stickerPanel setDocumentList:stickerList];
+            [stickerPanel setDocumentList:dictionary];
             [stickerPanel setTargetOffset:113.0f];
             [self setAssociatedPanel:stickerPanel animated:true];
         }
@@ -1939,11 +2231,16 @@ static CGRect viewFrame(UIView *view)
     }
 }
 
-- (void)growingTextView:(HPGrowingTextView *)__unused growingTextView didPasteImages:(NSArray *)images
+- (void)growingTextView:(HPGrowingTextView *)__unused growingTextView didPasteImages:(NSArray *)images andText:(NSString *)text
 {    
     id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
     if ([delegate respondsToSelector:@selector(inputPanelRequestedSendImages:images:)])
         [delegate inputPanelRequestedSendImages:self images:images];
+    if (text.length != 0) {
+        if ([delegate respondsToSelector:@selector(inputPanelRequestedSendMessage:text:)]) {
+             [delegate inputPanelRequestedSendMessage:self text:text];
+        }
+    }
 }
 
 - (void)growingTextView:(HPGrowingTextView *)__unused growingTextView didPasteData:(NSData *)data
@@ -1976,6 +2273,12 @@ static CGRect viewFrame(UIView *view)
     {
         if (!button.hidden && CGRectContainsPoint(button.frame, point))
             return button;
+    }
+    
+    if (_inlineBotsPanel != nil) {
+        UIView *result = [_inlineBotsPanel hitTest:[self convertPoint:point toView:_inlineBotsPanel] withEvent:event];
+        if (result != nil)
+            return result;
     }
     
     if (_associatedPanel != nil)
@@ -2175,7 +2478,7 @@ static CGRect viewFrame(UIView *view)
     }
     [commandKeyboardView setReplyMarkup:[self currentReplyMarkup]];
     __weak TGModernConversationInputTextPanel *weakSelf = self;
-    commandKeyboardView.commandActivated = ^(NSString *command, int32_t userId, int32_t messageId)
+    commandKeyboardView.commandActivated = ^(TGBotReplyMarkupButton *button, int32_t userId, int32_t messageId)
     {
         __strong TGModernConversationInputTextPanel *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -2184,9 +2487,9 @@ static CGRect viewFrame(UIView *view)
                 [strongSelf keyboardModeButtonPressed];
             
             id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)strongSelf.delegate;
-            if ([delegate respondsToSelector:@selector(inputPanelRequestedActivateCommand:command:userId:messageId:)])
+            if ([delegate respondsToSelector:@selector(inputPanelRequestedActivateCommand:button:userId:messageId:)])
             {
-                [delegate inputPanelRequestedActivateCommand:self command:command userId:userId messageId:messageId];
+                [delegate inputPanelRequestedActivateCommand:self button:button userId:userId messageId:messageId];
             }
         }
     };
@@ -2266,7 +2569,7 @@ static CGRect viewFrame(UIView *view)
         UIImage *broadcastImage = _isBroadcasting ? [UIImage imageNamed:@"ConversationInputFieldBroadcastIconActive.png"] : [UIImage imageNamed:@"ConversationInputFieldBroadcastIconInactive.png"];
         [_broadcastButton setImage:broadcastImage forState:UIControlStateNormal];
         
-        [self _updatePlaceholderImage];
+        [self _updatePlaceholderImage:true];
         [self updateModeButtonVisibility];
     }
 }
@@ -2330,7 +2633,7 @@ static CGRect viewFrame(UIView *view)
             }
             [commandKeyboardView setReplyMarkup:replyMarkup];
             __weak TGModernConversationInputTextPanel *weakSelf = self;
-            commandKeyboardView.commandActivated = ^(NSString *command, int32_t userId, int32_t messageId)
+            commandKeyboardView.commandActivated = ^(TGBotReplyMarkupButton *button, int32_t userId, int32_t messageId)
             {
                 __strong TGModernConversationInputTextPanel *strongSelf = weakSelf;
                 if (strongSelf != nil)
@@ -2339,8 +2642,8 @@ static CGRect viewFrame(UIView *view)
                         [strongSelf keyboardModeButtonPressed];
                     
                     id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)strongSelf.delegate;
-                    if ([delegate respondsToSelector:@selector(inputPanelRequestedActivateCommand:command:userId:messageId:)])
-                        [delegate inputPanelRequestedActivateCommand:self command:command userId:userId messageId:messageId];
+                    if ([delegate respondsToSelector:@selector(inputPanelRequestedActivateCommand:button:userId:messageId:)])
+                        [delegate inputPanelRequestedActivateCommand:self button:button userId:userId messageId:messageId];
                 }
             };
             CGSize size = [commandKeyboardView sizeThatFits:self.frame.size];
@@ -2429,6 +2732,81 @@ static CGRect viewFrame(UIView *view)
     }
 }
 
+- (void)setContextBotMode:(TGUser *)contextBotMode {
+    if (_contextBotMode.uid != contextBotMode.uid) {
+        bool wasDisplayingContextResult = [self currentlyDisplayingContextResult];
+        
+        _contextBotMode = contextBotMode;
+        
+        if ([self currentlyDisplayingContextResult] != wasDisplayingContextResult) {
+            [UIView performWithoutAnimation:^{
+                [self updateInputFieldLayout];
+                [self updateSendButtonVisibility];
+                [self updateModeButtonVisibility];
+                [self layoutSubviews];
+            }];
+            [self updateHeight];
+        }
+        
+        [self updateContextBotInputMode];
+        
+        [self growingTextViewDidChange:_inputField afterSetText:false afterPastingText:false];
+    }
+}
+
+- (void)setContextBotInputMode:(bool)contextBotInputMode {
+    if (_contextBotInputMode != contextBotInputMode) {
+        _contextBotInputMode = contextBotInputMode;
+        
+        [self updateContextBotInputMode];
+    }
+}
+
+- (void)setMentionTextMode:(NSString *)mentionTextMode {
+    if ((_mentionTextMode == nil) != (mentionTextMode == nil)) {
+        _mentionTextMode = mentionTextMode;
+        
+        [self updateContextBotInputMode];
+    }
+}
+
+- (void)updateContextBotInputMode {
+    /*if (_contextBotInputMode || _contextBotMode || _mentionTextMode != nil) {
+        if (_inlineBotsPanel == nil) {
+            _inlineBotsPanel = [[TGInlineBotsInputPanel alloc] init];
+            __weak TGModernConversationInputTextPanel *weakSelf = self;
+            _inlineBotsPanel.botSelected = ^(TGUser *user) {
+                __strong TGModernConversationInputTextPanel *strongSelf = weakSelf;
+                if (strongSelf != nil && user != nil) {
+                    [strongSelf replaceInlineBot:user.userName];
+                }
+            };
+            [self addSubview:_inlineBotsPanel];
+            [_inlineBotsPanel setCurrentBot:_contextBotMode];
+            
+            [UIView performWithoutAnimation:^{
+                [self layoutSubviews];
+            }];
+            
+            [_inlineBotsPanel animateIn];
+            
+            [self updateInlineBotPanelOffset];
+            [self updateAssociatedPanelInset:true];
+        } else {
+            [_inlineBotsPanel setCurrentBot:_contextBotMode];
+        }
+    } else {
+        if (_inlineBotsPanel != nil) {
+            TGInlineBotsInputPanel *panel = _inlineBotsPanel;
+            _inlineBotsPanel = nil;
+            [panel animateOut:^{
+                [panel removeFromSuperview];
+            }];
+            [self updateAssociatedPanelInset:true];
+        }
+    }*/
+}
+
 - (void)animateRecordingIn {
     [_micButton animateIn];
 }
@@ -2463,7 +2841,13 @@ static CGRect viewFrame(UIView *view)
         [self setNeedsLayout];
         [self layoutSubviews];
         
-        [self.inputField setText:messageEditingContext.text animated:animated];
+        [self.inputField setAttributedText:[TGMessageEditingContext attributedStringForText:messageEditingContext.text entities:messageEditingContext.entities] animated:animated];
+        
+        if (messageEditingContext != nil) {
+            if (_inputField.internalTextView.inputView != nil) {
+                [self keyboardModeButtonPressed];
+            }
+        }
     }
 }
 
@@ -2471,11 +2855,69 @@ static CGRect viewFrame(UIView *view)
     _messageEditingContextInvalidated = true;
     if (_messageEditingContextInvalidated) {
         if (_messageEditingContext != nil) {
-            _messageEditingContext = [[TGMessageEditingContext alloc] initWithText:self.inputField.text isCaption:_messageEditingContext.isCaption messageId:_messageEditingContext.messageId];
+            __autoreleasing NSArray *entities = nil;
+            NSString *text = [_inputField textWithEntities:&entities];
+            _messageEditingContext = [[TGMessageEditingContext alloc] initWithText:text entities:entities isCaption:_messageEditingContext.isCaption messageId:_messageEditingContext.messageId];
         }
         _messageEditingContextInvalidated = false;
     }
     return _messageEditingContext;
+}
+
+- (void)clearButtonPressed {
+    NSString *text = _inputField.internalTextView.text;
+    NSString *previousText = text;
+    if (text.length != 0) {
+        NSRange spaceRange = [text rangeOfString:@" "];
+        if (spaceRange.location != NSNotFound) {
+            text = [text substringToIndex:spaceRange.location + 1];
+            if (![previousText isEqualToString:text]) {
+                [self.inputField setText:text animated:false];
+            } else {
+                [self.inputField setText:@"" animated:false];
+            }
+        } else {
+            [self.inputField setText:@"" animated:false];
+        }
+    }
+}
+
+- (void)replaceInlineBot:(NSString *)username {
+    NSString *text = _inputField.internalTextView.text;
+    if ([text hasPrefix:@"@"] && ![text hasPrefix:[NSString stringWithFormat:@"@%@ ", username]]) {
+        NSInteger endIndex = 1;
+        while (endIndex < (NSInteger)text.length) {
+            unichar c = [text characterAtIndex:endIndex];
+            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')) {
+                break;
+            }
+            endIndex++;
+        }
+        
+        NSString *query = [text substringFromIndex:endIndex];
+        if ([query hasPrefix:@" "]) {
+            query = [query substringFromIndex:1];
+        }
+        
+        id<TGModernConversationInputTextPanelDelegate> delegate = (id<TGModernConversationInputTextPanelDelegate>)self.delegate;
+        if ([delegate respondsToSelector:@selector(inputPanelMentionTextEntered:mention:text:)]) {
+            [delegate inputPanelMentionTextEntered:self mention:@"" text:@""];
+        }
+        
+        text = [NSString stringWithFormat:@"@%@ %@", username, query];
+        
+        [self.inputField setText:text animated:false];
+    }
+}
+
+- (void)atButtonPressed {
+    if (self.maybeInputField.text.length == 0)
+    {
+        self.inputField.internalTextView.enableFirstResponder = true;
+        self.inputField.text = @"@";
+        
+        [self updateModeButtonVisibility];
+    }
 }
 
 @end

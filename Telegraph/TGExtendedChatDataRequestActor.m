@@ -134,8 +134,7 @@ static NSMutableDictionary *extendedChatDataDictionary()
     {
         TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:[chatFull.chats lastObject]];
         
-        static int actionId = 0;
-        [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(chatData%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSArray alloc] initWithObjects:conversation, nil], @"chats", nil]];
+        [TGDatabaseInstance() transactionAddMessages:nil updateConversationDatas:@{@(conversation.conversationId): conversation} notifyAdded:true];
     }
     
     if ([chatFull.full_chat isKindOfClass:[TLChatFull$chatFull class]])

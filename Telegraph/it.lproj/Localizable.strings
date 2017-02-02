@@ -10,9 +10,9 @@
 "MESSAGE_GIF" = "%1$@ ti ha inviato una GIF";
 "ENCRYPTED_MESSAGE" = "Hai un nuovo messaggio%1$@";
 "LOCKED_MESSAGE" = "Hai un nuovo messaggio%1$@";
-"ENCRYPTION_REQUEST" = "Nuova richiesta di cifratura%1$@";
-"ENCRYPTION_ACCEPT" = "La tua richiesta di cifratura è stata accettata%1$@";
-"DC_UPDATE" = "Apri questa notifica per aggiornare le impostazioni dell'applicazione";
+"ENCRYPTION_REQUEST" = "Nuova richiesta di crittografia%1$@";
+"ENCRYPTION_ACCEPT" = "La tua richiesta di crittografia è stata accettata%1$@";
+"DC_UPDATE" = "Apri questa notifica per aggiornare le impostazioni dell'app";
 
 "CHAT_JOINED" = "%1$@ si è unito al gruppo %2$@";
 
@@ -20,7 +20,7 @@
 "CHAT_MESSAGE_NOTEXT" = "%1$@ ha inviato un messaggio al gruppo %2$@";
 "CHAT_MESSAGE_PHOTO" = "%1$@ ha inviato una foto al gruppo %2$@";
 "CHAT_MESSAGE_VIDEO" = "%1$@ ha inviato un video al gruppo %2$@";
-"CHAT_MESSAGE_CONTACT" = "%1$@ ha condiviso un contatto con il gruppo %2$@";
+"CHAT_MESSAGE_CONTACT" = "%1$@ ha condiviso un contatto nel gruppo %2$@";
 "CHAT_MESSAGE_GEO" = "%1$@ ha inviato una posizione al gruppo %2$@";
 "CHAT_MESSAGE_DOC" = "%1$@ ha inviato un file al gruppo %2$@";
 "CHAT_MESSAGE_AUDIO" = "%1$@ ha inviato un messaggio vocale al gruppo %2$@";
@@ -35,8 +35,8 @@
 "CHAT_LEFT" = "%1$@ ha lasciato il gruppo %2$@";
 "CHAT_RETURNED" = "%1$@ è tornato nel gruppo %2$@";
 
-"MESSAGE_STICKER" = "%1$@ ti ha inviato uno sticker";
-"CHAT_MESSAGE_STICKER" = "%1$@ ha inviato uno sticker al gruppo %2$@";
+"MESSAGE_STICKER" = "%1$@ ti ha inviato uno %2$@sticker";
+"CHAT_MESSAGE_STICKER" = "%1$@ ha inviato uno %3$@sticker al gruppo %2$@";
 
 "CONTACT_JOINED" = "%1$@ si è unito a Telegram!";
 "CONTACT_ACTIVATED" = "%1$@ ti ha aiutato ad attivare il tuo account!";
@@ -52,12 +52,30 @@
 "CHANNEL_MESSAGE_PHOTO" = "%1$@ ha pubblicato una foto";
 "CHANNEL_MESSAGE_VIDEO" = "%1$@ ha pubblicato un video";
 "CHANNEL_MESSAGE_DOC" = "%1$@ ha pubblicato un file";
-"CHANNEL_MESSAGE_STICKER" = "%1$@ ha pubblicato uno sticker";
+"CHANNEL_MESSAGE_STICKER" = "%1$@ ha pubblicato uno %2$@sticker";
 "CHANNEL_MESSAGE_AUDIO" = "%1$@ ha pubblicato un messaggio vocale";
 "CHANNEL_MESSAGE_CONTACT" = "%1$@ ha pubblicato un contatto";
 "CHANNEL_MESSAGE_GEO" = "%1$@ ha pubblicato una posizione";
 "CHANNEL_MESSAGE_FWDS" = "%1$@ ha pubblicato %2$@ messaggi inoltrati";
 "CHANNEL_MESSAGE_GIF" = "%1$@ ha pubblicato una GIF";
+
+"PINNED_TEXT" = "%1$@ ha fissato \"%2$@\"";
+"PINNED_NOTEXT" = "%1$@ ha fissato un messaggio";
+"PINNED_PHOTO" = "%1$@ ha fissato una foto";
+"PINNED_VIDEO" = "%1$@ ha fissato un video";
+"PINNED_DOC" = "%1$@ ha fissato un file";
+"PINNED_STICKER" = "%1$@ ha fissato uno %2$@sticker";
+"PINNED_AUDIO" = "%1$@ ha fissato un messaggio vocale";
+"PINNED_CONTACT" = "%1$@ ha fissato un contatto";
+"PINNED_GEO" = "%1$@ ha fissato una posizione";
+"PINNED_GIF" = "%1$@ ha fissato una GIF";
+
+"MESSAGE_GAME" = "%1$@ ti ha invitato a giocare a %2$@";
+"CHANNEL_MESSAGE_GAME" = "%1$@ ti ha invitato a giocare a %2$@";
+"CHAT_MESSAGE_GAME" = "%1$@ ha invitato il gruppo %2$@ a giocare a %3$@";
+"PINNED_GAME" = "%1$@ ha fissato un gioco";
+
+"PHONE_CALL_REQUEST" = "%1$@ ti sta chiamando";
 
 // Common
 "Common.OK" = "OK";
@@ -132,6 +150,8 @@
 "Weekday.Friday" = "Venerdì";
 "Weekday.Saturday" = "Sabato";
 "Weekday.Sunday" = "Domenica";
+"Weekday.Today" = "Oggi";
+"Weekday.Yesterday" = "Ieri";
 
 "Time.TodayAt" = "oggi alle %@";
 "Time.YesterdayAt" = "ieri alle %@";
@@ -178,54 +198,54 @@
 "Tour.Title7" = "Privato";
 "Tour.Text7" = "I messaggi di **Telegram** sono fortemente criptati e possono autodistruggersi.";
 
-"Tour.StartButton" = "Inizia a inviare messaggi";
+"Tour.StartButton" = "Inizia a messaggiare";
 
 // Login
-"Login.PhoneAndCountryHelp" = "Conferma il prefisso nazionale e inserisci il tuo numero di telefono.";
+"Login.PhoneAndCountryHelp" = "Conferma il prefisso internazionale e inserisci il tuo numero di telefono.";
 "Login.CodeHelp" = "Ti abbiamo inviato un SMS con un codice al numero\n%@";
-"Login.CodeSentInternal" = "Abbiamo inviato un codice su **Telegram** nel tuo altro dispositivo";
+"Login.CodeSentInternal" = "Abbiamo inviato il codice su **Telegram** nel tuo altro dispositivo";
 "Login.HaveNotReceivedCodeInternal" = "Non hai ricevuto il codice?";
 "Login.CodeSentSms" = "Ti abbiamo inviato un SMS con il codice";
 "Login.Code" = "Codice";
 "Login.CallRequestState1" = "Telegram ti chiamerà tra %d:%.2d";
-"Login.CallRequestState2" = "Chiamata in arrivo da Telegram...";
+"Login.CallRequestState2" = "Richiesta di chiamata a Telegram...";
 "Login.CallRequestState3" = "Telegram ha composto il tuo numero\n[Non hai ricevuto il codice?]";
 "Login.EmailNotConfiguredError" = "Configura un account email";
 "Login.EmailCodeSubject" = "%@, nessun codice";
 "Login.EmailCodeBody" = "Il mio numero di telefono è:\n%@\nNon posso ricevere un codice di attivazione per Telegram.";
 "Login.UnknownError" = "Si è verificato un errore. Riprova più tardi";
 "Login.InvalidCodeError" = "Hai digitato un codice non valido. Prova ancora.";
-"Login.NetworkError" = "Controlla la tua connessione a internet e riprova.";
-"Login.CodeExpiredError" = "Codice scaduto. Prova ancora.";
+"Login.NetworkError" = "Per favore controlla la tua connessione a internet e riprova.";
+"Login.CodeExpiredError" = "Codice scaduto. Per favore riprova.";
 "Login.CodeFloodError" = "Limite superato. Riprova più tardi.";
 "Login.InvalidPhoneError" = "Numero di telefono non valido. Riprova.";
-"Login.InvalidFirstNameError" = "Nome non valido. Prova ancora.";
-"Login.InvalidLastNameError" = "Cognome non valido. Prova ancora.";
+"Login.InvalidFirstNameError" = "Nome non valido. Per favore riprova.";
+"Login.InvalidLastNameError" = "Cognome non valido. Per favore riprova.";
 "Login.InactiveHelp" = "Nessuno dei tuoi contatti\nutilizza ancora Telegram.\nTi avviseremo quando entreranno.\nPuoi anche invitare subito un amico.";
-"Login.InviteButton" = "Invita un amico in chat";
+"Login.InviteButton" = "Invita un amico per messaggiare";
 
 "Login.PhoneTitle" = "Il tuo telefono";
 "Login.PhonePlaceholder" = "Il tuo numero di telefono";
-"Login.CountryCode" = "Prefisso nazionale";
-"Login.InvalidCountryCode" = "Prefisso nazionale non valido";
+"Login.CountryCode" = "Prefisso internazionale";
+"Login.InvalidCountryCode" = "Prefisso internazionale non valido";
 
 "Login.CodeTitle" = "Il tuo codice";
 
-"Login.InfoTitle" = "Le tue informazioni";
+"Login.InfoTitle" = "Le tue info";
 "Login.InfoAvatarAdd" = "aggiungi";
 "Login.InfoAvatarPhoto" = "foto";
 "Login.InfoFirstNamePlaceholder" = "Nome";
 "Login.InfoLastNamePlaceholder" = "Cognome";
 "Login.InfoUpdatePhoto" = "Aggiorna foto";
 "Login.InfoDeletePhoto" = "Elimina foto";
-"Login.InfoHelp" = "Digita il tuo nome e aggiungi un'immagine di profilo.";
+"Login.InfoHelp" = "Inserisci il tuo nome e aggiungi un'immagine profilo.";
 
 // Login.SelectCountry
 "Login.SelectCountry.Title" = "Nazione";
 
 // Welcome Screen
-"WelcomeScreen.Title" = "Primi passi";
-"WelcomeScreen.Logout" = "Disconnetti";
+"WelcomeScreen.Title" = "Inizia";
+"WelcomeScreen.Logout" = "Esci";
 "WelcomeScreen.Greeting" = "Benvenuto, %@!";
 "WelcomeScreen.ContactsAccessDisabled" = "Spiacenti, impossibile sincronizzare i contatti.";
 "WelcomeScreen.ContactsAccessHelp" = "La messaggistica di Telegram è basata sulla tua lista dei contatti. Vai nelle Impostazioni del tuo %@ — Privacy — Contatti e imposta Telegram su Sì.";
@@ -240,7 +260,7 @@
 "DialogList.SelectContacts" = "Seleziona contatti";
 "DialogList.Create" = "Crea";
 "DialogList.NoMessagesTitle" = "Non hai alcuna conversazione";
-"DialogList.NoMessagesText" = "Inizia a scrivere premendo il pulsante di composizione nell'angolo in alto a destra o vai nella sezione Contatti.";
+"DialogList.NoMessagesText" = "Inizia a messaggiare toccando il pulsante con la matita nell'angolo in alto a destra o vai nella sezione Contatti.";
 "DialogList.SingleTypingSuffix" = "%@ sta scrivendo";
 "DialogList.SingleRecordingAudioSuffix" = "%@ sta registrando un audio";
 "DialogList.SingleUploadingPhotoSuffix" = "%@ sta inviando una foto";
@@ -250,7 +270,7 @@
 "DialogList.Typing" = "sta scrivendo";
 "DialogList.ClearHistoryConfirmation" = "Cancella cronologia";
 "DialogList.DeleteConversationConfirmation" = "Elimina ed esci";
-"DialogList.AwaitingEncryption" = "Aspettando che %@ si colleghi…";
+"DialogList.AwaitingEncryption" = "In attesa che %@ si colleghi…";
 "DialogList.EncryptionRejected" = "Chat segreta annullata";
 "DialogList.EncryptionProcessing" = "Scambio delle chiavi di crittografia…";
 "DialogList.EncryptedChatStartedOutgoing" = "%@ si è unito alla tua chat segreta.";
@@ -326,16 +346,16 @@
 "Conversation.ClearAllConfirmation" = "Vuoi eliminare tutti i messaggi?";
 "Conversation.SearchImages" = "Cerca immagini";
 "Conversation.UnsupportedMedia" = "Questo messaggio non è supportato dalla tua versione di Telegram. Aggiorna l'app per visualizzarlo:\nhttp://telegram.org/update";
-"Conversation.EncryptionWaiting" = "Aspettando che %@ si colleghi…";
-"Conversation.EncryptionProcessing" = "Scambio delle chiavi di cifratura…";
+"Conversation.EncryptionWaiting" = "In attesa che %@ si colleghi…";
+"Conversation.EncryptionProcessing" = "Scambio chiavi di crittografia…";
 "Conversation.SupportPlaceholder" = "Hai una domanda su Telegram?";
-"Conversation.EmptyPlaceholder" = "Non ci sono messaggi…";
-"Conversation.EncryptedPlaceholderTitleIncoming" = "%@ ti ha invitato ad entrare in una chat segreta.";
-"Conversation.EncryptedPlaceholderTitleOutgoing" = "Hai invitato %@ a entrare in una chat segreta.";
-"Conversation.EncryptedDescriptionTitle" = "Le Chat segrete offrono:";
-"Conversation.EncryptedDescription1" = "La crittografia end-to-end";
-"Conversation.EncryptedDescription2" = "Non lascia traccia nei server";
-"Conversation.EncryptedDescription3" = "Un timer di autodistruzione";
+"Conversation.EmptyPlaceholder" = "Ancora nessun messaggio qui…";
+"Conversation.EncryptedPlaceholderTitleIncoming" = "%@ ti ha invitato a unirti ad una chat segreta.";
+"Conversation.EncryptedPlaceholderTitleOutgoing" = "Hai invitato %@ a unirsi ad una chat segreta.";
+"Conversation.EncryptedDescriptionTitle" = "Chat segrete:";
+"Conversation.EncryptedDescription1" = "Crittografia end-to-end";
+"Conversation.EncryptedDescription2" = "Nessuna traccia sui server";
+"Conversation.EncryptedDescription3" = "Timer di autodistruzione";
 "Conversation.EncryptedDescription4" = "Nessun inoltro";
 "Conversation.EncryptedForwardingAlert" = "Spiacenti, non puoi inoltrare un messaggio da una chat segreta.";
 "Conversation.ContextMenuCopy" = "Copia";
@@ -381,7 +401,7 @@
 "Notification.CreatedChatWithTitle" = "%@ ha creato il gruppo \"%@\"";
 "Notification.Joined" = "%@ si è unito a Telegram";
 "Notification.ChangedGroupName" = "%@  ha cambiato il nome del gruppo in \"%@\"";
-"Notification.NewAuthDetected" = "%1$@,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo il %2$@, %3$@ alle %4$@\n\nDispositivo: %5$@\nPosizione: %6$@\n\nSe non sei stato tu, puoi andare su Impostazioni - Privacy e sicurezza - Sessioni - Termina tutte le sessioni.\n\nSe pensi che qualcuno si sia collegato al tuo account contro il tuo volere, ti raccomandiamo di attivare la verifica in due passaggi nelle impostazioni di Privacy e Sicurezza.\n\nGrazie,\nil team di Telegram";
+"Notification.NewAuthDetected" = "%1$@,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo %2$@, %3$@ alle %4$@\n\nDispositivo: %5$@\nPosizione: %6$@\n\nSe non sei stato tu, puoi andare nelle Impostazioni - Privacy e sicurezza - Sessioni - Termina tutte le sessioni.\n\nSe pensi che qualcuno si sia collegato al tuo account contro il tuo volere, puoi attivare la verifica in due passaggi nelle impostazioni di Privacy e sicurezza.\n\nSinceramente,\nIl Team di Telegram";
 "Notification.EncryptedChatRequested" = "Chat segreta richiesta";
 "Notification.EncryptedChatAccepted" = "Chat segreta iniziata";
 "Notification.MessageLifetimeChanged" = "%1$@ ha impostato il timer di autodistruzione a %2$@";
@@ -403,7 +423,7 @@
 "Message.File" = "File";
 "Message.Sticker" = "Sticker";
 "Message.Audio" = "Messaggio vocale";
-"Message.ForwardedMessage" = "Messaggio inoltrato\nDa: %@";
+"Message.ForwardedMessage" = "Messaggio inoltrato\nda: %@";
 "Message.SharedContact" = "Contatto condiviso";
 "Message.Animation" = "GIF";
 
@@ -411,7 +431,7 @@
 "ConversationProfile.ErrorCreatingConversation" = "Si è verificato un errore";
 "ConversationProfile.UserLeftChatError" = "Spiacenti, %@ ha deciso di lasciare questo gruppo, non puoi invitarlo di nuovo.";
 "ConversationProfile.UnknownAddMemberError" = "Si è verificato un errore imprevisto. I nostri stregoni sono stati avvisati e risolveranno il problema al più presto. Siamo spiacenti.";
-"ConversationProfile.UsersTooMuchError" = "Spiacenti, questo gruppo è al completo. Non puoi aggiungere altri membri.";
+"ConversationProfile.UsersTooMuchError" = "Spiacenti, questo gruppo è pieno. Non puoi aggiungere altri membri.";
 
 "ConversationProfile.LeaveDeleteAndExit" = "Elimina ed esci";
 
@@ -419,16 +439,16 @@
 "Conversation.ViewPhoto" = "Visualizza foto";
 "Conversation.PlayVideo" = "Riproduci video";
 "Conversation.Play" = "Riproduci";
-"Conversation.Stop" = "Ferma";
+"Conversation.Stop" = "Arresta";
 "Conversation.ViewFile" = "Visualizza file";
 "Conversation.Download" = "Scarica";
-"Conversation.DownloadMegabytes" = "Scarica %.1fMB";
-"Conversation.DownloadKilobytes" = "Scarica %dKB";
-"Conversation.Megabytes" = "%.1fMB";
-"Conversation.Kilobytes" = "%dKB";
-"Conversation.Bytes" = "%dB";
-"Conversation.DownloadProgressMegabytes" = "%1$.1fMB / %2$.1fMB";
-"Conversation.DownloadProgressKilobytes" = "%1$dKB / %2$dKB";
+"Conversation.DownloadMegabytes" = "Scarica %.1f MB";
+"Conversation.DownloadKilobytes" = "Scarica %d KB";
+"Conversation.Megabytes" = "%.1f MB";
+"Conversation.Kilobytes" = "%d KB";
+"Conversation.Bytes" = "%d B";
+"Conversation.DownloadProgressMegabytes" = "%1$.1f MB / %2$.1f MB";
+"Conversation.DownloadProgressKilobytes" = "%1$d KB / %2$d KB";
 "Conversation.ViewLocation" = "Visualizza posizione";
 "Conversation.SearchWebImages" = "Cerca immagini";
 "Conversation.ShareMyContactInfo" = "Condividi il mio contatto";
@@ -442,7 +462,7 @@
 "Conversation.SlideToCancel" = "Annulla";
 "Conversation.ApplyLocalization" = "Applica traduzione";
 "Conversation.OpenFile" = "Apri file";
-"Conversation.MicrophoneAccessDisabled" = "Telegram deve accedere al microfono per i messaggi vocali. Per favore vai in Impostazioni - Privacy - Microfono e imposta Telegram su Sì.";
+"Conversation.MicrophoneAccessDisabled" = "Telegram deve accedere al tuo microfono per i messaggi vocali. Per favore vai in Impostazioni - Privacy - Microfono e imposta Telegram su Sì.";
 
 // Media Picker
 "MediaPicker.Send" = "Invia";
@@ -457,7 +477,7 @@
 "SearchImages.Downloading#Mb" = "Download di %d MB";
 "SearchImages.ImageNofM" = "Immagine %1$@ di %2$@";
 "SearchImages.DownloadCancelled" = "Download annullato";
-"SearchImages.ErrorDownloadingImage" = "Errore durante lo scaricamento dell'immagine";
+"SearchImages.ErrorDownloadingImage" = "Errore durante il download dell'immagine";
 "SearchImages.SkipImage" = "Salta immagine";
 "SearchImages.RetryDownload" = "Riprova a scaricare";
 
@@ -468,7 +488,7 @@
 "Profile.CreateEncryptedChatOutdatedError" = "Impossibile creare una chat segreta con %@.\n%@ sta usando una versione più vecchia di Telegram e deve prima aggiornare.";
 "Profile.CreateNewContact" = "Crea nuovo contatto";
 "Profile.AddToExisting" = "Aggiungi a contatto esistente";
-"Profile.EncryptionKey" = "Chiave di cifratura";
+"Profile.EncryptionKey" = "Chiave di crittografia";
 "Profile.MessageLifetime" = "Timer di autodistruzione";
 "Profile.MessageLifetimeForever" = "Spento";
 "Profile.MessageLifetime2s" = "2sc";
@@ -514,7 +534,7 @@
 "GroupInfo.GroupNamePlaceholder" = "Nome gruppo";
 "GroupInfo.BroadcastListNamePlaceholder" = "Nome lista";
 "GroupInfo.SetGroupPhoto" = "Imposta foto gruppo";
-"GroupInfo.SetGroupPhotoStop" = "Ferma";
+"GroupInfo.SetGroupPhotoStop" = "Arresta";
 "GroupInfo.SetGroupPhotoDelete" = "Elimina foto";
 "GroupInfo.Notifications" = "Notifiche";
 "GroupInfo.Sound" = "Suono";
@@ -533,7 +553,7 @@
 "GroupInfo.LeftStatus" = "Hai lasciato il gruppo";
 
 // Encryption Key
-"EncryptionKey.Title" = "Chiave di cifratura";
+"EncryptionKey.Title" = "Chiave di crittografia";
 "EncryptionKey.Description" = "Questa immagine e il testo sono derivati dalla chiave di crittografia per questa chat segreta con %1$@. \n\nSe sono uguali sul dispositivo di %2$@, la crittografia end-to-end è garantita.\n\nUlteriori informazioni su telegram.org";
 
 // Conversation media
@@ -544,12 +564,12 @@
 "Preview.VideoNotYetDownloaded" = "Scarica prima il video.";
 "Preview.GroupPhotoTitle" = "Foto gruppo";
 "Preview.ProfilePhotoTitle" = "Foto profilo";
-"Preview.LoadingVideo" = "caricamento video...";
-"Preview.LoadingImage" = "caricamento immagine completa...";
-"Preview.LoadingImages" = "caricamento immagini complete...";
+"Preview.LoadingVideo" = "carico video...";
+"Preview.LoadingImage" = "carico immagine completa...";
+"Preview.LoadingImages" = "carico immagini complete...";
 "Preview.DeletePhoto" = "Elimina foto";
 "Preview.DeleteVideo" = "Elimina video";
-"Preview.ForwardViaTelegram" = "Inoltra via Telegram";
+"Preview.ForwardViaTelegram" = "Inoltra tramite Telegram";
 "Preview.SaveToCameraRoll" = "Salva nel Rullino";
 
 // Map
@@ -559,8 +579,8 @@
 "Map.Map" = "Mappa";
 "Map.Satellite" = "Satellite";
 "Map.Hybrid" = "Ibrido";
-"Map.AccessDeniedError" = "Per rendere disponibile questa funzione, attiva i servizi di localizzazione per Telegram nelle impostazioni della Privacy del tuo iPhone.";
-"Map.ForwardViaTelegram" = "Inoltra via Telegram";
+"Map.AccessDeniedError" = "Per rendere disponibile questa funzione, attiva la localizzazione per Telegram nelle impostazioni di Privacy del tuo iPhone.";
+"Map.ForwardViaTelegram" = "Inoltra tramite Telegram";
 "Map.GetDirections" = "Ottieni direzioni";
 "Map.OpenInGoogleMaps" = "Apri in Google Maps";
 
@@ -578,17 +598,17 @@
 // Settings
 "Settings.TabTitle" = "Impostazioni";
 "Settings.SetProfilePhoto" = "Imposta foto profilo";
-"Settings.Logout" = "Disconnetti";
+"Settings.Logout" = "Esci";
 "Settings.Title" = "Impostazioni";
 "Settings.NotificationsAndSounds" = "Notifiche e suoni";
-"Settings.ChatSettings" = "Impostazioni chat";
+"Settings.ChatSettings" = "Dati e archivio";
 "Settings.BlockedUsers" = "Utenti bloccati";
 "Settings.ChatBackground" = "Sfondo chat";
 "Settings.Support" = "Fai una domanda";
-"Settings.FAQ" = "FAQ di Telegram";
+"Settings.FAQ" = "Domande frequenti";
 "Settings.FAQ_URL" = "https://telegram.org/faq/it#domande-generali";
-"Settings.FAQ_Intro" = "Per favore, considera che il supporto su Telegram è offerto da volontari. Proveremo a risponderti il più velocemente possibile, ma potrebbe volerci un po' di tempo. \nDai un'occhiata alle FAQ di Telegram: potrai trovare importanti suggerimenti riguardo alcune problematiche e risposte alla maggior parte delle domande.";
-"Settings.FAQ_Button" = "FAQ";
+"Settings.FAQ_Intro" = "Per favore nota che l'assistenza di Telegram è fornita da volontari. Proviamo a rispondere quanto prima, ma potrebbe volerci del tempo.\n\nDai un'occhiata alle domande frequenti di Telegram: contengono suggerimenti importanti per risolvere i problemi e risposte a quasi tutte le domande.";
+"Settings.FAQ_Button" = "Domande frequenti";
 "Settings.SaveIncomingPhotos" = "Salva foto ricevute";
 "Settings.SaveIncomingPhotosHelp" = "Salva le foto ricevute nel Rullino.";
 "Settings.LogoutError" = "Si è verificato un errore. Riprova più tardi.";
@@ -599,13 +619,13 @@
 "Notifications.MessageNotificationsAlert" = "Avviso";
 "Notifications.MessageNotificationsPreview" = "Anteprima messaggio";
 "Notifications.MessageNotificationsSound" = "Suono";
-"Notifications.MessageNotificationsHelp" = "Puoi personalizzare le notifiche per i singoli utenti nella loro pagina di Info.";
+"Notifications.MessageNotificationsHelp" = "Puoi impostare notifiche personalizzate per i singoli utenti nella loro pagina di Info.";
 
 "Notifications.GroupNotifications" = "NOTIFICHE GRUPPI";
 "Notifications.GroupNotificationsAlert" = "Avviso";
 "Notifications.GroupNotificationsPreview" = "Anteprima messaggio";
 "Notifications.GroupNotificationsSound" = "Suono";
-"Notifications.GroupNotificationsHelp" = "Puoi personalizzare le notifiche per i singoli gruppi nella pagina di Info del gruppo.";
+"Notifications.GroupNotificationsHelp" = "Puoi impostare notifiche personalizzate per i singoli gruppi nella pagina Info gruppo.";
 
 "Notifications.TextTone" = "Tono messaggio";
 "Notifications.AlertTones" = "TONI DI AVVISO";
@@ -621,13 +641,13 @@
 "Notifications.ResetAllNotificationsHelp" = "Ripristina tutte le impostazioni di notifica per tutti i contatti e i gruppi.";
 
 // Chat Settings
-"ChatSettings.Title" = "Impostazioni chat";
+"ChatSettings.Title" = "Dati e archivio";
 "ChatSettings.Appearance" = "ASPETTO";
 "ChatSettings.TextSize" = "Dimensione testo";
 "ChatSettings.TextSizeUnits" = "pt";
 "ChatSettings.AutomaticPhotoDownload" = "DOWNLOAD AUTOMATICO FOTO";
 "ChatSettings.AutomaticAudioDownload" = "DOWNLOAD AUTOMATICO AUDIO";
-"ChatSettings.PrivateChats" = "Chat";
+"ChatSettings.PrivateChats" = "Chat private";
 "ChatSettings.Groups" = "Gruppi";
 "ChatSettings.Security" = "PROTEZIONE";
 "ChatSettings.Language" = "LINGUA";
@@ -635,8 +655,8 @@
 "ChatSettings.Cache" = "CACHE";
 
 // Usage
-"Cache.Title" = "Impostazioni cache";
-"Cache.ClearCache" = "Pulisci cache";
+"Cache.Title" = "Utilizzo archivio";
+"Cache.ClearCache" = "Vuota la cache";
 "Cache.ClearCacheAlert" = "Foto, video e altri file delle chat cloud verranno rimossi dal dispositivo per risparmiare memoria.\n\nTutti i media rimarranno nel cloud di Telegram e potranno essere riscaricati se ti serviranno ancora.";
 "Cache.KeepMedia" = "Mantieni media";
 "Cache.Help" = "Foto, video e altri file dalle chat nel cloud che non hai **aperto** in questo periodo verranno eliminati dal dispositivo per preservare la spazio sul disco.\n\nTutti i media rimarranno nel cloud di Telegram e potranno essere riscaricati ogni volta che ne avrai bisogno.";
@@ -648,7 +668,7 @@
 "BlockedUsers.BlockUser" = "Blocca utente";
 "BlockedUsers.BlockFormat" = "Blocca %@?";
 "BlockedUsers.BlockTitle" = "Blocca";
-"BlockedUsers.LeavePrefix" = "Lascia";
+"BlockedUsers.LeavePrefix" = "Lasciare";
 "BlockedUsers.Info" = "Gli utenti bloccati non potranno mandarti messaggi o aggiungerti ai gruppi. Non vedranno le tue immagini profilo, lo stato in linea e l'ultimo accesso.";
 "BlockedUsers.AddNew" = "Aggiungi nuovo...";
 "BlockedUsers.Unblock" = "Sblocca";
@@ -686,8 +706,8 @@
 
 "ChatSettings.AutoPlayAudio" = "Autoriproduzione audio";
 
-"Settings.LogoutConfirmationTitle" = "Disconnetti?";
-"Settings.LogoutConfirmationText" = "\nRicorda che puoi usare Telegram su tutti i tuoi device insieme.\n\nRicorda, disconnettersi elimina tutte le Chat Segrete";
+"Settings.LogoutConfirmationTitle" = "Uscire?";
+"Settings.LogoutConfirmationText" = "\nNota che puoi usare Telegram su tutti i tuoi dispositivi contemporaneamente.\n\nRicorda, uscendo eliminerai tutte le Chat Segrete.";
 
 "Login.PadPhoneHelp" = "\nPuoi usare il tuo numero per connetterti a Telegram su tutti i dispositivi.\nNon usare il numero dell'iPad qui - dovremo mandarti un SMS.\n\nIl tuo numero è corretto?\n{number}";
 "Login.PadPhoneHelpTitle" = "Il Tuo Numero";
@@ -747,15 +767,15 @@
 "MessageTimer.ShortWeeks_3_10" = "%@S";
 "MessageTimer.ShortWeeks_any" = "%@S";
 
-"Activity.UploadingPhoto" = "inviando una foto";
-"Activity.UploadingVideo" = "inviando un video";
-"Activity.UploadingDocument" = "inviando un file";
-"Activity.RecordingAudio" = "registrando un audio";
-"Activity.Location" = "selezionando una posizione";
+"Activity.UploadingPhoto" = "sta inviando una foto";
+"Activity.UploadingVideo" = "sta inviando un video";
+"Activity.UploadingDocument" = "sta inviando un file";
+"Activity.RecordingAudio" = "sta registrando un audio";
+"Activity.Location" = "sta scegliendo una posizione";
 
 "Service.NetworkConfigurationUpdatedMessage" = "Impostazioni di connessione aggiornate con successo.";
 
-"Compatibility.SecretMediaVersionTooLow" = "%@ sta usando una versione vecchia di Telegram, quindi le foto segrete verranno visualizzate in modalità di compatibilità. \n\nUna volta che %@ avrà aggiornato Telegram, le foto con il timer di 1 minuto o meno funzioneranno in modalità 'Tieni premuto per vedere' , e verrai notificato ogni volta che l'altro esegue uno screenshot.";
+"Compatibility.SecretMediaVersionTooLow" = "%@ sta usando una versione vecchia di Telegram, quindi le foto segrete verranno visualizzate in modalità di compatibilità. \n\nUna volta che %@ avrà aggiornato Telegram, le foto con il timer di 1 minuto o meno funzioneranno in modalità 'Tieni premuto per vedere', e verrai notificato ogni volta che l'altro esegue uno screenshot.";
 
 "Contacts.GlobalSearch" = "Ricerca Globale";
 "Profile.Username" = "username";
@@ -775,8 +795,8 @@
 
 "WebSearch.Images" = "Immagini";
 "WebSearch.GIFs" = "GIF";
-"WebSearch.RecentSectionTitle" = "Recente";
-"WebSearch.RecentSectionClear" = "Pulisci";
+"WebSearch.RecentSectionTitle" = "Recenti";
+"WebSearch.RecentSectionClear" = "Cancella";
 
 "Settings.PrivacySettings" = "Privacy e sicurezza";
 
@@ -803,12 +823,12 @@
 
 "PrivacySettings.DeleteAccountTitle" = "ELIMINA IL MIO ACCOUNT";
 "PrivacySettings.DeleteAccountIfAwayFor" = "Se lontano per";
-"PrivacySettings.DeleteAccountHelp" = "Se non ti connetti almeno una volta in questo periodo, il tuo account verrà eliminato insieme a tutti i gruppi, messaggi e contatti.";
+"PrivacySettings.DeleteAccountHelp" = "Se non ti connetti almeno una volta in questo periodo, il tuo account verrà eliminato insieme a tutti i gruppi, i messaggi e i contatti.";
 "PrivacySettings.DeleteAccountNowConfirmation" = "Eliminare il tuo account?";
 "PrivacySettings.DeleteAccountNever" = "Mai";
 
 "PrivacyLastSeenSettings.Title" = "Ultimo accesso";
-"PrivacyLastSeenSettings.CustomHelp" = "Importante: non sarai in grado di vedere l'Ultimo Accesso delle persone con le quali non condividi l'Ultimo Accesso. Verrà mostrato un orario approssimativo (di recente, entro una settimana, entro un mese).";
+"PrivacyLastSeenSettings.CustomHelp" = "Importante: non potrai vedere l'ultimo accesso delle persone con cui non condividi l'ultimo accesso. Verrà mostrato un orario approssimativo (di recente, entro una settimana, entro un mese).";
 "PrivacyLastSeenSettings.AlwaysShareWith" = "Condividi con";
 "PrivacyLastSeenSettings.NeverShareWith" = "Non condividere con";
 "PrivacyLastSeenSettings.CustomShareSettingsHelp" = "Queste impostazioni annulleranno i valori precedenti.";
@@ -869,11 +889,11 @@
 "Camera.VideoMode" = "VIDEO";
 "Camera.SquareMode" = "1:1";
 "Camera.FlashOff" = "No";
-"Camera.FlashOn" = "Si";
+"Camera.FlashOn" = "Sì";
 "Camera.FlashAuto" = "Auto";
 "Camera.Retake" = "Scarta";
 
-"Settings.PhoneNumber" = "Numero di telefono";
+"Settings.PhoneNumber" = "Telefono";
 
 "PhoneNumberHelp.Help" = "Puoi cambiare il tuo numero di telefono qui. Il tuo account e tutti i tuoi dati cloud — messaggi, file, contatti, etc. saranno trasferiti sul nuovo numero.\n\n**Importante:** a tutti i tuoi contatti di Telegram verrà aggiunto il tuo **nuovo numero** ai contatti, purché abbiano il tuo vecchio numero e tu non li abbia bloccati su Telegram.";
 "PhoneNumberHelp.Alert" = "Tutti i tuoi contatti Telegram avranno il tuo nuovo numero tra i loro contatti, purché abbiano il tuo vecchio numero e tu non li abbia bloccati su Telegram.";
@@ -888,7 +908,7 @@
 "ChangePhoneNumberCode.CodePlaceholder" = "Codice";
 "ChangePhoneNumberCode.Help" = "Ti abbiamo inviato un SMS con il codice";
 "ChangePhoneNumberCode.CallTimer" = "Telegram ti chiamerà tra %@";
-"ChangePhoneNumberCode.RequestingACall" = "Chiamata in arrivo da Telegram...";
+"ChangePhoneNumberCode.RequestingACall" = "Richiesta di chiamata a Telegram...";
 "ChangePhoneNumberCode.Called" = "Telegram ha composto il tuo numero";
 
 "LoginPassword.Title" = "La tua password";
@@ -1041,8 +1061,8 @@
 "SharedMedia.DeleteItemsConfirmation_3_10" = "Eliminare %@ file media?";
 "SharedMedia.DeleteItemsConfirmation_any" = "Eliminare %@ file media?";
 
-"PrivacySettings.Passcode" = "Blocco con codice";
-"PasscodeSettings.Title" = "Blocco con codice";
+"PrivacySettings.Passcode" = "Codice di blocco";
+"PasscodeSettings.Title" = "Codice di blocco";
 "PasscodeSettings.TurnPasscodeOn" = "Attiva codice";
 "PasscodeSettings.TurnPasscodeOff" = "Disattiva codice";
 "PasscodeSettings.ChangePasscode" = "Cambia codice";
@@ -1050,8 +1070,8 @@
 "PasscodeSettings.UnlockWithTouchId" = "Sblocca con Touch ID";
 "PasscodeSettings.SimplePasscode" = "Codice semplice";
 "PasscodeSettings.SimplePasscodeHelp" = "Un codice semplice è un numero a 4 cifre.";
-"PasscodeSettings.EncryptData" = "Cripta database locale";
-"PasscodeSettings.EncryptDataHelp" = "Funzione sperimentale, usare con cautela. Cripta i tuoi dati locali di Telegram, usando una derivazione del tuo codice come chiave.";
+"PasscodeSettings.EncryptData" = "Crittografia database locale";
+"PasscodeSettings.EncryptDataHelp" = "Funzione sperimentale, usare con cautela. I tuoi dati locali di Telegram vengono crittografati, usando una chiave derivata dal tuo codice.";
 
 "EnterPasscode.EnterTitle" = "Inserisci il codice di Telegram";
 "EnterPasscode.SetupTitle" = "Nuovo codice";
@@ -1063,7 +1083,7 @@
 "EnterPasscode.EnterCurrentPasscode" = "Inserisci il tuo codice";
 "EnterPasscode.TouchId" = "Inserisci il tuo codice";
 
-"DialogList.PasscodeLockHelp" = "Premi per bloccare Telegram";
+"DialogList.PasscodeLockHelp" = "Tocca per bloccare Telegram";
 
 "PasscodeSettings.AutoLock" = "Blocco automatico";
 "PasscodeSettings.AutoLock.Disabled" = "Disabilitato";
@@ -1082,22 +1102,22 @@
 
 "AccessDenied.Contacts" = "La messaggistica di Telegram si basa sulla lista esistente dei tuoi contatti.\n\nVai su Impostazioni > Privacy > Contatti e imposta Telegram su Sì.";
 
-"AccessDenied.VoiceMicrophone" = "Telegram deve accedere al microfono per inviare messaggi vocali.\n\nVai in Impostazioni > Privacy > Microfono e imposta Telegram su Sì.";
+"AccessDenied.VoiceMicrophone" = "Telegram deve accedere al tuo microfono per inviare messaggi vocali.\n\nVai in Impostazioni > Privacy > Microfono e imposta Telegram su Sì.";
 
-"AccessDenied.VideoMicrophone" = "Telegram deve accedere al microfono per registrare il suono nei video.\n\nVai in Impostazioni > Privacy > Microfono e imposta Telegram su Sì.";
+"AccessDenied.VideoMicrophone" = "Telegram deve accedere al tuo microfono per registrare il suono nei video.\n\nVai in Impostazioni > Privacy > Microfono e imposta Telegram su Sì.";
 
 "AccessDenied.MicrophoneRestricted" = "L'accesso al microfono è negato per Telegram.\n\nVai nelle Impostazioni > Generali > Restrizioni > Microfono e imposta Telegram su Sì.";
 
 
-"AccessDenied.Camera" = "Telegram deve accedere alla fotocamera per scattare foto e video.\n\nVai in Impostazioni > Privacy > Fotocamera e imposta Telegram su Sì.";
+"AccessDenied.Camera" = "Telegram deve accedere alla tua fotocamera per scattare foto e registrare video.\n\nVai in Impostazioni > Privacy > Fotocamera e imposta Telegram su Sì.";
 
 "AccessDenied.CameraRestricted" = "L'accesso alla fotocamera è negato per Telegram.\n\nVai in Impostazioni > Generali > Restrizioni > Fotocamera e imposta Telegram su Sì.";
 
 "AccessDenied.CameraDisabled" = "L'accesso alla fotocamera è negato globalmente nel tuo telefono.\n\nVai in Impostazioni > Generali > Restrizioni e imposta la Fotocamera su Sì.";
 
-"AccessDenied.PhotosAndVideos" = "Telegram deve accedere alla libreria fotografica per inviare foto e video.\n\nVai in Impostazioni > Privacy > Foto e imposta Telegram su Sì.";
+"AccessDenied.PhotosAndVideos" = "Telegram deve accedere alla tua libreria fotografica per inviare foto e video.\n\nVai in Impostazioni > Privacy > Foto e imposta Telegram su Sì.";
 
-"AccessDenied.SaveMedia" = "Telegram deve accedere alla libreria fotografica per salvare foto e video.\n\nVai in Impostazioni > Privacy > Foto e imposta Telegram su Sì.";
+"AccessDenied.SaveMedia" = "Telegram deve accedere alla tua libreria fotografica per salvare foto e video.\n\nVai in Impostazioni > Privacy > Foto e imposta Telegram su Sì.";
 
 "AccessDenied.PhotosRestricted" = "L'accesso alle foto è negato a Telegram\n\nVai in Impostazioni > Generali > Restrizioni > Foto e imposta Telegram su Sì.";
 
@@ -1109,7 +1129,7 @@
 
 "AccessDenied.Settings" = "Impostazioni";
 
-"WebSearch.RecentClearConfirmation" = "Sei sicuro di volere cancellare le immagini recenti?";
+"WebSearch.RecentClearConfirmation" = "Sei sicuro di voler cancellare le immagini recenti?";
 
 "FeatureDisabled.Oops" = "Oops";
 
@@ -1204,22 +1224,22 @@
 "TwoStepAuth.EmailSkipAlert" = "No, seriamente.\n\nSe dimentichi la tua password, perderai l'accesso al tuo account Telegram. Non ci sarà modo di ripristinarlo.";
 "TwoStepAuth.Email" = "E-mail";
 "TwoStepAuth.EmailPlaceholder" = "La tua e-mail";
-"TwoStepAuth.EmailHelp" = "Inserisci un'e-mail valida. È l'unico modo di recuperare una password dimenticata.";
+"TwoStepAuth.EmailHelp" = "Inserisci un'e-mail valida. È l'unico modo per recuperare una password dimenticata.";
 "TwoStepAuth.EmailInvalid" = "E-mail non valida. Prova ancora.";
 "TwoStepAuth.EmailSent" = "Ti abbiamo inviato un'e-mail per confermare il tuo indirizzo.";
 "TwoStepAuth.PasswordSet" = "La password per la verifica in due passaggi è ora attiva.";
 "TwoStepAuth.PasswordRemoveConfirmation" = "Sei sicuro di voler disabilitare la tua password?";
 
-"TwoStepAuth.RecoveryUnavailable" = "Siccome non hai fornito un'email di recupero quando hai impostato la  tua password, non ti resta che ricordarti la password o ripristinare il tuo account.";
+"TwoStepAuth.RecoveryUnavailable" = "Siccome non hai fornito un'email di recupero quando hai impostato la tua password, non ti resta che ricordarti la password o ripristinare il tuo account.";
 "TwoStepAuth.RecoveryFailed" = "Le opzioni che ti rimangono sono o ricordarti la tua password o ripristinare il tuo account.";
 "TwoStepAuth.ResetAccount" = "Ripristina il mio account";
 "TwoStepAuth.ResetAccountHelp" = "Perderai tutte le chat e i messaggi, insieme ai media e ai file condivisi, se procederai a ripristinare il tuo account.";
 "TwoStepAuth.ResetAccountConfirmation" = "Perderai tutte le chat e i messaggi, insieme ai media e ai file condivisi, se procederai a ripristinare il tuo account.";
 
 "TwoStepAuth.RecoveryTitle" = "Codice e-mail";
-"TwoStepAuth.RecoverySent" = "Abbiamo inviato un codice di ripristino alla e-mail che ci hai fornito:\n\n%@";
+"TwoStepAuth.RecoverySent" = "Abbiamo inviato un codice di ripristino all'e-mail che ci hai fornito:\n\n%@";
 "TwoStepAuth.RecoveryCode" = "Codice";
-"TwoStepAuth.RecoveryCodeHelp" = "Controlla la tua e-mail e inserisci il codice a 6 cifre che ti abbiamo inviato.";
+"TwoStepAuth.RecoveryCodeHelp" = "Per favore controlla la tua e-mail e inserisci il codice a 6 cifre che ti abbiamo inviato.";
 "TwoStepAuth.RecoveryCodeInvalid" = "Codice non valido. Per favore riprova.";
 "TwoStepAuth.RecoveryCodeExpired" = "Ti abbiamo inviato un codice a 6 cifre.";
 "TwoStepAuth.RecoveryEmailUnavailable" = "Hai problemi ad accedere alla tua e-mail %@?";
@@ -1247,7 +1267,7 @@
 "Map.More" = "Più...";
 
 "Map.SendThisLocation" = "Invia questa posizione";
-"Map.SendMyCurrentLocation" = "Invia la mia posizione attuale";
+"Map.SendMyCurrentLocation" = "Invia la mia posizione corrente";
 "Map.Locating" = "Localizzazione...";
 "Map.ChooseAPlace" = "O scegli un luogo";
 "Map.AccurateTo" = "Precisione di %@";
@@ -1263,14 +1283,14 @@
 "Map.ETAHours_any" = "%@ o";
 
 "GoogleDrive.Title" = "Google Drive";
-"GoogleDrive.Logout" = "Disconnetti";
-"GoogleDrive.LogoutTitle" = "Disconnetti";
-"GoogleDrive.LogoutMessage" = "Sei sicuro di volerti disconnettere da Google Drive?";
-"GoogleDrive.LogoutLogout" = "Disconnetti";
+"GoogleDrive.Logout" = "Esci";
+"GoogleDrive.LogoutTitle" = "Esci";
+"GoogleDrive.LogoutMessage" = "Sei sicuro di voler uscire da Google Drive?";
+"GoogleDrive.LogoutLogout" = "Esci";
 "GoogleDrive.FolderIsEmpty" = "La cartella è vuota.";
 "GoogleDrive.FolderLoadError" = "Impossibile caricare cartella.";
 "GoogleDrive.LoadErrorTitle" = "Impossibile connettersi";
-"GoogleDrive.LoadErrorMessage" = "Controlla la tua connessione a internet e riprova.";
+"GoogleDrive.LoadErrorMessage" = "Per favore controlla la tua connessione a internet e riprova.";
 
 "ChangePhone.ErrorOccupied" = "Il numero %@ è già connesso a un account Telegram. Per favore elimina quell'account prima di migrare ad un nuovo numero.";
 
@@ -1278,9 +1298,9 @@
 
 "PrivacySettings.AuthSessions" = "Sessioni attive";
 "AuthSessions.Title" = "Sessioni attive";
-"AuthSessions.CurrentSession" = "SESSIONE ATTUALE";
+"AuthSessions.CurrentSession" = "SESSIONE CORRENTE";
 "AuthSessions.TerminateOtherSessions" = "Termina tutte le altre sessioni";
-"AuthSessions.TerminateOtherSessionsHelp" = "Disconnette tutti i dispositivi tranne questo.";
+"AuthSessions.TerminateOtherSessionsHelp" = "Esce da tutti i dispositivi tranne questo.";
 "AuthSessions.TerminateSession" = "Termina sessione";
 "AuthSessions.OtherSessions" = "SESSIONI ATTIVE";
 "AuthSessions.EmptyTitle" = "Nessun'altra sessione";
@@ -1294,17 +1314,17 @@
 
 "MediaPicker.AddCaption" = "Aggiungi una didascalia...";
 
-"GroupInfo.InviteByLink" = "Invita nel gruppo via link";
+"GroupInfo.InviteByLink" = "Invita nel gruppo tramite link";
 
-"GroupInfo.InviteLink.Title" = "Link di invito";
+"GroupInfo.InviteLink.Title" = "Link d'invito";
 "GroupInfo.InviteLink.LinkSection" = "LINK";
-"GroupInfo.InviteLink.Help" = "Chiunque abbia Telegram installato, sarà in grado di aggiungersi al tuo gruppo aprendo il link.";
+"GroupInfo.InviteLink.Help" = "Chiunque abbia Telegram installato, potrà aggiungersi al tuo gruppo aprendo questo link.";
 "GroupInfo.InviteLink.CopyLink" = "Copia link";
 "GroupInfo.InviteLink.RevokeLink" = "Revoca link";
 "GroupInfo.InviteLink.ShareLink" = "Condividi link";
 "GroupInfo.InviteLink.RevokeAlert.Text" = "Sei sicuro di voler revocare questo link? Una volta fatto, nessuno potrà unirsi al gruppo utilizzandolo.";
 "GroupInfo.InviteLink.RevokeAlert.Revoke" = "Revoca";
-"GroupInfo.InviteLink.RevokeAlert.Success" = "Il precedente link di invito è inattivo. Ne è appena stato creato uno nuovo.";
+"GroupInfo.InviteLink.RevokeAlert.Success" = "Il precedente link d'invito è ora inattivo. Ne è stato creato uno nuovo.";
 "GroupInfo.InviteLink.CopyAlert.Success" = "Link copiato negli appunti.";
 
 "UserInfo.ShareMyContactInfo" = "Condividi il mio contatto";
@@ -1317,7 +1337,7 @@
 
 "Core.ServiceUserStatus" = "Notifiche di servizio";
 
-"Notification.JoinedGroupByLink" = "%@ si è unito al gruppo via link di invito";
+"Notification.JoinedGroupByLink" = "%@ si è unito al gruppo tramite link d'invito";
 
 "ChatSettings.Other" = "ALTRO";
 "ChatSettings.Stickers" = "Sticker";
@@ -1327,7 +1347,7 @@
 "StickerPacksSettings.ShowStickersButtonHelp" = "Un'icona sticker apparirà nel campo di scrittura.";
 
 "StickerPacksSettings.StickerPacksSection" = "SET DI STICKER";
-"StickerPacksSettings.ManagingHelp" = "Gli artisti sono invitati ad aggiungere i loro set di sticker usando il nostro bot @stickers.\n\nGli utenti possono aggiungere sticker premendo su di loro e scegliendo \"Aggiungi agli sticker\".";
+"StickerPacksSettings.ManagingHelp" = "Gli artisti sono invitati ad aggiungere i loro set di sticker usando il nostro bot @stickers.\n\nTocca uno sticker per vederlo e aggiungere l'intero set.";
 
 "StickerPack.RemovePrompt" = "Rimuovere \"%@\"?";
 "StickerPack.BuiltinPackName" = "Grandi menti";
@@ -1346,7 +1366,7 @@
 "Conversation.ContextMenuStickerPackAdd" = "Aggiungi sticker";
 "Conversation.ContextMenuStickerPackInfo" = "Info";
 
-"MediaPicker.Processing" = "Elaborando %@";
+"MediaPicker.Processing" = "Elaboro %@";
 "MediaPicker.Nof" = "%@ di";
 
 "UserInfo.ShareBot" = "Condividi";
@@ -1377,7 +1397,7 @@
 "Conversation.SearchPlaceholder" = "Cerca in questa chat";
 "Conversation.SearchNoResults" = "Nessun risultato";
 
-"GroupInfo.AddUserLeftError" = "Spiacenti, se una persona lascia un gruppo, solo un contatto in comune può reinvitarla (chi ti invita deve avere il tuo contatto su Telegram, e viceversa).";
+"GroupInfo.AddUserLeftError" = "Spiacenti, se una persona lascia un gruppo, solo un contatto reciproco può aggiungerla (chi ti invita deve avere il tuo numero, e viceversa).";
 
 "DialogList.SearchSectionRecent" = "Recenti";
 
@@ -1419,7 +1439,7 @@
 "Channel.Username.Title" = "Link";
 "Channel.Username.Help" = "Puoi scegliere un nome per il canale su **Telegram**. Se lo fai, le altre persone potranno trovare il tuo canale tramite questo nome.\n\nPuoi usare **a-z**, **0-9** e underscore. La lunghezza minima è di **5** caratteri.";
 "Channel.Username.LinkHint" = "Questo link apre il tuo canale su Telegram:[\nhttps://telegram.me/%@]";
-"Channel.Username.InvalidTooShort" = "I nomi devi canali devono avere almeno 5 caratteri.";
+"Channel.Username.InvalidTooShort" = "I nomi dei canali devono avere almeno 5 caratteri.";
 "Channel.Username.InvalidStartsWithNumber" = "I nomi dei canali non possono iniziare con un numero.";
 "Channel.Username.InvalidCharacters" = "Spiacenti, questo nome non è valido.";
 "Channel.Username.InvalidTaken" = "Spiacenti, questo nome è già stato preso.";
@@ -1452,7 +1472,7 @@
 "Conversation.InfoChannel" = "Canale";
 
 "Channel.ErrorAccessDenied" = "Spiacenti, questo canale è privato.";
-"Conversation.InputTextBroadcastPlaceholder" = "Broadcast";
+"Conversation.InputTextBroadcastPlaceholder" = "Post";
 
 "Channel.NotificationCommentsEnabled" = "I commenti sono abilitati";
 "Channel.NotificationCommentsDisabled" = "I commenti sono disabilitati";
@@ -1465,7 +1485,7 @@
 "Channel.NotificationComments_2" = "2 commenti";
 "Channel.NotificationComments_3_10" = "%@ commenti";
 "Channel.NotificationComments_any" = "%@ commenti";
-"Channel.NotificationLoading" = "Caricamento...";
+"Channel.NotificationLoading" = "Carico...";
 
 "Conversation.InputTextDisabledPlaceholder" = "I commenti sono disabilitati";
 "Compose.ChannelTokenListPlaceholder" = "Cerca contatti o username";
@@ -1477,7 +1497,7 @@
 "Channel.Setup.TypePrivate" = "Privato";
 "Channel.Setup.TypePublic" = "Pubblico";
 "Channel.Setup.TypePublicHelp" = "I canali pubblici possono essere trovati nella ricerca, chiunque può unirsi.";
-"Channel.Setup.TypePrivateHelp" = "Ci si può unire ai canali privati solo via link di invito.";
+"Channel.Setup.TypePrivateHelp" = "È possibile unirsi ai canali privati solo tramite link d'invito.";
 
 "Channel.Setup.Title" = "Canale";
 
@@ -1489,7 +1509,7 @@
 
 "Channel.Setup.PublicNoLink" = "Per favore scegli un link per il tuo canale pubblico, in modo che possa essere trovato nella ricerca e condiviso con altri.\n\nSe non sei interessato, ti consigliamo di creare un canale privato.";
 
-"Channel.Edit.PrivatePublicLinkAlert" = "Per favore ricorda che se scegli un link pubblico per il tuo canale, chiunque sarà in grado di trovarlo nella ricerca e unirsi.\n\nNon creare questo link se vuoi che il tuo canale rimanga privato.";
+"Channel.Edit.PrivatePublicLinkAlert" = "Per favore ricorda che se scegli un link pubblico per il tuo canale, chiunque potrà trovarlo nella ricerca e unirsi.\n\nNon creare questo link se vuoi che il tuo canale rimanga privato.";
 
 "Channel.Info.Description" = "descrizione";
 
@@ -1514,7 +1534,7 @@
 
 "Conversation.InputTextCommentPlaceholder" = "Commento";
 
-"Channel.Members.InviteLink" = "Invita via link";
+"Channel.Members.InviteLink" = "Invita tramite link";
 
 "Channel.Management.ErrorNotMember" = "%@ non si è ancora unito al canale. Vuoi invitarlo?";
 
@@ -1537,9 +1557,9 @@
 "ChannelInfo.DeleteChannel" = "Elimina canale";
 "ChannelInfo.DeleteChannelConfirmation" = "Aspetta! Eliminando il canale rimuoverai tutti i membri e tutti i messaggi saranno persi. Vuoi comunque eliminare il canale?";
 
-"Channel.Username.InvalidTooManyUsernames" = "Spiacenti, hai creato troppi canali pubblici. Puoi creare un canale privato o eliminare un tuo canale pubblico.";
+"Channel.Username.InvalidTooManyUsernames" = "Spiacenti, hai creato troppi canali pubblici. Puoi creare un canale privato o eliminare un tuo canale esistente.";
 
-"ChannelInfo.ChannelForbidden" = "Spiacenti, questo canale non è più accessibile.";
+"ChannelInfo.ChannelForbidden" = "Spiacenti, il canale \"%@\"  non è più accessibile.";
 
 "PhotoEditor.FadeTool" = "Sfumatura";
 "PhotoEditor.TintTool" = "Colore";
@@ -1567,7 +1587,7 @@
 
 "ChatSettings.AutoPlayAnimations" = "Autoriproduzione GIF";
 
-"GroupInfo.ChatAdmins" = "Aggiungi amministratore";
+"GroupInfo.ChatAdmins" = "Aggiungi amministratori";
 
 "ChatAdmins.Title" = "Amministratori";
 "ChatAdmins.AllMembersAreAdmins" = "Tutti sono amministratori";
@@ -1582,9 +1602,9 @@
 "Group.UpgradeNoticeHeader" = "LIMITE MEMBRI RAGGIUNTO";
 
 "Group.UpgradeNoticeText1" = "Per superare il limite e avere ulteriori funzioni, aggiorna a supergruppo:";
-"Group.UpgradeNoticeText2" = "• I supergruppi hanno massimo {supergroup_member_limit} membri\n• I nuovi membri vedono tutta la cronologia\n• Gli admin eliminano i messaggi per tutti\n• Le notifiche sono silenziate di default";
+"Group.UpgradeNoticeText2" = "• I supergruppi hanno massimo {supergroup_member_limit} membri\n• I nuovi membri vedono tutta la cronologia\n• Gli admin eliminano i messaggi per tutti\n• Le notifiche sono disattivate di default";
 "GroupInfo.UpgradeButton" = "Aggiorna a supergruppo";
-"Group.UpgradeConfirmation" = "Per favore ricorda che i membri del gruppo dovranno aggiornare Telegram all'ultima versione per vedere il tuo supergruppo.";
+"Group.UpgradeConfirmation" = "Attenzione: questa azione è irreversibile. Non è possibile trasformare un supergruppo in un gruppo normale.";
 
 "Notification.GroupMigratedToChannel" = "Questo gruppo è stato aggiornato a supergruppo.";
 "Notification.GroupDeactivated" = "Gruppo disattivato";
@@ -1600,14 +1620,14 @@
 "Group.ErrorAddTooMuchBots" = "Spiacenti, hai raggiunto il numero massimo di bot per questo gruppo.";
 "Group.ErrorAddTooMuchAdmins" = "Spiacenti, hai raggiunto il numero massimo di amministratori per questo gruppo.";
 "Group.ErrorAddBlocked" = "Spiacenti, non puoi aggiungere questo utente ai gruppi.";
-"Group.ErrorNotMutualContact" = "Spiacenti, al momento puoi aggiungere ai gruppi solo contatti in comune.";
+"Group.ErrorNotMutualContact" = "Spiacenti, al momento puoi aggiungere solo i contatti reciproci ai gruppi.";
 
-"Conversation.SendMessageErrorFlood" = "Spiacenti, al momento puoi scrivere solo a contatti in comune.";
-"Generic.ErrorMoreInfo" = "Più info";
+"Conversation.SendMessageErrorFlood" = "Spiacenti, al momento puoi scrivere solo ai contatti reciproci.";
+"Generic.ErrorMoreInfo" = "Maggiori info";
 
 "Notification.InvitedMany" = "%@ ha invitato %@";
 
-"ChannelMembers.Blacklist.EmptyText" = "Gli utenti in lista nera sono rimossi dal gruppo e possono tornare solo se invitati da un amministratore. I link di invito non funzionano per loro.";
+"ChannelMembers.Blacklist.EmptyText" = "Gli utenti in lista nera sono rimossi dal gruppo e possono tornare solo se invitati da un amministratore. I link d'invito non funzionano per loro.";
 
 "ChannelInfo.DeleteGroup" = "Elimina gruppo";
 "ChannelInfo.DeleteGroupConfirmation" = "Aspetta! Eliminando il gruppo rimuoverai tutti i membri e tutti i messaggi saranno persi. Vuoi comunque eliminare il gruppo?";
@@ -1619,7 +1639,7 @@
 "ReportPeer.ReasonPornography" = "Pornografia";
 "ReportPeer.ReasonOther" = "Altro";
 
-"ReportPeer.AlertSuccess" = "Grazie!\nLa tua segnalazione sarà esaminata dal nostro team.";
+"ReportPeer.AlertSuccess" = "Grazie!\nLa tua segnalazione sarà presto esaminata dal nostro team.";
 
 "Login.TermsOfServiceLabel" = "Iscrivendoti,\naccetti i [Termini di servizio].";
 "Login.TermsOfServiceHeader" = "Termini di servizio";
@@ -1633,11 +1653,11 @@
 "Watch.AppName" = "Telegram";
 "Watch.Compose.AddContact" = "Scegli contatto";
 "Watch.Compose.CreateMessage" = "Crea messaggi";
-"Watch.Compose.CurrentLocation" = "Posizione attuale";
+"Watch.Compose.CurrentLocation" = "Posizione corrente";
 "Watch.Compose.Send" = "Invia";
 "Watch.Contacts.NoResults" = "Nessun contatto\ncorrispondente trovato";
 "Watch.ChatList.NoConversationsTitle" = "Nessuna chat";
-"Watch.ChatList.NoConversationsText" = "Per iniziare a inviare messaggi,\ntieni premuto, quindi premi\nNuovo messaggio";
+"Watch.ChatList.NoConversationsText" = "Per iniziare a messaggiare,\ntieni premuto, quindi tocca\nNuovo messaggio";
 "Watch.ChatList.Compose" = "Nuovo messaggio";
 
 "Watch.Conversation.Reply" = "Rispondi";
@@ -1663,7 +1683,7 @@
 
 "Watch.Message.ForwardedFrom" = "Inoltrato da";
 
-"Watch.Notification.Joined" = "si è unito a Telegram";
+"Watch.Notification.Joined" = "Si è unito a Telegram";
 
 "Watch.MessageView.Title" = "Messaggio";
 "Watch.MessageView.Forward" = "Inoltra";
@@ -1676,7 +1696,7 @@
 "Watch.Stickers.RecentPlaceholder" = "Gli sticker usati di frequente appariranno qui";
 "Watch.Stickers.StickerPacks" = "Set di sticker";
 
-"Watch.Location.Current" = "Posizione attuale";
+"Watch.Location.Current" = "Posizione corrente";
 "Watch.Location.Access" = "Permetti a Telegram di accedere alla posizione sul tuo telefono";
 
 "Watch.AuthRequired" = "Collegati a Telegram sul tuo telefono per iniziare";
@@ -1716,7 +1736,7 @@
 "Watch.Suggestion.ThankYou" = "Grazie.";
 "Watch.Suggestion.Thanks" = "Grazie!";
 "Watch.Suggestion.WhatsUp" = "Cosa succede?";
-"Watch.Suggestion.Yes" = "Si";
+"Watch.Suggestion.Yes" = "Sì";
 "Watch.Suggestion.No" = "No";
 "Watch.Suggestion.Absolutely" = "Assolutamente";
 "Watch.Suggestion.Nope" = "No";
@@ -1731,8 +1751,8 @@
 "Cache.Videos" = "Video";
 "Cache.Music" = "Musica";
 "Cache.Files" = "File";
-"Cache.Clear" = "Pulisci (%@)";
-"Cache.ClearNone" = "Pulisci";
+"Cache.Clear" = "Svuota (%@)";
+"Cache.ClearNone" = "Svuota";
 "Cache.ClearProgress" = "Attendere prego...";
 "Cache.ClearEmpty" = "Vuota";
 "Cache.ByPeerHeader" = "CHAT";
@@ -1742,11 +1762,11 @@
 "ExplicitContent.AlertChannel" = "Non puoi accedere a questo canale perchè non rispetta le regole dell'App Store.";
 "ExplicitContent.AlertUser" = "Non puoi accedere a questo bot perchè non rispetta le regole dell'App Store.";
 
-"StickerSettings.ContextHide" = "Nascondi";
+"StickerSettings.ContextHide" = "Archivia";
 "StickerSettings.ContextShow" = "Mostra";
 
 "Conversation.LinkDialogSave" = "Salva";
-"Conversation.GifTooltip" = "Premi qui per accedere alle GIF salvate";
+"Conversation.GifTooltip" = "Tocca qui per vedere le GIF salvate";
 
 "AttachmentMenu.PhotoOrVideo" = "Foto o video";
 "AttachmentMenu.ImageSearch" = "Ricerca immagini";
@@ -1775,11 +1795,11 @@
 "AttachmentMenu.SendAsFile" = "Invia come file";
 "AttachmentMenu.SendAsFiles" = "Invia come file";
 
-"Conversation.Processing" = "Processando...";
+"Conversation.Processing" = "Elaboro...";
 
 "Conversation.MessageViaUser" = "via %@";
 
-"CreateGroup.SoftUserLimitAlert" = "Sarai in grado di aggiungere più utenti dopo aver creato il gruppo e averlo convertito in supergruppo.";
+"CreateGroup.SoftUserLimitAlert" = "Potrai aggiungere più utenti dopo aver creato il gruppo e averlo convertito in supergruppo.";
 "ChannelMembers.AllMembersMayInvite" = "Tutti i membri possono invitare";
 "ChannelMembers.AllMembersMayInviteOnHelp" = "Chiunque può aggiungere nuovi membri.";
 "ChannelMembers.AllMembersMayInviteOffHelp" = "Solo gli amministratori possono aggiungere nuovi membri.";
@@ -1789,7 +1809,7 @@
 "Privacy.GroupsAndChannels.CustomHelp" = "Puoi decidere chi può aggiungerti a gruppi e canali con precisione granulare.";
 "Privacy.GroupsAndChannels.AlwaysAllow" = "Consenti sempre";
 "Privacy.GroupsAndChannels.NeverAllow" = "Non consentire mai";
-"Privacy.GroupsAndChannels.CustomShareHelp" = "Questi utenti saranno o non saranno in grado di aggiungerti a gruppi e canali indipendentemente dalle impostazioni precedenti.";
+"Privacy.GroupsAndChannels.CustomShareHelp" = "Questi utenti potranno o non potranno aggiungerti a gruppi e canali indipendentemente dalle impostazioni precedenti.";
 
 "Privacy.GroupsAndChannels.AlwaysAllow.Title" = "Consenti sempre";
 "Privacy.GroupsAndChannels.AlwaysAllow.Placeholder" = "Consenti sempre...";
@@ -1800,9 +1820,9 @@
 "Privacy.GroupsAndChannels.InviteToChannelError" = "Spiacenti, non puoi aggiungere %@ ai canali a causa delle impostazioni di privacy di %@.";
 "Privacy.GroupsAndChannels.InviteToChannelMultipleError" = "Spiacenti, non puoi creare un gruppo con questi utenti a causa delle loro impostazioni di privacy.";
 
-"ChannelMembers.WhoCanAddMembers" = "Chi può aggiungere i membri";
-"ChannelMembers.WhoCanAddMembers.AllMembers" = "Tutti i membri";
-"ChannelMembers.WhoCanAddMembers.Admins" = "Solo gli amministratori";
+"ChannelMembers.WhoCanAddMembers" = "Chi può aggiungere";
+"ChannelMembers.WhoCanAddMembers.AllMembers" = "Tutti";
+"ChannelMembers.WhoCanAddMembers.Admins" = "Amministratori";
 "ChannelMembers.WhoCanAddMembersAllHelp" = "Chiunque può aggiungere nuovi membri.";
 "ChannelMembers.WhoCanAddMembersAdminsHelp" = "Solo gli amministratori possono aggiungere nuovi membri.";
 
@@ -1839,7 +1859,7 @@
 
 "Map.OpenInWaze" = "Apri in Waze";
 
-"ShareMenu.CopyShareLink" = "Copia link azione";
+"ShareMenu.CopyShareLink" = "Copia link";
 
 "Channel.SignMessages" = "Firma messaggi";
 "Channel.SignMessages.Help" = "Aggiungi i nomi degli amministratori nei messaggi che pubblicano.";
@@ -1848,6 +1868,397 @@
 
 "ChannelInfo.InvitationLinkDoesNotExist" = "Spiacenti, sembra che questo canale non esista.";
 
-"Conversation.InputTextSilentBroadcastPlaceholder" = "Broadcast silenzioso";
-"Conversation.SilentBroadcastTooltipOn" = "I membri saranno notificati quando pubblichi";
-"Conversation.SilentBroadcastTooltipOff" = "I membri non saranno notificati quando pubblichi";
+"Conversation.InputTextSilentBroadcastPlaceholder" = "Post silenzioso";
+"Conversation.SilentBroadcastTooltipOn" = "I post saranno notificati ai membri";
+"Conversation.SilentBroadcastTooltipOff" = "I post non saranno notificati ai membri";
+
+"Settings.About" = "Bio";
+"GroupInfo.LabelAdmin" = "amministratore";
+
+"Conversation.Pin" = "Fissa";
+"Conversation.Unpin" = "Togli";
+"Conversation.Report" = "Segnala spam";
+"Conversation.PinnedMessage" = "Messaggio fissato";
+
+"Conversation.Moderate.Delete" = "Elimina messaggio";
+"Conversation.Moderate.Ban" = "Rimuovi utente";
+"Conversation.Moderate.Report" = "Segnala spam";
+"Conversation.Moderate.DeleteAllMessages" = "Elimina tutto da %@";
+
+"Group.Username.Help" = "Puoi scegliere un nome per il gruppo su **Telegram**. Se lo fai, le altre persone potranno trovare il tuo gruppo tramite questo nome.\n\nPuoi usare **a-z**, **0-9** e underscore. La lunghezza minima è di **5** caratteri.";
+
+"Group.Username.InvalidTooShort" = "I nomi dei gruppi devono avere almeno 5 caratteri.";
+"Group.Username.InvalidStartsWithNumber" = "I nomi dei gruppi non possono iniziare con un numero.";
+
+"Group.Username.LinkHint" = "Questo link apre il tuo gruppo su Telegram:[\nhttps://telegram.me/%@]";
+
+"Notification.PinnedTextMessage" = "%@ ha fissato \"%@\"";
+"Notification.PinnedPhotoMessage" = "%@ ha fissato una foto";
+"Notification.PinnedVideoMessage" = "%@ ha fissato un video";
+"Notification.PinnedAudioMessage" = "%@ ha fissato un messaggio vocale";
+"Notification.PinnedDocumentMessage" = "%@ ha fissato un file";
+"Notification.PinnedAnimationMessage" = "%@ ha fissato una GIF";
+"Notification.PinnedStickerMessage" = "%@ ha fissato uno sticker";
+"Notification.PinnedLocationMessage" = "%@ ha fissato una posizione";
+"Notification.PinnedContactMessage" = "%@ ha fissato un contatto";
+"Notification.PinnedDeletedMessage" = "%@ ha fissato un messaggio eliminato";
+
+"Message.PinnedTextMessage" = "ha fissato \"%@\"";
+"Message.PinnedPhotoMessage" = "ha fissato una foto";
+"Message.PinnedVideoMessage" = "ha fissato un video";
+"Message.PinnedAudioMessage" = "ha fissato un messaggio vocale";
+"Message.PinnedDocumentMessage" = "ha fissato un file";
+"Message.PinnedAnimationMessage" = "ha fissato una GIF";
+"Message.PinnedStickerMessage" = "ha fissato uno sticker";
+"Message.PinnedLocationMessage" = "ha fissato una posizione";
+"Message.PinnedContactMessage" = "ha fissato un contatto";
+"Message.PinnedDeletedMessage" = "ha fissato un messaggio eliminato";
+
+"Notification.PinnedMessage" = "ha fissato un messaggio";
+
+"GroupInfo.ConvertToSupergroup" = "Converti in supergruppo";
+
+"ConvertToSupergroup.Title" = "Supergruppo";
+"ConvertToSupergroup.HelpTitle" = "**Nei supergruppi:**";
+"ConvertToSupergroup.HelpText" = "• I nuovi membri vedono tutta la cronologia\n• I messaggi eliminati scompaiono per tutti\n• Gli admin possono fissare i messaggi importanti\n• Il creatore può creare un link pubblico per il gruppo";
+
+"ConvertToSupergroup.Note" = "**Nota**: questa azione non può essere annullata.";
+
+"GroupInfo.GroupType" = "Tipo di gruppo";
+
+"Group.Setup.TypeHeader" = "TIPO DI GRUPPO";
+"Group.Setup.TypePublicHelp" = "I gruppi pubblici possono essere trovati nella ricerca, la cronologia è disponibile per tutti e chiunque può unirsi.";
+"Group.Setup.TypePrivateHelp" = "È possibile unirsi ai gruppi privati solo se sei stato invitato o se hai un link d'invito.";
+
+"Group.Username.CreatePublicLinkHelp" = "Le persone possono condividere questo link con gli altri e trovare il tuo gruppo usando la ricerca di Telegram.";
+"Group.Username.CreatePrivateLinkHelp" = "Le persone possono unirsi al tuo gruppo tramite questo link. Puoi revocare il link in ogni momento.";
+
+"Conversation.PinMessageAlertGroup" = "Fissare questo messaggio e notificare tutti i membri del gruppo?";
+"Conversation.PinMessageAlertChannel" = "Fissare questo messaggio e notificare tutti i membri del canale?";
+"Conversation.PinMessageAlert.OnlyPin" = "Fissa soltanto";
+
+"Conversation.UnpinMessageAlert" = "Vuoi togliere questo messaggio?";
+
+"Settings.About.Title" = "Bio";
+"Settings.About.Help" = "Puoi aggiungere qualche riga su di te. Chiunque apra il tuo profilo vedrà questo testo.";
+
+"Profile.About" = "bio";
+
+"Group.Management.ErrorNotMember" = "%@ non si è ancora unito al gruppo. Vuoi invitarlo?";
+
+"Conversation.ReportSpamAndLeave" = "Segnala spam e lascia";
+
+"Conversation.StatusKickedFromChannel" = "sei stato rimosso dal canale";
+
+"Generic.OpenHiddenLinkAlert" = "Aprire %@?";
+
+"Resolve.ErrorNotFound" = "Spiacenti, sembra che questo utente non esista.";
+
+"StickerPack.AddStickers" = "Aggiungi sticker";
+"StickerPack.Share" = "Condividi";
+"StickerPack.Send" = "Invia sticker";
+
+"StickerPack.RemoveStickers" = "Rimuovi sticker";
+"StickerPack.RemoveStickerCount_1" = "Rimuovi 1 sticker";
+"StickerPack.RemoveStickerCount_2" = "Rimuovi 2 sticker";
+"StickerPack.RemoveStickerCount_3_10" = "Rimuovi %@ sticker";
+"StickerPack.RemoveStickerCount_any" = "Rimuovi %@ sticker";
+
+"StickerPack.HideStickers" = "Nascondi sticker";
+"StickerPack.ShowStickers" = "Mostra sticker";
+
+"ShareMenu.ShareTo" = "Condividi con";
+"ShareMenu.SelectChats" = "Seleziona chat";
+"ShareMenu.Comment" = "Scrivi un commento...";
+
+"MediaPicker.Videos" = "Video";
+
+"Coub.TapForSound" = "Tocca per il suono";
+
+"Preview.SaveGif" = "Salva GIF";
+"Preview.DeleteGif" = "Elimina GIF";
+"Preview.CopyAddress" = "Copia indirizzo";
+"Preview.ViewStickerPack" = "Visualizza set di sticker";
+
+"Conversation.ShareBotLocationConfirmationTitle" = "Condividere la tua posizione?";
+"Conversation.ShareBotLocationConfirmation" = "Questo invierà la tua posizione corrente al bot.";
+
+"Conversation.ShareBotContactConfirmationTitle" = "Condividere il tuo numero di telefono?";
+"Conversation.ShareBotContactConfirmation" = "Il bot saprà il tuo numero di telefono. Questo può essere utile per l'integrazione con altri servizi.";
+
+"Conversation.ShareInlineBotLocationConfirmation" = "Questo bot vorrebbe sapere la tua posizione ogni volta che invii una richiesta. Questo può essere usato per fornire risultati specifici per la posizione.";
+
+"Activity.UploadingAudio" = "sta inviando un audio";
+
+"Preview.Tooltip" = "Tieni premuto per vedere l'anteprima";
+
+"StickerPack.ErrorNotFound" = "Spiacenti, sembra che questo set di sticker non esista.";
+
+"Camera.TapAndHoldForVideo" = "Tieni premuto per il video";
+
+"Conversation.TapAndHoldToRecord" = "Tieni premuto per registrare";
+
+"DialogList.RecentTitlePeople" = "Persone";
+"DialogList.RecentTitleGroups" = "Gruppi";
+"DialogList.RecentTitleBots" = "Bot";
+
+"Conversation.MessageEditedLabel" = "modificato";
+"Conversation.EditingMessagePanelTitle" = "Modifica messaggio";
+
+"DialogList.Draft" = "Bozza";
+"Embed.PlayingInPIP" = "Questo video è riprodotto in PiP";
+
+"MediaPicker.Moments" = "Momenti";
+"MediaPicker.MomentsDateFormat" = "{day} {month}"; // 1 - day, 2 - month
+"MediaPicker.MomentsDateYearFormat" = "{day} {month}, {year}"; // 1 - day, 2 - month, 3 - year
+
+"MediaPicker.MomentsDateRangeFormat" = "{date1} – {date2}";
+"MediaPicker.MomentsDateRangeYearFormat" = "{date1} – {date2} {year}";
+"MediaPicker.MomentsDateRangeSameMonthFormat" = "{day1} – {day2} {month}";
+"MediaPicker.MomentsDateRangeSameMonthYearFormat" = "{day1} – {day2} {month}, {year}";
+
+"StickerPacksSettings.FeaturedPacks" = "Sticker in primo piano";
+"FeaturedStickerPacks.Title" = "Sticker in primo piano";
+
+"Invitation.JoinGroup" = "Unisciti al gruppo";
+"Invitation.Members_1" = "1 membro:";
+"Invitation.Members_2" = "2 membri:";
+"Invitation.Members_3_10" = "%@ membri";
+"Invitation.Members_any" = "%@ membri:";
+
+"StickerPacksSettings.ArchivedPacks" = "Sticker archiviati";
+"StickerPacksSettings.ArchivedPacks.Info" = "Puoi avere fino a 200 set di sticker installati.\nGli sticker non usati saranno archiviati quando ne aggiungerai altri.";
+
+"Conversation.CloudStorageInfo.Title" = "Il tuo archivio cloud";
+"Conversation.ClousStorageInfo.Description1" = "• Inoltra i messaggi qui per salvarli";
+"Conversation.ClousStorageInfo.Description2" = "• Invia media e file per archiviarli";
+"Conversation.ClousStorageInfo.Description3" = "• Accedi alla chat da ogni dispositivo";
+"Conversation.ClousStorageInfo.Description4" = "• Trova le tue cose con la ricerca";
+
+"Conversation.CloudStorage.ChatStatus" = "chat con te stesso";
+
+"ArchivedPacksAlert.Title" = "Alcuni dei tuoi set di sticker più vecchi sono stati stati archiviati. Puoi riattivarli nelle impostazioni degli sticker.";
+
+"StickerSettings.ContextInfo" = "Se archivi un set di sticker, potrai ripristinarlo più tardi dalla sezione degli sticker archiviati.";
+
+"Contacts.TopSection" = "CONTATTI";
+
+"Login.ResetAccountProtected.Title" = "Ripristino account";
+"Login.ResetAccountProtected.Text" = "Dato che l'account %@  è attivo e protetto da una password, lo elimineremo tra 1 settimana per motivi di sicurezza.\n\nPuoi annullare questo processo in qualsiasi momento.";
+"Login.ResetAccountProtected.TimerTitle" = "Potrai ripristinare il tuo account tra:";
+"Login.ResetAccountProtected.Reset" = "Ripristina";
+"Login.ResetAccountProtected.LimitExceeded" = "I tuoi tentativi recenti di ripristinare questo account sono stati annullati dal suo utente attivo. Per favore riprova tra 7 giorni.";
+
+"Login.CodeSentCall" = "Stiamo chiamando il tuo numero per dettarti un codice.";
+
+"Login.SmsRequestState1" = "Telegram ti invierà un SMS tra %d:%.2d";
+"Login.SmsRequestState2" = "Richiedo un SMS da Telegram...";
+"Login.SmsRequestState3" = "Telegram ti ha inviato un SMS\n[Non hai ricevuto il codice?]";
+
+"CancelResetAccount.Title" = "Annulla ripristino account";
+"CancelResetAccount.TextSMS" = "Qualcuno con accesso al tuo numero di telefono %@ ha richiesto l'eliminazione del tuo account Telegram e il ripristino della password della verifica in due passaggi.\n\nSe non sei stato tu, per favore inserisci il codice che abbiamo appena inviato tramite SMS al tuo numero.";
+
+"CancelResetAccount.Success" = "Il processo di eliminazione per il tuo account %@ è stato annullato.";
+"MediaPicker.MomentsDateRangeSameMonthYearFormat" = "{day1} – {day2} {month}, {year}";
+
+"Paint.Clear" = "Cancella tutto";
+"Paint.ClearConfirm" = "Cancella disegno";
+"Paint.Delete" = "Elimina";
+"Paint.Edit" = "Modifica";
+"Paint.Duplicate" = "Duplica";
+"Paint.Stickers" = "Sticker";
+"Paint.RecentStickers" = "Recenti";
+"Paint.Masks" = "Maschere";
+
+"Paint.Outlined" = "Contornato";
+"Paint.Regular" = "Normale";
+
+"MediaPicker.VideoMuteDescription" = "Il suono è ora disattivato. Il video sarà autoriprodotto e ripetuto come una GIF.";
+
+
+"Group.Username.RemoveExistingUsernamesInfo" = "Spiacenti, hai riservato troppi username pubblici.\nPuoi revocare il link da uno dei tuoi gruppi o canali più vecchi, o creare invece delle entità private.";
+
+"ServiceMessage.GameScoreExtended_1" = "{name} ha totalizzato {score} punto a {game}";
+"ServiceMessage.GameScoreExtended_2" = "{name} ha totalizzato {score} punti a {game}";
+"ServiceMessage.GameScoreExtended_3_10" = "{name} ha totalizzato {score} punti a {game}";
+"ServiceMessage.GameScoreExtended_any" = "{name} ha totalizzato {score} punti a {game}";
+
+"ServiceMessage.GameScoreSelfExtended_1" = "Hai totalizzato {score} punto a {game}";
+"ServiceMessage.GameScoreSelfExtended_2" = "Hai totalizzato {score} punti a {game}";
+"ServiceMessage.GameScoreSelfExtended_3_10" = "Hai totalizzato {score} punti a {game}";
+"ServiceMessage.GameScoreSelfExtended_any" = "Hai totalizzato {score} punti a {game}";
+
+"ServiceMessage.GameScoreSimple_1" = "{name} ha totalizzato {score} punto";
+"ServiceMessage.GameScoreSimple_2" = "{name} ha totalizzato {score} punti";
+"ServiceMessage.GameScoreSimple_3_10" = "{name} ha totalizzato {score} punti";
+"ServiceMessage.GameScoreSimple_any" = "{name} ha totalizzato {score} punti";
+
+"ServiceMessage.GameScoreSelfSimple_1" = "Hai totalizzato {score} punto";
+"ServiceMessage.GameScoreSelfSimple_2" = "Hai totalizzato {score} punti";
+"ServiceMessage.GameScoreSelfSimple_3_10" = "Hai totalizzato {score} punti";
+"ServiceMessage.GameScoreSelfSimple_any" = "Hai totalizzato {score} punti";
+
+"Notification.GameScoreExtended_1" = "ha totalizzato {score} punto a {game}";
+"Notification.GameScoreExtended_2" = "ha totalizzato {score} punti a {game}";
+"Notification.GameScoreExtended_3_10" = "ha totalizzato {score} punti a {game}";
+"Notification.GameScoreExtended_any" = "ha totalizzato {score} punti a {game}";
+
+"Notification.GameScoreSelfExtended_1" = "hai totalizzato {score} punto a {game}";
+"Notification.GameScoreSelfExtended_2" = "hai totalizzato {score} punti a {game}";
+"Notification.GameScoreSelfExtended_3_10" = "hai totalizzato {score} punti a {game}";
+"Notification.GameScoreSelfExtended_any" = "hai totalizzato {score} punti a {game}";
+
+"Notification.GameScoreSimple_1" = "ha totalizzato {score} punto";
+"Notification.GameScoreSimple_2" = "ha totalizzato {score} punti";
+"Notification.GameScoreSimple_3_10" = "ha totalizzato {score} punti";
+"Notification.GameScoreSimple_any" = "ha totalizzato {score} punti";
+
+"Notification.GameScoreSelfSimple_1" = "hai totalizzato  {score} punto";
+"Notification.GameScoreSelfSimple_2" = "hai totalizzato {score} punti";
+"Notification.GameScoreSelfSimple_3_10" = "hai totalizzato {score} punti";
+"Notification.GameScoreSelfSimple_any" = "hai totalizzato {score} punti";
+
+"Stickers.Install" = "AGGIUNGI";
+
+"MaskStickerSettings.Title" = "Maschere";
+"MaskStickerSettings.Info" = "Puoi aggiungere maschere alle foto che invii. Per farlo, apri l'editor fotografico prima di inviare una foto.";
+
+"StickerPack.MaskCount_1" = "1 maschera";
+"StickerPack.MaskCount_2" = "2 maschere";
+"StickerPack.MaskCount_3_10" = "%@ maschere";
+"StickerPack.MaskCount_any" = "%@ maschere";
+
+"StickerPack.Add" = "Aggiungi";
+"StickerPack.AddMaskCount_1" = "Aggiungi 1 maschera";
+"StickerPack.AddMaskCount_2" = "Aggiungi 2 maschere";
+"StickerPack.AddMaskCount_3_10" = "Aggiungi %@ maschere";
+"StickerPack.AddMaskCount_any" = "Aggiungi %@ maschere";
+
+"StickerPack.Remove" = "Rimuovi";
+"StickerPack.RemoveMaskCount_1" = "Rimuovi 1 maschera";
+"StickerPack.RemoveMaskCount_2" = "Rimuovi 2 maschere";
+"StickerPack.RemoveMaskCount_3_10" = "Rimuovi %@ maschere";
+"StickerPack.RemoveMaskCount_any" = "Rimuovi %@ maschere";
+
+"Conversation.BotInteractiveUrlAlert" = "Consentire a %@ di trasmettere il tuo nome e id Telegram (non il tuo numero di telefono) alle pagine che apri tramite questo bot?";
+"StickerPacksSettings.ArchivedMasks" = "Maschere archiviate";
+"StickerSettings.MaskContextInfo" = "Se archivi un set di maschere, potrai ripristinarlo più tardi dalla sezione delle maschere archiviate.";
+"StickerPacksSettings.ArchivedMasks.Info" = "Puoi avere fino a 200 set di maschere installate.\nI set non usati saranno archiviati quando ne aggiungerai altri.";
+
+"CloudStorage.Title" = "Archivio cloud";
+
+"Widget.AuthRequired" = "Accedi a Telegram";
+"Widget.NoUsers" = "Inizia a messaggiare per vedere i tuoi amici qui";
+
+"Message.GamePreviewLabel" = "GIOCO";
+
+"ShareMenu.CopyShareLinkGame" = "Copia link del gioco";
+
+"Message.PinnedGame" = "ha fissato un gioco";
+
+"Target.ShareGameConfirmationPrivate" = "Condividere il gioco con \"%@\"?";
+"Target.ShareGameConfirmationGroup" = "Condividere il gioco con \"%@\"?";
+
+"Activity.PlayingGame" = "sta giocando a un gioco";
+
+"DialogList.SinglePlayingGameSuffix" = "%@ sta giocando a un gioco";
+
+"UserInfo.GroupsInCommon" = "Gruppi in comune";
+"Conversation.InstantPagePreview" = "APERTURA RAPIDA";
+
+"StickerPack.ViewPack" = "Visualizza set";
+"InstantPage.AuthorAndDateTitle" = "Di %1$@ • %2$@";
+"InstantPage.FeedbackButton" = "Lascia un feedback su questa anteprima";
+"Conversation.JumpToDate" = "Vai alla data";
+"Conversation.AddToReadingList" = "Aggiungi a “Elenco lettura”";
+
+"AccessDenied.CallMicrophone" = "Telegram ha bisogno di accedere al tuo microfono per le chiamate. Vai in Impostazioni —  Privacy —  Microfono e imposta Telegram su Sì.";
+
+"Call.EncryptionKey.Title" = "Chiave di crittografia";
+"Call.EncryptionKey.Description" = "Questa immagine e il testo sono derivati dalla chiave di crittografia per questa chiamata con %1$@. \n\nSe sono uguali sul dispositivo di %2$@, la crittografia end-to-end è garantita.\n\nUlteriori informazioni su telegram.org";
+
+"Application.Name" = "Telegram";
+"DialogList.Pin" = "Fissa";
+"DialogList.Unpin" = "Togli";
+"DialogList.PinLimitError" = "Spiacenti, non puoi fissare in alto più di %@ chat.";
+
+"Conversation.DeleteMessagesForMe" = "Elimina per me";
+"Conversation.DeleteMessagesFor" = "Elimina per me e %@";
+"Conversation.DeleteMessagesForEveryone" = "Elimina per tutti";
+
+"NetworkUsageSettings.Title" = "Utilizzo rete";
+"NetworkUsageSettings.Cellular" = "Cellulare";
+"NetworkUsageSettings.Wifi" = "Wi-Fi";
+
+"NetworkUsageSettings.GeneralDataSection" = "MESSAGGI";
+"NetworkUsageSettings.MediaImageDataSection" = "FOTO";
+"NetworkUsageSettings.MediaVideoDataSection" = "VIDEO";
+"NetworkUsageSettings.MediaAudioDataSection" = "AUDIO";
+"NetworkUsageSettings.MediaDocumentDataSection" = "DOCUMENTI";
+"NetworkUsageSettings.TotalSection" = "BYTE TOTALI";
+"NetworkUsageSettings.BytesSent" = "Byte inviati";
+"NetworkUsageSettings.BytesReceived" = "Byte ricevuti";
+
+"NetworkUsageSettings.ResetStats" = "Ripristina statistiche";
+"NetworkUsageSettings.ResetStatsConfirmation" = "Vuoi ripristinare le tue statistiche di utilizzo?";
+"NetworkUsageSettings.CellularUsageSince" = "Utilizzo cellulare da %@";
+"NetworkUsageSettings.WifiUsageSince" = "Utilizzo Wi-Fi da %@";
+
+"Settings.CallSettings" = "Chiamate vocali";
+
+"Calls.TabTitle" = "Chiamate";
+"Calls.All" = "Tutte";
+"Calls.Missed" = "Perse";
+"Calls.Clear" = "Cancella";
+
+"CallSettings.Title" = "Chiamate vocali";
+"CallSettings.RecentCalls" = "Chiamate recenti";
+"CallSettings.TabIcon" = "Mostra scheda chiamate";
+"CallSettings.TabIconDescription" = "Un'icona di chiamata apparirà nella barra delle schede";
+"CallSettings.UseLessData" = "Utilizza meno dati";
+"CallSettings.UseLessDataDescription" = "Utilizza meno dati per le chiamate.";
+"CallSettings.Never" = "Mai";
+"CallSettings.OnMobile" = "Con la rete mobile";
+"CallSettings.Always" = "Sempre";
+"CallSettings.UseLessDataLongDescription" = "Usare meno dati può migliorare l'esperienza su reti deboli, ma diminuirà leggermente la qualità audio.";
+
+"Calls.CallTabTitle" = "Scheda chiamate";
+"Calls.CallTabDescription" = "Puoi aggiungere una scheda chiamata nella barra delle schede.";
+"Calls.NotNow" = "Non ora";
+"Calls.AddTab" = "Aggiungi scheda";
+"Calls.Search" = "Cerca chiamate";
+"Calls.NewCall" = "Nuova chiamata";
+
+"Calls.RatingTitle" = "Per favore valuta la qualità\ndella tua chiamata Telegram";
+"Calls.SubmitRating" = "Invia";
+
+"Call.Seconds_1" = "%@ secondo";
+"Call.Seconds_2" = "%@ secondi";
+"Call.Seconds_3_10" = "%@ secondi";
+"Call.Seconds_any" = "%@ secondi";
+"Call.Minutes_1" = "%@ minuto";
+"Call.Minutes_2" = "%@ minuti";
+"Call.Minutes_3_10" = "%@ minuti";
+"Call.Minutes_any" = "%@ minuti";
+
+"Call.ShortSeconds_1" = "%@ sec";
+"Call.ShortSeconds_2" = "%@ sec";
+"Call.ShortSeconds_3_10" = "%@ sec";
+"Call.ShortSeconds_any" = "%@ sec";
+"Call.ShortMinutes_1" = "%@ min";
+"Call.ShortMinutes_2" = "%@ min";
+"Call.ShortMinutes_3_10" = "%@ min";
+"Call.ShortMinutes_any" = "%@ min";
+
+"Notification.CallTimeFormat" = "%1$@ (%2$@)"; // 1 - type, 2 - duration
+"Notification.CallOutgoing" = "Chiamata in uscita";
+"Notification.CallIncoming" = "Chiamata in entrata";
+"Notification.CallMissed" = "Chiamata persa";
+"Notification.CallCanceled" = "Chiamata annullata";
+"Notification.CallFormat" = "%1$@ %2$@"; // 1 - title, 2 - time
+
+"Call.ConnectionErrorTitle" = "Impossibile chiamare";
+"Call.ConnectionErrorMessage" = "Per favore controlla la tua connessione a internet e riprova.";
+
+"Call.CallBack" = "Richiama";
+"Call.CallAgain" = "Chiama di nuovo";

@@ -7,6 +7,7 @@
 #import "TLWebPage.h"
 #import "TLPhoto.h"
 #import "TLDocument.h"
+#import "TLGame.h"
 
 @implementation TLMessageMedia
 
@@ -344,6 +345,39 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.caption;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9bcfcf5a, value));
+    }
+}
+
+
+@end
+
+@implementation TLMessageMedia$messageMediaGame : TLMessageMedia
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xfdb19008;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x5c9f29a3;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageMedia$messageMediaGame *object = [[TLMessageMedia$messageMediaGame alloc] init];
+    object.game = metaObject->getObject((int32_t)0x1ed73bd7);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.game;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x1ed73bd7, value));
     }
 }
 

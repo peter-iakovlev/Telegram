@@ -109,7 +109,9 @@
                 [[AVAudioSession sharedInstance] setActive:true error:&error];
                 if (error != nil)
                     TGLog(@"(TGAudioSessionManager setting active error %@)", error);
-                [[AVAudioSession sharedInstance] overrideOutputAudioPort:(type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo) ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error];
+                //if ((type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo)) {
+                    [[AVAudioSession sharedInstance] overrideOutputAudioPort:(type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo) ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error];
+                //}
                 if (error != nil)
                     TGLog(@"(TGAudioSessionManager override port error %@)", error);
             }
@@ -173,7 +175,7 @@
         [[AVAudioSession sharedInstance] setCategory:[self nativeCategoryForType:_currentType] error:&error];
         if (error != nil)
             TGLog(@"(TGAudioSessionManager setting category error %@)", error);
-        [[AVAudioSession sharedInstance] setActive:false error:&error];
+        [[AVAudioSession sharedInstance] setActive:false withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
         if (error != nil)
             TGLog(@"(TGAudioSessionManager setting inactive error %@)", error);
     }
@@ -208,7 +210,7 @@
             [[AVAudioSession sharedInstance] setCategory:[self nativeCategoryForType:_currentType] error:&error];
             if (error != nil)
                 TGLog(@"(TGAudioSessionManager setting category error %@)", error);
-            [[AVAudioSession sharedInstance] setActive:false error:&error];
+            [[AVAudioSession sharedInstance] setActive:false withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
             if (error != nil)
                 TGLog(@"(TGAudioSessionManager setting inactive error %@)", error);
         }

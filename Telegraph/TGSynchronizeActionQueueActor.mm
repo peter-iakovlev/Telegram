@@ -25,6 +25,7 @@
 @property (nonatomic) int currentReadMaxMid;
 
 @property (nonatomic) int64_t currentDeleteConversationId;
+@property (nonatomic) int32_t currentDeleteConversationTopMessageId;
 @property (nonatomic) bool currentClearConversation;
 
 @property (nonatomic, strong) NSArray *currentSecretActions;
@@ -112,18 +113,91 @@
             }
             else if (deleteMessageActions.count != 0)
             {
-                NSMutableArray *messageIds = [[NSMutableArray alloc] initWithCapacity:deleteMessageActions.count];
+                NSMutableArray *messageIdsForSelf = [[NSMutableArray alloc] init];
+                NSMutableArray *messageIdsForEveryone = [[NSMutableArray alloc] init];
                 for (NSValue *value in deleteMessageActions)
                 {
                     TGDatabaseAction action;
                     [value getValue:&action];
                     
-                    [messageIds addObject:[[NSNumber alloc] initWithInt:(int)action.subject]];
+                    if (action.arg0 & 1) {
+                        [messageIdsForEveryone addObject:[[NSNumber alloc] initWithInt:(int)action.subject]];
+                    } else {
+                        [messageIdsForSelf addObject:[[NSNumber alloc] initWithInt:(int)action.subject]];
+                    }
                 }
                 
-                _currentMids = messageIds;
+                SSignal *deleteForSelf = [SSignal complete];
+                SSignal *deleteForEveryone = [SSignal complete];
                 
-                self.cancelToken = [TGTelegraphInstance doDeleteMessages:messageIds actor:self];
+                if (messageIdsForSelf.count != 0) {
+                    TLRPCmessages_deleteMessages$messages_deleteMessages *deleteMessages = [[TLRPCmessages_deleteMessages$messages_deleteMessages alloc] init];
+                    deleteMessages.n_id = messageIdsForSelf;
+                    deleteForSelf = [[[[[TGTelegramNetworking instance] requestSignal:deleteMessages] catch:^SSignal *(__unused id error) {
+                        return [SSignal complete];
+                    }] onNext:^(TLmessages_AffectedMessages *result) {
+                        if (result != nil)
+                            [[TGTelegramNetworking instance] updatePts:result.pts ptsCount:result.pts_count seq:0];
+                        
+                        NSMutableArray *actions = [[NSMutableArray alloc] initWithCapacity:_currentMids.count];
+                        for (NSNumber *nMid in messageIdsForSelf)
+                        {
+                            TGDatabaseAction action = { .type = TGDatabaseActionDeleteMessage, .subject = [nMid intValue], .arg0 = 0, .arg1 = 0 };
+                            [actions addObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]];
+                        }
+                        [TGDatabaseInstance() confirmQueuedActions:actions requireFullMatch:false];
+                    }] onError:^(__unused id error) {
+                        NSMutableArray *actions = [[NSMutableArray alloc] initWithCapacity:_currentMids.count];
+                        for (NSNumber *nMid in messageIdsForSelf)
+                        {
+                            TGDatabaseAction action = { .type = TGDatabaseActionDeleteMessage, .subject = [nMid intValue], .arg0 = 0, .arg1 = 0 };
+                            [actions addObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]];
+                        }
+                        [TGDatabaseInstance() confirmQueuedActions:actions requireFullMatch:false];
+                    }];
+                }
+                
+                if (messageIdsForEveryone.count != 0) {
+                    TLRPCmessages_deleteMessages$messages_deleteMessages *deleteMessages = [[TLRPCmessages_deleteMessages$messages_deleteMessages alloc] init];
+                    deleteMessages.n_id = messageIdsForEveryone;
+                    deleteMessages.flags = (1 << 0);
+                    deleteForEveryone = [[[[[TGTelegramNetworking instance] requestSignal:deleteMessages] catch:^SSignal *(__unused id error) {
+                        return [SSignal complete];
+                    }] onNext:^(TLmessages_AffectedMessages *result) {
+                        if (result != nil)
+                            [[TGTelegramNetworking instance] updatePts:result.pts ptsCount:result.pts_count seq:0];
+                        
+                        NSMutableArray *actions = [[NSMutableArray alloc] initWithCapacity:_currentMids.count];
+                        for (NSNumber *nMid in messageIdsForEveryone)
+                        {
+                            TGDatabaseAction action = { .type = TGDatabaseActionDeleteMessage, .subject = [nMid intValue], .arg0 = 0, .arg1 = 0 };
+                            [actions addObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]];
+                        }
+                        [TGDatabaseInstance() confirmQueuedActions:actions requireFullMatch:false];
+                    }] onError:^(__unused id error) {
+                        NSMutableArray *actions = [[NSMutableArray alloc] initWithCapacity:_currentMids.count];
+                        for (NSNumber *nMid in messageIdsForEveryone)
+                        {
+                            TGDatabaseAction action = { .type = TGDatabaseActionDeleteMessage, .subject = [nMid intValue], .arg0 = 0, .arg1 = 0 };
+                            [actions addObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]];
+                        }
+                        [TGDatabaseInstance() confirmQueuedActions:actions requireFullMatch:false];
+                    }];
+                }
+                
+                __weak TGSynchronizeActionQueueActor *weakSelf = self;
+                void (^completed)() = ^{
+                    __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        [strongSelf execute:nil];
+                    }
+                };
+                
+                [_currentDisposable setDisposable:[[SSignal mergeSignals:@[deleteForSelf, deleteForEveryone]] startWithNext:nil error:^(__unused id error) {
+                    completed();
+                } completed:^{
+                    completed();
+                }]];
             }
             else if (deleteSecretMessageActions.count != 0)
             {
@@ -184,6 +258,7 @@
                 TGDatabaseAction action;
                 [(NSValue *)[deleteConversationActions objectAtIndex:0] getValue:&action];
                 _currentDeleteConversationId = action.subject;
+                _currentDeleteConversationTopMessageId = action.arg0;
                 
                 _currentClearConversation = false;
                 
@@ -211,7 +286,7 @@
                     if (_currentDeleteConversationId <= INT_MIN)
                         [self deleteHistorySuccess:nil];
                     else
-                        self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId accessHash:0 offset:0 actor:self];
+                        self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId onlyClear:false maxId:_currentDeleteConversationTopMessageId accessHash:0 offset:0 actor:self];
                 }
             }
             else if (clearConversationActions.count != 0)
@@ -219,13 +294,14 @@
                 TGDatabaseAction action;
                 [(NSValue *)[clearConversationActions objectAtIndex:0] getValue:&action];
                 _currentDeleteConversationId = action.subject;
+                _currentDeleteConversationTopMessageId = action.arg0;
                 
                 _currentClearConversation = true;
                 
                 if (_currentDeleteConversationId <= INT_MIN)
                     [self deleteHistorySuccess:nil];
                 else
-                    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId accessHash:0 offset:0 actor:self];
+                    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId onlyClear:true maxId:_currentDeleteConversationTopMessageId accessHash:0 offset:0 actor:self];
             }
             else if (clearSecretConversationsActions.count != 0)
             {
@@ -341,11 +417,11 @@
     
     if (affectedHistory.offset > 0)
     {
-        self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId accessHash:0 offset:affectedHistory.offset actor:self];
+        self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId onlyClear:_currentClearConversation maxId:_currentDeleteConversationTopMessageId accessHash:0 offset:affectedHistory.offset actor:self];
     }
     else
     {
-        TGDatabaseAction action = { .type = _currentClearConversation ? TGDatabaseActionClearConversation : TGDatabaseActionDeleteConversation, .subject = _currentDeleteConversationId, .arg0 = 0, .arg1 = 0 };
+        TGDatabaseAction action = { .type = _currentClearConversation ? TGDatabaseActionClearConversation : TGDatabaseActionDeleteConversation, .subject = _currentDeleteConversationId, .arg0 = _currentDeleteConversationTopMessageId, .arg1 = 0 };
         [TGDatabaseInstance() confirmQueuedActions:[NSArray arrayWithObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]] requireFullMatch:false];
         
         [self execute:nil];
@@ -368,14 +444,14 @@
     
     [TGUpdateStateRequestBuilder removeIgnoreConversationId:_currentDeleteConversationId];
     
-    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId accessHash:0 offset:0 actor:self];
+    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId onlyClear:false maxId:0 accessHash:0 offset:0 actor:self];
 }
 
 - (void)deleteMemberFailed
 {
     [TGUpdateStateRequestBuilder removeIgnoreConversationId:_currentDeleteConversationId];
     
-    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId accessHash:0 offset:0 actor:self];
+    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId onlyClear:false maxId:0 accessHash:0 offset:0 actor:self];
 }
 
 - (void)rejectEncryptedChatSuccess

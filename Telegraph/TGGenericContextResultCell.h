@@ -10,9 +10,9 @@
 
 @interface TGGenericContextResultCell : UITableViewCell
 
-@property (nonatomic, copy) void (^preview)(NSString *url, bool embed, CGSize embedSize);
+@property (nonatomic, copy) void (^preview)(TGBotContextResult *result);
 
-- (void)setResult:(TGBotContextResult *)result;
+@property (nonatomic, strong) TGBotContextResult *result;
 
 - (TGGenericContextResultCellContent *)_takeContent;
 - (void)_putContent:(TGGenericContextResultCellContent *)content;

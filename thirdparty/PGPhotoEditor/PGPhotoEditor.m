@@ -10,6 +10,7 @@
 
 #import "PGPhotoEditorValues.h"
 #import "TGVideoEditAdjustments.h"
+#import "TGPaintingData.h"
 
 #import "PGPhotoToolComposer.h"
 #import "PGEnhanceTool.h"
@@ -45,6 +46,7 @@
     UIImageOrientation _imageCropOrientation;
     CGRect _imageCropRect;
     CGFloat _imageCropRotation;
+    bool _imageCropMirrored;
     
     SPipe *_histogramPipe;
     
@@ -66,15 +68,15 @@
     self = [super init];
     if (self != nil)
     {
-        _forVideo = forVideo;
-        
         _queue = [[ATQueue alloc] init];
+        
+        _forVideo = forVideo;
         
         _originalSize = originalSize;
         _cropRect = CGRectMake(0.0f, 0.0f, _originalSize.width, _originalSize.height);
+        _paintingData = adjustments.paintingData;
         
         _tools = [self toolsInit];
-        
         _toolComposer = [[PGPhotoToolComposer alloc] init];
         [_toolComposer addPhotoTools:_tools];
         [_toolComposer compose];
@@ -98,6 +100,19 @@
     return self;
 }
 
+- (void)dealloc
+{
+    TGDispatchAfter(1.5f, dispatch_get_main_queue(), ^
+    {
+        [[GPUImageContext sharedFramebufferCache] purgeAllUnassignedFramebuffers];
+    });
+}
+
+- (void)cleanup
+{
+    [[GPUImageContext sharedFramebufferCache] purgeAllUnassignedFramebuffers];
+}
+
 - (NSArray *)toolsInit
 {
     NSMutableArray *tools = [NSMutableArray array];
@@ -110,7 +125,7 @@
     return tools;
 }
 
-- (void)setImage:(UIImage *)image forCropRect:(CGRect)cropRect cropRotation:(CGFloat)cropRotation cropOrientation:(UIImageOrientation)cropOrientation fullSize:(bool)fullSize
+- (void)setImage:(UIImage *)image forCropRect:(CGRect)cropRect cropRotation:(CGFloat)cropRotation cropOrientation:(UIImageOrientation)cropOrientation cropMirrored:(bool)cropMirrored fullSize:(bool)fullSize
 {
     [_toolComposer invalidate];
     _currentProcessChain = nil;
@@ -118,6 +133,7 @@
     _imageCropRect = cropRect;
     _imageCropRotation = cropRotation;
     _imageCropOrientation = cropOrientation;
+    _imageCropMirrored = cropMirrored;
     
     [_currentInput removeAllTargets];
     _currentInput = [[PGPhotoEditorPicture alloc] initWithImage:image];
@@ -137,19 +153,9 @@
     return _cropRect.size;
 }
 
-- (bool)needsImageRecropping
-{
-    if (!_CGRectEqualToRectWithEpsilon(self.cropRect, _imageCropRect, FLT_EPSILON) || self.cropOrientation != _imageCropOrientation || ABS(self.cropRotation - _imageCropRotation) > FLT_EPSILON)
-    {
-        return true;
-    }
-    
-    return false;
-}
-
 - (bool)hasDefaultCropping
 {
-    if (!_CGRectEqualToRectWithEpsilon(self.cropRect, CGRectMake(0, 0, _originalSize.width, _originalSize.height), 1.0f) || self.cropOrientation != UIImageOrientationUp || ABS(self.cropRotation) > FLT_EPSILON)
+    if (!_CGRectEqualToRectWithEpsilon(self.cropRect, CGRectMake(0, 0, _originalSize.width, _originalSize.height), 1.0f) || self.cropOrientation != UIImageOrientationUp || ABS(self.cropRotation) > FLT_EPSILON || self.cropMirrored)
     {
         return false;
     }
@@ -226,9 +232,9 @@
             _finalFilter = lastFilter;
             
             [_finalFilter addTarget:previewOutput.imageView];
-            [_finalFilter addTarget:_histogramGenerator];            
+            [_finalFilter addTarget:_histogramGenerator];
         }
-        
+                
         if (capture)
             [_finalFilter useNextFrameForImageCapture];
         
@@ -301,22 +307,37 @@
     
     self.cropOrientation = adjustments.cropOrientation;
     self.cropLockedAspectRatio = adjustments.cropLockedAspectRatio;
+    self.cropMirrored = adjustments.cropMirrored;
+    self.paintingData = adjustments.paintingData;
     
-    PGPhotoEditorValues *editorValues = nil;
     if ([adjustments isKindOfClass:[PGPhotoEditorValues class]])
-        editorValues = (PGPhotoEditorValues *)adjustments;
-
-    self.cropRotation = editorValues.cropRotation;
-
-    for (PGPhotoTool *tool in self.tools)
     {
-        id value = editorValues.toolValues[tool.identifier];
-        if (value != nil && [value isKindOfClass:[tool valueClass]])
-            tool.value = [value copy];
+        PGPhotoEditorValues *editorValues = (PGPhotoEditorValues *)adjustments;
+
+        self.cropRotation = editorValues.cropRotation;
+
+        for (PGPhotoTool *tool in self.tools)
+        {
+            id value = editorValues.toolValues[tool.identifier];
+            if (value != nil && [value isKindOfClass:[tool valueClass]])
+                tool.value = [value copy];
+        }
+    }
+    else if ([adjustments isKindOfClass:[TGVideoEditAdjustments class]])
+    {
+        TGVideoEditAdjustments *videoAdjustments = (TGVideoEditAdjustments *)adjustments;
+        self.trimStartValue = videoAdjustments.trimStartValue;
+        self.trimEndValue = videoAdjustments.trimEndValue;
+        self.sendAsGif = videoAdjustments.sendAsGif;
     }
 }
 
 - (id<TGMediaEditAdjustments>)exportAdjustments
+{
+    return [self exportAdjustmentsWithPaintingData:_paintingData];
+}
+
+- (id<TGMediaEditAdjustments>)exportAdjustmentsWithPaintingData:(TGPaintingData *)paintingData
 {
     if (!_forVideo)
     {
@@ -330,13 +351,13 @@
             }
         }
         
-        return [PGPhotoEditorValues editorValuesWithOriginalSize:self.originalSize cropRect:self.cropRect cropRotation:self.cropRotation cropOrientation:self.cropOrientation cropLockedAspectRatio:self.cropLockedAspectRatio toolValues:toolValues];
+        return [PGPhotoEditorValues editorValuesWithOriginalSize:self.originalSize cropRect:self.cropRect cropRotation:self.cropRotation cropOrientation:self.cropOrientation cropLockedAspectRatio:self.cropLockedAspectRatio cropMirrored:self.cropMirrored toolValues:toolValues paintingData:paintingData];
     }
     else
     {
         TGVideoEditAdjustments *initialAdjustments = (TGVideoEditAdjustments *)_initialAdjustments;
         
-        return [TGVideoEditAdjustments editAdjustmentsWithOriginalSize:self.originalSize cropRect:self.cropRect cropOrientation:self.cropOrientation cropLockedAspectRatio:self.cropLockedAspectRatio trimStartValue:initialAdjustments.trimStartValue trimEndValue:initialAdjustments.trimEndValue];
+        return [TGVideoEditAdjustments editAdjustmentsWithOriginalSize:self.originalSize cropRect:self.cropRect cropOrientation:self.cropOrientation cropLockedAspectRatio:self.cropLockedAspectRatio cropMirrored:self.cropMirrored trimStartValue:initialAdjustments.trimStartValue trimEndValue:initialAdjustments.trimEndValue paintingData:paintingData sendAsGif:self.sendAsGif];
     }
 }
 

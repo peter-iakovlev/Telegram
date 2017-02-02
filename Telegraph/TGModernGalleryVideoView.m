@@ -1,12 +1,6 @@
 #import "TGModernGalleryVideoView.h"
 #import <AVFoundation/AVFoundation.h>
 
-@interface TGModernGalleryVideoView ()
-{
-    AVPlayerLayer *_playerLayer;
-}
-@end
-
 @implementation TGModernGalleryVideoView
 
 - (instancetype)initWithFrame:(CGRect)frame player:(AVPlayer *)player
@@ -28,6 +22,9 @@
 
 - (void)cleanupPlayer
 {
+#ifdef DEBUG
+    
+#endif
     self.playerLayer.player = nil;
 }
 

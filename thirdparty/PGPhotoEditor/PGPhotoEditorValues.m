@@ -1,4 +1,5 @@
 #import "PGPhotoEditorValues.h"
+#import "TGPaintingData.h"
 
 #import "TGPhotoEditorUtils.h"
 
@@ -8,8 +9,10 @@
 @synthesize cropRect = _cropRect;
 @synthesize cropOrientation = _cropOrientation;
 @synthesize cropLockedAspectRatio = _cropLockedAspectRatio;
+@synthesize cropMirrored = _cropMirrored;
+@synthesize paintingData = _paintingData;
 
-+ (instancetype)editorValuesWithOriginalSize:(CGSize)originalSize cropRect:(CGRect)cropRect cropRotation:(CGFloat)cropRotation cropOrientation:(UIImageOrientation)cropOrientation cropLockedAspectRatio:(CGFloat)cropLockedAspectRatio toolValues:(NSDictionary *)toolValues
++ (instancetype)editorValuesWithOriginalSize:(CGSize)originalSize cropRect:(CGRect)cropRect cropRotation:(CGFloat)cropRotation cropOrientation:(UIImageOrientation)cropOrientation cropLockedAspectRatio:(CGFloat)cropLockedAspectRatio cropMirrored:(bool)cropMirrored toolValues:(NSDictionary *)toolValues paintingData:(TGPaintingData *)paintingData
 {
     PGPhotoEditorValues *values = [[PGPhotoEditorValues alloc] init];
     values->_originalSize = originalSize;
@@ -17,9 +20,16 @@
     values->_cropRotation = cropRotation;
     values->_cropOrientation = cropOrientation;
     values->_cropLockedAspectRatio = cropLockedAspectRatio;
+    values->_cropMirrored = cropMirrored;
     values->_toolValues = toolValues;
+    values->_paintingData = paintingData;
     
     return values;
+}
+
+- (bool)hasPainting
+{
+    return (_paintingData != nil);
 }
 
 - (bool)cropAppliedForAvatar:(bool)forAvatar
@@ -43,6 +53,9 @@
     if (self.cropLockedAspectRatio > FLT_EPSILON)
         return true;
     
+    if (self.cropMirrored)
+        return true;
+    
     return false;
 }
 
@@ -50,13 +63,13 @@
 {
     if (self.toolValues.count > 0)
         return true;
-
+    
     return false;
 }
 
 - (bool)isDefaultValuesForAvatar:(bool)forAvatar
 {
-    return ![self cropAppliedForAvatar:forAvatar] && ![self toolsApplied];
+    return ![self cropAppliedForAvatar:forAvatar] && ![self toolsApplied] && ![self hasPainting];
 }
 
 - (bool)isCropEqualWith:(id<TGMediaEditAdjustments>)adjusments
@@ -86,7 +99,13 @@
     if (ABS(self.cropLockedAspectRatio - values.cropLockedAspectRatio) > FLT_EPSILON)
         return false;
     
+    if (self.cropMirrored != values.cropMirrored)
+        return false;
+    
     if (![self.toolValues isEqual:values.toolValues])
+        return false;
+    
+    if (![self.paintingData isEqual:values.paintingData])
         return false;
     
     return true;

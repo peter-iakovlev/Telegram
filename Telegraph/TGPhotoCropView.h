@@ -8,6 +8,7 @@
 @property (nonatomic, assign) UIImageOrientation cropOrientation;
 @property (nonatomic, assign) CGRect cropRect;
 @property (nonatomic, assign) CGFloat rotation;
+@property (nonatomic, assign) bool mirrored;
 @property (nonatomic, readonly) bool hasArbitraryRotation;
 @property (nonatomic, readonly) bool isAspectRatioLocked;
 @property (nonatomic, readonly) CGFloat lockedAspectRatio;
@@ -24,8 +25,7 @@
 
 - (void)setSnapshotImage:(UIImage *)snapshotImage;
 - (void)setSnapshotView:(UIView *)snapshotView;
-
-- (void)setBackdropImage:(UIImage *)backdropImage;
+- (void)setPaintingImage:(UIImage *)paintingImage;
 
 - (void)animateTransitionIn;
 - (void)animateTransitionOut;
@@ -36,6 +36,9 @@
 
 - (void)setRotation:(CGFloat)rotation animated:(bool)animated;
 - (void)rotate90DegreesCCWAnimated:(bool)animated;
+
+- (void)mirror;
+
 - (void)setLockedAspectRatio:(CGFloat)aspectRatio performResize:(bool)performResize animated:(bool)animated;
 - (void)unlockAspectRatio;
 - (void)resetAnimated:(bool)animated;

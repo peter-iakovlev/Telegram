@@ -14,7 +14,7 @@
 
 @implementation TGPreparedLocalImageMessage
 
-+ (instancetype)messageWithImageData:(NSData *)imageData imageSize:(CGSize)imageSize thumbnailData:(NSData *)thumbnailData thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage
++ (instancetype)messageWithImageData:(NSData *)imageData imageSize:(CGSize)imageSize thumbnailData:(NSData *)thumbnailData thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments
 {
 #ifdef DEBUG
     NSAssert(imageData != nil, @"imageData should not be nil");
@@ -33,11 +33,14 @@
     message.caption = caption;
     
     message.replyMessage = replyMessage;
+    message.replyMarkup = replyMarkup;
+    
+    message.stickerDocuments = stickerDocuments;
     
     return message;
 }
 
-+ (instancetype)messageWithLocalImageDataPath:(NSString *)localImageDataPath imageSize:(CGSize)imageSize localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage
++ (instancetype)messageWithLocalImageDataPath:(NSString *)localImageDataPath imageSize:(CGSize)imageSize localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments
 {
 #ifdef DEBUG
     NSAssert(localImageDataPath != nil, @"localImageDataPath should not be nil");
@@ -56,6 +59,9 @@
     message.caption = caption;
     
     message.replyMessage = replyMessage;
+    message.replyMarkup = replyMarkup;
+    
+    message.stickerDocuments = stickerDocuments;
     
     return message;
 }
@@ -74,6 +80,9 @@
     message.caption = source.caption;
     
     message.replyMessage = source.replyMessage;
+    message.replyMarkup = source.replyMarkup;
+    
+    message.stickerDocuments = source.stickerDocuments;
     
     return message;
 }
@@ -89,7 +98,7 @@
     arc4random_buf(&randomId, sizeof(randomId));
     NSString *imagePathComponent = [[NSString alloc] initWithFormat:@"%" PRIx64 ".bin", randomId];
     NSString *filePath = [uploadDirectory stringByAppendingPathComponent:imagePathComponent];
-    [data writeToFile:filePath atomically:false];
+    [data writeToFile:filePath atomically:true];
     
     return [@"file://" stringByAppendingString:filePath];
 }
@@ -126,6 +135,8 @@
     [imageInfo addImageWithSize:_thumbnailSize url:[self localThumbnailDataPath]];
     imageAttachment.imageInfo = imageInfo;
     imageAttachment.caption = self.caption;
+    imageAttachment.embeddedStickerDocuments = _stickerDocuments;
+    imageAttachment.hasStickers = _stickerDocuments.count != 0;
     [attachments addObject:imageAttachment];
     
     TGLocalMessageMetaMediaAttachment *mediaMeta = [[TGLocalMessageMetaMediaAttachment alloc] init];
@@ -139,6 +150,10 @@
         replyMedia.replyMessageId = self.replyMessage.mid;
         replyMedia.replyMessage = self.replyMessage;
         [attachments addObject:replyMedia];
+    }
+    
+    if (self.replyMarkup != nil) {
+        [attachments addObject:self.replyMarkup];
     }
     
     message.mediaAttachments = attachments;

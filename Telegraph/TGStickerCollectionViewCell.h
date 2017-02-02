@@ -4,7 +4,7 @@
 
 @interface TGStickerCollectionViewCell : UICollectionViewCell
 
-- (void)setDocumentMedia:(TGDocumentMediaAttachment *)documentMedia;
+@property (nonatomic, strong) TGDocumentMediaAttachment *documentMedia;
 
 - (void)setDisabledTimeout;
 - (bool)isEnabled;

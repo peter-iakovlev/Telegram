@@ -19,8 +19,8 @@ NSString *const TGLocationFoursquareVenueProvider = @"foursquare";
     venue->_identifier = dictionary[@"id"];
     venue->_name = dictionary[@"name"];
     
-    venue->_coordinate = CLLocationCoordinate2DMake([dictionary[@"location"][@"lat"] doubleValue],
-                                                    [dictionary[@"location"][@"lng"] doubleValue]);
+    NSDictionary *location = dictionary[@"location"];
+    venue->_coordinate = CLLocationCoordinate2DMake([location[@"lat"] doubleValue], [location[@"lng"] doubleValue]);
     
     NSArray *categories = dictionary[@"categories"];
     if (categories.count > 0)
@@ -33,7 +33,7 @@ NSString *const TGLocationFoursquareVenueProvider = @"foursquare";
             venue->_categoryIconUrl = [NSURL URLWithString:[NSString stringWithFormat:@"%@64%@", icon[@"prefix"], icon[@"suffix"]]];
     }
     
-    NSDictionary *location = dictionary[@"location"];
+    
     
     venue->_country = location[@"country"];
     venue->_state = location[@"state"];

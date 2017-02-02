@@ -31,6 +31,10 @@
             return [[TLMessagesFilter$inputMessagesFilterPhotoVideoDocuments alloc] init];
         case TGMessageSearchFilterLink:
             return [[TLMessagesFilter$inputMessagesFilterUrl alloc] init];
+        case TGMessageSearchFilterGroupPhotos:
+            return [[TLMessagesFilter$inputMessagesFilterChatPhotos alloc] init];
+        case TGMessageSearchFilterPhoneCalls:
+            return [[TLMessagesFilter$inputMessagesFilterPhoneCalls alloc] init];
             
     }
 }
@@ -55,10 +59,18 @@
             return TGSharedMediaCacheItemTypePhotoVideoFile;
         case TGMessageSearchFilterLink:
             return TGSharedMediaCacheItemTypeLink;
+        case TGMessageSearchFilterGroupPhotos:
+            return TGSharedMediaCacheItemTypeNone;
+        case TGMessageSearchFilterPhoneCalls:
+            return TGSharedMediaCacheItemTypeNone;
     }
 }
 
-+ (SSignal *)searchPeer:(int64_t)peer accessHash:(int64_t)accessHash query:(NSString *)query filter:(TGMessageSearchFilter)filter maxMessageId:(int32_t)maxMessageId limit:(NSUInteger)limit
++ (SSignal *)searchPeer:(int64_t)peer accessHash:(int64_t)accessHash query:(NSString *)query filter:(TGMessageSearchFilter)filter maxMessageId:(int32_t)maxMessageId limit:(NSUInteger)limit {
+    return [self searchPeer:peer accessHash:accessHash query:query filter:filter maxMessageId:maxMessageId limit:limit around:false];
+}
+
++ (SSignal *)searchPeer:(int64_t)peer accessHash:(int64_t)accessHash query:(NSString *)query filter:(TGMessageSearchFilter)filter maxMessageId:(int32_t)maxMessageId limit:(NSUInteger)limit around:(bool)around
 {
     TLRPCmessages_search$messages_search *search = [[TLRPCmessages_search$messages_search alloc] init];
     search.peer = [TGTelegraphInstance createInputPeerForConversation:peer accessHash:accessHash];
@@ -66,7 +78,11 @@
     search.filter = [self nativeFilterForFilter:filter];
     search.min_date = 0;
     search.max_date = 0;
-    search.offset = 0;
+    if (around) {
+        search.offset = ((int32_t)(limit)) / -2;
+    } else {
+        search.offset = 0;
+    }
     search.max_id = maxMessageId;
     search.limit = (int32_t)limit;
     
@@ -102,12 +118,14 @@
             }
         }
         
-        [TGDatabaseInstance() cacheMediaForPeerId:peer messages:messages];
-        if (messages.count == 0)
-        {
-            if ([self cacheItemTypeForFilter:filter] != TGSharedMediaCacheItemTypeLink)
+        if ([self cacheItemTypeForFilter:filter] != TGSharedMediaCacheItemTypeNone) {
+            [TGDatabaseInstance() cacheMediaForPeerId:peer messages:messages];
+            if (messages.count == 0)
             {
-                [TGDatabaseInstance() setSharedMediaIndexDownloadedForPeerId:peer itemType:[self cacheItemTypeForFilter:filter]];
+                if ([self cacheItemTypeForFilter:filter] != TGSharedMediaCacheItemTypeLink)
+                {
+                    [TGDatabaseInstance() setSharedMediaIndexDownloadedForPeerId:peer itemType:[self cacheItemTypeForFilter:filter]];
+                }
             }
         }
         
@@ -133,6 +151,58 @@
             return result.link;
         }];
     }
+}
+
++ (TLInputPeer *)inputPeerWithPeerId:(int64_t)peerId {
+    if (TGPeerIdIsUser(peerId)) {
+        TGUser *user = [TGDatabaseInstance() loadUser:(int32_t)peerId];
+        if (user != nil) {
+            TLInputPeer$inputPeerUser *inputPeerUser = [[TLInputPeer$inputPeerUser alloc] init];
+            inputPeerUser.user_id = user.uid;
+            inputPeerUser.access_hash = user.phoneNumberHash;
+            return inputPeerUser;
+        }
+    } else {
+        TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:peerId];
+        if (conversation != nil) {
+            if (TGPeerIdIsChannel(peerId)) {
+                TLInputPeer$inputPeerChannel *inputPeerChannel = [[TLInputPeer$inputPeerChannel alloc] init];
+                inputPeerChannel.channel_id = TGChannelIdFromPeerId(peerId);
+                inputPeerChannel.access_hash = conversation.accessHash;
+                return inputPeerChannel;
+            } else{
+                TLInputPeer$inputPeerChat *inputPeerChat = [[TLInputPeer$inputPeerChat alloc] init];
+                inputPeerChat.chat_id = TGGroupIdFromPeerId(peerId);
+                return inputPeerChat;
+            }
+        }
+    }
+    return nil;
+}
+
++ (SSignal *)messageIdForPeerId:(int64_t)peerId date:(int32_t)date {
+    return [[TGDatabaseInstance() modify:^id{
+        return [self inputPeerWithPeerId:peerId];
+    }] mapToSignal:^SSignal *(TLInputPeer *inputPeer) {
+        if (inputPeer == nil) {
+            return [SSignal fail:nil];
+        } else {
+            TLRPCmessages_getHistory$messages_getHistory *getHistory = [[TLRPCmessages_getHistory$messages_getHistory alloc] init];
+            getHistory.peer = inputPeer;
+            getHistory.offset_date = date;
+            getHistory.limit = 1;
+            getHistory.add_offset = -1;
+            return [[[TGTelegramNetworking instance] requestSignal:getHistory] mapToSignal:^SSignal *(TLmessages_Messages *result) {
+                for (TLMessage *desc in result.messages) {
+                    TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:desc];
+                    if (message.mid != 0) {
+                        return [SSignal single:@(message.mid)];
+                    }
+                }
+                return [SSignal fail:nil];
+            }];
+        }
+    }];
 }
 
 @end

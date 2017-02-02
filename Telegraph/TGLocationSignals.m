@@ -22,6 +22,69 @@ NSString *const TGLocationGooglePlacesLocale = @"en";
 
 NSString *const TGLocationGoogleGeocodeLocale = @"en";
 
+@interface TGLocationHelper : NSObject <CLLocationManagerDelegate> {
+    CLLocationManager *_locationManager;
+    void (^_locationDetermined)(CLLocation *);
+    bool _startedUpdating;
+}
+
+@end
+
+@implementation TGLocationHelper
+
+- (instancetype)initWithLocationDetermined:(void (^)(CLLocation *))locationDetermined {
+    self = [super init];
+    if (self != nil) {
+        _locationDetermined = [locationDetermined copy];
+        
+        _locationManager = [[CLLocationManager alloc] init];
+        _locationManager.delegate = self;
+        _locationManager.distanceFilter = kCLDistanceFilterNone;
+        _locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+        
+        bool startUpdating = false;
+        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0) {
+            switch ([CLLocationManager authorizationStatus])
+            {
+                case kCLAuthorizationStatusAuthorizedAlways:
+                case kCLAuthorizationStatusAuthorizedWhenInUse:
+                    startUpdating = true;
+                default:
+                    break;
+            }
+        }
+        
+        if (startUpdating) {
+            [self startUpdating];
+        }
+    }
+    return self;
+}
+
+- (void)dealloc {
+    [_locationManager stopUpdatingLocation];
+}
+
+- (void)startUpdating {
+    if (!_startedUpdating) {
+        _startedUpdating = true;
+        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0) {
+            [_locationManager requestWhenInUseAuthorization];
+        }
+        [_locationManager startUpdatingLocation];
+    }
+}
+
+- (void)locationManager:(CLLocationManager *)__unused manager didUpdateLocations:(NSArray *)locations {
+    if (locations.count != 0) {
+        if (_locationDetermined) {
+            _locationDetermined([locations lastObject]);
+        }
+    }
+}
+
+@end
+
 @implementation TGLocationSignals
 
 + (SSignal *)reverseGeocodeCoordinate:(CLLocationCoordinate2D)coordinate
@@ -148,16 +211,22 @@ NSString *const TGLocationGoogleGeocodeLocale = @"en";
     switch (service)
     {
         case TGLocationPlacesServiceGooglePlaces:
-            return @{ @"key": TGLocationGooglePlacesApiKey,
-                      @"language": TGLocationGooglePlacesLocale,
-                      @"radius": TGLocationGooglePlacesRadius,
-                      @"sensor": @"true" };
+            return @
+            {
+                @"key": TGLocationGooglePlacesApiKey,
+                @"language": TGLocationGooglePlacesLocale,
+                @"radius": TGLocationGooglePlacesRadius,
+                @"sensor": @"true"
+            };
             
         case TGLocationPlacesServiceFoursquare:
-            return @{ @"v": TGLocationFoursquareVersion,
-                      @"locale": TGLocationFoursquareLocale,
-                      @"client_id": TGLocationFoursquareClientId,
-                      @"client_secret" :TGLocationFoursquareClientSecret };
+            return @
+            {
+                @"v": TGLocationFoursquareVersion,
+                @"locale": TGLocationFoursquareLocale,
+                @"client_id": TGLocationFoursquareClientId,
+                @"client_secret" :TGLocationFoursquareClientSecret
+            };
             
         default:
             return nil;
@@ -180,6 +249,23 @@ static CLLocation *lastKnownUserLocation;
         lastKnownUserLocation = nil;
     
     return lastKnownUserLocation;
+}
+
++ (SSignal *)userLocation:(SVariable *)locationRequired {
+    return [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+        TGLocationHelper *helper = [[TGLocationHelper alloc] initWithLocationDetermined:^(CLLocation *location) {
+            [subscriber putNext:location];
+        }];
+        
+        id<SDisposable> requiredDisposable = [[[[locationRequired signal] take:1] deliverOn:[SQueue mainQueue]] startWithNext:^(__unused id next) {
+            [helper startUpdating];
+        }];
+        
+        return [[SBlockDisposable alloc] initWithBlock:^{
+            [helper description]; // keep reference
+            [requiredDisposable dispose];
+        }];
+    }] startOn:[SQueue mainQueue]];
 }
 
 @end

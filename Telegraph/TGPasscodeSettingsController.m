@@ -160,6 +160,11 @@
 {
     [[NSUserDefaults standardUserDefaults] setObject:@(enableTouchId) forKey:@"Passcode_useTouchId"];
     [[NSUserDefaults standardUserDefaults] synchronize];
+    
+    TGDispatchOnMainThread(^
+    {
+        [[TGTelegramNetworking instance] exportCredentialsForExtensions];
+    });
 }
 
 - (void)_updateSections
@@ -277,6 +282,8 @@
                         [strongSelf _updateSections];
                         [strongSelf dismissViewControllerAnimated:true completion:nil];
                         [progressWindow dismissWithSuccess];
+                        
+                        [TGAppDelegateInstance setupShortcutItems];
                     });
                 }];
             }
@@ -321,6 +328,8 @@
                         [progressWindow dismissWithSuccess];
                         
                         [TGAppDelegateInstance setIsManuallyLocked:false];
+                        
+                        [TGAppDelegateInstance setupShortcutItems];
                     });
                 }];
             }

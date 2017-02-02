@@ -7,6 +7,7 @@
 
 @interface TLRPCupdates_getDifference : TLMetaRpc
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic) int32_t pts;
 @property (nonatomic) int32_t date;
 @property (nonatomic) int32_t qts;

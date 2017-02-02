@@ -1,12 +1,29 @@
 #import "TGMessage.h"
 
+#import "TGCommon.h"
+
 #import "PSKeyValueCoder.h"
 #import "PSKeyValueEncoder.h"
 #import "PSKeyValueDecoder.h"
+#import <objc/runtime.h>
 
 #import "TGTextCheckingResult.h"
 
 #include <tr1/unordered_map>
+
+static void *NSTextCheckingResultTelegramHiddenLinkKey = &NSTextCheckingResultTelegramHiddenLinkKey;
+
+@implementation NSTextCheckingResult (TGMessage)
+
+- (void)setIsTelegramHiddenLink:(bool)value {
+    objc_setAssociatedObject(self, NSTextCheckingResultTelegramHiddenLinkKey, @(value), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (bool)isTelegramHiddenLink {
+    return [objc_getAssociatedObject(self, NSTextCheckingResultTelegramHiddenLinkKey) boolValue];
+}
+
+@end
 
 static std::tr1::unordered_map<int, id<TGMediaAttachmentParser> > mediaAttachmentParsers;
 
@@ -16,11 +33,14 @@ typedef enum {
     TGMessageFlagContainsMention = 64,
     TGMessageFlagForceReply = (1 << 7),
     TGMessageFlagLayerMaskExtended = 0xff << 8,
-    TGMessageFlagSilent = (1 << 16)
+    TGMessageFlagSilent = (1 << 16),
+    TGMessageFlagEdited = (1 << 17)
 } TGMessageFlags;
 
 
-@interface TGMessage ()
+@interface TGMessage () {
+    bool _unread;
+}
 
 @property (nonatomic) bool hasNoCheckingResults;
 
@@ -96,6 +116,8 @@ typedef enum {
 - (id)copyWithZone:(NSZone *)__unused zone
 {
     TGMessage *copyMessage = [[TGMessage alloc] init];
+    
+    copyMessage->_hintUnread = _hintUnread;
     
     copyMessage->_mid = _mid;
     copyMessage->_sortKey = _sortKey;
@@ -175,6 +197,18 @@ typedef enum {
 
 - (bool)isSilent {
     return _flags & TGMessageFlagSilent;
+}
+
+- (bool)isEdited {
+    return _flags & TGMessageFlagEdited;
+}
+
+- (void)setIsEdited:(bool)isEdited {
+    if (isEdited) {
+        _flags |= TGMessageFlagEdited;
+    } else {
+        _flags &= ~TGMessageFlagEdited;
+    }
 }
 
 - (void)setLayer:(NSUInteger)layer
@@ -257,8 +291,91 @@ typedef enum {
     return _mid >= TGMessageLocalMidBaseline;
 }
 
-+ (NSArray *)textCheckingResultsForText:(NSString *)text highlightMentionsAndTags:(bool)highlightMentionsAndTags highlightCommands:(bool)highlightCommands
++ (NSArray *)textCheckingResultsForText:(NSString *)text highlightMentionsAndTags:(bool)highlightMentionsAndTags highlightCommands:(bool)highlightCommands entities:(NSArray *)entities
 {
+    if (entities != nil) {
+        NSMutableArray *textCheckingResults = [[NSMutableArray alloc] init];
+        
+        for (TGMessageEntity *entity in entities) {
+            if (entity.range.location + entity.range.length > text.length) {
+                continue;
+            }
+            
+            if ([entity isKindOfClass:[TGMessageEntityBold class]]) {
+                [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeBold contents:@""]];
+            } else if ([entity isKindOfClass:[TGMessageEntityBotCommand class]]) {
+                if (entity.range.length > 1) {
+                    [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeCommand contents:[text substringWithRange:NSMakeRange(entity.range.location, entity.range.length)]]];
+                }
+            } else if ([entity isKindOfClass:[TGMessageEntityCode class]]) {
+                [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeCode contents:@""]];
+            } else if ([entity isKindOfClass:[TGMessageEntityEmail class]]) {
+                NSString *email = [text substringWithRange:entity.range];
+                [textCheckingResults addObject:[NSTextCheckingResult linkCheckingResultWithRange:entity.range URL:[NSURL URLWithString:[@"mailto:" stringByAppendingString:email]]]];
+            } else if ([entity isKindOfClass:[TGMessageEntityHashtag class]]) {
+                if (entity.range.length > 1) {
+                    [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeHashtag contents:[text substringWithRange:NSMakeRange(entity.range.location + 1, entity.range.length - 1)]]];
+                }
+            } else if ([entity isKindOfClass:[TGMessageEntityItalic class]]) {
+                [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeItalic contents:@""]];
+            } else if ([entity isKindOfClass:[TGMessageEntityMention class]]) {
+                if (entity.range.length > 1) {
+                    [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeMention contents:[text substringWithRange:NSMakeRange(entity.range.location + 1, entity.range.length - 1)]]];
+                }
+            } else if ([entity isKindOfClass:[TGMessageEntityMentionName class]]) {
+                [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeLink contents:[NSString stringWithFormat:@"tg-user://%d", ((TGMessageEntityMentionName *)entity).userId]]];
+            } else if ([entity isKindOfClass:[TGMessageEntityPre class]]) {
+                [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeCode contents:@""]];
+            } else if ([entity isKindOfClass:[TGMessageEntityTextUrl class]]) {
+                NSTextCheckingResult *result = [NSTextCheckingResult linkCheckingResultWithRange:entity.range URL:[NSURL URLWithString:((TGMessageEntityTextUrl *)entity).url]];
+                [result setIsTelegramHiddenLink:true];
+                [textCheckingResults addObject:result];
+            } else if ([entity isKindOfClass:[TGMessageEntityUrl class]]) {
+                NSString *link = [text substringWithRange:entity.range];
+                NSURL *url = [NSURL URLWithString:link];
+                if (url == nil) {
+                    url = [NSURL URLWithString:[link stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+                }
+                [textCheckingResults addObject:[NSTextCheckingResult linkCheckingResultWithRange:entity.range URL:url]];
+            }
+        }
+        
+        SEL sel = @selector(characterAtIndex:);
+        int length = (int)text.length;
+        unichar (*characterAtIndexImp)(id, SEL, NSUInteger) = (unichar (*)(id, SEL, NSUInteger))[text methodForSelector:sel];
+        
+        int digitCount = 0;
+        for (int i = 0; i < length; i++)
+        {
+            unichar c = characterAtIndexImp(text, sel, i);
+            if (c >= '0' && c <= '9') {
+                digitCount++;
+                if (digitCount == 2) {
+                    break;
+                }
+            } else {
+                digitCount = 0;
+            }
+        }
+        
+        if (digitCount >= 2) {
+            NSError *error = nil;
+            static NSDataDetector *dataDetector = nil;
+            if (dataDetector == nil)
+                dataDetector = [NSDataDetector dataDetectorWithTypes:(int)(NSTextCheckingTypeLink | NSTextCheckingTypePhoneNumber) error:&error];
+            [dataDetector enumerateMatchesInString:text options:0 range:NSMakeRange(0, text.length) usingBlock:^(NSTextCheckingResult *match, __unused NSMatchingFlags flags, __unused BOOL *stop)
+             {
+                 NSTextCheckingType type = [match resultType];
+                 if (type == NSTextCheckingTypePhoneNumber)
+                 {
+                     [textCheckingResults addObject:match];
+                 }
+             }];
+        }
+        
+        return textCheckingResults;
+    }
+    
     bool containsSomething = false;
     
     int length = (int)text.length;
@@ -381,7 +498,7 @@ typedef enum {
                 {
                     if (mentionStart != -1)
                     {
-                        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'))
+                        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == 0x200C))
                         {
                             if (i > mentionStart + 1)
                             {
@@ -399,7 +516,7 @@ typedef enum {
                     }
                     else if (hashtagStart != -1)
                     {
-                        if (c == ' ' || (![characterSet characterIsMember:c] && c != '_'))
+                        if (c == ' ' || (![characterSet characterIsMember:c] && c != '_' && c != 0x200C))
                         {
                             if (i > hashtagStart + 1)
                             {
@@ -414,7 +531,9 @@ typedef enum {
                     
                     if (c == '@')
                     {
-                        mentionStart = i;
+                        if (previous == 0 || previous == ' ' || previous == '\n') {
+                            mentionStart = i;
+                        }
                     }
                     else if (c == '#')
                     {
@@ -478,7 +597,7 @@ typedef enum {
     
     NSMutableString *cleanText = [[NSMutableString alloc] initWithString:text];
     
-#ifdef DEBUG
+#ifdef DEBUG    
     while (true)
     {
         NSRange startRange = [cleanText rangeOfString:@"***"];
@@ -596,10 +715,14 @@ typedef enum {
                         if (entity.range.length > 1) {
                             [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeMention contents:[_text substringWithRange:NSMakeRange(entity.range.location + 1, entity.range.length - 1)]]];
                         }
+                    } else if ([entity isKindOfClass:[TGMessageEntityMentionName class]]) {
+                        [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeLink contents:[NSString stringWithFormat:@"tg-user://%d", ((TGMessageEntityMentionName *)entity).userId]]];
                     } else if ([entity isKindOfClass:[TGMessageEntityPre class]]) {
                         [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:entity.range type:TGTextCheckingResultTypeCode contents:@""]];
                     } else if ([entity isKindOfClass:[TGMessageEntityTextUrl class]]) {
-                        [textCheckingResults addObject:[NSTextCheckingResult linkCheckingResultWithRange:entity.range URL:[NSURL URLWithString:((TGMessageEntityTextUrl *)entity).url]]];
+                        NSTextCheckingResult *result = [NSTextCheckingResult linkCheckingResultWithRange:entity.range URL:[NSURL URLWithString:((TGMessageEntityTextUrl *)entity).url]];
+                        [result setIsTelegramHiddenLink:true];
+                        [textCheckingResults addObject:result];
                     } else if ([entity isKindOfClass:[TGMessageEntityUrl class]]) {
                         NSString *link = [_text substringWithRange:entity.range];
                         NSURL *url = [NSURL URLWithString:link];
@@ -608,6 +731,42 @@ typedef enum {
                         }
                         [textCheckingResults addObject:[NSTextCheckingResult linkCheckingResultWithRange:entity.range URL:url]];
                     }
+                }
+                
+                SEL sel = @selector(characterAtIndex:);
+                NSString *text = _text;
+                int length = (int)text.length;
+                unichar (*characterAtIndexImp)(id, SEL, NSUInteger) = (unichar (*)(id, SEL, NSUInteger))[text methodForSelector:sel];
+                
+                int digitCount = 0;
+                for (int i = 0; i < length; i++)
+                {
+                    unichar c = characterAtIndexImp(text, sel, i);
+                    if (c >= '0' && c <= '9') {
+                        digitCount++;
+                        if (digitCount == 2) {
+                            break;
+                        }
+                    } else {
+                        digitCount = 0;
+                    }
+                }
+                
+                if (digitCount >= 2) {
+                    static NSDataDetector *dataDetector = nil;
+                    static dispatch_once_t onceToken;
+                    dispatch_once(&onceToken, ^{
+                        NSError *error = nil;
+                        dataDetector = [NSDataDetector dataDetectorWithTypes:(int)(NSTextCheckingTypeLink | NSTextCheckingTypePhoneNumber) error:&error];
+                    });
+                    [dataDetector enumerateMatchesInString:text options:0 range:NSMakeRange(0, text.length) usingBlock:^(NSTextCheckingResult *match, __unused NSMatchingFlags flags, __unused BOOL *stop)
+                     {
+                         NSTextCheckingType type = [match resultType];
+                         if (type == NSTextCheckingTypePhoneNumber)
+                         {
+                             [textCheckingResults addObject:match];
+                         }
+                     }];
                 }
                 
                 _textCheckingResults = textCheckingResults;
@@ -621,7 +780,7 @@ typedef enum {
     
     if (_textCheckingResults == nil && !_hasNoCheckingResults)
     {
-        _textCheckingResults = [TGMessage textCheckingResultsForText:_text highlightMentionsAndTags:true highlightCommands:true];
+        _textCheckingResults = [TGMessage textCheckingResultsForText:_text highlightMentionsAndTags:true highlightCommands:true entities:nil];
         _hasNoCheckingResults = _textCheckingResults == nil;
     }
     

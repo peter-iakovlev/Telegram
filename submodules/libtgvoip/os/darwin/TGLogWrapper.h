@@ -1,0 +1,18 @@
+//
+// Created by Grishka on 06.12.16.
+//
+
+#ifndef TGVOIP_TGLOGWRAPPER_H
+#define TGVOIP_TGLOGWRAPPER_H
+
+#if defined __cplusplus
+extern "C" {
+#endif
+
+void __tgvoip_call_tglog(char* format, ...);
+	
+#if defined __cplusplus
+};
+#endif
+
+#endif //TGVOIP_TGLOGWRAPPER_H

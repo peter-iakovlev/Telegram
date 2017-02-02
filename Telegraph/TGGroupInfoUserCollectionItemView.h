@@ -27,6 +27,7 @@
 - (void)setStatus:(NSString *)status active:(bool)active;
 - (void)setAvatarUri:(NSString *)avatarUri;
 - (void)setIsSecretChat:(bool)isSecretChat;
+- (void)setCustomLabel:(NSString *)customLabel;
 
 - (void)setDisplaySwitch:(bool)displaySwitch;
 - (void)setEnableSwitch:(bool)enableSwitch animated:(bool)animated;

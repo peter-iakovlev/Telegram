@@ -139,3 +139,36 @@
 
 @end
 
+@implementation TLReplyMarkup$replyInlineMarkup : TLReplyMarkup
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x48a30254;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xb4cb9b07;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLReplyMarkup$replyInlineMarkup *object = [[TLReplyMarkup$replyInlineMarkup alloc] init];
+    object.rows = metaObject->getArray((int32_t)0x441aa5c6);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.rows;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x441aa5c6, value));
+    }
+}
+
+
+@end
+

@@ -58,6 +58,7 @@ typedef enum {
 @property (nonatomic, strong) UIColor *overlayBackgroundColorHint;
 @property (nonatomic) UIEdgeInsets inlineVideoInsets;
 @property (nonatomic) CGSize inlineVideoSize;
+@property (nonatomic) bool flexibleTimestamp;
 
 @property (nonatomic, copy) void (^progressBlock)(TGImageView *, CGFloat);
 @property (nonatomic, copy) void (^completionBlock)(TGImageView *);

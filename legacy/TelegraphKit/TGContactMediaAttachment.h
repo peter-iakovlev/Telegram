@@ -10,7 +10,7 @@
 
 #define TGContactMediaAttachmentType ((int)0xB90A5663)
 
-@interface TGContactMediaAttachment : TGMediaAttachment <TGMediaAttachmentParser>
+@interface TGContactMediaAttachment : TGMediaAttachment <TGMediaAttachmentParser, NSCoding>
 
 @property (nonatomic) int uid;
 @property (nonatomic, strong) NSString *firstName;

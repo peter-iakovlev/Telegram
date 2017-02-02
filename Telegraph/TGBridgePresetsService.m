@@ -60,7 +60,9 @@ NSString *const TGBridgePresetsDefaultsKey = @"TG_presets";
     if (TGTelegraphInstance.clientUserId == 0 || !TGTelegraphInstance.clientIsActivated)
         return;
     
-    [[TGBridgeServer instance] putNext:presets forKey:TGBridgePresetsPipeKey];
+    [[TGBridgeServer instanceSignal] startWithNext:^(TGBridgeServer *server) {
+        [server putNext:presets forKey:TGBridgePresetsPipeKey];
+    }];
     
     if (presets != nil)
         [[NSUserDefaults standardUserDefaults] setObject:presets forKey:[self userDefaultsKey]];

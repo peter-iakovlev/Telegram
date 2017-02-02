@@ -20,6 +20,7 @@ typedef enum {
 @interface TGPhotoEditorController : TGOverlayController
 
 @property (nonatomic, strong) TGSuggestionContext *suggestionContext;
+@property (nonatomic, strong) TGMediaEditingContext *editingContext;
 
 @property (nonatomic, copy) UIView *(^beginTransitionIn)(CGRect *referenceFrame, UIView **parentView);
 @property (nonatomic, copy) void (^finishedTransitionIn)(void);
@@ -58,6 +59,8 @@ typedef enum {
 - (void)_finishedTransitionIn;
 - (UIView *)transitionWrapperView;
 - (CGFloat)toolbarLandscapeSize;
+
+- (void)setToolbarHidden:(bool)hidden animated:(bool)animated;
 
 + (TGPhotoEditorTab)defaultTabsForAvatarIntent;
 

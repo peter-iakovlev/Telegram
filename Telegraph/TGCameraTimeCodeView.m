@@ -90,8 +90,10 @@
     _recordingTimer = nil;
     
     NSTimeInterval recordingDuration = (self.requestedRecordingDuration != nil) ? self.requestedRecordingDuration() : 0.0f;
+    if (recordingDuration < _recordingDurationSeconds)
+        return;
     
-    MTAbsoluteTime currentTime = MTAbsoluteSystemTime();
+    CFAbsoluteTime currentTime = MTAbsoluteSystemTime();
     NSUInteger currentDurationSeconds = (NSUInteger)recordingDuration;
     if (currentDurationSeconds == _recordingDurationSeconds)
     {

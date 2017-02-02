@@ -5,6 +5,23 @@
 #import "TGImageUtils.h"
 #import "TGFont.h"
 
+static UIImage *plusImage() {
+    static UIImage *image = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(18.0f, 18.0f), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
+        CGContextFillRect(context, CGRectMake((18.0f) / 2.0f - 1.0f, 0.0f, 1.5f, 18.0f));
+        CGContextFillRect(context, CGRectMake(0.0f, (18.0f) / 2.0f - 1.0f, 18.0f, 1.5f));
+        
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        
+        UIGraphicsEndImageContext();
+    });
+    return image;
+}
+
 @interface TGFlatActionCell ()
 {
     CALayer *_separatorLayer;
@@ -72,7 +89,7 @@
     
     if (inviteIcon == nil)
     {
-        inviteIcon = [UIImage imageNamed:@"ModernContactListInviteFriendsIcon.png"];
+        inviteIcon = plusImage();
         friendsIcon = [UIImage imageNamed:@"ModernContactListCreateGroupIcon.png"];
         encryptedIcon = [UIImage imageNamed:@"ModernContactListCreateSecretChatIcon.png"];
         broadcastsIcon = [UIImage imageNamed:@"ModernContactListBroadcastIcon.png"];
@@ -87,7 +104,7 @@
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
-        iconFrame.origin = CGPointMake(20 - TGRetinaPixel + horizontalOffset, 9 + verticalOffset);
+        iconFrame.origin = CGPointMake(26.0f - TGRetinaPixel + horizontalOffset, 15.0f + verticalOffset);
         _iconView.frame = iconFrame;
     }
     else if (mode == TGFlatActionCellModeCreateGroup || mode == TGFlatActionCellModeCreateGroupContacts || mode == TGFlatActionCellModeCreateChannelGroup)

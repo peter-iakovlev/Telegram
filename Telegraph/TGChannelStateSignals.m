@@ -24,6 +24,8 @@
 
 #import "TGPreparedMessage.h"
 
+#import "TLUpdate$updateChannelTooLong.h"
+
 static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) {
     return ^ {
         block(recursiveBlock(block));
@@ -152,6 +154,8 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
         NSMutableArray *ptsUpdates = [[NSMutableArray alloc] init];
         NSMutableSet *skipMessageIds = [[NSMutableSet alloc] init];
         int32_t maxReadId = 0;
+        int32_t maxReadOutgoingId = 0;
+        NSNumber *pinnedMessageId = nil;
         __block bool failed = false;
         bool hasMessageIdUpdates = false;
         
@@ -162,12 +166,18 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
                 [ptsUpdates addObject:update];
             } else if ([update isKindOfClass:[TLUpdate$updateReadChannelInbox class]]) {
                 maxReadId = MAX(maxReadId, ((TLUpdate$updateReadChannelInbox *)update).max_id);
+            } else if ([update isKindOfClass:[TLUpdate$updateReadChannelOutbox class]]) {
+                maxReadOutgoingId = MAX(maxReadOutgoingId, ((TLUpdate$updateReadChannelOutbox *)update).max_id);
             } else if ([update isKindOfClass:[TLUpdate$updateDeleteChannelMessages class]]) {
+                [ptsUpdates addObject:update];
+            } else if ([update isKindOfClass:[TLUpdate$updateChannelWebPage class]]) {
                 [ptsUpdates addObject:update];
             } else if ([update isKindOfClass:[TLUpdate$updateChannelTooLong class]]) {
                 failed = true;
             } else if ([update isKindOfClass:[TLUpdate$updateMessageID class]]) {
                 hasMessageIdUpdates = true;
+            } else if ([update isKindOfClass:[TLUpdate$updateChannelPinnedMessage class]]) {
+                pinnedMessageId = @(((TLUpdate$updateChannelPinnedMessage *)update).n_id);
             }
         }
         
@@ -212,6 +222,8 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
                     lhsPts = ((TLUpdate$updateEditChannelMessage *)lhs).pts;
                 } else if ([lhs isKindOfClass:[TLUpdate$updateDeleteChannelMessages class]]) {
                     lhsPts = ((TLUpdate$updateDeleteChannelMessages *)lhs).pts;
+                } else if ([lhs isKindOfClass:[TLUpdate$updateChannelWebPage class]]) {
+                    lhsPts = ((TLUpdate$updateChannelWebPage *)lhs).pts;
                 }
                 if ([rhs isKindOfClass:[TLUpdate$updateNewChannelMessage class]]) {
                     rhsPts = ((TLUpdate$updateNewChannelMessage *)rhs).pts;
@@ -219,6 +231,8 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
                     rhsPts = ((TLUpdate$updateEditChannelMessage *)rhs).pts;
                 } else if ([rhs isKindOfClass:[TLUpdate$updateDeleteChannelMessages class]]) {
                     rhsPts = ((TLUpdate$updateDeleteChannelMessages *)rhs).pts;
+                } else if ([rhs isKindOfClass:[TLUpdate$updateChannelWebPage class]]) {
+                    rhsPts = ((TLUpdate$updateChannelWebPage *)lhs).pts;
                 }
                 return lhsPts < rhsPts ? NSOrderedAscending : NSOrderedDescending;
             }];
@@ -276,6 +290,16 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
                     } else if (updatedPts + updateDeleteChannelMessages.pts_count == updateDeleteChannelMessages.pts) {
                         [deletedMessageIds addObjectsFromArray:updateDeleteChannelMessages.messages];
                         updatedPts = updateDeleteChannelMessages.pts;
+                    } else {
+                        failed = true;
+                    }
+                } else if ([update isKindOfClass:[TLUpdate$updateChannelWebPage class]]) {
+                    TLUpdate$updateChannelWebPage *updateWebPage = (TLUpdate$updateChannelWebPage *)update;
+                    
+                    if (updateWebPage.pts <= updatedPts) {
+                        continue;
+                    } else if (updatedPts + updateWebPage.pts_count == updateWebPage.pts) {
+                        updatedPts = updateWebPage.pts;
                     } else {
                         failed = true;
                     }
@@ -358,26 +382,34 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
                                 }
                             }
                         }
-                        
-                        static int actionId = 0;
-                        [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(addMember%d)", actionId++] ] execute:[[NSDictionary alloc] initWithObjectsAndKeys:addedMessages, @"messages", @true, @"doNotAdd", nil]];
 
                         if (updatedMessages.count != 0) {
-                            [TGDatabaseInstance() dispatchOnDatabaseThread:^{
-                                for (TGMessage *message in updatedMessages) {
-                                    [TGDatabaseInstance() updateMessageTextOrMedia:message.mid peerId:peerId media:message.mediaAttachments text:message.text dispatch:true];
-                                }
-                                
-                                [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/messagesEditedInConversation/(%lld)", peerId] resource:updatedMessages];
-                            } synchronous:false];
+                            NSMutableArray<TGDatabaseUpdateMessage *> *messageUpdates = [[NSMutableArray alloc] init];
+                            for (TGMessage *message in updatedMessages) {
+                                [messageUpdates addObject:[[TGDatabaseUpdateMessageWithMessage alloc] initWithPeerId:message.cid messageId:message.mid message:message dispatchEdited:true]];
+                            }
+                            
+                            [TGDatabaseInstance() transactionUpdateMessages:messageUpdates updateConversationDatas:nil];
                         }
                         
                         if (updatedPts != conversation.pts) {
                             [TGDatabaseInstance() addMessagesToChannelAndDispatch:peerId messages:addedMessages deletedMessages:deletedMessageIds holes:nil pts:updatedPts];
                         }
                         
+                        if (conversation.kind == TGConversationKindPersistentChannel && addedMessages.count != 0) {
+                            [TGDatabaseInstance() _addedNewMessages:addedMessages];
+                        }
+                        
                         if (maxReadId != 0) {
-                            [TGDatabaseInstance() updateChannelRead:peerId maxReadId:maxReadId];
+                            [TGDatabaseInstance() updateChannelRead:peerId maxReadId:maxReadId maxReadOutgoingId:0];
+                        }
+                        
+                        if (maxReadOutgoingId != 0) {
+                            [TGDatabaseInstance() transactionApplyMaxOutgoingReadIds:@{@(peerId): @(maxReadOutgoingId)}];
+                        }
+                        
+                        if (pinnedMessageId != nil) {
+                            [TGDatabaseInstance() updateChannelPinnedMessageId:peerId pinnedMessageId:[pinnedMessageId intValue] hidden:nil];
                         }
                         
                         if (failed) {
@@ -388,27 +420,33 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
                     }] switchToLatest];
                 }];
             } else {
-                if (conversation.kind == TGConversationKindPersistentChannel) {
-                    static int actionId = 0;
-                    [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(addMember%d)", actionId++] ] execute:[[NSDictionary alloc] initWithObjectsAndKeys:addedMessages, @"messages", @true, @"doNotAdd", nil]];
-                }
-                
                 if (updatedMessages.count != 0) {
-                    [TGDatabaseInstance() dispatchOnDatabaseThread:^{
-                        for (TGMessage *message in updatedMessages) {
-                            [TGDatabaseInstance() updateMessageTextOrMedia:message.mid peerId:peerId media:message.mediaAttachments == nil ? @[] : message.mediaAttachments text:message.text dispatch:true];
-                        }
-                        
-                        [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/messagesEditedInConversation/(%lld)", peerId] resource:updatedMessages];
-                    } synchronous:false];
+                    NSMutableArray<TGDatabaseUpdateMessage *> *messageUpdates = [[NSMutableArray alloc] init];
+                    for (TGMessage *message in updatedMessages) {
+                        [messageUpdates addObject:[[TGDatabaseUpdateMessageWithMessage alloc] initWithPeerId:message.cid messageId:message.mid message:message dispatchEdited:true]];
+                    }
+                    
+                    [TGDatabaseInstance() transactionUpdateMessages:messageUpdates updateConversationDatas:nil];
                 }
                 
                 if (updatedPts != conversation.pts) {
                     [TGDatabaseInstance() addMessagesToChannelAndDispatch:peerId messages:addedMessages deletedMessages:deletedMessageIds holes:nil pts:updatedPts];
                 }
                 
+                if (conversation.kind == TGConversationKindPersistentChannel && addedMessages.count != 0) {
+                    [TGDatabaseInstance() _addedNewMessages:addedMessages];
+                }
+                
                 if (maxReadId != 0) {
-                    [TGDatabaseInstance() updateChannelRead:peerId maxReadId:maxReadId];
+                    [TGDatabaseInstance() updateChannelRead:peerId maxReadId:maxReadId maxReadOutgoingId:0];
+                }
+                
+                if (maxReadOutgoingId != 0) {
+                    [TGDatabaseInstance() transactionApplyMaxOutgoingReadIds:@{@(peerId): @(maxReadOutgoingId)}];
+                }
+                
+                if (pinnedMessageId != nil) {
+                    [TGDatabaseInstance() updateChannelPinnedMessageId:peerId pinnedMessageId:[pinnedMessageId intValue] hidden:nil];
                 }
                 
                 if (failed) {
@@ -615,6 +653,7 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
                     [disposable setDisposable:[[TGManagedChannelState _channelDifference:peerId accessHash:conversation.accessHash pts:pts] startWithNext:^(TLupdates_ChannelDifference *result) {
                         [TGDatabaseInstance() dispatchOnDatabaseThread:^{
                             NSMutableArray *messages = [[NSMutableArray alloc] init];
+                            NSMutableArray *updatedMessages = [[NSMutableArray alloc] init];
                             NSMutableArray *deletedMessageIds = [[NSMutableArray alloc] init];
                             bool keepUnreadCount = false;
                             
@@ -642,7 +681,7 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
                                 }
                                 keepUnreadCount = true;
                                 
-                                TGLog(@"(TGChannelStateSignals ChannelDifference for %lld is tooLong topImportant: %d, topMessage: %d)", peerId, concreteDifference.top_important_message, concreteDifference.top_message);
+                                TGLog(@"(TGChannelStateSignals ChannelDifference for %lld is tooLong, topMessage: %d)", peerId, concreteDifference.top_message);
                                 
                                 for (id messageDesc in concreteDifference.messages) {
                                     TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:messageDesc];
@@ -663,12 +702,12 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
                                 users = concreteDifference.users;
                                 
                                 addHole = ^{
-                                    [TGDatabaseInstance() addTrailingHoleToChannelAndDispatch:peerId messages:messages pts:concreteDifference.pts importantUnreadCount:concreteDifference.unread_important_count unimportantUnreadCount:concreteDifference.unread_count - concreteDifference.unread_important_count maxReadId:concreteDifference.read_inbox_max_id];
+                                    [TGDatabaseInstance() addTrailingHoleToChannelAndDispatch:peerId messages:messages pts:concreteDifference.pts importantUnreadCount:concreteDifference.unread_count unimportantUnreadCount:0 maxReadId:concreteDifference.read_inbox_max_id];
                                     
                                     [TGDatabaseInstance() updateHistoryPtsForPeerId:peerId pts:concreteDifference.pts];
                                 };
                                 
-                                if (concreteDifference.unread_count != 0 || concreteDifference.unread_important_count != 0) {
+                                if (concreteDifference.unread_count != 0) {
                                     loadHoles = ^{
                                         SMetaDisposable *metaDisposable = [[SMetaDisposable alloc] init];
                                         __weak SMetaDisposable *weakMetaDisposable = metaDisposable;
@@ -757,6 +796,12 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
                                         [deletedMessageIds addObjectsFromArray:((TLUpdate$updateDeleteChannelMessages *)update).messages];
                                     } else if ([update isKindOfClass:[TLUpdate$updateMessageID class]]) {
                                         hasMessageIdUpdates = true;
+                                    } else if ([update isKindOfClass:[TLUpdate$updateEditChannelMessage class]]) {
+                                        TLUpdate$updateEditChannelMessage *updateEditMessage = update;
+                                        TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:updateEditMessage.message];
+                                        message.pts = updateEditMessage.pts;
+                                        
+                                        [updatedMessages addObject:message];
                                     }
                                 }
                                 
@@ -798,6 +843,15 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse)) 
                                 
                                 addMessages = ^{
                                     [TGDatabaseInstance() addMessagesToChannelAndDispatch:peerId messages:messages deletedMessages:deletedMessageIds holes:nil pts:concreteDifference.pts];
+                                    
+                                    if (updatedMessages.count != 0) {
+                                        NSMutableArray<TGDatabaseUpdateMessage *> *messageUpdates = [[NSMutableArray alloc] init];
+                                        for (TGMessage *message in updatedMessages) {
+                                            [messageUpdates addObject:[[TGDatabaseUpdateMessageWithMessage alloc] initWithPeerId:message.cid messageId:message.mid message:message dispatchEdited:true]];
+                                        }
+                                        
+                                        [TGDatabaseInstance() transactionUpdateMessages:messageUpdates updateConversationDatas:nil];
+                                    }
                                 };
                             }
                             

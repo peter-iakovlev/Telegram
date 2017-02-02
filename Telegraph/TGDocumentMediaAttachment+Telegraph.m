@@ -32,6 +32,7 @@
             self.accessHash = concreteDocument.access_hash;
             self.datacenterId = concreteDocument.dc_id;
             self.date = concreteDocument.date;
+            self.version = concreteDocument.version;
             
             NSMutableArray *attributes = [[NSMutableArray alloc] init];
             for (id attribute in concreteDocument.attributes)
@@ -50,9 +51,9 @@
                     TLDocumentAttribute$documentAttributeImageSize *concreteAttribute = attribute;
                     [attributes addObject:[[TGDocumentAttributeImageSize alloc] initWithSize:CGSizeMake(concreteAttribute.w, concreteAttribute.h)]];
                 }
-                else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeSticker class]])
+                else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeStickerMeta class]])
                 {
-                    TLDocumentAttribute$documentAttributeSticker *concreteAttribute = (TLDocumentAttribute$documentAttributeSticker *)attribute;
+                    TLDocumentAttribute$documentAttributeStickerMeta *concreteAttribute = (TLDocumentAttribute$documentAttributeStickerMeta *)attribute;
                     id<TGStickerPackReference> packReference = nil;
                     if ([concreteAttribute.stickerset isKindOfClass:[TLInputStickerSet$inputStickerSetID class]])
                     {
@@ -64,8 +65,12 @@
                         TLInputStickerSet$inputStickerSetShortName *concreteStickerset = (TLInputStickerSet$inputStickerSetShortName *)concreteAttribute.stickerset;
                         packReference = [[TGStickerPackShortnameReference alloc] initWithShortName:concreteStickerset.short_name];
                     }
+                    TGStickerMaskDescription *maskDescription = nil;
+                    if (concreteAttribute.mask_coords != nil) {
+                        maskDescription = [[TGStickerMaskDescription alloc] initWithN:concreteAttribute.mask_coords.n point:CGPointMake((CGFloat)concreteAttribute.mask_coords.x, (CGFloat)concreteAttribute.mask_coords.y) zoom:concreteAttribute.mask_coords.zoom];
+                    }
                     
-                    [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:concreteAttribute.alt packReference:packReference]];
+                    [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:concreteAttribute.alt packReference:packReference mask:maskDescription]];
                 }
                 else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeVideo class]])
                 {
@@ -153,7 +158,7 @@
             }
             else if ([attribute isKindOfClass:[Secret23_DocumentAttribute_documentAttributeSticker class]])
             {
-                [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:nil packReference:nil]];
+                [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:nil packReference:nil mask:nil]];
             }
             else if ([attribute isKindOfClass:[Secret23_DocumentAttribute_documentAttributeVideo class]])
             {
@@ -239,7 +244,7 @@
                     Secret46_InputStickerSet_inputStickerSetShortName *concreteStickerSet = (Secret46_InputStickerSet_inputStickerSetShortName *)concreteAttribute.stickerset;
                     reference = [[TGStickerPackShortnameReference alloc] initWithShortName:concreteStickerSet.shortName];
                 }
-                [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:concreteAttribute.alt packReference:reference]];
+                [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:concreteAttribute.alt packReference:reference mask:nil]];
             }
             else if ([attribute isKindOfClass:[Secret46_DocumentAttribute_documentAttributeVideo class]])
             {

@@ -48,6 +48,22 @@ struct TGVideoQualityRecord
 
 @implementation TGVideoInfo
 
+- (instancetype)initWithCoder:(NSCoder *)aDecoder {
+    self = [super init];
+    if (self != nil) {
+        _qualitySet.push_back(TGVideoQualityRecord(0, [aDecoder decodeObjectForKey:@"url"], [aDecoder decodeInt32ForKey:@"size"]));
+    }
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder {
+    if (!_qualitySet.empty()) {
+        auto q = _qualitySet[0];
+        [aCoder encodeInt32:q.size forKey:@"size"];
+        [aCoder encodeObject:q.url forKey:@"url"];
+    }
+}
+
 - (BOOL)isEqual:(id)object
 {
     if (![object isKindOfClass:[TGVideoInfo class]])

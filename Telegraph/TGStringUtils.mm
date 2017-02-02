@@ -482,6 +482,13 @@ static HTMLEscapeMap gAsciiHTMLEscapeMap[] = {
     return output;
 }
 
++ (NSString *)md5ForData:(NSData *)data {
+    unsigned char md5Buffer[16];
+    CC_MD5(data.bytes, (CC_LONG)data.length, md5Buffer);
+    NSString *output = [[NSString alloc] initWithFormat:@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", md5Buffer[0], md5Buffer[1], md5Buffer[2], md5Buffer[3], md5Buffer[4], md5Buffer[5], md5Buffer[6], md5Buffer[7], md5Buffer[8], md5Buffer[9], md5Buffer[10], md5Buffer[11], md5Buffer[12], md5Buffer[13], md5Buffer[14], md5Buffer[15]];
+    return output;
+}
+
 + (NSDictionary *)argumentDictionaryInUrlString:(NSString *)string
 {
     NSMutableDictionary *queryStringDictionary = [[NSMutableDictionary alloc] init];
@@ -554,6 +561,47 @@ static HTMLEscapeMap gAsciiHTMLEscapeMap[] = {
      }];
     
     return returnValue;
+}
+
+static bool isEmojiCharacter(NSString *singleChar)
+{
+    const unichar high = [singleChar characterAtIndex:0];
+    
+    if (0xd800 <= high && high <= 0xdbff && singleChar.length >= 2)
+    {
+        const unichar low = [singleChar characterAtIndex:1];
+        const int codepoint = ((high - 0xd800) * 0x400) + (low - 0xdc00) + 0x10000;
+        
+        return (0x1d000 <= codepoint && codepoint <= 0x1f77f);
+    }
+    
+    return (0x2100 <= high && high <= 0x27bf);
+}
+
++ (bool)stringContainsEmojiOnly:(NSString *)string length:(NSUInteger *)length
+{
+    if (string.length == 0)
+        return false;
+    
+    __block bool result = true;
+    
+    __block NSUInteger count = 0;
+    [string enumerateSubstringsInRange:NSMakeRange(0, string.length)
+                               options:NSStringEnumerationByComposedCharacterSequences
+                            usingBlock: ^(NSString *substring, __unused NSRange substringRange, __unused NSRange enclosingRange, BOOL *stop)
+     {
+         if (!isEmojiCharacter(substring))
+         {
+             result = false;
+             *stop = true;
+         }
+         count++;
+     }];
+    
+    if (length != NULL)
+        *length = count;
+    
+    return result;
 }
 
 + (NSString *)stringForMessageTimerSeconds:(NSUInteger)seconds
@@ -876,6 +924,70 @@ static HTMLEscapeMap gAsciiHTMLEscapeMap[] = {
     }
     
     return @[first, second];
+}
+
++ (NSString *)stringForCallDurationSeconds:(NSUInteger)seconds
+{
+    if (seconds < 60)
+    {
+        int number = (int)seconds;
+        
+        NSString *format = TGLocalized(@"Call.Seconds_any");
+        if (number == 1)
+            format = TGLocalized(@"Call.Seconds_1");
+        else if (number == 2)
+            format = TGLocalized(@"Call.Seconds_2");
+        else if (number == 4)
+            format = TGLocalized(@"Call.Seconds_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else
+    {
+        int number = (int)seconds / 60;
+        
+        NSString *format = TGLocalized(@"Call.Minutes_any");
+        if (number == 1)
+            format = TGLocalized(@"Call.Minutes_1");
+        else if (number == 2)
+            format = TGLocalized(@"Call.Minutes_2");
+        else if (number == 4)
+            format = TGLocalized(@"Call.Minutes_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+}
+
++ (NSString *)stringForShortCallDurationSeconds:(NSUInteger)seconds
+{
+    if (seconds < 60)
+    {
+        int number = (int)seconds;
+        
+        NSString *format = TGLocalized(@"Call.ShortSeconds_any");
+        if (number == 1)
+            format = TGLocalized(@"Call.ShortSeconds_1");
+        else if (number == 2)
+            format = TGLocalized(@"Call.ShortSeconds_2");
+        else if (number == 4)
+            format = TGLocalized(@"Call.ShortSeconds_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
+    else
+    {
+        int number = (int)seconds / 60;
+        
+        NSString *format = TGLocalized(@"Call.ShortMinutes_any");
+        if (number == 1)
+            format = TGLocalized(@"Call.ShortMinutes_1");
+        else if (number == 2)
+            format = TGLocalized(@"Call.ShortMinutes_2");
+        else if (number == 4)
+            format = TGLocalized(@"Call.ShortMinutes_3_10");
+        
+        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+    }
 }
 
 + (NSString *)stringForUserCount:(NSUInteger)userCount
@@ -1263,30 +1375,16 @@ bool TGIsLocaleArabic()
 
 - (bool)containsSingleEmoji
 {
-    __block bool processedRanges = false;
-    __block bool result = false;
-    
-    [self enumerateSubstringsInRange:NSMakeRange(0, [self length]) options:NSStringEnumerationByComposedCharacterSequences usingBlock:^(NSString* substring, __unused NSRange substringRange, __unused NSRange enclosingRange, BOOL* stop)
-    {
-        if (processedRanges)
-        {
-            result = false;
-            if (stop)
-                *stop = true;
-        }
-        else if ([substring isEmoji])
-        {
+    bool result = false;
+    @try {
+        __autoreleasing NSString *checkString = nil;
+        NSString *firstEmoji = [[self getEmojiFromString:true checkString:&checkString] firstObject];
+        if (firstEmoji.length != 0 && [checkString isEqualToString:self]) {
             result = true;
-            processedRanges = true;
         }
-        else
-        {
-            result = false;
-            if (stop)
-                *stop = true;
-        }
-    }];
-    
+    } @catch(__unused NSException *e) {
+        
+    }
     return result;
 }
 
@@ -1374,11 +1472,9 @@ static unsigned char strToChar (char a, char b)
     return [[NSData alloc] initWithBytesNoCopy:r length:length / 2 freeWhenDone:true];
 }
 
-- (NSArray *)getEmojiFromString:(BOOL)checkColor
-{
+- (NSArray *)getEmojiFromString:(BOOL)checkColor checkString:(__autoreleasing NSString **)checkString {
     
     __block NSMutableDictionary *temp = [NSMutableDictionary dictionary];
-    
     
     [self enumerateSubstringsInRange: NSMakeRange(0, [self length]) options:NSStringEnumerationByComposedCharacterSequences usingBlock:
      ^(NSString *substring, __unused NSRange substringRange, __unused NSRange enclosingRange, __unused BOOL *stop){
@@ -1391,7 +1487,7 @@ static unsigned char strToChar (char a, char b)
              if (substring.length > 1) {
                  unichar ls = [substring characterAtIndex:1];
                  int uc = ((hs - 0xd800) * 0x400) + (ls - 0xdc00) + 0x10000;
-                 if (0x1d000 <= uc && uc <= 0x1f77f) {
+                 if (0x1d000 <= uc && uc <= 129300) {
                      
                      [temp setObject:substring forKey:@(uc)];
                  }
@@ -1417,37 +1513,38 @@ static unsigned char strToChar (char a, char b)
              }
          }
          
-         // // surrogate pair
-         // if (0xd800 <= hs && hs <= 0xdbff) {
-         // const unichar ls = [substring characterAtIndex: 1];
-         // const int uc = ((hs - 0xd800) * 0x400) + (ls - 0xdc00) + 0x10000;
+         //         // surrogate pair
+         //         if (0xd800 <= hs && hs <= 0xdbff) {
+         //             const unichar ls = [substring characterAtIndex: 1];
+         //             const int uc = ((hs - 0xd800) * 0x400) + (ls - 0xdc00) + 0x10000;
          //
-         // if((0x1d000 <= uc && uc <= 0x1f77f)) {
-         // [temp setObject:substring forKey:@(uc)];
-         // }
+         //             if((0x1d000 <= uc && uc <= 0x1f77f)) {
+         //                 [temp setObject:substring forKey:@(uc)];
+         //             }
          //
          //
-         // // non surrogate
-         // } else {
-         // if((0x2100 <= hs && hs <= 0x26ff)) {
-         // [temp setObject:substring forKey:@(hs)];
-         // }
+         //             // non surrogate
+         //         } else {
+         //             if((0x2100 <= hs && hs <= 0x26ff)) {
+         //                 [temp setObject:substring forKey:@(hs)];
+         //             }
          //
-         // }
+         //         }
      }];
+    
+    if (checkString) {
+        NSArray *tempValues = [temp allValues];
+        if (tempValues.count > 0) {
+            *checkString = (NSString *)tempValues[0];
+        }
+    }
     
     if(checkColor) {
         NSMutableDictionary *t = [[NSMutableDictionary alloc] init];
         
         [temp enumerateKeysAndObjectsUsingBlock:^(id key, id obj, __unused BOOL *stop) {
-            
-            
             NSString *e = [self realEmoji:obj];
-            
             [t setObject:e forKey:key];
-            
-            
-            
         }];
         
         return [t allValues];
@@ -1458,9 +1555,7 @@ static unsigned char strToChar (char a, char b)
     
 }
 
--(NSString *)realEmoji:(NSString *)raceEmoji
-{
-    
+-(NSString *)realEmoji:(NSString *)raceEmoji {
     NSString *e = raceEmoji;
     
     if(raceEmoji.length == 4) {

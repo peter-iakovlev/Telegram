@@ -57,6 +57,8 @@ typedef enum {
     
     if (_manualProgress) {
         if ([[self boundView] isKindOfClass:[TGSignalImageViewWithProgress class]]) {
+            ((TGSignalImageViewWithProgress *)self.boundView).manualProgress = _manualProgress;
+            
             switch (_overlay) {
                 case TGSignalImageViewModelOverlayProgress:
                     ((TGSignalImageViewWithProgress *)self.boundView).progress = _progress;

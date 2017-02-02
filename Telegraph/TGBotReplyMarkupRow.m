@@ -24,6 +24,14 @@
     [coder encodeArray:_buttons forCKey:"buttons"];
 }
 
+- (instancetype)initWithCoder:(NSCoder *)aDecoder {
+    return [self initWithButtons:[aDecoder decodeObjectForKey:@"buttons"]];
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder {
+    [aCoder encodeObject:_buttons forKey:@"buttons"];
+}
+
 - (BOOL)isEqual:(id)object
 {
     return [object isKindOfClass:[TGBotReplyMarkupRow class]] && [((TGBotReplyMarkupRow *)object)->_buttons isEqual:_buttons];

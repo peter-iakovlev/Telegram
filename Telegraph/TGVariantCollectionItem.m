@@ -52,6 +52,7 @@
     [((TGVariantCollectionItemView *)view) setVariant:_variant];
     [((TGVariantCollectionItemView *)view) setIcon:_icon];
     [((TGVariantCollectionItemView *)view) setEnabled:_enabled];
+    [((TGVariantCollectionItemView *)view) setHideArrow:_hideArrow];
 }
 
 - (void)itemSelected:(id)actionTarget

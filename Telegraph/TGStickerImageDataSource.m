@@ -362,7 +362,8 @@ static ASQueue *taskManagementQueue()
             }
         }
         
-        image = TGBlurredAlphaImage(image, CGSizeMake(size.width / 2.0f, size.height / 2.0f));
+        if (![args[@"inhibitBlur"] boolValue])
+            image = TGBlurredAlphaImage(image, CGSizeMake(size.width / 2.0f, size.height / 2.0f));
     }
     
     thumbnailSourceImage = image;

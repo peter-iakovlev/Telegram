@@ -6,6 +6,7 @@
 #import "TGPhotoEditorUtils.h"
 #import "TGImageUtils.h"
 #import "TGTimer.h"
+#import "TGBlurEffect.h"
 
 #import "TGPhotoCropScrollView.h"
 #import "TGPhotoCropAreaView.h"
@@ -33,12 +34,13 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     
     TGPhotoCropScrollView *_scrollView;
     UIView *_contentWrapperView;
-    UIImageView *_backdropView;
+    UIVisualEffectView *_blurView;
     UIImageView *_imageView;
     UIView *_snapshotView;
     CGSize _snapshotSize;
+    UIImageView *_paintingImageView;
     
-    UIImage *_backdropImage;
+    UIImage *_paintingImage;
     
     bool _hasArbitraryRotation;
     bool _animatingRotation;
@@ -108,6 +110,14 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
         };
         [_areaWrapperView addSubview:_scrollView];
         
+        if (iosMajorVersion() >= 9)
+        {
+            _blurView = [[UIVisualEffectView alloc] initWithEffect:[TGBlurEffect cropBlurEffect]];
+            _blurView.alpha = 0.0f;
+            _blurView.userInteractionEnabled = false;
+            [_areaWrapperView addSubview:_blurView];
+        }
+        
         _overlayWrapperView = [[UIView alloc] initWithFrame:CGRectZero];
         _overlayWrapperView.userInteractionEnabled = false;
         [_areaWrapperView addSubview:_overlayWrapperView];
@@ -145,7 +155,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
             
             strongSelf->_previousAreaFrame = strongSelf->_areaView.frame;
             
-            [strongSelf resetBackdropViewsAnimated:true];
+            [strongSelf resetBackdropViewsAnimated:false];
             [strongSelf cancelConfirmCountdown];
             [strongSelf->_areaView setGridMode:TGPhotoCropViewGridModeMajor animated:true];
             [strongSelf setIntefaceHidden:true animated:true];
@@ -260,6 +270,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     }
     
     _scrollView.hidden = true;
+    _blurView.hidden = true;
     [UIView animateWithDuration:0.1f delay:0.0f options:UIViewAnimationOptionCurveEaseOut animations:^
     {
         _areaView.alpha = 0.0f;
@@ -278,7 +289,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     if (animated)
         _scrollView.alpha = 0.0f;
     
-    [UIView animateWithDuration:0.25f delay:0.0f options:UIViewAnimationOptionCurveEaseInOut animations:^
+    [UIView animateWithDuration:0.35f delay:0.0f options:UIViewAnimationOptionCurveEaseInOut animations:^
     {
         if (animated)
             _scrollView.alpha = 1.0f;
@@ -319,15 +330,6 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     
     _scrollView.imageView = _imageView;
     
-    _backdropView = [[UIImageView alloc] initWithFrame:CGRectMake(-_contentWrapperView.frame.size.width / 2,
-                                                                  -_contentWrapperView.frame.size.height / 2,
-                                                                  _contentWrapperView.frame.size.width * 2,
-                                                                  _contentWrapperView.frame.size.height * 2)];
-    if (_backdropImage != nil)
-        _backdropView.image = _backdropImage;
-    _backdropView.alpha = 0.0f;
-    [_contentWrapperView addSubview:_backdropView];
-    
     [self _layoutAreaViewAnimated:false completion:nil];
     [self _zoomToCropRectWithFrame:_scrollView.bounds animated:false completion:nil];
     
@@ -345,6 +347,16 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
         [_contentWrapperView addSubview:_snapshotView];
         
         _contentWrapperView.transform = transform;
+    }
+    
+    if (_paintingImage != nil)
+    {
+        _paintingImageView = [[UIImageView alloc] initWithFrame:_imageView.frame];
+        _paintingImageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        _paintingImageView.image = _paintingImage;
+        [_contentWrapperView addSubview:_paintingImageView];
+        
+        [_scrollView setPaintingImage:_paintingImage];
     }
 }
 
@@ -364,15 +376,24 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     _snapshotSize = snapshotImage.size;
     
     UIImageView *imageSnapshotView = [[UIImageView alloc] initWithImage:snapshotImage];
-    
     _snapshotView = imageSnapshotView;
 }
 
 - (void)setSnapshotView:(UIView *)snapshotView
 {
     [_snapshotView removeFromSuperview];
-    
     _snapshotView = snapshotView;
+}
+
+- (void)setPaintingImage:(UIImage *)paintingImage
+{
+    _paintingImage = paintingImage;
+    
+    if (_paintingImageView != nil)
+    {
+        _paintingImageView.hidden = (paintingImage == nil);
+        _paintingImageView.image = paintingImage;
+    }
 }
 
 #pragma mark - Crop Area
@@ -439,38 +460,39 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
 
 #pragma mark - Backdrop
 
-- (void)setBackdropImage:(UIImage *)backdropImage
-{
-    _backdropImage = backdropImage;
-    if (_backdropView != nil)
-        _backdropView.image = backdropImage;
-}
-
 - (void)showBackdropViewAnimated:(bool)animated
 {
-    if (_imageView.image == nil)
+    if (iosMajorVersion() < 9 || _imageView.image == nil)
         return;
     
-    [_scrollView setSnapshotViewEnabled:true];
+    UIView *superview = self.superview.superview;
+    _blurView.frame = [superview convertRect:superview.bounds toView:_blurView.superview];
+    
+    UIView *snapshotView = [_scrollView setSnapshotViewEnabled:true];
+    snapshotView.frame = _scrollView.frame;
+    [_areaWrapperView insertSubview:snapshotView aboveSubview:_blurView];
     
     if (animated)
     {
         [UIView animateWithDuration:0.16f delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^
         {
-            _backdropView.alpha = 1.0f;
+            _blurView.alpha = 1.0f;
         } completion:nil];
     }
     else
     {
-        _backdropView.alpha = 1.0f;
+        _blurView.alpha = 1.0f;
     }
 }
 
 - (void)resetBackdropViewsAnimated:(bool)animated
 {
+    if (iosMajorVersion() < 9)
+        return;
+    
     if (animated)
     {
-        if (_backdropView.alpha == 0)
+        if (_blurView.alpha == 0)
         {
             [_scrollView setSnapshotViewEnabled:false];
             return;
@@ -478,7 +500,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
         
         [UIView animateWithDuration:0.16f delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^
         {
-            _backdropView.alpha = 0.0f;
+            _blurView.alpha = 0.0f;
         } completion:^(BOOL finished)
         {
             if (finished)
@@ -488,7 +510,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     else
     {
         [_scrollView setSnapshotViewEnabled:false];
-        _backdropView.alpha = 0.0f;
+        _blurView.alpha = 0.0f;
     }
 }
 
@@ -717,7 +739,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
 
 - (UIImage *)croppedImageWithMaxSize:(CGSize)maxSize
 {
-    return TGPhotoEditorCrop(_imageView.image, self.cropOrientation, self.rotation, self.cropRect, maxSize, _originalSize, true);
+    return TGPhotoEditorVideoCrop(_imageView.image, _paintingImage, self.cropOrientation, self.rotation, self.cropRect, self.mirrored, maxSize, _originalSize, true, true);
 }
 
 #pragma mark - Rotation
@@ -744,12 +766,17 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     [_rotationView setAngle:rotation animated:animated];
 }
 
+- (void)setMirrored:(bool)mirrored
+{
+    _mirrored = mirrored;
+    [_scrollView setContentMirrored:mirrored];
+}
+
 - (void)rotate90DegreesCCWAnimated:(bool)animated
 {
     if (_animatingConfirm || _scrollView.animating)
         return;
     
-    [self resetBackdropViewsAnimated:true];
     [self cancelConfirmCountdown];
     
     UIView *snapshotView = nil;
@@ -841,11 +868,11 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
             [self setCropAreaHidden:false animated:true];
             
             [self showBackdropViewAnimated:false];
-            _backdropView.alpha = 0.0f;
+            _blurView.alpha = 0.0f;
             _imageView.alpha = 0.0f;
             [UIView animateWithDuration:0.16f delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^
             {
-                _backdropView.alpha = 1.0f;
+                _blurView.alpha = 1.0f;
             } completion:^(__unused BOOL finished)
             {
                 _imageView.alpha = 1.0f;
@@ -869,6 +896,29 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
         
         [self showBackdropViewAnimated:false];
     }
+    
+    if (self.croppingChanged != nil)
+        self.croppingChanged();
+}
+
+#pragma mark - 
+
+- (void)mirror
+{
+    if (_animatingConfirm || _scrollView.animating)
+        return;
+    
+    [self cancelConfirmCountdown];
+    
+    self.cropRect = [_scrollView zoomedRect];
+    self.mirrored = !self.mirrored;
+    
+    [self resetBackdropViewsAnimated:false];
+    [_scrollView setContentMirrored:self.mirrored];
+    [self showBackdropViewAnimated:false];
+    
+    [self _layoutAreaViewAnimated:false completion:nil];
+    [self _zoomToCropRectWithFrame:_scrollView.bounds animated:false completion:nil];
     
     if (self.croppingChanged != nil)
         self.croppingChanged();
@@ -952,7 +1002,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     
     _animatingConfirm = true;
     
-    if (self.cropOrientation != UIImageOrientationUp && (ABS(_rotation) > FLT_EPSILON || !_CGRectEqualToRectWithEpsilon(_cropRect, CGRectMake(0, 0, _originalSize.width, _originalSize.height), FLT_EPSILON)))
+    if (self.cropOrientation != UIImageOrientationUp && (_mirrored || ABS(_rotation) > FLT_EPSILON || !_CGRectEqualToRectWithEpsilon(_cropRect, CGRectMake(0, 0, _originalSize.width, _originalSize.height), FLT_EPSILON)))
         animated = false;
     
     _cropAreaChanged = false;
@@ -972,6 +1022,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     _cropRect = originalCropRect;
     _rotation = 0.0f;
     _cropOrientation = UIImageOrientationUp;
+    _mirrored = false;
     
     if (animated && _cropOrientation != UIImageOrientationUp)
     {
@@ -983,6 +1034,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     [_areaView setGridMode:TGPhotoCropViewGridModeNone animated:animated];
     
     [_scrollView resetRotationStartValues];
+    [_scrollView setContentMirrored:false];
     
     [self evenlyFillAreaViewAnimated:animated reset:true completion:^
     {

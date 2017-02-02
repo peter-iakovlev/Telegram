@@ -6,21 +6,7 @@
 
 #import "TGDocumentMediaAttachment+Telegraph.h"
 
-/*
- @property (nonatomic) int64_t webPageId;
- @property (nonatomic, strong) NSString *url;
- @property (nonatomic, strong) NSString *displayUrl;
- @property (nonatomic, strong) NSString *pageType;
- @property (nonatomic, strong) NSString *siteName;
- @property (nonatomic, strong) NSString *title;
- @property (nonatomic, strong) NSString *pageDescription;
- @property (nonatomic, strong) TGImageInfo *photoInfo;
- @property (nonatomic, strong) NSString *embedUrl;
- @property (nonatomic, strong) NSString *embedType;
- @property (nonatomic) CGSize embedSize;
- @property (nonatomic, strong) NSNumber *duration;
- @property (nonatomic, strong) NSString *author;
- */
+#import "TGInstantPage+TG.h"
 
 @implementation TGWebPageMediaAttachment (Telegraph)
 
@@ -57,6 +43,11 @@
                     self.document = document;
                 }
             }
+            
+            if (webPage.cached_page != nil) {
+                self.instantPage = [TGInstantPage parse:webPage.cached_page];
+            }
+            self.webPageHash = webPage.n_hash;
         }
         else if ([desc isKindOfClass:[TLWebPage$webPagePending class]])
         {

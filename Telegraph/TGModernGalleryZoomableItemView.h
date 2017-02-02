@@ -21,4 +21,6 @@
 
 - (void)reset;
 
+- (void)forceUpdateLayout;
+
 @end

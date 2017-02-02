@@ -12,6 +12,7 @@
 
 @class TGModernViewInlineMediaContext;
 @class TGConversation;
+@class TGMessage;
 
 typedef struct {
     int32_t mid;
@@ -29,18 +30,26 @@ typedef struct {
 @property (nonatomic) bool commandsEnabled;
 @property (nonatomic, strong) NSString *searchText;
 @property (nonatomic, strong) TGConversation *conversation;
+@property (nonatomic, strong) TGConversation *conversationForUnreadCalculations;
 @property (nonatomic) bool isBot;
+@property (nonatomic) bool isPublicGroup;
 @property (nonatomic) bool autoplayAnimations;
+
+@property (nonatomic) bool outgoingMessagesAreAlwaysRead;
 
 @property (nonatomic, strong) SSignal *playingAudioMessageStatus;
 @property (nonatomic, copy) void (^playAudioMessageId)(int32_t);
 @property (nonatomic, copy) void (^resumeAudioMessage)();
 @property (nonatomic, copy) void (^pauseAudioMessage)();
 
+@property (nonatomic, strong) SSignal *callbackInProgress;
+
 - (bool)isMediaVisibleInMessage:(int32_t)messageId;
 - (bool)isMessageChecked:(int32_t)messageId;
 - (bool)isSecretMessageViewed:(int32_t)messageId;
 - (bool)isSecretMessageScreenshotted:(int32_t)messageId;
 - (NSTimeInterval)secretMessageViewDate:(int32_t)messageId;
+
+- (bool)isMessageUnread:(TGMessage *)message;
 
 @end

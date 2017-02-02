@@ -61,7 +61,7 @@
         _contentModel = [[TGModernFlatteningViewModel alloc] initWithContext:nil];
         
         _textModel = [[TGModernTextViewModel alloc] initWithText:text font:TGCoreTextSystemFontOfSize(16.0f)];
-        _textModel.textCheckingResults = [TGMessage textCheckingResultsForText:text highlightMentionsAndTags:true highlightCommands:true];
+        _textModel.textCheckingResults = [TGMessage textCheckingResultsForText:text highlightMentionsAndTags:true highlightCommands:true entities:nil];
         _textModel.layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightCommands | TGReusableLabelLayoutHighlightLinks;
         [_textModel layoutForContainerSize:CGSizeMake([self maximumContentWidth], CGFLOAT_MAX)];
         [_contentModel addSubmodel:_textModel];

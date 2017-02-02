@@ -151,13 +151,12 @@
                     if (message.contentProperties[@"contentsRead"] == nil) {
                         NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
                         contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
-                        message.contentProperties = contentProperties;
                         
                         TGDatabaseAction action = { .type = TGDatabaseActionReadMessageContents, .subject = message.mid, .arg0 = 0, .arg1 = 0};
                         [TGDatabaseInstance() storeQueuedActions:[NSArray arrayWithObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]]];
                         [ActionStageInstance() requestActor:@"/tg/service/synchronizeactionqueue/(global)" options:nil watcher:TGTelegraphInstance];
                         
-                        [TGDatabaseInstance() updateMessage:message.mid peerId:message.cid withMessage:message];
+                        [TGDatabaseInstance() transactionUpdateMessages:@[[[TGDatabaseUpdateContentsRead alloc] initWithPeerId:message.cid messageId:message.mid]] updateConversationDatas:nil];
                         
                         [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/conversation/*/readmessageContents"] resource:@{@"messageIds": @[@(message.mid)]}];
                     }
@@ -308,6 +307,12 @@
             [helper description]; //keep reference
         }];
     }];
+}
+
++ (SSignal *)playlistForItem:(TGMusicPlayerItem *)item voice:(bool)voice {
+    TGMusicPlayerPlaylist *playlist = [[TGMusicPlayerPlaylist alloc] initWithVoice:voice items:@[item] itemKeyAliases:@{} markItemAsViewed:^(__unused TGMusicPlayerItem *item) {
+    }];
+    return [SSignal single:playlist];
 }
 
 @end

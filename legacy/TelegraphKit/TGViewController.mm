@@ -3,8 +3,10 @@
 #import "TGToolbarButton.h"
 #import "TGLabel.h"
 #import "TGStringUtils.h"
+#import "Freedom.h"
 
 #import "TGNavigationController.h"
+#import "TGOverlayControllerWindow.h"
 
 #import <QuartzCore/QuartzCore.h>
 
@@ -793,7 +795,8 @@ static std::set<int> autorotationLockIds;
 {
     CGRect statusBarFrame = [[UIApplication sharedApplication] statusBarFrame];
     CGFloat minStatusBarHeight = [self prefersStatusBarHidden] ? 0.0f : 20.0f;
-    return MAX(minStatusBarHeight, MIN(statusBarFrame.size.width, statusBarFrame.size.height));
+    CGFloat statusBarHeight = MAX(minStatusBarHeight, MIN(statusBarFrame.size.width, statusBarFrame.size.height));
+    return MIN(40.0f, statusBarHeight + _additionalStatusBarHeight);
 }
 
 - (void)viewControllerStatusBarWillChangeFrame:(NSNotification *)notification
@@ -803,6 +806,7 @@ static std::set<int> autorotationLockIds;
         CGRect statusBarFrame = [[[notification userInfo] objectForKey:UIApplicationStatusBarFrameUserInfoKey] CGRectValue];
         CGFloat minStatusBarHeight = [self prefersStatusBarHidden] ? 0.0f : 20.0f;
         CGFloat statusBarHeight = MAX(minStatusBarHeight, MIN(statusBarFrame.size.width, statusBarFrame.size.height));
+        statusBarHeight = MIN(40.0f, statusBarHeight + _additionalStatusBarHeight);
         
         CGFloat keyboardHeight = [self _currentKeyboardHeight:self.interfaceOrientation];
         
@@ -922,7 +926,33 @@ static std::set<int> autorotationLockIds;
 
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
-    return UIStatusBarStyleDefault;
+    if (!TGAppDelegateInstance.rootController.callStatusBarHidden)
+        return UIStatusBarStyleLightContent;
+    else
+        return UIStatusBarStyleDefault;
+}
+
+- (void)setNeedsStatusBarAppearanceUpdate
+{
+    [super setNeedsStatusBarAppearanceUpdate];
+    
+    if (iosMajorVersion() < 8)
+        return;
+    
+    UIWindow *lastWindow = [UIApplication sharedApplication].windows.lastObject;
+    if (lastWindow != self.view.window && [lastWindow isKindOfClass:[TGOverlayControllerWindow class]])
+    {
+        static void (*methodImpl)(id, SEL) = NULL;
+        static dispatch_once_t onceToken;
+        static SEL methodSelector = NULL;
+        dispatch_once(&onceToken, ^
+        {
+            methodImpl = (void (*)(id, SEL))freedomImpl([UIApplication sharedApplication], 0xa7a8dd8a, NULL);
+        });
+        
+        if (methodImpl != NULL)
+            methodImpl([UIApplication sharedApplication], methodSelector);
+    }
 }
 
 - (void)adjustToInterfaceOrientation:(UIInterfaceOrientation)orientation
@@ -943,6 +973,16 @@ static std::set<int> autorotationLockIds;
 - (void)setAdditionalNavigationBarHeight:(CGFloat)additionalNavigationBarHeight
 {
     _additionalNavigationBarHeight = additionalNavigationBarHeight;
+    
+    CGFloat statusBarHeight = [self _currentStatusBarHeight];
+    CGFloat keyboardHeight = [self _currentKeyboardHeight:self.interfaceOrientation];
+    
+    [self _updateControllerInsetForOrientation:self.interfaceOrientation statusBarHeight:statusBarHeight keyboardHeight:keyboardHeight force:false notify:true];
+}
+
+- (void)setAdditionalStatusBarHeight:(CGFloat)additionalStatusBarHeight
+{
+    _additionalStatusBarHeight = additionalStatusBarHeight;
     
     CGFloat statusBarHeight = [self _currentStatusBarHeight];
     CGFloat keyboardHeight = [self _currentKeyboardHeight:self.interfaceOrientation];
@@ -1302,6 +1342,13 @@ static std::set<int> autorotationLockIds;
 {
     if (TGIsPad() && iosMajorVersion() >= 7)
         viewControllerToPresent.preferredContentSize = [self.navigationController preferredContentSize];
+    
+    if ([viewControllerToPresent isKindOfClass:[TGNavigationController class]])
+    {
+        TGNavigationController *navController = (TGNavigationController *)self.navigationController;
+        if (navController.showCallStatusBar)
+            [(TGNavigationController *)viewControllerToPresent setShowCallStatusBar:true];
+    }
     
     if (iosMajorVersion() >= 8 && self.presentedViewController != nil && [self.presentedViewController isKindOfClass:[UIAlertController class]])
     {

@@ -14,6 +14,7 @@
 
 #import "TGMediaSelectionContext.h"
 #import "TGMediaEditingContext.h"
+#import "TGVideoEditAdjustments.h"
 #import "TGMediaPickerGallerySelectedItemsModel.h"
 
 #import "TGModernGallerySelectableItem.h"
@@ -30,6 +31,10 @@
 #import "TGMediaPickerPhotoCounterButton.h"
 #import "TGMediaPickerPhotoStripView.h"
 
+#import "TGMenuView.h"
+
+#import "TGPhotoCaptionInputMixin.h"
+
 @interface TGMediaPickerGalleryInterfaceView ()
 {
     id<TGModernGalleryItem> _currentItem;
@@ -42,26 +47,24 @@
     NSMutableArray *_itemFooterViews;
     
     UIView *_wrapperView;
-    UIView *_progressWrapperView;
     UIView *_headerWrapperView;
     TGPhotoToolbarView *_portraitToolbarView;
     TGPhotoToolbarView *_landscapeToolbarView;
     
+    TGPhotoCaptionInputMixin *_captionMixin;
+    
     TGCheckButtonView *_checkButton;
     TGMediaPickerPhotoCounterButton *_photoCounterButton;
-    TGMediaPickerPhotoCounterButton *_progressCounterButton;
     
     TGMediaPickerPhotoStripView *_selectedPhotosView;
     
     SMetaDisposable *_adjustmentsDisposable;
+    SMetaDisposable *_captionDisposable;
     SMetaDisposable *_itemAvailabilityDisposable;
     SMetaDisposable *_itemSelectedDisposable;
     
-    UIView *_progressContainer;
-    TGModernButton *_progressButton;
-    TGMessageImageViewOverlayView *_progressView;
-    
     void (^_closePressed)();
+    void (^_scrollViewOffsetRequested)(CGFloat offset);
 }
 @end
 
@@ -149,53 +152,68 @@
         
         [self updateEditorButtonsForItem:focusItem animated:false];
         
-        _progressContainer = [[UIView alloc] initWithFrame:self.bounds];
-        _progressContainer.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        _progressContainer.alpha = 0.0f;
-        _progressContainer.backgroundColor = UIColorRGBA(0x000000, 0.7f);
-        _progressContainer.userInteractionEnabled = false;
-        [self addSubview:_progressContainer];
-        
-        CGFloat diameter = 50.0f;
-        
-        _progressButton = [[TGModernButton alloc] initWithFrame:CGRectMake(CGFloor((_progressContainer.frame.size.width - diameter) / 2.0f), CGFloor((_progressContainer.frame.size.height - diameter) / 2.0f), diameter, diameter)];
-        _progressButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
-        _progressButton.exclusiveTouch = true;
-        _progressButton.modernHighlight = true;
-        [_progressButton addTarget:self action:@selector(progressCancelPressed) forControlEvents:UIControlEventTouchUpInside];
-        [_progressContainer addSubview:_progressButton];
-        
-        static UIImage *highlightImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.4f).CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-            highlightImage = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-        });
-        
-        _progressButton.highlightImage = highlightImage;
-        
-        _progressView = [[TGMessageImageViewOverlayView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, diameter, diameter)];
-        _progressView.userInteractionEnabled = false;
-        
-        [_progressButton addSubview:_progressView];
-        
-        _progressWrapperView = [[UIView alloc] initWithFrame:CGRectZero];
-        _progressWrapperView.userInteractionEnabled = false;
-        [self addSubview:_progressWrapperView];
-        
-        _progressCounterButton = [[TGMediaPickerPhotoCounterButton alloc] initWithFrame:CGRectMake(0, 0, 64, 38)];
-        _progressCounterButton.hidden = true;
-        _progressCounterButton.userInteractionEnabled = false;
-        [_progressWrapperView addSubview:_progressCounterButton];
-        
         _adjustmentsDisposable = [[SMetaDisposable alloc] init];
+        _captionDisposable = [[SMetaDisposable alloc] init];
         _itemSelectedDisposable = [[SMetaDisposable alloc] init];
         _itemAvailabilityDisposable = [[SMetaDisposable alloc] init];
+        
+        _captionMixin = [[TGPhotoCaptionInputMixin alloc] init];
+        _captionMixin.panelParentView = ^UIView *
+        {
+            __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
+            return strongSelf->_wrapperView;
+        };
+        
+        _captionMixin.panelFocused = ^
+        {
+            __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            TGModernGalleryItemView *currentItemView = strongSelf->_currentItemView;
+            if ([currentItemView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]])
+            {
+                TGMediaPickerGalleryVideoItemView *videoItemView = (TGMediaPickerGalleryVideoItemView *)strongSelf->_currentItemView;
+                [videoItemView stop];
+            }
+            
+            [strongSelf setSelectionInterfaceHidden:true animated:true];
+            [strongSelf setItemHeaderViewHidden:true animated:true];
+        };
+        
+        _captionMixin.finishedWithCaption = ^(NSString *caption)
+        {
+            __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            [strongSelf setSelectionInterfaceHidden:false delay:0.25 animated:true];
+            [strongSelf setItemHeaderViewHidden:false animated:true];
+            
+            if (strongSelf.captionSet != nil)
+                strongSelf.captionSet(strongSelf->_currentItem, caption);
+            
+            [strongSelf updateEditorButtonsForItem:strongSelf->_currentItem animated:false];
+        };
+        
+        _captionMixin.keyboardHeightChanged = ^(CGFloat keyboardHeight, NSTimeInterval duration, NSInteger animationCurve)
+        {
+            __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            CGFloat offset = 0.0f;
+            if (keyboardHeight > 0)
+                offset = -keyboardHeight / 2.0f;
+            
+            [UIView animateWithDuration:duration delay:0.0f options:animationCurve animations:^
+            {
+                if (strongSelf->_scrollViewOffsetRequested != nil)
+                    strongSelf->_scrollViewOffsetRequested(offset);
+            } completion:nil];
+        };
+        
+        [_captionMixin createInputPanelIfNeeded];
     }
     return self;
 }
@@ -203,13 +221,31 @@
 - (void)dealloc
 {
     [_adjustmentsDisposable dispose];
+    [_captionDisposable dispose];
     [_itemSelectedDisposable dispose];
     [_itemAvailabilityDisposable dispose];
+}
+
+- (void)setHasCaptions:(bool)hasCaptions
+{
+    _hasCaptions = hasCaptions;
+    if (!hasCaptions)
+        [_captionMixin destroy];
+}
+
+- (void)setSuggestionContext:(TGSuggestionContext *)suggestionContext
+{
+    _captionMixin.suggestionContext = suggestionContext;
 }
 
 - (void)setClosePressed:(void (^)())closePressed
 {
     _closePressed = [closePressed copy];
+}
+
+- (void)setScrollViewOffsetRequested:(void (^)(CGFloat))scrollViewOffsetRequested
+{
+    _scrollViewOffsetRequested = [scrollViewOffsetRequested copy];
 }
 
 - (void)setEditorTabPressed:(void (^)(TGPhotoEditorTab tab))editorTabPressed
@@ -221,8 +257,8 @@
         if (strongSelf == nil)
             return;
         
-        if (tab == TGPhotoEditorRotateTab)
-            [strongSelf rotateVideo];
+        if (tab == TGPhotoEditorGifTab)
+            [strongSelf toggleSendAsGif];
         else
             editorTabPressed(tab);
     };
@@ -279,23 +315,25 @@
     
     [self updateEditorButtonsForItem:item animated:true];
     
+    __weak TGModernGalleryItemView *weakItemView = itemView;
     [_itemAvailabilityDisposable setDisposable:[[[itemView contentAvailabilityStateSignal] deliverOn:[SQueue mainQueue]] startWithNext:^(id next)
     {
         __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
-        if (strongSelf == nil)
+        __strong TGModernGalleryItemView *strongItemView = weakItemView;
+        if (strongSelf == nil || strongItemView == nil)
             return;
 
         bool available = [next boolValue];
         
         NSString *itemId = nil;
-        if ([itemView.item respondsToSelector:@selector(uniqueId)])
+        if ([strongItemView.item respondsToSelector:@selector(uniqueId)])
             itemId = [itemView.item performSelector:@selector(uniqueId)];
                       
         NSString *currentId = nil;
         if ([strongSelf->_currentItem respondsToSelector:@selector(uniqueId)])
             currentId = [strongSelf->_currentItem performSelector:@selector(uniqueId)];
         
-        if (itemView.item == strongSelf->_currentItem || [itemId isEqualToString:currentId])
+        if (strongItemView.item == strongSelf->_currentItem || [itemId isEqualToString:currentId])
         {
             [strongSelf->_portraitToolbarView setEditButtonsEnabled:available animated:true];
             [strongSelf->_landscapeToolbarView setEditButtonsEnabled:available animated:true];
@@ -317,72 +355,6 @@
 - (void)setThumbnailSignalForItem:(SSignal *(^)(id))thumbnailSignalForItem
 {
     [_selectedPhotosView setThumbnailSignalForItem:thumbnailSignalForItem];
-}
-
-- (void)showVideoConversionProgressForItemsCount:(NSInteger)itemsCount
-{
-    TGMediaPickerGalleryVideoItemView *videoItemView = (TGMediaPickerGalleryVideoItemView *)_currentItemView;
-    if ([videoItemView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]])
-        [videoItemView setPlayButtonHidden:true animated:true];
-    
-    _progressContainer.userInteractionEnabled = true;
-    
-    [_progressView setProgress:0.005f cancelEnabled:false animated:false];
-    [UIView animateWithDuration:0.2 delay:0.0 options:[TGViewController preferredAnimationCurve] << 16 animations:^
-    {
-        _progressContainer.alpha = 1.0f;
-    } completion:nil];
-
-    [_photoCounterButton setSelected:false animated:true];
-    [_selectedPhotosView setHidden:true animated:true];
-    
-    if (itemsCount > 1)
-    {
-        _photoCounterButton.hidden = true;
-        _progressCounterButton.hidden = false;
-        _progressCounterButton.internalHidden = false;
-        [_progressCounterButton setSelectedCount:itemsCount animated:false];
-        [self updateVideoConversionActiveItemNumber:1];
-    }
-}
-
-- (void)updateVideoConversionActiveItemNumber:(NSInteger)itemNumber
-{
-    if (!_progressCounterButton.hidden)
-        [_progressCounterButton setActiveNumber:itemNumber animated:true];
-}
-
-- (void)updateVideoConversionProgress:(CGFloat)progress cancelEnabled:(bool)cancelEnabled
-{
-    [_progressView setProgress:progress cancelEnabled:cancelEnabled animated:true];
-}
-
-- (void)progressCancelPressed
-{
-    if (self.videoConversionCancelled != nil)
-        self.videoConversionCancelled();
-    
-    _progressContainer.userInteractionEnabled = false;
-    
-    [UIView animateWithDuration:0.3 delay:0.0 options:[TGViewController preferredAnimationCurve] << 16 animations:^
-    {
-        _progressContainer.alpha = 0.0f;
-    } completion:^(__unused BOOL finished)
-    {
-        [_progressView setProgress:0.0f cancelEnabled:false animated:false];
-        
-        TGMediaPickerGalleryVideoItemView *videoItemView = (TGMediaPickerGalleryVideoItemView *)_currentItemView;
-        if ([videoItemView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]])
-            [videoItemView setPlayButtonHidden:false animated:true];
-    }];
-    
-    if (!_progressCounterButton.hidden)
-    {
-        [_progressCounterButton cancelledProcessingAnimated:true completion:^{
-            _progressCounterButton.hidden = true;
-            _photoCounterButton.hidden = false;
-        }];
-    }
 }
 
 - (void)checkButtonPressed
@@ -414,7 +386,7 @@
 
 - (void)updateEditorButtonsForItem:(id<TGModernGalleryItem>)item animated:(bool)animated
 {
-    if (_editingContext == nil)
+    if (_editingContext == nil || _editingContext.inhibitEditing)
     {
         [_portraitToolbarView setEditButtonsHidden:true animated:false];
         [_landscapeToolbarView setEditButtonsHidden:true animated:false];
@@ -429,7 +401,10 @@
         tabs &= ~TGPhotoEditorCaptionTab;
     
     if (iosMajorVersion() < 7)
+    {
+        tabs &= ~ TGPhotoEditorPaintTab;
         tabs &= ~ TGPhotoEditorToolsTab;
+    }
     
     [_portraitToolbarView setToolbarTabs:tabs animated:animated];
     [_landscapeToolbarView setToolbarTabs:tabs animated:animated];
@@ -441,57 +416,56 @@
     if (editButtonsHidden)
     {
         [_adjustmentsDisposable setDisposable:nil];
+        [_captionDisposable setDisposable:nil];
         return;
     }
-        
+    
     id<TGModernGalleryEditableItem> galleryEditableItem = (id<TGModernGalleryEditableItem>)item;
     if ([item conformsToProtocol:@protocol(TGModernGalleryEditableItem)])
     {
         id<TGMediaEditableItem> editableMediaItem = [galleryEditableItem editableMediaItem];
         
-        SSignal *adjustmentsSignal = [[galleryEditableItem.editingContext adjustmentsSignalForItem:editableMediaItem] map:^id(id value)
-        {
-            if (value == nil)
-                return [NSNull null];
-            
-            return value;
-        }];
-        SSignal *captionSignal = [[galleryEditableItem.editingContext captionSignalForItem:editableMediaItem] map:^id(id value)
-        {
-            if (value == nil)
-                return [NSNull null];
-            
-            return value;
-        }];
-  
-        SSignal *signal = [SSignal combineSignals:@[ adjustmentsSignal, captionSignal ]];
-        
         __weak TGMediaPickerGalleryInterfaceView *weakSelf = self;
-        [_adjustmentsDisposable setDisposable:[[signal deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *next)
+        [_adjustmentsDisposable setDisposable:[[[galleryEditableItem.editingContext adjustmentsSignalForItem:editableMediaItem] deliverOn:[SQueue mainQueue]] startWithNext:^(id<TGMediaEditAdjustments> adjustments)
         {
             __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
             if (strongSelf == nil)
                 return;
             
-            id<TGMediaEditAdjustments> adjustments = next.firstObject;
-            adjustments = [adjustments isKindOfClass:[NSNull class]] ? nil : adjustments;
+            if ([adjustments isKindOfClass:[TGVideoEditAdjustments class]])
+            {
+                TGVideoEditAdjustments *videoAdjustments = (TGVideoEditAdjustments *)adjustments;
+                [strongSelf->_captionMixin setCaptionPanelHidden:(videoAdjustments.sendAsGif && strongSelf->_inhibitDocumentCaptions) animated:true];
+            }
+            else
+            {
+                [strongSelf->_captionMixin setCaptionPanelHidden:false animated:true];
+            }
+
+            [strongSelf updateEditorButtonsForAdjustments:adjustments];
+        }]];
+        
+        [_captionDisposable setDisposable:[[galleryEditableItem.editingContext captionSignalForItem:editableMediaItem] startWithNext:^(NSString *caption)
+        {
+            __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
             
-            NSString *caption = next.lastObject;
-            caption = [caption isKindOfClass:[NSNull class]] ? nil : caption;
-            
-            [strongSelf updateEditorButtonsForAdjustments:adjustments hasCaption:(caption.length > 0)];
+            [strongSelf->_captionMixin setCaption:caption animated:animated];
         }]];
     }
     else
     {
         [_adjustmentsDisposable setDisposable:nil];
-        [self updateEditorButtonsForAdjustments:nil hasCaption:false];
+        [_captionDisposable setDisposable:nil];
+        [self updateEditorButtonsForAdjustments:nil];
+        [_captionMixin setCaption:nil animated:animated];
     }
 }
 
-- (void)updateEditorButtonsForAdjustments:(id<TGMediaEditAdjustments>)adjustments hasCaption:(bool)hasCaption
+- (void)updateEditorButtonsForAdjustments:(id<TGMediaEditAdjustments>)adjustments
 {
-    TGPhotoEditorTab highlightedButtons = [TGPhotoEditorTabController highlightedButtonsForEditorValues:adjustments forAvatar:false hasCaption:hasCaption];
+    TGPhotoEditorTab highlightedButtons = [TGPhotoEditorTabController highlightedButtonsForEditorValues:adjustments forAvatar:false];
     [_portraitToolbarView setEditButtonsHighlighted:highlightedButtons];
     [_landscapeToolbarView setEditButtonsHighlighted:highlightedButtons];
 }
@@ -615,13 +589,19 @@
         [UIView animateWithDuration:0.2f animations:^
         {
             for (UIView *view in _itemHeaderViews)
-                view.alpha = hidden ? 0.0f : 1.0f;
+            {
+                if (!view.hidden)
+                    view.alpha = hidden ? 0.0f : 1.0f;
+            }
         } completion:^(BOOL finished)
         {
             if (finished)
             {
                 for (UIView *view in _itemHeaderViews)
-                    view.userInteractionEnabled = !hidden;
+                {
+                    if (!view.hidden)
+                        view.userInteractionEnabled = !hidden;
+                }
             }
         }];
     }
@@ -629,20 +609,23 @@
     {
         for (UIView *view in _itemHeaderViews)
         {
-            view.alpha = hidden ? 0.0f : 1.0f;
-            view.userInteractionEnabled = !hidden;
+            if (!view.hidden)
+            {
+                view.alpha = hidden ? 0.0f : 1.0f;
+                view.userInteractionEnabled = !hidden;
+            }
         }
     }
 }
 
-- (void)rotateVideo
+- (void)toggleSendAsGif
 {
     if (![_currentItem conformsToProtocol:@protocol(TGModernGalleryEditableItem)])
         return;
     
     TGModernGalleryItemView *currentItemView = _currentItemView;
     if ([currentItemView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]])
-        [(TGMediaPickerGalleryVideoItemView *)currentItemView rotate];
+        [(TGMediaPickerGalleryVideoItemView *)currentItemView toggleSendAsGif];
 }
 
 - (CGRect)itemFooterViewFrameForSize:(CGSize)size
@@ -742,19 +725,41 @@
     }
 }
 
+- (void)editorTransitionIn
+{
+    [self setSelectionInterfaceHidden:true animated:true];
+    
+    [UIView animateWithDuration:0.2 animations:^
+    {
+        _captionMixin.inputPanel.alpha = 0.0f;
+    }];
+}
+
+- (void)editorTransitionOut
+{
+    [self setSelectionInterfaceHidden:false animated:true];
+    
+    [UIView animateWithDuration:0.3 animations:^
+    {
+        _captionMixin.inputPanel.alpha = 1.0f;
+    }];
+}
+
 #pragma mark -
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
     UIView *view = [super hitTest:point withEvent:event];
     
-    if ([view isDescendantOfView:_headerWrapperView]
+    if (view == _photoCounterButton
+        || view == _checkButton
+        || [view isDescendantOfView:_headerWrapperView]
         || [view isDescendantOfView:_portraitToolbarView]
         || [view isDescendantOfView:_landscapeToolbarView]
         || [view isDescendantOfView:_selectedPhotosView]
-        || [view isDescendantOfView:_progressContainer]
-        || view == _photoCounterButton
-        || view == _checkButton)
+        || [view isDescendantOfView:_captionMixin.inputPanel]
+        || [view isDescendantOfView:_captionMixin.dismissView]
+        || [view isKindOfClass:[TGMenuButtonView class]])
         
     {
         return view;
@@ -812,26 +817,9 @@
     return frame;
 }
 
-- (void)willRotateWithDuration:(NSTimeInterval)duration
-{    
-    if (!_selectedPhotosView.hidden)
-    {
-        UIView *snapshotView = [_selectedPhotosView snapshotViewAfterScreenUpdates:false];
-        snapshotView.frame = _selectedPhotosView.frame;
-        [_wrapperView insertSubview:snapshotView aboveSubview:_selectedPhotosView];
-        
-        _selectedPhotosView.alpha = 0.0f;
-        
-        [UIView animateWithDuration:duration animations:^
-        {
-            snapshotView.alpha = 0.0f;
-            _selectedPhotosView.alpha = 1.0f;
-        } completion:^(__unused BOOL finished)
-        {
-            [snapshotView removeFromSuperview];
-        }];
-    }
-    
+- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)__unused duration
+{
+    _landscapeToolbarView.interfaceOrientation = toInterfaceOrientation;
     [self setNeedsLayout];
 }
 
@@ -853,17 +841,17 @@
 {
     [super layoutSubviews];
     
-    bool isPad = [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad;
+    [_captionMixin setContentAreaHeight:self.frame.size.height];
     
     UIInterfaceOrientation orientation = [self interfaceOrientation];
     CGSize screenSize = TGScreenSize();
-    if (isPad)
+    if (TGIsPad())
         screenSize = [self referenceViewSize];
     
     CGFloat screenSide = MAX(screenSize.width, screenSize.height);
     UIEdgeInsets screenEdges = UIEdgeInsetsZero;
     
-    if (isPad)
+    if (TGIsPad())
     {
         _landscapeToolbarView.hidden = true;
         screenEdges = UIEdgeInsetsMake(0, 0, self.frame.size.height, self.frame.size.width);
@@ -875,8 +863,6 @@
         _wrapperView.frame = CGRectMake((self.frame.size.width - screenSide) / 2, (self.frame.size.height - screenSide) / 2, screenSide, screenSide);
     }
     
-    _progressWrapperView.frame = _wrapperView.frame;
-    
     _selectedPhotosView.interfaceOrientation = orientation;
     
     CGFloat photosViewSize = TGPhotoThumbnailSizeForCurrentScreen().height + 4 * 2;
@@ -884,27 +870,26 @@
     bool hasHeaderView = (_currentItemView.headerView != nil);
     CGFloat headerInset = hasHeaderView ? 64.0f : 0.0f;
     
+    CGFloat portraitToolbarViewBottomEdge = screenSide;
+    if (self.usesSimpleLayout || TGIsPad())
+        portraitToolbarViewBottomEdge = screenEdges.bottom;
+    _portraitToolbarView.frame = CGRectMake(screenEdges.left, portraitToolbarViewBottomEdge - TGPhotoEditorToolbarSize, self.frame.size.width, TGPhotoEditorToolbarSize);
+    
+    UIEdgeInsets captionEdgeInsets = screenEdges;
+    captionEdgeInsets.bottom = _portraitToolbarView.frame.size.height;
+    [_captionMixin updateLayoutWithFrame:self.bounds edgeInsets:captionEdgeInsets];
+    
     switch (orientation)
     {
         case UIInterfaceOrientationLandscapeLeft:
         {
             [UIView performWithoutAnimation:^
             {
-                _photoCounterButton.frame = CGRectMake(screenEdges.left + [_landscapeToolbarView landscapeSize] + 1,
-                                                       screenEdges.top + 14 + headerInset,
-                                                       64,
-                                                       38);
-                _progressCounterButton.frame = _photoCounterButton.frame;
+                _photoCounterButton.frame = CGRectMake(screenEdges.left + [_landscapeToolbarView landscapeSize] + 1, screenEdges.top + 14 + headerInset, 64, 38);
                 
-                _selectedPhotosView.frame = CGRectMake(screenEdges.left + [_landscapeToolbarView landscapeSize] + 66,
-                                                       screenEdges.top + 4 + headerInset,
-                                                       photosViewSize,
-                                                       self.frame.size.height - 4 * 2 - headerInset);
+                _selectedPhotosView.frame = CGRectMake(screenEdges.left + [_landscapeToolbarView landscapeSize] + 66, screenEdges.top + 4 + headerInset, photosViewSize, self.frame.size.height - 4 * 2 - headerInset);
                 
-                _landscapeToolbarView.frame = CGRectMake(screenEdges.left,
-                                                         screenEdges.top,
-                                                         [_landscapeToolbarView landscapeSize],
-                                                         self.frame.size.height);
+                _landscapeToolbarView.frame = CGRectMake(screenEdges.left, screenEdges.top, [_landscapeToolbarView landscapeSize], self.frame.size.height);
             }];
             
             _headerWrapperView.frame = CGRectMake([_landscapeToolbarView landscapeSize] + screenEdges.left, screenEdges.top, self.frame.size.width - [_landscapeToolbarView landscapeSize], 64);
@@ -915,21 +900,11 @@
         {
             [UIView performWithoutAnimation:^
             {
-                _photoCounterButton.frame = CGRectMake(screenEdges.right - [_landscapeToolbarView landscapeSize] - 64 - 1,
-                                                       screenEdges.top + 14 + headerInset,
-                                                       64,
-                                                       38);
-                _progressCounterButton.frame = _photoCounterButton.frame;
-                                
-                _selectedPhotosView.frame = CGRectMake(screenEdges.right - [_landscapeToolbarView landscapeSize] - photosViewSize - 66,
-                                                       screenEdges.top + 4 + headerInset,
-                                                       photosViewSize,
-                                                       self.frame.size.height - 4 * 2 - headerInset);
+                _photoCounterButton.frame = CGRectMake(screenEdges.right - [_landscapeToolbarView landscapeSize] - 64 - 1, screenEdges.top + 14 + headerInset, 64, 38);
                 
-                _landscapeToolbarView.frame = CGRectMake(screenEdges.right - [_landscapeToolbarView landscapeSize],
-                                                         screenEdges.top,
-                                                         [_landscapeToolbarView landscapeSize],
-                                                         self.frame.size.height);
+                _selectedPhotosView.frame = CGRectMake(screenEdges.right - [_landscapeToolbarView landscapeSize] - photosViewSize - 66, screenEdges.top + 4 + headerInset, photosViewSize, self.frame.size.height - 4 * 2 - headerInset);
+                
+                _landscapeToolbarView.frame = CGRectMake(screenEdges.right - [_landscapeToolbarView landscapeSize], screenEdges.top, [_landscapeToolbarView landscapeSize], self.frame.size.height);
             }];
             
             _headerWrapperView.frame = CGRectMake(screenEdges.left, screenEdges.top, self.frame.size.width - [_landscapeToolbarView landscapeSize], 64);
@@ -940,35 +915,19 @@
         {
             [UIView performWithoutAnimation:^
             {
-                _photoCounterButton.frame = CGRectMake(screenEdges.right - 64,
-                                                       screenEdges.bottom - TGPhotoEditorToolbarSize - 38 - 14,
-                                                       64,
-                                                       38);
-                _progressCounterButton.frame = _photoCounterButton.frame;
+                _photoCounterButton.frame = CGRectMake(screenEdges.right - 64, screenEdges.bottom - TGPhotoEditorToolbarSize - [_captionMixin.inputPanel baseHeight] - 38 - 14, 64, 38);
                 
-                _selectedPhotosView.frame = CGRectMake(screenEdges.left + 4,
-                                                       screenEdges.bottom - TGPhotoEditorToolbarSize - photosViewSize - 66,
-                                                       self.frame.size.width - 4 * 2,
-                                                       photosViewSize);
+                _selectedPhotosView.frame = CGRectMake(screenEdges.left + 4, screenEdges.bottom - TGPhotoEditorToolbarSize - [_captionMixin.inputPanel baseHeight] - photosViewSize - 66, self.frame.size.width - 4 * 2, photosViewSize);
             }];
             
-            _landscapeToolbarView.frame = CGRectMake(_landscapeToolbarView.frame.origin.x,
-                                                     screenEdges.top,
-                                                     [_landscapeToolbarView landscapeSize],
-                                                     self.frame.size.height);
+            _landscapeToolbarView.frame = CGRectMake(_landscapeToolbarView.frame.origin.x, screenEdges.top, [_landscapeToolbarView landscapeSize], self.frame.size.height);
             
             _headerWrapperView.frame = CGRectMake(screenEdges.left, screenEdges.top, self.frame.size.width, 64);
         }
             break;
     }
     
-    TGModernGalleryItemView *currentItemView = _currentItemView;
     _checkButton.frame = [self _checkButtonFrameForOrientation:orientation screenEdges:screenEdges hasHeaderView:hasHeaderView];
-    
-    CGFloat portraitToolbarViewBottomEdge = screenSide;
-    if (self.usesSimpleLayout || isPad)
-        portraitToolbarViewBottomEdge = screenEdges.bottom;
-    _portraitToolbarView.frame = CGRectMake(screenEdges.left, portraitToolbarViewBottomEdge - TGPhotoEditorToolbarSize, self.frame.size.width, TGPhotoEditorToolbarSize);
     
     for (UIView *itemHeaderView in _itemHeaderViews)
         itemHeaderView.frame = _headerWrapperView.bounds;

@@ -18,7 +18,9 @@
 #import <MTProtoKit/MTContext.h>
 #import <MTProtoKit/MTProto.h>
 #import <MTProtoKit/MTRequestMessageService.h>
-#import <MTProtoKit/MTRequest.h>
+#import <MTProtoKit/MtProtoKit.h>
+
+#import "TGTelegramNetworking.h"
 
 static int workerCount = 0;
 
@@ -49,7 +51,7 @@ static int workerCount = 0;
         _context = context;
         _datacenterId = datacenterId;
         
-        _mtProto = [[MTProto alloc] initWithContext:_context datacenterId:_datacenterId];
+        _mtProto = [[MTProto alloc] initWithContext:_context datacenterId:_datacenterId usageCalculationInfo:[[TGTelegramNetworking instance] mediaUsageInfoForType:TGNetworkMediaTypeTagGeneric]];
         _mtProto.requiredAuthToken = @(TGTelegraphInstance.clientUserId);
         _mtProto.authTokenMasterDatacenterId = masterDatacenterId;
         
@@ -75,6 +77,11 @@ static int workerCount = 0;
     
     [_mtProto stop];
     _requestService.delegate = nil;
+}
+
+- (void)setUsageCalculationInfo:(MTNetworkUsageCalculationInfo *)usageCalculationInfo {
+    _usageCalculationInfo = usageCalculationInfo;
+    [_mtProto setUsageCalculationInfo:usageCalculationInfo];
 }
 
 - (void)startTimer

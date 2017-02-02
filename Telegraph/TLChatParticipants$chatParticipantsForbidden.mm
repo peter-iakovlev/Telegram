@@ -22,6 +22,9 @@
     if (flags & (1 << 0)) {
         int32_t signature = [is readInt32];
         result.self_participant = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
     
     return result;

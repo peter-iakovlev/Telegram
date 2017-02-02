@@ -4,6 +4,8 @@
 
 #import "PSKeyValueCoder.h"
 
+#import "TGPeerIdAdapter.h"
+
 @implementation TGEncryptedConversationData
 
 - (BOOL)isEqualToEncryptedData:(TGEncryptedConversationData *)other
@@ -477,13 +479,18 @@
         _importantSortKey = TGConversationSortKeyDecode(coder, "isort");
         _unimportantSortKey = TGConversationSortKeyDecode(coder, "usort");
         _maxReadMessageId = [coder decodeInt32ForCKey:"mread"];
+        _maxOutgoingReadMessageId = [coder decodeInt32ForCKey:"moutread"];
+        _maxKnownMessageId = [coder decodeInt32ForCKey:"mknown"];
+        _maxLocallyReadMessageId = [coder decodeInt32ForCKey:"mlr"];
+        _maxReadDate = [coder decodeInt32ForCKey:"mrd"];
+        _maxOutgoingReadDate = [coder decodeInt32ForCKey:"mrod"];
         _about = [coder decodeStringForCKey:"about"];
         _username = [coder decodeStringForCKey:"username"];
         _outgoing = [coder decodeInt32ForCKey:"out"];
         _unread = [coder decodeInt32ForCKey:"unr"];
         _deliveryError = [coder decodeInt32ForCKey:"der"];
         _deliveryState = [coder decodeInt32ForCKey:"ds"];
-        _date = [coder decodeInt32ForCKey:"date"];
+        _messageDate = [coder decodeInt32ForCKey:"date"];
         _fromUid = [coder decodeInt32ForCKey:"from"];
         _text = [coder decodeStringForCKey:"text"];
         _media = [TGMessage parseMediaAttachments:[coder decodeDataCorCKey:"media"]];
@@ -500,7 +507,7 @@
         _channelRole = [coder decodeInt32ForCKey:"role"];
         _channelIsReadOnly = [coder decodeInt32ForCKey:"ro"];
         _flags = [coder decodeInt64ForCKey:"flags"];
-        _leftChat = false;
+        _leftChat = [coder decodeInt32ForCKey:"lef"];
         _kickedFromChat = [coder decodeInt32ForCKey:"kk"];
         _isChat = false;
         _isChannel = true;
@@ -510,6 +517,9 @@
         _migratedToChannelId = [coder decodeInt32ForCKey:"mtci"];
         _migratedToChannelAccessHash = [coder decodeInt64ForCKey:"mtch"];
         _restrictionReason = [coder decodeStringForCKey:"rr"];
+        _pinnedMessageId = [coder decodeInt32ForCKey:"pmi"];
+        _chatCreationDate = [coder decodeInt32ForCKey:"ccd"];
+        _pinnedDate = [coder decodeInt32ForCKey:"pdt"];
     }
     return self;
 }
@@ -524,13 +534,18 @@
     TGConversationSortKeyEncode(coder, "isort", _importantSortKey);
     TGConversationSortKeyEncode(coder, "usort", _unimportantSortKey);
     [coder encodeInt32:_maxReadMessageId forCKey:"mread"];
+    [coder encodeInt32:_maxOutgoingReadMessageId forCKey:"moutread"];
+    [coder encodeInt32:_maxKnownMessageId forCKey:"mknown"];
+    [coder encodeInt32:_maxLocallyReadMessageId forCKey:"mlr"];
+    [coder encodeInt32:_maxReadDate forCKey:"mrd"];
+    [coder encodeInt32:_maxOutgoingReadDate forCKey:"mrod"];
     [coder encodeString:_about forCKey:"about"];
     [coder encodeString:_username forCKey:"username"];
     [coder encodeInt32:_outgoing ? 1 : 0 forCKey:"out"];
     [coder encodeInt32:_unread ? 1 : 0 forCKey:"unr"];
     [coder encodeInt32:_deliveryError ? 1 : 0 forCKey:"der"];
     [coder encodeInt32:_deliveryState forCKey:"ds"];
-    [coder encodeInt32:_date forCKey:"date"];
+    [coder encodeInt32:_messageDate forCKey:"date"];
     [coder encodeInt32:_fromUid forCKey:"from"];
     [coder encodeString:_text forCKey:"text"];
     [coder encodeData:[TGMessage serializeMediaAttachments:true attachments:_media] forCKey:"media"];
@@ -545,10 +560,13 @@
     [coder encodeInt32:_channelRole forCKey:"role"];
     [coder encodeInt32:_channelIsReadOnly ? 1 : 0 forCKey:"ro"];
     [coder encodeInt64:_flags forCKey:"flags"];
+    [coder encodeInt32:_leftChat forCKey:"lef"];
     [coder encodeInt32:_kickedFromChat forCKey:"kk"];
     [coder encodeInt32:_migratedToChannelId forCKey:"mtci"];
     [coder encodeInt64:_migratedToChannelAccessHash forCKey:"mtch"];
     [coder encodeString:_restrictionReason forCKey:"rr"];
+    [coder encodeInt32:_pinnedMessageId forCKey:"pmi"];
+    [coder encodeInt32:_chatCreationDate forCKey:"ccd"];
 }
 
 - (id)copyWithZone:(NSZone *)__unused zone
@@ -564,13 +582,19 @@
     conversation.importantSortKey = _importantSortKey;
     conversation.unimportantSortKey = _unimportantSortKey;
     conversation.maxReadMessageId = _maxReadMessageId;
+    conversation.maxOutgoingReadMessageId = _maxOutgoingReadMessageId;
+    conversation.maxKnownMessageId = _maxKnownMessageId;
+    conversation.maxLocallyReadMessageId = _maxLocallyReadMessageId;
+    conversation.maxReadDate = _maxReadDate;
+    conversation.maxOutgoingReadDate = _maxOutgoingReadDate;
     conversation.about = _about;
     conversation.username = _username;
     conversation.outgoing = _outgoing;
     conversation.unread = _unread;
     conversation.deliveryError = _deliveryError;
     conversation.deliveryState = _deliveryState;
-    conversation.date = _date;
+    conversation.messageDate = _messageDate;
+    conversation.minMessageDate = _minMessageDate;
     conversation.fromUid = _fromUid;
     conversation.text = _text;
     conversation.media = _media;
@@ -591,6 +615,7 @@
     conversation.isChat = _isChat;
     conversation.isDeleted = _isDeleted;
     conversation.restrictionReason = _restrictionReason;
+    conversation->_chatCreationDate = _chatCreationDate;
     
     conversation.encryptedData = _encryptedData == nil ? nil : [_encryptedData copy];
     
@@ -600,6 +625,10 @@
     conversation.flags = _flags;
     conversation.migratedToChannelId = _migratedToChannelId;
     conversation.migratedToChannelAccessHash = _migratedToChannelAccessHash;
+    conversation.pinnedMessageId = _pinnedMessageId;
+    
+    conversation->_draft = _draft;
+    conversation.pinnedDate = _pinnedDate;
     
     return conversation;
 }
@@ -617,19 +646,29 @@
 - (void)setVariantSortKey:(TGConversationSortKey)variantSortKey {
     _variantSortKey = variantSortKey;
     
-    _date = TGConversationSortKeyTimestamp(variantSortKey);
+    _messageDate = TGConversationSortKeyTimestamp(variantSortKey);
 }
 
 - (void)mergeMessage:(TGMessage *)message
 {
     _outgoing = message.outgoing;
-    _date = (int)message.date;
+    _messageDate = (int)message.date;
     _fromUid = (int)message.fromUid;
     _text = message.text;
     _media = message.mediaAttachments;
-    _unread = message.unread;
+    _unread = [self isMessageUnread:message];
     _deliveryError = message.deliveryState == TGMessageDeliveryStateFailed;
     _deliveryState = message.deliveryState;
+}
+
+- (void)mergeEmptyMessage {
+    _outgoing = false;
+    _fromUid = 0;
+    _text = nil;
+    _media = nil;
+    _unread = false;
+    _deliveryError = false;
+    _deliveryState = TGMessageDeliveryStateDelivered;
 }
 
 - (NSData *)mediaData
@@ -641,9 +680,13 @@
     return _mediaData;
 }
 
+- (BOOL)isEqual:(id)object {
+    return [object isKindOfClass:[TGConversation class]] && [((TGConversation *)object) isEqualToConversation:self];
+}
+
 - (BOOL)isEqualToConversation:(TGConversation *)other
 {
-    if (_conversationId != other.conversationId || _outgoing != other.outgoing || _date != other.date || _fromUid != other.fromUid || ![_text isEqualToString:other.text] || _unreadCount != other.unreadCount || _serviceUnreadCount != other.serviceUnreadCount || _unread != other.unread || _isChat != other.isChat || _deliveryError != other.deliveryError || _deliveryState != other.deliveryState)
+    if (_conversationId != other.conversationId || _outgoing != other.outgoing || _messageDate != other.messageDate || _fromUid != other.fromUid || ![_text isEqualToString:other.text] || _unreadCount != other.unreadCount || _serviceUnreadCount != other.serviceUnreadCount || _unread != other.unread || _isChat != other.isChat || _deliveryError != other.deliveryError || _deliveryState != other.deliveryState)
         return false;
     
     if (_media.count != other.media.count)
@@ -675,7 +718,39 @@
         return false;
     }
     
+    if (_pinnedMessageId != other->_pinnedMessageId) {
+        return false;
+    }
+    
     if (!TGStringCompare(_restrictionReason, other->_restrictionReason)) {
+        return false;
+    }
+    
+    if (_maxReadDate != other->_maxReadDate) {
+        return false;
+    }
+    
+    if (_maxReadMessageId != other->_maxReadMessageId) {
+        return false;
+    }
+    
+    if (_maxOutgoingReadDate != other->_maxOutgoingReadDate) {
+        return false;
+    }
+    
+    if (_maxOutgoingReadMessageId != other->_maxOutgoingReadMessageId) {
+        return false;
+    }
+    
+    if (_maxKnownMessageId != other->_maxKnownMessageId) {
+        return false;
+    }
+    
+    if (!TGObjectCompare(_draft, other->_draft)) {
+        return false;
+    }
+    
+    if (_pinnedDate != other->_pinnedDate) {
         return false;
     }
         
@@ -709,6 +784,26 @@
         return false;
     }
     
+    if (_maxReadDate != other->_maxReadDate) {
+        return false;
+    }
+    
+    if (_maxReadMessageId != other->_maxReadMessageId) {
+        return false;
+    }
+    
+    if (_maxOutgoingReadDate != other->_maxOutgoingReadDate) {
+        return false;
+    }
+    
+    if (_maxOutgoingReadMessageId != other->_maxOutgoingReadMessageId) {
+        return false;
+    }
+    
+    if (_maxKnownMessageId != other->_maxKnownMessageId) {
+        return false;
+    }
+    
     return true;
 }
 
@@ -718,7 +813,7 @@
     
     int32_t magic = 0x7acde441;
     [data appendBytes:&magic length:4];
-    int32_t version = 4;
+    int32_t version = 7;
     [data appendBytes:&version length:4];
     
     for (int i = 0; i < 3; i++)
@@ -747,6 +842,17 @@
     
     [data appendBytes:&_migratedToChannelId length:4];
     [data appendBytes:&_migratedToChannelAccessHash length:8];
+    
+    [data appendBytes:&_maxReadMessageId length:4];
+    [data appendBytes:&_maxOutgoingReadMessageId length:4];
+    [data appendBytes:&_maxKnownMessageId length:4];
+    [data appendBytes:&_maxLocallyReadMessageId length:4];
+    
+    [data appendBytes:&_maxReadDate length:4];
+    [data appendBytes:&_maxOutgoingReadDate length:4];
+    
+    [data appendBytes:&_messageDate length:4];
+    [data appendBytes:&_minMessageDate length:4];
     
     return data;
 }
@@ -808,6 +914,36 @@
                 ptr += 4;
                 [data getBytes:&_migratedToChannelAccessHash range:NSMakeRange(ptr, 8)];
                 ptr += 8;
+                
+                if (version >= 5) {
+                    [data getBytes:&_maxReadMessageId range:NSMakeRange(ptr, 4)];
+                    ptr += 4;
+                    
+                    [data getBytes:&_maxOutgoingReadMessageId range:NSMakeRange(ptr, 4)];
+                    ptr += 4;
+                    
+                    [data getBytes:&_maxKnownMessageId range:NSMakeRange(ptr, 4)];
+                    ptr += 4;
+                    
+                    [data getBytes:&_maxLocallyReadMessageId range:NSMakeRange(ptr, 4)];
+                    ptr += 4;
+                    
+                    [data getBytes:&_maxReadDate range:NSMakeRange(ptr, 4)];
+                    ptr += 4;
+                    
+                    [data getBytes:&_maxOutgoingReadDate range:NSMakeRange(ptr, 4)];
+                    ptr += 4;
+                    
+                    if (version >= 6) {
+                        [data getBytes:&_messageDate range:NSMakeRange(ptr, 4)];
+                        ptr += 4;
+                        
+                        if (version >= 7) {
+                            [data getBytes:&_minMessageDate range:NSMakeRange(ptr, 4)];
+                            ptr += 4;
+                        }
+                    }
+                }
             }
         }
     }
@@ -818,25 +954,72 @@
     return _encryptedData != nil;
 }
 
+- (void)mergeConversation:(TGConversation *)conversation {
+    self.accessHash = conversation.accessHash;
+    self.about = conversation.about;
+    self.username = conversation.username;
+    self.chatTitle = conversation.chatTitle;
+    self.chatPhotoSmall = conversation.chatPhotoSmall;
+    self.chatPhotoMedium = conversation.chatPhotoMedium;
+    self.chatPhotoBig = conversation.chatPhotoBig;
+    self.chatParticipantCount = conversation.chatParticipantCount;
+    self.leftChat = conversation.leftChat;
+    self.kickedFromChat = conversation.kickedFromChat;
+    self.chatVersion = conversation.chatVersion;
+    self.chatIsAdmin = conversation.chatIsAdmin;
+    self.hasAdmins = conversation.hasAdmins;
+    self.isAdmin = conversation.isAdmin;
+    self.isVerified = conversation.isVerified;
+    if (conversation.chatParticipants != nil) {
+        self.chatParticipants = conversation.chatParticipants;
+    }
+    self.isChat = conversation.isChat;
+    self.isDeactivated = conversation.isDeactivated;
+    self.isMigrated = conversation.isMigrated;
+    self.migratedToChannelId = conversation.migratedToChannelId;
+    self.migratedToChannelAccessHash = conversation.migratedToChannelAccessHash;
+    self.canNotSetUsername = conversation.canNotSetUsername;
+    if (conversation.encryptedData != nil) {
+        self.encryptedData = conversation.encryptedData;
+    }
+}
+
 - (void)mergeChannel:(TGConversation *)channel {
     _chatTitle = channel.chatTitle;
     _chatVersion = channel.chatVersion;
     _chatPhotoBig = channel.chatPhotoBig;
     _chatPhotoMedium = channel.chatPhotoMedium;
     _chatPhotoSmall = channel.chatPhotoSmall;
-    _accessHash = channel.accessHash;
     _username = channel.username;
-    _chatIsAdmin = channel.chatIsAdmin;
-    self.channelRole = channel.channelRole;
-    self.hasExplicitContent = channel.hasExplicitContent;
+    if (!channel.isMin) {
+        _chatIsAdmin = channel.chatIsAdmin;
+        self.channelRole = channel.channelRole;
+        _leftChat = channel.leftChat;
+        _kickedFromChat = channel.kickedFromChat;
+        self.kind = channel.leftChat || channel.kickedFromChat ? TGConversationKindTemporaryChannel : TGConversationKindPersistentChannel;
+        _accessHash = channel.accessHash;
+        self.hasExplicitContent = channel.hasExplicitContent;
+        self.signaturesEnabled = channel.signaturesEnabled;
+        self.restrictionReason = channel.restrictionReason;
+    }
     self.everybodyCanAddMembers = channel.everybodyCanAddMembers;
-    self.signaturesEnabled = channel.signaturesEnabled;
-    self.restrictionReason = channel.restrictionReason;
     _channelIsReadOnly = channel.channelIsReadOnly;
-    _leftChat = channel.leftChat;
-    _kickedFromChat = channel.kickedFromChat;
-    self.kind = channel.leftChat || channel.kickedFromChat ? TGConversationKindTemporaryChannel : TGConversationKindPersistentChannel;
     self.isVerified = channel.isVerified;
+}
+
+- (void)mergeDraft:(TGDatabaseMessageDraft *)draft {
+    _draft = draft;
+    
+    if (_draft.date > TGConversationSortKeyTimestamp(_variantSortKey)) {
+        _variantSortKey = TGConversationSortKeyMake(TGConversationSortKeyKind(_variantSortKey), _draft.date, TGConversationSortKeyMid(_variantSortKey));
+    }
+}
+
+- (void)setPinnedDate:(int32_t)pinnedDate {
+    _pinnedDate = pinnedDate;
+    if (pinnedDate > TGConversationSortKeyTimestamp(_variantSortKey)) {
+        _variantSortKey = TGConversationSortKeyMake(TGConversationSortKeyKind(_variantSortKey), pinnedDate, TGConversationSortKeyMid(_variantSortKey));
+    }
 }
 
 - (bool)currentUserCanSendMessages {
@@ -959,6 +1142,30 @@
     }
 }
 
+- (bool)isMin {
+    return _flags & TGConversationFlagIsMin;
+}
+
+- (void)setIsMin:(bool)isMin {
+    if (isMin) {
+        _flags |= TGConversationFlagIsMin;
+    } else {
+        _flags &= ~TGConversationFlagIsMin;
+    }
+}
+
+- (bool)canNotSetUsername {
+    return _flags & TGConversationFlagCanNotSetUsername;
+}
+
+- (void)setCanNotSetUsername:(bool)canNotSetUsername {
+    if (canNotSetUsername) {
+        _flags |= TGConversationFlagCanNotSetUsername;
+    } else {
+        _flags &= ~TGConversationFlagCanNotSetUsername;
+    }
+}
+
 - (bool)signaturesEnabled {
     return _flags & TGConversationFlagSignaturesEnabled;
 }
@@ -981,6 +1188,62 @@
     } else {
         _flags &= ~TGConversationFlagIsDeactivated;
     }
+}
+
+- (bool)pinnedMessageHidden {
+    return _flags & TGConversationFlagPinnedMessageHidden;
+}
+
+- (void)setPinnedMessageHidden:(bool)pinnedMessageHidden {
+    if (pinnedMessageHidden) {
+        _flags |= TGConversationFlagPinnedMessageHidden;
+    } else {
+        _flags &= ~TGConversationFlagPinnedMessageHidden;
+    }
+}
+
+- (bool)isMessageUnread:(TGMessage *)message {
+    return [self isMessageUnread:message.mid date:(int32_t)message.date outgoing:message.outgoing];
+}
+
+- (bool)isMessageUnread:(int32_t)messageId date:(int32_t)messageDate outgoing:(bool)outgoing {
+    if (TGPeerIdIsSecretChat(_conversationId)) {
+        if (outgoing) {
+            return ((int32_t)messageDate) > _maxOutgoingReadDate;
+        } else {
+            return ((int32_t)messageDate) > _maxReadDate;
+        }
+    } else {
+        if (TGPeerIdIsChannel(_conversationId) && _kind != TGConversationKindPersistentChannel) {
+            return false;
+        }
+        
+        if (outgoing) {
+            if (messageId < TGMessageLocalMidBaseline) {
+                return messageId > _maxOutgoingReadMessageId;
+            } else {
+                return true;
+            }
+        } else {
+            if (messageId < TGMessageLocalMidBaseline) {
+                return messageId > _maxReadMessageId;
+            } else {
+                return false;
+            }
+        }
+    }
+}
+
+- (int32_t)date {
+    return MAX(_pinnedDate, MAX(_minMessageDate, MAX(_draft.date, _messageDate)));
+}
+
+- (int32_t)unpinnedDate {
+    return MAX(_minMessageDate, MAX(_draft.date, _messageDate));
+}
+
+- (bool)pinnedToTop {
+    return _pinnedDate >= TGConversationPinnedDateBase;
 }
 
 @end

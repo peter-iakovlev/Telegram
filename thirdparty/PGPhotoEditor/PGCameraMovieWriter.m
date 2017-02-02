@@ -1,5 +1,6 @@
 #import "PGCameraMovieWriter.h"
 
+#import <SSignalKit/SSignalKit.h>
 #import "TGImageUtils.h"
 #import "TGPhotoEditorUtils.h"
 
@@ -21,6 +22,14 @@
     CMTime _startTimeStamp;
     CMTime _lastVideoTimeStamp;
     CMTime _lastAudioTimeStamp;
+    
+    NSMutableArray *_delayedAudioSamples;
+    
+    NSTimeInterval _captureStartTime;
+    SQueue *_queue;
+    
+    bool _stopIminent;
+    void (^_finishCompletion)(void);
 }
 @end
 
@@ -34,72 +43,104 @@
         _videoTransform = videoTransform;
         _videoOutputSettings = videoSettings;
         _audioOutputSettings = audioSettings;
+        
+        _queue = [[SQueue alloc] init];
+        
+        _delayedAudioSamples = [[NSMutableArray alloc] init];
     }
     return self;
 }
 
 - (void)startRecording
 {
-    if (_isRecording || _finishedWriting)
-        return;
-    
-    NSError *error = nil;
-    
-    NSString *path = [PGCameraMovieWriter tempOutputPath];
-    
-    if ([[NSFileManager defaultManager] fileExistsAtPath:path])
-        [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
-    
-    _assetWriter = [[AVAssetWriter alloc] initWithURL:[NSURL fileURLWithPath:path] fileType:[PGCameraMovieWriter outputFileType] error:&error];
+    [_queue dispatch:^
+    {
+        if (_isRecording || _finishedWriting)
+            return;
+        
+        _captureStartTime = CFAbsoluteTimeGetCurrent();
+        
+        NSError *error = nil;
+        
+        NSString *path = [PGCameraMovieWriter tempOutputPath];
+        
+        if ([[NSFileManager defaultManager] fileExistsAtPath:path])
+            [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+        
+        _assetWriter = [[AVAssetWriter alloc] initWithURL:[NSURL fileURLWithPath:path] fileType:[PGCameraMovieWriter outputFileType] error:&error];
 
-    if (_assetWriter == nil && error != nil)
-    {
-        TGLog(@"ERROR: camera movie writer failed to initialize: %@", error);
-        return;
-    }
-    
-    _videoInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeVideo outputSettings:_videoOutputSettings];
-    _videoInput.expectsMediaDataInRealTime = true;
-    _videoInput.transform = _videoTransform;
-    
-    if ([_assetWriter canAddInput:_videoInput])
-    {
-        [_assetWriter addInput:_videoInput];
-    }
-    else
-    {
-        TGLog(@"ERROR: camera movie writer failed to add video input");
-        return;
-    }
-    
-    _audioInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeAudio outputSettings:_audioOutputSettings];
-    _audioInput.expectsMediaDataInRealTime = true;
-    
-    if ([_assetWriter canAddInput:_audioInput])
-    {
-        [_assetWriter addInput:_audioInput];
-    }
-    else
-    {
-        TGLog(@"ERROR: camera movie writer failed to add audio input");
-        return;
-    }
-    
-    _isRecording = true;
+        if (_assetWriter == nil && error != nil)
+        {
+            TGLog(@"ERROR: camera movie writer failed to initialize: %@", error);
+            return;
+        }
+        
+        _videoInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeVideo outputSettings:_videoOutputSettings];
+        _videoInput.expectsMediaDataInRealTime = true;
+        _videoInput.transform = _videoTransform;
+        
+        if ([_assetWriter canAddInput:_videoInput])
+        {
+            [_assetWriter addInput:_videoInput];
+        }
+        else
+        {
+            TGLog(@"ERROR: camera movie writer failed to add video input");
+            return;
+        }
+        
+        if (_audioOutputSettings != nil)
+        {
+            _audioInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeAudio outputSettings:_audioOutputSettings];
+            _audioInput.expectsMediaDataInRealTime = true;
+            if ([_assetWriter canAddInput:_audioInput])
+            {
+                [_assetWriter addInput:_audioInput];
+            }
+            else
+            {
+                TGLog(@"ERROR: camera movie writer failed to add audio input");
+                return;
+            }
+        }
+        
+        [_assetWriter startWriting];
+        _isRecording = true;
+    }];
 }
 
 - (void)stopRecordingWithCompletion:(void (^)(void))completion
 {
-    _isRecording = false;
-    
-    if (_assetWriter.status > AVAssetWriterStatusCompleted)
+    [_queue dispatch:^
     {
-        if (self.finishedWithMovieAtURL != nil)
-            self.finishedWithMovieAtURL(_assetWriter.outputURL, CGAffineTransformIdentity, CGSizeZero, 0.0, false);
-        TGLog(@"ERROR: camera movie writer failed to write movie: %@", _assetWriter.error);
+        if (fabs(CFAbsoluteTimeGetCurrent() - _captureStartTime) < 0.5)
+            return;
         
-        return;
-    }
+        _stopIminent = true;
+        _finishCompletion = completion;
+        
+        if (_assetWriter.status == AVAssetWriterStatusUnknown || _assetWriter.status > AVAssetWriterStatusCompleted)
+        {
+            TGDispatchOnMainThread(^
+            {
+                if (self.finishedWithMovieAtURL != nil)
+                    self.finishedWithMovieAtURL(nil, CGAffineTransformIdentity, CGSizeZero, 0.0, false);
+                TGLog(@"ERROR: camera movie writer failed to write movie: %@", _assetWriter.error);
+                
+                _assetWriter = nil;
+            });
+            
+            return;
+        }
+        
+        if (_audioOutputSettings == nil)
+            [self _finishWithCompletion];
+    }];
+}
+
+- (void)_finishWithCompletion
+{
+    _isRecording = false;
     
     __weak PGCameraMovieWriter *weakSelf = self;
     [_assetWriter finishWritingWithCompletionHandler:^
@@ -109,7 +150,7 @@
             return;
         
         strongSelf->_finishedWriting = true;
-
+        
         TGDispatchOnMainThread(^
         {
             if (strongSelf->_assetWriter.status == AVAssetWriterStatusCompleted)
@@ -131,81 +172,101 @@
             
             strongSelf->_assetWriter = nil;
             
-            if (completion != nil)
-                completion();
+            if (_finishCompletion != nil)
+                _finishCompletion();
         });
     }];
+
 }
 
 - (void)_processSampleBuffer:(CMSampleBufferRef)sampleBuffer
 {
-    if (!_isRecording)
-        return;
-    
-    CMFormatDescriptionRef formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer);
-    CMMediaType mediaType = CMFormatDescriptionGetMediaType(formatDescription);
-    CMTime timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
-    
-    if (_assetWriter.status > AVAssetWriterStatusCompleted)
+    CFRetain(sampleBuffer);
+    [_queue dispatch:^
     {
-        TGLog(@"WARNING: camera movie writer status is %d", _assetWriter.status);
-        if (_assetWriter.status == AVAssetWriterStatusFailed)
+        CMFormatDescriptionRef formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer);
+        CMMediaType mediaType = CMFormatDescriptionGetMediaType(formatDescription);
+        CMTime timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
+        
+        if (_assetWriter.status > AVAssetWriterStatusCompleted)
         {
-            TGLog(@"ERROR: camera movie writer error: %@", _assetWriter.error);
-            _isRecording = false;
-            
-            if (self.finishedWithMovieAtURL != nil)
-                self.finishedWithMovieAtURL(_assetWriter.outputURL, CGAffineTransformIdentity, CGSizeZero, 0.0, false);
+            TGLog(@"WARNING: camera movie writer status is %d", _assetWriter.status);
+            if (_assetWriter.status == AVAssetWriterStatusFailed)
+            {
+                TGLog(@"ERROR: camera movie writer error: %@", _assetWriter.error);
+                _isRecording = false;
+                
+                if (self.finishedWithMovieAtURL != nil)
+                    self.finishedWithMovieAtURL(_assetWriter.outputURL, CGAffineTransformIdentity, CGSizeZero, 0.0, false);
+            }
+            return;
         }
-        return;
-    }
-    
-    if (mediaType == kCMMediaType_Video)
-    {
-        if (!_startedWriting)
+
+        bool keepSample = false;
+        if (mediaType == kCMMediaType_Video)
         {
-            if ([_assetWriter startWriting])
+            if (!_startedWriting)
             {
                 [_assetWriter startSessionAtSourceTime:timestamp];
                 _startTimeStamp = timestamp;
+
+                _startedWriting = true;
+            }
+            
+            while (!_videoInput.readyForMoreMediaData)
+            {
+                NSDate *maxDate = [NSDate dateWithTimeIntervalSinceNow:0.1];
+                [[NSRunLoop currentRunLoop] runUntilDate:maxDate];
+            }
+
+            bool success = [_videoInput appendSampleBuffer:sampleBuffer];
+            if (success)
+                _lastVideoTimeStamp = timestamp;
+            else
+                TGLog(@"ERROR: camera movie writer failed to append pixel buffer");
+            
+            if (_audioOutputSettings != nil && _stopIminent && CMTimeCompare(_lastVideoTimeStamp, _lastAudioTimeStamp) != -1) {
+                [self _finishWithCompletion];
+            }
+        }
+        else if (mediaType == kCMMediaType_Audio && !_stopIminent)
+        {
+            if (!_startedWriting)
+            {
+                [_delayedAudioSamples addObject:(__bridge id _Nonnull)(sampleBuffer)];
+                keepSample = true;
             }
             else
             {
-                TGLog(@"ERROR: camera movie writer failed to start writing: %@", _assetWriter.error);
+                if (_delayedAudioSamples.count > 0)
+                {
+                    for (id sample in _delayedAudioSamples)
+                    {
+                        CMSampleBufferRef buffer = (__bridge CMSampleBufferRef)(sample);
+                        [_audioInput appendSampleBuffer:buffer];
+                        CFRelease(buffer);
+                    }
+                    
+                    _delayedAudioSamples = nil;
+                }
+                
+                while (!_audioInput.isReadyForMoreMediaData)
+                {
+                    NSDate *maxDate = [NSDate dateWithTimeIntervalSinceNow:0.1];
+                    [[NSRunLoop currentRunLoop] runUntilDate:maxDate];
+                }
+            
+                bool success = [_audioInput appendSampleBuffer:sampleBuffer];
+                if (success)
+                    _lastAudioTimeStamp = timestamp;
+                else
+                    TGLog(@"ERROR: camera movie writer failed to append audio buffer");
             }
-            _startedWriting = true;
         }
         
-        while (!_videoInput.readyForMoreMediaData)
-        {
-            TGLog(@"WARNING: camera movie writer had to wait for video frame: %@", CFBridgingRelease(CMTimeCopyDescription(kCFAllocatorDefault, timestamp)));
-            
-            NSDate *maxDate = [NSDate dateWithTimeIntervalSinceNow:0.1];
-            [[NSRunLoop currentRunLoop] runUntilDate:maxDate];
-        }
-
-        bool success = [_videoInput appendSampleBuffer:sampleBuffer];
-        if (success)
-            _lastVideoTimeStamp = timestamp;
-        else
-            TGLog(@"ERROR: camera movie writer failed to append pixel buffer");
-    }
-    else if (_startedWriting && mediaType == kCMMediaType_Audio)
-    {
-        while (!_audioInput.isReadyForMoreMediaData)
-        {
-            TGLog(@"WARNING: camera movie writer had to wait for audio frame: %@", CFBridgingRelease(CMTimeCopyDescription(kCFAllocatorDefault, timestamp)));
-
-            NSDate *maxDate = [NSDate dateWithTimeIntervalSinceNow:0.1];
-            [[NSRunLoop currentRunLoop] runUntilDate:maxDate];
-        }
-    
-        bool success = [_audioInput appendSampleBuffer:sampleBuffer];
-        if (success)
-            _lastAudioTimeStamp = timestamp;
-        else
-            TGLog(@"ERROR: camera movie writer failed to append audio buffer");
-    }
+        if (!keepSample)
+            CFRelease(sampleBuffer);
+    }];
 }
 
 - (NSTimeInterval)currentDuration

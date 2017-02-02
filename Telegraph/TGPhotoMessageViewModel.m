@@ -178,6 +178,14 @@
     return false;
 }
 
+- (bool)isPreviewableAtPoint:(CGPoint)point
+{
+    if (self.isSecret)
+        return false;
+    
+    return CGRectContainsPoint(self.imageModel.frame, point);
+}
+
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition
 {
     [super bindSpecialViewsToContainer:container viewStorage:viewStorage atItemPosition:itemPosition];

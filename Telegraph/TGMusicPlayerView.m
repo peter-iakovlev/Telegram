@@ -111,10 +111,6 @@
             }
         }];
         
-        UISwipeGestureRecognizer *upSwipeGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipeGesture:)];
-        upSwipeGesture.direction = UISwipeGestureRecognizerDirectionUp;
-        [_minimizedButton addGestureRecognizer:upSwipeGesture];
-        
         _updateLabelsLayout = true;
     }
     return self;
@@ -155,23 +151,8 @@
                 title = TGLocalized(@"MusicPlayer.VoiceNote");
             }
         } else {
-            if ([status.item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
-                TGDocumentMediaAttachment *document = ((TGDocumentMediaAttachment *)status.item.media);
-                for (id attribute in document.attributes)
-                {
-                    if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
-                    {
-                        title = ((TGDocumentAttributeAudio *)attribute).title;
-                        performer = ((TGDocumentAttributeAudio *)attribute).performer;
-                        
-                        break;
-                    }
-                }
-                
-                if (title.length == 0) {
-                    title = document.fileName;
-                }
-            }
+            title = status.item.title;
+            performer = status.item.performer;
             
             if (title.length == 0)
                 title = @"Unknown Track";
@@ -311,33 +292,36 @@
 
 - (void)minimizedButtonPressed
 {
-    if (_currentStatus.item == nil || _currentStatus.item.isVoice) {
+    if (_currentStatus.item == nil || _currentStatus.item.isVoice)
         return;
-    }
     
     TGMusicPlayerController *controller = [[TGMusicPlayerController alloc] init];
-    
-    TGNavigationController *playerNavigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];
     UINavigationController *navigationController = _navigationController;
     
-    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+    UIViewController *presentedController = controller;
+    
+    CGSize preferredSize = CGSizeMake(414.0f, 667.0f);
+    if (TGIsPad())
+    {
+        TGNavigationController *playerNavigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];
         playerNavigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
         playerNavigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-        playerNavigationController.preferredContentSize = CGSizeMake(414.0f, 667.0f);
-        
-    } else {
-        playerNavigationController.restrictLandscape = true;
+        playerNavigationController.preferredContentSize = preferredSize;
+        presentedController = playerNavigationController;
     }
-    [navigationController presentViewController:playerNavigationController animated:true completion:nil];
-}
-
-- (void)swipeGesture:(UISwipeGestureRecognizer *)recognizer
-{
-    if (recognizer.state == UIGestureRecognizerStateEnded)
+    else
     {
-        //__strong TGNavigationController *navigationController = (TGNavigationController *)_navigationController;
-        //[navigationController setMinimizePlayer:true];
+        navigationController.modalPresentationStyle = UIModalPresentationCurrentContext;
+        presentedController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
     }
+    
+    NSNumber *value = [NSNumber numberWithInt:UIInterfaceOrientationPortrait];
+    [[UIDevice currentDevice] setValue:value forKey:@"orientation"];
+    
+    [navigationController presentViewController:presentedController animated:true completion:nil];
+    
+    if (TGIsPad() && iosMajorVersion() < 8)
+        presentedController.view.superview.bounds = CGRectMake(0, 0, preferredSize.width, preferredSize.height);
 }
 
 @end

@@ -9,6 +9,8 @@
 
 #import "TLWebPage_manual.h"
 
+#import "TGDatabase.h"
+
 @interface TGWebpageSignalsResourceHelper : NSObject <ASWatcher>
 
 @property (nonatomic, copy) void (^handler)(NSArray *);
@@ -107,6 +109,57 @@
         
         return pollingSignal;
     }];
+}
+
++ (SSignal *)updatedWebpage:(TGWebPageMediaAttachment *)webPage {
+    TLRPCmessages_getWebPage$messages_getWebPage *getWebPage = [[TLRPCmessages_getWebPage$messages_getWebPage alloc] init];
+    getWebPage.url = webPage.url;
+    getWebPage.n_hash = webPage.webPageHash;
+    return [[[TGTelegramNetworking instance] requestSignal:getWebPage] mapToSignal:^SSignal *(TLWebPage *desc) {
+        if ([desc isKindOfClass:[TLWebPage$webPageNotModified class]]) {
+            return [SSignal complete];
+        } else {
+            TGWebPageMediaAttachment *updatedWebPage = [[TGWebPageMediaAttachment alloc] initWithTelegraphWebPageDesc:desc];
+            if (updatedWebPage != nil) {
+                return [TGDatabaseInstance() modify:^id{
+                    [TGDatabaseInstance() updateWebpages:@[updatedWebPage]];
+                    [ActionStageInstance() dispatchResource:@"/webpages" resource:@[updatedWebPage]];
+                    return updatedWebPage;
+                }];
+            } else {
+                return [SSignal complete];
+            }
+        }
+    }];
+}
+
++ (SSignal *)cachedOrRemoteWebpage:(int64_t)webPageId url:(NSString *)url {
+    return [[TGDatabaseInstance() modify:^id{
+        TGWebPageMediaAttachment *webPage = [TGDatabaseInstance() _webpageWithId:webPageId];
+        if (webPage != nil && webPage.url.length != 0) {
+            return [SSignal single:webPage];
+        } else{
+            TLRPCmessages_getWebPage$messages_getWebPage *getWebPage = [[TLRPCmessages_getWebPage$messages_getWebPage alloc] init];
+            getWebPage.url = url;
+            getWebPage.n_hash = 0;
+            return [[[TGTelegramNetworking instance] requestSignal:getWebPage] mapToSignal:^SSignal *(TLWebPage *desc) {
+                if ([desc isKindOfClass:[TLWebPage$webPageNotModified class]]) {
+                    return [SSignal fail:nil];
+                } else {
+                    TGWebPageMediaAttachment *updatedWebPage = [[TGWebPageMediaAttachment alloc] initWithTelegraphWebPageDesc:desc];
+                    if (updatedWebPage != nil) {
+                        return [TGDatabaseInstance() modify:^id{
+                            [TGDatabaseInstance() updateWebpages:@[updatedWebPage]];
+                            [ActionStageInstance() dispatchResource:@"/webpages" resource:@[updatedWebPage]];
+                            return updatedWebPage;
+                        }];
+                    } else {
+                        return [SSignal fail:nil];
+                    }
+                }
+            }];
+        }
+    }] switchToLatest];
 }
 
 @end

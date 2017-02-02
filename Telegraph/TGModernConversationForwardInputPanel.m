@@ -38,7 +38,7 @@ typedef enum {
 
 @implementation TGModernConversationForwardInputPanel
 
-- (TGCommonMediaType)commonMediaTypeForMessage:(TGMessage *)message
++ (TGCommonMediaType)commonMediaTypeForMessage:(TGMessage *)message
 {
     for (TGMediaAttachment *attachment in message.mediaAttachments)
     {
@@ -73,7 +73,7 @@ typedef enum {
     return TGCommonMediaTypeTexts;
 }
 
-- (TGCommonMediaType)commonMediaTypeForMessages:(NSArray *)messages
++ (TGCommonMediaType)commonMediaTypeForMessages:(NSArray *)messages
 {
     TGCommonMediaType commonType = TGCommonMediaTypeNone;
     bool initialized = false;
@@ -92,7 +92,7 @@ typedef enum {
     return commonType;
 }
 
-- (NSString *)formatPrefixForCommonType:(TGCommonMediaType)commonType
++ (NSString *)formatPrefixForForwardedCommonType:(TGCommonMediaType)commonType
 {
     switch (commonType)
     {
@@ -119,7 +119,7 @@ typedef enum {
     }
 }
 
-- (NSString *)textForMessages:(NSArray *)messages breakInTheMiddle:(bool *)breakInTheMiddle
++ (NSString *)textForMessages:(NSArray *)messages breakInTheMiddle:(bool *)breakInTheMiddle
 {
     TGCommonMediaType commonType = [self commonMediaTypeForMessages:messages];
     if (messages.count == 1)
@@ -143,12 +143,12 @@ typedef enum {
                 break;
         }
     }
-
-    NSString *formatPrefix = [TGStringUtils integerValueFormat:[self formatPrefixForCommonType:commonType] value:(int)messages.count];
+    
+    NSString *formatPrefix = [TGStringUtils integerValueFormat:[self formatPrefixForForwardedCommonType:commonType] value:(int)messages.count];
     return [[NSString alloc] initWithFormat:TGLocalized(formatPrefix), [[NSString alloc] initWithFormat:@"%d", (int)messages.count]];
 }
 
-- (NSString *)titleForPeer:(id)peer shortName:(bool)shortName {
++ (NSString *)titleForPeer:(id)peer shortName:(bool)shortName {
     if ([peer isKindOfClass:[TGUser class]]) {
         if (shortName) {
             return ((TGUser *)peer).displayFirstName;
@@ -161,7 +161,7 @@ typedef enum {
     return @"";
 }
 
-- (NSString *)titleForMessages:(NSArray *)messages
++ (NSString *)titleForMessages:(NSArray *)messages
 {
     NSMutableArray *peers = [[NSMutableArray alloc] init];
     for (TGMessage *message in messages)
@@ -246,11 +246,11 @@ typedef enum {
         _nameLabel.textColor = color;
         _nameLabel.font = TGSystemFontOfSize(14.5f);
         
-        _nameLabel.text = [self titleForMessages:messages];
+        _nameLabel.text = [TGModernConversationForwardInputPanel titleForMessages:messages];
         [self addSubview:_nameLabel];
         
         bool breakInTheMiddle = false;
-        NSString *text = [self textForMessages:messages breakInTheMiddle:&breakInTheMiddle];
+        NSString *text = [TGModernConversationForwardInputPanel textForMessages:messages breakInTheMiddle:&breakInTheMiddle];
         NSLineBreakMode lineBreakMode = breakInTheMiddle ? NSLineBreakByTruncatingMiddle : NSLineBreakByTruncatingTail;
         
         UIColor *mediaTextColor = UIColorRGB(0x8c8c92);

@@ -162,6 +162,7 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
             self.contextBotPlaceholder = concreteUser.inlineBotPlaceholder;
             self.isContextBot = concreteUser.flags & (1 << 19);
             self.minimalRepresentation = concreteUser.flags & (1 << 20);
+            self.botInlineGeo = concreteUser.flags & (1 << 21);
         }
         else if ([user isKindOfClass:[TLUser$userEmpty class]])
         {

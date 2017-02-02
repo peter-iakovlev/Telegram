@@ -1,5 +1,6 @@
 #import "TGMediaAssetsModernLibrary.h"
 #import "TGMediaAssetFetchResultChange.h"
+#import "TGMediaAssetMomentList.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 
 @interface TGMediaAssetsModernLibrary () <PHPhotoLibraryChangeObserver>
@@ -54,6 +55,13 @@
             }
             
             [groups sortUsingFunction:TGMediaAssetGroupComparator context:nil];
+            
+            PHFetchOptions *options = [[PHFetchOptions alloc] init];
+            options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"startDate" ascending:true]];
+            
+            //PHFetchResult *moments = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeMoment subtype:PHAssetCollectionSubtypeAny options:options];
+            //TGMediaAssetMomentList *momentList = [[TGMediaAssetMomentList alloc] initWithPHFetchResult:moments];
+            //[groups insertObject:momentList atIndex:0];
             
             return groups;
         }];
@@ -249,6 +257,29 @@
 
 #pragma mark -
 
+- (UIImage *)reorientedMirroredImage:(UIImage *)image
+{
+    UIImageOrientation newOrientation = image.imageOrientation;
+    switch (image.imageOrientation)
+    {
+        case UIImageOrientationLeftMirrored:
+            newOrientation = UIImageOrientationRightMirrored;
+            break;
+            
+        case UIImageOrientationRightMirrored:
+            newOrientation = UIImageOrientationLeftMirrored;
+            break;
+            
+        default:
+            break;
+    }
+    
+    if (newOrientation != image.imageOrientation)
+        return [UIImage imageWithCGImage:image.CGImage scale:image.scale orientation:newOrientation];
+    
+    return image;
+}
+
 - (SSignal *)saveAssetWithImage:(UIImage *)image
 {
     return [[TGMediaAssetsModernLibrary _requestAuthorization] mapToSignal:^SSignal *(NSNumber *statusValue)
@@ -261,7 +292,7 @@
         {
             [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^
             {
-                [PHAssetChangeRequest creationRequestForAssetFromImage:image];
+                [PHAssetChangeRequest creationRequestForAssetFromImage:[self reorientedMirroredImage:image]];
             } completionHandler:^(BOOL success, NSError *error)
             {
                 if (error == nil && success)

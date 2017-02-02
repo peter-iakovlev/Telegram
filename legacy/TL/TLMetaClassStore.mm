@@ -26,15 +26,38 @@
 #import "TLChatParticipants$chatParticipantsForbidden.h"
 #import "TLWebPage$webPageExternal.h"
 #import "TLMessages_BotResults$botResults.h"
+#import "TLBotInlineMessage$botInlineMessageMediaAuto.h"
 #import "TLBotInlineMessage$botInlineMessageText.h"
 #import "TLBotInlineResult$botInlineResult.h"
 #import "TLDocumentAttribute$documentAttributeAudio.h"
-#import "TLchannels_MessageEditData$messageEditData.h"
 #import "TLMessageFwdHeader$messageFwdHeader.h"
+#import "TLUserFull$userFull.h"
+#import "TLUpdate$updateChannelTooLong.h"
+#import "TLauth_SentCode$auth_sentCode.h"
+#import "TLmessages_BotCallbackAnswer$botCallbackAnswer.h"
+#import "TLBotInlineResult$botInlineMediaResult.h"
+#import "TLBotInlineMessage$botInlineMessageMediaGeo.h"
+#import "TLBotInlineMessage$botInlineMessageMediaVenue.h"
+#import "TLBotInlineMessage$botInlineMessageMediaContact.h"
+#import "TLDialog$dialog.h"
+#import "TLDraftMessage$draftMessage.h"
+#import "TLChatInvite$chatInvite.h"
+#import "TLConfig$config.h"
+#import "TLGame$game.h"
+#import "TLPageBlock$pageBlockEmbed.h"
+#import "TLPhoneCall$phoneCallWaiting.h"
+#import "TLUpdate$updateServiceNotification.h"
+#import "TLPhoneCall$phoneCallDiscarded.h"
+#import "TLUpdate$updatePinnedDialogs.h"
+#import "TLMessageAction$messageActionPhoneCall.h"
+
+#import "TLDocumentAttributeSticker.h"
 
 #import "TLBool.h"
 
 #import "TGStringUtils.h"
+
+#import "TLauth_Authorization$auth_authorization.h"
 
 #include <map>
 #include <set>
@@ -457,9 +480,9 @@ void TLMetaClassStore::mergeScheme(TLScheme *scheme)
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x5162463, [[TLResPQ$resPQ_manual alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x62d6b459, [[TLMsgsAck$msgs_ack_manual alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xC09BE45F, [[TLMessage$modernMessage alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xC06B9607, [[TLMessage$modernMessageService alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x9e19a1f6, [[TLMessage$modernMessageService alloc] init]));
         
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >((int32_t)0xCA820ED7, [[TLWebPage_manual alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >((int32_t)0x5f07b4bc, [[TLWebPage_manual alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >((int32_t)0xD10D979A, [[TLUser$modernUser alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >((int32_t)0x05D8C6CC, [[TLDcOption$modernDcOption alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x914FBF11, [[TLUpdates$modernUpdateShortMessage alloc] init]));
@@ -468,18 +491,39 @@ void TLMetaClassStore::mergeScheme(TLScheme *scheme)
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x11f1331c, [[TLUpdates$updateShortSentMessage alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x2064674E, [[TLUpdates_ChannelDifference$channelDifference alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x3E11AFFB, [[TLUpdates_ChannelDifference$empty alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x5E167646, [[TLUpdates_ChannelDifference$tooLong alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x4B1B7506, [[TLChat$channel alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x9e341ddf, [[TLChatFull$channelFull alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x410dee07, [[TLUpdates_ChannelDifference$tooLong alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xa14dca52, [[TLChat$channel alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xc3d5512f, [[TLChatFull$channelFull alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xFC900C2B, [[TLChatParticipants$chatParticipantsForbidden alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xD91CDD54, [[TLChat$chat alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xB08FBB93, [[TLWebPage$webPageExternal alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x1170b0a3, [[TLMessages_BotResults$botResults alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xA56197A9, [[TLBotInlineMessage$botInlineMessageText alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xccd3563d, [[TLMessages_BotResults$botResults alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xa74b15b, [[TLBotInlineMessage$botInlineMessageMediaAuto alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x8c7f65e2, [[TLBotInlineMessage$botInlineMessageText alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x3a8fd8b8, [[TLBotInlineMessage$botInlineMessageMediaGeo alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x4366232e, [[TLBotInlineMessage$botInlineMessageMediaVenue alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x35edb4d4, [[TLBotInlineMessage$botInlineMessageMediaContact alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x9BEBAEB9, [[TLBotInlineResult$botInlineResult alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x9852F9C6, [[TLDocumentAttribute$documentAttributeAudio alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x67E1255F, [[TLchannels_MessageEditData$messageEditData alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xC786DDCB, [[TLMessageFwdHeader$messageFwdHeader alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xf220f3f, [[TLUserFull$userFull alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xeb0467fb, [[TLUpdate$updateChannelTooLong alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x5e002502, [[TLauth_SentCode$auth_sentCode alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x36585ea4, [[TLmessages_BotCallbackAnswer$botCallbackAnswer alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x17db940b, [[TLBotInlineResult$botInlineMediaResult alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x66ffba14, [[TLDialog$dialog alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xfd8e711f, [[TLDraftMessage$draftMessage alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xdb74f558, [[TLChatInvite$chatInvite alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x3af6fb5f, [[TLConfig$config alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xcd050916, [[TLauth_Authorization$auth_authorization alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x6319d612, [[TLDocumentAttributeSticker alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xbdf9653b, [[TLGame$game alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xcde200d1, [[TLPageBlock$pageBlockEmbed alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x1b8f4ad1, [[TLPhoneCall$phoneCallWaiting alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xebe46819, [[TLUpdate$updateServiceNotification alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x50ca4de1, [[TLPhoneCall$phoneCallDiscarded alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xd8caf68d, [[TLUpdate$updatePinnedDialogs alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x80e11a7f, [[TLMessageAction$messageActionPhoneCall alloc] init]));
         
         {
             TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
@@ -917,6 +961,9 @@ TLConstructedValue TLMetaClassStore::constructValue(NSInputStream *is, int32_t s
         {
             if (error != NULL)
             {
+#if defined(DEBUG) || defined(INTERNAL_RELEASE)
+      //@throw [[NSException alloc] initWithName:@"tlmetaclassstore" reason:[NSString stringWithFormat:@"Constructor with signature %.8x not found", signature] userInfo:@{}];
+#endif
                 NSMutableDictionary *userInfo = [[NSMutableDictionary alloc] init];
                 [userInfo setValue:[NSString stringWithFormat:@"Constructor with signature %.8x not found", signature] forKey:NSLocalizedDescriptionKey];
                 *error = [[NSError alloc] initWithDomain:@"TL" code:-1 userInfo:userInfo];

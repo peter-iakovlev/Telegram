@@ -9,8 +9,6 @@
 
 #import "TGPeerIdAdapter.h"
 
-#import "TGConversationReadHistoryActor.h"
-
 @interface TGChatMessageListAdapter : NSObject <ASWatcher>
 {
     int64_t _peerId;
@@ -48,7 +46,7 @@
 
 - (NSString *)_conversationIdPathComponent
 {
-    return [[NSString alloc] initWithFormat:@"%" PRId64 "", _peerId];
+    return [[NSString alloc] initWithFormat:@"%lld", _peerId];
 }
 
 - (instancetype)initWithPeerId:(int64_t)peerId currentView:(TGChatMessageListView *)currentView rangeMessageCount:(NSUInteger)rangeMessageCount initialSignal:(SSignal *)initialSignal viewUpdated:(void (^)(TGChatMessageListView *))viewUpdated
@@ -93,8 +91,6 @@
             [
              [[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/messages", [self _conversationIdPathComponent]],
              [[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/localMessages", [self _conversationIdPathComponent]],
-             @"/tg/conversation/*/readmessages",
-             [[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/readmessages", [self _conversationIdPathComponent]],
              @"/tg/conversation/*/failmessages",
              [[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/messagesDeleted", [self _conversationIdPathComponent]],
              [NSString stringWithFormat:@"/tg/conversation/(%lld)/messagesChanged", _peerId],
@@ -278,85 +274,6 @@
             _currentView = updatedView;
         }
     }
-    else if ([path isEqualToString:@"/tg/conversation/*/readmessages"])
-    {
-        TGSharedPtrWrapper *ptrWrapper = ((SGraphObjectNode *)resource).object;
-        if (ptrWrapper == nil)
-            return;
-        
-        std::tr1::shared_ptr<std::set<int> > mids = std::tr1::static_pointer_cast<std::set<int> >([ptrWrapper ptr]);
-        
-        if (mids != NULL)
-        {
-            NSMutableSet *messageIds = [[NSMutableSet alloc] init];
-            for (int mid : *(mids.get()))
-                [messageIds addObject:@(mid)];
-            
-            NSMutableArray *updatedMessages = nil;
-            for (NSUInteger i = 0; i < _currentView.messages.count; i++)
-            {
-                TGMessage *previousMessage = _currentView.messages[i];
-                if ([messageIds containsObject:@(i)])
-                {
-                    TGMessage *updatedMessage = [previousMessage copy];
-                    updatedMessage.unread = false;
-                    if (updatedMessages == nil)
-                        updatedMessages = [[NSMutableArray alloc] init];
-                    updatedMessages[i] = updatedMessage;
-                }
-            }
-            
-            if (updatedMessages != nil)
-            {
-                TGChatMessageListView *updatedView = [[TGChatMessageListView alloc] initWithMessages:updatedMessages earlierReferenceMessageId:_currentView.earlierReferenceMessageId laterReferenceMessageId:_currentView.laterReferenceMessageId];
-                updatedView.rangeCount = _currentView.rangeCount;
-                updatedView.maybeHasMessagesOnTop = _currentView.maybeHasMessagesOnTop;
-                updatedView.isChannel = _currentView.isChannel;
-                updatedView.isChannelGroup = _currentView.isChannelGroup;
-                _currentView = updatedView;
-                
-                if (_viewUpdated)
-                    _viewUpdated(updatedView);
-                
-                _currentView = updatedView;
-            }
-        }
-    }
-    else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%@)/readmessages", [self _conversationIdPathComponent]]])
-    {
-        bool isOutbox = [resource[@"outbox"] boolValue];
-        int32_t maxMessageId = [resource[@"maxMessageId"] intValue];
-        
-        NSMutableArray *updatedMessages = nil;
-        NSInteger index = -1;
-        for (TGMessage *message in _currentView.messages)
-        {
-            index++;
-            if (message.outgoing == isOutbox && message.mid <= maxMessageId && message.unread)
-            {
-                if (updatedMessages == nil)
-                    updatedMessages = [[NSMutableArray alloc] initWithArray:_currentView.messages];
-                TGMessage *updatedMessage = [message copy];
-                updatedMessage.unread = false;
-                updatedMessages[index] = updatedMessage;
-            }
-        }
-        
-        if (updatedMessages != nil)
-        {
-            TGChatMessageListView *updatedView = [[TGChatMessageListView alloc] initWithMessages:updatedMessages earlierReferenceMessageId:_currentView.earlierReferenceMessageId laterReferenceMessageId:_currentView.laterReferenceMessageId];
-            updatedView.rangeCount = _currentView.rangeCount;
-            updatedView.maybeHasMessagesOnTop = _currentView.maybeHasMessagesOnTop;
-            updatedView.isChannel = _currentView.isChannel;
-            updatedView.isChannelGroup = _currentView.isChannelGroup;
-            _currentView = updatedView;
-            
-            if (_viewUpdated)
-                _viewUpdated(updatedView);
-            
-            _currentView = updatedView;
-        }
-    }
 }
 
 @end
@@ -484,7 +401,7 @@
 {
     return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
-        [TGConversationReadHistoryActor executeStandalone:peerId];
+        [TGDatabaseInstance() transactionReadHistoryForPeerIds:[[NSSet alloc] initWithArray:@[@(peerId)]]];
         [subscriber putCompletion];
         
         return nil;

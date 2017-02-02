@@ -3,6 +3,7 @@
 #import "TGMusicPlayerScrubbingArea.h"
 
 #import "TGImageUtils.h"
+#import "TGImageBlur.h"
 #import "TGFont.h"
 #import "TGModernButton.h"
 #import "TGMusicPlayerModeButton.h"
@@ -36,6 +37,9 @@
     UIView *_albumArtBackgroundView;
     UIImageView *_albumArtPlaceholderView;
     TGImageView *_albumArtImageView;
+    UIImageView *_gradientView;
+    
+    UIView *_wrapperView;
     TGMusicPlayerScrubbingArea *_scrubbingArea;
     UIView *_scrubbingBackground;
     UIView *_playbackScrubbingForeground;
@@ -49,10 +53,13 @@
     TGModernButton *_controlPlayButton;
     TGModernButton *_controlPauseButton;
     
+    TGModernButton *_shareButton;
     TGMusicPlayerModeButton *_controlShuffleButton;
     TGMusicPlayerModeButton *_controlRepeatButton;
+    TGModernButton *_playlistButton;
     
-    CGFloat _labelsEdge;
+    TGModernButton *_dismissButton;
+    
     UILabel *_positionLabel;
     int _positionLabelValue;
     UILabel *_durationLabel;
@@ -82,6 +89,8 @@
     CGFloat _downloadProgress;
     
     bool _updateLabelsLayout;
+    
+    UITapGestureRecognizer *_tapGestureRecognizer;
 }
 
 @end
@@ -121,20 +130,33 @@
         _albumArtImageView = [[TGImageView alloc] init];
         [_albumArtBackgroundView addSubview:_albumArtImageView];
         
+        _gradientView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"MusicPlayerGradient"]];
+        _gradientView.alpha = 0.0f;
+        _gradientView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        _gradientView.frame = CGRectMake(0, 0, self.frame.size.width, _gradientView.frame.size.height);
+        [_albumArtBackgroundView addSubview:_gradientView];
+        
+        _tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleArtTap:)];
+        [_albumArtBackgroundView addGestureRecognizer:_tapGestureRecognizer];
+        
+        _wrapperView = [[UIView alloc] init];
+        _wrapperView.backgroundColor = [UIColor whiteColor];
+        [self addSubview:_wrapperView];
+        
         _scrubbingBackground = [[UIView alloc] init];
         _scrubbingBackground.backgroundColor = UIColorRGB(0xcccccc);
-        [self addSubview:_scrubbingBackground];
+        [_wrapperView addSubview:_scrubbingBackground];
         
         _playbackScrubbingForeground = [[UIView alloc] init];
         _playbackScrubbingForeground.backgroundColor = TGAccentColor();
-        [self addSubview:_playbackScrubbingForeground];
+        [_wrapperView addSubview:_playbackScrubbingForeground];
         
         _downloadingScrubbingForeground = [[UIView alloc] init];
         _downloadingScrubbingForeground.backgroundColor = TGAccentColor();
-        [self addSubview:_downloadingScrubbingForeground];
+        [_wrapperView addSubview:_downloadingScrubbingForeground];
         
         _scrubbingHandle = [[UIImageView alloc] initWithImage:[self handleImage]];
-        [self addSubview:_scrubbingHandle];
+        [_wrapperView addSubview:_scrubbingHandle];
         
         _scrubbingArea = [[TGMusicPlayerScrubbingArea alloc] init];
         __weak TGMusicPlayerCompleteView *weakSelf = self;
@@ -162,24 +184,25 @@
             if (strongSelf != nil)
                 [strongSelf cancelScrubbing];
         };
-        [self addSubview:_scrubbingArea];
+        [_wrapperView addSubview:_scrubbingArea];
         
         _positionLabel = [[UILabel alloc] init];
         _positionLabel.backgroundColor = [UIColor whiteColor];
         _positionLabel.textColor = UIColorRGB(0x474747);
         _positionLabel.font = TGSystemFontOfSize(12.0f);
-        [self addSubview:_positionLabel];
+        [_wrapperView addSubview:_positionLabel];
         _positionLabelValue = INT_MIN;
         
         _durationLabel = [[UILabel alloc] init];
         _durationLabel.backgroundColor = [UIColor whiteColor];
         _durationLabel.textColor = UIColorRGB(0x474747);
         _durationLabel.font = TGSystemFontOfSize(12.0f);
-        [self addSubview:_durationLabel];
+        [_wrapperView addSubview:_durationLabel];
         _durationLabelValue = INT_MIN;
         
         static UIImage *minimumTrackImage = nil;
         static UIImage *maximumTrackImage = nil;
+        static UIImage *dismissBackImage = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
@@ -203,6 +226,14 @@
                 maximumTrackImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:2.0f topCapHeight:0.0f];
                 UIGraphicsEndImageContext();
             }
+            {
+                UIGraphicsBeginImageContextWithOptions(CGSizeMake(24.0f, 24.0f), false, 0.0f);
+                CGContextRef context = UIGraphicsGetCurrentContext();
+                CGContextSetFillColorWithColor(context, UIColorRGB(0xd0d0d0).CGColor);
+                CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 24.0f, 24.0f));
+                dismissBackImage = UIGraphicsGetImageFromCurrentImageContext();
+                UIGraphicsEndImageContext();
+            }
         });
         
         CGFloat titleFontSize = 16.0f + TGRetinaPixel;
@@ -221,44 +252,63 @@
         _titleLabel.backgroundColor = [UIColor whiteColor];
         _titleLabel.textColor = [UIColor blackColor];
         _titleLabel.font = TGMediumSystemFontOfSize(titleFontSize);
-        [self addSubview:_titleLabel];
+        [_wrapperView addSubview:_titleLabel];
         
         _performerLabel = [[UILabel alloc] init];
         _performerLabel.backgroundColor = [UIColor whiteColor];
         _performerLabel.textColor = UIColorRGB(0x474747);
         _performerLabel.font = TGSystemFontOfSize(performerFontSize);
-        [self addSubview:_performerLabel];
+        [_wrapperView addSubview:_performerLabel];
 
         _controlPlayButton = [[TGModernButton alloc] init];
         [_controlPlayButton setImage:[UIImage imageNamed:@"MusicPlayerControlPlay.png"] forState:UIControlStateNormal];
         [_controlPlayButton setContentEdgeInsets:UIEdgeInsetsMake(0.0f, 5.0f, 0.0f, 0.0f)];
         [_controlPlayButton addTarget:self action:@selector(controlPlay) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:_controlPlayButton];
+        [_wrapperView addSubview:_controlPlayButton];
         
         _controlPauseButton = [[TGModernButton alloc] init];
         [_controlPauseButton setImage:[UIImage imageNamed:@"MusicPlayerControlPause.png"] forState:UIControlStateNormal];
         [_controlPauseButton addTarget:self action:@selector(controlPause) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:_controlPauseButton];
+        [_wrapperView addSubview:_controlPauseButton];
         
         _controlBackButton = [[TGModernButton alloc] init];
         [_controlBackButton setImage:[UIImage imageNamed:@"MusicPlayerControlBack.png"] forState:UIControlStateNormal];
         [_controlBackButton addTarget:self action:@selector(controlBack) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:_controlBackButton];
+        [_wrapperView addSubview:_controlBackButton];
         
         _controlForwardButton = [[TGModernButton alloc] init];
         [_controlForwardButton setImage:[UIImage imageNamed:@"MusicPlayerControlForward.png"] forState:UIControlStateNormal];
         [_controlForwardButton addTarget:self action:@selector(controlForward) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:_controlForwardButton];
+        [_wrapperView addSubview:_controlForwardButton];
+        
+        _shareButton = [[TGModernButton alloc] init];
+        [_shareButton setImage:[UIImage imageNamed:@"MusicPlayerShare.png"] forState:UIControlStateNormal];
+        [_shareButton addTarget:self action:@selector(shareButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [_wrapperView addSubview:_shareButton];
         
         _controlShuffleButton = [[TGMusicPlayerModeButton alloc] init];
         [_controlShuffleButton setImage:[UIImage imageNamed:@"MusicPlayerControlShuffle.png"] forState:UIControlStateNormal];
         [_controlShuffleButton addTarget:self action:@selector(controlShuffle) forControlEvents:UIControlEventTouchUpInside];
-        //[self addSubview:_controlShuffleButton];
+        [_wrapperView addSubview:_controlShuffleButton];
         
         _controlRepeatButton = [[TGMusicPlayerModeButton alloc] init];
         [_controlRepeatButton setImage:[UIImage imageNamed:@"MusicPlayerControlRepeat.png"] forState:UIControlStateNormal];
         [_controlRepeatButton addTarget:self action:@selector(controlRepeat) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:_controlRepeatButton];
+        [_wrapperView addSubview:_controlRepeatButton];
+        
+        _playlistButton = [[TGModernButton alloc] init];
+        [_playlistButton setImage:[UIImage imageNamed:@"MusicPlayerPlaylist.png"] forState:UIControlStateNormal];
+        [_playlistButton addTarget:self action:@selector(playlistButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [_wrapperView addSubview:_playlistButton];
+        
+        if (!TGIsPad())
+        {
+            _dismissButton = [[TGModernButton alloc] init];
+            [_dismissButton setBackgroundImage:dismissBackImage forState:UIControlStateNormal];
+            [_dismissButton setImage:[UIImage imageNamed:@"MusicPlayerDismiss.png"] forState:UIControlStateNormal];
+            [_dismissButton addTarget:self action:@selector(dismissButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+            [self addSubview:_dismissButton];
+        }
         
 #if TARGET_IPHONE_SIMULATOR
         UISlider *sliderView = [[UISlider alloc] init];
@@ -276,12 +326,12 @@
         volumeView.showsRouteButton = false;
         _volumeView = volumeView;
 #endif
-        [self addSubview:_volumeView];
+        [_wrapperView addSubview:_volumeView];
         
         _volumeControlLeftIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"VolumeControlVolumeIcon.png"]];
-        [self addSubview:_volumeControlLeftIcon];
+        [_wrapperView addSubview:_volumeControlLeftIcon];
         _volumeControlRightIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"VolumeControlVolumeUpIcon.png"]];
-        [self addSubview:_volumeControlRightIcon];
+        [_wrapperView addSubview:_volumeControlRightIcon];
         
         _currentItemPosition = (TGMusicPlayerItemPosition){.index = 0, .count = -1};
         
@@ -289,9 +339,7 @@
         {
             __strong TGMusicPlayerCompleteView *strongSelf = weakSelf;
             if (strongSelf != nil)
-            {
                 [strongSelf setStatus:status];
-            }
         }];
         
         _updateLabelsLayout = true;
@@ -392,7 +440,8 @@ typedef enum {
     TGMusicPlayerInterfaceCompact = 0,
     TGMusicPlayerInterfaceMedium = 1,
     TGMusicPlayerInterfaceLarge = 2,
-    TGMusicPlayerInterfaceExtraLarge = 3
+    TGMusicPlayerInterfaceExtraLarge = 3,
+    TGMusicPlayerInterfacePad = 4
 } TGMusicPlayerInterfaceType;
 
 - (TGMusicPlayerInterfaceType)interfaceType
@@ -400,6 +449,8 @@ typedef enum {
     CGSize screenSize = self.bounds.size;
     CGFloat screenHeight = MAX(screenSize.width, screenSize.height);
     
+    if (fabs(667.0f - screenHeight) < FLT_EPSILON && TGIsPad())
+        return TGMusicPlayerInterfacePad;
     if (screenHeight > 667.0f + FLT_EPSILON)
         return TGMusicPlayerInterfaceExtraLarge;
     else if (screenHeight > 568.0f + FLT_EPSILON)
@@ -420,23 +471,14 @@ typedef enum {
     CGFloat progressHeight = [self progressHeight];
     CGSize handleSize = [self handleSize];
     
-    CGFloat albumArtEdge = CGRectGetMaxY(_albumArtBackgroundView.frame);
-    
     CGFloat side = MIN(self.frame.size.width, self.frame.size.height);
     CGFloat handleOriginX = TGScreenPixelFloor((side - handleSize.width) * displayOffset);
-    _playbackScrubbingForeground.frame = CGRectMake(0.0f, albumArtEdge, handleOriginX, progressHeight);
-    _downloadingScrubbingForeground.frame = CGRectMake(0.0f, albumArtEdge, _downloadProgress * side, progressHeight);
-    _scrubbingHandle.frame = CGRectMake(handleOriginX, albumArtEdge, handleSize.width, handleSize.height);
+    _playbackScrubbingForeground.frame = CGRectMake(0.0f, 0.0f, handleOriginX, progressHeight);
+    _downloadingScrubbingForeground.frame = CGRectMake(0.0f, 0.0f, _downloadProgress * side, progressHeight);
+    _scrubbingHandle.frame = CGRectMake(handleOriginX, 0.0f, handleSize.width, handleSize.height);
     
     int positionLabelValue = (int)(displayOffset * _currentStatus.duration);
     int durationLabelValue = (int)(_currentStatus.duration) - positionLabelValue;
-    
-    if (ABS(_labelsEdge - albumArtEdge) > FLT_EPSILON)
-    {
-        _labelsEdge = albumArtEdge;
-        _positionLabelValue = INT_MIN;
-        _durationLabelValue = INT_MIN;
-    }
     
     if (_positionLabelValue != positionLabelValue)
     {
@@ -451,7 +493,7 @@ typedef enum {
             _positionLabel.text = [[NSString alloc] initWithFormat:@"%d:%02d", positionLabelValue / 60, positionLabelValue % 60];
         }
         [_positionLabel sizeToFit];
-        _positionLabel.frame = CGRectMake(11.0f + TGRetinaPixel, albumArtEdge + 17.0f - TGRetinaPixel, _positionLabel.frame.size.width, _positionLabel.frame.size.height);
+        _positionLabel.frame = CGRectMake(11.0f + TGRetinaPixel, 17.0f - TGRetinaPixel, _positionLabel.frame.size.width, _positionLabel.frame.size.height);
     }
     
     if (_durationLabelValue != durationLabelValue)
@@ -467,7 +509,7 @@ typedef enum {
             _durationLabel.text = [[NSString alloc] initWithFormat:@"-%d:%02d", durationLabelValue / 60, durationLabelValue % 60];
         }
         [_durationLabel sizeToFit];
-        _durationLabel.frame = CGRectMake(side - 11.0f - TGRetinaPixel - _durationLabel.frame.size.width, albumArtEdge + 17.0f - TGRetinaPixel, _durationLabel.frame.size.width, _durationLabel.frame.size.height);
+        _durationLabel.frame = CGRectMake(side - 11.0f - TGRetinaPixel - _durationLabel.frame.size.width, 17.0f - TGRetinaPixel, _durationLabel.frame.size.width, _durationLabel.frame.size.height);
     }
     
     [self setIgnoreLayout:ignoreLayout];
@@ -476,11 +518,6 @@ typedef enum {
 - (void)layoutSubviews
 {
     [super layoutSubviews];
-    
-    CGFloat verticalOffset = 0.0f;
-    if (self.bounds.size.height > 667.0f + FLT_EPSILON) {
-        verticalOffset = CGFloor((self.bounds.size.height - 667.0f) / 2.0f);
-    }
     
     CGFloat side = MIN(self.frame.size.width, self.frame.size.height);
     side = MIN(side, 414.0f);
@@ -493,7 +530,7 @@ typedef enum {
     switch ([self interfaceType])
     {
         case TGMusicPlayerInterfaceCompact:
-            albumArtHeight = 232.0f;
+            albumArtHeight = 280.0f;
             albumArtImageSize = CGSizeMake(200.0f, 200.0f);
             break;
         default:
@@ -502,19 +539,22 @@ typedef enum {
             break;
     }
     
-    _albumArtBackgroundView.frame = CGRectMake(0.0f, 0.0f, self.bounds.size.width, albumArtHeight + _topInset + verticalOffset);
-    _albumArtImageView.frame = CGRectMake(CGFloor((self.frame.size.width - albumArtImageSize.width) / 2.0f), _topInset + verticalOffset + CGFloor((albumArtHeight - albumArtImageSize.height) / 2.0f), albumArtImageSize.width, albumArtImageSize.height);
-    _albumArtPlaceholderView.frame = CGRectMake(CGFloor((self.frame.size.width - _albumArtPlaceholderView.frame.size.width) / 2.0f) - 8.0f, _topInset + verticalOffset + CGFloor((albumArtHeight - _albumArtPlaceholderView.frame.size.height) / 2.0f), _albumArtPlaceholderView.frame.size.width, _albumArtPlaceholderView.frame.size.height);
+    _albumArtBackgroundView.frame = CGRectMake(0.0f, 0.0f, self.bounds.size.width, albumArtHeight + _topInset);
+    CGSize filledSize = TGScaleToFill(albumArtImageSize, _albumArtBackgroundView.frame.size);
+    _albumArtImageView.frame = CGRectMake(CGFloor((self.frame.size.width - filledSize.width) / 2.0f), _topInset + CGFloor((albumArtHeight - filledSize.height) / 2.0f), filledSize.width, filledSize.height);
+    _albumArtPlaceholderView.frame = CGRectMake(CGFloor((self.frame.size.width - _albumArtPlaceholderView.frame.size.width) / 2.0f) - 8.0f, _topInset + CGFloor((albumArtHeight - _albumArtPlaceholderView.frame.size.height) / 2.0f), _albumArtPlaceholderView.frame.size.width, _albumArtPlaceholderView.frame.size.height);
     
     CGFloat albumArtEdge = CGRectGetMaxY(_albumArtBackgroundView.frame);
     
-    _scrubbingArea.frame = CGRectMake(0.0f, albumArtEdge + progressHeight / 2.0f - scrubbingHeight / 2.0f, self.bounds.size.width, scrubbingHeight);
-    _scrubbingBackground.frame = CGRectMake(0.0f, albumArtEdge, self.bounds.size.width, progressHeight);
+    _wrapperView.frame = CGRectMake(0, albumArtEdge, self.frame.size.width, self.frame.size.height - albumArtEdge);
+    
+    _scrubbingArea.frame = CGRectMake(0.0f, progressHeight / 2.0f - scrubbingHeight / 2.0f, _wrapperView.bounds.size.width, scrubbingHeight);
+    _scrubbingBackground.frame = CGRectMake(0.0f, 0, _wrapperView.bounds.size.width, progressHeight);
     
     CGFloat titleOffset = albumArtEdge + 31.0f;
     CGFloat controlButtonsOffset = albumArtEdge + 76.0f;
     CGFloat controlButtonSize = 60.0f;
-    CGFloat controlButtonSpread = 100.0f;
+    CGFloat controlButtonSpread = 110.0f;
     CGFloat volumeControlBottomOffset = 58.0f;
     CGFloat volumeControlSideInset = 47.0f;
     CGFloat volumeControlOffset = 0.0f;
@@ -526,56 +566,82 @@ typedef enum {
     switch ([self interfaceType])
     {
         case TGMusicPlayerInterfaceCompact:
-            titleOffset = albumArtEdge + 30.0f;
-            controlButtonsOffset = albumArtEdge + 75.0f;
-            volumeControlBottomOffset = 58.0f;
+            titleOffset = 30.0f;
+            controlButtonsOffset = 74;
+            volumeControlBottomOffset = 78.0f;
             break;
         case TGMusicPlayerInterfaceMedium:
-            titleOffset = albumArtEdge + 31.0f;
-            controlButtonsOffset = albumArtEdge + 75.0f;
-            volumeControlBottomOffset = 58.0f;
+            titleOffset = 31.0f;
+            controlButtonsOffset = 88.0f;
+            volumeControlBottomOffset = 98.0f;
             break;
         case TGMusicPlayerInterfaceLarge:
-            titleOffset = albumArtEdge + 51.0f;
-            controlButtonsOffset = albumArtEdge + 96.0f;
-            volumeControlBottomOffset = 59.0f;
+            titleOffset = 51.0f;
+            controlButtonsOffset = 116.0f;
+            volumeControlBottomOffset = 102.0f;
             volumeControlSideInset = 76.0f;
             break;
         case TGMusicPlayerInterfaceExtraLarge:
-            titleOffset = albumArtEdge + 57.0f;
-            controlButtonsOffset = albumArtEdge + 107.0f;
-            volumeControlBottomOffset = 70.0f;
+            titleOffset = 59.0f;
+            controlButtonsOffset = 120.0f;
+            volumeControlBottomOffset = 122.0f;
             volumeControlSideInset = 86.0f;
+            break;
+        case TGMusicPlayerInterfacePad:
+            titleOffset = 51.0f;
+            controlButtonsOffset = 96.0f;
+            volumeControlBottomOffset = 59.0f;
+            volumeControlSideInset = 76.0f;
             break;
     }
     
     CGSize titleSize = _titleLabel.frame.size;
     CGSize performerSize = _performerLabel.frame.size;
     
+    if (self.preview)
+        titleOffset = 19.0f;
+    
     if (_updateLabelsLayout)
     {
         _updateLabelsLayout = false;
         titleSize = [_titleLabel.text sizeWithFont:_titleLabel.font];
         performerSize = [_performerLabel.text sizeWithFont:_performerLabel.font];
-        CGFloat maxWidth = self.bounds.size.width - 32.0f;
+        CGFloat maxWidth = _wrapperView.bounds.size.width - 32.0f;
+        if (self.preview)
+            maxWidth -= 80;
         titleSize.width = MIN(titleSize.width, maxWidth);
         performerSize.width = MIN(performerSize.width, maxWidth);
     }
     
-    _titleLabel.frame = CGRectMake(CGFloor((self.bounds.size.width - titleSize.width) / 2.0f), titleOffset + TGRetinaPixel, titleSize.width, titleSize.height);
-    _performerLabel.frame = CGRectMake(CGFloor((self.bounds.size.width - performerSize.width) / 2.0f), titleOffset + titleSize.height + 6.0f, performerSize.width, performerSize.height);
+    _titleLabel.frame = CGRectMake(CGFloor((_wrapperView.bounds.size.width - titleSize.width) / 2.0f), titleOffset + TGRetinaPixel, titleSize.width, titleSize.height);
+    _performerLabel.frame = CGRectMake(CGFloor((_wrapperView.bounds.size.width - performerSize.width) / 2.0f), titleOffset + titleSize.height + 6.0f, performerSize.width, performerSize.height);
     
-    _controlPauseButton.frame = _controlPlayButton.frame = CGRectMake(CGFloor((self.bounds.size.width - controlButtonSize) / 2.0f), controlButtonsOffset, controlButtonSize, controlButtonSize);
-    _controlBackButton.frame = CGRectMake(CGFloor((self.bounds.size.width - controlButtonSpread) / 2.0f) - controlButtonSize, controlButtonsOffset, controlButtonSize, controlButtonSize);
-    _controlForwardButton.frame = CGRectMake(CGFloor((self.bounds.size.width + controlButtonSpread) / 2.0f), controlButtonsOffset, controlButtonSize, controlButtonSize);
+    _controlPauseButton.frame = _controlPlayButton.frame = CGRectMake(CGFloor((_wrapperView.bounds.size.width - controlButtonSize) / 2.0f), controlButtonsOffset, controlButtonSize, controlButtonSize);
+    _controlBackButton.frame = CGRectMake(CGFloor((_wrapperView.bounds.size.width - controlButtonSpread) / 2.0f) - controlButtonSize, controlButtonsOffset, controlButtonSize, controlButtonSize);
+    _controlForwardButton.frame = CGRectMake(CGFloor((_wrapperView.bounds.size.width + controlButtonSpread) / 2.0f), controlButtonsOffset, controlButtonSize, controlButtonSize);
     
     CGSize modeButtonSize = CGSizeMake(28.0f, 21.0f);
-    _controlShuffleButton.frame = CGRectMake(16.0f, _controlPlayButton.frame.origin.y + 19.0f, modeButtonSize.width, modeButtonSize.height);
-    _controlRepeatButton.frame = CGRectMake(self.bounds.size.width - 44.0f, _controlShuffleButton.frame.origin.y, modeButtonSize.width, modeButtonSize.height);
+    
+    if ([self interfaceType] == TGMusicPlayerInterfacePad)
+    {
+        _controlShuffleButton.frame = CGRectMake(16.0f, _controlPlayButton.frame.origin.y + 19.0f, modeButtonSize.width, modeButtonSize.height);
+        _controlRepeatButton.frame = CGRectMake(_wrapperView.bounds.size.width - 44.0f, _controlShuffleButton.frame.origin.y, modeButtonSize.width, modeButtonSize.height);
+    }
+    else
+    {
+        CGFloat segment = _wrapperView.frame.size.width / 3.0f;
+        CGFloat yOffset = -10.0f;
+        _shareButton.frame = CGRectMake(8.0f, _wrapperView.frame.size.height - modeButtonSize.height + yOffset, modeButtonSize.width, modeButtonSize.height);
+        _controlShuffleButton.frame = CGRectMake(8.0f + ceil(segment - modeButtonSize.width / 2.0f), _wrapperView.frame.size.height - modeButtonSize.height + yOffset, modeButtonSize.width, modeButtonSize.height);
+        _controlRepeatButton.frame = CGRectMake(-8.0f + ceil(_wrapperView.frame.size.width - segment - modeButtonSize.width / 2.0f), _controlShuffleButton.frame.origin.y, modeButtonSize.width, modeButtonSize.height);
+        _playlistButton.frame = CGRectMake(-8.0f + _wrapperView.frame.size.width - modeButtonSize.width, _wrapperView.frame.size.height - modeButtonSize.height + yOffset, modeButtonSize.width, modeButtonSize.height);
+    }
+    
+    _dismissButton.frame = CGRectMake(12.0f, 28.0f, 24.0f, 24.0f);
     
     [UIView performWithoutAnimation:^
     {
-        _volumeView.frame = CGRectMake(volumeControlSideInset, self.frame.size.height - volumeControlBottomOffset + volumeControlOffset, self.bounds.size.width - volumeControlSideInset * 2.0f, 50.0f);
+        _volumeView.frame = CGRectMake(volumeControlSideInset, _wrapperView.frame.size.height - volumeControlBottomOffset + volumeControlOffset, _wrapperView.bounds.size.width - volumeControlSideInset * 2.0f, 50.0f);
     }];
     _volumeControlLeftIcon.frame = CGRectMake(_volumeView.frame.origin.x - 16.0f, _volumeView.frame.origin.y + 20.0f - volumeControlOffset, _volumeControlLeftIcon.frame.size.width, _volumeControlLeftIcon.frame.size.height);
     _volumeControlRightIcon.frame = CGRectMake(CGRectGetMaxX(_volumeView.frame) + 8.0f, _volumeView.frame.origin.y + 18.0f - volumeControlOffset, _volumeControlRightIcon.frame.size.width, _volumeControlRightIcon.frame.size.height);
@@ -598,26 +664,8 @@ typedef enum {
     
     if (!TGObjectCompare(status.item.key, previousStatus.item.key))
     {
-        NSString *title = nil;
-        NSString *performer = nil;
-        if ([status.item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
-            TGDocumentMediaAttachment *document = status.item.media;
-            for (id attribute in document.attributes)
-            {
-                if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
-                {
-                    title = ((TGDocumentAttributeAudio *)attribute).title;
-                    performer = ((TGDocumentAttributeAudio *)attribute).performer;
-                    
-                    break;
-                }
-            }
-        
-            if (title.length == 0)
-            {
-                title = document.fileName;
-            }
-        }
+        NSString *title = status.item.title;
+        NSString *performer = status.item.performer;
         
         if (title.length == 0)
             title = @"Unknown Track";
@@ -647,8 +695,33 @@ typedef enum {
         [_albumArtImageView reset];
         if (status.albumArtSync != nil)
         {
-            _albumArtImageView.contentMode = UIViewContentModeScaleAspectFit;
-            [_albumArtImageView setSignal:status.albumArtSync];
+            _albumArtImageView.contentMode = UIViewContentModeScaleAspectFill;
+            __weak TGMusicPlayerCompleteView *weakSelf = self;
+            [_albumArtImageView setSignal:[[[status.albumArtSync deliverOn:[SQueue mainQueue]] onNext:^(id next)
+            {
+                __strong TGMusicPlayerCompleteView *strongSelf = weakSelf;
+                if (![next isKindOfClass:[UIImage class]] || strongSelf == nil || strongSelf.statusBarStyleChange == nil)
+                    return;
+                
+                [[SQueue concurrentDefaultQueue] dispatch:^
+                {
+                    bool isDark = [strongSelf isDarkAlbumArtwork:next];
+                    [[SQueue mainQueue] dispatch:^
+                    {
+                        strongSelf.statusBarStyleChange(isDark);
+                    }];
+                }];
+            }] onError:^(__unused id error)
+            {
+                __strong TGMusicPlayerCompleteView *strongSelf = weakSelf;
+                if (strongSelf != nil && strongSelf.statusBarStyleChange != nil)
+                    strongSelf.statusBarStyleChange(false);
+            }]];
+        }
+        else
+        {
+            if (self.statusBarStyleChange != nil)
+                self.statusBarStyleChange(false);
         }
     }
     
@@ -689,6 +762,9 @@ typedef enum {
         _controlPlayButton.alpha = buttonsEnabled ? 1.0f : disabledAlpha;
         _controlPauseButton.alpha = buttonsEnabled ? 1.0f : disabledAlpha;
         _scrubbingArea.enabled = buttonsEnabled;
+        
+        _shareButton.enabled = buttonsEnabled;
+        _shareButton.alpha = buttonsEnabled ? 1.0f : disabledAlpha;
         
         if (_actionsEnabled) {
             _actionsEnabled(buttonsEnabled);
@@ -832,6 +908,28 @@ typedef enum {
     }
 }
 
+- (bool)isDarkAlbumArtwork:(UIImage *)image
+{
+    if (image == nil)
+        return false;
+    
+    
+    CGSize imageSize = image.size;
+    CGFloat edge = imageSize.height * 20.0f / self.frame.size.height;
+    CGSize topEdgeSize = CGSizeMake(image.size.width, floor(MIN(imageSize.height, edge)));
+    CGSize scaledSize = TGScaleToFill(topEdgeSize, CGSizeMake(10.0f, 10.0f));
+    
+    UIImage *topEdge = TGFixOrientationAndCrop(image, CGRectMake(0, 0, topEdgeSize.width, topEdgeSize.height), scaledSize);
+    
+    uint32_t colorValue;
+    TGPlainImageAverageColor(topEdge, &colorValue);
+    
+    UIColor *averageColor = UIColorRGB(colorValue);
+    const CGFloat *RGB = CGColorGetComponents(averageColor.CGColor);
+    
+    return ((0.2126f * RGB[0] + 0.7152f * RGB[1] + 0.0722f * RGB[2]) < 0.5f);
+}
+
 - (void)controlPlay
 {
     [TGTelegraphInstance.musicPlayer controlPlay];
@@ -860,6 +958,69 @@ typedef enum {
 - (void)controlRepeat
 {
     [TGTelegraphInstance.musicPlayer controlRepeat];
+}
+
+- (void)shareButtonPressed
+{
+    if (self.actionsPressed != nil)
+        self.actionsPressed();
+}
+
+- (void)playlistButtonPressed
+{
+    if (self.playlistPressed != nil)
+        self.playlistPressed();
+}
+
+- (void)dismissButtonPressed
+{
+    if (self.dismissPressed != nil)
+        self.dismissPressed();
+}
+
+- (void)dismissToRect:(CGRect)__unused rect completion:(void (^)(void))completion
+{
+    self.backgroundColor = [UIColor clearColor];
+    
+    _albumArtBackgroundView.backgroundColor = [UIColor clearColor];
+    _albumArtPlaceholderView.hidden = true;
+    
+    [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
+    {
+        _wrapperView.frame = CGRectOffset(_wrapperView.frame, 0, _wrapperView.frame.size.height);
+        _albumArtImageView.frame = CGRectMake(10, 149, 42, 42);
+    } completion:^(__unused BOOL finished)
+    {
+       if (completion != nil)
+           completion();
+    }];
+}
+
+- (void)handleArtTap:(UITapGestureRecognizer *)__unused gestureRecognizer
+{
+    if (!self.preview)
+        return;
+    
+    if (_currentStatus.paused)
+        [self controlPlay];
+    else
+        [self controlPause];
+}
+
+- (bool)isSwipeGestureAllowedAtPoint:(CGPoint)point
+{
+    return !CGRectContainsPoint(CGRectInset([_scrubbingArea.superview convertRect:_scrubbingArea.frame toView:self], -20, -10), point);
+}
+
+- (void)setPreview:(bool)preview
+{
+    _preview = preview;
+    _dismissButton.hidden = preview;
+}
+
+- (void)setGradientAlpha:(CGFloat)alpha
+{
+    _gradientView.alpha = alpha;
 }
 
 @end

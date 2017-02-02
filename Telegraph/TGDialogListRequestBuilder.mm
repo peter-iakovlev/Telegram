@@ -1,5 +1,7 @@
 #import "TGDialogListRequestBuilder.h"
 
+#import "ASCommon.h"
+
 #import "TGTelegraph.h"
 
 #import "TGMessage+Telegraph.h"
@@ -56,6 +58,9 @@
         _replaceList = true;
     
         int limit = 200;
+#ifdef DEBUG
+        limit = 5;
+#endif
         
         self.cancelToken = [TGTelegraphInstance doRequestDialogsListWithOffset:0 limit:limit requestBuilder:self];
     }
@@ -146,12 +151,13 @@
             [parsedMessages addObject:message];
     }
     
-    [[[self signalForCompleteMessages:parsedMessages channels:channelItems] catch:^SSignal *(__unused id error)
+    [[[TGDialogListRequestBuilder signalForCompleteMessages:parsedMessages channels:channelItems] catch:^SSignal *(__unused id error)
     {
         return [SSignal single:parsedMessages];
     }] startWithNext:^(NSArray *completeMessages)
     {
         NSMutableDictionary *multipleMessagesByConversation = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary<NSNumber *, TGDatabaseMessageDraft *> *updatePeerDrafts = [[NSMutableDictionary alloc] init];
         
         for (TGMessage *message in completeMessages)
         {
@@ -170,13 +176,22 @@
         NSMutableArray *conversations = [[NSMutableArray alloc] init];
         NSMutableArray *channels = [[NSMutableArray alloc] init];
         
+        NSMutableArray *pinnedPeerIds = [[NSMutableArray alloc] init];
+        
         for (TLDialog *dialog in dialogs.dialogs)
         {
+            int64_t peerId = 0;
             if ([dialog.peer isKindOfClass:[TLPeer$peerUser class]])
             {
                 if (_ignoreConversationIds.find(((TLPeer$peerUser *)dialog.peer).user_id) == _ignoreConversationIds.end())
                 {
                     TGConversation *conversation = [[TGConversation alloc] initWithConversationId:((TLPeer$peerUser *)dialog.peer).user_id unreadCount:dialog.unread_count serviceUnreadCount:0];
+                    peerId = conversation.conversationId;
+                    
+                    conversation.maxReadMessageId = dialog.read_inbox_max_id;
+                    conversation.maxOutgoingReadMessageId = dialog.read_outbox_max_id;
+                    conversation.maxKnownMessageId = dialog.top_message;
+                    
                     TGMessage *message = [messagesDict objectForKey:[NSNumber numberWithInt:dialog.top_message]];
                     if (message != nil)
                         [conversation mergeMessage:message];
@@ -229,7 +244,13 @@
                 if (_ignoreConversationIds.find(-((TLPeer$peerChat *)dialog.peer).chat_id) == _ignoreConversationIds.end())
                 {
                     TGConversation *conversation = [chatItems objectForKey:[[NSNumber alloc] initWithLongLong:-((TLPeer$peerChat *)dialog.peer).chat_id]];
+                    peerId = conversation.conversationId;
                     conversation.unreadCount = dialog.unread_count;
+                    
+                    conversation.maxReadMessageId = dialog.read_inbox_max_id;
+                    conversation.maxOutgoingReadMessageId = dialog.read_outbox_max_id;
+                    conversation.maxKnownMessageId = dialog.top_message;
+                    
                     TGMessage *message = [messagesDict objectForKey:[NSNumber numberWithInt:dialog.top_message]];
                     if (message != nil)
                         [conversation mergeMessage:message];
@@ -277,38 +298,54 @@
             }
             else if ([dialog.peer isKindOfClass:[TLPeer$peerChannel class]]) {
                 TGConversation *conversation = channelItems[@(TGPeerIdFromChannelId(((TLPeer$peerChannel *)dialog.peer).channel_id))];
-                if ([dialog isKindOfClass:[TLDialog$dialogChannel class]]) {
-                    TLDialog$dialogChannel *concreteDialog = (TLDialog$dialogChannel *)dialog;
-                    conversation.unreadCount = concreteDialog.unread_important_count;
-                    conversation.serviceUnreadCount = MAX(0, concreteDialog.unread_count - concreteDialog.unread_important_count);
-                } else {
-                    conversation.serviceUnreadCount = dialog.unread_count;
+                if (conversation != nil) {
+                    peerId = conversation.conversationId;
+                    conversation.unreadCount = dialog.unread_count;
+                    conversation.maxReadMessageId = dialog.read_inbox_max_id;
+                    conversation.maxOutgoingReadMessageId = dialog.read_outbox_max_id;
+                    conversation.maxKnownMessageId = dialog.top_message;
+                    
+                    [channels addObject:conversation];
+                    
+                    if ([dialog.notify_settings isKindOfClass:[TLPeerNotifySettings$peerNotifySettings class]])
+                    {
+                        TLPeerNotifySettings$peerNotifySettings *concreteSettings = (TLPeerNotifySettings$peerNotifySettings *)dialog.notify_settings;
+                        
+                        int peerSoundId = 0;
+                        int peerMuteUntil = 0;
+                        bool peerPreviewText = true;
+                        bool messagesMuted = false;
+                        
+                        peerMuteUntil = concreteSettings.mute_until;
+                        
+                        if (concreteSettings.sound.length == 0)
+                            peerSoundId = 0;
+                        else if ([concreteSettings.sound isEqualToString:@"default"])
+                            peerSoundId = 1;
+                        else
+                            peerSoundId = [concreteSettings.sound intValue];
+                        
+                        peerPreviewText = concreteSettings.flags & (1 << 0);
+                        messagesMuted = concreteSettings.flags & (1 << 1);
+                        
+                        [TGDatabaseInstance() storePeerNotificationSettings:conversation.conversationId soundId:peerSoundId muteUntil:peerMuteUntil previewText:peerPreviewText messagesMuted:messagesMuted writeToActionQueue:false completion:nil];
+                    }
                 }
-                conversation.maxReadMessageId = dialog.read_inbox_max_id;
-                [channels addObject:conversation];
+            }
+            
+            if (peerId != 0) {
+                TGDatabaseMessageDraft *draft = nil;
+                if ([dialog.draft isKindOfClass:[TLDraftMessage$draftMessageMeta class]]) {
+                    TLDraftMessage$draftMessageMeta *concreteDraft = (TLDraftMessage$draftMessageMeta *)dialog.draft;
+                    draft = [[TGDatabaseMessageDraft alloc] initWithText:concreteDraft.message entities:[TGMessage parseTelegraphEntities:concreteDraft.entities] disableLinkPreview:concreteDraft.flags & (1 << 1) replyToMessageId:concreteDraft.reply_to_msg_id date:concreteDraft.date];
+                }
                 
-                if ([dialog.notify_settings isKindOfClass:[TLPeerNotifySettings$peerNotifySettings class]])
-                {
-                    TLPeerNotifySettings$peerNotifySettings *concreteSettings = (TLPeerNotifySettings$peerNotifySettings *)dialog.notify_settings;
-                    
-                    int peerSoundId = 0;
-                    int peerMuteUntil = 0;
-                    bool peerPreviewText = true;
-                    bool messagesMuted = false;
-                    
-                    peerMuteUntil = concreteSettings.mute_until;
-                    
-                    if (concreteSettings.sound.length == 0)
-                        peerSoundId = 0;
-                    else if ([concreteSettings.sound isEqualToString:@"default"])
-                        peerSoundId = 1;
-                    else
-                        peerSoundId = [concreteSettings.sound intValue];
-                    
-                    peerPreviewText = concreteSettings.flags & (1 << 0);
-                    messagesMuted = concreteSettings.flags & (1 << 1);
-                    
-                    [TGDatabaseInstance() storePeerNotificationSettings:conversation.conversationId soundId:peerSoundId muteUntil:peerMuteUntil previewText:peerPreviewText messagesMuted:messagesMuted writeToActionQueue:false completion:nil];
+                if (draft != nil) {
+                    updatePeerDrafts[@(peerId)] = draft == nil ? (id)[NSNull null] : draft;
+                }
+                
+                if (dialog.flags & (1 << 2)) {
+                    [pinnedPeerIds addObject:@(peerId)];
                 }
             }
         }
@@ -318,7 +355,7 @@
         
         TGDialogListRemoteOffset *remoteOffset = nil;
         
-        for (TLDialog$dialog *dialog in dialogs.dialogs) {
+        for (TLDialog *dialog in dialogs.dialogs) {
             int64_t peerId = 0;
             int64_t accessHash = 0;
             TGMessage *message = nil;
@@ -339,6 +376,7 @@
                 for (TGConversation *conversation in channels) {
                     if (conversation.conversationId == peerId) {
                         accessHash = conversation.accessHash;
+                        conversation.pts = dialog.pts;
                         break;
                     }
                 }
@@ -404,13 +442,15 @@
                 
                 [TGDatabaseInstance() addMessagesToChannel:[nConversationId longLongValue] messages:messages deleteMessages:nil unimportantGroups:nil addedHoles:addedHoles removedHoles:nil removedUnimportantHoles:nil updatedMessageSortKeys:nil returnGroups:false keepUnreadCounters:true changedMessages:nil];
             } else {
-                [TGDatabaseInstance() addMessagesToConversation:messages conversationId:[nConversationId longLongValue] updateConversation:nil dispatch:false countUnread:false];
+                [TGDatabaseInstance() transactionAddMessages:messages updateConversationDatas:nil notifyAdded:false];
                 if (messages.count != 0) {
                     TGMessage *message = messages.firstObject;
                     [TGDatabaseInstance() fillConversationHistoryHole:[nConversationId longLongValue] indexSet:[NSIndexSet indexSetWithIndex:message.mid]];
                 }
             }
         }];
+        
+        [TGDatabaseInstance() transactionAddMessages:nil notifyAddedMessages:false removeMessages:nil updateMessages:nil updatePeerDrafts:updatePeerDrafts removeMessagesInteractive:nil keepDates:false removeMessagesInteractiveForEveryone:false updateConversationDatas:nil applyMaxIncomingReadIds:nil applyMaxOutgoingReadIds:nil applyMaxOutgoingReadDates:nil readHistoryForPeerIds:nil resetPeerReadStates:nil clearConversationsWithPeerIds:nil removeConversationsWithPeerIds:nil updatePinnedConversations:_replaceList ? pinnedPeerIds : nil synchronizePinnedConversations:false forceReplacePinnedConversations:false];
         
         [ActionStageInstance() dispatchResource:@"/dialogListReloaded" resource:@true];
         
@@ -430,7 +470,7 @@
     [ActionStageInstance() nodeRetrieveFailed:self.path];
 }
 
-- (SSignal *)signalForCompleteMessages:(NSArray *)completeMessages channels:(NSDictionary *)channels
++ (SSignal *)signalForCompleteMessages:(NSArray *)completeMessages channels:(NSDictionary *)channels
 {
     NSMutableArray *downloadMessages = [[NSMutableArray alloc] init];
     

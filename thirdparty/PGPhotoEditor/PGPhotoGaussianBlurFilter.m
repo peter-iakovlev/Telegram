@@ -45,7 +45,7 @@
     GLfloat sumOfWeights = 0.0;
     for (NSUInteger currentGaussianWeightIndex = 0; currentGaussianWeightIndex < blurRadius + 1; currentGaussianWeightIndex++)
     {
-        standardGaussianWeights[currentGaussianWeightIndex] = (1.0 / sqrt(2.0 * M_PI * pow(sigma, 2.0))) * exp(-pow(currentGaussianWeightIndex, 2.0) / (2.0 * pow(sigma, 2.0)));
+        standardGaussianWeights[currentGaussianWeightIndex] = (GLfloat)((1.0 / sqrt(2.0 * M_PI * pow(sigma, 2.0))) * exp(-pow(currentGaussianWeightIndex, 2.0) / (2.0 * pow(sigma, 2.0))));
         
         if (currentGaussianWeightIndex == 0)
             sumOfWeights += standardGaussianWeights[currentGaussianWeightIndex];
@@ -56,7 +56,7 @@
     for (NSUInteger currentGaussianWeightIndex = 0; currentGaussianWeightIndex < blurRadius + 1; currentGaussianWeightIndex++)
         standardGaussianWeights[currentGaussianWeightIndex] = standardGaussianWeights[currentGaussianWeightIndex] / sumOfWeights;
     
-    NSUInteger numberOfOptimizedOffsets = MIN(blurRadius / 2 + (blurRadius % 2), 7);
+    NSUInteger numberOfOptimizedOffsets = MIN(blurRadius / 2 + (blurRadius % 2), 7U);
     GLfloat *optimizedGaussianOffsets = calloc(numberOfOptimizedOffsets, sizeof(GLfloat));
     
     for (NSUInteger currentOptimizedOffset = 0; currentOptimizedOffset < numberOfOptimizedOffsets; currentOptimizedOffset++)
@@ -109,7 +109,7 @@
     GLfloat sumOfWeights = 0.0;
     for (NSUInteger currentGaussianWeightIndex = 0; currentGaussianWeightIndex < blurRadius + 1; currentGaussianWeightIndex++)
     {
-        standardGaussianWeights[currentGaussianWeightIndex] = (1.0 / sqrt(2.0 * M_PI * pow(sigma, 2.0))) * exp(-pow(currentGaussianWeightIndex, 2.0) / (2.0 * pow(sigma, 2.0)));
+        standardGaussianWeights[currentGaussianWeightIndex] = (GLfloat)((1.0 / sqrt(2.0 * M_PI * pow(sigma, 2.0))) * exp(-pow(currentGaussianWeightIndex, 2.0) / (2.0 * pow(sigma, 2.0))));
         
         if (currentGaussianWeightIndex == 0)
         {
@@ -124,7 +124,7 @@
     for (NSUInteger currentGaussianWeightIndex = 0; currentGaussianWeightIndex < blurRadius + 1; currentGaussianWeightIndex++)
         standardGaussianWeights[currentGaussianWeightIndex] = standardGaussianWeights[currentGaussianWeightIndex] / sumOfWeights;
     
-    NSUInteger numberOfOptimizedOffsets = MIN(blurRadius / 2 + (blurRadius % 2), 7);
+    NSUInteger numberOfOptimizedOffsets = MIN(blurRadius / 2 + (blurRadius % 2), 7U);
     NSUInteger trueNumberOfOptimizedOffsets = blurRadius / 2 + (blurRadius % 2);
     
     NSMutableString *shaderString = [[NSMutableString alloc] init];
@@ -182,7 +182,7 @@
     _currentRadius = 6;
     NSUInteger calculatedSampleRadius = 0;
     CGFloat minimumWeightToFindEdgeOfSamplingArea = 1.0/256.0;
-    calculatedSampleRadius = floor(sqrt(-2.0 * pow(_currentRadius, 2.0) * log(minimumWeightToFindEdgeOfSamplingArea * sqrt(2.0 * M_PI * pow(_currentRadius, 2.0))) ));
+    calculatedSampleRadius = (NSUInteger)(floor(sqrt(-2.0 * pow(_currentRadius, 2.0) * log(minimumWeightToFindEdgeOfSamplingArea * sqrt(2.0 * M_PI * pow(_currentRadius, 2.0))) )));
     calculatedSampleRadius += calculatedSampleRadius % 2;
     
     NSString *vertexShader = [[self class] vertexShaderForBlurOfRadius:calculatedSampleRadius sigma:_currentRadius];
@@ -277,7 +277,7 @@
         if (_currentRadius >= 1)
         {
             CGFloat minimumWeightToFindEdgeOfSamplingArea = 1.0/256.0;
-            calculatedSampleRadius = floor(sqrt(-2.0 * pow(_currentRadius, 2.0) * log(minimumWeightToFindEdgeOfSamplingArea * sqrt(2.0 * M_PI * pow(_currentRadius, 2.0))) ));
+            calculatedSampleRadius = (NSUInteger)(floor(sqrt(-2.0 * pow(_currentRadius, 2.0) * log(minimumWeightToFindEdgeOfSamplingArea * sqrt(2.0 * M_PI * pow(_currentRadius, 2.0))) )));
             calculatedSampleRadius += calculatedSampleRadius % 2;
         }
         

@@ -10,11 +10,15 @@
 
 #import "TL/TLMetaScheme.h"
 
+@class SSignal;
+
 @interface TGDialogListRequestBuilder : ASActor
 
 + (NSString *)genericPath;
 
 - (void)dialogListRequestSuccess:(TLmessages_Dialogs *)dialogs;
 - (void)dialogListRequestFailed;
+
++ (SSignal *)signalForCompleteMessages:(NSArray *)completeMessages channels:(NSDictionary *)channels;
 
 @end

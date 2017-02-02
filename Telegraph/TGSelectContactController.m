@@ -111,6 +111,10 @@
             //self.usersSelectedLimit = 10;
 #endif
             
+            if (createEncrypted) {
+                self.ignoreBots = true;
+            }
+            
             _displayUserCountLimit = self.usersSelectedLimit + 1;
             
             data = [TGDatabaseInstance() customProperty:@"maxChannelGroupMembers"];

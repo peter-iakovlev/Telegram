@@ -10,6 +10,12 @@
 
 #import <UIKit/UIGestureRecognizerSubclass.h>
 
+extern const char *TGRTLScreenEdgePanGestureRecognizerDelegateEnableGestureKey;
+
 @interface TGRTLScreenEdgePanGestureRecognizer : UIScreenEdgePanGestureRecognizer
+
+@end
+
+@interface TGRTLScreenEdgePanGestureRecognizerDelegate : NSObject <UIGestureRecognizerDelegate>
 
 @end

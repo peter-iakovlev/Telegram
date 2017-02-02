@@ -27,6 +27,8 @@ static inline int roundUpInput(int numToRound, int multiple)
     if ([self read:(uint8_t *)&value maxLength:4] != 4)
     {
         TGLog(@"***** Couldn't read int32");
+        
+        @throw [[NSException alloc] initWithName:@"NSInputStream+TLException" reason:@"readInt32 end of stream" userInfo:@{}];
     }
     
 #if __BYTE_ORDER == __LITTLE_ENDIAN

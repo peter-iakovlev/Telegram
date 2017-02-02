@@ -21,7 +21,10 @@
         _deviceOrientation = UIDeviceOrientationUnknown;
         
         _motionManager = [[CMMotionManager alloc] init];
-        _motionManager.accelerometerUpdateInterval = 0.5f;
+        _motionManager.accelerometerUpdateInterval = 1.0f;
+        _motionManager.deviceMotionUpdateInterval = 1.0f;
+        _motionManager.gyroUpdateInterval = 1.0f;
+        _motionManager.magnetometerUpdateInterval = 1.0f;
         _motionQueue = [[NSOperationQueue alloc] init];
     }
     return self;
@@ -48,6 +51,94 @@
         return;
     
     __weak PGCameraDeviceAngleSampler *weakSelf = self;
+    [_motionManager startAccelerometerUpdatesToQueue:_motionQueue withHandler:^(CMAccelerometerData *accelerometerData, __unused NSError *error)
+    {
+        __strong PGCameraDeviceAngleSampler *strongSelf = weakSelf;
+        if (strongSelf == nil || accelerometerData == nil || error != nil)
+            return;
+        
+        CMAcceleration acceleration = accelerometerData.acceleration;
+        CGFloat xx = -acceleration.x;
+        CGFloat yy = acceleration.y;
+        CGFloat z = acceleration.z;
+        CGFloat angle = atan2(yy, xx);
+        
+        UIDeviceOrientation deviceOrientation = strongSelf.deviceOrientation;
+        CGFloat absoluteZ = fabs(z);
+        
+        if (deviceOrientation == UIDeviceOrientationFaceUp || deviceOrientation == UIDeviceOrientationFaceDown)
+        {
+            if (absoluteZ < 0.845f)
+            {
+                if (angle < -2.6f)
+                    deviceOrientation = UIDeviceOrientationLandscapeRight;
+                else if (angle > -2.05f && angle < -1.1f)
+                    deviceOrientation = UIDeviceOrientationPortrait;
+                else if (angle > -0.48f && angle < 0.48f)
+                    deviceOrientation = UIDeviceOrientationLandscapeLeft;
+                else if (angle > 1.08f && angle < 2.08f)
+                    deviceOrientation = UIDeviceOrientationPortraitUpsideDown;
+            }
+            else if (z < 0.f)
+            {
+                deviceOrientation = UIDeviceOrientationFaceUp;
+            }
+            else if (z > 0.f)
+            {
+                deviceOrientation = UIDeviceOrientationFaceDown;
+            }
+        }
+        else
+        {
+            if (z > 0.875f)
+            {
+                deviceOrientation = UIDeviceOrientationFaceDown;
+            }
+            else if (z < -0.875f)
+            {
+                deviceOrientation = UIDeviceOrientationFaceUp;
+            }
+            else
+            {
+                switch (deviceOrientation)
+                {
+                    case UIDeviceOrientationLandscapeLeft:
+                        if (angle < -1.07f) deviceOrientation = UIDeviceOrientationPortrait;
+                        if (angle > 1.08f) deviceOrientation = UIDeviceOrientationPortraitUpsideDown;
+                        break;
+                        
+                    case UIDeviceOrientationLandscapeRight:
+                        if (angle < 0.f && angle > -2.05f) deviceOrientation = UIDeviceOrientationPortrait;
+                        if (angle > 0.f && angle < 2.05f) deviceOrientation = UIDeviceOrientationPortraitUpsideDown;
+                        break;
+                        
+                    case UIDeviceOrientationPortraitUpsideDown:
+                        if (angle > 2.66f) deviceOrientation = UIDeviceOrientationLandscapeRight;
+                        if (angle < 0.48f) deviceOrientation = UIDeviceOrientationLandscapeLeft;
+                        break;
+                        
+                    case UIDeviceOrientationPortrait:
+                    default:
+                        if (angle > -0.47f) deviceOrientation = UIDeviceOrientationLandscapeLeft;
+                        if (angle < -2.64f) deviceOrientation = UIDeviceOrientationLandscapeRight;
+                        break;
+                }
+            }
+        }
+        
+        if (deviceOrientation != strongSelf.deviceOrientation)
+        {
+            strongSelf->_deviceOrientation = deviceOrientation;
+            
+            TGDispatchOnMainThread(^
+            {
+                if (strongSelf.deviceOrientationChanged != nil)
+                    strongSelf.deviceOrientationChanged(deviceOrientation);
+            });
+        }
+
+    }];
+    
     [_motionManager startDeviceMotionUpdatesUsingReferenceFrame:CMAttitudeReferenceFrameXArbitraryZVertical toQueue:_motionQueue withHandler:^(CMDeviceMotion *motion, __unused NSError *error)
     {
         __strong PGCameraDeviceAngleSampler *strongSelf = weakSelf;
@@ -55,35 +146,6 @@
             return;
         
         strongSelf->_currentDeviceAngle = TGRadiansToDegrees((CGFloat)(atan2(motion.gravity.x, motion.gravity.y) - M_PI)) * -1;
-
-        CGFloat angle = (CGFloat)M_PI / 2.0f - (CGFloat)atan2(motion.gravity.y, motion.gravity.x);
-        if (angle > M_PI)
-            angle -= 2 * M_PI;
-        
-        UIDeviceOrientation orientation = UIDeviceOrientationUnknown;
-        
-        if ((motion.gravity.z > -0.90f) && (motion.gravity.z < 0.90f))
-        {
-            if ((angle > -M_PI_4) && (angle < M_PI_4))
-                orientation = UIDeviceOrientationPortraitUpsideDown;
-            else if ((angle < -M_PI_4) && (angle > -3 * M_PI_4))
-                orientation = UIDeviceOrientationLandscapeLeft;
-            else if ((angle > M_PI_4) && (angle < 3 * M_PI_4))
-                orientation = UIDeviceOrientationLandscapeRight;
-            else
-                orientation = UIDeviceOrientationPortrait;
-        }
-        
-        if (orientation != UIDeviceOrientationUnknown && orientation != strongSelf.deviceOrientation)
-        {
-            TGDispatchOnMainThread(^
-            {
-                strongSelf->_deviceOrientation = orientation;
-
-                if (strongSelf.deviceOrientationChanged != nil)
-                    strongSelf.deviceOrientationChanged(orientation);
-            });
-        }
     }];
 }
 

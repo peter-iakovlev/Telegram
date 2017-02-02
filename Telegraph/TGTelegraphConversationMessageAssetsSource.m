@@ -1233,6 +1233,52 @@ static UIImage *generateDownloadButton(int baseColor, CGFloat alphaFactor, CGFlo
     return image;
 }
 
+- (UIImage *)systemReplyButton {
+    static int cachedImageColor = -1;
+    static UIImage *image = nil;
+    if (cachedImageColor != _monochromeColor || image == nil)
+    {
+        CGFloat size = 14.0f;
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(size, size), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        
+        CGFloat backgroundAlpha = _systemAlpha;
+        UIColor *color = UIColorRGBA(_monochromeColor, backgroundAlpha);
+        
+        CGContextSetFillColorWithColor(context, color.CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, size, size));
+        
+        image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(size / 2.0f) topCapHeight:(NSInteger)(size / 2.0f)];
+        UIGraphicsEndImageContext();
+        
+        cachedImageColor = _monochromeColor;
+    }
+    return image;
+}
+
+- (UIImage *)systemReplyHighlightedButton {
+    static int cachedImageColor = -1;
+    static UIImage *image = nil;
+    if (cachedImageColor != _monochromeColor || image == nil)
+    {
+        CGFloat size = 14.0f;
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(size, size), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        
+        CGFloat backgroundAlpha = _systemAlpha * 0.8;
+        UIColor *color = UIColorRGBA(_monochromeColor, backgroundAlpha);
+        
+        CGContextSetFillColorWithColor(context, color.CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, size, size));
+        
+        image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(size / 2.0f) topCapHeight:(NSInteger)(size / 2.0f)];
+        UIGraphicsEndImageContext();
+        
+        cachedImageColor = _monochromeColor;
+    }
+    return image;
+}
+
 - (UIImage *)generateSystemReplyBackground:(int)baseColor
 {
     CGFloat backgroundAlpha = _systemAlpha;

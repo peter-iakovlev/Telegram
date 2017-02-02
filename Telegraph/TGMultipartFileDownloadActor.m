@@ -204,8 +204,9 @@
         [_fileStream open];
         
 #if TGUseModernNetworking
+        TGNetworkMediaTypeTag mediaTypeTag = (TGNetworkMediaTypeTag)([options[@"mediaTypeTag"] intValue]);
         __weak TGMultipartFileDownloadActor *weakSelf = self;
-        _worker1Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:_datacenterId completion:^(TGNetworkWorkerGuard *worker)
+        _worker1Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:_datacenterId type:mediaTypeTag completion:^(TGNetworkWorkerGuard *worker)
         {
             __strong TGMultipartFileDownloadActor *strongSelf = weakSelf;
             if (strongSelf != nil)
@@ -214,7 +215,7 @@
             }
         }];
         
-        _worker2Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:_datacenterId completion:^(TGNetworkWorkerGuard *worker)
+        _worker2Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:_datacenterId type:mediaTypeTag completion:^(TGNetworkWorkerGuard *worker)
         {
             __strong TGMultipartFileDownloadActor *strongSelf = weakSelf;
             if (strongSelf != nil)

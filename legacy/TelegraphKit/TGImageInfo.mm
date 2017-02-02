@@ -185,7 +185,7 @@ struct TGImageSizeRecord
         
         CGFloat currentDeltaSquared = deltaWidth * deltaWidth + deltaHeight * deltaHeight;
         
-        if (closestUrl == nil || currentDeltaSquared < closestDeltaSquared || (pickLargest && currentDeltaSquared <= closestDeltaSquared + FLT_EPSILON))
+        if (closestUrl == nil || currentDeltaSquared < closestDeltaSquared || (pickLargest && ((currentDeltaSquared <= closestDeltaSquared + FLT_EPSILON) || ((closestSize.width < size.width || closestSize.height < size.height) && (it->size.width > closestSize.width && it->size.height > closestSize.height)))))
         {
             closestUrl = it->url;
             closestSize = it->size;

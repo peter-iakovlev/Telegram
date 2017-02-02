@@ -13,11 +13,23 @@
 
 #import "TGChannelManagementSignals.h"
 
+#import "TGRecentPeersSignals.h"
+
+@interface TGConversationDeleteActor () {
+    id<SDisposable> _resetPeerRatingDisposable;
+}
+
+@end
+
 @implementation TGConversationDeleteActor
 
 + (NSString *)genericPath
 {
     return @"/tg/conversation/@/delete";
+}
+
+- (void)dealloc {
+    [_resetPeerRatingDisposable dispose];
 }
 
 - (void)execute:(NSDictionary *)options
@@ -33,6 +45,7 @@
     
     if (TGPeerIdIsChannel(conversationId)) {
         [TGDatabaseInstance() enqueueLeaveChannel:conversationId];
+        [TGDatabaseInstance() transactionRemoveConversationsWithPeerIds:@[@(conversationId)]];
     } else {
         TGUser *user = conversationId > 0 ? [TGDatabaseInstance() loadUser:(int)conversationId] : nil;
         if ([options[@"block"] boolValue] && user != nil && (user.kind == TGUserKindBot || user.kind == TGUserKindSmartBot))
@@ -41,7 +54,7 @@
             [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/changePeerBlockedStatus/(auto%d)", actionId++] options:@{@"peerId": @(conversationId), @"block": @(true)} watcher:TGTelegraphInstance];
         }
         
-        [TGDatabaseInstance() deleteConversation:conversationId populateActionQueue:true];
+        [TGDatabaseInstance() transactionRemoveConversationsWithPeerIds:@[@(conversationId)]];
     }
     
     dispatch_async([ActionStageInstance() globalStageDispatchQueue], ^
@@ -61,7 +74,27 @@
         }
     });
     
-    [ActionStageInstance() actionCompleted:self.path result:nil];
+    TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:conversationId];
+    if (conversation != nil) {
+        int64_t accessHash = conversation.accessHash;
+        if (TGPeerIdIsUser(conversationId)) {
+            TGUser *user = [TGDatabaseInstance() loadUser:(int)conversationId];
+            accessHash = user.phoneNumberHash;
+        }
+        _resetPeerRatingDisposable = [[TGRecentPeersSignals resetGenericPeerRating:conversation.conversationId accessHash:accessHash] startWithNext:nil error:^(__unused id error) {
+            [ActionStageInstance() actionCompleted:self.path result:nil];
+        } completed:^{
+            [ActionStageInstance() actionCompleted:self.path result:nil];
+        }];
+    } else {
+        [ActionStageInstance() actionCompleted:self.path result:nil];
+    }
+}
+        
+- (void)cancel {
+    [super cancel];
+    
+    [_resetPeerRatingDisposable dispose];
 }
 
 @end

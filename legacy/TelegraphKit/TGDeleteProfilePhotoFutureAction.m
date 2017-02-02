@@ -34,7 +34,7 @@
     ptr += 8;
     
     int64_t valueAccessHash = 0;
-    [data getBytes:&valueAccessHash range:NSMakeRange(0, 8)];
+    [data getBytes:&valueAccessHash range:NSMakeRange(8, 8)];
     ptr += 8;
     
     return [[TGDeleteProfilePhotoFutureAction alloc] initWithImageId:valueImageId accessHash:valueAccessHash];

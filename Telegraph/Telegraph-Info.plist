@@ -22,6 +22,8 @@
 	</array>
 	<key>CFBundleExecutable</key>
 	<string>${EXECUTABLE_NAME}</string>
+	<key>CFBundleGetInfoString</key>
+	<string></string>
 	<key>CFBundleIconFiles</key>
 	<array>
 		<string>Icon-60@2x.png</string>
@@ -39,6 +41,7 @@
 				<string>Icon-60@2x.png</string>
 				<string>Icon@2x.png</string>
 				<string>Icon.png</string>
+				<string>Icon-167.png</string>
 			</array>
 			<key>UIPrerenderedIcon</key>
 			<true/>
@@ -71,7 +74,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>3.6</string>
+	<string>3.16</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -108,7 +111,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>55195</string>
+	<string>59821</string>
 	<key>LSApplicationCategoryType</key>
 	<string></string>
 	<key>LSApplicationQueriesSchemes</key>
@@ -122,9 +125,21 @@
 		<string>yandexmaps</string>
 		<string>yandexnavi</string>
 		<string>comgooglemaps</string>
-		<string>youtube-x-callback</string>
+		<string>youtube</string>
 		<string>twitter</string>
 		<string>vk</string>
+		<string>waze</string>
+		<string>googlechrome</string>
+		<string>googlechromes</string>
+		<string>firefox</string>
+		<string>opera-http</string>
+		<string>opera-https</string>
+		<string>yandexbrowser-open-url</string>
+		<string>vimeo</string>
+		<string>vine</string>
+		<string>coub</string>
+		<string>uber</string>
+		<string>citymapper</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
@@ -133,16 +148,35 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>We need this so that you can take and share photos and videos.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Telegram stores your contacts heavily encrypted in the cloud to let you connect with your friends across all your devices.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>When you send your location to your friends, Telegram needs access to show them a map. You also need this to send locations from an Apple Watch.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>When you send your location to your friends, Telegram needs access to show them a map.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need this so that you can record and share voice messages and videos with sound.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>When you send your location to your friends, Telegram needs access to show them a map.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need this so that you can share photos and videos from your photo library.</string>
+	<key>NSSiriUsageDescription</key>
+	<string>You can use Siri to send messages.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>org.telegram.conversation</string>
 	</array>
 	<key>UIAppFonts</key>
 	<array/>
+	<key>UIApplicationExitsOnSuspend</key>
+	<false/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
 		<string>remote-notification</string>
+		<string>voip</string>
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<false/>
@@ -196,6 +230,8 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
 	<key>UIViewGroupOpacity</key>
 	<false/>
 	<key>UTImportedTypeDeclarations</key>

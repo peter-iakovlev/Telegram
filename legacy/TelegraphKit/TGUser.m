@@ -14,7 +14,8 @@ typedef enum {
     TGUserFlagVerified = (1 << 0),
     TGUserFlagHasExplicitContent = (1 << 1),
     TGUserFlagIsContextBot = (1 << 2),
-    TGUserFlagMinimalRepresentation = (1 << 3)
+    TGUserFlagMinimalRepresentation = (1 << 3),
+    TGUserFlagBotInlineGeo = (1 << 4)
 } TGUserFlags;
 
 @interface TGUser ()
@@ -47,6 +48,7 @@ typedef enum {
         if ([self isContextBot]) {
             _contextBotPlaceholder = [coder decodeStringForCKey:"cbp"];
         }
+        _about = [coder decodeStringForCKey:"a"];
     }
     return self;
 }
@@ -64,6 +66,7 @@ typedef enum {
     if ([self isContextBot]) {
         [coder encodeString:_contextBotPlaceholder forCKey:"cbp"];
     }
+    [coder encodeString:_about forCKey:"a"];
 }
 
 - (id)copyWithZone:(NSZone *)__unused zone
@@ -421,6 +424,18 @@ typedef enum {
         _flags |= TGUserFlagMinimalRepresentation;
     } else {
         _flags &= ~TGUserFlagMinimalRepresentation;
+    }
+}
+
+- (bool)botInlineGeo {
+    return _flags & TGUserFlagBotInlineGeo;
+}
+
+- (void)setBotInlineGeo:(bool)botInlineGeo {
+    if (botInlineGeo) {
+        _flags |= TGUserFlagBotInlineGeo;
+    } else {
+        _flags &= ~TGUserFlagBotInlineGeo;
     }
 }
 

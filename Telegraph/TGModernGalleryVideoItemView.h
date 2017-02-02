@@ -8,6 +8,8 @@
 
 #import "TGModernGalleryItemView.h"
 
+#import "TGModernGalleryZoomableItemView.h"
+
 @class TGImageView;
 @class AVPlayer;
 
@@ -20,8 +22,10 @@
 - (bool)shouldLoopVideo:(NSUInteger)currentLoopCount;
 
 - (void)play;
+- (void)loadAndPlay;
 - (void)hidePlayButton;
 - (void)stop;
+- (void)stopForOutTransition;
 
 - (void)_willPlay;
 

@@ -12,6 +12,7 @@ const CGFloat TGPhotoEditorToolButtonsViewSize = 53;
 {
     UIView *_backgroundView;
     UIView *_stripeView;
+    UIView *_topStripeView;
     
     TGModernButtonView *_cancelButton;
     TGModernButtonView *_confirmButton;
@@ -28,7 +29,11 @@ const CGFloat TGPhotoEditorToolButtonsViewSize = 53;
         _backgroundView.backgroundColor = [TGPhotoEditorInterfaceAssets toolbarBackgroundColor];
         [self addSubview:_backgroundView];
         
-        _stripeView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, 0)];
+        _topStripeView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, 0)];
+        _topStripeView.backgroundColor = UIColorRGB(0x242424);
+        [self addSubview:_topStripeView];
+        
+        _stripeView = [[UIView alloc] initWithFrame:CGRectZero];
         _stripeView.backgroundColor = UIColorRGB(0x242424);
         [self addSubview:_stripeView];
         
@@ -72,6 +77,8 @@ const CGFloat TGPhotoEditorToolButtonsViewSize = 53;
     if (self.frame.size.width > self.frame.size.height)
     {
         _stripeView.hidden = false;
+        _topStripeView.hidden = false;
+        _topStripeView.frame = CGRectMake(0, 0, self.frame.size.width, thickness);
         _stripeView.frame = CGRectMake(self.frame.size.width / 2, 0, thickness, self.frame.size.height);
         _cancelButton.frame = CGRectMake(0, 0, CGFloor(self.frame.size.width / 2), self.frame.size.height);
         _confirmButton.frame = CGRectMake(CGFloor(self.frame.size.width / 2), 0, CGFloor(self.frame.size.width / 2), self.frame.size.height);
@@ -81,6 +88,7 @@ const CGFloat TGPhotoEditorToolButtonsViewSize = 53;
     else
     {
         _stripeView.hidden = true;
+        _topStripeView.hidden = true;
         _stripeView.frame = CGRectMake(0, self.frame.size.height / 2, self.frame.size.width, thickness);
         _cancelButton.frame = CGRectMake(0, self.frame.size.height - 44, self.frame.size.width, 44);
         _confirmButton.frame = CGRectMake(0, 0, self.frame.size.width, 44);

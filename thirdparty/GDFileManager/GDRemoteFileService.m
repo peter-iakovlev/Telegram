@@ -79,8 +79,6 @@
     return [self.clientManager linkUserID:userID apiToken:apiToken fromController:rootController success:^(__unused id client) {
 
     } failure:failure];
-    
-    [self doesNotRecognizeSelector:_cmd];
 }
 
 - (void)unlinkSession:(GDFileServiceSession *)session

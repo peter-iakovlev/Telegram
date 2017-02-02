@@ -32,12 +32,12 @@
     return true;
 }
 
-- (float)playbackPosition:(MTAbsoluteTime *)timestamp
+- (float)playbackPosition:(CFAbsoluteTime *)timestamp
 {
     return [self playbackPosition:timestamp sync:false];
 }
 
-- (float)playbackPosition:(MTAbsoluteTime *)__unused timestamp sync:(bool)__unused sync
+- (float)playbackPosition:(CFAbsoluteTime *)__unused timestamp sync:(bool)__unused sync
 {
     return 0.0f;
 }
@@ -61,7 +61,7 @@
 
 - (void)postUpdatePlaybackPosition:(bool)sync
 {
-    MTAbsoluteTime timestamp = MTAbsoluteSystemTime();
+    CFAbsoluteTime timestamp = MTAbsoluteSystemTime();
     float position = [self playbackPosition:&timestamp sync:sync];
     
     id<TGModernViewInlineMediaContextDelegate> delegate = _delegate;

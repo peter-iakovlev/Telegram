@@ -6,8 +6,7 @@
 #import "TGAnimatedMediaContextResultCell.h"
 
 #import "TGBotContextExternalResult.h"
-#import "TGBotContextImageResult.h"
-#import "TGBotContextDocumentResult.h"
+#import "TGBotContextMediaResult.h"
 
 #import "TGImageUtils.h"
 
@@ -17,6 +16,13 @@
 #import "TGExternalImageSearchResult.h"
 
 #import "TGBotSignals.h"
+
+#import "TGItemPreviewController.h"
+#import "TGItemMenuSheetPreviewView.h"
+#import "TGMenuSheetButtonItemView.h"
+#import "TGPreviewMenu.h"
+
+#import "TGModernConversationGenericContextResultsAssociatedPanelSwitchPm.h"
 
 @interface TGModernConversationMediaContextResultsAssociatedPanel () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout> {
     TGBotContextResults *_results;
@@ -36,6 +42,12 @@
     
     SMetaDisposable *_loadMoreDisposable;
     bool _loadingMore;
+    CGFloat _preferredHeight;
+    bool _stickers;
+    
+    TGItemPreviewHandle *_previewHandle;
+    
+    TGModernConversationGenericContextResultsAssociatedPanelSwitchPm *_switchPm;
 }
 
 @end
@@ -115,6 +127,23 @@
             _separatorView.backgroundColor = separatorColor;
             [self addSubview:_separatorView];
         }
+        
+        _preferredHeight = 105.0f;
+        
+        __weak TGModernConversationMediaContextResultsAssociatedPanel *weakSelf = self;
+        _previewHandle = [TGPreviewMenu setupPreviewControllerForView:_collectionView configurator:^TGItemPreviewController *(CGPoint gestureLocation)
+        {
+            __strong TGModernConversationMediaContextResultsAssociatedPanel *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return nil;
+            
+            NSIndexPath *indexPath = [strongSelf->_collectionView indexPathForItemAtPoint:gestureLocation];
+            if (indexPath == nil)
+                return nil;
+            
+            TGBotContextResult *result = strongSelf->_results.results[indexPath.item];
+            return [strongSelf presentPreviewForResultIfAvailable:result immediately:false];
+        }];
     }
     return self;
 }
@@ -123,8 +152,39 @@
     [_loadMoreDisposable dispose];
 }
 
+- (TGItemPreviewController *)presentPreviewForResultIfAvailable:(TGBotContextResult *)result immediately:(bool)immediately
+{
+    if (self.onResultPreview != nil)
+        self.onResultPreview();
+    
+    __weak TGModernConversationMediaContextResultsAssociatedPanel *weakSelf = self;
+    return [TGPreviewMenu presentInParentController:self.controller expandImmediately:immediately result:result results:_results sendAction:^(TGBotContextResult *result)
+    {
+        __strong TGModernConversationMediaContextResultsAssociatedPanel *strongSelf = weakSelf;
+        if (strongSelf != nil && strongSelf.resultSelected != nil)
+            strongSelf.resultSelected(strongSelf->_results, result);
+    } sourcePointForItem:^CGPoint(__unused id item)
+    {
+        __strong TGModernConversationMediaContextResultsAssociatedPanel *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return CGPointZero;
+        
+        for (TGAnimatedMediaContextResultCell *cell in strongSelf->_collectionView.visibleCells)
+        {
+            if ([cell.result isEqual:result])
+            {
+                NSIndexPath *indexPath = [strongSelf->_collectionView indexPathForCell:cell];
+                if (indexPath != nil)
+                    return [strongSelf->_collectionView convertPoint:cell.center toView:nil];
+            }
+        }
+        
+        return CGPointZero;
+    } sourceView:nil sourceRect:nil];
+}
+
 - (CGFloat)preferredHeight {
-    return 105.0f;
+    return _preferredHeight;
 }
 
 - (bool)displayForTextEntryOnly {
@@ -132,7 +192,55 @@
 }
 
 - (void)setResults:(TGBotContextResults *)results reload:(bool)reload {
+    CGFloat preferredHeight = 105.0f;
+    
     _results = results;
+    
+    bool smallOnly = true;
+    bool stickersOnly = true;
+    for (TGBotContextResult *result in results.results) {
+        if (![result.type isEqualToString:@"sticker"] && ![result.type isEqualToString:@"article"]) {
+            smallOnly = false;
+        }
+        if (![result.type isEqualToString:@"sticker"]) {
+            stickersOnly = false;
+        }
+    }
+    
+    if (smallOnly) {
+        preferredHeight = 73.0f;
+    }
+    
+    if (results.switchPm != nil) {
+        if (_switchPm == nil) {
+            _switchPm = [[TGModernConversationGenericContextResultsAssociatedPanelSwitchPm alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.frame.size.width, 32.0f)];
+            _switchPm.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+            __weak TGModernConversationMediaContextResultsAssociatedPanel *weakSelf = self;
+            _switchPm.pressed = ^{
+                __strong TGModernConversationMediaContextResultsAssociatedPanel *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    if (strongSelf->_activateSwitchPm) {
+                        strongSelf->_activateSwitchPm(results.switchPm.startParam);
+                    }
+                }
+            };
+            [self addSubview:_switchPm];
+        }
+        _switchPm.title = results.switchPm.text;
+    } else {
+        [_switchPm removeFromSuperview];
+        _switchPm = nil;
+    }
+    
+    preferredHeight += _switchPm.frame.size.height;
+    
+    _stickers = stickersOnly;
+    
+    if (ABS(_preferredHeight - preferredHeight) > FLT_EPSILON) {
+        _preferredHeight = preferredHeight;
+        self.preferredHeightUpdated();
+        [self setNeedsLayout];
+    }
     
     NSMutableDictionary *cachedContents = [[NSMutableDictionary alloc] init];
     for (TGAnimatedMediaContextResultCell *cell in [_collectionView visibleCells]) {
@@ -192,12 +300,16 @@
     if ([result isKindOfClass:[TGBotContextExternalResult class]]) {
         TGBotContextExternalResult *concreteResult = result;
         return concreteResult.size;
-    } else if ([result isKindOfClass:[TGBotContextDocumentResult class]]) {
-        return [((TGBotContextDocumentResult *)result).document pictureSize];
-    } else if ([result isKindOfClass:[TGBotContextImageResult class]]) {
-        CGSize size = CGSizeMake(32.0f, 32.0f);
-        if ([((TGBotContextImageResult *)result).image.imageInfo imageUrlForLargestSize:&size]) {
-            return size;
+    } else if ([result isKindOfClass:[TGBotContextMediaResult class]]) {
+        TGBotContextMediaResult *concreteResult = result;
+        if (concreteResult.photo != nil) {
+            CGSize largestSize = CGSizeZero;
+            if ([concreteResult.photo.imageInfo imageUrlForLargestSize:&largestSize] != nil) {
+                return largestSize;
+            }
+        }
+        if (concreteResult.document != nil) {
+            return [concreteResult.document pictureSize];
         }
     }
     return CGSizeMake(32.0f, 32.0f);
@@ -215,10 +327,16 @@
 }
 
 - (UIEdgeInsets)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout insetForSectionAtIndex:(NSInteger)__unused section {
+    if (_stickers) {
+        return UIEdgeInsetsMake(4.0f, 12.0f, 4.0f, 12.0f);
+    }
     return UIEdgeInsetsMake(4.0f, 4.0f, 4.0f, 4.0f);
 }
 
 - (CGFloat)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout minimumInteritemSpacingForSectionAtIndex:(NSInteger)__unused section {
+    if (_stickers) {
+        return 12.0f;
+    }
     return 4.0f;
 }
 
@@ -236,20 +354,26 @@
 
 - (void)collectionView:(UICollectionView *)__unused collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
     TGBotContextResult *result = _results.results[indexPath.row];
-    if (_resultSelected) {
-        _resultSelected(_results, result);
+    
+    if ([self presentPreviewForResultIfAvailable:result immediately:true] == nil)
+    {
+        if (_resultSelected != nil)
+            _resultSelected(_results, result);
     }
+    
+    [_collectionView deselectItemAtIndexPath:indexPath animated:true];
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     if (scrollView == _collectionView) {
         if (!_loadingMore && _results.nextOffset.length != 0 && scrollView.contentOffset.x >= scrollView.contentSize.width - scrollView.bounds.size.width * 2.0f) {
             _loadingMore = true;
+            TGBotContextResultsSwitchPm *switchPm = _results.switchPm;
             __weak TGModernConversationMediaContextResultsAssociatedPanel *weakSelf = self;
-            [_loadMoreDisposable setDisposable:[[[TGBotSignals botContextResultForUserId:_results.userId query:_results.query offset:_results.nextOffset] deliverOn:[SQueue mainQueue]] startWithNext:^(TGBotContextResults *nextResults) {
+            [_loadMoreDisposable setDisposable:[[[TGBotSignals botContextResultForUserId:_results.userId peerId:_results.peerId accessHash:_results.accessHash query:_results.query geoPoint:nil offset:_results.nextOffset] deliverOn:[SQueue mainQueue]] startWithNext:^(TGBotContextResults *nextResults) {
                 __strong TGModernConversationMediaContextResultsAssociatedPanel *strongSelf = weakSelf;
                 if (strongSelf != nil) {
-                    TGBotContextResults *mergedResults = [[TGBotContextResults alloc] initWithUserId:strongSelf->_results.userId isMedia:strongSelf->_results.isMedia query:strongSelf->_results.query nextOffset:nextResults.nextOffset results:[strongSelf->_results.results arrayByAddingObjectsFromArray:nextResults.results]];
+                    TGBotContextResults *mergedResults = [[TGBotContextResults alloc] initWithUserId:strongSelf->_results.userId peerId:strongSelf->_results.peerId accessHash:strongSelf->_results.accessHash isMedia:strongSelf->_results.isMedia query:strongSelf->_results.query nextOffset:nextResults.nextOffset results:[strongSelf->_results.results arrayByAddingObjectsFromArray:nextResults.results] switchPm:switchPm];
                     strongSelf->_loadingMore = false;
                     [strongSelf setResults:mergedResults reload:false];
                 }
@@ -269,7 +393,7 @@
     _stripeView.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, separatorHeight);
     _separatorView.frame = CGRectMake(0.0f, self.frame.size.height - separatorHeight, self.frame.size.width, separatorHeight);
     
-    _collectionView.frame = CGRectMake(0.0f, separatorHeight, self.frame.size.width, self.frame.size.height - separatorHeight);
+    _collectionView.frame = CGRectMake(0.0f, separatorHeight + _switchPm.frame.size.height, self.frame.size.width, self.frame.size.height - separatorHeight - _switchPm.frame.size.height);
     
     _bottomView.frame = CGRectMake(0.0f, self.frame.size.height, self.frame.size.width, 4.0f);
 }

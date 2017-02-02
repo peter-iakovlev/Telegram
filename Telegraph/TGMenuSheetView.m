@@ -1,3 +1,4 @@
+
 #import "TGMenuSheetView.h"
 #import "TGMenuSheetItemView.h"
 
@@ -13,10 +14,6 @@ const CGFloat TGMenuSheetCornerRadius = 14.5f;
 const UIEdgeInsets TGMenuSheetPhoneEdgeInsets = { 10.0f, 10.0f, 10.0f, 10.0f };
 const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
 
-@interface TGMenuSheetScrollView : UIScrollView
-
-@end
-
 @implementation TGMenuSheetScrollView
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -24,6 +21,7 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     self = [super initWithFrame:frame];
     if (self != nil)
     {
+        self.scrollsToTop = false;
         self.showsHorizontalScrollIndicator = false;
         self.showsVerticalScrollIndicator = false;
     }
@@ -64,42 +62,16 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
         }
         else
         {
-            static dispatch_once_t onceToken;
-            static UIImage *backgroundImage;
-            dispatch_once(&onceToken, ^
-            {
-                CGRect rect = CGRectMake(0, 0, TGMenuSheetCornerRadius * 2 + 1, TGMenuSheetCornerRadius * 2 + 1);
-                UIGraphicsBeginImageContextWithOptions(rect.size, false, 0.0f);
-                CGContextRef context = UIGraphicsGetCurrentContext();
-                
-                CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-                [[UIBezierPath bezierPathWithRoundedRect:rect cornerRadius:TGMenuSheetCornerRadius] fill];
-                
-                backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(TGMenuSheetCornerRadius, TGMenuSheetCornerRadius, TGMenuSheetCornerRadius, TGMenuSheetCornerRadius)];
-                UIGraphicsEndImageContext();
-            });
-            
-            _imageView = [[UIImageView alloc] initWithImage:backgroundImage];
-            _imageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            _imageView.frame = self.bounds;
-            [self addSubview:_imageView];
+            self.backgroundColor = [UIColor whiteColor];
         }
         
         [self updateTraitsWithSizeClass:sizeClass];
-        
-        [self setMaskEnabled:true];
     }
     return self;
 }
 
 - (void)setMaskEnabled:(bool)enabled
 {
-    if (TGMenuSheetUseEffectView)
-        return;
-    
-    if (!enabled)
-        return;
-    
     self.layer.cornerRadius = enabled ? TGMenuSheetCornerRadius : 0.0f;
 }
 
@@ -108,11 +80,13 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     bool hidden = (sizeClass == UIUserInterfaceSizeClassRegular);
     _effectView.hidden = hidden;
     _imageView.hidden = hidden;
+    
+    [self setMaskEnabled:!hidden];
 }
 
 @end
 
-@interface TGMenuSheetView ()
+@interface TGMenuSheetView () <UIScrollViewDelegate>
 {
     TGMenuSheetBackgroundView *_headerBackgroundView;
     TGMenuSheetBackgroundView *_mainBackgroundView;
@@ -124,6 +98,9 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     NSMutableDictionary *_dividerViews;
     
     UIUserInterfaceSizeClass _sizeClass;
+    
+    id _panHandlingItemView;
+    bool _expectsPreciseContentTouch;
 }
 @end
 
@@ -157,6 +134,7 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
 {
     TGMenuSheetItemView *previousItemView = nil;
     
+    itemView.sizeClass = _sizeClass;
     itemView.tag = _itemViews.count;
     
     switch (itemView.type)
@@ -174,14 +152,21 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
                 [self insertSubview:_mainBackgroundView atIndex:0];
                 
                 _scrollView = [[TGMenuSheetScrollView alloc] initWithFrame:CGRectZero];
+                _scrollView.delegate = self;
                 [_mainBackgroundView addSubview:_scrollView];
             }
+            
+            [_scrollView addSubview:itemView];
             
             UIView *divider = [self createDividerForItemView:itemView previousItemView:previousItemView];
             if (divider != nil)
                 [_scrollView addSubview:divider];
             
-            [_scrollView addSubview:itemView];
+            if (itemView.requiresClearBackground)
+            {
+                _mainBackgroundView.backgroundColor = [UIColor clearColor];
+                _expectsPreciseContentTouch = true;
+            }
         }
             break;
         
@@ -242,6 +227,9 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
         __strong TGMenuSheetItemView *strongItemView = weakItemView;
         if (strongSelf != nil && weakItemView != nil)
         {
+            if (true)
+                return;
+            
             switch (strongItemView.type)
             {
                 case TGMenuSheetItemTypeHeader:
@@ -340,6 +328,9 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
 - (CGFloat)menuHeight
 {
     CGFloat maxHeight = TGAppDelegateInstance.rootController.applicationBounds.size.height;
+    if (self.maxHeight > FLT_EPSILON)
+        maxHeight = MIN(self.maxHeight, maxHeight);
+    
     return MIN(maxHeight, [self menuHeightForWidth:self.menuWidth - self.edgeInsets.left - self.edgeInsets.right]);
 }
 
@@ -396,6 +387,12 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     
     if (hasHeader && hasFooter && hasRegularItems)
         height += self.interSectionSpacing;
+    
+    if (self.keyboardOffset > 0)
+    {
+        height += self.keyboardOffset;
+        height -= [self.footerItemView preferredHeightForWidth:width screenHeight:screenHeight] + self.interSectionSpacing;
+    }
     
     if (fabs(height - screenHeight) <= edgeInsets.top)
         height = screenHeight;
@@ -477,6 +474,118 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     return nil;
 }
 
+#pragma mark - 
+
+- (CGRect)activePanRect
+{
+    if (_panHandlingItemView == nil)
+    {
+        for (TGMenuSheetItemView *itemView in _itemViews)
+        {
+            if (itemView.handlesPan)
+            {
+                _panHandlingItemView = itemView;
+                break;
+            }
+        }
+        
+        if (_panHandlingItemView == nil)
+            _panHandlingItemView = [NSNull null];
+    }
+    
+    if ([_panHandlingItemView isKindOfClass:[NSNull class]])
+    {
+        if (_scrollView.frame.size.height < _scrollView.contentSize.height)
+            return [self convertRect:_scrollView.frame toView:self.superview.superview];
+        else
+            return CGRectNull;
+    }
+    
+    TGMenuSheetItemView *itemView = (TGMenuSheetItemView *)_panHandlingItemView;
+    return [itemView convertRect:itemView.bounds toView:self.superview.superview];
+}
+
+- (bool)passPanOffset:(CGFloat)offset
+{
+    if (_scrollView.frame.size.height < _scrollView.contentSize.height)
+    {
+        CGFloat bottomContentOffset = (_scrollView.contentSize.height - _scrollView.frame.size.height);
+        
+        if (bottomContentOffset > 0 && _scrollView.contentOffset.y > bottomContentOffset)
+            return false;
+        
+        bool atTop = (_scrollView.contentOffset.y < FLT_EPSILON);
+        bool atBottom = (_scrollView.contentOffset.y - bottomContentOffset > -FLT_EPSILON);
+        
+        if (atTop && offset > FLT_EPSILON)
+            return true;
+        
+        if (atBottom && offset < 0)
+            return true;
+        
+        return false;
+    }
+    else if ([_panHandlingItemView isKindOfClass:[NSNull class]])
+    {
+        return true;
+    }
+    
+    TGMenuSheetItemView *itemView = (TGMenuSheetItemView *)_panHandlingItemView;
+    return [itemView passPanOffset:offset];
+}
+
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    if (!_expectsPreciseContentTouch)
+        return [super pointInside:point withEvent:event];
+    
+    for (TGMenuSheetItemView *itemView in _itemViews)
+    {
+        if ([itemView pointInside:[self convertPoint:point toView:itemView] withEvent:event])
+            return true;
+    }
+    
+    return false;
+}
+
+#pragma mark - 
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    CGFloat bottomContentOffset = (scrollView.contentSize.height - scrollView.frame.size.height);
+    
+    bool atTop = (scrollView.contentOffset.y < FLT_EPSILON);
+    bool atBottom = (scrollView.contentOffset.y - bottomContentOffset > -FLT_EPSILON);
+
+    if ((atTop || atBottom) && _sizeClass == UIUserInterfaceSizeClassCompact)
+    {
+        if (scrollView.isTracking && scrollView.bounces && (scrollView.contentOffset.y - bottomContentOffset) < 20.0f)
+        {
+            scrollView.bounces = false;
+            if (atTop)
+                scrollView.contentOffset = CGPointMake(0, 0);
+            else if (atBottom)
+                scrollView.contentOffset = CGPointMake(0, bottomContentOffset);
+        }
+    }
+    else
+    {
+        scrollView.bounces = true;
+    }
+}
+
+
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+{
+    CGFloat bottomContentOffset = (scrollView.contentSize.height - scrollView.frame.size.height);
+    
+    bool atTop = (scrollView.contentOffset.y < FLT_EPSILON);
+    bool atBottom = (scrollView.contentOffset.y - bottomContentOffset > -FLT_EPSILON);
+    
+    if ((atTop || atBottom) && scrollView.bounces && !scrollView.isTracking && _sizeClass == UIUserInterfaceSizeClassCompact)
+        scrollView.bounces = false;
+}
+
 #pragma mark -
 
 - (void)menuWillAppearAnimated:(bool)animated
@@ -506,19 +615,30 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
 - (void)layoutSubviews
 {
     CGFloat width = self.menuWidth - self.edgeInsets.left - self.edgeInsets.right;
-    CGFloat maxHeight = TGAppDelegateInstance.rootController.applicationBounds.size.height;
-    CGFloat screenHeight = maxHeight;
-
-    if (self.headerItemView != nil)
-        maxHeight -= [self.headerItemView preferredHeightForWidth:width screenHeight:screenHeight] + self.interSectionSpacing;
+    CGFloat maxHeight = _sizeClass == UIUserInterfaceSizeClassCompact ? TGAppDelegateInstance.rootController.applicationBounds.size.height : self.frame.size.height;
     
-    if (self.footerItemView != nil)
-        maxHeight -= [self.footerItemView preferredHeightForWidth:width screenHeight:screenHeight] + self.interSectionSpacing;
+    if (_sizeClass == UIUserInterfaceSizeClassCompact && self.maxHeight > FLT_EPSILON)
+        maxHeight = MIN(self.maxHeight , maxHeight);
+    
+    CGFloat screenHeight = maxHeight;
+    bool fullscreen = fabs(maxHeight - TGAppDelegateInstance.rootController.applicationBounds.size.height) < FLT_EPSILON;
+
+    if (_sizeClass == UIUserInterfaceSizeClassCompact)
+    {
+        if (self.headerItemView != nil)
+            maxHeight -= [self.headerItemView preferredHeightForWidth:width screenHeight:screenHeight] + self.interSectionSpacing;
+        
+        if (self.keyboardOffset > FLT_EPSILON)
+            maxHeight -= self.keyboardOffset;
+        else if (self.footerItemView != nil)
+            maxHeight -= [self.footerItemView preferredHeightForWidth:width screenHeight:screenHeight] + self.interSectionSpacing;
+    }
     
     CGFloat contentHeight = 0;
     bool hasRegularItems = false;
     
     NSUInteger i = 0;
+    TGMenuSheetItemView *condensableItemView = nil;
     for (TGMenuSheetItemView *itemView in self.itemViews)
     {
         if (itemView.type == TGMenuSheetItemTypeDefault)
@@ -530,12 +650,16 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
             itemView.frame = CGRectMake(0, contentHeight, width, height);
             contentHeight += height;
             
-            if (itemView.requiresDivider && i != self.itemViews.count - 2)
+            NSUInteger lastItem = (self.footerItemView != nil) ? self.itemViews.count - 2 : self.itemViews.count - 1;
+            if (itemView.requiresDivider && i != lastItem)
             {
                 UIView *divider = _dividerViews[@(itemView.tag)][TGMenuDividerBottom];
                 if (divider != nil)
                     divider.frame = CGRectMake(0, CGRectGetMaxY(itemView.frame) - divider.frame.size.height, width, divider.frame.size.height);
             }
+            
+            if (itemView.condensable)
+                condensableItemView = itemView;
         }
         i++;
     }
@@ -546,17 +670,65 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     CGFloat statusBarHeight = MIN(statusBarSize.width, statusBarSize.height);
     statusBarHeight = MAX(statusBarHeight, 20.0f);
     
-    if (contentHeight > (maxHeight - edgeInsets.top - edgeInsets.bottom))
-        edgeInsets.top = statusBarHeight;
-    
-    CGFloat bottomCorrection = 0.0f;
-    if (fabs(contentHeight - maxHeight + edgeInsets.bottom) <= statusBarHeight)
+    if (fullscreen)
     {
-        edgeInsets.top = statusBarHeight;
-        bottomCorrection += edgeInsets.bottom;
+        if (contentHeight > maxHeight - edgeInsets.top - edgeInsets.bottom)
+            edgeInsets.top = statusBarHeight;
+    
+        if (fabs(contentHeight - maxHeight + edgeInsets.bottom) <= statusBarHeight)
+            edgeInsets.top = statusBarHeight;
     }
     
+    if (_sizeClass == UIUserInterfaceSizeClassRegular)
+        edgeInsets = UIEdgeInsetsZero;
+    
     maxHeight -= edgeInsets.top + edgeInsets.bottom;
+    
+    if (self.keyboardOffset > FLT_EPSILON && contentHeight > maxHeight && condensableItemView != nil)
+    {
+        CGFloat difference = contentHeight - maxHeight;
+        contentHeight -= difference;
+        
+        CGRect frame = condensableItemView.frame;
+        condensableItemView.frame = CGRectMake(frame.origin.x, frame.origin.y, frame.size.width, frame.size.height - difference);
+        
+        if (condensableItemView.requiresDivider)
+        {
+            UIView *divider = _dividerViews[@(condensableItemView.tag)][TGMenuDividerBottom];
+            if (divider != nil)
+            {
+                CGRect dividerFrame = divider.frame;
+                divider.frame = CGRectMake(dividerFrame.origin.x, dividerFrame.origin.y - difference, dividerFrame.size.width, dividerFrame.size.height);
+            }
+        }
+        
+        bool moveNextItems = false;
+        for (TGMenuSheetItemView *itemView in self.itemViews)
+        {
+            if (moveNextItems)
+            {
+                CGRect frame = itemView.frame;
+                itemView.frame = CGRectMake(frame.origin.x, frame.origin.y - difference, frame.size.width, frame.size.height);
+                
+                if (itemView.requiresDivider)
+                {
+                    UIView *divider = _dividerViews[@(itemView.tag)][TGMenuDividerBottom];
+                    if (divider != nil)
+                    {
+                        CGRect dividerFrame = divider.frame;
+                        divider.frame = CGRectMake(dividerFrame.origin.x, dividerFrame.origin.y - difference, dividerFrame.size.width, dividerFrame.size.height);
+                    }
+                }
+            }
+            else if (itemView == condensableItemView)
+            {
+                moveNextItems = true;
+            }
+        }
+    }
+    
+    for (TGMenuSheetItemView *itemView in self.itemViews)
+        [itemView _didLayoutSubviews];
     
     CGFloat topInset = edgeInsets.top;
     if (self.headerItemView != nil)
@@ -578,7 +750,7 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     {
         CGFloat height = [self.footerItemView preferredHeightForWidth:width screenHeight:screenHeight];
         CGFloat top = self.menuHeight - edgeInsets.bottom - height;
-        if (hasRegularItems)
+        if (hasRegularItems && self.keyboardOffset < FLT_EPSILON)
             top = CGRectGetMaxY(_mainBackgroundView.frame) + TGMenuSheetInterSectionSpacing;
     
         _footerBackgroundView.frame = CGRectMake(edgeInsets.left, top, width, height);

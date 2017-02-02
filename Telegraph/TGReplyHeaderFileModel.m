@@ -6,7 +6,11 @@
 
 #import "TGDocumentMediaAttachment.h"
 
+#import "TGImageMediaAttachment.h"
+
 #import "TGSignalImageViewModel.h"
+
+#import "TGSharedPhotoSignals.h"
 
 @interface TGReplyHeaderFileModel ()
 {
@@ -17,7 +21,11 @@
 
 @implementation TGReplyHeaderFileModel
 
-- (instancetype)initWithPeer:(id)peer fileMedia:(TGDocumentMediaAttachment *)fileMedia incoming:(bool)incoming system:(bool)system
+- (instancetype)initWithPeer:(id)peer fileMedia:(TGDocumentMediaAttachment *)fileMedia incoming:(bool)incoming system:(bool)system {
+    return [self initWithPeer:peer fileMedia:fileMedia incoming:incoming system:system caption:fileMedia.caption.length == 0 ? nil : fileMedia.caption];
+}
+
+- (instancetype)initWithPeer:(id)peer fileMedia:(TGDocumentMediaAttachment *)fileMedia incoming:(bool)incoming system:(bool)system caption:(NSString *)caption
 {
     bool isVoice = false;
     for (id attribute in fileMedia.attributes) {
@@ -26,16 +34,22 @@
             break;
         }
     }
-    self = [super initWithPeer:peer incoming:incoming text:isVoice ? TGLocalized(@"Message.Audio") : ([fileMedia isAnimated] ? TGLocalized(@"Message.Animation") : fileMedia.fileName) truncateTextInTheMiddle:true textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:0.0f system:system];
+    NSString *text = isVoice ? TGLocalized(@"Message.Audio") : ([fileMedia isAnimated] ? TGLocalized(@"Message.Animation") : fileMedia.fileName);
+    
+    TGImageMediaAttachment *imageMedia = nil;
+    if ([fileMedia isAnimated] && fileMedia.thumbnailInfo != nil) {
+        imageMedia = [[TGImageMediaAttachment alloc] init];
+        imageMedia.imageInfo = fileMedia.thumbnailInfo;
+    }
+    
+    self = [super initWithPeer:peer incoming:incoming text:caption == nil ? text : caption truncateTextInTheMiddle:false textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:44.0f system:system];
+    self = [super initWithPeer:peer incoming:incoming text:caption == nil ? text : caption imageSignalGenerator:imageMedia == nil ? nil : ^SSignal *
+            {
+                return [TGSharedPhotoSignals squarePhotoThumbnail:imageMedia ofSize:CGSizeMake(33.0f, 33.0f) threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:[TGReplyHeaderModel thumbnailCornerRadius]] downloadLargeImage:false placeholder:nil];
+            } imageSignalIdentifier:[[NSString alloc] initWithFormat:@"reply-image-%@-%" PRId64 "", imageMedia.imageId != 0 ? @"remote" : @"local", imageMedia.imageId != 0 ? imageMedia.imageId : imageMedia.localImageId] icon:nil truncateTextInTheMiddle:false system:system];
+    
     if (self != nil)
     {
-        /*_imageModel = [[TGSignalImageViewModel alloc] init];
-        [_imageModel setSignalGenerator:^SSignal *
-        {
-            return [TGSharedFileSignals squareFileThumbnail:fileMedia ofSize:CGSizeMake(35.0f, 35.0f) threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:[TGReplyHeaderModel thumbnailCornerRadius]]];
-        } identifier:[[NSString alloc] initWithFormat:@"reply-file-%@-%" PRId64 "", fileMedia.documentId != 0 ? @"remote" : @"local", fileMedia.documentId != 0 ? fileMedia.documentId : fileMedia.localDocumentId]];
-        _imageModel.skipDrawInContext = true;
-        [self addSubmodel:_imageModel];*/
     }
     return self;
 }

@@ -240,6 +240,8 @@
     if (shouldFix && center.y <= self.frame.size.height / 2)
         center.y = center.y + 20.0f;
     
+    center.y += self.verticalOffset;
+    
     [super setCenter:center];
     
     if (_statusBarBackgroundView != nil && _statusBarBackgroundView.superview != nil)
@@ -318,7 +320,8 @@
     if (view == nil)
         return nil;
     
-    if ([NSStringFromClass([view class]) isEqualToString:@"_UINavigationBarBackground"])
+    NSString *viewClass = NSStringFromClass([view class]);
+    if ([viewClass isEqualToString:@"_UINavigationBarBackground"] || [viewClass isEqualToString:@"_UIBarBackground"])
         return view;
     
     for (UIView *subview in view.subviews)
@@ -340,6 +343,7 @@
         if ([self isKindOfClass:[TGTransparentNavigationBar class]] || !TGBackdropEnabled())
         {
             UIView *backgroundView = [self findBackground:self];
+            backgroundView.hidden = true;
             [backgroundView removeFromSuperview];
             
             //TGDumpViews(self, @"");
@@ -500,6 +504,12 @@
     if (result != nil)
         return result;
     return [super hitTest:point withEvent:event];
+}
+
+- (void)setAlpha:(CGFloat)alpha {
+    if (!_keepAlpha) {
+        [super setAlpha:alpha];
+    }
 }
 
 @end

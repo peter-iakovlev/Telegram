@@ -135,15 +135,15 @@ struct FilePart
     _height = [options[@"height"] intValue];
     _fileSize = [options[@"fileSize"] intValue];
     
-    SecRandomCopyBytes(kSecRandomDefault, 8, (uint8_t *)&_fileId);
+    __unused int result = SecRandomCopyBytes(kSecRandomDefault, 8, (uint8_t *)&_fileId);
     
     if (_isEncrypted)
     {
         uint8_t rawKey[32];
-        SecRandomCopyBytes(kSecRandomDefault, 32, rawKey);
+        result = SecRandomCopyBytes(kSecRandomDefault, 32, rawKey);
         _encryptionKey = [[NSData alloc] initWithBytes:rawKey length:32];
         uint8_t rawIv[32];
-        SecRandomCopyBytes(kSecRandomDefault, 32, rawIv);
+        result = SecRandomCopyBytes(kSecRandomDefault, 32, rawIv);
         _encryptionIv = [[NSData alloc] initWithBytes:rawIv length:32];
         _encryptionRunningIv = [[NSMutableData alloc] initWithData:_encryptionIv];
     }
@@ -209,8 +209,9 @@ struct FilePart
             [_is open];
             
 #if TGUseModernNetworking
+            TGNetworkMediaTypeTag mediaTypeTag = (TGNetworkMediaTypeTag)[options[@"mediaTypeTag"] intValue];
             __weak TGFileUploadActor *weakSelf = self;
-            _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:[[TGTelegramNetworking instance] masterDatacenterId] completion:^(TGNetworkWorkerGuard *worker)
+            _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:[[TGTelegramNetworking instance] masterDatacenterId] type:mediaTypeTag completion:^(TGNetworkWorkerGuard *worker)
             {
                 [ActionStageInstance() dispatchOnStageQueue:^
                 {
@@ -300,8 +301,9 @@ struct FilePart
                     [self beginWithWorker:nil];
                 else
                 {
+                    TGNetworkMediaTypeTag mediaTypeTag = (TGNetworkMediaTypeTag)([options[@"mediaTypeTag"] intValue]);
                     __weak TGFileUploadActor *weakSelf = self;
-                    _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:[[TGTelegramNetworking instance] masterDatacenterId] completion:^(TGNetworkWorkerGuard *worker)
+                    _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:[[TGTelegramNetworking instance] masterDatacenterId] type:mediaTypeTag completion:^(TGNetworkWorkerGuard *worker)
                     {
                         __strong TGFileUploadActor *strongSelf = weakSelf;
                         [strongSelf beginWithWorker:worker];

@@ -13,6 +13,10 @@
 
 @implementation TGModernGalleryItemView
 
+- (SSignal *)readyForTransitionIn {
+    return [SSignal single:@true];
+}
+
 - (void)prepareForRecycle
 {
 }

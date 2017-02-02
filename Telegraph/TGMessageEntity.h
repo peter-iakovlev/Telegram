@@ -2,7 +2,7 @@
 
 #import "PSCoding.h"
 
-@interface TGMessageEntity : NSObject <PSCoding>
+@interface TGMessageEntity : NSObject <PSCoding, NSCoding>
 
 @property (nonatomic, readonly) NSRange range;
 

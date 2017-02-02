@@ -21,7 +21,7 @@
 
 @end
 
-@interface TGLocationMediaAttachment : TGMediaAttachment <TGMediaAttachmentParser>
+@interface TGLocationMediaAttachment : TGMediaAttachment <TGMediaAttachmentParser, NSCoding>
 
 @property (nonatomic) double latitude;
 @property (nonatomic) double longitude;

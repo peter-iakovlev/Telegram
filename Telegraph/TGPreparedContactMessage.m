@@ -12,7 +12,7 @@
 
 @implementation TGPreparedContactMessage
 
-- (instancetype)initWithUid:(int32_t)uid firstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber replyMessage:(TGMessage *)replyMessage
+- (instancetype)initWithUid:(int32_t)uid firstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
     self = [super init];
     if (self != nil)
@@ -22,13 +22,14 @@
         _lastName = lastName;
         _phoneNumber = phoneNumber;
         self.replyMessage = replyMessage;
+        self.replyMarkup = replyMarkup;
     }
     return self;
 }
 
-- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber replyMessage:(TGMessage *)replyMessage
+- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
-    return [self initWithUid:0 firstName:firstName lastName:lastName phoneNumber:phoneNumber replyMessage:replyMessage];
+    return [self initWithUid:0 firstName:firstName lastName:lastName phoneNumber:phoneNumber replyMessage:replyMessage replyMarkup:replyMarkup];
 }
 
 - (TGMessage *)message
@@ -54,6 +55,10 @@
         replyMedia.replyMessageId = self.replyMessage.mid;
         replyMedia.replyMessage = self.replyMessage;
         [attachments addObject:replyMedia];
+    }
+    
+    if (self.replyMarkup != nil) {
+        [attachments addObject:self.replyMarkup];
     }
     
     message.mediaAttachments = attachments;

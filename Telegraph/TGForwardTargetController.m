@@ -151,7 +151,7 @@
     return self;
 }
 
-- (id)initWithSelectTarget
+- (id)initWithSelectTarget:(bool)showSecretChats
 {
     self = [super init];
     if (self)
@@ -160,6 +160,7 @@
         
         _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
         _dialogListCompanion.forwardMode = true;
+        _dialogListCompanion.showSecretInForwardMode = showSecretChats;
         _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
         _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
         _dialogListController.customParentViewController = self;
@@ -174,6 +175,10 @@
         _targetMode = true;
     }
     return self;
+}
+
+- (id)initWithSelectTarget {
+    return [self initWithSelectTarget:true];
 }
 
 - (id)initWithSelectGroup
@@ -568,7 +573,7 @@
             
             if (_targetMode)
             {
-                if (conversation.isChat)
+                if (conversation.isChat || conversation.isChannel || conversation.isChannelGroup)
                     [_watcherHandle requestAction:@"conversationSelected" options:conversation];
                 else
                 {
@@ -605,8 +610,13 @@
                         }
                         else
                         {
-                            if (_blockMode)
-                                alertText = [NSString stringWithFormat:@"%@\"%@\"?", TGLocalized(@"BlockedUsers.LeavePrefix"), conversation.chatTitle];
+                            if (_blockMode) {
+                                NSString *prefix = TGLocalized(@"BlockedUsers.LeavePrefix");
+                                if ([prefix rangeOfString:@" "].location == NSNotFound) {
+                                    prefix = [prefix stringByAppendingString:@" "];
+                                }
+                                alertText = [NSString stringWithFormat:@"%@\"%@\"?", prefix, conversation.chatTitle];
+                            }
                             else if (_confirmationCustomFormat != nil)
                                 alertText = [[NSString alloc] initWithFormat:_confirmationCustomFormat, conversation.chatTitle];
                             else
@@ -701,8 +711,9 @@
     if (watcher != nil && [watcher respondsToSelector:@selector(actionStageActionRequested:options:)])
         [watcher actionStageActionRequested:@"willForwardMessages" options:[[NSDictionary alloc] initWithObjectsAndKeys:self, @"controller", _selectedTarget, @"target", nil]];
     
-    if (watcher == nil)
+    if (watcher == nil || _doNothing) {
         [self dismissSelf];
+    }
  
     if (!_groupMode)
     {
@@ -724,12 +735,20 @@
             if ([_selectedTarget isKindOfClass:[TGUser class]])
             {
                 TGUser *user = (TGUser *)_selectedTarget;
-                [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}], @"shareLink": _shareLink == nil ? @{} : _shareLink} animated:false];
+                NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}], @"shareLink": _shareLink == nil ? @{} : _shareLink}];
+                if (_shareLink[@"text"] != nil && [_shareLink[@"replace"] boolValue]) {
+                    dict[@"replaceInitialText"] = _shareLink[@"text"];
+                }
+                [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:dict atMessage:nil clearStack:true openKeyboard:[_shareLink[@"replace"] boolValue]canOpenKeyboardWhileInTransition:false animated:true];
             }
             else if ([_selectedTarget isKindOfClass:[TGConversation class]])
             {
                 TGConversation *conversation = (TGConversation *)_selectedTarget;
-                [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil performActions:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}], @"shareLink": _shareLink == nil ? @{} : _shareLink} animated:false];
+                NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}], @"shareLink": _shareLink == nil ? @{} : _shareLink}];
+                if (_shareLink[@"text"] != nil && [_shareLink[@"replace"] boolValue]) {
+                    dict[@"replaceInitialText"] = _shareLink[@"text"];
+                }
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil performActions:dict atMessage:nil clearStack:true openKeyboard:[_shareLink[@"replace"] boolValue]canOpenKeyboardWhileInTransition:false animated:true];
             }
         }
     }

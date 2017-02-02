@@ -21,7 +21,7 @@
 
 - (int)layerVersion
 {
-    return 42;
+    return 61;
 }
 
 - (int32_t)TLconstructorSignature
@@ -55,7 +55,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x6b47f94d;
+    return (int32_t)0x191ba9c5;
 }
 
 - (int32_t)TLconstructorName
@@ -66,6 +66,7 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCmessages_getDialogs$messages_getDialogs *object = [[TLRPCmessages_getDialogs$messages_getDialogs alloc] init];
+    object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.offset_date = metaObject->getInt32((int32_t)0xe37adfc2);
     object.offset_id = metaObject->getInt32((int32_t)0x1120a8cd);
     object.offset_peer = metaObject->getObject((int32_t)0xfcfce48f);
@@ -75,6 +76,12 @@
 
 - (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
 {
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.flags;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x81915c23, value));
+    }
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypePrimitiveInt32;

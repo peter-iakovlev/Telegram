@@ -31,6 +31,9 @@
     {
         int32_t signature = [is readInt32];
         result.photo = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
     
     result.participants_count = [is readInt32];
@@ -40,6 +43,9 @@
     if (flags & (1 << 6)) {
         int32_t signature = [is readInt32];
         result.migrated_to = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
     
     return result;

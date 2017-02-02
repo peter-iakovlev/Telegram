@@ -10,12 +10,50 @@
 #import "TGImageUtils.h"
 
 #import "TGUser.h"
+#import "TGModernButton.h"
+
+static UIImage *arrowImage() {
+    static UIImage *image = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        CGSize size = CGSizeMake(11.0f, 11.0f);
+        UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        
+        CGContextClearRect(context, CGRectMake(0.0f, 0.0f, size.width, size.height));
+        CGContextTranslateCTM(context, size.width / 2.0f, size.height / 2.0f);
+        CGContextScaleCTM(context, 1.0f, 1.0f);
+        CGContextTranslateCTM(context, -size.width / 2.0f, -size.height / 2.0f);
+        
+        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xC7CCD0).CGColor);
+        CGContextSetLineCap(context, kCGLineCapRound);
+        CGContextSetLineWidth(context, 2.0f);
+        CGContextSetLineJoin(context, kCGLineJoinRound);
+        
+        CGContextBeginPath(context);
+        CGContextMoveToPoint(context, 1.0f, 2.0f);
+        CGContextAddLineToPoint(context, 1.0f, 10.0f);
+        CGContextAddLineToPoint(context, 9.0f, 10.0f);
+        CGContextStrokePath(context);
+        
+        CGContextBeginPath(context);
+        CGContextMoveToPoint(context, 1.0f, 10.0f);
+        CGContextAddLineToPoint(context, 10.0f, 1.0f);
+        CGContextStrokePath(context);
+        
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    });
+    return image;
+}
 
 @interface TGCommandPanelCell ()
 {
     TGLetteredAvatarView *_avatarView;
     UILabel *_titleLabel;
     UILabel *_descriptionLabel;
+    TGModernButton *_arrowButton;
+    TGBotComandInfo *_commandInfo;
 }
 
 @end
@@ -58,12 +96,19 @@
         _descriptionLabel.font = TGSystemFontOfSize(14.0f);
         _descriptionLabel.lineBreakMode = NSLineBreakByTruncatingTail;
         [self.contentView addSubview:_descriptionLabel];
+        
+        _arrowButton = [[TGModernButton alloc] init];
+        _arrowButton.modernHighlight = true;
+        [_arrowButton setImage:arrowImage() forState:UIControlStateNormal];
+        [self.contentView addSubview:_arrowButton];
+        [_arrowButton addTarget:self action:@selector(arrowButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     }
     return self;
 }
 
 - (void)setCommandInfo:(TGBotComandInfo *)commandInfo user:(TGUser *)user
 {
+    _commandInfo = commandInfo;
     if (user == nil)
         _avatarView.hidden = true;
     else
@@ -119,7 +164,7 @@
     
     CGFloat leftInset = _avatarView.hidden ? 6.0f : 51.0f;
     CGFloat spacing = 6.0f;
-    CGFloat rightInset = 6.0f;
+    CGFloat rightInset = 6.0f + 40.0f;
     
     CGSize titleSize = [_titleLabel.text sizeWithFont:_titleLabel.font];
     titleSize.width = CGCeil(MIN((boundsSize.width - leftInset - rightInset) * 3.0f / 4.0f, titleSize.width));
@@ -130,6 +175,15 @@
     
     _titleLabel.frame = CGRectMake(leftInset, CGFloor((boundsSize.height - titleSize.height) / 2.0f), titleSize.width, titleSize.height);
     _descriptionLabel.frame = CGRectMake(leftInset + titleSize.width + spacing, CGFloor((boundsSize.height - descriptionSize.height) / 2.0f), descriptionSize.width, descriptionSize.height);
+    
+    CGSize arrowSize = CGSizeMake(42.0, boundsSize.height);
+    _arrowButton.frame = CGRectMake(boundsSize.width - arrowSize.width, 0.0, arrowSize.width, arrowSize.height);
+}
+
+- (void)arrowButtonPressed {
+    if (_substituteCommand && _commandInfo) {
+        _substituteCommand(_commandInfo);
+    }
 }
 
 @end

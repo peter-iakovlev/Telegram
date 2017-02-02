@@ -128,8 +128,11 @@
     {
         [super touchesEnded:touches withEvent:event];
         
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
         if (self.delegate != nil && [self.delegate respondsToSelector:@selector(touchedTableBackground)])
             [self.delegate performSelector:@selector(touchedTableBackground)];
+#pragma clang diagnostic pop
     }
 }
 

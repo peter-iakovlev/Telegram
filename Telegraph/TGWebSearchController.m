@@ -54,7 +54,6 @@
 #import "TGExternalGifSearchResultGalleryItem.h"
 
 #import "TGMediaPickerGalleryModel.h"
-#import "TGMediaPickerGallerySelectedItemsModel.h"
 
 #import "TGActionSheet.h"
 
@@ -64,6 +63,7 @@
 #import "TGMediaEditingContext.h"
 
 #import "PGPhotoEditorValues.h"
+#import "TGPaintingData.h"
 
 #import "TGPhotoEditorController.h"
 
@@ -139,6 +139,8 @@
     
     void(^_fetchOriginalImage)(id<TGMediaEditableItem>, void(^)(UIImage *));
     void(^_fetchOriginalThumbnailImage)(id<TGMediaEditableItem>, void(^)(UIImage *));
+    
+    bool _checked3dTouch;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -594,6 +596,8 @@
     _collectionView.frame = collectionViewFrame;
     
     _recentSearchResultsTableView.frame = collectionViewFrame;
+    
+    [self setup3DTouch];
 }
 
 - (void)viewDidAppear:(BOOL)animated
@@ -1025,10 +1029,11 @@
     return galleryItems;
 }
 
-- (TGModernGalleryController *)createGalleryControllerForItem:(id<TGWebSearchListItem>)item
+- (TGModernGalleryController *)createGalleryControllerForItem:(id<TGWebSearchListItem>)item previewMode:(bool)previewMode
 {
     __weak TGWebSearchController *weakSelf = self;
     TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+    modernGallery.previewMode = previewMode;
     
     __block id<TGModernGalleryItem> focusItem = nil;
     NSArray *galleryItems = [self prepareGalleryItemsWithEnumerationBlock:^(id<TGWebSearchResultsGalleryItem> galleryItem)
@@ -1037,7 +1042,7 @@
             focusItem = galleryItem;
     }];
 
-    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:galleryItems focusItem:focusItem selectionContext:item.selectionContext editingContext:_editingContext hasCaptions:self.captionsEnabled hasSelectionPanel:false];
+    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:galleryItems focusItem:focusItem selectionContext:item.selectionContext editingContext:_editingContext hasCaptions:self.captionsEnabled inhibitDocumentCaptions:false hasSelectionPanel:false];
     model.suggestionContext = self.suggestionContext;
     model.controller = modernGallery;
     model.externalSelectionCount = ^NSInteger
@@ -1108,11 +1113,16 @@
     _galleryModel = model;
     modernGallery.model = model;
     
+    __weak TGModernGalleryController *weakGallery = modernGallery;
     modernGallery.itemFocused = ^(id<TGWebSearchResultsGalleryItem> item)
     {
         __strong TGWebSearchController *strongSelf = weakSelf;
+        __strong TGModernGalleryController *strongGallery = weakGallery;
         if (strongSelf != nil)
         {
+            if (strongGallery.previewMode)
+                return;
+            
             id<TGWebSearchListItem> listItem = [strongSelf listItemForSearchResult:[item webSearchResult]];
             strongSelf->_hiddenItem = listItem;
             [strongSelf updateHiddenItemAnimated:false];
@@ -1122,8 +1132,12 @@
     modernGallery.beginTransitionIn = ^UIView *(id<TGWebSearchResultsGalleryItem> item, __unused TGModernGalleryItemView *itemView)
     {
         __strong TGWebSearchController *strongSelf = weakSelf;
+        __strong TGModernGalleryController *strongGallery = weakGallery;
         if (strongSelf != nil)
         {
+            if (strongGallery.previewMode)
+                return nil;
+            
             return [strongSelf referenceViewForSearchResult:[item webSearchResult]];
         }
         
@@ -1150,6 +1164,13 @@
             [strongSelf updateHiddenItemAnimated:true];
         }
     };
+    
+    if (!previewMode)
+    {
+        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+        controllerWindow.hidden = false;
+        modernGallery.view.clipsToBounds = true;
+    }
 
     return modernGallery;
 }
@@ -1183,6 +1204,7 @@
         
         __weak TGWebSearchController *weakSelf = self;
         TGPhotoEditorController *controller = [[TGPhotoEditorController alloc] initWithItem:(id<TGMediaEditableItem>)item.webSearchResult intent:TGPhotoEditorControllerAvatarIntent | TGPhotoEditorControllerWebIntent adjustments:nil caption:nil screenImage:thumbnailImage availableTabs:[TGPhotoEditorController defaultTabsForAvatarIntent] selectedTab:TGPhotoEditorCropTab];
+        controller.editingContext = _editingContext;
         controller.didFinishEditing = ^(PGPhotoEditorValues *editorValues, UIImage *resultImage, __unused UIImage *thumbnailImage, bool hasChanges)
         {
             if (!hasChanges)
@@ -1216,13 +1238,7 @@
     }
     else
     {
-        TGModernGalleryController *controller = [self createGalleryControllerForItem:item];
-        if (controller == nil)
-            return;
-        
-        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
-        controllerWindow.hidden = false;
-        controller.view.clipsToBounds = true;
+        [self createGalleryControllerForItem:item previewMode:false];
     }
 }
 
@@ -1474,15 +1490,18 @@
     for (id<TGWebSearchResult> item in _selectedItems)
     {
         NSString *caption = nil;
+        id<TGMediaEditAdjustments> adjustments = nil;
         if ([item conformsToProtocol:@protocol(TGMediaEditableItem)])
+        {
             caption = [_editingContext captionForItem:(id<TGMediaEditableItem>)item];
-
+            adjustments = [_editingContext adjustmentsForItem:(id<TGMediaEditableItem>)item];
+        }
         if (caption.length == 0)
             caption = nil;
         
         SSignal *signal = [SSignal single:item];
         
-        if ([item conformsToProtocol:@protocol(TGMediaEditableItem)])
+        if ([item conformsToProtocol:@protocol(TGMediaEditableItem)] && [item respondsToSelector:@selector(screenImageSignal)])
         {
             signal = [[[[_editingContext imageSignalForItem:(id<TGMediaEditableItem>)item] filter:^bool(id result)
             {
@@ -1509,7 +1528,22 @@
             if (item == nil)
                 return [SSignal complete];
             
-            id generatedItem = imageDescriptionGenerator(item, caption);
+            NSArray *stickers = adjustments.paintingData.stickers;
+            id generatedItem = nil;
+            if ([item isKindOfClass:[UIImage class]] && stickers.count > 0)
+            {
+                NSDictionary *dictItem = @
+                {
+                    @"type": @"webPhoto",
+                    @"image": item,
+                    @"stickers": stickers
+                };
+                generatedItem = imageDescriptionGenerator(dictItem, caption);
+            }
+            else
+            {
+                generatedItem = imageDescriptionGenerator(item, caption);
+            }
             if (generatedItem == nil)
                 return [SSignal complete];
             
@@ -1776,6 +1810,63 @@
         [self endAppearanceTransition];
         [self removeFromParentViewController];
     }];
+}
+
+- (void)setup3DTouch
+{
+    if (_checked3dTouch)
+        return;
+    
+    _checked3dTouch = true;
+    if (iosMajorVersion() >= 9)
+    {
+        if (self.traitCollection.forceTouchCapability == UIForceTouchCapabilityAvailable)
+            [self registerForPreviewingWithDelegate:(id)self sourceView:self.view];
+    }
+}
+
+- (UIViewController *)previewingContext:(id<UIViewControllerPreviewing>)previewingContext viewControllerForLocation:(CGPoint)location
+{
+    CGPoint point = [self.view convertPoint:location toView:_collectionView];
+    NSIndexPath *indexPath = [_collectionView indexPathForItemAtPoint:point];
+    if (indexPath == nil)
+        return nil;
+    
+    CGRect cellFrame = [_collectionView.collectionViewLayout layoutAttributesForItemAtIndexPath:indexPath].frame;
+    previewingContext.sourceRect = [self.view convertRect:cellFrame fromView:_collectionView];
+    
+    id<TGWebSearchListItem> item = [self scopeSearchResults][indexPath.row];
+    CGSize dimensions = CGSizeZero;
+    
+    if ([item.webSearchResult isKindOfClass:[TGWebSearchInternalImageResult class]])
+        [((TGWebSearchInternalImageResult *)item.webSearchResult).imageInfo imageUrlForLargestSize:&dimensions];
+    else if ([item.webSearchResult isKindOfClass:[TGWebSearchInternalGifResult class]])
+        [((TGWebSearchInternalGifResult *)item.webSearchResult).thumbnailInfo imageUrlForLargestSize:&dimensions];
+    else if ([item.webSearchResult isKindOfClass:[TGInternalGifSearchResult class]])
+        [((TGInternalGifSearchResult *)item.webSearchResult).document.thumbnailInfo imageUrlForLargestSize:&dimensions];
+    else if ([item.webSearchResult isKindOfClass:[TGGiphySearchResultItem class]])
+        dimensions = ((TGGiphySearchResultItem *)item.webSearchResult).gifSize;
+    else if ([item.webSearchResult isKindOfClass:[TGExternalGifSearchResult class]])
+        dimensions = ((TGExternalGifSearchResult *)item.webSearchResult).size;
+    else if ([item.webSearchResult isKindOfClass:[TGBingSearchResultItem class]])
+        dimensions = ((TGBingSearchResultItem *)item.webSearchResult).imageSize;
+    
+    UIViewController *controller = [self createGalleryControllerForItem:item previewMode:true];
+    controller.preferredContentSize = TGFitSize(dimensions, self.view.frame.size);
+    return controller;
+}
+
+- (void)previewingContext:(id<UIViewControllerPreviewing>)__unused previewingContext commitViewController:(UIViewController *)viewControllerToCommit
+{
+    if ([viewControllerToCommit isKindOfClass:[TGModernGalleryController class]])
+    {
+        TGModernGalleryController *controller = (TGModernGalleryController *)viewControllerToCommit;
+        controller.previewMode = false;
+        
+        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
+        controllerWindow.hidden = false;
+        controller.view.clipsToBounds = true;
+    }
 }
 
 @end

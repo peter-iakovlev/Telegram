@@ -1,7 +1,7 @@
 #import "TLChatFull$channelFull.h"
 #import "TLMetaClassStore.h"
 
-//channelFull flags:# can_view_participants:flags.3?true id:int about:string participants_count:flags.0?int admins_count:flags.1?int kicked_count:flags.2?int read_inbox_max_id:int unread_count:int unread_important_count:int chat_photo:Photo notify_settings:PeerNotifySettings exported_invite:ExportedChatInvite bot_info:Vector<BotInfo> migrated_from_chat_id:flags.4?int migrated_from_max_id:flags.4?int = ChatFull;
+//channelFull flags:# id:int about:string participants_count:flags.0?int admins_count:flags.1?int kicked_count:flags.2?int read_inbox_max_id:int read_outbox_max_id:int unread_count:int chat_photo:Photo notify_settings:PeerNotifySettings exported_invite:ExportedChatInvite bot_info:Vector<BotInfo> migrated_from_chat_id:flags.4?int migrated_from_max_id:flags.4?int pinned_msg_id:flags.5?int = ChatFull;
 
 @implementation TLChatFull$channelFull
 
@@ -37,23 +37,32 @@
     }
     
     result.read_inbox_max_id = [is readInt32];
+    result.read_outbox_max_id = [is readInt32];
     
     result.unread_count = [is readInt32];
-    result.unread_important_count = [is readInt32];
     
     {
         int32_t signature = [is readInt32];
         result.chat_photo = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
     
     {
         int32_t signature = [is readInt32];
         result.notify_settings = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
     
     {
         int32_t signature = [is readInt32];
         result.exported_invite = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
     
     {
@@ -64,6 +73,9 @@
         for (int32_t i = 0; i < count; i++) {
             int32_t signature = [is readInt32];
             id item = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (item != nil) {
                 [items addObject:item];
             }
@@ -78,6 +90,10 @@
     
     if (flags & (1 << 4)) {
         result.migrated_from_max_id = [is readInt32];
+    }
+    
+    if (flags & (1 << 5)) {
+        result.pinned_msg_id = [is readInt32];
     }
     
     return result;

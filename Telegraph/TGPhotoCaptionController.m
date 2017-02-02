@@ -124,7 +124,7 @@
     [super viewDidAppear:animated];
     
     _captionMixin.suggestionContext = self.suggestionContext;
-    [_captionMixin beginEditingWithCaption:_initialCaption];
+    [_captionMixin beginEditing];
     
     if (_keyboardHeight == 0 && !_transitionedIn)
     {
@@ -239,6 +239,7 @@
     _dismissing = true;
     
     TGPhotoEditorPreviewView *previewView = self.previewView;
+    [previewView prepareForTransitionOut];
     
     UIView *snapshotView = nil;
     POPSpringAnimation *snapshotAnimation = nil;
@@ -348,6 +349,8 @@
                                    containerFrame.origin.y + (containerFrame.size.height - fittedSize.height - _keyboardHeight) / 2,
                                    fittedSize.width,
                                    fittedSize.height);
+    
+    [_captionMixin setContentAreaHeight:self.view.frame.size.height];
 }
 
 @end

@@ -7,6 +7,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGPreparedLocalDocumentMessage.h"
+
 @implementation TGGenericPeerMediaGalleryVideoItem
 
 - (NSString *)filePathForVideoId:(int64_t)videoId local:(bool)local
@@ -51,7 +53,43 @@
         [previewUri appendFormat:@"&conversationId=%" PRId64 "", (int64_t)peerId];
     }
     
-    self = [super initWithVideoMedia:videoMedia previewUri:previewUri];
+    self = [super initWithMedia:videoMedia previewUri:previewUri];
+    if (self != nil)
+    {
+        _peerId = peerId;
+        _messageId = messageId;
+    }
+    return self;
+}
+
+- (instancetype)initWithDocument:(TGDocumentMediaAttachment *)documentMedia peerId:(int64_t)peerId messageId:(int32_t)messageId {
+    NSMutableString *previewUri = nil;
+    
+    NSString *documentPath = documentMedia.localDocumentId != 0 ? [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:documentMedia.localDocumentId version:documentMedia.version] : [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:documentMedia.documentId version:documentMedia.version];
+    NSString *legacyVideoFilePath = [documentPath stringByAppendingPathComponent:[documentMedia safeFileName]];
+    NSString *legacyThumbnailCacheUri = [documentMedia.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL];
+    
+    if (documentMedia.documentId != 0 || documentMedia.localDocumentId != 0)
+    {
+        previewUri = [[NSMutableString alloc] initWithString:@"media-gallery-video-preview://?"];
+        if (documentMedia.documentId != 0)
+            [previewUri appendFormat:@"id=%" PRId64 "", documentMedia.documentId];
+        else
+            [previewUri appendFormat:@"local-id=%" PRId64 "", documentMedia.localDocumentId];
+        
+        CGSize size = documentMedia.pictureSize;
+        
+        [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)size.width, (int)size.height, (int)size.width, (int)size.height];
+        
+        [previewUri appendFormat:@"&legacy-video-file-path=%@", legacyVideoFilePath];
+        if (legacyThumbnailCacheUri != nil)
+            [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUri];
+        
+        [previewUri appendFormat:@"&messageId=%" PRId32 "", (int32_t)messageId];
+        [previewUri appendFormat:@"&conversationId=%" PRId64 "", (int64_t)peerId];
+    }
+    
+    self = [super initWithMedia:documentMedia previewUri:previewUri];
     if (self != nil)
     {
         _peerId = peerId;
@@ -80,8 +118,18 @@
 
 - (NSString *)filePath
 {
-    NSString *legacyVideoFilePath = [self filePathForVideoId:self.videoMedia.videoId != 0 ? self.videoMedia.videoId : self.videoMedia.localVideoId local:self.videoMedia.videoId == 0];
-    return legacyVideoFilePath;
+    if ([self.media isKindOfClass:[TGVideoMediaAttachment class]]) {
+        TGVideoMediaAttachment *videoMedia = self.media;
+        NSString *legacyVideoFilePath = [self filePathForVideoId:videoMedia.videoId != 0 ? videoMedia.videoId : videoMedia.localVideoId local:videoMedia.videoId == 0];
+        return legacyVideoFilePath;
+    } else if ([self.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+        TGDocumentMediaAttachment *documentMedia = self.media;
+        NSString *documentPath = documentMedia.localDocumentId != 0 ? [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:documentMedia.localDocumentId version:documentMedia.version] : [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:documentMedia.documentId version:documentMedia.version];
+        NSString *legacyVideoFilePath = [documentPath stringByAppendingPathComponent:[documentMedia safeFileName]];
+        return legacyVideoFilePath;
+    } else {
+        return nil;
+    }
 }
 
 - (Class)viewClass

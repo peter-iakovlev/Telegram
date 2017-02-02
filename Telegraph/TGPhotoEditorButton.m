@@ -59,8 +59,13 @@
 
 - (void)setIconImage:(UIImage *)image
 {
+    [self setIconImage:image activeIconImage:nil];
+}
+
+- (void)setIconImage:(UIImage *)image activeIconImage:(UIImage *)activeIconImage
+{
     _iconImage = image;
-    _activeIconImage = nil;
+    _activeIconImage = activeIconImage;
     [self setActive:_active];
     
     UIGraphicsBeginImageContextWithOptions(image.size, false, 0.0f);

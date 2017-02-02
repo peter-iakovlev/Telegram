@@ -12,6 +12,8 @@
 
 #import "TGModernSendSecretMessageActor.h"
 
+#import "TGTelegraph.h"
+
 @interface TGSecretOutgoingRequest : MTRequest
 
 @property (nonatomic) int32_t actionId;
@@ -124,6 +126,12 @@
                                 else
                                 {
                                     [strongSelf->_executingRequestsActionIds removeObject:@(actionId)];
+                                    
+                                    NSString *errorType = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                                    if ([errorType isEqualToString:@"ENCRYPTION_DECLINED"]) {
+                                        int64_t encryptedChatId = [TGDatabaseInstance() encryptedConversationIdForPeerId:_peerId];
+                                        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/encrypted/discardEncryptedChat/(%" PRId64 ")", (int64_t)encryptedChatId] options:@{@"encryptedConversationId": @((int64_t)encryptedChatId), @"locally": @true} flags:0 watcher:TGTelegraphInstance];
+                                    }
                                 }
                             }
                         }];

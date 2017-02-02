@@ -57,7 +57,10 @@
     }
     else if (asset.isVideo && asset.subtypes & TGMediaAssetSubtypeVideoHighFrameRate && isScreenImage)
     {
-        SSignal *signal = [[self avAssetForVideoAsset:asset allowNetworkAccess:allowNetworkAccess] mapToSignal:^SSignal *(AVAsset *avAsset)
+        SSignal *signal = [[[self avAssetForVideoAsset:asset allowNetworkAccess:allowNetworkAccess] filter:^bool(id value)
+        {
+            return [value isKindOfClass:[AVAsset class]];
+        }] mapToSignal:^SSignal *(AVAsset *avAsset)
         {
             return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
             {
@@ -125,6 +128,8 @@
                     bool degraded = [info[PHImageResultIsDegradedKey] boolValue];
                     if (result == nil && !networkAccessAllowed)
                     {
+                        TGLog(@"requestImageForAsset: error -1");
+                        
                         [subscriber putError:@true];
                         return;
                     }
@@ -679,7 +684,6 @@
             if (networkAccessAllowed)
             {
                 requestOptions.deliveryMode = PHVideoRequestOptionsDeliveryModeHighQualityFormat;
-                //requestOptions.deliveryMode = PHVideoRequestOptionsDeliveryModeAutomatic;
                 requestOptions.progressHandler = ^(double progress, __unused NSError *error, __unused BOOL *stop, __unused NSDictionary *info)
                 {
                     [subscriber putNext:@(progress)];

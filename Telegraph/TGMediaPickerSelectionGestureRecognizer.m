@@ -120,6 +120,12 @@ const CGFloat TGSelectionGestureVerticalFailureThreshold = 5.0f;
     }
 }
 
+- (void)cancel
+{
+    _gestureRecognizer.enabled = false;
+    _gestureRecognizer.enabled = true;
+}
+
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)__unused otherGestureRecognizer
 {
     return gestureRecognizer == _gestureRecognizer;

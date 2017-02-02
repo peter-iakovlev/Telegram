@@ -8,8 +8,9 @@
 
 @interface TGStickerAssociatedInputPanelCell ()
 {
-    TGDocumentMediaAttachment *_document;
     TGImageView *_imageView;
+    
+    bool _highlighted;
 }
 
 @end
@@ -55,6 +56,25 @@
     [uri appendFormat:@"&highQuality=1"];
     
     [_imageView loadUri:uri withOptions:nil];
+}
+
+- (void)setHighlighted:(bool)highlighted animated:(bool)__unused animated
+{
+    if (_highlighted != highlighted)
+    {
+        _highlighted = highlighted;
+        
+        if (iosMajorVersion() >= 8)
+        {
+            [UIView animateWithDuration:0.6 delay:0.0 usingSpringWithDamping:0.6f initialSpringVelocity:0.0f options:UIViewAnimationOptionBeginFromCurrentState animations:^
+            {
+                if (_highlighted)
+                    _imageView.transform = CGAffineTransformMakeScale(0.8f, 0.8f);
+                else
+                    _imageView.transform = CGAffineTransformIdentity;
+            } completion:nil];
+        }
+    }
 }
 
 @end

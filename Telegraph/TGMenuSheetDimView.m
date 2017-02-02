@@ -112,6 +112,19 @@
     return self;
 }
 
+- (void)setTheaterMode:(bool)theaterMode animated:(bool)animated
+{
+    void (^changeBlock)(void) = ^
+    {
+        _topView.backgroundColor = theaterMode ? [TGMenuSheetDimView theaterBackgroundColor] : [TGMenuSheetDimView backgroundColor];
+    };
+    
+    if (animated)
+        [UIView animateWithDuration:0.5 animations:changeBlock];
+    else
+        changeBlock();
+}
+
 - (void)layoutSubviews
 {
     if (!TGMenuSheetUseEffectView)
@@ -226,6 +239,11 @@
 + (UIColor *)backgroundColor
 {
     return [UIColor colorWithWhite:0.0f alpha:0.4f];
+}
+
++ (UIColor *)theaterBackgroundColor
+{
+    return [UIColor colorWithWhite:0.0f alpha:0.65f];
 }
 
 @end

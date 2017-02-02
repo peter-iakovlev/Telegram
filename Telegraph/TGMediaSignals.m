@@ -27,7 +27,7 @@
     inputFileLocation.volume_id = reference.volumeId;
     inputFileLocation.local_id = reference.localId;
     inputFileLocation.secret = reference.secret;
-    SSignal *remoteSignal = [TGRemoteFileSignal dataForLocation:inputFileLocation datacenterId:(NSUInteger)reference.datacenterId size:0 reportProgress:false];
+    SSignal *remoteSignal = [TGRemoteFileSignal dataForLocation:inputFileLocation datacenterId:(NSUInteger)reference.datacenterId size:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage];
     
     TLFileLocation$fileLocation *fileLocation = [[TLFileLocation$fileLocation alloc] init];
     fileLocation.dc_id = reference.datacenterId;
@@ -142,7 +142,7 @@
         inputLocation.volume_id = imageFileReference.volumeId;
         inputLocation.local_id = imageFileReference.localId;
         inputLocation.secret = imageFileReference.secret;
-        return [[TGRemoteFileSignal dataForLocation:inputLocation datacenterId:imageFileReference.datacenterId size:0 reportProgress:false] map:^id(NSData *data)
+        return [[TGRemoteFileSignal dataForLocation:inputLocation datacenterId:imageFileReference.datacenterId size:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] map:^id(NSData *data)
         {
             [[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:true attributes:nil error:nil];
             UIImage *image = [[UIImage alloc] initWithData:data];

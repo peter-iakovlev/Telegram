@@ -65,6 +65,12 @@
 
 #import "TGHashtagSearchController.h"
 
+#import "TGShareMenu.h"
+#import "TGSendMessageSignals.h"
+#import "TGUserSignal.h"
+
+#import "TGGroupsInCommonController.h"
+
 @interface TGBotUserInfoController () <TGAlertSoundControllerDelegate, TGUserInfoEditingPhoneCollectionItemDelegate, TGPhoneLabelPickerControllerDelegate, TGCreateContactControllerDelegate, TGAddToExistingContactControllerDelegate>
 {
     int32_t _uid;
@@ -105,10 +111,18 @@
     void (^_sendCommand)(NSString *);
     
     bool _isUserBlocked;
+    
+    bool _checked3dTouch;
+    
+    int32_t _groupsInCommonCount;
+    NSString *_about;
+    id<SDisposable> _updatedCachedDataDisposable;
+    id<SDisposable> _cachedDataDisposable;
 }
 
 @property (nonatomic, strong) TGCollectionMenuSection *sharedMediaSection;
 @property (nonatomic, strong) TGUserInfoVariantCollectionItem *sharedMediaItem;
+@property (nonatomic, strong) TGUserInfoVariantCollectionItem *groupsInCommonItem;
 
 @end
 
@@ -151,6 +165,7 @@
         _normalNotificationsItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Notifications") variant:nil action:@selector(notificationsPressed)];
         _normalNotificationsItem.deselectAutomatically = true;
         _sharedMediaItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.SharedMedia") variant:nil action:@selector(sharedMediaPressed)];
+        _groupsInCommonItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"UserInfo.GroupsInCommon") variant:@"" action:@selector(groupsInCommonPressed)];
         _sharedMediaSection = [[TGCollectionMenuSection alloc] initWithItems:@[_sharedMediaItem, _normalNotificationsItem]];
         _sharedMediaSection.insets = UIEdgeInsetsMake(22.0f, 0.0f, 0.0f, 0.0f);
         
@@ -209,6 +224,27 @@
                 [strongSelf setBotInfo:botInfo];
             }
         }];
+        
+        
+        _updatedCachedDataDisposable = [[TGUserSignal updatedUserCachedDataWithUserId:_uid] startWithNext:nil];
+        _cachedDataDisposable = [[[TGDatabaseInstance() userCachedData:_uid] deliverOn:[SQueue mainQueue]] startWithNext:^(TGCachedUserData *data) {
+            __strong TGBotUserInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                if (!TGStringCompare(strongSelf->_about, data.about) || strongSelf->_groupsInCommonCount != data.groupsInCommonCount) {
+                    bool forceUpdate = !TGStringCompare(strongSelf->_about, data.about);
+                    if ((strongSelf->_groupsInCommonCount != 0) != (data.groupsInCommonCount != 0)) {
+                        forceUpdate = true;
+                    }
+                    strongSelf->_about = data.about;
+                    strongSelf->_groupsInCommonCount = data.groupsInCommonCount;
+                    [strongSelf->_groupsInCommonItem setVariant:[NSString stringWithFormat:@"%d", data.groupsInCommonCount]];
+                    
+                    if (forceUpdate) {
+                        [strongSelf _updatePhonesAndActions];
+                    }
+                }
+            }
+        }];
     }
     return self;
 }
@@ -216,6 +252,8 @@
 - (void)dealloc
 {
     [_botInfoDisposable dispose];
+    [_updatedCachedDataDisposable dispose];
+    [_cachedDataDisposable dispose];
 }
 
 - (void)_resetCollectionView
@@ -240,6 +278,13 @@
     }
 }
 
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self check3DTouch];
+}
+
 #pragma mark -
 
 - (void)_updatePhonesAndActions
@@ -257,7 +302,7 @@
             [self.menuSections deleteItemFromSection:usernameSectionIndex atIndex:0];
         }
         
-        NSString *shortDescription = _botInfo.shortDescription;
+        NSString *shortDescription = _about;
         if (!_editing && shortDescription.length != 0)
         {
             TGUserInfoTextCollectionItem *infoItem = [[TGUserInfoTextCollectionItem alloc] init];
@@ -275,6 +320,7 @@
         if (!_editing && _user.userName.length != 0)
         {
             TGUserInfoUsernameCollectionItem *usernameItem = [[TGUserInfoUsernameCollectionItem alloc] initWithLabel:TGLocalized(@"Profile.Username") username:[[NSString alloc] initWithFormat:@"@%@", _user.userName]];
+            usernameItem.action = @selector(shareContactPressed);
             [self.menuSections addItemToSection:usernameSectionIndex item:usernameItem];
         }
     }
@@ -367,6 +413,12 @@
             }
             
             actionsSectionIndex = [self indexForSection:self.actionsSection];
+        }
+        
+        if (_groupsInCommonCount == 0) {
+            [_sharedMediaSection deleteItem:_groupsInCommonItem];
+        } else if ([_sharedMediaSection indexOfItem:_groupsInCommonItem] == NSNotFound) {
+            [_sharedMediaSection addItem:_groupsInCommonItem];
         }
         
         NSUInteger sharedMediaSectionIndex = [self indexForSection:_sharedMediaSection];
@@ -865,19 +917,28 @@ static UIView *_findBackArrow(UIView *view)
 
 - (void)shareContactPressed
 {
-    NSString *linkText = [[NSString alloc] initWithFormat:@"%@%@https://telegram.me/%@", _botInfo.shortDescription, _botInfo.shortDescription.length == 0 ? @"" : @" ", _user.userName];
-    NSArray *dataToShare = @[linkText];
-    if ([_shareContactItem boundView] != nil)
+    NSString *linkString = [NSString stringWithFormat:@"https://telegram.me/%@", _user.userName];
+    NSString *shareString = linkString;
+    if (_user.about.length > 0)
+        shareString = [NSString stringWithFormat:@"%@ %@", _user.about, shareString];
+    
+    __weak TGBotUserInfoController *weakSelf = self;
+    CGRect (^sourceRect)(void) = ^CGRect
     {
-        UIActivityViewController *activityViewController = [[UIActivityViewController alloc] initWithActivityItems:dataToShare applicationActivities:nil];
-        if (iosMajorVersion() >= 8 && [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
-        {
-            UIView *sourceView = [_shareContactItem boundView];
-            activityViewController.popoverPresentationController.sourceView = sourceView;
-            activityViewController.popoverPresentationController.sourceRect = sourceView.bounds;
-        }
-        [self presentViewController:activityViewController animated:true completion:nil];
-    }
+        __strong TGBotUserInfoController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return CGRectZero;
+        
+        return [strongSelf->_shareContactItem.view convertRect:strongSelf->_shareContactItem.view.bounds toView:strongSelf.view];
+    };
+    
+    [TGShareMenu presentInParentController:self menuController:nil buttonTitle:TGLocalized(@"ShareMenu.CopyShareLink") buttonAction:^
+    {
+        [[UIPasteboard generalPasteboard] setString:linkString];
+    } shareAction:^(NSArray *peerIds, NSString *caption)
+    {
+        [[TGShareSignals shareText:shareString toPeerIds:peerIds caption:caption] startWithNext:nil];
+    } externalShareItemSignal:[SSignal single:shareString] sourceView:self.view sourceRect:sourceRect barButtonItem:nil];
 }
 
 - (void)inviteToGroupPressed
@@ -903,8 +964,6 @@ static UIView *_findBackArrow(UIView *view)
 - (void)sharedMediaPressed
 {
     [self.navigationController pushViewController:[[TGSharedMediaController alloc] initWithPeerId:_sharedMediaPeerId accessHash:0 important:true] animated:true];
-    
-    //[[TGInterfaceManager instance] navigateToMediaListOfConversation:_sharedMediaPeerId navigationController:self.navigationController];
 }
 
 - (void)reportUserPressed {
@@ -1100,6 +1159,112 @@ static UIView *_findBackArrow(UIView *view)
      }];
 }
 
+- (TGModernGalleryController *)createAvatarGalleryControllerForPreviewMode:(bool)previewMode
+{
+    TGUser *user = [TGDatabaseInstance() loadUser:_uid];
+    
+    if (user.photoUrlSmall.length != 0)
+    {
+        TGRemoteImageView *avatarView = [self.userInfoItem visibleAvatarView];
+        
+        if (user != nil && user.photoUrlBig != nil && avatarView.currentImage != nil)
+        {
+            TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+            modernGallery.previewMode = previewMode;
+            if (previewMode)
+                modernGallery.showInterface = false;
+            
+            modernGallery.model = [[TGUserAvatarGalleryModel alloc] initWithPeerId:_uid currentAvatarLegacyThumbnailImageUri:user.photoUrlSmall currentAvatarLegacyImageUri:user.photoUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
+            
+            __weak TGBotUserInfoController *weakSelf = self;
+            __weak TGModernGalleryController *weakGallery = modernGallery;
+            
+            modernGallery.itemFocused = ^(id<TGModernGalleryItem> item)
+            {
+                __strong TGBotUserInfoController *strongSelf = weakSelf;
+                __strong TGModernGalleryController *strongGallery = weakGallery;
+                if (strongSelf != nil)
+                {
+                    if (strongGallery.previewMode)
+                        return;
+                    
+                    if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
+                    {
+                        if (((TGUserAvatarGalleryItem *)item).isCurrent)
+                        {
+                            ((UIView *)strongSelf.userInfoItem.visibleAvatarView).hidden = true;
+                        }
+                        else
+                            ((UIView *)strongSelf.userInfoItem.visibleAvatarView).hidden = false;
+                    }
+                }
+            };
+            
+            modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
+            {
+                __strong TGBotUserInfoController *strongSelf = weakSelf;
+                __strong TGModernGalleryController *strongGallery = weakGallery;
+                if (strongSelf != nil)
+                {
+                    if (strongGallery.previewMode)
+                        return nil;
+                    
+                    if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
+                    {
+                        if (((TGUserAvatarGalleryItem *)item).isCurrent)
+                        {
+                            return strongSelf.userInfoItem.visibleAvatarView;
+                        }
+                    }
+                }
+                
+                return nil;
+            };
+            
+            modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
+            {
+                __strong TGBotUserInfoController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
+                    {
+                        if (((TGUserAvatarGalleryItem *)item).isCurrent)
+                        {
+                            return strongSelf.userInfoItem.visibleAvatarView;
+                        }
+                    }
+                }
+                
+                return nil;
+            };
+            
+            modernGallery.completedTransitionOut = ^
+            {
+                __strong TGBotUserInfoController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    ((UIView *)strongSelf.userInfoItem.visibleAvatarView).hidden = false;
+                }
+            };
+            
+            if (!previewMode)
+            {
+                TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+                controllerWindow.hidden = false;
+            }
+            else
+            {
+                CGFloat side = MIN(self.view.frame.size.width, self.view.frame.size.height);
+                modernGallery.preferredContentSize = CGSizeMake(side, side);
+            }
+            
+            return modernGallery;
+        }
+    }
+    
+    return nil;
+}
+
 - (void)actionStageActionRequested:(NSString *)action options:(id)options
 {
     if ([action isEqualToString:@"willForwardMessages"])
@@ -1159,84 +1324,7 @@ static UIView *_findBackArrow(UIView *view)
     }
     if ([action isEqualToString:@"avatarTapped"])
     {
-        TGUser *user = [TGDatabaseInstance() loadUser:_uid];
-        
-        if (user.photoUrlSmall.length != 0)
-        {
-            TGRemoteImageView *avatarView = [self.userInfoItem visibleAvatarView];
-            
-            if (user != nil && user.photoUrlBig != nil && avatarView.currentImage != nil)
-            {
-                TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
-                
-                modernGallery.model = [[TGUserAvatarGalleryModel alloc] initWithPeerId:_uid currentAvatarLegacyThumbnailImageUri:user.photoUrlSmall currentAvatarLegacyImageUri:user.photoUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
-                
-                __weak TGBotUserInfoController *weakSelf = self;
-                
-                modernGallery.itemFocused = ^(id<TGModernGalleryItem> item)
-                {
-                    __strong TGBotUserInfoController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                    {
-                        if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
-                        {
-                            if (((TGUserAvatarGalleryItem *)item).isCurrent)
-                            {
-                                ((UIView *)strongSelf.userInfoItem.visibleAvatarView).hidden = true;
-                            }
-                            else
-                                ((UIView *)strongSelf.userInfoItem.visibleAvatarView).hidden = false;
-                        }
-                    }
-                };
-                
-                modernGallery.beginTransitionIn = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
-                {
-                    __strong TGBotUserInfoController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                    {
-                        if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
-                        {
-                            if (((TGUserAvatarGalleryItem *)item).isCurrent)
-                            {
-                                return strongSelf.userInfoItem.visibleAvatarView;
-                            }
-                        }
-                    }
-                    
-                    return nil;
-                };
-                
-                modernGallery.beginTransitionOut = ^UIView *(id<TGModernGalleryItem> item, __unused TGModernGalleryItemView *itemView)
-                {
-                    __strong TGBotUserInfoController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                    {
-                        if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
-                        {
-                            if (((TGUserAvatarGalleryItem *)item).isCurrent)
-                            {
-                                return strongSelf.userInfoItem.visibleAvatarView;
-                            }
-                        }
-                    }
-                    
-                    return nil;
-                };
-                
-                modernGallery.completedTransitionOut = ^
-                {
-                    __strong TGBotUserInfoController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                    {
-                        ((UIView *)strongSelf.userInfoItem.visibleAvatarView).hidden = false;
-                    }
-                };
-                
-                TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
-                controllerWindow.hidden = false;
-            }
-        }
+        [self createAvatarGalleryControllerForPreviewMode:false];
     }
     else
     
@@ -1466,6 +1554,48 @@ static UIView *_findBackArrow(UIView *view)
         } @catch (NSException *e) {
         }
     }
+}
+
+- (void)check3DTouch
+{
+    if (_checked3dTouch)
+        return;
+    
+    _checked3dTouch = true;
+    if (iosMajorVersion() >= 9)
+    {
+        if (self.traitCollection.forceTouchCapability == UIForceTouchCapabilityAvailable)
+        {
+            [self registerForPreviewingWithDelegate:(id)self sourceView:self.userInfoItem.avatarView];
+        }
+    }
+}
+
+- (UIViewController *)previewingContext:(id<UIViewControllerPreviewing>)previewingContext viewControllerForLocation:(CGPoint)__unused location
+{
+    if (_user.photoUrlSmall.length != 0)
+    {
+        previewingContext.sourceRect = previewingContext.sourceView.bounds;
+        return [self createAvatarGalleryControllerForPreviewMode:true];
+    }
+    
+    return nil;
+}
+
+- (void)previewingContext:(id<UIViewControllerPreviewing>)__unused previewingContext commitViewController:(UIViewController *)viewControllerToCommit
+{
+    if ([viewControllerToCommit isKindOfClass:[TGModernGalleryController class]])
+    {
+        TGModernGalleryController *controller = (TGModernGalleryController *)viewControllerToCommit;
+        controller.previewMode = false;
+        
+        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
+        controllerWindow.hidden = false;
+    }
+}
+
+- (void)groupsInCommonPressed {
+    [self.navigationController pushViewController:[[TGGroupsInCommonController alloc] initWithUserId:_uid] animated:true];
 }
 
 @end

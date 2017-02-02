@@ -94,34 +94,34 @@
 
 #pragma mark - Signals
 
-+ (SSignal *)convertSignalForAVAsset:(AVAsset *)avAsset preset:(TGMediaVideoConversionPreset)preset adjustments:(TGMediaVideoEditAdjustments *)adjustments
++ (SSignal *)convertSignalForAVAsset:(AVAsset *)__unused avAsset preset:(TGMediaVideoConversionPreset)__unused preset adjustments:(TGMediaVideoEditAdjustments *)__unused adjustments
 {
-    NSURL *fileUrl = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%x.tmp", (int)arc4random()]]];
-    
-    NSError *error;
-    AVAssetWriter *assetWriter = [AVAssetWriter assetWriterWithURL:fileUrl fileType:AVFileTypeMPEG4 error:&error];
-    
-    if (assetWriter == nil || error != nil)
-        return [SSignal fail:error];
-    
-    AVAssetTrack *videoTrack = [avAsset tracksWithMediaType:AVMediaTypeVideo].firstObject;
-
-    CGSize outputVideoDimensions = [self _outputDimensionsForVideoTrack:videoTrack presetSettings:nil adjustments:adjustments];
-    NSDictionary *videoSettings = nil;
-    
-    AVAssetWriterInput *videoWriterInput = [AVAssetWriterInput assetWriterInputWithMediaType:AVMediaTypeVideo outputSettings:videoSettings];
-    videoWriterInput.expectsMediaDataInRealTime = true;
-    
-    if (![assetWriter canAddInput:videoWriterInput])
-        return [SSignal fail:nil];
-    
-    [assetWriter addInput:videoWriterInput];
-    
-    AVMutableComposition *composition = [[AVMutableComposition alloc] init];
-    AVMutableVideoComposition *videoComposition = nil;
-    AVAssetTrack *videoTrackToRead = nil;
-    
-    AVAssetTrack *audioTrack = [avAsset tracksWithMediaType:AVMediaTypeAudio].firstObject;
+//    NSURL *fileUrl = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%x.tmp", (int)arc4random()]]];
+//    
+//    NSError *error;
+//    AVAssetWriter *assetWriter = [AVAssetWriter assetWriterWithURL:fileUrl fileType:AVFileTypeMPEG4 error:&error];
+//    
+//    if (assetWriter == nil || error != nil)
+//        return [SSignal fail:error];
+//    
+//    AVAssetTrack *videoTrack = [avAsset tracksWithMediaType:AVMediaTypeVideo].firstObject;
+//
+//    CGSize outputVideoDimensions = [self _outputDimensionsForVideoTrack:videoTrack presetSettings:nil adjustments:adjustments];
+//    NSDictionary *videoSettings = nil;
+//    
+//    AVAssetWriterInput *videoWriterInput = [AVAssetWriterInput assetWriterInputWithMediaType:AVMediaTypeVideo outputSettings:videoSettings];
+//    videoWriterInput.expectsMediaDataInRealTime = true;
+//    
+//    if (![assetWriter canAddInput:videoWriterInput])
+//        return [SSignal fail:nil];
+//    
+//    [assetWriter addInput:videoWriterInput];
+//    
+//    AVMutableComposition *composition = [[AVMutableComposition alloc] init];
+//    AVMutableVideoComposition *videoComposition = nil;
+//    AVAssetTrack *videoTrackToRead = nil;
+//    
+//    AVAssetTrack *audioTrack = [avAsset tracksWithMediaType:AVMediaTypeAudio].firstObject;
     
 //    [assetWriter startWriting];
 //    [assetWriter startSessionAtSourceTime:kCMTimeZero];
@@ -138,11 +138,13 @@
 //            [converter cancel];
 //        }];
 //    }];
+    
+    return [SSignal fail:nil];
 }
 
 + (SSignal *)hashSignalForAVAsset:(AVAsset *)avAsset adjustments:(TGMediaVideoEditAdjustments *)adjustments
 {
-    if ([adjustments trimApplied] || [adjustments cropAppliedForAvatar:false] || [adjustments rotationApplied])
+    if ([adjustments trimApplied] || [adjustments cropAppliedForAvatar:false] || adjustments.sendAsGif)
         return [SSignal single:nil];
     
     NSURL *fileUrl = nil;
@@ -245,29 +247,34 @@ const CGSize TGMediaVideoConversionCompressedResultSize = { 640.0f, 640.0f };
 
 + (TGMediaVideoConversionPresetSettings *)settingsForPreset:(TGMediaVideoConversionPreset)preset
 {
+    TGMediaVideoConversionPresetSettings *settings = [[TGMediaVideoConversionPresetSettings alloc] init];
     switch (preset)
     {
         case TGMediaVideoConversionPresetPassthrough:
         {
-            
+            settings->_hasAudio = true;
         }
             break;
             
         case TGMediaVideoConversionPresetCompressed:
         {
-            
+            settings->_hasAudio = true;
+            settings->_maximumResultSize = CGSizeMake(640, 640);
         }
             break;
             
         case TGMediaVideoConversionPresetAnimation:
         {
-            
+            settings->_hasAudio = false;
+            settings->_maximumResultSize = CGSizeMake(480, 480);
         }
             break;
             
         default:
             break;
     }
+    
+    return settings;
 }
 
 @end

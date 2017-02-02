@@ -40,3 +40,5 @@ UIImage *TGScaleAndCropImageToPixelSize(UIImage *source, CGSize size, CGSize ren
 NSArray *TGBlurredBackgroundImages(UIImage *source, CGSize size);
 
 void TGAddImageCorners(void *memory, const unsigned int width, const unsigned int height, const unsigned int stride, int radius);
+
+void telegramFastBlur(int imageWidth, int imageHeight, int imageStride, void *pixels);

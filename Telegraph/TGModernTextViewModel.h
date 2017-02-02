@@ -39,9 +39,11 @@
 - (instancetype)initWithText:(NSString *)text font:(CTFontRef)font;
 
 - (bool)layoutNeedsUpdatingForContainerSize:(CGSize)containerSize;
-- (bool)layoutNeedsUpdatingForContainerSize:(CGSize)containerSize layoutFlags:(int)layoutFlags;
+- (bool)layoutNeedsUpdatingForContainerSize:(CGSize)containerSize additionalTrailingWidth:(CGFloat)additionalTrailingWidth layoutFlags:(int)layoutFlags;
 - (void)layoutForContainerSize:(CGSize)containerSize;
 - (NSString *)linkAtPoint:(CGPoint)point regionData:(__autoreleasing NSArray **)regionData;
+- (NSString *)linkAtPoint:(CGPoint)point regionData:(__autoreleasing NSArray **)regionData hiddenLink:(bool *)hiddenLink;
+- (NSString *)linkAtPoint:(CGPoint)point regionData:(__autoreleasing NSArray **)regionData hiddenLink:(bool *)hiddenLink linkText:(__autoreleasing NSString **)linkText;
 - (void)enumerateSearchRegionsForString:(NSString *)string withBlock:(void (^)(CGRect))block;
 
 - (NSUInteger)measuredNumberOfLines;

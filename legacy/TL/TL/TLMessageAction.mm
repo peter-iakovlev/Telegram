@@ -574,3 +574,94 @@
 
 @end
 
+@implementation TLMessageAction$messageActionPinMessage : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x94bd38ed;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xce93aa0;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLMessageAction$messageActionPinMessage *object = [[TLMessageAction$messageActionPinMessage alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLMessageAction$messageActionHistoryClear : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x9fbab604;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x8e5afb58;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLMessageAction$messageActionHistoryClear *object = [[TLMessageAction$messageActionHistoryClear alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLMessageAction$messageActionGameScore : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x92a72876;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x4e1def96;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageAction$messageActionGameScore *object = [[TLMessageAction$messageActionGameScore alloc] init];
+    object.game_id = metaObject->getInt64((int32_t)0xdac07ef4);
+    object.score = metaObject->getInt32((int32_t)0xe2546678);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.game_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xdac07ef4, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.score;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe2546678, value));
+    }
+}
+
+
+@end

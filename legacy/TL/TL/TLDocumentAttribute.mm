@@ -4,6 +4,7 @@
 #import "../NSOutputStream+TL.h"
 
 #import "TLInputStickerSet.h"
+#import "TLMaskCoords.h"
 
 @implementation TLDocumentAttribute
 
@@ -180,29 +181,37 @@
 
 @end
 
-@implementation TLDocumentAttribute$documentAttributeSticker : TLDocumentAttribute
+@implementation TLDocumentAttribute$documentAttributeStickerMeta : TLDocumentAttribute
 
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x3a556302;
+    return (int32_t)0x21122b4c;
 }
 
 - (int32_t)TLconstructorName
 {
-    return (int32_t)0x95bd6986;
+    return (int32_t)0x1cbf90c3;
 }
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
-    TLDocumentAttribute$documentAttributeSticker *object = [[TLDocumentAttribute$documentAttributeSticker alloc] init];
+    TLDocumentAttribute$documentAttributeStickerMeta *object = [[TLDocumentAttribute$documentAttributeStickerMeta alloc] init];
+    object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.alt = metaObject->getString((int32_t)0xe86810ff);
     object.stickerset = metaObject->getObject((int32_t)0xaac37694);
+    object.mask_coords = metaObject->getObject((int32_t)0x84cb27ad);
     return object;
 }
 
 - (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
 {
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.flags;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x81915c23, value));
+    }
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypeString;
@@ -215,6 +224,38 @@
         value.nativeObject = self.stickerset;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xaac37694, value));
     }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.mask_coords;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x84cb27ad, value));
+    }
+}
+
+
+@end
+
+@implementation TLDocumentAttribute$documentAttributeHasStickers : TLDocumentAttribute
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x9801d2f7;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x2865c028;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLDocumentAttribute$documentAttributeHasStickers *object = [[TLDocumentAttribute$documentAttributeHasStickers alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
 }
 
 

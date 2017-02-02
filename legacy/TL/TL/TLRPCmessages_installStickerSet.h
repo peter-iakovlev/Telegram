@@ -4,11 +4,12 @@
 #import "TLMetaRpc.h"
 
 @class TLInputStickerSet;
+@class TLmessages_StickerSetInstallResult;
 
 @interface TLRPCmessages_installStickerSet : TLMetaRpc
 
 @property (nonatomic, retain) TLInputStickerSet *stickerset;
-@property (nonatomic) bool disabled;
+@property (nonatomic) bool archived;
 
 - (Class)responseClass;
 

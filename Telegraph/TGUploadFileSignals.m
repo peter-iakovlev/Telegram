@@ -24,9 +24,9 @@
     return self;
 }
 
-- (void)uploadData:(NSData *)data {
+- (void)uploadData:(NSData *)data mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag {
     static int uploadIndex = 0;
-    [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/upload/(%duploadFileHelper)", uploadIndex++] options:[NSDictionary dictionaryWithObject:data forKey:@"data"] watcher:self];
+    [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/upload/(%duploadFileHelper)", uploadIndex++] options:@{@"data": data, @"mediaTypeTag": @(mediaTypeTag)} watcher:self];
 }
 
 - (void)dealloc {
@@ -50,7 +50,7 @@
 
 @implementation TGUploadFileSignals
 
-+ (SSignal *)uploadedFileWithData:(NSData *)data {
++ (SSignal *)uploadedFileWithData:(NSData *)data mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag {
     return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
         TGUploadFileHelper *helper = [[TGUploadFileHelper alloc] initWithCompletion:^(TLInputFile *file) {
             [subscriber putNext:file];
@@ -59,7 +59,7 @@
             [subscriber putError:nil];
         }];
         
-        [helper uploadData:data];
+        [helper uploadData:data mediaTypeTag:mediaTypeTag];
         
         return [[SBlockDisposable alloc] initWithBlock:^{
             [helper description]; // keep reference

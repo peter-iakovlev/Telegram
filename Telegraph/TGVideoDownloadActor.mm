@@ -446,7 +446,7 @@ public:
                         
 #if TGUseModernNetworking
                         __weak TGVideoDownloadActor *weakSelf = self;
-                        _worker1Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:_datacenterId completion:^(TGNetworkWorkerGuard *worker)
+                        _worker1Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:_datacenterId type:TGNetworkMediaTypeTagVideo completion:^(TGNetworkWorkerGuard *worker)
                         {
                             __strong TGVideoDownloadActor *strongSelf = weakSelf;
                             if (strongSelf != nil)
@@ -455,7 +455,7 @@ public:
                             }
                         }];
                         
-                        _worker2Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:_datacenterId completion:^(TGNetworkWorkerGuard *worker)
+                        _worker2Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:_datacenterId type:TGNetworkMediaTypeTagVideo completion:^(TGNetworkWorkerGuard *worker)
                         {
                             __strong TGVideoDownloadActor *strongSelf = weakSelf;
                             if (strongSelf != nil)

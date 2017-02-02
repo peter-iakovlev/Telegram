@@ -33,16 +33,14 @@
 #import "TGModernButton.h"
 #import "TGMessageImageViewOverlayView.h"
 
-#import <pop/POP.h>
-
 #import "ActionStage.h"
 
 #import "TGDownloadManager.h"
 #import "TGMessage.h"
 
-#import "TGGenericPeerMediaGalleryVideoItem.h"
-
 #import "TGAudioSessionManager.h"
+
+#import "TGPreparedLocalDocumentMessage.h"
 
 @interface TGModernGalleryVideoItemView () <TGDoubleTapGestureRecognizerDelegate, ASWatcher>
 {
@@ -72,6 +70,7 @@
     NSTimeInterval _duration;
     
     SMetaDisposable *_currentAudioSession;
+    bool _autoplayAfterDownload;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -238,7 +237,7 @@
     [_actionHandle reset];
     [ActionStageInstance() removeWatcher:self];
     
-    [_currentAudioSession dispose];;
+    [_currentAudioSession dispose];
 }
 
 - (void)setFrame:(CGRect)frame
@@ -278,6 +277,7 @@
     _actionButton.transform = CGAffineTransformIdentity;
     
     self.isPlaying = false;
+    _autoplayAfterDownload = false;
     
     [self footerView].hidden = true;
 }
@@ -327,37 +327,85 @@
     [self updatePosition:false forceZero:true];
 }
 
+- (void)stopForOutTransition
+{
+    if (_player != nil && _videoView != nil && iosMajorVersion() >= 8)
+    {
+        [_player pause];
+        
+        UIView *snapshotView = [_videoView snapshotViewAfterScreenUpdates:false];
+        [_videoView.superview insertSubview:snapshotView aboveSubview:_videoView];
+    }
+    
+    [_actionButton removeFromSuperview];
+    [self stop];
+}
+
 - (void)_joinDownload
 {
-    if (((TGModernGalleryVideoItem *)self.item).videoMedia == nil)
+    id media = ((TGModernGalleryVideoItem *)self.item).media;
+    if (media == nil)
         return;
     
-    TGVideoMediaAttachment *videoAttachment = ((TGModernGalleryVideoItem *)self.item).videoMedia;
-    [ActionStageInstance() dispatchOnStageQueue:^
-    {
-        NSString *url = [videoAttachment.videoInfo urlWithQuality:1 actualQuality:NULL actualSize:NULL];
-        NSString *path = [[NSString alloc] initWithFormat:@"/as/media/video/(%@)", url];
-        if ([ActionStageInstance() requestActorStateNow:path])
+    if ([media isKindOfClass:[TGVideoMediaAttachment class]]) {
+        TGVideoMediaAttachment *videoAttachment = media;
+        [ActionStageInstance() dispatchOnStageQueue:^
         {
-            TGDispatchOnMainThread(^
+            NSString *url = [videoAttachment.videoInfo urlWithQuality:1 actualQuality:NULL actualSize:NULL];
+            NSString *path = [[NSString alloc] initWithFormat:@"/as/media/video/(%@)", url];
+            if ([ActionStageInstance() requestActorStateNow:path])
             {
-                _downloading = true;
-                [self setProgressVisible:true value:0.0f animated:false];
-            });
+                TGDispatchOnMainThread(^
+                {
+                    _downloading = true;
+                    [self setProgressVisible:true value:0.0f animated:false];
+                });
+                
+                [ActionStageInstance() requestActor:path options:nil watcher:self];
+            }
+        }];
+    } else if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+        TGDocumentMediaAttachment *document = media;
+        [ActionStageInstance() dispatchOnStageQueue:^
+        {
+            NSString *path = [NSString stringWithFormat:@"/tg/media/document/(%d:%" PRId64 ":%@)", document.datacenterId, document.documentId, document.documentUri.length != 0 ? document.documentUri : @""];
             
-            [ActionStageInstance() requestActor:path options:nil watcher:self];
-        }
-    }];
+            if ([ActionStageInstance() requestActorStateNow:path])
+            {
+                TGDispatchOnMainThread(^
+                {
+                    _downloading = true;
+                    [self setProgressVisible:true value:0.0f animated:false];
+                });
+                
+                [ActionStageInstance() requestActor:path options:@{@"documentAttachment": document} watcher:self];
+            }
+        }];
+    }
 }
 
 - (void)_cancelDownload
 {
     [ActionStageInstance() removeWatcher:self];
     
-    TGVideoMediaAttachment *videoAttachment = ((TGModernGalleryVideoItem *)self.item).videoMedia;
+    id media = ((TGModernGalleryVideoItem *)self.item).media;
     
-    id itemId = [[TGMediaId alloc] initWithType:1 itemId:videoAttachment.videoId];
-    [[TGDownloadManager instance] cancelItem:itemId];
+    if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+        TGDocumentMediaAttachment *document = media;
+        
+        if (document.documentId != 0) {
+            id itemId = [[TGMediaId alloc] initWithType:3 itemId:document.documentId];
+            [[TGDownloadManager instance] cancelItem:itemId];
+        } else if (document.localDocumentId != 0 && document.documentUri.length != 0) {
+            id itemId = [[TGMediaId alloc] initWithType:3 itemId:document.localDocumentId];
+            [[TGDownloadManager instance] cancelItem:itemId];
+        }
+    } else if ([media isKindOfClass:[TGVideoMediaAttachment class]]) {
+        TGVideoMediaAttachment *videoAttachment = media;
+        
+        id itemId = [[TGMediaId alloc] initWithType:1 itemId:videoAttachment.videoId];
+        [[TGDownloadManager instance] cancelItem:itemId];
+    }
     
     TGDispatchOnMainThread(^
     {
@@ -368,15 +416,23 @@
 
 - (void)_requestDownload
 {
-    TGVideoMediaAttachment *videoAttachment = ((TGModernGalleryVideoItem *)self.item).videoMedia;
-    NSString *url = [videoAttachment.videoInfo urlWithQuality:1 actualQuality:NULL actualSize:NULL];
+    id media = ((TGModernGalleryVideoItem *)self.item).media;
     
-    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-    dict[@"videoAttachment"] = videoAttachment;
-    if (((TGModernGalleryVideoItem *)self.item).videoDownloadArguments != nil)
-        dict[@"additionalOptions"] = ((TGModernGalleryVideoItem *)self.item).videoDownloadArguments;
-    
-    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/as/media/video/(%@)", url] options:dict watcher:self];
+    if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+        TGDocumentMediaAttachment *document = media;
+        NSString *path = [NSString stringWithFormat:@"/tg/media/document/(%d:%" PRId64 ":%@)", document.datacenterId, document.documentId, document.documentUri.length != 0 ? document.documentUri : @""];
+        [ActionStageInstance() requestActor:path options:@{@"documentAttachment": document} watcher:self];
+    } else if ([media isKindOfClass:[TGVideoMediaAttachment class]]) {
+        TGVideoMediaAttachment *videoAttachment = media;
+        NSString *url = [videoAttachment.videoInfo urlWithQuality:1 actualQuality:NULL actualSize:NULL];
+        
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+        dict[@"videoAttachment"] = videoAttachment;
+        if (((TGModernGalleryVideoItem *)self.item).videoDownloadArguments != nil)
+            dict[@"additionalOptions"] = ((TGModernGalleryVideoItem *)self.item).videoDownloadArguments;
+        
+        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/as/media/video/(%@)", url] options:dict watcher:self];
+    }
     
     TGDispatchOnMainThread(^
     {
@@ -395,15 +451,42 @@
     
     [self footerView].hidden = true;
     
-    [_scrubbingInterfaceView setDuration:item.videoMedia.duration currentTime:0.0 isPlaying:false isPlayable:false animated:false];
+    CGSize dimensions = CGSizeZero;
+    NSTimeInterval duration = 0.0;
+    NSString *videoPath = nil;
     
-    NSString *videoPath = [TGVideoDownloadActor localPathForVideoUrl:[item.videoMedia.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL]];
+    id media = ((TGModernGalleryVideoItem *)self.item).media;
+    
+    if ([media isKindOfClass:[TGVideoMediaAttachment class]]) {
+        TGVideoMediaAttachment *videoAttachment = media;
+        dimensions = videoAttachment.dimensions;
+        duration = videoAttachment.duration;
+        videoPath = [TGVideoDownloadActor localPathForVideoUrl:[videoAttachment.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL]];
+    } else if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+        TGDocumentMediaAttachment *document = media;
+        dimensions = document.pictureSize;
+        for (id attribute in document.attributes) {
+            if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                duration = ((TGDocumentAttributeVideo *)attribute).duration;
+            }
+        }
+        NSString *documentPath = document.localDocumentId != 0 ? [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId version:document.version] : [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId version:document.version];
+        NSString *legacyVideoFilePath = [documentPath stringByAppendingPathComponent:[document safeFileName]];
+        videoPath = legacyVideoFilePath;
+        if (![videoPath.pathExtension isEqualToString:@"mp4"] && ![videoPath.pathExtension isEqualToString:@"mp4"]) {
+            NSString *movPath = [videoPath stringByAppendingString:@".mov"];
+            [[NSFileManager defaultManager] linkItemAtPath:movPath toPath:[document safeFileName] error:NULL];
+            videoPath = movPath;
+        }
+    }
+    
+    [_scrubbingInterfaceView setDuration:duration currentTime:0.0 isPlaying:false isPlayable:false animated:false];
     
     if (videoPath != nil)
     {
-        _videoDimensions = item.videoMedia.dimensions;
+        _videoDimensions = dimensions;
         
-        _duration = item.videoMedia.duration;
+        _duration = duration;
         
         [_imageView loadUri:item.previewUri withOptions:@{TGImageViewOptionSynchronous: @(synchronously)}];
         
@@ -460,6 +543,14 @@
     [self playPressed];
 }
 
+- (void)loadAndPlay
+{
+    if (!_mediaAvailable)
+        _autoplayAfterDownload = true;
+    
+    [self playPressed];
+}
+
 - (void)_willPlay
 {
 }
@@ -475,15 +566,40 @@
     {
         [self _willPlay];
         
+        CGSize dimensions = CGSizeZero;
+        NSTimeInterval duration = 0.0;
+        NSString *videoPath = nil;
+        
+        id media = ((TGModernGalleryVideoItem *)self.item).media;
+        
+        if ([media isKindOfClass:[TGVideoMediaAttachment class]]) {
+            TGVideoMediaAttachment *videoAttachment = media;
+            dimensions = videoAttachment.dimensions;
+            duration = videoAttachment.duration;
+            videoPath = [TGVideoDownloadActor localPathForVideoUrl:[videoAttachment.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL]];
+        } else if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+            TGDocumentMediaAttachment *document = media;
+            dimensions = document.pictureSize;
+            for (id attribute in document.attributes) {
+                if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                    duration = ((TGDocumentAttributeVideo *)attribute).duration;
+                }
+            }
+            NSString *documentPath = document.localDocumentId != 0 ? [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId version:document.version] : [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId version:document.version];
+            NSString *legacyVideoFilePath = [documentPath stringByAppendingPathComponent:[document safeFileName]];
+            videoPath = legacyVideoFilePath;
+            if (![videoPath.pathExtension isEqualToString:@"mp4"] && ![videoPath.pathExtension isEqualToString:@"mp4"]) {
+                NSString *movPath = [videoPath stringByAppendingString:@".mov"];
+                [[NSFileManager defaultManager] linkItemAtPath:movPath toPath:[document safeFileName] error:NULL];
+                videoPath = movPath;
+            }
+        }
+        
         if (_player == nil)
         {
-            TGModernGalleryVideoItem *item = (TGModernGalleryVideoItem *)self.item;
-            
-            NSString *videoPath = [TGVideoDownloadActor localPathForVideoUrl:[item.videoMedia.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL]];
-            
             if (videoPath != nil)
             {
-                _videoDimensions = item.videoMedia.dimensions;
+                _videoDimensions = dimensions;
                 
                 __weak TGModernGalleryVideoItemView *weakSelf = self;
                 [[SQueue concurrentDefaultQueue] dispatch:^
@@ -814,6 +930,12 @@
                 [self setProgressVisible:false value:1.0f animated:false];
                 
                 [_imageView loadUri:((TGModernGalleryVideoItem *)self.item).previewUri withOptions:@{TGImageViewOptionKeepCurrentImageAsPlaceholder: @true}];
+                
+                if (_autoplayAfterDownload)
+                {
+                    _autoplayAfterDownload = false;
+                    [self playPressed];
+                }
             }
         });
     }

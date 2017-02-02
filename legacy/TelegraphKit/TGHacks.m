@@ -17,6 +17,7 @@
 
 static float animationDurationFactor = 1.0f;
 static float secondaryAnimationDurationFactor = 1.0f;
+static bool forceSystemCurve = false;
 
 static bool forceMovieAnimatedScaleMode = false;
 
@@ -111,6 +112,9 @@ void InjectInstanceMethodFromAnotherClass(Class toClass, Class fromClass, SEL fr
 
 + (void)telegraph_animateWithDuration:(NSTimeInterval)duration delay:(NSTimeInterval)delay options:(UIViewAnimationOptions)options animations:(void (^)(void))animations completion:(void (^)(BOOL finished))completion
 {
+    if (forceSystemCurve) {
+        options |= (7 << 16);
+    }
     [self telegraph_animateWithDuration:duration * secondaryAnimationDurationFactor delay:delay options:options animations:animations completion:completion];
 }
 
@@ -192,7 +196,36 @@ void InjectInstanceMethodFromAnotherClass(Class toClass, Class fromClass, SEL fr
     secondaryAnimationDurationFactor = factor;
 }
 
-+ (void)setApplicationStatusBarAlpha:(float)alpha
++ (void)setForceSystemCurve:(bool)force {
+    forceSystemCurve = force;
+}
+
++ (CGFloat)applicationStatusBarAlpha
+{
+    static SEL selector = NULL;
+    if (selector == NULL)
+    {
+        NSString *str1 = @"rs`str";
+        NSString *str2 = @"A`qVhmcnv";
+        
+        selector = NSSelectorFromString([[NSString alloc] initWithFormat:@"%@%@", TGEncodeText(str1, 1), TGEncodeText(str2, 1)]);
+    }
+    
+    CGFloat alpha = 1.0f;
+    if ([[UIApplication sharedApplication] respondsToSelector:selector])
+    {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        UIWindow *window = [[UIApplication sharedApplication] performSelector:selector];
+#pragma clang diagnostic pop
+        
+        alpha = window.alpha;
+    }
+    
+    return alpha;
+}
+
++ (void)setApplicationStatusBarAlpha:(CGFloat)alpha
 {
     static SEL selector = NULL;
     if (selector == NULL)
@@ -211,6 +244,54 @@ void InjectInstanceMethodFromAnotherClass(Class toClass, Class fromClass, SEL fr
 #pragma clang diagnostic pop
         
         window.alpha = alpha;
+    }
+}
+
++ (CGFloat)applicationStatusBarOffset
+{
+    static SEL selector = NULL;
+    if (selector == NULL)
+    {
+        NSString *str1 = @"rs`str";
+        NSString *str2 = @"A`qVhmcnv";
+        
+        selector = NSSelectorFromString([[NSString alloc] initWithFormat:@"%@%@", TGEncodeText(str1, 1), TGEncodeText(str2, 1)]);
+    }
+    
+    CGFloat offset = 0.0f;
+    if ([[UIApplication sharedApplication] respondsToSelector:selector])
+    {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        UIWindow *window = [[UIApplication sharedApplication] performSelector:selector];
+#pragma clang diagnostic pop
+        
+        offset = window.bounds.origin.y;
+    }
+    
+    return offset;
+}
+
++ (void)setApplicationStatusBarOffset:(CGFloat)offset {
+    static SEL selector = NULL;
+    if (selector == NULL)
+    {
+        NSString *str1 = @"rs`str";
+        NSString *str2 = @"A`qVhmcnv";
+        
+        selector = NSSelectorFromString([[NSString alloc] initWithFormat:@"%@%@", TGEncodeText(str1, 1), TGEncodeText(str2, 1)]);
+    }
+    
+    if ([[UIApplication sharedApplication] respondsToSelector:selector])
+    {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        UIWindow *window = [[UIApplication sharedApplication] performSelector:selector];
+#pragma clang diagnostic pop
+        
+        CGRect bounds = window.bounds;
+        bounds.origin = CGPointMake(0.0f, -offset);
+        window.bounds = bounds;
     }
 }
 
@@ -520,7 +601,11 @@ static bool keyboardHidden = true;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        keyboardWindowClass = NSClassFromString(TGEncodeText(@"VJUfyuFggfdutXjoepx", -1));
+        if (iosMajorVersion() >= 9) {
+            keyboardWindowClass = NSClassFromString(TGEncodeText(@"VJSfnpufLfzcpbseXjoepx", -1));
+        } else {
+            keyboardWindowClass = NSClassFromString(TGEncodeText(@"VJUfyuFggfdutXjoepx", -1));
+        }
     });
     
     for (UIWindow *window in [[UIApplication sharedApplication] windows])

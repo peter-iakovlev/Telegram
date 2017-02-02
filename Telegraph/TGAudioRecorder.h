@@ -24,7 +24,7 @@
 @interface TGAudioRecorder : NSObject
 
 @property (nonatomic, weak) id<TGAudioRecorderDelegate> delegate;
-@property (nonatomic, strong) id activityHolder;
+@property (nonatomic, copy) id (^requestActivityHolder)();
 @property (nonatomic, copy) void (^pauseRecording)();
 @property (nonatomic, copy) void (^micLevel)(CGFloat);
 

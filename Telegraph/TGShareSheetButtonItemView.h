@@ -9,6 +9,7 @@
 - (void)setBold:(bool)bold;
 - (void)setImage:(UIImage *)image;
 - (void)setDestructive:(bool)destructive;
+- (void)setEnabled:(bool)enabled;
 
 - (void)_buttonPressed;
 

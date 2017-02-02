@@ -9,6 +9,7 @@ typedef enum {
 typedef enum {
     TGMicrophoneAccessIntentVoice,
     TGMicrophoneAccessIntentVideo,
+    TGMicrophoneAccessIntentCall,
 } TGMicrophoneAccessIntent;
 
 typedef enum {

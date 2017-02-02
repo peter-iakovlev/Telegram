@@ -8,6 +8,7 @@
 
 #import "TGModernCache.h"
 #import "TGMemoryImageCache.h"
+#import "TGMediaAsset.h"
 
 #import "TGAppDelegate.h"
 
@@ -61,11 +62,20 @@
     TGMemoryImageCache *_imageCache;
     TGMemoryImageCache *_thumbnailImageCache;
     
+    TGMemoryImageCache *_paintingImageCache;
+    
     TGMemoryImageCache *_originalImageCache;
     TGMemoryImageCache *_originalThumbnailImageCache;
     
     TGModernCache *_diskCache;
     NSURL *_fullSizeResultsUrl;
+    NSURL *_paintingDatasUrl;
+    NSURL *_paintingImagesUrl;
+    NSURL *_videoPaintingImagesUrl;
+    
+    NSMutableArray *_storeVideoPaintingImages;
+    
+    NSMutableDictionary *_faces;
     
     SPipe *_representationPipe;
     SPipe *_thumbnailImagePipe;
@@ -94,6 +104,9 @@
         _thumbnailImageCache = [[TGMemoryImageCache alloc] initWithSoftMemoryLimit:[[self class] thumbnailImageSoftMemoryLimit]
                                                                    hardMemoryLimit:[[self class] thumbnailImageHardMemoryLimit]];
         
+        _paintingImageCache = [[TGMemoryImageCache alloc] initWithSoftMemoryLimit:[[self class] imageSoftMemoryLimit]
+                                                                  hardMemoryLimit:[[self class] imageHardMemoryLimit]];
+        
         _originalImageCache = [[TGMemoryImageCache alloc] initWithSoftMemoryLimit:[[self class] originalImageSoftMemoryLimit]
                                                                   hardMemoryLimit:[[self class] originalImageHardMemoryLimit]];
         _originalThumbnailImageCache = [[TGMemoryImageCache alloc] initWithSoftMemoryLimit:[[self class] thumbnailImageSoftMemoryLimit]
@@ -104,6 +117,19 @@
         
         _fullSizeResultsUrl = [NSURL fileURLWithPath:[[TGAppDelegate documentsPath] stringByAppendingPathComponent:[NSString stringWithFormat:@"photoeditorresults/%@", _contextId]]];
         [[NSFileManager defaultManager] createDirectoryAtPath:_fullSizeResultsUrl.path withIntermediateDirectories:true attributes:nil error:nil];
+        
+        _paintingImagesUrl = [NSURL fileURLWithPath:[[TGAppDelegate documentsPath] stringByAppendingPathComponent:[NSString stringWithFormat:@"paintingimages/%@", _contextId]]];
+        [[NSFileManager defaultManager] createDirectoryAtPath:_paintingImagesUrl.path withIntermediateDirectories:true attributes:nil error:nil];
+        
+        _videoPaintingImagesUrl = [NSURL fileURLWithPath:[[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"videopaintingimages"]];
+        [[NSFileManager defaultManager] createDirectoryAtPath:_videoPaintingImagesUrl.path withIntermediateDirectories:true attributes:nil error:nil];
+        
+        _paintingDatasUrl = [NSURL fileURLWithPath:[[TGAppDelegate documentsPath] stringByAppendingPathComponent:[NSString stringWithFormat:@"paintingdatas/%@", _contextId]]];
+        [[NSFileManager defaultManager] createDirectoryAtPath:_paintingDatasUrl.path withIntermediateDirectories:true attributes:nil error:nil];
+        
+        _storeVideoPaintingImages = [[NSMutableArray alloc] init];
+        
+        _faces = [[NSMutableDictionary alloc] init];
         
         _temporaryRepCache = [[NSMutableDictionary alloc] init];
         
@@ -127,6 +153,15 @@
     [_diskCache cleanup];
     
     [[NSFileManager defaultManager] removeItemAtPath:_fullSizeResultsUrl.path error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:_paintingImagesUrl.path error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:_paintingDatasUrl.path error:nil];
+}
+
++ (instancetype)contextForCaptionsOnly
+{
+    TGMediaEditingContext *context = [[TGMediaEditingContext alloc] init];
+    context->_inhibitEditing = true;
+    return context;
 }
 
 #pragma mark -
@@ -228,7 +263,7 @@
         if (result == nil)
         {
             NSData *imageData = [_diskCache getValueForKey:[imageDiskUri dataUsingEncoding:NSUTF8StringEncoding]];
-            if (imageData != nil)
+            if (imageData.length > 0)
             {
                 result = [UIImage imageWithData:imageData];
                 [imageCache setImage:result forKey:itemId attributes:NULL];
@@ -249,6 +284,35 @@
     }];
     
     return synchronous ? signal : [signal startOn:_queue];
+}
+
+- (void)_clearPreviousImageForItemId:(NSString *)itemId
+{    
+    [_imageCache setImage:nil forKey:itemId attributes:NULL];
+    
+    NSString *imageUri = [[self class] _imageUriForItemId:itemId];
+    [_diskCache setValue:[NSData data] forKey:[imageUri dataUsingEncoding:NSUTF8StringEncoding]];
+}
+
+- (UIImage *)paintingImageForItem:(NSObject<TGMediaEditableItem> *)item
+{
+    NSString *itemId = [self _contextualIdForItemId:item.uniqueIdentifier];
+    if (itemId == nil)
+        return nil;
+    
+    UIImage *result = [_paintingImageCache imageForKey:itemId attributes:NULL];
+    if (result == nil)
+    {
+        NSURL *imageUrl = [_paintingImagesUrl URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.png", [TGStringUtils md5:itemId]]];
+        UIImage *diskImage = [UIImage imageWithContentsOfFile:imageUrl.path];
+        if (diskImage != nil)
+        {
+            result = diskImage;
+            [_paintingImageCache setImage:result forKey:itemId attributes:NULL];
+        }
+    }
+
+    return result;
 }
 
 #pragma mark - Caption
@@ -278,15 +342,6 @@
 
 - (SSignal *)captionSignalForItem:(NSObject<TGMediaEditableItem> *)item
 {
-    SSignal *signal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-    {
-        NSString *caption = [self captionForItem:item];
-        [subscriber putNext:caption];
-        [subscriber putCompletion];
-        
-        return nil;
-    }];
-    
     SSignal *updateSignal = [[_captionPipe.signalProducer() filter:^bool(TGMediaCaptionUpdate *update)
     {
         return [update.item.uniqueIdentifier isEqualToString:item.uniqueIdentifier];
@@ -295,7 +350,7 @@
         return update.caption;
     }];
     
-    return [signal then:updateSignal];
+    return [[SSignal single:[self captionForItem:item]] then:updateSignal];
 }
 
 #pragma mark -
@@ -329,48 +384,23 @@
         _adjustments[itemId] = adjustments;
     else
         [_adjustments removeObjectForKey:itemId];
-    
-    _adjustmentsPipe.sink([TGMediaAdjustmentsUpdate adjustmentsUpdateWithItem:item adjustments:adjustments]);
-    
+
     bool cropChanged = false;
-    
-    if ([adjustments isKindOfClass:[PGPhotoEditorValues class]])
-    {
-        if (![previousAdjustments cropAppliedForAvatar:false] && [adjustments cropAppliedForAvatar:false])
-            cropChanged = true;
-        else if ([previousAdjustments cropAppliedForAvatar:false] && ![adjustments cropAppliedForAvatar:false])
-            cropChanged = true;
-        else if ([previousAdjustments cropAppliedForAvatar:false] && [adjustments cropAppliedForAvatar:false] && ![previousAdjustments isCropEqualWith:adjustments])
-            cropChanged = true;
-    }
-    else if ([adjustments isKindOfClass:[TGVideoEditAdjustments class]])
-    {
-        TGVideoEditAdjustments *previousVideoAdjustments = (TGVideoEditAdjustments *)previousAdjustments;
-        TGVideoEditAdjustments *videoAdjustments = (TGVideoEditAdjustments *)adjustments;
-        
-        if (![previousVideoAdjustments cropOrRotationAppliedForAvatar:false] && [videoAdjustments cropOrRotationAppliedForAvatar:false])
-            cropChanged = true;
-        else if ([previousVideoAdjustments cropOrRotationAppliedForAvatar:false] && ![videoAdjustments cropOrRotationAppliedForAvatar:false])
-            cropChanged = true;
-        else if ([previousVideoAdjustments cropOrRotationAppliedForAvatar:false] && [videoAdjustments cropOrRotationAppliedForAvatar:false] && ![previousVideoAdjustments isCropAndRotationEqualWith:videoAdjustments])
-            cropChanged = true;
-    }
+    if (![previousAdjustments cropAppliedForAvatar:false] && [adjustments cropAppliedForAvatar:false])
+        cropChanged = true;
+    else if ([previousAdjustments cropAppliedForAvatar:false] && ![adjustments cropAppliedForAvatar:false])
+        cropChanged = true;
+    else if ([previousAdjustments cropAppliedForAvatar:false] && [adjustments cropAppliedForAvatar:false] && ![previousAdjustments isCropEqualWith:adjustments])
+        cropChanged = true;
     
     if (cropChanged)
         _cropPipe.sink(@true);
+    
+    _adjustmentsPipe.sink([TGMediaAdjustmentsUpdate adjustmentsUpdateWithItem:item adjustments:adjustments]);
 }
 
 - (SSignal *)adjustmentsSignalForItem:(NSObject<TGMediaEditableItem> *)item
 {
-    SSignal *signal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-    {
-        id<TGMediaEditAdjustments> adjustments = [self adjustmentsForItem:item];
-        [subscriber putNext:adjustments];
-        [subscriber putCompletion];
-        
-        return nil;
-    }];
-    
     SSignal *updateSignal = [[_adjustmentsPipe.signalProducer() filter:^bool(TGMediaAdjustmentsUpdate *update)
     {
         return [update.item.uniqueIdentifier isEqualToString:item.uniqueIdentifier];
@@ -379,7 +409,7 @@
         return update.adjustments;
     }];
     
-    return [signal then:updateSignal];
+    return [[SSignal single:[self adjustmentsForItem:item]] then:updateSignal];
 }
 
 - (SSignal *)cropAdjustmentsUpdatedSignal
@@ -416,13 +446,80 @@
             NSData *imageData = UIImageJPEGRepresentation(thumbnailImage, 0.87f);
             [_diskCache setValue:imageData forKey:[thumbnailImageUri dataUsingEncoding:NSUTF8StringEncoding]];
         }
-//        _thumbnailImagePipe.sink([TGMediaImageUpdate imageUpdateWithItem:item representation:thumbnailImage]);
+        if ([item isKindOfClass:[TGMediaAsset class]] && ((TGMediaAsset *)item).isVideo)
+            _thumbnailImagePipe.sink([TGMediaImageUpdate imageUpdateWithItem:item representation:thumbnailImage]);
     };
     
     if (synchronous)
         [_queue dispatchSync:block];
     else
         [_queue dispatch:block];
+}
+
+- (bool)setPaintingData:(NSData *)data image:(UIImage *)image forItem:(NSObject<TGMediaEditableItem> *)item dataUrl:(NSURL **)dataOutUrl imageUrl:(NSURL **)imageOutUrl forVideo:(bool)video
+{
+    NSString *itemId = [self _contextualIdForItemId:item.uniqueIdentifier];
+    
+    if (itemId == nil)
+        return false;
+    
+    NSURL *imagesDirectory = video ? _videoPaintingImagesUrl : _paintingImagesUrl;
+    NSURL *imageUrl = [imagesDirectory URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.png", [TGStringUtils md5:itemId]]];
+    NSURL *dataUrl = [_paintingDatasUrl URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.dat", [TGStringUtils md5:itemId]]];
+    
+    [_paintingImageCache setImage:image forKey:itemId attributes:NULL];
+    
+    NSData *imageData = UIImagePNGRepresentation(image);
+    bool imageSuccess = [imageData writeToURL:imageUrl options:NSDataWritingAtomic error:nil];
+    bool dataSuccess = [data writeToURL:dataUrl options:NSDataWritingAtomic error:nil];
+    
+    if (imageSuccess && imageOutUrl != NULL)
+        *imageOutUrl = imageUrl;
+    
+    if (dataSuccess && dataOutUrl != NULL)
+        *dataOutUrl = dataUrl;
+    
+    if (video)
+        [_storeVideoPaintingImages addObject:imageUrl];
+    
+    return (image == nil || imageSuccess) && (data == nil || dataSuccess);
+}
+
+- (void)clearPaintingData
+{
+    for (NSURL *url in _storeVideoPaintingImages)
+    {
+        [[NSFileManager defaultManager] removeItemAtURL:url error:NULL];
+    }
+}
+
+- (SSignal *)facesForItem:(NSObject<TGMediaEditableItem> *)item
+{
+    NSString *itemId = [self _contextualIdForItemId:item.uniqueIdentifier];
+    if (itemId == nil)
+        return [SSignal fail:nil];
+    
+    NSArray *faces = _faces[itemId];
+    
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+    {
+        [subscriber putNext:faces];
+        [subscriber putCompletion];
+                           
+        return nil;
+    }];
+}
+
+- (void)setFaces:(NSArray *)faces forItem:(NSObject<TGMediaEditableItem> *)item
+{
+    NSString *itemId = [self _contextualIdForItemId:item.uniqueIdentifier];
+    if (itemId == nil)
+        return;
+    
+    if (faces.count > 0)
+        _faces[itemId] = faces;
+    else
+        [_faces removeObjectForKey:itemId];
 }
 
 - (void)setFullSizeImage:(UIImage *)image forItem:(id<TGMediaEditableItem>)item
@@ -434,8 +531,8 @@
     
     NSData *imageData = UIImageJPEGRepresentation(image, 0.7f);
     NSURL *url = [_fullSizeResultsUrl URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.jpg", [TGStringUtils md5:itemId]]];
-    NSError *error;
-    bool succeed = [imageData writeToURL:url options:NSDataWritingAtomic error:&error];
+    
+    bool succeed = [imageData writeToURL:url options:NSDataWritingAtomic error:nil];
     if (succeed)
         _fullSizePipe.sink(itemId);
 }
@@ -463,7 +560,7 @@
         return [SSignal complete];
     
     PGPhotoEditorValues *editorValues = (PGPhotoEditorValues *)adjustments;
-    if (![editorValues toolsApplied])
+    if (![editorValues toolsApplied] && ![editorValues hasPainting])
         return [SSignal complete];
     
     NSURL *url = [self _fullSizeImageUrlForItem:item];
@@ -515,6 +612,8 @@
     
     [_queue dispatchSync:^
     {
+        [self _clearPreviousImageForItemId:itemId];
+        
         if (rep != nil)
             [_temporaryRepCache setObject:rep forKey:itemId];
         else

@@ -33,6 +33,7 @@
     {
         _keepForwarded = keepForwarded;
         TGMessage *innerMessage = [message copy];
+        innerMessage.isEdited = false;
         
         NSMutableArray *attachments = [[NSMutableArray alloc] init];
         for (TGMediaAttachment *attachment in message.mediaAttachments)
@@ -51,6 +52,8 @@
             }
             else if ([attachment isKindOfClass:[TGReplyMessageMediaAttachment class]])
             {
+            }
+            else if ([attachment isKindOfClass:[TGReplyMarkupAttachment class]]) {
             }
             else
                 [attachments addObject:attachment];
@@ -103,6 +106,10 @@
     }
     if (forwardAttachment != nil)
         [attachments addObject:forwardAttachment];
+    
+    if (self.replyMarkup != nil) {
+        [attachments addObject:self.replyMarkup];
+    }
     
     message.mediaAttachments = attachments;
     

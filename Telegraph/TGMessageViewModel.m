@@ -300,6 +300,10 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
     return nil;
 }
 
+- (bool)isPreviewableAtPoint:(CGPoint)__unused point {
+    return false;
+}
+
 - (void)updateEditingState:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage animationDelay:(NSTimeInterval)animationDelay
 {
     if (!_needsEditingCheckButton)
@@ -475,7 +479,7 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
 {
     if (recognizer.state == UIGestureRecognizerStateRecognized)
     {
-        [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @(_uid)}];
+        [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @(_uid), @"mid": @(_mid)}];
     }
 }
 
@@ -492,7 +496,7 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
 {
     if (_avatarModel != nil)
     {
-        _avatarModel.frame = CGRectMake(TGGetMessageViewModelLayoutConstants()->avatarInset + (_editing ? 42.0f : 0.0f), self.frame.size.height - 38, 38, 38);
+        _avatarModel.frame = CGRectMake(TGGetMessageViewModelLayoutConstants()->avatarInset + (_editing ? 42.0f : 0.0f), self.frame.size.height - 38 - _avatarOffset, 38, 38);
         _avatarModel.alpha = (_collapseFlags & TGModernConversationItemCollapseBottom) ? 0.0f : 1.0f;
     }
     

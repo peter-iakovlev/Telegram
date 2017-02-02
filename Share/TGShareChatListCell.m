@@ -98,7 +98,7 @@
         
         if (channelChatModel.avatarLocation == nil)
         {
-            NSString *letters = [[channelChatModel.title substringFromIndex:1] uppercaseString];
+            NSString *letters = [[channelChatModel.title substringToIndex:1] uppercaseString];
             [_avatarView setSignal:[TGChatListAvatarSignal chatListAvatarWithContext:shareContext letters:letters peerId:channelChatModel.peerId]];
         }
         else

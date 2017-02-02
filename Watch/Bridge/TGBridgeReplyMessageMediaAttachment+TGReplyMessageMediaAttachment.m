@@ -10,7 +10,7 @@
     
     TGBridgeReplyMessageMediaAttachment *bridgeAttachment = [[TGBridgeReplyMessageMediaAttachment alloc] init];
     bridgeAttachment.mid = attachment.replyMessageId;
-    bridgeAttachment.message = [TGBridgeMessage messageWithTGMessage:attachment.replyMessage];
+    bridgeAttachment.message = [TGBridgeMessage messageWithTGMessage:attachment.replyMessage conversation:nil];
     return bridgeAttachment;
 }
 

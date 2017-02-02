@@ -1,6 +1,6 @@
 #import "TGBotContextResult.h"
 
-@interface TGBotContextExternalResult : TGBotContextResult
+@interface TGBotContextExternalResult : TGBotContextResult <NSCoding>
 
 @property (nonatomic, strong, readonly) NSString *url;
 @property (nonatomic, strong, readonly) NSString *displayUrl;

@@ -50,10 +50,10 @@
         [self.menuSections addSection:_phonesSection];
         
         _usernameSection = [[TGCollectionMenuSection alloc] init];
-        UIEdgeInsets usernameSectionInsets = _usernameSection.insets;
-        usernameSectionInsets.top = 0.0f;
-        usernameSectionInsets.bottom = 22.0f;
-        _usernameSection.insets = usernameSectionInsets;
+        UIEdgeInsets aboutSectionInsets = _usernameSection.insets;
+        aboutSectionInsets.top = 0.0f;
+        aboutSectionInsets.bottom = 22.0f;
+        _usernameSection.insets = aboutSectionInsets;
         [self.menuSections addSection:_usernameSection];
         
         _actionsSection = [[TGCollectionMenuSection alloc] init];

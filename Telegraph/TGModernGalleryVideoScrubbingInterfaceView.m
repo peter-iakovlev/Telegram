@@ -4,6 +4,7 @@
 #import "TGImageUtils.h"
 
 #import "TGAudioSliderArea.h"
+#import "TGModernButton.h"
 
 #import <MTProtoKit/MTTime.h>
 
@@ -25,13 +26,15 @@ static CGFloat scrubberInternalInset = 4.0f;
     UIImageView *_scrubberHandle;
     TGAudioSliderArea *_sliderArea;
     
+    TGModernButton *_pipButton;
+    
     CGFloat _position;
     bool _isScrubbing;
     CGPoint _sliderButtonStartLocation;
     CGFloat _sliderButtonStartValue;
     CGFloat _scrubbingPosition;
     bool _isPlaying;
-    MTAbsoluteTime _positionTimestamp;
+    CFAbsoluteTime _positionTimestamp;
     NSTimeInterval _duration;
     
     CGFloat _currentTimeMinWidth;
@@ -86,6 +89,12 @@ static CGFloat scrubberInternalInset = 4.0f;
             currentTimeMinWidth = floor([[[NSAttributedString alloc] initWithString:@"0:00" attributes:@{ NSFontAttributeName: _currentTimeLabel.font }] boundingRectWithSize:CGSizeMake(FLT_MAX, FLT_MAX) options:NSStringDrawingUsesLineFragmentOrigin context:nil].size.width) + TGRetinaPixel;
         });
         _currentTimeMinWidth = currentTimeMinWidth;
+        
+        _pipButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 50.0f, 44.0f)];
+        _pipButton.hidden = true;
+        [_pipButton setImage:TGTintedImage([UIImage imageNamed:@"EmbedVideoPIPIcon"], [UIColor whiteColor]) forState:UIControlStateNormal];
+        [_pipButton addTarget:self action:@selector(pipButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_pipButton];
     }
     return self;
 }
@@ -93,7 +102,7 @@ static CGFloat scrubberInternalInset = 4.0f;
 - (void)setFrame:(CGRect)frame
 {
     //bool sizeUpdated = CGSizeEqualToSize(self.frame.size, frame.size);
-    [super setFrame:frame];
+    [super setFrame:CGRectOffset(frame, 5.0f, 0.0f)];
     
     [self _layout];
 }
@@ -256,6 +265,8 @@ static CGFloat scrubberInternalInset = 4.0f;
     _scrubberForegroundContainer.frame = [self sliderForegroundFrameForProgress:progressValue];
     _scrubberHandle.frame = [self sliderButtonFrameForProgress:progressValue];
     
+    _pipButton.frame = CGRectMake(self.frame.size.width + 23.0f, _pipButton.frame.origin.y, _pipButton.frame.size.width, _pipButton.frame.size.height);
+    
     [self updatePositionAnimations:false];
 }
 
@@ -322,6 +333,30 @@ static CGFloat scrubberInternalInset = 4.0f;
         if (_scrubbingChanged)
             _scrubbingChanged(_scrubbingPosition);
     }
+}
+
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    if (!_pipButton.hidden && CGRectContainsPoint(_pipButton.frame, point))
+        return true;
+    
+    return [super pointInside:point withEvent:event];
+}
+
+- (void)setPictureInPictureHidden:(bool)hidden
+{
+    _pipButton.hidden = hidden;
+}
+
+- (void)setPictureInPictureEnabled:(bool)enabled
+{
+    _pipButton.enabled = enabled;
+}
+
+- (void)pipButtonPressed
+{
+    if (self.pipPressed != nil)
+        self.pipPressed();
 }
 
 @end

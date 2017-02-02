@@ -8,6 +8,29 @@
 
 #import "TGDownloadManager.h"
 
+#import "TGBotContextResult.h"
+#import "TGBotContextExternalResult.h"
+#import "TGBotContextMediaResult.h"
+
+#import "TGStringUtils.h"
+#import "TGMediaStoreContext.h"
+
+#import "TL/TLMetaScheme.h"
+
+#import "TGTelegramNetworking.h"
+
+static TLInputFileLocation$inputDocumentFileLocation *fileLocationForDocument(TGDocumentMediaAttachment *document) {
+    TLInputFileLocation$inputDocumentFileLocation *location = [[TLInputFileLocation$inputDocumentFileLocation alloc] init];
+    location.n_id = document.documentId;
+    location.access_hash = document.accessHash;
+    return location;
+}
+
+NSString *cacheKeyForDocument(TGDocumentMediaAttachment *document) {
+    TLInputFileLocation$inputDocumentFileLocation *location = fileLocationForDocument(document);
+    return [[NSString alloc] initWithFormat:@"inputDocumentFileLocation-%lld", location.n_id];
+}
+
 TGMusicPlayerItemAvailability TGMusicPlayerItemAvailabilityUnpack(int64_t value)
 {
     TGMusicPlayerItemAvailability result;
@@ -42,6 +65,7 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
     void (^_updated)(TGMusicPlayerItemAvailability);
     
     TGMediaId *_mediaId;
+    NSString *_downloadPath;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -81,8 +105,27 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
         [ActionStageInstance() watchForPaths:@[
             @"downloadManagerStateChanged"
         ] watcher:self];
-        [[TGDownloadManager instance] requestState:self.actionHandle];
-        [self requestDownloadItem:priority];
+        
+        if (_mediaId != nil && [(NSNumber *)_item.key intValue] != 0) {
+            [[TGDownloadManager instance] requestState:self.actionHandle];
+            [self requestDownloadItem:priority];
+        } else {
+            if ([item.media isKindOfClass:[TGBotContextExternalResult class]]) {
+                TGBotContextExternalResult *externalResult = item.media;
+                _downloadPath = [[NSString alloc] initWithFormat:@"/temporaryDownload/(%@,%@)", [TGStringUtils stringByEscapingForActorURL:externalResult.originalUrl], @"path"];
+                [ActionStageInstance() requestActor:_downloadPath options:@{@"url": externalResult.originalUrl, @"cache": [[TGMediaStoreContext instance] temporaryFilesCache], @"returnPath": @true, @"mediaTypeTag": @(TGNetworkMediaTypeTagAudio)} flags:0 watcher:self];
+            } else if ([item.media isKindOfClass:[TGBotContextMediaResult class]]) {
+                TGBotContextMediaResult *mediaResult = item.media;
+                if (mediaResult.document != nil) {
+                    _downloadPath = [[NSString alloc] initWithFormat:@"/temporaryDownload/(%@,%@)", [TGStringUtils stringByEscapingForActorURL:cacheKeyForDocument(mediaResult.document)], @"path"];
+                    [ActionStageInstance() requestActor:_downloadPath options:@{@"cacheKey": [cacheKeyForDocument(mediaResult.document) dataUsingEncoding:NSUTF8StringEncoding], @"cache": [[TGMediaStoreContext instance] temporaryFilesCache], @"returnPath": @true, @"inputLocation": fileLocationForDocument(mediaResult.document), @"datacenterId": @(mediaResult.document.datacenterId), @"size": @(mediaResult.document.size), @"mediaTypeTag": @(TGNetworkMediaTypeTagAudio)} flags:0 watcher:self];
+                }
+            } else if ([item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+                TGDocumentMediaAttachment *document = ((TGDocumentMediaAttachment *)item.media);
+                _downloadPath = [[NSString alloc] initWithFormat:@"/temporaryDownload/(%@,%@)", [TGStringUtils stringByEscapingForActorURL:cacheKeyForDocument(document)], @"path"];
+                [ActionStageInstance() requestActor:_downloadPath options:@{@"cacheKey": [cacheKeyForDocument(document) dataUsingEncoding:NSUTF8StringEncoding], @"cache": [[TGMediaStoreContext instance] temporaryFilesCache], @"returnPath": @true, @"inputLocation": fileLocationForDocument(document), @"datacenterId": @(document.datacenterId), @"size": @(document.size), @"mediaTypeTag": @(TGNetworkMediaTypeTagAudio)} flags:0 watcher:self];
+            }
+        }
     }
     return self;
 }
@@ -155,6 +198,30 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
     }
 }
 
+- (void)actorMessageReceived:(NSString *)path messageType:(NSString *)messageType message:(id)message {
+    if ([messageType isEqualToString:@"progress"]) {
+        if ([path isEqualToString:_downloadPath]) {
+            TGMusicPlayerItemAvailability availability = {.downloaded = false, .downloading = true, .progress = (CGFloat)[message floatValue]};
+            if (_updated)
+                _updated(availability);
+        }
+    }
+}
+
+- (void)actorCompleted:(int)status path:(NSString *)path result:(id)__unused result {
+    if ([path isEqualToString:_downloadPath]) {
+        if (status == ASStatusSuccess) {
+            TGMusicPlayerItemAvailability availability = {.downloaded = true, .downloading = false, .progress = 1.0f};
+            if (_updated)
+                _updated(availability);
+        } else {
+            TGMusicPlayerItemAvailability availability = {.downloaded = false, .downloading = false, .progress = 0.0f};
+            if (_updated)
+                _updated(availability);
+        }
+    }
+}
+
 @end
 
 @implementation TGMusicPlayerItemSignals
@@ -164,16 +231,21 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
     if ([item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
         TGDocumentMediaAttachment *document = item.media;
         
-        NSString *path = nil;
-        if (document.documentId != 0)
-            path = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId];
-        else
-        {
-            path = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId];
+        if ([(NSNumber *)item.key intValue] != 0) {
+            NSString *path = nil;
+            if (document.documentId != 0)
+                path = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId version:document.version];
+            else
+            {
+                path = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId version:document.version];
+            }
+            
+            path = [path stringByAppendingPathComponent:[document safeFileName]];
+            return path;
+        } else {
+            NSString *cacheKey = cacheKeyForDocument(document);
+            return [[[TGMediaStoreContext instance] temporaryFilesCache] _filePathForKey:[cacheKey dataUsingEncoding:NSUTF8StringEncoding]];
         }
-        
-        path = [path stringByAppendingPathComponent:[document safeFileName]];
-        return path;
     } else if ([item.media isKindOfClass:[TGAudioMediaAttachment class]]) {
         TGAudioMediaAttachment *audio = item.media;
         NSString *path = nil;
@@ -185,6 +257,29 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
         }
         
         return path;
+    } else if ([item.media isKindOfClass:[TGBotContextResult class]]) {
+        TGBotContextResult *result = item.media;
+        if ([result isKindOfClass:[TGBotContextMediaResult class]]) {
+            TGDocumentMediaAttachment *document = ((TGBotContextMediaResult *)result).document;
+            NSString *cacheKey = cacheKeyForDocument(document);
+            return [[[TGMediaStoreContext instance] temporaryFilesCache] _filePathForKey:[cacheKey dataUsingEncoding:NSUTF8StringEncoding]];
+            /*if (document != nil) {
+                NSString *path = nil;
+                if (document.documentId != 0) {
+                    path = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId];
+                } else {
+                    path = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:document.localDocumentId];
+                }
+                path = [path stringByAppendingPathComponent:[document safeFileName]];
+                return path;
+            }*/
+        } else if ([result isKindOfClass:[TGBotContextExternalResult class]]) {
+            TGBotContextExternalResult *externalResult = (TGBotContextExternalResult *)result;
+            if (externalResult.originalUrl.length != 0) {
+                NSString *path = [[[TGMediaStoreContext instance] temporaryFilesCache] _filePathForKey:[externalResult.originalUrl dataUsingEncoding:NSUTF8StringEncoding]];
+                return path;
+            }
+        }
     }
     return nil;
 }

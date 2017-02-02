@@ -278,12 +278,12 @@ CSize CSizeMake(float width, float height)
 
 float D2R(float a)
 {
-    return a*M_PI/180.0;
+    return (float)(a*M_PI/180.0);
 }
 
 float R2D(float a)
 {
-    return a*180.0/M_PI;
+    return (float)(a*180.0/M_PI);
 }
 
 
@@ -416,7 +416,7 @@ static inline void mvp_matrix(mat4x4 model_view_projection_matrix, Params params
 
 
 
-void mat4x4_log(mat4x4 M)
+void mat4x4_log(__unused mat4x4 M)
 {
     /*
     printf("\n\n");
@@ -435,7 +435,7 @@ void mat4x4_log(mat4x4 M)
     */
 }
 
-void vec4_log(vec4 M)
+void vec4_log(__unused vec4 M)
 {
     /*
     printf("\n\n");
@@ -580,29 +580,29 @@ static inline void gen_rounded_rectangle(CPoint* out, CSize size, float radius, 
 
     out[offset++] = CPointMake(0, 0);
 
-    float k = M_PI/2/(round_count+1);
+    float k = (float)(M_PI/2/(round_count+1));
 
     int i=0;
     int n=0;
 
 
     for (i=(round_count+2)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
+        out[offset++] = CPointMake(size.width/2-radius + cosf(i*k)*radius, size.height/2-radius + sinf(i*k)*radius);
     }
     n++;
 
     for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
+        out[offset++] = CPointMake(-size.width/2+radius + cosf(i*k)*radius, size.height/2-radius + sinf(i*k)*radius);
     }
     n++;
 
     for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*radius, -size.height/2+radius + sin(i*k)*radius);
+        out[offset++] = CPointMake(-size.width/2+radius + cosf(i*k)*radius, -size.height/2+radius + sinf(i*k)*radius);
     }
     n++;
 
     for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, -size.height/2+radius + sin(i*k)*radius);
+        out[offset++] = CPointMake(size.width/2-radius + cosf(i*k)*radius, -size.height/2+radius + sinf(i*k)*radius);
     }
     n++;
 
@@ -670,23 +670,23 @@ static inline int size_of_segmented_square_in_vertices() {
 
 static inline CPoint square_point(float angle, float radius)
 {
-    CPoint p;
+    CPoint p = {0.0f, 0.0f};
     
     if (angle<=M_PI/2*.5 || angle>M_PI/2*3.5)
     {
-        p = CPointMake(radius, radius * sin(angle)/cos(angle));
+        p = CPointMake(radius, radius * sinf(angle)/cosf(angle));
     }
     else if (angle<=M_PI/2*1.5)
     {
-        p = CPointMake(radius * cos(angle)/sin(angle), radius);
+        p = CPointMake(radius * cosf(angle)/sinf(angle), radius);
     }
     else if (angle<=M_PI/2*2.5)
     {
-        p = CPointMake(-radius, -radius * sin(angle)/cos(angle));
+        p = CPointMake(-radius, -radius * sinf(angle)/cosf(angle));
     }
-    else if (angle<=M_PI/2*3.5)
+    else if (angle<=(float)(M_PI/2*3.5))
     {
-        p = CPointMake(-radius * cos(angle)/sin(angle), -radius);
+        p = CPointMake(-radius * cosf(angle)/sinf(angle), -radius);
     }
     
     return p;
@@ -694,7 +694,7 @@ static inline CPoint square_point(float angle, float radius)
 
 static inline CPoint square_texture_point(CPoint p, float side_length)
 {
-    return CPointMake((-p.x/side_length*.5 +.5), -p.y/side_length*.5 +.5);
+    return CPointMake((-p.x/side_length*.5f +.5f), -p.y/side_length*.5f +.5f);
 }
 
 static inline void gen_segmented_square(CPoint* out, float side_length, float start_angle, float end_angle)
@@ -707,10 +707,10 @@ static inline void gen_segmented_square(CPoint* out, float side_length, float st
     
     float k=1;
     
-    float da=D2R(-2.6*2)*k;
+    float da=D2R(-2.6f*2)*k;
     
 
-    p = CPointMake(sin(start_angle+end_angle)*6*k, - cos(start_angle+end_angle)*6*k);
+    p = CPointMake(sinf(start_angle+end_angle)*6*k, - cosf(start_angle+end_angle)*6*k);
     //p = CPointMake(0, 0);
     
     out[offset++] = p;
@@ -729,7 +729,7 @@ static inline void gen_segmented_square(CPoint* out, float side_length, float st
     
     
     int i;
-    for (i=start_angle; i<floor(R2D(start_angle+end_angle+da)); i++) {
+    for (i=(int)start_angle; i<floorf(R2D(start_angle+end_angle+da)); i++) {
         if ((i+45)%90==0) {
             p = square_point(D2R(i), radius);
             out[offset++] = p;
@@ -839,7 +839,7 @@ Shape create_rectangle(CSize size, const vec4 color)
 
 static inline CPoint rectangle_texture_point(CPoint p, CSize size)
 {
-    return CPointMake(1-(-p.x/size.width+.5), p.y/size.height+.5);
+    return CPointMake(1-(-p.x/size.width+.5f), p.y/size.height+.5f);
 }
 
 static inline void gen_textured_rectangle(CPoint* out, CSize size)
@@ -899,9 +899,9 @@ static inline void gen_ribbon(CPoint* out, float length)
 {
     int offset=0;
 
-    out[offset++] = CPointMake(-MAXf(length-5.5, 0), -5.5);
+    out[offset++] = CPointMake((float)(-MAXf(length-5.5f, 0)), -5.5f);
     out[offset++] = CPointMake(0, -5.5);
-    out[offset++] = CPointMake(-MAXf(length, 0), 5.5);
+    out[offset++] = CPointMake((float)(-MAXf(length, 0)), 5.5f);
     out[offset++] = CPointMake(0, 5.5);
 
 }
@@ -961,7 +961,7 @@ static inline void gen_segmented_circle(CPoint* out, float radius, float start_a
     
     int i;
     for (i = 0; i <= vertex_count; i++) {
-        out[offset++] = CPointMake(radius*cos(start_angle+(i/(float)vertex_count)*angle), radius*sin(start_angle+(i/(float)vertex_count)*angle));
+        out[offset++] = CPointMake(radius*cosf(start_angle+(i/(float)vertex_count)*angle), radius*sinf(start_angle+(i/(float)vertex_count)*angle));
         //int o=offset-1;
     }
 }
@@ -1011,10 +1011,6 @@ void change_segmented_circle(Shape* shape, float radius, float start_angle, floa
 // ok
 // Circle
 
-static inline int size_of_circle_in_vertices(int num_points) {
-    return 1 + (num_points + 1);
-}
-
 static inline void gen_circle(CPoint* out, float radius, int vertex_count)
 {
     int offset=0;
@@ -1023,7 +1019,7 @@ static inline void gen_circle(CPoint* out, float radius, int vertex_count)
     
     int i;
     for (i = 0; i <= vertex_count; i++) {
-        out[offset++] = CPointMake(radius*cos(2*M_PI*(i/(float)vertex_count)), radius*sin(2*M_PI*(i/(float)vertex_count)) );
+        out[offset++] = CPointMake(radius*(float)(cos(2*M_PI*(i/(float)vertex_count))), radius*(float)(sin(2*M_PI*(i/(float)vertex_count))) );
     }
     
 }
@@ -1109,8 +1105,8 @@ static inline void gen_infinity(CPoint* out, float width, float angle, int segme
         float tt = ((float)seg/(float)segment_count)*angle;
         
         int q=4;
-        float tstep=1./q;
-        int n = floor(tt/tstep);
+        float tstep=1.f/q;
+        int n = (int)floor(tt/tstep);
         
         if (seg >= segment_count) {
             //n=n-1;//q-1;
@@ -1126,11 +1122,11 @@ static inline void gen_infinity(CPoint* out, float width, float angle, int segme
         float nt = 1.0f - t;
         
         
-        vec2 p = {a.x * nt * nt * nt  +  3.0 * p1.x * nt * nt * t  +  3.0 * p2.x * nt * t * t  +  b.x * t * t * t,
-            a.y * nt * nt * nt  +  3.0 * p1.y * nt * nt * t  +  3.0 * p2.y * nt * t * t  +  b.y * t * t * t};
+        vec2 p = {a.x * nt * nt * nt  +  3.0f * p1.x * nt * nt * t  +  3.0f * p2.x * nt * t * t  +  b.x * t * t * t,
+            a.y * nt * nt * nt  +  3.0f * p1.y * nt * nt * t  +  3.0f * p2.y * nt * t * t  +  b.y * t * t * t};
         
-        vec2 tangent = {-3.0 * a.x * nt * nt  +  3.0 * p1.x * (1.0 - 4.0 * t + 3.0 * t * t)  +  3.0 * p2.x * (2.0 * t - 3.0 * t * t)  +  3.0 * b.x * t * t,
-            -3.0 * a.y * nt * nt  +  3.0 * p1.y * (1.0 - 4.0 * t + 3.0 * t * t)  +  3.0 * p2.y * (2.0 * t - 3.0 * t * t)  +  3.0 * b.y * t * t};
+        vec2 tangent = {-3.0f * a.x * nt * nt  +  3.0f * p1.x * (1.0f - 4.0f * t + 3.0f * t * t)  +  3.0f * p2.x * (2.0f * t - 3.0f * t * t)  +  3.0f * b.x * t * t,
+            -3.0f * a.y * nt * nt  +  3.0f * p1.y * (1.0f - 4.0f * t + 3.0f * t * t)  +  3.0f * p2.y * (2.0f * t - 3.0f * t * t)  +  3.0f * b.y * t * t};
         
         vec2 tan_norm = {-tangent[1], tangent[0]};
         vec2 norm;
@@ -1139,13 +1135,13 @@ static inline void gen_infinity(CPoint* out, float width, float angle, int segme
         
         vec2 v;
         vec2 norm_scaled;
-        vec2_scale(norm_scaled, norm, +width/2.);
+        vec2_scale(norm_scaled, norm, +width/2.f);
         vec2_add(v, p, norm_scaled);
         
         out[offset] = CPointMake(v[0], v[1]);
         offset++;
         
-        vec2_scale(norm_scaled, norm, -width/2.);
+        vec2_scale(norm_scaled, norm, -width/2.f);
         vec2_add(v, p, norm_scaled);
         
         out[offset] = CPointMake(v[0], v[1]);
@@ -1228,39 +1224,39 @@ static inline void gen_rounded_rectangle_stroked(CPoint* out, CSize size, float 
 {
     int offset=0;
 
-    float k = M_PI/2/(round_count+1);
+    float k = (float)(M_PI/2/(round_count+1));
     float inner_radius = radius - stroke_width;
     
     int i=0;
 
     int n=0;
     for (i=(round_count+2)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
-        out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*inner_radius, size.height/2-radius + sin(i*k)*inner_radius);
+        out[offset++] = CPointMake(size.width/2-radius + cosf(i*k)*radius, size.height/2-radius + sinf(i*k)*radius);
+        out[offset++] = CPointMake(size.width/2-radius + cosf(i*k)*inner_radius, size.height/2-radius + sinf(i*k)*inner_radius);
     }
     n++;
 
     for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
-        out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*inner_radius, size.height/2-radius + sin(i*k)*inner_radius);
+        out[offset++] = CPointMake(-size.width/2+radius + cosf(i*k)*radius, size.height/2-radius + sinf(i*k)*radius);
+        out[offset++] = CPointMake(-size.width/2+radius + cosf(i*k)*inner_radius, size.height/2-radius + sinf(i*k)*inner_radius);
     }
     n++;
     
     for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*radius, -size.height/2+radius + sin(i*k)*radius);
-        out[offset++] = CPointMake(-size.width/2+radius + cos(i*k)*inner_radius, -size.height/2+radius + sin(i*k)*inner_radius);
+        out[offset++] = CPointMake(-size.width/2+radius + cosf(i*k)*radius, -size.height/2+radius + sinf(i*k)*radius);
+        out[offset++] = CPointMake(-size.width/2+radius + cosf(i*k)*inner_radius, -size.height/2+radius + sinf(i*k)*inner_radius);
     }
     n++;
     
     for (i=(round_count+1)*n; i<=round_count+1 + (round_count+1)*n; i++) {
-        out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, -size.height/2+radius + sin(i*k)*radius);
-        out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*inner_radius, -size.height/2+radius + sin(i*k)*inner_radius);
+        out[offset++] = CPointMake(size.width/2-radius + cosf(i*k)*radius, -size.height/2+radius + sinf(i*k)*radius);
+        out[offset++] = CPointMake(size.width/2-radius + cosf(i*k)*inner_radius, -size.height/2+radius + sinf(i*k)*inner_radius);
     }
     n++;
     
     i=0;
-    out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*radius, size.height/2-radius + sin(i*k)*radius);
-    out[offset++] = CPointMake(size.width/2-radius + cos(i*k)*inner_radius, size.height/2-radius + sin(i*k)*inner_radius);
+    out[offset++] = CPointMake(size.width/2-radius + cosf(i*k)*radius, size.height/2-radius + sinf(i*k)*radius);
+    out[offset++] = CPointMake(size.width/2-radius + cosf(i*k)*inner_radius, size.height/2-radius + sinf(i*k)*inner_radius);
 }
 
 Shape create_rounded_rectangle_stroked(CSize size, float radius, float stroke_width, int round_count, const vec4 color)
@@ -1287,7 +1283,7 @@ Shape create_rounded_rectangle_stroked(CSize size, float radius, float stroke_wi
         params};
 }
 
-void change_rounded_rectangle_stroked(Shape* shape, CSize size, float radius, float stroke_width)
+void change_rounded_rectangle_stroked(Shape* shape, CSize size, float radius, __unused float stroke_width)
 {
     if ((*shape).params.var_params.size.width != size.width || (*shape).params.var_params.size.height != size.height || (*shape).params.var_params.radius != radius )
     {

@@ -41,7 +41,7 @@
     UIWindow *window = _weakWindow;
     
     window.userInteractionEnabled = true;
-    [window makeKeyAndVisible];
+    window.hidden = false;
     
     if (animated)
     {
@@ -121,6 +121,10 @@
              }
          }
      }];
+}
+
+- (BOOL)canBecomeFirstResponder {
+    return false;
 }
 
 @end

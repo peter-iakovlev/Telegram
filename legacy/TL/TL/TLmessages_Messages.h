@@ -23,3 +23,11 @@
 
 @end
 
+@interface TLmessages_Messages$messages_channelMessages : TLmessages_Messages
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic) int32_t pts;
+@property (nonatomic) int32_t count;
+
+@end
+

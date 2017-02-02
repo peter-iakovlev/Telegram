@@ -29,6 +29,9 @@
         {
             int32_t signature = [is readInt32];
             id object = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (object != nil)
             {
                 [messages addObject:object];
@@ -46,6 +49,9 @@
         {
             int32_t signature = [is readInt32];
             id object = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (object != nil)
             {
                 [collapsed addObject:object];
@@ -62,6 +68,9 @@
         {
             int32_t signature = [is readInt32];
             id object = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (object != nil)
             {
                 [chats addObject:object];
@@ -78,6 +87,9 @@
         {
             int32_t signature = [is readInt32];
             id object = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (object != nil)
             {
                 [users addObject:object];

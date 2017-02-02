@@ -15,4 +15,6 @@
 - (void)inviteTextRequestSuccess:(TLhelp_InviteText *)inviteText;
 - (void)inviteTextRequestFailed;
 
++ (BOOL)cachedExperimentalPasscodeBlurDisabled;
+
 @end

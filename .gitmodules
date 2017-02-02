@@ -7,9 +7,6 @@ url=https://github.com/peter-iakovlev/Signals.git
 [submodule "Share/submodules/lmdb"]
 	path = Share/submodules/lmdb
 	url = https://gitorious.org/mdb/mdb.git
-[submodule "submodules/elements"]
-	path = submodules/elements
-	url = git@bitbucket.org:iakovlevpeterp/elements.git
 [submodule "submodules/MtProtoKit"]
 	path = submodules/MtProtoKit
 	url = git@github.com:iakovlev-peter/MtProtoKit.git

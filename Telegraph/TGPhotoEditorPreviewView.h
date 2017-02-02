@@ -1,10 +1,12 @@
 #import <UIKit/UIKit.h>
 
 @class PGPhotoEditorView;
+@class TGPaintingData;
 
 @interface TGPhotoEditorPreviewView : UIView
 
 @property (nonatomic, readonly) PGPhotoEditorView *imageView;
+@property (nonatomic, readonly) UIImageView *paintingView;
 
 @property (nonatomic, copy) void(^touchedDown)(void);
 @property (nonatomic, copy) void(^touchedUp)(void);
@@ -14,6 +16,10 @@
 
 - (void)setSnapshotImage:(UIImage *)image;
 - (void)setSnapshotView:(UIView *)view;
+- (void)setPaintingImageWithData:(TGPaintingData *)values;
+- (void)setPaintingHidden:(bool)hidden;
+
+- (void)setCropRect:(CGRect)cropRect cropOrientation:(UIImageOrientation)cropOrientation cropRotation:(CGFloat)cropRotation cropMirrored:(bool)cropMirrored originalSize:(CGSize)originalSize;
 
 - (UIView *)originalSnapshotView;
 

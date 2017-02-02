@@ -151,6 +151,7 @@
 - (TGCachedConversationData *)addManagementMember:(TGCachedConversationMember *)member {
     int32_t managementCount = _managementCount;
     NSMutableArray *managementMembers = [[NSMutableArray alloc] initWithArray:_managementMembers];
+    NSMutableArray *generalMembers = [[NSMutableArray alloc] initWithArray:_generalMembers];
     
     if (![managementMembers containsObject:member]) {
         managementCount++;
@@ -160,12 +161,19 @@
     
     [managementMembers addObject:member];
     
-    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
+    NSUInteger index = [generalMembers indexOfObject:member];
+    if (index != NSNotFound) {
+        TGCachedConversationMember *generalMember = generalMembers[index];
+        generalMembers[index] = [[TGCachedConversationMember alloc] initWithUid:generalMember.uid role:member.role timestamp:generalMember.timestamp];
+    }
+    
+    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:managementMembers blacklistMembers:_blacklistMembers generalMembers:generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
 }
 
 - (TGCachedConversationData *)removeManagementMember:(int32_t)uid {
     int32_t managementCount = _managementCount;
     NSMutableArray *managementMembers = [[NSMutableArray alloc] initWithArray:_managementMembers];
+    NSMutableArray *generalMembers = [[NSMutableArray alloc] initWithArray:_generalMembers];
     
     TGCachedConversationMember *member = [[TGCachedConversationMember alloc] initWithUid:uid role:0 timestamp:0];
     if ([managementMembers containsObject:member]) {
@@ -173,7 +181,13 @@
         [managementMembers removeObject:member];
     }
     
-    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:managementMembers blacklistMembers:_blacklistMembers generalMembers:_generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
+    NSUInteger index = [generalMembers indexOfObject:member];
+    if (index != NSNotFound) {
+        TGCachedConversationMember *generalMember = generalMembers[index];
+        generalMembers[index] = [[TGCachedConversationMember alloc] initWithUid:generalMember.uid role:TGChannelRoleMember timestamp:generalMember.timestamp];
+    }
+    
+    return [[TGCachedConversationData alloc] initWithManagementCount:managementCount blacklistCount:_blacklistCount memberCount:_memberCount managementMembers:managementMembers blacklistMembers:_blacklistMembers generalMembers:generalMembers privateLink:_privateLink migrationData:_migrationData botInfos:_botInfos];
 }
 
 - (TGCachedConversationData *)addMembers:(NSArray *)uids timestamp:(int32_t)timestamp {

@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
 #import <SSignalKit/SSignalKit.h>
 
-#import <Elements/Elements.h>
+#import "EMInMemoryImageCache.h"
 
 @class TGDocumentMediaAttachment;
 

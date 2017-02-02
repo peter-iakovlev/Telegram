@@ -58,7 +58,7 @@
     if (self != nil)
     {
         _separatorView = [[UIView alloc] init];
-        _separatorView.backgroundColor = TGSeparatorColor();
+        _separatorView.backgroundColor = UIColorRGB(0xc8c7cc);
         [self.contentView addSubview:_separatorView];
         
         _titleLabel = [[UILabel alloc] init];
@@ -84,10 +84,10 @@
         _thumbnailIconView = [[TGImageView alloc] init];
         
         _progressView = [[UIView alloc] init];
-        _progressView.backgroundColor = TGAccentColor();
+        _progressView.backgroundColor = UIColorRGB(0x007ee5);
         
         self.selectedBackgroundView = [[UIView alloc] init];
-        self.selectedBackgroundView.backgroundColor = TGSelectionColor();
+        self.selectedBackgroundView.backgroundColor = UIColorRGB(0xd9d9d9);
         
         _availabilityStateIconView = [[UIImageView alloc] init];
         
@@ -143,7 +143,28 @@
     _documentAttachment = documentMediaAttachment;
     _date = date;
     
+    _titleLabel.lineBreakMode = NSLineBreakByTruncatingMiddle;
     _titleLabel.text = documentMediaAttachment.fileName;
+    
+    for (id attribute in _documentAttachment.attributes)
+    {
+        if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
+        {
+            TGDocumentAttributeAudio *audioAttribute = (TGDocumentAttributeAudio *)attribute;
+            NSString *title = documentMediaAttachment.fileName;
+            if (audioAttribute.title.length > 0)
+            {
+                title = audioAttribute.title;
+
+                if (audioAttribute.performer.length > 0)
+                    title = [NSString stringWithFormat:@"%@ — %@", audioAttribute.performer, title];
+                
+                _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+                _titleLabel.text = title;
+            }
+            break;
+        }
+    }
     
     _separatorView.hidden = false;
     

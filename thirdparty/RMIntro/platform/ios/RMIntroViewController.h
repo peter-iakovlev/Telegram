@@ -21,8 +21,6 @@ typedef enum {
 
 @interface RMIntroViewController : UIViewController<UIScrollViewDelegate, GLKViewDelegate>
 {
-    DeviceScreen _deviceScreen;
-    
     EAGLContext *context;
     
     GLKView *_glkView;

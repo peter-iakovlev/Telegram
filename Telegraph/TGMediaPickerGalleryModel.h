@@ -37,9 +37,10 @@
 
 @property (nonatomic, copy) NSInteger (^externalSelectionCount)(void);
 
+@property (nonatomic, readonly) TGMediaSelectionContext *selectionContext;
 @property (nonatomic, strong) TGSuggestionContext *suggestionContext;
 
-- (instancetype)initWithItems:(NSArray *)items focusItem:(id<TGModernGalleryItem>)focusItem selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext hasCaptions:(bool)hasCaptions hasSelectionPanel:(bool)hasSelectionPanel;
+- (instancetype)initWithItems:(NSArray *)items focusItem:(id<TGModernGalleryItem>)focusItem selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext hasCaptions:(bool)hasCaptions inhibitDocumentCaptions:(bool)inhibitDocumentCaptions hasSelectionPanel:(bool)hasSelectionPanel;
 
 - (void)setCurrentItem:(id<TGMediaSelectableItem>)item direction:(TGModernGalleryScrollAnimationDirection)direction;
 

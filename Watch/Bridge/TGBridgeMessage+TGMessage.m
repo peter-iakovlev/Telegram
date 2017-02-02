@@ -1,16 +1,17 @@
 #import "TGBridgeMessage+TGMessage.h"
 #import "TGBridgeMediaAttachment+TGMediaAttachment.h"
 #import "TGMessage.h"
+#import "TGConversation.h"
 
 @implementation TGBridgeMessage (TGMessage)
 
-+ (TGBridgeMessage *)messageWithTGMessage:(TGMessage *)message
++ (TGBridgeMessage *)messageWithTGMessage:(TGMessage *)message conversation:(TGConversation *)conversation
 {
     TGBridgeMessage *bridgeMessage = [[TGBridgeMessage alloc] init];
     bridgeMessage->_identifier = message.mid;
     bridgeMessage->_date = message.date;
     bridgeMessage->_randomId = message.randomId;
-    bridgeMessage->_unread = message.unread;
+    bridgeMessage->_unread = [conversation isMessageUnread:message];
     bridgeMessage->_outgoing = message.outgoing;
     bridgeMessage->_fromUid = message.fromUid;
     bridgeMessage->_toUid = message.toUid;
@@ -30,9 +31,9 @@
     return bridgeMessage;
 }
 
-+ (TGBridgeMessage *)channelMessageWithTGMessage:(TGMessage *)message
++ (TGBridgeMessage *)channelMessageWithTGMessage:(TGMessage *)message conversation:(TGConversation *)conversation
 {
-    TGBridgeMessage *bridgeMessage = [self messageWithTGMessage:message];
+    TGBridgeMessage *bridgeMessage = [self messageWithTGMessage:message conversation:conversation];
     bridgeMessage->_outgoing = false;
     return bridgeMessage;
 }

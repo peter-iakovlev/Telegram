@@ -6,7 +6,11 @@ typedef enum
     TGPhotoEditorCropTab    = 1 << 0,
     TGPhotoEditorToolsTab   = 1 << 1,
     TGPhotoEditorCaptionTab = 1 << 2,
-    TGPhotoEditorRotateTab  = 1 << 3
+    TGPhotoEditorRotateTab  = 1 << 3,
+    TGPhotoEditorPaintTab   = 1 << 4,
+    TGPhotoEditorStickerTab = 1 << 5,
+    TGPhotoEditorTextTab    = 1 << 6,
+    TGPhotoEditorGifTab     = 1 << 7
 } TGPhotoEditorTab;
 
 @interface TGPhotoToolbarView : UIView

@@ -53,6 +53,8 @@
             dataSignal = [self signalForAudioItemProvider:provider];
         else if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeMovie])
             dataSignal = [self signalForVideoItemProvider:provider];
+        else if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeGIF])
+            dataSignal = [self signalForDataItemProvider:provider];
         else if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeImage])
             dataSignal = [self signalForImageItemProvider:provider];
         else if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeFileURL])
@@ -72,14 +74,12 @@
                 return [SSignal single:@{@"data": data, @"fileName": fileName, @"mimeType": mimeType}];
             }];
         }
-
         else if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeVCard])
             dataSignal = [self signalForVCardItemProvider:provider];
         else if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeText])
             dataSignal = [self signalForTextItemProvider:provider];
         else if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeURL])
             dataSignal = [self signalForTextUrlItemProvider:provider];
-
         else if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeData])
         {
             dataSignal = [[self signalForDataItemProvider:provider] map:^id(NSDictionary *dict)
@@ -221,7 +221,17 @@
                  if (mimeType == nil)
                      mimeType = @"application/octet-stream";
                  
-                 [subscriber putNext:@{@"video": url, @"mimeType": mimeType}];
+                 AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:url options:nil];
+                 NSString *software = nil;
+                 AVMetadataItem *softwareItem = [[AVMetadataItem metadataItemsFromArray:asset.metadata withKey:AVMetadataCommonKeySoftware keySpace:AVMetadataKeySpaceCommon] firstObject];
+                 if ([softwareItem isKindOfClass:[AVMetadataItem class]] && ([softwareItem.value isKindOfClass:[NSString class]]))
+                     software = (NSString *)[softwareItem value];
+                 
+                 bool isAnimation = false;
+                 if ([software hasPrefix:@"Boomerang"])
+                     isAnimation = true;
+                 
+                 [subscriber putNext:@{@"video": asset, @"mimeType": mimeType, @"isAnimation": @(isAnimation)}];
                  [subscriber putCompletion];
              }
          }];

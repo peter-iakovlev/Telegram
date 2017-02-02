@@ -39,6 +39,7 @@ extern NSString *authorNameYou;
 
 - (void)resetState;
 - (void)dialogListFullyReloaded:(NSArray *)items;
+- (void)updateConversations:(NSDictionary *)dict;
 - (void)dialogListItemsChanged:(NSArray *)insertedIndices insertedItems:(NSArray *)insertedItems updatedIndices:(NSArray *)updatedIndices updatedItems:(NSArray *)updatedItems removedIndices:(NSArray *)removedIndices;
 
 - (void)selectConversationWithId:(int64_t)conversationId;

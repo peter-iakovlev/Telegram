@@ -42,6 +42,7 @@
 
 - (void)setDocumentMedia:(TGDocumentMediaAttachment *)documentMedia
 {
+    _documentMedia = documentMedia;
     NSMutableString *uri = [[NSMutableString alloc] initWithString:@"sticker-preview://?"];
     if (documentMedia.documentId != 0)
         [uri appendFormat:@"documentId=%" PRId64 "", documentMedia.documentId];

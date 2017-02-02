@@ -178,7 +178,6 @@
                     message.fromUid = TGTelegraphInstance.clientUserId;
                     message.toUid = peerId;
                     message.date = [[TGTelegramNetworking instance] approximateRemoteTime];
-                    message.unread = false;
                     message.outgoing = true;
                     message.cid = peerId;
                     
@@ -187,8 +186,7 @@
                     actionAttachment.actionData = [[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithInt:settingsAction.messageLifetime], @"messageLifetime", nil];
                     message.mediaAttachments = @[actionAttachment];
                     
-                    static int messageActionId = 1000000;
-                    [[[TGConversationAddMessagesActor alloc] initWithPath:[NSString stringWithFormat:@"/tg/addmessage/(%dact)", messageActionId++]] execute:[NSDictionary dictionaryWithObjectsAndKeys:[[NSArray alloc] initWithObjects:message, nil], @"messages", nil]];
+                    [TGDatabaseInstance() transactionAddMessages:@[message] updateConversationDatas:nil notifyAdded:true];
                 }
                 else if ([action isKindOfClass:[TGChangePasslockSettingsFutureAction class]])
                 {

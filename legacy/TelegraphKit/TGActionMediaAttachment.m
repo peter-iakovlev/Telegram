@@ -158,6 +158,20 @@
         
         int32_t channelId = [_actionData[@"groupId"] intValue];
         [data appendBytes:&channelId length:4];
+    } else if (actionType == TGMessageActionPinnedMessage) {
+    } else if (actionType == TGMessageActionClearChat) {
+    } else if (actionType == TGMessageActionGameScore) {
+        int32_t gameId = [_actionData[@"gameId"] intValue];
+        [data appendBytes:&gameId length:4];
+        int32_t score = [_actionData[@"score"] intValue];
+        [data appendBytes:&score length:4];
+    } else if (actionType == TGMessageActionPhoneCall) {
+        int64_t callId = [_actionData[@"callId"] int64Value];
+        [data appendBytes:&callId length:8];
+        int32_t reason = [_actionData[@"reason"] intValue];
+        [data appendBytes:&reason length:4];
+        int32_t duration = [_actionData[@"duration"] intValue];
+        [data appendBytes:&duration length:4];
     }
 
     int dataLength = (int)data.length - dataLengthPtr - 4;
@@ -333,6 +347,22 @@
         [is read:(uint8_t *)&groupId maxLength:4];
         
         actionAttachment.actionData = @{@"groupId": @(groupId), @"title": title};
+    } else if (actionType == TGMessageActionPinnedMessage) {
+    } else if (actionType == TGMessageActionClearChat) {
+    } else if (actionType == TGMessageActionGameScore) {
+        int gameId = 0;
+        [is read:(uint8_t *)&gameId maxLength:4];
+        int score = 0;
+        [is read:(uint8_t *)&score maxLength:4];
+        actionAttachment.actionData = @{@"gameId": @(gameId), @"score": @(score)};
+    } else if (actionType == TGMessageActionPhoneCall) {
+        int64_t callId = 0;
+        [is read:(uint8_t *)&callId maxLength:8];
+        int32_t reason = 0;
+        [is read:(uint8_t *)&reason maxLength:4];
+        int32_t duration = 0;
+        [is read:(uint8_t *)&duration maxLength:4];
+        actionAttachment.actionData = @{@"callId": @(callId), @"reason": @(reason), @"duration": @(duration)};
     }
     
     return actionAttachment;

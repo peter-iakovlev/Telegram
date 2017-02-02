@@ -6,11 +6,10 @@
 
 @interface TLBotInlineMessage : NSObject <TLObject>
 
-@property (nonatomic, retain) NSString *caption;
 
 @end
 
-@interface TLBotInlineMessage$botInlineMessageMediaAuto : TLBotInlineMessage
+@interface TLBotInlineMessage$botInlineMessageMeta : TLBotInlineMessage
 
 
 @end

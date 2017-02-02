@@ -15,4 +15,6 @@ typedef enum {
 + (void)storeLastKnownUserLocation:(CLLocation *)location;
 + (CLLocation *)lastKnownUserLocation;
 
++ (SSignal *)userLocation:(SVariable *)locationRequired;
+
 @end

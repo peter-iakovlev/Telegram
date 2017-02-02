@@ -78,12 +78,6 @@
     } error:^(__unused id error) {
         [ActionStageInstance() actionFailed:self.path reason:-1];
     } completed:nil];
-    
-    return;
-    
-    _currentItems = options[@"currentItems"];
-    NSString *url = [[NSString alloc] initWithFormat:@"https://api.giphy.com/v1/gifs/search?q=%@&offset=%d&limit=60&api_key=141Wa2KDAfNfxu", [TGStringUtils stringByEscapingForURL:options[@"query"]], (int)_currentItems.count];
-    self.cancelToken = [TGTelegraphInstance doRequestRawHttp:url maxRetryCount:0 acceptCodes:@[@200] actor:self];
 }
 
 - (id)objectAtDictionaryPath:(NSString *)path dictionary:(NSDictionary *)dictionary

@@ -2,6 +2,6 @@
 
 @interface TGCachePeerItemView : TGCollectionItemView
 
-- (void)setPeer:(id)peer totalSize:(int32_t)totalSize;
+- (void)setPeer:(id)peer totalSize:(int64_t)totalSize;
 
 @end

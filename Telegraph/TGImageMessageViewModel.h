@@ -17,6 +17,7 @@
 @class TGMessageImageViewModel;
 @class TGModernFlatteningViewModel;
 @class TGInlineVideoModel;
+@class TGTextMessageBackgroundViewModel;
 
 @interface TGImageMessageViewModel : TGMessageViewModel
 {
@@ -25,6 +26,7 @@
     bool _mediaIsAvailable;
     TGModernFlatteningViewModel *_contentModel;
     bool _canDownload;
+    TGTextMessageBackgroundViewModel *_backgroundModel;
 }
 
 @property (nonatomic, strong) TGMessageImageViewModel *imageModel;

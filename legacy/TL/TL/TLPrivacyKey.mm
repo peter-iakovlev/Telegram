@@ -85,3 +85,29 @@
 
 @end
 
+@implementation TLPrivacyKey$privacyKeyPhoneCall : TLPrivacyKey
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x3d662b7b;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xda7dacf7;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLPrivacyKey$privacyKeyPhoneCall *object = [[TLPrivacyKey$privacyKeyPhoneCall alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+

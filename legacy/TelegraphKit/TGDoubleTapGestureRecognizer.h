@@ -24,6 +24,7 @@
 @optional
 
 - (int)gestureRecognizer:(TGDoubleTapGestureRecognizer *)recognizer shouldFailTap:(CGPoint)point;
+- (void)gestureRecognizer:(TGDoubleTapGestureRecognizer *)recognizer shouldBeginAtPoint:(CGPoint)point;
 - (void)gestureRecognizer:(TGDoubleTapGestureRecognizer *)recognizer didBeginAtPoint:(CGPoint)point;
 - (void)gestureRecognizerDidFail:(TGDoubleTapGestureRecognizer *)recognizer;
 - (bool)gestureRecognizerShouldHandleLongTap:(TGDoubleTapGestureRecognizer *)recognizer;

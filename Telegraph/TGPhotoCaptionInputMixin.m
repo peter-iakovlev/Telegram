@@ -15,8 +15,6 @@
     TGObserverProxy *_keyboardWillChangeFrameProxy;
     bool _editing;
     
-    TGMediaPickerCaptionInputPanel *_inputPanel;
-    UIView *_dismissView;
     UIGestureRecognizer *_dismissTapRecognizer;
 }
 @end
@@ -54,6 +52,11 @@
     [parentView addSubview:self.inputPanel];
 }
 
+- (void)destroy
+{
+    [self.inputPanel removeFromSuperview];
+}
+
 - (void)createDismissViewIfNeeded
 {
     UIView *parentView = [self _parentView];
@@ -65,10 +68,26 @@
     _dismissTapRecognizer.enabled = false;
     [_dismissView addGestureRecognizer:_dismissTapRecognizer];
     
-    [parentView addSubview:_dismissView];
+    [parentView insertSubview:_dismissView belowSubview:_inputPanel];
 }
 
-- (void)beginEditingWithCaption:(NSString *)caption
+- (void)setCaption:(NSString *)caption
+{
+    [self setCaption:caption animated:false];
+}
+
+- (void)setCaption:(NSString *)caption animated:(bool)animated
+{
+    _caption = caption;
+    [self.inputPanel setCaption:caption animated:animated];
+}
+
+- (void)setCaptionPanelHidden:(bool)hidden animated:(bool)__unused animated
+{
+    self.inputPanel.hidden = hidden;
+}
+
+- (void)beginEditing
 {
     _editing = true;
     
@@ -76,10 +95,7 @@
     [self createInputPanelIfNeeded];
     
     [self.inputPanel adjustForOrientation:self.interfaceOrientation keyboardHeight:_keyboardHeight duration:0.0 animationCurve:0];
-    [self.inputPanel setCaption:caption];
     [self.inputPanel layoutSubviews];
-    
-    [self.inputPanel becomeFirstResponder];
 }
 
 - (void)enableDismissal
@@ -95,6 +111,7 @@
         return;
     
     [self.inputPanel dismiss];
+    [_dismissView removeFromSuperview];
 }
 
 #pragma mark - Input Panel Delegate
@@ -108,12 +125,16 @@
 {
     [TGViewController disableAutorotation];
     
+    [self beginEditing];
+    
     _dismissView.hidden = false;
     
     [self.inputPanel.window makeKeyWindow];
     
     if (self.panelFocused != nil)
         self.panelFocused();
+    
+    [self enableDismissal];
 }
 
 - (void)inputPanelRequestedSetCaption:(TGMediaPickerCaptionInputPanel *)__unused inputPanel text:(NSString *)text
@@ -151,10 +172,13 @@
                     if ([[strongSelf->_inputPanel associatedPanel] isKindOfClass:[TGModernConversationMentionsAssociatedPanel class]])
                         [strongSelf->_inputPanel setAssociatedPanel:nil animated:false];
                     
-                    [strongSelf->_inputPanel replaceMention:user.userName];
+                    if (user.userName.length == 0) {
+                        [strongSelf->_inputPanel replaceMention:[[NSString alloc] initWithFormat:@"%@", user.displayFirstName] username:false userId:user.uid];
+                    } else {
+                        [strongSelf->_inputPanel replaceMention:[[NSString alloc] initWithFormat:@"%@", user.userName] username:true userId:user.uid];
+                    }
                 }
             };
-            [inputTextPanel setAssociatedPanel:panel animated:true];
         }
         
         SSignal *userListSignal = nil;
@@ -162,6 +186,8 @@
             userListSignal = self.suggestionContext.userListSignal(mention);
         
         [panel setUserListSignal:userListSignal];
+        
+        [inputTextPanel setAssociatedPanel:panel animated:true];
     }
 }
 
@@ -209,6 +235,14 @@
     [inputPanel adjustForOrientation:UIInterfaceOrientationPortrait keyboardHeight:_keyboardHeight duration:duration animationCurve:animationCurve];
 }
 
+- (void)setContentAreaHeight:(CGFloat)contentAreaHeight
+{
+    _contentAreaHeight = contentAreaHeight;
+    
+    CGFloat finalHeight = _contentAreaHeight - _keyboardHeight;
+    [_inputPanel setContentAreaHeight:finalHeight];
+}
+
 - (UIView *)_parentView
 {
     UIView *parentView = nil;
@@ -222,9 +256,6 @@
 
 - (void)keyboardWillChangeFrame:(NSNotification *)notification
 {
-    if (!_editing)
-        return;
-    
     UIView *parentView = [self _parentView];
     
     NSTimeInterval duration = notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] == nil ? 0.3 : [notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
@@ -237,10 +268,23 @@
     
     _keyboardHeight = keyboardHeight;
     
+    if (!UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation) && !TGIsPad())
+        return;
+    
     [_inputPanel adjustForOrientation:UIInterfaceOrientationPortrait keyboardHeight:keyboardHeight duration:duration animationCurve:curve];
     
     if (self.keyboardHeightChanged != nil)
         self.keyboardHeightChanged(keyboardHeight, duration, curve);
+    
+    CGFloat finalHeight = _contentAreaHeight - _keyboardHeight;
+    [_inputPanel setContentAreaHeight:finalHeight];
+}
+
+- (void)updateLayoutWithFrame:(CGRect)frame edgeInsets:(UIEdgeInsets)edgeInsets
+{
+    _inputPanel.frame = CGRectMake(edgeInsets.left, _inputPanel.frame.origin.y, frame.size.width, _inputPanel.frame.size.height);
+    _inputPanel.bottomMargin = edgeInsets.bottom;
+    [_inputPanel adjustForOrientation:UIInterfaceOrientationPortrait keyboardHeight:_keyboardHeight duration:0.0 animationCurve:0];
 }
 
 @end

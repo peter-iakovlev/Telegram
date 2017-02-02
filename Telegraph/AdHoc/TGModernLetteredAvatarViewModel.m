@@ -71,8 +71,10 @@
     if (_avatarUri.length == 0) {
         if (_uid != 0) {
             [view setFirstName:_firstName lastName:_lastName uid:_uid placeholder:_placeholder];
-        } else {
+        } else if (_groupId != 0) {
             [view setTitle:_title groupId:_groupId placeholder:_placeholder];
+        } else {
+            [view setFirstName:_firstName lastName:_lastName uid:0 placeholder:_placeholder];
         }
     } else {
         [view setAvatarUri:_avatarUri filter:_filter placeholder:_placeholder];

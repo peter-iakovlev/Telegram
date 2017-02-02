@@ -6,7 +6,6 @@
 
 typedef enum
 {
-    TGMediaAssetsControllerDefaultIntent,
     TGMediaAssetsControllerSendMediaIntent,
     TGMediaAssetsControllerSendFileIntent,
     TGMediaAssetsControllerSetProfilePhotoIntent,
@@ -18,6 +17,7 @@ typedef enum
 @property (nonatomic, strong) TGSuggestionContext *suggestionContext;
 @property (nonatomic, assign) bool localMediaCacheEnabled;
 @property (nonatomic, assign) bool captionsEnabled;
+@property (nonatomic, assign) bool inhibitDocumentCaptions;
 @property (nonatomic, assign) bool shouldStoreAssets;
 
 @property (nonatomic, assign) bool liveVideoUploadEnabled;

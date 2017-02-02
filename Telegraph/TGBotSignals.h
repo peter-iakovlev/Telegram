@@ -14,6 +14,10 @@
 + (SSignal *)botStartForUserId:(int32_t)userId payload:(NSString *)payload;
 + (SSignal *)botInviteUserId:(int32_t)userId toPeerId:(int64_t)peerId accessHash:(int64_t)accessHash payload:(NSString *)payload;
 
-+ (SSignal *)botContextResultForUserId:(int32_t)userId query:(NSString *)query offset:(NSString *)offset;
++ (SSignal *)botContextResultForUserId:(int32_t)userId peerId:(int64_t)peerId accessHash:(int64_t)accessHash query:(NSString *)query geoPoint:(SSignal *)geoPoint offset:(NSString *)offset;
++ (SSignal *)botCallback:(int64_t)conversationId accessHash:(int64_t)accessHash messageId:(int32_t)messageId data:(NSData *)data isGame:(bool)isGame;
+
++ (SSignal *)shareBotGame:(int64_t)fromPeerId messageId:(int32_t)messageId toPeerId:(int64_t)peerId withScore:(bool)withScore;
++ (SSignal *)sendBotGame:(NSString *)shortName toPeerId:(int64_t)peerId botId:(int32_t)botId;
 
 @end

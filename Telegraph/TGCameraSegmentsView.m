@@ -75,7 +75,7 @@ const CGFloat TGCameraSegmentsMinimumWidth = 4.0f;
         self.deletePressed();
 }
 
-- (void)setSegments:(NSArray *)segments
+- (void)setSegments:(NSArray *)__unused segments
 {
     
 }
@@ -231,7 +231,7 @@ const CGFloat TGCameraSegmentsMinimumWidth = 4.0f;
     [self _stopBlinkAnimation];
 }
 
-- (void)setCommittingWithCompletion:(void (^)(void))completion
+- (void)setCommittingWithCompletion:(void (^)(void))__unused completion
 {
     
 }

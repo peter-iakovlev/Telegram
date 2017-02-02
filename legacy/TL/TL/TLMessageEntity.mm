@@ -3,6 +3,7 @@
 #import "../NSInputStream+TL.h"
 #import "../NSOutputStream+TL.h"
 
+#import "TLInputUser.h"
 
 @implementation TLMessageEntity
 
@@ -481,6 +482,100 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.url;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xeaf7861e, value));
+    }
+}
+
+
+@end
+
+@implementation TLMessageEntity$messageEntityMentionName : TLMessageEntity
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x352dca58;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xe727402c;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageEntity$messageEntityMentionName *object = [[TLMessageEntity$messageEntityMentionName alloc] init];
+    object.offset = metaObject->getInt32((int32_t)0xfc56269);
+    object.length = metaObject->getInt32((int32_t)0x18492126);
+    object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.offset;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xfc56269, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.length;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x18492126, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.user_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xafdf4073, value));
+    }
+}
+
+
+@end
+
+@implementation TLMessageEntity$inputMessageEntityMentionName : TLMessageEntity
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x208e68c9;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x7b78b06f;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageEntity$inputMessageEntityMentionName *object = [[TLMessageEntity$inputMessageEntityMentionName alloc] init];
+    object.offset = metaObject->getInt32((int32_t)0xfc56269);
+    object.length = metaObject->getInt32((int32_t)0x18492126);
+    object.user_id = metaObject->getObject((int32_t)0xafdf4073);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.offset;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xfc56269, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.length;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x18492126, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.user_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xafdf4073, value));
     }
 }
 

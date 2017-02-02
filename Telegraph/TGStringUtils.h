@@ -36,14 +36,18 @@ bool TGIsLocaleArabic();
 + (NSString *)stringWithLocalizedNumberCharacters:(NSString *)string;
 
 + (NSString *)md5:(NSString *)string;
++ (NSString *)md5ForData:(NSData *)data;
 
 + (NSDictionary *)argumentDictionaryInUrlString:(NSString *)string;
 
 + (bool)stringContainsEmoji:(NSString *)string;
++ (bool)stringContainsEmojiOnly:(NSString *)string length:(NSUInteger *)length;
 
 + (NSString *)stringForMessageTimerSeconds:(NSUInteger)seconds;
 + (NSString *)stringForShortMessageTimerSeconds:(NSUInteger)seconds;
 + (NSArray *)stringComponentsForMessageTimerSeconds:(NSUInteger)seconds;
++ (NSString *)stringForCallDurationSeconds:(NSUInteger)seconds;
++ (NSString *)stringForShortCallDurationSeconds:(NSUInteger)seconds;
 + (NSString *)stringForUserCount:(NSUInteger)userCount;
 + (NSString *)stringForFileSize:(int64_t)size;
 + (NSString *)stringForFileSize:(int64_t)size precision:(NSInteger)precision;
@@ -62,7 +66,7 @@ bool TGIsLocaleArabic();
 - (int)lengthByComposedCharacterSequencesInRange:(NSRange)range;
 
 - (NSData *)dataByDecodingHexString;
-- (NSArray *)getEmojiFromString:(BOOL)checkColor;
+- (NSArray *)getEmojiFromString:(BOOL)checkColor checkString:(__autoreleasing NSString **)checkString;
 
 - (bool)containsSingleEmoji;
 

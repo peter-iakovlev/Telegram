@@ -5,3 +5,5 @@
 @property (nonatomic, strong) UIColor *color;
 
 @end
+
+extern const CGFloat TGPhotoEditorTintSwatchSize;

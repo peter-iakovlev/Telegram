@@ -180,31 +180,8 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
     [_viewModel updateSearchText:animated];
 }
 
-- (void)updateMessage:(TGMessage *)message fromMessage:(TGMessage *)fromMessage viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
+- (void)updateMessage:(TGMessage *)message fromMessage:(TGMessage *)__unused fromMessage viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
 {
-   /* NSString *previousCaption = nil;
-    for (id attachment in fromMessage.mediaAttachments) {
-        if ([attachment isKindOfClass:[TGImageMediaAttachment class]]) {
-            previousCaption = ((TGImageMediaAttachment *)attachment).caption;
-        } else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]]) {
-            previousCaption = ((TGVideoMediaAttachment *)attachment).caption;
-        }
-    }
-    
-    NSString *currentCaption = nil;
-    for (id attachment in message.mediaAttachments) {
-        if ([attachment isKindOfClass:[TGImageMediaAttachment class]]) {
-            currentCaption = ((TGImageMediaAttachment *)attachment).caption;
-        } else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]]) {
-            currentCaption = ((TGVideoMediaAttachment *)attachment).caption;
-        }
-    }
-    
-    if (!TGStringCompare(previousCaption, currentCaption) && [_viewModel isKindOfClass:[TGImageMessageViewModel class]] && !CGSizeEqualToSize(_currentContainerSize, CGSizeZero)) {
-        _viewModel = nil;
-        _viewModel = [self viewModelForContainerSize:_currentContainerSize];
-    } else {*/
-    
     [_viewModel updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
 }
 
@@ -436,6 +413,7 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
     
     int contactIndex = -1;
     int webpageIndex = -1;
+    int gameIndex = -1;
     int32_t contactUid = 0;
     bool unsupportedMessage = false;
     TGUser *viaUser = nil;
@@ -519,6 +497,8 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
             }
             else if (attachment.type == TGWebPageMediaAttachmentType)
                 webpageIndex = index;
+            else if (attachment.type == TGGameAttachmentType)
+                gameIndex = index;
             else if (attachment.type == TGViaUserAttachmentType) {
                 int32_t userId = ((TGViaUserAttachment *)attachment).userId;
                 if (userId == 0) {
@@ -669,7 +649,7 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
                         
                         if (imageSize.width > FLT_EPSILON && imageSize.height > FLT_EPSILON)
                         {
-                            TGStickerMessageViewModel *model = [[TGStickerMessageViewModel alloc] initWithMessage:_message document:documentAttachment size:imageSize authorPeer:useAuthor ? [self currentAuthorPeer] : nil context:_context replyHeader:replyMessage replyPeer:replyPeer];
+                            TGStickerMessageViewModel *model = [[TGStickerMessageViewModel alloc] initWithMessage:_message document:documentAttachment size:imageSize authorPeer:useAuthor ? [self currentAuthorPeer] : nil context:_context replyHeader:replyMessage replyPeer:replyPeer viaUser:viaUser];
                             if (useAuthor) {
                                 [self _setupMessageAuthor:model];
                             }
@@ -796,7 +776,7 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
             }
         }
         
-        TGContactMessageViewModel *model = [[TGContactMessageViewModel alloc] initWithMessage:_message contact:contactUser authorPeer:useAuthor ? [self currentAuthorPeer] : nil context:_context];
+        TGContactMessageViewModel *model = [[TGContactMessageViewModel alloc] initWithMessage:_message contact:contactUser authorPeer:useAuthor ? [self currentAuthorPeer] : nil context:_context viaUser:viaUser];
         
         if (contactUser != nil)
         {
@@ -819,7 +799,7 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
         return model;
     }
     
-    TGTextMessageModernViewModel *model = [[TGTextMessageModernViewModel alloc] initWithMessage:message authorPeer:useAuthor ? [self currentAuthorPeer] : nil viaUser:viaUser context:_context];
+    TGTextMessageModernViewModel *model = [[TGTextMessageModernViewModel alloc] initWithMessage:message hasGame:gameIndex != -1 authorPeer:useAuthor ? [self currentAuthorPeer] : nil viaUser:viaUser context:_context];
     if (unsupportedMessage)
         [model setIsUnsupported:true];
     
@@ -836,9 +816,12 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
     }
     if (webpageIndex != -1) {
         TGWebPageMediaAttachment *webPage = message.mediaAttachments[webpageIndex];
-        if (webPage.title.length != 0 || webPage.pageDescription.length != 0 || webPage.siteName.length != 0 || [webPage.photo.imageInfo imageUrlForLargestSize:NULL] != nil || [webPage.document.thumbnailInfo imageUrlForLargestSize:NULL] != nil) {
+        if (webPage.title.length != 0 || webPage.pageDescription.length != 0 || webPage.siteName.length != 0 || [webPage.photo.imageInfo imageUrlForLargestSize:NULL] != nil || [webPage.document.thumbnailInfo imageUrlForLargestSize:NULL] != nil || webPage.document != nil) {
             [model setWebPageFooter:webPage viewStorage:nil];
         }
+    } else if (gameIndex != -1) {
+        TGGameMediaAttachment *game = message.mediaAttachments[gameIndex];
+        [model setWebPageFooter:[game webPageWithText:message.text entities:message.entities] viewStorage:nil];
     }
     
     model.collapseFlags = _collapseFlags;

@@ -12,7 +12,7 @@
 
 @implementation TGPreparedRemoteVideoMessage
 
-- (instancetype)initWithVideoId:(int64_t)videoId accessHash:(int64_t)accessHash videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration videoInfo:(TGVideoInfo *)videoInfo thumbnailInfo:(TGImageInfo *)thumbnailInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage
+- (instancetype)initWithVideoId:(int64_t)videoId accessHash:(int64_t)accessHash videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration videoInfo:(TGVideoInfo *)videoInfo thumbnailInfo:(TGImageInfo *)thumbnailInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
     self = [super init];
     if (self != nil)
@@ -26,6 +26,7 @@
         _thumbnailInfo = thumbnailInfo;
         _caption = caption;
         self.replyMessage = replyMessage;
+        self.replyMarkup = replyMarkup;
     }
     return self;
 }
@@ -40,15 +41,7 @@
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
-    TGVideoMediaAttachment *videoAttachment = [[TGVideoMediaAttachment alloc] init];
-    videoAttachment.videoId = _videoId;
-    videoAttachment.accessHash = _accessHash;
-    videoAttachment.duration = (int)_duration;
-    videoAttachment.dimensions = _videoSize;
-    videoAttachment.thumbnailInfo = _thumbnailInfo;
-    videoAttachment.videoInfo = _videoInfo;
-    videoAttachment.caption = _caption;
-    [attachments addObject:videoAttachment];
+    [attachments addObject:[self video]];
     
     if (self.replyMessage != nil)
     {
@@ -58,9 +51,30 @@
         [attachments addObject:replyMedia];
     }
     
+    if (self.botContextResult != nil) {
+        [attachments addObject:self.botContextResult];   
+        [attachments addObject:[[TGViaUserAttachment alloc] initWithUserId:self.botContextResult.userId username:nil]];
+    }
+    
+    if (self.replyMarkup != nil) {
+        [attachments addObject:self.replyMarkup];
+    }
+    
     message.mediaAttachments = attachments;
     
     return message;
+}
+
+- (TGVideoMediaAttachment *)video {
+    TGVideoMediaAttachment *videoAttachment = [[TGVideoMediaAttachment alloc] init];
+    videoAttachment.videoId = _videoId;
+    videoAttachment.accessHash = _accessHash;
+    videoAttachment.duration = (int)_duration;
+    videoAttachment.dimensions = _videoSize;
+    videoAttachment.thumbnailInfo = _thumbnailInfo;
+    videoAttachment.videoInfo = _videoInfo;
+    videoAttachment.caption = _caption;
+    return videoAttachment;
 }
 
 @end

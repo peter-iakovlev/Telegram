@@ -10,4 +10,6 @@
 
 @interface TGConversationAddMessagesActor : ASActor
 
++ (void)updatePeerRatings:(NSArray *)messages;
+
 @end

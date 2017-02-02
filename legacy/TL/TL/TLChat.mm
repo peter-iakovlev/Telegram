@@ -66,53 +66,6 @@
 
 @end
 
-@implementation TLChat$channelForbidden : TLChat
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0x2d85832c;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0x731ea8a0;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
-{
-    TLChat$channelForbidden *object = [[TLChat$channelForbidden alloc] init];
-    object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
-    object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
-    object.title = metaObject->getString((int32_t)0xcdebf414);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.n_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt64;
-        value.primitive.int64Value = self.access_hash;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8f305224, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.title;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xcdebf414, value));
-    }
-}
-
-
-@end
-
 @implementation TLChat$chatForbidden : TLChat
 
 
@@ -141,6 +94,60 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.n_id;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.title;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xcdebf414, value));
+    }
+}
+
+
+@end
+
+@implementation TLChat$channelForbidden : TLChat
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x8537784f;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x731ea8a0;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLChat$channelForbidden *object = [[TLChat$channelForbidden alloc] init];
+    object.flags = metaObject->getInt32((int32_t)0x81915c23);
+    object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
+    object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
+    object.title = metaObject->getString((int32_t)0xcdebf414);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.flags;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x81915c23, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.n_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.access_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8f305224, value));
     }
     {
         TLConstructedValue value;

@@ -31,6 +31,8 @@ typedef enum {
 @property (nonatomic) bool displayPlayer;
 @property (nonatomic) bool minimizePlayer;
 
+@property (nonatomic) bool showCallStatusBar;
+
 + (TGNavigationController *)navigationControllerWithControllers:(NSArray *)controllers;
 + (TGNavigationController *)navigationControllerWithControllers:(NSArray *)controllers navigationBarClass:(Class)navigationBarClass;
 + (TGNavigationController *)navigationControllerWithRootController:(UIViewController *)controller;

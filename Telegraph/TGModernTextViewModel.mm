@@ -24,6 +24,7 @@
     TGReusableLabelLayoutData *_layoutData;
     CGFloat _cachedLayoutContainerWidth;
     int _cachedLayoutFlags;
+    CGFloat _cachedAdditionalTrailingWidth;
 }
 
 @end
@@ -77,12 +78,12 @@
 
 - (bool)layoutNeedsUpdatingForContainerSize:(CGSize)containerSize
 {
-    return [self layoutNeedsUpdatingForContainerSize:containerSize layoutFlags:_layoutFlags];
+    return [self layoutNeedsUpdatingForContainerSize:containerSize additionalTrailingWidth:_additionalTrailingWidth layoutFlags:_layoutFlags];
 }
 
-- (bool)layoutNeedsUpdatingForContainerSize:(CGSize)containerSize layoutFlags:(int)layoutFlags
+- (bool)layoutNeedsUpdatingForContainerSize:(CGSize)containerSize additionalTrailingWidth:(CGFloat)additionalTrailingWidth layoutFlags:(int)layoutFlags
 {
-    if (_layoutData == nil || ABS(containerSize.width - _cachedLayoutContainerWidth) > FLT_EPSILON || _cachedLayoutFlags != layoutFlags)
+    if (_layoutData == nil || ABS(containerSize.width - _cachedLayoutContainerWidth) > FLT_EPSILON || _cachedLayoutFlags != layoutFlags || ABS(_cachedAdditionalTrailingWidth - additionalTrailingWidth) > FLT_EPSILON)
     {
         return true;
     }
@@ -123,11 +124,12 @@
 
 - (void)layoutForContainerSize:(CGSize)containerSize
 {
-    if (_layoutData == nil || ABS(containerSize.width - _cachedLayoutContainerWidth) > FLT_EPSILON || _cachedLayoutFlags != _layoutFlags)
+    if (_layoutData == nil || ABS(containerSize.width - _cachedLayoutContainerWidth) > FLT_EPSILON || _cachedLayoutFlags != _layoutFlags || ABS(_additionalTrailingWidth - _cachedAdditionalTrailingWidth) > FLT_EPSILON)
     {
         _layoutData = [TGReusableLabel calculateLayout:_text additionalAttributes:_additionalAttributes textCheckingResults:_textCheckingResults font:_font textColor:_textColor frame:CGRectZero orMaxWidth:(float)containerSize.width flags:_layoutFlags textAlignment:(NSTextAlignment)_alignment outIsRTL:&_isRTL additionalTrailingWidth:_additionalTrailingWidth maxNumberOfLines:_maxNumberOfLines numberOfLinesToInset:_linesInset.numberOfLinesToInset linesInset:_linesInset.inset containsEmptyNewline:&_containsEmptyNewline additionalLineSpacing:_additionalLineSpacing ellipsisString:_ellipsisString];
         _cachedLayoutContainerWidth = containerSize.width;
         _cachedLayoutFlags = _layoutFlags;
+        _cachedAdditionalTrailingWidth = _additionalTrailingWidth;
     }
     
     CGRect frame = self.frame;
@@ -139,11 +141,20 @@
 
 - (NSString *)linkAtPoint:(CGPoint)point regionData:(__autoreleasing NSArray **)regionData
 {
+    return [self linkAtPoint:point regionData:regionData hiddenLink:NULL];
+}
+
+- (NSString *)linkAtPoint:(CGPoint)point regionData:(__autoreleasing NSArray **)regionData hiddenLink:(bool *)hiddenLink {
+    return [self linkAtPoint:point regionData:regionData hiddenLink:hiddenLink linkText:nil];
+}
+
+- (NSString *)linkAtPoint:(CGPoint)point regionData:(__autoreleasing NSArray **)regionData hiddenLink:(bool *)hiddenLink linkText:(__autoreleasing NSString **)linkText
+{
     CGRect topRegion = CGRectZero;
     CGRect middleRegion = CGRectZero;
     CGRect bottomRegion = CGRectZero;
     
-    NSString *result = [_layoutData linkAtPoint:point topRegion:&topRegion middleRegion:&middleRegion bottomRegion:&bottomRegion];
+    NSString *result = [_layoutData linkAtPoint:point topRegion:&topRegion middleRegion:&middleRegion bottomRegion:&bottomRegion hiddenLink:hiddenLink linkText:linkText];
     if (result != nil)
     {
         NSMutableArray *array = [[NSMutableArray alloc] init];

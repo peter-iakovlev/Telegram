@@ -115,7 +115,7 @@
     return nil;
 }
 
-- (SSignal *)_memoizedDataSignalForRemoteLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId reportProgress:(bool)reportProgress
+- (SSignal *)_memoizedDataSignalForRemoteLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag
 {
     NSString *key = [self keyForLocation:location];
     if (key == nil)
@@ -123,7 +123,7 @@
     
     return [_signalManager multicastedSignalForKey:key producer:^SSignal *
     {
-        return [TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId size:0 reportProgress:reportProgress];
+        return [TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId size:0 reportProgress:reportProgress mediaTypeTag:mediaTypeTag];
     }];
 }
 
@@ -139,9 +139,9 @@
     }];
 }
 
-+ (SSignal *)memoizedDataSignalForRemoteLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId reportProgress:(bool)reportProgress
++ (SSignal *)memoizedDataSignalForRemoteLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag
 {
-    return [[self instance] _memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:reportProgress];
+    return [[self instance] _memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:reportProgress mediaTypeTag:mediaTypeTag];
 }
 
 + (SSignal *)memoizedDataSignalForHttpUrl:(NSString *)httpUrl
@@ -217,6 +217,7 @@
             threadPool:(SThreadPool *)threadPool
             memoryCache:(TGMemoryImageCache *)memoryCache
             placeholder:(SSignal *)__unused placeholder
+            blurLowQuality:(bool)blurLowQuality
 {
     __block bool lowQuality = false;
     __block bool alreadyBlurred = false;
@@ -238,7 +239,7 @@
                 
                 if (location != nil)
                 {
-                    return [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false] mapToSignal:^SSignal *(NSData *data)
+                    return [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
                     {
                         lowQuality = false;
                         cacheResult = true;
@@ -304,7 +305,7 @@
             
             if (location != nil)
             {
-                nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false] mapToSignal:^SSignal *(NSData *data)
+                nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
                 {
                     lowQuality = false;
                     //[data writeToFile:lowQualityImagePath atomically:true];
@@ -330,7 +331,7 @@
             
             if (location != nil)
             {
-                nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false] mapToSignal:^SSignal *(NSData *data)
+                nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
                 {
                     lowQuality = false;
                     //[data writeToFile:lowQualityImagePath atomically:true];
@@ -353,7 +354,7 @@
             return [SSignal fail:nil];
         else
         {
-            return [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false] mapToSignal:^SSignal *(NSData *data)
+            return [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
             {
                 NSString *directoryPath = [lowQualityImagePath substringToIndex:lowQualityImagePath.length - ((NSString *)[lowQualityImagePath pathComponents].lastObject).length];
                 [[NSFileManager defaultManager] createDirectoryAtPath:directoryPath withIntermediateDirectories:true attributes:nil error:NULL];
@@ -375,7 +376,7 @@
                     
                     if (location != nil)
                     {
-                        nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false] mapToSignal:^SSignal *(NSData *data)
+                        nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
                         {
                             lowQuality = false;
                             //[data writeToFile:lowQualityImagePath atomically:true];
@@ -397,7 +398,7 @@
         CGSize optimizedSize = size;
         if (lowQuality && pixelProcessingBlock == nil)
             optimizedSize = TGFitSize(size, CGSizeMake(25.0f, 25.0f));
-        return [[TGListThumbnailSignals signalForListThumbnail:optimizedSize image:image blurImage:lowQuality && !alreadyBlurred pixelProcessingBlock:pixelProcessingBlock calculateAverageColor:!averageColorCalculated] filter:^bool(id next)
+        return [[TGListThumbnailSignals signalForListThumbnail:optimizedSize image:image blurImage:lowQuality && !alreadyBlurred && blurLowQuality pixelProcessingBlock:pixelProcessingBlock calculateAverageColor:!averageColorCalculated] filter:^bool(id next)
         {
             if ([next isKindOfClass:[UIImage class]])
                 return true;

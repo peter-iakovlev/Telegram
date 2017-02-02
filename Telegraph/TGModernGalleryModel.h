@@ -5,6 +5,7 @@
 #import "TGModernGalleryDefaultFooterView.h"
 #import "TGModernGalleryDefaultFooterAccessoryView.h"
 
+@class TGModernGalleryController;
 @protocol TGModernGalleryItem;
 
 @interface TGModernGalleryModel : NSObject

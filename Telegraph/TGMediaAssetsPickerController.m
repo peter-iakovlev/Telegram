@@ -1,6 +1,8 @@
 #import "TGMediaAssetsPickerController.h"
 
 #import "UICollectionView+Utils.h"
+#import "TGImageUtils.h"
+#import "TGPhotoEditorUtils.h"
 
 #import "TGMediaPickerLayoutMetrics.h"
 #import "TGMediaAssetsPhotoCell.h"
@@ -20,7 +22,7 @@
 #import "TGMediaPickerModernGalleryMixin.h"
 #import "TGMediaPickerGalleryItem.h"
 
-@interface TGMediaAssetsPickerController ()
+@interface TGMediaAssetsPickerController () <UIViewControllerPreviewingDelegate>
 {
     TGMediaAssetsControllerIntent _intent;
     TGMediaAssetsLibrary *_assetsLibrary;
@@ -28,11 +30,14 @@
     SMetaDisposable *_assetsDisposable;
     
     TGMediaAssetFetchResult *_fetchResult;
-    TGMediaAssetsPreheatMixin *_preheatMixin;
     
     TGModernBarButton *_searchBarButton;
     
     TGMediaPickerModernGalleryMixin *_galleryMixin;
+    TGMediaPickerModernGalleryMixin *_previewGalleryMixin;
+    NSIndexPath *_previewIndexPath;
+    
+    bool _checked3dTouch;
 }
 @end
 
@@ -99,15 +104,15 @@
         if (strongSelf == nil)
             return 0;
         
-        return strongSelf->_fetchResult.count;
+        return [strongSelf _numberOfItems];
     };
-    _preheatMixin.assetAtIndex = ^TGMediaAsset *(NSInteger index)
+    _preheatMixin.assetAtIndexPath = ^TGMediaAsset *(NSIndexPath *indexPath)
     {
         __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return nil;
         
-        return [strongSelf->_fetchResult assetAtIndex:index];
+        return [strongSelf _itemAtIndexPath:indexPath];
     };
 }
 
@@ -180,9 +185,16 @@
     }]];
 }
 
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self setup3DTouch];
+}
+
 #pragma mark -
 
-- (NSInteger)_numberOfItems
+- (NSUInteger)_numberOfItems
 {
     return _fetchResult.count;
 }
@@ -195,6 +207,9 @@
 - (SSignal *)_signalForItem:(id)item
 {
     SSignal *assetSignal = [TGMediaAssetImageSignals imageForAsset:item imageType:TGMediaAssetImageTypeThumbnail size:[_layoutMetrics imageSize]];
+    if (self.editingContext == nil)
+        return assetSignal;
+    
     return [[self.editingContext thumbnailImageSignalForItem:item] mapToSignal:^SSignal *(id result)
     {
         if (result != nil)
@@ -229,10 +244,94 @@
 
 #pragma mark - Collection View Delegate
 
+- (void)_setupGalleryMixin:(TGMediaPickerModernGalleryMixin *)mixin
+{
+    __weak TGMediaAssetsPickerController *weakSelf = self;
+    mixin.referenceViewForItem = ^UIView *(TGMediaPickerGalleryItem *item)
+    {
+        __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return nil;
+        
+        for (TGMediaPickerCell *cell in [strongSelf->_collectionView visibleCells])
+        {
+            if ([cell.item isEqual:item.asset])
+                return cell;
+        }
+        
+        return nil;
+    };
+    
+    mixin.itemFocused = ^(TGMediaPickerGalleryItem *item)
+    {
+        __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        [strongSelf _hideCellForItem:item.asset animated:false];
+    };
+    
+    mixin.didTransitionOut = ^
+    {
+        __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        [strongSelf _hideCellForItem:nil animated:true];
+        strongSelf->_galleryMixin = nil;
+    };
+    
+    mixin.completeWithItem = ^(TGMediaPickerGalleryItem *item)
+    {
+        __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        [(TGMediaAssetsController *)strongSelf.navigationController completeWithCurrentItem:item.asset];
+    };
+}
+
+- (TGMediaPickerModernGalleryMixin *)_galleryMixinForItem:(id)item thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions inhibitDocumentCaptions:(bool)inhibitDocumentCaptions asFile:(bool)asFile
+{
+    return [[TGMediaPickerModernGalleryMixin alloc] initWithItem:item fetchResult:_fetchResult parentController:self thumbnailImage:thumbnailImage selectionContext:selectionContext editingContext:editingContext suggestionContext:suggestionContext hasCaptions:hasCaptions inhibitDocumentCaptions:inhibitDocumentCaptions asFile:asFile itemsLimit:0];
+}
+
+- (TGMediaPickerModernGalleryMixin *)galleryMixinForIndexPath:(NSIndexPath *)indexPath previewMode:(bool)previewMode outAsset:(TGMediaAsset **)outAsset
+{
+    TGMediaAsset *asset = [self _itemAtIndexPath:indexPath];
+    if (outAsset != NULL)
+        *outAsset = asset;
+    
+    UIImage *thumbnailImage = nil;
+    
+    TGMediaPickerCell *cell = (TGMediaPickerCell *)[_collectionView cellForItemAtIndexPath:indexPath];
+    if ([cell isKindOfClass:[TGMediaPickerCell class]])
+        thumbnailImage = cell.imageView.image;
+    
+    bool hasCaptions = self.captionsEnabled;
+    bool asFile = (_intent == TGMediaAssetsControllerSendFileIntent);
+    
+    TGMediaPickerModernGalleryMixin *mixin = [self _galleryMixinForItem:asset thumbnailImage:thumbnailImage selectionContext:self.selectionContext editingContext:self.editingContext suggestionContext:self.suggestionContext hasCaptions:hasCaptions inhibitDocumentCaptions:self.inhibitDocumentCaptions asFile:asFile];
+    
+    __weak TGMediaAssetsPickerController *weakSelf = self;
+    mixin.thumbnailSignalForItem = ^SSignal *(id item)
+    {
+        __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return nil;
+        
+        return [strongSelf _signalForItem:item];
+    };
+    
+    if (!previewMode)
+        [self _setupGalleryMixin:mixin];
+    
+    return mixin;
+}
+
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    NSInteger index = indexPath.row;
-    TGMediaAsset *asset = [_fetchResult assetAtIndex:index];
+    TGMediaAsset *asset = [self _itemAtIndexPath:indexPath];
 
     __block UIImage *thumbnailImage = nil;
     if ([TGMediaAssetsLibrary usesPhotoFramework])
@@ -253,6 +352,7 @@
     if (_intent == TGMediaAssetsControllerSetProfilePhotoIntent)
     {
         TGPhotoEditorController *controller = [[TGPhotoEditorController alloc] initWithItem:asset intent:TGPhotoEditorControllerAvatarIntent adjustments:nil caption:nil screenImage:thumbnailImage availableTabs:[TGPhotoEditorController defaultTabsForAvatarIntent] selectedTab:TGPhotoEditorCropTab];
+        controller.editingContext = self.editingContext;
         controller.didFinishRenderingFullSizeImage = ^(UIImage *resultImage)
         {
             __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
@@ -292,65 +392,53 @@
     }
     else
     {
-        bool hasCaption = (_intent == TGMediaAssetsControllerSendMediaIntent && self.captionsEnabled);
-        bool asFile = (_intent == TGMediaAssetsControllerSendFileIntent);
-        
-        _galleryMixin = [[TGMediaPickerModernGalleryMixin alloc] initWithItem:asset fetchResult:_fetchResult parentController:self thumbnailImage:thumbnailImage selectionContext:self.selectionContext editingContext:self.editingContext suggestionContext:self.suggestionContext hasCaption:hasCaption asFile:asFile itemsLimit:0];
-        
-        _galleryMixin.thumbnailSignalForItem = ^SSignal *(id item)
-        {
-            __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return nil;
-            
-            return [strongSelf _signalForItem:item];
-        };
-        
-        _galleryMixin.referenceViewForItem = ^UIView *(TGMediaPickerGalleryItem *item)
-        {
-            __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return nil;
-            
-            for (TGMediaPickerCell *cell in [strongSelf->_collectionView visibleCells])
-            {
-                if ([cell.item isEqual:item.asset])
-                    return cell;
-            }
-            
-            return nil;
-        };
-        
-        _galleryMixin.itemFocused = ^(TGMediaPickerGalleryItem *item)
-        {
-            __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf _hideCellForItem:item.asset animated:false];
-        };
-        
-        _galleryMixin.didTransitionOut = ^
-        {
-            __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [strongSelf _hideCellForItem:nil animated:true];
-            strongSelf->_galleryMixin = nil;
-        };
-        
-        _galleryMixin.completeWithItem = ^(TGMediaPickerGalleryItem *item)
-        {
-            __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            [(TGMediaAssetsController *)strongSelf.navigationController completeWithCurrentItem:item.asset];
-        };
-    
+        _galleryMixin = [self galleryMixinForIndexPath:indexPath previewMode:false outAsset:NULL];
         [_galleryMixin present];
     }
+}
+
+#pragma mark - 
+
+- (void)setup3DTouch
+{
+    if (_checked3dTouch)
+        return;
+    
+    _checked3dTouch = true;
+    if (iosMajorVersion() >= 9)
+    {
+        if (self.traitCollection.forceTouchCapability == UIForceTouchCapabilityAvailable)
+            [self registerForPreviewingWithDelegate:(id)self sourceView:self.view];
+    }
+}
+
+- (UIViewController *)previewingContext:(id<UIViewControllerPreviewing>)previewingContext viewControllerForLocation:(CGPoint)location
+{
+    CGPoint point = [self.view convertPoint:location toView:_collectionView];
+    NSIndexPath *indexPath = [_collectionView indexPathForItemAtPoint:point];
+    if (indexPath == nil)
+        return nil;
+    
+    [self _cancelSelectionGestureRecognizer];
+    
+    CGRect cellFrame = [_collectionView.collectionViewLayout layoutAttributesForItemAtIndexPath:indexPath].frame;
+    previewingContext.sourceRect = [self.view convertRect:cellFrame fromView:_collectionView];
+    
+    TGMediaAsset *asset = nil;
+    _previewGalleryMixin = [self galleryMixinForIndexPath:indexPath previewMode:true outAsset:&asset];
+    UIViewController *controller = [_previewGalleryMixin galleryController];
+    controller.preferredContentSize = TGFitSize(asset.dimensions, self.view.frame.size);
+    [_previewGalleryMixin setPreviewMode];
+    return controller;
+}
+
+- (void)previewingContext:(id<UIViewControllerPreviewing>)__unused previewingContext commitViewController:(UIViewController *)__unused viewControllerToCommit
+{
+    _galleryMixin = _previewGalleryMixin;
+    _previewGalleryMixin = nil;
+    
+    [self _setupGalleryMixin:_galleryMixin];
+    [_galleryMixin present];
 }
 
 #pragma mark - Asset Image Preheating
@@ -372,8 +460,8 @@
     NSMutableArray *assets = [NSMutableArray arrayWithCapacity:indexPaths.count];
     for (NSIndexPath *indexPath in indexPaths)
     {
-        if ((NSUInteger)indexPath.row < _fetchResult.count)
-            [assets addObject:[_fetchResult assetAtIndex:indexPath.row]];
+        if ((NSUInteger)indexPath.row < [self _numberOfItems])
+            [assets addObject:[self _itemAtIndexPath:indexPath]];
     }
     
     return assets;

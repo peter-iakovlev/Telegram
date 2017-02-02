@@ -565,11 +565,11 @@ const CGFloat TGNotificationBottomHitTestInset = 20.0f;
     }
     else
     {
-        NSString *emoji = [text getEmojiFromString:true].firstObject;
+        NSString *emoji = [text getEmojiFromString:true checkString:nil].firstObject;
         SSignal *stickersSignal = self.stickersSignal(emoji);
         
         __weak TGNotificationView *weakSelf = self;
-        [_stickerPacksDisposable setDisposable:[stickersSignal startWithNext:^(NSArray *matchedDocuments)
+        [_stickerPacksDisposable setDisposable:[stickersSignal startWithNext:^(NSDictionary *matchedDocuments)
         {
             __strong TGNotificationView *strongSelf = weakSelf;
             if (strongSelf == nil)
@@ -578,7 +578,8 @@ const CGFloat TGNotificationBottomHitTestInset = 20.0f;
             if (![text isEqualToString:inputTextPanel.text])
                 return;
 
-            if (matchedDocuments.count == 0)
+            NSArray *documents = matchedDocuments[@"documents"];
+            if (documents.count == 0)
             {
                 if ([[strongSelf->_replyView associatedPanel] isKindOfClass:[TGStickerAssociatedInputPanel class]])
                     [strongSelf->_replyView setAssociatedPanel:nil animated:true];
@@ -742,11 +743,14 @@ const CGFloat TGNotificationBottomHitTestInset = 20.0f;
     _replyView.frame = CGRectMake((self.frame.size.width - contentWidth) / 2, self.frame.size.height - replyPanelHeight, contentWidth, replyPanelHeight);
     _handleView.frame = CGRectMake((_backgroundView.frame.size.width - _handleView.frame.size.width) / 2, _backgroundView.frame.size.height - _handleView.frame.size.height - 4, _handleView.frame.size.width, _handleView.frame.size.height);
     
-    if (update)
+    if (update && _isExpanded)
     {
         [_replyView layoutIfNeeded];
         [_replyView refreshHeight];
     }
+}
+
+- (void)inputPanelRequestedSendGif:(TGNotificationReplyPanelView *)__unused inputTextPanel document:(TGDocumentMediaAttachment *)__unused document {
 }
 
 @end

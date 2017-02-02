@@ -19,16 +19,13 @@
     return self;
 }
 
-- (void)setAvailableSpaceAbove:(CGFloat)__unused availableSpaceAbove
-{
+- (void)setContentAreaHeight:(CGFloat)__unused contentAreaHeight {
 }
 
-- (void)adjustForOrientation:(UIInterfaceOrientation)__unused orientation keyboardHeight:(CGFloat)__unused keyboardHeight duration:(NSTimeInterval)__unused duration animationCurve:(int)__unused animationCurve
-{
+- (void)adjustForSize:(CGSize)__unused size keyboardHeight:(CGFloat)__unused keyboardHeight duration:(NSTimeInterval)__unused duration animationCurve:(int)__unused animationCurve contentAreaHeight:(CGFloat)__unused contentAreaHeight {
 }
 
-- (void)changeOrientationToOrientation:(UIInterfaceOrientation)__unused orientation keyboardHeight:(CGFloat)__unused keyboardHeight duration:(NSTimeInterval)__unused duration
-{
+- (void)changeToSize:(CGSize)__unused size keyboardHeight:(CGFloat)__unused keyboardHeight duration:(NSTimeInterval)__unused duration contentAreaHeight:(CGFloat)__unused contentAreaHeight {
 }
 
 @end

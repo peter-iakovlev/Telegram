@@ -20,7 +20,7 @@
 
 @implementation TGPreparedLocalDocumentMessage
 
-+ (instancetype)messageWithTempDataItem:(TGDataItem *)tempDataItem size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage {
++ (instancetype)messageWithTempDataItem:(TGDataItem *)tempDataItem size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup {
 #ifdef DEBUG
     NSAssert(tempDataItem != nil, @"tempDataItem should not be nil");
 #endif
@@ -30,7 +30,7 @@
     int64_t localDocumentId = 0;
     arc4random_buf(&localDocumentId, 8);
     
-    NSString *currentDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localDocumentId];
+    NSString *currentDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localDocumentId version:0];
     if (![[NSFileManager defaultManager] fileExistsAtPath:currentDocumentDirectory])
         [[NSFileManager defaultManager] createDirectoryAtPath:currentDocumentDirectory withIntermediateDirectories:true attributes:nil error:nil];
     
@@ -61,12 +61,15 @@
         message.thumbnailSize = networkThumbnailSize;
     }
     
+    message.caption = caption;
+    
     message.replyMessage = replyMessage;
+    message.replyMarkup = replyMarkup;
     
     return message;
 }
 
-+ (instancetype)messageWithTempDocumentPath:(NSString *)tempDocumentPath size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage
++ (instancetype)messageWithTempDocumentPath:(NSString *)tempDocumentPath size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
 #ifdef DEBUG
     NSAssert(tempDocumentPath != nil, @"tempDocumentPath should not be nil");
@@ -77,7 +80,7 @@
     int64_t localDocumentId = 0;
     arc4random_buf(&localDocumentId, 8);
     
-    NSString *currentDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localDocumentId];
+    NSString *currentDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localDocumentId version:0];
     if (![[NSFileManager defaultManager] fileExistsAtPath:currentDocumentDirectory])
         [[NSFileManager defaultManager] createDirectoryAtPath:currentDocumentDirectory withIntermediateDirectories:true attributes:nil error:nil];
     
@@ -108,7 +111,10 @@
         message.thumbnailSize = networkThumbnailSize;
     }
     
+    message.caption = caption;
+    
     message.replyMessage = replyMessage;
+    message.replyMarkup = replyMarkup;
     
     return message;
 }
@@ -116,11 +122,15 @@
 + (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalDocumentMessage *)source
 {
     TGMessage *replyMessage = nil;
+    TGReplyMarkupAttachment *replyMarkup = nil;
     for (id mediaAttachment in source.message.mediaAttachments)
     {
         if ([mediaAttachment isKindOfClass:[TGReplyMessageMediaAttachment class]])
         {
             replyMessage = ((TGReplyMessageMediaAttachment *)mediaAttachment).replyMessage;
+        }
+        else if ([mediaAttachment isKindOfClass:[TGReplyMarkupAttachment class]]) {
+            replyMarkup = mediaAttachment;
         }
     }
     
@@ -128,14 +138,14 @@
     {
         if ([mediaAttachment isKindOfClass:[TGDocumentMediaAttachment class]])
         {
-            return [self messageByCopyingDataFromMedia:mediaAttachment replyMessage:replyMessage];
+            return [self messageByCopyingDataFromMedia:mediaAttachment replyMessage:replyMessage replyMarkup:replyMarkup];
         }
     }
     
     return nil;
 }
 
-+ (instancetype)messageByCopyingDataFromMedia:(TGDocumentMediaAttachment *)documentAttachment replyMessage:(TGMessage *)replyMessage
++ (instancetype)messageByCopyingDataFromMedia:(TGDocumentMediaAttachment *)documentAttachment replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
 #ifdef DEBUG
     NSAssert(documentAttachment != nil, @"documentAttachment should not be nil");
@@ -151,10 +161,10 @@
     int64_t localDocumentId = 0;
     arc4random_buf(&localDocumentId, 8);
     
-    NSString *previousDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:documentAttachment.localDocumentId];
+    NSString *previousDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:documentAttachment.localDocumentId version:0];
     NSString *previousDocumentFile = [previousDocumentDirectory stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:documentAttachment.fileName]];
     
-    NSString *uploadDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localDocumentId];
+    NSString *uploadDocumentDirectory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localDocumentId version:0];
     NSString *uploadDocumentFile = [uploadDocumentDirectory stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:documentAttachment.fileName]];
     
     if (![[NSFileManager defaultManager] fileExistsAtPath:uploadDocumentDirectory])
@@ -183,7 +193,10 @@
         message.thumbnailSize = thumbnailSize;
     }
     
+    message.caption = documentAttachment.caption;
+    
     message.replyMessage = replyMessage;
+    message.replyMarkup = replyMarkup;
     
     return message;
 }
@@ -199,12 +212,12 @@
     arc4random_buf(&randomId, sizeof(randomId));
     NSString *imagePathComponent = [[NSString alloc] initWithFormat:@"%" PRIx64 ".bin", randomId];
     NSString *filePath = [uploadDirectory stringByAppendingPathComponent:imagePathComponent];
-    [data writeToFile:filePath atomically:false];
+    [data writeToFile:filePath atomically:true];
     
     return [@"file://" stringByAppendingString:filePath];
 }
 
-+ (instancetype)messageWithLocalDocumentId:(int64_t)localDocumentId size:(int32_t)size mimeType:(NSString *)mimeType localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)localThumbnailSize attributes:(NSArray *)attributes
++ (instancetype)messageWithLocalDocumentId:(int64_t)localDocumentId size:(int32_t)size mimeType:(NSString *)mimeType localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)localThumbnailSize attributes:(NSArray *)attributes replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
     TGPreparedLocalDocumentMessage *message = [[TGPreparedLocalDocumentMessage alloc] init];
     
@@ -214,27 +227,36 @@
     message.mimeType = mimeType;
     message.localThumbnailDataPath = localThumbnailDataPath;
     message.thumbnailSize = localThumbnailSize;
+    message.replyMarkup = replyMarkup;
     
     return message;
 }
 
-+ (NSString *)localDocumentDirectoryForLocalDocumentId:(int64_t)localDocumentId
++ (NSString *)localDocumentDirectoryForLocalDocumentId:(int64_t)localDocumentId version:(int32_t)version
 {
     NSString *documentsDirectory = [TGAppDelegate documentsPath];
     NSString *filesDirectory = [documentsDirectory stringByAppendingPathComponent:@"files"];
-    return [filesDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"local%llx", localDocumentId]];
+    NSString *versionString = @"";
+    if (version > 0) {
+        versionString = [NSString stringWithFormat:@"-%d", version];
+    }
+    return [[filesDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"local%llx", localDocumentId]] stringByAppendingString:versionString];
 }
 
-+ (NSString *)localDocumentDirectoryForDocumentId:(int64_t)documentId
++ (NSString *)localDocumentDirectoryForDocumentId:(int64_t)documentId version:(int32_t)version
 {
     NSString *documentsDirectory = [TGAppDelegate documentsPath];
     NSString *filesDirectory = [documentsDirectory stringByAppendingPathComponent:@"files"];
-    return [filesDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%llx", documentId]];
+    NSString *versionString = @"";
+    if (version > 0) {
+        versionString = [NSString stringWithFormat:@"-%d", version];
+    }
+    return [[filesDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%llx", documentId]]  stringByAppendingString:versionString];
 }
 
 - (NSString *)localDocumentDirectory
 {
-    return [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:_localDocumentId];
+    return [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:_localDocumentId version:0];
 }
 
 - (NSString *)localDocumentFileName
@@ -264,6 +286,7 @@
     documentAttachment.size = _size;
     documentAttachment.attributes = _attributes;
     documentAttachment.mimeType = _mimeType;
+    documentAttachment.caption = self.caption;
     
     if (_localThumbnailDataPath != nil)
     {
@@ -283,6 +306,10 @@
         replyAttachment.replyMessageId = self.replyMessage.mid;
         replyAttachment.replyMessage = self.replyMessage;
         [attachments addObject:replyAttachment];
+    }
+    
+    if (self.replyMarkup != nil) {
+        [attachments addObject:self.replyMarkup];
     }
     
     message.mediaAttachments = attachments;

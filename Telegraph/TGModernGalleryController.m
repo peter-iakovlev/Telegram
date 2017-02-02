@@ -19,6 +19,8 @@
 #import "TGModernGalleryItemView.h"
 #import "TGModernGalleryTransitionView.h"
 
+#import "TGModernGalleryImageItemContainerView.h"
+
 #import "TGModernGalleryContainerView.h"
 #import "TGModernGalleryInterfaceView.h"
 #import "TGModernGalleryDefaultInterfaceView.h"
@@ -36,6 +38,9 @@
 #import "TGImageUtils.h"
 
 #import "TGSharedMediaCollectionView.h"
+#import "TGAttachmentCarouselItemView.h"
+
+#import "TGModernGalleryEmbeddedStickersHeaderView.h"
 
 #define TGModernGalleryItemPadding 20.0f
 
@@ -55,8 +60,8 @@
     bool _isBeingDismissed;
     
     UIStatusBarStyle _statusBarStyle;
+    id<SDisposable> _transitionInDisposable;
 }
-
 @end
 
 @implementation TGModernGalleryController
@@ -73,6 +78,8 @@
         _animateTransition = true;
         _showInterface = true;
         _adjustsStatusBarVisibility = true;
+        _defaultStatusBarStyle = UIStatusBarStyleDefault;
+        _shouldAnimateStatusBarStyleTransition = true;
     }
     return self;
 }
@@ -81,6 +88,7 @@
 {
     _view.scrollView.delegate = nil;
     _view.scrollView.scrollDelegate = nil;
+    [_transitionInDisposable dispose];
 }
 
 - (void)dismiss
@@ -99,6 +107,18 @@
     return [super prefersStatusBarHidden];
 }
 
+
+- (void)complexDismiss
+{
+    if (_completedTransitionOut != nil)
+        _completedTransitionOut();
+    
+    dispatch_async(dispatch_get_main_queue(), ^
+    {
+        [super dismiss];
+    });
+}
+
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
     return _statusBarStyle;
@@ -109,19 +129,14 @@
     return [super shouldAutorotate] && (_view == nil || [_view shouldAutorotate]) && ([_model _shouldAutorotate]);
 }
 
+- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation duration:(NSTimeInterval)duration
+{
+    if ([_view.interfaceView respondsToSelector:@selector(willRotateToInterfaceOrientation:duration:)])
+        [_view.interfaceView willRotateToInterfaceOrientation:interfaceOrientation duration:duration];
+}
+
 - (void)dismissWhenReady
 {
-    /*for (TGModernGalleryItemView *itemView in _visibleItemViews)
-    {
-        if (itemView.index == [self currentItemIndex])
-        {
-            if ([itemView dismissControllerNowOrSchedule])
-                [self dismiss];
-            
-            return;
-        }
-    }*/
-    
     [self dismiss];
 }
 
@@ -180,7 +195,7 @@
                 
                 if (asModal)
                 {
-                    strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
+                    strongSelf->_statusBarStyle = strongSelf->_defaultStatusBarStyle;
                     strongSelf.view.hidden = true;
                     
                     if (strongSelf.completedTransitionOut)
@@ -198,10 +213,10 @@
                 {
                     if (animated)
                     {
-                        if (iosMajorVersion() >= 7)
+                        if (iosMajorVersion() >= 7 && strongSelf.shouldAnimateStatusBarStyleTransition)
                         {
                             [strongSelf animateStatusBarTransition:0.2];
-                            strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
+                            strongSelf->_statusBarStyle = strongSelf->_defaultStatusBarStyle;
                             [strongSelf setNeedsStatusBarAppearanceUpdate];
                         }
                         
@@ -222,7 +237,7 @@
                     {
                         if (iosMajorVersion() >= 7)
                         {
-                            strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
+                            strongSelf->_statusBarStyle = strongSelf->_defaultStatusBarStyle;
                             [strongSelf setNeedsStatusBarAppearanceUpdate];
                         }
                         
@@ -253,6 +268,33 @@
 - (void)itemViewDidRequestInterfaceShowHide:(TGModernGalleryItemView *)__unused itemView
 {
     [_view showHideInterface];
+}
+
+- (void)itemViewDidRequestGalleryDismissal:(TGModernGalleryItemView *)__unused itemView animated:(bool)animated
+{
+    if (_completedTransitionOut)
+        _completedTransitionOut();
+    
+    void (^block)(void) = ^
+    {
+        [super dismiss];
+    };
+    
+    _view.userInteractionEnabled = false;
+    
+    if (animated)
+        [_view fadeOutWithDuration:0.3 completion:block];
+    else
+        block();
+}
+
+- (UIView *)itemViewDidRequestInterfaceView:(TGModernGalleryItemView *)__unused itemView
+{
+    return _view.interfaceView;
+}
+
+- (TGViewController *)parentControllerForPresentation {
+    return self;
 }
 
 - (TGModernGalleryItemView *)dequeueViewForItem:(id<TGModernGalleryItem>)item
@@ -333,7 +375,7 @@
     
     _view.userInteractionEnabled = showInterface;
     
-    _statusBarStyle = _showInterface ? UIStatusBarStyleLightContent : UIStatusBarStyleDefault;
+    _statusBarStyle = _showInterface ? UIStatusBarStyleLightContent : _defaultStatusBarStyle;
 }
 
 - (void)loadView
@@ -350,7 +392,12 @@
     if (interfaceView == nil)
         interfaceView = [[TGModernGalleryDefaultInterfaceView alloc] initWithFrame:CGRectZero];
     
-    _view = [[TGModernGalleryView alloc] initWithFrame:self.view.bounds itemPadding:TGModernGalleryItemPadding interfaceView:interfaceView];
+    CGSize previewSize = CGSizeZero;
+    if (_previewMode)
+        previewSize = self.preferredContentSize;
+    
+    __weak TGModernGalleryController *weakSelf = self;
+    _view = [[TGModernGalleryView alloc] initWithFrame:self.view.bounds itemPadding:TGModernGalleryItemPadding interfaceView:interfaceView previewMode:_previewMode previewSize:previewSize];
     _view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_view];
     
@@ -367,7 +414,6 @@
     
     _view.userInteractionEnabled = _showInterface;
     
-    __weak TGModernGalleryController *weakSelf = self;
     _view.transitionOut = ^bool (CGFloat velocity)
     {
         __strong TGModernGalleryController *strongSelf = weakSelf;
@@ -421,10 +467,10 @@
                 }
                 else
                 {
-                    if (iosMajorVersion() >= 7)
+                    if (iosMajorVersion() >= 7 && strongSelf.shouldAnimateStatusBarStyleTransition)
                     {
                         [strongSelf animateStatusBarTransition:0.2];
-                        strongSelf->_statusBarStyle = UIStatusBarStyleDefault;
+                        strongSelf->_statusBarStyle = strongSelf->_defaultStatusBarStyle;
                         [strongSelf setNeedsStatusBarAppearanceUpdate];
                     }
                     
@@ -447,12 +493,12 @@
         return true;
     };
     
-    [self reloadDataAtItem:_model.focusItem synchronously:true];
+    [self reloadDataAtItem:_model.focusItem synchronously:!_asyncTransitionIn];
     
-    if (_animateTransition)
-    {
+    if (_animateTransition) {
         UIView *transitionInFromView = nil;
         UIView *transitionInToView = nil;
+        TGModernGalleryItemView *transitionFromItemView = nil;
         CGRect transitionInToViewContentRect = CGRectMake(0.0f, 0.0f, 1.0f, 1.0f);
         if (_beginTransitionIn && _model.focusItem != nil)
         {
@@ -462,6 +508,7 @@
                 if ([visibleItemView.item isEqual:self.model.focusItem])
                 {
                     itemView = visibleItemView;
+                    transitionFromItemView = itemView;
                     
                     break;
                 }
@@ -482,37 +529,65 @@
                 }
             }
         }
-        
+    
         if (transitionInFromView != nil && transitionInToView != nil && transitionInToView.frame.size.width > FLT_EPSILON && transitionInToView.frame.size.height > FLT_EPSILON && transitionInToViewContentRect.size.width > FLT_EPSILON && transitionInToViewContentRect.size.height > FLT_EPSILON)
         {
-            [self animateTransitionInFromView:transitionInFromView toView:transitionInToView toViewContentRect:transitionInToViewContentRect];
-        }
-        else if (_finishedTransitionIn && _model.focusItem != nil)
-        {
-            TGModernGalleryItemView *itemView = nil;
-            if (self.finishedTransitionIn && self.model.focusItem != nil)
-            {
-                for (TGModernGalleryItemView *visibleItemView in self->_visibleItemViews)
-                {
-                    if ([visibleItemView.item isEqual:self.model.focusItem])
-                    {
-                        itemView = visibleItemView;
+            if (_asyncTransitionIn) {
+                __weak TGModernGalleryController *weakSelf = self;
+                self.view.hidden = true;
+                _transitionInDisposable = [[[[transitionFromItemView readyForTransitionIn] take:1] timeout:1.0 onQueue:[SQueue mainQueue] orSignal:[SSignal single:@true]] startWithNext:^(__unused id next) {
+                    __strong TGModernGalleryController *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        if (strongSelf->_startedTransitionIn) {
+                            strongSelf->_startedTransitionIn();
+                        }
                         
-                        break;
+                        strongSelf.view.hidden = false;
+                        [strongSelf animateTransitionInFromView:transitionInFromView toView:transitionInToView toViewContentRect:transitionInToViewContentRect];
+                        [strongSelf->_view transitionInWithDuration:0.15];
+                        
+                        [strongSelf animateStatusBarTransition:0.2];
+                    }
+                }];
+            } else {
+                if (_startedTransitionIn) {
+                    _startedTransitionIn();
+                }
+                [self animateTransitionInFromView:transitionInFromView toView:transitionInToView toViewContentRect:transitionInToViewContentRect];
+                [_view transitionInWithDuration:0.15];
+                
+                [self animateStatusBarTransition:0.2];
+            }
+        }
+        else if (!_previewMode)
+        {
+            if (_finishedTransitionIn && _model.focusItem != nil)
+            {
+                TGModernGalleryItemView *itemView = nil;
+                if (self.finishedTransitionIn && self.model.focusItem != nil)
+                {
+                    for (TGModernGalleryItemView *visibleItemView in self->_visibleItemViews)
+                    {
+                        if ([visibleItemView.item isEqual:self.model.focusItem])
+                        {
+                            itemView = visibleItemView;
+                            
+                            break;
+                        }
                     }
                 }
+                
+                _finishedTransitionIn(_model.focusItem, itemView);
+                
+                [_model _transitionCompleted];
             }
+            else
+                [_model _transitionCompleted];
             
-            _finishedTransitionIn(_model.focusItem, itemView);
+            [_view transitionInWithDuration:0.15];
             
-            [_model _transitionCompleted];
+            [self animateStatusBarTransition:0.2];
         }
-        else
-            [_model _transitionCompleted];
-        
-        [_view transitionInWithDuration:0.15];
-        
-        [self animateStatusBarTransition:0.2];
     }
     else
     {
@@ -678,6 +753,12 @@ static CGFloat transformRotation(CGAffineTransform transform)
     {
     }
     
+    if (![UIView areAnimationsEnabled]) {
+        view.frame = toFrame;
+        completion(true);
+        return;
+    }
+    
     [CATransaction begin];
     
     CGFloat damping = animatingIn ? 25.0f : 30.0f;
@@ -741,7 +822,7 @@ static CGFloat transformRotation(CGAffineTransform transform)
     CGFloat fromRotationZ = 0.0f;
     CGRect fromFrame = [self convertFrameOfView:fromView fromSubframe:(CGRect){CGPointZero, fromView.frame.size} toView:toView.superview toSubframe:[toView.superview convertRect:toViewContentRect fromView:toView] outRotationZ:&fromRotationZ];
     
-    if (![fromScrollView isKindOfClass:[TGSharedMediaCollectionView class]])
+    if (![fromScrollView isKindOfClass:[TGSharedMediaCollectionView class]] && ![fromScrollView isKindOfClass:[TGAttachmentCarouselCollectionView class]])
         fromFrame.origin.y += fromScrollView.frame.origin.y * 2.0f;
     
     fromFrame.origin.x -= toView.superview.frame.origin.x;
@@ -813,15 +894,8 @@ static CGFloat transformRotation(CGAffineTransform transform)
         __strong UIView *strongFromViewContainerCopy = weakFromViewContainerCopy;
         [strongFromViewContainerCopy removeFromSuperview];
     }];
-    
     toView.alpha = 0.0f;
     
-    /*POPBasicAnimation *toViewAlphaAnimation = [POPBasicAnimation animationWithPropertyNamed:kPOPViewAlpha];
-    toViewAlphaAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
-    toViewAlphaAnimation.duration = 0.15;
-    toViewAlphaAnimation.fromValue = @(0.0);
-    toViewAlphaAnimation.toValue = @(1.0);
-    [toView pop_addAnimation:toViewAlphaAnimation forKey:@"transitionInAlpha"];*/
     [UIView animateWithDuration:0.07 animations:^{
         toView.alpha = 1.0f;
     }];
@@ -836,42 +910,82 @@ static CGFloat transformRotation(CGAffineTransform transform)
     UIView *toScrollView = [self findScrollView:toView];
     UIView *toContainerView = toScrollView.superview;
     
-    CGRect toFrame = [fromView.superview convertRect:[toView convertRect:toView.bounds toView:nil] fromView:nil];
-    toFrame = adjustFrameForOriginalSubframe(fromView.frame, fromViewContentRect, toFrame);
-    
     TG_TIMESTAMP_MEASURE(out)
     
     CGRect toContainerFrame = [toContainerView convertRect:toView.bounds fromView:toView];
     CGRect toContainerFromFrame = [toContainerView convertRect:[fromView convertRect:fromViewContentRect toView:nil] fromView:nil];
     
-    TG_TIMESTAMP_MEASURE(out)
-    
-    /*POPBasicAnimation *fromViewAlphaAnimation = [POPBasicAnimation animationWithPropertyNamed:kPOPViewAlpha];
-    fromViewAlphaAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
-    fromViewAlphaAnimation.duration = 0.15;
-    fromViewAlphaAnimation.fromValue = @(1.0);
-    fromViewAlphaAnimation.toValue = @(0.0);
-    [fromView pop_addAnimation:fromViewAlphaAnimation forKey:@"transitionOutAlpha"];*/
-    [UIView animateWithDuration:0.1 animations:^{
-        fromView.alpha = 0.0f;
-    }];
-    
     UIView *toViewCopy = nil;
+    TGModernGalleryComplexTransitionDescription *transitionDesc = nil;
     
     TG_TIMESTAMP_MEASURE(out)
     
     if ([toView conformsToProtocol:@protocol(TGModernGalleryTransitionView)])
     {
-        UIImage *transitionImage = [(id<TGModernGalleryTransitionView>)toView transitionImage];
-        if (transitionImage != nil)
+        if ([toView respondsToSelector:@selector(hasComplexTransition)])
         {
-            toViewCopy = [[UIImageView alloc] initWithImage:transitionImage];
+            if ([(id<TGModernGalleryTransitionView>)toView hasComplexTransition])
+                transitionDesc = [(id<TGModernGalleryTransitionView>)toView complexTransitionDescription];
+        }
+        else
+        {
+            UIImage *transitionImage = [(id<TGModernGalleryTransitionView>)toView transitionImage];
+            if (transitionImage != nil)
+            {
+                toViewCopy = [[UIImageView alloc] initWithImage:transitionImage];
+            }
         }
     }
     
+    UIEdgeInsets toFrameInsets = UIEdgeInsetsZero;
+
+    if (transitionDesc == nil)
+    {
+        [UIView animateWithDuration:0.1 animations:^{
+            fromView.alpha = 0.0f;
+        }];
+    }
+    else
+    {
+        if (transitionDesc.cornerRadius > FLT_EPSILON)
+        {
+            if ([fromView isKindOfClass:[TGModernGalleryImageItemContainerView class]])
+            {
+                UIView *contentView = ((TGModernGalleryImageItemContainerView *)fromView).contentView();
+                CGFloat scale = [[contentView.layer valueForKeyPath:@"transform.scale.x"] floatValue];
+                contentView.layer.cornerRadius = transitionDesc.cornerRadius / scale;
+                contentView.clipsToBounds = true;
+            }
+        }
+        if (transitionDesc.overlayImage != nil)
+        {
+            if ([fromView isKindOfClass:[TGModernGalleryImageItemContainerView class]])
+            {
+                UIView *contentView = ((TGModernGalleryImageItemContainerView *)fromView).contentView();
+             
+                UIImageView *overlayImageView = [[UIImageView alloc] initWithImage:transitionDesc.overlayImage];
+                overlayImageView.alpha = 0.0f;
+                overlayImageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                overlayImageView.frame = contentView.bounds;
+                [contentView addSubview:overlayImageView];
+                
+                [UIView animateWithDuration:0.1 animations:^{
+                    overlayImageView.alpha = 1.0f;
+                }];
+            }
+        }
+        if (!UIEdgeInsetsEqualToEdgeInsets(transitionDesc.insets, UIEdgeInsetsZero))
+        {
+            toFrameInsets = transitionDesc.insets;
+        }
+    }
+    
+    CGRect toFrame = [fromView.superview convertRect:[toView convertRect:CGRectInset(toView.bounds, toFrameInsets.left, toFrameInsets.top) toView:nil] fromView:nil];
+    toFrame = adjustFrameForOriginalSubframe(fromView.frame, fromViewContentRect, toFrame);
+    
     TG_TIMESTAMP_MEASURE(out)
     
-    if (toViewCopy == nil)
+    if (transitionDesc == nil && toViewCopy == nil)
     {
         CGFloat toViewAlpha = toView.alpha;
         bool toViewHidden = toView.hidden;
@@ -886,7 +1000,8 @@ static CGFloat transformRotation(CGAffineTransform transform)
     }
     
     toViewCopy.frame = toContainerFromFrame;
-    [toContainerView insertSubview:toViewCopy aboveSubview:toScrollView];
+    if (toViewCopy != nil)
+        [toContainerView insertSubview:toViewCopy aboveSubview:toScrollView];
     
     TG_TIMESTAMP_MEASURE(out)
     
@@ -897,25 +1012,31 @@ static CGFloat transformRotation(CGAffineTransform transform)
         __strong TGModernGalleryController *strongSelf = weakSelf;
         if (strongSelf != nil)
         {
-            [strongSelf dismiss];
+            if (transitionDesc != nil)
+                [strongSelf complexDismiss];
+            else
+                [strongSelf dismiss];
         }
     }];
     
     TG_TIMESTAMP_MEASURE(out)
     
-    __weak UIView *weakToViewCopy = toViewCopy;
-    [self animateView:toViewCopy frameFrom:toViewCopy.frame to:toContainerFrame velocity:velocity rotationFrom:0.0f to:0.0f animatingIn:false completion:^(__unused bool finished)
+    if (toViewCopy != nil)
     {
-        __strong UIView *strongToViewCopy = weakToViewCopy;
-        [strongToViewCopy removeFromSuperview];
-    }];
+        __weak UIView *weakToViewCopy = toViewCopy;
+        [self animateView:toViewCopy frameFrom:toViewCopy.frame to:toContainerFrame velocity:velocity rotationFrom:0.0f to:0.0f animatingIn:false completion:^(__unused bool finished)
+        {
+            __strong UIView *strongToViewCopy = weakToViewCopy;
+            [strongToViewCopy removeFromSuperview];
+        }];
+    }
     
     TG_TIMESTAMP_MEASURE(out)
     
-    if (iosMajorVersion() >= 7)
+    if (iosMajorVersion() >= 7 && self.shouldAnimateStatusBarStyleTransition)
     {
         [self animateStatusBarTransition:0.2];
-        self->_statusBarStyle = UIStatusBarStyleDefault;
+        self->_statusBarStyle = _defaultStatusBarStyle;
         [self setNeedsStatusBarAppearanceUpdate];
     }
     
@@ -932,9 +1053,43 @@ static CGFloat transformRotation(CGAffineTransform transform)
     TGLog(@"started animation");
 }
 
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    
+    if (_previewMode && animated)
+    {
+        if (_finishedTransitionIn && _model.focusItem != nil)
+        {
+            TGModernGalleryItemView *itemView = nil;
+            if (self.finishedTransitionIn && self.model.focusItem != nil)
+            {
+                for (TGModernGalleryItemView *visibleItemView in self->_visibleItemViews)
+                {
+                    if ([visibleItemView.item isEqual:self.model.focusItem])
+                    {
+                        itemView = visibleItemView;
+                        
+                        break;
+                    }
+                }
+            }
+            
+            _finishedTransitionIn(_model.focusItem, itemView);
+            
+            [_model _transitionCompleted];
+        }
+        else
+            [_model _transitionCompleted];
+    }
+}
+
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    
+    if (_previewMode)
+        return;
     
     if (!_showInterface)
     {
@@ -953,15 +1108,25 @@ static CGFloat transformRotation(CGAffineTransform transform)
 - (void)viewWillDisappear:(BOOL)animated
 {
     [super viewWillDisappear:animated];
+    
+    if (_previewMode && animated)
+    {
+        if (self.beginTransitionOut != nil)
+        {
+            id<TGModernGalleryItem> item = [self currentItem];
+            self.beginTransitionOut(item, [self itemViewForItem:item]);
+        }
+        return;
+    }
 
     if (self.adjustsStatusBarVisibility)
     {
         [TGHacks setApplicationStatusBarAlpha:1.0f];
         
-        dispatch_async(dispatch_get_main_queue(), ^
-        {
-            [TGHacks setApplicationStatusBarAlpha:1.0f];
-        });
+//        dispatch_async(dispatch_get_main_queue(), ^
+//        {
+//            [TGHacks setApplicationStatusBarAlpha:1.0f];
+//        });
     }
 }
 
@@ -1277,6 +1442,8 @@ static CGFloat transformRotation(CGAffineTransform transform)
                     itemView.frame = CGRectMake(itemWidth * i + TGModernGalleryItemPadding, 0.0f, itemWidth - TGModernGalleryItemPadding * 2.0f, bounds.size.height);
                     [itemView setItem:item synchronously:synchronously];
                     itemView.index = i;
+                    [itemView setIsVisible:itemView.index >= leftmostTrulyVisibleItemIndex && itemView.index <= rightmostTrulyVisibleItemIndex];
+                    [itemView setIsCurrent:itemView.index == [self currentItemIndex]];
                     [_view.scrollView addSubview:itemView];
                     
                     UIView *headerView = [itemView headerView];
@@ -1341,7 +1508,10 @@ static CGFloat transformRotation(CGAffineTransform transform)
         if (itemHeaderView != nil)
         {
             itemHeaderView.alpha = alpha;
-            titleAlpha -= alpha;
+            itemHeaderView.hidden = (alpha < FLT_EPSILON);
+            if (![itemHeaderView isKindOfClass:[TGModernGalleryEmbeddedStickersHeaderView class]]) {
+                titleAlpha -= alpha;
+            }
         }
         
         CGFloat footerAlpha = itemView.index == currentItemIndex ? 1.0f : 0.0f;
@@ -1418,7 +1588,7 @@ static CGFloat transformRotation(CGAffineTransform transform)
 
 - (void)animateStatusBarTransition:(NSTimeInterval)duration
 {
-    if (iosMajorVersion() >= 7)
+    if (iosMajorVersion() >= 7 && self.shouldAnimateStatusBarStyleTransition)
     {
         [TGHacks animateApplicationStatusBarStyleTransitionWithDuration:duration];
     }
@@ -1458,6 +1628,21 @@ static CGFloat transformRotation(CGAffineTransform transform)
 - (bool)isExclusive
 {
     return true;
+}
+
+- (void)setPreviewMode:(bool)previewMode
+{
+    bool previousMode = _previewMode;
+    
+    _previewMode = previewMode;
+    [_view setPreviewMode:_previewMode];
+    
+    if (previousMode)
+    {
+        self.showInterface = true;
+        if (_itemFocused != nil)
+            _itemFocused(self.currentItem);
+    }
 }
 
 @end

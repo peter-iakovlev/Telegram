@@ -504,6 +504,12 @@
     return item.canBeMovedToSectionAtIndex != nil && item.canBeMovedToSectionAtIndex(toIndexPath.section, toIndexPath.item);
 }
 
+- (void)collectionView:(UICollectionView *)__unused collectionView willDisplayCell:(UICollectionViewCell *)__unused cell forItemAtIndexPath:(NSIndexPath *)indexPath {
+    TGCollectionMenuSection *section = _menuSections.sections[indexPath.section];
+    TGCollectionItem *item = section.items[indexPath.item];
+    [self willDisplayItem:item];
+}
+
 - (BOOL)collectionViewCanMoveItems:(UICollectionView *)__unused collectionView
 {
     return _enableItemReorderingGestures;
@@ -515,6 +521,9 @@
             [self loadMore];
         }
     }
+}
+
+- (void)willDisplayItem:(TGCollectionItem *)__unused item {
 }
 
 - (void)loadMore {

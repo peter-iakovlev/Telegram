@@ -86,6 +86,8 @@
 #import "TGCreateGroupController.h"
 #import "TGChannelIntroController.h"
 
+#import "TGMeContactsCell.h"
+
 #pragma mark -
 
 static bool TGContactListItemSortByLastNameFunction(const TGUser *item1, const TGUser *item2)
@@ -266,6 +268,8 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
     UIView *_navigationBarBackgroundView;
     
     bool _updateContactListOnShow;
+    
+    TGUser *_selfUser;
 }
 
 @property (nonatomic, strong) TGToolbarButton *doneButton;
@@ -1044,7 +1048,7 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
 {
     [super willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
     
-    CGSize screenSize = [TGViewController screenSizeForInterfaceOrientation:toInterfaceOrientation];
+    //CGSize screenSize = [TGViewController screenSizeForInterfaceOrientation:toInterfaceOrientation];
     
     if ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose)
     {    
@@ -1251,14 +1255,8 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
         
         UIView *sectionView = [[UIView alloc] initWithFrame:CGRectMake(0, first ? 0 : -1, 10, first ? 10 : 11)];
         sectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        sectionView.backgroundColor = UIColorRGB(0xf7f7f7);
+        sectionView.backgroundColor = UIColorRGB(0xf2f2f2);
         [sectionContainer addSubview:sectionView];
-        
-        CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
-        UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, sectionView.frame.origin.y - (first ? separatorHeight : 0.0f), 10, separatorHeight)];
-        separatorView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-        separatorView.backgroundColor = TGSeparatorColor();
-        [sectionContainer addSubview:separatorView];
         
         UILabel *sectionLabel = [[UILabel alloc] init];
         sectionLabel.tag = 100;
@@ -1272,9 +1270,9 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
     }
 
     UILabel *sectionLabel = (UILabel *)[sectionContainer viewWithTag:100];
-    sectionLabel.font = wide ? TGMediumSystemFontOfSize(14) : TGBoldSystemFontOfSize(17);
+    sectionLabel.font = wide ? TGMediumSystemFontOfSize(14) : TGMediumSystemFontOfSize(12);
     sectionLabel.text = title;
-    sectionLabel.textColor = wide ? UIColorRGB(0x8e8e93) : [UIColor blackColor];
+    sectionLabel.textColor = wide ? UIColorRGB(0x8e8e93) : UIColorRGB(0x8e8e93);
     [sectionLabel sizeToFit];
     if (wide)
     {
@@ -1282,7 +1280,7 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
     }
     else
     {
-        sectionLabel.frame = CGRectMake(14.0f, TGRetinaPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
+        sectionLabel.frame = CGRectMake(14.0f, 5.0 + TGRetinaPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
     }
     
     return sectionContainer;
@@ -1297,7 +1295,7 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
         
         if (section >= 0 && section < (int)_sectionList.size() && _sectionList[section]->letter != nil)
         {
-            return 22.0f;
+            return 27.0f;
         }
     }
     else if (section == 0)
@@ -1325,6 +1323,10 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
     {
         if ((_contactsMode & TGContactsModeManualFirstSection) && indexPath.section == 0)
             return [self itemHeightForFirstSection];
+        
+        if (((_contactsMode & TGContactsModeMainContacts) == TGContactsModeMainContacts) && indexPath.section == 0 && indexPath.row == 0) {
+            return 80.0f;
+        }
         
         if ((((_contactsMode & TGContactsModeMainContacts) == TGContactsModeMainContacts) || ((_contactsMode & TGContactsModeCreateGroupOption) == TGContactsModeCreateGroupOption)) && indexPath.section == 0)
             return TGIsPad() ? 55 : 48;
@@ -1577,6 +1579,19 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             user = [_globalSearchResults objectAtIndex:indexPath.row];
     }
     
+    if (user != nil && (user.uid == INT_MAX - 10)) {
+        static NSString *actionCellIdentifier = @"MEC";
+        TGMeContactsCell *actionCell = (TGMeContactsCell *)[_tableView dequeueReusableCellWithIdentifier:actionCellIdentifier];
+        if (actionCell == nil)
+        {
+            actionCell = [[TGMeContactsCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:actionCellIdentifier];
+        }
+        
+        [actionCell setUser:_selfUser];
+        
+        return actionCell;
+    }
+    
     if (user != nil && (user.uid == INT_MAX || user.uid == INT_MAX - 1 || user.uid == INT_MAX - 2 || user.uid == INT_MAX - 3))
     {
         static NSString *actionCellIdentifier = @"AC";
@@ -1712,6 +1727,12 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             [_searchMixin.searchBar endEditing:true];
     }
     
+    if (user != nil && (user.uid == INT_MAX - 10))
+    {
+        [[TGInterfaceManager instance] navigateToConversationWithId:TGTelegraphInstance.clientUserId conversation:nil];
+        return;
+    }
+    
     if (user != nil && (user.uid == INT_MAX || user.uid == INT_MAX - 1 || user.uid == INT_MAX - 2 || user.uid == INT_MAX - 3))
     {
         if (indexPath.row == 0 || indexPath.row == 1 || indexPath.row == 2 || indexPath.row == 3)
@@ -1784,7 +1805,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
     {
         if (user.uid > 0)
         {
-            [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:nil atMessage:nil clearStack:true openKeyboard:(_contactsMode & TGContactsModeCreateGroupOption) animated:true];
+            [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:nil atMessage:nil clearStack:true openKeyboard:(_contactsMode & TGContactsModeCreateGroupOption) canOpenKeyboardWhileInTransition:false animated:true];
         }
         else
         {
@@ -2003,7 +2024,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
                             }
                             
                             if (match && _ignoreBots) {
-                                match = user.kind != TGUserKindGeneric;
+                                match = user.kind == TGUserKindGeneric;
                             }
                             
                             if (match)
@@ -2868,7 +2889,25 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
             
             dispatch_async(dispatch_get_main_queue(), ^
             {
-                _globalSearchResults = users;
+                NSMutableArray *filteredGlobalSearchResults = [[NSMutableArray alloc] init];
+                for (TGUser *user in users)
+                {
+                    bool match = true;
+                    
+                    if (match && (_contactsMode & TGContactsModeIgnorePrivateBots))
+                    {
+                        match = user.botKind != TGBotKindPrivate;
+                    }
+                    
+                    if (match && _ignoreBots) {
+                        match = user.kind == TGUserKindGeneric;
+                    }
+                    
+                    if (match)
+                        [filteredGlobalSearchResults addObject:user];
+                }
+                
+                _globalSearchResults = filteredGlobalSearchResults;
                 
                 if ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose)
                 {
@@ -3283,20 +3322,33 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
         TGUser *serviceUser = [[TGUser alloc] init];
         serviceUser.uid = INT_MAX;
         serviceSection->addItem(serviceUser);
-        serviceSection->letter = nil;
+        
+        if ((_contactsMode & TGContactsModeMainContacts) == TGContactsModeMainContacts) {
+            serviceSection->letter = TGLocalized(@"Contacts.TopSection");
+        }
         newSectionListTelegraph.insert(newSectionListTelegraph.begin(), serviceSection);
         
-        //if ((_contactsMode & TGContactsModeMainContacts) == TGContactsModeMainContacts)
         {
-            TGUser *serviceUser1 = [[TGUser alloc] init];
-            serviceUser1.uid = INT_MAX - 1;
-            serviceSection->addItem(serviceUser1);
+            if ((_contactsMode & TGContactsModeMainContacts) != TGContactsModeMainContacts) {
+                TGUser *serviceUser1 = [[TGUser alloc] init];
+                serviceUser1.uid = INT_MAX - 1;
+                serviceSection->addItem(serviceUser1);
+            }
             
             if ((_contactsMode & TGContactsModeCreateGroupOption) == TGContactsModeCreateGroupOption) {
                 TGUser *serviceUser2 = [[TGUser alloc] init];
                 serviceUser2.uid = INT_MAX - 2;
                 serviceSection->addItem(serviceUser2);
             }
+        }
+        
+        if ((_contactsMode & TGContactsModeMainContacts) == TGContactsModeMainContacts) {
+            std::tr1::shared_ptr<TGContactListSection> meSection(new TGContactListSection());
+            TGUser *serviceUser = [[TGUser alloc] init];
+            serviceUser.uid = INT_MAX - 10;
+            meSection->addItem(serviceUser);
+            meSection->letter = nil;
+            newSectionListTelegraph.insert(newSectionListTelegraph.begin(), meSection);
         }
     }
     
@@ -3306,6 +3358,8 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
     holder.sectionList = newSectionListTelegraph;
     
     NSArray *newIndices = ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose) || ((_contactsMode & TGContactsModeCreateGroupOption) == TGContactsModeCreateGroupOption) || (_contactsMode & TGContactsModeCombineSections) ? [self generateIndices:newSectionListTelegraph] : nil;
+    
+    _selfUser = [TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId];
     
     dispatch_block_t mainThreadBlock =^
     {

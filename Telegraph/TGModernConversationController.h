@@ -31,6 +31,11 @@
 
 @class TGWebPageMediaAttachment;
 
+@class TGConversationScrollState;
+@class TGPIPSourceLocation;
+
+@protocol TGStickerPackReference;
+
 extern NSInteger TGModernConversationControllerUnloadHistoryLimit;
 extern NSInteger TGModernConversationControllerUnloadHistoryThreshold;
 
@@ -52,7 +57,9 @@ typedef enum {
 @property (nonatomic) bool shouldIgnoreAppearAnimationOnce;
 @property (nonatomic) bool shouldOpenKeyboardOnce;
 
-- (void)setInitialSnapshot:(CGImageRef)image backgroundView:(TGModernTemporaryView *)backgroundView viewStorage:(TGModernViewStorage *)viewStorage topEdge:(CGFloat)topEdge;
+@property (nonatomic) bool canOpenKeyboardWhileInTransition;
+
+- (void)setInitialSnapshot:(CGImageRef)image backgroundView:(TGModernTemporaryView *)backgroundView viewStorage:(TGModernViewStorage *)viewStorage topEdge:(CGFloat)topEdge displayScrollDownButton:(bool)displayScrollDownButton;
 - (TGMessage *)latestVisibleMessage;
 - (NSArray *)visibleMessageIds;
 - (NSArray *)_currentItems;
@@ -71,10 +78,12 @@ typedef enum {
 - (void)imageDataInvalidated:(NSString *)imageUrl;
 - (void)updateCheckedMessages;
 - (void)updateMessageAttributes:(int32_t)messageId;
+- (void)updateAllMessageAttributes;
 - (void)setHasUnseenMessagesBelow:(bool)hasUnseenMessagesBelow;
 - (void)setUnreadMessageRangeIfAppropriate:(TGMessageRange)unreadMessageRange;
 
 - (void)scrollToMessage:(int32_t)messageId sourceMessageId:(int32_t)sourceMessageId animated:(bool)animated;
+- (void)openMediaFromMessage:(int32_t)messageId cancelPIP:(bool)cancelPIP;
 - (void)openMediaFromMessage:(int32_t)messageId instant:(bool)instant;
 - (void)closeMediaFromMessage:(int32_t)messageId instant:(bool)instant;
 - (void)stopInlineMedia;
@@ -94,12 +103,13 @@ typedef enum {
 - (void)reloadBackground;
 - (void)refreshMetrics;
 - (void)setInputText:(NSString *)inputText replace:(bool)replace selectRange:(NSRange)selectRange;
+- (void)setInputText:(NSString *)inputText entities:(NSArray *)entities replace:(bool)replace replaceIfPrefix:(bool)replaceIfPrefix selectRange:(NSRange)selectRange;
 - (void)setMessageEditingContext:(TGMessageEditingContext *)messageEditingContext;
 - (NSString *)inputText;
 - (void)updateWebpageLinks;
 - (void)setReplyMessage:(TGMessage *)replyMessage animated:(bool)animated;
 - (void)setForwardMessages:(NSArray *)forwardMessages animated:(bool)animated;
-- (void)setInlineStickerList:(NSArray *)inlineStickerList;
+- (void)setInlineStickerList:(NSDictionary *)inlineStickerList;
 - (void)setTitle:(NSString *)title;
 - (void)setAvatarConversationId:(int64_t)conversationId title:(NSString *)title icon:(UIImage *)icon;
 - (void)setAvatarConversationId:(int64_t)conversationId firstName:(NSString *)firstName lastName:(NSString *)lastName;
@@ -130,6 +140,7 @@ typedef enum {
 - (NSArray *)_items;
 - (int32_t)_currentReplyMessageId;
 - (NSArray *)_currentForwardMessageDescs;
+- (TGConversationScrollState *)_currentScrollState;
 
 - (void)setReplyMarkup:(TGBotReplyMarkup *)replyMarkup;
 - (void)appendCommand:(NSString *)command;
@@ -141,7 +152,13 @@ typedef enum {
 - (void)setIsChannel:(bool)isChannel;
 - (void)updateControllerShouldHideInputTextByDefault;
 
-- (void)openEmbed:(TGWebPageMediaAttachment *)webPage;
+- (void)openEmbed:(TGWebPageMediaAttachment *)webPage forMessageId:(int32_t)messageId;
+- (void)openEmbedFromMessageId:(int32_t)messageId cancelPIP:(bool)cancelPIP;
+
+- (bool)openPIPSourceLocation:(TGPIPSourceLocation *)location;
+
+- (void)openStickerPackForMessageId:(int32_t)messageId;
+- (void)openCallMenuForMessageId:(int32_t)messageId;
 
 - (void)hideKeyboard;
 
@@ -150,5 +167,9 @@ typedef enum {
 
 - (void)setLoadingMessages:(bool)loadingMessages;
 - (void)messagesDeleted:(NSArray *)messageIds;
+
+- (void)pushEarliestUnreadMessageId:(int32_t)messageId;
+
+- (void)incrementScrollDownUnreadCount:(NSInteger)count;
 
 @end

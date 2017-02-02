@@ -31,7 +31,13 @@
     if (self != nil)
     {
         __autoreleasing NSError *error = nil;
-        _currentItem = [[AVPlayerItem alloc] initWithURL:[NSURL fileURLWithPath:path]];
+        NSString *realPath = path;
+        NSArray *audioExtensions = @[@"mp3", @"aac", @"m4a"];
+        if (![audioExtensions containsObject:realPath.pathExtension.lowercaseString]) {
+            realPath = [path stringByAppendingPathExtension:@"mp3"];
+            [[NSFileManager defaultManager] createSymbolicLinkAtPath:realPath withDestinationPath:path error:nil];
+        }
+        _currentItem = [[AVPlayerItem alloc] initWithURL:[NSURL fileURLWithPath:realPath]];
         if (_currentItem != nil) {
             _audioPlayer = [[AVPlayer alloc] initWithPlayerItem:_currentItem];
             _didPlayToEndObserver = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(playerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:_currentItem];

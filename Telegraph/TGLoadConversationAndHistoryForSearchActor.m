@@ -19,6 +19,8 @@
 
 #import "TGPeerIdAdapter.h"
 
+#import "TGDownloadMessagesSignal.h"
+
 @interface TGLoadConversationAndHistoryForSearchActor () <ASWatcher>
 {
     int64_t _peerId;
@@ -172,39 +174,92 @@
         }
         else
         {
-            if (!_loadingFirstHistory)
-            {
-                if (minRemoteMid < maxRemoteMid)
-                    [TGDatabaseInstance() addConversationHistoryHoleToLoadedLaterMessages:_peerId maxMessageId:maxRemoteMid];
-            }
-            
-            [[TGDatabase instance] addMessagesToConversation:messageItems conversationId:_peerId updateConversation:conversation dispatch:true countUnread:false];
-            
-            if (minRemoteMid <= maxRemoteMid)
-            {
-                [TGDatabaseInstance() fillConversationHistoryHole:_peerId indexSet:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(minRemoteMid, maxRemoteMid - minRemoteMid)]];
-            }
-            
-            if (_loadingFirstHistory)
-            {
-                _loadingFirstHistory = false;
-                [self _loadSearchArea];
-            }
-            else
-            {
-                NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-                dict[@"peerId"] = @(_peerId);
-                dict[@"messageId"] = @(_messageId);
-                if (conversation != nil)
-                    dict[@"conversation"] = conversation;
+            [[self signalForCompleteMessages:messageItems] startWithNext:^(NSArray *messageItems) {
+                if (!_loadingFirstHistory)
+                {
+                    if (minRemoteMid < maxRemoteMid)
+                        [TGDatabaseInstance() addConversationHistoryHoleToLoadedLaterMessages:_peerId maxMessageId:maxRemoteMid];
+                }
                 
-                [ActionStageInstance() actionCompleted:self.path result:dict];
-            }
+                [TGDatabaseInstance() transactionAddMessages:messageItems updateConversationDatas:conversation == nil ? nil : @{@(conversation.conversationId): conversation} notifyAdded:false];
+                
+                if (minRemoteMid <= maxRemoteMid)
+                {
+                    [TGDatabaseInstance() fillConversationHistoryHole:_peerId indexSet:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(minRemoteMid, maxRemoteMid - minRemoteMid)]];
+                }
+                
+                if (_loadingFirstHistory)
+                {
+                    _loadingFirstHistory = false;
+                    [self _loadSearchArea];
+                }
+                else
+                {
+                    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                    dict[@"peerId"] = @(_peerId);
+                    dict[@"messageId"] = @(_messageId);
+                    if (conversation != nil)
+                        dict[@"conversation"] = conversation;
+                    
+                    [ActionStageInstance() actionCompleted:self.path result:dict];
+                }
+            }];
         }
     }
     else
     {
         [ActionStageInstance() actionFailed:self.path reason:-1];
+    }
+}
+
+- (SSignal *)signalForCompleteMessages:(NSArray *)completeMessages
+{
+    NSMutableSet *requiredMessageIds = [[NSMutableSet alloc] init];
+    for (TGMessage *message in completeMessages)
+    {
+        for (id attachment in message.mediaAttachments)
+        {
+            if ([attachment isKindOfClass:[TGReplyMessageMediaAttachment class]])
+            {
+                if (((TGReplyMessageMediaAttachment *)attachment).replyMessage == nil)
+                    [requiredMessageIds addObject:@(((TGReplyMessageMediaAttachment *)attachment).replyMessageId)];
+            }
+        }
+    }
+    
+    if (requiredMessageIds.count == 0)
+        return [SSignal single:completeMessages];
+    else
+    {
+        NSMutableArray *downloadMessages = [[NSMutableArray alloc] init];
+        for (NSNumber *nMessageId in [requiredMessageIds allObjects]) {
+            [downloadMessages addObject:[[TGDownloadMessage alloc] initWithPeerId:0 accessHash:0 messageId:[nMessageId intValue]]];
+        }
+        return [[TGDownloadMessagesSignal downloadMessages:downloadMessages] map:^id(NSArray *messages)
+        {
+            NSMutableDictionary *messageIdToMessage = [[NSMutableDictionary alloc] init];
+            for (TGMessage *message in messages)
+            {
+                messageIdToMessage[@(message.mid)] = message;
+            }
+            
+            for (TGMessage *message in completeMessages)
+            {
+                for (id attachment in message.mediaAttachments)
+                {
+                    if ([attachment isKindOfClass:[TGReplyMessageMediaAttachment class]])
+                    {
+                        TGMessage *requiredMessage = messageIdToMessage[@(((TGReplyMessageMediaAttachment *)attachment).replyMessageId)];
+                        if (requiredMessage != nil)
+                            ((TGReplyMessageMediaAttachment *)attachment).replyMessage = requiredMessage;
+                        
+                        break;
+                    }
+                }
+            }
+            
+            return completeMessages;
+        }];
     }
 }
 

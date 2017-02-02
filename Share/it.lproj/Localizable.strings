@@ -4,10 +4,10 @@
 "Share.Search" = "Cerca";
 
 "Share.Title" = "Condividi";
-"Share.ShareWithPerson" = "Condividi con %@?";
-"Share.ShareWithGroup" = "Condividi con %@?";
+"Share.ShareWithPerson" = "Condividere con %@?";
+"Share.ShareWithGroup" = "Condividere con %@?";
 "Share.ShareWithMultiple" = "Condividere con %@ destinatari?";
-"Share.Sharing" = "Condivisione...";
+"Share.Sharing" = "Condivido...";
 
 "Share.PasscodeTitle" = "Codice";
 "Share.EnterPasscode" = "Inserisci codice";
@@ -23,3 +23,5 @@
 
 "Share.RecentSection" = "Recenti";
 "Share.RecentSectionClear" = "Pulisci";
+
+"Share.TouchId" = "Inserisci il codice";

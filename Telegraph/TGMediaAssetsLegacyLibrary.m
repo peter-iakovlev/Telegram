@@ -57,7 +57,7 @@
 {
     SSignal *(^groupsSignal)(void) = ^
     {
-        return [[[[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+        return [[[[[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
         {
             [_assetsLibrary enumerateGroupsWithTypes:ALAssetsGroupAll usingBlock:^(ALAssetsGroup *assetsGroup, __unused BOOL *stop)
             {
@@ -79,7 +79,30 @@
             }];
             
             return nil;
-        }] reduceLeft:[[NSMutableArray alloc] init] with:^id(NSMutableArray *groups, id group)
+        }] then:[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+        {
+            [_assetsLibrary enumerateGroupsWithTypes:ALAssetsGroupAll usingBlock:^(ALAssetsGroup *assetsGroup, __unused BOOL *stop)
+            {
+                if (assetsGroup != nil)
+                {
+                    if ([[assetsGroup valueForProperty:ALAssetsGroupPropertyType] integerValue] == ALAssetsGroupSavedPhotos)
+                    {
+                        TGMediaAssetGroup *group = [[TGMediaAssetGroup alloc] initWithALAssetsGroup:assetsGroup subtype:TGMediaAssetGroupSubtypeVideos];
+                        [subscriber putNext:group];
+                        [subscriber putCompletion];
+                    }
+                }
+                else
+                {
+                    [subscriber putCompletion];
+                }
+            } failureBlock:^(NSError *error)
+            {
+                [subscriber putError:error];
+            }];
+            
+            return nil;
+        }]] reduceLeft:[[NSMutableArray alloc] init] with:^id(NSMutableArray *groups, id group)
         {
             [groups addObject:group];
             return groups;
@@ -144,8 +167,10 @@
             
             [group.backingAssetsGroup enumerateAssetsWithOptions:options usingBlock:^(ALAsset *asset, __unused NSUInteger index, __unused BOOL *stop)
             {
-                if (asset != nil)
+                if (asset != nil && (assetGroup.subtype != TGMediaAssetGroupSubtypeVideos || [[asset valueForProperty:ALAssetPropertyType] isEqualToString:ALAssetTypeVideo]))
+                {
                     [mediaFetchResult _appendALAsset:asset];
+                }
             }];
             
             [subscriber putNext:mediaFetchResult];

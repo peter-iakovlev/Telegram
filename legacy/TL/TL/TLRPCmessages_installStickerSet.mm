@@ -4,13 +4,14 @@
 #import "../NSOutputStream+TL.h"
 
 #import "TLInputStickerSet.h"
+#import "TLmessages_StickerSetInstallResult.h"
 
 @implementation TLRPCmessages_installStickerSet
 
 
 - (Class)responseClass
 {
-    return [NSNumber class];
+    return [TLmessages_StickerSetInstallResult class];
 }
 
 - (int)impliedResponseSignature
@@ -20,7 +21,7 @@
 
 - (int)layerVersion
 {
-    return 32;
+    return 54;
 }
 
 - (int32_t)TLconstructorSignature
@@ -54,7 +55,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x7b30c3a6;
+    return (int32_t)0xc78fe460;
 }
 
 - (int32_t)TLconstructorName
@@ -66,7 +67,7 @@
 {
     TLRPCmessages_installStickerSet$messages_installStickerSet *object = [[TLRPCmessages_installStickerSet$messages_installStickerSet alloc] init];
     object.stickerset = metaObject->getObject((int32_t)0xaac37694);
-    object.disabled = metaObject->getBool((int32_t)0x39e317f);
+    object.archived = metaObject->getBool((int32_t)0x7c48a39f);
     return object;
 }
 
@@ -81,8 +82,8 @@
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypePrimitiveBool;
-        value.primitive.boolValue = self.disabled;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x39e317f, value));
+        value.primitive.boolValue = self.archived;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7c48a39f, value));
     }
 }
 

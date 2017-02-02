@@ -3,7 +3,7 @@
 #import "TGMemoryImageCache.h"
 #import <SSignalKit/SSignalKit.h>
 #import "TGModernCache.h"
-#import <Elements/Elements.h>
+#import "EMInMemoryImageCache.h"
 
 @interface TGSharedMediaUtils : NSObject
 

@@ -16,6 +16,8 @@
 #import "TGPhotoAvatarCropView.h"
 #import "TGModernButton.h"
 
+#import "TGPhotoPaintController.h"
+
 const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
 
 @interface TGPhotoAvatarCropController ()
@@ -24,6 +26,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
     
     UIView *_buttonsWrapperView;
     TGModernButton *_rotateButton;
+    TGModernButton *_mirrorButton;
     TGModernButton *_resetButton;
     
     TGPhotoAvatarCropView *_cropView;
@@ -79,6 +82,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
     _cropView = [[TGPhotoAvatarCropView alloc] initWithOriginalSize:photoEditor.originalSize screenSize:[self referenceViewSize]];
     [_cropView setCropRect:photoEditor.cropRect];
     [_cropView setCropOrientation:photoEditor.cropOrientation];
+    [_cropView setCropMirrored:photoEditor.cropMirrored];
     _cropView.croppingChanged = ^
     {
         __strong TGPhotoAvatarCropController *strongSelf = weakSelf;
@@ -88,6 +92,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
         PGPhotoEditor *photoEditor = strongSelf.photoEditor;
         photoEditor.cropRect = strongSelf->_cropView.cropRect;
         photoEditor.cropOrientation = strongSelf->_cropView.cropOrientation;
+        photoEditor.cropMirrored = strongSelf->_cropView.cropMirrored;
     };
     if (_snapshotView != nil)
     {
@@ -108,16 +113,24 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
     _rotateButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 36, 36)];
     _rotateButton.exclusiveTouch = true;
     _rotateButton.hitTestEdgeInsets = UIEdgeInsetsMake(-10, -10, -10, -10);
-    [_rotateButton addTarget:self action:@selector(rotateButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+    [_rotateButton addTarget:self action:@selector(rotate) forControlEvents:UIControlEventTouchUpInside];
     [_rotateButton setImage:[UIImage imageNamed:@"PhotoEditorRotateIcon"] forState:UIControlStateNormal];
     [_buttonsWrapperView addSubview:_rotateButton];
+    
+    _mirrorButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 36, 36)];
+    _mirrorButton.exclusiveTouch = true;
+    _mirrorButton.imageEdgeInsets = UIEdgeInsetsMake(4.0f, 0.0f, 0.0f, 0.0f);
+    _mirrorButton.hitTestEdgeInsets = UIEdgeInsetsMake(-10, -10, -10, -10);
+    [_mirrorButton addTarget:self action:@selector(mirror) forControlEvents:UIControlEventTouchUpInside];
+    [_mirrorButton setImage:[UIImage imageNamed:@"PhotoEditorMirrorIcon"] forState:UIControlStateNormal];
+    [_buttonsWrapperView addSubview:_mirrorButton];
     
     _resetButton = [[TGModernButton alloc] init];
     _resetButton.contentEdgeInsets = UIEdgeInsetsMake(0.0f, 8.0f, 0.0f, 8.0f);
     _resetButton.exclusiveTouch = true;
     _resetButton.hitTestEdgeInsets = UIEdgeInsetsMake(-10, -10, -10, -10);
     _resetButton.titleLabel.font = [TGFont systemFontOfSize:13];
-    [_resetButton addTarget:self action:@selector(resetButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+    [_resetButton addTarget:self action:@selector(reset) forControlEvents:UIControlEventTouchUpInside];
     [_resetButton setTitle:TGLocalized(@"PhotoEditor.CropReset") forState:UIControlStateNormal];
     [_resetButton setTitleColor:[UIColor whiteColor]];
     [_resetButton sizeToFit];
@@ -128,6 +141,9 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    
+    if (_appeared)
+        return;
     
     if (self.initialAppearance && self.skipTransitionIn)
     {
@@ -214,6 +230,14 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
     [_cropView animateTransitionIn];
 }
 
+- (void)animateTransitionIn
+{
+    if ([_transitionView isKindOfClass:[TGPhotoEditorPreviewView class]])
+        [(TGPhotoEditorPreviewView *)_transitionView performTransitionToCropAnimated:true];
+    
+    [super animateTransitionIn];
+}
+
 - (void)_finishedTransitionInWithView:(UIView *)transitionView
 {
     [transitionView removeFromSuperview];
@@ -263,7 +287,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
             }
             
             UIImage *croppedImage = [_cropView croppedImageWithMaxSize:TGPhotoEditorScreenImageMaxSize()];
-            [photoEditor setImage:croppedImage forCropRect:_cropView.cropRect cropRotation:0.0f cropOrientation:_cropView.cropOrientation fullSize:false];
+            [photoEditor setImage:croppedImage forCropRect:_cropView.cropRect cropRotation:0.0f cropOrientation:_cropView.cropOrientation cropMirrored:_cropView.cropMirrored fullSize:false];
             
             [photoEditor processAnimated:false completion:^
             {
@@ -288,7 +312,13 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
         
         CGRect cropRectFrame = [_cropView cropRectFrameForView:self.view];
         CGSize referenceSize = [self referenceViewSizeForOrientation:orientation];
-        CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation includePanel:false];
+        CGRect referenceBounds = CGRectMake(0, 0, referenceSize.width, referenceSize.height);
+        CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:referenceBounds toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation panelSize:TGPhotoEditorPanelSize];
+        
+        if (self.switchingToTab == TGPhotoEditorPaintTab)
+        {
+            containerFrame = [TGPhotoPaintController photoContainerFrameForParentViewFrame:referenceBounds toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation panelSize:TGPhotoPaintTopPanelSize + TGPhotoPaintBottomPanelSize];
+        }
         
         CGSize fittedSize = TGScaleToSize(cropRectFrame.size, containerFrame.size);
         CGRect targetFrame = CGRectMake(containerFrame.origin.x + (containerFrame.size.width - fittedSize.width) / 2,
@@ -404,7 +434,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
     if ([self inFormSheet] || [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
         orientation = UIInterfaceOrientationPortrait;
 
-    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation includePanel:true];
+    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation panelSize:0.0f];
 
     CGRect targetFrame = CGRectZero;
     
@@ -449,12 +479,17 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
 
 #pragma mark - Actions
 
-- (void)rotateButtonPressed
+- (void)rotate
 {
     [_cropView rotate90DegreesCCWAnimated:true];
 }
 
-- (void)resetButtonPressed
+- (void)mirror
+{
+    [_cropView mirror];
+}
+
+- (void)reset
 {
     [_cropView resetAnimated:true];
 }
@@ -497,11 +532,8 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
                                                        TGPhotoAvatarCropButtonsWrapperSize,
                                                        referenceSize.height);
                  
-                _rotateButton.frame = CGRectMake(25,
-                                                 10,
-                                                 _rotateButton.frame.size.width,
-                                                 _rotateButton.frame.size.height);
-                
+                _rotateButton.frame = CGRectMake(25, 10, _rotateButton.frame.size.width, _rotateButton.frame.size.height);
+                _mirrorButton.frame = CGRectMake(25, 60, _mirrorButton.frame.size.width, _mirrorButton.frame.size.height);
                 
                 _resetButton.transform = CGAffineTransformIdentity;
                 [_resetButton sizeToFit];
@@ -531,10 +563,8 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
                                                        TGPhotoAvatarCropButtonsWrapperSize,
                                                        referenceSize.height);
                  
-                _rotateButton.frame = CGRectMake(_buttonsWrapperView.frame.size.width - _rotateButton.frame.size.width - 25,
-                                                 10,
-                                                 _rotateButton.frame.size.width,
-                                                 _rotateButton.frame.size.height);
+                _rotateButton.frame = CGRectMake(_buttonsWrapperView.frame.size.width - _rotateButton.frame.size.width - 25, 10, _rotateButton.frame.size.width, _rotateButton.frame.size.height);
+                _mirrorButton.frame = CGRectMake(_buttonsWrapperView.frame.size.width - _mirrorButton.frame.size.width - 25, 60, _mirrorButton.frame.size.width, _mirrorButton.frame.size.height);
                 
                 _resetButton.transform = CGAffineTransformIdentity;
                 [_resetButton sizeToFit];
@@ -563,10 +593,8 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
                                                        referenceSize.width,
                                                        TGPhotoAvatarCropButtonsWrapperSize);
                  
-                _rotateButton.frame = CGRectMake(10,
-                                                 _buttonsWrapperView.frame.size.height - _rotateButton.frame.size.height - 25,
-                                                 _rotateButton.frame.size.width,
-                                                 _rotateButton.frame.size.height);
+                _rotateButton.frame = CGRectMake(10, _buttonsWrapperView.frame.size.height - _rotateButton.frame.size.height - 25, _rotateButton.frame.size.width, _rotateButton.frame.size.height);
+                _mirrorButton.frame = CGRectMake(60, _buttonsWrapperView.frame.size.height - _mirrorButton.frame.size.height - 25, _mirrorButton.frame.size.width, _mirrorButton.frame.size.height);
                 
                 _resetButton.transform = CGAffineTransformIdentity;
                 [_resetButton sizeToFit];
@@ -582,7 +610,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
     if (_dismissing)
         return;
     
-    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation includePanel:true];
+    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation panelSize:0.0f];
     containerFrame = CGRectOffset(containerFrame, screenEdges.left, screenEdges.top);
     
     CGFloat shortSide = MIN(referenceSize.width, referenceSize.height);

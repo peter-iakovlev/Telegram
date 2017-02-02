@@ -76,4 +76,23 @@
     return contactAttachment;
 }
 
+- (instancetype)initWithCoder:(NSCoder *)aDecoder {
+    self = [super init];
+    if (self != nil) {
+        self.type = TGContactMediaAttachmentType;
+        _uid = [aDecoder decodeInt32ForKey:@"uid"];
+        _firstName = [aDecoder decodeObjectForKey:@"firstName"];
+        _lastName = [aDecoder decodeObjectForKey:@"lastName"];
+        _phoneNumber = [aDecoder decodeObjectForKey:@"phoneNumber"];
+    }
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder {
+    [aCoder encodeInt32:_uid forKey:@"uid"];
+    [aCoder encodeObject:_firstName forKey:@"firstName"];
+    [aCoder encodeObject:_lastName forKey:@"lastName"];
+    [aCoder encodeObject:_phoneNumber forKey:@"phoneNumber"];
+}
+
 @end

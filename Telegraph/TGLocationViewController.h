@@ -2,14 +2,17 @@
 
 #import <CoreLocation/CoreLocation.h>
 
-@class TGUser;
+@class TGLocationMediaAttachment;
 @class TGVenueAttachment;
 
 @interface TGLocationViewController : TGViewController
 
-@property (nonatomic, copy) void (^forwardPressed)(void);
+@property (nonatomic, assign) bool previewMode;
+
+@property (nonatomic, copy) void (^shareAction)(NSArray *peerIds, NSString *caption);
 @property (nonatomic, copy) void (^calloutPressed)(void);
 
 - (instancetype)initWithCoordinate:(CLLocationCoordinate2D)coordinate venue:(TGVenueAttachment *)venue peer:(id)peer;
+- (instancetype)initWithLocationAttachment:(TGLocationMediaAttachment *)locationAttachment peer:(id)peer;
 
 @end

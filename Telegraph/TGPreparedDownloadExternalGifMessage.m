@@ -13,7 +13,7 @@
 
 @implementation TGPreparedDownloadExternalGifMessage
 
-- (instancetype)initWithSearchResult:(TGExternalGifSearchResult *)searchResult localDocumentId:(int64_t)localDocumentId mimeType:(NSString *)mimeType thumbnailInfo:(TGImageInfo *)thumbnailInfo attributes:(NSArray *)attributes caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult {
+- (instancetype)initWithSearchResult:(TGExternalGifSearchResult *)searchResult localDocumentId:(int64_t)localDocumentId mimeType:(NSString *)mimeType thumbnailInfo:(TGImageInfo *)thumbnailInfo attributes:(NSArray *)attributes caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult replyMarkup:(TGReplyMarkupAttachment *)replyMarkup {
     self = [super init];
     if (self != nil) {
         _searchResult = searchResult;
@@ -24,6 +24,7 @@
         _caption = caption;
         self.replyMessage = replyMessage;
         self.botContextResult = botContextResult;
+        self.replyMarkup = replyMarkup;
         _documentUrl = searchResult.originalUrl;
         
         self.executeOnAdd = ^{
@@ -39,7 +40,7 @@
                 NSString *videoFilePath = [[[TGMediaStoreContext instance] temporaryFilesCache] getValuePathForKey:[searchResult.originalUrl dataUsingEncoding:NSUTF8StringEncoding]];
 
                 if (videoFilePath != nil) {
-                    NSString *documentPath = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localDocumentId];
+                    NSString *documentPath = [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:localDocumentId version:0];
                     [[NSFileManager defaultManager] createDirectoryAtPath:documentPath withIntermediateDirectories:true attributes:nil error:nil];
                     NSError *error = nil;
                     [[NSFileManager defaultManager] linkItemAtPath:videoFilePath toPath:[documentPath stringByAppendingPathComponent:fileName] error:&error];
@@ -86,6 +87,10 @@
         [attachments addObject:self.botContextResult];
         
         [attachments addObject:[[TGViaUserAttachment alloc] initWithUserId:self.botContextResult.userId username:nil]];
+    }
+    
+    if (self.replyMarkup != nil) {
+        [attachments addObject:self.replyMarkup];
     }
     
     message.mediaAttachments = attachments;

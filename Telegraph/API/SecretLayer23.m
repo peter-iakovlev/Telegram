@@ -951,7 +951,7 @@ static const char *Secret23__Serializer_Key = "Secret23__Serializer";
     return [super initWithConstructorSignature:(int32_t)0xB5286E24 serializeBlock:^bool (NSString *object, NSMutableData *data)
     {
         NSData *value = [object dataUsingEncoding:NSUTF8StringEncoding];
-        int32_t length = value.length;
+        int32_t length = (int32_t)value.length;
         int32_t padding = 0;
         if (length >= 254)
         {
@@ -988,7 +988,7 @@ static const char *Secret23__Serializer_Key = "Secret23__Serializer";
     return [super initWithConstructorSignature:(int32_t)0xB5286E24 serializeBlock:^bool (NSData *object, NSMutableData *data)
     {
         NSData *value = object;
-        int32_t length = value.length;
+        int32_t length = (int32_t)value.length;
         int32_t padding = 0;
         if (length >= 254)
         {

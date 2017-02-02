@@ -1,9 +1,11 @@
 #import "TGPhotoEditorTintSwatchView.h"
+#import "TGPhotoEditorInterfaceAssets.h"
 
-const CGFloat TGPhotoEditorTintSwatchRadius = 8.5f;
-const CGFloat TGPhotoEditorTintSwatchSelectedRadius = 6.5f;
-const CGFloat TGPhotoEditorTintSwatchSelectionRadius = 10.5f;
-const CGFloat TGPhotoEditorTintSwatchSelectionThickness = 2.0f;
+const CGFloat TGPhotoEditorTintSwatchRadius = 9.0f;
+const CGFloat TGPhotoEditorTintSwatchSelectedRadius = 9.0f;
+const CGFloat TGPhotoEditorTintSwatchSelectionRadius = 12.0f;
+const CGFloat TGPhotoEditorTintSwatchSelectionThickness = 1.5f;
+const CGFloat TGPhotoEditorTintSwatchSize = 25.0f;
 
 @implementation TGPhotoEditorTintSwatchView
 
@@ -32,6 +34,7 @@ const CGFloat TGPhotoEditorTintSwatchSelectionThickness = 2.0f;
     {
         CGContextFillEllipseInRect(context, CGRectMake(rect.size.width / 2 - TGPhotoEditorTintSwatchSelectedRadius, rect.size.height / 2 - TGPhotoEditorTintSwatchSelectedRadius, TGPhotoEditorTintSwatchSelectedRadius * 2, TGPhotoEditorTintSwatchSelectedRadius * 2));
         
+        CGContextSetStrokeColorWithColor(context, [TGPhotoEditorInterfaceAssets accentColor].CGColor);
         CGContextStrokeEllipseInRect(context, CGRectMake(rect.size.width / 2 - TGPhotoEditorTintSwatchSelectionRadius + TGPhotoEditorTintSwatchSelectionThickness / 2, rect.size.height / 2 - TGPhotoEditorTintSwatchSelectionRadius + TGPhotoEditorTintSwatchSelectionThickness / 2, TGPhotoEditorTintSwatchSelectionRadius * 2 - TGPhotoEditorTintSwatchSelectionThickness, TGPhotoEditorTintSwatchSelectionRadius * 2 - TGPhotoEditorTintSwatchSelectionThickness));
     }
     else

@@ -1,6 +1,5 @@
 #import "TGPhotoEditorTabController.h"
 
-@class SSignal;
 @class PGPhotoEditor;
 @class TGSuggestionContext;
 @class TGPhotoEditorPreviewView;

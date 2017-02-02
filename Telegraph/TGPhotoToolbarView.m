@@ -91,6 +91,25 @@
             button.dontHighlightOnSelection = true;
             break;
             
+        case TGPhotoEditorPaintTab:
+            button.iconImage = [TGPhotoEditorInterfaceAssets paintIcon];
+            break;
+            
+        case TGPhotoEditorStickerTab:
+            button.iconImage = [TGPhotoEditorInterfaceAssets stickerIcon];
+            button.dontHighlightOnSelection = true;
+            break;
+            
+        case TGPhotoEditorTextTab:
+            button.iconImage = [TGPhotoEditorInterfaceAssets textIcon];
+            button.dontHighlightOnSelection = true;
+            break;
+            
+        case TGPhotoEditorGifTab:
+            [button setIconImage:[TGPhotoEditorInterfaceAssets gifIcon] activeIconImage:[TGPhotoEditorInterfaceAssets gifActiveIcon]];
+            button.dontHighlightOnSelection = true;
+            break;
+            
         default:
             button = nil;
             break;
@@ -118,14 +137,20 @@
     for (UIView *view in buttons)
         [view removeFromSuperview];
     
-    if (_currentTabs & TGPhotoEditorCaptionTab)
-        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorCaptionTab]];
     if (_currentTabs & TGPhotoEditorCropTab)
         [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorCropTab]];
+    if (_currentTabs & TGPhotoEditorStickerTab)
+        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorStickerTab]];
+    if (_currentTabs & TGPhotoEditorPaintTab)
+        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorPaintTab]];
+    if (_currentTabs & TGPhotoEditorTextTab)
+        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorTextTab]];
     if (_currentTabs & TGPhotoEditorToolsTab)
         [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorToolsTab]];
     if (_currentTabs & TGPhotoEditorRotateTab)
         [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorRotateTab]];
+    if (_currentTabs & TGPhotoEditorGifTab)
+        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorGifTab]];
     
     [self setNeedsLayout];
     
@@ -352,17 +377,11 @@
     {
         if (self.frame.size.width > self.frame.size.height)
         {
-            _backgroundView.frame = CGRectMake(_backgroundView.frame.origin.x,
-                                               0,
-                                               _backgroundView.frame.size.width,
-                                               _backgroundView.frame.size.height);
+            _backgroundView.frame = CGRectMake(_backgroundView.frame.origin.x, 0, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
         }
         else
         {
-            _backgroundView.frame = CGRectMake(0,
-                                               _backgroundView.frame.origin.y,
-                                               _backgroundView.frame.size.width,
-                                               _backgroundView.frame.size.height);
+            _backgroundView.frame = CGRectMake(0, _backgroundView.frame.origin.y, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
         }
     };
     
@@ -376,26 +395,17 @@
     {
         if (self.frame.size.width > self.frame.size.height)
         {
-            _backgroundView.frame = CGRectMake(_backgroundView.frame.origin.x,
-                                               _backgroundView.frame.size.height,
-                                               _backgroundView.frame.size.width,
-                                               _backgroundView.frame.size.height);
+            _backgroundView.frame = CGRectMake(_backgroundView.frame.origin.x, _backgroundView.frame.size.height, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
         }
         else
         {
             if (_interfaceOrientation == UIInterfaceOrientationLandscapeLeft)
             {
-                _backgroundView.frame = CGRectMake(-_backgroundView.frame.size.width,
-                                                   _backgroundView.frame.origin.y,
-                                                   _backgroundView.frame.size.width,
-                                                   _backgroundView.frame.size.height);
+                _backgroundView.frame = CGRectMake(-_backgroundView.frame.size.width, _backgroundView.frame.origin.y, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
             }
             else
             {
-                _backgroundView.frame = CGRectMake(_backgroundView.frame.size.width,
-                                                   _backgroundView.frame.origin.y,
-                                                   _backgroundView.frame.size.width,
-                                                   _backgroundView.frame.size.height);
+                _backgroundView.frame = CGRectMake(_backgroundView.frame.size.width, _backgroundView.frame.origin.y, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
             }
         }
         
@@ -422,26 +432,17 @@
     {
         if (self.frame.size.width > self.frame.size.height)
         {
-            _backgroundView.frame = CGRectMake(_backgroundView.frame.origin.x,
-                                               _backgroundView.frame.size.height,
-                                               _backgroundView.frame.size.width,
-                                               _backgroundView.frame.size.height);
+            _backgroundView.frame = CGRectMake(_backgroundView.frame.origin.x, _backgroundView.frame.size.height, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
         }
         else
         {
             if (_interfaceOrientation == UIInterfaceOrientationLandscapeLeft)
             {
-                _backgroundView.frame = CGRectMake(-_backgroundView.frame.size.width,
-                                                   _backgroundView.frame.origin.y,
-                                                   _backgroundView.frame.size.width,
-                                                   _backgroundView.frame.size.height);
+                _backgroundView.frame = CGRectMake(-_backgroundView.frame.size.width, _backgroundView.frame.origin.y, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
             }
             else
             {
-                _backgroundView.frame = CGRectMake(_backgroundView.frame.size.width,
-                                                   _backgroundView.frame.origin.y,
-                                                   _backgroundView.frame.size.width,
-                                                   _backgroundView.frame.size.height);
+                _backgroundView.frame = CGRectMake(_backgroundView.frame.size.width, _backgroundView.frame.origin.y, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
             }
         }
     };

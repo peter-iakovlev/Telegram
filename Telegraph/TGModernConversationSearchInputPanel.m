@@ -17,6 +17,8 @@
     NSUInteger _offset;
     NSUInteger _count;
     UILabel *_countLabel;
+    
+    TGModernButton *_calendarButton;
 }
 
 @end
@@ -57,6 +59,13 @@
         [_previousButton setImage:[UIImage imageNamed:@"InlineSearchDownDisabled.png"] forState:UIControlStateDisabled];
         [_previousButton addTarget:self action:@selector(previousPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_previousButton];
+        
+        _calendarButton = [[TGModernButton alloc] init];
+        [_calendarButton setImage:[UIImage imageNamed:@"ConversationSearchCalendar.png"] forState:UIControlStateNormal];
+        _calendarButton.modernHighlight = true;
+        [_calendarButton setContentEdgeInsets:UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, 0.0)];
+        [self addSubview:_calendarButton];
+        [_calendarButton addTarget:self action:@selector(calendarButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         
         _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
         [self addSubview:_activityIndicator];
@@ -168,12 +177,12 @@
     [self setNeedsLayout];
 }
 
-- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve
+- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight
 {
-    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve];
+    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve contentAreaHeight:contentAreaHeight];
 }
 
-- (void)_adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve
+- (void)_adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)__unused contentAreaHeight
 {
     dispatch_block_t block = ^
     {
@@ -189,9 +198,9 @@
         block();
 }
 
-- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration
+- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration contentAreaHeight:(CGFloat)contentAreaHeight
 {
-    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:0];
+    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:0 contentAreaHeight:contentAreaHeight];
 }
 
 - (void)layoutSubviews
@@ -209,6 +218,8 @@
     _countLabel.frame = CGRectMake(105.0f, CGFloor((self.frame.size.height - _countLabel.frame.size.height) / 2.0f), _countLabel.frame.size.width, _countLabel.frame.size.height);
     
     _activityIndicator.frame = CGRectMake(self.frame.size.width - _activityIndicator.frame.size.width - 8.0f, CGFloor((self.frame.size.height - _activityIndicator.frame.size.height) / 2.0f), _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
+    
+    _calendarButton.frame = CGRectMake(self.frame.size.width - 60.0f, 0.0f, 60.0f, 44.0f);
 }
 
 - (void)nextPressed
@@ -227,6 +238,12 @@
 {
     if (_done)
         _done();
+}
+
+- (void)calendarButtonPressed {
+    if (_calendar) {
+        _calendar();
+    }
 }
 
 @end

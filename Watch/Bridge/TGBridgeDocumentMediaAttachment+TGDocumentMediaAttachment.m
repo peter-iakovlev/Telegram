@@ -65,7 +65,7 @@
     NSMutableArray *attributes = [[NSMutableArray alloc] init];
     
     if (bridgeAttachment.isSticker)
-        [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:bridgeAttachment.stickerAlt packReference:nil]];
+        [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:bridgeAttachment.stickerAlt packReference:nil mask:nil]];
 
     if (bridgeAttachment.imageSize != nil)
         [attributes addObject:[[TGDocumentAttributeImageSize alloc] initWithSize:bridgeAttachment.imageSize.CGSizeValue]];

@@ -2,7 +2,7 @@
 
 #import "TLMetaClassStore.h"
 
-//flags:# id:int from_id:flags.8?int to_id:Peer date:int action:MessageAction = Message;
+//messageService flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true post:flags.14?true id:int from_id:flags.8?int to_id:Peer date:int action:MessageAction = Message;
 
 @implementation TLMessage$modernMessageService
 
@@ -27,11 +27,21 @@
     
     int32_t peerSignature = [is readInt32];
     result.to_id = TLMetaClassStore::constructObject(is, peerSignature, environment, nil, error);
+    if (error != nil && *error != nil) {
+        return nil;
+    }
+    
+    if (flags & (1 << 3)) {
+        result.reply_to_msg_id = [is readInt32];
+    }
     
     result.date = [is readInt32];
     
     int32_t actionSignature = [is readInt32];
     result.action = TLMetaClassStore::constructObject(is, actionSignature, environment, nil, error);
+    if (error != nil && *error != nil) {
+        return nil;
+    }
     
     return result;
 }

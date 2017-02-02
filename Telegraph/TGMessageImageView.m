@@ -170,11 +170,16 @@ static const CGFloat additionalDataTopPadding = 6.0f;
 
 - (void)_updateTimestampViewFrame
 {
-    CGFloat maxTimestampWidth = self.frame.size.width - 20.0f;
+    CGFloat maxTimestampWidth = self.frame.size.width - 34.0f;
+    CGFloat nominalMaximumTimestampWidth = maxTimestampWidth + 34.0f;
+    if (_flexibleTimestamp) {
+        maxTimestampWidth = 120.0f;
+    }
     CGSize currentSize = [_timestampView sizeForMaxWidth:maxTimestampWidth];
     if (_timestampPosition == TGMessageImageViewTimestampPositionDefault)
     {
-        _timestampView.frame = CGRectMake(self.frame.size.width - currentSize.width - timestampRightPadding, self.frame.size.height - timestampHeight - timestampBottomPadding, currentSize.width, timestampHeight);
+        CGFloat offset = MAX(0.0f, currentSize.width - nominalMaximumTimestampWidth);
+        _timestampView.frame = CGRectMake(self.frame.size.width - currentSize.width - timestampRightPadding + offset, self.frame.size.height - timestampHeight - timestampBottomPadding, currentSize.width, timestampHeight);
     }
     else if (_timestampPosition == TGMessageImageViewTimestampPositionLeft)
     {
@@ -622,6 +627,17 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     [_inlineVideoView setVideoPathSignal:signal];
 }
 
+- (void)setInlineVideoInsets:(UIEdgeInsets)inlineVideoInsets {
+    _inlineVideoInsets = inlineVideoInsets;
+    
+    CGRect bounds = self.bounds;
+    bounds.origin.x += _inlineVideoInsets.left;
+    bounds.origin.y += _inlineVideoInsets.top;
+    bounds.size.width -= _inlineVideoInsets.left + _inlineVideoInsets.right;
+    bounds.size.height -= _inlineVideoInsets.top + _inlineVideoInsets.bottom;
+    _inlineVideoView.frame = bounds;
+}
+
 @end
 
 @implementation TGMessageImageViewContainer
@@ -694,6 +710,30 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     UIGraphicsEndImageContext();
     
     return image;
+}
+
+- (bool)hasComplexTransition
+{
+    return !CGSizeEqualToSize(_imageView.inlineVideoSize, CGSizeZero);
+}
+
+- (TGModernGalleryComplexTransitionDescription *)complexTransitionDescription
+{
+    UIGraphicsBeginImageContextWithOptions(CGRectInset(self.frame, _imageView.inlineVideoInsets.left, _imageView.inlineVideoInsets.top).size, false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextTranslateCTM(context, _timestampView.frame.origin.x - _imageView.inlineVideoInsets.left, _timestampView.frame.origin.y - _imageView.inlineVideoInsets.top);
+    [_timestampView.layer renderInContext:context];
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    TGModernGalleryComplexTransitionDescription *description = [[TGModernGalleryComplexTransitionDescription alloc] init];
+    description.overlayImage = image;
+    description.insets = _imageView.inlineVideoInsets;
+    description.cornerRadius = 21.0f;
+    
+    return description;
 }
 
 @end

@@ -31,6 +31,10 @@
 - (NSInteger)wakeupNetwork;
 - (void)suspendNetworkIfReady:(NSInteger)token;
 
+- (SSignal *)server;
+
 + (instancetype)instance;
++ (SSignal *)instanceSignal;
++ (bool)serverQueueIsCurrent;
 
 @end

@@ -4,9 +4,10 @@
 #import "../NSOutputStream+TL.h"
 
 #import "TLInputGeoPoint.h"
-#import "TLInputFile.h"
 #import "TLInputPhoto.h"
 #import "TLInputDocument.h"
+#import "TLInputFile.h"
+#import "TLInputGame.h"
 
 @implementation TLInputMedia
 
@@ -137,46 +138,6 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.last_name;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x10662e0e, value));
-    }
-}
-
-
-@end
-
-@implementation TLInputMedia$inputMediaUploadedPhoto : TLInputMedia
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0xf7aff1c0;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0x7527a4be;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
-{
-    TLInputMedia$inputMediaUploadedPhoto *object = [[TLInputMedia$inputMediaUploadedPhoto alloc] init];
-    object.file = metaObject->getObject((int32_t)0x3187ec9);
-    object.caption = metaObject->getString((int32_t)0x9bcfcf5a);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.file;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x3187ec9, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.caption;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9bcfcf5a, value));
     }
 }
 
@@ -324,121 +285,6 @@
 
 @end
 
-@implementation TLInputMedia$inputMediaUploadedDocument : TLInputMedia
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0x1d89306d;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0xd9639385;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
-{
-    TLInputMedia$inputMediaUploadedDocument *object = [[TLInputMedia$inputMediaUploadedDocument alloc] init];
-    object.file = metaObject->getObject((int32_t)0x3187ec9);
-    object.mime_type = metaObject->getString((int32_t)0xcd8e470b);
-    object.attributes = metaObject->getArray((int32_t)0xb339a07a);
-    object.caption = metaObject->getString((int32_t)0x9bcfcf5a);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.file;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x3187ec9, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.mime_type;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xcd8e470b, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeVector;
-        value.nativeObject = self.attributes;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xb339a07a, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.caption;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9bcfcf5a, value));
-    }
-}
-
-
-@end
-
-@implementation TLInputMedia$inputMediaUploadedThumbDocument : TLInputMedia
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0xad613491;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0x97d078e3;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
-{
-    TLInputMedia$inputMediaUploadedThumbDocument *object = [[TLInputMedia$inputMediaUploadedThumbDocument alloc] init];
-    object.file = metaObject->getObject((int32_t)0x3187ec9);
-    object.thumb = metaObject->getObject((int32_t)0x712c4d9);
-    object.mime_type = metaObject->getString((int32_t)0xcd8e470b);
-    object.attributes = metaObject->getArray((int32_t)0xb339a07a);
-    object.caption = metaObject->getString((int32_t)0x9bcfcf5a);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.file;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x3187ec9, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.thumb;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x712c4d9, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.mime_type;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xcd8e470b, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeVector;
-        value.nativeObject = self.attributes;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xb339a07a, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.caption;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9bcfcf5a, value));
-    }
-}
-
-
-@end
-
 @implementation TLInputMedia$inputMediaDocument : TLInputMedia
 
 
@@ -473,6 +319,105 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.caption;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9bcfcf5a, value));
+    }
+}
+
+
+@end
+
+@implementation TLInputMedia$inputMediaPhotoExternal : TLInputMedia
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x3b7c62be;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x37524dc0;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLInputMedia$inputMediaPhotoExternal *object = [[TLInputMedia$inputMediaPhotoExternal alloc] init];
+    object.url = metaObject->getString((int32_t)0xeaf7861e);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.url;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xeaf7861e, value));
+    }
+}
+
+
+@end
+
+@implementation TLInputMedia$inputMediaDocumentExternal : TLInputMedia
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x7477f92c;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xb14ffa16;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLInputMedia$inputMediaDocumentExternal *object = [[TLInputMedia$inputMediaDocumentExternal alloc] init];
+    object.url = metaObject->getObject((int32_t)0xeaf7861e);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.url;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xeaf7861e, value));
+    }
+}
+
+
+@end
+
+@implementation TLInputMedia$inputMediaGame : TLInputMedia
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xd33f43f3;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xb4710a06;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLInputMedia$inputMediaGame *object = [[TLInputMedia$inputMediaGame alloc] init];
+    object.n_id = metaObject->getObject((int32_t)0x7a5601fb);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.n_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
     }
 }
 

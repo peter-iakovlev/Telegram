@@ -23,9 +23,13 @@
 @property (nonatomic) double locationLongitude;
 @property (nonatomic, strong) TGImageInfo *imageInfo;
 @property (nonatomic) NSString *caption;
+@property (nonatomic) bool hasStickers;
+@property (nonatomic, strong) NSArray *embeddedStickerDocuments;
 
 @property (nonatomic, readonly) NSArray *textCheckingResults;
 
 + (int64_t)localImageIdForImageInfo:(TGImageInfo *)imageInfo;
+
+- (CGSize)dimensions;
 
 @end

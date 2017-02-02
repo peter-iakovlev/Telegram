@@ -3,17 +3,6 @@
 #import "TGMessage.h"
 #import "TGStringUtils.h"
 
-/*
- @property (nonatomic) int64_t imageId;
- @property (nonatomic, readonly) int64_t localImageId;
- @property (nonatomic) int64_t accessHash;
- @property (nonatomic) int date;
- @property (nonatomic) bool hasLocation;
- @property (nonatomic) double locationLatitude;
- @property (nonatomic) double locationLongitude;
- @property (nonatomic, strong) TGImageInfo *imageInfo;
- */
-
 @interface TGImageMediaAttachment ()
 {
     NSArray *_textCheckingResults;
@@ -46,6 +35,8 @@
         _locationLongitude = 0;
         _imageInfo = [aDecoder decodeObjectForKey:@"imageInfo"];
         _caption = [aDecoder decodeObjectForKey:@"caption"];
+        _hasStickers = [aDecoder decodeBoolForKey:@"hasStickers"];
+        _embeddedStickerDocuments = [aDecoder decodeObjectForKey:@"embeddedStickerDocuments"];
     }
     return self;
 }
@@ -57,6 +48,8 @@
     [aCoder encodeInt32:_date forKey:@"date"];
     [aCoder encodeObject:_imageInfo forKey:@"imageInfo"];
     [aCoder encodeObject:_caption forKey:@"caption"];
+    [aCoder encodeBool:_hasStickers forKey:@"hasStickers"];
+    [aCoder encodeObject:_embeddedStickerDocuments forKey:@"embeddedStickerDocuments"];
 }
 
 - (id)copyWithZone:(NSZone *)__unused zone
@@ -71,8 +64,24 @@
     imageAttachment.locationLongitude = _locationLongitude;
     imageAttachment.imageInfo = _imageInfo;
     imageAttachment.caption = _caption;
+    imageAttachment.hasStickers = _hasStickers;
+    imageAttachment.embeddedStickerDocuments = _embeddedStickerDocuments;
     
     return imageAttachment;
+}
+
+- (BOOL)isEqual:(id)object {
+    if (![object isKindOfClass:[TGImageMediaAttachment class]]) {
+        return false;
+    }
+    TGImageMediaAttachment *other = object;
+    if (_imageId != other->_imageId || _accessHash != other->_accessHash || _date != other->_date || _hasLocation != other->_hasLocation) {
+        return false;
+    }
+    if (![_imageInfo isEqual:other->_imageInfo]) {
+        return false;
+    }
+    return true;
 }
 
 - (int64_t)localImageId
@@ -94,7 +103,7 @@
     int32_t modernTag = 0x7abacaf1;
     [data appendBytes:&modernTag length:4];
     
-    uint8_t version = 2;
+    uint8_t version = 3;
     [data appendBytes:&version length:1];
     
     int dataLengthPtr = (int)data.length;
@@ -128,6 +137,19 @@
     [data appendBytes:&captionLength length:4];
     if (captionLength != 0)
         [data appendData:captionData];
+    
+    int8_t hasStickers = _hasStickers ? 1 : 0;
+    [data appendBytes:&hasStickers length:1];
+    
+    if (_embeddedStickerDocuments.count == 0) {
+        int32_t zero = 0;
+        [data appendBytes:&zero length:4];
+    } else {
+        NSData *stickerData = [NSKeyedArchiver archivedDataWithRootObject:_embeddedStickerDocuments];
+        int32_t length = (int32_t)stickerData.length;
+        [data appendBytes:&length length:4];
+        [data appendData:stickerData];
+    }
     
     int dataLength = (int)(data.length - dataLengthPtr - 4);
     [data replaceBytesInRange:NSMakeRange(dataLengthPtr, 4) withBytes:&dataLength];
@@ -204,6 +226,21 @@
         }
     }
     
+    if (version >= 3) {
+        int8_t hasStickers = 0;
+        [is read:(uint8_t *)&hasStickers maxLength:1];
+        imageAttachment.hasStickers = hasStickers != 0;
+        
+        int32_t stickerDataLength = 0;
+        [is read:(uint8_t *)&stickerDataLength maxLength:4];
+        if (stickerDataLength != 0) {
+            uint8_t *stickerBytes = malloc(stickerDataLength);
+            [is read:stickerBytes maxLength:stickerDataLength];
+            NSData *stickerData = [[NSData alloc] initWithBytesNoCopy:stickerBytes length:stickerDataLength freeWhenDone:true];
+            imageAttachment.embeddedStickerDocuments = [NSKeyedUnarchiver unarchiveObjectWithData:stickerData];
+        }
+    }
+    
     return imageAttachment;
 }
 
@@ -214,11 +251,17 @@
     
     if (_textCheckingResults == nil)
     {
-        NSArray *textCheckingResults = [TGMessage textCheckingResultsForText:_caption highlightMentionsAndTags:true highlightCommands:true];
+        NSArray *textCheckingResults = [TGMessage textCheckingResultsForText:_caption highlightMentionsAndTags:true highlightCommands:true entities:nil];
         _textCheckingResults = textCheckingResults ?: [NSArray array];
     }
     
     return _textCheckingResults;
+}
+
+- (CGSize)dimensions {
+    CGSize size = CGSizeZero;
+    [_imageInfo imageUrlForLargestSize:&size];
+    return size;
 }
 
 @end

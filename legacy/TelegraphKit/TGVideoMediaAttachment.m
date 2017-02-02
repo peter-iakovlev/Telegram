@@ -43,8 +43,45 @@
     videoAttachment.videoInfo = _videoInfo;
     videoAttachment.thumbnailInfo = _thumbnailInfo;
     videoAttachment.caption = _caption;
+    videoAttachment.hasStickers = _hasStickers;
+    videoAttachment.embeddedStickerDocuments = _embeddedStickerDocuments;
+    videoAttachment.loopVideo = _loopVideo;
     
     return videoAttachment;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)aDecoder {
+    self = [super init];
+    if (self != nil) {
+        self.type = TGVideoMediaAttachmentType;
+        
+        _videoId = [aDecoder decodeInt64ForKey:@"videoId"];
+        _accessHash = [aDecoder decodeInt64ForKey:@"accessHash"];
+        _localVideoId = [aDecoder decodeInt64ForKey:@"localVideoId"];
+        _duration = [aDecoder decodeInt32ForKey:@"duration"];
+        _dimensions = [aDecoder decodeCGSizeForKey:@"dimensions"];
+        _videoInfo = [aDecoder decodeObjectForKey:@"videoInfo"];
+        _thumbnailInfo = [aDecoder decodeObjectForKey:@"thumbInfo"];
+        _caption = [aDecoder decodeObjectForKey:@"caption"];
+        _hasStickers = [aDecoder decodeBoolForKey:@"hasStickers"];
+        _embeddedStickerDocuments = [aDecoder decodeObjectForKey:@"embeddedStickerDocuments"];
+    }
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder {
+    [aCoder encodeInt64:_videoId forKey:@"videoId"];
+    [aCoder encodeInt64:_accessHash forKey:@"accessHash"];
+    [aCoder encodeInt64:_localVideoId forKey:@"localVideoId"];
+    [aCoder encodeInt32:_duration forKey:@"duration"];
+    [aCoder encodeCGSize:_dimensions forKey:@"dimensions"];
+    [aCoder encodeObject:_videoInfo forKey:@"videoInfo"];
+    [aCoder encodeObject:_thumbnailInfo forKey:@"thumbInfo"];
+    [aCoder encodeObject:_caption forKey:@"caption"];
+    [aCoder encodeBool:_hasStickers forKey:@"hasStickers"];
+    if (_embeddedStickerDocuments != nil) {
+        [aCoder encodeObject:_embeddedStickerDocuments forKey:@"embeddedStickerDocuments"];
+    }
 }
 
 - (BOOL)isEqual:(id)object
@@ -66,6 +103,10 @@
     if (!TGObjectCompare(_caption, other.caption))
         return false;
     
+    if (_hasStickers != other.hasStickers) {
+        return false;
+    }
+    
     return true;
 }
 
@@ -74,7 +115,7 @@
     int32_t modernTag = 0x7abacaf1;
     [data appendBytes:&modernTag length:4];
     
-    uint8_t version = 2;
+    uint8_t version = 3;
     [data appendBytes:&version length:1];
     
     int dataLengthPtr = (int)data.length;
@@ -108,6 +149,19 @@
     [data appendBytes:&captionLength length:4];
     if (captionLength != 0)
         [data appendData:captionData];
+    
+    int8_t hasStickers = _hasStickers ? 1 : 0;
+    [data appendBytes:&hasStickers length:1];
+    
+    if (_embeddedStickerDocuments.count == 0) {
+        int32_t zero = 0;
+        [data appendBytes:&zero length:4];
+    } else {
+        NSData *stickerData = [NSKeyedArchiver archivedDataWithRootObject:_embeddedStickerDocuments];
+        int32_t length = (int32_t)stickerData.length;
+        [data appendBytes:&length length:4];
+        [data appendData:stickerData];
+    }
     
     int dataLength = (int)(data.length - dataLengthPtr - 4);
     [data replaceBytesInRange:NSMakeRange(dataLengthPtr, 4) withBytes:&dataLength];
@@ -176,6 +230,22 @@
         }
     }
     
+    if (version >= 3)
+    {
+        int8_t hasStickers = 0;
+        [is read:(uint8_t *)&hasStickers maxLength:1];
+        videoAttachment.hasStickers = hasStickers != 0;
+        
+        int32_t stickerDataLength = 0;
+        [is read:(uint8_t *)&stickerDataLength maxLength:4];
+        if (stickerDataLength != 0) {
+            uint8_t *stickerBytes = malloc(stickerDataLength);
+            [is read:stickerBytes maxLength:stickerDataLength];
+            NSData *stickerData = [[NSData alloc] initWithBytesNoCopy:stickerBytes length:stickerDataLength freeWhenDone:true];
+            videoAttachment.embeddedStickerDocuments = [NSKeyedUnarchiver unarchiveObjectWithData:stickerData];
+        }
+    }
+    
     return videoAttachment;
 }
 
@@ -186,7 +256,7 @@
     
     if (_textCheckingResults == nil)
     {
-        NSArray *textCheckingResults = [TGMessage textCheckingResultsForText:_caption highlightMentionsAndTags:true highlightCommands:true];
+        NSArray *textCheckingResults = [TGMessage textCheckingResultsForText:_caption highlightMentionsAndTags:true highlightCommands:true entities:nil];
         _textCheckingResults = textCheckingResults ?: [NSArray array];
     }
     

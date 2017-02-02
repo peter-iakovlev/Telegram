@@ -30,6 +30,8 @@
 
 #import "TGStickerPacksSettingsController.h"
 
+#import "TGNetworkUsageController.h"
+
 @interface TGChatSettingsController () <TGTextSizeControllerDelegate>
 {
     TGVariantCollectionItem *_textSizeItem;
@@ -89,19 +91,27 @@
         _autoPlayAnimationsItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutoPlayAnimations") isOn:TGAppDelegateInstance.autoPlayAnimations];
         _autoPlayAnimationsItem.interfaceHandle = _actionHandle;
         
-        TGCollectionMenuSection *autoDownloadPhotoSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutomaticPhotoDownload")],
-            _privateAutoDownloadItem,
-            _groupAutoDownloadItem,
-            _autosavePhotosItem,
-            [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"Settings.SaveIncomingPhotosHelp")]
+        TGDisclosureActionCollectionItem *cacheItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Cache.Title") action:@selector(cachePressed)];
+        
+        TGDisclosureActionCollectionItem *networkItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"NetworkUsageSettings.Title") action:@selector(networkPressed)];
+        
+        TGCollectionMenuSection *usageSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+            cacheItem,
+            networkItem
         ]];
         if (iosMajorVersion() >= 7 || [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
         {
-            UIEdgeInsets topSectionInsets = autoDownloadPhotoSection.insets;
+            UIEdgeInsets topSectionInsets = usageSection.insets;
             topSectionInsets.top = 32.0f;
-            autoDownloadPhotoSection.insets = topSectionInsets;
+            usageSection.insets = topSectionInsets;
         }
+        [self.menuSections addSection:usageSection];
+        
+        TGCollectionMenuSection *autoDownloadPhotoSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutomaticPhotoDownload")],
+            _privateAutoDownloadItem,
+            _groupAutoDownloadItem
+        ]];
         [self.menuSections addSection:autoDownloadPhotoSection];
         
         TGCollectionMenuSection *autoDownloadAudioSection = [[TGCollectionMenuSection alloc] initWithItems:@[
@@ -139,13 +149,10 @@
             [self.menuSections addSection:languageSection];
         }
         
-        TGDisclosureActionCollectionItem *cacheItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Cache.Title") action:@selector(cachePressed)];
-        TGDisclosureActionCollectionItem *stickersItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Stickers") action:@selector(stickersPressed)];
         TGCollectionMenuSection *otherSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Other")],
-            _autoPlayAnimationsItem,
-            stickersItem,
-            cacheItem,
+            _autosavePhotosItem,
+            _autoPlayAnimationsItem
         ]];
         otherSection.insets = (UIEdgeInsets){otherSection.insets.top - 12.0f, otherSection.insets.left, otherSection.insets.bottom, otherSection.insets.right};
         [self.menuSections addSection:otherSection];
@@ -257,6 +264,10 @@
 {
     TGCacheController *cacheController = [[TGCacheController alloc] init];
     [self.navigationController pushViewController:cacheController animated:true];
+}
+
+- (void)networkPressed {
+    [self.navigationController pushViewController:[[TGNetworkUsageController alloc] init] animated:true];
 }
 
 @end

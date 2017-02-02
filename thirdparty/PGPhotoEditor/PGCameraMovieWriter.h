@@ -7,9 +7,7 @@
 @property (nonatomic, readonly) NSTimeInterval currentDuration;
 @property (nonatomic, readonly) bool isRecording;
 
-- (instancetype)initWithVideoTransform:(CGAffineTransform)videoTransform
-                   videoOutputSettings:(NSDictionary *)videoSettings
-                   audioOutputSettings:(NSDictionary *)audioSettings;
+- (instancetype)initWithVideoTransform:(CGAffineTransform)videoTransform videoOutputSettings:(NSDictionary *)videoSettings audioOutputSettings:(NSDictionary *)audioSettings;
 
 - (void)startRecording;
 - (void)stopRecordingWithCompletion:(void (^)(void))completion;

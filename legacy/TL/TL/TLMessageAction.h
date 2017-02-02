@@ -4,6 +4,7 @@
 #import "TLMetaRpc.h"
 
 @class TLPhoto;
+@class TLPhoneCallDiscardReason;
 
 @interface TLMessageAction : NSObject <TLObject>
 
@@ -106,6 +107,23 @@
 @interface TLMessageAction$messageActionChatAddUserLegacy : TLMessageAction
 
 @property (nonatomic) int32_t user_id;
+
+@end
+
+@interface TLMessageAction$messageActionPinMessage : TLMessageAction
+
+
+@end
+
+@interface TLMessageAction$messageActionHistoryClear : TLMessageAction
+
+
+@end
+
+@interface TLMessageAction$messageActionGameScore : TLMessageAction
+
+@property (nonatomic) int64_t game_id;
+@property (nonatomic) int32_t score;
 
 @end
 

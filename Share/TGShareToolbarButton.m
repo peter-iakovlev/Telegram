@@ -1,6 +1,7 @@
 #import "TGShareToolbarButton.h"
 #import "TGShareButton.h"
-#import "TGColor.h"
+
+#import <LegacyDatabase/LegacyDatabase.h>
 
 #import "UIControl+HitTestEdgeInsets.h"
 

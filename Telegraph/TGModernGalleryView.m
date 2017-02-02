@@ -19,8 +19,12 @@ static const CGFloat swipeDistanceThreshold = 128.0f;
     
     UIView *_scrollViewContainer;
     CGFloat _dismissProgress;
+    
+    bool _previewMode;
+    CGSize _previewSize;
+    
+    CGFloat _scrollViewVerticalOffset;
 }
-
 @end
 
 @implementation TGModernGalleryView
@@ -31,8 +35,11 @@ static const CGFloat swipeDistanceThreshold = 128.0f;
     return nil;
 }
 
-- (instancetype)initWithFrame:(CGRect)frame itemPadding:(CGFloat)itemPadding interfaceView:(UIView<TGModernGalleryInterfaceView> *)interfaceView
+- (instancetype)initWithFrame:(CGRect)frame itemPadding:(CGFloat)itemPadding interfaceView:(UIView<TGModernGalleryInterfaceView> *)interfaceView previewMode:(bool)previewMode previewSize:(CGSize)previewSize
 {
+    _previewMode = previewMode;
+    _previewSize = previewSize;
+    
     self = [super initWithFrame:frame];
     if (self != nil)
     {
@@ -41,20 +48,29 @@ static const CGFloat swipeDistanceThreshold = 128.0f;
         self.opaque = false;
         self.backgroundColor = UIColorRGBA(0x000000, 1.0f);
         
-        _scrollViewContainer = [[UIView alloc] initWithFrame:(CGRect){CGPointZero, frame.size}];
+        CGRect bounds = [self _boundsFrame];
+        
+        _scrollViewContainer = [[UIView alloc] initWithFrame:bounds];
         [self addSubview:_scrollViewContainer];
         
         _scrollView = [[TGModernGalleryScrollView alloc] initWithFrame:CGRectMake(-_itemPadding, 0.0f, frame.size.width + itemPadding * 2.0f, frame.size.height)];
         [_scrollViewContainer addSubview:_scrollView];
         
         _interfaceView = interfaceView;
-        _interfaceView.frame = CGRectMake(0.0f, 0.0f, frame.size.width, frame.size.height);
+        _interfaceView.frame = bounds;
+        _interfaceView.hidden = _previewMode;
         __weak TGModernGalleryView *weakSelf = self;
         _interfaceView.closePressed = ^
         {
             __strong TGModernGalleryView *strongSelf = weakSelf;
             if (strongSelf.transitionOut)
                 strongSelf.transitionOut(0.0f);
+        };
+        _interfaceView.scrollViewOffsetRequested = ^(CGFloat offset)
+        {
+            __strong TGModernGalleryView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                [strongSelf setScrollViewVerticalOffset:offset];
         };
         [self addSubview:_interfaceView];
         
@@ -79,14 +95,27 @@ static const CGFloat swipeDistanceThreshold = 128.0f;
     return (_dismissProgress < FLT_EPSILON && (_interfaceView == nil || ![_interfaceView respondsToSelector:@selector(shouldAutorotate)] || [_interfaceView shouldAutorotate]));
 }
 
+- (CGRect)_boundsFrame
+{
+    CGRect bounds =  (CGRect){CGPointZero, self.frame.size};
+    if (_previewMode)
+    {
+        bounds.origin.x = floor((_previewSize.width - bounds.size.width) / 2.0f);
+        bounds.origin.y = floor((_previewSize.height - bounds.size.height) / 2.0f);
+    }
+    
+    return bounds;
+}
+
 - (void)setFrame:(CGRect)frame
 {
     [super setFrame:frame];
     
-    _interfaceView.frame = (CGRect){CGPointZero, frame.size};
-    _scrollViewContainer.frame = (CGRect){CGPointZero, frame.size};
+    CGRect bounds = [self _boundsFrame];
+    _interfaceView.frame = bounds;
+    _scrollViewContainer.frame = bounds;
     
-    CGRect scrollViewFrame = CGRectMake(-_itemPadding, _scrollView.frame.origin.y, frame.size.width + _itemPadding * 2.0f, frame.size.height);
+    CGRect scrollViewFrame = CGRectMake(-_itemPadding, _scrollViewVerticalOffset, frame.size.width + _itemPadding * 2.0f, frame.size.height);
     if (!CGRectEqualToRect(_scrollView.frame, scrollViewFrame))
     {
         NSInteger currentItemIndex = (NSInteger)(CGFloor((_scrollView.bounds.origin.x + _scrollView.bounds.size.width / 2.0f) / _scrollView.bounds.size.width));
@@ -94,9 +123,13 @@ static const CGFloat swipeDistanceThreshold = 128.0f;
     }
 }
 
-- (void)layoutSubviews
+- (void)setScrollViewVerticalOffset:(CGFloat)offset
 {
-    [super layoutSubviews];
+    _scrollViewVerticalOffset = offset;
+    
+    CGRect scrollViewFrame = _scrollView.frame;
+    scrollViewFrame.origin.y = offset;
+    _scrollView.frame = scrollViewFrame;
 }
 
 - (void)showHideInterface
@@ -315,6 +348,19 @@ static const CGFloat swipeDistanceThreshold = 128.0f;
         if (completion)
             completion();
     }];
+}
+
+- (void)setPreviewMode:(bool)previewMode
+{
+    _previewMode = previewMode;
+    _interfaceView.hidden = previewMode;
+    
+    if (_scrollViewContainer != nil)
+    {
+        CGRect bounds = [self _boundsFrame];
+        _interfaceView.frame = bounds;
+        _scrollViewContainer.frame = bounds;
+    }
 }
 
 @end

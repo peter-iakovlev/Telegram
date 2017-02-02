@@ -19,7 +19,7 @@
 
 - (int)layerVersion
 {
-    return 43;
+    return 56;
 }
 
 - (int32_t)TLconstructorSignature
@@ -53,7 +53,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x9fcfbc30;
+    return (int32_t)0x78337739;
 }
 
 - (int32_t)TLconstructorName
@@ -64,12 +64,19 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCmessages_reorderStickerSets$messages_reorderStickerSets *object = [[TLRPCmessages_reorderStickerSets$messages_reorderStickerSets alloc] init];
+    object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.order = metaObject->getArray((int32_t)0x40fe6817);
     return object;
 }
 
 - (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
 {
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.flags;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x81915c23, value));
+    }
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypeVector;

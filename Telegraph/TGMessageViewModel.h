@@ -61,6 +61,7 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize);
 
 @property (nonatomic) bool needsRelativeBoundsUpdates;
 @property (nonatomic) bool needsAvatar;
+@property (nonatomic) CGFloat avatarOffset;
 
 @property (nonatomic) int collapseFlags;
 
@@ -93,6 +94,7 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize);
 - (void)resumeInlineMedia;
 
 - (NSString *)linkAtPoint:(CGPoint)point;
+- (bool)isPreviewableAtPoint:(CGPoint)point;
 
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition;
 

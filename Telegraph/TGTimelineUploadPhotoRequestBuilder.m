@@ -26,6 +26,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGTelegramNetworking.h"
+
 #define FILE_CHUNK_SIZE (16 * 1024)
 
 @interface TGTimelineUploadPhotoRequestBuilder ()
@@ -110,7 +112,7 @@
     _fileData = imageData;
 
     static int actionId = 0;
-    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/upload/(userAvatar%d)", actionId++] options:[[NSDictionary alloc] initWithObjectsAndKeys:_fileData, @"data", nil] watcher:self];
+    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/upload/(userAvatar%d)", actionId++] options:[[NSDictionary alloc] initWithObjectsAndKeys:_fileData, @"data", @(TGNetworkMediaTypeTagImage), @"mediaTypeTag", nil] watcher:self];
 }
 
 - (UIImage *)currentLoginBigPhoto

@@ -6,6 +6,7 @@
 @property (nonatomic, assign) bool active;
 @property (nonatomic, assign) bool dontHighlightOnSelection;
 
+- (void)setIconImage:(UIImage *)image activeIconImage:(UIImage *)activeIconImage;
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated;
 
 @end

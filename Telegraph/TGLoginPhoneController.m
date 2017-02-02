@@ -839,15 +839,8 @@
 
 #pragma mark -
 
-- (void)backgroundTapped:(UITapGestureRecognizer *)recognizer
+- (void)backgroundTapped:(UITapGestureRecognizer *)__unused recognizer
 {
-    return;
-    
-    if (recognizer.state == UIGestureRecognizerStateRecognized)
-    {
-        [_countryCodeField resignFirstResponder];
-        [_phoneField resignFirstResponder];
-    }
 }
 
 - (void)inputBackgroundTapped:(UITapGestureRecognizer *)recognizer
@@ -987,10 +980,11 @@
                 NSTimeInterval phoneTimeout = (((SGraphObjectNode *)result).object)[@"callTimeout"] == nil ? 60 : [(((SGraphObjectNode *)result).object)[@"callTimeout"] intValue];
                 
                 bool messageSentToTelegram = [(((SGraphObjectNode *)result).object)[@"messageSentToTelegram"] intValue];
+                bool messageSentViaPhone = [(((SGraphObjectNode *)result).object)[@"messageSentViaPhone"] intValue];
                 
-                [TGAppDelegateInstance saveLoginStateWithDate:(int)CFAbsoluteTimeGetCurrent() phoneNumber:[[NSString alloc] initWithFormat:@"%@|%@", _countryCodeField.text, _phoneField.text] phoneCode:nil phoneCodeHash:phoneCodeHash codeSentToTelegram:messageSentToTelegram firstName:nil lastName:nil photo:nil];
+                [TGAppDelegateInstance saveLoginStateWithDate:(int)CFAbsoluteTimeGetCurrent() phoneNumber:[[NSString alloc] initWithFormat:@"%@|%@", _countryCodeField.text, _phoneField.text] phoneCode:nil phoneCodeHash:phoneCodeHash codeSentToTelegram:messageSentToTelegram codeSentViaPhone:messageSentViaPhone firstName:nil lastName:nil photo:nil resetAccountState:nil];
                 
-                TGLoginCodeController *loginCodeController = [[TGLoginCodeController alloc] initWithShowKeyboard:(_countryCodeField.isFirstResponder || _phoneField.isFirstResponder) phoneNumber:_phoneNumber phoneCodeHash:phoneCodeHash phoneTimeout:phoneTimeout messageSentToTelegram:messageSentToTelegram];
+                TGLoginCodeController *loginCodeController = [[TGLoginCodeController alloc] initWithShowKeyboard:(_countryCodeField.isFirstResponder || _phoneField.isFirstResponder) phoneNumber:_phoneNumber phoneCodeHash:phoneCodeHash phoneTimeout:phoneTimeout messageSentToTelegram:messageSentToTelegram messageSentViaPhone:messageSentViaPhone];
                 [self.navigationController pushViewController:loginCodeController animated:true];
             }
             else
@@ -1007,6 +1001,8 @@
                     errorText = TGLocalized(@"Login.CodeFloodError");
                 else if (resultCode == TGSendCodeErrorNetwork)
                     errorText = TGLocalized(@"Login.NetworkError");
+                else if (resultCode == TGSendCodeErrorPhoneFlood)
+                    errorText = TGLocalized(@"Login.PhoneFloodError");
                 
                 __weak TGLoginPhoneController *weakSelf = self;
                 [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:okButton ? TGLocalized(@"Login.PhoneNumberHelp") : nil completionBlock:^(bool okButtonPressed)

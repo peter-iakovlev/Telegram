@@ -22,23 +22,27 @@
 
 #import "TGTelegraph.h"
 
+#import "Freedom.h"
+
+#import "TGDialogListCellEditingControls.h"
+
 static UIImage *deliveredCheckmark()
 {
     static UIImage *image = nil;
-    if (image == nil)
-    {
-        image = [UIImage imageNamed:@"ModernConversationListIconDelivered.png"];
-    }
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        image = [[UIImage imageNamed:@"ModernConversationListIconDelivered.png"] preloadedImageWithAlpha];
+    });
     return image;
 }
 
 static UIImage *readCheckmark()
 {
     static UIImage *image = nil;
-    if (image == nil)
-    {
-        image = [UIImage imageNamed:@"ModernConversationListIconRead.png"];
-    }
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        image = [[UIImage imageNamed:@"ModernConversationListIconRead.png"] preloadedImageWithAlpha];
+    });
     return image;
 }
 
@@ -47,8 +51,6 @@ static UIColor *actionTextColor = nil;
 static UIColor *mediaTextColor = nil;
 
 @interface TGDialogListTextView : UIView
-{
-}
 
 @property (nonatomic, strong) NSString *title;
 @property (nonatomic) CGRect titleFrame;
@@ -61,6 +63,7 @@ static UIColor *mediaTextColor = nil;
 @property (nonatomic , strong) NSString *authorName;
 @property (nonatomic) CGRect authorNameFrame;
 @property (nonatomic, strong) UIFont *authorNameFont;
+@property (nonatomic, strong) UIColor *authorNameColor;
 
 @property (nonatomic) CGRect typingFrame;
 @property (nonatomic) bool showTyping;
@@ -81,8 +84,6 @@ static UIColor *mediaTextColor = nil;
     static CGColorRef titleColor = nil;
     static UIColor *nEncryptedTitleColor = nil;
     static CGColorRef encryptedTitleColor = nil;
-    static CGColorRef authorNameColor = nil;
-    static UIColor *nAuthorNameColor = nil;
     if (titleColor == nil)
     {
         nTitleColor = [UIColor blackColor];
@@ -90,9 +91,6 @@ static UIColor *mediaTextColor = nil;
         
         nEncryptedTitleColor = UIColorRGB(0x00a629);
         encryptedTitleColor = CGColorRetain([nEncryptedTitleColor CGColor]);
-        
-        nAuthorNameColor = [UIColor blackColor];
-        authorNameColor = CGColorRetain([nAuthorNameColor CGColor]);
     }
     
     CGContextRef context = UIGraphicsGetCurrentContext();
@@ -108,8 +106,10 @@ static UIColor *mediaTextColor = nil;
         UIImage *image = nil;
         
         static UIImage *multichatImage = nil;
-        if (multichatImage == nil)
-            multichatImage = [UIImage imageNamed:@"ModernConversationListIconLock.png"];
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            multichatImage = [[UIImage imageNamed:@"ModernConversationListIconLock.png"] preloadedImageWithAlpha];
+        });
         image = multichatImage;
         
         [image drawAtPoint:CGPointMake(1.0f, 6.0f) blendMode:kCGBlendModeNormal alpha:1.0f];
@@ -119,8 +119,10 @@ static UIColor *mediaTextColor = nil;
         UIImage *image = nil;
         
         static UIImage *multichatImage = nil;
-        if (multichatImage == nil)
-            multichatImage = [UIImage imageNamed:@"DialogListGroupChatIcon.png"];
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            multichatImage = [[UIImage imageNamed:@"DialogListGroupChatIcon.png"] preloadedImageWithAlpha];
+        });
         image = multichatImage;
         
         [image drawAtPoint:CGPointMake(1, 6.0) blendMode:kCGBlendModeNormal alpha:1.0f];
@@ -221,25 +223,21 @@ static UIColor *mediaTextColor = nil;
     
         if (_authorName != nil && _authorName.length != 0)
         {
-            CGContextSetFillColorWithColor(context, authorNameColor);
+            CGContextSetFillColorWithColor(context, _authorNameColor == nil ? [UIColor blackColor].CGColor : [_authorNameColor CGColor]);
             if (CGRectIntersectsRect(rect, authorNameFrame))
             {
                 if (iosMajorVersion() >= 7)
                 {
-                    static NSDictionary *attributes = nil;
-                    static dispatch_once_t onceToken;
-                    dispatch_once(&onceToken, ^
-                    {
-                        NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
-                        style.lineBreakMode = NSLineBreakByTruncatingTail;
-                        style.alignment = NSTextAlignmentLeft;
-                        
-                        attributes = @{
-                            NSParagraphStyleAttributeName: style,
-                            NSFontAttributeName: _authorNameFont,
-                            NSForegroundColorAttributeName: nAuthorNameColor
-                        };
-                    });
+                    NSDictionary *attributes = nil;
+                    NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
+                    style.lineBreakMode = NSLineBreakByTruncatingTail;
+                    style.alignment = NSTextAlignmentLeft;
+                    
+                    attributes = @{
+                        NSParagraphStyleAttributeName: style,
+                        NSFontAttributeName: _authorNameFont,
+                        NSForegroundColorAttributeName: _authorNameColor == nil ? [UIColor blackColor] : _authorNameColor
+                    };
                     
                     [_authorName drawWithRect:authorNameFrame options:NSStringDrawingUsesLineFragmentOrigin attributes:attributes context:nil];
                 }
@@ -259,13 +257,15 @@ static UIColor *mediaTextColor = nil;
 
 #pragma mark - Cell
 
-@interface TGDialogListCell ()
+@interface TGDialogListCell () <UIGestureRecognizerDelegate>
 {
     CALayer *_separatorLayer;
-    UIImageView *_avatarIconView;
+    
+    UIImage *_unreadBackgroundImage;
+    UIImage *_unreadMutedBackgroundImage;
 }
 
-@property (nonatomic, strong) UIView *wrapView;
+@property (nonatomic, strong) TGDialogListCellEditingControls *wrapView;
 
 @property (nonatomic, strong) TGDialogListTextView *textView;
 
@@ -275,6 +275,7 @@ static UIColor *mediaTextColor = nil;
 @property (nonatomic, strong) TGDateLabel *dateLabel;
 
 @property (nonatomic, strong) UIImageView *unreadCountBackgrond;
+@property (nonatomic, strong) UIImageView *pinnedBackgrond;
 @property (nonatomic, strong) TGLabel *unreadCountLabel;
 
 @property (nonatomic, strong) UIImageView *deliveryErrorBackgrond;
@@ -320,13 +321,41 @@ static UIColor *mediaTextColor = nil;
             self.contentView.superview.clipsToBounds = false;
         }
         
-        _separatorLayer = [[CALayer alloc] init];
-        _separatorLayer.backgroundColor = TGSeparatorColor().CGColor;
-        [self.layer addSublayer:_separatorLayer];
+        if (iosMajorVersion() <= 6) {
+            _separatorLayer = [[CALayer alloc] init];
+            _separatorLayer.backgroundColor = TGSeparatorColor().CGColor;
+            [self.layer addSublayer:_separatorLayer];
+        }
         
-        _wrapView = [[UIView alloc] init];
+        _wrapView = [[TGDialogListCellEditingControls alloc] init];
         _wrapView.clipsToBounds = true;
         [self addSubview:_wrapView];
+        
+        __weak TGDialogListCell *weakSelf = self;
+        _wrapView.requestDelete = ^{
+            __strong TGDialogListCell *strongSelf = weakSelf;
+            if (strongSelf != nil && strongSelf->_conversationId != 0) {
+                if (strongSelf->_deleteConversation) {
+                    strongSelf->_deleteConversation(strongSelf->_conversationId);
+                }
+            }
+        };
+        _wrapView.toggleMute = ^(bool mute) {
+            __strong TGDialogListCell *strongSelf = weakSelf;
+            if (strongSelf != nil && strongSelf->_conversationId != 0) {
+                if (strongSelf->_toggleMuteConversation) {
+                    strongSelf->_toggleMuteConversation(strongSelf->_conversationId, mute);
+                }
+            }
+        };
+        _wrapView.togglePinned = ^(bool pin) {
+            __strong TGDialogListCell *strongSelf = weakSelf;
+            if (strongSelf != nil && strongSelf->_conversationId != 0) {
+                if (strongSelf->_togglePinConversation) {
+                    strongSelf->_togglePinConversation(strongSelf->_conversationId, pin);
+                }
+            }
+        };
         
         UIView *selectedView = [[UIView alloc] init];
         selectedView.backgroundColor = TGSelectionColor();
@@ -339,8 +368,8 @@ static UIColor *mediaTextColor = nil;
         _textView.titleFont = TGMediumSystemFontOfSize(16);
         _textView.textFont = TGSystemFontOfSize(15);
         _textView.authorNameFont = TGSystemFontOfSize(15);
-        _textView.opaque = true;
-        _textView.backgroundColor = [UIColor whiteColor];
+        _textView.opaque = false;
+        _textView.backgroundColor = nil;//[UIColor whiteColor];
         
         [_wrapView addSubview:_textView];
         
@@ -376,12 +405,9 @@ static UIColor *mediaTextColor = nil;
         _avatarView.fadeTransition = fadeTransition;
         [_wrapView addSubview:_avatarView];
         
-        _avatarIconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"BroadcastLargeAvatarIcon.png"]];
-        _avatarIconView.frame = (CGRect){{23.0f, 23.0f}, _avatarIconView.frame.size};
-        _avatarIconView.hidden = true;
-        [_wrapView addSubview:_avatarIconView];
-        
         static UIImage *unreadBackground = nil;
+        static UIImage *unreadMutedBackground = nil;
+        static UIImage *pinnedBackground = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
@@ -393,11 +419,27 @@ static UIColor *mediaTextColor = nil;
             
             unreadBackground = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:10.0f topCapHeight:0.0f];
             UIGraphicsEndImageContext();
+            
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(20.0f, 20.0f), false, 0.0f);
+            context = UIGraphicsGetCurrentContext();
+            
+            CGContextSetFillColorWithColor(context, UIColorRGB(0xb6b6bb).CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 20.0f, 20.0f));
+            
+            unreadMutedBackground = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:10.0f topCapHeight:0.0f];
+            UIGraphicsEndImageContext();
+            
+            pinnedBackground = [[UIImage imageNamed:@"DialogListPinnedIcon.png"] preloadedImageWithAlpha];
         });
         
+        _unreadBackgroundImage = unreadBackground;
+        _unreadMutedBackgroundImage = unreadMutedBackground;
+        
         _unreadCountBackgrond = [[UIImageView alloc] initWithImage:unreadBackground];
+        _pinnedBackgrond = [[UIImageView alloc] initWithImage:pinnedBackground];
         
         [_wrapView addSubview:_unreadCountBackgrond];
+        [_wrapView addSubview:_pinnedBackgrond];
         
         _unreadCountLabel = [[TGLabel alloc] initWithFrame:CGRectMake(0, 0, 50, 20)];
         _unreadCountLabel.textColor = [UIColor whiteColor];
@@ -436,6 +478,7 @@ static UIColor *mediaTextColor = nil;
 - (void)prepareForReuse
 {
     [self stopTypingAnimation];
+    [_wrapView setExpanded:false animated:false];
     
     [super prepareForReuse];
 }
@@ -460,7 +503,7 @@ static UIColor *mediaTextColor = nil;
             selectedView.frame = CGRectMake(0, -separatorHeight, selectedView.frame.size.width, self.frame.size.height + separatorHeight);
         }
         
-        if (TGIsPad())
+        if (TGIsPad() && _separatorLayer != nil)
         {
             bool hidden = (self.selected || self.highlighted);
             if (_separatorLayer.hidden != hidden)
@@ -494,7 +537,7 @@ static UIColor *mediaTextColor = nil;
             selectedView.frame = CGRectMake(0, -separatorHeight, selectedView.frame.size.width, self.frame.size.height + separatorHeight);
         }
         
-        if (TGIsPad())
+        if (TGIsPad() && _separatorLayer != nil)
         {
             bool hidden = (self.selected || self.highlighted);
             if (_separatorLayer.hidden != hidden)
@@ -703,12 +746,40 @@ static UIColor *mediaTextColor = nil;
     }
 }
 
+static NSArray *editingButtonTypes(bool muted, bool pinned, bool mutable) {
+    if (mutable) {
+        if (pinned) {
+            if (muted) {
+                return TGDialogListCellEditingControlButtonsUnmuteUnpinDelete();
+            } else {
+                return TGDialogListCellEditingControlButtonsMuteUnpinDelete();
+            }
+        } else {
+            if (muted) {
+                return TGDialogListCellEditingControlButtonsUnmutePinDelete();
+            } else {
+                return TGDialogListCellEditingControlButtonsMutePinDelete();
+            }
+        }
+    } else {
+        if (pinned) {
+            return TGDialogListCellEditingControlButtonsUnpinDelete();
+        } else {
+            return TGDialogListCellEditingControlButtonsPinDelete();
+        }
+    }
+}
+
 - (void)resetView:(bool)keepState
 {
     if (self.selectionStyle != UITableViewCellSelectionStyleBlue)
         self.selectionStyle = UITableViewCellSelectionStyleBlue;
     
-    _avatarIconView.hidden = !_isBroadcast;
+    [_wrapView setButtonBytes:editingButtonTypes(_isMuted, _pinnedToTop, !_isEncrypted)];
+    
+    UIColor *backgroundColor = _pinnedToTop ? UIColorRGB(0xf7f7f7) : [UIColor whiteColor];
+    //_textView.backgroundColor = _pinnedToTop ? [UIColor clearColor] : ((self.highlighted || self.selected) ? _textView.backgroundColor : [UIColor whiteColor]);
+    self.backgroundColor = backgroundColor;
     
     _dateString = _date == 0 ? nil : [TGDateUtils stringForMessageListDate:(int)_date];
     
@@ -1066,6 +1137,123 @@ static UIColor *mediaTextColor = nil;
                         
                         break;
                     }
+                    case TGMessageActionPinnedMessage:
+                    {
+                        TGMessage *replyMessage = nil;
+                        for (id attachment in _messageAttachments) {
+                            if ([attachment isKindOfClass:[TGReplyMessageMediaAttachment class]]) {
+                                replyMessage = ((TGReplyMessageMediaAttachment *)attachment).replyMessage;
+                                break;
+                            }
+                        }
+                        
+                        NSString *formatString = replyMessage != nil ? TGLocalized(@"Message.PinnedTextMessage") : TGLocalized(@"Message.PinnedDeletedMessage");
+                        for (id attachment in replyMessage.mediaAttachments) {
+                            if ([attachment isKindOfClass:[TGImageMediaAttachment class]]) {
+                                formatString = TGLocalized(@"Message.PinnedPhotoMessage");
+                            } else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]]) {
+                                formatString = TGLocalized(@"Message.PinnedVideoMessage");
+                            } else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]]) {
+                                TGDocumentMediaAttachment *document = attachment;
+                                if ([document isAnimated]) {
+                                    formatString = TGLocalized(@"Message.PinnedAnimationMessage");
+                                } else {
+                                    bool isSticker = false;
+                                    bool isAudio = false;
+                                    bool isVoice = false;
+                                    
+                                    for (id attribute in document.attributes) {
+                                        if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                                            isAudio = true;
+                                            isVoice = ((TGDocumentAttributeAudio *)attribute).isVoice;
+                                        } else if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]]) {
+                                            isSticker = true;
+                                        }
+                                    }
+                                    
+                                    if (isSticker) {
+                                        formatString = TGLocalized(@"Message.PinnedStickerMessage");
+                                    } else if (isVoice) {
+                                        formatString = TGLocalized(@"Message.PinnedAudioMessage");
+                                    } else {
+                                        formatString = TGLocalized(@"Message.PinnedDocumentMessage");
+                                    }
+                                }
+                            } else if ([attachment isKindOfClass:[TGLocationMediaAttachment class]]) {
+                                formatString = TGLocalized(@"Message.PinnedLocationMessage");
+                            } else if ([attachment isKindOfClass:[TGContactMediaAttachment class]]) {
+                                formatString = TGLocalized(@"Message.PinnedContactMessage");
+                            } else if ([attachment isKindOfClass:[TGGameMediaAttachment class]]) {
+                                formatString = TGLocalized(@"Message.PinnedGame");
+                            }
+                        }
+                        
+                        _messageText = [NSString stringWithFormat:formatString, replyMessage.text];
+                        _messageTextColor = mediaTextColor;
+                        
+                        break;
+                    }
+                    case TGMessageActionGameScore:
+                    {
+                        TGMessage *replyMessage = nil;
+                        for (TGMediaAttachment *attachment in _messageAttachments) {
+                            if ([attachment isKindOfClass:[TGReplyMessageMediaAttachment class]]) {
+                                replyMessage = ((TGReplyMessageMediaAttachment *)attachment).replyMessage;
+                            }
+                        }
+                        
+                        NSString *gameTitle = nil;
+                        for (id attachment in replyMessage.mediaAttachments) {
+                            if ([attachment isKindOfClass:[TGGameMediaAttachment class]]) {
+                                gameTitle = ((TGGameMediaAttachment *)attachment).title;
+                                break;
+                            }
+                        }
+                        
+                        int scoreCount = (int)[actionAttachment.actionData[@"score"] intValue];
+                        
+                        NSString *formatStringBase = @"";
+                        if (_authorIsSelf) {
+                            if (gameTitle != nil) {
+                                formatStringBase = [TGStringUtils integerValueFormat:@"Notification.GameScoreSelfExtended_" value:scoreCount];
+                            } else {
+                                formatStringBase = [TGStringUtils integerValueFormat:@"Notification.GameScoreSelfSimple_" value:scoreCount];
+                            }
+                        } else {
+                            if (gameTitle != nil) {
+                                formatStringBase = [TGStringUtils integerValueFormat:@"Notification.GameScoreExtended_" value:scoreCount];
+                            } else {
+                                formatStringBase = [TGStringUtils integerValueFormat:@"Notification.GameScoreSimple_" value:scoreCount];
+                            }
+                        }
+                        
+                        NSMutableString *formatString = [[NSMutableString alloc] initWithString:TGLocalized(formatStringBase)];
+                        
+                        NSRange scoreRange = [formatString rangeOfString:@"{score}"];
+                        if (scoreRange.location != NSNotFound) {
+                            [formatString replaceCharactersInRange:scoreRange withString:[NSString stringWithFormat:@"%d", scoreCount]];
+                        }
+                        
+                        NSRange gameTitleRange = [formatString rangeOfString:@"{game}"];
+                        if (gameTitleRange.location != NSNotFound) {
+                            [formatString replaceCharactersInRange:gameTitleRange withString:gameTitle];
+                        }
+                        
+                        _messageText = formatString;
+                        _messageTextColor = mediaTextColor;
+                        break;
+                    }
+                    case TGMessageActionPhoneCall:
+                    {
+                        bool outgoing = _authorIsSelf;
+                        int reason = [actionAttachment.actionData[@"reason"] intValue];
+                        bool missed = reason == TGCallDiscardReasonMissed || reason == TGCallDiscardReasonBusy;
+                        
+                         NSString *type = TGLocalized(missed ? (outgoing ? @"Notification.CallCanceled" : @"Notification.CallMissed") : (outgoing ? @"Notification.CallOutgoing" : @"Notification.CallIncoming"));
+                        _messageText = type;
+                        _messageTextColor = actionTextColor;
+                        break;
+                    }
                     default:
                         break;
                 }
@@ -1128,6 +1316,7 @@ static UIColor *mediaTextColor = nil;
                 CGSize imageSize = CGSizeZero;
                 bool isSticker = false;
                 bool isVoice = false;
+                NSString *musicText = nil;
                 NSString *stickerRepresentation = nil;
                 for (id attribute in documentAttachment.attributes)
                 {
@@ -1149,6 +1338,17 @@ static UIColor *mediaTextColor = nil;
                     }
                     else if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
                         isVoice = ((TGDocumentAttributeAudio *)attribute).isVoice;
+                        if (!isVoice) {
+                            NSString *artist = ((TGDocumentAttributeAudio *)attribute).performer;
+                            NSString *title = ((TGDocumentAttributeAudio *)attribute).title;
+                            if (artist.length != 0 && title.length != 0) {
+                                musicText = [[artist stringByAppendingString:@" — "] stringByAppendingString:title];
+                            } else if (artist.length != 0) {
+                                musicText = artist;
+                            } else if (title.length != 0) {
+                                musicText = title;
+                            }
+                        }
                     }
                 }
                 
@@ -1174,6 +1374,11 @@ static UIColor *mediaTextColor = nil;
                     _messageTextColor = mediaTextColor;
                     attachmentFound = true;
                 }
+                else if (musicText != nil) {
+                    _messageText = musicText;
+                    _messageTextColor = mediaTextColor;
+                    attachmentFound = true;
+                }
                 else
                 {
                     NSString *fileName = ((TGDocumentMediaAttachment *)attachment).fileName;
@@ -1191,6 +1396,13 @@ static UIColor *mediaTextColor = nil;
             else if (attachment.type == TGAudioMediaAttachmentType)
             {
                 _messageText = TGLocalized(@"Message.Audio");
+                _messageTextColor = mediaTextColor;
+                //_mediaIcon = [UIImage imageNamed:@"MediaVoice"];
+                attachmentFound = true;
+                break;
+            }
+            else if (attachment.type == TGGameAttachmentType) {
+                _messageText = [@"🎮 " stringByAppendingString:((TGGameMediaAttachment *)attachment).title];
                 _messageTextColor = mediaTextColor;
                 //_mediaIcon = [UIImage imageNamed:@"MediaVoice"];
                 attachmentFound = true;
@@ -1236,11 +1448,11 @@ static UIColor *mediaTextColor = nil;
     } else {
         totalUnreadCount = _unreadCount + _serviceUnreadCount;
     }
-    
-    if (totalUnreadCount)
-    {
+
+    if (totalUnreadCount) {
         _unreadCountBackgrond.hidden = false;
         _unreadCountLabel.hidden = false;
+        _pinnedBackgrond.hidden = true;
         
         if (TGIsLocaleArabic())
         {
@@ -1258,16 +1470,24 @@ static UIColor *mediaTextColor = nil;
     {
         _unreadCountBackgrond.hidden = true;
         _unreadCountLabel.hidden = true;
+        
+        _pinnedBackgrond.hidden = !_pinnedToTop;
     }
     
     if (_deliveryState == TGMessageDeliveryStateFailed)
     {
         _unreadCountBackgrond.hidden = true;
         _unreadCountLabel.hidden = true;
+        _pinnedBackgrond.hidden = true;
         
         if (_deliveryErrorBackgrond == nil)
         {
-            _deliveryErrorBackgrond = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernConversationListBadgeUnsent.png"]];
+            static UIImage *unsentImage = nil;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^{
+                unsentImage = [[UIImage imageNamed:@"ModernConversationListBadgeUnsent.png"] preloadedImageWithAlpha];
+            });
+            _deliveryErrorBackgrond = [[UIImageView alloc] initWithImage:unsentImage];
             [_wrapView addSubview:_deliveryErrorBackgrond];
         }
         else if (_deliveryErrorBackgrond.superview == nil)
@@ -1279,6 +1499,16 @@ static UIColor *mediaTextColor = nil;
     }
     
     _textView.authorName = _hideAuthorName ? nil : _authorName;
+    _textView.authorNameColor = [UIColor blackColor];
+    
+    if (_draft != nil && ![_draft isEmpty] && totalUnreadCount == 0) {
+        _textView.text = _draft.text;
+        _textView.textColor = _messageTextColor;
+        _textView.authorName = TGLocalized(@"DialogList.Draft");
+        _hideAuthorName = false;
+        _authorName = _textView.authorName;
+        _textView.authorNameColor = UIColorRGB(0xdd4b39);
+    }
         
     _avatarView.hidden = false;
     
@@ -1338,7 +1568,6 @@ static UIColor *mediaTextColor = nil;
         {
             [_avatarView loadGroupPlaceholderWithSize:CGSizeMake(62.0f, 62.0f) conversationId:_conversationId title:_isBroadcast ? @"" : _titleText placeholder:placeholder];
         }
-            //[_avatarView loadImage:[[NSString alloc] initWithFormat:@"dialogListPlaceholder:%lld", _conversationId] filter:nil placeholder:[_assetsSource groupAvatarPlaceholderGeneric] forceFade:false];
     }
     
     _textView.isMultichat = _isGroupChat;
@@ -1355,8 +1584,7 @@ static UIColor *mediaTextColor = nil;
         _editingIsActive = false;
     }
     
-    if (_outgoing)
-    {
+    if (_outgoing && (_draft == nil || [_draft isEmpty] || totalUnreadCount != 0)) {
         if (_deliveryState == TGMessageDeliveryStateDelivered && !_unread)
         {
             _deliveredCheckmark.hidden = true;
@@ -1378,10 +1606,10 @@ static UIColor *mediaTextColor = nil;
             if (_pendingIndicator == nil)
             {
                 static UIImage *pendingImage = nil;
-                if (pendingImage == nil)
-                {
-                    pendingImage = [UIImage imageNamed:@"DialogListPending.png"];
-                }
+                static dispatch_once_t onceToken;
+                dispatch_once(&onceToken, ^{
+                    pendingImage = [[UIImage imageNamed:@"DialogListPending.png"] preloadedImageWithAlpha];
+                });
                 
                 _pendingIndicator = [[UIImageView alloc] initWithImage:pendingImage];
                 [_wrapView addSubview:_pendingIndicator];
@@ -1406,7 +1634,12 @@ static UIColor *mediaTextColor = nil;
     {
         if (_muteIcon == nil)
         {
-            _muteIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"DialogList_Muted.png"]];
+            static UIImage *muteIcon = nil;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^{
+                muteIcon = [[UIImage imageNamed:@"DialogList_Muted.png"] preloadedImageWithAlpha];
+            });
+            _muteIcon = [[UIImageView alloc] initWithImage:muteIcon];
         }
         
         if (_muteIcon.superview == nil)
@@ -1417,9 +1650,21 @@ static UIColor *mediaTextColor = nil;
         [_muteIcon removeFromSuperview];
     }
     
+    if (_unreadCountBackgrond != nil && totalUnreadCount > 0)
+    {
+        UIImage *unreadBackground = _isMuted ? _unreadMutedBackgroundImage : _unreadBackgroundImage;
+        if (_unreadCountBackgrond.image != unreadBackground)
+            _unreadCountBackgrond.image = unreadBackground;
+    }
+    
     if (_isVerified) {
         if (_verifiedIcon == nil) {
-            _verifiedIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ChannelVerifiedIconSmall.png"]];
+            static UIImage *verifiedImage = nil;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^{
+                verifiedImage = [[UIImage imageNamed:@"ChannelVerifiedIconSmall.png"] preloadedImageWithAlpha];
+            });
+            _verifiedIcon = [[UIImageView alloc] initWithImage:verifiedImage];
         }
         if (_verifiedIcon.superview == nil) {
             [_wrapView addSubview:_verifiedIcon];
@@ -1433,6 +1678,13 @@ static UIColor *mediaTextColor = nil;
 
 - (void)dismissEditingControls:(bool)__unused animated
 {
+}
+
+- (void)setIsLastCell:(bool)isLastCell {
+    if (_isLastCell != isLastCell) {
+        _isLastCell = isLastCell;
+        [self setNeedsLayout];
+    }
 }
 
 - (void)layoutSubviews
@@ -1449,6 +1701,40 @@ static UIColor *mediaTextColor = nil;
     
     [super layoutSubviews];
     
+    CGFloat contentOffset = self.contentView.frame.origin.x;
+    
+    if ((_disableActions || contentOffset > FLT_EPSILON) && [_wrapView isExpanded]) {
+        [_wrapView setExpanded:false animated:false];
+    }
+    [_wrapView setExpandable:contentOffset <= FLT_EPSILON || _disableActions];
+    
+    static Class separatorClass = nil;
+    static dispatch_once_t onceToken2;
+    dispatch_once(&onceToken2, ^{
+        separatorClass = NSClassFromString(TGEncodeText(@"`VJUbcmfWjfxDfmmTfqbsbupsWjfx", -1));
+    });
+    for (UIView *subview in self.subviews) {
+        if (subview.class == separatorClass) {
+            CGRect frame = subview.frame;
+            if (_isLastCell) {
+                frame.size.width = self.bounds.size.width;
+                frame.origin.x = 0.0f;
+            } else {
+                if (contentOffset > FLT_EPSILON) {
+                    frame.size.width = self.bounds.size.width - 116.0f;
+                    frame.origin.x = 116.0f;
+                } else {
+                    frame.size.width = self.bounds.size.width - 80.0f;
+                    frame.origin.x = 80.0f;
+                }
+            }
+            if (!CGRectEqualToRect(subview.frame, frame)) {
+                subview.frame = frame;
+            }
+            break;
+        }
+    }
+    
     TG_TIMESTAMP_MEASURE(cellLayout);
     
     CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
@@ -1456,8 +1742,9 @@ static UIColor *mediaTextColor = nil;
     CGSize rawSize = self.frame.size;
     
     UIView *selectedView = self.selectedBackgroundView;
-    if (selectedView != nil)
+    if (selectedView != nil) {
         selectedView.frame = CGRectMake(0, -separatorHeight, selectedView.frame.size.width, rawSize.height + separatorHeight);
+    }
     
     TG_TIMESTAMP_MEASURE(cellLayout);
     
@@ -1473,7 +1760,23 @@ static UIColor *mediaTextColor = nil;
         widescreenWidth = MAX(screenSize.width, screenSize.height);
     });
     
-    CGFloat contentOffset = self.contentView.frame.origin.x;
+    if (contentOffset > FLT_EPSILON && _pinnedToTop) {
+        if (_pinnedBackgrond.alpha >= FLT_EPSILON) {
+            _pinnedBackgrond.alpha = 0.0f;
+            _unreadCountBackgrond.alpha = 0.0f;
+            _dateLabel.alpha = 0.0f;
+            _readCheckmark.alpha = 0.0f;
+            _deliveredCheckmark.alpha = 0.0f;
+            _unreadCountLabel.alpha = 0.0f;
+        }
+    } else if (_pinnedBackgrond.alpha <= 1.0f - FLT_EPSILON) {
+        _pinnedBackgrond.alpha = 1.0f;
+        _unreadCountBackgrond.alpha = 1.0f;
+        _dateLabel.alpha = 1.0f;
+        _readCheckmark.alpha = 1.0f;
+        _deliveredCheckmark.alpha = 1.0f;
+        _unreadCountLabel.alpha = 1.0f;
+    }
     
     CGSize size = rawSize;
     if (!TGIsPad())
@@ -1488,7 +1791,14 @@ static UIColor *mediaTextColor = nil;
     
     TG_TIMESTAMP_MEASURE(cellLayout);
     
-    _separatorLayer.frame = CGRectMake(80.0f, size.height - separatorHeight, rawSize.width - 80.0f, separatorHeight);
+    CGFloat separatorOffset = 80.0f;
+    
+    if (_separatorLayer != nil) {
+        bool disabledActions = [CATransaction disableActions];
+        [CATransaction setDisableActions:true];
+        _separatorLayer.frame = CGRectMake(separatorOffset, size.height - separatorHeight, rawSize.width - separatorOffset + 256.0f, separatorHeight);
+        [CATransaction setDisableActions:disabledActions];
+    }
     
     _wrapView.frame = CGRectMake(contentOffset, 0.0f, size.width, size.height);
     
@@ -1503,12 +1813,6 @@ static UIColor *mediaTextColor = nil;
             }
         }
         
-        /*CGRect arrowFrame = _arrowView.frame;
-        arrowFrame.origin.x = contentOffset > FLT_EPSILON ? (rawSize.width + 4.0f) : (size.width - 9.0f - _arrowView.frame.size.width);
-        arrowFrame.origin.y = 12.0f;
-        _arrowView.frame = arrowFrame;
-        _arrowView.alpha = contentOffset > FLT_EPSILON ? 0.0f : 1.0f;*/
-        
         int rightPadding = 0.0f;
         
         CGFloat countTextWidth = [_unreadCountLabel.text sizeWithFont:_unreadCountLabel.font].width;
@@ -1516,13 +1820,14 @@ static UIColor *mediaTextColor = nil;
         CGFloat backgroundWidth = MAX(20.0f, countTextWidth + 11.0f);
         CGRect unreadCountBackgroundFrame = CGRectMake(size.width - 11.0f - backgroundWidth, 38.0f, backgroundWidth, 20.0f);
         _unreadCountBackgrond.frame = unreadCountBackgroundFrame;
+        _pinnedBackgrond.frame = CGRectMake(size.width - 11.0f - 20.0f, 38.0f, 20.0f, 20.0f);
         CGRect unreadCountLabelFrame = _unreadCountLabel.frame;
         unreadCountLabelFrame.origin = CGPointMake(unreadCountBackgroundFrame.origin.x + TGRetinaFloor(((unreadCountBackgroundFrame.size.width - countTextWidth) / 2.0f)) - (TGIsRetina() ? 0.0f : 0.0f), unreadCountBackgroundFrame.origin.y + 1.0f -TGRetinaPixel);
         _unreadCountLabel.frame = unreadCountLabelFrame;
         
         TG_TIMESTAMP_MEASURE(cellLayout);
         
-        if (!_unreadCountBackgrond.hidden)
+        if (!_unreadCountBackgrond.hidden || !_pinnedBackgrond.hidden)
             rightPadding += unreadCountBackgroundFrame.size.width + 16;
         
         if (_deliveryErrorBackgrond != nil && _deliveryErrorBackgrond.superview != nil)
@@ -1633,7 +1938,21 @@ static UIColor *mediaTextColor = nil;
 
 - (void)setEditing:(BOOL)editing animated:(BOOL)animated
 {
+    bool wasEditing = self.isEditing;
     [super setEditing:editing animated:animated];
+    if (animated && wasEditing != editing) {
+        UIView *snapshotWrappingView = [[UIView alloc] initWithFrame:_wrapView.bounds];
+        snapshotWrappingView.backgroundColor = self.backgroundColor;
+        UIView *snapshotView = [_textView snapshotViewAfterScreenUpdates:false];
+        snapshotView.frame = _textView.frame;
+        [snapshotWrappingView addSubview:snapshotView];
+        [_wrapView insertSubview:snapshotWrappingView aboveSubview:_textView];
+        [UIView animateWithDuration:0.3 animations:^{
+            snapshotWrappingView.alpha = 0.0f;
+        } completion:^(__unused BOOL finished) {
+            [snapshotWrappingView removeFromSuperview];
+        }];
+    }
 }
 
 - (bool)showingDeleteConfirmationButton
@@ -1641,9 +1960,35 @@ static UIColor *mediaTextColor = nil;
     return false;
 }
 
+- (bool)isEditingControlsExpanded {
+    return [_wrapView isExpanded];
+}
+
+- (void)setEditingConrolsExpanded:(bool)expanded animated:(bool)animated {
+    [_wrapView setExpanded:expanded animated:animated];
+}
+
 - (void)resetLocalization
 {
     _dateLabel.dateText = @"";
+}
+
+- (UIView *)avatarSnapshotView
+{
+    return [_avatarView snapshotViewAfterScreenUpdates:false];
+}
+
+- (CGRect)avatarFrame
+{
+    CGRect frame = self.bounds;
+    frame.size.width = CGRectGetMaxX(_avatarView.frame) + _avatarView.frame.origin.x;
+    
+    return frame;
+}
+
+- (CGRect)textContentFrame
+{
+    return self.bounds;
 }
 
 @end

@@ -12,6 +12,8 @@
 
 @property (nonatomic, assign) bool blockContentOffset;
 
+@property (nonatomic, copy) void (^onHitTest)(CGPoint);
+
 - (void)adjustBehaviour;
 
 @end

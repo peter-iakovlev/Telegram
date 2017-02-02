@@ -13,7 +13,7 @@
 
 @implementation TGPreparedDownloadExternalImageMessage
 
-- (instancetype)initWithSearchResult:(TGExternalImageSearchResult *)searchResult imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult {
+- (instancetype)initWithSearchResult:(TGExternalImageSearchResult *)searchResult imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult replyMarkup:(TGReplyMarkupAttachment *)replyMarkup {
     self = [super init];
     if (self != nil) {
         _searchResult = searchResult;
@@ -21,6 +21,7 @@
         _caption = caption;
         self.replyMessage = replyMessage;
         self.botContextResult = botContextResult;
+        self.replyMarkup = replyMarkup;
         
         self.executeOnAdd = ^{
             NSString *imageFilePath = [[[TGMediaStoreContext instance] temporaryFilesCache] getValuePathForKey:[searchResult.originalUrl dataUsingEncoding:NSUTF8StringEncoding]];
@@ -78,6 +79,10 @@
         [attachments addObject:self.botContextResult];
         
         [attachments addObject:[[TGViaUserAttachment alloc] initWithUserId:self.botContextResult.userId username:nil]];
+    }
+    
+    if (self.replyMarkup != nil) {
+        [attachments addObject:self.replyMarkup];
     }
     
     message.mediaAttachments = attachments;

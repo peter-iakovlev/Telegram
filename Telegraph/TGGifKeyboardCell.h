@@ -10,11 +10,14 @@
 
 @interface TGGifKeyboardCell : UICollectionViewCell
 
+@property (nonatomic, readonly) TGGifKeyboardCellContents *contents;
 @property (nonatomic) bool enableAnimation;
 
 - (void)setDocument:(TGDocumentMediaAttachment *)document;
 
 - (TGGifKeyboardCellContents *)_takeContents;
 - (void)_putContents:(TGGifKeyboardCellContents *)contents;
+
+- (void)setHighlighted:(bool)highlighted animated:(bool)__unused animated;
 
 @end

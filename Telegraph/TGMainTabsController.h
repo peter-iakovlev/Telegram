@@ -13,6 +13,9 @@
 @interface TGMainTabsController : UITabBarController <TGViewControllerNavigationBarAppearance>
 
 - (void)setUnreadCount:(int)unreadCount;
+- (void)setMissedCallsCount:(int)callsCount;
+
+- (void)setCallsHidden:(bool)hidden animated:(bool)animated;
 
 - (void)localizationUpdated;
 

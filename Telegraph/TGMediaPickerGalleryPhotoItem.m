@@ -25,7 +25,7 @@
 
 - (TGPhotoEditorTab)toolbarTabs
 {
-    return TGPhotoEditorCaptionTab | TGPhotoEditorCropTab | TGPhotoEditorToolsTab;
+    return TGPhotoEditorCaptionTab | TGPhotoEditorCropTab | TGPhotoEditorToolsTab | TGPhotoEditorPaintTab;
 }
 
 - (Class)viewClass

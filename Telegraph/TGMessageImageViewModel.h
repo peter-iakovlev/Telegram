@@ -31,6 +31,7 @@ typedef enum {
 @property (nonatomic) bool isBroadcast;
 @property (nonatomic) UIEdgeInsets inlineVideoInsets;
 @property (nonatomic) CGSize inlineVideoSize;
+@property (nonatomic) bool flexibleTimestamp;
 
 @property (nonatomic, strong) NSArray *detailStrings;
 @property (nonatomic) UIEdgeInsets detailStringsInsets;

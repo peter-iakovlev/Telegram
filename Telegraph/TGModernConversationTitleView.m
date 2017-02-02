@@ -47,6 +47,7 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     UILabel *_toggleLabel;
     
     bool _showUnreadCount;
+    bool _disableUnreadCount;
 }
 
 @end
@@ -289,6 +290,9 @@ const NSTimeInterval typingIntervalSecond = 0.14;
                 case TGModernConversationTitleViewActivityUploading:
                     [_activityIndicator setUploading];
                     break;
+                case TGModernConversationTitleViewActivityPlaying:
+                    [_activityIndicator setPlaying];
+                    break;
                 default:
                     [_activityIndicator setTyping];
                     break;
@@ -417,7 +421,7 @@ static UIView *findNavigationBar(UIView *view)
 
 - (void)setUnreadCount:(int)unreadCount
 {
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad || _disableUnreadCount)
         return;
     
     if (_unreadCount != unreadCount)
@@ -490,6 +494,11 @@ static UIView *findNavigationBar(UIView *view)
 - (void)setShowUnreadCount:(bool)showUnreadCount {
     _showUnreadCount = showUnreadCount;
     _unreadContainer.alpha = self.alpha * (showUnreadCount ? 1.0f : 0.0f);
+}
+
+- (void)disableUnreadCount {
+    _disableUnreadCount = true;
+    [_unreadContainer removeFromSuperview];
 }
 
 - (void)willMoveToSuperview:(UIView *)newSuperview

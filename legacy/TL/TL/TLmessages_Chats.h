@@ -15,3 +15,9 @@
 
 @end
 
+@interface TLmessages_Chats$messages_chatsSlice : TLmessages_Chats
+
+@property (nonatomic) int32_t count;
+
+@end
+

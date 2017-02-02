@@ -16,11 +16,16 @@
 - (void)play;
 - (void)stop;
 
-- (void)setPlayButtonHidden:(bool)hidden animated:(bool)animated;
-- (void)rotate;
+- (void)playIfAvailable;
 
+- (void)setPlayButtonHidden:(bool)hidden animated:(bool)animated;
+- (void)toggleSendAsGif;
+
+- (void)setScrubbingPanelApperanceLocked:(bool)locked;
+- (void)setScrubbingPanelHidden:(bool)hidden animated:(bool)animated;
 - (void)presentScrubbingPanelAfterReload:(bool)afterReload;
-- (void)hideScrubbingPanelAnimated:(bool)animated;
+
+- (void)prepareForEditing;
 
 - (UIImage *)screenImage;
 - (UIImage *)transitionImage;

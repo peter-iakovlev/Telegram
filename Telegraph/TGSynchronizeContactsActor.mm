@@ -1065,6 +1065,7 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
         {
             if (lastExportState.find(it->first) == lastExportState.end())
             {
+                TGLog(@"add contact export action id (%d)", it->second);
                 if (currentExportActions == nil)
                     currentExportActions = [[NSMutableArray alloc] init];
                 [currentExportActions addObject:[[TGExportContactFutureAction alloc] initWithContactId:it->second]];

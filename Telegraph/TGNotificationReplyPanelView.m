@@ -178,7 +178,7 @@
     [self updateModeButtonVisibilityForce:true];
 }
 
--(void)growingTextViewDidEndEditing:(HPGrowingTextView *)__unused growingTextView
+- (void)growingTextViewDidEndEditing:(HPGrowingTextView *)__unused growingTextView
 {
     [self setAssociatedPanel:nil animated:true];
 }
@@ -511,13 +511,14 @@
     }
 }
 
-- (void)setAssociatedStickerList:(NSArray *)stickerList
+- (void)setAssociatedStickerList:(NSDictionary *)stickerList
 {
     int screenSize = (int)TGScreenSize().height;
     if (screenSize < 568)
         return;
     
-    if (stickerList.count != 0)
+    NSArray *documents = stickerList[@"documents"];
+    if (documents.count != 0)
     {
         if ([_associatedPanel isKindOfClass:[TGStickerAssociatedInputPanel class]])
             [((TGStickerAssociatedInputPanel *)_associatedPanel) setDocumentList:stickerList];

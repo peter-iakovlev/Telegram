@@ -78,6 +78,10 @@
     _titleLabel.textColor = enabled ? [UIColor blackColor] : UIColorRGB(0x8f8f8f);
 }
 
+- (void)setHideArrow:(bool)hideArrow {
+    _disclosureIndicator.hidden = hideArrow;
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
@@ -89,10 +93,12 @@
     
     _disclosureIndicator.frame = CGRectMake(bounds.size.width - _disclosureIndicator.frame.size.width - 15, CGFloor((bounds.size.height - _disclosureIndicator.frame.size.height) / 2), _disclosureIndicator.frame.size.width, _disclosureIndicator.frame.size.height);
     
+    CGFloat disclosureWidth = _disclosureIndicator.hidden ? 0.0f: _disclosureIndicator.frame.size.width;
+    
     CGFloat startingX = (_iconView.image != nil) ? 59.0f : 15.0f;
-    CGFloat indicatorSpacing = 10.0f;
+    CGFloat indicatorSpacing = _disclosureIndicator.hidden ? 0.0f : 10.0f;
     CGFloat labelSpacing = 8.0f;
-    CGFloat availableWidth = _disclosureIndicator.frame.origin.x - startingX - indicatorSpacing;
+    CGFloat availableWidth = bounds.size.width - disclosureWidth - 15.0f - startingX - indicatorSpacing;
     
     CGFloat titleY =  CGFloor((bounds.size.height - titleSize.height) / 2.0f) + TGRetinaPixel;
     CGFloat variantY =  CGFloor((bounds.size.height - variantSize.height) / 2.0f) + TGRetinaPixel;

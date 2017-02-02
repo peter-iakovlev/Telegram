@@ -7,10 +7,11 @@
 @class TGSuggestionContext;
 @class TGMediaPickerGalleryItem;
 @class TGMediaAssetFetchResult;
+@class TGMediaAssetMomentList;
 
 @interface TGMediaPickerModernGalleryMixin : NSObject
 
-@property (nonatomic, readonly) TGMediaPickerGalleryModel *galleryModel;
+@property (nonatomic, weak, readonly) TGMediaPickerGalleryModel *galleryModel;
 
 @property (nonatomic, copy) void (^itemFocused)(TGMediaPickerGalleryItem *);
 
@@ -24,7 +25,9 @@
 @property (nonatomic, copy) void (^editorOpened)(void);
 @property (nonatomic, copy) void (^editorClosed)(void);
 
-- (instancetype)initWithItem:(id)item fetchResult:(TGMediaAssetFetchResult *)fetchResult parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaption:(bool)hasCaption asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit;
+- (instancetype)initWithItem:(id)item fetchResult:(TGMediaAssetFetchResult *)fetchResult parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions inhibitDocumentCaptions:(bool)inhibitDocumentCaptions asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit;
+
+- (instancetype)initWithItem:(id)item momentList:(TGMediaAssetMomentList *)momentList parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions inhibitDocumentCaptions:(bool)inhibitDocumentCaptions asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit;
 
 - (void)present;
 - (void)updateWithFetchResult:(TGMediaAssetFetchResult *)fetchResult;
@@ -32,5 +35,8 @@
 - (UIView *)currentReferenceView;
 
 - (void)setThumbnailSignalForItem:(SSignal *(^)(id))thumbnailSignalForItem;
+
+- (UIViewController *)galleryController;
+- (void)setPreviewMode;
 
 @end

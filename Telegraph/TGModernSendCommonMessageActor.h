@@ -18,6 +18,7 @@
 + (TGImageMediaAttachment *)remoteImageByRemoteUrl:(NSString *)url;
 + (void)setRemoteImageForRemoteUrl:(NSString *)url image:(TGImageMediaAttachment *)image;
 + (void)clearRemoteMediaMapping;
++ (NSArray *)convertEntities:(NSArray *)entities;
 
 - (void)conversationSendMessageRequestSuccess:(id)result;
 - (void)conversationSendMessageQuickAck;

@@ -33,7 +33,7 @@ static Class TGMediaAssetsLibraryClass = nil;
     return [[TGMediaAssetsLibraryClass alloc] initForAssetType:assetType];
 }
 
-- (SSignal *)assetWithIdentifier:(NSString *)identifier
+- (SSignal *)assetWithIdentifier:(NSString *)__unused identifier
 {
     return nil;
 }

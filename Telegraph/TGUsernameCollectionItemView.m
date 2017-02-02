@@ -136,6 +136,9 @@
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
+    if (!_textField.secureTextEntry && [string rangeOfCharacterFromSet:[NSCharacterSet characterSetWithCharactersInString:@"[]"]].location != NSNotFound)
+        return false;
+    
     NSString *username = [textField.text stringByReplacingCharactersInRange:range withString:string];
     
     if (_usernameChanged)

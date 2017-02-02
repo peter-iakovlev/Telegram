@@ -5,6 +5,10 @@ static inline bool TGPeerIdIsGroup(int64_t peerId) {
     return peerId < 0 && peerId > INT32_MIN;
 }
 
+static inline bool TGPeerIdIsUser(int64_t peerId) {
+    return peerId > 0 && peerId < INT32_MAX;
+}
+
 static inline bool TGPeerIdIsChannel(int64_t peerId) {
     return peerId <= ((int64_t)INT32_MIN) * 2 && peerId > ((int64_t)INT32_MIN) * 3;
 }

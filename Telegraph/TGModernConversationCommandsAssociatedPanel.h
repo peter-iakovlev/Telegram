@@ -7,7 +7,7 @@
 
 @interface TGModernConversationCommandsAssociatedPanel : TGModernConversationAssociatedInputPanel
 
-@property (nonatomic, copy) void (^commandSelected)(TGBotComandInfo *, TGUser *);
+@property (nonatomic, copy) void (^commandSelected)(TGBotComandInfo *, TGUser *, bool);
 
 - (void)setCommandListSignal:(SSignal *)commandListSignal;
 

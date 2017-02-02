@@ -1,3 +1,4 @@
+
 #import "TGCameraPreviewView.h"
 
 #import <AVFoundation/AVFoundation.h>
@@ -6,22 +7,41 @@
 #import "PGCamera.h"
 #import "PGCameraCaptureSession.h"
 
-@interface TGCameraPreviewLayerWrapperView : UIView
+@protocol TGCameraPreviewLayerView <NSObject>
+
+@property (nonatomic, strong) NSString *videoGravity;
+@property (nonatomic, readonly) AVCaptureConnection *connection;
+- (CGPoint)captureDevicePointOfInterestForPoint:(CGPoint)point;
+
+@optional
+- (AVSampleBufferDisplayLayer *)displayLayer;
+- (AVCaptureVideoPreviewLayer *)previewLayer;
 
 @end
 
-@implementation TGCameraPreviewLayerWrapperView
 
-+ (Class)layerClass
+@interface TGCameraPreviewLayerWrapperView : UIView <TGCameraPreviewLayerView>
 {
-    return [AVCaptureVideoPreviewLayer class];
+    __weak AVCaptureConnection *_connection;
 }
 
+@property (nonatomic, readonly) AVSampleBufferDisplayLayer *displayLayer;
+
+- (void)enqueueSampleBuffer:(CMSampleBufferRef)buffer connection:(AVCaptureConnection *)connection;
+
 @end
+
+
+@interface TGCameraLegacyPreviewLayerWrapperView : UIView <TGCameraPreviewLayerView>
+
+@property (nonatomic, readonly) AVCaptureVideoPreviewLayer *previewLayer;
+
+@end
+
 
 @interface TGCameraPreviewView ()
 {
-    TGCameraPreviewLayerWrapperView *_wrapperView;
+    UIView<TGCameraPreviewLayerView> *_wrapperView;
     UIView *_fadeView;
     UIView *_snapshotView;
     
@@ -38,12 +58,14 @@
     {
         self.backgroundColor = [UIColor blackColor];
         self.clipsToBounds = true;
-                
-        _wrapperView = [[TGCameraPreviewLayerWrapperView alloc] init];
+        
+        if (false && iosMajorVersion() >= 8)
+            _wrapperView = [[TGCameraPreviewLayerWrapperView alloc] init];
+        else
+            _wrapperView = [[TGCameraLegacyPreviewLayerWrapperView alloc] init];
         [self addSubview:_wrapperView];
         
-        AVCaptureVideoPreviewLayer *layer = (AVCaptureVideoPreviewLayer *)_wrapperView.layer;
-        [layer setVideoGravity:AVLayerVideoGravityResize];
+        _wrapperView.videoGravity = AVLayerVideoGravityResizeAspectFill;
         
         _fadeView = [[UIView alloc] initWithFrame:self.bounds];
         _fadeView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -54,18 +76,45 @@
     return self;
 }
 
-- (AVCaptureVideoPreviewLayer *)previewLayer
+- (AVCaptureConnection *)captureConnection
 {
-    return (AVCaptureVideoPreviewLayer *)_wrapperView.layer;
+    return _wrapperView.connection;
+}
+
+- (AVSampleBufferDisplayLayer *)displayLayer
+{
+    return _wrapperView.displayLayer;
+}
+
+- (AVCaptureVideoPreviewLayer *)legacyPreviewLayer
+{
+    return _wrapperView.previewLayer;
 }
 
 - (void)setupWithCamera:(PGCamera *)camera
 {
     _camera = camera;
     
-    [self.previewLayer setSession:camera.captureSession];
-    
     __weak TGCameraPreviewView *weakSelf = self;
+    if ([_wrapperView isKindOfClass:[TGCameraPreviewLayerWrapperView class]])
+    {
+        [self.displayLayer flushAndRemoveImage];
+        camera.captureSession.outputSampleBuffer = ^(CMSampleBufferRef buffer, AVCaptureConnection *connection)
+        {
+            __strong TGCameraPreviewView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            [(TGCameraPreviewLayerWrapperView *)strongSelf->_wrapperView enqueueSampleBuffer:buffer connection:connection];
+        };
+    }
+    else
+    {
+#if !TARGET_IPHONE_SIMULATOR
+        [self.legacyPreviewLayer setSession:camera.captureSession];
+#endif
+    }
+    
     camera.captureStarted = ^(bool resume)
     {
         __strong TGCameraPreviewView *strongSelf = weakSelf;
@@ -93,7 +142,15 @@
 
 - (void)invalidate
 {
-    [self.previewLayer setSession:nil];
+    if ([_wrapperView isKindOfClass:[TGCameraPreviewLayerWrapperView class]])
+    {
+        [self.displayLayer flushAndRemoveImage];
+        _camera.captureSession.outputSampleBuffer = nil;
+    }
+    else
+    {
+        [self.legacyPreviewLayer setSession:nil];
+    }
     _wrapperView = nil;
 }
 
@@ -137,6 +194,7 @@
     [_snapshotView removeFromSuperview];
     
     UIImageView *snapshotView = [[UIImageView alloc] initWithFrame:_wrapperView.frame];
+    snapshotView.contentMode = UIViewContentModeScaleAspectFill;
     snapshotView.image = image;
     [self insertSubview:snapshotView aboveSubview:_wrapperView];
     
@@ -222,14 +280,98 @@
 
 - (CGPoint)devicePointOfInterestForPoint:(CGPoint)point
 {
-    return [self.previewLayer captureDevicePointOfInterestForPoint:point];
+    return [_wrapperView captureDevicePointOfInterestForPoint:point];
 }
 
 - (void)layoutSubviews
 {
-    CGSize scaledSize = TGScaleToFill(CGSizeMake(320, 428), self.bounds.size);
-    _wrapperView.frame = CGRectMake((self.bounds.size.width - scaledSize.width) / 2, (self.bounds.size.height - scaledSize.height) / 2, scaledSize.width, scaledSize.height);
-    _snapshotView.frame = _wrapperView.frame;
+    _wrapperView.frame = self.bounds;
+    
+    if (_snapshotView != nil)
+    {
+        CGSize size = TGScaleToFill(_snapshotView.frame.size, _wrapperView.frame.size);
+        _snapshotView.frame = CGRectMake(floor((self.frame.size.width - size.width) / 2.0f), floor((self.frame.size.height - size.height) / 2.0f), size.width, size.height);
+    }
+}
+
+@end
+
+
+@implementation TGCameraPreviewLayerWrapperView
+
+- (NSString *)videoGravity
+{
+    return [self displayLayer].videoGravity;
+}
+
+- (void)setVideoGravity:(NSString *)videoGravity
+{
+    self.displayLayer.videoGravity = videoGravity;
+}
+
+- (AVCaptureConnection *)connection
+{
+    return _connection;
+}
+
+- (CGPoint)captureDevicePointOfInterestForPoint:(CGPoint)point
+{
+    return CGPointZero;
+}
+
+- (void)enqueueSampleBuffer:(CMSampleBufferRef)buffer connection:(AVCaptureConnection *)connection
+{
+    _connection = connection;
+    
+    //self.orientation = connection.videoOrientation;
+    //self.mirrored = connection.videoMirrored;
+    
+    [self.displayLayer enqueueSampleBuffer:buffer];
+}
+
+- (AVSampleBufferDisplayLayer *)displayLayer
+{
+    return (AVSampleBufferDisplayLayer *)self.layer;
+}
+
++ (Class)layerClass
+{
+    return [AVSampleBufferDisplayLayer class];
+}
+
+@end
+
+
+@implementation TGCameraLegacyPreviewLayerWrapperView
+
+- (NSString *)videoGravity
+{
+    return self.previewLayer.videoGravity;
+}
+
+- (void)setVideoGravity:(NSString *)videoGravity
+{
+    self.previewLayer.videoGravity = videoGravity;
+}
+
+- (AVCaptureConnection *)connection
+{
+    return self.previewLayer.connection;
+}
+
+- (CGPoint)captureDevicePointOfInterestForPoint:(CGPoint)point
+{
+    return [self.previewLayer captureDevicePointOfInterestForPoint:point];
+}
+
+- (AVCaptureVideoPreviewLayer *)previewLayer
+{
+    return (AVCaptureVideoPreviewLayer *)self.layer;
+}
+
++ (Class)layerClass
+{
+    return [AVCaptureVideoPreviewLayer class];
 }
 
 @end

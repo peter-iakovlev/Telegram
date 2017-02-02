@@ -8,6 +8,7 @@
 @interface TGModernConversationActivityManager ()
 {
     NSMutableArray *_activityList;
+    NSString *_previousActivityType;
 }
 
 @end
@@ -63,8 +64,12 @@
     if (topActivity != nil)
     {
         if (_sendActivityUpdate)
-            _sendActivityUpdate(topActivity.type);
+            _sendActivityUpdate(topActivity.type, _previousActivityType);
+    } else if (_previousActivityType != nil) {
+        if (_sendActivityUpdate)
+            _sendActivityUpdate(nil, _previousActivityType);
     }
+    _previousActivityType = topActivity.type;
 }
 
 - (id)addActivityWithType:(NSString *)type priority:(NSInteger)priority
@@ -143,7 +148,8 @@
         if ([activity isEqual:[self _topActivity]])
         {
             if (_sendActivityUpdate)
-                _sendActivityUpdate(activity.type);
+                _sendActivityUpdate(activity.type, _previousActivityType);
+            _previousActivityType = activity.type;
         }
     }];
 }

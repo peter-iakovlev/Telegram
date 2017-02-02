@@ -9,7 +9,7 @@
 #import "TGImageView.h"
 
 #import "TGImageManager.h"
-#import <MTProtoKit/MTTime.h>
+#import <MTProtoKit/MTProtoKit.h>
 
 #import "UIImage+TG.h"
 
@@ -85,7 +85,7 @@ NSString *TGImageViewOptionSynchronous = @"TGImageViewOptionSynchronous";
         __autoreleasing id asyncTaskId = nil;
         __weak TGImageView *weakSelf = self;
         int version = _version;
-        MTAbsoluteTime loadStartTime = MTAbsoluteSystemTime();
+        CFAbsoluteTime loadStartTime = MTAbsoluteSystemTime();
         bool legacyAutomaticProgress = _legacyAutomaticProgress;
         image = [[TGImageManager instance] loadImageSyncWithUri:uri canWait:[options[TGImageViewOptionSynchronous] boolValue] decode:true acceptPartialData:true asyncTaskId:&asyncTaskId progress:^(float value)
         {
@@ -144,7 +144,7 @@ NSString *TGImageViewOptionSynchronous = @"TGImageViewOptionSynchronous";
                 [self performTransitionToImage:nil partial:true duration:0.0];
         }
         
-        MTAbsoluteTime loadStartTime = MTAbsoluteSystemTime();
+        CFAbsoluteTime loadStartTime = MTAbsoluteSystemTime();
         
         __weak TGImageView *weakSelf = self;
         int version = _version;

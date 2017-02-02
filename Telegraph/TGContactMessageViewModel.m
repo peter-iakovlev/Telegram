@@ -36,6 +36,10 @@
 
 #import "TGFont.h"
 
+#import "TGDatabase.h"
+
+#import "TGMessageReplyButtonsModel.h"
+
 @interface TGContactMessageViewModel () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate>
 {
     TGTextMessageBackgroundViewModel *_backgroundModel;
@@ -58,6 +62,8 @@
     bool _checkFirstEmbeddedInContent;
     bool _checkSecondEmbeddedInContent;
     TGModernImageViewModel *_unsentButtonModel;
+    
+    TGMessage *_message;
     
     bool _incoming;
     bool _incomingAppearance;
@@ -86,17 +92,25 @@
     TGModernTextViewModel *_authorSignatureModel;
     
     NSString *_authorSignature;
+    TGUser *_viaUser;
+    
+    TGMessageReplyButtonsModel *_replyButtonsModel;
+    SMetaDisposable *_callbackButtonInProgressDisposable;
+    NSDictionary *_callbackButtonInProgress;
+    TGBotReplyMarkup *_replyMarkup;
 }
 
 @end
 
 @implementation TGContactMessageViewModel
 
-- (instancetype)initWithMessage:(TGMessage *)message contact:(TGUser *)contact authorPeer:(id)authorPeer context:(TGModernViewContext *)context
+- (instancetype)initWithMessage:(TGMessage *)message contact:(TGUser *)contact authorPeer:(id)authorPeer context:(TGModernViewContext *)context viaUser:(TGUser *)viaUser
 {
     self = [super initWithAuthorPeer:authorPeer context:context];
     if (self != nil)
     {
+        _callbackButtonInProgressDisposable = [[SMetaDisposable alloc] init];
+        
         static TGTelegraphConversationMessageAssetsSource *assetsSource = nil;
         
         static UIColor *incomingDateColor = nil;
@@ -127,11 +141,12 @@
         
         bool isChannel = [authorPeer isKindOfClass:[TGConversation class]];
         
+        _message = message;
         _mid = message.mid;
         _incoming = !message.outgoing;
         _incomingAppearance = _incoming || isChannel;
         _deliveryState = message.deliveryState;
-        _read = !message.unread;
+        _read = ![_context isMessageUnread:message];
         _date = (int32_t)message.date;
         _contact = contact;
         _messageViews = message.viewCount;
@@ -288,8 +303,34 @@
                 }
             }
         }
+        
+        TGBotReplyMarkup *replyMarkup = message.replyMarkup;
+        if (replyMarkup != nil && replyMarkup.isInline) {
+            _replyMarkup = replyMarkup;
+            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] init];
+            __weak TGContactMessageViewModel *weakSelf = self;
+            _replyButtonsModel.buttonActivated = ^(TGBotReplyMarkupButton *button, NSInteger index) {
+                __strong TGContactMessageViewModel *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:@{@"mid": @(strongSelf->_mid), @"command": button.text}];
+                    if (button.action != nil) {
+                        dict[@"action"] = button.action;
+                    }
+                    dict[@"index"] = @(index);
+                    [strongSelf->_context.companionHandle requestAction:@"activateCommand" options:dict];
+                }
+            };
+            _replyButtonsModel.replyMarkup = replyMarkup;
+            [self addSubmodel:_replyButtonsModel];
+        }
+        
+        _viaUser = viaUser;
     }
     return self;
+}
+
+- (void)dealloc {
+    [_callbackButtonInProgressDisposable dispose];
 }
 
 - (TGModernImageViewModel *)unsentButtonModel
@@ -385,17 +426,42 @@
         [_backgroundModel clearHighlight];
 }
 
+- (void)updateMessageAttributes {
+    [super updateMessageAttributes];
+    
+    bool previousRead = _read;
+    _read = ![_context isMessageUnread:_message];
+    
+    if (_read != previousRead) {
+        if (_read) {
+            _checkSecondModel.alpha = 1.0f;
+            
+            if (!previousRead && [_checkSecondModel boundView] != nil) {
+                CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"transform.scale"];
+                animation.fromValue = @(1.3f);
+                animation.toValue = @(1.0f);
+                animation.duration = 0.1;
+                animation.removedOnCompletion = true;
+                
+                [[_checkSecondModel boundView].layer addAnimation:animation forKey:@"transform.scale"];
+            }
+        }
+    }
+}
+
 - (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
 {
     [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
     
     _mid = message.mid;
+    _message = message;
     
     if (_messageViewsModel != nil) {
         _messageViewsModel.count = message.viewCount.viewCount;
     }
     
-    if (_deliveryState != message.deliveryState || (!_incoming && _read != !message.unread))
+    bool messageUnread = [_context isMessageUnread:message];
+    if (_deliveryState != message.deliveryState || (!_incoming && _read != !messageUnread))
     {
         TGMessageDeliveryState previousDeliveryState = _deliveryState;
         _deliveryState = message.deliveryState;
@@ -405,7 +471,7 @@
         }
         
         bool previousRead = _read;
-        _read = !message.unread;
+        _read = !messageUnread;
         
         if (_date != (int32_t)message.date)
         {
@@ -626,6 +692,64 @@
             [_contentModel updateSubmodelContentsIfNeeded];
         }
     }
+    
+    for (id attachment in message.mediaAttachments) {
+        if ([attachment isKindOfClass:[TGContactMediaAttachment class]]) {
+            TGContactMediaAttachment *contactMedia = attachment;
+            TGUser *contact = nil;
+            if (contactMedia.uid != 0) {
+                contact = [TGDatabaseInstance() loadUser:contactMedia.uid];
+            } else {
+                contact = [[TGUser alloc] init];
+            }
+            contact.firstName = contactMedia.firstName;
+            contact.lastName = contactMedia.lastName;
+            
+            if (![_contact isEqualToUser:contact]) {
+                _contact = contact;
+                
+                if (contact.photoUrlSmall.length != 0)
+                    [_contactAvatarModel setAvatarUri:contact.photoUrlSmall];
+                else
+                    [_contactAvatarModel setAvatarFirstName:contact.firstName lastName:contact.lastName uid:contact.uid];
+            }
+            
+            break;
+        }
+    }
+    
+    TGBotReplyMarkup *replyMarkup = message.replyMarkup != nil && message.replyMarkup.isInline ? message.replyMarkup : nil;
+    if (!TGObjectCompare(_replyMarkup, replyMarkup)) {
+        _replyMarkup = replyMarkup;
+        
+        if (_replyButtonsModel == nil) {
+            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] init];
+            __weak TGContactMessageViewModel *weakSelf = self;
+            _replyButtonsModel.buttonActivated = ^(TGBotReplyMarkupButton *button, NSInteger index) {
+                __strong TGContactMessageViewModel *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:@{@"mid": @(strongSelf->_mid), @"command": button.text}];
+                    if (button.action != nil) {
+                        dict[@"action"] = button.action;
+                    }
+                    dict[@"index"] = @(index);
+                    [strongSelf->_context.companionHandle requestAction:@"activateCommand" options:dict];
+                }
+            };
+            
+            [self addSubmodel:_replyButtonsModel];
+        }
+        if (_backgroundModel.boundView != nil) {
+            [_replyButtonsModel unbindView:viewStorage];
+            _replyButtonsModel.replyMarkup = replyMarkup;
+            [_replyButtonsModel bindViewToContainer:_backgroundModel.boundView.superview viewStorage:viewStorage];
+        } else {
+            _replyButtonsModel.replyMarkup = replyMarkup;
+        }
+        if (sizeUpdated) {
+            *sizeUpdated = true;
+        }
+    }
 }
 
 - (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)viewStorage delayDisplay:(bool)delayDisplay
@@ -714,6 +838,30 @@
     [_contactAvatarModel boundView].frame = CGRectOffset([_contactAvatarModel boundView].frame, itemPosition.x, itemPosition.y);
     
     [_replyHeaderModel bindSpecialViewsToContainer:container viewStorage:viewStorage atItemPosition:CGPointMake(itemPosition.x + _contentModel.frame.origin.x + _replyHeaderModel.frame.origin.x, itemPosition.y + _contentModel.frame.origin.y + _replyHeaderModel.frame.origin.y)];
+    
+    [_replyButtonsModel bindSpecialViewsToContainer:container viewStorage:viewStorage atItemPosition:CGPointMake(itemPosition.x, itemPosition.y)];
+    
+    [self subscribeToCallbackButtonInProgress];
+}
+
+- (void)subscribeToCallbackButtonInProgress {
+    if (_replyButtonsModel != nil) {
+        __weak TGContactMessageViewModel *weakSelf = self;
+        [_callbackButtonInProgressDisposable setDisposable:[[[_context callbackInProgress] deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *next) {
+            __strong TGContactMessageViewModel *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                if (next != nil) {
+                    if ([next[@"mid"] intValue] == strongSelf->_mid) {
+                        [strongSelf->_replyButtonsModel setButtonIndexInProgress:[next[@"buttonIndex"] intValue]];
+                    } else {
+                        [strongSelf->_replyButtonsModel setButtonIndexInProgress:NSNotFound];
+                    }
+                } else {
+                    [strongSelf->_replyButtonsModel setButtonIndexInProgress:NSNotFound];
+                }
+            }
+        }]];
+    }
 }
 
 - (void)bindViewToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage
@@ -741,6 +889,8 @@
     }
     
     [(UIButton *)[_actionButtonModel boundView] addTarget:self action:@selector(actionButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+    
+    [self subscribeToCallbackButtonInProgress];
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
@@ -759,6 +909,8 @@
     [(UIButton *)[_actionButtonModel boundView] removeTarget:self action:@selector(actionButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     
     [super unbindView:viewStorage];
+    
+    [_callbackButtonInProgressDisposable setDisposable:nil];
 }
 
 - (void)relativeBoundsUpdated:(CGRect)bounds
@@ -786,10 +938,14 @@
             else if (recognizer.doubleTapped)
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
             else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
-                if (TGPeerIdIsChannel(_forwardedPeerId)) {
-                    [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+                if (_viaUser != nil && [_forwardedHeaderModel linkAtPoint:CGPointMake(point.x - _forwardedHeaderModel.frame.origin.x, point.y - _forwardedHeaderModel.frame.origin.y) regionData:NULL]) {
+                    [_context.companionHandle requestAction:@"useContextBot" options:@{@"uid": @((int32_t)_viaUser.uid), @"username": _viaUser.userName == nil ? @"" : _viaUser.userName}];
                 } else {
-                    [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                    if (TGPeerIdIsChannel(_forwardedPeerId)) {
+                        [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+                    } else {
+                        [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
+                    }
                 }
             }
             else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
@@ -1016,7 +1172,15 @@
         _unsentButtonModel.frame = CGRectMake(containerSize.width - _unsentButtonModel.frame.size.width - 9, backgroundFrame.size.height + topSpacing + bottomSpacing - _unsentButtonModel.frame.size.height - ((_collapseFlags & TGModernConversationItemCollapseBottom) ? 5 : 6), _unsentButtonModel.frame.size.width, _unsentButtonModel.frame.size.height);
     }
     
-    self.frame = CGRectMake(0, 0, containerSize.width, backgroundFrame.size.height + topSpacing + bottomSpacing);
+    CGFloat replyButtonsHeight = 0.0f;
+    if (_replyButtonsModel != nil) {
+        [_replyButtonsModel layoutForContainerSize:CGSizeMake(backgroundFrame.size.width + 4.0f, containerSize.height)];
+        _replyButtonsModel.frame = CGRectMake(_incomingAppearance ? backgroundFrame.origin.x : (CGRectGetMaxX(backgroundFrame) - _replyButtonsModel.frame.size.width), CGRectGetMaxY(backgroundFrame), _replyButtonsModel.frame.size.width, _replyButtonsModel.frame.size.height);
+        replyButtonsHeight = _replyButtonsModel.frame.size.height;
+        self.avatarOffset = replyButtonsHeight;
+    }
+    
+    self.frame = CGRectMake(0, 0, containerSize.width, backgroundFrame.size.height + topSpacing + bottomSpacing + replyButtonsHeight);
     
     [_contentModel updateSubmodelContentsIfNeeded];
     

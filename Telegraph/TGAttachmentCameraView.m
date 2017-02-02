@@ -36,7 +36,7 @@
         PGCamera *camera = nil;
         if ([PGCamera cameraAvailable])
         {
-            camera = [[PGCamera alloc] initWithPosition:selfPortrait ? PGCameraPositionFront : PGCameraPositionUndefined];
+            camera = [[PGCamera alloc] initWithMode:PGCameraModePhoto position:selfPortrait ? PGCameraPositionFront : PGCameraPositionUndefined];
         }
         _camera = camera;
         

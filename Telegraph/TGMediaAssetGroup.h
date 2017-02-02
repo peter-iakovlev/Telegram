@@ -5,11 +5,12 @@
 
 typedef enum
 {
+    TGMediaAssetGroupSubtypeNone = 0,
     TGMediaAssetGroupSubtypeCameraRoll,
     TGMediaAssetGroupSubtypeMyPhotoStream,
     TGMediaAssetGroupSubtypeFavorites,
-    TGMediaAssetGroupSubtypePanoramas,
     TGMediaAssetGroupSubtypeSelfPortraits,
+    TGMediaAssetGroupSubtypePanoramas,
     TGMediaAssetGroupSubtypeVideos,
     TGMediaAssetGroupSubtypeSlomo,
     TGMediaAssetGroupSubtypeTimelapses,
@@ -22,7 +23,7 @@ typedef enum
 
 @property (nonatomic, readonly) NSString *identifier;
 @property (nonatomic, readonly) NSString *title;
-@property (nonatomic, readonly) NSUInteger assetCount;
+@property (nonatomic, readonly) NSInteger assetCount;
 @property (nonatomic, readonly) TGMediaAssetGroupSubtype subtype;
 @property (nonatomic, readonly) bool isCameraRoll;
 @property (nonatomic, readonly) bool isPhotoStream;
@@ -35,6 +36,7 @@ typedef enum
 - (instancetype)initWithPHFetchResult:(PHFetchResult *)fetchResult;
 - (instancetype)initWithPHAssetCollection:(PHAssetCollection *)collection fetchResult:(PHFetchResult *)fetchResult;
 - (instancetype)initWithALAssetsGroup:(ALAssetsGroup *)assetsGroup;
+- (instancetype)initWithALAssetsGroup:(ALAssetsGroup *)assetsGroup subtype:(TGMediaAssetGroupSubtype)subtype;
 
 - (NSArray *)latestAssets;
 

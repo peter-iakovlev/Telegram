@@ -20,6 +20,8 @@
 @property (nonatomic, strong) NSString *firstName;
 @property (nonatomic, strong) NSString *lastName;
 @property (nonatomic, strong) NSString *status;
+@property (nonatomic, strong) NSString *label;
+@property (nonatomic) bool editing;
 @property (nonatomic) bool statusIsActive;
 @property (nonatomic) bool isSecretChat;
 
@@ -68,6 +70,17 @@
     CGSize firstNameSize = [_firstName sizeWithFont:regularNameFont];
     CGSize lastNameSize = [_lastName sizeWithFont:boldNameFont];
     CGFloat nameSpacing = 4.0f;
+    
+    CGSize labelSize = [_label sizeWithFont:statusFont];
+    
+    if (!self.editing) {
+        if (_label.length != 0) {
+            CGContextSetFillColorWithColor(context, regularStatusColor);
+            [_label drawAtPoint:CGPointMake(availableWidth - labelSize.width + 6.0f, 11.0f + TGRetinaPixel) withFont:statusFont];
+        }
+    }
+    
+    availableWidth -= labelSize.width;
     
     firstNameSize.width = MIN(firstNameSize.width, availableWidth - 30.0f);
     lastNameSize.width = MIN(lastNameSize.width, availableWidth - nameSpacing - firstNameSize.width);
@@ -178,6 +191,13 @@
     }
 }
 
+- (void)setCustomLabel:(NSString *)customLabel {
+    if (!TGStringCompare(customLabel, _content.label)) {
+        _content.label = customLabel;
+        [_content setNeedsDisplay];
+    }
+}
+
 - (void)setDisplaySwitch:(bool)displaySwitch {
     if (displaySwitch && _switchView == nil) {
         _switchView = [[UISwitch alloc] init];
@@ -216,7 +236,9 @@
 }
 
 - (void)setSwitchIsOn:(bool)switchIsOn animated:(bool)animated {
-    [_switchView setOn:switchIsOn animated:animated];
+    if (switchIsOn != _switchView.isOn) {
+        [_switchView setOn:switchIsOn animated:animated];
+    }
 }
 
 - (void)setDisabled:(bool)disabled animated:(bool)animated
@@ -270,6 +292,11 @@
 {
     CGFloat leftInset = self.showsDeleteIndicator ? 38.0f : 0.0f;
     self.separatorInset = 65.0f + leftInset;
+    
+    if (self.showsDeleteIndicator != _content.editing) {
+        _content.editing = self.showsDeleteIndicator;
+        [_content setNeedsDisplay];
+    }
     
     CGFloat rightInset = 0.0f;
     if (_switchView != nil && _switchView.superview != nil) {

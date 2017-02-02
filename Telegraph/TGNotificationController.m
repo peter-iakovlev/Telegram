@@ -1,14 +1,18 @@
 #import "TGNotificationController.h"
 #import "TGOverlayControllerWindow.h"
 
+#import <objc/runtime.h>
 #import <AVFoundation/AVFoundation.h>
 
 #import "TGOverlayController.h"
 #import "TGMenuSheetController.h"
+#import "TGModernGalleryContainerView.h"
 #import "TGPickerSheet.h"
 #import "TGSingleStickerPreviewWindow.h"
 #import "TGModernConversationController.h"
+#import "TGWebAppController.h"
 #import "TGGenericModernConversationCompanion.h"
+#import <SafariServices/SafariServices.h>
 
 #import "TGNotificationOverlayView.h"
 #import "TGNotificationView.h"
@@ -40,6 +44,7 @@
 #import "TGMessageViewedContentProperty.h"
 
 #import "TGGenericPeerPlaylistSignals.h"
+#import "TGInstantPageController.h"
 
 const NSTimeInterval TGNotificationTimerInterval = 0.5;
 const NSUInteger TGNotificationInterItemDelay = 2;
@@ -49,6 +54,8 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
 @interface TGNotificationWindow : UIWindow
 
 @property (nonatomic, copy) bool (^pointInside)(CGPoint);
+
+- (instancetype)initWithFrame:(CGRect)frame overInAppBrowser:(bool)overInAppBrowser;
 
 @end
 
@@ -90,6 +97,8 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
 @property (nonatomic, readonly) TGNotificationView *notificationView;
 @property (nonatomic, strong) ASHandle *actionHandle;
 
+@property (nonatomic, readonly) UIView *wrapperView;
+
 @end
 
 @implementation TGNotificationController
@@ -102,12 +111,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
         _actionHandle = [[ASHandle alloc] initWithDelegate:self];
 
         self.autoManageStatusBarBackground = false;
-        
-        _window = [[TGNotificationWindow alloc] initWithFrame:TGAppDelegateInstance.rootController.applicationBounds];
-        
-        [_window.rootViewController addChildViewController:self];
-        [_window.rootViewController.view addSubview:self.view];
-        
+    
         _queue = [[NSMutableArray alloc] init];
         
         [ActionStageInstance() watchForPaths:@
@@ -125,19 +129,56 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     [ActionStageInstance() removeWatcher:self];
 }
 
+- (UIWindow *)notificationWindow
+{
+    if (_window == nil)
+    {
+        _window = [[TGNotificationWindow alloc] initWithFrame:TGAppDelegateInstance.rootController.applicationBounds overInAppBrowser:[TGAppDelegateInstance.rootController.presentedViewController isKindOfClass:[SFSafariViewController class]]];
+        _window.tag = 0xbeef;
+        _window.rootViewController = self;
+        
+        __weak TGNotificationController *weakSelf = self;
+        _window.pointInside = ^bool(CGPoint point)
+        {
+            __strong TGNotificationController *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return false;
+            
+            bool pointInsideView = CGRectContainsPoint(strongSelf->_notificationView.frame, point);
+            bool pointInsideOverlay = CGRectContainsPoint(strongSelf->_overlayView.frame, point) && !strongSelf->_overlayView.hidden;
+            
+            return pointInsideView || pointInsideOverlay;
+        };
+    }
+    
+    return _window;
+}
+
+- (void)removeWindow
+{
+    _window.rootViewController = nil;
+    
+    _window.hidden = true;
+    _window = nil;
+}
+
 - (void)loadView
 {
     [super loadView];
+    object_setClass(self.view, [TGModernGalleryContainerView class]);
     
-    self.view.frame = TGAppDelegateInstance.rootController.applicationBounds;
-    self.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    self.view.frame = (CGRect){self.view.frame.origin, TGAppDelegateInstance.rootController.applicationBounds.size};
+    
+    _wrapperView = [[UIView alloc] initWithFrame:self.view.bounds];
+    _wrapperView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [self.view addSubview:_wrapperView];
     
     CGFloat side = MAX(self.view.bounds.size.width, self.view.bounds.size.height) * 2;
     
     _overlayView = [[TGNotificationOverlayView alloc] initWithFrame:CGRectMake((self.view.frame.size.width - side) / 2, (self.view.frame.size.height - side) / 2, side, side)];
     _overlayView.hidden = true;
     [_overlayView addTarget:self action:@selector(overlayPressed) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:_overlayView];
+    [_wrapperView addSubview:_overlayView];
     
     __weak TGNotificationController *weakSelf = self;
     _notificationView = [[TGNotificationView alloc] initWithFrame:CGRectMake(0, 0, 0, TGNotificationDefaultHeight)];
@@ -170,6 +211,8 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
         __strong TGNotificationController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
+        
+        [strongSelf.notificationWindow makeKeyWindow];
         
         strongSelf->_ticksToTransition = TGNotificationExpandedTimeout;
     };
@@ -267,19 +310,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
         
         return [strongSelf _inlineMediaContext:mid];
     };
-    [self.view addSubview:_notificationView];
-    
-    _window.pointInside = ^bool(CGPoint point)
-    {
-        __strong TGNotificationController *strongSelf = weakSelf;
-        if (strongSelf == nil)
-            return false;
-        
-        bool pointInsideView = CGRectContainsPoint(strongSelf->_notificationView.frame, point);
-        bool pointInsideOverlay = CGRectContainsPoint(strongSelf->_overlayView.frame, point) && !strongSelf->_overlayView.hidden;
-        
-        return pointInsideView || pointInsideOverlay;
-    };
+    [_wrapperView addSubview:_notificationView];
 }
 
 - (void)displayNotificationForConversation:(TGConversation *)conversation identifier:(int32_t)identifier replyToMid:(int32_t)replyToMid duration:(NSTimeInterval)duration configure:(void (^)(TGNotificationContentView *view, bool *isRepliable))configure
@@ -361,6 +392,8 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     
     bool hasOverlayController = false;
     bool hasPlayerController = false;
+    bool hasWebAppController = false;
+    bool hasInstanPageController = false;
     for (UIWindow *window in [UIApplication sharedApplication].windows)
     {
         if ([window isKindOfClass:[TGOverlayControllerWindow class]] && window != _window)
@@ -411,7 +444,20 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
         }
     }
     
-    if (hasOverlayController || hasPlayerController)
+    for (TGViewController *controller in TGAppDelegateInstance.rootController.viewControllers)
+    {
+        if ([controller isKindOfClass:[TGWebAppController class]])
+        {
+            hasWebAppController = true;
+            break;
+        }
+        else if ([controller isKindOfClass:[TGInstantPageController class]]) {
+            hasInstanPageController = true;
+            break;
+        }
+    }
+    
+    if (hasOverlayController || hasPlayerController || hasWebAppController || hasInstanPageController)
         return true;
     
     return false;
@@ -484,7 +530,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     
     if (hasExistingConversationController && (!hasModalController && !hasOverlayController && !hasPlayerController))
         shouldDisplay = false;
-
+    
     return shouldDisplay;
 }
 
@@ -521,6 +567,9 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     bool isPresented = _notificationView.isPresented;
     if (!isPresented)
     {
+        if (![self isViewLoaded])
+            [self loadView];
+        
         item.configure(_notificationView.contentView, &isRepliable);
         [self _presentNotificationView];
     }
@@ -560,7 +609,8 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     void (^finishBlock)(BOOL) = ^(__unused BOOL finished)
     {
         _notificationView.isPresented = false;
-        _window.hidden = true;
+        [self removeWindow];
+
         _overlayView.hidden = true;
         
         [_notificationView reset];
@@ -588,22 +638,32 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
 - (void)_presentNotificationView
 {
     _notificationView.isHiding = false;
-    
-    if (_window.hidden)
-        _window.hidden = false;
+    self.notificationWindow.hidden = false;
     
     [self _startTimer];
     
     _notificationView.isPresented = true;
-    _notificationView.frame = CGRectMake(0, -TGNotificationDefaultHeight, self.view.frame.size.width, TGNotificationDefaultHeight);
+    _notificationView.frame = CGRectMake(0, -TGNotificationDefaultHeight, _wrapperView.frame.size.width, TGNotificationDefaultHeight);
     
     [UIView animateWithDuration:0.35 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^
     {
         _notificationView.frame = CGRectMake(0, 0, _notificationView.frame.size.width, _notificationView.frame.size.height);
     } completion:^(__unused BOOL finished)
     {
-        [_window makeKeyWindow];
-        [self _updateStatusBarHiding:true];
+
+        
+        if (iosMajorVersion() > 8)
+        {
+            [self _updateStatusBarHiding:true];
+        }
+        else
+        {
+            //fix ios8 crash
+            dispatch_async(dispatch_get_main_queue(), ^
+            {
+                [self _updateStatusBarHiding:true];
+            });
+        }
     }];
 }
 
@@ -678,7 +738,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     bool shouldShrink = ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone && UIInterfaceOrientationIsLandscape(toInterfaceOrientation));
     
     CGFloat height = _notificationView.isExpanded && !shouldShrink ? [_notificationView expandedHeight] : [_notificationView shrinkedHeight];
-    _notificationView.frame = CGRectMake(0, _notificationView.frame.origin.y, self.view.frame.size.width, height);
+    _notificationView.frame = CGRectMake(0, _notificationView.frame.origin.y, _wrapperView.frame.size.width, height);
     [_notificationView setShrinked:shouldShrink];
 }
 
@@ -687,7 +747,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     [super viewWillLayoutSubviews];
     
     _overlayView.center = self.view.center;
-    _notificationView.frame = CGRectMake(0, _notificationView.frame.origin.y, self.view.frame.size.width, _notificationView.frame.size.height);
+    _notificationView.frame = CGRectMake(0, _notificationView.frame.origin.y, _wrapperView.frame.size.width, _notificationView.frame.size.height);
 }
 
 - (UIWindow *)window
@@ -697,8 +757,10 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
 
 - (void)_updateStatusBarHiding:(bool)__unused hiding
 {
-    if (iosMajorVersion() >= 7)
-        [[UIApplication sharedApplication].keyWindow.rootViewController setNeedsStatusBarAppearanceUpdate];
+    if (iosMajorVersion() < 8 || (iosMajorVersion() == 8 && iosMinorVersion() < 1))
+        return;
+    
+    [[UIApplication sharedApplication].keyWindow.rootViewController setNeedsStatusBarAppearanceUpdate];
 }
 
 #pragma mark -
@@ -791,6 +853,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     }] take:1] mapToSignal:^SSignal *(NSDictionary *dict)
     {
         NSMutableArray *matchedDocuments = [[NSMutableArray alloc] init];
+        NSMutableDictionary *associations = [[NSMutableDictionary alloc] init];
         
         NSArray *sortedStickerPacks = dict[@"packs"];
         
@@ -800,7 +863,11 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
             for (TGStickerAssociation *association in stickerPack.stickerAssociations)
             {
                 if ([association.key isEqual:emoji])
+                {
                     [documentIds addObjectsFromArray:association.documentIds];
+                    for (NSNumber *documentId in association.documentIds)
+                        associations[documentId] = stickerPack.stickerAssociations;
+                }
             }
             
             for (NSNumber *nDocumentId in documentIds)
@@ -816,7 +883,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
             }
         }
         
-        return [TGStickersSignals preloadedStickerPreviews:matchedDocuments count:6];
+        return [TGStickersSignals preloadedStickerPreviews:@{ @"documents": matchedDocuments, @"associations": associations } count:6];
     }] deliverOn:[SQueue mainQueue]];
 }
 
@@ -1000,14 +1067,11 @@ static id mediaIdForAttachment(TGMediaAttachment *attachment)
             NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
             contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
             
-            TGMessage *updatedMessage = [message copy];
-            updatedMessage.contentProperties = contentProperties;
-            
             TGDatabaseAction action = { .type = TGDatabaseActionReadMessageContents, .subject = message.mid, .arg0 = 0, .arg1 = 0};
             [TGDatabaseInstance() storeQueuedActions:[NSArray arrayWithObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]]];
             [ActionStageInstance() requestActor:@"/tg/service/synchronizeactionqueue/(global)" options:nil watcher:TGTelegraphInstance];
             
-            [TGDatabaseInstance() updateMessage:message.mid peerId:peerId withMessage:updatedMessage];
+            [TGDatabaseInstance() transactionUpdateMessages:@[[[TGDatabaseUpdateContentsRead alloc] initWithPeerId:message.cid messageId:message.mid]] updateConversationDatas:nil];
         }
     }
 }
@@ -1087,12 +1151,12 @@ static id mediaIdForAttachment(TGMediaAttachment *attachment)
             bool documentDownloaded = false;
             if (documentAttachment.localDocumentId != 0)
             {
-                NSString *documentPath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:documentAttachment.localDocumentId] stringByAppendingPathComponent:[documentAttachment safeFileName]];
+                NSString *documentPath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:documentAttachment.localDocumentId version:documentAttachment.version] stringByAppendingPathComponent:[documentAttachment safeFileName]];
                 documentDownloaded = [[NSFileManager defaultManager] fileExistsAtPath:documentPath];
             }
             else
             {
-                NSString *documentPath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:documentAttachment.documentId] stringByAppendingPathComponent:[documentAttachment safeFileName]];
+                NSString *documentPath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:documentAttachment.documentId version:documentAttachment.version] stringByAppendingPathComponent:[documentAttachment safeFileName]];
                 documentDownloaded = [[NSFileManager defaultManager] fileExistsAtPath:documentPath];
             }
             
@@ -1200,40 +1264,42 @@ static id mediaIdForAttachment(TGMediaAttachment *attachment)
     bool isHiding = controller.notificationView.isHiding;
     
     CGFloat statusBarHeight = [UIApplication sharedApplication].statusBarFrame.size.height;
-    return (iosMajorVersion() >=7 && viewPresented && !isHiding && (statusBarHeight - 20.0f) < FLT_EPSILON);
+    return (iosMajorVersion() >= 7 && viewPresented && !isHiding && (statusBarHeight - 20.0f) < FLT_EPSILON);
 }
 
-- (void)viewDidLayoutSubviews
-{
-    self.view.frame = TGAppDelegateInstance.rootController.applicationBounds;
-}
+//- (void)viewDidLayoutSubviews
+//{
+//    self.view.frame = TGAppDelegateInstance.rootController.applicationBounds;
+//}
 
 @end
 
 
 @implementation TGNotificationWindow
 
-- (instancetype)initWithFrame:(CGRect)frame
+- (instancetype)initWithFrame:(CGRect)frame overInAppBrowser:(bool)overInAppBrowser
 {
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        [self setHugeWindowLevel:!overInAppBrowser];
         self.backgroundColor = [UIColor clearColor];
-        self.windowLevel = UIWindowLevelStatusBar + 0.1f;
-        self.rootViewController = [[TGNotificationWindowViewController alloc] init];
-        self.rootViewController.view.userInteractionEnabled = true;
-        if (iosMajorVersion() < 7)
-            self.rootViewController.wantsFullScreenLayout = true;
     }
     return self;
 }
 
+- (void)setHugeWindowLevel:(bool)huge
+{
+    self.windowLevel = huge ? 100000000.0f + 0.002f : UIWindowLevelStatusBar + 0.001f;
+}
+
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
-    CGPoint localPoint = [[((TGOverlayWindowViewController *)self.rootViewController).childViewControllers.firstObject view] convertPoint:point fromView:self];
-    UIView *result = [[((TGOverlayWindowViewController *)self.rootViewController).childViewControllers.firstObject view] hitTest:localPoint withEvent:event];
-    if (result == [((TGOverlayWindowViewController *)self.rootViewController).childViewControllers.firstObject view] || result == self.rootViewController.view)
+    TGNotificationController *controller = (TGNotificationController *)self.rootViewController;
+    
+    CGPoint localPoint = [controller.view convertPoint:point fromView:self];
+    UIView *result = [controller.view hitTest:localPoint withEvent:event];
+    if (result == controller.view || result == controller.wrapperView)
         return nil;
     
     return result;

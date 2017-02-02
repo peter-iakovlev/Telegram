@@ -12,7 +12,12 @@
 
 @property (nonatomic) bool processStatusBarHiddenRequests;
 
-- (BOOL)openURL:(NSURL*)url forceNative:(BOOL)forceNative;
+@property (nonatomic, strong) NSMutableDictionary *gameShareDict;
+
+- (BOOL)openURL:(NSURL *)url forceNative:(BOOL)forceNative;
+- (BOOL)openURL:(NSURL *)url forceNative:(BOOL)forceNative keepStack:(bool)keepStack;
+
+- (BOOL)nativeOpenURL:(NSURL *)url;
 
 - (void)forceSetStatusBarStyle:(UIStatusBarStyle)statusBarStyle animated:(BOOL)animated;
 - (void)forceSetStatusBarHidden:(BOOL)hidden withAnimation:(UIStatusBarAnimation)animation;

@@ -18,6 +18,7 @@
 #import <libkern/OSAtomic.h>
 
 static bool alreadyReloadedStickerPacksFromRemote = false;
+static bool alreadyReloadedFeaturedPacksFromRemote = false;
 
 static NSDictionary *cachedPacks = nil;
 static OSSpinLock cachedPacksLock = 0;
@@ -42,9 +43,9 @@ static OSSpinLock cachedPacksLock = 0;
         SSignal *signal = [SSignal complete];
         
         int cacheInvalidationTimeout = 60 * 60;
-/*#if TARGET_IPHONE_SIMULATOR
-        cacheInvalidationTimeout = 10;
-#endif*/
+#ifdef DEBUG
+        //cacheInvalidationTimeout = 10;
+#endif
         
         NSDictionary *cachedPacks = [self cachedStickerPacks];
         int currentTime = (int)[[NSDate date] timeIntervalSince1970];
@@ -63,6 +64,44 @@ static OSSpinLock cachedPacksLock = 0;
         {
             NSDictionary *cachedPacks = [self cachedStickerPacks];
             return [self remoteStickerPacksWithCacheHash:[self hashForStickerPacks:cachedPacks[@"packs"]]];
+        }] catch:^SSignal *(__unused id error) {
+            return [SSignal complete];
+        }];
+        
+        signal = [signal then:[[periodicFetchSignal delay:cacheInvalidationTimeout onQueue:[SQueue concurrentDefaultQueue]] restart]];
+        
+        return signal;
+    }];
+}
+
++ (SSignal *)updateFeaturedStickerPacks
+{
+    return [[SSignal single:nil] mapToSignal:^SSignal *(__unused id next)
+    {
+        SSignal *signal = [SSignal complete];
+        
+        int cacheInvalidationTimeout = 60 * 60;
+#ifdef DEBUG
+        //cacheInvalidationTimeout = 10;
+#endif
+        
+        NSDictionary *cachedPacks = [self cachedStickerPacks];
+        int currentTime = (int)[[NSDate date] timeIntervalSince1970];
+        if (cachedPacks == nil || currentTime > [cachedPacks[@"featuredCacheUpdateDate"] intValue] + cacheInvalidationTimeout || !alreadyReloadedFeaturedPacksFromRemote)
+        {
+            signal = [self remoteFeaturedPacksWithCacheHash:[self hashForStickerPacks:cachedPacks[@"featuredPacks"]]];
+        }
+        else
+        {
+            int delay = cacheInvalidationTimeout - (currentTime - [cachedPacks[@"featuredCacheUpdateDate"] intValue]);
+            signal = [[self remoteFeaturedPacksWithCacheHash:[self hashForStickerPacks:cachedPacks[@"featuredPacks"]]] delay:delay onQueue:[SQueue concurrentDefaultQueue]];
+        }
+        alreadyReloadedFeaturedPacksFromRemote = true;
+        
+        SSignal *periodicFetchSignal = [[[SSignal single:nil] mapToSignal:^SSignal *(__unused id next)
+        {
+            NSDictionary *cachedPacks = [self cachedStickerPacks];
+            return [self remoteFeaturedPacksWithCacheHash:[self hashForStickerPacks:cachedPacks[@"featuredPacks"]]];
         }] catch:^SSignal *(__unused id error) {
             return [SSignal complete];
         }];
@@ -109,6 +148,12 @@ static OSSpinLock cachedPacksLock = 0;
     {
         if ([pack.packReference isEqual:packReference]) {
             return true;
+        }
+        
+        if ([pack.packReference isKindOfClass:[TGStickerPackIdReference class]] && [packReference isKindOfClass:[TGStickerPackIdReference class]]) {
+            if (((TGStickerPackIdReference *)pack.packReference).packId == ((TGStickerPackIdReference *)packReference).packId) {
+                return true;
+            }
         }
         
         if (packShortname.length != 0 && TGStringCompare(packShortname, [self stickerPackShortName:pack.packReference])) {
@@ -192,13 +237,35 @@ static OSSpinLock cachedPacksLock = 0;
     }];
 }
 
++ (NSString *)filePath {
+    return [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"stickerPacks.data"];
+}
+
++ (NSData *)loadPacksData {
+    NSData *data = [NSData dataWithContentsOfFile:[self filePath]];
+    if (data == nil) {
+        data = [[NSUserDefaults standardUserDefaults] objectForKey:@"TG_stickerPacks"];
+        if (![data writeToFile:[self filePath] atomically:true]) {
+            TGLog(@"***** TGStickersSignalsClass loadPacksData couldn't write to file");
+        } else {
+            [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"TG_stickerPacks"];
+        }
+    }
+    return data;
+}
+
++ (void)storePacksData:(NSData *)data {
+    if (![data writeToFile:[self filePath] atomically:true]) {
+        TGLog(@"***** TGStickersSignalsClass storePacksData couldn't write to file");
+    }
+}
+
 + (void)clearCache
 {
     OSSpinLockLock(&cachedPacksLock);
     cachedPacks = nil;
     OSSpinLockUnlock(&cachedPacksLock);
-    [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"TG_stickerPacks"];
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    [[NSFileManager defaultManager] removeItemAtPath:[self filePath] error:nil];
     alreadyReloadedStickerPacksFromRemote = false;
 }
 
@@ -211,7 +278,7 @@ static OSSpinLock cachedPacksLock = 0;
         return loadedFromCachePacks;
     }
     
-    NSData *cachedStickerPacksData = [[NSUserDefaults standardUserDefaults] objectForKey:@"TG_stickerPacks"];
+    NSData *cachedStickerPacksData = [self loadPacksData];
     if (cachedStickerPacksData == nil)
         return nil;
 
@@ -237,7 +304,7 @@ static OSSpinLock cachedPacksLock = 0;
             dict = updatedDict;
             
             NSData *data = [NSKeyedArchiver archivedDataWithRootObject:dict];
-            [[NSUserDefaults standardUserDefaults] setObject:data forKey:@"TG_stickerPacks"];
+            [self storePacksData:data];
         }
     }
     
@@ -261,7 +328,7 @@ static OSSpinLock cachedPacksLock = 0;
         OSSpinLockUnlock(&cachedPacksLock);
         
         NSData *data = [NSKeyedArchiver archivedDataWithRootObject:newDict];
-        [[NSUserDefaults standardUserDefaults] setObject:data forKey:@"TG_stickerPacks"];
+        [self storePacksData:data];
     }
 }
 
@@ -299,7 +366,11 @@ static OSSpinLock cachedPacksLock = 0;
         }
         [documentIdsUseCount removeObjectsForKeys:removedDocumentIds];
         
-        newDict = @{@"packs": stickerPacks, @"cacheUpdateDate": @(cacheUpdateDate), @"documentIdsUseCount": documentIdsUseCount};
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:currentDict];
+        dict[@"packs"] = stickerPacks;
+        dict[@"cacheUpdateDate"] = @(cacheUpdateDate);
+        dict[@"documentIdsUseCount"] = documentIdsUseCount;
+        newDict = dict;
     }
     
     OSSpinLockLock(&cachedPacksLock);
@@ -307,7 +378,99 @@ static OSSpinLock cachedPacksLock = 0;
     OSSpinLockUnlock(&cachedPacksLock);
     
     NSData *data = [NSKeyedArchiver archivedDataWithRootObject:newDict];
-    [[NSUserDefaults standardUserDefaults] setObject:data forKey:@"TG_stickerPacks"];
+    [self storePacksData:data];
+    
+    return newDict;
+}
+
++ (void)replaceFeaturedCacheUpdateDate:(int32_t)cacheUpdateDate
+{
+    NSDictionary *currentDict = [self cachedStickerPacks];
+    if (currentDict != nil)
+    {
+        NSMutableDictionary *newDict = [[NSMutableDictionary alloc] initWithDictionary:currentDict];
+        newDict[@"featuredCacheUpdateDate"] = @(cacheUpdateDate);
+        
+        OSSpinLockLock(&cachedPacksLock);
+        cachedPacks = newDict;
+        OSSpinLockUnlock(&cachedPacksLock);
+        
+        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:newDict];
+        [self storePacksData:data];
+    }
+}
+
++ (void)replaceFeaturedUnreadPackIds:(NSArray *)unreadPackIds
+{
+    NSDictionary *currentDict = [self cachedStickerPacks];
+    if (currentDict != nil)
+    {
+        NSMutableDictionary *newDict = [[NSMutableDictionary alloc] initWithDictionary:currentDict];
+        newDict[@"featuredPacksUnreadIds"] = unreadPackIds;
+        
+        OSSpinLockLock(&cachedPacksLock);
+        cachedPacks = newDict;
+        OSSpinLockUnlock(&cachedPacksLock);
+        
+        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:newDict];
+        [self storePacksData:data];
+    }
+}
+
++ (NSDictionary *)replaceArchivedStickerPacksSummary:(TGArchivedStickerPacksSummary *)summary
+{
+    NSDictionary *currentDict = [self cachedStickerPacks];
+    if (currentDict != nil)
+    {
+        NSMutableDictionary *newDict = [[NSMutableDictionary alloc] initWithDictionary:currentDict];
+        if (!TGObjectCompare(newDict[@"archivedPacksSummary"], summary)) {
+            if (summary != nil) {
+                newDict[@"archivedPacksSummary"] = summary;
+            } else {
+                [newDict removeObjectForKey:@"archivedPacksSummary"];
+            }
+            
+            OSSpinLockLock(&cachedPacksLock);
+            cachedPacks = newDict;
+            OSSpinLockUnlock(&cachedPacksLock);
+            
+            NSData *data = [NSKeyedArchiver archivedDataWithRootObject:newDict];
+            [self storePacksData:data];
+            
+            return newDict;
+        }
+    }
+    return nil;
+}
+
++ (NSDictionary *)replaceCachedFeaturedPacks:(NSArray *)stickerPacks unreadPackIds:(NSArray *)unreadPackIds cacheUpdateDate:(int32_t)cacheUpdateDate
+{
+    NSDictionary *currentDict = [self cachedStickerPacks];
+    NSDictionary *newDict = nil;
+    if (currentDict.count == 0)
+    {
+        NSMutableArray *orderedReferences = [[NSMutableArray alloc] init];
+        for (TGStickerPack *stickerPack in stickerPacks)
+        {
+            [orderedReferences addObject:stickerPack.packReference];
+        }
+        newDict = @{@"featuredPacks": stickerPacks, @"featuredCacheUpdateDate": @(cacheUpdateDate), @"featuredPacksUnreadIds": unreadPackIds, @"documentIdsUseCount": @{}};
+    }
+    else
+    {
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:currentDict];
+        dict[@"featuredPacks"] = stickerPacks;
+        dict[@"featuredCacheUpdateDate"] = @(cacheUpdateDate);
+        dict[@"featuredPacksUnreadIds"] = unreadPackIds;
+        newDict = dict;
+    }
+    
+    OSSpinLockLock(&cachedPacksLock);
+    cachedPacks = newDict;
+    OSSpinLockUnlock(&cachedPacksLock);
+    
+    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:newDict];
+    [self storePacksData:data];
     
     return newDict;
 }
@@ -357,20 +520,16 @@ static OSSpinLock cachedPacksLock = 0;
         OSSpinLockUnlock(&cachedPacksLock);
         
         NSData *data = [NSKeyedArchiver archivedDataWithRootObject:updatedDict];
-        [[NSUserDefaults standardUserDefaults] setObject:data forKey:@"TG_stickerPacks"];
+        [self storePacksData:data];
     }
 }
 
 + (SSignal *)remoteStickerPacksWithCacheHash:(int32_t)cacheHash
 {
-#if TARGET_IPHONE_SIMULATOR
-    //cacheHash = 0;
-#endif
-    
     TLRPCmessages_getAllStickers$messages_getAllStickers *getAllStickers = [[TLRPCmessages_getAllStickers$messages_getAllStickers alloc] init];
     getAllStickers.n_hash = cacheHash;
     
-    return [[[TGTelegramNetworking instance] requestSignal:getAllStickers] mapToSignal:^SSignal *(TLmessages_AllStickers *result)
+    SSignal *allStickers = [[[TGTelegramNetworking instance] requestSignal:getAllStickers] mapToSignal:^SSignal *(TLmessages_AllStickers *result)
     {
         if ([result isKindOfClass:[TLmessages_AllStickers$messages_allStickers class]])
         {
@@ -436,12 +595,143 @@ static OSSpinLock cachedPacksLock = 0;
                         [finalStickerPacks addObject:foundPack];
                 }
                 
+                
+                
                 NSDictionary *result = [self replaceCachedStickerPacks:finalStickerPacks cacheUpdateDate:(int32_t)[[NSDate date] timeIntervalSince1970]];
                 return result;
             }];
         }
         
         [self replaceCacheUpdateDate:(int32_t)[[NSDate date] timeIntervalSince1970]];
+        
+        return [SSignal single:[NSNull null]];
+    }];
+    
+    TLRPCmessages_getArchivedStickers$messages_getArchivedStickers *getArchivedStickers = [[TLRPCmessages_getArchivedStickers$messages_getArchivedStickers alloc] init];
+    getArchivedStickers.offset_id = 0;
+    getArchivedStickers.limit = 1;
+    
+    SSignal *archivedStickers = [[[TGTelegramNetworking instance] requestSignal:getArchivedStickers] mapToSignal:^SSignal *(TLmessages_ArchivedStickers *result) {
+        TGArchivedStickerPacksSummary *summary = [[TGArchivedStickerPacksSummary alloc] initWithCount:result.count];
+        NSDictionary *dict = [self replaceArchivedStickerPacksSummary:summary];
+        
+        if (dict != nil) {
+            return [SSignal single:dict];
+        }
+        
+        return [SSignal single:[NSNull null]];
+    }];
+    
+    return [[SSignal combineSignals:@[allStickers, archivedStickers]] mapToSignal:^SSignal *(NSArray *values) {
+        if (![values[1] isEqual:[NSNull null]]) {
+            return [SSignal single:values[1]];
+        } else if (![values[0] isEqual:[NSNull null]]) {
+            return [SSignal single:values[0]];
+        } else {
+            return [SSignal complete];
+        }
+    }];
+}
+
++ (SSignal *)remoteFeaturedPacksWithCacheHash:(int32_t)cacheHash
+{
+#ifdef DEBUG
+    cacheHash = 0;
+#endif
+    TLRPCmessages_getFeaturedStickers$messages_getFeaturedStickers *getFeaturedStickers = [[TLRPCmessages_getFeaturedStickers$messages_getFeaturedStickers alloc] init];
+    
+    getFeaturedStickers.n_hash = cacheHash;
+    
+    return [[[TGTelegramNetworking instance] requestSignal:getFeaturedStickers] mapToSignal:^SSignal *(TLmessages_FeaturedStickers *result)
+    {
+        if ([result isKindOfClass:[TLmessages_FeaturedStickers$messages_featuredStickers class]])
+        {
+            TLmessages_FeaturedStickers$messages_featuredStickers *allStickers = (TLmessages_FeaturedStickers$messages_featuredStickers *)result;
+            
+            NSMutableDictionary *currentStickerPacks = [self cachedStickerPacks][@"featuredPacks"];
+            
+            NSMutableArray *resultingPackReferences = [[NSMutableArray alloc] init];
+            NSMutableArray *missingPackSignals = [[NSMutableArray alloc] init];
+            
+            for (TLStickerSetCovered *resultPackCovered in allStickers.sets)
+            {
+                TLStickerSet *resultPack = resultPackCovered.set;
+                TGStickerPackIdReference *resultPackReference = [[TGStickerPackIdReference alloc] initWithPackId:resultPack.n_id packAccessHash:resultPack.access_hash shortName:resultPack.short_name];
+                
+                TGStickerPack *currentPack = nil;
+                for (TGStickerPack *pack in currentStickerPacks)
+                {
+                    if ([pack.packReference isEqual:resultPackReference])
+                    {
+                        currentPack = pack;
+                        break;
+                    }
+                }
+                
+                if (currentPack == nil || currentPack.packHash != resultPack.n_hash)
+                {
+                    [missingPackSignals addObject:[self stickerPackInfo:resultPackReference packHash:resultPack.n_hash]];
+                }
+                
+                [resultingPackReferences addObject:resultPackReference];
+            }
+            
+            return [[SSignal combineSignals:missingPackSignals] map:^id (NSArray *additionalPacks)
+            {
+                NSMutableArray *finalStickerPacks = [[NSMutableArray alloc] init];
+                
+                for (id<TGStickerPackReference> reference in resultingPackReferences)
+                {
+                    TGStickerPack *foundPack = nil;
+                    
+                    for (TGStickerPack *pack in additionalPacks)
+                    {
+                        if ([pack.packReference isEqual:reference])
+                        {
+                            foundPack = pack;
+                            break;
+                        }
+                    }
+                    
+                    if (foundPack == nil)
+                    {
+                        for (TGStickerPack *pack in currentStickerPacks)
+                        {
+                            if ([pack.packReference isEqual:reference])
+                            {
+                                foundPack = pack;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (foundPack != nil)
+                        [finalStickerPacks addObject:foundPack];
+                }
+                
+                NSMutableArray *unreadPackIds = [[NSMutableArray alloc] init];
+                for (NSNumber *nPackId in allStickers.unread) {
+                    [unreadPackIds addObject:nPackId];
+                }
+#ifdef DEBUG
+                /*static dispatch_once_t onceToken;
+                dispatch_once(&onceToken, ^{
+                    [unreadPackIds removeAllObjects];
+                    for (TGStickerPack *pack in finalStickerPacks) {
+                        if ([pack.packReference isKindOfClass:[TGStickerPackIdReference class]]) {
+                            int64_t packId = ((TGStickerPackIdReference *)pack.packReference).packId;
+                            [unreadPackIds addObject:@(packId)];
+                        }
+                    }
+                });*/
+#endif
+                
+                NSDictionary *result = [self replaceCachedFeaturedPacks:finalStickerPacks unreadPackIds:unreadPackIds cacheUpdateDate:(int32_t)[[NSDate date] timeIntervalSince1970]];
+                return result;
+            }];
+        }
+        
+        [self replaceFeaturedCacheUpdateDate:(int32_t)[[NSDate date] timeIntervalSince1970]];
         
         return [SSignal complete];
     }];
@@ -496,51 +786,145 @@ static OSSpinLock cachedPacksLock = 0;
             }
         }
         
-        return [[TGStickerPack alloc] initWithPackReference:resultPackReference title:result.set.title stickerAssociations:stickerAssociations documents:documents packHash:packHash hidden:(result.set.flags & (1 << 1))];
+        return [[TGStickerPack alloc] initWithPackReference:resultPackReference title:result.set.title stickerAssociations:stickerAssociations documents:documents packHash:packHash hidden:(result.set.flags & (1 << 1)) isMask:(result.set.flags & (1 << 3))];
     }];
 }
 
-+ (SSignal *)installStickerPack:(id<TGStickerPackReference>)packReference
++ (SSignal *)installStickerPackAndGetArchived:(id<TGStickerPackReference>)packReference {
+    return [self installStickerPackAndGetArchived:packReference hintUnarchive:false];
+}
+
++ (SSignal *)installStickerPackAndGetArchived:(id<TGStickerPackReference>)packReference hintUnarchive:(bool)hintUnarchive
 {
     TLRPCmessages_installStickerSet$messages_installStickerSet *installStickerSet = [[TLRPCmessages_installStickerSet$messages_installStickerSet alloc] init];
     installStickerSet.stickerset = [self _inputStickerSetFromPackReference:packReference];
     
-    return [[[TGTelegramNetworking instance] requestSignal:installStickerSet] then:[[self remoteStickerPacksWithCacheHash:0] onNext:^(NSDictionary *dict)
-    {
-        NSMutableDictionary *updatedDict = [[NSMutableDictionary alloc] initWithDictionary:dict];
+    return [[[TGTelegramNetworking instance] requestSignal:installStickerSet] mapToSignal:^SSignal *(TLmessages_StickerSetInstallResult *result) {
+        return [[self stickerPackInfo:packReference] mapToSignal:^SSignal *(TGStickerPack *pack) {
+            NSMutableDictionary *updatedDict = [[NSMutableDictionary alloc] initWithDictionary:[self cachedStickerPacks]];
             
-        OSSpinLockLock(&cachedPacksLock);
-        cachedPacks = updatedDict;
-        OSSpinLockUnlock(&cachedPacksLock);
-        
-        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:updatedDict];
-        [[NSUserDefaults standardUserDefaults] setObject:data forKey:@"TG_stickerPacks"];
-        
-        [self updateShowStickerButtonModeForStickerPacks:updatedDict[@"packs"]];
-        
-        [[[TGTelegramNetworking instance] genericTasksSignalManager] putNext:updatedDict toMulticastedPipeForKey:@"stickerPacks"];
-    }]];
+            NSMutableArray *packs = [[NSMutableArray alloc] initWithArray:updatedDict[@"packs"]];
+            bool found = false;
+            for (TGStickerPack *existingPack in packs) {
+                if ([existingPack.packReference isEqual:pack.packReference]) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                [packs insertObject:pack atIndex:0];
+            }
+            updatedDict[@"packs"] = packs;
+            
+            int addedArchivedCount = 0;
+            if ([result isKindOfClass:[TLmessages_StickerSetInstallResult$messages_stickerSetInstallResultArchive class]]) {
+                TLmessages_StickerSetInstallResult$messages_stickerSetInstallResultArchive *concreteResult = (TLmessages_StickerSetInstallResult$messages_stickerSetInstallResultArchive *)result;
+                addedArchivedCount = (int)concreteResult.sets.count;
+            }
+            
+            TGArchivedStickerPacksSummary *summary = [[TGArchivedStickerPacksSummary alloc] initWithCount:((TGArchivedStickerPacksSummary *)updatedDict[@"archivedPacksSummary"]).count + (hintUnarchive ? -1 : 0) + addedArchivedCount];
+            updatedDict[@"archivedPacksSummary"] = summary;
+            
+            OSSpinLockLock(&cachedPacksLock);
+            cachedPacks = updatedDict;
+            OSSpinLockUnlock(&cachedPacksLock);
+            
+            [self updateShowStickerButtonModeForStickerPacks:updatedDict[@"packs"]];
+            
+            [[[TGTelegramNetworking instance] genericTasksSignalManager] putNext:updatedDict toMulticastedPipeForKey:@"stickerPacks"];
+            
+            NSData *data = [NSKeyedArchiver archivedDataWithRootObject:updatedDict];
+            [self storePacksData:data];
+            
+            if ([result isKindOfClass:[TLmessages_StickerSetInstallResult$messages_stickerSetInstallResultArchive class]]) {
+                TLmessages_StickerSetInstallResult$messages_stickerSetInstallResultArchive *concreteResult = (TLmessages_StickerSetInstallResult$messages_stickerSetInstallResultArchive *)result;
+                
+                NSMutableArray *resultingPackReferences = [[NSMutableArray alloc] init];
+                NSMutableArray *missingPackSignals = [[NSMutableArray alloc] init];
+                
+                for (TLStickerSet *resultPack in concreteResult.sets)
+                {
+                    TGStickerPackIdReference *resultPackReference = [[TGStickerPackIdReference alloc] initWithPackId:resultPack.n_id packAccessHash:resultPack.access_hash shortName:resultPack.short_name];
+                    [missingPackSignals addObject:[self stickerPackInfo:resultPackReference packHash:resultPack.n_hash]];
+                    
+                    [resultingPackReferences addObject:resultPackReference];
+                }
+                
+                return [[SSignal combineSignals:missingPackSignals] map:^id (NSArray *additionalPacks) {
+                    NSMutableArray *finalStickerPacks = [[NSMutableArray alloc] init];
+                    
+                    for (id<TGStickerPackReference> reference in resultingPackReferences) {
+                        TGStickerPack *foundPack = nil;
+                        
+                        for (TGStickerPack *pack in additionalPacks)
+                        {
+                            if ([pack.packReference isEqual:reference])
+                            {
+                                foundPack = pack;
+                                break;
+                            }
+                        }
+                        
+                        if (foundPack != nil)
+                            [finalStickerPacks addObject:foundPack];
+                    }
+                    return finalStickerPacks;
+                }];
+            } else {
+                return [SSignal single:@[]];
+            }
+        }];
+    }];
 }
 
-+ (SSignal *)removeStickerPack:(id<TGStickerPackReference>)packReference
++ (SSignal *)removeStickerPack:(id<TGStickerPackReference>)packReference hintArchived:(bool)hintArchived
 {
     TLRPCmessages_uninstallStickerSet$messages_uninstallStickerSet *uninstallStickerSet = [[TLRPCmessages_uninstallStickerSet$messages_uninstallStickerSet alloc] init];
     uninstallStickerSet.stickerset = [self _inputStickerSetFromPackReference:packReference];
     
-    return [[[TGTelegramNetworking instance] requestSignal:uninstallStickerSet] then:[[[self remoteStickerPacksWithCacheHash:0] onNext:^(NSDictionary *dict)
-    {
-        [self updateShowStickerButtonModeForStickerPacks:dict[@"packs"]];
-    }] afterNext:^(id next)
-    {
-        [[[TGTelegramNetworking instance] genericTasksSignalManager] putNext:next toMulticastedPipeForKey:@"stickerPacks"];
-    }]];
+    return [[[TGTelegramNetworking instance] requestSignal:uninstallStickerSet] mapToSignal:^SSignal *(id __unused result) {
+        NSMutableDictionary *updatedDict = [[NSMutableDictionary alloc] initWithDictionary:[self cachedStickerPacks]];
+        
+        NSMutableArray *packs = [[NSMutableArray alloc] initWithArray:updatedDict[@"packs"]];
+        NSInteger index = -1;
+        for (TGStickerPack *pack in packs) {
+            index++;
+            if ([pack.packReference isEqual:packReference]) {
+                [packs removeObjectAtIndex:index];
+                break;
+            }
+        }
+        updatedDict[@"packs"] = packs;
+        
+        int addedArchivedCount = hintArchived ? -1 : 0;
+        
+        TGArchivedStickerPacksSummary *summary = [[TGArchivedStickerPacksSummary alloc] initWithCount:MAX(0, (int)((TGArchivedStickerPacksSummary *)updatedDict[@"archivedPacksSummary"]).count + addedArchivedCount)];
+        updatedDict[@"archivedPacksSummary"] = summary;
+        
+        OSSpinLockLock(&cachedPacksLock);
+        cachedPacks = updatedDict;
+        OSSpinLockUnlock(&cachedPacksLock);
+        
+        [self updateShowStickerButtonModeForStickerPacks:updatedDict[@"packs"]];
+        
+        [[[TGTelegramNetworking instance] genericTasksSignalManager] putNext:updatedDict toMulticastedPipeForKey:@"stickerPacks"];
+        
+        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:updatedDict];
+        [self storePacksData:data];
+        
+        return [SSignal complete];
+    }];
 }
 
 + (SSignal *)toggleStickerPackHidden:(id<TGStickerPackReference>)packReference hidden:(bool)hidden
 {
+    if (!hidden) {
+        return [self installStickerPackAndGetArchived:packReference hintUnarchive:true];
+    }
+    
     TLRPCmessages_installStickerSet$messages_installStickerSet *installStickerSet = [[TLRPCmessages_installStickerSet$messages_installStickerSet alloc] init];
     installStickerSet.stickerset = [self _inputStickerSetFromPackReference:packReference];
-    installStickerSet.disabled = hidden;
+    installStickerSet.archived = hidden;
     
     return [[[[TGTelegramNetworking instance] requestSignal:installStickerSet] mapToSignal:^SSignal *(__unused id result) {
         return [SSignal complete];
@@ -549,28 +933,32 @@ static OSSpinLock cachedPacksLock = 0;
         
         NSMutableArray *updatedPacks = [[NSMutableArray alloc] initWithArray:updatedDict[@"packs"]];
         
-        NSInteger index = -1;
-        for (TGStickerPack *pack in updatedPacks) {
-            index++;
-            
-            if (TGObjectCompare(pack.packReference, packReference)) {
-                TGStickerPack *updatedPack = [[TGStickerPack alloc] initWithPackReference:pack.packReference title:pack.title stickerAssociations:pack.stickerAssociations documents:pack.documents packHash:pack.packHash hidden:hidden];
-                [updatedPacks replaceObjectAtIndex:index withObject:updatedPack];
-                break;
+        if (hidden) {
+            NSInteger index = -1;
+            for (TGStickerPack *pack in updatedPacks) {
+                index++;
+                
+                if (TGObjectCompare(pack.packReference, packReference)) {
+                    [updatedPacks removeObjectAtIndex:index];
+                    break;
+                }
             }
         }
         updatedDict[@"packs"] = updatedPacks;
+        
+        TGArchivedStickerPacksSummary *summary = [[TGArchivedStickerPacksSummary alloc] initWithCount:MAX(0, (int)((TGArchivedStickerPacksSummary *)updatedDict[@"archivedPacksSummary"]).count + (hidden ? 1 : -1))];
+        updatedDict[@"archivedPacksSummary"] = summary;
         
         OSSpinLockLock(&cachedPacksLock);
         cachedPacks = updatedDict;
         OSSpinLockUnlock(&cachedPacksLock);
         
-        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:updatedDict];
-        [[NSUserDefaults standardUserDefaults] setObject:data forKey:@"TG_stickerPacks"];
-        
         [self updateShowStickerButtonModeForStickerPacks:updatedDict[@"packs"]];
         
         [[[TGTelegramNetworking instance] genericTasksSignalManager] putNext:updatedDict toMulticastedPipeForKey:@"stickerPacks"];
+        
+        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:updatedDict];
+        [self storePacksData:data];
     }];
 }
 
@@ -612,7 +1000,7 @@ static OSSpinLock cachedPacksLock = 0;
         OSSpinLockUnlock(&cachedPacksLock);
         
         NSData *data = [NSKeyedArchiver archivedDataWithRootObject:updatedDict];
-        [[NSUserDefaults standardUserDefaults] setObject:data forKey:@"TG_stickerPacks"];
+        [self storePacksData:data];
         
         [[[TGTelegramNetworking instance] genericTasksSignalManager] putNext:updatedDict toMulticastedPipeForKey:@"stickerPacks"];
     }];
@@ -672,8 +1060,10 @@ static OSSpinLock cachedPacksLock = 0;
     [[[TGTelegramNetworking instance] genericTasksSignalManager] putNext:updatedDict toMulticastedPipeForKey:@"stickerPacks"];
 }
 
-+ (SSignal *)preloadedStickerPreviews:(NSArray *)documents count:(NSUInteger)count
++ (SSignal *)preloadedStickerPreviews:(NSDictionary *)dictionary count:(NSUInteger)count
 {
+    NSArray *documents = dictionary[@"documents"];
+
     return [[SSignal single:nil] mapToSignal:^SSignal *(__unused id next)
     {
         SSignal *signal = [SSignal complete];
@@ -682,7 +1072,7 @@ static OSSpinLock cachedPacksLock = 0;
         {
             TGDocumentMediaAttachment *document = documents[i];
             
-            NSString *directory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId];
+            NSString *directory = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId version:document.version];
             [[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:true attributes:nil error:NULL];
             
             NSString *path = [directory stringByAppendingPathComponent:@"thumbnail-high"];
@@ -701,7 +1091,7 @@ static OSSpinLock cachedPacksLock = 0;
                     location.local_id = localId;
                     location.secret = secret;
                     
-                    SSignal *downloadSignal = [[TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId size:0 reportProgress:false] onNext:^(id next)
+                    SSignal *downloadSignal = [[TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId size:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagDocument] onNext:^(id next)
                     {
                         if ([next isKindOfClass:[NSData class]])
                         {
@@ -718,8 +1108,114 @@ static OSSpinLock cachedPacksLock = 0;
         return [[signal reduceLeft:nil with:^id(__unused id current, __unused id next)
         {
             return current;
-        }] then:[SSignal single:documents]];
+        }] then:[SSignal single:dictionary]];
     }];
+}
+
+
+
++ (SSignal *)updatedFeaturedStickerPacks {
+    return [[[TGTelegramNetworking instance] genericTasksSignalManager] multicastedSignalForKey:@"updateFeaturedStickers" producer:^SSignal *{
+        return [[self updateFeaturedStickerPacks] onNext:^(NSDictionary *dict) {
+            [[[TGTelegramNetworking instance] genericTasksSignalManager] putNext:dict toMulticastedPipeForKey:@"stickerPacks"];
+        }];
+    }];
+}
+
++ (SSignal *)readRemoteFeaturedStickerPacks {
+    TLRPCmessages_readFeaturedStickers$messages_readFeaturedStickers *readFeaturedStickers = [[TLRPCmessages_readFeaturedStickers$messages_readFeaturedStickers alloc] init];
+    return [[TGTelegramNetworking instance] requestSignal:readFeaturedStickers];
+}
+
++ (SSignal *)readRemoteFeaturedStickerPacks:(NSArray *)packIds {
+    if (packIds.count != 0) {
+        TLRPCmessages_readFeaturedStickers$messages_readFeaturedStickers *readFeaturedStickers = [[TLRPCmessages_readFeaturedStickers$messages_readFeaturedStickers alloc] init];
+        readFeaturedStickers.n_id = packIds;
+        return [[TGTelegramNetworking instance] requestSignal:readFeaturedStickers];
+    } else {
+        return [SSignal complete];
+    }
+}
+
++ (void)markFeaturedStickersAsRead {
+    [[[TGTelegramNetworking instance] genericTasksSignalManager] startStandaloneSignalIfNotRunningForKey:@"markFeaturedStickersAsRead" producer:^SSignal *
+    {
+        return [[SSignal defer:^SSignal *{
+            NSArray *featuredPacksUnreadIds = [self cachedStickerPacks][@"featuredPacksUnreadIds"];
+            if (featuredPacksUnreadIds.count != 0) {
+                [self replaceFeaturedUnreadPackIds:@[]];
+                [self dispatchStickers];
+                return [self readRemoteFeaturedStickerPacks];
+            } else {
+                return [SSignal fail:@true];
+            }
+        }] restart];
+    }];
+}
+
++ (void)markFeaturedStickerPackAsRead:(NSArray *)packIds {
+    [[SQueue concurrentDefaultQueue] dispatch:^{
+        if (packIds.count != 0) {
+            NSArray *featuredPacksUnreadIds = [self cachedStickerPacks][@"featuredPacksUnreadIds"];
+            if (featuredPacksUnreadIds.count != 0) {
+                NSMutableArray *updatedFeaturedPacksUnreadIds = [[NSMutableArray alloc] initWithArray:featuredPacksUnreadIds];
+                [updatedFeaturedPacksUnreadIds removeObjectsInArray:packIds];
+                if (updatedFeaturedPacksUnreadIds.count != featuredPacksUnreadIds.count) {
+                    [self replaceFeaturedUnreadPackIds:updatedFeaturedPacksUnreadIds];
+                    [self dispatchStickers];
+                    [TGTelegraphInstance.disposeOnLogout add:[[self readRemoteFeaturedStickerPacks:packIds] startWithNext:nil]];
+                }
+            }
+        }
+    }];
+}
+
++ (SSignal *)archivedStickerPacksWithOffsetId:(int64_t)offsetId limit:(NSUInteger)limit {
+    TLRPCmessages_getArchivedStickers$messages_getArchivedStickers *getArchivedStickers = [[TLRPCmessages_getArchivedStickers$messages_getArchivedStickers alloc] init];
+    getArchivedStickers.offset_id = offsetId;
+    getArchivedStickers.limit = (int32_t)limit;
+    
+    return [[[TGTelegramNetworking instance] requestSignal:getArchivedStickers] mapToSignal:^SSignal *(TLmessages_ArchivedStickers *result) {
+        NSDictionary *dict = [self replaceArchivedStickerPacksSummary:[[TGArchivedStickerPacksSummary alloc] initWithCount:result.count]];
+        
+        if (dict != nil) {
+            [[[TGTelegramNetworking instance] genericTasksSignalManager] putNext:dict toMulticastedPipeForKey:@"stickerPacks"];
+        }
+        
+        NSMutableArray *resultingPackReferences = [[NSMutableArray alloc] init];
+        NSMutableArray *missingPackSignals = [[NSMutableArray alloc] init];
+        
+        for (TLStickerSetCovered *resultPackCovered in result.sets)
+        {
+            TGStickerPackIdReference *resultPackReference = [[TGStickerPackIdReference alloc] initWithPackId:resultPackCovered.set.n_id packAccessHash:resultPackCovered.set.access_hash shortName:resultPackCovered.set.short_name];
+            [missingPackSignals addObject:[self stickerPackInfo:resultPackReference packHash:resultPackCovered.set.n_hash]];
+            
+            [resultingPackReferences addObject:resultPackReference];
+        }
+        
+        return [[SSignal combineSignals:missingPackSignals] map:^id (NSArray *additionalPacks) {
+            NSMutableArray *finalStickerPacks = [[NSMutableArray alloc] init];
+            
+            for (id<TGStickerPackReference> reference in resultingPackReferences) {
+                TGStickerPack *foundPack = nil;
+                
+                for (TGStickerPack *pack in additionalPacks)
+                {
+                    if ([pack.packReference isEqual:reference])
+                    {
+                        foundPack = pack;
+                        break;
+                    }
+                }
+                
+                if (foundPack != nil)
+                    [finalStickerPacks addObject:foundPack];
+            }
+            return finalStickerPacks;
+        }];
+    }];
+    
+    return nil;
 }
 
 @end

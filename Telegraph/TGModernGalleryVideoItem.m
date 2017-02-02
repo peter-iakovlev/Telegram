@@ -14,12 +14,12 @@
 
 @implementation TGModernGalleryVideoItem
 
-- (instancetype)initWithVideoMedia:(TGVideoMediaAttachment *)videoMedia previewUri:(NSString *)previewUri
+- (instancetype)initWithMedia:(id)media previewUri:(NSString *)previewUri
 {
     self = [super init];
     if (self != nil)
     {
-        _videoMedia = videoMedia;
+        _media = media;
         _previewUri = previewUri;
     }
     return self;
@@ -34,7 +34,7 @@
 {
     if ([object isKindOfClass:[TGModernGalleryVideoItem class]])
     {
-        return TGStringCompare(_previewUri, ((TGModernGalleryVideoItem *)object).previewUri) && TGObjectCompare(_videoMedia, ((TGModernGalleryVideoItem *)object).videoMedia);
+        return TGStringCompare(_previewUri, ((TGModernGalleryVideoItem *)object).previewUri) && TGObjectCompare(_media, ((TGModernGalleryVideoItem *)object).media);
     }
     
     return false;

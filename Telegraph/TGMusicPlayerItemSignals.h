@@ -3,6 +3,8 @@
 
 #import "TGMusicPlayerItem.h"
 
+@class TGDocumentMediaAttachment;
+
 typedef struct {
     bool downloaded;
     bool downloading;
@@ -14,6 +16,7 @@ extern "C" {
 #endif
     
 TGMusicPlayerItemAvailability TGMusicPlayerItemAvailabilityUnpack(int64_t value);
+NSString *cacheKeyForDocument(TGDocumentMediaAttachment *document);
     
 #ifdef __cplusplus
 }

@@ -16,6 +16,9 @@
 @property (nonatomic, weak) TGNavigationController *navigationController;
 
 @property (nonatomic, strong) UIView *progressView;
+@property (nonatomic, assign) CGFloat verticalOffset;
+
+@property (nonatomic) bool keepAlpha;
 
 - (id)initWithFrame:(CGRect)frame barStyle:(UIBarStyle)barStyle;
 

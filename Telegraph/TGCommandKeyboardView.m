@@ -170,7 +170,7 @@
                 if (i == index)
                 {
                     if (_commandActivated)
-                        _commandActivated(button.text, _replyMarkup.userId, _replyMarkup.messageId);
+                        _commandActivated(button, _replyMarkup.userId, _replyMarkup.messageId);
                     found = true;
                     break;
                 }

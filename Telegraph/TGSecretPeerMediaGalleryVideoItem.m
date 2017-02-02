@@ -7,6 +7,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGPreparedLocalDocumentMessage.h"
+
 @implementation TGSecretPeerMediaGalleryVideoItem
 
 - (NSString *)filePathForVideoId:(int64_t)videoId local:(bool)local
@@ -51,7 +53,7 @@
         [previewUri appendFormat:@"&conversationId=%" PRId64 "", (int64_t)peerId];
     }
     
-    self = [super initWithVideoMedia:videoMedia previewUri:previewUri];
+    self = [super initWithMedia:videoMedia previewUri:previewUri];
     if (self != nil)
     {
         _peerId = peerId;
@@ -82,8 +84,18 @@
 
 - (NSString *)filePath
 {
-    NSString *legacyVideoFilePath = [self filePathForVideoId:self.videoMedia.videoId != 0 ? self.videoMedia.videoId : self.videoMedia.localVideoId local:self.videoMedia.videoId == 0];
-    return legacyVideoFilePath;
+    if ([self.media isKindOfClass:[TGVideoMediaAttachment class]]) {
+        TGVideoMediaAttachment *videoMedia = self.media;
+        NSString *legacyVideoFilePath = [self filePathForVideoId:videoMedia.videoId != 0 ? videoMedia.videoId : videoMedia.localVideoId local:videoMedia.videoId == 0];
+        return legacyVideoFilePath;
+    } else if ([self.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+        TGDocumentMediaAttachment *documentMedia = self.media;
+        NSString *documentPath = documentMedia.localDocumentId != 0 ? [TGPreparedLocalDocumentMessage localDocumentDirectoryForLocalDocumentId:documentMedia.localDocumentId version:documentMedia.version] : [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:documentMedia.documentId version:documentMedia.version];
+        NSString *legacyVideoFilePath = [documentPath stringByAppendingPathComponent:[documentMedia safeFileName]];
+        return legacyVideoFilePath;
+    } else {
+        return nil;
+    }
 }
 
 - (Class)viewClass

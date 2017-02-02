@@ -37,7 +37,7 @@
 
 - (void)setSingleFontSize:(CGFloat)singleFontSize doubleFontSize:(CGFloat)doubleFontSize useBoldFont:(bool)useBoldFont
 {
-    if (ABS(singleFontSize - _singleSize) < FLT_EPSILON && ABS(doubleFontSize - _doubleSize))
+    if (ABS(singleFontSize - _singleSize) < FLT_EPSILON && ABS(doubleFontSize - _doubleSize) < FLT_EPSILON)
         return;
     
     _singleSize = singleFontSize;
@@ -104,7 +104,7 @@ static bool isEmojiCharacter(NSString *singleChar)
         NSString *cleanLastName = [self _cleanedUpString:lastName];
         
         if (cleanFirstName.length != 0 && cleanLastName.length != 0)
-            _label.text = [[NSString alloc] initWithFormat:@"%@\u200D%@", [cleanFirstName substringToIndex:1], [cleanLastName substringToIndex:1]];
+            _label.text = [[NSString alloc] initWithFormat:@"%@\u200B%@", [cleanFirstName substringToIndex:1], [cleanLastName substringToIndex:1]];
         else if (cleanFirstName.length != 0)
             _label.text = [cleanFirstName substringToIndex:1];
         else if (cleanLastName.length != 0)
@@ -114,7 +114,7 @@ static bool isEmojiCharacter(NSString *singleChar)
         
         if (cleanFirstName.length != 0 && cleanLastName.length != 0)
         {
-            _label.text = [[NSString alloc] initWithFormat:@"%@\u200D%@", [cleanFirstName substringToIndex:1], [cleanLastName substringToIndex:1]];
+            _label.text = [[NSString alloc] initWithFormat:@"%@\u200B%@", [cleanFirstName substringToIndex:1], [cleanLastName substringToIndex:1]];
         }
         else if (cleanFirstName.length != 0)
         {
@@ -160,7 +160,7 @@ static bool isEmojiCharacter(NSString *singleChar)
     
     if (cleanFirstName.length != 0 && cleanLastName.length != 0)
     {
-        _label.text = [[NSString alloc] initWithFormat:@"%@\u200D%@", [cleanFirstName substringToIndex:1], [cleanLastName substringToIndex:1]];
+        _label.text = [[NSString alloc] initWithFormat:@"%@\u200B%@", [cleanFirstName substringToIndex:1], [cleanLastName substringToIndex:1]];
     }
     else if (cleanFirstName.length != 0)
     {

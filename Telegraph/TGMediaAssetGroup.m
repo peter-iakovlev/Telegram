@@ -5,6 +5,8 @@
     NSString *_identifier;
     NSString *_title;
     NSArray *_latestAssets;
+    TGMediaAssetGroupSubtype _subtype;
+    NSNumber *_cachedAssetCount;
 }
 @end
 
@@ -17,6 +19,7 @@
     {
         _backingFetchResult = fetchResult;
         _isCameraRoll = true;
+        _title = TGLocalized(@"MediaPicker.CameraRoll");
     }
     return self;
 }
@@ -44,17 +47,48 @@
 
 - (instancetype)initWithALAssetsGroup:(ALAssetsGroup *)assetsGroup
 {
+    bool isCameraRoll = ([[assetsGroup valueForProperty:ALAssetsGroupPropertyType] integerValue] == ALAssetsGroupSavedPhotos);
+    TGMediaAssetGroupSubtype subtype = isCameraRoll ? TGMediaAssetGroupSubtypeCameraRoll : TGMediaAssetGroupSubtypeNone;
+    return [self initWithALAssetsGroup:assetsGroup subtype:subtype];
+}
+
+- (instancetype)initWithALAssetsGroup:(ALAssetsGroup *)assetsGroup subtype:(TGMediaAssetGroupSubtype)subtype
+{
     self = [super init];
     if (self != nil)
     {
         _backingAssetsGroup = assetsGroup;
-        _isCameraRoll = ([[assetsGroup valueForProperty:ALAssetsGroupPropertyType] integerValue] == ALAssetsGroupSavedPhotos);
+        _subtype = subtype;
+        
+        if (subtype == TGMediaAssetGroupSubtypeVideos)
+        {
+            _title = TGLocalized(@"MediaPicker.Videos");
+            
+            [self.backingAssetsGroup setAssetsFilter:[ALAssetsFilter allVideos]];
+            _cachedAssetCount = @(self.backingAssetsGroup.numberOfAssets);
+            [self.backingAssetsGroup setAssetsFilter:[ALAssetsFilter allAssets]];
+        }
+        else
+        {
+            _isCameraRoll = ([[assetsGroup valueForProperty:ALAssetsGroupPropertyType] integerValue] == ALAssetsGroupSavedPhotos);
+            if (_isCameraRoll)
+            {
+                _subtype = TGMediaAssetGroupSubtypeCameraRoll;
+            }
+            else
+            {
+                _isPhotoStream = ([[assetsGroup valueForProperty:ALAssetsGroupPropertyType] integerValue] == ALAssetsGroupPhotoStream);
+                _subtype = _isPhotoStream ? TGMediaAssetGroupSubtypeMyPhotoStream : TGMediaAssetGroupSubtypeRegular;
+            }
+        }
         
         NSMutableArray *latestAssets = [[NSMutableArray alloc] init];
         [assetsGroup enumerateAssetsWithOptions:NSEnumerationReverse usingBlock:^(ALAsset *asset, __unused NSUInteger index, BOOL *stop)
         {
-            if (asset != nil)
+            if (asset != nil && (_subtype != TGMediaAssetGroupSubtypeVideos || [[asset valueForProperty:ALAssetPropertyType] isEqualToString:ALAssetTypeVideo]))
+            {
                 [latestAssets addObject:[[TGMediaAsset alloc] initWithALAsset:asset]];
+            }
             if (latestAssets.count == 3 && stop != NULL)
                 *stop = true;
         }];
@@ -76,20 +110,33 @@
 
 - (NSString *)title
 {
+    if (_title != nil)
+        return _title;
     if (_backingAssetCollection != nil)
         return _backingAssetCollection.localizedTitle;
     if (_backingAssetsGroup != nil)
         return [_backingAssetsGroup valueForProperty:ALAssetsGroupPropertyName];
     
-    return _title;
+    return nil;
 }
 
-- (NSUInteger)assetCount
+- (NSInteger)assetCount
 {
     if (self.backingFetchResult != nil)
+    {
         return self.backingFetchResult.count;
+    }
     else if (self.backingAssetsGroup != nil)
+    {
+        if (self.subtype == TGMediaAssetGroupSubtypeVideos)
+        {
+            if (_cachedAssetCount != nil)
+                return _cachedAssetCount.integerValue;
+            
+            return -1;
+        }
         return self.backingAssetsGroup.numberOfAssets;
+    }
     
     return 0;
 }
@@ -109,6 +156,8 @@
     {
         if (_isCameraRoll)
             return TGMediaAssetGroupSubtypeCameraRoll;
+        else if (_subtype != TGMediaAssetGroupSubtypeNone)
+            return _subtype;
     }
     
     return TGMediaAssetGroupSubtypeRegular;
@@ -132,7 +181,7 @@
         
         for (NSInteger i = 0; i < requiredCount; i++)
         {
-            NSInteger index = self.isCameraRoll ? totalCount - i - 1 : i;
+            NSInteger index = (self.subtype != TGMediaAssetGroupSubtypeRegular) ? totalCount - i - 1 : i;
             PHAsset *asset = [_backingFetchResult objectAtIndex:index];
             
             TGMediaAsset *pickerAsset = [[TGMediaAsset alloc] initWithPHAsset:asset];

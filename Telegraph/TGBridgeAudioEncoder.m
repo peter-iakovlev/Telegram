@@ -11,6 +11,8 @@
 
 #import "TGDataItem.h"
 
+#import "TGTelegramNetworking.h"
+
 const NSInteger TGBridgeAudioEncoderSampleRate = 16000;
 
 @interface TGBridgeAudioEncoder () <ASWatcher>
@@ -71,7 +73,7 @@ const NSInteger TGBridgeAudioEncoderSampleRate = 16000;
             _liveUploadPath = [[NSString alloc] initWithFormat:@"/tg/liveUpload/(%d)", actionId];
             
             [ActionStageInstance() requestActor:_liveUploadPath options:@{ @"fileItem": _tempFileItem,
-                                                                           @"encryptFile": @(false)
+                                                                           @"encryptFile": @(false), @"mediaTypeTag": @(TGNetworkMediaTypeTagAudio)
                                                                            } flags:0 watcher:self];
         }];
     }

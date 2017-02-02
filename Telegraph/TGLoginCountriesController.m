@@ -172,7 +172,7 @@ static NSArray *countryCodes()
     return TGIsPad();
 }
 
-- (NSUInteger)supportedInterfaceOrientations
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
     return UIInterfaceOrientationMaskPortrait;
 }

@@ -321,3 +321,55 @@
 
 @end
 
+@implementation TLSendMessageAction$sendMessageGamePlayAction : TLSendMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xdd6a8f48;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xa4acd6c6;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLSendMessageAction$sendMessageGamePlayAction *object = [[TLSendMessageAction$sendMessageGamePlayAction alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLSendMessageAction$sendMessageGameStopAction : TLSendMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x15c2c99a;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xb14ab57e;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLSendMessageAction$sendMessageGameStopAction *object = [[TLSendMessageAction$sendMessageGameStopAction alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+

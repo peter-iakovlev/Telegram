@@ -35,8 +35,8 @@
 "CHAT_LEFT" = "%1$@ left the group %2$@";
 "CHAT_RETURNED" = "%1$@ returned to the group %2$@";
 
-"MESSAGE_STICKER" = "%1$@ sent you a sticker";
-"CHAT_MESSAGE_STICKER" = "%1$@ sent a sticker to the group %2$@";
+"MESSAGE_STICKER" = "%1$@ sent you a %2$@sticker";
+"CHAT_MESSAGE_STICKER" = "%1$@ sent a %3$@sticker to the group %2$@";
 
 "CONTACT_JOINED" = "%1$@ joined Telegram!";
 "CONTACT_ACTIVATED" = "%1$@ helped you activate your account!";
@@ -52,12 +52,30 @@
 "CHANNEL_MESSAGE_PHOTO" = "%1$@ posted a photo";
 "CHANNEL_MESSAGE_VIDEO" = "%1$@ posted a video";
 "CHANNEL_MESSAGE_DOC" = "%1$@ posted a document";
-"CHANNEL_MESSAGE_STICKER" = "%1$@ posted a sticker";
+"CHANNEL_MESSAGE_STICKER" = "%1$@ posted a %2$@sticker";
 "CHANNEL_MESSAGE_AUDIO" = "%1$@ posted a voice message";
 "CHANNEL_MESSAGE_CONTACT" = "%1$@ posted a contact";
 "CHANNEL_MESSAGE_GEO" = "%1$@ posted a map";
 "CHANNEL_MESSAGE_FWDS" = "%1$@ posted %2$@ forwarded messages";
 "CHANNEL_MESSAGE_GIF" = "%1$@ posted a GIF";
+
+"PINNED_TEXT" = "%1$@ pinned \"%2$@\"";
+"PINNED_NOTEXT" = "%1$@ pinned a message";
+"PINNED_PHOTO" = "%1$@ pinned a photo";
+"PINNED_VIDEO" = "%1$@ pinned a video";
+"PINNED_DOC" = "%1$@ pinned a file";
+"PINNED_STICKER" = "%1$@ pinned a %2$@sticker";
+"PINNED_AUDIO" = "%1$@ pinned a voice message";
+"PINNED_CONTACT" = "%1$@ pinned a contact";
+"PINNED_GEO" = "%1$@ pinned a map";
+"PINNED_GIF" = "%1$@ pinned a GIF";
+
+"MESSAGE_GAME" = "%1$@ invited you to play %2$@";
+"CHANNEL_MESSAGE_GAME" = "%1$@ invited you to play %2$@";
+"CHAT_MESSAGE_GAME" = "%1$@ invited the group %2$@ to play %3$@";
+"PINNED_GAME" = "%1$@ pinned a game";
+
+"PHONE_CALL_REQUEST" = "%1$@ is calling you";
 
 // Common
 "Common.OK" = "OK";
@@ -132,6 +150,8 @@
 "Weekday.Friday" = "Friday";
 "Weekday.Saturday" = "Saturday";
 "Weekday.Sunday" = "Sunday";
+"Weekday.Today" = "Today";
+"Weekday.Yesterday" = "Yesterday";
 
 "Time.TodayAt" = "today at %@";
 "Time.YesterdayAt" = "yesterday at %@";
@@ -259,7 +279,7 @@
 "DialogList.Messages" = "Messages";
 
 // Compose
-"Compose.TokenListPlaceholder" = "Who would you like to message?";
+"Compose.TokenListPlaceholder" = "Whom would you like to message?";
 "Compose.NewMessage" = "New Message";
 "Compose.NewGroup" = "New Group";
 "Compose.NewEncryptedChat" = "New Secret Chat";
@@ -422,13 +442,13 @@
 "Conversation.Stop" = "Stop";
 "Conversation.ViewFile" = "View File";
 "Conversation.Download" = "Download";
-"Conversation.DownloadMegabytes" = "Download %.1fMb";
-"Conversation.DownloadKilobytes" = "Download %dKb";
-"Conversation.Megabytes" = "%.1fMb";
-"Conversation.Kilobytes" = "%dKb";
-"Conversation.Bytes" = "%db";
-"Conversation.DownloadProgressMegabytes" = "%1$.1fMb / %2$.1fMb";
-"Conversation.DownloadProgressKilobytes" = "%1$dKb / %2$dKb";
+"Conversation.DownloadMegabytes" = "Download %.1f MB";
+"Conversation.DownloadKilobytes" = "Download %d KB";
+"Conversation.Megabytes" = "%.1f MB";
+"Conversation.Kilobytes" = "%d KB";
+"Conversation.Bytes" = "%d B";
+"Conversation.DownloadProgressMegabytes" = "%1$.1f MB / %2$.1f MB";
+"Conversation.DownloadProgressKilobytes" = "%1$d KB / %2$d KB";
 "Conversation.ViewLocation" = "View Location";
 "Conversation.SearchWebImages" = "Find Images";
 "Conversation.ShareMyContactInfo" = "Share My Contact Info";
@@ -581,13 +601,13 @@
 "Settings.Logout" = "Log Out";
 "Settings.Title" = "Settings";
 "Settings.NotificationsAndSounds" = "Notifications and Sounds";
-"Settings.ChatSettings" = "Chat Settings";
+"Settings.ChatSettings" = "Data and Storage";
 "Settings.BlockedUsers" = "Blocked Users";
 "Settings.ChatBackground" = "Chat Background";
 "Settings.Support" = "Ask a Question";
 "Settings.FAQ" = "Telegram FAQ";
 "Settings.FAQ_URL" = "http://telegram.org/faq#general";
-"Settings.FAQ_Intro" = "Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.Please take a look at the Telegram FAQ: it has important troubleshooting tips and answers to most questions.";
+"Settings.FAQ_Intro" = "Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.\n\nPlease take a look at the Telegram FAQ: it has important troubleshooting tips and answers to most questions.";
 "Settings.FAQ_Button" = "FAQ";
 "Settings.SaveIncomingPhotos" = "Save Incoming Photos";
 "Settings.SaveIncomingPhotosHelp" = "Save incoming photos to the Camera Roll.";
@@ -621,7 +641,7 @@
 "Notifications.ResetAllNotificationsHelp" = "Undo all custom notification settings for all your contacts and groups.";
 
 // Chat Settings
-"ChatSettings.Title" = "Chat Settings";
+"ChatSettings.Title" = "Data and Storage";
 "ChatSettings.Appearance" = "APPEARANCE";
 "ChatSettings.TextSize" = "Text Size";
 "ChatSettings.TextSizeUnits" = "pt";
@@ -635,7 +655,7 @@
 "ChatSettings.Cache" = "CACHE";
 
 // Usage
-"Cache.Title" = "Cache Settings";
+"Cache.Title" = "Storage Usage";
 "Cache.ClearCache" = "Clear Cache";
 "Cache.ClearCacheAlert" = "Photos, videos and other files from cloud chats will be removed from this device to save disk space.\n\nAll media will stay in the Telegram cloud and can be re-downloaded if you need it again.";
 "Cache.KeepMedia" = "Keep Media";
@@ -1327,7 +1347,7 @@
 "StickerPacksSettings.ShowStickersButtonHelp" = "A sticker icon will appear in the input field.";
 
 "StickerPacksSettings.StickerPacksSection" = "STICKER SETS";
-"StickerPacksSettings.ManagingHelp" = "Artists are welcome to add their own sticker sets using our @stickers bot.\n\nUsers can add stickers by double-tapping them and choosing \"Add Stickers\".";
+"StickerPacksSettings.ManagingHelp" = "Artists are welcome to add their own sticker sets using our @stickers bot.\n\nTap on a sticker to view and add the whole set.";
 
 "StickerPack.RemovePrompt" = "Remove \"%@\"?";
 "StickerPack.BuiltinPackName" = "Great Minds";
@@ -1539,7 +1559,7 @@
 
 "Channel.Username.InvalidTooManyUsernames" = "Sorry, you have created too many public channels. You can either create a private channel or delete one of your existing channels first.";
 
-"ChannelInfo.ChannelForbidden" = "Sorry, this channel is no longer accessible.";
+"ChannelInfo.ChannelForbidden" = "Sorry, the channel \"%@\" is no longer accessible.";
 
 "PhotoEditor.FadeTool" = "Fade";
 "PhotoEditor.TintTool" = "Tint";
@@ -1584,7 +1604,7 @@
 "Group.UpgradeNoticeText1" = "To go over the limit and get additional features, upgrade to a supergroup:";
 "Group.UpgradeNoticeText2" = "•  Supergroups can get up to {supergroup_member_limit} members\n•  New members see the entire chat history\n•  Admins delete messages for everyone\n•  Notifications are muted by default";
 "GroupInfo.UpgradeButton" = "Upgrade to supergroup";
-"Group.UpgradeConfirmation" = "Please note that group members will need to update their Telegram apps to the latest version to see your supergroup.";
+"Group.UpgradeConfirmation" = "Warning: this action is irreversible. It is not possible to downgrade a supergroup to a regular group.";
 
 "Notification.GroupMigratedToChannel" = "The group was upgraded to a supergroup";
 "Notification.GroupDeactivated" = "Group deactivated";
@@ -1742,7 +1762,7 @@
 "ExplicitContent.AlertChannel" = "You can't access this channel because it violates App Store rules.";
 "ExplicitContent.AlertUser" = "You can't access this bot because it violates App Store rules.";
 
-"StickerSettings.ContextHide" = "Hide";
+"StickerSettings.ContextHide" = "Archive";
 "StickerSettings.ContextShow" = "Show";
 
 "Conversation.LinkDialogSave" = "Save";
@@ -1839,7 +1859,7 @@
 
 "Map.OpenInWaze" = "Open in Waze";
 
-"ShareMenu.CopyShareLink" = "Copy Share Link";
+"ShareMenu.CopyShareLink" = "Copy Link";
 
 "Channel.SignMessages" = "Sign Messages";
 "Channel.SignMessages.Help" = "Add names of the admins to the messages they post.";
@@ -1851,3 +1871,397 @@
 "Conversation.InputTextSilentBroadcastPlaceholder" = "Silent Broadcast";
 "Conversation.SilentBroadcastTooltipOn" = "Members will be notified when you post";
 "Conversation.SilentBroadcastTooltipOff" = "Members will not be notified when you post";
+
+"Settings.About" = "Bio";
+"GroupInfo.LabelAdmin" = "admin";
+
+"Conversation.Pin" = "Pin";
+"Conversation.Unpin" = "Unpin";
+"Conversation.Report" = "Report Spam";
+"Conversation.PinnedMessage" = "Pinned Message";
+
+"Conversation.Moderate.Delete" = "Delete Message";
+"Conversation.Moderate.Ban" = "Ban User";
+"Conversation.Moderate.Report" = "Report Spam";
+"Conversation.Moderate.DeleteAllMessages" = "Delete All From %@";
+
+"Group.Username.Help" = "You can choose a group name on **Telegram**. If you do, other people will be able to find your group by this name.\n\nYou can use **a-z**, **0-9** and underscores. Minimum length is **5** characters.";
+
+"Group.Username.InvalidTooShort" = "Group names must have at least 5 characters.";
+"Group.Username.InvalidStartsWithNumber" = "Group names can't start with a number.";
+
+"Group.Username.LinkHint" = "This link opens your group in Telegram:[\nhttps://telegram.me/%@]";
+
+"Notification.PinnedTextMessage" = "%@ pinned \"%@\"";
+"Notification.PinnedPhotoMessage" = "%@ pinned a photo";
+"Notification.PinnedVideoMessage" = "%@ pinned a video";
+"Notification.PinnedAudioMessage" = "%@ pinned a voice message";
+"Notification.PinnedDocumentMessage" = "%@ pinned a file";
+"Notification.PinnedAnimationMessage" = "%@ pinned a GIF";
+"Notification.PinnedStickerMessage" = "%@ pinned a sticker";
+"Notification.PinnedLocationMessage" = "%@ pinned a map";
+"Notification.PinnedContactMessage" = "%@ pinned a contact";
+"Notification.PinnedDeletedMessage" = "%@ pinned deleted message";
+
+"Message.PinnedTextMessage" = "pinned \"%@\"";
+"Message.PinnedPhotoMessage" = "pinned photo";
+"Message.PinnedVideoMessage" = "pinned video";
+"Message.PinnedAudioMessage" = "pinned voice message";
+"Message.PinnedDocumentMessage" = "pinned file";
+"Message.PinnedAnimationMessage" = "pinned GIF";
+"Message.PinnedStickerMessage" = "pinned sticker";
+"Message.PinnedLocationMessage" = "pinned location";
+"Message.PinnedContactMessage" = "pinned contact";
+"Message.PinnedDeletedMessage" = "pinned deleted message";
+
+"Notification.PinnedMessage" = "pinned message";
+
+"GroupInfo.ConvertToSupergroup" = "Convert to Supergroup";
+
+"ConvertToSupergroup.Title" = "Supergroup";
+"ConvertToSupergroup.HelpTitle" = "**In supergroups:**";
+"ConvertToSupergroup.HelpText" = "• New members can see the full message history\n• Deleted messages will disappear for all members\n• Admins can pin important messages\n• Creator can set a public link for the group";
+
+"ConvertToSupergroup.Note" = "**Note**: this action can't be undone.";
+
+"GroupInfo.GroupType" = "Group Type";
+
+"Group.Setup.TypeHeader" = "GROUP TYPE";
+"Group.Setup.TypePublicHelp" = "Public groups can be found in search, chat history is available to everyone and anyone can join.";
+"Group.Setup.TypePrivateHelp" = "Private groups can only be joined if you were invited or have an invite link.";
+
+"Group.Username.CreatePublicLinkHelp" = "People can share this link with others and find your group using Telegram search.";
+"Group.Username.CreatePrivateLinkHelp" = "People can join your group by following this link. You can revoke the link at any time.";
+
+"Conversation.PinMessageAlertGroup" = "Pin this message and notify all members of the group?";
+"Conversation.PinMessageAlertChannel" = "Pin this message and notify all members of the channel?";
+"Conversation.PinMessageAlert.OnlyPin" = "Only Pin";
+
+"Conversation.UnpinMessageAlert" = "Would you like to unpin this message?";
+
+"Settings.About.Title" = "Bio";
+"Settings.About.Help" = "You can add a few lines about yourself. Anyone who opens your profile will see this text.";
+
+"Profile.About" = "bio";
+
+"Group.Management.ErrorNotMember" = "%@ hasn't joined the group yet. Do you want to invite them?";
+
+"Conversation.ReportSpamAndLeave" = "Report Spam and Leave";
+
+"Conversation.StatusKickedFromChannel" = "you were removed from the channel";
+
+"Generic.OpenHiddenLinkAlert" = "Open %@?";
+
+"Resolve.ErrorNotFound" = "Sorry, this user doesn't seem to exist.";
+
+"StickerPack.AddStickers" = "Add Stickers";
+"StickerPack.Share" = "Share";
+"StickerPack.Send" = "Send Sticker";
+
+"StickerPack.RemoveStickers" = "Remove Stickers";
+"StickerPack.RemoveStickerCount_1" = "Remove 1 Sticker";
+"StickerPack.RemoveStickerCount_2" = "Remove 2 Stickers";
+"StickerPack.RemoveStickerCount_3_10" = "Remove %@ Stickers";
+"StickerPack.RemoveStickerCount_any" = "Remove %@ Stickers";
+
+"StickerPack.HideStickers" = "Hide Stickers";
+"StickerPack.ShowStickers" = "Show Stickers";
+
+"ShareMenu.ShareTo" = "Share to";
+"ShareMenu.SelectChats" = "Select chats";
+"ShareMenu.Comment" = "Write a comment...";
+
+"MediaPicker.Videos" = "Videos";
+
+"Coub.TapForSound" = "Tap for sound";
+
+"Preview.SaveGif" = "Save GIF";
+"Preview.DeleteGif" = "Delete GIF";
+"Preview.CopyAddress" = "Copy Address";
+"Preview.ViewStickerPack" = "View Sticker Set";
+
+"Conversation.ShareBotLocationConfirmationTitle" = "Share Your Location?";
+"Conversation.ShareBotLocationConfirmation" = "This will send your current location to the bot.";
+
+"Conversation.ShareBotContactConfirmationTitle" = "Share Your Phone Number?";
+"Conversation.ShareBotContactConfirmation" = "The bot will know your phone number. This can be useful for integration with other services.";
+
+"Conversation.ShareInlineBotLocationConfirmation" = "This bot would like to know your location each time you send it a request. This can be used to provide location-specific results.";
+
+"Activity.UploadingAudio" = "sending audio";
+
+"Preview.Tooltip" = "Tap and hold to preview an item";
+
+"StickerPack.ErrorNotFound" = "Sorry, this sticker set doesn't seem to exist.";
+
+"Camera.TapAndHoldForVideo" = "Tap and hold for video";
+
+"Conversation.TapAndHoldToRecord" = "Tap and hold to record";
+
+"DialogList.RecentTitlePeople" = "People";
+"DialogList.RecentTitleGroups" = "Groups";
+"DialogList.RecentTitleBots" = "Bots";
+
+"Conversation.MessageEditedLabel" = "edited";
+"Conversation.EditingMessagePanelTitle" = "Edit Message";
+
+"DialogList.Draft" = "Draft";
+"Embed.PlayingInPIP" = "This video is playing in Picture in Picture";
+
+"MediaPicker.Moments" = "Moments";
+"MediaPicker.MomentsDateFormat" = "{month} {day}"; // 1 - day, 2 - month
+"MediaPicker.MomentsDateYearFormat" = "{month} {day}, {year}"; // 1 - day, 2 - month, 3 - year
+
+"MediaPicker.MomentsDateRangeFormat" = "{date1} – {date2}";
+"MediaPicker.MomentsDateRangeYearFormat" = "{date1} – {date2} {year}";
+"MediaPicker.MomentsDateRangeSameMonthFormat" = "{month} {day1} – {day2}";
+"MediaPicker.MomentsDateRangeSameMonthYearFormat" = "{month} {day1} – {day2}, {year}";
+
+"StickerPacksSettings.FeaturedPacks" = "Trending Stickers";
+"FeaturedStickerPacks.Title" = "Trending Stickers";
+
+"Invitation.JoinGroup" = "Join Group";
+"Invitation.Members_1" = "1 member:";
+"Invitation.Members_2" = "2 members:";
+"Invitation.Members_3_10" = "%@ members:";
+"Invitation.Members_any" = "%@ members:";
+
+"StickerPacksSettings.ArchivedPacks" = "Archived Stickers";
+"StickerPacksSettings.ArchivedPacks.Info" = "You can have up to 200 sticker sets installed.\nUnused stickers are archived when you add more.";
+
+"Conversation.CloudStorageInfo.Title" = "Your Cloud Storage";
+"Conversation.ClousStorageInfo.Description1" = "• Forward messages here to save them";
+"Conversation.ClousStorageInfo.Description2" = "• Send media and files to store them";
+"Conversation.ClousStorageInfo.Description3" = "• Access this chat from any device";
+"Conversation.ClousStorageInfo.Description4" = "• Use search to quickly find things";
+
+"Conversation.CloudStorage.ChatStatus" = "chat with yourself";
+
+"ArchivedPacksAlert.Title" = "Some of your older sticker sets have been archived. You can reactivate them in the Sticker Settings.";
+
+"StickerSettings.ContextInfo" = "If you archive a sticker set, you can quickly restore it later from the Archived Stickers section.";
+
+"Contacts.TopSection" = "CONTACTS";
+
+"Login.ResetAccountProtected.Title" = "Reset Account";
+"Login.ResetAccountProtected.Text" = "Since the account %@ is active and protected by a password, we will delete it in 1 week for security purposes.\n\nYou can cancel this process at any time.";
+"Login.ResetAccountProtected.TimerTitle" = "You'll be able to reset your account in:";
+"Login.ResetAccountProtected.Reset" = "Reset";
+"Login.ResetAccountProtected.LimitExceeded" = "Your recent attempts to reset this account have been cancelled by its active user. Please try again in 7 days.";
+
+"Login.CodeSentCall" = "We are calling your phone to dictate a code.";
+
+"Login.SmsRequestState1" = "Telegram will send you an SMS in %d:%.2d";
+"Login.SmsRequestState2" = "Requesting an SMS from Telegram...";
+"Login.SmsRequestState3" = "Telegram sent you an SMS\n[Didn't get the code?]";
+
+"CancelResetAccount.Title" = "Cancel Account Reset";
+"CancelResetAccount.TextSMS" = "Somebody with access to your phone number %@ has requested to delete your Telegram account and reset your 2-Step Verification password.\n\nIf it wasn't you, please enter the code we've just sent you via SMS to your number.";
+
+"CancelResetAccount.Success" = "The deletion process was cancelled for your account %@.";
+"MediaPicker.MomentsDateRangeSameMonthYearFormat" = "{month} {day1} – {day2}, {year}";
+
+"Paint.Clear" = "Clear All";
+"Paint.ClearConfirm" = "Clear Painting";
+"Paint.Delete" = "Delete";
+"Paint.Edit" = "Edit";
+"Paint.Duplicate" = "Duplicate";
+"Paint.Stickers" = "Stickers";
+"Paint.RecentStickers" = "Recent";
+"Paint.Masks" = "Masks";
+
+"Paint.Outlined" = "Outlined";
+"Paint.Regular" = "Regular";
+
+"MediaPicker.VideoMuteDescription" = "Sound is now muted, so the video will autoplay and loop like a GIF.";
+
+
+"Group.Username.RemoveExistingUsernamesInfo" = "Sorry, you have reserved too many public usernames.\nYou can revoke the link from one of your older groups or channels, or create a private entity instead.";
+
+"ServiceMessage.GameScoreExtended_1" = "{name} scored {score} in {game}";
+"ServiceMessage.GameScoreExtended_2" = "{name} scored {score} in {game}";
+"ServiceMessage.GameScoreExtended_3_10" = "{name} scored {score} in {game}";
+"ServiceMessage.GameScoreExtended_any" = "{name} scored {score} in {game}";
+
+"ServiceMessage.GameScoreSelfExtended_1" = "You scored {score} in {game}";
+"ServiceMessage.GameScoreSelfExtended_2" = "You scored {score} in {game}";
+"ServiceMessage.GameScoreSelfExtended_3_10" = "You scored {score} in {game}";
+"ServiceMessage.GameScoreSelfExtended_any" = "You scored {score} in {game}";
+
+"ServiceMessage.GameScoreSimple_1" = "{name} scored {score}";
+"ServiceMessage.GameScoreSimple_2" = "{name} scored {score}";
+"ServiceMessage.GameScoreSimple_3_10" = "{name} scored {score}";
+"ServiceMessage.GameScoreSimple_any" = "{name} scored {score}";
+
+"ServiceMessage.GameScoreSelfSimple_1" = "You scored {score}";
+"ServiceMessage.GameScoreSelfSimple_2" = "You scored {score}";
+"ServiceMessage.GameScoreSelfSimple_3_10" = "You scored {score}";
+"ServiceMessage.GameScoreSelfSimple_any" = "You scored {score}";
+
+"Notification.GameScoreExtended_1" = "scored {score} in {game}";
+"Notification.GameScoreExtended_2" = "scored {score} in {game}";
+"Notification.GameScoreExtended_3_10" = "scored {score} in {game}";
+"Notification.GameScoreExtended_any" = "scored {score} in {game}";
+
+"Notification.GameScoreSelfExtended_1" = "scored {score} in {game}";
+"Notification.GameScoreSelfExtended_2" = "scored {score} in {game}";
+"Notification.GameScoreSelfExtended_3_10" = "scored {score} in {game}";
+"Notification.GameScoreSelfExtended_any" = "scored {score} in {game}";
+
+"Notification.GameScoreSimple_1" = "scored {score}";
+"Notification.GameScoreSimple_2" = "scored {score}";
+"Notification.GameScoreSimple_3_10" = "scored {score}";
+"Notification.GameScoreSimple_any" = "scored {score}";
+
+"Notification.GameScoreSelfSimple_1" = "scored {score}";
+"Notification.GameScoreSelfSimple_2" = "scored {score}";
+"Notification.GameScoreSelfSimple_3_10" = "scored {score}";
+"Notification.GameScoreSelfSimple_any" = "scored {score}";
+
+"Stickers.Install" = "ADD";
+
+"MaskStickerSettings.Title" = "Masks";
+"MaskStickerSettings.Info" = "You can add masks to photos and videos you send. To do this, open the photo editor before sending a photo or video.";
+
+"StickerPack.MaskCount_1" = "1 mask";
+"StickerPack.MaskCount_2" = "2 masks";
+"StickerPack.MaskCount_3_10" = "%@ masks";
+"StickerPack.MaskCount_any" = "%@ masks";
+
+"StickerPack.Add" = "Add";
+"StickerPack.AddMaskCount_1" = "Add 1 Mask";
+"StickerPack.AddMaskCount_2" = "Add 2 Masks";
+"StickerPack.AddMaskCount_3_10" = "Add %@ Masks";
+"StickerPack.AddMaskCount_any" = "Add %@ Masks";
+
+"StickerPack.Remove" = "Remove";
+"StickerPack.RemoveMaskCount_1" = "Remove 1 Mask";
+"StickerPack.RemoveMaskCount_2" = "Remove 2 Masks";
+"StickerPack.RemoveMaskCount_3_10" = "Remove %@ Masks";
+"StickerPack.RemoveMaskCount_any" = "Remove %@ Masks";
+
+"Conversation.BotInteractiveUrlAlert" = "Allow %@ to pass your Telegram name and id (not your phone number) to pages you open with this bot?";
+"StickerPacksSettings.ArchivedMasks" = "Archived Masks";
+"StickerSettings.MaskContextInfo" = "If you archive a set of masks, you can quickly restore it later from the Archived Masks section.";
+"StickerPacksSettings.ArchivedMasks.Info" = "You can have up to 200 sets of masks.
+Unused sets are archived when you add more.";
+
+"CloudStorage.Title" = "Cloud Storage";
+
+"Widget.AuthRequired" = "Log in to Telegram";
+"Widget.NoUsers" = "Start messaging to see your friends here";
+
+"Message.GamePreviewLabel" = "GAME";
+
+"ShareMenu.CopyShareLinkGame" = "Copy link to game";
+
+"Message.PinnedGame" = "pinned a game";
+
+"Target.ShareGameConfirmationPrivate" = "Share the game with %@?";
+"Target.ShareGameConfirmationGroup" = "Share the game with \"%@\"?";
+
+"Activity.PlayingGame" = "playing game";
+
+"DialogList.SinglePlayingGameSuffix" = "%@ is playing a game";
+
+"UserInfo.GroupsInCommon" = "Groups In Common";
+"Conversation.InstantPagePreview" = "INSTANT VIEW";
+
+"StickerPack.ViewPack" = "View Sticker Set";
+"InstantPage.AuthorAndDateTitle" = "By %1$@ • %2$@";
+"InstantPage.FeedbackButton" = "Leave feedback about this preview";
+"Conversation.JumpToDate" = "Jump To Date";
+"Conversation.AddToReadingList" = "Add to Reading List";
+
+"AccessDenied.CallMicrophone" = "Telegram needs access to your microphone for voice calls.\n\nPlease go to Settings — Privacy — Microphone and set Telegram to ON.";
+
+"Call.EncryptionKey.Title" = "Encryption Key";
+"Call.EncryptionKey.Description" = "This image and text were derived from the encryption key for this voice call with %1$@.\n\n If they look the same on %2$@'s device, end-to-end encryption is guaranteed.\n\nLearn more at telegram.org";
+
+"Application.Name" = "Telegram";
+"DialogList.Pin" = "Pin";
+"DialogList.Unpin" = "Unpin";
+"DialogList.PinLimitError" = "Sorry, you can pin no more than %@ chats to the top.";
+
+"Conversation.DeleteMessagesForMe" = "Delete for me";
+"Conversation.DeleteMessagesFor" = "Delete for me and %@";
+"Conversation.DeleteMessagesForEveryone" = "Delete for everyone";
+
+"NetworkUsageSettings.Title" = "Network Usage";
+"NetworkUsageSettings.Cellular" = "Cellular";
+"NetworkUsageSettings.Wifi" = "Wi-Fi";
+
+"NetworkUsageSettings.GeneralDataSection" = "MESSAGES";
+"NetworkUsageSettings.MediaImageDataSection" = "PHOTOS";
+"NetworkUsageSettings.MediaVideoDataSection" = "VIDEOS";
+"NetworkUsageSettings.MediaAudioDataSection" = "AUDIO";
+"NetworkUsageSettings.MediaDocumentDataSection" = "DOCUMENTS";
+"NetworkUsageSettings.TotalSection" = "TOTAL BYTES";
+"NetworkUsageSettings.BytesSent" = "Bytes Sent";
+"NetworkUsageSettings.BytesReceived" = "Bytes Received";
+
+"NetworkUsageSettings.ResetStats" = "Reset Statistics";
+"NetworkUsageSettings.ResetStatsConfirmation" = "Do you want to reset your usage statistics?";
+"NetworkUsageSettings.CellularUsageSince" = "Cellular usage since %@";
+"NetworkUsageSettings.WifiUsageSince" = "Wi-Fi usage since %@";
+
+"Settings.CallSettings" = "Voice Calls";
+
+"Calls.TabTitle" = "Calls";
+"Calls.All" = "All";
+"Calls.Missed" = "Missed";
+"Calls.Clear" = "Clear";
+
+"CallSettings.Title" = "Voice Calls";
+"CallSettings.RecentCalls" = "Recent Calls";
+"CallSettings.TabIcon" = "Show Calls Tab";
+"CallSettings.TabIconDescription" = "A call icon will appear in the tab bar.";
+"CallSettings.UseLessData" = "Use Less Data";
+"CallSettings.UseLessDataDescription" = "Use less data for calls.";
+"CallSettings.Never" = "Never";
+"CallSettings.OnMobile" = "On Mobile Network";
+"CallSettings.Always" = "Always";
+"CallSettings.UseLessDataLongDescription" = "Using less data may improve the experience on bad networks, but will slightly decrease audio quality.";
+
+"Calls.CallTabTitle" = "Calls Tab";
+"Calls.CallTabDescription" = "You can add a Calls Tab to the tab bar.";
+"Calls.NotNow" = "Not Now";
+"Calls.AddTab" = "Add Tab";
+"Calls.Search" = "Search calls";
+"Calls.NewCall" = "New Call";
+
+"Calls.RatingTitle" = "Please rate the quality\nof your Telegram call";
+"Calls.SubmitRating" = "Submit";
+
+"Call.Seconds_1" = "%@ second";
+"Call.Seconds_2" = "%@ seconds";
+"Call.Seconds_3_10" = "%@ seconds";
+"Call.Seconds_any" = "%@ seconds";
+"Call.Minutes_1" = "%@ minute";
+"Call.Minutes_2" = "%@ minutes";
+"Call.Minutes_3_10" = "%@ minutes";
+"Call.Minutes_any" = "%@ minutes";
+
+"Call.ShortSeconds_1" = "%@ sec";
+"Call.ShortSeconds_2" = "%@ sec";
+"Call.ShortSeconds_3_10" = "%@ sec";
+"Call.ShortSeconds_any" = "%@ sec";
+"Call.ShortMinutes_1" = "%@ min";
+"Call.ShortMinutes_2" = "%@ min";
+"Call.ShortMinutes_3_10" = "%@ min";
+"Call.ShortMinutes_any" = "%@ min";
+
+"Notification.CallTimeFormat" = "%1$@ (%2$@)"; // 1 - type, 2 - duration
+"Notification.CallOutgoing" = "Outgoing Call";
+"Notification.CallIncoming" = "Incoming Call";
+"Notification.CallMissed" = "Missed Call";
+"Notification.CallCanceled" = "Cancelled Call";
+"Notification.CallFormat" = "%1$@ %2$@"; // 1 - title, 2 - time
+
+"Call.ConnectionErrorTitle" = "Unable to Call";
+"Call.ConnectionErrorMessage" = "Please check your internet connection and try again.";
+
+"Call.CallBack" = "Call Back";
+"Call.CallAgain" = "Call Again";
+
+"Login.PhoneFloodError" = "Sorry, you have deleted and re-created your account too many times recently. Please wait for a few days before signing up again.";

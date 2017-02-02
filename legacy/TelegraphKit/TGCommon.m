@@ -102,8 +102,14 @@ int iosMajorVersion()
             case 9:
                 version = 9;
                 break;
+            case 10:
+                version = 10;
+                break;
+            case 11:
+                version = 11;
+                break;
             default:
-                version = 8;
+                version = 9;
                 break;
         }
         
@@ -265,6 +271,10 @@ NSString *TGLocalized(NSString *s)
         fallbackBundle = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:@"en" ofType:@"lproj"]];
         
         NSString *language = [[NSLocale preferredLanguages] objectAtIndex:0];
+        
+        if ([language isEqualToString:@"gl"] || [language isEqualToString:@"eu"]) {
+            language = @"es";
+        }
         
         if (![[[NSBundle mainBundle] localizations] containsObject:language])
         {

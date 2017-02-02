@@ -24,9 +24,11 @@
 @property (nonatomic, copy) void(^didEndChanging)(void);
 
 - (void)setContentRotation:(CGFloat)contentRotation maximize:(bool)maximize resetting:(bool)resetting;
+- (void)setContentMirrored:(bool)mirrored;
 - (void)translateContentViewWithOffset:(CGPoint)offset;
 
-- (void)setSnapshotViewEnabled:(bool)enabled;
+- (UIView *)setSnapshotViewEnabled:(bool)enabled;
+- (void)setPaintingImage:(UIImage *)image;
 
 - (void)zoomToRect:(CGRect)rect withFrame:(CGRect)frame animated:(bool)animated completion:(void (^)(void))completion;
 - (void)fitContentInsideBoundsAllowScale:(bool)allowScale animated:(bool)animated completion:(void (^)(void))completion;

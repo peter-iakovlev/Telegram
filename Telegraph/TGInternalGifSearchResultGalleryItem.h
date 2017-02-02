@@ -1,9 +1,10 @@
 #import "TGModernGalleryItem.h"
 #import "TGWebSearchResultsGalleryItem.h"
+#import "TGModernGalleryEditableItem.h"
 
 #import "TGInternalGifSearchResult.h"
 
-@interface TGInternalGifSearchResultGalleryItem : NSObject <TGModernGalleryItem, TGWebSearchResultsGalleryItem>
+@interface TGInternalGifSearchResultGalleryItem : NSObject <TGModernGalleryItem, TGWebSearchResultsGalleryItem, TGModernGalleryEditableItem>
 
 @property (nonatomic, strong, readonly) TGInternalGifSearchResult *webSearchResult;
 

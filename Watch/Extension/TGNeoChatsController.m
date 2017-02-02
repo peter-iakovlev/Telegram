@@ -96,7 +96,6 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
         [self configureWithForwardContext:context];
 }
 
-
 - (void)configureWithRootContext
 {
     __weak TGNeoChatsController *weakSelf = self;
@@ -174,21 +173,21 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
         }
     }]];
     
-    [_stateDisposable setDisposable:[[[TGBridgeStateSignal synchronizationState] deliverOn:[SQueue mainQueue]] startWithNext:^(NSNumber *next)
-    {
-        TGBridgeSynchronizationStateValue value = (TGBridgeSynchronizationStateValue)[next integerValue];
-        
-        __strong TGNeoChatsController *strongSelf = weakSelf;
-        if (strongSelf == nil)
-            return;
-        
-        strongSelf->_syncState = value;
-        
-        [[NSNotificationCenter defaultCenter] postNotificationName:TGSynchronizationStateNotification object:nil userInfo:@{ TGSynchronizationStateKey: @(value) }];
-        
-        if (strongSelf.isVisible)
-            [strongSelf updateTitle];
-    }]];
+//    [_stateDisposable setDisposable:[[[TGBridgeStateSignal synchronizationState] deliverOn:[SQueue mainQueue]] startWithNext:^(NSNumber *next)
+//    {
+//        TGBridgeSynchronizationStateValue value = (TGBridgeSynchronizationStateValue)[next integerValue];
+//        
+//        __strong TGNeoChatsController *strongSelf = weakSelf;
+//        if (strongSelf == nil)
+//            return;
+//        
+//        strongSelf->_syncState = value;
+//        
+//        [[NSNotificationCenter defaultCenter] postNotificationName:TGSynchronizationStateNotification object:nil userInfo:@{ TGSynchronizationStateKey: @(value) }];
+//        
+//        if (strongSelf.isVisible)
+//            [strongSelf updateTitle];
+//    }]];
 }
 
 - (void)configureWithForwardContext:(TGNeoChatsControllerContext *)context
@@ -226,6 +225,13 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
             [strongSelf reloadData];
         }];
     }]];
+}
+
+- (void)willActivate
+{
+    [super willActivate];
+    
+    [self.table notifyVisiblityChange];
 }
 
 - (void)popAllControllers
@@ -374,13 +380,15 @@ const NSUInteger TGNeoChatsControllerForwardLimit = 20;
 - (void)updateTitle
 {
     if (_forForward)
+    {
+        self.title = nil;
         return;
-    
-    NSString *state = [TGNeoChatsController stringForSyncState:_syncState];
-    if (!_context.authorized || state == nil || !_reachable)
+    }
+    //NSString *state = [TGNeoChatsController stringForSyncState:_syncState];
+    //if (!_context.authorized || state == nil || !_reachable)
         self.title = TGLocalized(@"Watch.AppName");
-    else
-        self.title = state;
+    //else
+    //    self.title = state;
 }
 
 + (NSString *)stringForSyncState:(TGBridgeSynchronizationStateValue)value

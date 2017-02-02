@@ -22,6 +22,7 @@
             self.imageInfo = [[TGImageInfo alloc] initWithTelegraphSizesDescription:concretePhoto.sizes];
 
             self.hasLocation = false;
+            self.hasStickers = concretePhoto.flags & (1 << 0);
         }
         else if ([desc isKindOfClass:[TLPhoto$wallPhoto class]])
         {

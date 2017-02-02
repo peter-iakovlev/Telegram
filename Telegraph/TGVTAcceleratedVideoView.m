@@ -81,12 +81,13 @@ static NSData *vertexShaderSource() {
 
 @property (nonatomic, readonly) CVImageBufferRef buffer;
 @property (nonatomic, readonly) NSTimeInterval timestamp;
+@property (nonatomic, readonly) CGFloat angle;
 
 @end
 
 @implementation TGVTAcceleratedVideoFrame
 
-- (instancetype)initWithBuffer:(CVImageBufferRef)buffer timestamp:(NSTimeInterval)timestamp {
+- (instancetype)initWithBuffer:(CVImageBufferRef)buffer timestamp:(NSTimeInterval)timestamp angle:(CGFloat)angle {
     self = [super init];
     if (self != nil) {
         if (buffer) {
@@ -94,6 +95,7 @@ static NSData *vertexShaderSource() {
         }
         _timestamp = timestamp;
         _buffer = buffer;
+        _angle = angle;
     }
     return self;
 }
@@ -187,6 +189,7 @@ static NSData *vertexShaderSource() {
 }
 
 @property (nonatomic, strong) NSMutableArray *pendingFrames;
+@property (nonatomic) CGFloat angle;
 
 @end
 
@@ -353,8 +356,9 @@ static void TGVTPlayerDecompressionOutputCallback(void *decompressionOutputRefCo
         TGWeakReference *sessionReference = sessions()[@((int32_t)((intptr_t)decompressionOutputRefCon))];
         OSSpinLockUnlock(&sessionsLock);
         
-        TGVTAcceleratedVideoFrame *frame = [[TGVTAcceleratedVideoFrame alloc] initWithBuffer:imageBuffer timestamp:presentationSeconds];
         TGVTAcceleratedVideoFrameQueue *queue = sessionReference.object;
+        TGVTAcceleratedVideoFrame *frame = [[TGVTAcceleratedVideoFrame alloc] initWithBuffer:imageBuffer timestamp:presentationSeconds angle:queue.angle];
+        
         //[queue dispatch:^{
         [queue.pendingFrames addObject:frame];
         //}];
@@ -369,6 +373,8 @@ static void TGVTPlayerDecompressionOutputCallback(void *decompressionOutputRefCo
             AVAssetTrack *track = [asset tracksWithMediaType:AVMediaTypeVideo].firstObject;
             if (track != nil) {
                 _timeRange = track.timeRange;
+                CGAffineTransform transform = [track preferredTransform];
+                _angle = atan2(transform.b, transform.a);
                 
                 if (_useVT) {
                     NSArray *formatDescriptions = track.formatDescriptions;
@@ -388,7 +394,7 @@ static void TGVTPlayerDecompressionOutputCallback(void *decompressionOutputRefCo
                         _failed = true;
                         return nil;
                     }
-                
+                    
                     _output = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:track outputSettings:nil];
                 } else {
                     _output = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:track outputSettings:@{(NSString *)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange)}];
@@ -468,11 +474,11 @@ static void TGVTPlayerDecompressionOutputCallback(void *decompressionOutputRefCo
                     CMTime presentationTime = CMSampleBufferGetPresentationTimeStamp(sampleVideo);
                     NSTimeInterval presentationSeconds = CMTimeGetSeconds(presentationTime);
                     CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleVideo);
-                    videoFrame = [[TGVTAcceleratedVideoFrame alloc] initWithBuffer:imageBuffer timestamp:presentationSeconds];
+                    videoFrame = [[TGVTAcceleratedVideoFrame alloc] initWithBuffer:imageBuffer timestamp:presentationSeconds angle:_angle];
                 }
                 
                 CFRelease(sampleVideo);
-                    
+                
                 return videoFrame;
             } else {
                 TGVTAcceleratedVideoFrame *earliestFrame = nil;
@@ -897,6 +903,7 @@ static NSMutableDictionary *queueItemsByPath() {
     glGenRenderbuffers(1, &_colorBufferHandle);
     glBindRenderbuffer(GL_RENDERBUFFER, _colorBufferHandle);
     
+    
     [[TGVTAcceleratedVideoContext instance] renderbufferStorage:GL_RENDERBUFFER fromDrawable:_layer];
     
     glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &_backingWidth);
@@ -965,7 +972,7 @@ static NSMutableDictionary *queueItemsByPath() {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            
+                
                 glUseProgram([TGVTAcceleratedVideoContext instance].program);
                 glUniform1f([TGVTAcceleratedVideoContext instance].uniforms[UniformIndex_RotationAngle], 0.0f);
                 glUniformMatrix3fv([TGVTAcceleratedVideoContext instance].uniforms[UniformIndex_ColorConversionMatrix], 1, false, _preferredConversion);
@@ -974,6 +981,15 @@ static NSMutableDictionary *queueItemsByPath() {
                 
                 CGSize boundsSize = CGSizeMake(_backingWidth, _backingHeight);
                 CGSize imageSize = CGSizeMake(frameWidth, frameHeight);
+                if (ABS(frame.angle - ((CGFloat)M_PI / 2.0f)) < FLT_EPSILON) {
+                    CGFloat tmp = imageSize.width;
+                    imageSize.width = imageSize.height;
+                    imageSize.height = tmp;
+                } else if (ABS(frame.angle - ((CGFloat)-M_PI / 2.0f)) < FLT_EPSILON) {
+                    CGFloat tmp = imageSize.width;
+                    imageSize.width = imageSize.height;
+                    imageSize.height = tmp;
+                }
                 CGSize renderSize = TGScaleToFill(imageSize, boundsSize);
                 
                 if (_videoSize.width > FLT_EPSILON && _videoSize.height > FLT_EPSILON) {
@@ -1003,15 +1019,42 @@ static NSMutableDictionary *queueItemsByPath() {
                 /*
                  The texture vertices are set up such that we flip the texture vertically. This is so that our top left origin buffers match OpenGL's bottom left texture coordinate system.
                  */
-                CGRect textureSamplingRect = CGRectMake(0, 0, 1, 1);
-                GLfloat quadTextureData[] = {
-                    (GLfloat)CGRectGetMinX(textureSamplingRect), (GLfloat)CGRectGetMaxY(textureSamplingRect),
-                    (GLfloat)CGRectGetMaxX(textureSamplingRect), (GLfloat)CGRectGetMaxY(textureSamplingRect),
-                    (GLfloat)CGRectGetMinX(textureSamplingRect), (GLfloat)CGRectGetMinY(textureSamplingRect),
-                    (GLfloat)CGRectGetMaxX(textureSamplingRect), (GLfloat)CGRectGetMinY(textureSamplingRect)
-                };
                 
-                glVertexAttribPointer(AttributeIndex_TextureCoordinates, 2, GL_FLOAT, 0, 0, quadTextureData);
+                /*
+                 
+                 0,0---1,0
+                 |      |
+                 0,1---1,1
+                 
+                 */
+                
+                CGRect textureSamplingRect = CGRectMake(0, 0, 1, 1);
+                if (ABS(frame.angle - ((CGFloat)M_PI / 2.0f)) < FLT_EPSILON) {
+                    GLfloat quadTextureData[] = {
+                        1.0f, 1.0f,
+                        1.0f, 0.0f,
+                        0.0f, 1.0f,
+                        0.0f, 0.0f
+                    };
+                    glVertexAttribPointer(AttributeIndex_TextureCoordinates, 2, GL_FLOAT, 0, 0, quadTextureData);
+                } else if (ABS(frame.angle - ((CGFloat)-M_PI / 2.0f)) < FLT_EPSILON) {
+                    GLfloat quadTextureData[] = {
+                        0.0f, 0.0f,
+                        0.0f, 1.0f,
+                        1.0f, 0.0f,
+                        1.0f, 1.0f
+                    };
+                    glVertexAttribPointer(AttributeIndex_TextureCoordinates, 2, GL_FLOAT, 0, 0, quadTextureData);
+                } else {
+                    GLfloat quadTextureData[] = {
+                        (GLfloat)CGRectGetMinX(textureSamplingRect), (GLfloat)CGRectGetMaxY(textureSamplingRect),
+                        (GLfloat)CGRectGetMaxX(textureSamplingRect), (GLfloat)CGRectGetMaxY(textureSamplingRect),
+                        (GLfloat)CGRectGetMinX(textureSamplingRect), (GLfloat)CGRectGetMinY(textureSamplingRect),
+                        (GLfloat)CGRectGetMaxX(textureSamplingRect), (GLfloat)CGRectGetMinY(textureSamplingRect)
+                    };
+                    glVertexAttribPointer(AttributeIndex_TextureCoordinates, 2, GL_FLOAT, 0, 0, quadTextureData);
+                }
+                
                 glEnableVertexAttribArray(AttributeIndex_TextureCoordinates);
                 
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1048,7 +1091,7 @@ static NSMutableDictionary *queueItemsByPath() {
         if (![[NSFileManager defaultManager] fileExistsAtPath:realPath]) {
             realPath = nil;
         }
-    
+        
         if (!TGStringCompare(realPath, _path)) {
             _path = realPath;
             _frameQueueGuard = nil;
@@ -1090,7 +1133,7 @@ static NSMutableDictionary *queueItemsByPath() {
                         }
                     }
                 } path:_path];
-                                    
+                
                 [TGVTAcceleratedVideoFrameQueueGuard addGuardForPath:_path guard:_frameQueueGuard];
             }
         }

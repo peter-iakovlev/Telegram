@@ -346,6 +346,10 @@ static bool skipToValueForRawKey(PSKeyValueDecoder *self, uint8_t const *key, NS
             
             if (compareKeyLength != keyLength || memcmp(key, self->_currentPtr, keyLength))
             {
+                if (compareKeyLength > 1000) {
+                    return false;
+                }
+                
                 self->_currentPtr += compareKeyLength;
                 skipField(&self->_currentPtr);
                 

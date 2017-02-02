@@ -22,6 +22,7 @@
 + (NSString *)stringForLastSeen:(int)date;
 + (NSString *)stringForApproximateDate:(int)date;
 + (NSString *)stringForRelativeLastSeen:(int)date;
++ (NSString *)stringForFullDate:(int)date;
 
 @end
 
@@ -30,6 +31,10 @@ extern "C" {
 #endif
 
 bool TGUse12hDateFormat();
+    
+NSString *TGWeekdayNameFull(int number);
+NSString *TGMonthNameFull(int number);
+NSString *TGMonthNameShort(int number);
     
 #ifdef __cplusplus
 }

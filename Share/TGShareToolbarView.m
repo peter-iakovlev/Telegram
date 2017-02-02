@@ -1,6 +1,6 @@
 #import "TGShareToolbarView.h"
 
-#import "TGColor.h"
+#import <LegacyDatabase/LegacyDatabase.h>
 
 #import "TGShareToolbarButton.h"
 

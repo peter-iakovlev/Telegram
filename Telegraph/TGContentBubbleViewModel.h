@@ -21,6 +21,7 @@
 @class TGDoubleTapGestureRecognizer;
 @class TGMessageViewCountContentProperty;
 @class TGMessageViewsViewModel;
+@class TGModernLabelViewModel;
 
 extern bool debugShowMessageIds;
 
@@ -38,6 +39,7 @@ extern bool debugShowMessageIds;
     TGWebpageFooterModel *_webPageFooterModel;
     
     TGModernDateViewModel *_dateModel;
+    TGModernLabelViewModel *_editedLabelModel;
     TGModernClockProgressViewModel *_progressModel;
     TGModernImageViewModel *_checkFirstModel;
     TGModernImageViewModel *_checkSecondModel;
@@ -80,7 +82,8 @@ extern bool debugShowMessageIds;
 - (void)doubleTapGestureRecognizerSingleTapped:(TGDoubleTapGestureRecognizer *)recognizer;
 
 - (void)layoutContentForHeaderHeight:(CGFloat)headerHeight;
-- (CGSize)contentSizeForContainerSize:(CGSize)containerSize needsContentsUpdate:(bool *)needsContentsUpdate hasDate:(bool)hasDate hasViews:(bool)hasViews;
+- (void)layoutContentForHeaderHeight:(CGFloat)headerHeight containerSize:(CGSize)containerSize;
+- (CGSize)contentSizeForContainerSize:(CGSize)containerSize needsContentsUpdate:(bool *)needsContentsUpdate infoWidth:(CGFloat)infoWidth;
 
 + (TGReplyHeaderModel *)replyHeaderModelFromMessage:(TGMessage *)replyHeader peer:(id)peer incoming:(bool)incoming system:(bool)system;
 

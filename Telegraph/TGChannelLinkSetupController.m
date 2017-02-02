@@ -15,8 +15,13 @@
 #import "TGAlertView.h"
 
 #import "TGChannelManagementSignals.h"
+#import "TGGroupManagementSignals.h"
 
 #import "TGTelegramNetworking.h"
+
+#import "TGRevokeLinkConversationItem.h"
+
+#import "TGProgressWindow.h"
 
 typedef enum {
     TGUsernameControllerUsernameStateNone,
@@ -32,12 +37,22 @@ typedef enum {
 @interface TGChannelLinkSetupController ()
 {
     TGConversation *_conversation;
+    
+    TGCollectionMenuSection *_editUsernameSection;
     TGUsernameCollectionItem *_usernameItem;
     TGCommentCollectionItem *_invalidUsernameItem;
     TGCommentCollectionItem *_hintItem;
     
+    TGCollectionMenuSection *_removeExistingInfoSection;
+    TGCollectionMenuSection *_removeExistingConversationsSection;
+    
     SMetaDisposable *_checkUsernameDisposable;
     SMetaDisposable *_updateUsernameDisposable;
+    
+    SVariable *_conversationsToBeRemovedToAssignPublicUsernames;
+    SMetaDisposable *_conversationsToBeRemovedToAssignPublicUsernamesDisposable;
+    
+    NSArray<TGConversation *> *_conversationsToDelete;
     
     void (^_block)(NSString *);
 }
@@ -73,6 +88,8 @@ typedef enum {
     [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelPressed)]];
     [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(donePressed)]];
     
+    _conversationsToBeRemovedToAssignPublicUsernames = [[SVariable alloc] init];
+    
     _usernameItem = [[TGUsernameCollectionItem alloc] init];
     _usernameItem.username = _conversation.username;
     _usernameItem.usernameValid = true;
@@ -86,7 +103,7 @@ typedef enum {
         [strongSelf usernameChanged:username];
     };
     
-    TGCommentCollectionItem *commentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.Username.Help")];
+    TGCommentCollectionItem *commentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.Help") : TGLocalized(@"Channel.Username.Help")];
     commentItem.topInset = 1.0f;
     
     _invalidUsernameItem = [[TGCommentCollectionItem alloc] init];
@@ -113,18 +130,34 @@ typedef enum {
     
     [self updateLinkHint:_conversation.username];
     
-    TGCollectionMenuSection *section = [[TGCollectionMenuSection alloc] initWithItems:@[_usernameItem, _invalidUsernameItem, commentItem, _hintItem]];
-    section.insets = UIEdgeInsetsMake(32.0f, 0.0f, 0.0f, 0.0f);
-    [self.menuSections addSection:section];
+    _editUsernameSection = [[TGCollectionMenuSection alloc] initWithItems:@[_usernameItem, _invalidUsernameItem, commentItem, _hintItem]];
+    _editUsernameSection.insets = UIEdgeInsetsMake(32.0f, 0.0f, 0.0f, 0.0f);
+    
+    TGCommentCollectionItem *removeCommentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Group.Username.RemoveExistingUsernamesInfo")];
+    removeCommentItem.textColor = UIColorRGB(0xcf3030);
+    _removeExistingInfoSection = [[TGCollectionMenuSection alloc] initWithItems:@[removeCommentItem]];
+    _removeExistingInfoSection.insets = UIEdgeInsetsMake(16.0f, 0.0f, 0.0f, 0.0f);
+    _removeExistingConversationsSection = [[TGCollectionMenuSection alloc] initWithItems:@[]];
+    _removeExistingConversationsSection.insets = UIEdgeInsetsMake(16.0f, 0.0f, 8.0f, 0.0f);
     
     _checkUsernameDisposable = [[SMetaDisposable alloc] init];
     _updateUsernameDisposable = [[SMetaDisposable alloc] init];
+    _conversationsToBeRemovedToAssignPublicUsernamesDisposable = [[SMetaDisposable alloc] init];
+    [_conversationsToBeRemovedToAssignPublicUsernamesDisposable setDisposable:[[_conversationsToBeRemovedToAssignPublicUsernames.signal deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *conversations) {
+        __strong TGChannelLinkSetupController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            [strongSelf setConversationsToDelete:conversations];
+        }
+    }]];
+    [_conversationsToBeRemovedToAssignPublicUsernames set:[SSignal single:@[]]];
+    [self updateCanCreateUsernames];
 }
 
 - (void)dealloc
 {
     [_checkUsernameDisposable dispose];
     [_updateUsernameDisposable dispose];
+    [_conversationsToBeRemovedToAssignPublicUsernamesDisposable dispose];
 }
 
 - (BOOL)shouldAutorotate
@@ -136,6 +169,12 @@ typedef enum {
     [super viewDidAppear:animated];
     
     [_usernameItem becomeFirstResponder];
+}
+
+- (void)loadView {
+    [super loadView];
+    
+    [self enterEditingMode:false];
 }
 
 - (void)cancelPressed
@@ -156,7 +195,7 @@ typedef enum {
         unichar c = [_usernameItem.username characterAtIndex:0];
         if (c >= '0' && c <= '9')
         {
-            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Username.InvalidStartsWithNumber") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil] show];
+            [[[TGAlertView alloc] initWithTitle:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.InvalidStartsWithNumber") : TGLocalized(@"Channel.Username.InvalidStartsWithNumber") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil] show];
         }
         else
         {
@@ -165,7 +204,7 @@ typedef enum {
     }
     else if (_usernameItem.username.length != 0 && _usernameItem.username.length < 5)
     {
-        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Username.InvalidTooShort") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil] show];
+        [[[TGAlertView alloc] initWithTitle:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.InvalidTooShort") : TGLocalized(@"Channel.Username.InvalidTooShort") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil] show];
     }
     else
     {
@@ -267,7 +306,7 @@ typedef enum {
                  [_invalidUsernameItem setTextColor:UIColorRGB(0x26972c)];
                  break;
              case TGUsernameControllerUsernameStateTooShort:
-                 [_invalidUsernameItem setText:TGLocalized(@"Channel.Username.InvalidTooShort")];
+                 [_invalidUsernameItem setText:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.InvalidTooShort") : TGLocalized(@"Channel.Username.InvalidTooShort")];
                  _invalidUsernameItem.alpha = 1.0f;
                  _invalidUsernameItem.hidden = false;
                  _invalidUsernameItem.showProgress = false;
@@ -281,7 +320,7 @@ typedef enum {
                  [_invalidUsernameItem setTextColor:UIColorRGB(0xcf3030)];
                  break;
              case TGUsernameControllerUsernameStateStartsWithNumber:
-                 [_invalidUsernameItem setText:TGLocalized(@"Channel.Username.InvalidStartsWithNumber")];
+                 [_invalidUsernameItem setText:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.InvalidStartsWithNumber") : TGLocalized(@"Channel.Username.InvalidStartsWithNumber")];
                  _invalidUsernameItem.alpha = 1.0f;
                  _invalidUsernameItem.hidden = false;
                  _invalidUsernameItem.showProgress = false;
@@ -385,7 +424,67 @@ typedef enum {
     if (username.length == 0)
         _hintItem.text = nil;
     else
-        [_hintItem setFormattedText:[[NSString alloc] initWithFormat:TGLocalized(@"Channel.Username.LinkHint"), username]];
+        [_hintItem setFormattedText:[[NSString alloc] initWithFormat:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.LinkHint") : TGLocalized(@"Channel.Username.LinkHint"), username]];
+}
+
+- (void)updateCanCreateUsernames {
+    [_conversationsToBeRemovedToAssignPublicUsernames set:[TGGroupManagementSignals conversationsToBeRemovedToAssignPublicUsernames:_conversation.conversationId accessHash:_conversation.accessHash]];
+}
+
+- (void)setConversationsToDelete:(NSArray<TGConversation *> *)conversationsToDelete {
+    if ([_conversationsToDelete isEqual:conversationsToDelete]) {
+        return;
+    }
+    
+    _conversationsToDelete = conversationsToDelete;
+    
+    while (self.menuSections.sections.count != 0) {
+        [self.menuSections deleteSection:0];
+    }
+    
+    if (_conversationsToDelete.count == 0) {
+        [self.menuSections addSection:_editUsernameSection];
+    } else {
+        while (_removeExistingConversationsSection.items.count != 0) {
+            [_removeExistingConversationsSection deleteItemAtIndex:0];
+        }
+        
+        __weak TGChannelLinkSetupController *weakSelf = self;
+        for (TGConversation *conversation in _conversationsToDelete) {
+            TGRevokeLinkConversationItem *item = [[TGRevokeLinkConversationItem alloc] initWithConversation:conversation];
+            item.revoke = ^{
+                __strong TGChannelLinkSetupController *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    [strongSelf revokeUsernameFromConversation:conversation];
+                }
+            };
+            [_removeExistingConversationsSection addItem:item];
+        }
+        
+        [self.menuSections addSection:_removeExistingInfoSection];
+        [self.menuSections addSection:_removeExistingConversationsSection];
+    }
+    
+    [self.collectionView reloadData];
+}
+
+- (void)revokeUsernameFromConversation:(TGConversation *)conversation {
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+    [progressWindow showWithDelay:0.1];
+    
+    __weak TGChannelLinkSetupController *weakSelf = self;
+    [[[[[[TGChannelManagementSignals updateChannelUsername:conversation.conversationId accessHash:conversation.accessHash username:@""] mapToSignal:^SSignal *(__unused id result) {
+        return [SSignal complete];
+    }] then:[TGGroupManagementSignals conversationsToBeRemovedToAssignPublicUsernames:_conversation.conversationId accessHash:_conversation.accessHash]] deliverOn:[SQueue mainQueue]] onDispose:^{
+        TGDispatchOnMainThread(^{
+            [progressWindow dismiss:true];;
+        });
+    }] startWithNext:^(NSArray *conversations) {
+        __strong TGChannelLinkSetupController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            [strongSelf->_conversationsToBeRemovedToAssignPublicUsernames set:[SSignal single:conversations]];
+        }
+    }];
 }
 
 @end

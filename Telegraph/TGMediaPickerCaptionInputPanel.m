@@ -13,8 +13,8 @@
 #import "TGModernConversationInputTextPanel.h"
 #import "TGModernConversationAssociatedInputPanel.h"
 
-const NSInteger TGMediaPickerCaptionInputPanelCaptionLimit = 140;
-const NSInteger TGMediaPickerCaptionInputPanelCaptionCounterThreshold = 70;
+const NSInteger TGMediaPickerCaptionInputPanelCaptionLimit = 200;
+const NSInteger TGMediaPickerCaptionInputPanelCaptionCounterThreshold = 100;
 
 static void setViewFrame(UIView *view, CGRect frame)
 {
@@ -37,12 +37,15 @@ static void setViewFrame(UIView *view, CGRect frame)
     UIImageView *_fieldBackground;
     UIView *_inputFieldClippingContainer;
     HPGrowingTextView *_inputField;
-    UIView *_inputFieldPlaceholder;
+    UILabel *_placeholderLabel;
+    
     UILabel *_inputFieldOnelineLabel;
     
     UILabel *_counterLabel;
 
     TGModernConversationAssociatedInputPanel *_associatedPanel;
+    
+    CGFloat _contentAreaHeight;
 }
 
 @end
@@ -81,7 +84,7 @@ static void setViewFrame(UIView *view, CGRect frame)
             
             UIGraphicsBeginImageContextWithOptions(placeholderSize, false, 0.0f);
             CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGB(0x979797).CGColor);
+            CGContextSetFillColorWithColor(context, UIColorRGB(0xffffff).CGColor);
             [placeholderText drawAtPoint:CGPointMake(1.0f, 1.0f) withFont:placeholderFont];
             placeholderImage = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
@@ -104,14 +107,19 @@ static void setViewFrame(UIView *view, CGRect frame)
         [backgroundWrapperView addSubview:_backgroundView];
         
         _fieldBackground = [[UIImageView alloc] initWithImage:fieldBackgroundImage];
+        _fieldBackground.alpha = 0.0f;
         _fieldBackground.userInteractionEnabled = true;
-        [_fieldBackground addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleFieldBackgroundTap:)]];
         [_wrapperView addSubview:_fieldBackground];
         
-        CGPoint placeholderOffset = [self _inputFieldPlaceholderOffset];
-        _inputFieldPlaceholder = [[UIImageView alloc] initWithImage:placeholderImage];
-        setViewFrame(_inputFieldPlaceholder, CGRectOffset(_inputFieldPlaceholder.frame, placeholderOffset.x, placeholderOffset.y));
-        [_fieldBackground addSubview:_inputFieldPlaceholder];
+        _placeholderLabel = [[UILabel alloc] init];
+        _placeholderLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
+        _placeholderLabel.backgroundColor = [UIColor clearColor];
+        _placeholderLabel.font = TGSystemFontOfSize(16);
+        _placeholderLabel.textColor = UIColorRGB(0x7f7f7f);
+        _placeholderLabel.text = TGLocalized(@"MediaPicker.AddCaption");
+        _placeholderLabel.userInteractionEnabled = true;
+        [_placeholderLabel sizeToFit];
+        [_wrapperView addSubview:_placeholderLabel];
         
         _inputFieldOnelineLabel = [[UILabel alloc] init];
         _inputFieldOnelineLabel.backgroundColor = [UIColor clearColor];
@@ -132,6 +140,8 @@ static void setViewFrame(UIView *view, CGRect frame)
         _counterLabel.highlightedTextColor = UIColorRGB(0xff4848);
         _counterLabel.userInteractionEnabled = false;
         [_fieldBackground addSubview:_counterLabel];
+        
+        [_wrapperView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleFieldBackgroundTap:)]];
     }
     return self;
 }
@@ -148,12 +158,12 @@ static void setViewFrame(UIView *view, CGRect frame)
     
     UIEdgeInsets inputFieldInternalEdgeInsets = [self _inputFieldInternalEdgeInsets];
     _inputField = [[HPGrowingTextView alloc] initWithFrame:CGRectMake(inputFieldInternalEdgeInsets.left, inputFieldInternalEdgeInsets.top + TGRetinaPixel, _inputFieldClippingContainer.frame.size.width - inputFieldInternalEdgeInsets.left - 24, _inputFieldClippingContainer.frame.size.height)];
-    _inputField.placeholderView = _inputFieldPlaceholder;
+    _inputField.textColor = [UIColor whiteColor];
+    _inputField.placeholderView = _placeholderLabel;
     _inputField.font = TGSystemFontOfSize(16);
     _inputField.clipsToBounds = true;
     _inputField.backgroundColor = nil;
     _inputField.opaque = false;
-    _inputField.textColor = [UIColor whiteColor];
     _inputField.showPlaceholderWhenFocussed = true;
     _inputField.internalTextView.returnKeyType = UIReturnKeyDone;
     _inputField.internalTextView.backgroundColor = nil;
@@ -200,9 +210,7 @@ static void setViewFrame(UIView *view, CGRect frame)
         [self shakeControls];
         return false;
     }
-    
-    _dismissing = true;
-    
+        
     if (_inputField.internalTextView.isFirstResponder)
         [TGHacks applyCurrentKeyboardAutocorrectionVariant];
     
@@ -240,6 +248,8 @@ static void setViewFrame(UIView *view, CGRect frame)
     id<TGMediaPickerCaptionInputPanelDelegate> delegate = self.delegate;
     if ([delegate respondsToSelector:@selector(inputPanelRequestedSetCaption:text:)])
         [delegate inputPanelRequestedSetCaption:self text:text];
+    
+    _dismissing = true;
     
     [_inputField.internalTextView resignFirstResponder];
     
@@ -292,7 +302,12 @@ static void setViewFrame(UIView *view, CGRect frame)
 
 #pragma mark - 
 
-- (void)adjustForOrientation:(UIInterfaceOrientation)__unused orientation keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(NSInteger)animationCurve
+- (void)adjustForOrientation:(UIInterfaceOrientation)orientation keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(NSInteger)animationCurve
+{
+    [self adjustForOrientation:orientation keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve completion:nil];
+}
+
+- (void)adjustForOrientation:(UIInterfaceOrientation)__unused orientation keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(NSInteger)animationCurve completion:(void (^)(void))completion
 {
     _keyboardHeight = keyboardHeight;
     
@@ -309,18 +324,28 @@ static void setViewFrame(UIView *view, CGRect frame)
         }
         else
         {
-            CGFloat height = inputContainerHeight;
-            self.frame = CGRectMake(self.frame.origin.x, screenSize.height - self.bottomMargin - inputContainerHeight + (_dismissing ? height : 0), self.frame.size.width, inputContainerHeight);
+            self.frame = CGRectMake(self.frame.origin.x, screenSize.height - self.bottomMargin - inputContainerHeight, self.frame.size.width, inputContainerHeight);
             _backgroundView.backgroundColor = [TGPhotoEditorInterfaceAssets toolbarTransparentBackgroundColor];
         }
         
         [self layoutSubviews];
     };
     
+    void (^finishedBlock)(BOOL) = ^(__unused BOOL finished)
+    {
+        if (completion != nil)
+            completion();
+    };
+    
     if (duration > DBL_EPSILON)
-        [UIView animateWithDuration:duration delay:0.0f options:animationCurve animations:changeBlock completion:nil];
+    {
+        [UIView animateWithDuration:duration delay:0.0f options:animationCurve animations:changeBlock completion:finishedBlock];
+    }
     else
+    {
         changeBlock();
+        finishedBlock(true);
+    }
 }
 
 #pragma mark -
@@ -353,21 +378,21 @@ static void setViewFrame(UIView *view, CGRect frame)
         if (previousCaption.length > 0)
             snapshottedView = _inputFieldOnelineLabel;
         else
-            snapshottedView = _inputFieldPlaceholder;
+            snapshottedView = _placeholderLabel;
         
         snapshotView = [snapshottedView snapshotViewAfterScreenUpdates:false];
         snapshotView.frame = snapshottedView.frame;
         [snapshottedView.superview addSubview:snapshotView];
         
         if (previousCaption.length > 0 && caption.length == 0)
-            fadingInView = _inputFieldPlaceholder;
+            fadingInView = _placeholderLabel;
         else
             fadingInView = _inputFieldOnelineLabel;
         
         fadingInView.hidden = false;
         fadingInView.alpha = 0.0f;
         
-        _inputFieldPlaceholder.hidden = (caption.length > 0);
+        _placeholderLabel.hidden = (caption.length > 0);
         
         [UIView animateWithDuration:0.3f delay:0.05f options:UIViewAnimationOptionCurveEaseInOut animations:^
         {
@@ -377,6 +402,7 @@ static void setViewFrame(UIView *view, CGRect frame)
         [UIView animateWithDuration:0.21f delay:0.0f options:UIViewAnimationOptionCurveEaseOut animations:^
         {
             snapshotView.alpha = 0.0f;
+            _fieldBackground.alpha = _placeholderLabel.hidden ? 1.0f : 0.0f;
         } completion:^(__unused BOOL finished)
         {
             [snapshotView removeFromSuperview];
@@ -386,7 +412,8 @@ static void setViewFrame(UIView *view, CGRect frame)
     {
         _inputFieldOnelineLabel.text = [self oneLinedCaptionForText:caption];
         _inputFieldOnelineLabel.hidden = (caption.length == 0);
-        _inputFieldPlaceholder.hidden = !_inputFieldOnelineLabel.hidden;
+        _placeholderLabel.hidden = !_inputFieldOnelineLabel.hidden;
+        _fieldBackground.alpha = _placeholderLabel.hidden ? 1.0f : 0.0f;
     }
     
     _inputField.text = caption;
@@ -426,7 +453,7 @@ static void setViewFrame(UIView *view, CGRect frame)
         }
     }
     
-    _counterLabel.hidden = textLength < TGMediaPickerCaptionInputPanelCaptionCounterThreshold;
+    _counterLabel.hidden = ![self isFirstResponder] || textLength < TGMediaPickerCaptionInputPanelCaptionCounterThreshold;
 }
 
 - (void)shakeControls
@@ -461,7 +488,7 @@ static void setViewFrame(UIView *view, CGRect frame)
 
 - (BOOL)isFirstResponder
 {
-    return _inputField.internalTextView.isFirstResponder;
+    return _inputField.internalTextView.isFirstResponder && !_dismissing;
 }
 
 - (void)growingTextViewDidBeginEditing:(HPGrowingTextView *)__unused growingTextView
@@ -470,11 +497,14 @@ static void setViewFrame(UIView *view, CGRect frame)
     if ([delegate respondsToSelector:@selector(inputPanelFocused:)])
         [delegate inputPanelFocused:self];
     
+    [self updateCounterWithText:_caption];
+    
     _inputField.alpha = 0.0f;
     [UIView animateWithDuration:0.2f animations:^
     {
         _inputField.alpha = 1.0f;
         _inputFieldOnelineLabel.alpha = 0.0f;
+        _fieldBackground.alpha = 1.0f;
     } completion:^(BOOL finished)
     {
         if (finished)
@@ -485,7 +515,9 @@ static void setViewFrame(UIView *view, CGRect frame)
     }];
     
     if (_keyboardHeight < FLT_EPSILON)
-        [self adjustForOrientation:UIInterfaceOrientationPortrait keyboardHeight:0 duration:0.25f animationCurve:[TGViewController preferredAnimationCurve]];
+    {
+        [self adjustForOrientation:UIInterfaceOrientationPortrait keyboardHeight:0 duration:0.2f animationCurve:[TGViewController preferredAnimationCurve]];
+    }
     
     [_inputField refreshHeight:false];
 }
@@ -496,10 +528,16 @@ static void setViewFrame(UIView *view, CGRect frame)
     _inputFieldOnelineLabel.text = [self oneLinedCaptionForText:_caption];
     _inputFieldOnelineLabel.alpha = 0.0f;
     _inputFieldOnelineLabel.hidden = false;
+    
+    [self updateCounterWithText:_caption];
+    
     [UIView animateWithDuration:0.2f animations:^
     {
         _inputField.alpha = 0.0f;
         _inputFieldOnelineLabel.alpha = 1.0f;
+        
+        if (_caption.length == 0)
+            _fieldBackground.alpha = 0.0f;
     } completion:^(BOOL finished)
     {
         if (finished)
@@ -515,7 +553,7 @@ static void setViewFrame(UIView *view, CGRect frame)
 - (void)growingTextView:(HPGrowingTextView *)__unused growingTextView willChangeHeight:(CGFloat)height duration:(NSTimeInterval)duration animationCurve:(int)animationCurve
 {
     UIEdgeInsets inputFieldInsets = [self _inputFieldInsets];
-    CGFloat inputContainerHeight = MAX([self _baseHeight], height - 8 + inputFieldInsets.top + inputFieldInsets.bottom);
+    CGFloat inputContainerHeight = MAX([self baseHeight], height - 8 + inputFieldInsets.top + inputFieldInsets.bottom);
     
     id<TGMediaPickerCaptionInputPanelDelegate> delegate = (id<TGMediaPickerCaptionInputPanelDelegate>)self.delegate;
     if ([delegate respondsToSelector:@selector(inputPanelWillChangeHeight:height:duration:animationCurve:)])
@@ -618,12 +656,9 @@ static void setViewFrame(UIView *view, CGRect frame)
     return false;
 }
 
-- (void)growingTextView:(HPGrowingTextView *)__unused growingTextView receivedReturnKeyCommandWithModifierFlags:(UIKeyModifierFlags)flags
+- (void)growingTextView:(HPGrowingTextView *)__unused growingTextView receivedReturnKeyCommandWithModifierFlags:(UIKeyModifierFlags)__unused flags
 {
-    if (flags & UIKeyModifierAlternate)
-        [self addNewLine];
-    else
-        [self setButtonPressed];
+    [self setButtonPressed];
 }
 
 - (void)addNewLine
@@ -663,6 +698,10 @@ static void setViewFrame(UIView *view, CGRect frame)
 - (void)replaceMention:(NSString *)mention
 {
     [TGModernConversationInputTextPanel replaceMention:mention inputField:_inputField];
+}
+
+- (void)replaceMention:(NSString *)mention username:(bool)username userId:(int32_t)userId {
+    [TGModernConversationInputTextPanel replaceMention:mention inputField:_inputField username:username userId:userId];
 }
 
 - (void)replaceHashtag:(NSString *)hashtag
@@ -705,16 +744,22 @@ static void setViewFrame(UIView *view, CGRect frame)
         _associatedPanel = associatedPanel;
         if (_associatedPanel != nil)
         {
-            __weak TGMediaPickerCaptionInputPanel *weakSelf = self;
-            _associatedPanel.preferredHeightUpdated = ^
-            {
-                __strong TGMediaPickerCaptionInputPanel *strongSelf = weakSelf;
-                if (strongSelf != nil)
+            if ([_associatedPanel fillsAvailableSpace]) {
+                CGFloat inputContainerHeight = [self heightForInputFieldHeight:[self isFirstResponder] ? _inputField.frame.size.height : 0];
+                _associatedPanel.frame = CGRectMake(0.0f, -_contentAreaHeight + inputContainerHeight, self.frame.size.width, _contentAreaHeight - inputContainerHeight);
+            } else {
+                __weak TGMediaPickerCaptionInputPanel *weakSelf = self;
+                _associatedPanel.preferredHeightUpdated = ^
                 {
-                    strongSelf->_associatedPanel.frame = CGRectMake(0.0f, -[strongSelf->_associatedPanel preferredHeight], strongSelf.frame.size.width, [strongSelf shouldDisplayPanels] ? [strongSelf->_associatedPanel preferredHeight] : 0.0f);
-                }
-            };
-            _associatedPanel.frame = CGRectMake(0.0f, -[_associatedPanel preferredHeight], self.frame.size.width, [self shouldDisplayPanels] ? [_associatedPanel preferredHeight] : 0.0f);
+                    __strong TGMediaPickerCaptionInputPanel *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        strongSelf->_associatedPanel.frame = CGRectMake(0.0f, -[strongSelf->_associatedPanel preferredHeight], strongSelf.frame.size.width, [strongSelf shouldDisplayPanels] ? [strongSelf->_associatedPanel preferredHeight] : 0.0f);
+                    }
+                };
+                _associatedPanel.frame = CGRectMake(0.0f, -[_associatedPanel preferredHeight], self.frame.size.width, [self shouldDisplayPanels] ? [_associatedPanel preferredHeight] : 0.0f);
+            }
+
             [self addSubview:_associatedPanel];
             if (animated)
             {
@@ -730,6 +775,14 @@ static void setViewFrame(UIView *view, CGRect frame)
             }
         }
     }
+}
+
+- (void)setContentAreaHeight:(CGFloat)contentAreaHeight
+{
+    _contentAreaHeight = contentAreaHeight;
+    [self setNeedsLayout];
+    
+    _dismissing = false;
 }
 
 #pragma mark - Style
@@ -793,12 +846,12 @@ static void setViewFrame(UIView *view, CGRect frame)
         inputFieldHeight += 4;
     
     UIEdgeInsets inputFieldInsets = [self _inputFieldInsets];
-    CGFloat height = MAX([self _baseHeight], inputFieldHeight - 8 + inputFieldInsets.top + inputFieldInsets.bottom);
+    CGFloat height = MAX([self baseHeight], inputFieldHeight - 8 + inputFieldInsets.top + inputFieldInsets.bottom);
     
     return height;
 }
 
-- (CGFloat)_baseHeight
+- (CGFloat)baseHeight
 {
     static CGFloat value = 0.0f;
     static dispatch_once_t onceToken;
@@ -858,7 +911,15 @@ static void setViewFrame(UIView *view, CGRect frame)
     
     if (_associatedPanel != nil)
     {
-        CGRect associatedPanelFrame = CGRectMake(0.0f, -[_associatedPanel preferredHeight], frame.size.width, [self shouldDisplayPanels] ? [_associatedPanel preferredHeight] : 0.0f);
+        CGFloat inputContainerHeight = [self heightForInputFieldHeight:[self isFirstResponder] ? _inputField.frame.size.height : 0];
+        
+        CGRect associatedPanelFrame = CGRectZero;
+        if ([_associatedPanel fillsAvailableSpace]) {
+            associatedPanelFrame = CGRectMake(0.0f, -_contentAreaHeight + inputContainerHeight, self.frame.size.width, _contentAreaHeight - inputContainerHeight);
+        } else {
+            associatedPanelFrame = CGRectMake(0.0f, -[_associatedPanel preferredHeight], frame.size.width, [self shouldDisplayPanels] ? [_associatedPanel preferredHeight] : 0.0f);
+        }
+
         if (!CGRectEqualToRect(associatedPanelFrame, _associatedPanel.frame))
             _associatedPanel.frame = associatedPanelFrame;
     }
@@ -874,6 +935,11 @@ static void setViewFrame(UIView *view, CGRect frame)
     onelineFrame.size.width -= inputFieldInternalEdgeInsets.left * 2 + 10;
     onelineFrame.size.height = 36;
     setViewFrame(_inputFieldOnelineLabel, onelineFrame);
+    
+    CGRect placeholderFrame = CGRectMake(floor((self.frame.size.width - _placeholderLabel.frame.size.width) / 2.0f), floor(([self baseHeight] - _placeholderLabel.frame.size.height) / 2.0f), _placeholderLabel.frame.size.width, _placeholderLabel.frame.size.height);
+    if (self.isFirstResponder)
+        placeholderFrame.origin.x = onelineFrame.origin.x;
+    setViewFrame(_placeholderLabel, placeholderFrame);
     
     CGRect inputFieldClippingFrame = _fieldBackground.frame;
     setViewFrame(_inputFieldClippingContainer, inputFieldClippingFrame);

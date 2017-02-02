@@ -106,6 +106,7 @@
                     self.migratedToChannelAccessHash = inputChannel.access_hash;
                 }
             }
+            self.chatCreationDate = concreteChat.date;
         }
         else if ([chatDesc isKindOfClass:[TLChat$channel class]])
         {
@@ -123,6 +124,7 @@
                 self.chatPhotoMedium = nil;
                 self.chatPhotoBig = extractFileUrl(concretePhoto.photo_big);
             }
+            self.chatCreationDate = channel.date;
             self.chatVersion = channel.version;
             self.importantSortKey = TGConversationSortKeyMake(self.kind, channel.date, 0);
             self.unimportantSortKey = TGConversationSortKeyMake(self.kind, channel.date, 0);
@@ -144,6 +146,8 @@
             self.isChannelGroup = channel.flags & (1 << 8);
             self.everybodyCanAddMembers = channel.flags & (1 << 10);
             self.signaturesEnabled = channel.flags & (1 << 11);
+            self.isMin = channel.flags & (1 << 12);
+            self.canNotSetUsername = (channel.flags & (1 << 6)) == 0;
             
             self.displayVariant = self.isChannelGroup ? TGChannelDisplayVariantAll : TGChannelDisplayVariantImportant;
             

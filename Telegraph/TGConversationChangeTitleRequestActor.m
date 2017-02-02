@@ -67,8 +67,7 @@
             if (updates.messages.count != 0)
                 message = [[TGMessage alloc] initWithTelegraphMessageDesc:updates.messages.firstObject];
             
-            static int actionId = 0;
-            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(changeTitle%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", message == nil ? @[] : @[message], @"messages", nil]];
+            [TGDatabaseInstance() transactionAddMessages:message == nil ? nil : @[message] updateConversationDatas:chats notifyAdded:true];
         }
         
         [[TGTelegramNetworking instance] addUpdates:updates];

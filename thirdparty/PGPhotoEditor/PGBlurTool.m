@@ -20,6 +20,37 @@
     return value;
 }
 
+- (BOOL)isEqual:(id)object
+{
+    if (object == self)
+        return true;
+    
+    if (!object || ![object isKindOfClass:[self class]])
+        return false;
+    
+    PGBlurToolValue *value = (PGBlurToolValue *)object;
+    
+    if (value.type != self.type)
+        return false;
+    
+    if (!CGPointEqualToPoint(value.point, self.point))
+        return false;
+    
+    if (value.size != self.size)
+        return false;
+    
+    if (value.falloff != self.falloff)
+        return false;
+    
+    if (value.angle != self.angle)
+        return false;
+    
+    if (value.intensity != self.intensity)
+        return false;
+    
+    return true;
+}
+
 @end
 
 @implementation PGBlurTool

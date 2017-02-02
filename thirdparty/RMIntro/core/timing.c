@@ -72,25 +72,25 @@ float timing(float x, timing_type type)
         
         float c[TIMING_NUM][4];
         
-        c[Default][0]=0.25;
-        c[Default][1]=0.1;
-        c[Default][2]=0.25;
-        c[Default][3]=1.0;
+        c[Default][0]=0.25f;
+        c[Default][1]=0.1f;
+        c[Default][2]=0.25f;
+        c[Default][3]=1.0f;
         
-        c[EaseInEaseOut][0]=0.42;
-        c[EaseInEaseOut][1]=0.0;
-        c[EaseInEaseOut][2]=0.58;
-        c[EaseInEaseOut][3]=1.0;
+        c[EaseInEaseOut][0]=0.42f;
+        c[EaseInEaseOut][1]=0.0f;
+        c[EaseInEaseOut][2]=0.58f;
+        c[EaseInEaseOut][3]=1.0f;
         
-        c[EaseIn][0]=0.42;
-        c[EaseIn][1]=0.0;
-        c[EaseIn][2]=1.0;
-        c[EaseIn][3]=1.0;
+        c[EaseIn][0]=0.42f;
+        c[EaseIn][1]=0.0f;
+        c[EaseIn][2]=1.0f;
+        c[EaseIn][3]=1.0f;
         
-        c[EaseOut][0]=0.0;
-        c[EaseOut][1]=0.0;
-        c[EaseOut][2]=0.58;
-        c[EaseOut][3]=1.0;
+        c[EaseOut][0]=0.0f;
+        c[EaseOut][1]=0.0f;
+        c[EaseOut][2]=0.58f;
+        c[EaseOut][3]=1.0f;
 
 
         c[EaseOutBounce][0]=0.0;
@@ -115,14 +115,14 @@ float timing(float x, timing_type type)
             float _c2y = c[i][3];
             
             _coefficientsX[i][0] = _c0x; // t^0
-            _coefficientsX[i][1] = -3.0*_c0x + 3.0*_c1x; // t^1
-            _coefficientsX[i][2] = 3.0*_c0x - 6.0*_c1x + 3.0*_c2x;  // t^2
-            _coefficientsX[i][3] = -_c0x + 3.0*_c1x - 3.0*_c2x + _c3x; // t^3
+            _coefficientsX[i][1] = -3.0f*_c0x + 3.0f*_c1x; // t^1
+            _coefficientsX[i][2] = 3.0f*_c0x - 6.0f*_c1x + 3.0f*_c2x;  // t^2
+            _coefficientsX[i][3] = -_c0x + 3.0f*_c1x - 3.0f*_c2x + _c3x; // t^3
             
             _coefficientsY[i][0] = _c0y; // t^0
-            _coefficientsY[i][1] = -3.0*_c0y + 3.0*_c1y; // t^1
-            _coefficientsY[i][2] = 3.0*_c0y - 6.0*_c1y + 3.0*_c2y;  // t^2
-            _coefficientsY[i][3] = -_c0y + 3.0*_c1y - 3.0*_c2y + _c3y; // t^3
+            _coefficientsY[i][1] = -3.0f*_c0y + 3.0f*_c1y; // t^1
+            _coefficientsY[i][2] = 3.0f*_c0y - 6.0f*_c1y + 3.0f*_c2y;  // t^2
+            _coefficientsY[i][3] = -_c0y + 3.0f*_c1y - 3.0f*_c2y + _c3y; // t^3
         }
 
     }

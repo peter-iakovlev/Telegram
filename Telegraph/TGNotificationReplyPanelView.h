@@ -15,7 +15,7 @@
 - (instancetype)initWithFrame:(CGRect)frame;
 - (CGFloat)heightForWidth:(CGFloat)width;
 
-- (void)setAssociatedStickerList:(NSArray *)stickerList;
+- (void)setAssociatedStickerList:(NSDictionary *)stickerList;
 - (void)setAssociatedPanel:(TGModernConversationAssociatedInputPanel *)associatedPanel animated:(bool)animated;
 - (TGModernConversationAssociatedInputPanel *)associatedPanel;
 

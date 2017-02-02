@@ -4,6 +4,7 @@
 #import "../NSOutputStream+TL.h"
 
 #import "TLChat.h"
+#import "TLChatPhoto.h"
 
 @implementation TLChatInvite
 
@@ -67,24 +68,27 @@
 
 @end
 
-@implementation TLChatInvite$chatInvite : TLChatInvite
+@implementation TLChatInvite$chatInviteMeta : TLChatInvite
 
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x93e99b60;
+    return (int32_t)0x7b4b5b37;
 }
 
 - (int32_t)TLconstructorName
 {
-    return (int32_t)0x7ea3e4d9;
+    return (int32_t)0x9906c635;
 }
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
-    TLChatInvite$chatInvite *object = [[TLChatInvite$chatInvite alloc] init];
+    TLChatInvite$chatInviteMeta *object = [[TLChatInvite$chatInviteMeta alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.title = metaObject->getString((int32_t)0xcdebf414);
+    object.photo = metaObject->getObject((int32_t)0xe6c52372);
+    object.participants_count = metaObject->getInt32((int32_t)0xeb6aa445);
+    object.participants = metaObject->getArray((int32_t)0xe0e25c28);
     return object;
 }
 
@@ -101,6 +105,24 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.title;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xcdebf414, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.photo;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe6c52372, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.participants_count;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xeb6aa445, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.participants;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe0e25c28, value));
     }
 }
 

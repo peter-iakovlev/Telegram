@@ -143,7 +143,6 @@ CGFloat TGQuadraticEaseInOut(CGFloat p)
     CGPoint sourcePoint = CGPointMake(CGRectGetMidX(toFrame), CGRectGetMidY(toFrame));
     CGPoint destinationPoint = CGPointMake(CGRectGetMidX(placementFrame), CGRectGetMidY(placementFrame));
     
-    
     CGSize contentSize = layout.nextLayout.collectionViewContentSize;
     CGPoint offset = CGPointMake(sourcePoint.x - destinationPoint.x, sourcePoint.y - destinationPoint.y);
     

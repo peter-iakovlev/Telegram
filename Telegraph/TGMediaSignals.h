@@ -1,4 +1,3 @@
-#import <Foundation/Foundation.h>
 #import <SSignalKit/SSignalKit.h>
 
 #import "TGImageFileReference.h"

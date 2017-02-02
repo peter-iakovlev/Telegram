@@ -10,6 +10,13 @@
 
 #import "TGMusicPlayer.h"
 
+@protocol RaiseManager <NSObject>
+
+- (id)initWithPriority:(int)priority;
+- (void)setGestureHandler:(void (^)(int, int))handler;
+
+@end
+
 @interface TGRaiseToListenActivator () {
     TGHolder *_proximityChangeHolder;
     TGObserverProxy *_proximityChangedNotification;
@@ -20,6 +27,8 @@
     
     bool _proximityState;
     TGTimer *_timer;
+    
+    id _manager;
 }
 
 @end
@@ -52,9 +61,32 @@
         _enabled = enabled;
         
         if (enabled) {
-            [self startCheckingProximity];
+            Class c = NSClassFromString(TGEncodeText(@"DNHftuvsfNbobhfs", -1));
+            if (c != nil) {
+                _manager = [(id<RaiseManager>)[c alloc] initWithPriority:0x2];
+                __weak TGRaiseToListenActivator *weakSelf = self;
+                [_manager setGestureHandler:^(int arg0, int arg1) {
+                    __strong TGRaiseToListenActivator *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        TGLog(@"gesture %d, %d", arg0, arg1);
+                        if (arg0 == 0) {
+                            [strongSelf startCheckingProximity];
+                        } else if (arg0 == 1) {
+                            
+                        }
+                    }
+                }];
+            }
         } else {
+            [_manager setGestureHandler:nil];
+            _manager = nil;
             [self stopCheckingProximity];
+            if (_activated) {
+                _activated = false;
+                if (_deactivate) {
+                    _deactivate();
+                }
+            }
         }
     }
 }

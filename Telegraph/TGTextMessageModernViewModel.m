@@ -41,6 +41,9 @@
     
     NSArray *_currentSearchHighlightViews;
     NSString *_text;
+    bool _emojiOnly;
+    bool _centerText;
+    bool _isGame;
 }
 
 @end
@@ -61,7 +64,21 @@ static CTFontRef textFontForSize(CGFloat size)
     return font;
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message authorPeer:(id)authorPeer viaUser:(TGUser *)viaUser context:(TGModernViewContext *)context
+static CTFontRef emojiFontForSize(CGFloat size)
+{
+    static CTFontRef font = NULL;
+    static int cachedSize = 0;
+    
+    if ((int)size != cachedSize || font == NULL)
+    {
+        font = TGCoreTextSystemFontOfSize(CGFloor(size * 2.5));
+        cachedSize = (int)size;
+    }
+    
+    return font;
+}
+
+- (instancetype)initWithMessage:(TGMessage *)message hasGame:(bool)hasGame authorPeer:(id)authorPeer viaUser:(TGUser *)viaUser context:(TGModernViewContext *)context
 {
     self = [super initWithMessage:message authorPeer:authorPeer viaUser:viaUser context:context];
     if (self != nil)
@@ -72,11 +89,24 @@ static CTFontRef textFontForSize(CGFloat size)
         {
             assetsSource = [TGTelegraphConversationMessageAssetsSource instance];
         });
+        _isGame = hasGame;
+        if (hasGame) {
+            _text = @"";
+        } else {
+            _text = message.text;
+        }
         
-        _text = message.text;
+        CTFontRef font = textFontForSize(TGGetMessageViewModelLayoutConstants()->textFontSize);
+        /*NSUInteger length = 0;
+        if (_text.length < 20 && [TGStringUtils stringContainsEmojiOnly:_text length:&length]) {
+            if (length <= 6) {
+                font = emojiFontForSize(TGGetMessageViewModelLayoutConstants()->textFontSize);
+                _emojiOnly = true;
+            }
+        }*/
         
-        _textModel = [[TGModernTextViewModel alloc] initWithText:message.text font:textFontForSize(TGGetMessageViewModelLayoutConstants()->textFontSize)];
-        _textModel.textCheckingResults = message.textCheckingResults;
+        _textModel = [[TGModernTextViewModel alloc] initWithText:_text font:font];
+        _textModel.textCheckingResults = _isGame ? nil : message.textCheckingResults;
         _textModel.textColor = [assetsSource messageTextColor];
         if (message.isBroadcast)
             _textModel.additionalTrailingWidth += 10.0f;
@@ -143,29 +173,82 @@ static CTFontRef textFontForSize(CGFloat size)
         if (recognizer.state == UIGestureRecognizerStateRecognized)
         {
             CGPoint point = [recognizer locationInView:[_contentModel boundView]];
-            NSString *linkCandidate = [_textModel linkAtPoint:CGPointMake(point.x - _textModel.frame.origin.x, point.y - _textModel.frame.origin.y) regionData:NULL];
+            bool hiddenLink = false;
+            NSString *linkCandidateText = nil;
+            NSString *linkCandidate = [_textModel linkAtPoint:CGPointMake(point.x - _textModel.frame.origin.x, point.y - _textModel.frame.origin.y) regionData:NULL hiddenLink:&hiddenLink linkText:&linkCandidateText];
             TGWebPageMediaAttachment *webPage = nil;
             bool activateWebpageContents = false;
             TGWebpageFooterModelAction webpageAction = TGWebpageFooterModelActionNone;
+            bool webpageIsVideo = false;
+            bool webpageIsGame = false;
+            if ([_webPage.pageType isEqualToString:@"game"]) {
+                webpageIsGame = true;
+            } else if (_webPage.document != nil) {
+                bool isVideo = false;
+                bool isAnimation = false;
+                for (id attribute in _webPage.document.attributes) {
+                    if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                        isVideo = true;
+                    } else if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]]) {
+                        isAnimation = true;
+                    }
+                }
+                webpageIsVideo = isVideo && !isAnimation;
+            }
+            
+            bool activateVideo = false;
+            bool activateGame = false;
+            bool activateInstantPage = false;
             if (linkCandidate == nil)
             {
-                if (_webPageFooterModel != nil)
+                if (_webPageFooterModel != nil && CGRectContainsPoint(_webPageFooterModel.frame, point))
                 {
                     webpageAction = [_webPageFooterModel webpageActionAtPoint:CGPointMake(point.x - _webPageFooterModel.frame.origin.x, point.y - _webPageFooterModel.frame.origin.y)];
                     if (webpageAction != TGWebpageFooterModelActionNone)
                     {
-                        if ([_webPage.pageType isEqualToString:@"photo"] || [_webPage.pageType isEqualToString:@"article"])
-                        {
-                            webPage = _webPage;
+                        if (webpageIsGame) {
+                            activateGame = true;
+                        } else if (_webPage.instantPage != nil && webpageAction != TGWebpageFooterModelActionDownload) {
+                            activateInstantPage = true;
+                        } else {
+                            if ([_webPage.pageType isEqualToString:@"photo"] || [_webPage.pageType isEqualToString:@"article"])
+                            {
+                                webPage = _webPage;
+                            }
+                            
+                            bool isInstagram = [_webPage.siteName.lowercaseString isEqualToString:@"instagram"];
+                            bool isCoub = [_webPage.siteName.lowercaseString isEqualToString:@"coub"];
+                            
+                            activateWebpageContents = _webPage.embedUrl.length != 0;
+                            if (webpageAction == TGWebpageFooterModelActionDownload || webpageAction == TGWebpageFooterModelActionCancel) {
+                            } else if (_webPageFooterModel.mediaIsAvailable) {
+                                if (webpageIsVideo && !isInstagram) {
+                                    activateVideo = true;
+                                }
+                            }
+                            
+                            if (isInstagram)
+                                webpageAction = TGWebpageFooterModelActionNone;
+                            else if ((webpageAction == TGWebpageFooterModelActionDownload || (webpageAction == TGWebpageFooterModelActionPlay && (_context.autoplayAnimations || isCoub))) && _webPageFooterModel.mediaIsAvailable) {
+                                webpageAction = TGWebpageFooterModelActionNone;
+                            }
+                            linkCandidate = _webPage.url;
                         }
-                        activateWebpageContents = _webPage.embedUrl.length != 0;
-                        linkCandidate = _webPage.url;
                     }
                     else
                     {
                         linkCandidate = [_webPageFooterModel linkAtPoint:CGPointMake(point.x - _webPageFooterModel.frame.origin.x, point.y - _webPageFooterModel.frame.origin.y) regionData:NULL];
                     }
                 }
+            }
+            if (_webPage.instantPage != nil && ([linkCandidate hasPrefix:@"http://telegra.ph/"] || [linkCandidate hasPrefix:@"https://telegra.ph/"])) {
+                if ([_webPage.url isEqualToString:linkCandidate] || (linkCandidateText != nil && [_webPage.url isEqualToString:linkCandidateText])) {
+                    activateInstantPage = true;
+                }
+            }
+            
+            if (hiddenLink && ([linkCandidate hasPrefix:@"http://telegram.me/"] || [linkCandidate hasPrefix:@"http://t.me/"])) {
+                hiddenLink = false;
             }
             
             if (recognizer.longTapped)
@@ -182,20 +265,34 @@ static CTFontRef textFontForSize(CGFloat size)
             }
             else if (recognizer.doubleTapped)
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
-            else if (webpageAction == TGWebpageFooterModelActionDownload) {
+            else if (activateVideo) {
+                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
+            } else if (activateGame) {
+                [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": [NSString stringWithFormat:@"activate-app://%d", _mid]}];
+            } else if (activateInstantPage) {
+                if (_webPage.instantPage != nil) {
+                    [_context.companionHandle requestAction:@"activateInstantPage" options:@{@"webpage": _webPage, @"mid": @(_mid)}];
+                }
+            } else if (webpageAction == TGWebpageFooterModelActionDownload) {
                 [_context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid)}];
+            } else if (webpageAction == TGWebpageFooterModelActionCancel) {
+                [_context.companionHandle requestAction:@"mediaProgressCancelRequested" options:@{@"mid": @(_mid)}];
             } else if (webpageAction == TGWebpageFooterModelActionPlay) {
                 [_webPageFooterModel activateWebpageContents];
+            } else if (webpageAction == TGWebpageFooterModelActionOpenMedia) {
+                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
             }
-            else if (webpageAction == TGWebpageFooterModelActionOpenURL && linkCandidate != nil) {
+            else if (webpageAction == TGWebpageFooterModelActionCustom) {
+                [_webPageFooterModel activateWebpageContents];
+            } else if (webpageAction == TGWebpageFooterModelActionOpenURL && linkCandidate != nil) {
                 [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": linkCandidate, @"mid": @(_mid)}];
             }
             else if (activateWebpageContents)
-                [_context.companionHandle requestAction:@"openEmbedRequested" options:@{@"webPage": _webPage}];
+                [_context.companionHandle requestAction:@"openEmbedRequested" options:@{@"webPage": _webPage, @"mid": @(_mid)}];
             else if (webPage != nil)
                 [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
             else if (linkCandidate != nil)
-                [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": linkCandidate, @"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": linkCandidate, @"mid": @(_mid), @"hidden": @(hiddenLink)}];
             else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
                 if (_viaUser != nil && [_forwardedHeaderModel linkAtPoint:CGPointMake(point.x - _forwardedHeaderModel.frame.origin.x, point.y - _forwardedHeaderModel.frame.origin.y) regionData:NULL]) {
                     [_context.companionHandle requestAction:@"useContextBot" options:@{@"uid": @((int32_t)_viaUser.uid), @"username": _viaUser.userName == nil ? @"" : _viaUser.userName}];
@@ -249,6 +346,20 @@ static CTFontRef textFontForSize(CGFloat size)
     return true;
 }
 
+- (BOOL)gestureRecognizer1:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(nonnull UITouch *)touch {
+    if ([gestureRecognizer isKindOfClass:[TGDoubleTapGestureRecognizer class]]) {
+        CGPoint point = [touch locationInView:[_contentModel boundView]];
+        
+        if (_webPageFooterModel != nil && CGRectContainsPoint(_webPageFooterModel.frame, point))
+        {
+            if ([_webPageFooterModel webpageActionAtPoint:CGPointMake(point.x - _webPageFooterModel.frame.origin.x, point.y - _webPageFooterModel.frame.origin.y)] == TGWebpageFooterModelActionCustom) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 - (int)gestureRecognizer:(TGDoubleTapGestureRecognizer *)recognizer shouldFailTap:(CGPoint)point
 {
     point = [recognizer locationInView:[_contentModel boundView]];
@@ -267,6 +378,10 @@ static CTFontRef textFontForSize(CGFloat size)
         
         if ([_webPageFooterModel linkAtPoint:CGPointMake(point.x - _webPageFooterModel.frame.origin.x, point.y - _webPageFooterModel.frame.origin.y) regionData:NULL] != nil)
         {
+            return 3;
+        }
+        
+        if (_webPage.instantPage != nil) {
             return 3;
         }
     }
@@ -690,52 +805,100 @@ static CTFontRef textFontForSize(CGFloat size)
     }
 }
 
-- (void)layoutContentForHeaderHeight:(CGFloat)headerHeight
+- (void)layoutContentForHeaderHeight:(CGFloat)headerHeight containerSize:(CGSize)containerSize
 {
     CGRect textFrame = _textModel.frame;
     
     textFrame.origin = CGPointMake(1, headerHeight + TGGetMessageViewModelLayoutConstants()->textBubbleTextOffsetTop);
+    if (_emojiOnly) {
+        textFrame.origin.y -= 11.0f;
+        if (_centerText) {
+            textFrame.origin.x = CGFloor((containerSize.width - textFrame.size.width) / 2.0f);
+        }
+    }
     _textModel.frame = textFrame;
     
     if ([_contentModel needsSubmodelContentsUpdate])
         [self updateSearchHighlight:false];
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)containerSize needsContentsUpdate:(bool *)needsContentsUpdate hasDate:(bool)hasDate hasViews:(bool)hasViews
+- (CGSize)contentSizeForContainerSize:(CGSize)containerSize needsContentsUpdate:(bool *)needsContentsUpdate infoWidth:(CGFloat)infoWidth
 {
     int layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks;
-    if (hasDate)
-    {
-        layoutFlags |= TGReusableLabelLayoutDateSpacing | (_incoming ? 0 : TGReusableLabelLayoutExtendedDateSpacing);
-    }
-    if (hasViews) {
-        layoutFlags |= TGReusableLabelViewCountSpacing;
-    }
     
     if (_context.commandsEnabled || _isBot)
         layoutFlags |= TGReusableLabelLayoutHighlightCommands;
     
-    bool updateContents = [_textModel layoutNeedsUpdatingForContainerSize:containerSize layoutFlags:layoutFlags];
+    CGFloat effectiveInfoWidth = infoWidth;
+    if (_emojiOnly) {
+        effectiveInfoWidth = 0.0f;
+    }
+    bool updateContents = [_textModel layoutNeedsUpdatingForContainerSize:containerSize additionalTrailingWidth:effectiveInfoWidth layoutFlags:layoutFlags];
     _textModel.layoutFlags = layoutFlags;
+    _textModel.additionalTrailingWidth = effectiveInfoWidth;
     if (updateContents)
         [_textModel layoutForContainerSize:containerSize];
     
     if (needsContentsUpdate != NULL && updateContents)
         *needsContentsUpdate = updateContents;
     
-    return _textModel.frame.size;
+    CGSize size = _textModel.frame.size;
+    if (_emojiOnly) {
+        size.height += 9.0f - 11.0f;
+        if (size.width < infoWidth - 5.0f) {
+            _centerText = true;
+            size.width = infoWidth - 5.0f;
+        }
+    }
+    
+    size.width = MAX(size.width, infoWidth - 5.0f);
+    
+    if (_isGame) {
+        size.height = 0.0f;
+    }
+    
+    return size;
 }
 
 - (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated {
+    NSUInteger previousEntitiesCount = _textModel.textCheckingResults.count;
+    
     [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
     
-    if (!TGStringCompare(message.text, _text)) {
-        _text = message.text;
+    bool hasGame = false;
+    NSString *updatedText = message.text;
+    NSArray *updatedTextCheckingResults = message.textCheckingResults;
+    for (id attachment in message.mediaAttachments) {
+        if ([attachment isKindOfClass:[TGGameMediaAttachment class]]) {
+            updatedText = @"";
+            updatedTextCheckingResults = nil;
+            hasGame = true;
+            break;
+        }
+    }
+    
+    bool forceUpdateText = false;
+    if (previousEntitiesCount != updatedTextCheckingResults.count) {
+        forceUpdateText = true;
+    }
+    
+    if (!TGStringCompare(updatedText, _text) || forceUpdateText || _isGame != hasGame) {
+        _text = updatedText;
+        _isGame = hasGame;
+        _textModel.text = @"";
         _textModel.text = _text;
-        _textModel.textCheckingResults = message.textCheckingResults;
+        _textModel.textCheckingResults = updatedTextCheckingResults;
         [_contentModel setNeedsSubmodelContentsUpdate];
         *sizeUpdated = true;
     }
+}
+
+- (bool)isPreviewableAtPoint:(CGPoint)point {
+    point = CGPointMake(point.x - _contentModel.frame.origin.x, point.y - _contentModel.frame.origin.y);
+    if (_webPageFooterModel != nil && CGRectContainsPoint(_webPageFooterModel.frame, point))
+        return [_webPageFooterModel isPreviewableAtPoint:point];
+    
+    return false;
 }
 
 @end

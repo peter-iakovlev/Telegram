@@ -17,7 +17,7 @@
                 
         return [[TGSendMessageSignals sendTextMessageWithPeerId:sendMessageSubscription.peerId text:sendMessageSubscription.text replyToMid:sendMessageSubscription.replyToMid] map:^TGBridgeMessage *(TGMessage *message)
         {
-            return [TGBridgeMessage messageWithTGMessage:message];
+            return [TGBridgeMessage messageWithTGMessage:message conversation:nil];
         }];
     }
     else if ([subscription isKindOfClass:[TGBridgeSendLocationMessageSubscription class]])
@@ -27,7 +27,7 @@
         
         return [[TGSendMessageSignals sendLocationWithPeerId:sendMessageSubscription.peerId replyToMid:sendMessageSubscription.replyToMid locationAttachment:attachment] map:^TGBridgeMessage *(TGMessage *message)
         {
-            return [TGBridgeMessage messageWithTGMessage:message];
+            return [TGBridgeMessage messageWithTGMessage:message conversation:nil];
         }];
     }
     else if ([subscription isKindOfClass:[TGBridgeSendStickerMessageSubscription class]])
@@ -37,7 +37,7 @@
         
         return [[TGSendMessageSignals sendRemoteDocumentWithPeerId:sendMessageSubscription.peerId replyToMid:sendMessageSubscription.replyToMid documentAttachment:attachment] map:^TGBridgeMessage *(TGMessage *message)
         {
-            return [TGBridgeMessage messageWithTGMessage:message];
+            return [TGBridgeMessage messageWithTGMessage:message conversation:nil];
         }];
     }
     else if ([subscription isKindOfClass:[TGBridgeSendForwardedMessageSubscription class]])
@@ -46,7 +46,7 @@
         
         return [[TGSendMessageSignals forwardMessageWithMid:sendMessageSubscription.messageId peerId:sendMessageSubscription.peerId] map:^TGBridgeMessage *(TGMessage *message)
         {
-            return [TGBridgeMessage messageWithTGMessage:message];
+            return [TGBridgeMessage messageWithTGMessage:message conversation:nil];
         }];
     }
     

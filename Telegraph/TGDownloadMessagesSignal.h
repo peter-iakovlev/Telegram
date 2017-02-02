@@ -1,5 +1,7 @@
 #import <SSignalKit/SSignalKit.h>
 
+@class TGMediaAttachment;
+
 @interface TGDownloadMessage : NSObject
 
 @property (nonatomic, readonly) int64_t peerId;
@@ -13,5 +15,6 @@
 @interface TGDownloadMessagesSignal : NSObject
 
 + (SSignal *)downloadMessages:(NSArray *)messages;
++ (SSignal *)mediaStickerpacks:(TGMediaAttachment *)attachment;
 
 @end

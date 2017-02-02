@@ -4,7 +4,7 @@
 
 @implementation TGStickerPack
 
-- (instancetype)initWithPackReference:(id<TGStickerPackReference>)packReference title:(NSString *)title stickerAssociations:(NSArray *)stickerAssociations documents:(NSArray *)documents packHash:(int32_t)packHash hidden:(bool)hidden
+- (instancetype)initWithPackReference:(id<TGStickerPackReference>)packReference title:(NSString *)title stickerAssociations:(NSArray *)stickerAssociations documents:(NSArray *)documents packHash:(int32_t)packHash hidden:(bool)hidden isMask:(bool)isMask
 {
     self = [super init];
     if (self != nil)
@@ -15,18 +15,19 @@
         _documents = documents;
         _packHash = packHash;
         _hidden = hidden;
+        _isMask = isMask;
     }
     return self;
 }
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder
 {
-    return [self initWithPackReference:[aDecoder decodeObjectForKey:@"packReference"] title:[aDecoder decodeObjectForKey:@"title"] stickerAssociations:[aDecoder decodeObjectForKey:@"stickerAssociations"] documents:[aDecoder decodeObjectForKey:@"documents"] packHash:[aDecoder decodeInt32ForKey:@"packHash"] hidden:[aDecoder decodeInt32ForKey:@"hidden"]];
+    return [self initWithPackReference:[aDecoder decodeObjectForKey:@"packReference"] title:[aDecoder decodeObjectForKey:@"title"] stickerAssociations:[aDecoder decodeObjectForKey:@"stickerAssociations"] documents:[aDecoder decodeObjectForKey:@"documents"] packHash:[aDecoder decodeInt32ForKey:@"packHash"] hidden:[aDecoder decodeInt32ForKey:@"hidden"] isMask:[aDecoder decodeInt32ForKey:@"isMask"]];
 }
 
 - (instancetype)initWithKeyValueCoder:(PSKeyValueCoder *)coder
 {
-    return [self initWithPackReference:(id<TGStickerPackReference>)[coder decodeObjectForCKey:"r"] title:[coder decodeStringForCKey:"t"] stickerAssociations:[coder decodeArrayForCKey:"a"] documents:[coder decodeArrayForCKey:"d"] packHash:[coder decodeInt32ForCKey:"ph"] hidden:[coder decodeInt32ForCKey:"hi"]];
+    return [self initWithPackReference:(id<TGStickerPackReference>)[coder decodeObjectForCKey:"r"] title:[coder decodeStringForCKey:"t"] stickerAssociations:[coder decodeArrayForCKey:"a"] documents:[coder decodeArrayForCKey:"d"] packHash:[coder decodeInt32ForCKey:"ph"] hidden:[coder decodeInt32ForCKey:"hi"] isMask:[coder decodeInt32ForCKey:"ma"]];
 }
 
 - (void)encodeWithCoder:(NSCoder *)aCoder
@@ -37,6 +38,7 @@
     [aCoder encodeObject:_documents forKey:@"documents"];
     [aCoder encodeInt32:_packHash forKey:@"packHash"];
     [aCoder encodeInt32:_hidden ? 1 : 0 forKey:@"hidden"];
+    [aCoder encodeInt32:_isMask ? 1 : 0 forKey:@"isMask"];
 }
 
 - (void)encodeWithKeyValueCoder:(PSKeyValueCoder *)coder
@@ -47,6 +49,7 @@
     [coder encodeArray:_documents forCKey:"d"];
     [coder encodeInt32:_packHash forCKey:"ph"];
     [coder encodeInt32:_hidden ? 1 : 0 forCKey:"hi"];
+    [coder encodeInt32:_isMask ? 1 : 0 forCKey:"ma"];
 }
 
 - (BOOL)isEqual:(id)object
@@ -69,6 +72,10 @@
         return false;
     
     if (other->_hidden != _hidden) {
+        return false;
+    }
+    
+    if (other->_isMask != _isMask) {
         return false;
     }
     

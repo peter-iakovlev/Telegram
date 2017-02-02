@@ -11,20 +11,25 @@ CGSize TGScaleToFillSize(CGSize size, CGSize maxSize);
 CGFloat TGDegreesToRadians(CGFloat degrees);
 CGFloat TGRadiansToDegrees(CGFloat radians);
     
-UIImage *TGPhotoEditorCrop(UIImage *image, UIImageOrientation orientation, CGFloat rotation, CGRect rect, CGSize maxSize, CGSize originalSize, bool shouldResize);
+UIImage *TGPhotoEditorCrop(UIImage *image, UIImage *paintingImage, UIImageOrientation orientation, CGFloat rotation, CGRect rect, bool mirrored, CGSize maxSize, CGSize originalSize, bool shouldResize);
+UIImage *TGPhotoEditorVideoCrop(UIImage *image, UIImage *paintingImage, UIImageOrientation orientation, CGFloat rotation, CGRect rect, bool mirrored, CGSize maxSize, CGSize originalSize, bool shouldResize, bool useImageSize);
 UIImage *TGPhotoEditorFitImage(UIImage *image, CGSize maxSize);
 CGSize TGRotatedContentSize(CGSize contentSize, CGFloat rotation);
     
+UIImageOrientation TGNextCWOrientationForOrientation(UIImageOrientation orientation);
 UIImageOrientation TGNextCCWOrientationForOrientation(UIImageOrientation orientation);
 CGFloat TGRotationForOrientation(UIImageOrientation orientation);
+CGFloat TGCounterRotationForOrientation(UIImageOrientation orientation);
 CGFloat TGRotationForInterfaceOrientation(UIInterfaceOrientation orientation);
 CGAffineTransform TGTransformForVideoOrientation(AVCaptureVideoOrientation orientation, bool mirrored);
     
 bool TGOrientationIsSideward(UIImageOrientation orientation, bool *mirrored);
+UIImageOrientation TGMirrorSidewardOrientation(UIImageOrientation orientation);
     
 UIImageOrientation TGVideoOrientationForAsset(AVAsset *asset, bool *mirrored);
 CGAffineTransform TGVideoTransformForOrientation(UIImageOrientation orientation, CGSize size, CGRect cropRect, bool mirror);
 CGAffineTransform TGVideoCropTransformForOrientation(UIImageOrientation orientation, CGSize size, bool rotateSize);
+CGAffineTransform TGVideoTransformForCrop(UIImageOrientation orientation, CGSize size, bool mirrored);
     
 CGSize TGTransformDimensionsWithTransform(CGSize dimensions, CGAffineTransform transform);
     

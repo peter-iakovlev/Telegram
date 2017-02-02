@@ -1,5 +1,13 @@
 #import <Foundation/Foundation.h>
 
+@interface TGModernGalleryComplexTransitionDescription : NSObject
+
+@property (nonatomic, strong) UIImage *overlayImage;
+@property (nonatomic, assign) CGFloat cornerRadius;
+@property (nonatomic, assign) UIEdgeInsets insets;
+
+@end
+
 @protocol TGModernGalleryTransitionView <NSObject>
 
 @required
@@ -9,5 +17,8 @@
 @optional
 
 - (CGRect)transitionContentRect;
+
+- (bool)hasComplexTransition;
+- (TGModernGalleryComplexTransitionDescription *)complexTransitionDescription;
 
 @end

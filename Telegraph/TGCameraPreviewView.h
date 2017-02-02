@@ -6,7 +6,7 @@
 @interface TGCameraPreviewView : UIView
 
 @property (nonatomic, readonly) PGCamera *camera;
-@property (nonatomic, readonly) AVCaptureVideoPreviewLayer *previewLayer;
+@property (nonatomic, readonly) AVCaptureConnection *captureConnection;
 
 - (void)setupWithCamera:(PGCamera *)camera;
 - (void)invalidate;

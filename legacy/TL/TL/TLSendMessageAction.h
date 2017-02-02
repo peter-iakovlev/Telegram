@@ -63,3 +63,13 @@
 
 @end
 
+@interface TLSendMessageAction$sendMessageGamePlayAction : TLSendMessageAction
+
+
+@end
+
+@interface TLSendMessageAction$sendMessageGameStopAction : TLSendMessageAction
+
+
+@end
+

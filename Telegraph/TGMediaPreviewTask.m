@@ -26,6 +26,8 @@
 
 #import <SSignalKit/SSignalKit.h>
 
+#import "TGTelegramNetworking.h"
+
 @interface TGMediaPreviewTask () <ASWatcher>
 {
     volatile bool _idCancelled;
@@ -80,7 +82,7 @@
     
     if ([uri hasPrefix:@"http://"] || [uri hasPrefix:@"https://"])
     {
-        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/temporaryDownload/(%@)", [TGStringUtils stringByEscapingForActorURL:uri]] options:@{@"url": uri, @"path": targetFilePath == nil ? @"" : targetFilePath, @"cache": [[TGMediaStoreContext instance] temporaryFilesCache]} flags:0 watcher:self];
+        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/temporaryDownload/(%@)", [TGStringUtils stringByEscapingForActorURL:uri]] options:@{@"url": uri, @"path": targetFilePath == nil ? @"" : targetFilePath, @"cache": [[TGMediaStoreContext instance] temporaryFilesCache], @"mediaTypeTag": @(TGNetworkMediaTypeTagImage)} flags:0 watcher:self];
     }
     else
     {
@@ -108,7 +110,7 @@
     _workerTask = workerTask;
     _progress = progress;
     
-    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/temporaryDownload/(%@)", [TGStringUtils stringByEscapingForActorURL:uri]] options:@{@"url": uri} flags:0 watcher:self];
+    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/temporaryDownload/(%@)", [TGStringUtils stringByEscapingForActorURL:uri]] options:@{@"url": uri, @"mediaTypeTag": @(TGNetworkMediaTypeTagImage)} flags:0 watcher:self];
 }
 
 - (void)executeMultipartWithImageUri:(NSString *)imageUri targetFilePath:(NSString *)targetFilePath progress:(void (^)(float))progress completion:(void (^)(bool))completion
@@ -133,7 +135,8 @@
             @"fileLocation": fileLocation,
             @"storeFilePath": targetFilePath,
             @"datacenterId": @(datacenterId),
-            @"encryptionArgs": @{}
+            @"encryptionArgs": @{},
+            @"mediaTypeTag": @(TGNetworkMediaTypeTagImage)
         } watcher:self];
     }
     else if (completion)

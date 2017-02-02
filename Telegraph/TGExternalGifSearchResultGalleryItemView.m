@@ -24,6 +24,8 @@
 
 #import "TGMediaSelectionContext.h"
 
+#import "TGTelegramNetworking.h"
+
 @interface TGExternalGifSearchResultGalleryItemView () <ASWatcher> {
     UIView *_containerView;
     TGImageView *_imageView;
@@ -211,7 +213,7 @@
     url = item.webSearchResult.originalUrl;
     
     _downloadPath = [[NSString alloc] initWithFormat:@"/temporaryDownload/(%@,%@)", [TGStringUtils stringByEscapingForActorURL:url], _isVideo ? @"path" : @"data"];
-    [ActionStageInstance() requestActor:_downloadPath options:@{@"url": url, @"cache": [[TGMediaStoreContext instance] temporaryFilesCache], @"returnPath": @(_isVideo)} flags:0 watcher:self];
+    [ActionStageInstance() requestActor:_downloadPath options:@{@"url": url, @"cache": [[TGMediaStoreContext instance] temporaryFilesCache], @"returnPath": @(_isVideo), @"mediaTypeTag": @(TGNetworkMediaTypeTagDocument)} flags:0 watcher:self];
     
     if (_prefetchDisposable == nil) {
         _prefetchDisposable = [[SMetaDisposable alloc] init];

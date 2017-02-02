@@ -8,13 +8,16 @@
 #import "TGFont.h"
 #import "TGImageUtils.h"
 
-@interface TGShareSheetSharePeersCell () {
+@interface TGShareSheetSharePeersCell () <UIGestureRecognizerDelegate>
+{
+    id _peer;
     TGLetteredAvatarView *_avatarView;
     UIImageView *_selectedCircleView;
     UILabel *_titleLabel;
     int64_t _peerId;
     bool _isSelected;
     bool _isSecret;
+    UILongPressGestureRecognizer *_longTapRecognizer;
 }
 
 @end
@@ -55,6 +58,11 @@
         [self.contentView addSubview:_titleLabel];
         
         [self.contentView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapGesture:)]];
+        
+        _longTapRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longTapGesture:)];
+        _longTapRecognizer.enabled = false;
+        _longTapRecognizer.delegate = self;
+        [self.contentView addGestureRecognizer:_longTapRecognizer];
     }
     return self;
 }
@@ -68,6 +76,11 @@
 }
 
 - (void)setPeer:(id)peer {
+    if (_peer == peer) {
+        return;
+    }
+    
+    _peer = peer;
     CGSize size = _avatarView.bounds.size;
     static UIImage *placeholder = nil;
     static dispatch_once_t onceToken;
@@ -132,6 +145,10 @@
     [self setNeedsLayout];
 }
 
+- (int64_t)peerId {
+    return _peerId;
+}
+
 - (void)updateSelectedPeerIds:(NSSet *)selectedPeerIds animated:(bool)animated {
     [self updateSelected:[selectedPeerIds containsObject:@(_peerId)] animated:animated];
 }
@@ -161,7 +178,29 @@
     _selectedCircleView.center = _avatarView.center;
     
     CGSize titleSize = [_titleLabel.text sizeWithFont:_titleLabel.font];
-    _titleLabel.frame = CGRectMake(0.0f, self.bounds.size.height - titleSize.height - TGRetinaPixel, self.bounds.size.width, titleSize.height);
+    _titleLabel.frame = CGRectMake(0.0f, CGRectGetMaxY(_avatarView.frame) + 4.0f, self.bounds.size.width, titleSize.height);
+}
+
+- (void)setLongTap:(void (^)(int64_t))longTap {
+    _longTap = [longTap copy];
+    
+    _longTapRecognizer.enabled = longTap != nil;
+}
+
+- (void)longTapGesture:(UILongPressGestureRecognizer *)recognizer {
+    if (recognizer.state == UIGestureRecognizerStateBegan) {
+        if (_longTap && _peerId != 0) {
+            _longTap(_peerId);
+        }
+    }
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)__unused gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)__unused otherGestureRecognizer
+{
+    //if ([otherGestureRecognizer isKindOfClass:[UILongPressGestureRecognizer class]])
+    //    return true;
+    
+    return false;
 }
 
 @end

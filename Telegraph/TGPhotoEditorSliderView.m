@@ -34,6 +34,8 @@ const CGFloat TGPhotoEditorSliderViewMargin = 21.0f;
         _startValue = 0.0f;
         _value = _startValue;
         
+        _lineSize = TGPhotoEditorSliderViewLineSize;
+        
         _backView = [[UIView alloc] initWithFrame:CGRectZero];
         _backView.backgroundColor = [TGPhotoEditorInterfaceAssets sliderBackColor];
         [self addSubview:_backView];
@@ -74,6 +76,51 @@ const CGFloat TGPhotoEditorSliderViewMargin = 21.0f;
         [self addGestureRecognizer:_panGestureRecognizer];
     }
     return self;
+}
+
+#pragma mark - 
+
+- (void)setShowValue:(bool)showValue
+{
+    _showValue = showValue;
+    _valueLabel.hidden = !showValue;
+}
+
+- (void)setLineSize:(CGFloat)lineSize
+{
+    _lineSize = lineSize;
+    [self setNeedsLayout];
+}
+
+- (UIColor *)backColor
+{
+    return _backView.backgroundColor;
+}
+
+- (void)setBackColor:(UIColor *)backColor
+{
+    _backView.backgroundColor = backColor;
+}
+
+- (UIColor *)trackColor
+{
+    return _trackView.backgroundColor;
+}
+
+- (void)setTrackColor:(UIColor *)trackColor
+{
+    _trackView.backgroundColor = trackColor;
+}
+
+- (UIImage *)knobImage
+{
+    return _knobView.image;
+}
+
+- (void)setKnobImage:(UIImage *)knobImage
+{
+    _knobView.image = knobImage;
+    [self setNeedsLayout];
 }
 
 #pragma mark - Properties
@@ -117,8 +164,9 @@ const CGFloat TGPhotoEditorSliderViewMargin = 21.0f;
         vertical = true;
     }
     
-    CGFloat knobPosition = _knobView.highlighted ? _knobDragCenter : [self centerPositionForValue:_value totalLength:totalLength knobSize:_knobView.image.size.width vertical:vertical];
-    knobPosition = MAX(0, MIN(knobPosition, totalLength));
+    CGFloat knobPosition = _knobView.highlighted ? _knobDragCenter : _knobPadding + [self centerPositionForValue:_value totalLength:totalLength - 2 * _knobPadding knobSize:_knobView.image.size.width vertical:vertical];
+    knobPosition = MAX(_knobPadding, MIN(knobPosition, totalLength - _knobPadding));
+   
     CGFloat startPosition = totalLength / (_maximumValue - _minimumValue) * (ABS(_minimumValue) + _startValue);
     if (vertical)
         startPosition = totalLength - startPosition;
@@ -131,7 +179,7 @@ const CGFloat TGPhotoEditorSliderViewMargin = 21.0f;
         origin -= track;
     }
     
-    CGRect trackViewFrame = CGRectMake(origin, (sideLength - TGPhotoEditorSliderViewLineSize) / 2, track, TGPhotoEditorSliderViewLineSize);
+    CGRect trackViewFrame = CGRectMake(origin, (sideLength - _lineSize) / 2, track, _lineSize);
     
     CGRect knobViewFrame = CGRectMake(knobPosition - _knobView.image.size.width / 2,
                                       (sideLength - _knobView.image.size.height) / 2,
@@ -140,7 +188,7 @@ const CGFloat TGPhotoEditorSliderViewMargin = 21.0f;
     
     if (self.frame.size.width > self.frame.size.height)
     {
-        _backView.frame = CGRectMake(0, (sideLength - TGPhotoEditorSliderViewLineSize) / 2, totalLength, TGPhotoEditorSliderViewLineSize);
+        _backView.frame = CGRectMake(0, (sideLength - _lineSize) / 2, totalLength, _lineSize);
         _trackView.frame = trackViewFrame;
         _knobView.frame = knobViewFrame;
         _startView.frame = CGRectMake(startPosition - 2 / 2, (self.frame.size.height - 13) / 2, 2, 13);
@@ -148,7 +196,7 @@ const CGFloat TGPhotoEditorSliderViewMargin = 21.0f;
     }
     else
     {
-        _backView.frame = CGRectMake((sideLength - TGPhotoEditorSliderViewLineSize) / 2, 0, TGPhotoEditorSliderViewLineSize, totalLength);
+        _backView.frame = CGRectMake((sideLength - _lineSize) / 2, 0, _lineSize, totalLength);
         _trackView.frame = CGRectMake(trackViewFrame.origin.y, trackViewFrame.origin.x, trackViewFrame.size.height, trackViewFrame.size.width);
         _knobView.frame = CGRectMake(knobViewFrame.origin.y, knobViewFrame.origin.x, knobViewFrame.size.width, knobViewFrame.size.height);
         _startView.frame = CGRectMake((self.frame.size.width - 13) / 2, startPosition - 2 / 2, 13, 2);
@@ -159,7 +207,7 @@ const CGFloat TGPhotoEditorSliderViewMargin = 21.0f;
     }
     
     _valueLabel.text = [self _dotStringValue];
-    _valueLabel.hidden = (CGFloor(ABS(self.value)) == 0);
+    _valueLabel.hidden = !_showValue || (CGFloor(ABS(self.value)) == 0);
 }
 
 - (NSString *)_dotStringValue
@@ -267,7 +315,7 @@ const CGFloat TGPhotoEditorSliderViewMargin = 21.0f;
             if (self.frame.size.width > self.frame.size.height)
             {
                 _knobDragCenter =_knobTouchCenterStart + touchLocation.x - _knobTouchStart;
-                value = [self valueForCenterPosition:_knobDragCenter totalLength:self.frame.size.width knobSize:_knobView.image.size.width vertical:false];
+                value = [self valueForCenterPosition:_knobDragCenter - _knobPadding totalLength:self.frame.size.width - 2 * _knobPadding knobSize:_knobView.image.size.width vertical:false];
             }
             else
             {

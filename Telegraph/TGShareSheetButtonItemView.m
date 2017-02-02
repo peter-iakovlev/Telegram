@@ -22,7 +22,12 @@
         _button = [[TGModernButton alloc] init];
         _button.exclusiveTouch = true;
         [_button setTitle:title forState:UIControlStateNormal];
-        [_button setTitleColor:TGAccentColor()];
+        [_button setTitleColor:TGAccentColor() forState:UIControlStateNormal];
+        [_button setTitleColor:UIColorRGB(0x8e8e93) forState:UIControlStateDisabled];
+        [_button setContentEdgeInsets:UIEdgeInsetsMake(0.0f, 10.0f, 0.0f, 10.0f)];
+        _button.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+        _button.modernHighlight = true;
+        
         _button.titleLabel.font = TGSystemFontOfSize(20.0f + TGRetinaPixel);
         [_button addTarget:self action:@selector(_buttonPressed) forControlEvents:UIControlEventTouchUpInside];
         _button.stretchHighlightImage = true;
@@ -83,6 +88,10 @@
 - (void)setDestructive:(bool)destructive
 {
     [_button setTitleColor:destructive ? TGDestructiveAccentColor() : TGAccentColor()];
+}
+
+- (void)setEnabled:(bool)enabled {
+    _button.enabled = enabled;
 }
 
 - (void)_buttonPressed

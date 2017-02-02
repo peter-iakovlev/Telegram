@@ -13,6 +13,7 @@
 @class TGMessage;
 @class TGConversation;
 @class TGModernConversationController;
+@class TGCallManager;
 
 @interface TGInterfaceManager : NSObject <ASWatcher>
 
@@ -26,22 +27,25 @@
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation animated:(bool)animated;
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions;
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions animated:(bool)animated;
-- (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions atMessage:(NSDictionary *)atMessage clearStack:(bool)clearStack openKeyboard:(bool)openKeyboard animated:(bool)animated;
+- (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions atMessage:(NSDictionary *)atMessage clearStack:(bool)clearStack openKeyboard:(bool)openKeyboard canOpenKeyboardWhileInTransition:(bool)canOpenKeyboardWhileInTransition animated:(bool)animated;
 - (TGModernConversationController *)configuredPreviewConversationControlerWithId:(int64_t)conversationId;
 
 - (TGModernConversationController *)currentControllerWithPeerId:(int64_t)peerId;
 - (void)dismissConversation;
-- (void)navigateToConversationWithBroadcastUids:(NSArray *)broadcastUids forwardMessages:(NSArray *)forwardMessages;
 - (void)navigateToProfileOfUser:(int)uid preferNativeContactId:(int)preferNativeContactId;
 - (void)navigateToProfileOfUser:(int)uid;
 - (void)navigateToProfileOfUser:(int)uid shareVCard:(void (^)())shareVCard;
 - (void)navigateToProfileOfUser:(int)uid encryptedConversationId:(int64_t)encryptedConversationId;
-- (void)navigateToMediaListOfConversation:(int64_t)conversationId navigationController:(UINavigationController *)navigationController;
+- (void)navigateToSharedMediaOfConversationWithId:(int64_t)conversationId mode:(int)mode atMessage:(NSDictionary *)atMessage;
 
 - (void)displayBannerIfNeeded:(TGMessage *)message conversationId:(int64_t)conversationId;
 - (void)dismissBannerForConversationId:(int64_t)conversationId;
 - (void)dismissAllBanners;
 
 - (void)localizationUpdated;
+
+- (void)setupCallManager:(TGCallManager *)callManager;
+- (void)callPeerWithId:(int64_t)peerId;
+- (void)maybeDisplayCallTabAlert;
 
 @end

@@ -10,6 +10,7 @@
 #import "TGMessageEntityItalic.h"
 #import "TGMessageEntityCode.h"
 #import "TGMessageEntityPre.h"
+#import "TGMessageEntityMentionName.h"
 
 #define TGMessageEntitiesAttachmentType ((int)0x8C2E3CCE)
 

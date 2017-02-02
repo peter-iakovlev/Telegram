@@ -30,11 +30,15 @@
 - (void)setUpdatingFirstName:(NSString *)updatingFirstName updatingLastName:(NSString *)updatingLastName;
 
 - (void)setUpdatingAvatar:(UIImage *)updatingAvatar hasUpdatingAvatar:(bool)hasUpdatingAvatar;
+- (void)resetUpdatingAvatar:(NSString *)url;
+
+- (void)setHasUpdatingAvatar:(bool)hasUpdatingAvatar;
 - (bool)hasUpdatingAvatar;
 
 - (void)updateTimestamp;
 
 - (id)visibleAvatarView;
+- (id)avatarView;
 - (void)makeNameFieldFirstResponder;
 - (void)copyUpdatingAvatarToCacheWithUri:(NSString *)uri;
 - (NSString *)editingFirstName;

@@ -24,7 +24,7 @@
     }
     
     [ActionStageInstance() dispatchResource:@"/tg/conversation/historyCleared" resource:@(conversationId)];
-    [TGDatabaseInstance() clearConversation:conversationId populateActionQueue:true];
+    [TGDatabaseInstance() transactionClearConversationsWithPeerIds:@[@(conversationId)]];
     
     dispatch_async([ActionStageInstance() globalStageDispatchQueue], ^
     {

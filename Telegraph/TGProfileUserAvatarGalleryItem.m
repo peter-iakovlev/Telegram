@@ -9,8 +9,8 @@
     self = [super initWithLegacyThumbnailUrl:legacyThumbnailUrl legacyUrl:legacyUrl imageSize:imageSize isCurrent:isCurrent];
     if (self != nil)
     {
-        _imageId = imageId;
-        _accessHash = accessHash;
+        self.imageId = imageId;
+        self.accessHash = accessHash;
     }
     return self;
 }

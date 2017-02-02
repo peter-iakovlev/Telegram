@@ -6,6 +6,7 @@
 @protocol TGModernGalleryInterfaceView <NSObject>
 
 - (void)setClosePressed:(void (^)())closePressed;
+- (void)setScrollViewOffsetRequested:(void (^)(CGFloat offset))scrollViewOffsetRequested;
 
 - (void)itemFocused:(id<TGModernGalleryItem>)item itemView:(TGModernGalleryItemView *)itemView;
 
@@ -30,5 +31,7 @@
 
 - (bool)showHiddenInterfaceOnScroll;
 - (bool)shouldAutorotate;
+
+- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration;
 
 @end

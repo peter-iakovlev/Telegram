@@ -8,6 +8,7 @@
 #import "TGActionSheet.h"
 
 #import "TGAccessChecker.h"
+#import "TGNavigationBar.h"
 
 #import "TGUser.h"
 #import "TGConversation.h"
@@ -21,13 +22,19 @@
 #import "TGLocationMapModeControl.h"
 #import "TGLocationPinAnnotationView.h"
 
+#import "TGMenuSheetController.h"
+#import "TGShareMenu.h"
+#import "TGOpenInMenu.h"
+
 @interface TGLocationViewController () <MKMapViewDelegate>
 {
     CLLocationManager *_locationManager;
     
     bool _locationServicesDisabled;
+    
     CLLocation *_location;
     TGVenueAttachment *_venue;
+    TGLocationMediaAttachment *_locationAttachment;
     TGLocationAnnotation *_annotation;
     
     CLLocation *_lastDirectionsStartLocation;
@@ -36,10 +43,13 @@
     TGLocationTitleView *_titleView;
     TGLocationMapView *_mapView;
     
+    UIBarButtonItem *_actionsBarItem;
     UIView *_toolbarView;
     TGLocationTrackingButton *_trackingButton;
     TGLocationMapModeControl *_mapModeControl;
     id _peer;
+    
+    TGNavigationBar *_previewNavigationBar;
 }
 @end
 
@@ -76,6 +86,16 @@
     return self;
 }
 
+- (instancetype)initWithLocationAttachment:(TGLocationMediaAttachment *)locationAttachment peer:(id)peer
+{
+    self = [self initWithCoordinate:CLLocationCoordinate2DMake(locationAttachment.latitude, locationAttachment.longitude) venue:locationAttachment.venue peer:peer];
+    if (self != nil)
+    {
+        _locationAttachment = locationAttachment;
+    }
+    return self;
+}
+
 - (void)dealloc
 {
     _mapView.delegate = nil;
@@ -97,6 +117,7 @@
     _toolbarView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - 44.0f, self.view.frame.size.width, 44.0f)];
     _toolbarView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
     _toolbarView.backgroundColor = UIColorRGBA(0xf7f7f7, 1.0f);
+    _toolbarView.hidden = self.previewMode;
     UIView *stripeView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _toolbarView.frame.size.width, TGIsRetina() ? 0.5f : 1.0f)];
     stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
     stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
@@ -124,13 +145,15 @@
     CGFloat actionsButtonWidth = 0.0f;
     if (iosMajorVersion() >= 7)
     {
-        [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(actionsButtonPressed)]];
+        _actionsBarItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(actionsButtonPressed)];
+        [self setRightBarButtonItem:_actionsBarItem];
         actionsButtonWidth = 48.0f;
     }
     else
     {
         NSString *actionsButtonTitle = TGLocalized(@"Common.More");
-        [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:actionsButtonTitle style:UIBarButtonItemStylePlain target:self action:@selector(actionsButtonPressed)]];
+        _actionsBarItem = [[UIBarButtonItem alloc] initWithTitle:actionsButtonTitle style:UIBarButtonItemStylePlain target:self action:@selector(actionsButtonPressed)];
+        [self setRightBarButtonItem:_actionsBarItem];
         
         actionsButtonWidth = 16.0f;
         if ([actionsButtonTitle respondsToSelector:@selector(sizeWithAttributes:)])
@@ -154,6 +177,15 @@
         _titleView.backButtonWidth = backButtonWidth;
         _titleView.actionsButtonWidth = actionsButtonWidth;
         [self setTitleView:_titleView];
+        
+        if (self.previewMode)
+        {
+            _previewNavigationBar = [[TGNavigationBar alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 44.0f) barStyle:UIBarStyleDefault];
+            [self.view addSubview:_previewNavigationBar];
+            
+            [self setRightBarButtonItem:nil];
+            [_previewNavigationBar setItems:@[ [self navigationItem] ]];
+        }
     }
 }
 
@@ -169,11 +201,49 @@
     [TGLocationUtils requestWhenInUserLocationAuthorizationWithLocationManager:_locationManager];
 }
 
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    if (self.previewMode && !animated)
+    {
+        UIView *contentView = [[_mapView subviews] firstObject];
+        UIView *annotationContainer = nil;
+        for (NSUInteger i = 1; i < contentView.subviews.count; i++)
+        {
+            UIView *view = contentView.subviews[i];
+            if ([NSStringFromClass(view.class) rangeOfString:@"AnnotationContainer"].location != NSNotFound)
+            {
+                annotationContainer = view;
+                break;
+            }
+        }
+        
+        for (UIView *view in annotationContainer.subviews)
+            view.frame = CGRectOffset(view.frame, 0, 48.5f);
+    }
+}
+
 - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
 {
     [super willRotateToInterfaceOrientation:toInterfaceOrientation duration:duration];
     
     _titleView.interfaceOrientation = toInterfaceOrientation;
+}
+
+#pragma mark - 
+
+- (void)setPreviewMode:(bool)previewMode
+{
+    _previewMode = previewMode;
+    _toolbarView.hidden = previewMode;
+    
+    if (!previewMode)
+    {
+        [self setRightBarButtonItem:_actionsBarItem];
+        [_previewNavigationBar removeFromSuperview];
+        _previewNavigationBar = nil;
+    }
 }
 
 #pragma mark - Actions
@@ -185,87 +255,115 @@
 
 - (void)actionsButtonPressed
 {
-    NSMutableArray *actions = [[NSMutableArray alloc] init];
-    if (self.forwardPressed != nil)
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.ForwardViaTelegram") action:@"forward"]];
+    TGLocationMediaAttachment *locationAttachment = _locationAttachment;
+    if (locationAttachment == nil)
+        return;
     
-    if (_venue.venueId.length > 0)
+    CGRect (^sourceRect)(void) = ^CGRect
     {
-        if ([_venue.provider isEqualToString:TGLocationGooglePlacesVenueProvider])
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInGooglePlus") action:@"openInGooglePlus"]];
-        else if ([_venue.provider isEqualToString:TGLocationFoursquareVenueProvider])
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInFoursquare") action:@"openInFoursquare"]];
-    }
+        return CGRectZero;
+    };
     
-    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInMaps") action:@"openInMaps"]];
+   
+    __weak TGLocationViewController *weakSelf = self;
     
-    NSMutableArray *openInActions = [[NSMutableArray alloc] init];
-    
-    if ([TGLocationUtils isGoogleMapsInstalled])
-        [openInActions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInGoogleMaps") action:@"openInGoogleMaps"]];
-    
-    if ([TGLocationUtils isHereMapsInstalled])
-        [openInActions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInHereMaps") action:@"openInHereMaps"]];
-    
-    if ([TGLocationUtils isYandexMapsInstalled])
-        [openInActions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInYandexMaps") action:@"openInYandexMaps"]];
-    
-    if ([TGLocationUtils isWazeInstalled])
-        [openInActions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInWaze") action:@"openInWaze"]];
-    
-    TGActionSheetAction *cancelAction = [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel];
-    
-    if (openInActions.count < 3)
+    void (^shareAction)(TGMenuSheetController *) = ^(TGMenuSheetController *controller)
     {
-        [actions addObjectsFromArray:openInActions];
+        __strong TGLocationViewController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        NSString *coordinatePair = [NSString stringWithFormat:@"%lf,%lf", strongSelf->_location.coordinate.latitude, strongSelf->_location.coordinate.longitude];
+        NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://maps.apple.com/maps?ll=%@&q=%@&t=m", coordinatePair, coordinatePair]];
+        
+        [TGShareMenu presentInParentController:nil menuController:controller buttonTitle:TGLocalized(@"ShareMenu.CopyShareLink") buttonAction:^
+        {
+            [[UIPasteboard generalPasteboard] setString:url.absoluteString];
+        } shareAction:^(NSArray *peerIds, NSString *caption)
+        {
+            __strong TGLocationViewController *strongSelf = weakSelf;
+            if (strongSelf != nil && strongSelf.shareAction != nil)
+                strongSelf.shareAction(peerIds, caption);
+        } externalShareItemSignal:[SSignal single:url] sourceView:strongSelf.view sourceRect:nil barButtonItem:strongSelf.navigationItem.rightBarButtonItem];
+    };
+    
+    if ([TGOpenInMenu hasThirdPartyAppsForLocationAttachment:locationAttachment directions:false])
+    {
+        __block TGMenuSheetController *controller = [TGOpenInMenu presentInParentController:self menuController:nil title:TGLocalized(@"Map.OpenIn") locationAttachment:locationAttachment directions:false buttonTitle:TGLocalized(@"Conversation.ContextMenuShare") buttonAction:^
+        {
+            shareAction(controller);
+        } sourceView:self.view sourceRect:sourceRect barButtonItem:self.navigationItem.rightBarButtonItem];
     }
     else
     {
-        [actions addObject:openInActions.firstObject];
-        [openInActions removeObjectAtIndex:0];
-        [openInActions addObject:cancelAction];
+        TGMenuSheetController *controller = [[TGMenuSheetController alloc] init];
+        controller.dismissesByOutsideTap = true;
+        controller.hasSwipeGesture = true;
+        controller.narrowInLandscape = true;
+        controller.sourceRect = sourceRect;
+        controller.barButtonItem = self.navigationItem.rightBarButtonItem;
         
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.More") action:@"more"]];
+        NSMutableArray *itemViews = [[NSMutableArray alloc] init];
+        
+        __weak TGMenuSheetController *weakController = controller;
+        TGMenuSheetButtonItemView *openItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Map.OpenInMaps") type:TGMenuSheetButtonTypeDefault action:^
+        {
+            __strong TGLocationViewController *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            __strong TGMenuSheetController *strongController = weakController;
+            if (strongController == nil)
+                return;
+            
+            [strongController dismissAnimated:true];
+            [TGLocationUtils openMapsWithCoordinate:strongSelf->_location.coordinate withDirections:false locationName:strongSelf->_annotation.title];
+        }];
+        [itemViews addObject:openItem];
+        
+        TGMenuSheetButtonItemView *shareItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Conversation.ContextMenuShare") type:TGMenuSheetButtonTypeDefault action:^
+        {
+            __strong TGMenuSheetController *strongController = weakController;
+            if (strongController == nil)
+                return;
+            
+            shareAction(strongController);
+        }];
+        [itemViews addObject:shareItem];
+        
+        TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
+        {
+            __strong TGMenuSheetController *strongController = weakController;
+            if (strongController == nil)
+                return;
+            
+            [strongController dismissAnimated:true manual:true];
+        }];
+        [itemViews addObject:cancelItem];
+        
+        [controller setItemViews:itemViews];
+        [controller presentInViewController:self sourceView:self.view animated:true];
+
     }
-    
-    [actions addObject:cancelAction];
-    
-    void (^actionBlock)(TGLocationViewController *, NSString *) = ^(TGLocationViewController *controller, NSString *action)
-    {
-        if ([action isEqualToString:@"more"])
-        {
-            [[[TGActionSheet alloc] initWithTitle:TGLocalized(@"Map.OpenIn") actions:openInActions actionBlock:^(TGLocationViewController *controller, NSString *action)
-            {
-                [controller _performActionSheetAction:action];
-            } target:controller] showInView:controller.view];
-        }
-        else
-        {
-            [controller _performActionSheetAction:action];
-        }
-    };
-    
-    [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:actionBlock target:self] showInView:self.view];
 }
 
-- (void)_performActionSheetAction:(NSString *)action
+- (NSString *)_coordinateString
 {
-    if ([action isEqualToString:@"forward"])
-        self.forwardPressed();
-    else if ([action isEqualToString:@"openInMaps"])
-        [TGLocationUtils openMapsWithCoordinate:_location.coordinate withDirections:false locationName:_annotation.title];
-    else if ([action isEqualToString:@"openInGoogleMaps"])
-        [TGLocationUtils openGoogleMapsWithCoordinate:_location.coordinate withDirections:false];
-    else if ([action isEqualToString:@"openInHereMaps"])
-        [TGLocationUtils openHereMapsWithCoordinate:_location.coordinate];
-    else if ([action isEqualToString:@"openInYandexMaps"])
-        [TGLocationUtils openYandexMapsWithCoordinate:_location.coordinate withDirections:false];
-    else if ([action isEqualToString:@"openInGooglePlus"])
-        [TGLocationUtils openGoogleWithPlaceId:_venue.venueId];
-    else if ([action isEqualToString:@"openInFoursquare"])
-        [TGLocationUtils openFoursquareWithVenueId:_venue.venueId];
-    else if ([action isEqualToString:@"openInWaze"])
-        [TGLocationUtils openWazeWithCoordinate:_location.coordinate withDirections:false];
+    NSInteger latSeconds = (NSInteger)(_location.coordinate.latitude * 3600);
+    NSInteger latDegrees = latSeconds / 3600;
+    latSeconds = labs(latSeconds % 3600);
+    NSInteger latMinutes = latSeconds / 60;
+    latSeconds %= 60;
+    
+    NSInteger longSeconds = (NSInteger)(_location.coordinate.longitude * 3600);
+    NSInteger longDegrees = longSeconds / 3600;
+    longSeconds = labs(longSeconds % 3600);
+    NSInteger longMinutes = longSeconds / 60;
+    longSeconds %= 60;
+    
+    NSString *result = [NSString stringWithFormat:@"%@%02ld° %02ld' %02ld\" %@%02ld° %02ld' %02ld\"", latDegrees >= 0 ? @"N" : @"S", labs(latDegrees), latMinutes, latSeconds, longDegrees >= 0 ? @"E" : @"W", labs(longDegrees), longMinutes, longSeconds];
+    
+    return result;
 }
 
 - (void)trackingModePressed
@@ -311,49 +409,17 @@
 
 - (void)getDirectionsPressed
 {
-    bool googleMapsInstalled = [TGLocationUtils isGoogleMapsInstalled];
-    bool yandexMapsInstalled = [TGLocationUtils isYandexMapsInstalled];
-    bool yandexNavigatorInstalled = [TGLocationUtils isYandexNavigatorInstalled];
-    bool wazeInstalled = [TGLocationUtils isWazeInstalled];
-    bool anyThirdPartyAppInstalled = googleMapsInstalled || yandexMapsInstalled || yandexNavigatorInstalled || wazeInstalled;
+    TGLocationMediaAttachment *locationAttachment = _locationAttachment;
+    if (locationAttachment == nil)
+        return;
     
-    if (!anyThirdPartyAppInstalled)
+    if ([TGOpenInMenu hasThirdPartyAppsForLocationAttachment:locationAttachment directions:true])
     {
-        [TGLocationUtils openMapsWithCoordinate:_location.coordinate withDirections:true locationName:_annotation.title];
+        [TGOpenInMenu presentInParentController:self menuController:nil title:TGLocalized(@"Map.GetDirections") locationAttachment:locationAttachment directions:true buttonTitle:nil buttonAction:nil sourceView:self.view sourceRect:nil barButtonItem:nil];
     }
     else
     {
-        NSMutableArray *actions = [[NSMutableArray alloc] init];
-        
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInMaps") action:@"openInMaps"]];
-        
-        if (googleMapsInstalled)
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInGoogleMaps") action:@"openInGoogleMaps"]];
-
-        if (yandexMapsInstalled)
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInYandexMaps") action:@"openInYandexMaps"]];
-        
-        if (yandexNavigatorInstalled)
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInYandexNavigator") action:@"openInYandexNavigator"]];
-        
-        if (wazeInstalled)
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Map.OpenInWaze") action:@"openInWaze"]];
-        
-        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
-        
-        [[[TGActionSheet alloc] initWithTitle:TGLocalized(@"Map.GetDirections") actions:actions actionBlock:^(TGLocationViewController *controller, NSString *action)
-        {
-            if ([action isEqualToString:@"openInMaps"])
-                [TGLocationUtils openMapsWithCoordinate:controller->_location.coordinate withDirections:true locationName:_annotation.title];
-            else if ([action isEqualToString:@"openInGoogleMaps"])
-                [TGLocationUtils openGoogleMapsWithCoordinate:controller->_location.coordinate withDirections:true];
-            else if ([action isEqualToString:@"openInYandexMaps"])
-                [TGLocationUtils openYandexMapsWithCoordinate:controller->_location.coordinate withDirections:true];
-            else if ([action isEqualToString:@"openInYandexNavigator"])
-                [TGLocationUtils openDirectionsInYandexNavigatorWithCoordinate:controller->_location.coordinate];
-            else if ([action isEqualToString:@"openInWaze"])
-                [TGLocationUtils openWazeWithCoordinate:controller->_location.coordinate withDirections:true];
-        } target:self] showInView:self.view];
+        [TGLocationUtils openMapsWithCoordinate:_location.coordinate withDirections:true locationName:_annotation.title];
     }
 }
 
@@ -468,13 +534,13 @@
         
         _directions = [[MKDirections alloc] initWithRequest:request];
         [_directions calculateETAWithCompletionHandler:^(MKETAResponse *response, NSError *error)
-         {
-             if (error != nil)
-                 return;
+        {
+            if (error != nil)
+                return;
              
-             _annotation.userInfo = @{ TGLocationETAKey: @(response.expectedTravelTime) };
-             [self _updateAnnotationView];
-         }];
+            _annotation.userInfo = @{ TGLocationETAKey: @(response.expectedTravelTime) };
+            [self _updateAnnotationView];
+        }];
         
         _lastDirectionsStartLocation = _mapView.userLocation.location;
     }

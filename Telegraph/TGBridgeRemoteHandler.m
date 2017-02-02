@@ -67,7 +67,7 @@
     }
     else
     {
-        [[TGInterfaceManager instance] navigateToConversationWithId:peerId conversation:nil performActions:nil atMessage:@{ @"mid": @(messageId) } clearStack:true openKeyboard:false animated:true];
+        [[TGInterfaceManager instance] navigateToConversationWithId:peerId conversation:nil performActions:nil atMessage:@{ @"mid": @(messageId) } clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
         controller = [[TGInterfaceManager instance] currentControllerWithPeerId:peerId];
         
         if (startMedia)

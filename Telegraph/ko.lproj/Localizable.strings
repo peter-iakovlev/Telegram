@@ -30,13 +30,13 @@
 "CHAT_PHOTO_EDITED" = "%1$@님이 %2$@ 그룹의 사진을 변경했습니다";
 "CHAT_ADD_MEMBER" = "%1$@님이 %2$@ 그룹에 %3$@님을 초대했습니다";
 "CHAT_ADD_YOU" = "%1$@님이 %2$@ 그룹에 초대했습니다";
-"CHAT_DELETE_YOU" = "%2$@ 그룹방에서 %1$@님이 회원님을 퇴장 시켰습니다.";
-"CHAT_DELETE_MEMBER" = "%2$@ 그룹방에서 %3$@ 님을 %1$@ 님이 퇴장 시켰습니다.";
+"CHAT_DELETE_YOU" = "%2$@ 그룹방에서 %1$@님이 회원님을 내보냈습니다.";
+"CHAT_DELETE_MEMBER" = "%2$@ 그룹방에서 %3$@ 님을 %1$@ 님이 내보냈습니다.";
 "CHAT_LEFT" = "%1$@님이 %2$@ 그룹을 떠났습니다";
 "CHAT_RETURNED" = "%1$@님이 %2$@ 그룹으로 되돌아왔습니다";
 
-"MESSAGE_STICKER" = "%1$@님이 스티커를 보냈습니다";
-"CHAT_MESSAGE_STICKER" = "%1$@님이 %2$@ 그룹에 스티커를 보냈습니다";
+"MESSAGE_STICKER" = "%1$@님이 %2$@스티커를 보냈습니다";
+"CHAT_MESSAGE_STICKER" = "%1$@님이 %3$@스티커를 %2$@그룹방에 보냈습니다";
 
 "CONTACT_JOINED" = "%1$@님이 텔레그램에 가입했습니다!";
 "CONTACT_ACTIVATED" = "%1$@님이 계정 활성화를 도와주었습니다!";
@@ -52,18 +52,36 @@
 "CHANNEL_MESSAGE_PHOTO" = "%1$@ 님이 사진을 보냈습니다";
 "CHANNEL_MESSAGE_VIDEO" = "%1$@ 님이 동영상을 보냈습니다";
 "CHANNEL_MESSAGE_DOC" = "%1$@님이 문서를 보냈습니다";
-"CHANNEL_MESSAGE_STICKER" = "%1$@님이 스티커를 보냈습니다";
+"CHANNEL_MESSAGE_STICKER" = "%1$@님이 %2$@스티커를 작성했습니다.";
 "CHANNEL_MESSAGE_AUDIO" = "%1$@님이 음성메시지를 보냈습니다";
 "CHANNEL_MESSAGE_CONTACT" = "%1$@님이 연락처를 공유했습니다";
 "CHANNEL_MESSAGE_GEO" = "%1$@ 님이 위치를 보냈습니다";
 "CHANNEL_MESSAGE_FWDS" = "%2$@개의 메시지를 %1$@님이 전달하였습니다.";
 "CHANNEL_MESSAGE_GIF" = "%1$@ 님이 GIF파일을 보냈습니다";
 
+"PINNED_TEXT" = "%1$@ 님이 \"%2$@\" 를 고정함";
+"PINNED_NOTEXT" = "%1$@ 님이 메시지를 고정함";
+"PINNED_PHOTO" = "%1$@ 님이 사진을 고정함";
+"PINNED_VIDEO" = "%1$@ 님이 동영상을 고정함";
+"PINNED_DOC" = "%1$@ 님이 파일을 고정함";
+"PINNED_STICKER" = "%1$@님이 %2$@스티커를 고정했습니다.";
+"PINNED_AUDIO" = "%1$@ 님이 음성메시지를 고정함";
+"PINNED_CONTACT" = "%1$@ 님이 연락처를 고정함";
+"PINNED_GEO" = "%1$@ 님이 지도를 고정함";
+"PINNED_GIF" = "%1$@ 님이 GIF를 고정함";
+
+"MESSAGE_GAME" = "%1$@ 님이 %2$@ 게임으로 초대했습니다";
+"CHANNEL_MESSAGE_GAME" = "%1$@ 님이 %2$@ 게임으로 초대했습니다";
+"CHAT_MESSAGE_GAME" = "%1$@ 님이 %2$@ 그룹에 %3$@ 게임으로 초대했습니다";
+"PINNED_GAME" = "%1$@ 님이 게임을 고정함";
+
+"PHONE_CALL_REQUEST" = "%1$@님으로 부터 전화가 왔습니다";
+
 // Common
 "Common.OK" = "확인";
 "Common.Cancel" = "취소";
-"Common.Edit" = "편집";
-"Common.edit" = "편집";
+"Common.Edit" = "수정";
+"Common.edit" = "숮어";
 "Common.Done" = "완료";
 "Common.Next" = "다음";
 "Common.Delete" = "삭제";
@@ -132,6 +150,8 @@
 "Weekday.Friday" = "금요일";
 "Weekday.Saturday" = "토요일";
 "Weekday.Sunday" = "일요일";
+"Weekday.Today" = "오늘";
+"Weekday.Yesterday" = "어제";
 
 "Time.TodayAt" = "오늘 %@";
 "Time.YesterdayAt" = "어제 %@";
@@ -290,7 +310,7 @@
 "Conversation.Send" = "전송";
 "Conversation.typing" = "입력 중";
 "Conversation.MessageDeliveryFailed" = "메시지가 전송되지 않았습니다. 이 메시지를 보내려면 \"재전송\"을 탭하세요.";
-"Conversation.MessageDialogEdit" = "편집";
+"Conversation.MessageDialogEdit" = "수정";
 "Conversation.MessageDialogRetry" = "재전송";
 "Conversation.MessageDialogRetryAll" = "%1$d개의 메시지를 재전송";
 "Conversation.MessageDialogDelete" = "삭제";
@@ -303,14 +323,14 @@
 "Conversation.ForwardTitle" = "전달";
 "Conversation.ForwardChats" = "대화";
 "Conversation.ForwardContacts" = "대화상대";
-"Conversation.StatusKickedFromGroup" = "그룹에서 회원님이 퇴장당했습니다.";
+"Conversation.StatusKickedFromGroup" = "그룹에서 회원님을 내보냈습니다.";
 "Conversation.StatusLeftGroup" = "그룹을 떠났습니다";
 "Conversation.StatusTyping" = "입력 중";
 "Conversation.BroadcastTitle" = "단체 메시지";
 "Conversation.Call" = "전화 걸기";
 "Conversation.Mute" = "알림 해제";
 "Conversation.Unmute" = "알림 켜기";
-"Conversation.Edit" = "편집";
+"Conversation.Edit" = "수정";
 "Conversation.Info" = "정보";
 "Conversation.Search" = "검색";
 "Conversation.Block" = "차단";
@@ -373,7 +393,7 @@
 "Notification.JoinedChat" = "%@님이 그룹에 참여했습니다";
 "Notification.Invited" = "%@님이 %@님을 초대했습니다";
 "Notification.LeftChat" = "%@님이 그룹을 떠났습니다";
-"Notification.Kicked" = "%@ 님이 %@를 퇴장 시켰습니다.";
+"Notification.Kicked" = "%@ 님이 %@를 내보냈습니다.";
 "Notification.CreatedChat" = "%@님이 그룹을 만들었습니다";
 "Notification.CreatedChannel" = "채널 생성됨";
 "Notification.CreatedGroup" = "그룹 생성됨";
@@ -422,13 +442,13 @@
 "Conversation.Stop" = "중지";
 "Conversation.ViewFile" = "파일 보기";
 "Conversation.Download" = "다운로드";
-"Conversation.DownloadMegabytes" = "%.1fMb 다운로드 ";
-"Conversation.DownloadKilobytes" = "%dKb 다운로드";
-"Conversation.Megabytes" = "%.1fMb";
-"Conversation.Kilobytes" = "%dKb";
-"Conversation.Bytes" = "%db";
-"Conversation.DownloadProgressMegabytes" = "%1$.1fMb / %2$.1fMb";
-"Conversation.DownloadProgressKilobytes" = "%1$dKb / %2$dKb";
+"Conversation.DownloadMegabytes" = "%.1f MB 다운로드 ";
+"Conversation.DownloadKilobytes" = "%d KB 다운로드";
+"Conversation.Megabytes" = "%.1f MB";
+"Conversation.Kilobytes" = "%d KB";
+"Conversation.Bytes" = "%d B";
+"Conversation.DownloadProgressMegabytes" = "%1$.1f MB / %2$.1f MB";
+"Conversation.DownloadProgressKilobytes" = "%1$d KB / %2$d KB";
 "Conversation.ViewLocation" = "위치 보기";
 "Conversation.SearchWebImages" = "이미지 찾기 ";
 "Conversation.ShareMyContactInfo" = "내 연락처 정보 공유";
@@ -529,7 +549,7 @@
 "GroupInfo.AddParticipant" = "구성원 추가";
 "GroupInfo.AddParticipantTitle" = "대화상대";
 "GroupInfo.AddParticipantConfirmation" = "%@님을 그룹에 추가할까요?";
-"GroupInfo.KickedStatus" = "회원님이 그룹방에서 퇴당당했습니다.";
+"GroupInfo.KickedStatus" = "그룹에서 회원님을 내보냈습니다.";
 "GroupInfo.LeftStatus" = "그룹에서 나왔습니다";
 
 // Encryption Key
@@ -581,13 +601,13 @@
 "Settings.Logout" = "로그아웃";
 "Settings.Title" = "설정";
 "Settings.NotificationsAndSounds" = "알림 및 소리";
-"Settings.ChatSettings" = "채팅방 설정";
+"Settings.ChatSettings" = "데이터 및 저장소";
 "Settings.BlockedUsers" = "차단 목록";
 "Settings.ChatBackground" = "채팅방 배경화면";
 "Settings.Support" = "질문하기";
 "Settings.FAQ" = "자주 묻는 질문";
 "Settings.FAQ_URL" = "https://telegram.org/faq/ko";
-"Settings.FAQ_Intro" = "텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다. 일반적인 문제와 해결방법에 대해서는 '자주 묻는 질문'을 확인해 보세요.";
+"Settings.FAQ_Intro" = "텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다. \n\n일반적인 문제와 해결방법에 대해서는 '자주 묻는 질문'을 확인해 보세요.";
 "Settings.FAQ_Button" = "자주 묻는 질문";
 "Settings.SaveIncomingPhotos" = "받은 사진 저장";
 "Settings.SaveIncomingPhotosHelp" = "받은 사진을 카메라 롤에 저장";
@@ -618,10 +638,10 @@
 
 "Notifications.Reset" = "초기화";
 "Notifications.ResetAllNotifications" = "모든 알림 설정 초기화";
-"Notifications.ResetAllNotificationsHelp" = "연락처와 그룹에 대한 모든 알림 설정을 처음 상태로";
+"Notifications.ResetAllNotificationsHelp" = "연락처와 그룹에 대한 모든 알림 설정을 처음 상태로 되돌립니다.";
 
 // Chat Settings
-"ChatSettings.Title" = "채팅방 설정";
+"ChatSettings.Title" = "데이터 및 저장소";
 "ChatSettings.Appearance" = "화면 설정";
 "ChatSettings.TextSize" = "글자 크기";
 "ChatSettings.TextSizeUnits" = "pt";
@@ -635,7 +655,7 @@
 "ChatSettings.Cache" = "캐시";
 
 // Usage
-"Cache.Title" = "캐시 설정";
+"Cache.Title" = "저장소 사용량";
 "Cache.ClearCache" = "캐시 정리";
 "Cache.ClearCacheAlert" = "클라우드 채팅방에서 사진이나 동영상, 기타 파일 등은 공간 절약을 위해 이 기기에서 삭제됩니다.\n\n모든 파일은 텔레그램 클라우드에 여전히 남으며 필요하시면 언제든 다시 다운로드하실 수 있습니다.";
 "Cache.KeepMedia" = "사진/동영상 저장";
@@ -1135,7 +1155,7 @@
 "ForwardedPhotos_3_10" = "%@ 개의 전달된 사진";
 "ForwardedPhotos_any" = "%@ 개의 전달된 사진";
 
-"ForwardedVideos_1" = "전달된 비딩";
+"ForwardedVideos_1" = "전달된 비디오";
 "ForwardedVideos_2" = "2개의 전달된 비디오";
 "ForwardedVideos_3_10" = "%@ 개의 전달된 비디오";
 "ForwardedVideos_any" = "%@ 개의 전달된 비디오";
@@ -1327,7 +1347,7 @@
 "StickerPacksSettings.ShowStickersButtonHelp" = "입력 필드에 스티커 아이콘이 표시됩니다.";
 
 "StickerPacksSettings.StickerPacksSection" = "스티커 팩";
-"StickerPacksSettings.ManagingHelp" = "@stickers bot 봇을 통하여 누구든지 스스로 제작한 스티커를 등록 할 수 있습니다.\n\n스티커는  더블탭하여 \"스티커 추가\" 를 통하여 추가할 수 있습니다.";
+"StickerPacksSettings.ManagingHelp" = "아티스트분들은 언제든지 @stickers 봇을 통하여 스티커 셋을 생성 할 수 있습니다.\n\n스티커를 탭하여 확인하고 전체 스티커 셋을 추가 할 수 있습니다.";
 
 "StickerPack.RemovePrompt" = "\"%@\"를 제거하시겠습니까?";
 "StickerPack.BuiltinPackName" = "Great Minds";
@@ -1539,7 +1559,7 @@
 
 "Channel.Username.InvalidTooManyUsernames" = "죄송하지만, 너무 많은 공개 채널을 생성하였습니다. 기존 공개 채널을 삭제하시거나 비공개 채널을 생성할 수 있습니다.";
 
-"ChannelInfo.ChannelForbidden" = "죄송합니다, 이 채널은 더 이상 접근이 불가능 합니다.";
+"ChannelInfo.ChannelForbidden" = "죄송합니다, \"%@\" 채널은 더 이상 접근이 불가능 합니다.";
 
 "PhotoEditor.FadeTool" = "흐리기";
 "PhotoEditor.TintTool" = "색조";
@@ -1572,7 +1592,7 @@
 "ChatAdmins.Title" = "관리자 대화";
 "ChatAdmins.AllMembersAreAdmins" = "모든 구성원을 관리자로 설정";
 "ChatAdmins.AllMembersAreAdminsOnHelp" = "그룹에 있는 모든 구성원은 상대 초대, 이름 및 사진을 수정할 수 있습니다.";
-"ChatAdmins.AllMembersAreAdminsOffHelp" = "그룹에 있는 관리자만 구성원을 초대, 퇴장, 이름 편집 및 사진 수정할 수 있습니다.";
+"ChatAdmins.AllMembersAreAdminsOffHelp" = "그룹에 있는 관리자만 구성원을 초대, 퇴장, 이름 및 사진을 수정할 수 있습니다.";
 "ChatAdmins.AdminLabel" = "관리자";
 
 "Group.MessagePhotoUpdated" = "그룹 사진 업데이트됨";
@@ -1584,7 +1604,7 @@
 "Group.UpgradeNoticeText1" = "대화방인원 제한 및 추가 기능을 활용하시려면, 슈퍼그룹으로 업그레이드를 하세요:";
 "Group.UpgradeNoticeText2" = "• 슈퍼그룹은 {supergroup_member_limit}명까지 수용 가능합니다. \n• 새로운 참여자는 모든 대화내역을 볼 수 있습니다.\n• 관리자는 모두에게 메시지 삭제를 할 수 있습니다. \n• 기본값으로 알림이 음소거 됩니다.";
 "GroupInfo.UpgradeButton" = "슈퍼그룹으로 업그레이드하기";
-"Group.UpgradeConfirmation" = "슈퍼그룹을 보려면 구성원들이 최신 텔레그램 버전으로 업데이트 해야합니다.";
+"Group.UpgradeConfirmation" = "경고 : 되돌릴 수 없는 작업입니다. 슈퍼그룹에서 일반그룹방으로 다운 그레이드는 불가능합니다.";
 
 "Notification.GroupMigratedToChannel" = "그룹은 슈퍼그룹으로 업그레이드 되었습니다.";
 "Notification.GroupDeactivated" = "그룹이 비활성화 됨";
@@ -1742,7 +1762,7 @@
 "ExplicitContent.AlertChannel" = "이 채널은 앱 스토어 규정을 위반하였기 떄문에 접근을 할 수 없습니다.";
 "ExplicitContent.AlertUser" = "이 봇은 앱 스토어 규정을 위반하였기 떄문에 접근을 할 수 없습니다.";
 
-"StickerSettings.ContextHide" = "숨김";
+"StickerSettings.ContextHide" = "보관";
 "StickerSettings.ContextShow" = "보기";
 
 "Conversation.LinkDialogSave" = "저장";
@@ -1839,7 +1859,7 @@
 
 "Map.OpenInWaze" = "Waze로 열기";
 
-"ShareMenu.CopyShareLink" = "공유 링크 복사";
+"ShareMenu.CopyShareLink" = "링크 복사";
 
 "Channel.SignMessages" = "메시지 서명";
 "Channel.SignMessages.Help" = "메시지 작성하는 관리자 추가";
@@ -1848,6 +1868,397 @@
 
 "ChannelInfo.InvitationLinkDoesNotExist" = "죄송합니다, 채널이 더이상 존재하지 않습니다.";
 
-"Conversation.InputTextSilentBroadcastPlaceholder" = "Silent Broadcast";
+"Conversation.InputTextSilentBroadcastPlaceholder" = "조용한 공지";
 "Conversation.SilentBroadcastTooltipOn" = "메시지 알림 허용";
 "Conversation.SilentBroadcastTooltipOff" = "메시지 미알림 대상";
+
+"Settings.About" = "자기소개";
+"GroupInfo.LabelAdmin" = "관리자";
+
+"Conversation.Pin" = "고정";
+"Conversation.Unpin" = "고정제거";
+"Conversation.Report" = "스팸 신고";
+"Conversation.PinnedMessage" = "메시지 고정";
+
+"Conversation.Moderate.Delete" = "메시지 삭제";
+"Conversation.Moderate.Ban" = "사용자 차단";
+"Conversation.Moderate.Report" = "스팸 신고";
+"Conversation.Moderate.DeleteAllMessages" = "%@ 전부 삭제";
+
+"Group.Username.Help" = "**Telegram**에서 그룹명을 선택 할 수 있습니다. 설정을 하셨을 경우 다른 유저들이 검색할 수 있습니다.\n\n채널명으로  **a-z**, **0-9** 과 _ 를 사용가능하며,  최소 **5** 글자 이상을 기입하셔야 합니다";
+
+"Group.Username.InvalidTooShort" = "그룹명은 최소 5 글자 이상 입력해야 합니다.";
+"Group.Username.InvalidStartsWithNumber" = "그룹명은 숫자로 시작 할 수 없습니다.";
+
+"Group.Username.LinkHint" = "이 링크는 텔레그램 그룹으로 이동합니다.:[\nhttp://telegram.me/%@]";
+
+"Notification.PinnedTextMessage" = "%@님이 \"%@\"를 고정함";
+"Notification.PinnedPhotoMessage" = "%@ 님이 사진을 고정함";
+"Notification.PinnedVideoMessage" = "%@ 님이 비디오를 고정함";
+"Notification.PinnedAudioMessage" = "%@님이 음성메시지를 고정함";
+"Notification.PinnedDocumentMessage" = "%@님이 파일을 고정함";
+"Notification.PinnedAnimationMessage" = "%@님이 GIF를 고정함";
+"Notification.PinnedStickerMessage" = "%@님이 스티커를 고정함";
+"Notification.PinnedLocationMessage" = "%@님이 위치를 고정함";
+"Notification.PinnedContactMessage" = "%@님이 연락처를 고정함";
+"Notification.PinnedDeletedMessage" = "%@님이 삭제 메시지를 고정함";
+
+"Message.PinnedTextMessage" = "고정된 \"%@\"";
+"Message.PinnedPhotoMessage" = "고정된 사진";
+"Message.PinnedVideoMessage" = "고정된 비디오";
+"Message.PinnedAudioMessage" = "고정된 음성메시지";
+"Message.PinnedDocumentMessage" = "고정된 파일";
+"Message.PinnedAnimationMessage" = "고정된 GIF";
+"Message.PinnedStickerMessage" = "고정된 스티커";
+"Message.PinnedLocationMessage" = "고정된 위치";
+"Message.PinnedContactMessage" = "고정된 연락처";
+"Message.PinnedDeletedMessage" = "고정된 삭제 메시지";
+
+"Notification.PinnedMessage" = "고정된 메시지";
+
+"GroupInfo.ConvertToSupergroup" = "슈퍼그룹으로 변환하기";
+
+"ConvertToSupergroup.Title" = "슈퍼그룹";
+"ConvertToSupergroup.HelpTitle" = "**슈퍼그룹:**";
+"ConvertToSupergroup.HelpText" = "• 새로운 회원이 전체 메시지 확인 가능\n• 모든 회원에게 메시지가 삭제됨\n• 관리자가 중요한 메시지 고정가능\n• 생성자는 그룹 공개 링크 설정 가능";
+
+"ConvertToSupergroup.Note" = "**주위**: 이 작업은 되돌릴수 없습니다.";
+
+"GroupInfo.GroupType" = "그룹 타입";
+
+"Group.Setup.TypeHeader" = "그룹 타입";
+"Group.Setup.TypePublicHelp" = "공개 그룹은 검색이 가능하며, 누구나 입장 가능합니다";
+"Group.Setup.TypePrivateHelp" = "비공개 그룹은 초대 링크로만 입장 가능합니다.";
+
+"Group.Username.CreatePublicLinkHelp" = "텔레그램 검색을 통하여 다른 유저들이 그룹을 찾을 수 있습니다.";
+"Group.Username.CreatePrivateLinkHelp" = "이 링크를 통하여 다른 유저들이 그룹에 입장 할 수 있습니다. 이 링크는 언제든지 폐기 가능합니다.";
+
+"Conversation.PinMessageAlertGroup" = "이 메시지를 고정하여 그룹 모두에게 공유하겠습니까?";
+"Conversation.PinMessageAlertChannel" = "이 메시지를 고정하여 채널 모두에게 공유하겠습니까?";
+"Conversation.PinMessageAlert.OnlyPin" = "고정만";
+
+"Conversation.UnpinMessageAlert" = "메시지를 고정 해제하시겠습니까?";
+
+"Settings.About.Title" = "자기소개";
+"Settings.About.Help" = "자기소개에 대한 몇줄을 추가 할 수 있습니다. 회원님 정보를 보시는 분들에게 표시가 됩니다";
+
+"Profile.About" = "자기소개 ";
+
+"Group.Management.ErrorNotMember" = "아직 %@님이 그룹에 입장하지 않았습니다. 초대하시겠습니까?";
+
+"Conversation.ReportSpamAndLeave" = "스팸 신고 후 나가기";
+
+"Conversation.StatusKickedFromChannel" = "채널에서 회원님을 내보냈습니다.";
+
+"Generic.OpenHiddenLinkAlert" = "%@를 열겠습니까?";
+
+"Resolve.ErrorNotFound" = "죄송합니다, 이 대화상대는 더이상 존재하지 않습니다.";
+
+"StickerPack.AddStickers" = "스티커 추가";
+"StickerPack.Share" = "공유";
+"StickerPack.Send" = "스티커 전송";
+
+"StickerPack.RemoveStickers" = "스티커 제거";
+"StickerPack.RemoveStickerCount_1" = "스티커 1개 제거";
+"StickerPack.RemoveStickerCount_2" = "스티커 2개 제거";
+"StickerPack.RemoveStickerCount_3_10" = "스티커 %@개 제거";
+"StickerPack.RemoveStickerCount_any" = "스티커 %@개 제거";
+
+"StickerPack.HideStickers" = "스티커 숨기기";
+"StickerPack.ShowStickers" = "스티커 보이기";
+
+"ShareMenu.ShareTo" = "공유하기";
+"ShareMenu.SelectChats" = "채팅방 선택";
+"ShareMenu.Comment" = "코멘트 쓰기..";
+
+"MediaPicker.Videos" = "비디오";
+
+"Coub.TapForSound" = "눌러 알림음 활성";
+
+"Preview.SaveGif" = "GIF 저장";
+"Preview.DeleteGif" = "GIF 삭제";
+"Preview.CopyAddress" = "주소 복사";
+"Preview.ViewStickerPack" = "스티커 세트 확인";
+
+"Conversation.ShareBotLocationConfirmationTitle" = "위치 공유";
+"Conversation.ShareBotLocationConfirmation" = "현재 위치를 봇에게 전송합니다.";
+
+"Conversation.ShareBotContactConfirmationTitle" = "전화번호 공유하기";
+"Conversation.ShareBotContactConfirmation" = "봇이 전화번호를 인지를 하며, 다른 서비스와의 통합에 활용이 됩니다.";
+
+"Conversation.ShareInlineBotLocationConfirmation" = "요청시마다 봇이 위치를 확인합니다. 이 요청으로 인하여 특정 위치에 대한 결과 확인이 가능합니다.";
+
+"Activity.UploadingAudio" = "음성 메시지 전송";
+
+"Preview.Tooltip" = "꾹 눌러 미리보기";
+
+"StickerPack.ErrorNotFound" = "죄송합니다, 이 스티커셋은 더이상 존재하지 않습니다.";
+
+"Camera.TapAndHoldForVideo" = "꾹 눌러 녹화하기";
+
+"Conversation.TapAndHoldToRecord" = "꾹 눌러 녹음하기";
+
+"DialogList.RecentTitlePeople" = "사람";
+"DialogList.RecentTitleGroups" = "그룹";
+"DialogList.RecentTitleBots" = "봇";
+
+"Conversation.MessageEditedLabel" = "수정됨";
+"Conversation.EditingMessagePanelTitle" = "메시지 수정";
+
+"DialogList.Draft" = "임시저장";
+"Embed.PlayingInPIP" = "이 비디오는 화면속 화면으로 재생됩니다";
+
+"MediaPicker.Moments" = "순간";
+"MediaPicker.MomentsDateFormat" = "{month} {day}"; // 1 - day, 2 - month
+"MediaPicker.MomentsDateYearFormat" = "{month} {day}, {year}"; // 1 - day, 2 - month, 3 - year
+
+"MediaPicker.MomentsDateRangeFormat" = "{date1} – {date2}";
+"MediaPicker.MomentsDateRangeYearFormat" = "{date1} – {date2} {year}";
+"MediaPicker.MomentsDateRangeSameMonthFormat" = "{month} {day1} – {day2}";
+"MediaPicker.MomentsDateRangeSameMonthYearFormat" = "{month} {day1} – {day2}, {year}";
+
+"StickerPacksSettings.FeaturedPacks" = "인기 스티커";
+"FeaturedStickerPacks.Title" = "인기 스티커";
+
+"Invitation.JoinGroup" = "그룹 참여";
+"Invitation.Members_1" = "1 명:";
+"Invitation.Members_2" = "2 명:";
+"Invitation.Members_3_10" = "%@ 명:";
+"Invitation.Members_any" = "%@ 명:";
+
+"StickerPacksSettings.ArchivedPacks" = "보관된 스티커";
+"StickerPacksSettings.ArchivedPacks.Info" = "최대 200개의 스티커를 설치 할 수 있습니다.\n사용하지 않는 스티커는 새로추가시 보관됩니다.";
+
+"Conversation.CloudStorageInfo.Title" = "클라우드 저장소";
+"Conversation.ClousStorageInfo.Description1" = "• 여기로 메시지를 전달하여 저장";
+"Conversation.ClousStorageInfo.Description2" = "• 미디어와 파일을 전송하여 저장";
+"Conversation.ClousStorageInfo.Description3" = "• 모든 기기에서 이 대화를 공유";
+"Conversation.ClousStorageInfo.Description4" = "• 빠른검색을 위하여 검색사용";
+
+"Conversation.CloudStorage.ChatStatus" = "나와의 대화";
+
+"ArchivedPacksAlert.Title" = "오래된 스티커중 일부가 보관되어집니다. 스티커 설정에서 다시 재설정이 가능합니다.";
+
+"StickerSettings.ContextInfo" = "보관된 마스크 섹션에서 손쉽게 보관된 마스크를 재설정할 수 있습니다.";
+
+"Contacts.TopSection" = "주소록";
+
+"Login.ResetAccountProtected.Title" = "계정 초기화";
+"Login.ResetAccountProtected.Text" = "보안목적으로, 계정 %@이 비밀번호 설정이 되어져 있어, 약 1주일 후에 삭제를 할 예정입니다.\n\n삭제는 언제든지 쥐소가 가능합니다.";
+"Login.ResetAccountProtected.TimerTitle" = "다음 이후 계정 초기화 가능 : ";
+"Login.ResetAccountProtected.Reset" = "초기화";
+"Login.ResetAccountProtected.LimitExceeded" = "활성화된 사용자가 계정취소를 취소하였습니다. 7일후에 다시 시도해주세요.";
+
+"Login.CodeSentCall" = "회원님에게 코드를 전달하기 위하여 전화를 겁니다.";
+
+"Login.SmsRequestState1" = "텔레그램이 %d:%.2d 내에 SMS를 보낼 예정입니다.";
+"Login.SmsRequestState2" = "텔레그램에게 SMS를 요청중...";
+"Login.SmsRequestState3" = "텔레그램이 SMS를 전송하였습니다.\n[받지 못하셨나요?]";
+
+"CancelResetAccount.Title" = "계정 초기화 취소";
+"CancelResetAccount.TextSMS" = "%@ 번호에 접근이 가능한 누군가가 해당 계정 및 2단계 비밀번호 초기화를 요청하였습니다.\n\n만약 본인이 아니실 경우 방금 보내드린 코드를 본인 번호에 SMS로 전송해주세요.";
+
+"CancelResetAccount.Success" = "%@ 계정에 대한 삭제가 취소 되었습니다.";
+"MediaPicker.MomentsDateRangeSameMonthYearFormat" = "{month} {day1} – {day2}, {year}";
+
+"Paint.Clear" = "전체 삭제";
+"Paint.ClearConfirm" = "그림 삭제";
+"Paint.Delete" = "삭제";
+"Paint.Edit" = "수정";
+"Paint.Duplicate" = "복제";
+"Paint.Stickers" = "스티커";
+"Paint.RecentStickers" = "최근";
+"Paint.Masks" = "마스크";
+
+"Paint.Outlined" = "아웃라인";
+"Paint.Regular" = "레귤러";
+
+"MediaPicker.VideoMuteDescription" = "소리가 음소거되어, 비디오가 GIF처럼 자동재생 및 반복재생됩니다.";
+
+
+"Group.Username.RemoveExistingUsernamesInfo" = "죄송하지만, 너무 많은 공개아이디를 생성하였습니다. \n기존 공개 채널 혹은 그룹방을 비공개로 전환하거나 삭제해주세요.";
+
+"ServiceMessage.GameScoreExtended_1" = "{game} 에서 {name} 님이 {score} 점을 획득";
+"ServiceMessage.GameScoreExtended_2" = "{game} 에서 {name} 님이 {score} 점을 획득";
+"ServiceMessage.GameScoreExtended_3_10" = "{game} 에서 {name} 님이 {score} 점을 획득";
+"ServiceMessage.GameScoreExtended_any" = "{game} 에서 {name} 님이 {score} 점을 획득";
+
+"ServiceMessage.GameScoreSelfExtended_1" = "회원님이 {game} 에서 {score} 점을 획득";
+"ServiceMessage.GameScoreSelfExtended_2" = "회원님이 {game} 에서 {score} 점을 획득";
+"ServiceMessage.GameScoreSelfExtended_3_10" = "회원님이 {game} 에서 {score} 점을 획득";
+"ServiceMessage.GameScoreSelfExtended_any" = "회원님이 {game} 에서 {score} 점을 획득";
+
+"ServiceMessage.GameScoreSimple_1" = "{name} 님이 {score} 점을 획득";
+"ServiceMessage.GameScoreSimple_2" = "{name} 님이 {score} 점을 획득";
+"ServiceMessage.GameScoreSimple_3_10" = "{name} 님이 {score} 점을 획득";
+"ServiceMessage.GameScoreSimple_any" = "{name} 님이 {score} 점을 획득";
+
+"ServiceMessage.GameScoreSelfSimple_1" = "회원님이 {score} 점을 획득";
+"ServiceMessage.GameScoreSelfSimple_2" = "회원님이 {score} 점을 획득";
+"ServiceMessage.GameScoreSelfSimple_3_10" = "회원님이 {score} 점을 획득";
+"ServiceMessage.GameScoreSelfSimple_any" = "회원님이 {score} 점을 획득";
+
+"Notification.GameScoreExtended_1" = "{game}에서 {score} 점을 획득";
+"Notification.GameScoreExtended_2" = "{game}에서 {score} 점을 획득";
+"Notification.GameScoreExtended_3_10" = "{game}에서 {score} 점을 획득";
+"Notification.GameScoreExtended_any" = "{game}에서 {score} 점을 획득";
+
+"Notification.GameScoreSelfExtended_1" = "{game}에서 {score} 점을 획득";
+"Notification.GameScoreSelfExtended_2" = "{game}에서 {score} 점을 획득";
+"Notification.GameScoreSelfExtended_3_10" = "{game}에서 {score} 점을 획득";
+"Notification.GameScoreSelfExtended_any" = "{game}에서 {score} 점을 획득";
+
+"Notification.GameScoreSimple_1" = "{score} 점 획득";
+"Notification.GameScoreSimple_2" = "{score} 점 획득";
+"Notification.GameScoreSimple_3_10" = "{score} 점 획득";
+"Notification.GameScoreSimple_any" = "{score} 점 획득";
+
+"Notification.GameScoreSelfSimple_1" = "{score} 점 획득";
+"Notification.GameScoreSelfSimple_2" = "{score} 점 획득";
+"Notification.GameScoreSelfSimple_3_10" = "{score} 점 획득";
+"Notification.GameScoreSelfSimple_any" = "{score} 점 획득";
+
+"Stickers.Install" = "추가";
+
+"MaskStickerSettings.Title" = "마스크";
+"MaskStickerSettings.Info" = "전송하시려는 사진과 비디오에 마스크를 추가 할 수 있습니다. 사진 에디터를 전송하시기 전에 실행해주시면 됩니다.";
+
+"StickerPack.MaskCount_1" = "마스크 1개";
+"StickerPack.MaskCount_2" = "마스크 2개";
+"StickerPack.MaskCount_3_10" = "마스크 %@ 개";
+"StickerPack.MaskCount_any" = "마스크 %@ 개";
+
+"StickerPack.Add" = "추가";
+"StickerPack.AddMaskCount_1" = "마스크 1개 추가";
+"StickerPack.AddMaskCount_2" = "마스크 2개 추가";
+"StickerPack.AddMaskCount_3_10" = "마스크 %@개 추가";
+"StickerPack.AddMaskCount_any" = "마스크 %@개 추가";
+
+"StickerPack.Remove" = "삭제";
+"StickerPack.RemoveMaskCount_1" = "마스크 1개 삭제";
+"StickerPack.RemoveMaskCount_2" = "마스크 2개 삭ㅈ";
+"StickerPack.RemoveMaskCount_3_10" = "마스크 %@개 삭제";
+"StickerPack.RemoveMaskCount_any" = "마스크 %@개 삭제";
+
+"Conversation.BotInteractiveUrlAlert" = "이 bot을 통하여 %@이 텔레그램 이름과 아이디를(전화번호 아님) 웹페이지로 전달하시기를 허락하시나요?";
+"StickerPacksSettings.ArchivedMasks" = "마스크 보관";
+"StickerSettings.MaskContextInfo" = "보관된 스티커 섹션에서 손쉽게 보관된 스티커를 재설정할 수 있습니다.";
+"StickerPacksSettings.ArchivedMasks.Info" = "최대 200개의 마스크를 설치 할 수 있습니다.\n사용하지 않는 마스크는 새로추가시 보관됩니다.";
+
+"CloudStorage.Title" = "클라우드 저장소";
+
+"Widget.AuthRequired" = "텔레그램 로그인";
+"Widget.NoUsers" = "친구들과 대화를 시작하세요";
+
+"Message.GamePreviewLabel" = "게임";
+
+"ShareMenu.CopyShareLinkGame" = "게임 링크 복사";
+
+"Message.PinnedGame" = "게임 고정함";
+
+"Target.ShareGameConfirmationPrivate" = "%@에게 게임을 공유하겠습니까?";
+"Target.ShareGameConfirmationGroup" = "\"%@\"에게 게임을 공유하겠습니까?";
+
+"Activity.PlayingGame" = "게임 플레이중";
+
+"DialogList.SinglePlayingGameSuffix" = "%@님이 게임을 플레이중입니다.";
+
+"UserInfo.GroupsInCommon" = "공통 그룹";
+"Conversation.InstantPagePreview" = "즉시 보기";
+
+"StickerPack.ViewPack" = "스티커 세트 확인";
+"InstantPage.AuthorAndDateTitle" = "작성자 %1$@ • %2$@ ";
+"InstantPage.FeedbackButton" = "미리보기에 대한 의견 남기기";
+"Conversation.JumpToDate" = "날자로 이동";
+"Conversation.AddToReadingList" = "읽기 리스트에 추가";
+
+"AccessDenied.CallMicrophone" = "텔레그램에서 음성메시지를 보내기 위해 마이크에 대한 접근 권한을 필요로 합니다.\n\n '설정' — '개인 정보 보호' — '마이크'로 이동하여 텔레그램을 활성화하세요.";
+
+"Call.EncryptionKey.Title" = "암호화 키";
+"Call.EncryptionKey.Description" = "이 이미지와 텍스트는 %1$@ 님과의 현재 비밀대화에 대한 비밀키에서 파생된 것입니다.\n\n이 이미지와 텍스트가 %2$@ 님의 휴대전화와 동일하다면 end-to-end 암호화가 정상적으로 진행되고 있음을 보장합니다.\n\n더 자세한 사항은 telegram.org를 참고해 주세요.";
+
+"Application.Name" = "Telegram";
+"DialogList.Pin" = "고정";
+"DialogList.Unpin" = "고정제거";
+"DialogList.PinLimitError" = "죄송합니다, 고정할 수 있는 개수는 %@개입니다.";
+
+"Conversation.DeleteMessagesForMe" = "나에게만 삭제";
+"Conversation.DeleteMessagesFor" = "나와 %@에게 삭제";
+"Conversation.DeleteMessagesForEveryone" = "모두에게 삭제";
+
+"NetworkUsageSettings.Title" = "네트워크 사용량";
+"NetworkUsageSettings.Cellular" = "통신사";
+"NetworkUsageSettings.Wifi" = "WIFI";
+
+"NetworkUsageSettings.GeneralDataSection" = "메시지";
+"NetworkUsageSettings.MediaImageDataSection" = "사진";
+"NetworkUsageSettings.MediaVideoDataSection" = "비디오";
+"NetworkUsageSettings.MediaAudioDataSection" = "음성";
+"NetworkUsageSettings.MediaDocumentDataSection" = "문서";
+"NetworkUsageSettings.TotalSection" = "전체 바이트";
+"NetworkUsageSettings.BytesSent" = "보낸 바이트";
+"NetworkUsageSettings.BytesReceived" = "받은 바이트";
+
+"NetworkUsageSettings.ResetStats" = "통계 초기화";
+"NetworkUsageSettings.ResetStatsConfirmation" = "사용량 통계를 초기화 하시겠습니까?";
+"NetworkUsageSettings.CellularUsageSince" = "%@부터 사용된 네트워크";
+"NetworkUsageSettings.WifiUsageSince" = "%@ 부터 사용된 네트워크";
+
+"Settings.CallSettings" = "음성 전화";
+
+"Calls.TabTitle" = "전화";
+"Calls.All" = "전체";
+"Calls.Missed" = "부재중";
+"Calls.Clear" = "초기화";
+
+"CallSettings.Title" = "음성 전화";
+"CallSettings.RecentCalls" = "최근 전화";
+"CallSettings.TabIcon" = "전화 탭 보기";
+"CallSettings.TabIconDescription" = "전화 아이콘이 탭바에 표시됩니다.";
+"CallSettings.UseLessData" = "적은 데이터 사용";
+"CallSettings.UseLessDataDescription" = "전화에 적은 데이터 사용";
+"CallSettings.Never" = "거부";
+"CallSettings.OnMobile" = "통신사망";
+"CallSettings.Always" = "항상";
+"CallSettings.UseLessDataLongDescription" = "불안정한 네트워크에서 적은 데이터를 사용할 경우 통화개선이 있을수 있지만, 음성품질이 소폭 하락할 수 있습니다.";
+
+"Calls.CallTabTitle" = "전화 탭";
+"Calls.CallTabDescription" = "탭 바에 전화 탭을 추가 할 수 있습니다";
+"Calls.NotNow" = "지금은 안됨";
+"Calls.AddTab" = "탭 추가";
+"Calls.Search" = "전화 검색";
+"Calls.NewCall" = "새로운 전화";
+
+"Calls.RatingTitle" = "텔레그램 전화의 품질을\n평가해주세요.";
+"Calls.SubmitRating" = "제출";
+
+"Call.Seconds_1" = "%@초";
+"Call.Seconds_2" = "%@초";
+"Call.Seconds_3_10" = "%@초";
+"Call.Seconds_any" = "%@초";
+"Call.Minutes_1" = "%@분";
+"Call.Minutes_2" = "%@분";
+"Call.Minutes_3_10" = "%@분";
+"Call.Minutes_any" = "%@분";
+
+"Call.ShortSeconds_1" = "%@초";
+"Call.ShortSeconds_2" = "%@초";
+"Call.ShortSeconds_3_10" = "%@초";
+"Call.ShortSeconds_any" = "%@초";
+"Call.ShortMinutes_1" = "%@ 분";
+"Call.ShortMinutes_2" = "%@ 분";
+"Call.ShortMinutes_3_10" = "%@ 분";
+"Call.ShortMinutes_any" = "%@ 분";
+
+"Notification.CallTimeFormat" = "%1$@ (%2$@)"; // 1 - type, 2 - duration
+"Notification.CallOutgoing" = "발신 전화";
+"Notification.CallIncoming" = "수신 전화";
+"Notification.CallMissed" = "부재중 전화";
+"Notification.CallCanceled" = "취소된 전화";
+"Notification.CallFormat" = "%1$@ %2$@"; // 1 - title, 2 - time
+
+"Call.ConnectionErrorTitle" = "전화 안됨";
+"Call.ConnectionErrorMessage" = "인터넷 연결을 확인한 후 다시 시도해 주세요.";
+
+"Call.CallBack" = "전화 회신";
+"Call.CallAgain" = "다시 전화걸기";

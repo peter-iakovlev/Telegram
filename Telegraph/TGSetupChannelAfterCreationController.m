@@ -20,6 +20,9 @@
 
 #import "TGSelectContactController.h"
 
+#import "TGGroupManagementSignals.h"
+#import "TGRevokeLinkConversationItem.h"
+
 typedef enum {
     TGUsernameControllerUsernameStateNone,
     TGUsernameControllerUsernameStateValid,
@@ -34,6 +37,8 @@ typedef enum {
 @interface TGSetupChannelAfterCreationController () {
     TGConversation *_conversation;
     NSString *_exportedLink;
+    
+    UIBarButtonItem *_nextItem;
     
     bool _isPrivate;
     TGCheckCollectionItem *_publicItem;
@@ -54,36 +59,56 @@ typedef enum {
     TGSwitchCollectionItem *_commentsEnabledItem;
     
     TGUsernameControllerUsernameState _usernameState;
+    
+    bool _modal;
+    
+    SVariable *_conversationsToBeRemovedToAssignPublicUsernames;
+    SMetaDisposable *_conversationsToBeRemovedToAssignPublicUsernamesDisposable;
+    TGCollectionMenuSection *_removeExistingInfoSection;
+    TGCollectionMenuSection *_removeExistingConversationsSection;
+    NSArray<TGConversation *> *_conversationsToDelete;
+    
+    TGCollectionMenuSection *_typeSection;
 }
 
 @end
 
 @implementation TGSetupChannelAfterCreationController
 
-- (instancetype)initWithConversation:(TGConversation *)conversation exportedLink:(NSString *)exportedLink {
+- (instancetype)initWithConversation:(TGConversation *)conversation exportedLink:(NSString *)exportedLink modal:(bool)modal conversationsToDeleteForPublicUsernames:(NSArray *)conversationsToDeleteForPublicUsernames checkConversationsToDeleteForPublicUsernames:(bool)checkConversationsToDeleteForPublicUsernames {
     self = [super init];
     if (self != nil) {
-        self.title = TGLocalized(@"Channel.Setup.Title");
+        _conversationsToBeRemovedToAssignPublicUsernames = [[SVariable alloc] init];
         
-        [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Next") style:UIBarButtonItemStyleDone target:self action:@selector(nextPressed)] animated:false];
+        self.title = conversation.isChannelGroup ? TGLocalized(@"Conversation.InfoGroup") : TGLocalized(@"Channel.Setup.Title");
+        
+        _modal = modal;
+        
+        if (modal) {
+            [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelPressed)] animated:false];
+            _nextItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(nextPressed)];
+            [self setRightBarButtonItem:_nextItem animated:false];
+        } else {
+            [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Next") style:UIBarButtonItemStyleDone target:self action:@selector(nextPressed)] animated:false];
+        }
         
         _conversation = conversation;
         _exportedLink = exportedLink;
-        _isPrivate = false;
+        _isPrivate = _conversation.isChannelGroup ? _conversation.username.length == 0 : false;
         
         _checkUsernameDisposable = [[SMetaDisposable alloc] init];
         _updateUsernameDisposable = [[SMetaDisposable alloc] init];
         
-        TGHeaderCollectionItem *typeItem = [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Setup.TypeHeader")];
+        TGHeaderCollectionItem *typeItem = [[TGHeaderCollectionItem alloc] initWithTitle:conversation.isChannelGroup ? TGLocalized(@"Group.Setup.TypeHeader") : TGLocalized(@"Channel.Setup.TypeHeader")];
         _publicItem = [[TGCheckCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Setup.TypePublic") action:@selector(publicPressed)];
         _privateItem = [[TGCheckCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Setup.TypePrivate") action:@selector(privatePressed)];
-        _typeHelpItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.Setup.TypePrivateHelp")];
+        _typeHelpItem = [[TGCommentCollectionItem alloc] initWithFormattedText:@""];
         
-        TGCollectionMenuSection *typeSection =  [[TGCollectionMenuSection alloc] initWithItems:@[typeItem, _publicItem, _privateItem, _typeHelpItem]];
-        UIEdgeInsets topSectionInsets = typeSection.insets;
+        _typeSection =  [[TGCollectionMenuSection alloc] initWithItems:@[typeItem, _publicItem, _privateItem, _typeHelpItem]];
+        UIEdgeInsets topSectionInsets = _typeSection.insets;
         topSectionInsets.top = 32.0f;
-        typeSection.insets = topSectionInsets;
-        [self.menuSections addSection:typeSection];
+        _typeSection.insets = topSectionInsets;
+        [self.menuSections addSection:_typeSection];
         
         _usernameItem = [[TGUsernameCollectionItem alloc] init];
         _usernameItem.username = _conversation.username;
@@ -98,10 +123,10 @@ typedef enum {
             [strongSelf usernameChanged:username];
         };
         
-        TGCommentCollectionItem *publicCommentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.Username.CreatePublicLinkHelp")];
+        TGCommentCollectionItem *publicCommentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.CreatePublicLinkHelp") : TGLocalized(@"Channel.Username.CreatePublicLinkHelp")];
         publicCommentItem.topInset = 1.0f;
         
-        TGCommentCollectionItem *privateCommentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.Username.CreatePrivateLinkHelp")];
+        TGCommentCollectionItem *privateCommentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.CreatePrivateLinkHelp") : TGLocalized(@"Channel.Username.CreatePrivateLinkHelp")];
         privateCommentItem.topInset = 1.0f;
         
         _invalidUsernameItem = [[TGCommentCollectionItem alloc] init];
@@ -128,12 +153,49 @@ typedef enum {
         TGCommentCollectionItem *commentsCommentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.Username.CreateCommentsHelp")];
         commentsCommentItem.topInset = 1.0f;
         
-        TGCollectionMenuSection *commentsSection = [[TGCollectionMenuSection alloc] initWithItems:@[_commentsEnabledItem, commentsCommentItem]];
-        //[self.menuSections addSection:commentsSection];
+        _nextItem.enabled = _conversation.username.length != 0 || _isPrivate;
         
         [self updateIsPrivate];
+        
+        TGCommentCollectionItem *removeCommentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Group.Username.RemoveExistingUsernamesInfo")];
+        removeCommentItem.textColor = UIColorRGB(0xcf3030);
+        _removeExistingInfoSection = [[TGCollectionMenuSection alloc] initWithItems:@[removeCommentItem]];
+        _removeExistingInfoSection.insets = UIEdgeInsetsMake(16.0f, 0.0f, 0.0f, 0.0f);
+        _removeExistingConversationsSection = [[TGCollectionMenuSection alloc] initWithItems:@[]];
+        _removeExistingConversationsSection.insets = UIEdgeInsetsMake(8.0f, 0.0f, 8.0f, 0.0f);
+        
+        _conversationsToBeRemovedToAssignPublicUsernamesDisposable = [[SMetaDisposable alloc] init];
+        [_conversationsToBeRemovedToAssignPublicUsernamesDisposable setDisposable:[[_conversationsToBeRemovedToAssignPublicUsernames.signal deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *conversations) {
+            __strong TGSetupChannelAfterCreationController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf setConversationsToDelete:conversations force:false];
+            }
+        }]];
+        [_conversationsToBeRemovedToAssignPublicUsernames set:[SSignal single:conversationsToDeleteForPublicUsernames]];
+        
+        if (checkConversationsToDeleteForPublicUsernames) {
+            [self updateCanCreateUsernames];
+        }
     }
     return self;
+}
+
+- (void)dealloc {
+    [_conversationsToBeRemovedToAssignPublicUsernamesDisposable dispose];
+}
+
+- (void)updateCanCreateUsernames {
+    [_conversationsToBeRemovedToAssignPublicUsernames set:[TGGroupManagementSignals conversationsToBeRemovedToAssignPublicUsernames:_conversation.conversationId accessHash:_conversation.accessHash]];
+}
+
+- (void)loadView {
+    [super loadView];
+    
+    [self enterEditingMode:false];
+}
+
+- (void)cancelPressed {
+    [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
 }
 
 - (void)nextPressed {
@@ -158,12 +220,10 @@ typedef enum {
     SSignal *setupCommentsSignal = [SSignal complete];
     SSignal *setupLinkSignal = [SSignal complete];
     
-    if (_commentsEnabledItem.isOn != !_conversation.channelIsReadOnly) {
-        setupCommentsSignal = [TGChannelManagementSignals toggleChannelCommentsEnabled:_conversation.conversationId accessHash:_conversation.accessHash enabled:_commentsEnabledItem.isOn];
-    }
+    NSString *username = _isPrivate ? @"" : _usernameItem.username;
     
-    if (!_isPrivate && _usernameItem.username.length != 0) {
-        setupLinkSignal = [TGChannelManagementSignals updateChannelUsername:_conversation.conversationId accessHash:_conversation.accessHash username:_usernameItem.username];
+    if (!TGStringCompare(_conversation.username, username)) {
+        setupLinkSignal = [TGChannelManagementSignals updateChannelUsername:_conversation.conversationId accessHash:_conversation.accessHash username:username];
     }
     
     __weak TGSetupChannelAfterCreationController *weakSelf = self;
@@ -174,15 +234,19 @@ typedef enum {
     }] startWithNext:nil completed:^{
         __strong TGSetupChannelAfterCreationController *strongSelf = weakSelf;
         if (strongSelf != nil) {
-            TGSelectContactController *createGroupController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:false createBroadcast:false createChannel:true inviteToChannel:false showLink:false];
-            createGroupController.channelConversation = strongSelf->_conversation;
-            
-            NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:strongSelf.navigationController.viewControllers];
-            if (viewControllers.count != 1) {
-                [viewControllers removeObjectsInRange:NSMakeRange(1, viewControllers.count - 1)];
+            if (strongSelf->_modal) {
+                [strongSelf.presentingViewController dismissViewControllerAnimated:true completion:nil];
+            } else {
+                TGSelectContactController *createGroupController = [[TGSelectContactController alloc] initWithCreateGroup:false createEncrypted:false createBroadcast:false createChannel:true inviteToChannel:false showLink:false];
+                createGroupController.channelConversation = strongSelf->_conversation;
+                
+                NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:strongSelf.navigationController.viewControllers];
+                if (viewControllers.count != 1) {
+                    [viewControllers removeObjectsInRange:NSMakeRange(1, viewControllers.count - 1)];
+                }
+                [viewControllers addObject:createGroupController];
+                [strongSelf.navigationController setViewControllers:viewControllers animated:true];
             }
-            [viewControllers addObject:createGroupController];
-            [strongSelf.navigationController setViewControllers:viewControllers animated:true];
         }
     }];
 }
@@ -202,14 +266,9 @@ typedef enum {
         [_privateItem setIsChecked:true];
         [_publicItem setIsChecked:false];
         
-        _typeHelpItem.text = TGLocalized(@"Channel.Setup.TypePrivateHelp");
+        _typeHelpItem.text = _conversation.isChannelGroup ? TGLocalized(@"Group.Setup.TypePrivateHelp") : TGLocalized(@"Channel.Setup.TypePrivateHelp");
         
-        NSUInteger index = [self indexForSection:_linkPublicSection];
-        if (index != NSNotFound) {
-            [self.menuSections deleteSection:index];
-            [self.menuSections insertSection:_linkPrivateSection atIndex:index];
-            [self.collectionView reloadData];
-        }
+        [self setConversationsToDelete:_conversationsToDelete force:true];
         
         NSIndexPath *indexPath = [self indexPathForItem:_privateItem];
         [self.collectionView selectItemAtIndexPath:indexPath animated:false scrollPosition:UICollectionViewScrollPositionNone];
@@ -218,29 +277,35 @@ typedef enum {
         [_privateItem setIsChecked:false];
         [_publicItem setIsChecked:true];
         
-        _typeHelpItem.text = TGLocalized(@"Channel.Setup.TypePublicHelp");
+        _typeHelpItem.text = _conversation.isChannelGroup ? TGLocalized(@"Group.Setup.TypePublicHelp") : TGLocalized(@"Channel.Setup.TypePublicHelp");
         
-        NSUInteger index = [self indexForSection:_linkPrivateSection];
+        [self setConversationsToDelete:_conversationsToDelete force:true];
+        
+        /*NSUInteger index = [self indexForSection:_linkPrivateSection];
         if (index != NSNotFound) {
             [self.menuSections deleteSection:index];
             [self.menuSections insertSection:_linkPublicSection atIndex:index];
             [self.collectionView reloadData];
-        }
+        }*/
         
         NSIndexPath *indexPath = [self indexPathForItem:_publicItem];
         [self.collectionView selectItemAtIndexPath:indexPath animated:false scrollPosition:UICollectionViewScrollPositionNone];
         [self.collectionView deselectItemAtIndexPath:indexPath animated:true];
     }
+    
+    _nextItem.enabled = _usernameState == TGUsernameControllerUsernameStateValid || _isPrivate;
 }
 
 - (void)setUsernameState:(TGUsernameControllerUsernameState)state username:(NSString *)username
 {
     _usernameState = state;
+    bool valid = false;
     switch (state)
     {
         case TGUsernameControllerUsernameStateNone:
             break;
         case TGUsernameControllerUsernameStateValid:
+            valid = true;
             _invalidUsernameItem.showProgress = false;
             break;
         case TGUsernameControllerUsernameStateTooShort:
@@ -263,6 +328,8 @@ typedef enum {
             break;
     }
     
+    _nextItem.enabled = valid || _isPrivate;
+    
     [UIView animateWithDuration:0.3 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
      {
          switch (state)
@@ -279,7 +346,7 @@ typedef enum {
                  [_invalidUsernameItem setTextColor:UIColorRGB(0x26972c)];
                  break;
              case TGUsernameControllerUsernameStateTooShort:
-                 [_invalidUsernameItem setText:TGLocalized(@"Channel.Username.InvalidTooShort")];
+                 [_invalidUsernameItem setText:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.InvalidTooShort") : TGLocalized(@"Channel.Username.InvalidTooShort")];
                  _invalidUsernameItem.alpha = 1.0f;
                  _invalidUsernameItem.hidden = false;
                  _invalidUsernameItem.showProgress = false;
@@ -293,7 +360,7 @@ typedef enum {
                  [_invalidUsernameItem setTextColor:UIColorRGB(0xcf3030)];
                  break;
              case TGUsernameControllerUsernameStateStartsWithNumber:
-                 [_invalidUsernameItem setText:TGLocalized(@"Channel.Username.InvalidStartsWithNumber")];
+                 [_invalidUsernameItem setText:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.InvalidStartsWithNumber") :  TGLocalized(@"Channel.Username.InvalidStartsWithNumber")];
                  _invalidUsernameItem.alpha = 1.0f;
                  _invalidUsernameItem.hidden = false;
                  _invalidUsernameItem.showProgress = false;
@@ -402,6 +469,67 @@ typedef enum {
         _isPrivate = true;
         [self updateIsPrivate];
     }
+}
+
+- (void)setConversationsToDelete:(NSArray<TGConversation *> *)conversationsToDelete force:(bool)force {
+    if ([_conversationsToDelete isEqual:conversationsToDelete] && !force) {
+        return;
+    }
+    
+    _conversationsToDelete = conversationsToDelete;
+    
+    while (self.menuSections.sections.count != 0) {
+        [self.menuSections deleteSection:0];
+    }
+    
+    [self.menuSections addSection:_typeSection];
+    if (_isPrivate) {
+        [self.menuSections addSection:_linkPrivateSection];
+    } else {
+        if (_conversationsToDelete.count == 0) {
+            [self.menuSections addSection:_linkPublicSection];
+        } else {
+            while (_removeExistingConversationsSection.items.count != 0) {
+                [_removeExistingConversationsSection deleteItemAtIndex:0];
+            }
+            
+            __weak TGSetupChannelAfterCreationController *weakSelf = self;
+            for (TGConversation *conversation in _conversationsToDelete) {
+                TGRevokeLinkConversationItem *item = [[TGRevokeLinkConversationItem alloc] initWithConversation:conversation];
+                item.revoke = ^{
+                    __strong TGSetupChannelAfterCreationController *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        [strongSelf revokeUsernameFromConversation:conversation];
+                    }
+                };
+                [_removeExistingConversationsSection addItem:item];
+            }
+            
+            [self.menuSections addSection:_removeExistingInfoSection];
+            [self.menuSections addSection:_removeExistingConversationsSection];
+        }
+    }
+    
+    [self.collectionView reloadData];
+}
+
+- (void)revokeUsernameFromConversation:(TGConversation *)conversation {
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+    [progressWindow showWithDelay:0.1];
+    
+    __weak TGSetupChannelAfterCreationController *weakSelf = self;
+    [[[[[[TGChannelManagementSignals updateChannelUsername:conversation.conversationId accessHash:conversation.accessHash username:@""] mapToSignal:^SSignal *(__unused id result) {
+        return [SSignal complete];
+    }] then:[TGGroupManagementSignals conversationsToBeRemovedToAssignPublicUsernames:_conversation.conversationId accessHash:_conversation.accessHash]] deliverOn:[SQueue mainQueue]] onDispose:^{
+        TGDispatchOnMainThread(^{
+            [progressWindow dismiss:true];;
+        });
+    }] startWithNext:^(NSArray *conversations) {
+        __strong TGSetupChannelAfterCreationController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            [strongSelf->_conversationsToBeRemovedToAssignPublicUsernames set:[SSignal single:conversations]];
+        }
+    }];
 }
 
 @end

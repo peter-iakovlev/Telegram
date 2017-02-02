@@ -6,5 +6,6 @@
 @property (nonatomic, copy) void (^toggleItemSelection)(NSIndexPath *);
 
 - (instancetype)initForCollectionView:(UICollectionView *)collectionView;
+- (void)cancel;
 
 @end

@@ -16,6 +16,8 @@
 
 #import "TGBotSignals.h"
 
+#import "TLUserFull$userFull.h"
+
 @implementation TGExtendedUserDataRequestActor
 
 + (NSString *)genericPath
@@ -52,7 +54,7 @@
     }
 }
 
-- (void)extendedUserDataRequestSuccess:(TLUserFull *)userDesc
+- (void)extendedUserDataRequestSuccess:(TLUserFull$userFull *)userDesc
 {   
     TGUser *user = [[TGUser alloc] initWithTelegraphUserDesc:userDesc.link.user];
     [TGUserDataRequestBuilder executeUserObjectsUpdate:[NSArray arrayWithObject:user]];
@@ -96,6 +98,13 @@
     TGBotInfo *botInfo = [TGBotSignals botInfoForInfo:userDesc.bot_info];
     if (botInfo != nil)
         [TGDatabaseInstance() storeBotInfo:botInfo forUserId:user.uid];
+    
+    [TGDatabaseInstance() updateCachedUserData:user.uid block:^TGCachedUserData *(TGCachedUserData *data) {
+        if (data == nil) {
+            data = [[TGCachedUserData alloc] initWithAbout:nil groupsInCommonCount:0 groupsInCommon:nil supportsCalls:0];
+        }
+        return [[data updateGroupsInCommonCount:userDesc.common_chats_count] updateSupportsCalls:userDesc.flags & (1 << 4)];
+    }];
     
     NSMutableDictionary *resultDict = [[NSMutableDictionary alloc] init];
     [resultDict setObject:[[NSNumber alloc] initWithInt:userLink] forKey:@"userLink"];

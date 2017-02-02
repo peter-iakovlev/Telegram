@@ -227,17 +227,23 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
         return;
     }
     
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
     if (self.delegate != nil && [self.delegate respondsToSelector:@selector(touchedTableBackground)]) {
         [self.delegate performSelector:@selector(touchedTableBackground)];
     }
+#pragma clang diagnostic pop
 }
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
 {
     [super touchesCancelled:touches withEvent:event];
     
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
     if (self.delegate != nil && [self.delegate respondsToSelector:@selector(tableTouchesCancelled)])
         [self.delegate performSelector:@selector(tableTouchesCancelled)];
+#pragma clang diagnostic pop
 }
 
 - (void)setDelayVisibleItemsUpdate:(bool)delay
@@ -454,7 +460,11 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
     [self performBatchUpdates:updates completion:completion beforeDecorations:nil animated:true animationFactor:0.7f];
 }
 
-- (bool)performBatchUpdates:(void (^)(void))updates completion:(void (^)(BOOL))completion beforeDecorations:(void (^)())beforeDecorations animated:(bool)animated animationFactor:(float)animationFactor
+- (bool)performBatchUpdates:(void (^)(void))updates completion:(void (^)(BOOL))completion beforeDecorations:(void (^)())beforeDecorations animated:(bool)animated animationFactor:(float)animationFactor {
+    return [self performBatchUpdates:updates completion:completion beforeDecorations:beforeDecorations animated:animated animationFactor:animationFactor insideAnimation:nil];
+}
+
+- (bool)performBatchUpdates:(void (^)(void))updates completion:(void (^)(BOOL))completion beforeDecorations:(void (^)())beforeDecorations animated:(bool)animated animationFactor:(float)animationFactor insideAnimation:(void (^)())insideAnimation
 {
     std::map<NSInteger, CGRect> previousDecorationViewFrames;
     NSMutableDictionary *removedViews = [[NSMutableDictionary alloc] init];
@@ -585,6 +595,10 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
             }];
             
             [self updateHeaderView];
+            
+            if (insideAnimation) {
+                insideAnimation();
+            }
         } completion:^(__unused BOOL finished)
         {
             [removedViews enumerateKeysAndObjectsUsingBlock:^(__unused id key, UIView *view, __unused BOOL *stop)
@@ -636,6 +650,32 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
         return true;
     
     return false;
+}
+
+- (UIView *)resizableSnapshotViewFromRect:(CGRect)rect afterScreenUpdates:(BOOL)afterUpdates withCapInsets:(UIEdgeInsets)capInsets
+{
+    UIView *snapshotView = nil;
+    CGRect viewport = [self convertRect:self.bounds toView:self];
+    viewport.origin.y += self.contentInset.top;
+    viewport.size.height -= self.contentInset.top + self.contentInset.bottom;
+    
+    if (CGRectGetMinY(rect) <= CGRectGetMinY(viewport) || CGRectGetMaxX(rect) >= CGRectGetMaxY(viewport))
+    {
+        for (UICollectionViewCell *cell in self.visibleCells)
+        {
+            if (CGRectIntersectsRect(rect, cell.frame))
+            {
+                snapshotView = [cell resizableSnapshotViewFromRect:CGRectMake(rect.origin.x, rect.origin.y - cell.frame.origin.y, rect.size.width, rect.size.height) afterScreenUpdates:afterUpdates withCapInsets:UIEdgeInsetsZero];
+                break;
+            }
+        }
+    }
+    
+    if (snapshotView == nil)
+        snapshotView = [super resizableSnapshotViewFromRect:rect afterScreenUpdates:afterUpdates withCapInsets:capInsets];
+    
+    snapshotView.transform = self.transform;
+    return snapshotView;
 }
 
 @end

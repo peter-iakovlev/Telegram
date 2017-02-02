@@ -165,6 +165,9 @@
     contentOffset.x = MAX(0.0f, contentOffset.x);
     [super setContentOffset:contentOffset];
     
+    if (((UICollectionViewCell *)self.superview).highlighted)
+        [(UICollectionViewCell *)self.superview setHighlighted:false];
+    
     [self _postOffsetChangeNotification];
 }
 
@@ -224,9 +227,6 @@
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    if (((UICollectionViewCell *)self.superview).highlighted)
-        [(UICollectionViewCell *)self.superview setHighlighted:false];
-    
     [super touchesMoved:touches withEvent:event];
 }
 

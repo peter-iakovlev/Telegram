@@ -3,6 +3,7 @@
 @class TLPeer;
 @class TLMessageFwdHeader;
 
+
 @interface TLUpdates$modernUpdateShortMessage : TLUpdates
 
 @property (nonatomic) int32_t flags;

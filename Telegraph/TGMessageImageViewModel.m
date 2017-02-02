@@ -74,6 +74,7 @@
     [super bindViewToContainer:container viewStorage:viewStorage];
 
     [((TGMessageImageViewContainer *)self.boundView).imageView setExpectExtendedEdges:_expectExtendedEdges];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setFlexibleTimestamp:_flexibleTimestamp];
     
     if (!TGStringCompare(self.viewStateIdentifier, self.boundView.viewStateIdentifier))
         [((TGMessageImageViewContainer *)self.boundView).imageView loadUri:_uri withOptions:nil];
@@ -237,6 +238,14 @@
         TGImageViewOptionKeepCurrentImageAsPlaceholder: @true,
         TGImageViewOptionSynchronous: @(synchronous)
     }];
+}
+
+- (void)setInlineVideoInsets:(UIEdgeInsets)inlineVideoInsets {
+    if (!UIEdgeInsetsEqualToEdgeInsets(_inlineVideoInsets, inlineVideoInsets)) {
+        _inlineVideoInsets = inlineVideoInsets;
+        
+        [((TGMessageImageViewContainer *)self.boundView).imageView setInlineVideoInsets:_inlineVideoInsets];
+    }
 }
 
 @end

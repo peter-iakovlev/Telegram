@@ -25,6 +25,8 @@ NSString *const TGLocationETAKey = @"eta";
     self = [super initWithAnnotation:annotation reuseIdentifier:reuseIdentifier];
     if (self != nil)
     {
+        self.exclusiveTouch = true;
+        
         _titleLabel.font = TGSystemFontOfSize(15.5f);
         _titleLabel.text = annotation.title;
         _titleLabel.textColor = [UIColor blackColor];

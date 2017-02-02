@@ -68,18 +68,24 @@
 
 - (void)deleteLastBackward
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
     id delegate = self.delegate;
     if ([delegate respondsToSelector:@selector(textFieldDidHitLastBackspace)])
         [delegate performSelector:@selector(textFieldDidHitLastBackspace)];
+#pragma clang diagnostic pop
 }
 
 - (BOOL)becomeFirstResponder
 {
     if ([super becomeFirstResponder])
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
         id delegate = self.delegate;
         if ([delegate respondsToSelector:@selector(textFieldDidBecomeFirstResponder)])
             [delegate performSelector:@selector(textFieldDidBecomeFirstResponder)];
+#pragma clang diagnostic pop
         return true;
     }
     return false;
@@ -89,9 +95,12 @@
 {
     if ([super resignFirstResponder])
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
         id delegate = self.delegate;
         if ([delegate respondsToSelector:@selector(textFieldDidResignFirstResponder)])
             [delegate performSelector:@selector(textFieldDidResignFirstResponder)];
+#pragma clang diagnostic pop
         return true;
     }
     return false;

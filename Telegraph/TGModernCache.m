@@ -147,7 +147,7 @@ typedef enum {
 
 - (NSString *)_filePathForKey:(NSData *)key
 {
-    return [[_path stringByAppendingPathComponent:@"store"] stringByAppendingPathComponent:[TGStringUtils stringByEncodingInBase64:key]];
+    return [[_path stringByAppendingPathComponent:@"store"] stringByAppendingPathComponent:[TGStringUtils md5ForData:key]];
 }
 
 - (void)_dumpState:(id<PSKeyValueReader, PSKeyValueWriter>)readerWriter

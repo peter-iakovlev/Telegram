@@ -1,7 +1,10 @@
 #import "TGMediaGroupsController.h"
 #import "TGMediaGroupCell.h"
 
+#import "TGMediaAssetMomentList.h"
+
 #import "TGMediaAssetsPickerController.h"
+#import "TGMediaAssetsMomentsController.h"
 
 #import "TGMediaPickerToolbarView.h"
 
@@ -97,7 +100,14 @@
         if (!strongSelf.viewControllerHasEverAppeared && next.count > 0)
         {
             [strongSelf->_tableView layoutIfNeeded];
-            [strongSelf->_tableView selectRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] animated:false scrollPosition:UITableViewScrollPositionNone];
+            
+            for (TGMediaGroupCell *cell in strongSelf->_tableView.visibleCells)
+            {
+                if (cell.assetGroup.isCameraRoll)
+                {
+                    [strongSelf->_tableView selectRowAtIndexPath:[strongSelf->_tableView indexPathForCell:cell] animated:false scrollPosition:UITableViewScrollPositionNone];
+                }
+            }
         }
         else if ([strongSelf.navigationController isKindOfClass:[TGMediaAssetsController class]])
         {
@@ -142,10 +152,10 @@
 
 - (void)tableView:(UITableView *)__unused tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    TGMediaAssetGroup *assetGroup = _groups[indexPath.row];
+    id group = _groups[indexPath.row];
     
     if (self.openAssetGroup != nil)
-        self.openAssetGroup(assetGroup);
+        self.openAssetGroup(group);
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -154,7 +164,12 @@
     if (cell == nil)
         cell = [[TGMediaGroupCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:TGMediaGroupCellKind];
     
-    [cell configureForAssetGroup:_groups[indexPath.row]];
+    id group = _groups[indexPath.row];
+    
+    if ([group isKindOfClass:[TGMediaAssetMomentList class]])
+        [cell configureForMomentList:group];
+    else if ([group isKindOfClass:[TGMediaAssetGroup class]])
+        [cell configureForAssetGroup:group];
     
     return cell;
 }

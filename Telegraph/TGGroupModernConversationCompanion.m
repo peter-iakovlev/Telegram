@@ -36,6 +36,9 @@
 #import "TGPeerIdAdapter.h"
 #import "TGProgressWindow.h"
 
+#import "TGModernGalleryController.h"
+#import "TGGroupAvatarGalleryModel.h"
+
 typedef enum {
     TGGroupParticipationStatusMember = 0,
     TGGroupParticipationStatusLeft = 1,
@@ -63,9 +66,9 @@ typedef enum {
 
 @implementation TGGroupModernConversationCompanion
 
-- (instancetype)initWithConversationId:(int64_t)conversationId conversation:(TGConversation *)conversation userActivities:(NSDictionary *)userActivities mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
+- (instancetype)initWithConversation:(TGConversation *)conversation userActivities:(NSDictionary *)userActivities mayHaveUnreadMessages:(bool)mayHaveUnreadMessages
 {
-    self = [super initWithConversationId:conversationId mayHaveUnreadMessages:mayHaveUnreadMessages];
+    self = [super initWithConversation:conversation mayHaveUnreadMessages:mayHaveUnreadMessages];
     if (self != nil)
     {
         _conversation = conversation;
@@ -136,6 +139,8 @@ typedef enum {
 {
     if ([activity isEqualToString:@"recordingAudio"])
         return TGLocalized(@"Activity.RecordingAudio");
+    else if ([activity isEqualToString:@"uploadingAudio"])
+        return TGLocalized(@"Activity.UploadingAudio");
     else if ([activity isEqualToString:@"uploadingPhoto"])
         return TGLocalized(@"Activity.UploadingPhoto");
     else if ([activity isEqualToString:@"uploadingVideo"])
@@ -144,6 +149,8 @@ typedef enum {
         return TGLocalized(@"Activity.UploadingDocument");
     else if ([activity isEqualToString:@"pickingLocation"])
         return nil;
+    else if ([activity isEqualToString:@"playingGame"])
+        return TGLocalized(@"Activity.PlayingGame");
     
     return TGLocalized(@"Conversation.typing");
 }
@@ -160,6 +167,8 @@ typedef enum {
         return TGModernConversationTitleViewActivityUploading;
     else if ([activity isEqualToString:@"pickingLocation"])
         return 0;
+    else if ([activity isEqualToString:@"playingGame"])
+        return TGModernConversationTitleViewActivityPlaying;
     
     return TGModernConversationTitleViewActivityTyping;
 }
@@ -690,8 +699,8 @@ typedef enum {
         for (NSNumber *nUid in _conversation.chatParticipants.chatParticipantUids)
         {
             TGUser *user = [TGDatabaseInstance() loadUser:[nUid intValue]];
-            if (user != nil && user.uid != TGTelegraphInstance.clientUserId && user.userName.length != 0 && (normalizedMention.length == 0 || [[user.userName lowercaseString] hasPrefix:normalizedMention]))
-            {
+            TGLog(@"%d %@", user.uid, user.displayName);
+            if (user != nil && (normalizedMention.length == 0 || [[user.userName lowercaseString] hasPrefix:normalizedMention] || [[user.firstName lowercaseString] hasPrefix:normalizedMention] || [[user.lastName lowercaseString] hasPrefix:normalizedMention])) {
                 userDict[@(user.uid)] = user;
             }
         }
@@ -704,7 +713,7 @@ typedef enum {
     {
         int32_t uid = (int32_t)(item->_message.fromUid);
         TGUser *user = userDict[@(uid)];
-        if (user != nil)
+        if (user != nil && user.uid != TGTelegraphInstance.clientUserId)
         {
             [sortedUserList addObject:user];
             [userDict removeObjectForKey:@(uid)];
@@ -715,10 +724,17 @@ typedef enum {
     
     return [[canBeContextBot ? [TGRecentContextBotsSignal recentBots] : [SSignal single:@[]] mapToSignal:^SSignal *(NSArray *userIds) {
         return [TGDatabaseInstance() modify:^id{
-            NSMutableArray *users = [[NSMutableArray alloc] initWithArray:[userDict allValues]];
+            NSMutableArray *users = [[NSMutableArray alloc] init];
+            for (TGUser *user in [userDict allValues]) {
+                if (user.uid != TGTelegraphInstance.clientUserId) {
+                    [users addObject:user];
+                }
+            }
+            
             NSMutableArray *contextBots = [[NSMutableArray alloc] init];
             
             NSMutableSet *existingUsers = [[NSMutableSet alloc] init];
+            
             for (TGUser *user in users) {
                 [existingUsers addObject:@(user.uid)];
             }
@@ -733,7 +749,7 @@ typedef enum {
                     [existingUsers addObject:nUserId];
                     
                     TGUser *user = [TGDatabaseInstance() loadUser:[nUserId intValue]];
-                    if (user != nil && (normalizedMention.length == 0 || [[user.userName lowercaseString] hasPrefix:normalizedMention])) {
+                    if (user != nil && (normalizedMention.length == 0 || [[user.userName lowercaseString] hasPrefix:normalizedMention] || [[user.firstName lowercaseString] hasPrefix:normalizedMention] || [[user.lastName lowercaseString] hasPrefix:normalizedMention])) {
                         if (user.isContextBot) {
                             [contextBots addObject:user];
                         } else {
@@ -812,6 +828,21 @@ typedef enum {
 - (bool)isASingleBotGroup
 {
     return _hasSingleBot;
+}
+
+- (TGModernGalleryController *)galleryControllerForAvatar
+{
+    if (_conversation.chatPhotoSmall.length == 0)
+        return nil;
+    
+    TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+    modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithPeerId:_conversationId accessHash:0 messageId:0 legacyThumbnailUrl:_conversation.chatPhotoSmall legacyUrl:_conversation.chatPhotoBig imageSize:CGSizeMake(640.0f, 640.0f)];
+    
+    return modernGallery;
+}
+
+- (bool)isPeerAdmin {
+    return _conversation.isAdmin;
 }
 
 @end

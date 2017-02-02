@@ -90,7 +90,8 @@
     {
         for (UITouch *touch in [touches allObjects])
         {
-            if ([[self.view hitTest:[touch locationInView:self.view] withEvent:event] isKindOfClass:[UIControl class]])
+            UIView *hitResult = [self.view hitTest:[touch locationInView:self.view] withEvent:event];
+            if ([hitResult isKindOfClass:[UIControl class]])
             {
                 [self failGesture];
                 return;

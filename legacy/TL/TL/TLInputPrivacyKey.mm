@@ -85,3 +85,29 @@
 
 @end
 
+@implementation TLInputPrivacyKey$inputPrivacyKeyPhoneCall : TLInputPrivacyKey
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xfabadc5f;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x6c3f60ce;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLInputPrivacyKey$inputPrivacyKeyPhoneCall *object = [[TLInputPrivacyKey$inputPrivacyKeyPhoneCall alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+

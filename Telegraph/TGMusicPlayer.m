@@ -198,28 +198,32 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
 {
     [_queue dispatch:^
     {
-        __weak TGMusicPlayer *weakSelf = self;
-        [_currentRemoteControls setDisposable:[[TGRemoteControlsManager instance] requestControlsWithPrevious:^
-        {
-            __strong TGMusicPlayer *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                [strongSelf controlPrevious];
-        } next:^
-        {
-            __strong TGMusicPlayer *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                [strongSelf controlNext];
-        } play:play ? ^
-        {
-            __strong TGMusicPlayer *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                [strongSelf controlPlay];
-        } : nil pause: !play ? ^
-        {
-            __strong TGMusicPlayer *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                [strongSelf controlPause];
-        } : nil]];
+        if (_currentPlaylist.voice || _currentPlaylist == nil) {
+            [_currentRemoteControls setDisposable:nil];
+        } else {
+            __weak TGMusicPlayer *weakSelf = self;
+            [_currentRemoteControls setDisposable:[[TGRemoteControlsManager instance] requestControlsWithPrevious:^
+            {
+                __strong TGMusicPlayer *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf controlPrevious];
+            } next:^
+            {
+                __strong TGMusicPlayer *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf controlNext];
+            } play:play ? ^
+            {
+                __strong TGMusicPlayer *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf controlPlayPause];
+            } : nil pause: !play ? ^
+            {
+                __strong TGMusicPlayer *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf controlPlayPause];
+            } : nil]];
+        }
     }];
 }
 
@@ -413,6 +417,16 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
     }];
 }
 
+- (bool)storedShuffleValue
+{
+    return [[[NSUserDefaults standardUserDefaults] objectForKey:@"musicPlayerShuffle_v1"] boolValue];
+}
+
+- (TGMusicPlayerRepeatType)storedRepeatTypeValue
+{
+    return (TGMusicPlayerRepeatType)[[[NSUserDefaults standardUserDefaults] objectForKey:@"musicPlayerRepeatType_v1"] integerValue];
+}
+
 - (void)playItem:(TGMusicPlayerItem *)item
 {
     if (_currentPlaylist.markItemAsViewed) {
@@ -445,9 +459,12 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
     else
         duration = 0.0f;
     
+    bool shuffle = [self storedShuffleValue];
+    TGMusicPlayerRepeatType repeatType = [self storedRepeatTypeValue];
+    
     NSURL *itemUrl = [NSURL fileURLWithPath:path];
     TGMusicPlayerItemPosition itemPosition = [TGMusicPlayer itemPosition:item inArray:_currentPlaylist.items];
-    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item position:itemPosition paused:false offset:offset duration:duration albumArt:[TGMusicPlayer albumArtForUrl:itemUrl multicastManager:_albumArtMulticastManager] albumArtSync:[TGMusicPlayer albumArtSyncForUrl:itemUrl] downloadedStatus:TGMusicPlayerDownloadingStatusMake(true, false, 1.0f) isVoice:item.isVoice shuffle:(!item.isVoice && _currentStatus.shuffle) repeatType:!item.isVoice ? _currentStatus.repeatType : TGMusicPlayerRepeatTypeNone]];
+    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item position:itemPosition paused:false offset:offset duration:duration albumArt:[TGMusicPlayer albumArtForUrl:itemUrl multicastManager:_albumArtMulticastManager] albumArtSync:[TGMusicPlayer albumArtSyncForUrl:itemUrl] downloadedStatus:TGMusicPlayerDownloadingStatusMake(true, false, 1.0f) isVoice:item.isVoice shuffle:(!item.isVoice && shuffle) repeatType:!item.isVoice ? repeatType : TGMusicPlayerRepeatTypeNone]];
     
     [self requestControlsWithPlay:false];
     [_player play];
@@ -459,16 +476,18 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
 {
     TGMusicPlayerItem *nextItem = nil;
     
+    NSArray *items = (_currentStatus.shuffle ? _currentPlaylist.shuffledItems : _currentPlaylist.items);
+    
     if (_currentStatus.item != nil)
     {
         NSInteger index = -1;
-        for (TGMusicPlayerItem *item in _currentPlaylist.items)
+        for (TGMusicPlayerItem *item in items)
         {
             index++;
             if (TGObjectCompare(_currentStatus.item.key, item.key))
             {
-                if (index + 1 < (NSInteger)_currentPlaylist.items.count)
-                    nextItem = _currentPlaylist.items[index + 1];
+                if (index + 1 < (NSInteger)items.count)
+                    nextItem = items[index + 1];
                 break;
             }
         }
@@ -558,7 +577,9 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
         if (!TGObjectCompare(_currentPlaylist, playlist))
         {
             TGMusicPlayerPlaylist *previousPlaylist = _currentPlaylist;
-            _currentPlaylist = playlist;
+            bool shuffle = [self storedShuffleValue];
+            
+            _currentPlaylist = (previousPlaylist.items.count == 0 && shuffle) ? [playlist playlistWithShuffledItems] : playlist;
             if (playlist != nil) {
                 [self updateAudioSession];
             }
@@ -584,6 +605,9 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                             {
                                 if ([item.key isEqual:_currentStatus.item.key])
                                 {
+                                    if (shuffle)
+                                        _currentPlaylist = [_currentPlaylist playlistWithShuffleFromPlaylist:previousPlaylist currentItem:item];
+                                    
                                     TGMusicPlayerItemPosition itemPosition = [TGMusicPlayer itemPosition:item inArray:_currentPlaylist.items];
                                     
                                     [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item position:itemPosition paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice shuffle:_currentStatus.shuffle repeatType:_currentStatus.repeatType]];
@@ -613,6 +637,9 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                             {
                                 if ([aliasKey isEqual:_currentStatus.item.key])
                                 {
+                                    if (shuffle)
+                                        _currentPlaylist = [_currentPlaylist playlistWithShuffleFromPlaylist:previousPlaylist currentItem:item];
+                                    
                                     TGMusicPlayerItemPosition itemPosition = [TGMusicPlayer itemPosition:item inArray:_currentPlaylist.items];
                                     
                                     [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item position:itemPosition paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice shuffle:_currentStatus.shuffle repeatType:_currentStatus.repeatType]];
@@ -626,6 +653,9 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                 }
                 
                 if (!currentItemFound) {
+                    if (shuffle)
+                        _currentPlaylist = [_currentPlaylist playlistWithShuffledItems];
+                    
                     if (nextItemKey != nil) {
                         for (TGMusicPlayerItem *item in _currentPlaylist.items)
                         {
@@ -649,14 +679,17 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                     }
                 }
                 
+                NSArray *items = shuffle ? _currentPlaylist.shuffledItems : _currentPlaylist.items;
+                
                 if (!currentItemFound)
-                    [self playMediaFromItem:_currentPlaylist.items.firstObject];
+                    [self playMediaFromItem:items.firstObject];
             }
             
             [self updateNextItemAvailability];
             
             if (playlist == nil) {
                 [self updateAudioSession];
+                [_currentRemoteControls setDisposable:nil];
             }
         }
     }];
@@ -668,6 +701,18 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
     {
         if (_currentStatus != nil && _currentStatus.paused)
             [self playMediaFromItem:_currentStatus.item];
+    }];
+}
+
+- (void)controlPlayPause {
+    [_queue dispatch:^ {
+        if (_currentStatus != nil) {
+            if (_currentStatus.paused) {
+                [self playMediaFromItem:_currentStatus.item];
+            } else {
+                [self playMediaFromItem:_currentStatus.item];
+            }
+        }
     }];
 }
 
@@ -691,12 +736,14 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
 {
     [_queue dispatch:^
     {
-        if (_currentPlaylist.items.count != 0)
+        NSArray *items = _currentStatus.shuffle ? _currentPlaylist.shuffledItems : _currentPlaylist.items;
+        
+        if (items.count != 0)
         {
             if (_currentStatus.item != nil)
             {
                 NSInteger index = -1;
-                for (TGMusicPlayerItem *item in _currentPlaylist.items)
+                for (TGMusicPlayerItem *item in items)
                 {
                     index++;
                     
@@ -706,7 +753,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                         if (forward)
                         {
                             nextIndex = index + 1;
-                            if (nextIndex >= (NSInteger)_currentPlaylist.items.count)
+                            if (nextIndex >= (NSInteger)items.count)
                                 nextIndex = 0;
                         }
                         else
@@ -719,7 +766,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                             {
                                 nextIndex = index - 1;
                                 if (nextIndex < 0)
-                                    nextIndex = _currentPlaylist.items.count - 1;
+                                    nextIndex = items.count - 1;
                             }
                         }
                         
@@ -729,13 +776,13 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                             [self controlPlay];
                         }
                         else
-                            [self playMediaFromItem:_currentPlaylist.items[nextIndex]];
+                            [self playMediaFromItem:items[nextIndex]];
                         break;
                     }
                 }
             }
             else
-                [self playMediaFromItem:_currentPlaylist.items.firstObject];
+                [self playMediaFromItem:items.firstObject];
         }
     }];
 }
@@ -770,7 +817,14 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
 
 - (void)controlShuffle {
     [_queue dispatch:^{
-        [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item position:_currentStatus.position paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice shuffle:!_currentStatus.shuffle repeatType:_currentStatus.repeatType]];
+        bool shuffle = !_currentStatus.shuffle;
+        
+        [[NSUserDefaults standardUserDefaults] setObject:@(shuffle) forKey:@"musicPlayerShuffle_v1"];
+        
+        if (shuffle && ![_currentPlaylist hasShuffle])
+            [self _setPlaylist:[_currentPlaylist playlistWithShuffledItems] initialItemKey:nil forceRestart:false];
+        
+        [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item position:_currentStatus.position paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice shuffle:shuffle repeatType:_currentStatus.repeatType]];
     }];
 }
 
@@ -790,6 +844,8 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                 repeatType = TGMusicPlayerRepeatTypeNone;
                 break;
         }
+        
+        [[NSUserDefaults standardUserDefaults] setObject:@(repeatType) forKey:@"musicPlayerRepeatType_v1"];
          
         [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item position:_currentStatus.position paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice shuffle:_currentStatus.shuffle repeatType:repeatType]];
     }];
@@ -1071,27 +1127,19 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
 
 + (NSDictionary *)attributesForItem:(TGMusicPlayerItem *)item
 {
-    if ([item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
-        for (id attribute in ((TGDocumentMediaAttachment *)item.media).attributes)
-        {
-            if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
-            {
-                TGDocumentAttributeAudio *audioAttribute = attribute;
-                NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-                if (audioAttribute.title != nil)
-                    dict[@"title"] = audioAttribute.title;
-                if (audioAttribute.performer != nil)
-                    dict[@"performer"] = audioAttribute.performer;
-                dict[@"duration"] = @(audioAttribute.duration);
-                
-                return dict;
-            }
-        }
-    } else if ([item.media isKindOfClass:[TGAudioMediaAttachment class]]) {
-        return @{@"duration": @(((TGAudioMediaAttachment *)item.media).duration)};
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+    
+    if (item.performer.length != 0) {
+        dict[@"performer"] = item.performer;
     }
     
-    return @{};
+    if (item.title.length != 0) {
+        dict[@"title"] = item.title;
+    }
+    
+    dict[@"duration"] = @(item.duration);
+    
+    return dict;
 }
 
 + (bool)isHeadsetPluggedIn
@@ -1100,6 +1148,8 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
     for (AVAudioSessionPortDescription *desc in [route outputs])
     {
         if ([[desc portType] isEqualToString:AVAudioSessionPortHeadphones])
+            return true;
+        if ([[desc portType] isEqualToString:AVAudioSessionPortBluetoothA2DP])
             return true;
     }
     return false;

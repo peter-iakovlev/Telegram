@@ -4,24 +4,25 @@
 #import "../NSOutputStream+TL.h"
 
 #import "TLInputUser.h"
-#import "TLPhoneCall.h"
+#import "TLPhoneCallProtocol.h"
+#import "TLphone_PhoneCall.h"
 
 @implementation TLRPCphone_requestCall
 
 
 - (Class)responseClass
 {
-    return [TLPhoneCall class];
+    return [TLphone_PhoneCall class];
 }
 
 - (int)impliedResponseSignature
 {
-    return 0;
+    return (int)0xec82e140;
 }
 
 - (int)layerVersion
 {
-    return 8;
+    return 60;
 }
 
 - (int32_t)TLconstructorSignature
@@ -55,7 +56,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x101981ed;
+    return (int32_t)0xa41aa5e4;
 }
 
 - (int32_t)TLconstructorName
@@ -67,6 +68,9 @@
 {
     TLRPCphone_requestCall$phone_requestCall *object = [[TLRPCphone_requestCall$phone_requestCall alloc] init];
     object.user_id = metaObject->getObject((int32_t)0xafdf4073);
+    object.random_id = metaObject->getInt32((int32_t)0xca5a160a);
+    object.g_a = metaObject->getBytes((int32_t)0xa6887fe5);
+    object.protocol = metaObject->getObject((int32_t)0xd45aa5f2);
     return object;
 }
 
@@ -77,6 +81,24 @@
         value.type = TLConstructedValueTypeObject;
         value.nativeObject = self.user_id;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xafdf4073, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.random_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xca5a160a, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.g_a;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xa6887fe5, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.protocol;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xd45aa5f2, value));
     }
 }
 

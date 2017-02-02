@@ -17,6 +17,7 @@
 #import "TGPeerIdAdapter.h"
 
 #import "TGRecentGifsSignal.h"
+#import "TGRecentStickersSignal.h"
 
 #include <set>
 
@@ -42,9 +43,39 @@
     return self;
 }
 
++ (void)updatePeerRatings:(NSArray *)messages {
+    if (messages.count != 0) {
+        [TGDatabaseInstance() dispatchOnIndexThread:^{
+            NSMutableDictionary<NSNumber *, NSMutableArray<NSNumber *> *> *updatePeerRatingEvents = nil;
+            
+            for (TGMessage *message in messages) {
+                if (message.outgoing) {
+                    if (updatePeerRatingEvents == nil) {
+                        updatePeerRatingEvents = [[NSMutableDictionary alloc] init];
+                    }
+                    
+                    NSMutableArray *events = updatePeerRatingEvents[@(message.cid)];
+                    if (events == nil) {
+                        events = [[NSMutableArray alloc] init];
+                        updatePeerRatingEvents[@(message.cid)] = events;
+                    }
+                    
+                    [events addObject:@((int32_t)message.date)];
+                }
+            }
+            
+            if (updatePeerRatingEvents != nil) {
+                [TGDatabaseInstance() updatePeerRatings:[TGDatabaseInstance() peerRatingUpdatesFromOutgoingMessageEvents:updatePeerRatingEvents]];
+            }
+        } synchronous:false];
+    }
+}
+
 - (void)execute:(NSDictionary *)options
 {
     NSArray *messages = [options objectForKey:@"messages"];
+    [TGConversationAddMessagesActor updatePeerRatings:messages];
+    
     NSMutableDictionary *chats = [options objectForKey:@"chats"];
     bool doNotModifyDates = [options[@"doNotModifyDates"] boolValue];
     bool doNotAdd = [options[@"doNotAdd"] boolValue];
@@ -52,19 +83,8 @@
     if (!doNotAdd) {
         if (messages == nil && chats.count != 0)
         {
-            if ([chats respondsToSelector:@selector(allKeys)])
-            {
-                [chats enumerateKeysAndObjectsUsingBlock:^(__unused id key, TGConversation *conversation, __unused BOOL *stop)
-                {
-                    [[TGDatabase instance] addMessagesToConversation:nil conversationId:conversation.conversationId updateConversation:conversation dispatch:true countUnread:false];
-                }];
-            }
-            else
-            {
-                for (TGConversation *conversation in chats)
-                {
-                    [[TGDatabase instance] addMessagesToConversation:nil conversationId:conversation.conversationId updateConversation:conversation dispatch:true countUnread:false];
-                }
+            if ([chats respondsToSelector:@selector(allKeys)]) {
+                [TGDatabaseInstance() transactionAddMessages:nil updateConversationDatas:chats notifyAdded:false];
             }
             
             [ActionStageInstance() actionCompleted:self.path result:nil];
@@ -88,6 +108,7 @@
     int maxMid = 0;
     
     NSMutableArray *remoteGifDocuments = [[NSMutableArray alloc] init];
+    NSMutableArray *remoteStickerDocuments = [[NSMutableArray alloc] init];
     
     for (TGMessage *message in messages)
     {
@@ -111,15 +132,18 @@
                                 }
                             }
                         }
+                        if (((TGDocumentMediaAttachment *)attachment).isSticker) {
+                            [remoteStickerDocuments addObject:attachment];
+                        }
                         break;
                     }
                 }
             }
         }
         
+        TGConversation *chat = [TGDatabaseInstance() loadConversationWithId:message.cid];
         if (TGPeerIdIsChannel(message.cid) && TGMessageSortKeySpace(message.sortKey) != TGMessageSpaceImportant)
         {
-            TGConversation *chat = [TGDatabaseInstance() loadConversationWithId:message.cid];
             if (chat != nil && !chat.isChannelGroup)
             {
                 if (message.date > currentTime - 20)
@@ -143,7 +167,7 @@
         
         TGMessage *storeMessage = message;
         
-        if (!message.isSilent && !message.outgoing && (message.unread || TGPeerIdIsChannel(message.cid)) && (message.toUid != message.fromUid || TGPeerIdIsChannel(message.cid)))
+        if (!message.isSilent && !message.outgoing && ([chat isMessageUnread:message] || TGPeerIdIsChannel(message.cid)) && (message.toUid != message.fromUid || TGPeerIdIsChannel(message.cid)))
         {
             if (message.mid < TGMessageLocalMidBaseline && message.actionInfo == nil)
             {
@@ -278,7 +302,7 @@
                     [TGDatabaseInstance() updateChannels:@[conversation]];
                 }
             } else {
-                [[TGDatabase instance] addMessagesToConversation:conversationMessages conversationId:[nConversationId longLongValue] updateConversation:conversation dispatch:true countUnread:true updateDates:!doNotModifyDates];
+                [TGDatabaseInstance() transactionAddMessages:conversationMessages updateConversationDatas:@{@(conversation.conversationId): conversation} notifyAdded:false];
             }
         
             if (minRemoteMid > 0 && maxRemoteMid > 0 && (minRemoteMid != 0 || maxRemoteMid != 0) && minRemoteMid <= maxRemoteMid)
@@ -373,6 +397,9 @@
     
     if (remoteGifDocuments.count != 0) {
         [TGRecentGifsSignal addRemoteRecentGifFromDocuments:remoteGifDocuments];
+    }
+    if (remoteStickerDocuments.count != 0) {
+        [TGRecentStickersSignal addRemoteRecentStickerFromDocuments:remoteStickerDocuments];
     }
     
     [ActionStageInstance() actionCompleted:self.path result:nil];

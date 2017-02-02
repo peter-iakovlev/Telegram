@@ -412,7 +412,7 @@ static ASQueue *taskManagementQueue()
             if (thumbnailSourceImage != nil && !lowQualityThumbnail)
             {
                 NSData *thumbnailSourceData = UIImageJPEGRepresentation(thumbnailSourceImage, 0.8f);
-                [thumbnailSourceData writeToFile:thumbnailPath atomically:false];
+                [thumbnailSourceData writeToFile:thumbnailPath atomically:true];
             }
         }
     }

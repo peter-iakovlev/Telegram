@@ -10,8 +10,9 @@
 #import <AVFoundation/AVFoundation.h>
 #import "SQueue.h"
 
-const CGSize PGCameraVideoCaptureSize = { 640, 480 };
-const NSInteger PGCameraFrameRate = 24;
+#import "TGAudioSessionManager.h"
+
+const NSInteger PGCameraFrameRate = 30;
 
 @interface PGCameraCaptureSession () <AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate>
 {
@@ -27,8 +28,9 @@ const NSInteger PGCameraFrameRate = 24;
         
     AVCaptureDevice *_audioDevice;
     
-    SQueue *_videoQueue;
-    SQueue *_audioQueue;
+    dispatch_queue_t _videoQueue;
+    dispatch_queue_t _audioQueue;
+    SQueue *_audioSessionQueue;
     
     bool _captureNextFrame;
     bool _capturingForVideoThumbnail;
@@ -39,6 +41,9 @@ const NSInteger PGCameraFrameRate = 24;
     
     AVCaptureVideoOrientation _captureVideoOrientation;
     bool _captureMirrored;
+    
+    SMetaDisposable *_currentAudioSession;
+    bool _hasAudioSession;
 }
 
 @property (nonatomic, copy) void(^capturedFrameCompletion)(UIImage *image);
@@ -47,33 +52,35 @@ const NSInteger PGCameraFrameRate = 24;
 
 @implementation PGCameraCaptureSession
 
-- (instancetype)initWithPreferredPosition:(PGCameraPosition)position
+- (instancetype)initWithMode:(PGCameraMode)mode position:(PGCameraPosition)position
 {
     self = [super init];
     if (self != nil)
     {
-        _currentMode = PGCameraModePhoto;
+        _currentMode = mode;
         _photoFlashMode = PGCameraFlashModeOff;
         _videoFlashMode = PGCameraFlashModeOff;
         
-        _videoQueue = [[SQueue alloc] init];
-        _audioQueue = [[SQueue alloc] init];
+        _videoQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
+        _audioQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
+        _audioSessionQueue = [[SQueue alloc] init];
         
         _preferredCameraPosition = position;
+        
+        _currentAudioSession = [[SMetaDisposable alloc] init];
     }
     return self;
 }
 
 - (void)dealloc
 {
-    NSLog(@"Camera session: deaalloc");
-    [_videoOutput setSampleBufferDelegate:nil queue:[SQueue mainQueue]._dispatch_queue];
-    [_audioOutput setSampleBufferDelegate:nil queue:[SQueue mainQueue]._dispatch_queue];
+    [self endAudioSession];
+    [_videoOutput setSampleBufferDelegate:nil queue:NULL];
+    [_audioOutput setSampleBufferDelegate:nil queue:NULL];
 }
 
 - (void)performInitialConfigurationWithCompletion:(void (^)(void))completion
 {
-    NSLog(@"Camera session: initialization");
     _initialized = true;
     
     AVCaptureDevice *targetDevice = [PGCameraCaptureSession _deviceWithCameraPosition:_preferredCameraPosition];
@@ -87,8 +94,10 @@ const NSInteger PGCameraFrameRate = 24;
         _preferredCameraPosition = [PGCameraCaptureSession _cameraPositionForDevicePosition:_videoDevice.position];
         
         _videoInput = [AVCaptureDeviceInput deviceInputWithDevice:_videoDevice error:&error];
-        if (_videoInput != nil)
+        if (_videoInput != nil && [self canAddInput:_videoInput])
             [self addInput:_videoInput];
+        else
+            TGLog(@"ERROR: camera can't add video input");
     }
     else
     {
@@ -96,13 +105,26 @@ const NSInteger PGCameraFrameRate = 24;
         TGLog(@"ERROR: camera can't create video device");
     }
     
-    self.sessionPreset = AVCaptureSessionPresetPhoto;
+    if (_currentMode == PGCameraModePhoto || _currentMode == PGCameraModeSquare)
+    {
+#if !TARGET_IPHONE_SIMULATOR
+        self.sessionPreset = AVCaptureSessionPresetPhoto;
+#endif
+    }
+    else
+    {
+        [self switchToBestVideoFormatForDevice:_videoDevice];
+        [self _addAudioInputRequestAudioSession:true];
+        [self setFrameRate:PGCameraFrameRate forDevice:_videoDevice];
+    }
     
     AVCaptureStillImageOutput *imageOutput = [[AVCaptureStillImageOutput alloc] init];
+    [imageOutput setOutputSettings:@{AVVideoCodecKey : AVVideoCodecJPEG}];
     if ([self canAddOutput:imageOutput])
     {
-        [imageOutput setOutputSettings:@{AVVideoCodecKey : AVVideoCodecJPEG}];
+#if !TARGET_IPHONE_SIMULATOR
         [self addOutput:imageOutput];
+#endif
         _imageOutput = imageOutput;
     }
     else
@@ -112,14 +134,14 @@ const NSInteger PGCameraFrameRate = 24;
     }
     
     AVCaptureVideoDataOutput *videoOutput = [[AVCaptureVideoDataOutput alloc] init];
+    videoOutput.alwaysDiscardsLateVideoFrames = true;
+    videoOutput.videoSettings = @{ (id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange) };
     if ([self canAddOutput:videoOutput])
     {
-        videoOutput.alwaysDiscardsLateVideoFrames = true;
-        [videoOutput setSampleBufferDelegate:self queue:_videoQueue._dispatch_queue];
-
-        //videoOutput.videoSettings = @{ (id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange) };
-        videoOutput.videoSettings = @{ (id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA) };
+        [videoOutput setSampleBufferDelegate:self queue:_videoQueue];
+#if !TARGET_IPHONE_SIMULATOR
         [self addOutput:videoOutput];
+#endif
         _videoOutput = videoOutput;
     }
     else
@@ -128,12 +150,9 @@ const NSInteger PGCameraFrameRate = 24;
         TGLog(@"ERROR: camera can't add video output");
     }
     
-    [self _reconfigureDevice:self.videoDevice withBlock:^(AVCaptureDevice *device)
-    {
-        if (device.isLowLightBoostSupported)
-            device.automaticallyEnablesLowLightBoostWhenAvailable = true;
-    }];
+    self.currentFlashMode = PGCameraFlashModeOff;
     
+    [self _enableLowLightBoost];
     [self _enableVideoStabilization];
     
     if (completion != nil)
@@ -158,7 +177,7 @@ const NSInteger PGCameraFrameRate = 24;
 {
     [self beginConfiguration];
     
-    [self _removeAudioInput];
+    [self _removeAudioInputEndAudioSession:true];
     
     if (self.currentCameraPosition != _preferredCameraPosition)
     {
@@ -219,18 +238,19 @@ const NSInteger PGCameraFrameRate = 24;
         case PGCameraModePhoto:
         case PGCameraModeSquare:
         {
-            [self _removeAudioInput];
+            [self _removeAudioInputEndAudioSession:true];
             self.sessionPreset = AVCaptureSessionPresetPhoto;
-            [self setFrameRate:0];
+            [self setFrameRate:0 forDevice:_videoDevice];
         }
             break;
             
         case PGCameraModeVideo:
         case PGCameraModeClip:
         {
-            self.sessionPreset = AVCaptureSessionPresetMedium;
-            [self _addAudioInput];
-            [self setFrameRate:PGCameraFrameRate];
+            self.sessionPreset = AVCaptureSessionPresetInputPriority;
+            [self switchToBestVideoFormatForDevice:_videoDevice];
+            [self _addAudioInputRequestAudioSession:true];
+            [self setFrameRate:PGCameraFrameRate forDevice:_videoDevice];
         }
             break;
             
@@ -238,9 +258,87 @@ const NSInteger PGCameraFrameRate = 24;
             break;
     }
     
+    [self _enableLowLightBoost];
     [self _enableVideoStabilization];
     
     [self commitConfiguration];
+}
+
+- (void)switchToBestVideoFormatForDevice:(AVCaptureDevice *)device
+{
+    [self _reconfigureDevice:device withBlock:^(AVCaptureDevice *device)
+    {
+        NSArray *availableFormats = device.formats;
+        AVCaptureDeviceFormat *preferredFormat = nil;
+        NSMutableArray *maybeFormats = nil;
+        int32_t maxWidth = 0;
+        for (AVCaptureDeviceFormat *format in availableFormats)
+        {
+            if (![format.mediaType isEqualToString:@"vide"] || [[format valueForKey:@"isPhotoFormat"] boolValue])
+                continue;
+            
+            CMVideoDimensions dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription);
+            if (dimensions.width >= maxWidth && dimensions.width <= 1920)
+            {
+                if (dimensions.width > maxWidth)
+                    maybeFormats = [[NSMutableArray alloc] init];
+                FourCharCode mediaSubType = CMFormatDescriptionGetMediaSubType(format.formatDescription);
+                if (mediaSubType == kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange)
+                {
+                    maxWidth = dimensions.width;
+                    
+                    NSArray *rateRanges = format.videoSupportedFrameRateRanges;
+                    bool supportedRate = true;
+                    for (AVFrameRateRange *range in rateRanges)
+                    {
+                        if (range.maxFrameRate > 60)
+                        {
+                            supportedRate = false;
+                            break;
+                        }
+                    }
+                    
+                    if (supportedRate)
+                        [maybeFormats addObject:format];
+                }
+            }
+        }
+        
+        preferredFormat = maybeFormats.lastObject;
+        
+        [device setActiveFormat:preferredFormat];
+    }];
+}
+
+- (void)requestAudioSession
+{
+    if (_hasAudioSession)
+        return;
+    
+    _hasAudioSession = true;
+    [_audioSessionQueue dispatchSync:^
+    {
+        [_currentAudioSession setDisposable:[[TGAudioSessionManager instance] requestSessionWithType:TGAudioSessionTypePlayAndRecord interrupted:nil]];
+    }];
+}
+
+- (void)endAudioSession
+{
+    _hasAudioSession = false;
+    SMetaDisposable *currentAudioSession = _currentAudioSession;
+    [_audioSessionQueue dispatch:^
+    {
+        [currentAudioSession setDisposable:nil];
+    }];
+}
+
+- (void)_enableLowLightBoost
+{
+    [self _reconfigureDevice:_videoDevice withBlock:^(AVCaptureDevice *device)
+    {
+        if (device.isLowLightBoostSupported)
+            device.automaticallyEnablesLowLightBoostWhenAvailable = true;
+    }];
 }
 
 - (void)_enableVideoStabilization
@@ -255,7 +353,7 @@ const NSInteger PGCameraFrameRate = 24;
     }
 }
 
-- (void)_addAudioInput
+- (void)_addAudioInputRequestAudioSession:(bool)requestAudioSession
 {
     if (_audioDevice != nil)
         return;
@@ -277,13 +375,16 @@ const NSInteger PGCameraFrameRate = 24;
     AVCaptureAudioDataOutput *audioOutput = [[AVCaptureAudioDataOutput alloc] init];
     if ([self canAddOutput:audioOutput])
     {
-        [audioOutput setSampleBufferDelegate:self queue:_audioQueue._dispatch_queue];
+        [audioOutput setSampleBufferDelegate:self queue:_audioQueue];
         [self addOutput:audioOutput];
         _audioOutput = audioOutput;
     }
+    
+    if (requestAudioSession)
+        [self requestAudioSession];
 }
 
-- (void)_removeAudioInput
+- (void)_removeAudioInputEndAudioSession:(bool)endAudioSession
 {
     if (_audioDevice == nil)
         return;
@@ -296,6 +397,9 @@ const NSInteger PGCameraFrameRate = 24;
     _audioOutput = nil;
     
     _audioDevice = nil;
+    
+    if (endAudioSession)
+        [self endAudioSession];
 }
 
 #pragma mark - Zoom
@@ -433,6 +537,12 @@ const NSInteger PGCameraFrameRate = 24;
                             device.flashMode = flashMode;
                     }
                 }
+                else if (mode == PGCameraFlashModeAuto && self.alwaysSetFlash)
+                {
+                    AVCaptureFlashMode flashMode = [PGCameraCaptureSession _deviceFlashModeForCameraFlashMode:mode];
+                    if (device.hasFlash && [device isFlashModeSupported:flashMode])
+                        device.flashMode = flashMode;
+                }
             }
                 break;
                 
@@ -514,25 +624,28 @@ const NSInteger PGCameraFrameRate = 24;
             [self addInput:_videoInput];
         }
         
+        if (self.currentMode == PGCameraModeVideo)
+            [self switchToBestVideoFormatForDevice:deviceForTargetPosition];
+        
+        [self _removeAudioInputEndAudioSession:false];
+        [self _addAudioInputRequestAudioSession:false];
+        
         if (self.changingPosition != nil)
             self.changingPosition();
         
-        if (self.currentMode == PGCameraModeVideo || self.currentMode == PGCameraModeClip)
-            [self setFrameRate:PGCameraFrameRate];
-        else
-            [self setFrameRate:0];
-        
         [self commitConfiguration];
+        
+        if (self.currentMode == PGCameraModeVideo || self.currentMode == PGCameraModeClip)
+            [self setFrameRate:PGCameraFrameRate forDevice:deviceForTargetPosition];
+        else
+            [self setFrameRate:0 forDevice:deviceForTargetPosition];
     }
     
     _videoDevice = deviceForTargetPosition;
     
-    [self _reconfigureDevice:_videoDevice withBlock:^(AVCaptureDevice *device)
-    {
-        if (device.isLowLightBoostSupported)
-            device.automaticallyEnablesLowLightBoostWhenAvailable = true;
-    }];
+    [self setCurrentFlashMode:self.currentFlashMode];
     
+    [self _enableLowLightBoost];
     [self _enableVideoStabilization];
 }
 
@@ -587,7 +700,7 @@ const NSInteger PGCameraFrameRate = 24;
 #pragma mark - Configuration
 
 - (void)_reconfigureDevice:(AVCaptureDevice *)device withBlock:(void (^)(AVCaptureDevice *device))block
-{    
+{
     if (block == nil)
         return;
     
@@ -600,36 +713,32 @@ const NSInteger PGCameraFrameRate = 24;
         TGLog(@"ERROR: failed to reconfigure camera: %@", error);
 }
 
-- (void)setFrameRate:(NSInteger)frameRate
+- (void)setFrameRate:(NSInteger)frameRate forDevice:(AVCaptureDevice *)videoDevice
 {
     _frameRate = frameRate;
     
-    if (_frameRate > 0)
+    if ([videoDevice respondsToSelector:@selector(setActiveVideoMinFrameDuration:)] &&
+        [videoDevice respondsToSelector:@selector(setActiveVideoMaxFrameDuration:)])
     {
-        if ([self.videoDevice respondsToSelector:@selector(setActiveVideoMinFrameDuration:)] &&
-            [self.videoDevice respondsToSelector:@selector(setActiveVideoMaxFrameDuration:)])
+        if (_frameRate > 0)
         {
             NSInteger maxFrameRate = PGCameraFrameRate;
-            if (self.videoDevice.activeFormat.videoSupportedFrameRateRanges.count > 0)
+            if (videoDevice.activeFormat.videoSupportedFrameRateRanges.count > 0)
             {
                 AVFrameRateRange *range = self.videoDevice.activeFormat.videoSupportedFrameRateRanges.firstObject;
                 if (range.maxFrameRate < maxFrameRate)
                     maxFrameRate = (NSInteger)range.maxFrameRate;
             }
             
-            [self _reconfigureDevice:self.videoDevice withBlock:^(AVCaptureDevice *device)
+            [self _reconfigureDevice:videoDevice withBlock:^(AVCaptureDevice *device)
             {
                 [device setActiveVideoMinFrameDuration:CMTimeMake(1, (int32_t)maxFrameRate)];
                 [device setActiveVideoMaxFrameDuration:CMTimeMake(1, (int32_t)maxFrameRate)];
             }];
         }
-    }
-    else
-    {
-        if ([self.videoDevice respondsToSelector:@selector(setActiveVideoMinFrameDuration:)] &&
-            [self.videoDevice respondsToSelector:@selector(setActiveVideoMaxFrameDuration:)])
+        else
         {
-            [self _reconfigureDevice:self.videoDevice withBlock:^(AVCaptureDevice *device)
+            [self _reconfigureDevice:videoDevice withBlock:^(AVCaptureDevice *device)
             {
                 [device setActiveVideoMinFrameDuration:kCMTimeInvalid];
                 [device setActiveVideoMaxFrameDuration:kCMTimeInvalid];
@@ -660,48 +769,11 @@ const NSInteger PGCameraFrameRate = 24;
         }];
     }
     
-    CGSize targetVideoDimensions = CGSizeMake(640, 480);
-    
-    NSDictionary *videoCleanApertureSettings = @{
-                                                 AVVideoCleanApertureWidthKey: @((NSInteger)targetVideoDimensions.width),
-                                                 AVVideoCleanApertureHeightKey: @((NSInteger)targetVideoDimensions.height),
-                                                 AVVideoCleanApertureHorizontalOffsetKey: @10,
-                                                 AVVideoCleanApertureVerticalOffsetKey: @10
-                                                 };
-    
-    NSDictionary *videoAspectRatioSettings = @{
-                                               AVVideoPixelAspectRatioHorizontalSpacingKey: @3,
-                                               AVVideoPixelAspectRatioVerticalSpacingKey: @3
-                                               };
-
-    bool highDefinition = false;
-    NSDictionary *codecSettings = @{
-                                    AVVideoAverageBitRateKey: @(highDefinition ? ((NSInteger)(750000 * 2.0)) : 750000),
-                                    AVVideoCleanApertureKey: videoCleanApertureSettings,
-                                    AVVideoPixelAspectRatioKey: videoAspectRatioSettings
-                                    };
-    
-    NSDictionary *videoSettings = @{
-                                    AVVideoCodecKey: AVVideoCodecH264,
-                                    AVVideoCompressionPropertiesKey: codecSettings,
-                                    AVVideoWidthKey: @((NSInteger)targetVideoDimensions.width),
-                                    AVVideoHeightKey: @((NSInteger)targetVideoDimensions.height)
-                                    };
-    
-    AudioChannelLayout acl;
-    bzero( &acl, sizeof(acl));
-    acl.mChannelLayoutTag = kAudioChannelLayoutTag_Mono;
-    
-    NSDictionary *audioSettings = @{
-                                    AVFormatIDKey: @(kAudioFormatMPEG4AAC),
-                                    AVSampleRateKey: @(44100.0f),
-                                    AVEncoderBitRateKey: @(64000),
-                                    AVNumberOfChannelsKey: @(1),
-                                    AVChannelLayoutKey: [NSData dataWithBytes:&acl length:sizeof(acl)]
-                                    };
-    
     _captureVideoOrientation = orientation;
     _captureMirrored = mirrored;
+    
+    NSDictionary *videoSettings = [_videoOutput recommendedVideoSettingsForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
+    NSDictionary *audioSettings = [_audioOutput recommendedAudioSettingsForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
     
     _movieWriter = [[PGCameraMovieWriter alloc] initWithVideoTransform:TGTransformForVideoOrientation(orientation, mirrored) videoOutputSettings:videoSettings audioOutputSettings:audioSettings];
     _movieWriter.finishedWithMovieAtURL = completion;
@@ -726,88 +798,75 @@ const NSInteger PGCameraFrameRate = 24;
     }];
 }
 
-- (void)captureNextFrameForVideoThumbnail:(bool)forVideoThumbnail completion:(void (^)(UIImage * image))completion
+- (void)captureNextFrameCompletion:(void (^)(UIImage * image))completion
 {
     _captureNextFrame = true;
-    _capturingForVideoThumbnail = forVideoThumbnail;
     self.capturedFrameCompletion = completion;
 }
 
-static u_int8_t *TGCopyDataFromImageBuffer(CVImageBufferRef imageBuffer, size_t *outWidth, size_t *outHeight, size_t *outBytesPerRow)
+#define clamp(a) (uint8_t)(a > 255 ? 255 : (a < 0 ? 0 : a))
+
+- (UIImage *)imageFromSampleBuffer:(CMSampleBufferRef)sampleBuffer orientation:(UIImageOrientation)orientation
 {
-    size_t bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer);
+    CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
+    CVPixelBufferLockBaseAddress(imageBuffer,0);
+    
     size_t width = CVPixelBufferGetWidth(imageBuffer);
     size_t height = CVPixelBufferGetHeight(imageBuffer);
-    size_t currSize = bytesPerRow * height * sizeof(uint8_t);
+    uint8_t *yBuffer = CVPixelBufferGetBaseAddressOfPlane(imageBuffer, 0);
+    size_t yPitch = CVPixelBufferGetBytesPerRowOfPlane(imageBuffer, 0);
+    uint8_t *cbCrBuffer = CVPixelBufferGetBaseAddressOfPlane(imageBuffer, 1);
+    size_t cbCrPitch = CVPixelBufferGetBytesPerRowOfPlane(imageBuffer, 1);
     
-    if (outWidth != NULL)
-        *outWidth = width;
+    int bytesPerPixel = 4;
+    uint8_t *rgbBuffer = malloc(width * height * bytesPerPixel);
     
-    if (outHeight != NULL)
-        *outHeight = height;
+    for (size_t y = 0; y < height; y++)
+    {
+        uint8_t *rgbBufferLine = &rgbBuffer[y * width * bytesPerPixel];
+        uint8_t *yBufferLine = &yBuffer[y * yPitch];
+        uint8_t *cbCrBufferLine = &cbCrBuffer[(y >> 1) * cbCrPitch];
+        
+        for (size_t x = 0; x < width; x++)
+        {
+            int16_t y = yBufferLine[x];
+            int16_t cb = cbCrBufferLine[x & ~1] - 128;
+            int16_t cr = cbCrBufferLine[x | 1] - 128;
+            
+            uint8_t *rgbOutput = &rgbBufferLine[x * bytesPerPixel];
+            
+            int16_t r = (int16_t)round( y + cr *  1.4 );
+            int16_t g = (int16_t)round( y + cb * -0.343 + cr * -0.711 );
+            int16_t b = (int16_t)round( y + cb *  1.765);
+            
+            rgbOutput[0] = 0xff;
+            rgbOutput[1] = clamp(b);
+            rgbOutput[2] = clamp(g);
+            rgbOutput[3] = clamp(r);
+        }
+    }
     
-    if (outBytesPerRow != NULL)
-        *outBytesPerRow = bytesPerRow;
-    
-    void *srcBuff = CVPixelBufferGetBaseAddress(imageBuffer);
-    u_int8_t *outBuff = (u_int8_t *)malloc(currSize);
-    
-    memcpy(outBuff, srcBuff, currSize);
-    
-    return outBuff;
-}
-
-static UIImage *TGCapturedImage(u_int8_t *srcBuff, size_t width, size_t height, size_t bytesPerRow, UIImageOrientation orientation)
-{
-    size_t bytesPerRowOut = 4 * height * sizeof(uint8_t);
-    size_t currSize = width * 4 * height * sizeof(uint8_t);
-    
-    u_int8_t *outBuff = (u_int8_t *)malloc(currSize);
-    
-    vImage_Buffer ibuff = { srcBuff, height, width, bytesPerRow };
-    vImage_Buffer ubuff = { outBuff, width, height, bytesPerRowOut };
-    
-    uint8_t backColor[4] = { 0, 0, 0, 0 };
-    vImage_Error err = vImageRotate90_ARGB8888(&ibuff, &ubuff, 3, backColor, 0);
-    if (err != kvImageNoError)
-        TGLog(@"ERROR: camera failed to rotate captured buffer errno: %ld", err);
-
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-    
-    CGContextRef context = CGBitmapContextCreate(outBuff, height, width, 8, bytesPerRowOut, colorSpace, kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipFirst);
-    
+    CGContextRef context = CGBitmapContextCreate(rgbBuffer, width, height, 8, width * bytesPerPixel, colorSpace, kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipLast);
     CGImageRef quartzImage = CGBitmapContextCreateImage(context);
+    UIImage *image = [UIImage imageWithCGImage:quartzImage scale:1.0 orientation:orientation];
     
     CGContextRelease(context);
     CGColorSpaceRelease(colorSpace);
-    
-    UIImage *image = [UIImage imageWithCGImage:quartzImage scale:1.0 orientation:orientation];
-    
-    free(outBuff);
     CGImageRelease(quartzImage);
+    free(rgbBuffer);
+    
+    CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
     
     return image;
 }
 
-static UIImageOrientation TGCapturedImageOrientationForVideoOrientation(AVCaptureVideoOrientation orientation, bool mirrored)
+static UIImageOrientation TGSnapshotOrientationForVideoOrientation(bool mirrored)
 {
-    switch (orientation)
-    {
-        case AVCaptureVideoOrientationPortraitUpsideDown:
-            return mirrored ? UIImageOrientationDown : UIImageOrientationDown;
-            
-        case AVCaptureVideoOrientationLandscapeRight:
-            return mirrored ? UIImageOrientationLeftMirrored : UIImageOrientationLeft;
-            
-        case AVCaptureVideoOrientationLandscapeLeft:
-            return mirrored ? UIImageOrientationRightMirrored : UIImageOrientationRight;
-            
-        default:
-            return mirrored ? UIImageOrientationUpMirrored : UIImageOrientationUp;
-    }
+    return mirrored ? UIImageOrientationLeftMirrored : UIImageOrientationRight;
 }
 
-- (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)__unused connection
+- (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection
 {
     if (!self.isRunning)
         return;
@@ -816,6 +875,13 @@ static UIImageOrientation TGCapturedImageOrientationForVideoOrientation(AVCaptur
     {
         TGLog(@"WARNING: camera sample buffer data is not ready, skipping");
         return;
+    }
+    
+    if (self.outputSampleBuffer != nil)
+    {
+        CFRetain(sampleBuffer);
+        self.outputSampleBuffer(sampleBuffer, connection);
+        CFRelease(sampleBuffer);
     }
     
     if (_movieWriter.isRecording)
@@ -834,33 +900,9 @@ static UIImageOrientation TGCapturedImageOrientationForVideoOrientation(AVCaptur
         
         [[SQueue concurrentDefaultQueue] dispatch:^
         {
-            CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
-            CVPixelBufferLockBaseAddress(imageBuffer, 0);
-            
-            size_t width;
-            size_t height;
-            size_t bytesPerRow;
-            
-            uint8_t *srcBufferData = TGCopyDataFromImageBuffer(imageBuffer, &width, &height, &bytesPerRow);
-             
-            CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
-             
-            CFRelease(sampleBuffer);
-             
-            UIImageOrientation orientation = UIImageOrientationUp;
-            if (_capturingForVideoThumbnail)
-            {
-                orientation = TGCapturedImageOrientationForVideoOrientation(_captureVideoOrientation, _captureMirrored);
-            }
-            else
-            {
-                if (self.requestPreviewIsMirrored != nil)
-                    orientation = self.requestPreviewIsMirrored() ? UIImageOrientationUpMirrored : UIImageOrientationUp;
-            }
-            
-            UIImage *image = TGCapturedImage(srcBufferData, width, height, bytesPerRow, orientation);
-            free(srcBufferData);
-             
+            bool mirrored = self.requestPreviewIsMirrored();
+            UIImageOrientation orientation = TGSnapshotOrientationForVideoOrientation(mirrored);
+            UIImage *image = [self imageFromSampleBuffer:sampleBuffer orientation:orientation];
             capturedFrameCompletion(image);
         }];
     }

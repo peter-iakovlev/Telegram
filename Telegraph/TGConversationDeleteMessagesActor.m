@@ -42,8 +42,7 @@
         [TGDatabaseInstance() addMessagesToChannel:_peerId messages:nil deleteMessages:messageIds unimportantGroups:nil addedHoles:nil removedHoles:nil removedUnimportantHoles:nil updatedMessageSortKeys:nil returnGroups:false keepUnreadCounters:false changedMessages:nil];
         [TGDatabaseInstance() enqueueDeleteChannelMessages:_peerId messageIds:messageIds];
     } else {
-        NSMutableDictionary *messagesByConversation = [[NSMutableDictionary alloc] init];
-        [TGDatabaseInstance() deleteMessages:messageIds populateActionQueue:true fillMessagesByConversationId:messagesByConversation];
+        [TGDatabaseInstance() transactionRemoveMessagesInteractive:@{@(_peerId): messageIds} keepDates:false removeMessagesInteractiveForEveryone:[options[@"forEveryone"] boolValue] updateConversationDatas:nil];
     }
 
     for (NSNumber *nMid in messageIds)

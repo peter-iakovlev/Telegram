@@ -353,7 +353,7 @@
     }
 }
 
-- (void)setFollowLink:(void (^)())followLink {
+- (void)setFollowLink:(void (^)(NSString *))followLink {
     _textContentView.followLink = followLink;
 }
 

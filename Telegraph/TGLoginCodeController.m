@@ -89,12 +89,13 @@
 @property (nonatomic, strong) TGProgressWindow *progressWindow;
 
 @property (nonatomic) bool messageSentToTelegram;
+@property (nonatomic) bool messageSentViaPhone;
 
 @end
 
 @implementation TGLoginCodeController
 
-- (id)initWithShowKeyboard:(bool)__unused showKeyboard phoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash phoneTimeout:(NSTimeInterval)phoneTimeout messageSentToTelegram:(bool)messageSentToTelegram
+- (id)initWithShowKeyboard:(bool)__unused showKeyboard phoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash phoneTimeout:(NSTimeInterval)phoneTimeout messageSentToTelegram:(bool)messageSentToTelegram messageSentViaPhone:(bool)messageSentViaPhone
 {
     self = [super initWithNibName:nil bundle:nil];
     if (self)
@@ -107,6 +108,7 @@
         _phoneCodeHash = phoneCodeHash;
         _phoneTimeout = phoneTimeout;
         _messageSentToTelegram = messageSentToTelegram;
+        _messageSentViaPhone = messageSentViaPhone;
         
         self.style = TGViewControllerStyleBlack;
         
@@ -216,7 +218,7 @@
     _noticeLabel.textAlignment = NSTextAlignmentCenter;
     _noticeLabel.contentMode = UIViewContentModeCenter;
     _noticeLabel.numberOfLines = 0;
-    [self makeLabelWithFormattedText:_noticeLabel text:_messageSentToTelegram ? TGLocalized(@"Login.CodeSentInternal") : TGLocalized(@"Login.CodeSentSms")];
+    [self makeLabelWithFormattedText:_noticeLabel text:_messageSentToTelegram ? TGLocalized(@"Login.CodeSentInternal") : (_messageSentViaPhone ? TGLocalized(@"Login.CodeSentCall") : TGLocalized(@"Login.CodeSentSms"))];
    
     _noticeLabel.backgroundColor = [UIColor clearColor];
     [self.view addSubview:_noticeLabel];
@@ -248,7 +250,7 @@
     _timeoutLabel.textAlignment = NSTextAlignmentCenter;
     _timeoutLabel.contentMode = UIViewContentModeCenter;
     _timeoutLabel.numberOfLines = 0;
-    _timeoutLabel.text = [TGStringUtils stringWithLocalizedNumberCharacters:[[NSString alloc] initWithFormat:TGLocalized(@"Login.CallRequestState1"), 1, 0]];
+    _timeoutLabel.text = [TGStringUtils stringWithLocalizedNumberCharacters:[[NSString alloc] initWithFormat:(_messageSentViaPhone ? TGLocalized(@"Login.SmsRequestState1") : TGLocalized(@"Login.CallRequestState1")), 1, 0]];
     _timeoutLabel.backgroundColor = [UIColor clearColor];
     [_timeoutLabel sizeToFit];
     [self.view addSubview:_timeoutLabel];
@@ -259,7 +261,7 @@
     _requestingCallLabel.textAlignment = NSTextAlignmentCenter;
     _requestingCallLabel.contentMode = UIViewContentModeCenter;
     _requestingCallLabel.numberOfLines = 0;
-    _requestingCallLabel.text = TGLocalized(@"Login.CallRequestState2");
+    _requestingCallLabel.text = (_messageSentViaPhone ? TGLocalized(@"Login.SmsRequestState2") : TGLocalized(@"Login.CallRequestState2"));
     _requestingCallLabel.backgroundColor = [UIColor clearColor];
     _requestingCallLabel.alpha = 0.0f;
     [_requestingCallLabel sizeToFit];
@@ -317,7 +319,7 @@
         [self.view addSubview:_termsOfServiceLabel];
     }
     
-    NSString *codeTextFormat = TGLocalized(@"Login.CallRequestState3");
+    NSString *codeTextFormat = (_messageSentViaPhone ? TGLocalized(@"Login.SmsRequestState3") : TGLocalized(@"Login.CallRequestState3"));
     NSRange linkRange = NSMakeRange(NSNotFound, 0);
     
     NSMutableString *codeText = [[NSMutableString alloc] init];
@@ -484,7 +486,7 @@
     if (remainingTime < 0)
         remainingTime = 0;
     
-    _timeoutLabel.text = [TGStringUtils stringWithLocalizedNumberCharacters:[NSString stringWithFormat:TGLocalized(@"Login.CallRequestState1"), ((int)remainingTime) / 60, ((int)remainingTime) % 60]];
+    _timeoutLabel.text = [TGStringUtils stringWithLocalizedNumberCharacters:[NSString stringWithFormat:(_messageSentViaPhone ? TGLocalized(@"Login.SmsRequestState1") : TGLocalized(@"Login.CallRequestState1")), ((int)remainingTime) / 60, ((int)remainingTime) % 60]];
     CGSize size = [_timeoutLabel.text sizeWithFont:_timeoutLabel.font];
     _timeoutLabel.frame = CGRectMake(_timeoutLabel.frame.origin.x, _timeoutLabel.frame.origin.y, size.width, size.height);
     [self updateInterface:self.interfaceOrientation];
@@ -662,14 +664,8 @@
 
 #pragma mark -
 
-- (void)backgroundTapped:(UITapGestureRecognizer *)recognizer
+- (void)backgroundTapped:(UITapGestureRecognizer *)__unused recognizer
 {
-    return;
-    
-    if (recognizer.state == UIGestureRecognizerStateRecognized)
-    {
-        [_codeField resignFirstResponder];
-    }
 }
 
 - (void)inputBackgroundTapped:(UITapGestureRecognizer *)recognizer
@@ -841,7 +837,7 @@
                 if (resultCode == TGSignInResultNotRegistered)
                 {
                     int stateDate = [[TGAppDelegateInstance loadLoginState][@"date"] intValue];
-                    [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:_phoneCode phoneCodeHash:_phoneCodeHash codeSentToTelegram:false firstName:nil lastName:nil photo:nil];
+                    [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:_phoneCode phoneCodeHash:_phoneCodeHash codeSentToTelegram:false codeSentViaPhone:false firstName:nil lastName:nil photo:nil resetAccountState:nil];
                     
                     errorText = nil;
                     [self pushControllerRemovingSelf:[[TGLoginProfileController alloc] initWithShowKeyboard:_codeField.isFirstResponder phoneNumber:_phoneNumber phoneCodeHash:_phoneCodeHash phoneCode:_phoneCode]];
@@ -879,9 +875,11 @@
                 if (resultCode == ASStatusSuccess)
                 {
                     int stateDate = [[TGAppDelegateInstance loadLoginState][@"date"] intValue];
-                    [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:_phoneCodeHash codeSentToTelegram:false firstName:nil lastName:nil photo:nil];
+                    [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:_phoneCodeHash codeSentToTelegram:false codeSentViaPhone:false firstName:nil lastName:nil photo:nil resetAccountState:nil];
                     
-                    TGLoginCodeController *controller = [[TGLoginCodeController alloc] initWithShowKeyboard:(_codeField.isFirstResponder) phoneNumber:_phoneNumber phoneCodeHash:_phoneCodeHash phoneTimeout:_phoneTimeout messageSentToTelegram:false];
+                    bool messageSentViaPhone = [(((SGraphObjectNode *)result).object)[@"messageSentViaPhone"] intValue];
+                    
+                    TGLoginCodeController *controller = [[TGLoginCodeController alloc] initWithShowKeyboard:(_codeField.isFirstResponder) phoneNumber:_phoneNumber phoneCodeHash:_phoneCodeHash phoneTimeout:_phoneTimeout messageSentToTelegram:false messageSentViaPhone:messageSentViaPhone];
                     
                     NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:self.navigationController.viewControllers];
                     [viewControllers removeLastObject];
@@ -898,6 +896,8 @@
                         errorText = TGLocalized(@"Login.CodeFloodError");
                     else if (resultCode == TGSendCodeErrorNetwork)
                         errorText = TGLocalized(@"Login.NetworkError");
+                    else if (resultCode == TGSendCodeErrorPhoneFlood)
+                        errorText = TGLocalized(@"Login.PhoneFloodError");
                     
                     TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                     [alertView show];
@@ -927,6 +927,8 @@
                         errorText = TGLocalized(@"Login.CodeFloodError");
                     else if (resultCode == TGSendCodeErrorNetwork)
                         errorText = TGLocalized(@"Login.NetworkError");
+                    else if (resultCode == TGSendCodeErrorPhoneFlood)
+                        errorText = TGLocalized(@"Login.PhoneFloodError");
                     
                     TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                     [alertView show];

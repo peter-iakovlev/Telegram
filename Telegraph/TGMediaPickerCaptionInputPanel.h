@@ -18,6 +18,7 @@
 - (void)setCollapsed:(bool)collapsed animated:(bool)animated;
 
 - (void)replaceMention:(NSString *)mention;
+- (void)replaceMention:(NSString *)mention username:(bool)username userId:(int32_t)userId;
 - (void)replaceHashtag:(NSString *)hashtag;
 
 - (void)adjustForOrientation:(UIInterfaceOrientation)orientation keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(NSInteger)animationCurve;
@@ -25,9 +26,12 @@
 - (void)dismiss;
 
 - (CGFloat)heightForInputFieldHeight:(CGFloat)inputFieldHeight;
+- (CGFloat)baseHeight;
 
 - (void)setAssociatedPanel:(TGModernConversationAssociatedInputPanel *)associatedPanel animated:(bool)animated;
 - (TGModernConversationAssociatedInputPanel *)associatedPanel;
+
+- (void)setContentAreaHeight:(CGFloat)contentAreaHeight;
 
 @end
 

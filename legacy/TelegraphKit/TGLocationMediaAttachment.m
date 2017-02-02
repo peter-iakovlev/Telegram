@@ -97,4 +97,21 @@
     return locationAttachment;
 }
 
+- (instancetype)initWithCoder:(NSCoder *)aDecoder {
+    self = [super init];
+    if (self != nil) {
+        self.type = TGLocationMediaAttachmentType;
+        _latitude = [aDecoder decodeDoubleForKey:@"latitude"];
+        _longitude = [aDecoder decodeDoubleForKey:@"longitude"];
+        _venue = [aDecoder decodeObjectForKey:@"venue"];
+    }
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder {
+    [aCoder encodeDouble:_latitude forKey:@"latitude"];
+    [aCoder encodeDouble:_longitude forKey:@"longitude"];
+    [aCoder encodeObject:_venue forKey:@"venue"];
+}
+
 @end

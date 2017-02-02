@@ -2,7 +2,7 @@
 
 #import "PSCoding.h"
 
-@protocol TGStickerPackReference <NSObject, PSCoding, NSCoding>
+@protocol TGStickerPackReference <NSObject, NSCopying, PSCoding, NSCoding>
 
 @end
 

@@ -15,15 +15,16 @@
 
 @end
 
-@interface TLChat$channelForbidden : TLChat
+@interface TLChat$chatForbidden : TLChat
 
-@property (nonatomic) int64_t access_hash;
 @property (nonatomic, retain) NSString *title;
 
 @end
 
-@interface TLChat$chatForbidden : TLChat
+@interface TLChat$channelForbidden : TLChat
 
+@property (nonatomic) int32_t flags;
+@property (nonatomic) int64_t access_hash;
 @property (nonatomic, retain) NSString *title;
 
 @end

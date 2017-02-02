@@ -179,6 +179,10 @@
     [view setFrameImage:[TGModernClockProgressViewModel frameImageForType:_type] hourImage:[TGModernClockProgressViewModel hourImageForType:_type] minImage:[TGModernClockProgressViewModel minImageForType:_type]];
 }
 
++ (void)setupView:(TGModernClockProgressView *)view forType:(TGModernClockProgressType)type {
+    [view setFrameImage:[TGModernClockProgressViewModel frameImageForType:type] hourImage:[TGModernClockProgressViewModel hourImageForType:type] minImage:[TGModernClockProgressViewModel minImageForType:type]];
+}
+
 - (void)drawInContext:(CGContextRef)context
 {
     [super drawInContext:context];

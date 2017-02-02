@@ -8,6 +8,7 @@
 
 @interface TLRPCmessages_getDialogs : TLMetaRpc
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic) int32_t offset_date;
 @property (nonatomic) int32_t offset_id;
 @property (nonatomic, retain) TLInputPeer *offset_peer;

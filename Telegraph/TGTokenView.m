@@ -83,8 +83,11 @@ static UIImage *tokenBackgroundHighlightedImage()
 {
     if ([super becomeFirstResponder])
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
         if ([self.superview.superview respondsToSelector:@selector(highlightToken:)])
             [self.superview.superview performSelector:@selector(highlightToken:) withObject:self];
+#pragma clang diagnostic pop
         return true;
     }
     
@@ -95,8 +98,11 @@ static UIImage *tokenBackgroundHighlightedImage()
 {
     if ([super resignFirstResponder])
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
         if ([self.superview.superview respondsToSelector:@selector(unhighlightToken:)])
             [self.superview.superview performSelector:@selector(unhighlightToken:) withObject:self];
+#pragma clang diagnostic pop
         return true;
     }
     
@@ -105,8 +111,11 @@ static UIImage *tokenBackgroundHighlightedImage()
 
 - (void)deleteBackward
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
     if ([self.superview.superview respondsToSelector:@selector(deleteToken:)])
         [self.superview.superview performSelector:@selector(deleteToken:) withObject:self];
+#pragma clang diagnostic pop
 }
 
 - (BOOL)hasText

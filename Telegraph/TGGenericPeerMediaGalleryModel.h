@@ -1,8 +1,10 @@
 #import "TGModernGalleryModel.h"
 
-@protocol TGModernGalleryItem;
+@class TGMessage;
 
 @interface TGGenericPeerMediaGalleryModel : TGModernGalleryModel
+
+@property (nonatomic, copy) void (^shareAction)(TGMessage *message, NSArray *peerIds, NSString *caption);
 
 @property (nonatomic, readonly) int64_t peerId;
 @property (nonatomic) int64_t attachedPeerId;

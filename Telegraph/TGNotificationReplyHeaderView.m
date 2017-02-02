@@ -156,7 +156,7 @@ const CGFloat TGNotificationReplyHeaderHeight = 29.0f;
                     
                 case TGActionMediaAttachmentType:
                 {
-                    messageText = [TGReplyHeaderActionModel messageTextForActionMedia:(TGActionMediaAttachment *)subAttachment author:author];
+                    messageText = [TGReplyHeaderActionModel messageTextForActionMedia:(TGActionMediaAttachment *)subAttachment otherAttachments:attachment.replyMessage.mediaAttachments author:author];
                 }
                     break;
                     

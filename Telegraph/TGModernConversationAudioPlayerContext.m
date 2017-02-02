@@ -40,7 +40,7 @@
     return [audioPlayer isPaused];
 }
 
-- (float)playbackPosition:(MTAbsoluteTime *)timestamp sync:(bool)sync
+- (float)playbackPosition:(CFAbsoluteTime *)timestamp sync:(bool)sync
 {
     if (timestamp != NULL)
         *timestamp = MTAbsoluteSystemTime();

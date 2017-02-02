@@ -1,36 +1,22 @@
 #import "TGRemoteHttpLocationSignal.h"
 
-#import <thirdparty/AFNetworking/AFHTTPRequestOperation.h>
+//#import <thirdparty/AFNetworking/AFHTTPRequestOperation.h>
+#import <MTProtoKitDynamic/MTProtoKitDynamic.h>
 
 @implementation TGRemoteHttpLocationSignal
 
 + (SSignal *)dataForHttpLocation:(NSString *)httpLocation
 {
-    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-    {
-        NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:httpLocation]];
-        AFHTTPRequestOperation *operation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
-        
-        [operation setSuccessCallbackQueue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)];
-        [operation setFailureCallbackQueue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)];
-        
-        [operation setCompletionBlockWithSuccess:^(__unused AFHTTPRequestOperation *operation, __unused id responseObject)
-        {
-            [subscriber putNext:[operation responseData]];
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+        id<MTDisposable> disposable = [[MTHttpRequestOperation dataForHttpUrl:[[NSURL alloc] initWithString:httpLocation]] startWithNext:^(id next) {
+            [subscriber putNext:next];
+        } error:^(id error) {
+            [subscriber putError:error];
+        } completed:^{
             [subscriber putCompletion];
-        } failure:^(__unused AFHTTPRequestOperation *operation, __unused NSError *error)
-        {
-            [subscriber putError:nil];
         }];
-        
-        [operation start];
-        
-        __weak AFHTTPRequestOperation *weakOperation = operation;
-        
-        return [[SBlockDisposable alloc] initWithBlock:^
-        {
-            __strong AFHTTPRequestOperation *strongOperation = weakOperation;
-            [strongOperation cancel];
+        return [[SBlockDisposable alloc] initWithBlock:^{
+            [disposable dispose];
         }];
     }];
 }

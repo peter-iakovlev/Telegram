@@ -32,7 +32,14 @@
 
 #import "TGModernConversationController.h"
 
-#import "TGMediaAssetsLibrary.h"
+#import "TGShareMenu.h"
+#import "TGMediaAssetsUtils.h"
+#import "TGMenuSheetController.h"
+
+#import "TGGenericModernConversationCompanion.h"
+
+#import "TGShareSheetWindow.h"
+#import "TGShareSheetButtonItemView.h"
 
 @interface TGGenericPeerMediaGalleryModel () <ASWatcher>
 {
@@ -50,6 +57,7 @@
     bool _important;
     
     TGConversation *_conversationAuthorPeer;
+    TGShareSheetWindow *_shareSheetWindow;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -217,7 +225,7 @@
                 if (imageMedia.imageId == 0 && legacyCacheUrl.length != 0)
                     localImageId = murMurHash32(legacyCacheUrl);
                 
-                TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:imageMedia.imageId orLocalId:localImageId peerId:_peerId messageId:message.mid legacyImageInfo:imageMedia.imageInfo];
+                TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:imageMedia.imageId accessHash:imageMedia.accessHash orLocalId:localImageId peerId:_peerId messageId:message.mid legacyImageInfo:imageMedia.imageInfo embeddedStickerDocuments:imageMedia.embeddedStickerDocuments hasStickers:imageMedia.hasStickers];
                 
                 imageItem.authorPeer = [self authorPeerForId:message.fromUid];
                 
@@ -332,7 +340,7 @@
                     if (imageMedia.imageId == 0 && legacyCacheUrl.length != 0)
                         localImageId = murMurHash32(legacyCacheUrl);
                     
-                    TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:imageMedia.imageId orLocalId:localImageId peerId:_peerId messageId:message.mid legacyImageInfo:imageMedia.imageInfo];
+                    TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:imageMedia.imageId accessHash:imageMedia.accessHash orLocalId:localImageId peerId:_peerId messageId:message.mid legacyImageInfo:imageMedia.imageInfo embeddedStickerDocuments:imageMedia.embeddedStickerDocuments hasStickers:imageMedia.hasStickers];
                     
                     imageItem.authorPeer = [self authorPeerForId:message.fromUid];
 
@@ -405,7 +413,7 @@
                 if (imageMedia.imageId == 0 && legacyCacheUrl.length != 0)
                     localImageId = murMurHash32(legacyCacheUrl);
                 
-                TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:imageMedia.imageId orLocalId:localImageId peerId:_peerId messageId:message.mid legacyImageInfo:imageMedia.imageInfo];
+                TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:imageMedia.imageId accessHash:imageMedia.accessHash orLocalId:localImageId peerId:_peerId messageId:message.mid legacyImageInfo:imageMedia.imageInfo embeddedStickerDocuments:imageMedia.embeddedStickerDocuments hasStickers:imageMedia.hasStickers];
                 
                 imageItem.authorPeer = [self authorPeerForId:message.fromUid];
                 
@@ -470,47 +478,116 @@
 - (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultLeftAccessoryView
 {
     TGGenericPeerMediaGalleryActionsAccessoryView *accessoryView = [[TGGenericPeerMediaGalleryActionsAccessoryView alloc] init];
+    __weak TGGenericPeerMediaGalleryActionsAccessoryView *weakAccessoryView = accessoryView;
     __weak TGGenericPeerMediaGalleryModel *weakSelf = self;
     accessoryView.action = ^(id<TGModernGalleryItem> item)
     {
-        if ([item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+        if (![item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+            return;
+        
+        __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        bool isVideo = false;
+        NSString *actionTitle = TGLocalized(@"Preview.SaveToCameraRoll");
+        NSURL *itemURL = [strongSelf saveItemURL:item isVideo:&isVideo];
+        SSignal *externalItemSignal = (itemURL != nil) ? [SSignal single:itemURL] : nil;
+        if (itemURL == nil)
+            actionTitle = nil;
+        
+        TGViewController *viewController = nil;
+        if (strongSelf.viewControllerForModalPresentation) {
+            viewController = (TGViewController *)strongSelf.viewControllerForModalPresentation();
+        }
+        
+        void (^saveAction)(void) = ^
         {
-            id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
-            __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
-            if (strongSelf != nil)
+            if (!isVideo)
             {
-                UIView *actionSheetView = nil;
-                if (strongSelf.actionSheetView)
-                    actionSheetView = strongSelf.actionSheetView();
-                
-                if (actionSheetView != nil)
+                if ([itemURL.pathExtension isEqualToString:@"bin"] || itemURL.pathExtension.length == 0)
                 {
-                    NSMutableArray *actions = [[NSMutableArray alloc] init];
-                    
-                    if ([strongSelf _isDataAvailableForSavingItemToCameraRoll:item])
-                    {
-                        if (([concreteItem isKindOfClass:[TGGenericPeerMediaGalleryImageItem class]]) || [concreteItem isKindOfClass:[TGGenericPeerMediaGalleryVideoItem class]])
-                        {
-                            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Preview.SaveToCameraRoll") action:@"save" type:TGActionSheetActionTypeGeneric]];
-                        }
-                    }
-                    
-                    if (_allowActions)
-                    {
-                        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Preview.ForwardViaTelegram") action:@"forward" type:TGActionSheetActionTypeGeneric]];
-                    }
-                    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
-                    
-                    [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
-                    {
-                        __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
-                        if ([action isEqualToString:@"save"])
-                            [strongSelf _commitSaveItemToCameraRoll:item];
-                        else if ([action isEqualToString:@"forward"])
-                            [strongSelf _commitForwardItem:item];
-                    } target:strongSelf] showInView:actionSheetView];
+                    NSData *data = [NSData dataWithContentsOfURL:itemURL options:NSDataReadingMappedIfSafe error:nil];
+                    [TGMediaAssetsSaveToCameraRoll saveImageWithData:data];
+                }
+                else
+                {
+                    [TGMediaAssetsSaveToCameraRoll saveImageAtURL:itemURL];
                 }
             }
+            else
+            {
+                [TGMediaAssetsSaveToCameraRoll saveVideoAtURL:itemURL];
+            }
+        };
+        
+        CGRect (^sourceRect)(void) = ^CGRect
+        {
+            __strong TGGenericPeerMediaGalleryActionsAccessoryView *strongAccessoryView = weakAccessoryView;
+            if (strongAccessoryView == nil)
+                return CGRectZero;
+            
+            return strongAccessoryView.bounds;
+        };
+        
+        __strong TGGenericPeerMediaGalleryActionsAccessoryView *strongAccessoryView = weakAccessoryView;
+        if (strongSelf->_allowActions)
+        {
+            [TGShareMenu presentInParentController:viewController menuController:nil buttonTitle:actionTitle buttonAction:saveAction shareAction:^(NSArray *peerIds, NSString *caption)
+            {
+                __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
+                
+                if (strongSelf != nil && strongSelf.shareAction != nil)
+                {
+                    [ActionStageInstance() dispatchOnStageQueue:^
+                    {
+                        id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
+                        
+                        TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:[concreteItem messageId] peerId:_peerId];
+                        if (message == nil)
+                            message = [TGDatabaseInstance() loadMessageWithMid:[concreteItem messageId] - migratedMessageIdOffset peerId:_attachedPeerId];
+                        if (message == nil)
+                            message = [TGDatabaseInstance() loadMediaMessageWithMid:[concreteItem messageId]];
+                        
+                        TGDispatchOnMainThread(^
+                        {
+                            strongSelf.shareAction(message, peerIds, caption);
+                        });
+                    }];
+                }
+            } externalShareItemSignal:externalItemSignal sourceView:strongAccessoryView sourceRect:sourceRect barButtonItem:nil];
+        }
+        else if (itemURL != nil)
+        {
+            TGMenuSheetController *controller = [[TGMenuSheetController alloc] init];
+            controller.dismissesByOutsideTap = true;
+            controller.hasSwipeGesture = true;
+            controller.narrowInLandscape = true;
+            controller.sourceRect = sourceRect;
+            
+            __weak TGMenuSheetController *weakController = controller;
+            TGMenuSheetButtonItemView *saveItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:actionTitle type:TGMenuSheetButtonTypeDefault action:^
+            {
+                __strong TGMenuSheetController *strongController = weakController;
+                if (strongController == nil)
+                    return;
+                
+                [strongController dismissAnimated:true manual:true];
+                saveAction();
+            }];
+            
+            TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
+            {
+                __strong TGMenuSheetController *strongController = weakController;
+                if (strongController == nil)
+                    return;
+                                                       
+                [strongController dismissAnimated:true manual:true];
+            }];
+            
+            [controller setItemViews:@[ saveItem, cancelItem ]];
+            
+            [controller presentInViewController:viewController sourceView:strongAccessoryView animated:true];
         }
     };
     return accessoryView;
@@ -532,61 +609,26 @@
     return false;
 }
 
-- (void)_commitSaveItemToCameraRoll:(id<TGModernGalleryItem>)item
+- (NSURL *)saveItemURL:(id<TGModernGalleryItem>)item isVideo:(bool *)isVideo
 {
+    if (![self _isDataAvailableForSavingItemToCameraRoll:item])
+        return nil;
+    
     if ([item isKindOfClass:[TGGenericPeerMediaGalleryImageItem class]])
     {
         TGGenericPeerMediaGalleryImageItem *imageItem = (TGGenericPeerMediaGalleryImageItem *)item;
-        NSData *data = [[NSData alloc] initWithContentsOfFile:[imageItem filePath]];
-        [self _saveImageDataToCameraRoll:data];
+        return [NSURL fileURLWithPath:[imageItem filePath]];
     }
     else if ([item isKindOfClass:[TGGenericPeerMediaGalleryVideoItem class]])
     {
+        if (isVideo != NULL)
+            *isVideo = true;
+        
         TGGenericPeerMediaGalleryVideoItem *videoItem = (TGGenericPeerMediaGalleryVideoItem *)item;
-        [self _saveVideoToCameraRoll:[videoItem filePath]];
+        return [NSURL fileURLWithPath:[videoItem filePath]];
     }
-}
-
-- (void)_saveImageDataToCameraRoll:(NSData *)data
-{
-    if (data == nil)
-        return;
     
-    if (![TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
-        return;
-    
-    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-    [progressWindow show:true];
-
-    [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImageData:data] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
-    {
-        [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
-        [progressWindow dismiss:true];
-    } completed:^
-    {
-        [progressWindow dismissWithSuccess];
-    }];
-}
-
-- (void)_saveVideoToCameraRoll:(NSString *)filePath
-{
-    if (filePath == nil)
-        return;
-    
-    if (![TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
-        return;
-    
-    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-    [progressWindow show:true];
-    
-    [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithVideoAtUrl:[NSURL fileURLWithPath:filePath]] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
-    {
-        [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
-        [progressWindow dismiss:true];
-    } completed:^
-    {
-        [progressWindow dismissWithSuccess];
-    }];
+    return nil;
 }
 
 - (void)_commitForwardItem:(id<TGModernGalleryItem>)item
@@ -648,30 +690,124 @@
         if (strongSelf != nil)
         {
             if ([strongSelf _canDeleteItem:item]) {
-                UIView *actionSheetView = nil;
-                if (strongSelf.actionSheetView)
-                    actionSheetView = strongSelf.actionSheetView();
-                
-                if (actionSheetView != nil)
-                {
-                    NSMutableArray *actions = [[NSMutableArray alloc] init];
+                if (strongSelf.actionSheetView().window != nil) {
+                    bool haveOutgoing = false;
+                    bool haveIncoming = false;
                     
-                    NSString *actionTitle = nil;
-                    if ([item isKindOfClass:[TGModernGalleryImageItem class]])
-                        actionTitle = TGLocalized(@"Preview.DeletePhoto");
-                    else
-                        actionTitle = TGLocalized(@"Preview.DeleteVideo");
-                    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:actionTitle action:@"delete" type:TGActionSheetActionTypeDestructive]];
-                    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
+                    if (TGPeerIdIsUser(strongSelf->_peerId) || TGPeerIdIsGroup(strongSelf->_peerId)) {
+                        id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
+                        
+                        int32_t messageId = [concreteItem messageId];
+                        TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:messageId peerId:strongSelf->_peerId];
+                        bool isPeerAdmin = false;
+                        if (TGPeerIdIsGroup(strongSelf->_peerId)) {
+                            TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:strongSelf->_peerId];
+                            isPeerAdmin = [conversation isAdmin];
+                        }
+                        if (message != nil) {
+                            if (message.outgoing) {
+                                if ([TGGenericModernConversationCompanion canDeleteMessageForEveryone:message peerId:strongSelf->_peerId isPeerAdmin:isPeerAdmin]) {
+                                    haveOutgoing = true;
+                                }
+                            } else {
+                                haveIncoming = true;
+                            }
+                        }
+                    }
                     
-                    [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
+                    _shareSheetWindow = [[TGShareSheetWindow alloc] init];
+                    _shareSheetWindow.dismissalBlock = ^
                     {
                         __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
-                        if ([action isEqualToString:@"delete"])
-                        {
-                            [strongSelf _commitDeleteItem:item];
+                        if (strongSelf == nil)
+                            return;
+                        
+                        strongSelf->_shareSheetWindow.rootViewController = nil;
+                        strongSelf->_shareSheetWindow = nil;
+                    };
+                    
+                    NSMutableArray *items = [[NSMutableArray alloc] init];
+                    
+                    int64_t conversationId = strongSelf->_peerId;
+                    
+                    NSString *basicDeleteTitle = TGLocalized(@"Common.Delete");
+                    if (TGPeerIdIsSecretChat(conversationId)) {
+                        basicDeleteTitle = TGLocalized(@"Conversation.DeleteMessagesForEveryone");
+                    } else if (TGPeerIdIsChannel(conversationId)) {
+                        basicDeleteTitle = TGLocalized(@"Conversation.DeleteMessagesForEveryone");
+                    }
+                    TGShareSheetButtonItemView *actionItem = [[TGShareSheetButtonItemView alloc] initWithTitle: (TGPeerIdIsSecretChat(conversationId) || TGPeerIdIsChannel(conversationId) || conversationId == TGTelegraphInstance.clientUserId) ? basicDeleteTitle : TGLocalized(@"Conversation.DeleteMessagesForMe") pressed:^ {
+                        __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            [strongSelf->_shareSheetWindow dismissAnimated:true completion:nil];
+                            strongSelf->_shareSheetWindow = nil;
+                            
+                            [strongSelf _commitDeleteItem:item forEveryone:false];
                         }
-                    } target:strongSelf] showInView:actionSheetView];
+                    }];
+                    [actionItem setDestructive:true];
+                    
+                    if (!TGPeerIdIsSecretChat(conversationId) && !TGPeerIdIsChannel(conversationId) && conversationId != TGTelegraphInstance.clientUserId && haveOutgoing && !haveIncoming) {
+                        NSString *title = TGLocalized(@"Conversation.DeleteMessagesForEveryone");
+                        if (TGPeerIdIsUser(conversationId)) {
+                            TGUser *user = [TGDatabaseInstance() loadUser:(int)conversationId];
+                            if (user != nil) {
+                                title = [NSString stringWithFormat:TGLocalized(@"Conversation.DeleteMessagesFor"), user.displayFirstName];
+                            }
+                        }
+                        
+                        TGShareSheetButtonItemView *itemView = [[TGShareSheetButtonItemView alloc] initWithTitle: title pressed:^ {
+                            __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
+                            if (strongSelf != nil) {
+                                [strongSelf->_shareSheetWindow dismissAnimated:true completion:nil];
+                                strongSelf->_shareSheetWindow = nil;
+                                
+                                [strongSelf _commitDeleteItem:item forEveryone:true];
+                            }
+                        }];
+                        [itemView setDestructive:true];
+                        [items addObject:itemView];
+                    }
+                    
+                    [items addObject:actionItem];
+                    
+                    _shareSheetWindow.view.cancel = ^{
+                        __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            [strongSelf->_shareSheetWindow dismissAnimated:true completion:nil];
+                            strongSelf->_shareSheetWindow = nil;
+                        }
+                    };
+                    
+                    _shareSheetWindow.view.items = items;
+                    _shareSheetWindow.windowLevel = strongSelf.actionSheetView().window.windowLevel + 0.001f;
+                    [_shareSheetWindow showAnimated:true completion:nil];
+                } else {
+                    UIView *actionSheetView = nil;
+                    if (strongSelf.actionSheetView)
+                        actionSheetView = strongSelf.actionSheetView();
+                    
+                    if (actionSheetView != nil)
+                    {
+                        NSMutableArray *actions = [[NSMutableArray alloc] init];
+                        
+                        NSString *actionTitle = nil;
+                        if ([item isKindOfClass:[TGModernGalleryImageItem class]])
+                            actionTitle = TGLocalized(@"Preview.DeletePhoto");
+                        else
+                            actionTitle = TGLocalized(@"Preview.DeleteVideo");
+                        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:actionTitle action:@"delete" type:TGActionSheetActionTypeDestructive]];
+                        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
+                        
+                        [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
+                        {
+                            __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
+                            if ([action isEqualToString:@"delete"])
+                            {
+                                [strongSelf _commitDeleteItem:item];
+                            }
+                        } target:strongSelf] showInView:actionSheetView];
+                    }
                 }
             }
         }
@@ -704,7 +840,11 @@
     return true;
 }
 
-- (void)_commitDeleteItem:(id<TGModernGalleryItem>)item
+- (void)_commitDeleteItem:(id<TGModernGalleryItem>)item {
+    [self _commitDeleteItem:item forEveryone:false];
+}
+
+- (void)_commitDeleteItem:(id<TGModernGalleryItem>)item forEveryone:(bool)forEveryone
 {
     [_queue dispatch:^
     {
@@ -715,7 +855,7 @@
             NSArray *messageIds = @[@([concreteItem messageId])];
             [self _deleteMessagesWithIds:messageIds];
             static int actionId = 1;
-            [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/deleteMessages/(genericPeerMedia%d)", _peerId, actionId++] options:@{@"mids": messageIds} watcher:TGTelegraphInstance];
+            [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/deleteMessages/(genericPeerMedia%d)", _peerId, actionId++] options:@{@"mids": messageIds, @"forEveryone": @(forEveryone)} watcher:TGTelegraphInstance];
         }
     }];
 }

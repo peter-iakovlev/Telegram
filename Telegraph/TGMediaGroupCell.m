@@ -5,6 +5,7 @@
 #import "TGImageUtils.h"
 
 #import "TGMediaAssetGroup.h"
+#import "TGMediaAssetMomentList.h"
 #import "TGMediaAssetImageSignals.h"
 
 NSString *const TGMediaGroupCellKind = @"TGMediaGroupCellKind";
@@ -184,28 +185,21 @@ const CGFloat TGMediaGroupCellHeight = 86.0f;
         [imageView reset];
 }
 
-- (void)configureForAssetGroup:(TGMediaAssetGroup *)assetGroup
+- (void)configureThumbnailsWithAssets:(NSArray *)assets
 {
-    _assetGroup = assetGroup;
-    
-    _nameLabel.text = assetGroup.title;
-    _countLabel.text = [[NSString alloc] initWithFormat:@"%ld", (long)[assetGroup assetCount]];
-    [self setNeedsLayout];
-    
-    NSArray *latestAssets = [assetGroup latestAssets];
-    if (latestAssets.count > 0)
+    if (assets.count > 0)
     {
         for (NSUInteger i = 0; i < _imageViews.count; i++)
         {
             TGImageView *imageView = _imageViews[i];
             UIView *borderView = _borderViews[i];
             
-            if (i < latestAssets.count)
+            if (i < assets.count)
             {
                 imageView.hidden = false;
                 borderView.hidden = false;
                 
-                [imageView setSignal:[TGMediaAssetImageSignals imageForAsset:latestAssets[i]
+                [imageView setSignal:[TGMediaAssetImageSignals imageForAsset:assets[i]
                                                                    imageType:TGMediaAssetImageTypeThumbnail
                                                                         size:CGSizeMake(138, 138)]];
             }
@@ -233,6 +227,20 @@ const CGFloat TGMediaGroupCellHeight = 86.0f;
         
         [(TGImageView *)_imageViews.firstObject setImage:[UIImage imageNamed:@"ModernMediaEmptyAlbumIcon"]];
     }
+}
+
+- (void)configureForAssetGroup:(TGMediaAssetGroup *)assetGroup
+{
+    _assetGroup = assetGroup;
+    
+    _nameLabel.text = assetGroup.title;
+    if (assetGroup.assetCount == -1)
+        _countLabel.text = @"";
+    else
+        _countLabel.text = [[NSString alloc] initWithFormat:@"%ld", (long)assetGroup.assetCount];
+    [self setNeedsLayout];
+    
+    [self configureThumbnailsWithAssets:[assetGroup latestAssets]];
     
     UIImage *iconImage = nil;
     switch (assetGroup.subtype)
@@ -278,12 +286,29 @@ const CGFloat TGMediaGroupCellHeight = 86.0f;
     _shadowView.hidden = _iconView.hidden;
 }
 
+- (void)configureForMomentList:(TGMediaAssetMomentList *)momentList
+{
+    _nameLabel.text = TGLocalized(@"Moments");
+    _countLabel.text = @"";
+    [self setNeedsLayout];
+    
+    [self configureThumbnailsWithAssets:[momentList latestAssets]];
+    
+    _iconView.image = nil;
+    _iconView.hidden = true;
+    _shadowView.hidden = true;
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
     
+    CGFloat y = 24;
+    if (_countLabel.text.length == 0)
+        y = 33;
+        
     CGSize titleSize = [_nameLabel sizeThatFits:CGSizeMake(self.frame.size.width - _nameLabel.frame.origin.x - 20, _nameLabel.frame.size.height)];
-    _nameLabel.frame = CGRectMake(_nameLabel.frame.origin.x, _nameLabel.frame.origin.y, ceil(titleSize.width), ceil(titleSize.height));
+    _nameLabel.frame = CGRectMake(_nameLabel.frame.origin.x, y, ceil(titleSize.width), ceil(titleSize.height));
     
     CGSize countSize = [_countLabel.text sizeWithFont:_countLabel.font];
     _countLabel.frame = (CGRect){ _countLabel.frame.origin, { ceil(countSize.width), ceil(countSize.height) } };

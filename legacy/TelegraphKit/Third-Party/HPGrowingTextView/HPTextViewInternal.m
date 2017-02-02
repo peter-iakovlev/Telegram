@@ -11,6 +11,8 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 
+#import <MobileCoreServices/MobileCoreServices.h>
+
 @implementation HPTextViewInternal
 
 + (void)addTextViewMethods
@@ -30,6 +32,16 @@
     //then scroll it erratically. Setting scrollEnabled temporarily to YES prevents this.
     [self setScrollEnabled:YES];
     [super setText:text];
+    [self setScrollEnabled:originalValue];
+}
+
+- (void)setAttributedText:(NSAttributedString *)attributedText {
+    BOOL originalValue = self.scrollEnabled;
+    //If one of GrowingTextView's superviews is a scrollView, and self.scrollEnabled == NO,
+    //setting the text programatically will cause UIKit to search upwards until it finds a scrollView with scrollEnabled==yes
+    //then scroll it erratically. Setting scrollEnabled temporarily to YES prevents this.
+    [self setScrollEnabled:YES];
+    [super setAttributedText:attributedText];
     [self setScrollEnabled:originalValue];
 }
 
@@ -191,28 +203,16 @@
     return result;
 }
 
-- (void)toggleBoldface:(id)__unused sender
-{
-    [TGAppDelegateInstance.keyCommandController performActionForKeyCommand:[TGKeyCommand keyCommandForSystemActionSelector:@selector(toggleBoldface:)]];
-}
-
-- (void)toggleItalics:(id)__unused sender
-{
-    [TGAppDelegateInstance.keyCommandController performActionForKeyCommand:[TGKeyCommand keyCommandForSystemActionSelector:@selector(toggleItalics:)]];
-}
-
-- (void)toggleUnderline:(id)__unused sender
-{
-    [TGAppDelegateInstance.keyCommandController performActionForKeyCommand:[TGKeyCommand keyCommandForSystemActionSelector:@selector(toggleUnderline:)]];
-}
-
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender
 {
     if (action == @selector(paste:))
         return true;
     
-    if (action == @selector(toggleItalics:))
-        return true;
+    if (action == @selector(toggleUnderline:)) {
+        return false;
+    }
+    
+    //TGLog(@"canPerformAction %@", NSStringFromSelector(action));
     
     return [super canPerformAction:action withSender:sender];
 }
@@ -244,19 +244,23 @@
     else
     {
         NSMutableArray *images = [NSMutableArray arrayWithCapacity:1];
+        NSString *text = nil;
         
-        if (pasteBoard.images.count != 0)
-        {
-            for (id object in pasteBoard.images)
-            {
-                if ([object isKindOfClass:[UIImage class]])
-                    [images addObject:object];
+        for (NSDictionary *item in pasteBoard.items) {
+            if (item[(__bridge NSString *)kUTTypeJPEG] != nil) {
+                [images addObject:item[(__bridge NSString *)kUTTypeJPEG]];
+            } else if (item[(__bridge NSString *)kUTTypePNG] != nil) {
+                [images addObject:item[(__bridge NSString *)kUTTypePNG]];
+            } else if (item[(__bridge NSString *)kUTTypeGIF] != nil) {
+                [images addObject:item[(__bridge NSString *)kUTTypeGIF]];
+            } else if (item[(__bridge NSString *)kUTTypeURL] != nil) {
+                id url = item[(__bridge NSString *)kUTTypeURL];
+                if ([url respondsToSelector:@selector(characterAtIndex:)]) {
+                    text = url;
+                } else if ([url isKindOfClass:[NSURL class]]) {
+                    text = ((NSURL *)url).absoluteString;
+                }
             }
-        }
-        else if (pasteBoard.image != nil)
-        {
-            if ([pasteBoard.image isKindOfClass:[UIImage class]])
-                [images addObject:pasteBoard.image];
         }
         
         if (images.count != 0)
@@ -266,14 +270,17 @@
             {
                 HPGrowingTextView *textView = delegate;
                 NSObject<HPGrowingTextViewDelegate> *textViewDelegate = (NSObject<HPGrowingTextViewDelegate> *)textView.delegate;
-                if ([textViewDelegate respondsToSelector:@selector(growingTextView:didPasteImages:)])
-                    [textViewDelegate growingTextView:textView didPasteImages:images];
+                if ([textViewDelegate respondsToSelector:@selector(growingTextView:didPasteImages:andText:)])
+                    [textViewDelegate growingTextView:textView didPasteImages:images andText:text];
             }
         }
         else
         {
             _isPasting = true;
+            bool previousAllowsEditingTextAttributes = self.allowsEditingTextAttributes;
+            self.allowsEditingTextAttributes = false;
             [super paste:sender];
+            self.allowsEditingTextAttributes = previousAllowsEditingTextAttributes;
             _isPasting = false;
         }
     }

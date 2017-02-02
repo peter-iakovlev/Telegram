@@ -122,4 +122,11 @@
     [super setContentOffset:contentOffset];
 }
 
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    if (_onHitTest) {
+        _onHitTest(point);
+    }
+    return [super hitTest:point withEvent:event];
+}
+
 @end

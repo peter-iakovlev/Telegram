@@ -12,4 +12,6 @@
 
 - (void)setMessage:(TGMessage *)message date:(int)date lastInSection:(bool)lastInSection textModel:(TGModernTextViewModel *)textModel imageSignal:(SSignal *)imageSignal links:(NSArray *)links webPage:(TGWebPageMediaAttachment *)webPage;
 
+- (NSURL *)urlForLocation:(CGPoint)location;
+
 @end

@@ -12,6 +12,7 @@ const CGFloat TGPhotoAvatarCropViewOverscreenSize = 1000;
 {
     CGSize _originalSize;
     CGRect _cropRect;
+    bool _cropMirrored;
     
     UIScrollView *_scrollView;
     UIView *_wrapperView;
@@ -216,6 +217,14 @@ const CGFloat TGPhotoAvatarCropViewOverscreenSize = 1000;
         self.croppingChanged();
 }
 
+- (void)mirror
+{
+    self.cropMirrored = !self.cropMirrored;
+    
+    if (self.croppingChanged != nil)
+        self.croppingChanged();
+}
+
 - (void)resetAnimated:(bool)animated
 {
     _cropRect = [self _defaultCropRect];
@@ -368,6 +377,12 @@ const CGFloat TGPhotoAvatarCropViewOverscreenSize = 1000;
         [self invalidateCropRect];
 }
 
+- (void)setCropMirrored:(bool)cropMirrored
+{
+    _cropMirrored = cropMirrored;
+    _imageView.transform = CGAffineTransformMakeScale(self.cropMirrored ? -1.0f : 1.0f, 1.0f);
+}
+
 - (void)invalidateCropRect
 {
     [_scrollView zoomToRect:_cropRect animated:false];
@@ -392,7 +407,7 @@ const CGFloat TGPhotoAvatarCropViewOverscreenSize = 1000;
 
 - (UIImage *)croppedImageWithMaxSize:(CGSize)maxSize
 {
-    return TGPhotoEditorCrop(_imageView.image, self.cropOrientation, 0.0f, self.cropRect, maxSize, _originalSize, true);
+    return TGPhotoEditorCrop(_imageView.image, nil, self.cropOrientation, 0.0f, self.cropRect, false, maxSize, _originalSize, true);
 }
 
 #pragma mark - Transition

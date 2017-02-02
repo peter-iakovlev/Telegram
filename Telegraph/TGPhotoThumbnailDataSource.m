@@ -541,6 +541,8 @@ static ASQueue *taskManagementQueue()
             
             return [[TGDataResource alloc] initWithImage:thumbnailImage decoded:true];
         }
+    } else {
+        TGLog(@"Couldn't generate thumbnail");
     }
     
     return nil;

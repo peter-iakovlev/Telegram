@@ -2,4 +2,10 @@
 
 "CFBundleDisplayName" = "تيليجرام";
 
-"NSContactsUsageDescription" = "Telegram stores your contacts heavily encrypted in the cloud to let you connect with your friends across all your devices.";
+"NSContactsUsageDescription" = "تيليجرام يحفظ جهات الإتصال الخاصة بك مشفرة بشكل كبير في السحابة ليمكنك من التواصل مع أصدقائك عبر جميع الأجهزة الخاصة بك";
+"NSLocationWhenInUseUsageDescription" = "عندما ترغب في مشاركة مكانك مع أصدقائك، تيليجرام يحتاج لصلاحيات لعرض الخريطة لهم.";
+"NSLocationAlwaysUsageDescription" = "عندما تقوم بمشاركة موقعك مع أصدقائك، تيليجرام يحتاج إلى الصلاحية ليعرض لهم الخريطة. كما تحتاج لإعطاء تيليجرام الصلاحية لتتمكن من إرسال موقعك من ساعة آبل.";
+"NSCameraUsageDescription" = "نحتاج ذلك لتتمكن من التقاط وإرسال الصور والفيديوهات.";
+"NSPhotoLibraryUsageDescription" = "نحتاج ذلك لتتمكن من إرسال الصور والفيديوهات من ألبوم الصور.";
+"NSMicrophoneUsageDescription" = "نحتاج ذلك لتتمكن من تسجيل رسائل صوتية وفيديوهات بالصوت لترسلها..";
+"NSSiriUsageDescription" = "You can use Siri to send messages.";

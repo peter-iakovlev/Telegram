@@ -251,56 +251,32 @@
     _allMembersSwitchItem.isOn = !_conversation.hasAdmins;
     _allMembersCommentItem.text = !_conversation.hasAdmins ? TGLocalized(@"ChatAdmins.AllMembersAreAdminsOnHelp") : TGLocalized(@"ChatAdmins.AllMembersAreAdminsOffHelp");
     
-    NSMutableSet *currentUserIds = [[NSMutableSet alloc] init];
+    NSMutableArray *currentUserIds = [[NSMutableArray alloc] init];
     for (TGGroupInfoUserCollectionItem *userItem in _usersSection.items) {
         [currentUserIds addObject:@(userItem.user.uid)];
     }
     
-    NSMutableSet *updatedUserIds = [[NSMutableSet alloc] init];
-    for (TGUser *user in filteredUsers) {
+    NSMutableArray *updatedUserIds = [[NSMutableArray alloc] init];
+    for (TGUser *user in [self sortedUsers:filteredUsers chatAdminUids:_referenceChatAdminUids]) {
         [updatedUserIds addObject:@(user.uid)];
     }
     
-    if ([currentUserIds isEqualToSet:updatedUserIds]) {
-        NSArray *sortedUsers = [self sortedUsers:filteredUsers chatAdminUids:_referenceChatAdminUids];
-        NSUInteger sectionIndex = [self indexForSection:_usersSection];
-        NSInteger index = -1;
-        for (TGUser *user in sortedUsers) {
-            index++;
-            
-            NSInteger currentIndex = -1;
-            for (TGGroupInfoUserCollectionItem *userItem in _usersSection.items) {
-                currentIndex++;
-                
-                if (userItem.user.uid == user.uid) {
-                    if (currentIndex != index) {
-                        [_usersSection deleteItemAtIndex:currentIndex];
-                        [_usersSection insertItem:userItem atIndex:index];
-                        [self.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:currentIndex inSection:sectionIndex] toIndexPath:[NSIndexPath indexPathForItem:index inSection:sectionIndex]];
-                    }
-                    
-                    break;
-                }
-            }
-        }
-        
-        [self updateItemPositions];
-        
+    if ([currentUserIds isEqualToArray:updatedUserIds]) {
         for (TGGroupInfoUserCollectionItem *userItem in _usersSection.items) {
             userItem.selectable = false;//userItem.user.uid != TGTelegraphInstance.clientUserId;
             userItem.displaySwitch = true;
             if (userItem.user.uid == TGTelegraphInstance.clientUserId) {
                 userItem.enableSwitch = false;
-                userItem.switchIsOn = true;
+                [userItem setSwitchIsOn:true animated:true];
                 userItem.customStatus = TGLocalized(@"ChatAdmins.AdminLabel");
             } else {
                 userItem.enableSwitch = conversation.hasAdmins;
                 if (conversation.hasAdmins) {
                     bool isAdmin = [conversation.chatParticipants.chatAdminUids containsObject:@(userItem.user.uid)];
-                    userItem.switchIsOn = isAdmin;
+                    [userItem setSwitchIsOn:isAdmin animated:false];
                     userItem.customStatus = isAdmin ? TGLocalized(@"ChatAdmins.AdminLabel") : nil;
                 } else {
-                    userItem.switchIsOn = !conversation.hasAdmins;
+                    [userItem setSwitchIsOn:!conversation.hasAdmins animated:false];
                     userItem.customStatus = nil;
                 }
             }

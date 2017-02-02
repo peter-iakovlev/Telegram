@@ -2,6 +2,8 @@
 
 #import "TLMetaClassStore.h"
 
+//botInlineMessageText flags:# message:string no_webpage:flags.0?true entities:flags.1?Vector<MessageEntity> reply_markup:flags.2?ReplyMarkup = BotInlineMessage;
+
 @implementation TLBotInlineMessage$botInlineMessageText
 
 - (void)TLserialize:(NSOutputStream *)__unused os
@@ -30,12 +32,24 @@
         for (int32_t i = 0; i < count; i++) {
             int32_t signature = [is readInt32];
             id item = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (item != nil) {
                 [items addObject:item];
             }
         }
         
         result.entities = items;
+    }
+    
+    if (flags & (1 << 2))
+    {
+        int32_t signature = [is readInt32];
+        result.reply_markup = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
     }
     
     return result;

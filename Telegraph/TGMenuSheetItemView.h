@@ -1,6 +1,7 @@
 #import <UIKit/UIKit.h>
 
 @class TGMenuSheetView;
+@class TGMenuSheetController;
 
 typedef enum
 {
@@ -9,12 +10,13 @@ typedef enum
     TGMenuSheetItemTypeFooter
 } TGMenuSheetItemType;
 
-@interface TGMenuSheetItemView : UIView
+@interface TGMenuSheetItemView : UIView <UIViewControllerPreviewingDelegate>
 {
     CGFloat _screenHeight;
     UIUserInterfaceSizeClass _sizeClass;
 }
 
+@property (nonatomic, weak) TGMenuSheetController *menuController;
 @property (nonatomic, readonly) TGMenuSheetItemType type;
 
 - (instancetype)initWithType:(TGMenuSheetItemType)type;
@@ -25,6 +27,17 @@ typedef enum
 - (CGFloat)preferredHeightForWidth:(CGFloat)width screenHeight:(CGFloat)screenHeight;
 
 @property (nonatomic, assign) bool requiresDivider;
+@property (nonatomic, assign) bool requiresClearBackground;
+
+@property (nonatomic, assign) bool handlesPan;
+- (bool)passPanOffset:(CGFloat)offset;
+@property (nonatomic, readonly) bool inhibitPan;
+
+@property (nonatomic, readonly) UIView *previewSourceView;
+
+@property (nonatomic, assign) bool condensable;
+@property (nonatomic, assign) bool distractable;
+@property (nonatomic, assign) bool overflow;
 
 @property (nonatomic, assign) CGFloat screenHeight;
 @property (nonatomic, assign) UIUserInterfaceSizeClass sizeClass;
@@ -33,6 +46,12 @@ typedef enum
 - (void)requestMenuLayoutUpdate;
 
 @property (nonatomic, copy) void (^highlightUpdateBlock)(bool highlighted);
+
+- (void)_updateHeightAnimated:(bool)animated;
+- (void)_didLayoutSubviews;
+
+- (void)_willRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation duration:(NSTimeInterval)duration;
+- (void)_didRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation;
 
 - (void)menuView:(TGMenuSheetView *)menuView willAppearAnimated:(bool)animated;
 - (void)menuView:(TGMenuSheetView *)menuView didAppearAnimated:(bool)animated;

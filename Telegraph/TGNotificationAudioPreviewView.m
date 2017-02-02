@@ -273,7 +273,7 @@ static UIImage *cancelImageWithColor(UIColor *color)
     [self updateAnimated:animated && (_progress < 0.01f ? false : true)];
 }
 
-- (void)inlineMediaPlaybackStateUpdated:(bool)isPaused playbackPosition:(float)playbackPosition timestamp:(MTAbsoluteTime)timestamp preciseDuration:(NSTimeInterval)preciseDuration
+- (void)inlineMediaPlaybackStateUpdated:(bool)isPaused playbackPosition:(float)playbackPosition timestamp:(CFAbsoluteTime)timestamp preciseDuration:(NSTimeInterval)preciseDuration
 {
     _isPaused = isPaused;
     _audioPosition = playbackPosition;

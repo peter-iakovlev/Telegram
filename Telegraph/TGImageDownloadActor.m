@@ -26,6 +26,10 @@
 
 #import "TGImagePickerController.h"
 
+#import "TGPeerIdAdapter.h"
+
+#import "TGTelegramNetworking.h"
+
 static NSMutableDictionary *urlRewrites()
 {
     static NSMutableDictionary *dict = nil;
@@ -600,8 +604,12 @@ static inline double imageProcessingPriority()
                                                         if (mid != 0 && conversationId != 0)
                                                         {
                                                             int minAutosaveMid = [TGDatabaseInstance() minAutosaveMessageIdForConversation:conversationId];
-                                                            if (mid < minAutosaveMid)
-                                                                shouldSave = false;
+                                                            //if (mid < minAutosaveMid)
+                                                            //    shouldSave = false;
+                                                        }
+                                                        
+                                                        if (TGPeerIdIsChannel(conversationId)) {
+                                                            shouldSave = false;
                                                         }
                                                     }
                                                     
@@ -642,7 +650,7 @@ static inline double imageProcessingPriority()
                     }
                     
                     _requestedActors = true;
-                    [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/file/(%@)", url] options:[NSDictionary dictionaryWithObjectsAndKeys:url, @"url", nil] watcher:self];
+                    [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/file/(%@)", url] options:[NSDictionary dictionaryWithObjectsAndKeys:url, @"url", @(TGNetworkMediaTypeTagImage), @"mediaTypeTag", nil] watcher:self];
                 }
                 else
                 {

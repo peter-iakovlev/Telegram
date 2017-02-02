@@ -47,10 +47,9 @@
     }
     
     result.top_message = [is readInt32];
-    result.top_important_message = [is readInt32];
     result.read_inbox_max_id = [is readInt32];
+    result.read_outbox_max_id = [is readInt32];
     result.unread_count = [is readInt32];
-    result.unread_important_count = [is readInt32];
     
     {
         __unused int32_t vectorSignature = [is readInt32];
@@ -60,6 +59,9 @@
         {
             int32_t signature = [is readInt32];
             id object = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (object != nil)
             {
                 [items addObject:object];
@@ -76,6 +78,9 @@
         {
             int32_t signature = [is readInt32];
             id object = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (object != nil)
             {
                 [items addObject:object];
@@ -92,6 +97,9 @@
         {
             int32_t signature = [is readInt32];
             id object = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (object != nil)
             {
                 [items addObject:object];
@@ -133,6 +141,9 @@
         {
             int32_t signature = [is readInt32];
             id object = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (object != nil)
             {
                 [items addObject:object];
@@ -149,6 +160,9 @@
         {
             int32_t signature = [is readInt32];
             id object = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (object != nil)
             {
                 [items addObject:object];
@@ -165,6 +179,9 @@
         {
             int32_t signature = [is readInt32];
             id object = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (object != nil)
             {
                 [items addObject:object];
@@ -181,6 +198,9 @@
         {
             int32_t signature = [is readInt32];
             id object = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
             if (object != nil)
             {
                 [items addObject:object];

@@ -4,6 +4,7 @@
 @class PGCamera;
 @class TGCameraPreviewView;
 @class TGSuggestionContext;
+@class TGVideoEditAdjustments;
 
 typedef enum {
     TGCameraControllerGenericIntent,
@@ -20,9 +21,10 @@ typedef enum {
 @property (nonatomic, assign) bool shouldStoreCapturedAssets;
 
 @property (nonatomic, assign) bool allowCaptions;
+@property (nonatomic, assign) bool inhibitDocumentCaptions;
 
-@property (nonatomic, copy) void(^finishedWithPhoto)(UIImage *resultImage, NSString *caption);
-@property (nonatomic, copy) void(^finishedWithVideo)(NSString *existingAssetId, NSString *tempFilePath, NSUInteger fileSize, UIImage *previewImage, NSTimeInterval duration, CGSize dimensions, NSString *caption);
+@property (nonatomic, copy) void(^finishedWithPhoto)(UIImage *resultImage, NSString *caption, NSArray *stickers);
+@property (nonatomic, copy) void(^finishedWithVideo)(NSURL *videoURL, UIImage *previewImage, NSTimeInterval duration, CGSize dimensions, TGVideoEditAdjustments *adjustments, NSString *caption, NSArray *stickers);
 
 @property (nonatomic, copy) CGRect(^beginTransitionOut)(void);
 @property (nonatomic, copy) void(^finishedTransitionOut)(void);
@@ -33,6 +35,8 @@ typedef enum {
 - (instancetype)initWithCamera:(PGCamera *)camera previewView:(TGCameraPreviewView *)previewView intent:(TGCameraControllerIntent)intent;
 
 - (void)beginTransitionInFromRect:(CGRect)rect;
+
++ (UIInterfaceOrientation)_interfaceOrientationForDeviceOrientation:(UIDeviceOrientation)orientation;
 
 + (bool)useLegacyCamera;
 

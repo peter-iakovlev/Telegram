@@ -65,6 +65,9 @@
     return self;
 }
 
+- (void)phonePressed:(id)__unused sender {
+}
+
 - (void)invitePressed
 {
     if (_phonebookInfo.phoneNumbers.count == 0)

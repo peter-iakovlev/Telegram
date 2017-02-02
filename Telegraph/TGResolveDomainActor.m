@@ -18,11 +18,14 @@
 
 #import "TGChannelManagementSignals.h"
 
+#import "TGAlertView.h"
+
 @interface TGResolveDomainActor ()
 {
     TGProgressWindow *_progressWindow;
     NSString *_domain;
     bool _profile;
+    bool _keepStack;
     NSDictionary *_arguments;
 }
 
@@ -60,6 +63,7 @@
     _domain = options[@"domain"];
     _profile = [options[@"profile"] boolValue];
     _arguments = options[@"arguments"];
+    _keepStack = [options[@"keepStack"] boolValue];
     
     MTRequest *request = [[MTRequest alloc] init];
     
@@ -75,10 +79,11 @@
             __strong TGResolveDomainActor *strongSelf = weakSelf;
             if (strongSelf != nil)
             {
-                if (error == nil)
+                if (error == nil) {
                     [strongSelf resolveSuccess:resolvedPeer];
-                else
-                    [strongSelf resolveFailed];
+                } else {
+                    [strongSelf resolveFailed:[[TGTelegramNetworking instance] extractNetworkErrorType:error]];
+                }
             }
         }];
     }];
@@ -113,12 +118,23 @@
                         [TGAppDelegateInstance inviteBotToGroup:user payload:_arguments[@"startgroup"]];
                         return;
                     }
+                    else if (_arguments[@"game"] != nil)
+                    {
+                        [TGAppDelegateInstance startGameInConversation:_arguments[@"game"] user:user];
+                        return;
+                    }
                 }
                 
-                if (_profile)
-                    [[TGInterfaceManager instance] navigateToProfileOfUser:user.uid shareVCard:nil];
-                else
-                    [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil];
+                if (_profile) {
+                    if (user.kind == TGUserKindBot || user.kind == TGUserKindSmartBot) {
+                        [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:nil atMessage:nil clearStack:!_keepStack openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
+                    } else {
+                        [[TGInterfaceManager instance] navigateToProfileOfUser:user.uid shareVCard:nil];
+                    }
+                }
+                else {
+                    [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:nil atMessage:nil clearStack:!_keepStack openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
+                }
             });
         }
     }
@@ -138,19 +154,21 @@
                 [progressWindow dismiss:true];
             });
         }] takeLast] startWithNext:^(TGConversation *next) {
-            [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:next performActions:@{} atMessage:@{@"mid": @([_arguments[@"messageId"] intValue])} clearStack:true openKeyboard:false animated:true];
+            [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:next performActions:@{} atMessage:@{@"mid": @([_arguments[@"messageId"] intValue])} clearStack:!_keepStack openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
         }error:nil completed:nil];
     }
     
     [ActionStageInstance() actionCompleted:self.path result:nil];
 }
 
-- (void)resolveFailed
+- (void)resolveFailed:(NSString *)__unused errorType
 {
     TGDispatchOnMainThread(^
     {
         [_progressWindow dismiss:true];
         _progressWindow = nil;
+        
+        [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Resolve.ErrorNotFound") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
     });
 
     [ActionStageInstance() actionFailed:self.path reason:-1];

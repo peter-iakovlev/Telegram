@@ -53,7 +53,7 @@
 
 - (SSignal *)screenImageSignal
 {
-    return [[[self originalImageSignal] deliverOn:[SQueue concurrentDefaultQueue]] map:^UIImage *(UIImage *image)
+    return [[self originalImageSignal] map:^UIImage *(UIImage *image)
     {
         CGSize maxSize = TGPhotoEditorScreenImageMaxSize();
         CGSize targetSize = TGFitSize(self.originalSize, maxSize);

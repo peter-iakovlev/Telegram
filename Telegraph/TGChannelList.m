@@ -93,7 +93,9 @@
     
     [_uncommitedPeerIds removeAllObjects];
 
-    [ActionStageInstance() dispatchResource:@"/tg/conversations" resource:[[SGraphObjectNode alloc] initWithObject:channels]];
+    if (channels.count != 0) {
+        [ActionStageInstance() dispatchResource:@"/tg/conversations" resource:[[SGraphObjectNode alloc] initWithObject:channels]];
+    }
 }
 
 @end

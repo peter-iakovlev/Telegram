@@ -64,7 +64,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x3a84026a;
+    return (int32_t)0x9d4c17c0;
 }
 
 - (int32_t)TLconstructorName
@@ -75,9 +75,11 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
     TLPhoneConnection$phoneConnection *object = [[TLPhoneConnection$phoneConnection alloc] init];
-    object.server = metaObject->getString((int32_t)0x3bc2f529);
+    object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
+    object.ip = metaObject->getString((int32_t)0xe5956ecc);
+    object.ipv6 = metaObject->getString((int32_t)0x555f25db);
     object.port = metaObject->getInt32((int32_t)0x81ce65c9);
-    object.stream_id = metaObject->getInt64((int32_t)0x736c1b31);
+    object.peer_tag = metaObject->getBytes((int32_t)0x49f791e4);
     return object;
 }
 
@@ -85,9 +87,21 @@
 {
     {
         TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.n_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
+    }
+    {
+        TLConstructedValue value;
         value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.server;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x3bc2f529, value));
+        value.nativeObject = self.ip;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe5956ecc, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.ipv6;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x555f25db, value));
     }
     {
         TLConstructedValue value;
@@ -97,9 +111,9 @@
     }
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt64;
-        value.primitive.int64Value = self.stream_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x736c1b31, value));
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.peer_tag;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x49f791e4, value));
     }
 }
 

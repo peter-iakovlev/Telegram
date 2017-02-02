@@ -100,6 +100,11 @@
                     updatedUser.phoneNumberHash = originalUser.phoneNumberHash;
                     updatedUser.userName = originalUser.userName;
                     updatedUser.presence = originalUser.presence;
+                    updatedUser.firstName = originalUser.firstName;
+                    updatedUser.lastName = originalUser.lastName;
+                    updatedUser.phoneNumber = originalUser.phoneNumber;
+                    updatedUser.phonebookFirstName = originalUser.phonebookFirstName;
+                    updatedUser.phonebookLastName = originalUser.phonebookLastName;
                 }
                 
                 [updateUsers addObject:updatedUser];

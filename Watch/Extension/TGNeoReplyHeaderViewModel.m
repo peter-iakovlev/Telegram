@@ -3,6 +3,8 @@
 #import "TGNeoAttachmentViewModel.h"
 
 #import "TGBridgeMessage.h"
+#import "TGBridgeChat.h"
+#import "TGBridgeUser.h"
 #import "TGBridgeReplyMessageMediaAttachment.h"
 #import "TGBridgeVideoMediaAttachment.h"
 
@@ -30,7 +32,14 @@ const CGFloat TGNeoReplyHeaderImageWidth = 26.0f;
     {
         _outgoing = outgoing;
         
-        _authorNameModel = [[TGNeoLabelViewModel alloc] initWithText:[users[@(attachment.message.fromUid)] displayName] font:[UIFont systemFontOfSize:12 weight:UIFontWeightMedium] color:[self normalColorForOutgoing:outgoing] attributes:nil];
+        NSString *name = nil;
+        id peer = users[@(attachment.message.fromUid)];
+        if ([peer isKindOfClass:[TGBridgeUser class]])
+            name = [peer displayName];
+        else if ([peer isKindOfClass:[TGBridgeChat class]])
+            name = [peer groupTitle];
+        
+        _authorNameModel = [[TGNeoLabelViewModel alloc] initWithText:name font:[UIFont systemFontOfSize:12 weight:UIFontWeightMedium] color:[self normalColorForOutgoing:outgoing] attributes:nil];
         _authorNameModel.multiline = false;
         [self addSubmodel:_authorNameModel];
         

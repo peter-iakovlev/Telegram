@@ -1,5 +1,8 @@
-#import "TGModernGalleryVideoItemView.h"
+#import "TGModernGalleryNewVideoItemView.h"
+#import "TGPIPAblePlayerView.h"
 
-@interface TGGenericPeerMediaGalleryVideoItemView : TGModernGalleryVideoItemView
+@interface TGGenericPeerMediaGalleryVideoItemView : TGModernGalleryNewVideoItemView <TGPIPAblePlayerContainerView>
+
+- (void)cancelPIP;
 
 @end

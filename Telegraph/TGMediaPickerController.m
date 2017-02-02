@@ -14,18 +14,15 @@
 
 #import "TGPhotoEditorController.h"
 
-@interface TGMediaPickerController () <UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout>
+@interface TGMediaPickerController ()
 {    
     TGMediaSelectionContext *_selectionContext;
     TGMediaEditingContext *_editingContext;
     
     SMetaDisposable *_selectionChangedDisposable;
-    
-    UIView *_wrapperView;
-    CGFloat _collectionViewWidth;
+
     id _hiddenItem;
-    
-    TGMediaPickerSelectionGestureRecognizer *_selectionGestureRecognizer;
+    UICollectionViewLayout *_collectionLayout;
 }
 @end
 
@@ -59,7 +56,7 @@
     _wrapperView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_wrapperView];
 
-    _collectionView = [[UICollectionView alloc] initWithFrame:_wrapperView.bounds collectionViewLayout:[[UICollectionViewFlowLayout alloc] init]];
+    _collectionView = [[[self _collectionViewClass] alloc] initWithFrame:_wrapperView.bounds collectionViewLayout:[self _collectionLayout]];
     _collectionView.alwaysBounceVertical = true;
     _collectionView.backgroundColor = [UIColor whiteColor];
     _collectionView.delaysContentTouches = true;
@@ -73,33 +70,23 @@
     self.explicitTableInset = UIEdgeInsetsMake(0, 0, TGMediaPickerToolbarHeight, 0);
     self.explicitScrollIndicatorInset = self.explicitTableInset;
     
+    [self _setupSelectionGesture];
+    
     if (![self _updateControllerInset:false])
         [self controllerInsetUpdated:UIEdgeInsetsZero];
+}
+
+- (Class)_collectionViewClass
+{
+    return [UICollectionView class];
+}
+
+- (UICollectionViewLayout *)_collectionLayout
+{
+    if (_collectionLayout == nil)
+        _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
     
-    if (_selectionContext != nil)
-    {
-        __weak TGMediaPickerController *weakSelf = self;
-                
-        _selectionGestureRecognizer = [[TGMediaPickerSelectionGestureRecognizer alloc] initForCollectionView:_collectionView];
-        _selectionGestureRecognizer.isItemSelected = ^bool (NSIndexPath *indexPath)
-        {
-            __strong TGMediaPickerController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return false;
-            
-            id item = [strongSelf _itemAtIndexPath:indexPath];
-            return [strongSelf->_selectionContext isItemSelected:item];
-        };
-        _selectionGestureRecognizer.toggleItemSelection = ^(NSIndexPath *indexPath)
-        {
-            __strong TGMediaPickerController *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            id item = [strongSelf _itemAtIndexPath:indexPath];
-            [strongSelf->_selectionContext toggleItemSelection:item animated:true sender:nil];
-        };
-    }
+    return _collectionLayout;
 }
 
 - (void)viewDidLoad
@@ -138,6 +125,11 @@
 
 #pragma mark -
 
+- (void)_cancelSelectionGestureRecognizer
+{
+    [_selectionGestureRecognizer cancel];
+}
+
 - (bool)shouldAdjustScrollViewInsetsForInversedLayout
 {
     return true;
@@ -168,7 +160,7 @@
 
 #pragma mark - Data Source
 
-- (NSInteger)_numberOfItems
+- (NSUInteger)_numberOfItems
 {
     return 0;
 }
@@ -196,6 +188,11 @@
 }
 
 #pragma mark - Collection View Data Source & Delegate
+
+- (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)__unused collectionView
+{
+    return 1;
+}
 
 - (NSInteger)collectionView:(UICollectionView *)__unused collectionView numberOfItemsInSection:(NSInteger)__unused section
 {
@@ -245,54 +242,65 @@
 
 - (void)_adjustContentOffsetToBottom
 {
-    UIEdgeInsets sectionInsets = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout insetForSectionAtIndex:0];
-    
-    CGFloat itemSpacing = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout minimumInteritemSpacingForSectionAtIndex:0];
-    CGFloat lineSpacing = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout minimumLineSpacingForSectionAtIndex:0];
-    
-    CGFloat additionalRowWidth = sectionInsets.left + sectionInsets.right;
-    CGFloat currentRowWidth = 0.0f;
-    CGFloat maxRowWidth = _collectionView.frame.size.width;
-    
-    CGSize itemSize = CGSizeZero;
-    if ([self collectionView:_collectionView numberOfItemsInSection:0] != 0)
-    {
-        itemSize = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0]];
-    }
-    
-    CGFloat contentSize = 0.0f;
-    
-    for (NSInteger i = [self collectionView:_collectionView numberOfItemsInSection:0] - 1; i >= 0; i--)
-    {
-        if (currentRowWidth + itemSize.width + (currentRowWidth > FLT_EPSILON ? itemSpacing : 0.0f) + additionalRowWidth > maxRowWidth)
-        {
-            if (contentSize > FLT_EPSILON)
-                contentSize += lineSpacing;
-            contentSize += itemSize.height;
-            
-            currentRowWidth = 0.0f;
-        }
-        
-        if (currentRowWidth > FLT_EPSILON)
-            currentRowWidth += itemSpacing;
-        currentRowWidth += itemSize.width;
-    }
-    
-    if (currentRowWidth > FLT_EPSILON)
-    {
-        if (contentSize > FLT_EPSILON)
-            contentSize += lineSpacing;
-        contentSize += itemSize.height;
-    }
-    
-    contentSize += sectionInsets.top + sectionInsets.bottom;
-    
     UIEdgeInsets contentInset = [self controllerInsetForInterfaceOrientation:self.interfaceOrientation];
     
-    CGPoint contentOffset = CGPointMake(0, contentSize - _collectionView.frame.size.height + contentInset.bottom);
+    CGPoint contentOffset = CGPointMake(0, _collectionView.contentSize.height - _collectionView.frame.size.height + contentInset.bottom);
     if (contentOffset.y < -contentInset.top)
         contentOffset.y = -contentInset.top;
     [_collectionView setContentOffset:contentOffset animated:false];
+    
+    return;
+//    UIEdgeInsets sectionInsets = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout insetForSectionAtIndex:0];
+//    
+//    CGFloat itemSpacing = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout minimumInteritemSpacingForSectionAtIndex:0];
+//    CGFloat lineSpacing = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout minimumLineSpacingForSectionAtIndex:0];
+//    
+//    CGFloat additionalRowWidth = sectionInsets.left + sectionInsets.right;
+//    CGFloat currentRowWidth = 0.0f;
+//    CGFloat maxRowWidth = _collectionView.frame.size.width;
+//    
+//    CGSize itemSize = CGSizeZero;
+//    if ([self collectionView:_collectionView numberOfItemsInSection:0] != 0)
+//    {
+//        itemSize = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0]];
+//    }
+//    
+//    CGFloat contentSize = 0.0f;
+//    
+//    for (NSInteger i = [self numberOfSectionsInCollectionView:_collectionView] - 1; i >= 0; i--)
+//    {
+//        contentSize += sectionInsets.top + sectionInsets.bottom;
+//        
+//        for (NSInteger k = [self collectionView:_collectionView numberOfItemsInSection:i] - 1; k >= 0; k--)
+//        {
+//            if (currentRowWidth + itemSize.width + (currentRowWidth > FLT_EPSILON ? itemSpacing : 0.0f) + additionalRowWidth > maxRowWidth)
+//            {
+//                if (contentSize > FLT_EPSILON)
+//                    contentSize += lineSpacing;
+//                contentSize += itemSize.height;
+//                
+//                currentRowWidth = 0.0f;
+//            }
+//            
+//            if (currentRowWidth > FLT_EPSILON)
+//                currentRowWidth += itemSpacing;
+//            currentRowWidth += itemSize.width;
+//        }
+//        
+//        if (currentRowWidth > FLT_EPSILON)
+//        {
+//            if (contentSize > FLT_EPSILON)
+//                contentSize += lineSpacing;
+//            contentSize += itemSize.height;
+//        }
+//    }
+//    
+//    UIEdgeInsets contentInset = [self controllerInsetForInterfaceOrientation:self.interfaceOrientation];
+//    
+//    CGPoint contentOffset = CGPointMake(0, contentSize - _collectionView.frame.size.height + contentInset.bottom);
+//    if (contentOffset.y < -contentInset.top)
+//        contentOffset.y = -contentInset.top;
+//    [_collectionView setContentOffset:contentOffset animated:false];
 }
 
 - (void)layoutControllerForSize:(CGSize)size duration:(NSTimeInterval)duration
@@ -341,6 +349,34 @@
     
     for (TGMediaPickerCell *cell in [_collectionView visibleCells])
         [cell setHidden:([cell.item isEqual:_hiddenItem]) animated:animated];
+}
+
+- (void)_setupSelectionGesture
+{
+    if (_selectionContext == nil)
+        return;
+    
+    __weak TGMediaPickerController *weakSelf = self;
+    
+    _selectionGestureRecognizer = [[TGMediaPickerSelectionGestureRecognizer alloc] initForCollectionView:_collectionView];
+    _selectionGestureRecognizer.isItemSelected = ^bool (NSIndexPath *indexPath)
+    {
+        __strong TGMediaPickerController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return false;
+        
+        id item = [strongSelf _itemAtIndexPath:indexPath];
+        return [strongSelf->_selectionContext isItemSelected:item];
+    };
+    _selectionGestureRecognizer.toggleItemSelection = ^(NSIndexPath *indexPath)
+    {
+        __strong TGMediaPickerController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        id item = [strongSelf _itemAtIndexPath:indexPath];
+        [strongSelf->_selectionContext toggleItemSelection:item animated:true sender:nil];
+    };
 }
 
 @end

@@ -71,6 +71,87 @@
 
 #pragma mark - Layout
 
+- (CGSize)standaloneContentSize:(CGSize)viewportSize {
+    CGFloat idealHeight = self.preferredRowSize;
+    if (idealHeight == 0) {
+        if (self.scrollDirection == UICollectionViewScrollDirectionVertical) {
+            idealHeight = CGRectGetHeight(self.collectionView.bounds) / 3.0;
+        }
+        else {
+            idealHeight = CGRectGetWidth(self.collectionView.bounds) / 3.0;
+        }
+    }
+    
+    NSMutableArray *headerFrames = [NSMutableArray array];
+    NSMutableArray *footerFrames = [NSMutableArray array];
+    
+    CGSize contentSize = CGSizeZero;
+    
+    CGRect **itemFrameSections = _itemFrameSections;
+    NSInteger numberOfItemFrameSections = _numberOfItemFrameSections;
+    
+    _itemFrameSections = NULL;
+    _numberOfItemFrameSections = 0;
+    
+    // first release old item frame sections
+    [self clearItemFrames];
+    
+    // create new item frame sections
+    _numberOfItemFrameSections = [self.collectionView numberOfSections];
+    _itemFrameSections = (CGRect **)malloc(sizeof(CGRect *) * _numberOfItemFrameSections);
+    
+    for (int section = 0; section < [self.collectionView numberOfSections]; section++) {
+        // add new item frames array to sections array
+        NSInteger numberOfItemsInSections = [self.collectionView numberOfItemsInSection:section];
+        CGRect *itemFrames = (CGRect *)malloc(sizeof(CGRect) * numberOfItemsInSections);
+        _itemFrameSections[section] = itemFrames;
+        
+        CGSize headerSize = [self referenceSizeForHeaderInSection:section];
+        CGSize sectionSize = CGSizeZero;
+        
+        CGRect headerFrame;
+        if (self.scrollDirection == UICollectionViewScrollDirectionVertical) {
+            headerFrame = CGRectMake(0, contentSize.height, CGRectGetWidth(self.collectionView.bounds), headerSize.height);
+        } else {
+            headerFrame = CGRectMake(contentSize.width, 0, headerSize.width, CGRectGetHeight(self.collectionView.bounds));
+        }
+        [headerFrames addObject:[NSValue valueWithCGRect:headerFrame]];
+        
+        CGFloat totalItemSize = [self totalItemSizeForSection:section preferredRowSize:idealHeight];
+        NSInteger numberOfRows = MAX((NSInteger)CGRound(totalItemSize / [self viewPortAvailableSize]), 1);
+        
+        CGPoint sectionOffset;
+        if (self.scrollDirection == UICollectionViewScrollDirectionVertical) {
+            sectionOffset = CGPointMake(0, contentSize.height + headerSize.height);
+        } else {
+            sectionOffset = CGPointMake(contentSize.width + headerSize.width, 0);
+        }
+        
+        [self setFrames:itemFrames forItemsInSection:section numberOfRows:numberOfRows sectionOffset:sectionOffset sectionSize:&sectionSize viewportWidth:viewportSize.width viewportHeight:viewportSize.height];
+        
+        CGSize footerSize = [self referenceSizeForFooterInSection:section];
+        CGRect footerFrame;
+        if (self.scrollDirection == UICollectionViewScrollDirectionVertical) {
+            footerFrame = CGRectMake(0, contentSize.height + headerSize.height + sectionSize.height, CGRectGetWidth(self.collectionView.bounds), footerSize.height);
+        } else {
+            footerFrame = CGRectMake(contentSize.width + headerSize.width + sectionSize.width, 0, footerSize.width, CGRectGetHeight(self.collectionView.bounds));
+        }
+        [footerFrames addObject:[NSValue valueWithCGRect:footerFrame]];
+        
+        if (self.scrollDirection == UICollectionViewScrollDirectionVertical) {
+            contentSize = CGSizeMake(sectionSize.width, contentSize.height + headerSize.height + sectionSize.height + footerSize.height);
+        }
+        else {
+            contentSize = CGSizeMake(contentSize.width + headerSize.width + sectionSize.width + footerSize.width, sectionSize.height);
+        }
+    }
+    
+    _itemFrameSections = itemFrameSections;
+    _numberOfItemFrameSections = numberOfItemFrameSections;
+    
+    return contentSize;
+}
+
 - (void)prepareLayout
 {
     [super prepareLayout];
@@ -126,7 +207,7 @@
             sectionOffset = CGPointMake(contentSize.width + headerSize.width, 0);
         }
         
-        [self setFrames:itemFrames forItemsInSection:section numberOfRows:numberOfRows sectionOffset:sectionOffset sectionSize:&sectionSize];
+        [self setFrames:itemFrames forItemsInSection:section numberOfRows:numberOfRows sectionOffset:sectionOffset sectionSize:&sectionSize viewportWidth:[self viewPortAvailableSize] viewportHeight:[self viewPortHeight]];
         
         CGSize footerSize = [self referenceSizeForFooterInSection:section];
         CGRect footerFrame;
@@ -271,7 +352,7 @@
     return [weights copy];
 }
 
-- (void)setFrames:(CGRect *)frames forItemsInSection:(NSInteger)section numberOfRows:(NSUInteger)numberOfRows sectionOffset:(CGPoint)sectionOffset sectionSize:(CGSize *)sectionSize
+- (void)setFrames:(CGRect *)frames forItemsInSection:(NSInteger)section numberOfRows:(NSUInteger)numberOfRows sectionOffset:(CGPoint)sectionOffset sectionSize:(CGSize *)sectionSize viewportWidth:(CGFloat)viewportWidth viewportHeight:(CGFloat)viewportHeight
 {
     NSArray *weights = [self weightsForItemsInSection:section];
     NSArray *partition = [TGGifKeyboardBalancedPartition linearPartitionForSequence:weights numberOfPartitions:numberOfRows];
@@ -280,7 +361,7 @@
     CGPoint offset = CGPointMake(sectionOffset.x + self.sectionInset.left, sectionOffset.y + self.sectionInset.top);
     CGFloat previousItemSize = 0;
     CGFloat contentMaxValueInScrollDirection = 0;
-    CGFloat maxWidth = [self viewPortAvailableSize];
+    CGFloat maxWidth = viewportWidth;
     NSInteger rowIndex = -1;
     for (NSArray *row in partition) {
         rowIndex++;
@@ -297,13 +378,13 @@
             }
         }
         
-        CGFloat rowSize = [self viewPortAvailableSize] - (([row count] - 1) * self.minimumInteritemSpacing);
+        CGFloat rowSize = viewportWidth - (([row count] - 1) * self.minimumInteritemSpacing);
         
         if (rowIndex == (NSInteger)[partition count] - 1) {
             if ([row count] < 2) {
-                rowSize = CGFloor([self viewPortAvailableSize] / 3.0f) - (([row count] - 1) * self.minimumInteritemSpacing);
+                rowSize = CGFloor(viewportWidth / 3.0f) - (([row count] - 1) * self.minimumInteritemSpacing);
             } else if ([row count] < 3) {
-                rowSize = CGFloor([self viewPortAvailableSize] * 2.0f / 3.0f) - (([row count] - 1) * self.minimumInteritemSpacing);
+                rowSize = CGFloor(viewportWidth * 2.0f / 3.0f) - (([row count] - 1) * self.minimumInteritemSpacing);
             }
         }
         
@@ -357,10 +438,10 @@
     }
     
     if (self.scrollDirection == UICollectionViewScrollDirectionVertical) {
-        *sectionSize = CGSizeMake([self viewPortWidth], (contentMaxValueInScrollDirection - sectionOffset.y) + self.sectionInset.bottom);
+        *sectionSize = CGSizeMake(viewportWidth, (contentMaxValueInScrollDirection - sectionOffset.y) + self.sectionInset.bottom);
     }
     else {
-        *sectionSize = CGSizeMake((contentMaxValueInScrollDirection - sectionOffset.x) + self.sectionInset.right, [self viewPortHeight]);
+        *sectionSize = CGSizeMake((contentMaxValueInScrollDirection - sectionOffset.x) + self.sectionInset.right, viewportHeight);
     }
 }
 

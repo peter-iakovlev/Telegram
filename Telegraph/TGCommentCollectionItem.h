@@ -22,8 +22,9 @@
 
 - (instancetype)initWithText:(NSString *)text;
 - (instancetype)initWithFormattedText:(NSString *)text;
+- (instancetype)initWithFormattedText:(NSString *)text paragraphSpacing:(CGFloat)paragraphSpacing;
 - (void)setFormattedText:(NSString *)formattedText;
 
-+ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting;
++ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing;
 
 @end

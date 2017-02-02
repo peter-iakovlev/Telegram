@@ -1,4 +1,5 @@
 #import "TGPinAnnotationView.h"
+#import "TGImageUtils.h"
 
 @interface TGPinAnnotationView ()
 {
@@ -37,6 +38,9 @@
         _subtitleLabel = [[UILabel alloc] init];
         _subtitleLabel.backgroundColor = [UIColor clearColor];
         [_calloutWrapper addSubview:_subtitleLabel];
+        
+        _calloutWrapper.layer.rasterizationScale = TGScreenScaling();
+        _calloutWrapper.layer.shouldRasterize = true;
     }
     return self;
 }

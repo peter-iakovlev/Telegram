@@ -106,7 +106,13 @@ static bool _syncedGifs = false;
 
 + (SSignal *)_loadRecentGifs {
     return [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
-        NSData *data = [[NSUserDefaults standardUserDefaults] objectForKey:@"recentGifs_v0"];
+        NSData *data = [NSData dataWithContentsOfFile:[self filePath]];
+        if (data == nil) {
+            data = [[NSUserDefaults standardUserDefaults] objectForKey:@"recentGifs_v0"];
+            [data writeToFile:[self filePath] atomically:true];
+            [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"recentGifs_v0"];
+        }
+        
         if (data == nil) {
             [subscriber putNext:@[]];
             [subscriber putCompletion];
@@ -201,7 +207,7 @@ static bool _syncedGifs = false;
                     
                     [self _storeRecentGifs:array];
                     
-                    if (TGAppDelegateInstance.alwaysShowStickersMode != 2)
+                    if (array.count != 0 && TGAppDelegateInstance.alwaysShowStickersMode == 0)
                     {
                         TGAppDelegateInstance.alwaysShowStickersMode = 2;
                         [TGAppDelegateInstance saveSettings];
@@ -226,9 +232,13 @@ static bool _syncedGifs = false;
     }] startOn:[self queue]];
 }
 
++ (NSString *)filePath {
+    return [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"recentGifs.data"];
+}
+
 + (void)_storeRecentGifs:(NSArray *)array {
     [[self queue] dispatch:^{
-        [[NSUserDefaults standardUserDefaults] setObject:[NSKeyedArchiver archivedDataWithRootObject:array] forKey:@"recentGifs_v0"];
+        [[NSKeyedArchiver archivedDataWithRootObject:array] writeToFile:[self filePath] atomically:true];
     }];
 }
 
@@ -265,7 +275,7 @@ static bool _syncedGifs = false;
         
         [self _storeRecentGifs:updatedDocuments];
         
-        if (TGAppDelegateInstance.alwaysShowStickersMode != 2)
+        if (TGAppDelegateInstance.alwaysShowStickersMode == 0)
         {
             TGAppDelegateInstance.alwaysShowStickersMode = 2;
             [TGAppDelegateInstance saveSettings];
@@ -304,7 +314,7 @@ static bool _syncedGifs = false;
         
         [self _storeRecentGifs:updatedDocuments];
         
-        if (TGAppDelegateInstance.alwaysShowStickersMode != 2)
+        if (TGAppDelegateInstance.alwaysShowStickersMode == 0)
         {
             TGAppDelegateInstance.alwaysShowStickersMode = 2;
             [TGAppDelegateInstance saveSettings];

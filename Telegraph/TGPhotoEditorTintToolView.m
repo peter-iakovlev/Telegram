@@ -61,7 +61,7 @@
         
         for (UIColor *color in colors)
         {
-            TGPhotoEditorTintSwatchView *swatchView = [[TGPhotoEditorTintSwatchView alloc] initWithFrame:CGRectMake(0, 0, 21, 21)];
+            TGPhotoEditorTintSwatchView *swatchView = [[TGPhotoEditorTintSwatchView alloc] initWithFrame:CGRectMake(0, 0, TGPhotoEditorTintSwatchSize, TGPhotoEditorTintSwatchSize)];
             swatchView.color = color;
             [swatchView addTarget:self action:@selector(swatchPressed:) forControlEvents:UIControlEventTouchUpInside];
             [_buttonsWrapper addSubview:swatchView];
@@ -476,7 +476,7 @@
     if (!self.isLandscape)
     {
         CGFloat leftEdge = 30;
-        CGFloat spacing = (self.frame.size.width - leftEdge * 2 - 21 * _swatchViews.count) / (_swatchViews.count - 1);
+        CGFloat spacing = (self.frame.size.width - leftEdge * 2 - TGPhotoEditorTintSwatchSize * _swatchViews.count) / (_swatchViews.count - 1);
         NSInteger i = 0;
         
         for (UIView *view in _swatchViews)
@@ -496,7 +496,7 @@
     else
     {
         CGFloat topEdge = 30;
-        CGFloat spacing = (self.frame.size.height - 30 * 2 - 21 * _swatchViews.count) / (_swatchViews.count - 1);
+        CGFloat spacing = (self.frame.size.height - 30 * 2 - TGPhotoEditorTintSwatchSize * _swatchViews.count) / (_swatchViews.count - 1);
         
         _sliderView.frame = CGRectMake((self.frame.size.width - 32) / 2, TGPhotoEditorSliderViewMargin, 32, self.frame.size.height - 2 * TGPhotoEditorSliderViewMargin);
         
@@ -504,7 +504,7 @@
         
         if (orientation == UIInterfaceOrientationLandscapeLeft)
         {
-            swatchOffset = self.frame.size.width - 51 - 21;
+            swatchOffset = self.frame.size.width - 51 - TGPhotoEditorTintSwatchSize;
             
             [UIView performWithoutAnimation:^
             {

@@ -6,17 +6,17 @@
 
 + (UIColor *)toolbarBackgroundColor
 {
-    return UIColorRGB(0x171717);
+    return [UIColor blackColor]; //UIColorRGB(0x171717);
 }
 
 + (UIColor *)toolbarTransparentBackgroundColor
 {
-    return UIColorRGBA(0x191919, 0.9f);
+    return UIColorRGBA(0x000000, 0.9f); //UIColorRGBA(0x191919, 0.9f);
 }
 
 + (UIColor *)cropTransparentOverlayColor
 {
-    return UIColorRGBA(0x212121, 0.7f);
+    return UIColorRGBA(0x000000, 0.7f);
 }
 
 + (UIColor *)accentColor
@@ -26,12 +26,12 @@
 
 + (UIColor *)panelBackgroundColor
 {
-    return UIColorRGBA(0x000000, 0.9f);
+    return UIColorRGBA(0x000000, 0.9f); //UIColorRGBA(0x000000, 0.9f);
 }
 
 + (UIColor *)selectedImagesPanelBackgroundColor
 {
-    return UIColorRGBA(0x191919, 0.9f);
+    return UIColorRGBA(0x000000, 0.9f); //UIColorRGBA(0x191919, 0.9f);
 }
 
 + (UIColor *)editorButtonSelectionBackgroundColor
@@ -57,6 +57,31 @@
 + (UIImage *)rotateIcon
 {
     return [UIImage imageNamed:@"PhotoEditorRotate.png"];
+}
+
++ (UIImage *)paintIcon
+{
+    return [UIImage imageNamed:@"PhotoEditorPaint.png"];
+}
+
++ (UIImage *)stickerIcon
+{
+    return [UIImage imageNamed:@"PaintStickersIcon.png"];
+}
+
++ (UIImage *)textIcon
+{
+    return [UIImage imageNamed:@"PaintTextIcon.png"];
+}
+
++ (UIImage *)gifIcon
+{
+    return [UIImage imageNamed:@"PhotoEditorMute.png"];
+}
+
++ (UIImage *)gifActiveIcon
+{
+    return [UIImage imageNamed:@"PhotoEditorMuteActive.png"];
 }
 
 + (UIColor *)toolbarSelectedIconColor

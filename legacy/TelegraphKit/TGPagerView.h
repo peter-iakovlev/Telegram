@@ -14,6 +14,7 @@
 
 - (instancetype)initWithDotColors:(NSArray *)colors;
 - (instancetype)initWithDotColors:(NSArray *)colors dotSize:(CGFloat)dotSize;
+- (instancetype)initWithDotColors:(NSArray *)colors normalDotColor:(UIColor *)normalDotColor dotSpacing:(CGFloat)dotSpacing dotSize:(CGFloat)dotSize;
 
 - (void)setPagesCount:(int)count;
 - (void)setPage:(CGFloat)page;

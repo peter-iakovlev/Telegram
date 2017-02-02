@@ -134,7 +134,7 @@ static bool isEmojiCharacter(NSString *singleChar)
     NSString *cleanLastName = [self _cleanedUpString:lastName];
     
     if (!single && cleanFirstName.length != 0 && cleanLastName.length != 0)
-        initials = [[NSString alloc] initWithFormat:@"%@\u200D%@", [cleanFirstName substringToIndex:1], [cleanLastName substringToIndex:1]]; //\u200D is not rendering properly
+        initials = [[NSString alloc] initWithFormat:@"%@\u200B%@", [cleanFirstName substringToIndex:1], [cleanLastName substringToIndex:1]]; //\u200B is not rendering properly
     else if (cleanFirstName.length != 0)
         initials = [cleanFirstName substringToIndex:1];
     else if (cleanLastName.length != 0)
@@ -223,7 +223,7 @@ static bool isEmojiCharacter(NSString *singleChar)
             return [NSString stringWithFormat:TGLocalized(format), arguments[0], arguments[1], arguments[2], arguments[3]];
             
         default:
-            return format;
+            return TGLocalized(format);
     }
 }
 

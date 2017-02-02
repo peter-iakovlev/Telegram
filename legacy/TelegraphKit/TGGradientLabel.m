@@ -40,7 +40,11 @@
     if (_text == nil || _font == nil)
         return;
     
-    _textSize = [self.text sizeWithFont:_font];
+    if (iosMajorVersion() >= 7) {
+        _textSize = [self.text boundingRectWithSize:CGSizeMake(1000.0f, 1000.0f) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName: _font} context:nil].size;
+    } else {
+        _textSize = [self.text sizeWithFont:_font];
+    }
     
     CGRect frame = self.frame;
     frame.size = _textSize;

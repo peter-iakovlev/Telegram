@@ -133,9 +133,14 @@
         if (!_disableAvatar)
         {
             if (_hasUpdatingAvatar)
-                [view setAvatarImage:_updatingAvatar animated:animated];
+            {
+                if (_updatingAvatar != nil)
+                    [view setAvatarImage:_updatingAvatar animated:animated];
+            }
             else
+            {
                 [view setAvatarUri:_user.photoUrlSmall animated:animated synchronous:false];
+            }
         }
         
         if (_automaticallyManageUserPresence)
@@ -206,6 +211,36 @@
     }
 }
 
+- (void)resetUpdatingAvatar:(NSString *)url
+{
+    _updatingAvatar = nil;
+    _hasUpdatingAvatar = false;
+    
+    if ([self boundView] != nil)
+    {
+        TGUserInfoCollectionItemView *view = (TGUserInfoCollectionItemView *)[self boundView];
+     
+        if (!_disableAvatar)
+        {
+            if (url != nil)
+                [view setAvatarUri:url animated:false synchronous:false];
+        }
+        
+        [view setUpdatingAvatar:_hasUpdatingAvatar animated:true];
+    }
+}
+
+- (void)setHasUpdatingAvatar:(bool)hasUpdatingAvatar
+{
+    _hasUpdatingAvatar = hasUpdatingAvatar;
+    
+    if ([self boundView] != nil)
+    {
+        TGUserInfoCollectionItemView *view = (TGUserInfoCollectionItemView *)[self boundView];
+        [view setUpdatingAvatar:_hasUpdatingAvatar animated:true];
+    }
+}
+
 - (bool)hasUpdatingAvatar
 {
     return _updatingAvatar;
@@ -233,6 +268,11 @@
         return [TGDateUtils stringForRelativeLastSeen:presence.lastSeen];
     
     return TGLocalized(@"Presence.offline");
+}
+
+- (id)avatarView
+{
+    return [(TGUserInfoCollectionItemView *)[self boundView] avatarView];
 }
 
 - (id)visibleAvatarView

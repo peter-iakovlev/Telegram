@@ -4,7 +4,6 @@
 #import "../NSOutputStream+TL.h"
 
 #import "TLInputFile.h"
-#import "TLInputPhotoCrop.h"
 #import "TLInputPhoto.h"
 
 @implementation TLInputChatPhoto
@@ -67,7 +66,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x94254732;
+    return (int32_t)0x927c55b4;
 }
 
 - (int32_t)TLconstructorName
@@ -79,7 +78,6 @@
 {
     TLInputChatPhoto$inputChatUploadedPhoto *object = [[TLInputChatPhoto$inputChatUploadedPhoto alloc] init];
     object.file = metaObject->getObject((int32_t)0x3187ec9);
-    object.crop = metaObject->getObject((int32_t)0x987dc5e1);
     return object;
 }
 
@@ -91,12 +89,6 @@
         value.nativeObject = self.file;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x3187ec9, value));
     }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.crop;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x987dc5e1, value));
-    }
 }
 
 
@@ -107,7 +99,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xb2e1bf08;
+    return (int32_t)0x8953ad37;
 }
 
 - (int32_t)TLconstructorName
@@ -119,7 +111,6 @@
 {
     TLInputChatPhoto$inputChatPhoto *object = [[TLInputChatPhoto$inputChatPhoto alloc] init];
     object.n_id = metaObject->getObject((int32_t)0x7a5601fb);
-    object.crop = metaObject->getObject((int32_t)0x987dc5e1);
     return object;
 }
 
@@ -130,12 +121,6 @@
         value.type = TLConstructedValueTypeObject;
         value.nativeObject = self.n_id;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.crop;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x987dc5e1, value));
     }
 }
 

@@ -72,7 +72,7 @@
     int64_t randomId = 0;
     arc4random_buf(&randomId, 8);
     NSString *filePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%" PRId64 ".strings", randomId]];
-    [response writeToFile:filePath atomically:false];
+    [response writeToFile:filePath atomically:true];
     
     TGProgressWindow *progressWindow = _progressWindow;
     _progressWindow = nil;

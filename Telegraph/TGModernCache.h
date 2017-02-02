@@ -10,5 +10,6 @@
 - (NSData *)getValueForKey:(NSData *)key;
 - (NSString *)getValuePathForKey:(NSData *)key;
 - (bool)containsValueForKey:(NSData *)key;
+- (NSString *)_filePathForKey:(NSData *)key;
 
 @end

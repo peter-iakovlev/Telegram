@@ -38,4 +38,12 @@
     }
 }
 
+- (void)didMoveToWindow {
+    if (self.window != nil) {
+        if (_movedToWindow) {
+            _movedToWindow();
+        }
+    }
+}
+
 @end

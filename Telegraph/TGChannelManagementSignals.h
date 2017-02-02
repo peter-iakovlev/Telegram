@@ -16,7 +16,6 @@ typedef enum {
 
 + (SSignal *)makeChannelWithTitle:(NSString *)title about:(NSString *)about group:(bool)group;
 + (SSignal *)addChannel:(TGConversation *)conversation;
-+ (SSignal *)synchronizedChannelList;
 + (bool)_containsPreloadedHistoryForPeerId:(int64_t)peerId aroundMessageId:(int32_t)messageId;
 + (SSignal *)preloadedHistoryForPeerId:(int64_t)peerId accessHash:(int64_t)accessHash aroundMessageId:(int32_t)messageId;
 + (SSignal *)preloadedChannelAtMessage:(int64_t)peerId messageId:(int32_t)messageId;
@@ -39,7 +38,6 @@ typedef enum {
 + (SSignal *)updatedPeerMessageViews:(int64_t)peerId accessHash:(int64_t)accessHash messageIds:(NSArray *)messageIds;
 + (SSignal *)consumeMessages:(int64_t)peerId accessHash:(int64_t)accessHash messageIds:(NSArray *)messageIds;
 
-+ (SSignal *)toggleChannelCommentsEnabled:(int64_t)peerId accessHash:(int64_t)accessHash enabled:(bool)enabled;
 + (SSignal *)toggleChannelEverybodyCanInviteMembers:(int64_t)peerId accessHash:(int64_t)accessHash enabled:(bool)enabled;
 
 + (SSignal *)channelChangeMemberKicked:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user kicked:(bool)kicked;
@@ -56,6 +54,9 @@ typedef enum {
 + (SSignal *)updateChannelSignaturesEnabled:(int64_t)peerId accessHash:(int64_t)accessHash enabled:(bool)enabled;
 
 + (SSignal *)messageEditData:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId;
-+ (SSignal *)editMessage:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId text:(NSString *)text disableLinksPreview:(bool)disableLinksPreview;
+
++ (SSignal *)updatePinnedMessage:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId notify:(bool)notify;
++ (SSignal *)removeAllUserMessages:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user;
++ (SSignal *)reportUserSpam:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user messageIds:(NSArray *)messageIds;
 
 @end

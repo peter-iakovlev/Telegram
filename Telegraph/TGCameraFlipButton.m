@@ -8,7 +8,7 @@
     if (self != nil)
     {
         self.exclusiveTouch = true;
-        [self setImage:[UIImage imageNamed:@"CameraFlipButton"] forState:UIControlStateNormal];
+        [self setImage:[UIImage imageNamed:@"CameraLargeFlipButton"] forState:UIControlStateNormal];
     }
     return self;
 }

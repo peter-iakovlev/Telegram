@@ -779,7 +779,15 @@ NSString *TGImageHash(NSData *data)
 
 - (UIImage *)preloadedImage
 {
-    UIGraphicsBeginImageContextWithOptions(self.size, false, 0);
+    UIGraphicsBeginImageContextWithOptions(self.size, false, self.scale);
+    [self drawInRect:CGRectMake(0, 0, self.size.width, self.size.height)];
+    UIImage *result = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return result;
+}
+
+- (UIImage *)preloadedImageWithAlpha {
+    UIGraphicsBeginImageContextWithOptions(self.size, false, self.scale);
     [self drawInRect:CGRectMake(0, 0, self.size.width, self.size.height)];
     UIImage *result = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -923,11 +931,25 @@ CGSize TGScaleToFill(CGSize size, CGSize boundsSize)
     return CGSizeMake(CGFloor(size.width * scale), CGFloor(size.height * scale));
 }
 
+CGSize TGScaleToFit(CGSize size, CGSize boundsSize)
+{
+    if (size.width < 1.0f || size.height < 1.0f)
+        return CGSizeMake(1.0f, 1.0f);
+    
+    CGFloat scale = MIN(boundsSize.width / size.width, boundsSize.height / size.height);
+    return CGSizeMake(CGFloor(size.width * scale), CGFloor(size.height * scale));
+}
+
 CGFloat TGRetinaPixel = 0.5f;
 
 CGFloat TGRetinaFloor(CGFloat value)
 {
     return TGIsRetina() ? (CGFloor(value * 2.0f)) / 2.0f : CGFloor(value);
+}
+
+CGFloat TGRetinaCeil(CGFloat value)
+{
+    return TGIsRetina() ? (CGCeil(value * 2.0f)) / 2.0f : CGCeil(value);
 }
 
 CGFloat TGScreenPixelFloor(CGFloat value)
@@ -992,6 +1014,23 @@ CGSize TGScreenSize()
             size = [screen.coordinateSpace convertRect:screen.bounds toCoordinateSpace:screen.fixedCoordinateSpace].size;
         else
             size = screen.bounds.size;
+    });
+    
+    return size;
+}
+
+CGSize TGNativeScreenSize()
+{
+    static CGSize size;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        UIScreen *screen = [UIScreen mainScreen];
+        
+        if ([screen respondsToSelector:@selector(nativeBounds)])
+            size = [screen.coordinateSpace convertRect:screen.nativeBounds toCoordinateSpace:screen.fixedCoordinateSpace].size;
+        else
+            size = TGScreenSize();
     });
     
     return size;

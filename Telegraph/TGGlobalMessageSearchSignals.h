@@ -10,6 +10,6 @@
 + (void)clearRecentResults;
 + (void)addRecentPeerResult:(int64_t)peerId;
 + (void)removeRecentPeerResult:(int64_t)peerId;
-+ (SSignal *)recentPeerResults:(id (^)(id))itemMapping;
++ (SSignal *)recentPeerResults:(id (^)(id))itemMapping ratedPeers:(bool)ratedPeers;
 
 @end

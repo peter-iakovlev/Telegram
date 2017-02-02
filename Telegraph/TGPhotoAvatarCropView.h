@@ -6,6 +6,7 @@
 
 @property (nonatomic, assign) CGRect cropRect;
 @property (nonatomic, assign) UIImageOrientation cropOrientation;
+@property (nonatomic, assign) bool cropMirrored;
 
 @property (nonatomic, copy) void(^croppingChanged)(void);
 @property (nonatomic, copy) void(^interactionEnded)(void);
@@ -21,6 +22,7 @@
 - (void)_replaceSnapshotImage:(UIImage *)image;
 
 - (void)rotate90DegreesCCWAnimated:(bool)animated;
+- (void)mirror;
 - (void)resetAnimated:(bool)animated;
 
 - (void)animateTransitionIn;

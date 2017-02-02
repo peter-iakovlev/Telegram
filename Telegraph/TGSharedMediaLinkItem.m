@@ -49,7 +49,7 @@
         
         NSMutableArray *links = [[NSMutableArray alloc] init];
         NSString *title = nil;
-        for (id result in [TGMessage textCheckingResultsForText:message.text highlightMentionsAndTags:false highlightCommands:false])
+        for (id result in [TGMessage textCheckingResultsForText:message.text highlightMentionsAndTags:false highlightCommands:false entities:nil])
         {
             if ([result isKindOfClass:[NSTextCheckingResult class]])
             {

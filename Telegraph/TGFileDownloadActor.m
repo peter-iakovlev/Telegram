@@ -131,9 +131,9 @@
                 [ActionStageInstance() nodeRetrieveProgress:self.path progress:0.001f];
                 
 #if TGUseModernNetworking
-                
+                TGNetworkMediaTypeTag mediaTypeTag = (TGNetworkMediaTypeTag)[options[@"mediaTypeTag"] intValue];
                 __weak TGFileDownloadActor *weakSelf = self;
-                _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:dcId completion:^(TGNetworkWorkerGuard *worker)
+                _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:dcId type:mediaTypeTag completion:^(TGNetworkWorkerGuard *worker)
                 {
                     __strong TGFileDownloadActor *strongSelf = weakSelf;
                     if (strongSelf != nil)
@@ -194,8 +194,9 @@
     {
         [ActionStageInstance() nodeRetrieveProgress:self.path progress:0.001f];
 #if TGUseModernNetworking
+        TGNetworkMediaTypeTag mediaTypeTag = (TGNetworkMediaTypeTag)[options[@"mediaTypeTag"] intValue];
         __weak TGFileDownloadActor *weakSelf = self;
-        _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:datacenterId completion:^(TGNetworkWorkerGuard *worker)
+        _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:datacenterId type:mediaTypeTag completion:^(TGNetworkWorkerGuard *worker)
         {
             __strong TGFileDownloadActor *strongSelf = weakSelf;
             if (strongSelf != nil)
@@ -325,13 +326,16 @@
     if (_alreadyCompleted)
         return;
     
-    NSMutableData *decryptedData = [[NSMutableData alloc] initWithData:data];
-    MTAesDecryptInplace(decryptedData, _encryptionKey, _encryptionIv);
+    NSData *decryptedData = data;
+    if (_encryptionKey.length != 0) {
+        decryptedData = MTAesDecrypt(data, _encryptionKey, _encryptionIv);
+    }
     
+    NSMutableData *finalData = [[NSMutableData alloc] initWithData:decryptedData];
     if (_finalFileSize != 0)
-        [decryptedData setLength:_finalFileSize];
+        [finalData setLength:_finalFileSize];
     
-    [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphObjectNode alloc] initWithObject:decryptedData]];
+    [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphObjectNode alloc] initWithObject:finalData]];
 }
 
 - (void)filePartDownloadFailed:(TLInputFileLocation *)__unused location offset:(int)__unused offset length:(int)__unused length

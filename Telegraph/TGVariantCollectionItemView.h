@@ -14,5 +14,6 @@
 - (void)setVariant:(NSString *)variant;
 - (void)setIcon:(UIImage *)icon;
 - (void)setEnabled:(bool)enabled;
+- (void)setHideArrow:(bool)hideArrow;
 
 @end

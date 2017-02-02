@@ -4,6 +4,8 @@
 
 @interface TGStickerAssociatedInputPanelCell : UICollectionViewCell
 
-- (void)setDocument:(TGDocumentMediaAttachment *)document;
+@property (nonatomic, strong) TGDocumentMediaAttachment *document;
+
+- (void)setHighlighted:(bool)highlighted animated:(bool)animated;
 
 @end

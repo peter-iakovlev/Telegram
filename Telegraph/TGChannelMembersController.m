@@ -859,13 +859,14 @@
 
 - (SSignal *)addManagementMember:(TGUser *)user role:(TGChannelRole)role {
     if (user.kind == TGUserKindGeneric) {
+        bool isGroup = _conversation.isChannelGroup;
         __weak TGChannelMembersController *weakSelf = self;
         return [[self memberRole:user] mapToSignal:^SSignal *(TGCachedConversationMember *member) {
             __strong TGChannelMembersController *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 if (member == nil) {
                     SPipe *pipe = [[SPipe alloc] init];
-                    [[[TGAlertView alloc] initWithTitle:nil message:[[NSString alloc] initWithFormat: TGLocalized(@"Channel.Management.ErrorNotMember"), user.displayFirstName] cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
+                    [[[TGAlertView alloc] initWithTitle:nil message:[[NSString alloc] initWithFormat:isGroup ? TGLocalized(@"Group.Management.ErrorNotMember") : TGLocalized(@"Channel.Management.ErrorNotMember"), user.displayFirstName] cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
                         if (okButtonPressed) {
                             pipe.sink([[strongSelf addMember:user] then:[strongSelf modifyMemberRole:user role:role]]);
                         } else {
@@ -959,7 +960,7 @@
             }
         }];
     } else {
-        __unused TGChannelModeratorController *controller = [[TGChannelModeratorController alloc] initWithConversation:_conversation user:user member:nil];
+        /*TGChannelModeratorController *controller = [[TGChannelModeratorController alloc] initWithConversation:_conversation user:user member:nil];
         __weak TGChannelMembersController *weakSelf = self;
         controller.done = ^(TGCachedConversationMember *member) {
             if (member == nil) {
@@ -975,7 +976,7 @@
         };
         if ([self.presentedViewController isKindOfClass:[TGNavigationController class]]) {
             [(UINavigationController *)self.presentedViewController pushViewController:controller animated:true];
-        }
+        }*/
     }
 }
 

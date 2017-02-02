@@ -3,8 +3,102 @@
 #import <QuartzCore/QuartzCore.h>
 
 #import "TGFont.h"
+#import "TGImageUtils.h"
 
 #pragma mark -
+
+static CGFloat diameter = 16.0f;
+
+static UIColor *highlightColor() {
+    static UIColor *color = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        color = [UIColor colorWithWhite:1.0f alpha:0.25f];
+    });
+    return color;
+}
+
+static UIImage *menuBackgroundMask() {
+    static UIImage *image = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        UIColor *color = [UIColor whiteColor];
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, color.CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+        image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
+        UIGraphicsEndImageContext();
+    });
+    return image;
+}
+
+static UIImage *menuHighlightedBackground() {
+    static UIImage *image = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        UIColor *color = highlightColor();
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, color.CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+        image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
+        UIGraphicsEndImageContext();
+    });
+    return image;
+}
+
+static CGFloat pagerButtonWidth = 32.0f;
+static UIImage *pagerLeftButtonImage() {
+    static UIImage *image = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        CGSize size = CGSizeMake(pagerButtonWidth, 36.0f);
+        UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        
+        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
+        CGContextSaveGState(context);
+        CGContextTranslateCTM(context, size.width / 2.0f, size.height / 2.0f);
+        CGContextScaleCTM(context, -0.5f, 0.5f);
+        CGContextTranslateCTM(context, -size.width / 2.0f + 8.0f, -size.height / 2.0f + 7.0f);
+        TGDrawSvgPath(context, @"M0,0 L0,22 L18,11 L0,0 L0,0 Z ");
+        CGContextSetFillColorWithColor(context, highlightColor().CGColor);
+        CGContextRestoreGState(context);
+        
+        CGContextSetFillColorWithColor(context, highlightColor().CGColor);
+        CGContextFillRect(context, CGRectMake(size.width - 1.0f, 0.0f, 1.0f, size.height));
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    });
+    return image;
+}
+
+static UIImage *pagerLeftButtonHighlightedImage() {
+    static UIImage *image = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        CGSize size = CGSizeMake(pagerButtonWidth, 36.0f);
+        UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+
+        CGContextSetFillColorWithColor(context, highlightColor().CGColor);
+        [menuHighlightedBackground() drawInRect:CGRectMake(0.0f, 0.0f, size.width * 2.0f, size.height)];
+        
+        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
+        CGContextSaveGState(context);
+        CGContextTranslateCTM(context, size.width / 2.0f, size.height / 2.0f);
+        CGContextScaleCTM(context, -0.5f, 0.5f);
+        CGContextTranslateCTM(context, -size.width / 2.0f + 8.0f, -size.height / 2.0f + 7.0f);
+        TGDrawSvgPath(context, @"M0,0 L0,22 L18,11 L0,0 L0,0 Z ");
+        CGContextSetFillColorWithColor(context, highlightColor().CGColor);
+        CGContextRestoreGState(context);
+        
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    });
+    return image;
+}
 
 @protocol TGMenuButtonViewDelegate <NSObject>
 
@@ -12,29 +106,28 @@
 
 @end
 
-@interface TGMenuButtonView : UIButton
+@interface TGMenuButtonView () {
+    UIView *_highlightedView;
+}
 
+@property (nonatomic) bool highlightDisabled;
+@property (nonatomic) bool isOptional;
+@property (nonatomic) bool isTrailing;
 @property (nonatomic, weak) id<TGMenuButtonViewDelegate> delegate;
-
-@property (nonatomic, strong) UIImageView *leftView;
-@property (nonatomic, strong) UIImageView *centerView;
-@property (nonatomic, strong) UIImageView *rightView;
+@property (nonatomic) bool isMultiline;
+@property (nonatomic) CGFloat maxWidth;
 
 @end
 
 @implementation TGMenuButtonView
 
-- (id)initWithFrame:(CGRect)frame
-{
+- (id)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
-    if (self != nil)
-    {
-        _leftView = [[UIImageView alloc] init];
-        [self addSubview:_leftView];
-        _centerView = [[UIImageView alloc] init];
-        [self addSubview:_centerView];
-        _rightView = [[UIImageView alloc] init];
-        [self addSubview:_rightView];
+    if (self != nil) {
+        _highlightedView = [[UIView alloc] init];
+        _highlightedView.backgroundColor = highlightColor();
+        [self addSubview:_highlightedView];
+        _highlightedView.hidden = true;
     }
     return self;
 }
@@ -49,9 +142,7 @@
     
     highlighted = highlighted || selected;
     
-    _leftView.highlighted = highlighted;
-    _centerView.highlighted = highlighted;
-    _rightView.highlighted = highlighted;
+    _highlightedView.hidden = !(highlighted || selected) || _highlightDisabled;
 }
 
 - (void)setSelected:(BOOL)selected
@@ -64,34 +155,45 @@
     
     selected = selected || highlighted;
     
-    _leftView.highlighted = selected;
-    _centerView.highlighted = selected;
-    _rightView.highlighted = selected;
+    _highlightedView.hidden = !(highlighted || selected) || _highlightDisabled;
 }
 
 - (void)sizeToFit
 {
-    self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, [[self titleForState:UIControlStateNormal] sizeWithFont:self.titleLabel.font].width + 34, 41);
+    if (self.isMultiline)
+    {
+        CGSize size = [[self titleForState:UIControlStateNormal] sizeWithFont:self.titleLabel.font constrainedToSize:CGSizeMake(self.maxWidth - 34.0f, FLT_MAX) lineBreakMode:NSLineBreakByWordWrapping];
+        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, ceil(size.width) + 34, MAX(41.0f, ceil(size.height) + 20.0f));
+    }
+    else
+    {
+        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, [[self titleForState:UIControlStateNormal] sizeWithFont:self.titleLabel.font].width + 34, 41);
+    }
 }
 
 - (void)layoutSubviews
 {
     [super layoutSubviews];
     
-    CGSize viewSize = self.frame.size;
-    
-    _leftView.frame = CGRectMake(0, 0, _leftView.image.size.width, viewSize.height);
-    _rightView.frame = CGRectMake(viewSize.width - _rightView.image.size.width, 0, _rightView.image.size.width, viewSize.height);
-    _centerView.frame = CGRectMake(_leftView.frame.size.width, 0, _rightView.frame.origin.x - _leftView.frame.size.width, viewSize.height);
+    _highlightedView.frame = CGRectMake(0.0f, -20.0f, self.frame.size.width, self.frame.size.height + 40.0f);
 }
 
 @end
 
 #pragma mark -
 
-@interface TGMenuView () <TGMenuButtonViewDelegate>
+@interface TGMenuView () <TGMenuButtonViewDelegate, UIScrollViewDelegate>
 {
     NSDictionary *_userInfo;
+    
+    UIScrollView *_buttonContainer;
+    UIView *_buttonContainerContainer;
+    UIButton *_leftPagerButton;
+    UIButton *_rightPagerButton;
+    
+    UIImageView *_containerMaskView;
+    
+    CGFloat _maxWidth;
 }
 
 @property (nonatomic, strong) NSMutableArray *buttonViews;
@@ -119,23 +221,66 @@
         self.layer.anchorPoint = CGPointMake(0.5f, 1.0f);
         self.transform = CGAffineTransformMakeScale(0.1f, 0.1f);
         
-        _buttonViews = [[NSMutableArray alloc] init];
-        _separatorViews = [[NSMutableArray alloc] init];
+        _maxWidth = 310.0f;
         
-        _arrowTopView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"MenuArrowTop.png"] highlightedImage:[UIImage imageNamed:@"MenuArrowTop_Highlighted.png"]];
+        //_arrowTopView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"MenuArrowTop.png"] highlightedImage:[UIImage imageNamed:@"MenuArrowTop_Highlighted.png"]];
+        _arrowTopView = [[UIImageView alloc] init];
+        _arrowTopView.frame = CGRectMake(0.0f, 0.0f, 20.0f, 12.0f);
         [self addSubview:_arrowTopView];
         
-        _arrowBottomView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"MenuArrowBottom.png"] highlightedImage:[UIImage imageNamed:@"MenuArrowBottom_Highlighted.png"]];
+        //_arrowBottomView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"MenuArrowBottom.png"] highlightedImage:[UIImage imageNamed:@"MenuArrowBottom_Highlighted.png"]];
+        _arrowBottomView = [[UIImageView alloc] init];
+        _arrowBottomView.frame = CGRectMake(0.0f, 0.0f, 20.0f, 14.5f);
         [self addSubview:_arrowBottomView];
+        
+        _buttonContainerContainer = [[UIView alloc] init];
+        
+        if (iosMajorVersion() >= 8) {
+            UIVisualEffectView *effectView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleExtraLight]];
+            effectView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            effectView.frame = CGRectMake(0.0f, -20.0f, 0.0f, 40.0f);
+            [_buttonContainerContainer addSubview:effectView];
+        }
+        
+        UIView *effectView = [[UIView alloc] init];
+        effectView.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:iosMajorVersion() >= 8 ? 0.8f : 0.9f];
+        effectView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        effectView.frame = CGRectMake(0.0f, -20.0f, 0.0f, 40.0f);
+        [_buttonContainerContainer addSubview:effectView];
+        
+        [self addSubview:_buttonContainerContainer];
+        
+        _buttonContainer = [[UIScrollView alloc] init];
+        _buttonContainer.clipsToBounds = true;
+        _buttonContainer.alwaysBounceHorizontal = false;
+        _buttonContainer.alwaysBounceVertical = false;
+        _buttonContainer.showsHorizontalScrollIndicator = false;
+        _buttonContainer.showsVerticalScrollIndicator = false;
+        _buttonContainer.pagingEnabled = true;
+        _buttonContainer.delaysContentTouches = false;
+        _buttonContainer.canCancelContentTouches = true;
+        _buttonContainer.delegate = self;
+        _buttonContainer.scrollEnabled = false;
+        [_buttonContainerContainer addSubview:_buttonContainer];
+        
+        _leftPagerButton = [[UIButton alloc] init];
+        [_leftPagerButton setBackgroundImage:pagerLeftButtonImage() forState:UIControlStateNormal];
+        [_leftPagerButton setBackgroundImage:pagerLeftButtonHighlightedImage() forState:UIControlStateHighlighted];
+        [_leftPagerButton addTarget:self action:@selector(pagerButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+        _rightPagerButton = [[UIButton alloc] init];
+        [_rightPagerButton setBackgroundImage:pagerLeftButtonImage() forState:UIControlStateNormal];
+        [_rightPagerButton setBackgroundImage:pagerLeftButtonHighlightedImage() forState:UIControlStateHighlighted];
+        _rightPagerButton.transform = CGAffineTransformMakeScale(-1.0f, 1.0f);
+        [_rightPagerButton addTarget:self action:@selector(pagerButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_leftPagerButton];
+        [self addSubview:_rightPagerButton];
+        
+        _buttonViews = [[NSMutableArray alloc] init];
+        _separatorViews = [[NSMutableArray alloc] init];
         
         _arrowLocation = 50;
     }
     return self;
-}
-
-- (void)setUserInfo:(NSDictionary *)userInfo
-{
-    _userInfo = userInfo;
 }
 
 - (void)setButtonsAndActions:(NSArray *)buttonsAndActions watcherHandle:(ASHandle *)watcherHandle
@@ -158,15 +303,25 @@
         else
         {
             buttonView = [[TGMenuButtonView alloc] init];
-            //buttonView.userInteractionEnabled = false;
+            
+            if (self.multiline)
+            {
+                buttonView.titleLabel.numberOfLines = 0;
+                buttonView.isMultiline = true;
+                buttonView.maxWidth = _maxWidth;
+            }
+            
             buttonView.delegate = self;
             [buttonView setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
             [buttonView setTitleColor:UIColorRGBA(0xffffff, 0.5f) forState:UIControlStateDisabled];
             buttonView.titleLabel.font = TGSystemFontOfSize(14);
             [buttonView addTarget:self action:@selector(buttonPressed:) forControlEvents:UIControlEventTouchUpInside];
             [_buttonViews addObject:buttonView];
-            [self addSubview:buttonView];
+            [_buttonContainer addSubview:buttonView];
         }
+        
+        buttonView.isTrailing = [dict[@"trailing"] boolValue];
+        buttonView.isOptional = [dict[@"optional"] boolValue];
         
         [buttonView setTitle:title forState:UIControlStateNormal];
         buttonView.selected = false;
@@ -183,9 +338,9 @@
     if (_buttonViews.count != 0) {
         while (_separatorViews.count < _buttonViews.count - 1)
         {
-            UIImageView *separatorView = [[UIImageView alloc] init];
-            separatorView.image = [UIImage imageNamed:@"MenuButtonSeparator.png"];
-            [self addSubview:separatorView];
+            UIView *separatorView = [[UIImageView alloc] init];
+            separatorView.backgroundColor = highlightColor();
+            [_buttonContainer addSubview:separatorView];
             [_separatorViews addObject:separatorView];
         }
     }
@@ -218,19 +373,18 @@
     [self setNeedsLayout];
 }
 
+- (void)setButtonHighlightDisabled:(bool)buttonHighlightDisabled
+{
+    _buttonHighlightDisabled = buttonHighlightDisabled;
+    
+    for (TGMenuButtonView *view in _buttonViews)
+        view.highlightDisabled = buttonHighlightDisabled;
+}
+
 - (void)menuButtonHighlighted
 {
-    static UIImage *separatorNormal = nil;
-    static UIImage *separatorLeft = nil;
-    static UIImage *separatorRight = nil;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        separatorNormal = [UIImage imageNamed:@"MenuButtonSeparator.png"];
-        separatorLeft = [UIImage imageNamed:@"MenuButtonSeparatorLeft.png"];
-        separatorRight = [UIImage imageNamed:@"MenuButtonSeparatorRight.png"];
-    });
+    if (self.buttonHighlightDisabled)
+        return;
     
     NSInteger highlightedIndex = -1;
     
@@ -262,77 +416,67 @@
             break;
         }
     }
+}
+
+- (UIImage *)highlightMask {
+    UIGraphicsBeginImageContextWithOptions(_buttonContainer.bounds.size, false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
     
-    if (highlightedIndex == -1)
-    {
-        for (UIImageView *view in _separatorViews)
-            view.image = separatorNormal;
-    }
-    else
-    {
-        NSInteger separatorIndex = -1;
-        for (UIImageView *view in _separatorViews)
-        {
-            separatorIndex++;
-            
-            if (separatorIndex == highlightedIndex - 1)
-                view.image = separatorLeft;
-            else if (separatorIndex == highlightedIndex)
-                view.image = separatorRight;
-            else
-                view.image = separatorNormal;
-        }
+    [menuBackgroundMask() drawInRect:CGRectMake(0.0f, 10.0f, _buttonContainer.bounds.size.width, _buttonContainer.bounds.size.height - 20.0f)];
+    
+    if (!_arrowBottomView.hidden) {
+        CGPoint arrow = [_arrowBottomView convertRect:_arrowBottomView.bounds toView:_buttonContainerContainer].origin;
+        arrow.x += 1.0f;
+        CGContextBeginPath(context);
+        CGContextMoveToPoint(context, arrow.x, arrow.y);
+        CGContextAddLineToPoint(context, arrow.x + 18.0f, arrow.y);
+        CGContextAddLineToPoint(context, arrow.x + 18.0f / 2.0f, arrow.y + 10.0f);
+        CGContextClosePath(context);
+        CGContextFillPath(context);
+    } else if (!_arrowTopView.hidden) {
+        CGPoint arrow = [_arrowTopView convertRect:_arrowTopView.bounds toView:_buttonContainerContainer].origin;
+        arrow.x += 1.0f;
+        arrow.y += 1.0f;
+        CGContextBeginPath(context);
+        CGContextMoveToPoint(context, arrow.x, arrow.y + 10.0f);
+        CGContextAddLineToPoint(context, arrow.x + 18.0f / 2.0f, arrow.y);
+        CGContextAddLineToPoint(context, arrow.x + 18.0f, arrow.y + 10.0f);
+        CGContextClosePath(context);
+        CGContextFillPath(context);
     }
     
-    _arrowTopView.highlighted = arrowHighlighted;
-    _arrowBottomView.highlighted = arrowHighlighted;
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
 }
 
 - (void)updateBackgrounds
 {
-    UIImage *rawLeftImage = [UIImage imageNamed:@"MenuButtonLeft.png"];
-    UIImage *leftImage = [rawLeftImage stretchableImageWithLeftCapWidth:(int)(rawLeftImage.size.width - 1) topCapHeight:0];
-    UIImage *rightImage = [[UIImage imageNamed:@"MenuButtonRight.png"] stretchableImageWithLeftCapWidth:0 topCapHeight:0];
-    UIImage *rawCenterImage = [UIImage imageNamed:@"MenuButtonCenter.png"];
-    UIImage *centerImage = [rawCenterImage stretchableImageWithLeftCapWidth:(int)(rawCenterImage.size.width / 2) topCapHeight:0];
-    
-    UIImage *rawLeftHighlightedImage = [UIImage imageNamed:@"MenuButtonLeft_Highlighted.png"];
-    UIImage *leftHighlightedImage = [rawLeftHighlightedImage stretchableImageWithLeftCapWidth:(int)(rawLeftHighlightedImage.size.width - 1) topCapHeight:0];
-    UIImage *rightHighlightedImage = [[UIImage imageNamed:@"MenuButtonRight_Highlighted.png"] stretchableImageWithLeftCapWidth:0 topCapHeight:0];
-    UIImage *rawCenterHighlightedImage = [UIImage imageNamed:@"MenuButtonCenter_Highlighted.png"];
-    UIImage *centerHighlightedImage = [rawCenterHighlightedImage stretchableImageWithLeftCapWidth:(int)(rawCenterHighlightedImage.size.width / 2) topCapHeight:0];
-    
     NSInteger index = -1;
     for (TGMenuButtonView *buttonView in _buttonViews)
     {
         index++;
         
-        buttonView.centerView.image = centerImage;
-        buttonView.leftView.image = centerImage;
-        buttonView.rightView.image = centerImage;
-        
-        buttonView.centerView.highlightedImage = centerHighlightedImage;
-        buttonView.leftView.highlightedImage = centerHighlightedImage;
-        buttonView.rightView.highlightedImage = centerHighlightedImage;
-        
         UIEdgeInsets titleInset = UIEdgeInsetsMake(0, 0, 1, 0);
         
         if (index == 0)
         {
-            buttonView.leftView.image = leftImage;
-            buttonView.leftView.highlightedImage = leftHighlightedImage;
-            titleInset.left += 2;
+            //titleInset.left += 2;
         }
         
         if (index == (NSInteger)_buttonViews.count - 1)
         {
-            buttonView.rightView.image = rightImage;
-            buttonView.rightView.highlightedImage = rightHighlightedImage;
-            titleInset.right += 2;
+            //titleInset.right += 2;
         }
         
         buttonView.titleEdgeInsets = titleInset;
     }
+}
+
+- (void)sizeToFitToWidth:(CGFloat)maxWidth {
+    _maxWidth = maxWidth - 20.0f;
+    [self sizeToFit];
 }
 
 - (void)sizeToFit
@@ -340,12 +484,192 @@
     CGAffineTransform transform = self.transform;
     self.transform = CGAffineTransformIdentity;
     
-    float width = 0;
+    CGFloat maxWidth = _maxWidth;
+    CGFloat buttonHeight = 41.0f;
+    
+    NSMutableArray *pages = [[NSMutableArray alloc] init];
+    NSMutableArray *currentPageButtons = [[NSMutableArray alloc] init];
+    CGFloat currentPageWidth = 0.0f;
+    
+    NSMutableArray *optionalButtons = [[NSMutableArray alloc] init];
+    
     for (TGMenuButtonView *buttonView in _buttonViews)
     {
-        width += buttonView.frame.size.width;
+        if (buttonView.isOptional) {
+            buttonView.hidden = true;
+            [optionalButtons addObject:buttonView];
+        } else {
+            CGFloat buttonWidth = buttonView.frame.size.width;
+            bool added = false;
+            if (currentPageWidth + buttonWidth > maxWidth) {
+                if (currentPageButtons.count == 0) {
+                    [currentPageButtons addObject:buttonView];
+                    added = true;
+                }
+                
+                [pages addObject:currentPageButtons];
+                currentPageButtons = [[NSMutableArray alloc] init];
+                currentPageWidth = 0.0f;
+            }
+            
+            if (!added) {
+                currentPageWidth += buttonWidth;
+                [currentPageButtons addObject:buttonView];
+            }
+        }
+
     }
-    self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, width, 41);
+    
+    if (currentPageButtons.count != 0) {
+        if (currentPageButtons.count == 1) {
+            for (TGMenuButtonView *buttonView in optionalButtons)
+            {
+                CGFloat buttonWidth = buttonView.frame.size.width;
+                if (currentPageWidth + buttonWidth > maxWidth) {
+                    break;
+                }
+                
+                buttonView.hidden = false;
+                currentPageWidth += buttonWidth;
+                [currentPageButtons addObject:buttonView];
+            }
+        }
+        
+        [pages addObject:currentPageButtons];
+    }
+    
+    for (NSMutableArray *page in pages) {
+        NSUInteger index = 0;
+        for (TGMenuButtonView *button in page) {
+            if (button.isTrailing) {
+                if (index + 1 != page.count) {
+                    [page removeObjectAtIndex:index];
+                    [page addObject:button];
+                }
+                break;
+            }
+            index++;
+        }
+    }
+    
+    CGFloat maxPageWidth = 0.0f;
+
+    NSInteger pageIndex = -1;
+    for (NSArray *buttons in pages) {
+        CGFloat sumWidth = 0.0f;
+        NSInteger buttonIndex = -1;
+        for (UIView *button in buttons) {
+            [button sizeToFit];
+            buttonIndex++;
+            if (buttonIndex != 0) {
+                sumWidth += 1.0f;
+            }
+            sumWidth += button.frame.size.width;
+            
+            if (_multiline) {
+                buttonHeight = MAX(buttonHeight, button.frame.size.height);
+            }
+        }
+        if (pages.count > 1) {
+            if (pageIndex == 0) {
+                sumWidth += pagerButtonWidth;
+            } else if (pageIndex == (NSInteger)pages.count - 1) {
+                sumWidth += pagerButtonWidth;
+            } else {
+                sumWidth += pagerButtonWidth * 2.0f;
+            }
+        }
+        maxPageWidth = MAX(maxPageWidth, MIN(maxWidth, sumWidth));
+    }
+    
+    NSInteger nextSeparatorIndex = 0;
+    
+    CGFloat diff = buttonHeight - 41.0f;
+    CGFloat currentPageStart = 0.0f;
+    pageIndex = -1;
+    for (NSArray *buttons in pages) {
+        pageIndex++;
+        
+        CGFloat sumWidth = 0.0f;
+        NSInteger buttonIndex = -1;
+        for (UIView *button in buttons) {
+            buttonIndex++;
+            if (buttonIndex != 0) {
+                sumWidth += 1.0f;
+            }
+            sumWidth += button.frame.size.width;
+        }
+        
+        CGFloat leftOffset = 0.0f;
+        CGFloat pageContentWidth = maxPageWidth;
+        if (pages.count > 1) {
+            if (pageIndex == 0) {
+                pageContentWidth -= pagerButtonWidth;
+            } else if (pageIndex == (NSInteger)pages.count - 1) {
+                leftOffset = pagerButtonWidth;
+                pageContentWidth -= pagerButtonWidth;
+            } else {
+                leftOffset = pagerButtonWidth;
+                pageContentWidth -= pagerButtonWidth * 2.0f;
+            }
+        }
+        
+        CGFloat factor = pageContentWidth / sumWidth;
+        CGFloat buttonStart = currentPageStart + leftOffset;
+        buttonIndex = -1;
+        for (UIView *button in buttons) {
+            buttonIndex++;
+            
+            if (buttonIndex != 0) {
+                UIView *separatorView = _separatorViews[nextSeparatorIndex++];
+                separatorView.frame = CGRectMake(buttonStart, 0.0f, 1.0f, 36.0f + 20.0f);
+                buttonStart += 1.0f;
+            }
+            
+            CGFloat buttonWidth = CGFloor(button.frame.size.width * factor);
+            if (buttonIndex == (NSInteger)buttons.count - 1) {
+                buttonWidth = MAX(buttonWidth, currentPageStart + leftOffset + pageContentWidth - buttonStart);
+            }
+            button.frame = CGRectMake(buttonStart, -2.0f + 10.0f, buttonWidth, button.frame.size.height);
+            
+            buttonStart += buttonWidth;
+        }
+        
+        currentPageStart += maxPageWidth;
+    }
+
+    _buttonContainerContainer.frame = CGRectMake(0.0f, 2.0f - 10.0f, maxPageWidth, 36.0f + 20.0f + diff);
+    _buttonContainer.frame = _buttonContainerContainer.bounds;
+    _buttonContainer.contentSize = CGSizeMake(maxPageWidth * pages.count, _buttonContainer.frame.size.height);
+    _buttonContainer.contentOffset = CGPointZero;
+    
+    _leftPagerButton.frame = CGRectMake(0.0f, 2.0f, pagerButtonWidth, 36.0f);
+    _rightPagerButton.frame = CGRectMake(maxPageWidth - pagerButtonWidth, 2.0f, pagerButtonWidth, 36.0f);
+    
+    //_backgroundView.frame = CGRectMake(0.0f, 2.0f, maxPageWidth, 36.0f);
+    self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, maxPageWidth, buttonHeight);
+    
+    CGFloat minArrowX = 10.0f;
+    CGFloat maxArrowX = self.frame.size.width - 10.0f;
+    
+    CGFloat arrowX = CGFloor(_arrowLocation - _arrowTopView.frame.size.width / 2);
+    arrowX = MIN(MAX(minArrowX, arrowX), maxArrowX);
+    
+    _arrowTopView.frame = CGRectMake(arrowX, -9.0, _arrowTopView.frame.size.width, _arrowTopView.frame.size.height);
+    _arrowBottomView.frame = CGRectMake(arrowX, 37.0f + diff, _arrowBottomView.frame.size.width, _arrowBottomView.frame.size.height);
+    
+    _arrowTopView.hidden = !_arrowOnTop;
+    _arrowBottomView.hidden = _arrowOnTop;
+    
+    if (_containerMaskView == nil) {
+        _containerMaskView = [[UIImageView alloc] init];
+        //[_buttonContainerContainer addSubview:_containerMaskView];
+    }
+    _containerMaskView.image = [self highlightMask];
+    [_containerMaskView sizeToFit];
+    _buttonContainerContainer.layer.mask = _containerMaskView.layer;
+    
+    [self scrollViewDidScroll:_buttonContainer];
     
     self.transform = transform;
 }
@@ -391,6 +715,7 @@
     self.frame = frame;
     [self setNeedsLayout];
     [self layoutIfNeeded];
+    [self sizeToFit];
     
     self.transform = transform;
     
@@ -462,6 +787,8 @@
 {
     [super layoutSubviews];
     
+    /*_buttonContainer.frame = CGRectMake(0.0f, 2.0f, self.frame.size.width, self.frame.size.height - 5.0f);
+    
     float currentX = 0;
     
     NSInteger index = -1;
@@ -469,7 +796,7 @@
     {
         index++;
         
-        buttonView.frame = CGRectMake(currentX, 0, buttonView.frame.size.width, buttonView.frame.size.height);
+        buttonView.frame = CGRectMake(currentX, -2.0f, buttonView.frame.size.width, buttonView.frame.size.height);
         currentX += buttonView.frame.size.width;
         [buttonView layoutSubviews];
     }
@@ -485,7 +812,7 @@
         if (index > 0)
         {
             UIImageView *separatorView = [_separatorViews objectAtIndex:index - 1];
-            separatorView.frame = CGRectMake(buttonView.frame.origin.x - 1, 2, separatorView.image.size.width, 36);
+            separatorView.frame = CGRectMake(buttonView.frame.origin.x - 1, 0.0f, separatorView.image.size.width, 36.0f);
         }
         
         bool containsArrow = _arrowLocation >= buttonView.frame.origin.x && _arrowLocation < buttonView.frame.origin.x + buttonView.frame.size.width;
@@ -506,22 +833,7 @@
             if (_arrowLocation >= buttonView.frame.origin.x)
                 containsArrow = true;
         }
-        
-        if (containsArrow)
-        {
-            CGFloat minArrowX = buttonView.frame.origin.x + (index == 0 ? 10 : 0);
-            CGFloat maxArrowX = buttonView.frame.origin.x + buttonView.frame.size.width - _arrowTopView.frame.size.width + (index == (NSInteger)_buttonViews.count - 1 ? (-10) : 0);
-
-            CGFloat arrowX = CGFloor(_arrowLocation - _arrowTopView.frame.size.width / 2);
-            arrowX = MIN(MAX(minArrowX, arrowX), maxArrowX);
-            
-            _arrowTopView.frame = CGRectMake(arrowX, -9, _arrowTopView.frame.size.width, _arrowTopView.frame.size.height);
-            _arrowBottomView.frame = CGRectMake(arrowX, 37, _arrowBottomView.frame.size.width, _arrowBottomView.frame.size.height);
-        }
-    }
-    
-    _arrowTopView.hidden = !_arrowOnTop;
-    _arrowBottomView.hidden = _arrowOnTop;
+    }*/
 }
 
 #pragma mark -
@@ -551,6 +863,48 @@
                 [(TGMenuContainerView *)self.superview hideMenu];
             
             break;
+        }
+    }
+}
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    if (scrollView == _buttonContainer) {
+        if (scrollView.contentSize.width > scrollView.bounds.size.width + FLT_EPSILON) {
+            CGFloat leftDistance = scrollView.contentOffset.x;
+            CGFloat rightDistance = scrollView.contentSize.width - (scrollView.contentOffset.x + scrollView.bounds.size.width);
+            _leftPagerButton.alpha = MAX(0.0f, MIN(1.0f, leftDistance / _leftPagerButton.frame.size.width));
+            _rightPagerButton.alpha = MAX(0.0f, MIN(1.0f, rightDistance / _rightPagerButton.frame.size.width));
+        } else {
+            _leftPagerButton.alpha = 0.0f;
+            _rightPagerButton.alpha = 0.0f;
+        }
+    }
+}
+
+- (void)pagerButtonPressed:(UIView *)button {
+    CGFloat targetOffset = _buttonContainer.contentOffset.x;
+    
+    if (button == _leftPagerButton) {
+        NSInteger page = ((NSInteger)_buttonContainer.contentOffset.x) / ((NSInteger)_buttonContainer.bounds.size.width);
+        if (page > 0) {
+            targetOffset = (page - 1) * _buttonContainer.bounds.size.width;
+        }
+    } else if (button == _rightPagerButton) {
+        NSInteger page = ((NSInteger)_buttonContainer.contentOffset.x) / ((NSInteger)_buttonContainer.bounds.size.width);
+        if (page + 1 < (NSInteger)(_buttonContainer.contentSize.width / _buttonContainer.bounds.size.width)) {
+            targetOffset = (page + 1) * _buttonContainer.bounds.size.width;
+        }
+    }
+    
+    if (ABS(targetOffset - _buttonContainer.contentOffset.x) > FLT_EPSILON) {
+        if (iosMajorVersion() >= 7) {
+            [UIView animateWithDuration:0.4 delay:0.0 usingSpringWithDamping:0.8f initialSpringVelocity:0.0f options:0 animations:^{
+                _buttonContainer.contentOffset = CGPointMake(targetOffset, 0.0f);
+            } completion:nil];
+        } else {
+            [UIView animateWithDuration:0.2 animations:^{
+                _buttonContainer.contentOffset = CGPointMake(targetOffset, 0.0f);
+            }];
         }
     }
 }

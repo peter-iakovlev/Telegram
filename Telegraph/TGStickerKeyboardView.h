@@ -6,7 +6,9 @@
 typedef enum
 {
     TGStickerKeyboardViewDefaultStyle,
-    TGStickerKeyboardViewDarkBlurredStyle
+    TGStickerKeyboardViewDarkBlurredStyle,
+    TGStickerKeyboardViewPaintStyle,
+    TGStickerKeyboardViewPaintDarkStyle
 } TGStickerKeyboardViewStyle;
 
 @interface TGStickerKeyboardView : UIView

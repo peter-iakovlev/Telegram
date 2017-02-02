@@ -4,6 +4,7 @@
 #import "TLMetaRpc.h"
 
 @class TLInputStickerSet;
+@class TLMaskCoords;
 
 @interface TLDocumentAttribute : NSObject <TLObject>
 
@@ -36,10 +37,17 @@
 
 @end
 
-@interface TLDocumentAttribute$documentAttributeSticker : TLDocumentAttribute
+@interface TLDocumentAttribute$documentAttributeStickerMeta : TLDocumentAttribute
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic, retain) NSString *alt;
 @property (nonatomic, retain) TLInputStickerSet *stickerset;
+@property (nonatomic, retain) TLMaskCoords *mask_coords;
+
+@end
+
+@interface TLDocumentAttribute$documentAttributeHasStickers : TLDocumentAttribute
+
 
 @end
 

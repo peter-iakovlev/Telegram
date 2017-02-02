@@ -8,4 +8,6 @@
 
 @property (nonatomic, strong) TGBotReplyMarkup *replyMarkup;
 
+- (instancetype)initWithReplyMarkup:(TGBotReplyMarkup *)replyMarkup;
+
 @end

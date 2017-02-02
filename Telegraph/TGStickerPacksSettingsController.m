@@ -1,11 +1,16 @@
 #import "TGStickerPacksSettingsController.h"
 
+#import "TGTelegraph.h"
+
 #import "TGHeaderCollectionItem.h"
 #import "TGSwitchCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 #import "TGStickerPackCollectionItem.h"
+#import "TGDisclosureActionCollectionItem.h"
+#import "TGVariantCollectionItem.h"
 
 #import "TGStickersSignals.h"
+#import "TGMaskStickersSignals.h"
 
 #import "TGProgressWindow.h"
 #import "TGAlertView.h"
@@ -15,18 +20,34 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGStickersMenu.h"
+
+#import "TGFeaturedStickerPacksController.h"
+#import "TGArchivedStickerPacksController.h"
+
 @interface TGStickerPacksSettingsController ()
 {
     bool _editingMode;
     
     TGSwitchCollectionItem *_showStickersButtonItem;
+    
+    TGCollectionMenuSection *_featuredPacksSection;
+    TGDisclosureActionCollectionItem *_featuredPacksItem;
+    TGDisclosureActionCollectionItem *_maskStickerSettingsItem;
+    TGVariantCollectionItem *_archivedPacksItem;
+    
     TGCollectionMenuSection *_stickerPacksSection;
     
     SMetaDisposable *_stickerPacksDisposable;
+    id<SDisposable> _updatedFeaturedStickerPacksDisposable;
     
     UIActivityIndicatorView *_activityIndicator;
     
     NSArray *_originalStickerPacks;
+    bool _showArchived;
+    bool _showFeatured;
+    
+    bool _masksMode;
 }
 
 @end
@@ -34,18 +55,19 @@
 @implementation TGStickerPacksSettingsController
 
 - (instancetype)init {
-    return [self initWithEditing:false];
+    return [self initWithEditing:false masksMode:false];
 }
 
-- (instancetype)initWithEditing:(bool)editing {
+- (instancetype)initWithEditing:(bool)editing masksMode:(bool)masksMode {
     self = [super init];
     if (self != nil)
     {
+        _masksMode = masksMode;
         _editingMode = editing;
         
         __weak TGStickerPacksSettingsController *weakSelf = self;
         
-        self.title = TGLocalized(@"StickerPacksSettings.Title");
+        self.title = _masksMode ? TGLocalized(@"MaskStickerSettings.Title") : TGLocalized(@"StickerPacksSettings.Title");
         
         if (_editingMode) {
             [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(editCancelPressed)] animated:false];
@@ -67,33 +89,76 @@
             _showStickersButtonItem,
             showStickersHelpItem
         ]];
-        if (!_editingMode) {
+        if (!_editingMode && !_masksMode) {
             [self.menuSections addSection:showStickersSection];
         }
         
+        _featuredPacksItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"StickerPacksSettings.FeaturedPacks") action:@selector(featuredPacksPressed)];
+        
+        _maskStickerSettingsItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"MaskStickerSettings.Title") action:@selector(maskStickerSettingsPressed)];
+        
+        _archivedPacksItem = [[TGVariantCollectionItem alloc] initWithTitle:masksMode ? TGLocalized(@"StickerPacksSettings.ArchivedMasks") : TGLocalized(@"StickerPacksSettings.ArchivedPacks") action:@selector(archivedPacksPressed)];
+        
+        _featuredPacksSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+        ]];
+        _featuredPacksSection.insets = UIEdgeInsetsMake(16.0f, 0.0f, 16.0f, 0.0f);
+        [self.menuSections addSection:_featuredPacksSection];
+        
+        NSString *hintString = [TGLocalized(@"StickerPacksSettings.ManagingHelp") stringByReplacingOccurrencesOfString:@"@stickers" withString:@"[@stickers]"];
+        if (_masksMode) {
+            hintString = TGLocalized(@"MaskStickerSettings.Info");
+        }
+        TGCommentCollectionItem *hintItem = [[TGCommentCollectionItem alloc] init];
+        hintItem.action = ^
+        {
+            NSString *username = @"stickers";
+            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/resolveDomain/(%@)", username] options:@{@"domain": username} flags:0 watcher:TGTelegraphInstance];
+        };
+        [hintItem setFormattedText:hintString];
+        
         NSMutableArray *stickerPacksSectionItems = [[NSMutableArray alloc] init];
-        [stickerPacksSectionItems addObject:[[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"StickerPacksSettings.StickerPacksSection")]];
-        [stickerPacksSectionItems addObject:[[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"StickerPacksSettings.ManagingHelp")]];
+        if (!_masksMode) {
+            [stickerPacksSectionItems addObject:[[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"StickerPacksSettings.StickerPacksSection")]];
+        }
+        [stickerPacksSectionItems addObject:hintItem];
         _stickerPacksSection = [[TGCollectionMenuSection alloc] initWithItems:stickerPacksSectionItems];
-        _stickerPacksSection.insets = UIEdgeInsetsMake(16.0f, 0.0f, 16.0f, 0.0f);
+        _stickerPacksSection.insets = UIEdgeInsetsMake(_editingMode ? 24.0 : 8.0f, 0.0f, 16.0f, 0.0f);
         [self.menuSections addSection:_stickerPacksSection];
         
         _stickerPacksDisposable = [[SMetaDisposable alloc] init];
-        [_stickerPacksDisposable setDisposable:[[[TGStickersSignals stickerPacks] deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *dict)
+        
+        SSignal *stickerPacksSignal = _masksMode ? [TGMaskStickersSignals stickerPacks] : [TGStickersSignals stickerPacks];
+        [_stickerPacksDisposable setDisposable:[[stickerPacksSignal deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *dict)
         {
             __strong TGStickerPacksSettingsController *strongSelf = weakSelf;
-            if (strongSelf != nil && ((NSArray *)dict[@"packs"]).count != 0)
+            if (strongSelf != nil && (((NSArray *)dict[@"packs"]).count != 0 || [((NSNumber *)dict[@"cacheUpdateDate"]) intValue] != 0))
             {
                 [strongSelf->_activityIndicator stopAnimating];
                 [strongSelf->_activityIndicator removeFromSuperview];
                 strongSelf.collectionView.hidden = false;
                 
-                if (![strongSelf->_originalStickerPacks isEqual:dict[@"packs"]])
+                NSArray *featuredPacks = dict[@"featuredPacks"];
+                
+                TGArchivedStickerPacksSummary *archivedSummary = dict[@"archivedPacksSummary"];
+                
+                if (![strongSelf->_originalStickerPacks isEqual:dict[@"packs"]] || strongSelf->_showArchived != (archivedSummary.count != 0) || strongSelf->_showFeatured != (featuredPacks.count != 0))
                 {
-                    [strongSelf setStickerPacks:dict[@"packs"]];
+                    [strongSelf setStickerPacks:dict[@"packs"] showArchived:archivedSummary.count != 0 showFeatured:(featuredPacks.count != 0)];
+                }
+                
+                NSUInteger unreadFeaturedCount = ((NSArray *)dict[@"featuredPacksUnreadIds"]).count;
+                [strongSelf->_featuredPacksItem setBadge:unreadFeaturedCount == 0 ? nil : [NSString stringWithFormat:@"%d", (int)unreadFeaturedCount]];
+                
+                if (archivedSummary.count != 0) {
+                    strongSelf->_archivedPacksItem.variant = [NSString stringWithFormat:@"%d", (int)archivedSummary.count];
+                } else {
+                    strongSelf->_archivedPacksItem.variant = @"";
                 }
             }
         }]];
+        
+        SSignal *updatedFeaturedStickerPacksSignal = _masksMode ? [TGMaskStickersSignals updatedFeaturedStickerPacks] : [TGStickersSignals updatedFeaturedStickerPacks];
+        _updatedFeaturedStickerPacksDisposable = [updatedFeaturedStickerPacksSignal startWithNext:nil];
         
         TGCollectionMenuSection *topSection = self.menuSections.sections.firstObject;
         topSection.insets = UIEdgeInsetsMake(32.0f, 0.0f, 0.0f, 0.0f);
@@ -104,6 +169,7 @@
 - (void)dealloc
 {
     [_stickerPacksDisposable dispose];
+    [_updatedFeaturedStickerPacksDisposable dispose];
 }
 
 - (void)_resetCollectionView {
@@ -139,7 +205,7 @@
         
         [self animateCollectionCrossfade];
         
-        [self setStickerPacks:_originalStickerPacks];
+        [self setStickerPacks:_originalStickerPacks showArchived:_showArchived showFeatured:_showFeatured];
     }
 }
 
@@ -183,7 +249,8 @@
         }
         
         __weak TGStickerPacksSettingsController *weakSelf = self;
-        [[[[TGStickersSignals reorderStickerPacks:currentStickerPacksReferences] deliverOn:[SQueue mainQueue]] onDispose:^{
+        SSignal *reorderStickerPacksSignal = _masksMode ? [TGMaskStickersSignals reorderStickerPacks:currentStickerPacksReferences] : [TGStickersSignals reorderStickerPacks:currentStickerPacksReferences];
+        [[[reorderStickerPacksSignal deliverOn:[SQueue mainQueue]] onDispose:^{
             TGDispatchOnMainThread(^{
                 [progressWindow dismiss:true];
             });
@@ -231,20 +298,73 @@
     }
 }
 
-- (void)setStickerPacks:(NSArray *)stickerPacks
+- (void)setStickerPacks:(NSArray *)stickerPacks showArchived:(bool)showArchived showFeatured:(bool)showFeatured
 {
     _showStickersButtonItem.isOn = TGAppDelegateInstance.alwaysShowStickersMode == 2;
     
     _originalStickerPacks = stickerPacks;
+    _showArchived = showArchived;
+    _showFeatured = showFeatured;
+    
+    if (_showArchived) {
+        if ([_featuredPacksSection indexOfItem:_archivedPacksItem] == NSNotFound) {
+            [_featuredPacksSection addItem:_archivedPacksItem];
+        }
+    } else {
+        [_featuredPacksSection deleteItem:_archivedPacksItem];
+    }
+    
+    if (_showFeatured) {
+        if ([_featuredPacksSection indexOfItem:_featuredPacksItem] == NSNotFound) {
+            [_featuredPacksSection insertItem:_featuredPacksItem atIndex:0];
+        }
+    } else {
+        [_featuredPacksSection deleteItem:_featuredPacksItem];
+    }
+    
+    if (!_masksMode) {
+        if ([_featuredPacksSection indexOfItem:_maskStickerSettingsItem] == NSNotFound) {
+            [_featuredPacksSection addItem:_maskStickerSettingsItem];
+        }
+    } else {
+        [_featuredPacksSection deleteItem:_maskStickerSettingsItem];
+    }
+    
+    if (_showArchived || _showFeatured || !_masksMode) {
+        _featuredPacksSection.insets = UIEdgeInsetsMake(_masksMode ? 32.0f : 16.0f, 0.0f, 16.0f, 0.0f);
+    } else {
+        _featuredPacksSection.insets = UIEdgeInsetsMake(_masksMode ? 16.0f : 8.0f, 0.0f, 0.0f, 0.0f);
+    }
     
     __weak TGStickerPacksSettingsController *weakSelf = self;
     
     NSUInteger sectionIndex = [self indexForSection:_stickerPacksSection];
-    while (_stickerPacksSection.items.count != 2)
-    {
-        [self.menuSections deleteItemFromSection:sectionIndex atIndex:1];
+    while (true) {
+        bool found = false;
+        for (NSUInteger index = 0; index < _stickerPacksSection.items.count; index++) {
+            if ([_stickerPacksSection.items[index] isKindOfClass:[TGStickerPackCollectionItem class]]) {
+                [self.menuSections deleteItemFromSection:sectionIndex atIndex:index];
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            break;
+        }
     }
-    NSUInteger insertIndex = 1;
+    NSUInteger insertIndex = 0;
+    if (_stickerPacksSection.items.count == 0) {
+        insertIndex = 0;
+    } else if ([_stickerPacksSection.items[0] isKindOfClass:[TGHeaderCollectionItem class]]) {
+        insertIndex = 1;
+    }
+    
+    if (_masksMode) {
+        _stickerPacksSection.insets = UIEdgeInsetsMake((_showArchived || _showFeatured || !_masksMode) ? 24.0f : 0.0f, 0.0f, 16.0f, 0.0f);
+    } else {
+        _stickerPacksSection.insets = UIEdgeInsetsMake((_editingMode) ? 24.0 : 8.0f, 0.0f, 16.0f, 0.0f);
+    }
+    
     NSArray *sortedStickerPacks = stickerPacks;
     
     for (TGStickerPack *stickerPack in sortedStickerPacks)
@@ -306,10 +426,20 @@
 
 - (void)deleteStickerPack:(TGStickerPack *)stickerPack
 {
-    if (false) {
+    if (true) {
         __weak TGStickerPacksSettingsController *weakSelf = self;
         
-        [[[TGActionSheet alloc] initWithTitle:nil actions:@[[[TGActionSheetAction alloc] initWithTitle:stickerPack.hidden ? TGLocalized(@"StickerSettings.ContextShow") : TGLocalized(@"StickerSettings.ContextHide") action:stickerPack.hidden ? @"show" : @"hide"], [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Delete") action:@"delete" type:TGActionSheetActionTypeDestructive], [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]] actionBlock:^(__unused id target, NSString *action) {
+        NSMutableArray *actions = [[NSMutableArray alloc] init];
+        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"StickerSettings.ContextHide") action:@"hide"]];
+        
+        if (!([stickerPack.packReference isKindOfClass:[TGStickerPackIdReference class]] && ((TGStickerPackIdReference *)stickerPack.packReference).packId == 1842540969984001)) {
+            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Delete") action:@"delete" type:TGActionSheetActionTypeDestructive]];
+        }
+        
+        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
+        
+        bool masksMode = _masksMode;
+        [[[TGActionSheet alloc] initWithTitle:masksMode ? TGLocalized(@"StickerSettings.MaskContextInfo") : TGLocalized(@"StickerSettings.ContextInfo") actions:actions actionBlock:^(__unused id target, NSString *action) {
             if ([action isEqualToString:@"hide"]) {
                 __strong TGStickerPacksSettingsController *strongSelf = weakSelf;
                 if (strongSelf != nil) {
@@ -324,7 +454,8 @@
                 TGProgressWindow *progresWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
                 [progresWindow show:true];
                 
-                [[[[TGStickersSignals removeStickerPack:stickerPack.packReference] deliverOn:[SQueue mainQueue]] onDispose:^
+                SSignal *removeStickerPackSignal = masksMode ? [TGMaskStickersSignals removeStickerPack:stickerPack.packReference hintArchived:false] : [TGStickersSignals removeStickerPack:stickerPack.packReference hintArchived:false];
+                [[[removeStickerPackSignal deliverOn:[SQueue mainQueue]] onDispose:^
                 {
                     TGDispatchOnMainThread(^
                     {
@@ -379,6 +510,7 @@
     
     __weak TGStickerPacksSettingsController *weakSelf = self;
     NSString *text = [[NSString alloc] initWithFormat:hide ? TGLocalized(@"StickerSettings.ContextHide") : TGLocalized(@"StickerPack.RemovePrompt"), stickerPack.title];
+    bool masksMode = _masksMode;
     if (hide) {
         [self toggleStickerPack:stickerPack hidden:!stickerPack.hidden];
     } else {
@@ -395,7 +527,8 @@
                         [strongSelf toggleStickerPack:stickerPack hidden:true];
                     }
                 } else {
-                    [[[[TGStickersSignals removeStickerPack:stickerPack.packReference] deliverOn:[SQueue mainQueue]] onDispose:^
+                    SSignal *removeStickerPackSignal = masksMode ? [TGMaskStickersSignals removeStickerPack:stickerPack.packReference hintArchived:false] : [TGStickersSignals removeStickerPack:stickerPack.packReference hintArchived:false];
+                    [[[removeStickerPackSignal deliverOn:[SQueue mainQueue]] onDispose:^
                     {
                         TGDispatchOnMainThread(^
                         {
@@ -451,14 +584,15 @@
     [progressWindow show:true];
     
     __weak TGStickerPacksSettingsController *weakSelf = self;
-    [[[[TGStickersSignals toggleStickerPackHidden:stickerPack.packReference hidden:hidden] deliverOn:[SQueue mainQueue]] onDispose:^{
+    SSignal *toggleStickerPackHiddenSignal = _masksMode ? [TGMaskStickersSignals toggleStickerPackHidden:stickerPack.packReference hidden:hidden] : [TGStickersSignals toggleStickerPackHidden:stickerPack.packReference hidden:hidden];
+    [[[toggleStickerPackHiddenSignal deliverOn:[SQueue mainQueue]] onDispose:^{
         TGDispatchOnMainThread(^{
             [progressWindow dismiss:true];
         });
     }] startWithNext:nil error:nil completed:^{
         __strong TGStickerPacksSettingsController *strongSelf = weakSelf;
         if (strongSelf != nil) {
-            TGStickerPack *updatedStickerPack = [[TGStickerPack alloc] initWithPackReference:stickerPack.packReference title:stickerPack.title stickerAssociations:stickerPack.stickerAssociations documents:stickerPack.documents packHash:stickerPack.packHash hidden:hidden];
+            TGStickerPack *updatedStickerPack = [[TGStickerPack alloc] initWithPackReference:stickerPack.packReference title:stickerPack.title stickerAssociations:stickerPack.stickerAssociations documents:stickerPack.documents packHash:stickerPack.packHash hidden:hidden isMask:stickerPack.isMask];
             
             for (id item in strongSelf->_stickerPacksSection.items)
             {
@@ -486,7 +620,41 @@
     }];
 }
 
+- (CGRect)sourceRectForStickerPack:(TGStickerPack *)stickerPack
+{
+    for (id item in _stickerPacksSection.items)
+    {
+        if ([item isKindOfClass:[TGStickerPackCollectionItem class]])
+        {
+            TGStickerPackCollectionItem *stickerPackItem = item;
+            if ([stickerPackItem.stickerPack.packReference isEqual:[stickerPack packReference]])
+            {
+                if (stickerPackItem.view != nil)
+                    return [stickerPackItem.view convertRect:stickerPackItem.view.bounds toView:self.view];
+                
+                return CGRectZero;
+                break;
+            }
+        }
+    }
+    
+    return CGRectZero;
+}
+
 - (void)previewStickerPack:(TGStickerPack *)stickerPack
+{
+    __weak TGStickerPacksSettingsController *weakSelf = self;
+    [TGStickersMenu presentInParentController:self stickerPack:stickerPack showShareAction:true sendSticker:nil stickerPackRemoved:nil stickerPackHidden:nil stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:self.view sourceRect:^CGRect
+    {
+        __strong TGStickerPacksSettingsController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return CGRectZero;
+        
+        return [strongSelf sourceRectForStickerPack:stickerPack];
+    }];
+}
+
+- (void)_previewStickerPack:(TGStickerPack *)stickerPack
 {
     TGStickerPackPreviewWindow *previewWindow = [[TGStickerPackPreviewWindow alloc] initWithParentController:self stickerPack:stickerPack];
     __weak TGStickerPackPreviewWindow *weakPreviewWindow = previewWindow;
@@ -553,6 +721,18 @@
             }
         }
     }
+}
+
+- (void)featuredPacksPressed {
+    [self.navigationController pushViewController:[[TGFeaturedStickerPacksController alloc] init] animated:true];
+}
+
+- (void)archivedPacksPressed {
+    [self.navigationController pushViewController:[[TGArchivedStickerPacksController alloc] initWithMasksMode:_masksMode] animated:true];
+}
+
+- (void)maskStickerSettingsPressed {
+    [self.navigationController pushViewController:[[TGStickerPacksSettingsController alloc] initWithEditing:false masksMode:true] animated:true];
 }
 
 @end

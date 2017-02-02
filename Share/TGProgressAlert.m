@@ -1,6 +1,6 @@
 #import "TGProgressAlert.h"
 
-#import "TGColor.h"
+#import <LegacyDatabase/LegacyDatabase.h>
 
 @interface TGProgressAlert ()
 {

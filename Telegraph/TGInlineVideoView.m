@@ -50,7 +50,7 @@
 #endif
         
         _cornerRadius = 13.0f;
-        self.layer.cornerRadius = 13.0f;
+        self.layer.cornerRadius = _cornerRadius;
         self.layer.masksToBounds = true;
         _insets = UIEdgeInsetsMake(-2.0f, -2.0f, -2.0f, -2.0f);
     }

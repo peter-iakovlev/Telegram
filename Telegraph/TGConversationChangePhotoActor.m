@@ -74,7 +74,7 @@
     else
     {
         static int uploadIndex = 0;
-        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/upload/(%dccp)", uploadIndex++] options:[NSDictionary dictionaryWithObject:photoData forKey:@"data"] watcher:self];
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/upload/(%dccp)", uploadIndex++] options:@{@"data": photoData, @"mediaTypeTag": @(TGNetworkMediaTypeTagImage)} watcher:self];
     }
 }
 
@@ -130,9 +130,7 @@
         if (TGPeerIdIsChannel(_conversationId)) {
             [TGDatabaseInstance() updateChannels:@[chatConversation]];
         } else {
-            static int actionId = 0;
-            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(updateChatPhotoData%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSArray alloc] initWithObjects:chatConversation, nil], @"chats", nil]];
-            [[[TGConversationAddMessagesActor alloc] initWithPath:[[NSString alloc] initWithFormat:@"/tg/addmessage/(changeChatPhoto%d)", actionId++]] execute:[[NSDictionary alloc] initWithObjectsAndKeys:chats, @"chats", message == nil ? @[] : @[message], @"messages", nil]];
+            [TGDatabaseInstance() transactionAddMessages:message == nil ? nil : @[message] updateConversationDatas:chats notifyAdded:true];
         }
     
         [ActionStageInstance() actionCompleted:self.path result:[[SGraphObjectNode alloc] initWithObject:chatConversation]];
@@ -159,7 +157,6 @@
             TLInputFile *inputFile = result[@"file"];
             
             TLInputChatPhoto$inputChatUploadedPhoto *chatPhoto = [[TLInputChatPhoto$inputChatUploadedPhoto alloc] init];
-            chatPhoto.crop = [[TLInputPhotoCrop$inputPhotoCropAuto alloc] init];
             chatPhoto.file = inputFile;
             
             self.cancelToken = [TGTelegraphInstance doChangeConversationPhoto:_conversationId accessHash:_accessHash photo:chatPhoto actor:self];

@@ -24,13 +24,20 @@
 
 @end
 
-@interface TGNavigationController () <UINavigationControllerDelegate>
+@interface UINavigationController () {
+    
+}
+
+@end
+
+@interface TGNavigationController () <UINavigationControllerDelegate, UIGestureRecognizerDelegate>
 {
     UITapGestureRecognizer *_dimmingTapRecognizer;
     CGSize _preferredContentSize;
     
     id<SDisposable> _playerStatusDisposable;
     CGFloat _currentAdditionalNavigationBarHeight;
+    CGFloat _currentAdditionalStatusBarHeight;
 }
 
 @property (nonatomic) bool wasShowingNavigationBar;
@@ -102,34 +109,30 @@
 {
     [super loadView];
     
-    if (iosMajorVersion() >= 9 && [UIView userInterfaceLayoutDirectionForSemanticContentAttribute:self.view.semanticContentAttribute] == UIUserInterfaceLayoutDirectionRightToLeft) {
+    if (iosMajorVersion() >= 8) {
         SEL selector = NSSelectorFromString(TGEncodeText(@"`tdsffoFehfQboHftuvsfSfdphoj{fs", -1));
         if ([self respondsToSelector:selector])
         {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
             UIScreenEdgePanGestureRecognizer *screenPanRecognizer = [self performSelector:selector];
+#pragma clang diagnostic pop
             if (screenPanRecognizer != nil)
             {
-                screenPanRecognizer.edges = UIRectEdgeRight;
+                if (iosMajorVersion() >= 9 && [UIView userInterfaceLayoutDirectionForSemanticContentAttribute:self.view.semanticContentAttribute] == UIUserInterfaceLayoutDirectionRightToLeft)
+                {
+                    screenPanRecognizer.edges = UIRectEdgeRight;
+                }
                 object_setClass(screenPanRecognizer, [TGRTLScreenEdgePanGestureRecognizer class]);
+                id delegate = screenPanRecognizer.delegate;
+                if (delegate != nil) {
+                    //Class subclass = freedomMakeClass([delegate class], [TGRTLScreenEdgePanGestureRecognizerDelegate class]);
+                    //object_setClass(delegate, subclass);
+                    //objc_setAssociatedObject(delegate, TGRTLScreenEdgePanGestureRecognizerDelegateEnableGestureKey, @false, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+                }
             }
         }
     }
-    /*if ([TGViewController useExperimentalRTL])
-        ((UIView *)self.view.subviews[0]).transform = CGAffineTransformMakeScale(-1.0f, 1.0f);
-    
-    if ([TGViewController useExperimentalRTL])
-    {
-        SEL selector = NSSelectorFromString(TGEncodeText(@"`tdsffoFehfQboHftuvsfSfdphoj{fs", -1));
-        if ([self respondsToSelector:selector])
-        {
-            UIScreenEdgePanGestureRecognizer *screenPanRecognizer = objc_msgSend(self, selector);
-            if (screenPanRecognizer != nil)
-            {
-                screenPanRecognizer.edges = UIRectEdgeRight;
-                object_setClass(screenPanRecognizer, [TGRTLScreenEdgePanGestureRecognizer class]);
-            }
-        }
-    }*/
 }
 
 - (void)setDisplayPlayer:(bool)displayPlayer
@@ -183,6 +186,86 @@
         {
             [self updatePlayerOnControllers];
         }];
+    }
+}
+
+- (void)setShowCallStatusBar:(bool)showCallStatusBar
+{
+    if (_showCallStatusBar == showCallStatusBar)
+        return;
+    
+    _showCallStatusBar = showCallStatusBar;
+    
+    _currentAdditionalStatusBarHeight = _showCallStatusBar ? 20.0f : 0.0f;
+    [(TGNavigationBar *)self.navigationBar setVerticalOffset:_currentAdditionalStatusBarHeight];
+    
+    [UIView animateWithDuration:0.25 animations:^
+    {
+        static SEL selector = NULL;
+        static void (*impl)(id, SEL) = NULL;
+        
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^
+        {
+            selector = NSSelectorFromString(TGEncodeText(@"`vqebufCbstGpsDvssfouJoufsgbdfPsjfoubujpo", -1));
+            Method method = class_getInstanceMethod([UINavigationController class], selector);
+            impl = (void (*)(id, SEL))method_getImplementation(method);
+        });
+        
+        if (impl != NULL)
+            impl(self, selector);
+
+        [self updateStatusBarOnControllers];
+    }];
+}
+
+
+- (void)setupStatusBarOnControllers:(NSArray *)controllers
+{
+    if ([[self navigationBar] isKindOfClass:[TGNavigationBar class]])
+    {
+        for (id maybeController in controllers)
+        {
+            if ([maybeController isKindOfClass:[TGViewController class]])
+            {
+                TGViewController *controller = maybeController;
+                [controller setAdditionalStatusBarHeight:_currentAdditionalStatusBarHeight];
+            }
+            else if ([maybeController isKindOfClass:[TGMainTabsController class]])
+            {
+                [self setupPlayerOnControllers:((TGMainTabsController *)maybeController).viewControllers];
+            }
+        }
+    }
+}
+
+- (void)updateStatusBarOnControllers
+{
+    if ([[self navigationBar] isKindOfClass:[TGNavigationBar class]])
+    {
+        for (id maybeController in [self viewControllers])
+        {
+            if ([maybeController isKindOfClass:[TGViewController class]])
+            {
+                TGViewController *viewController = (TGViewController *)maybeController;
+                [viewController setAdditionalStatusBarHeight:_currentAdditionalStatusBarHeight];
+                [viewController setNeedsStatusBarAppearanceUpdate];
+                
+                if ([viewController.presentedViewController isKindOfClass:[TGNavigationController class]])
+                    [(TGNavigationController *)viewController.presentedViewController setShowCallStatusBar:_showCallStatusBar];
+            }
+            else if ([maybeController isKindOfClass:[TGMainTabsController class]])
+            {
+                for (id controller in ((TGMainTabsController *)maybeController).viewControllers)
+                {
+                    if ([controller isKindOfClass:[TGViewController class]])
+                    {
+                        [((TGViewController *)controller) setAdditionalStatusBarHeight:_currentAdditionalStatusBarHeight];
+                    }
+                }
+                [((TGMainTabsController *)maybeController) setNeedsStatusBarAppearanceUpdate];
+            }
+        }
     }
 }
 
@@ -387,7 +470,7 @@ static UIView *findDimmingView(UIView *view)
     _autorotationLock = nil;
 }
 
-- (NSUInteger)supportedInterfaceOrientations
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
     if (_restrictLandscape)
         return UIInterfaceOrientationMaskPortrait;
@@ -463,8 +546,10 @@ static UIView *findDimmingView(UIView *view)
         }
     }
     _isInControllerTransition = true;
-    if (viewController != nil)
+    if (viewController != nil) {
         [self setupPlayerOnControllers:@[viewController]];
+        [self setupStatusBarOnControllers:@[viewController]];
+    }
     [super pushViewController:viewController animated:animated];
     _isInControllerTransition = false;
 }
@@ -481,8 +566,10 @@ static UIView *findDimmingView(UIView *view)
     
     _isInControllerTransition = true;
     [self setupPlayerOnControllers:viewControllers];
+    [self setupStatusBarOnControllers:viewControllers];
     [super setViewControllers:viewControllers animated:animated];
     _isInControllerTransition = false;
+    
 }
 
 - (UIViewController *)popViewControllerAnimated:(BOOL)animated

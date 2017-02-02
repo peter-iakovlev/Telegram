@@ -8,6 +8,11 @@
 
 @implementation UIImage (ImageEffects)
 
+- (UIImage *)applyScreenshotEffect
+{
+    UIColor *tintColor = [UIColor colorWithWhite:1.0f alpha:0.3f];
+    return [self applyBlurWithRadius:10 tintColor:tintColor saturationDeltaFactor:1.8f maskImage:nil];
+}
 
 - (UIImage *)applyLightEffect
 {

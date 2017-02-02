@@ -93,6 +93,7 @@ typedef enum {
 @property (nonatomic) UIEdgeInsets explicitTableInset;
 @property (nonatomic) UIEdgeInsets explicitScrollIndicatorInset;
 @property (nonatomic) CGFloat additionalNavigationBarHeight;
+@property (nonatomic) CGFloat additionalStatusBarHeight;
 
 @property (nonatomic) bool navigationBarShouldBeHidden;
 

@@ -29,4 +29,9 @@
     return self;
 }
 
+- (bool)isPreviewableAtPoint:(CGPoint)point
+{
+    return CGRectContainsPoint(self.imageModel.frame, point);
+}
+
 @end

@@ -33,13 +33,17 @@
         self.selectable = false;
         _alpha = 1.0f;
         
-        _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:false];
+        _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:false paragraphSpacing:0.0f];
         _textColor = UIColorRGB(0x6d6d72);
     }
     return self;
 }
 
-- (instancetype)initWithFormattedText:(NSString *)text
+- (instancetype)initWithFormattedText:(NSString *)text {
+    return [self initWithFormattedText:text paragraphSpacing:0.0f];
+}
+
+- (instancetype)initWithFormattedText:(NSString *)text paragraphSpacing:(CGFloat)paragraphSpacing
 {
     self = [super init];
     if (self != nil)
@@ -49,7 +53,7 @@
         self.selectable = false;
         _alpha = 1.0f;
         
-        _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:true];
+        _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:true paragraphSpacing:paragraphSpacing];
         _textColor = UIColorRGB(0x6d6d72);
     }
     return self;
@@ -70,7 +74,7 @@
     return self;
 }
 
-+ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting
++ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing
 {
     if (text.length == 0)
         return [[NSAttributedString alloc] initWithString:@"" attributes:nil];
@@ -118,6 +122,7 @@
     
     NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
     style.lineSpacing = 2;
+    style.paragraphSpacing = paragraphSpacing;
     style.lineBreakMode = NSLineBreakByWordWrapping;
     style.alignment = NSTextAlignmentLeft;
 
@@ -146,7 +151,7 @@
 {
     _text = text;
     
-    _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:false];
+    _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:false paragraphSpacing:0.0f];
     
     if (_lastContainerWidth > FLT_EPSILON)
     {
@@ -161,7 +166,7 @@
 {
     _text = nil;
     
-    _attributedText = [TGCommentCollectionItem attributedStringFromText:formattedText allowFormatting:true];
+    _attributedText = [TGCommentCollectionItem attributedStringFromText:formattedText allowFormatting:true paragraphSpacing:0.0f];
     
     if (_lastContainerWidth > FLT_EPSILON)
     {

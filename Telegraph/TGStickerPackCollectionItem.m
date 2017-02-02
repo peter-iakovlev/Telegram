@@ -32,6 +32,8 @@
     view.deleteStickerPack = _deleteStickerPack;
     view.addStickerPack = _addStickerPack;
     [view setStickerPack:_stickerPack];
+    [view setUnread:_unread];
+    [view setStatus:_status];
 }
 
 - (void)unbindView
@@ -50,6 +52,16 @@
 - (void)setStickerPack:(TGStickerPack *)stickerPack {
     _stickerPack = stickerPack;
     [((TGStickerPackCollectionItemView *)self.boundView) setStickerPack:_stickerPack];
+}
+
+- (void)setUnread:(bool)unread {
+    _unread = unread;
+    [((TGStickerPackCollectionItemView *)self.boundView) setUnread:_unread];
+}
+
+- (void)setStatus:(TGStickerPackItemStatus)status {
+    _status = status;
+    [((TGStickerPackCollectionItemView *)self.boundView) setStatus:status];
 }
 
 @end

@@ -12,7 +12,7 @@
 
 @interface TGContactMessageViewModel : TGMessageViewModel
 
-- (instancetype)initWithMessage:(TGMessage *)message contact:(TGUser *)contact authorPeer:(id)authorPeer context:(TGModernViewContext *)context;
+- (instancetype)initWithMessage:(TGMessage *)message contact:(TGUser *)contact authorPeer:(id)authorPeer context:(TGModernViewContext *)context viaUser:(TGUser *)viaUser;
 
 - (void)setForwardHeader:(id)forwardPeer forwardAuthor:(id)forwardAuthor messageId:(int32_t)messageId;
 - (void)setReplyHeader:(TGMessage *)replyHeader peer:(id)peer;

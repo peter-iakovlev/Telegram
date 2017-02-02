@@ -21,4 +21,7 @@
     _item = item;
 }
 
+- (void)setHidden:(bool)__unused hidden animated:(bool)__unused animated {
+}
+
 @end

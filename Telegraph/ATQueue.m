@@ -144,11 +144,12 @@ static int32_t numQueues = 0;
 
 - (void)dispatch:(dispatch_block_t)block synchronous:(bool)synchronous
 {
-    ATQueue *strongSelf = self;
+    __block ATQueue *strongSelf = self;
     dispatch_block_t blockWithSelf = ^
     {
         block();
         [strongSelf noop];
+        strongSelf = nil;
     };
     
     if (_isMainQueue)

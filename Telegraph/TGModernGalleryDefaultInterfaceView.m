@@ -304,4 +304,8 @@
 {
 }
 
+- (void)setScrollViewOffsetRequested:(void (^)(CGFloat))__unused scrollViewOffsetRequested
+{
+}
+
 @end

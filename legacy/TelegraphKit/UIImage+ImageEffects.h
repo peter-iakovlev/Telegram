@@ -4,6 +4,7 @@
 
 @interface UIImage (ImageEffects)
 
+- (UIImage *)applyScreenshotEffect;
 - (UIImage *)applyLightEffect;
 - (UIImage *)applyExtraLightEffect;
 - (UIImage *)applyDarkEffect;

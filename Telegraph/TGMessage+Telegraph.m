@@ -124,6 +124,14 @@
                 videoMedia.dimensions = video.size;
                 videoMedia.thumbnailInfo = documentAttachment.thumbnailInfo;
                 videoMedia.caption = documentAttachment.caption;
+                
+                for (id additionalAttribute in documentAttachment.attributes) {
+                    if ([additionalAttribute isKindOfClass:[TLDocumentAttribute$documentAttributeHasStickers class]]) {
+                        videoMedia.hasStickers = true;
+                        break;
+                    }
+                }
+                
                 TGVideoInfo *videoInfo = [[TGVideoInfo alloc] init];
                 [videoInfo addVideoWithQuality:1 url:[[NSString alloc] initWithFormat:@"video:%lld:%lld:%d:%d", videoMedia.videoId, videoMedia.accessHash, documentAttachment.datacenterId, documentAttachment.size] size:documentAttachment.size];
                 videoMedia.videoInfo = videoInfo;
@@ -143,6 +151,21 @@
         TGWebPageMediaAttachment *webPage = [[TGWebPageMediaAttachment alloc] initWithTelegraphWebPageDesc:((TLMessageMedia$messageMediaWebPage *)media).webpage];
         
         [mediaAttachments addObject:webPage];
+    } else if ([media isKindOfClass:[TLMessageMedia$messageMediaGame class]]) {
+        TLMessageMedia$messageMediaGame *gameDesc = ((TLMessageMedia$messageMediaGame *)media);
+        
+        TGImageMediaAttachment *image = nil;
+        if (gameDesc.game.photo != nil) {
+            image = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:gameDesc.game.photo];
+        }
+        
+        TGDocumentMediaAttachment *document = nil;
+        if (gameDesc.game.document != nil) {
+            document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:gameDesc.game.document];
+        }
+        
+        TGGameMediaAttachment *gameMedia = [[TGGameMediaAttachment alloc] initWithGameId:gameDesc.game.n_id accessHash:gameDesc.game.access_hash shortName:gameDesc.game.short_name title:gameDesc.game.title gameDescription:gameDesc.game.n_description photo:image document:document];
+        [mediaAttachments addObject:gameMedia];
     }
     
     return mediaAttachments;
@@ -183,6 +206,9 @@
         } else if ([entity isKindOfClass:[TLMessageEntity$messageEntityPre class]]) {
             TLMessageEntity$messageEntityPre *preEntity = entity;
             [result addObject:[[TGMessageEntityPre alloc] initWithRange:NSMakeRange(preEntity.offset, preEntity.length)]];
+        } else if ([entity isKindOfClass:[TLMessageEntity$messageEntityMentionName class]]) {
+            TLMessageEntity$messageEntityMentionName *mentionNameEntity = entity;
+            [result addObject:[[TGMessageEntityMentionName alloc] initWithRange:NSMakeRange(mentionNameEntity.offset, mentionNameEntity.length) userId:mentionNameEntity.user_id]];
         }
     }
     
@@ -205,7 +231,7 @@
             self.containsMention = concreteMessage.flags & (1 << 4);
             
             self.mid = concreteMessage.n_id;
-            self.unread = concreteMessage.flags & 1;
+            //self.unread = concreteMessage.flags & 1;
             self.outgoing = concreteMessage.flags & 2;
             self.fromUid = concreteMessage.from_id;
             
@@ -213,6 +239,7 @@
             self.date = concreteMessage.date;
             
             self.isSilent = concreteMessage.flags & (1 << 13);
+            self.isEdited = concreteMessage.flags & (1 << 15);
             
             if ([concreteMessage.to_id isKindOfClass:[TLPeer$peerUser class]])
             {
@@ -242,6 +269,10 @@
                 
                 if ((concreteMessage.flags & 256) == 0) {
                     self.fromUid = self.cid;
+                }
+                
+                if (self.fromUid == TGTelegraphInstance.clientUserId) {
+                    self.outgoing = true;
                 }
             }
 
@@ -386,7 +417,7 @@
             TLMessage$modernMessageService *concreteMessage = (TLMessage$modernMessageService *)desc;
             
             self.mid = concreteMessage.n_id;
-            self.unread = concreteMessage.flags & 1;
+            //self.unread = concreteMessage.flags & 1;
             self.outgoing = concreteMessage.flags & 2;
             self.fromUid = concreteMessage.from_id;
             
@@ -421,6 +452,30 @@
                 
                 if ((concreteMessage.flags & 256) == 0) {
                     self.fromUid = self.cid;
+                }
+                
+                if (self.fromUid == TGTelegraphInstance.clientUserId) {
+                    self.outgoing = true;
+                }
+            }
+            
+            if (concreteMessage.reply_to_msg_id != 0)
+            {
+                TGMessage *replyMessage = [TGDatabaseInstance() loadMessageWithMid:concreteMessage.reply_to_msg_id peerId:self.cid];
+                
+                TGReplyMessageMediaAttachment *replyAttachment = [[TGReplyMessageMediaAttachment alloc] init];
+                
+                replyAttachment.replyMessage = replyMessage;
+                replyAttachment.replyMessageId = concreteMessage.reply_to_msg_id;
+                
+                if (mediaAttachments == nil)
+                    mediaAttachments = [NSArray arrayWithObject:replyAttachment];
+                else
+                {
+                    NSMutableArray *array = [[NSMutableArray alloc] init];
+                    [array addObjectsFromArray:mediaAttachments];
+                    [array addObject:replyAttachment];
+                    mediaAttachments = array;
                 }
             }
             
@@ -489,7 +544,7 @@
         self.fromUid = fromUid;
         self.toUid = TGTelegraphInstance.clientUserId;
         self.date = date;
-        self.unread = true;
+        //self.unread = true;
         self.outgoing = false;
         self.cid = conversationId;
         
@@ -746,7 +801,7 @@
         else if ([desc isKindOfClass:[Secret1_DecryptedMessage_decryptedMessageService class]])
         {
             Secret1_DecryptedMessage_decryptedMessageService *concreteMessage = (Secret1_DecryptedMessage_decryptedMessageService *)desc;
-            self.unread = false;
+            //self.unread = false;
             
             if ([concreteMessage.action isKindOfClass:[Secret1_DecryptedMessageAction_decryptedMessageActionSetMessageTTL class]])
             {
@@ -783,7 +838,7 @@
         self.fromUid = fromUid;
         self.toUid = TGTelegraphInstance.clientUserId;
         self.date = date;
-        self.unread = true;
+        //self.unread = true;
         self.outgoing = false;
         self.cid = conversationId;
         
@@ -1041,7 +1096,7 @@
         else if ([desc isKindOfClass:[Secret17_DecryptedMessage_decryptedMessageService class]])
         {
             Secret17_DecryptedMessage_decryptedMessageService *concreteMessage = (Secret17_DecryptedMessage_decryptedMessageService *)desc;
-            self.unread = false;
+            //self.unread = false;
             
             if ([concreteMessage.action isKindOfClass:[Secret17_DecryptedMessageAction_decryptedMessageActionSetMessageTTL class]])
             {
@@ -1097,7 +1152,7 @@
         self.fromUid = fromUid;
         self.toUid = TGTelegraphInstance.clientUserId;
         self.date = date;
-        self.unread = true;
+        //self.unread = true;
         self.outgoing = false;
         self.cid = conversationId;
         
@@ -1355,7 +1410,7 @@
         else if ([desc isKindOfClass:[Secret20_DecryptedMessage_decryptedMessageService class]])
         {
             Secret20_DecryptedMessage_decryptedMessageService *concreteMessage = (Secret20_DecryptedMessage_decryptedMessageService *)desc;
-            self.unread = false;
+            //self.unread = false;
             
             if ([concreteMessage.action isKindOfClass:[Secret20_DecryptedMessageAction_decryptedMessageActionSetMessageTTL class]])
             {
@@ -1411,7 +1466,7 @@
         self.fromUid = fromUid;
         self.toUid = TGTelegraphInstance.clientUserId;
         self.date = date;
-        self.unread = true;
+        //self.unread = true;
         self.outgoing = false;
         self.cid = conversationId;
         
@@ -1687,7 +1742,7 @@
         else if ([desc isKindOfClass:[Secret23_DecryptedMessage_decryptedMessageService class]])
         {
             Secret23_DecryptedMessage_decryptedMessageService *concreteMessage = (Secret23_DecryptedMessage_decryptedMessageService *)desc;
-            self.unread = false;
+            //self.unread = false;
             
             if ([concreteMessage.action isKindOfClass:[Secret23_DecryptedMessageAction_decryptedMessageActionSetMessageTTL class]])
             {
@@ -1742,7 +1797,7 @@
         self.fromUid = fromUid;
         self.toUid = TGTelegraphInstance.clientUserId;
         self.date = date;
-        self.unread = true;
+        //self.unread = true;
         self.outgoing = false;
         self.cid = conversationId;
         
@@ -1985,7 +2040,7 @@
                                 Secret46_InputStickerSet_inputStickerSetShortName *concreteStickerSet = (Secret46_InputStickerSet_inputStickerSetShortName *)concreteAttribute.stickerset;
                                 reference = [[TGStickerPackShortnameReference alloc] initWithShortName:concreteStickerSet.shortName];
                             }
-                            [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:concreteAttribute.alt packReference:reference]];
+                            [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:concreteAttribute.alt packReference:reference mask:nil]];
                         } else if ([attributeDesc isKindOfClass:[Secret46_DocumentAttribute_documentAttributeVideo class]]) {
                             Secret46_DocumentAttribute_documentAttributeVideo *concreteAttribute = attributeDesc;
                             [attributes addObject:[[TGDocumentAttributeVideo alloc] initWithSize:CGSizeMake([concreteAttribute.w intValue], [concreteAttribute.h intValue]) duration:[concreteAttribute.duration intValue]]];
@@ -2166,7 +2221,7 @@
         else if ([desc isKindOfClass:[Secret46_DecryptedMessage_decryptedMessageService class]])
         {
             Secret46_DecryptedMessage_decryptedMessageService *concreteMessage = (Secret46_DecryptedMessage_decryptedMessageService *)desc;
-            self.unread = false;
+            //self.unread = false;
             
             if ([concreteMessage.action isKindOfClass:[Secret46_DecryptedMessageAction_decryptedMessageActionSetMessageTTL class]])
             {

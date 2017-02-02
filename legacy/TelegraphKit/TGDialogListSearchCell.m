@@ -9,6 +9,8 @@
 
 #import "TGStringUtils.h"
 
+#import "TGColor.h"
+
 @interface TGDialogListSearchCell ()
 {
     CALayer *_separatorLayer;
@@ -237,8 +239,10 @@
 {
     [super layoutSubviews];
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
-    _separatorLayer.frame = CGRectMake(65.0f, self.frame.size.height - separatorHeight, self.frame.size.width - 65.0f, separatorHeight);
+    if (_separatorLayer != nil) {
+        CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+        _separatorLayer.frame = CGRectMake(65.0f, self.frame.size.height - separatorHeight, self.frame.size.width - 65.0f, separatorHeight);
+    }
     
     CGRect frame = self.selectedBackgroundView.frame;
     frame.origin.y = true ? -1 : 0;
@@ -264,7 +268,7 @@
     
     int avatarWidth = 5 + 40;
     
-    CGSize titleSizeGeneric = CGSizeMake(viewSize.width - avatarWidth - 9 - 5 - leftPadding - rightPadding, _titleLabelFirst.font.lineHeight);
+    CGSize titleSizeGeneric = CGSizeMake(viewSize.width - avatarWidth - 21 - leftPadding - rightPadding, _titleLabelFirst.font.lineHeight);
     
     if (!_verifiedIcon.hidden) {
         titleSizeGeneric.width -= _verifiedIcon.bounds.size.width + 5.0f;
@@ -284,7 +288,9 @@
         if (!_titleLabelFirst.hidden)
         {
             _titleLabelFirst.frame = CGRectMake(avatarWidth + 21 + leftPadding, titleLabelsY, titleSizeGeneric.width, titleSizeGeneric.height);
-            _titleLabelSecond.frame = CGRectMake(avatarWidth + 21 + leftPadding + 5 + (int)([_titleLabelFirst.text sizeWithFont:_titleLabelFirst.font].width), titleLabelsY, titleSizeGeneric.width, titleSizeGeneric.height);
+            CGFloat firstWidth = (int)([_titleLabelFirst.text sizeWithFont:_titleLabelFirst.font].width) + 5;
+            CGFloat x = _titleLabelFirst.frame.origin.x + firstWidth;
+            _titleLabelSecond.frame = CGRectMake(x, titleLabelsY, titleSizeGeneric.width - firstWidth, titleSizeGeneric.height);
             
             titleWidth = CGCeil([_titleLabelFirst.text sizeWithFont:_titleLabelFirst.font].width) + CGCeil([_titleLabelSecond.text sizeWithFont:_titleLabelSecond.font].width);
         }
@@ -378,6 +384,28 @@
             [self.superview insertSubview:self atIndex:maxCellIndex];
         }
     }
+}
+
+- (UIView *)avatarSnapshotView
+{
+    return [_avatarView snapshotViewAfterScreenUpdates:false];
+}
+
+- (CGRect)avatarFrame
+{
+    CGRect frame = self.bounds;
+    frame.size.width = CGRectGetMaxX(_avatarView.frame) + _avatarView.frame.origin.x;
+    return frame;
+}
+
+- (CGRect)textContentFrame
+{
+    return self.bounds;
+//    CGRect frame = self.bounds;
+//    frame.origin.x = CGRectGetMaxX(_avatarView.frame) + _avatarView.frame.origin.x;
+//    frame.size.width -= frame.origin.x;
+//    
+//    return frame;
 }
 
 @end

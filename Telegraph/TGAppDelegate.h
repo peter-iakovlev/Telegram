@@ -12,14 +12,19 @@
 #import "TGMainTabsController.h"
 #import "TGDialogListController.h"
 #import "TGContactsController.h"
+#import "TGRecentCallsController.h"
 #import "TGAccountSettingsController.h"
 #import "TGRootController.h"
 #import "TGNotificationController.h"
 #import "TGKeyCommandController.h"
 
+#import "TGResetAccountState.h"
+
 #import "ActionStage.h"
 
 #import "TGHolderSet.h"
+
+#import "TGMessage.h"
 
 extern CFAbsoluteTime applicationStartupTimestamp;
 extern CFAbsoluteTime mainLaunchTimestamp;
@@ -29,7 +34,7 @@ extern TGAppDelegate *TGAppDelegateInstance;
 
 @class TGGlobalContext;
 
-@class TGStickerPack;
+@protocol TGStickerPackReference;
 
 extern NSString *TGDeviceProximityStateChangedNotification;
 
@@ -80,6 +85,9 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 
 @property (nonatomic) bool secretInlineBotsInitialized;
 
+@property (nonatomic) int callsDataUsageMode;
+@property (nonatomic) int showCallsTab;
+
 @property (nonatomic) int alwaysShowStickersMode;
 
 @property (nonatomic) bool useDifferentBackend;
@@ -105,7 +113,7 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 
 - (void)presentMainController;
 
-- (void)presentLoginController:(bool)clearControllerStates showWelcomeScreen:(bool)showWelcomeScreen phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram profileFirstName:(NSString *)profileFirstName profileLastName:(NSString *)profileLastName;
+- (void)presentLoginController:(bool)clearControllerStates animated:(bool)animated showWelcomeScreen:(bool)showWelcomeScreen phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram codeSentViaPhone:(bool)codeSentViaPhone profileFirstName:(NSString *)profileFirstName profileLastName:(NSString *)profileLastName resetAccountState:(TGResetAccountState *)resetAccountState;
 - (void)presentContentController:(UIViewController *)controller;
 - (void)dismissContentController;
 
@@ -114,7 +122,7 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 
 - (NSDictionary *)loadLoginState;
 - (void)resetLoginState;
-- (void)saveLoginStateWithDate:(int)date phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram firstName:(NSString *)firstName lastName:(NSString *)lastName photo:(NSData *)photo;
+- (void)saveLoginStateWithDate:(int)date phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram codeSentViaPhone:(bool)codeSentViaPhone firstName:(NSString *)firstName lastName:(NSString *)lastName photo:(NSData *)photo resetAccountState:(TGResetAccountState *)resetAccountState;
 
 - (NSArray *)classicAlertSoundTitles;
 - (NSArray *)modernAlertSoundTitles;
@@ -131,10 +139,12 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 - (void)resetControllerStack;
 
 - (void)handleOpenDocument:(NSURL *)url animated:(bool)animated;
+- (void)handleOpenDocument:(NSURL *)url animated:(bool)animated keepStack:(bool)keepStack;
 
-- (void)previewStickerPack:(TGStickerPack *)stickerPack currentStickerPacks:(NSArray *)currentStickerPacks;
+- (void)previewStickerPackWithReference:(id<TGStickerPackReference>)packReference;
 
 - (void)inviteBotToGroup:(TGUser *)user payload:(NSString *)payload;
+- (void)startGameInConversation:(NSString *)shortName user:(TGUser *)user;
 
 + (NSString *)documentsPath;
 + (NSString *)cachePath;

@@ -131,7 +131,7 @@
     } localCachedImageSignalGenerator:^SSignal *(CGSize size, CGSize renderSize, bool lowQuality)
     {
         return [self localCachedImageForVideoThumbnail:videoAttachment ofSize:size renderSize:renderSize lowQuality:lowQuality];
-    } lowQualityImagePath:genericThumbnailPath lowQualityImageUrl:[videoAttachment.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL] highQualityImageUrl:nil highQualityImageIdentifier:nil threadPool:threadPool memoryCache:memoryCache placeholder:nil];
+    } lowQualityImagePath:genericThumbnailPath lowQualityImageUrl:[videoAttachment.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL] highQualityImageUrl:nil highQualityImageIdentifier:nil threadPool:threadPool memoryCache:memoryCache placeholder:nil blurLowQuality:size.width > 40 || size.height > 40];
 }
 
 @end

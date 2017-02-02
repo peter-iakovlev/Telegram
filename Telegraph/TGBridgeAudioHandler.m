@@ -52,28 +52,30 @@
         
         SSignal *(^convertSignal)(NSURL *) = ^(NSURL *url)
         {
-            return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-            {
-                TGBridgeAudioDecoder *decoder = [[TGBridgeAudioDecoder alloc] initWithURL:url];
-                [decoder startWithCompletion:^(NSURL *result)
+            return [[server server] mapToSignal:^SSignal *(TGBridgeServer *server) {
+                return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
                 {
-                    NSURL *finalURL = [NSURL fileURLWithPath:[NSString stringWithFormat:@"%@.%@", result.lastPathComponent, @"m4a"] relativeToURL:server.temporaryFilesURL];
-                    [[NSFileManager defaultManager] moveItemAtURL:result toURL:finalURL error:nil];
+                    TGBridgeAudioDecoder *decoder = [[TGBridgeAudioDecoder alloc] initWithURL:url];
+                    [decoder startWithCompletion:^(NSURL *result)
+                    {
+                        NSURL *finalURL = [NSURL fileURLWithPath:[NSString stringWithFormat:@"%@.%@", result.lastPathComponent, @"m4a"] relativeToURL:server.temporaryFilesURL];
+                        [[NSFileManager defaultManager] moveItemAtURL:result toURL:finalURL error:nil];
+                        
+                        if (result != nil)
+                        {
+                            [subscriber putNext:finalURL];
+                            [subscriber putCompletion];
+                        }
+                        else
+                        {
+                            [subscriber putError:nil];
+                        }
+                    }];
                     
-                    if (result != nil)
+                    return [[SBlockDisposable alloc] initWithBlock:^
                     {
-                        [subscriber putNext:finalURL];
-                        [subscriber putCompletion];
-                    }
-                    else
-                    {
-                        [subscriber putError:nil];
-                    }
-                }];
-                
-                return [[SBlockDisposable alloc] initWithBlock:^
-                {
-                    [decoder stop];
+                        [decoder stop];
+                    }];
                 }];
             }];
         };
@@ -124,6 +126,8 @@
 
 + (void)handleIncomingAudioWithURL:(NSURL *)url metadata:(NSDictionary *)metadata server:(TGBridgeServer *)server
 {
+    [TGBridgeServer serverQueueIsCurrent];
+    
     int64_t uniqueId = [metadata[TGBridgeIncomingFileRandomIdKey] int64Value];
     int64_t peerId = [metadata[TGBridgeIncomingFilePeerIdKey] int64Value];
     int32_t replyToMid = [metadata[TGBridgeIncomingFileReplyToMidKey] int32Value];
@@ -134,79 +138,80 @@
     [[NSFileManager defaultManager] moveItemAtURL:url toURL:tempURL error:&error];
     
     NSString *signalKey = [[NSString alloc] initWithFormat:@"convertAudio_%lld", uniqueId];
-    [server startSignalForKey:signalKey producer:^SSignal *
-    {
-        SSignal *convertSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-        {
-            TGBridgeAudioEncoder *encoder = [[TGBridgeAudioEncoder alloc] initWithURL:tempURL];
-            [encoder startWithCompletion:^(TGDataItem *dataItem, int32_t duration, TGLiveUploadActorData *liveData)
+    [[[server server] onNext:^(TGBridgeServer *server) {
+        [server startSignalForKey:signalKey producer:^SSignal *{
+            SSignal *convertSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
             {
-                if (dataItem != nil)
+                TGBridgeAudioEncoder *encoder = [[TGBridgeAudioEncoder alloc] initWithURL:tempURL];
+                [encoder startWithCompletion:^(TGDataItem *dataItem, int32_t duration, TGLiveUploadActorData *liveData)
                 {
-                    NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
-                    result[@"dataItem"] = dataItem;
-                    result[@"duration"] = @(duration);
-                    if (liveData != nil)
-                        result[@"liveData"] = liveData;
-                    
-                    [subscriber putNext:result];
-                    [subscriber putCompletion];
-                }
-                else
-                {
-                    [subscriber putError:nil];
-                }
+                    if (dataItem != nil)
+                    {
+                        NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
+                        result[@"dataItem"] = dataItem;
+                        result[@"duration"] = @(duration);
+                        if (liveData != nil)
+                            result[@"liveData"] = liveData;
+                        
+                        [subscriber putNext:result];
+                        [subscriber putCompletion];
+                    }
+                    else
+                    {
+                        [subscriber putError:nil];
+                    }
+                }];
+                
+                return nil;
             }];
             
-            return nil;
-        }];
-        
-        return [convertSignal mapToSignal:^SSignal *(NSDictionary *result)
-        {
-            return [[TGSendAudioSignal sendAudioWithPeerId:peerId tempDataItem:result[@"dataItem"] liveData:result[@"liveData"] duration:[result[@"duration"] int32Value] localAudioId:uniqueId replyToMid:replyToMid] onNext:^(TGMessage *next)
+            return [convertSignal mapToSignal:^SSignal *(NSDictionary *result)
             {
-                for (TGMediaAttachment *attachment in next.mediaAttachments)
+                return [[TGSendAudioSignal sendAudioWithPeerId:peerId tempDataItem:result[@"dataItem"] liveData:result[@"liveData"] duration:[result[@"duration"] int32Value] localAudioId:uniqueId replyToMid:replyToMid] onNext:^(TGMessage *next)
                 {
-                    if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
+                    for (TGMediaAttachment *attachment in next.mediaAttachments)
                     {
-                        TGAudioMediaAttachment *audioAttachment = (TGAudioMediaAttachment *)attachment;
-                        if (audioAttachment.audioId != 0)
+                        if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
                         {
-                            TGBridgeMessage *bridgeMessage = [TGBridgeMessage messageWithTGMessage:next];
-                            for (TGBridgeMediaAttachment *bridgeAttachment in bridgeMessage.media)
+                            TGAudioMediaAttachment *audioAttachment = (TGAudioMediaAttachment *)attachment;
+                            if (audioAttachment.audioId != 0)
                             {
-                                if ([bridgeAttachment isKindOfClass:[TGBridgeAudioMediaAttachment class]])
+                                TGBridgeMessage *bridgeMessage = [TGBridgeMessage messageWithTGMessage:next conversation:nil];
+                                for (TGBridgeMediaAttachment *bridgeAttachment in bridgeMessage.media)
                                 {
-                                    TGBridgeAudioMediaAttachment *bridgeAudioAttachment = (TGBridgeAudioMediaAttachment *)bridgeAttachment;
-                                    bridgeAudioAttachment.localAudioId = uniqueId;
+                                    if ([bridgeAttachment isKindOfClass:[TGBridgeAudioMediaAttachment class]])
+                                    {
+                                        TGBridgeAudioMediaAttachment *bridgeAudioAttachment = (TGBridgeAudioMediaAttachment *)bridgeAttachment;
+                                        bridgeAudioAttachment.localAudioId = uniqueId;
+                                    }
                                 }
+                                
+                                [server putNext:bridgeMessage forKey:@"sentAudio"];
                             }
-                            
-                            [server putNext:bridgeMessage forKey:@"sentAudio"];
+                        }
+                        else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
+                        {
+                            TGDocumentMediaAttachment *documentAttachment = (TGDocumentMediaAttachment *)attachment;
+                            if (documentAttachment.documentId != 0)
+                            {
+                                TGBridgeMessage *bridgeMessage = [TGBridgeMessage messageWithTGMessage:next conversation:nil];
+                                for (TGBridgeMediaAttachment *bridgeAttachment in bridgeMessage.media)
+                                {
+                                    if ([bridgeAttachment isKindOfClass:[TGBridgeDocumentMediaAttachment class]])
+                                    {
+                                        TGBridgeDocumentMediaAttachment *bridgeDocumentAttachment = (TGBridgeDocumentMediaAttachment *)bridgeAttachment;
+                                        bridgeDocumentAttachment.localDocumentId = uniqueId;
+                                    }
+                                }
+                                
+                                [server putNext:bridgeMessage forKey:@"sentAudio"];
+                            }
                         }
                     }
-                    else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
-                    {
-                        TGDocumentMediaAttachment *documentAttachment = (TGDocumentMediaAttachment *)attachment;
-                        if (documentAttachment.documentId != 0)
-                        {
-                            TGBridgeMessage *bridgeMessage = [TGBridgeMessage messageWithTGMessage:next];
-                            for (TGBridgeMediaAttachment *bridgeAttachment in bridgeMessage.media)
-                            {
-                                if ([bridgeAttachment isKindOfClass:[TGBridgeDocumentMediaAttachment class]])
-                                {
-                                    TGBridgeDocumentMediaAttachment *bridgeDocumentAttachment = (TGBridgeDocumentMediaAttachment *)bridgeAttachment;
-                                    bridgeDocumentAttachment.localDocumentId = uniqueId;
-                                }
-                            }
-                            
-                            [server putNext:bridgeMessage forKey:@"sentAudio"];
-                        }
-                    }
-                }
+                }];
             }];
         }];
-    }];
+    }] startWithNext:nil];
 }
 
 @end

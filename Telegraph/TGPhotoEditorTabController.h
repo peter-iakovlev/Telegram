@@ -9,6 +9,7 @@
     UIView *_transitionView;
 }
 
+@property (nonatomic, weak) id<TGMediaEditableItem> item;
 @property (nonatomic, assign) TGPhotoEditorControllerIntent intent;
 @property (nonatomic, assign) CGFloat toolbarLandscapeSize;
 @property (nonatomic, assign) bool initialAppearance;
@@ -25,6 +26,12 @@
 @property (nonatomic, copy) void (^beginItemTransitionIn)(void);
 @property (nonatomic, copy) void (^beginItemTransitionOut)(void);
 
+@property (nonatomic, copy) void (^valuesChanged)(void);
+
+@property (nonatomic, assign) TGPhotoEditorTab availableTabs;
+
+@property (nonatomic, assign) TGPhotoEditorTab switchingToTab;
+
 - (void)transitionOutSwitching:(bool)switching completion:(void (^)(void))completion;
 - (void)transitionOutSaving:(bool)saving completion:(void (^)(void))completion;
 
@@ -33,12 +40,14 @@
 
 - (void)prepareForCustomTransitionOut;
 
+- (void)animateTransitionIn;
 - (CGRect)_targetFrameForTransitionInFromFrame:(CGRect)fromFrame;
 - (void)_animatePreviewViewTransitionOutToFrame:(CGRect)toFrame saving:(bool)saving parentView:(UIView *)parentView completion:(void (^)(void))completion;
 - (void)_finishedTransitionInWithView:(UIView *)transitionView;
 
 - (CGRect)transitionOutReferenceFrame;
 - (UIView *)transitionOutReferenceView;
+- (CGRect)transitionOutSourceFrameForReferenceFrame:(CGRect)referenceFrame orientation:(UIInterfaceOrientation)orientation;
 
 - (CGSize)referenceViewSize;
 
@@ -46,11 +55,13 @@
 
 - (id)currentResultRepresentation;
 
+- (void)handleTabAction:(TGPhotoEditorTab)tab;
+
 - (bool)isDismissAllowed;
 
-+ (CGRect)photoContainerFrameForParentViewFrame:(CGRect)parentViewFrame toolbarLandscapeSize:(CGFloat)toolbarLandscapeSize orientation:(UIInterfaceOrientation)orientation includePanel:(bool)includePanel;
++ (CGRect)photoContainerFrameForParentViewFrame:(CGRect)parentViewFrame toolbarLandscapeSize:(CGFloat)toolbarLandscapeSize orientation:(UIInterfaceOrientation)orientation panelSize:(CGFloat)panelSize;
 
-+ (TGPhotoEditorTab)highlightedButtonsForEditorValues:(id<TGMediaEditAdjustments>)editorValues forAvatar:(bool)forAvatar hasCaption:(bool)hasCaption;
++ (TGPhotoEditorTab)highlightedButtonsForEditorValues:(id<TGMediaEditAdjustments>)editorValues forAvatar:(bool)forAvatar;
 
 @end
 
