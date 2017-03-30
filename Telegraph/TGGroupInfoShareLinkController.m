@@ -29,6 +29,10 @@
 
 @implementation TGGroupInfoShareLinkController
 
+static NSString *updatedLink(NSString *link) {
+    return [link stringByReplacingOccurrencesOfString:@"https://telegram.me/" withString:@"https://t.me/"];
+}
+
 - (instancetype)initWithPeerId:(int64_t)peerId accessHash:(int64_t)accessHash currentLink:(NSString *)currentLink
 {
     self = [super init];
@@ -40,7 +44,7 @@
         self.title = TGLocalized(@"GroupInfo.InviteLink.Title");
         
         _linkItem = [[TGGroupInfoShareLinkLinkItem alloc] init];
-        _linkItem.text = currentLink;
+        _linkItem.text = updatedLink(currentLink);
         TGCollectionMenuSection *linkSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.InviteLink.LinkSection")],
             _linkItem,
@@ -121,7 +125,7 @@
 
 - (void)_setLink:(NSString *)link
 {
-    _linkItem.text = link;
+    _linkItem.text = updatedLink(link);
     
     [self.collectionLayout invalidateLayout];
     [self.collectionView layoutSubviews];

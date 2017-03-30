@@ -3,6 +3,6 @@
 
 @interface TGShareVideoConverter : NSObject
 
-+ (SSignal *)convertSignalForAVAsset:(AVAsset *)avAsset;
++ (SSignal *)convertAVAsset:(AVAsset *)avAsset;
 
 @end

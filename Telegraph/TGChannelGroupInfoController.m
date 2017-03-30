@@ -1084,7 +1084,7 @@ static const NSUInteger loadMoreMemberCount = 100;
         
         NSString *linkText = @"";
         if (_conversation.username.length != 0) {
-            linkText = [@"https://telegram.me/" stringByAppendingString:_conversation.username];
+            linkText = [@"https://t.me/" stringByAppendingString:_conversation.username];
         }
         if (!TGStringCompare(linkText, _linkItem.text)) {
             _linkItem.text = linkText;
@@ -1586,7 +1586,7 @@ static const NSUInteger loadMoreMemberCount = 100;
     __weak TGChannelGroupInfoController *weakSelf = self;
     if (_conversation.username.length != 0)
     {
-        NSString *linkString = [NSString stringWithFormat:@"https://telegram.me/%@", _conversation.username];
+        NSString *linkString = [NSString stringWithFormat:@"https://t.me/%@", _conversation.username];
         NSString *shareString = linkString;
 
         CGRect (^sourceRect)(void) = ^CGRect

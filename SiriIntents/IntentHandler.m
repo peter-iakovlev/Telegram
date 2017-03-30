@@ -40,7 +40,7 @@ static INPerson *personWithContact(CNContact *contact) {
     return [[INPerson alloc] initWithPersonHandle:[[INPersonHandle alloc] initWithValue:contact.identifier type:INPersonHandleTypeUnknown] nameComponents:nameComponents displayName:displayName image:nil contactIdentifier:contact.identifier customIdentifier:nil];
 }
 
-@interface IntentHandler () <INSendMessageIntentHandling> {
+@interface IntentHandler () <INSendMessageIntentHandling, INStartAudioCallIntentHandling> {
     SQueue *_queue;
     SVariable *_shareContext;
     SVariable *_database;
@@ -103,26 +103,40 @@ static INPerson *personWithContact(CNContact *contact) {
     return _sendMessageDisposable;
 }
 
-- (void)resolveRecipientsForSendMessage:(INSendMessageIntent *)intent withCompletion:(void (^)(NSArray<INPersonResolutionResult *> *resolutionResults))completion {
-    NSArray<INPerson *> *recipients = intent.recipients;
-    
+- (void)resolveRecipients:(NSArray<INPerson *> *)recipients withCompletion:(void (^)(NSArray<INPersonResolutionResult *> *resolutionResults))completion {
+    NSArray *initialRecipients = recipients;
     if (recipients.count == 0) {
         completion(@[[INPersonResolutionResult needsValue]]);
         return;
     } else if (recipients.count != 1) {
-        completion(@[[INPersonResolutionResult needsValue]]);
-        return;
+        NSMutableArray *filteredRecipients = [[NSMutableArray alloc] init];
+        for (INPerson *recipient in recipients) {
+            if (recipient.contactIdentifier.length > 0) {
+                [filteredRecipients addObject:recipient];
+                break;
+            }
+        }
+        
+        if (filteredRecipients.count > 1)
+        {
+            completion(@[[INPersonResolutionResult needsValue]]);
+            return;
+        }
+        else
+        {
+            recipients = filteredRecipients;
+        }
     }
     
-    bool allRecepientsAlreadyMatched = true;
+    bool allRecipientsAlreadyMatched = true;
     for (INPerson *recipient in recipients) {
         if (![recipient.customIdentifier hasPrefix:@"tg"]) {
-            allRecepientsAlreadyMatched = false;
+            allRecipientsAlreadyMatched = false;
             break;
         }
     }
     
-    if (allRecepientsAlreadyMatched && recipients.count != 0) {
+    if (allRecipientsAlreadyMatched && recipients.count != 0) {
         completion(@[[INPersonResolutionResult successWithResolvedPerson:recipients.firstObject]]);
         return;
     }
@@ -155,7 +169,11 @@ static INPerson *personWithContact(CNContact *contact) {
                 if (users.count == 0) {
                     return @[[INPersonResolutionResult unsupported]];
                 } else if (users.count == 1) {
-                    return @[[INPersonResolutionResult successWithResolvedPerson:personWithLegacyUser(users[0])]];
+                    NSMutableArray *results  = [[NSMutableArray alloc] init];
+                    [results addObject:[INPersonResolutionResult successWithResolvedPerson:personWithLegacyUser(users[0])]];
+                    for (NSInteger i = 0; i < initialRecipients.count - 1; i++)
+                        [results addObject:[INPersonResolutionResult notRequired]];
+                    return results;
                 } else {
                     NSMutableArray<INPerson *> *persons = [[NSMutableArray alloc] init];
                     for (TGLegacyUser *user in users) {
@@ -172,6 +190,10 @@ static INPerson *personWithContact(CNContact *contact) {
             completion(result);
         }];
     }]];
+}
+
+- (void)resolveRecipientsForSendMessage:(INSendMessageIntent *)intent withCompletion:(void (^)(NSArray<INPersonResolutionResult *> *resolutionResults))completion {
+    [self resolveRecipients:intent.recipients withCompletion:completion];
 }
 
 - (void)resolveContentForSendMessage:(INSendMessageIntent *)intent withCompletion:(void (^)(INStringResolutionResult *resolutionResult))completion {
@@ -219,6 +241,51 @@ static INPerson *personWithContact(CNContact *contact) {
         INSendMessageIntentResponse *response = [[INSendMessageIntentResponse alloc] initWithCode:INSendMessageIntentResponseCodeSuccess userActivity:userActivity];
         completion(response);
     }]];
+}
+
+#pragma mark - INStartAudioCallIntentHandling
+
+- (void)resolveContactsForStartAudioCall:(INStartAudioCallIntent *)intent withCompletion:(void (^)(NSArray<INPersonResolutionResult *> * _Nonnull))completion {
+    [self resolveRecipients:intent.contacts withCompletion:completion];
+}
+
+- (void)confirmStartAudioCall:(INStartAudioCallIntent *)intent completion:(void (^)(INStartAudioCallIntentResponse * _Nonnull))completion {
+    NSUserActivity *userActivity = [[NSUserActivity alloc] initWithActivityType:NSStringFromClass([INStartAudioCallIntent class])];
+    INStartAudioCallIntentResponse *response = [[INStartAudioCallIntentResponse alloc] initWithCode:INStartAudioCallIntentResponseCodeReady userActivity:userActivity];
+    completion(response);
+}
+
+- (void)handleStartAudioCall:(INStartAudioCallIntent *)intent completion:(void (^)(INStartAudioCallIntentResponse * _Nonnull))completion {
+    [[self sendMessageDisposable] setDisposable:[[[[[self shareContext] take:1] mapToSignal:^SSignal *(TGShareContext *context) {
+        INPerson *person = [[intent contacts] firstObject];
+        if (person != nil) {
+            NSMutableArray<TGUserModel *> *users = [[NSMutableArray alloc] init];
+            if ([person.customIdentifier hasPrefix:@"tg"]) {
+                NSRange underscoreRange = [person.customIdentifier rangeOfString:@"_"];
+                if (underscoreRange.location != NSNotFound) {
+                    int32_t userId = [[[person.customIdentifier substringToIndex:underscoreRange.location] substringFromIndex:2] intValue];
+                    int64_t accessHash = [[person.customIdentifier substringFromIndex:underscoreRange.location + underscoreRange.length] longLongValue];
+                    [users addObject:[[TGUserModel alloc] initWithUserId:userId accessHash:accessHash firstName:@"" lastName:@"" avatarLocation:nil]];
+                }
+            }
+            if (users.count != 0) {
+                return [SSignal single:users];
+            } else {
+                return [SSignal fail:nil];
+            }
+        } else {
+            return [SSignal fail:nil];
+        }
+    }] deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray<TGUserModel *> *next) {
+        NSUserActivity *userActivity = [[NSUserActivity alloc] initWithActivityType:NSStringFromClass([INStartAudioCallIntent class])];
+        userActivity.userInfo = @{ @"handle": [NSString stringWithFormat:@"TGCA%d", next.firstObject.userId] };
+        INStartAudioCallIntentResponse *response = [[INStartAudioCallIntentResponse alloc] initWithCode:INStartAudioCallIntentResponseCodeContinueInApp userActivity:userActivity];
+        completion(response);
+    } error:^(__unused id error) {
+        NSUserActivity *userActivity = [[NSUserActivity alloc] initWithActivityType:NSStringFromClass([INStartAudioCallIntent class])];
+        INStartAudioCallIntentResponse *response = [[INStartAudioCallIntentResponse alloc] initWithCode:INStartAudioCallIntentResponseCodeFailureRequiringAppLaunch userActivity:userActivity];
+        completion(response);
+    } completed:nil]];
 }
 
 - (NSArray<CNContact *> *)matchedNativeContacts:(NSString *)query {

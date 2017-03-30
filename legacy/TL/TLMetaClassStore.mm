@@ -50,6 +50,13 @@
 #import "TLPhoneCall$phoneCallDiscarded.h"
 #import "TLUpdate$updatePinnedDialogs.h"
 #import "TLMessageAction$messageActionPhoneCall.h"
+#import "TLInvoice$invoice.h"
+#import "TLMessageMedia$messageMediaInvoice.h"
+#import "TLpayments_PaymentForm$payments_paymentForm.h"
+#import "TLpayments_SavedInfo$payments_savedInfo.h"
+#import "TLPaymentRequestedInfo$paymentRequestedInfo.h"
+#import "TLPayments_PaymentCeceipt$payments_paymentReceipt.h"
+#import "TLpayments_ValidatedRequestedInfo$payments_validatedRequestedInfo.h"
 
 #import "TLDocumentAttributeSticker.h"
 
@@ -514,7 +521,7 @@ void TLMetaClassStore::mergeScheme(TLScheme *scheme)
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x66ffba14, [[TLDialog$dialog alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xfd8e711f, [[TLDraftMessage$draftMessage alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xdb74f558, [[TLChatInvite$chatInvite alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x3af6fb5f, [[TLConfig$config alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xcb601684, [[TLConfig$config alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xcd050916, [[TLauth_Authorization$auth_authorization alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x6319d612, [[TLDocumentAttributeSticker alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xbdf9653b, [[TLGame$game alloc] init]));
@@ -524,6 +531,13 @@ void TLMetaClassStore::mergeScheme(TLScheme *scheme)
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x50ca4de1, [[TLPhoneCall$phoneCallDiscarded alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xd8caf68d, [[TLUpdate$updatePinnedDialogs alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x80e11a7f, [[TLMessageAction$messageActionPhoneCall alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xc30aa358, [[TLInvoice$invoice alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x84551347, [[TLMessageMedia$messageMediaInvoice alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x3f56aea3, [[TLpayments_PaymentForm$payments_paymentForm alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xfb8fe43c, [[TLpayments_SavedInfo$payments_savedInfo alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x909c3f94, [[TLPaymentRequestedInfo$paymentRequestedInfo alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x500911e1, [[TLPayments_PaymentCeceipt$payments_paymentReceipt alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xd1451883, [[TLpayments_ValidatedRequestedInfo$payments_validatedRequestedInfo alloc] init]));
         
         {
             TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];

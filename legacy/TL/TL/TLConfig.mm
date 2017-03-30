@@ -38,7 +38,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xdac7e3ee;
+    return (int32_t)0x6cbca18d;
 }
 
 - (int32_t)TLconstructorName
@@ -77,6 +77,7 @@
     object.call_ring_timeout_ms = metaObject->getInt32((int32_t)0xa81b0ad3);
     object.call_connect_timeout_ms = metaObject->getInt32((int32_t)0x20390966);
     object.call_packet_timeout_ms = metaObject->getInt32((int32_t)0x18855e6);
+    object.me_url_prefix = metaObject->getString((int32_t)0xf0f97064);
     object.disabled_features = metaObject->getArray((int32_t)0x4f56c735);
     return object;
 }
@@ -250,6 +251,12 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.call_packet_timeout_ms;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x18855e6, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.me_url_prefix;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xf0f97064, value));
     }
     {
         TLConstructedValue value;

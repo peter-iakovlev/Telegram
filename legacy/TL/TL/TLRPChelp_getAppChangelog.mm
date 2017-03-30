@@ -3,14 +3,14 @@
 #import "../NSInputStream+TL.h"
 #import "../NSOutputStream+TL.h"
 
-#import "TLhelp_AppChangelog.h"
+#import "TLUpdates.h"
 
 @implementation TLRPChelp_getAppChangelog
 
 
 - (Class)responseClass
 {
-    return [TLhelp_AppChangelog class];
+    return [TLUpdates class];
 }
 
 - (int)impliedResponseSignature
@@ -20,7 +20,7 @@
 
 - (int)layerVersion
 {
-    return 33;
+    return 64;
 }
 
 - (int32_t)TLconstructorSignature
@@ -54,7 +54,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x5bab7fb2;
+    return (int32_t)0x9010ef6f;
 }
 
 - (int32_t)TLconstructorName
@@ -65,10 +65,7 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPChelp_getAppChangelog$help_getAppChangelog *object = [[TLRPChelp_getAppChangelog$help_getAppChangelog alloc] init];
-    object.device_model = metaObject->getString((int32_t)0x7baba117);
-    object.system_version = metaObject->getString((int32_t)0x18665337);
-    object.app_version = metaObject->getString((int32_t)0xe92d4c10);
-    object.lang_code = metaObject->getString((int32_t)0x2ccfcaf3);
+    object.prev_app_version = metaObject->getString((int32_t)0xb8b9e57a);
     return object;
 }
 
@@ -77,26 +74,8 @@
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.device_model;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7baba117, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.system_version;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x18665337, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.app_version;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe92d4c10, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.lang_code;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x2ccfcaf3, value));
+        value.nativeObject = self.prev_app_version;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xb8b9e57a, value));
     }
 }
 

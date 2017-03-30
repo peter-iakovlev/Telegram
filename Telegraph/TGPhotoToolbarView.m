@@ -65,7 +65,7 @@
     return self;
 }
 
-- (TGPhotoEditorButton *)buttonForTab:(TGPhotoEditorTab)editorTab
+- (TGPhotoEditorButton *)createButtonForTab:(TGPhotoEditorTab)editorTab
 {
     TGPhotoEditorButton *button = [[TGPhotoEditorButton alloc] initWithFrame:CGRectMake(0, 0, 28, 28)];
     button.tag = editorTab;
@@ -110,6 +110,11 @@
             button.dontHighlightOnSelection = true;
             break;
             
+        case TGPhotoEditorQualityTab:
+            button.iconImage = [TGPhotoEditorInterfaceAssets qualityIconForPreset:TGMediaVideoConversionPresetCompressedMedium];
+            button.dontHighlightOnSelection = true;
+            break;
+            
         default:
             button = nil;
             break;
@@ -138,19 +143,21 @@
         [view removeFromSuperview];
     
     if (_currentTabs & TGPhotoEditorCropTab)
-        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorCropTab]];
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorCropTab]];
     if (_currentTabs & TGPhotoEditorStickerTab)
-        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorStickerTab]];
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorStickerTab]];
     if (_currentTabs & TGPhotoEditorPaintTab)
-        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorPaintTab]];
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorPaintTab]];
     if (_currentTabs & TGPhotoEditorTextTab)
-        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorTextTab]];
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorTextTab]];
     if (_currentTabs & TGPhotoEditorToolsTab)
-        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorToolsTab]];
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorToolsTab]];
     if (_currentTabs & TGPhotoEditorRotateTab)
-        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorRotateTab]];
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorRotateTab]];
     if (_currentTabs & TGPhotoEditorGifTab)
-        [_buttonsWrapperView addSubview:[self buttonForTab:TGPhotoEditorGifTab]];
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorGifTab]];
+    if (_currentTabs & TGPhotoEditorQualityTab)
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorQualityTab]];
     
     [self setNeedsLayout];
     
@@ -274,6 +281,16 @@
 {
     for (TGPhotoEditorButton *button in _buttonsWrapperView.subviews)
         button.active = (buttons & button.tag);
+}
+
+- (TGPhotoEditorButton *)buttonForTab:(TGPhotoEditorTab)tab
+{
+    for (TGPhotoEditorButton *button in _buttonsWrapperView.subviews)
+    {
+        if (button.tag == tab)
+            return button;
+    }
+    return nil;
 }
 
 - (void)layoutSubviews

@@ -101,9 +101,9 @@
     
     [TGDatabaseInstance() updateCachedUserData:user.uid block:^TGCachedUserData *(TGCachedUserData *data) {
         if (data == nil) {
-            data = [[TGCachedUserData alloc] initWithAbout:nil groupsInCommonCount:0 groupsInCommon:nil supportsCalls:0];
+            data = [[TGCachedUserData alloc] initWithAbout:nil groupsInCommonCount:0 groupsInCommon:nil supportsCalls:0 callsPrivate:0];
         }
-        return [[data updateGroupsInCommonCount:userDesc.common_chats_count] updateSupportsCalls:userDesc.flags & (1 << 4)];
+        return [[[data updateGroupsInCommonCount:userDesc.common_chats_count] updateSupportsCalls:userDesc.flags & (1 << 4)] updateCallsPrivate:userDesc.flags & (1 << 5)];
     }];
     
     NSMutableDictionary *resultDict = [[NSMutableDictionary alloc] init];

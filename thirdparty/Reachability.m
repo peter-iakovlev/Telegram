@@ -55,7 +55,7 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
 	NSCAssert([(__bridge NSObject*) info isKindOfClass: [Reachability class]], @"info was wrong class in ReachabilityCallback");
 
     Reachability *reachability = (__bridge Reachability *)info;
-    if (reachability.reachabilityChanged != nil)
+    if ([reachability isKindOfClass:[Reachability class]] && reachability.reachabilityChanged != nil)
         reachability.reachabilityChanged(reachability.currentReachabilityStatus);
 }
 

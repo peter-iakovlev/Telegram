@@ -230,7 +230,7 @@
     
     UIImage *rawInputImage = [UIImage imageNamed:@"ModernAuthPhoneBackground.png"];
     _inputBackgroundView = [[UIImageView alloc] initWithImage:[rawInputImage stretchableImageWithLeftCapWidth:(int)(rawInputImage.size.width / 2) topCapHeight:(int)(rawInputImage.size.height / 2)]];
-    _inputBackgroundView.frame = CGRectMake(0.0f, _countryButton.frame.origin.y + 57.0f, screenSize.width, rawInputImage.size.height + TGRetinaPixel);
+    _inputBackgroundView.frame = CGRectMake(0.0f, _countryButton.frame.origin.y + 57.0f, screenSize.width, rawInputImage.size.height + TGScreenPixel);
     [self.view addSubview:_inputBackgroundView];
     
     _inputBackgroundView.userInteractionEnabled = true;
@@ -244,7 +244,7 @@
     _countryCodeField.keyboardType = UIKeyboardTypeNumberPad;
     _countryCodeField.delegate = self;
     _countryCodeField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
-    _countryCodeField.frame = CGRectMake(14.0f, _inputBackgroundView.frame.origin.y + 1.0f + TGRetinaPixel, 68.0f, 56.0f);
+    _countryCodeField.frame = CGRectMake(14.0f, _inputBackgroundView.frame.origin.y + 1.0f + TGScreenPixel, 68.0f, 56.0f);
     [self.view addSubview:_countryCodeField];
     
     _phoneField = [[TGBackspaceTextField alloc] init];
@@ -257,10 +257,10 @@
     _phoneField.placeholderColor = UIColorRGB(0xc7c7cd);
     _phoneField.placeholderFont = _phoneField.font;
     _phoneField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
-    _phoneField.frame = CGRectMake(96.0f, _inputBackgroundView.frame.origin.y + 1.0f + TGRetinaPixel, screenSize.width - 96.0f - 10.0f, 56.0f);
+    _phoneField.frame = CGRectMake(96.0f, _inputBackgroundView.frame.origin.y + 1.0f + TGScreenPixel, screenSize.width - 96.0f - 10.0f, 56.0f);
     [self.view addSubview:_phoneField];
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     _separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, _grayBackground.frame.size.height, _grayBackground.frame.size.width, separatorHeight)];
     _separatorView.backgroundColor = UIColorRGB(0xc8c7cc);
     [self.view addSubview:_separatorView];
@@ -504,9 +504,9 @@
     
     _inputBackgroundView.frame = CGRectMake(sideInset - (TGIsPad() ? 15.0f : 0.0f), _countryButton.frame.origin.y + 57.0f, screenSize.width - sideInset * 2.0f + (TGIsPad() ? 15.0f : 0.0f), _inputBackgroundView.frame.size.height);
     
-    _countryCodeField.frame = CGRectMake(14.0f + sideInset - (TGIsPad() ? 15.0f : 0.0f), _inputBackgroundView.frame.origin.y + 1.0f + TGRetinaPixel, 68.0f, 56.0f);
+    _countryCodeField.frame = CGRectMake(14.0f + sideInset - (TGIsPad() ? 15.0f : 0.0f), _inputBackgroundView.frame.origin.y + 1.0f + TGScreenPixel, 68.0f, 56.0f);
     
-    _phoneField.frame = CGRectMake(96.0f + sideInset - (TGIsPad() ? 15.0f : 0.0f), _inputBackgroundView.frame.origin.y + 1.0f + TGRetinaPixel, screenSize.width - 96.0f - 10.0f - sideInset * 2.0f, 56.0f);
+    _phoneField.frame = CGRectMake(96.0f + sideInset - (TGIsPad() ? 15.0f : 0.0f), _inputBackgroundView.frame.origin.y + 1.0f + TGScreenPixel, screenSize.width - 96.0f - 10.0f - sideInset * 2.0f, 56.0f);
 }
 
 - (void)setInProgress:(bool)inProgress

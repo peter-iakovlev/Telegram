@@ -198,7 +198,7 @@ static UIImage *plusImage() {
 {
     [super layoutSubviews];
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     
     CGRect frame = self.selectedBackgroundView.frame;
     frame.origin.y = true ? -1 : 0;

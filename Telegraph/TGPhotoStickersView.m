@@ -168,7 +168,7 @@ typedef enum {
         };
         [_wrapperView addSubview:_tabPanel];
         
-        CGFloat thickness = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat thickness = TGScreenPixel;
         _separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 0.0f, thickness)];
         _separatorView.backgroundColor = UIColorRGB(0xafb2b1);
         //[_wrapperView addSubview:_separatorView];
@@ -857,7 +857,7 @@ typedef enum {
     _collectionView.frame = CGRectMake(0.0f, -TGPhotoStickersPreloadInset + 8.0f, _collectionWrapperView.frame.size.width, _collectionWrapperView.frame.size.height + 2 * TGPhotoStickersPreloadInset);
     _headersView.frame = [_collectionWrapperView convertRect:_collectionView.frame toView:_wrapperView];
     
-    CGFloat thickness = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat thickness = TGScreenPixel;
     _separatorView.frame = CGRectMake(bounds.origin.x, bounds.origin.y + 143.0f - thickness, bounds.size.width, thickness);
 }
 

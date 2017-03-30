@@ -36,6 +36,8 @@
 
 @protocol TGStickerPackReference;
 
+@class TGPaymentFlow;
+
 extern NSInteger TGModernConversationControllerUnloadHistoryLimit;
 extern NSInteger TGModernConversationControllerUnloadHistoryThreshold;
 
@@ -58,6 +60,8 @@ typedef enum {
 @property (nonatomic) bool shouldOpenKeyboardOnce;
 
 @property (nonatomic) bool canOpenKeyboardWhileInTransition;
+
+@property (nonatomic, strong) TGPaymentFlow *paymentFlow;
 
 - (void)setInitialSnapshot:(CGImageRef)image backgroundView:(TGModernTemporaryView *)backgroundView viewStorage:(TGModernViewStorage *)viewStorage topEdge:(CGFloat)topEdge displayScrollDownButton:(bool)displayScrollDownButton;
 - (TGMessage *)latestVisibleMessage;

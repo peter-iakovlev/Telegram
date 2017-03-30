@@ -9,31 +9,18 @@
 
 @implementation TGServiceSignals
 
-+ (SSignal *)appChangelogMessage {
++ (SSignal *)appChangelogMessages:(NSString *)previousVersion {
     TLRPChelp_getAppChangelog$help_getAppChangelog *getAppChangelog = [[TLRPChelp_getAppChangelog$help_getAppChangelog alloc] init];
-    getAppChangelog.device_model = [TGTelegraphInstance currentDeviceModel];
-    getAppChangelog.system_version = [[UIDevice currentDevice] systemVersion];
-    NSString *versionString = [[NSString alloc] initWithFormat:@"%@ (%@)", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"], [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
+    /*NSString *versionString = [[NSString alloc] initWithFormat:@"%@ (%@)", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"], [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
     getAppChangelog.app_version = versionString;
-    getAppChangelog.lang_code = [[NSLocale preferredLanguages] objectAtIndex:0];
+    getAppChangelog.lang_code = [[NSLocale preferredLanguages] objectAtIndex:0];*/
+    getAppChangelog.prev_app_version = previousVersion;
     
-    return [[[TGTelegramNetworking instance] requestSignal:getAppChangelog] map:^id(TLhelp_AppChangelog *result) {
-        if ([result isKindOfClass:[TLhelp_AppChangelog$help_appChangelog class]]) {
-            TLhelp_AppChangelog$help_appChangelog *changelog = (TLhelp_AppChangelog$help_appChangelog *)result;
-            
-            NSMutableArray *mediaAttachments = [[NSMutableArray alloc] init];
-            if (changelog.entities.count != 0) {
-                NSArray *entities = [TGMessage parseTelegraphEntities:changelog.entities];
-                if (entities.count != 0) {
-                    TGMessageEntitiesAttachment *entitiesAttachment = [[TGMessageEntitiesAttachment alloc] init];
-                    entitiesAttachment.entities = entities;
-                    [mediaAttachments addObject:entitiesAttachment];
-                }
-            }
-            NSArray *parsedMedia = [TGMessage parseTelegraphMedia:changelog.media];
-            [mediaAttachments addObjectsFromArray:parsedMedia];
-            
-            return @{@"text": changelog.message, @"media": mediaAttachments};
+    return [[[TGTelegramNetworking instance] requestSignal:getAppChangelog] map:^id(TLUpdates *result) {
+        if ([result isKindOfClass:[TLUpdates$updates class]]) {
+            return ((TLUpdates$updates *)result).updates;
+        } else if ([result isKindOfClass:[TLUpdates$updateShort class]]) {
+            return @[((TLUpdates$updateShort *)result).update];
         } else {
             return nil;
         }

@@ -3,6 +3,7 @@
 @interface TGUsernameCollectionItemView : TGCollectionItemView
 
 @property (nonatomic, copy) void (^usernameChanged)(NSString *);
+@property (nonatomic, copy) void (^returnPressed)();
 
 - (void)setTitle:(NSString *)title;
 - (void)setPlaceholder:(NSString *)placeholder;
@@ -12,5 +13,7 @@
 - (void)setUsername:(NSString *)username;
 - (void)setUsernameValid:(bool)usernameValid;
 - (void)setUsernameChecking:(bool)usernameChecking;
+- (void)setMinimalInset:(CGFloat)minimalInset;
+- (void)setAutoCapitalize:(bool)autoCapitalize;
 
 @end

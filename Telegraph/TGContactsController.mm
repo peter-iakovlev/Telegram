@@ -562,7 +562,7 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
         [self.view addSubview:_navigationBarBackgroundView];
         
         UIView *stripeView = [[UIView alloc] init];
-        stripeView.frame = CGRectMake(0.0f, _navigationBarBackgroundView.frame.size.height - (TGIsRetina() ? 0.5f : 1.0f), screenSize.width, TGIsRetina() ? 0.5f : 1.0f);
+        stripeView.frame = CGRectMake(0.0f, _navigationBarBackgroundView.frame.size.height - TGScreenPixel, screenSize.width, TGScreenPixel);
         stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
         stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         [_navigationBarBackgroundView addSubview:stripeView];
@@ -1075,7 +1075,7 @@ static bool TGContactListSectionComparator(std::tr1::shared_ptr<TGContactListSec
             _inviteContainer = [[TGHighlightableButton alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height, self.view.frame.size.width, 46)];
             ((TGHighlightableButton *)_inviteContainer).normalBackgroundColor = UIColorRGB(0xf7f7f7);
             
-            UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _inviteContainer.frame.size.width, TGIsRetina() ? 0.5f : 1.0f)];
+            UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _inviteContainer.frame.size.width, TGScreenPixel)];
             separatorView.backgroundColor = TGSeparatorColor();
             [_inviteContainer addSubview:separatorView];
             
@@ -3357,7 +3357,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
     TGContactListSectionListHolder *holder = [[TGContactListSectionListHolder alloc] init];
     holder.sectionList = newSectionListTelegraph;
     
-    NSArray *newIndices = ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose) || ((_contactsMode & TGContactsModeCreateGroupOption) == TGContactsModeCreateGroupOption) || (_contactsMode & TGContactsModeCombineSections) ? [self generateIndices:newSectionListTelegraph] : nil;
+    NSArray *newIndices = ((_contactsMode & TGContactsModeCalls) == TGContactsModeCalls) || ((_contactsMode & TGContactsModeCompose) == TGContactsModeCompose) || ((_contactsMode & TGContactsModeCreateGroupOption) == TGContactsModeCreateGroupOption) || (_contactsMode & TGContactsModeCombineSections) ? [self generateIndices:newSectionListTelegraph] : nil;
     
     _selfUser = [TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId];
     

@@ -11,7 +11,7 @@
 
 @property (nonatomic, retain) TLInputUser *user_id;
 @property (nonatomic) int32_t random_id;
-@property (nonatomic, retain) NSData *g_a;
+@property (nonatomic, retain) NSData *g_a_hash;
 @property (nonatomic, retain) TLPhoneCallProtocol *protocol;
 
 - (Class)responseClass;

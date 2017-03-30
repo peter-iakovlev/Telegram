@@ -281,6 +281,18 @@
         if (_visibleItemsWithViews.count == 0 && _visibleTiles.count == 0) {
             _scrollView.contentOffset = CGPointMake(0.0f, -20.0f);
         }
+        if (_initialAnchor != nil) {
+            NSString *anchor = _initialAnchor;
+            _initialAnchor = nil;
+            if (anchor.length != 0) {
+                for (id<TGInstantPageLayoutItem> item in self->_currentLayout.items) {
+                    if ([item respondsToSelector:@selector(matchesAnchor:)] && [item matchesAnchor:anchor]) {
+                        [self->_scrollView setContentOffset:CGPointMake(0.0f, item.frame.origin.y) animated:false];
+                        break;
+                    }
+                }
+            }
+        }
         [self updateVisibleItems];
         
         [self updateNavigationBar];

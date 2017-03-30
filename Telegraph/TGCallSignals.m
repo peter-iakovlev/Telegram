@@ -13,6 +13,9 @@
 
 #import "TGCallContext.h"
 
+const int32_t TGCallMinLayer = 65;
+const int32_t TGCallMaxLayer = 65;
+
 @implementation TGCallSignals
 
 + (SSignal *)encryptionConfig {
@@ -54,6 +57,14 @@
     }];
 }
 
++ (TLPhoneCallProtocol$phoneCallProtocol *)protocol {
+    TLPhoneCallProtocol$phoneCallProtocol *phoneCallProtocol = [[TLPhoneCallProtocol$phoneCallProtocol alloc] init];
+    phoneCallProtocol.flags = (1 << 0) | (1 << 1);
+    phoneCallProtocol.min_layer = TGCallMinLayer;
+    phoneCallProtocol.max_layer = TGCallMaxLayer;
+    return phoneCallProtocol;
+}
+
 + (SSignal *)requestedOutgoingCallWithPeerId:(int64_t)peerId {
     return [[TGDatabaseInstance() modify:^id{
         return [TGTelegraphInstance createInputUserForUid:(int32_t)peerId];
@@ -82,49 +93,24 @@
             tmpG = NSSwapInt(tmpG);
             NSData *g = [[NSData alloc] initWithBytes:&tmpG length:4];
             
-            NSData *g_a = MTExp(g, aBytes, config.p);
-            
-            if (!MTCheckIsSafeGAOrB(g_a, config.p)) {
+            NSData *gA = MTExp(g, aBytes, config.p);
+            if (!MTCheckIsSafeGAOrB(gA, config.p)) {
                 return [SSignal fail:nil];
             }
             
-            requestCall.g_a = g_a;
-            
-            TLPhoneCallProtocol$phoneCallProtocol *phoneCallProtocol = [[TLPhoneCallProtocol$phoneCallProtocol alloc] init];
-            phoneCallProtocol.flags = (1 << 0) | (1 << 1);
-            phoneCallProtocol.min_layer = 60;
-            phoneCallProtocol.max_layer = 60;
-            requestCall.protocol = phoneCallProtocol;
+            NSData *gAHash = MTSha256(gA);
+            requestCall.g_a_hash = gAHash;
+            requestCall.protocol = [self protocol];
             
             return [[[TGTelegramNetworking instance] requestSignal:requestCall] mapToSignal:^SSignal *(TLphone_PhoneCall *result) {
                 if ([result.phone_call isKindOfClass:[TLPhoneCall$phoneCallWaitingMeta class]]) {
                     TLPhoneCall$phoneCallWaitingMeta *concreteCall = (TLPhoneCall$phoneCallWaitingMeta *)result.phone_call;
-                    return [SSignal single:[[TGCallWaitingContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id a:aBytes dhConfig:config receiveDate:concreteCall.receive_date]];
-                } else if ([result.phone_call isKindOfClass:[TLPhoneCall$phoneCall class]]) {
-                    TLPhoneCall$phoneCall *concreteCall = (TLPhoneCall$phoneCall *)result.phone_call;
-                    
-                    TGCallConnectionDescription *(^deserializeConnection)(id) = ^TGCallConnectionDescription *(id connection) {
-                        if ([connection isKindOfClass:[TLPhoneConnection$phoneConnection class]]) {
-                            TLPhoneConnection$phoneConnection *concreteConnection = (TLPhoneConnection$phoneConnection *)connection;
-                            return [[TGCallConnectionDescription alloc] initWithIdentifier:concreteConnection.n_id ipv4:concreteConnection.ip ipv6:concreteConnection.ipv6 port:concreteConnection.port peerTag:concreteConnection.peer_tag];
-                        }
-                        return nil;
-                    };
-                    
-                    TGCallConnectionDescription *defaultConnection = deserializeConnection(concreteCall.connection);
-                    NSMutableArray<TGCallConnectionDescription *> *alternativeConnections = [[NSMutableArray alloc] init];
-                    for (id connection in concreteCall.alternative_connections) {
-                        TGCallConnectionDescription *callConnection = deserializeConnection(connection);
-                        if (callConnection != nil)
-                            [alternativeConnections addObject:callConnection];
-                    }
-                    
-                    TGCallWaitingContext *waitingContext = [[TGCallWaitingContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id a:aBytes dhConfig:config receiveDate:0];
-                    TGCallAcceptedContext *callContext = [[TGCallAcceptedContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id gAOrB:concreteCall.g_a_or_b keyFingerprint:concreteCall.key_fingerprint defaultConnection:defaultConnection alternativeConnections:alternativeConnections];
-                    return [[SSignal single:waitingContext] then:[SSignal single:callContext]];
+                    return [SSignal single:[[TGCallWaitingContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id a:aBytes gA:gA dhConfig:config receiveDate:concreteCall.receive_date]];
                 } else if ([result.phone_call isKindOfClass:[TLPhoneCall$phoneCallDiscardedMeta class]]) {
                     TLPhoneCall$phoneCallDiscardedMeta *concreteCall = (TLPhoneCall$phoneCallDiscardedMeta *)result.phone_call;
-                    TGCallDiscardedContext *callContext = [[TGCallDiscardedContext alloc] initWithCallId:concreteCall.n_id reason:[TGCallDiscardReasonAdapter reasonForTLObject:concreteCall.reason]];
+                    bool needsRating = concreteCall.flags & (1 << 2);
+                    bool needsDebug = concreteCall.flags & (1 << 3);
+                    TGCallDiscardedContext *callContext = [[TGCallDiscardedContext alloc] initWithCallId:concreteCall.n_id reason:[TGCallDiscardReasonAdapter reasonForTLObject:concreteCall.reason] outside:true needsRating:needsRating needsDebug:needsDebug error:nil];
                     return [SSignal single:callContext];
                 } else {
                     return [SSignal fail:nil];
@@ -143,18 +129,35 @@
     discardCall.peer = inputPhoneCall;
     discardCall.reason = [TGCallDiscardReasonAdapter TLObjectForReason:reason];
     discardCall.duration = duration;
-    return [[[TGTelegramNetworking instance] requestSignal:discardCall] mapToSignal:^SSignal *(__unused id next) {
-        TGCallDiscardedContext *callContext = [[TGCallDiscardedContext alloc] initWithCallId:callId reason:reason];
+    return [[[TGTelegramNetworking instance] requestSignal:discardCall] mapToSignal:^SSignal *(TLUpdates$updates *updates) {
+        TLPhoneCall$phoneCallDiscardedMeta *concreteCall = nil;
+        NSMutableArray *otherUpdates = [[NSMutableArray alloc] init];
+        
+        for (TLUpdate *update in updates.updates)
+        {
+            if ([update isKindOfClass:[TLUpdate$updatePhoneCall class]])
+            {
+                TLUpdate$updatePhoneCall *callUpdate = (TLUpdate$updatePhoneCall *)update;
+                if ([callUpdate.phone_call isKindOfClass:[TLPhoneCall$phoneCallDiscardedMeta class]])
+                    concreteCall = (TLPhoneCall$phoneCallDiscardedMeta *)callUpdate.phone_call;
+            }
+            else
+            {
+                [otherUpdates addObject:update];
+            }
+        }
+        updates.updates = otherUpdates;
+        [[TGTelegramNetworking instance] addUpdates:updates];
+        
+        bool needsRating = concreteCall.flags & (1 << 2);
+        bool needsDebug = concreteCall.flags & (1 << 3);
+        TGCallDiscardedContext *callContext = [[TGCallDiscardedContext alloc] initWithCallId:callId reason:reason outside:false needsRating:needsRating needsDebug:needsDebug error:nil];
         return [SSignal single:callContext];
     }];
 }
 
-+ (SSignal *)receivedIncomingCallWithCallId:(int64_t)callId accessHash:(int64_t)accessHash date:(int32_t)date adminId:(int32_t)adminId participantId:(int32_t)participantId gA:(NSData *)gA {
++ (SSignal *)receivedIncomingCallWithCallId:(int64_t)callId accessHash:(int64_t)accessHash date:(int32_t)date adminId:(int32_t)adminId participantId:(int32_t)participantId gAHash:(NSData *)gAHash {
     return [[self encryptionConfig] mapToSignal:^SSignal *(TLmessages_DhConfig$messages_dhConfig *config) {
-        if (!MTCheckIsSafeGAOrB(gA, config.p)) {
-            return [SSignal fail:nil];
-        }
-        
         uint8_t bBytes[256];
         __unused int result = SecRandomCopyBytes(kSecRandomDefault, 256, bBytes);
         
@@ -162,29 +165,17 @@
             uint8_t currentByte = ((uint8_t *)config.random.bytes)[i];
             bBytes[i] ^= currentByte;
         }
-        
         NSData *b = [[NSData alloc] initWithBytes:bBytes length:256];
         
         int32_t tmpG = config.g;
         tmpG = NSSwapInt(tmpG);
         NSData *g = [[NSData alloc] initWithBytes:&tmpG length:4];
         
-        NSData *gBBytes = MTExp(g, b, config.p);
-        
-        NSMutableData *key = [MTExp(gA, b, config.p) mutableCopy];
-        
-        if (key.length > 256) {
-            [key replaceBytesInRange:NSMakeRange(0, 1) withBytes:NULL length:1];
-        } while (key.length < 256) {
-            uint8_t zero = 0;
-            [key replaceBytesInRange:NSMakeRange(0, 0) withBytes:&zero length:1];
+        NSData *gB = MTExp(g, b, config.p);
+        if (!MTCheckIsSafeGAOrB(gB, config.p)) {
+            return [SSignal fail:nil];
         }
-        
-        NSData *keyHash = MTSha1(key);
-        NSData *nKeyId = [[NSData alloc] initWithBytes:(((uint8_t *)keyHash.bytes) + keyHash.length - 8) length:8];
-        int64_t keyId = 0;
-        [nKeyId getBytes:&keyId length:8];
-        
+
         TLRPCphone_receivedCall$phone_receivedCall *receivedCall = [[TLRPCphone_receivedCall$phone_receivedCall alloc] init];
         TLInputPhoneCall$inputPhoneCall *inputPhoneCall = [[TLInputPhoneCall$inputPhoneCall alloc] init];
         inputPhoneCall.n_id = callId;
@@ -192,27 +183,48 @@
         receivedCall.peer = inputPhoneCall;
 
         return [[[TGTelegramNetworking instance] requestSignal:receivedCall] mapToSignal:^SSignal *(__unused id next) {
-            return [SSignal single:[[TGCallReceivedContext alloc] initWithCallId:callId accessHash:accessHash date:date adminId:adminId participantId:participantId gAOrB:gBBytes key:key keyFingerprint:keyId]];
+            return [SSignal single:[[TGCallReceivedContext alloc] initWithCallId:callId accessHash:accessHash date:date adminId:adminId participantId:participantId dhConfig:config b:b gB:gB gAHash:gAHash]];
         }];
     }];
 }
 
-+ (SSignal *)acceptedIncomingCallWithCallId:(int64_t)callId accessHash:(int64_t)accessHash key:(NSData *)key gBBytes:(NSData *)gBBytes keyId:(int64_t)keyId {
++ (SSignal *)acceptedIncomingCallWithCallId:(int64_t)callId accessHash:(int64_t)accessHash dhConfig:(id)dhConfig bBytes:(NSData *)bBytes gBBytes:(NSData *)gBBytes gAHash:(NSData *)gAHash {
     TLRPCphone_acceptCall$phone_acceptCall *acceptCall = [[TLRPCphone_acceptCall$phone_acceptCall alloc] init];
     TLInputPhoneCall$inputPhoneCall *inputPhoneCall = [[TLInputPhoneCall$inputPhoneCall alloc] init];
     inputPhoneCall.n_id = callId;
     inputPhoneCall.access_hash = accessHash;
     acceptCall.peer = inputPhoneCall;
     acceptCall.g_b = gBBytes;
-    acceptCall.key_fingerprint = keyId;
-    
-    TLPhoneCallProtocol$phoneCallProtocol *phoneCallProtocol = [[TLPhoneCallProtocol$phoneCallProtocol alloc] init];
-    phoneCallProtocol.flags = (1 << 0) | (1 << 1);
-    phoneCallProtocol.min_layer = 60;
-    phoneCallProtocol.max_layer = 60;
-    acceptCall.protocol = phoneCallProtocol;
+    acceptCall.protocol = [self protocol];
     
     return [[[TGTelegramNetworking instance] requestSignal:acceptCall] mapToSignal:^SSignal *(TLphone_PhoneCall *result) {
+        if ([result.phone_call isKindOfClass:[TLPhoneCall$phoneCallWaitingMeta class]]) {
+            TLPhoneCall$phoneCallWaitingMeta *concreteCall = (TLPhoneCall$phoneCallWaitingMeta *)result.phone_call;
+            TGCallWaitingConfirmContext *callContext = [[TGCallWaitingConfirmContext alloc] initWithCallId:callId accessHash:accessHash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id b:bBytes gAHash:gAHash dhConfig:dhConfig receiveDate:concreteCall.receive_date];
+            return [SSignal single:callContext];
+        } else if ([result.phone_call isKindOfClass:[TLPhoneCall$phoneCallDiscardedMeta class]]) {
+            TLPhoneCall$phoneCallDiscardedMeta *concreteCall = (TLPhoneCall$phoneCallDiscardedMeta *)result.phone_call;
+            bool needsRating = concreteCall.flags & (1 << 2);
+            bool needsDebug = concreteCall.flags & (1 << 3);
+            TGCallDiscardedContext *callContext = [[TGCallDiscardedContext alloc] initWithCallId:concreteCall.n_id reason:[TGCallDiscardReasonAdapter reasonForTLObject:concreteCall.reason] outside:true needsRating:needsRating needsDebug:needsDebug error:nil];
+            return [SSignal single:callContext];
+        } else {
+            return [SSignal fail:nil];
+        }
+    }];
+}
+
++ (SSignal *)confirmedCallWithCallId:(int64_t)callId accessHash:(int64_t)accessHash key:(NSData *)key gABytes:(NSData *)gABytes keyId:(int64_t)keyId {
+    TLRPCphone_confirmCall$phone_confirmCall *confirmCall = [[TLRPCphone_confirmCall$phone_confirmCall alloc] init];
+    TLInputPhoneCall$inputPhoneCall *inputPhoneCall = [[TLInputPhoneCall$inputPhoneCall alloc] init];
+    inputPhoneCall.n_id = callId;
+    inputPhoneCall.access_hash = accessHash;
+    confirmCall.peer = inputPhoneCall;
+    confirmCall.g_a = gABytes;
+    confirmCall.key_fingerprint = keyId;
+    confirmCall.protocol = [self protocol];
+    
+    return [[[TGTelegramNetworking instance] requestSignal:confirmCall] mapToSignal:^SSignal *(TLphone_PhoneCall *result) {
         if ([result.phone_call isKindOfClass:[TLPhoneCall$phoneCall class]]) {
             TLPhoneCall$phoneCall *concreteCall = (TLPhoneCall$phoneCall *)result.phone_call;
             
@@ -231,12 +243,48 @@
                 if (callConnection != nil)
                     [alternativeConnections addObject:callConnection];
             }
-
+            
             return [SSignal single:[[TGCallOngoingContext alloc] initWithCallId:callId accessHash:accessHash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id key:key keyFingerprint:keyId defaultConnection:defaultConnection alternativeConnections:alternativeConnections]];
+        }
+        else if ([result.phone_call isKindOfClass:[TLPhoneCall$phoneCallDiscardedMeta class]]) {
+            TLPhoneCall$phoneCallDiscardedMeta *concreteCall = (TLPhoneCall$phoneCallDiscardedMeta *)result.phone_call;
+            bool needsRating = concreteCall.flags & (1 << 2);
+            bool needsDebug = concreteCall.flags & (1 << 3);
+            TGCallDiscardedContext *callContext = [[TGCallDiscardedContext alloc] initWithCallId:concreteCall.n_id reason:[TGCallDiscardReasonAdapter reasonForTLObject:concreteCall.reason] outside:true needsRating:needsRating needsDebug:needsDebug error:nil];
+            return [SSignal single:callContext];
         } else {
             return [SSignal fail:nil];
         }
     }];
+}
+
++ (SSignal *)reportCallRatingWithCallId:(int64_t)callId accessHash:(int64_t)accessHash rating:(int32_t)rating comment:(NSString *)comment {
+    TLRPCphone_setCallRating$phone_setCallRating *setCallRating = [[TLRPCphone_setCallRating$phone_setCallRating alloc] init];
+    TLInputPhoneCall$inputPhoneCall *inputCall;
+    inputCall.n_id = callId;
+    inputCall.access_hash = accessHash;
+    setCallRating.peer = inputCall;
+    setCallRating.rating = rating;
+    setCallRating.comment = comment;
+    return [[TGTelegramNetworking instance] requestSignal:setCallRating];
+}
+
++ (SSignal *)serverCallsConfig {
+    return [[[TGTelegramNetworking instance] requestSignal:[[TLRPCphone_getCallConfig$phone_getCallConfig alloc] init]] map:^id(TLDataJSON *result) {
+        return result.data;
+    }];
+}
+
++ (SSignal *)saveCallDebug:(int64_t)callId accessHash:(int64_t)accessHash data:(NSString *)data {
+    TLRPCphone_saveCallDebug$phone_saveCallDebug *saveCallDebug = [[TLRPCphone_saveCallDebug$phone_saveCallDebug alloc] init];
+    TLInputPhoneCall$inputPhoneCall *inputCall;
+    inputCall.n_id = callId;
+    inputCall.access_hash = accessHash;
+    saveCallDebug.peer = inputCall;
+    TLDataJSON$dataJSON *dataJson = [[TLDataJSON$dataJSON alloc] init];
+    dataJson.data = data;
+    saveCallDebug.debug = dataJson;
+    return [[TGTelegramNetworking instance] requestSignal:saveCallDebug];
 }
 
 @end

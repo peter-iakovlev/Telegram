@@ -478,15 +478,20 @@
 
 - (void)navigateToProfileOfUser:(int)uid encryptedConversationId:(int64_t)encryptedConversationId
 {
-    [self navigateToProfileOfUser:uid preferNativeContactId:0 encryptedConversationId:encryptedConversationId];
+    [self navigateToProfileOfUser:uid preferNativeContactId:0 encryptedConversationId:encryptedConversationId callMessages:nil];
+}
+
+- (void)navigateToProfileOfUser:(int)uid callMessages:(NSArray *)callMessages
+{
+    [self navigateToProfileOfUser:uid preferNativeContactId:0 encryptedConversationId:0 callMessages:callMessages];
 }
 
 - (void)navigateToProfileOfUser:(int)uid preferNativeContactId:(int)preferNativeContactId
 {
-    [self navigateToProfileOfUser:uid preferNativeContactId:preferNativeContactId encryptedConversationId:0];
+    [self navigateToProfileOfUser:uid preferNativeContactId:preferNativeContactId encryptedConversationId:0 callMessages:nil];
 }
 
-- (void)navigateToProfileOfUser:(int)uid preferNativeContactId:(int)__unused preferNativeContactId encryptedConversationId:(int64_t)encryptedConversationId
+- (void)navigateToProfileOfUser:(int)uid preferNativeContactId:(int)__unused preferNativeContactId encryptedConversationId:(int64_t)encryptedConversationId callMessages:(NSArray *)callMessages
 {
     if (encryptedConversationId == 0)
     {
@@ -499,7 +504,7 @@
         }
         else
         {
-            TGTelegraphUserInfoController *userInfoController = [[TGTelegraphUserInfoController alloc] initWithUid:uid];
+            TGTelegraphUserInfoController *userInfoController = [[TGTelegraphUserInfoController alloc] initWithUid:uid callMessages:callMessages];
             [TGAppDelegateInstance.rootController pushContentController:userInfoController];
         }
     }
@@ -563,9 +568,15 @@
                 if ([window isKindOfClass:[TGOverlayControllerWindow class]] && window != _notificationController.window)
                 {
                     TGOverlayController *controller = (TGOverlayController *)window.rootViewController;
-                    [controller dismiss];
-                    animated = false;
-                    break;
+                    if ([controller isKindOfClass:[TGCallController class]])
+                    {
+                        [(TGCallController *)controller minimize];
+                    }
+                    else
+                    {
+                        [controller dismiss];
+                        animated = false;
+                    }
                 }
             }
             
@@ -751,11 +762,18 @@
         if (strongSelf == nil || ![next respondsToSelector:@selector(intValue)])
             return;
         
-        [strongSelf presentCallWithSession:[TGTelegraphInstance.callManager sessionForIncomingCallWithInternalId:next]];
+        [strongSelf presentCallWithSessionInitializer:^TGCallSession *{
+            return [TGTelegraphInstance.callManager sessionForIncomingCallWithInternalId:next];
+        } completion:nil];
     }]];
 }
 
 - (void)callPeerWithId:(int64_t)peerId
+{
+    [self callPeerWithId:peerId completion:nil];
+}
+
+- (void)callPeerWithId:(int64_t)peerId completion:(void (^)(void))completion
 {
     if (peerId == 0)
         return;
@@ -768,6 +786,7 @@
         if (!granted)
             return;
         
+        TGCallController *currentCallController = nil;
         for (TGOverlayControllerWindow *window in TGAppDelegateInstance.rootController.associatedWindowStack)
         {
             if ([window.rootViewController isKindOfClass:[TGCallController class]])
@@ -778,28 +797,97 @@
                     [callController presentController];
                     return;
                 }
+                
+                currentCallController = callController;
             }
         }
         
-        [self presentCallWithSession:[TGTelegraphInstance.callManager sessionForOutgoingCallWithPeerId:peerId]];
+        void (^actionBlock)(void) = ^
+        {
+            [self presentCallWithSessionInitializer:^TGCallSession *{
+                return [TGTelegraphInstance.callManager sessionForOutgoingCallWithPeerId:peerId];
+            } completion:completion];
+        };
+        
+        if (currentCallController != nil)
+        {
+            TGUser *newUser = [TGDatabaseInstance() loadUser:(int)peerId];
+            NSString *message = [NSString stringWithFormat:TGLocalized(@"Call.CallInProgressMessage"), currentCallController.peer.displayName, newUser.displayName];
+           
+            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.CallInProgressTitle") message:message cancelButtonTitle:TGLocalized(@"Common.No") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:
+            ^(bool okButtonPressed)
+            {
+                if (okButtonPressed)
+                {
+                    [[UIApplication sharedApplication] beginIgnoringInteractionEvents];
+                    [currentCallController hangUpCallWithCompletion:^
+                    {
+                        actionBlock();
+                        TGDispatchOnMainThread(^
+                        {
+                            [[UIApplication sharedApplication] endIgnoringInteractionEvents];
+                        });
+                    }];
+                }
+            }] show];
+        }
+        else
+        {
+            if ([TGCallUtils isOnPhoneCall])
+            {
+                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.CallInProgressTitle") message:TGLocalized(@"Call.PhoneCallInProgressMessage") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            }
+            else
+            {
+                actionBlock();
+            }
+        }
     }];
 }
 
-- (void)presentCallWithSession:(TGCallSession *)session
+- (void)dismissAllCalls
+{
+    for (TGOverlayControllerWindow *window in TGAppDelegateInstance.rootController.associatedWindowStack)
+    {
+        if ([window.rootViewController isKindOfClass:[TGCallController class]])
+        {
+            TGCallController *callController = (TGCallController *)window.rootViewController;
+            [callController hangUpCall];
+        }
+    }
+}
+
+- (void)presentCallWithSessionInitializer:(TGCallSession *(^)(void))sessionInitializer completion:(void (^)(void))completion
 {
     [[[TGCallUtils networkTypeSignal] take:1] startWithNext:^(NSNumber *next)
     {
+        for (UIWindow *window in [UIApplication sharedApplication].windows)
+        {
+            if ([window.rootViewController isKindOfClass:[TGCallAlertViewController class]])
+            {
+                if ([window isKindOfClass:[TGOverlayControllerWindow class]])
+                    [(TGOverlayControllerWindow *)window dismiss];
+            }
+        }
+        
         if (next.integerValue == TGCallNetworkTypeNone)
         {
             [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.ConnectionErrorTitle") message:TGLocalized(@"Call.ConnectionErrorMessage") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
         }
         else
         {
+            TGCallSession *session = sessionInitializer();
+            if (session == nil)
+                return;
+            
             TGCallController *controller = [[TGCallController alloc] initWithSession:session];
-            controller.onDismissBlock = ^
+            if (completion != nil)
             {
-                [TGAppDelegateInstance.rootController.callStatusBarView setSignal:[SSignal single:nil]];
-            };
+                controller.onTransitionIn = ^
+                {
+                    completion();
+                };
+            }
             
             TGCallControllerWindow *controllerWindow = [[TGCallControllerWindow alloc] initWithParentController:TGAppDelegateInstance.rootController contentController:controller];
             controllerWindow.hidden = false;
@@ -824,23 +912,14 @@
     }];
 }
 
-- (void)maybeDisplayCallTabAlert
+- (void)maybeDisplayCallsTabAlert
 {
-    return;
-    
-    if (TGAppDelegateInstance.showCallsTab)
-        return;
-    
     UIImageView *imageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"CallsTabBarInfo"]];
     [TGCallAlertView presentAlertWithTitle:TGLocalized(@"Calls.CallTabTitle") message:TGLocalized(@"Calls.CallTabDescription") customView:imageView cancelButtonTitle:TGLocalized(@"Calls.NotNow") doneButtonTitle:TGLocalized(@"Calls.AddTab") completionBlock:^(bool done)
     {
-         if (!done)
-             return;
-        
-        TGAppDelegateInstance.showCallsTab = true;
-        [TGAppDelegateInstance saveSettings];
-        
-        [TGAppDelegateInstance.rootController.mainTabsController setCallsHidden:false animated:true];
+        TGAppDelegateInstance.showCallsTab = done;
+        if (done)
+            [TGAppDelegateInstance.rootController.mainTabsController setCallsHidden:false animated:true];
     }];
 }
 

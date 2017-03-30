@@ -20,7 +20,6 @@ typedef void(^MLAnimationCompletionBlock)(BOOL finished);
 
 @interface TGMarqueeLabel()
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000
-// iOS 10 SDK has CAAnimationDelegate a formal protocol
 <CAAnimationDelegate>
 #endif
 {
@@ -107,19 +106,15 @@ CGPoint MLOffsetCGPoint(CGPoint point, CGFloat offset);
 - (void)minimizeLabelFrameWithMaximumSize:(CGSize)maxSize adjustHeight:(BOOL)adjustHeight
 {
     if (self.internalLabel.text != nil) {
-        // Calculate text size
         if (CGSizeEqualToSize(maxSize, CGSizeZero)) {
             maxSize = CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX);
         }
         CGSize minimumLabelSize = [self subLabelSize];
         
-        // Adjust for fade length
         CGSize minimumSize = CGSizeMake(minimumLabelSize.width + (self.fadeLength * 2), minimumLabelSize.height);
         
-        // Find minimum size of options
         minimumSize = CGSizeMake(MIN(minimumSize.width, maxSize.width), MIN(minimumSize.height, maxSize.height));
         
-        // Apply to frame
         self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, minimumSize.width, (adjustHeight ? minimumSize.height : self.frame.size.height));
     }
 }

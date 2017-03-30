@@ -19,10 +19,11 @@
 
 @implementation TGCallConnection
 
-- (instancetype)initWithKey:(NSData *)key defaultConnection:(TGCallConnectionDescription *)defaultConnection alternativeConnections:(NSArray<TGCallConnectionDescription *> *)alternativeConnections {
+- (instancetype)initWithKey:(NSData *)key keyHash:(NSData *)keyHash defaultConnection:(TGCallConnectionDescription *)defaultConnection alternativeConnections:(NSArray<TGCallConnectionDescription *> *)alternativeConnections {
     self = [super init];
     if (self != nil) {
         _key = key;
+        _keyHash = keyHash;
         _defaultConnection = defaultConnection;
         _alternativeConnections = alternativeConnections;
     }

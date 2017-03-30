@@ -225,7 +225,7 @@
     
     _backgroundView.frame = CGRectMake(0.0f, 0.0f, bounds.width, bounds.height + 210.0f);
     
-    _topSeparatorView.frame = CGRectMake(0.0f, 0.0f, bounds.width, TGIsRetina() ? 0.5f : 1.0f);
+    _topSeparatorView.frame = CGRectMake(0.0f, 0.0f, bounds.width, TGScreenPixel);
     
     _scrollView.frame = CGRectMake(0.0f, 0.0f, bounds.width, bounds.height);
     

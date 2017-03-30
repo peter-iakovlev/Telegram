@@ -127,6 +127,13 @@ typedef enum {
         switch (commonType)
         {
             case TGCommonMediaTypeTexts:
+                for (id media in ((TGMessage *)messages[0]).mediaAttachments) {
+                    if ([media isKindOfClass:[TGInvoiceMediaAttachment class]]) {
+                        return ((TGInvoiceMediaAttachment *)media).title;
+                    } else if ([media isKindOfClass:[TGGameMediaAttachment class]]) {
+                        return ((TGGameMediaAttachment *)media).title;
+                    }
+                }
                 return ((TGMessage *)messages[0]).text;
             case TGCommonMediaTypeFiles:
             {

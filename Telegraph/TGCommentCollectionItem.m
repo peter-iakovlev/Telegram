@@ -74,7 +74,11 @@
     return self;
 }
 
-+ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing
++ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing {
+    return [self attributedStringFromText:text allowFormatting:allowFormatting paragraphSpacing:paragraphSpacing alignment:NSTextAlignmentNatural fontSize:14.0f];
+}
+
++ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing alignment:(NSTextAlignment)alignment fontSize:(CGFloat)fontSize
 {
     if (text.length == 0)
         return [[NSAttributedString alloc] initWithString:@"" attributes:nil];
@@ -124,15 +128,13 @@
     style.lineSpacing = 2;
     style.paragraphSpacing = paragraphSpacing;
     style.lineBreakMode = NSLineBreakByWordWrapping;
-    style.alignment = NSTextAlignmentLeft;
+    style.alignment = alignment;
 
-    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:cleanText attributes:@
-    {
-    }];
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:cleanText attributes:@{}];
     
-    [attributedString addAttributes:@{NSParagraphStyleAttributeName: style, NSFontAttributeName: TGSystemFontOfSize(14.0f)} range:NSMakeRange(0, attributedString.length)];
+    [attributedString addAttributes:@{NSParagraphStyleAttributeName: style, NSFontAttributeName: TGSystemFontOfSize(fontSize)} range:NSMakeRange(0, attributedString.length)];
 
-    NSDictionary *boldAttributes = @{NSFontAttributeName: TGBoldSystemFontOfSize(14.0f)};
+    NSDictionary *boldAttributes = @{NSFontAttributeName: TGBoldSystemFontOfSize(fontSize)};
     for (NSValue *nRange in boldRanges)
     {
         [attributedString addAttributes:boldAttributes range:[nRange rangeValue]];

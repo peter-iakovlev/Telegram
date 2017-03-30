@@ -10,10 +10,12 @@
 @property (nonatomic, readonly) CGFloat defaultValue;
 @property (nonatomic, readonly) CGFloat minimumValue;
 @property (nonatomic, readonly) CGFloat maximumValue;
+@property (nonatomic, readonly) bool segmented;
 
 @property (nonatomic, strong) id value;
 @property (nonatomic, strong) id tempValue;
 @property (nonatomic, readonly) id displayValue;
+@property (nonatomic, readonly) NSString *stringValue;
 
 @property (nonatomic, readonly) bool shouldBeSkipped;
 @property (nonatomic, assign) bool beingEdited;

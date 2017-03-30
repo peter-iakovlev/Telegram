@@ -146,7 +146,7 @@
     CGFloat scaling = 1.0f;
     if (UIInterfaceOrientationIsPortrait(_orientation))
     {
-        CGFloat rtlOffset = -23.0f - TGRetinaPixel;
+        CGFloat rtlOffset = -23.0f;
         if (TGAppDelegateInstance.rootController.isRTL) {
             rtlOffset = 10.0f;
         }

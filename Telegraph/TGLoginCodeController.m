@@ -199,7 +199,7 @@
     _grayBackground.backgroundColor = UIColorRGB(0xf2f2f2);
     [self.view addSubview:_grayBackground];
     
-    _separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, _grayBackground.frame.origin.y + _grayBackground.frame.size.height, screenSize.width, TGIsRetina() ? 0.5f : 1.0f)];
+    _separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, _grayBackground.frame.origin.y + _grayBackground.frame.size.height, screenSize.width, TGScreenPixel)];
     _separatorView.backgroundColor = TGSeparatorColor();
     [self.view addSubview:_separatorView];
     
@@ -227,7 +227,7 @@
     CGRect noticeFrame = CGRectMake(0, 0, noticeSize.width, noticeSize.height);
     _noticeLabel.frame = CGRectIntegral(CGRectOffset(noticeFrame, (screenSize.width - noticeFrame.size.width) / 2, _separatorView.frame.origin.y + ([TGViewController isWidescreen] ? 85.0f : 70.0f)));
 
-    _fieldSeparatorView = [[UIView alloc] initWithFrame:CGRectMake(22, _separatorView.frame.origin.y + 60.0f, screenSize.width - 44, TGIsRetina() ? 0.5f : 1.0f)];
+    _fieldSeparatorView = [[UIView alloc] initWithFrame:CGRectMake(22, _separatorView.frame.origin.y + 60.0f, screenSize.width - 44, TGScreenPixel)];
     _fieldSeparatorView.backgroundColor = TGSeparatorColor();
     [self.view addSubview:_fieldSeparatorView];
     
@@ -580,7 +580,7 @@
     CGRect noticeFrame = CGRectMake(0, 0, noticeSize.width, noticeSize.height);
     _noticeLabel.frame = CGRectIntegral(CGRectOffset(noticeFrame, (screenSize.width - noticeFrame.size.width) / 2, _separatorView.frame.origin.y + ([TGViewController isWidescreen] ? 85.0f : 70.0f)));
     
-    _fieldSeparatorView.frame = CGRectMake(22 + sideInset, _separatorView.frame.origin.y + 60.0f, screenSize.width - 44 - sideInset * 2.0f, TGIsRetina() ? 0.5f : 1.0f);
+    _fieldSeparatorView.frame = CGRectMake(22 + sideInset, _separatorView.frame.origin.y + 60.0f, screenSize.width - 44 - sideInset * 2.0f, TGScreenPixel);
     
     _codeField.frame = CGRectMake(sideInset, _fieldSeparatorView.frame.origin.y - 56.0f, screenSize.width - sideInset * 2.0f, 56.0f);
     

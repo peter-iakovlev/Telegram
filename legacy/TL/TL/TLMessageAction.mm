@@ -665,3 +665,44 @@
 
 
 @end
+
+@implementation TLMessageAction$messageActionPaymentSent : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x40699cd0;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x9c224127;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageAction$messageActionPaymentSent *object = [[TLMessageAction$messageActionPaymentSent alloc] init];
+    object.currency = metaObject->getString((int32_t)0xd2a84177);
+    object.total_amount = metaObject->getInt64((int32_t)0x662699d7);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.currency;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xd2a84177, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.total_amount;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x662699d7, value));
+    }
+}
+
+
+@end
+

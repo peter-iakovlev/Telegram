@@ -11,7 +11,6 @@
 
 @property (nonatomic, retain) TLInputPhoneCall *peer;
 @property (nonatomic, retain) NSData *g_b;
-@property (nonatomic) int64_t key_fingerprint;
 @property (nonatomic, retain) TLPhoneCallProtocol *protocol;
 
 - (Class)responseClass;

@@ -63,7 +63,7 @@
 #import "TGUserAboutSetupController.h"
 
 #import "TGStickerPacksSettingsController.h"
-#import "TGCallSettingsController.h"
+#import "TGRecentCallsController.h"
 
 #import "TGStickersSignals.h"
 
@@ -72,6 +72,8 @@
     int32_t _uid;
     
     bool _editing;
+    
+    TGCollectionMenuSection *_settingsSection;
     
     TGAccountInfoCollectionItem *_profileDataItem;
     TGButtonCollectionItem *_setProfilePhotoItem;
@@ -119,7 +121,8 @@
         [ActionStageInstance() watchForPaths:@[
             @"/tg/userdatachanges",
             @"/tg/userpresencechanges",
-            @"/tg/service/synchronizationstate"
+            @"/tg/service/synchronizationstate",
+            @"/tg/calls/enabled"
         ] watcher:self];
         
         [ActionStageInstance() requestActor:@"/tg/service/synchronizationstate" options:nil flags:0 watcher:self];
@@ -144,21 +147,23 @@
         [settingsItems addObject:(_notificationsItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.NotificationsAndSounds") action:@selector(notificationsAndSoundsPressed)])];
         [settingsItems addObject:(_privacySettingsItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.PrivacySettings") action:@selector(privacySettingsPressed)])];
         [settingsItems addObject:(_chatSettingsItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.ChatSettings") action:@selector(chatSettingsPressed)])];
-        
-        NSData *phoneCallsEnabledData = [TGDatabaseInstance() customProperty:@"phoneCallsEnabled"];
-        int32_t phoneCallsEnabled = false;
-        if (phoneCallsEnabledData.length == 4) {
-            [phoneCallsEnabledData getBytes:&phoneCallsEnabled];
-        }
-        if (phoneCallsEnabled) {
-            [settingsItems addObject:(_callSettingsItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.CallSettings") action:@selector(callSettingsPressed)])];
-        }
-        
         [settingsItems addObject:(_stickerSettingsItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Stickers") action:@selector(stickerSettingsPressed)])];
         [settingsItems addObject:_wallpapersItem];
         
-        TGCollectionMenuSection *settingsSection = [[TGCollectionMenuSection alloc] initWithItems:settingsItems];
-        [self.menuSections addSection:settingsSection];
+        _settingsSection = [[TGCollectionMenuSection alloc] initWithItems:settingsItems];
+        [self.menuSections addSection:_settingsSection];
+        
+        [TGDatabaseInstance() customProperty:@"phoneCallsEnabled" completion:^(NSData *value)
+        {
+            TGDispatchOnMainThread(^
+            {
+                int32_t phoneCallsEnabled = false;
+                if (value.length == 4) {
+                    [value getBytes:&phoneCallsEnabled];
+                }
+                [self updatePhoneCallsEnabled:phoneCallsEnabled];
+            });
+        }];
         
         _watchItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.AppleWatch") action:@selector(watchPressed)];
         
@@ -464,6 +469,19 @@
     [ActionStageInstance() requestActor:action options:options watcher:TGTelegraphInstance];
 }
 
+- (void)updatePhoneCallsEnabled:(bool)enabled
+{
+    if (enabled && _callSettingsItem == nil) {
+        _callSettingsItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"CallSettings.RecentCalls") action:@selector(callSettingsPressed)];
+        [_settingsSection insertItem:_callSettingsItem atIndex:3];
+        [self.collectionView reloadData];
+    } else if (!enabled && _callSettingsItem != nil) {
+        [_settingsSection deleteItem:_callSettingsItem];
+        _callSettingsItem = nil;
+        [self.collectionView reloadData];
+    }
+}
+
 - (void)setEditing:(BOOL)editing animated:(BOOL)__unused animated
 {
     _editing = editing;
@@ -543,7 +561,7 @@
 
 - (void)callSettingsPressed
 {
-    [self.navigationController pushViewController:[[TGCallSettingsController alloc] init] animated:true];
+    [self.navigationController pushViewController:[[TGRecentCallsController alloc] initWithController:TGAppDelegateInstance.rootController.callsController] animated:true];
 }
 
 - (void)stickerSettingsPressed {
@@ -601,6 +619,8 @@
 - (void)logoutPressed
 {
     __weak TGAccountSettingsController *weakSelf = self;
+    
+    [[TGInterfaceManager instance] dismissAllCalls];
     
     /*[[[TGActionSheet alloc] initWithTitle:nil actions:@[
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Settings.Logout") action:@"logout" type:TGActionSheetActionTypeDestructive],
@@ -668,6 +688,11 @@
                 break;
             }
         }
+    } else if ([path isEqualToString:@"/tg/calls/enabled"]) {
+        bool enabled = [((SGraphObjectNode *)resource).object boolValue];
+        TGDispatchOnMainThread(^{
+            [self updatePhoneCallsEnabled:enabled];
+        });
     }
 }
 

@@ -251,8 +251,10 @@
                 [viewController setAdditionalStatusBarHeight:_currentAdditionalStatusBarHeight];
                 [viewController setNeedsStatusBarAppearanceUpdate];
                 
-                if ([viewController.presentedViewController isKindOfClass:[TGNavigationController class]])
+                if ([viewController.presentedViewController isKindOfClass:[TGNavigationController class]] && viewController.presentedViewController.modalPresentationStyle != UIModalPresentationPopover)
+                {
                     [(TGNavigationController *)viewController.presentedViewController setShowCallStatusBar:_showCallStatusBar];
+                }
             }
             else if ([maybeController isKindOfClass:[TGMainTabsController class]])
             {

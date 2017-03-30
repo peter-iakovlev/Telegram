@@ -85,6 +85,9 @@
             {
                 int32_t keyUseCount = [TGDatabaseInstance() currentEncryptionKeyUseCount:_peerId];
                 int32_t maxKeyUseCount = 100;
+#ifdef DEBUG
+                maxKeyUseCount = 5;
+#endif
                 if (keyUseCount >= maxKeyUseCount)
                 {
                     [TGModernSendSecretMessageActor maybeRekeyPeerId:_peerId];

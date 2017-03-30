@@ -2,7 +2,7 @@
 
 @interface TGServiceSignals : NSObject
 
-+ (SSignal *)appChangelogMessage;
++ (SSignal *)appChangelogMessages:(NSString *)previousVersion;
 + (SSignal *)reportSpam:(int64_t)peerId accessHash:(int64_t)accessHash;
 
 @end

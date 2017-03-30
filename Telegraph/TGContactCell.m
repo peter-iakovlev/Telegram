@@ -460,7 +460,7 @@ static UIImage *contactCellCheckedImage()
 {
     [super layoutSubviews];
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     CGFloat separatorInset = _selectionEnabled ? (_hideAvatar ? 49 : 98) : (TGIsPad() ? 74.0f : 65.0f);
     if (TGIsPad() && _selectionEnabled)
         separatorInset += 21.0f;

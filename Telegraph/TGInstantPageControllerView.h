@@ -29,6 +29,8 @@
 @property (nonatomic, assign) int64_t peerId;
 @property (nonatomic, assign) int32_t messageId;
 
+@property (nonatomic, strong) NSString *initialAnchor;
+
 - (void)scrollToEmbedIndex:(int32_t)embedIndex animated:(bool)animated completion:(void (^)(void))completion;
 - (void)cancelPIPWithEmbedIndex:(int32_t)embedIndex;
 

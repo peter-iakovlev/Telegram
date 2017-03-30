@@ -81,7 +81,7 @@
             }
             else
             {
-                return [[editableItem.editableMediaItem originalImageSignal] afterNext:^(__unused id next)
+                return [[editableItem.editableMediaItem originalImageSignal:0] afterNext:^(__unused id next)
                 {
                     fadeOutRepView();
                 }];

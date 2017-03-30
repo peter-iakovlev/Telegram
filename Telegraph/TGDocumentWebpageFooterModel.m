@@ -34,7 +34,7 @@
 
 - (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage hasViews:(bool)hasViews
 {
-    self = [super initWithContext:context incoming:incoming];
+    self = [super initWithContext:context incoming:incoming webpage:webPage];
     if (self != nil)
     {
         _webPage = webPage;

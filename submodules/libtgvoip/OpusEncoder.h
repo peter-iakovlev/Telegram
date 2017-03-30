@@ -1,5 +1,7 @@
 //
-// Created by Grishka on 17.06.16.
+// libtgvoip is free and unencumbered public domain software.
+// For more information, see http://unlicense.org or the UNLICENSE file
+// you should have received with this source code distribution.
 //
 
 #ifndef LIBTGVOIP_OPUSENCODER_H
@@ -25,6 +27,7 @@ public:
 	void SetEchoCanceller(CEchoCanceller* aec);
 	void SetOutputFrameDuration(uint32_t duration);
 	void SetPacketLoss(int percent);
+	int GetPacketLoss();
 	uint32_t GetBitrate();
 
 private:
@@ -44,6 +47,11 @@ private:
 	int complexity;
 	bool running;
 	uint32_t frameDuration;
+	int packetLossPercent;
+	uint32_t mediumCorrectionBitrate;
+	uint32_t strongCorrectionBitrate;
+	double mediumCorrectionMultiplier;
+	double strongCorrectionMultiplier;
 };
 
 

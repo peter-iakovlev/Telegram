@@ -91,7 +91,8 @@ typedef enum {
     TGReusableLabelLayoutMultiline = 1,
     TGReusableLabelLayoutHighlightLinks = 2,
     TGReusableLabelTruncateInTheMiddle = 16,
-    TGReusableLabelLayoutHighlightCommands = 32
+    TGReusableLabelLayoutHighlightCommands = 32,
+    TGReusableLabelLayoutOffsetLastLine = 64
 } TGReusableLabelLayout;
 
 @interface TGReusableLabelLayoutData : NSObject

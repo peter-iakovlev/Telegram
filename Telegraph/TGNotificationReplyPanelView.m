@@ -55,7 +55,7 @@
         _wrapperView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [self addSubview:_wrapperView];
         
-        CGFloat thickness = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat thickness = TGScreenPixel;
         _separatorView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, thickness)];
         _separatorView.alpha = 0.7f;
         _separatorView.backgroundColor = UIColorRGB(0xb2b2b2);

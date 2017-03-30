@@ -81,6 +81,8 @@ bool debugShowMessageIds = false;
     NSDictionary *_callbackButtonInProgress;
     
     TGMessage *_message;
+    
+    bool _hasInvoice;
 }
 
 @end
@@ -192,6 +194,7 @@ bool debugShowMessageIds = false;
         }
         
         bool hasGameAction = false;
+        bool hasPayAction = false;
         TGBotReplyMarkup *replyMarkup = message.replyMarkup;
         if (replyMarkup != nil && replyMarkup.isInline) {
             for (TGBotReplyMarkupRow *row in replyMarkup.rows) {
@@ -199,11 +202,14 @@ bool debugShowMessageIds = false;
                     if ([button.action isKindOfClass:[TGBotReplyMarkupButtonActionGame class]]) {
                         hasGameAction = true;
                     }
+                    if ([button.action isKindOfClass:[TGBotReplyMarkupButtonActionPurchase class]]) {
+                        hasPayAction = true;
+                    }
                 }
             }
         }
         
-        if (_incomingAppearance && (isChannel || _context.isBot || isBot || _context.isPublicGroup || hasGameAction)) {
+        if (_incomingAppearance && (isChannel || _context.isBot || isBot || _context.isPublicGroup || hasGameAction || hasPayAction)) {
             [_backgroundModel setPartialMode:false];
             
             _shareButtonModel = [[TGModernButtonViewModel alloc] init];
@@ -224,7 +230,7 @@ bool debugShowMessageIds = false;
         _dateModel = [[TGModernDateViewModel alloc] initWithText:dateText textColor:_incomingAppearance ? incomingDateColor : outgoingDateColor daytimeVariant:daytimeVariant];
         [_contentModel addSubmodel:_dateModel];
         
-        if (message.isEdited) {/* && (_authorPeer == nil || (![_authorPeer isKindOfClass:[TGConversation class]]) || ((TGConversation *)_authorPeer).isChannel || ((TGConversation *)_authorPeer).isChannelGroup)) {*/
+        if (message.isEdited && !(context.isBot || ([_authorPeer isKindOfClass:[TGUser class]] && ((TGUser *)_authorPeer).kind != TGUserKindGeneric))) {/* && (_authorPeer == nil || (![_authorPeer isKindOfClass:[TGConversation class]]) || ((TGConversation *)_authorPeer).isChannel || ((TGConversation *)_authorPeer).isChannelGroup)) {*/
             static CTFontRef dateFont = NULL;
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
@@ -247,7 +253,7 @@ bool debugShowMessageIds = false;
             [_contentModel addSubmodel:_broadcastIconModel];
         }
         
-        if (!_incoming)
+        if (!_incoming && !_inhibitChecks)
         {
             static UIImage *checkPartialImage = nil;
             static UIImage *checkCompleteImage = nil;
@@ -326,7 +332,17 @@ bool debugShowMessageIds = false;
                     [strongSelf->_context.companionHandle requestAction:@"activateCommand" options:dict];
                 }
             };
-            _replyButtonsModel.replyMarkup = replyMarkup;
+            
+            bool hasReceipt = false;
+            if (hasPayAction) {
+                for (TGMediaAttachment *media in message.mediaAttachments) {
+                    if (media.type == TGInvoiceMediaAttachmentType) {
+                        hasReceipt = ((TGInvoiceMediaAttachment *)media).receiptMessageId != 0;
+                        break;
+                    }
+                }
+            }
+            [_replyButtonsModel setReplyMarkup:replyMarkup hasReceipt:hasReceipt];
             [self addSubmodel:_replyButtonsModel];
         }
     }
@@ -506,6 +522,18 @@ bool debugShowMessageIds = false;
             } else {
                 return [[TGReplyHeaderTextModel alloc] initWithPeer:peer text:((TGGameMediaAttachment *)attachment).title incoming:incoming system:system];
             }
+        } else if ([attachment isKindOfClass:[TGInvoiceMediaAttachment class]]) {
+            TGWebPageMediaAttachment *invoiceMedia = [(TGInvoiceMediaAttachment *)attachment webpage];
+            if (invoiceMedia.photo != nil) {
+                return [[TGReplyHeaderPhotoModel alloc] initWithPeer:peer imageMedia:invoiceMedia.photo incoming:incoming system:system caption:invoiceMedia.title];
+            } else if (invoiceMedia.document != nil) {
+                return [[TGReplyHeaderFileModel alloc] initWithPeer:peer fileMedia:invoiceMedia.document incoming:incoming system:system caption:invoiceMedia.title];
+            } else {
+                return [[TGReplyHeaderTextModel alloc] initWithPeer:peer text:((TGInvoiceMediaAttachment *)attachment).title incoming:incoming system:system];
+            }
+        } else if ([attachment isKindOfClass:[TGInvoiceMediaAttachment class]]) {
+            TGInvoiceMediaAttachment *invoiceMedia = (TGInvoiceMediaAttachment *)attachment;
+            return [[TGReplyHeaderTextModel alloc] initWithPeer:peer text:invoiceMedia.title incoming:incoming system:system];
         }
     }
     
@@ -520,17 +548,17 @@ bool debugShowMessageIds = false;
     _replyMessageId = replyHeader.mid;
 }
 
-- (void)setWebPageFooter:(TGWebPageMediaAttachment *)webPage viewStorage:(TGModernViewStorage *)viewStorage
+- (void)setWebPageFooter:(TGWebPageMediaAttachment *)webPage invoice:(TGInvoiceMediaAttachment *)invoice viewStorage:(TGModernViewStorage *)viewStorage
 {
     _webPage = webPage;
-    if (webPage.url.length == 0 && ![webPage.pageType isEqualToString:@"game"])
+    if (webPage.url.length == 0 && ![webPage.pageType isEqualToString:@"game"] && ![webPage.pageType isEqualToString:@"invoice"])
     {
     }
     else
     {
         bool isAnimationOrVideo = false;
         bool imageInText = true;
-        if ([webPage.pageType isEqualToString:@"photo"] || [webPage.pageType isEqualToString:@"video"] || [webPage.pageType isEqualToString:@"gif"] || [webPage.pageType isEqualToString:@"game"]) {
+        if ([webPage.pageType isEqualToString:@"photo"] || [webPage.pageType isEqualToString:@"video"] || [webPage.pageType isEqualToString:@"gif"] || [webPage.pageType isEqualToString:@"game"] || [webPage.pageType isEqualToString:@"invoice"]) {
             imageInText = false;
             isAnimationOrVideo = true;
         } else if ([webPage.pageType isEqualToString:@"article"]) {
@@ -588,7 +616,7 @@ bool debugShowMessageIds = false;
             _webPageFooterModel.boundToContainer = _boundToContainer;
             [_contentModel addSubmodel:_webPageFooterModel];
         } else {
-            _webPageFooterModel = [[TGArticleWebpageFooterModel alloc] initWithContext:_context incoming:_incomingAppearance webPage:webPage imageInText:imageInText];
+            _webPageFooterModel = [[TGArticleWebpageFooterModel alloc] initWithContext:_context incoming:_incomingAppearance webPage:webPage imageInText:imageInText invoice:invoice];
             _webPageFooterModel.mediaIsAvailable = _mediaIsAvailable;
             [_webPageFooterModel updateMediaProgressVisible:_mediaProgressVisible mediaProgress:_mediaProgress animated:false];
             _webPageFooterModel.boundToContainer = _boundToContainer;
@@ -602,6 +630,7 @@ bool debugShowMessageIds = false;
     }
     
     _shareButtonModel.hidden = webPage == nil;
+    _hasInvoice = invoice != nil;
 }
 
 - (UIView *)referenceViewForImageTransition
@@ -679,6 +708,14 @@ bool debugShowMessageIds = false;
 {
     [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
     
+    bool hadReceipt = false;
+    for (TGMediaAttachment *media in _message.mediaAttachments) {
+        if (media.type == TGInvoiceMediaAttachmentType) {
+            hadReceipt = ((TGInvoiceMediaAttachment *)media).receiptMessageId != 0;
+            break;
+        }
+    }
+    
     _message = message;
     _mid = message.mid;
     
@@ -694,6 +731,7 @@ bool debugShowMessageIds = false;
     }
     
     TGWebPageMediaAttachment *webPage = nil;
+    TGInvoiceMediaAttachment *invoice = nil;
     for (id attachment in message.mediaAttachments)
     {
         if ([attachment isKindOfClass:[TGWebPageMediaAttachment class]])
@@ -701,6 +739,9 @@ bool debugShowMessageIds = false;
             webPage = attachment;
         } else if ([attachment isKindOfClass:[TGGameMediaAttachment class]]) {
             webPage = [((TGGameMediaAttachment *)attachment) webPageWithText:message.text entities:message.entities];
+        } else if ([attachment isKindOfClass:[TGInvoiceMediaAttachment class]]) {
+            webPage = [((TGInvoiceMediaAttachment *)attachment) webpage];
+            invoice = attachment;
         }
     }
     
@@ -709,7 +750,7 @@ bool debugShowMessageIds = false;
             if (![_webPage isEqual:webPage])
             {
                 if (webPage.title.length != 0 || webPage.pageDescription.length != 0 || webPage.siteName.length != 0 || [webPage.photo.imageInfo imageUrlForLargestSize:NULL] != nil || [webPage.document.thumbnailInfo imageUrlForLargestSize:NULL] != nil) {
-                    [self setWebPageFooter:webPage viewStorage:viewStorage];
+                    [self setWebPageFooter:webPage invoice:invoice viewStorage:viewStorage];
                     if (sizeUpdated)
                         *sizeUpdated = true;
                 }
@@ -719,7 +760,7 @@ bool debugShowMessageIds = false;
             [_contentModel removeSubmodel:_webPageFooterModel viewStorage:viewStorage];
             _webPageFooterModel = nil;
             
-            [self setWebPageFooter:webPage viewStorage:viewStorage];
+            [self setWebPageFooter:webPage invoice:invoice viewStorage:viewStorage];
             if (sizeUpdated)
                 *sizeUpdated = true;
         }
@@ -732,7 +773,7 @@ bool debugShowMessageIds = false;
         [_contentModel removeSubmodel:_webPageFooterModel viewStorage:viewStorage];
         _webPageFooterModel = nil;
         
-        [self setWebPageFooter:nil viewStorage:viewStorage];
+        [self setWebPageFooter:nil invoice:invoice viewStorage:viewStorage];
         if (sizeUpdated)
             *sizeUpdated = true;
     }
@@ -894,7 +935,7 @@ bool debugShowMessageIds = false;
             _checkFirstEmbeddedInContent = false;
             _checkSecondEmbeddedInContent = false;
             
-            if (!_incomingAppearance) {
+            if (!_incomingAppearance && !_inhibitChecks) {
                 if (![self containsSubmodel:_checkFirstModel])
                 {
                     [self addSubmodel:_checkFirstModel];
@@ -971,7 +1012,7 @@ bool debugShowMessageIds = false;
     }
     
     TGBotReplyMarkup *replyMarkup = message.replyMarkup != nil && message.replyMarkup.isInline ? message.replyMarkup : nil;
-    if (!TGObjectCompare(_replyMarkup, replyMarkup)) {
+    if (!TGObjectCompare(_replyMarkup, replyMarkup) || hadReceipt != (invoice.receiptMessageId != 0)) {
         _replyMarkup = replyMarkup;
         
         if (_replyButtonsModel == nil) {
@@ -991,19 +1032,25 @@ bool debugShowMessageIds = false;
             
             [self addSubmodel:_replyButtonsModel];
         }
+        
+        bool hasReceipt = false;
+        if (invoice != nil) {
+            hasReceipt = invoice.receiptMessageId != 0;
+        }
+        
         if (_backgroundModel.boundView != nil) {
             [_replyButtonsModel unbindView:viewStorage];
-            _replyButtonsModel.replyMarkup = replyMarkup;
+            [_replyButtonsModel setReplyMarkup:replyMarkup hasReceipt:hasReceipt];
             [_replyButtonsModel bindViewToContainer:_backgroundModel.boundView.superview viewStorage:viewStorage];
         } else {
-            _replyButtonsModel.replyMarkup = replyMarkup;
+            [_replyButtonsModel setReplyMarkup:replyMarkup hasReceipt:hasReceipt];
         }
         if (sizeUpdated) {
             *sizeUpdated = true;
         }
     }
     
-    if (message.isEdited && (_authorPeer == nil || ![_authorPeer isKindOfClass:[TGConversation class]] || !((TGConversation *)_authorPeer).isChannel || ((TGConversation *)_authorPeer).isChannelGroup)) {
+    if (message.isEdited && !(_context.isBot || ([_authorPeer isKindOfClass:[TGUser class]] && ((TGUser *)_authorPeer).kind != TGUserKindGeneric)) && (_authorPeer == nil || ![_authorPeer isKindOfClass:[TGConversation class]] || !((TGConversation *)_authorPeer).isChannel || ((TGConversation *)_authorPeer).isChannelGroup)) {
         if (_editedLabelModel == nil) {
             static CTFontRef dateFont = NULL;
             static dispatch_once_t onceToken;
@@ -1039,7 +1086,7 @@ bool debugShowMessageIds = false;
 
 - (void)_maybeRestructureStateModels:(TGModernViewStorage *)viewStorage
 {
-    if (!_incoming && [_contentModel boundView] == nil && !_incomingAppearance)
+    if (!_incoming && !_inhibitChecks && [_contentModel boundView] == nil && !_incomingAppearance)
     {
         if (_deliveryState == TGMessageDeliveryStateDelivered)
         {
@@ -1324,6 +1371,7 @@ bool debugShowMessageIds = false;
     
     CGFloat maxHeaderWidth = contentContainerSize.width;
     bool alreadyMeasuredWebPage = false;
+    bool webpageOnly = false;
     bool alreadyMeasuredWebpageHasBottomInset = false;
     if ([_webPageFooterModel fitContentToWebpage])
     {
@@ -1331,6 +1379,7 @@ bool debugShowMessageIds = false;
         [_webPageFooterModel layoutForContainerSize:CGSizeMake(contentContainerSize.width, contentContainerSize.height) contentSize:CGSizeZero infoWidth:infoWidth needsContentUpdate:&updateContents bottomInset:&alreadyMeasuredWebpageHasBottomInset];
         maxHeaderWidth = _webPageFooterModel.frame.size.width;
     }
+    webpageOnly = alreadyMeasuredWebPage || _hasInvoice;
     
     CGSize headerSize = CGSizeZero;
     if (_authorNameModel != nil)
@@ -1448,9 +1497,13 @@ bool debugShowMessageIds = false;
         unsentOffset = 29.0f;
     
     CGFloat backgroundWidth = MAX(60.0f, MAX(headerSize.width, contentSize.width) + 25.0f);
-    CGRect backgroundFrame = CGRectMake(_incomingAppearance ? (avatarOffset + layoutConstants->leftInset) : (containerSize.width - backgroundWidth - layoutConstants->rightInset - unsentOffset), topSpacing, backgroundWidth, MAX(((_hasAvatar && webPageSize.height <= FLT_EPSILON) ? 44.0f : (alreadyMeasuredWebPage ? 0.0 : 30.0f)), headerSize.height + contentSize.height + layoutConstants->textBubblePaddingTop + layoutConstants->textBubblePaddingBottom));
+    CGRect backgroundFrame = CGRectMake(_incomingAppearance ? (avatarOffset + layoutConstants->leftInset) : (containerSize.width - backgroundWidth - layoutConstants->rightInset - unsentOffset), topSpacing, backgroundWidth, MAX(((_hasAvatar && webPageSize.height <= FLT_EPSILON) ? 44.0f : (webpageOnly ? 0.0 : 30.0f)), headerSize.height + contentSize.height + layoutConstants->textBubblePaddingTop + layoutConstants->textBubblePaddingBottom));
     if (_incomingAppearance && _editing)
         backgroundFrame.origin.x += 42.0f;
+    
+    if (contentSize.height <= FLT_EPSILON && _webPageFooterModel == nil) {
+        backgroundFrame.size.height -= 10.0f;
+    }
     
     if (_webPageFooterModel != nil)
     {
@@ -1458,7 +1511,7 @@ bool debugShowMessageIds = false;
     }
     
     CGSize previousContentModelSize = _contentModel.frame.size;
-    _contentModel.frame = CGRectMake(backgroundFrame.origin.x + (_incomingAppearance ? 14 : 8), topSpacing + 2.0f, MAX(32.0f, MAX(headerSize.width, contentSize.width) + 2 + (_incomingAppearance ? 0.0f : 5.0f)), MAX(headerSize.height + contentSize.height + 5, (_hasAvatar && webPageSize.height <= FLT_EPSILON) ? 30.0f : (alreadyMeasuredWebPage ? 0.0 : 14.0f)) + webPageSize.height);
+    _contentModel.frame = CGRectMake(backgroundFrame.origin.x + (_incomingAppearance ? 14 : 8), topSpacing + 2.0f, MAX(32.0f, MAX(headerSize.width, contentSize.width) + 2 + (_incomingAppearance ? 0.0f : 5.0f)), MAX(headerSize.height + contentSize.height + 5, (_hasAvatar && webPageSize.height <= FLT_EPSILON) ? 30.0f : (webpageOnly ? 0.0 : 14.0f)) + webPageSize.height);
     if (!CGSizeEqualToSize(_contentModel.frame.size, previousContentModelSize)) {
         updateContents = true;
     }

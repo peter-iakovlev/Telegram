@@ -35,8 +35,8 @@
 
 #import "TGMediaAssetsLibrary.h"
 #import "TGMediaAssetImageSignals.h"
-#import "TGVideoConverter.h"
-#import "TGVideoEditAdjustments.h"
+#import "TGMediaVideoConverter.h"
+#import "TGMediaLiveUploadWatcher.h"
 
 #import "UIImage+TG.h"
 
@@ -1000,7 +1000,6 @@
             
             TGVideoEditAdjustments *adjustments = [TGVideoEditAdjustments editAdjustmentsWithDictionary:assetVideoMessage.adjustments];
             bool liveUpload = assetVideoMessage.liveUpload;
-            bool passthrough = assetVideoMessage.passthrough;
             
             if (!assetVideoMessage.document || assetVideoMessage.isAnimation)
                 self.uploadProgressContainsPreDownloads = true;
@@ -1052,23 +1051,20 @@
                 if ([value isKindOfClass:[AVAsset class]])
                 {
                     AVAsset *avAsset = (AVAsset *)value;
-                    SSignal *(^convertSignal)(void) = ^SSignal *
-                    {
-                        return [[TGVideoConverter convertSignalForAVAsset:avAsset adjustments:adjustments liveUpload:liveUpload passthrough:passthrough] map:^id(id value)
-                        {
-                            if ([value isKindOfClass:[NSDictionary class]])
-                            {
-                                return @{ @"convertResult": value };
-                            }
-                            else if ([value isKindOfClass:[NSNumber class]])
-                            {
-                                return @{ @"convertProgress": value };
-                            }
-                            return value;
-                        }];
-                    };
                     
-                    return convertSignal();
+                    return [[TGMediaVideoConverter convertAVAsset:avAsset adjustments:adjustments watcher:liveUpload ? [[TGMediaLiveUploadWatcher alloc] init] : nil] map:^id(id value)
+                    {
+                        if ([value isKindOfClass:[TGMediaVideoConversionResult class]])
+                        {
+                            NSMutableDictionary *dict = [[(TGMediaVideoConversionResult *)value dictionary] mutableCopy];
+                            return @{ @"convertResult": dict };
+                        }
+                        else if ([value isKindOfClass:[NSNumber class]])
+                        {
+                            return @{ @"convertProgress": value };
+                        }
+                        return nil;
+                    }];
                 }
                 else if ([value isKindOfClass:[NSString class]])
                 {

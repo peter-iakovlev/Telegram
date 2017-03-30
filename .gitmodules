@@ -4,9 +4,6 @@
 [submodule "thirdparty/SSignalKit"]
 	path = thirdparty/SSignalKit
 url=https://github.com/peter-iakovlev/Signals.git
-[submodule "Share/submodules/lmdb"]
-	path = Share/submodules/lmdb
-	url = https://gitorious.org/mdb/mdb.git
 [submodule "submodules/MtProtoKit"]
 	path = submodules/MtProtoKit
 	url = git@github.com:iakovlev-peter/MtProtoKit.git

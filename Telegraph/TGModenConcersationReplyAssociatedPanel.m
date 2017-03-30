@@ -338,6 +338,10 @@
                 imageSignal = [TGSharedPhotoSignals squarePhotoThumbnail:imageMedia ofSize:CGSizeMake(35.0f, 35.0f) threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:[TGReplyHeaderModel thumbnailCornerRadius]] downloadLargeImage:true placeholder:nil];
             }
         }
+        else if ([attachment isKindOfClass:[TGInvoiceMediaAttachment class]]) {
+            text = ((TGInvoiceMediaAttachment *)attachment).title;
+            textColor = mediaTextColor;
+        }
     }
     
     if (message.messageLifetime > 0 && message.messageLifetime <= 60) {

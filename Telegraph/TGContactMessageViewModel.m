@@ -320,7 +320,7 @@
                     [strongSelf->_context.companionHandle requestAction:@"activateCommand" options:dict];
                 }
             };
-            _replyButtonsModel.replyMarkup = replyMarkup;
+            [_replyButtonsModel setReplyMarkup:replyMarkup hasReceipt:false];
             [self addSubmodel:_replyButtonsModel];
         }
         
@@ -741,10 +741,10 @@
         }
         if (_backgroundModel.boundView != nil) {
             [_replyButtonsModel unbindView:viewStorage];
-            _replyButtonsModel.replyMarkup = replyMarkup;
+            [_replyButtonsModel setReplyMarkup:replyMarkup hasReceipt:false];
             [_replyButtonsModel bindViewToContainer:_backgroundModel.boundView.superview viewStorage:viewStorage];
         } else {
-            _replyButtonsModel.replyMarkup = replyMarkup;
+            [_replyButtonsModel setReplyMarkup:replyMarkup hasReceipt:false];
         }
         if (sizeUpdated) {
             *sizeUpdated = true;

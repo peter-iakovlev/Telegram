@@ -27,13 +27,16 @@
     return [TGMediaAssetImageSignals imageForAsset:self imageType:TGMediaAssetImageTypeAspectRatioThumbnail size:CGSizeMake(thumbnailImageSide, thumbnailImageSide)];
 }
 
-- (SSignal *)screenImageSignal
+- (SSignal *)screenImageSignal:(NSTimeInterval)__unused position
 {
     return [TGMediaAssetImageSignals imageForAsset:self imageType:TGMediaAssetImageTypeScreen size:TGPhotoEditorScreenImageMaxSize()];
 }
 
-- (SSignal *)originalImageSignal
+- (SSignal *)originalImageSignal:(NSTimeInterval)position
 {
+    if (self.isVideo)
+        return [TGMediaAssetImageSignals videoThumbnailForAsset:self size:self.dimensions timestamp:CMTimeMakeWithSeconds(position, NSEC_PER_SEC)];
+    
     return [[TGMediaAssetImageSignals imageForAsset:self imageType:TGMediaAssetImageTypeFullSize size:CGSizeZero] takeLast];
 }
 

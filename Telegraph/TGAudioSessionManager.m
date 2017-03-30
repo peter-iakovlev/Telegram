@@ -1,7 +1,6 @@
 #import "TGAudioSessionManager.h"
 
 #import <pthread.h>
-#import <AVFoundation/AVFoundation.h>
 
 #import "TGTelegraph.h"
 
@@ -60,8 +59,8 @@
         case TGAudioSessionTypePlayVideo:
             return AVAudioSessionCategoryPlayback;
         case TGAudioSessionTypePlayAndRecord:
-            return AVAudioSessionCategoryPlayAndRecord;
         case TGAudioSessionTypePlayAndRecordHeadphones:
+        case TGAudioSessionTypeCall:
             return AVAudioSessionCategoryPlayAndRecord;
     }
 }
@@ -77,58 +76,64 @@
     
     pthread_mutex_lock(&_mutex);
     {
-        if (_isInterrupting)
+        if (_currentType != TGAudioSessionTypeCall)
         {
-            if (interrupted)
-                interruptedToInvoke = @[[interrupted copy]];
-        }
-        else
-        {
-            if (_currentInterruptedArray == nil)
-                _currentInterruptedArray = [[NSMutableArray alloc] init];
-            if (_currentClientIds == nil)
-                _currentClientIds = [[NSMutableArray alloc] init];
-            
-            int32_t clientId = _clientId++;
-            
-            if (!_currentActive || _currentType != type)
+            if (_isInterrupting)
             {
-                _currentActive = true;
-                _currentType = type;
-                
-                interruptedToInvoke = [[NSArray alloc] initWithArray:_currentInterruptedArray];
-                [_currentInterruptedArray removeAllObjects];
-                [_currentClientIds removeAllObjects];
-                
-                NSError *error = nil;
-                
-                TGLog(@"(TGAudioSessionManager setting category %d active overriding port: %d)", (int)type, ((type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo)) ? 1 : 0);
-                [[AVAudioSession sharedInstance] setCategory:[self nativeCategoryForType:type] withOptions:(type == TGAudioSessionTypePlayAndRecord || type == TGAudioSessionTypePlayAndRecordHeadphones) ? AVAudioSessionCategoryOptionAllowBluetooth : 0 error:&error];
-                if (error != nil)
-                    TGLog(@"(TGAudioSessionManager setting category %d error %@)", (int)type, error);
-                [[AVAudioSession sharedInstance] setActive:true error:&error];
-                if (error != nil)
-                    TGLog(@"(TGAudioSessionManager setting active error %@)", error);
-                //if ((type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo)) {
-                    [[AVAudioSession sharedInstance] overrideOutputAudioPort:(type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo) ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error];
-                //}
-                if (error != nil)
-                    TGLog(@"(TGAudioSessionManager override port error %@)", error);
+                if (interrupted)
+                    interruptedToInvoke = @[[interrupted copy]];
             }
-            
-            if (interrupted)
-                [_currentInterruptedArray addObject:[interrupted copy]];
             else
-                [_currentInterruptedArray addObject:[^{} copy]];
-            [_currentClientIds addObject:@(clientId)];
-            
-            __weak TGAudioSessionManager *weakSelf = self;
-            result = [[SBlockDisposable alloc] initWithBlock:^
             {
-                __strong TGAudioSessionManager *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf endSessionForClientId:clientId];
-            }];
+                if (_currentInterruptedArray == nil)
+                    _currentInterruptedArray = [[NSMutableArray alloc] init];
+                if (_currentClientIds == nil)
+                    _currentClientIds = [[NSMutableArray alloc] init];
+                
+                int32_t clientId = _clientId++;
+                
+                if (!_currentActive || _currentType != type)
+                {
+                    _currentActive = true;
+                    _currentType = type;
+                    
+                    interruptedToInvoke = [[NSArray alloc] initWithArray:_currentInterruptedArray];
+                    [_currentInterruptedArray removeAllObjects];
+                    [_currentClientIds removeAllObjects];
+                    
+                    NSError *error = nil;
+                    
+                    TGLog(@"(TGAudioSessionManager setting category %d active overriding port: %d)", (int)type, ((type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo)) ? 1 : 0);
+                    [[AVAudioSession sharedInstance] setCategory:[self nativeCategoryForType:type] withOptions:(type == TGAudioSessionTypePlayAndRecord || type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypeCall) ? AVAudioSessionCategoryOptionAllowBluetooth : 0 error:&error];
+                    if (error != nil)
+                        TGLog(@"(TGAudioSessionManager setting category %d error %@)", (int)type, error);
+                    [[AVAudioSession sharedInstance] setMode:(type == TGAudioSessionTypeCall) ? AVAudioSessionModeVoiceChat : AVAudioSessionModeDefault error:&error];
+                    if (error != nil)
+                        TGLog(@"(TGAudioSessionManager setting mode error %@)", error);
+                    [[AVAudioSession sharedInstance] setActive:true error:&error];
+                    if (error != nil)
+                        TGLog(@"(TGAudioSessionManager setting active error %@)", error);
+                    //if ((type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo)) {
+                    [[AVAudioSession sharedInstance] overrideOutputAudioPort:(type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo || type == TGAudioSessionTypeCall) ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error];
+                    //}
+                    if (error != nil)
+                        TGLog(@"(TGAudioSessionManager override port error %@)", error);
+                }
+                
+                if (interrupted)
+                    [_currentInterruptedArray addObject:[interrupted copy]];
+                else
+                    [_currentInterruptedArray addObject:[^{} copy]];
+                [_currentClientIds addObject:@(clientId)];
+                
+                __weak TGAudioSessionManager *weakSelf = self;
+                result = [[SBlockDisposable alloc] initWithBlock:^
+                {
+                    __strong TGAudioSessionManager *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                        [strongSelf endSessionForClientId:clientId];
+                }];
+            }
         }
     }
     pthread_mutex_unlock(&_mutex);
@@ -143,6 +148,24 @@
 
 - (void)cancelCurrentSession
 {
+    [self cancelCurrentSession:false];
+}
+
+- (void)cancelCurrentSession:(bool)interrupted
+{
+    if (interrupted)
+    {
+        bool ignore = false;
+        pthread_mutex_lock(&_mutex);
+        {
+            if (_currentType == TGAudioSessionTypeCall)
+                ignore = true;
+        }
+        pthread_mutex_unlock(&_mutex);
+        if (ignore)
+            return;
+    }
+    
     NSArray *interruptedToInvoke = nil;
 
     pthread_mutex_lock(&_mutex);
@@ -175,6 +198,9 @@
         [[AVAudioSession sharedInstance] setCategory:[self nativeCategoryForType:_currentType] error:&error];
         if (error != nil)
             TGLog(@"(TGAudioSessionManager setting category error %@)", error);
+        [[AVAudioSession sharedInstance] setMode:AVAudioSessionModeDefault error:&error];
+        if (error != nil)
+            TGLog(@"(TGAudioSessionManager setting mode error %@)", error);
         [[AVAudioSession sharedInstance] setActive:false withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
         if (error != nil)
             TGLog(@"(TGAudioSessionManager setting inactive error %@)", error);
@@ -210,6 +236,9 @@
             [[AVAudioSession sharedInstance] setCategory:[self nativeCategoryForType:_currentType] error:&error];
             if (error != nil)
                 TGLog(@"(TGAudioSessionManager setting category error %@)", error);
+            [[AVAudioSession sharedInstance] setMode:AVAudioSessionModeDefault error:&error];
+            if (error != nil)
+                TGLog(@"(TGAudioSessionManager setting mode error %@)", error);
             [[AVAudioSession sharedInstance] setActive:false withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
             if (error != nil)
                 TGLog(@"(TGAudioSessionManager setting inactive error %@)", error);
@@ -245,7 +274,99 @@
 {
     NSNumber *interruptionType = (NSNumber *)notification.userInfo[AVAudioSessionInterruptionTypeKey];
     if ([interruptionType intValue] == AVAudioSessionInterruptionTypeBegan)
-        [self cancelCurrentSession];
+        [self cancelCurrentSession:true];
+}
+
+- (void)applyRoute:(TGAudioRoute *)route
+{
+    NSError *error;
+    
+    AVAudioSession *session = [AVAudioSession sharedInstance];
+    if ([route.uid isEqualToString:@"builtin"])
+    {
+        [session overrideOutputAudioPort:AVAudioSessionPortOverrideNone error:NULL];
+        NSArray *inputs = [[AVAudioSession sharedInstance] availableInputs];
+        for (AVAudioSessionPortDescription *input in inputs)
+        {
+            if ([input.portType isEqualToString:AVAudioSessionPortBuiltInMic])
+            {
+                [session setPreferredInput:input error:&error];
+                return;
+            }
+        }
+    }
+    else if ([route.uid isEqualToString:@"speaker"])
+    {
+        [session overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:NULL];
+    }
+    else
+    {
+        [session overrideOutputAudioPort:AVAudioSessionPortOverrideNone error:NULL];
+        NSArray *inputs = [[AVAudioSession sharedInstance] availableInputs];
+        for (AVAudioSessionPortDescription *input in inputs)
+        {
+            if ([input.UID isEqualToString:route.uid])
+            {
+                [session setPreferredInput:input error:&error];
+                return;
+            }
+        }
+    }
+}
+
+@end
+
+
+@interface TGAudioRoute ()
+{
+    bool _isBluetooth;
+}
+@end
+
+@implementation TGAudioRoute
+
++ (instancetype)routeForBuiltIn:(bool)headphones
+{
+    NSString *deviceModel = [UIDevice currentDevice].model;
+    TGAudioRoute *route = [[TGAudioRoute alloc] init];
+    route->_name = headphones ? TGLocalized(@"Call.AudioRouteHeadphones") : deviceModel;
+    route->_uid = @"builtin";
+    route->_isBuiltIn = true;
+    route->_isHeadphones = headphones;
+    return route;
+}
+
++ (instancetype)routeForSpeaker
+{
+    NSString *deviceModel = [UIDevice currentDevice].model;
+    if (![deviceModel isEqualToString:@"iPhone"])
+        return nil;
+    
+    TGAudioRoute *route = [[TGAudioRoute alloc] init];
+    route->_name = TGLocalized(@"Call.AudioRouteSpeaker");
+    route->_uid = @"speaker";
+    route->_isLoudspeaker = true;
+    return route;
+}
+
++ (instancetype)routeWithDescription:(AVAudioSessionPortDescription *)description
+{
+    TGAudioRoute *route = [[TGAudioRoute alloc] init];
+    route->_name = description.portName;
+    route->_uid = description.UID;
+    route->_isBluetooth = [[self bluetoothTypes] containsObject:description.portType];
+    return route;
+}
+
++ (NSArray *)bluetoothTypes
+{
+    static dispatch_once_t onceToken;
+    static NSArray *bluetoothTypes;
+    dispatch_once(&onceToken, ^
+    {
+        bluetoothTypes = @[AVAudioSessionPortBluetoothA2DP, AVAudioSessionPortBluetoothLE, AVAudioSessionPortBluetoothHFP];
+    });
+    return bluetoothTypes;
 }
 
 @end

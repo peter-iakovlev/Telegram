@@ -37,7 +37,7 @@
 @implementation TGMusicWebpageFooterModel
 
 - (instancetype)initWithContext:(TGModernViewContext *)context messageId:(int32_t)messageId incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage hasViews:(bool)hasViews {
-    self = [super initWithContext:context incoming:incoming];
+    self = [super initWithContext:context incoming:incoming webpage:webPage];
     if (self != nil) {
         _webPage = webPage;
         _incoming = incoming;

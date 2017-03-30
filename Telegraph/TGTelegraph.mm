@@ -864,7 +864,7 @@ typedef std::map<int, std::pair<TGUser *, int > >::iterator UserDataToDispatchIt
 }
 
 - (void)doLogout:(NSString *)presetPhoneNumber
-{
+{    
     [ActionStageInstance() dispatchOnStageQueue:^
     {
         [TGAppDelegateInstance resetLoginState];

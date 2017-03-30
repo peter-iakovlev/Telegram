@@ -189,7 +189,7 @@
     
     [self _resetCollectionView];
     
-    [self setExplicitTableInset:UIEdgeInsetsMake(-(TGIsRetina() ? 0.5f : 1.0f), 0, 0, 0)];
+    [self setExplicitTableInset:UIEdgeInsetsMake(-(TGScreenPixel), 0, 0, 0)];
     if (![self _updateControllerInset:false])
         [self controllerInsetUpdated:UIEdgeInsetsZero];
 }
@@ -200,8 +200,9 @@
 {
     [super controllerInsetUpdated:previousInset];
     
-    if ([self isViewLoaded])
+    if ([self isViewLoaded]) {
         _headerBackgroundView.frame = CGRectMake(0.0f, 0.0f, self.view.frame.size.width, self.controllerInset.top);
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated

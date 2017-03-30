@@ -24,7 +24,7 @@ const CGFloat TGMediaPickerToolbarHeight = 44.0f;
     {
         self.backgroundColor = UIColorRGBA(0xf7f7f7, 1.0f);
         
-        UIView *stripeView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.frame.size.width, TGIsRetina() ? 0.5f : 1.0f)];
+        UIView *stripeView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.frame.size.width, TGScreenPixel)];
         stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
         stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         [self addSubview:stripeView];

@@ -24,12 +24,12 @@
     return [TGMediaAssetImageSignals videoThumbnailForAVAsset:self size:size timestamp:kCMTimeZero];
 }
 
-- (SSignal *)screenImageSignal
+- (SSignal *)screenImageSignal:(NSTimeInterval)__unused position
 {
     return nil;
 }
 
-- (SSignal *)originalImageSignal
+- (SSignal *)originalImageSignal:(NSTimeInterval)__unused position
 {
     return nil;
 }

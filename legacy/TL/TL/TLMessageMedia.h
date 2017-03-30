@@ -8,6 +8,7 @@
 @class TLPhoto;
 @class TLDocument;
 @class TLGame;
+@class TLWebDocument;
 
 @interface TLMessageMedia : NSObject <TLObject>
 
@@ -72,6 +73,19 @@
 @interface TLMessageMedia$messageMediaGame : TLMessageMedia
 
 @property (nonatomic, retain) TLGame *game;
+
+@end
+
+@interface TLMessageMedia$messageMediaInvoiceMeta : TLMessageMedia
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic, retain) NSString *title;
+@property (nonatomic, retain) NSString *n_description;
+@property (nonatomic, retain) TLWebDocument *photo;
+@property (nonatomic) int32_t receipt_msg_id;
+@property (nonatomic, retain) NSString *currency;
+@property (nonatomic) int64_t total_amount;
+@property (nonatomic, retain) NSString *start_param;
 
 @end
 

@@ -1,4 +1,5 @@
 #import "TGFont.h"
+#import "TGVideoEditAdjustments.h"
 
 @class POPAnimation;
 @class POPSpringAnimation;
@@ -26,6 +27,7 @@
 + (UIImage *)textIcon;
 + (UIImage *)gifIcon;
 + (UIImage *)gifActiveIcon;
++ (UIImage *)qualityIconForPreset:(TGMediaVideoConversionPreset)preset;
 
 + (UIColor *)toolbarSelectedIconColor;
 + (UIColor *)toolbarAppliedIconColor;

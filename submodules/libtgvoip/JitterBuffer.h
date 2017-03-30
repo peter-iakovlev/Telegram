@@ -1,5 +1,7 @@
 //
-// Created by Grishka on 19.06.16.
+// libtgvoip is free and unencumbered public domain software.
+// For more information, see http://unlicense.org or the UNLICENSE file
+// you should have received with this source code distribution.
 //
 
 #ifndef LIBTGVOIP_JITTERBUFFER_H
@@ -22,6 +24,7 @@ struct jitter_packet_t{
 	unsigned char* buffer;
 	size_t size;
 	uint32_t timestamp;
+	double recvTimeDiff;
 };
 typedef struct jitter_packet_t jitter_packet_t;
 
@@ -53,8 +56,14 @@ private:
 	uint32_t step;
 	uint32_t minDelay;
 	uint32_t minMinDelay;
+	uint32_t maxMinDelay;
+	uint32_t maxUsedSlots;
 	uint32_t lastPutTimestamp;
+	uint32_t lossesToReset;
+	double resyncThreshold;
 	int lostCount;
+	int lostSinceReset;
+	int gotSinceReset;
 	bool wasReset;
 	bool needBuffering;
 	int delayHistory[64];
@@ -65,6 +74,10 @@ private:
 	unsigned int dontIncMinDelay;
 	unsigned int dontDecMinDelay;
 	int lostPackets;
+	double prevRecvTime;
+	double expectNextAtTime;
+	double deviationHistory[64];
+	int deviationPtr;
 };
 
 

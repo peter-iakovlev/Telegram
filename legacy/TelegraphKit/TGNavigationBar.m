@@ -191,7 +191,7 @@
     
     if (_stripeView != nil)
     {
-        float stripeHeight = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat stripeHeight = TGScreenPixel;
         _stripeView.frame = CGRectMake(0, _backgroundContainerView.bounds.size.height - stripeHeight, _backgroundContainerView.bounds.size.width, stripeHeight);
     }
     

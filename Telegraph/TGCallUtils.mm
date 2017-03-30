@@ -1,6 +1,8 @@
 #import "TGCallUtils.h"
 #import "Reachability.h"
 
+#import <CoreTelephony/CTCall.h>
+#import <CoreTelephony/CTCallCenter.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 
 #import "TGObserverProxy.h"
@@ -209,6 +211,17 @@ void TGCallLoggingFunction(const char *msg)
 
 @implementation TGCallUtils
 
++ (bool)isOnPhoneCall
+{
+    CTCallCenter *callCenter = [[CTCallCenter alloc] init];
+    for (CTCall *call in callCenter.currentCalls)
+    {
+        if (call.callState == CTCallStateConnected)
+            return true;
+    }
+    return false;
+}
+
 + (SSignal *)networkTypeSignal
 {
     SSignal *reachabilitySignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
@@ -224,7 +237,8 @@ void TGCallLoggingFunction(const char *msg)
         
         return [[SBlockDisposable alloc] initWithBlock:^
         {
-            [reachability stopNotifier];
+            __strong Reachability *strongReachability = reachability;
+            [strongReachability stopNotifier];
         }];
     }];
     

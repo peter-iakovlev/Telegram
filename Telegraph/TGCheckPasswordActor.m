@@ -117,7 +117,7 @@
     else if ([errorText rangeOfString:@"FLOOD_WAIT"].location != NSNotFound)
         errorCode = TGCheckPasswordErrorCodeFlood;
     
-    [ActionStageInstance() actionFailed:self.path reason:-1];
+    [ActionStageInstance() actionFailed:self.path reason:errorCode];
 }
 
 @end

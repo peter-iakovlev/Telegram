@@ -76,6 +76,7 @@
 "PINNED_GAME" = "%1$@ ثبت لعبة";
 
 "PHONE_CALL_REQUEST" = "%1$@ يتصل بك";
+"PHONE_CALL_MISSED" = "يوجد مكالمة فائتة من %1$@";
 
 // Common
 "Common.OK" = "موافق";
@@ -462,7 +463,7 @@
 "Conversation.SlideToCancel" = "قم بالسحب للإلغاء";
 "Conversation.ApplyLocalization" = "تطبيق واجهة اللغة";
 "Conversation.OpenFile" = "فتح الملف";
-"Conversation.MicrophoneAccessDisabled" = "يحتاج تيليجرام للسماع له باستخدام الميكروفون لتسجيل الرسائل الصوتية. يرجى الذهاب إلى إعدادات — الخصوصية — الميكروفون ثم قم بتفعيل تيليجرام.";
+"Conversation.MicrophoneAccessDisabled" = "يحتاج تيليجرام للسماح له باستخدام الميكروفون لتسجيل الرسائل الصوتية. يرجى الذهاب إلى إعدادات — الخصوصية — الميكروفون ثم قم بتفعيل تيليجرام.";
 
 // Media Picker
 "MediaPicker.Send" = "أرسل";
@@ -1048,7 +1049,7 @@
 "DialogList.SearchSectionGlobal" = "بحث شامل";
 "DialogList.SearchSectionMessages" = "الرسائل";
 
-"Username.LinkHint" = "هذا الرابط سيفتح محادثة معك في تيليجرام\n:[https://telegram.me/%@]";
+"Username.LinkHint" = "هذا الرابط سيقوم بفتح محادثة معك في تيليجرام:\n[https://t.me/%@]";
 "Username.LinkCopied" = "تم نسخ الرابط إلى الحافظة";
 
 "SharedMedia.ItemsSelected_1" = "١ محدد";
@@ -1438,7 +1439,7 @@
 
 "Channel.Username.Title" = "الرابط";
 "Channel.Username.Help" = "يمكنك اختيار اسم القناة في **تيليجرام**. إذا قمت بذلك، سيستطيع الناس إيجاد قناتك باستخدام هذا الاسم.\n\nتستطيع استخدام حروف اللغة الإنجليزية وأرقامها وكذلك الخط. لا بد من استخدام ٥ حروف على الأقل.";
-"Channel.Username.LinkHint" = "هذا الرابط سيقوم بفتح قناتك في تيليجرام:\n[https://telegram.me/%@]";
+"Channel.Username.LinkHint" = "هذا الرابط سيفتح قناتك في تيليجرام:[\nhttp://t.me/%@]";
 "Channel.Username.InvalidTooShort" = "اسم القناة يجب أن يتكوّن من ٥ حروف على الأقل.";
 "Channel.Username.InvalidStartsWithNumber" = "أسماء القنوات لا يمكن أن تبدأ برقم.";
 "Channel.Username.InvalidCharacters" = "المعذرة، الاسم غير مقبول.";
@@ -1890,7 +1891,7 @@
 "Group.Username.InvalidTooShort" = "أسماء المجموعات يجب أن تتكوّن من ٥ حروف على الأقل.";
 "Group.Username.InvalidStartsWithNumber" = "أسماء المجموعات لا يمكن أن تبدأ برقم.";
 
-"Group.Username.LinkHint" = "هذا الرابط سيفتح مجموعتك في تيليجرام:[\nhttp://telegram.me/%@]";
+"Group.Username.LinkHint" = "هذا الرابط سيقوم بفتح مجموعتك في تيليجرام:\n[https://t.me/%@]";
 
 "Notification.PinnedTextMessage" = "%@ قام بتثبيت \"%@\"";
 "Notification.PinnedPhotoMessage" = "%@ ثبت صورة";
@@ -2172,10 +2173,10 @@
 "Conversation.JumpToDate" = "اذهب لهذا التاريخ";
 "Conversation.AddToReadingList" = "إضافة إلى قائمة القراءة";
 
-"AccessDenied.CallMicrophone" = "يحتاج تيليجرام للسماع له باستخدام الميكروفون للمكالمات الصوتية.\n\nيرجى الذهاب إلى إعدادات — الخصوصية — الميكروفون ثم قم بتفعيل تيليجرام.";
+"AccessDenied.CallMicrophone" = "يحتاج تيليجرام للسماح له باستخدام الميكروفون لتسجيل الرسائل الصوتية.\n\nيرجى الذهاب إلى إعدادات — الخصوصية — الميكروفون ثم قم بتفعيل تيليجرام.";
 
 "Call.EncryptionKey.Title" = "مفتاح التشفير";
-"Call.EncryptionKey.Description" = "هذه الصورة والنص تم اشتقاقهم من مفتاح التشفير لهذه المكالمة الصوتية مع %1$@.\n\nإذا كانت مطابقة لما يظهر على جهاز %2$@ ، التشفير من البداية للنهاية مضمون.\n\nللإستزادة، إطلع على telegram.org ";
+"Call.EncryptionKey.Description" = "هذه الصورة والنص تم اشتقاقهم من مفتاح التشفير لهذه المكالمة الصوتية مع %1$@.\n\nإذا كانت مطابقة لما يظهر على جهاز %2$@ ، التشفير من البداية للنهاية مضمون.";
 
 "Application.Name" = "تيليجرام";
 "DialogList.Pin" = "تثبيت";
@@ -2216,7 +2217,6 @@
 "CallSettings.TabIcon" = "أظهر قسم المكالمات";
 "CallSettings.TabIconDescription" = "أيقونة اتصال ستظهر على الشريط.";
 "CallSettings.UseLessData" = "استخدم بيانات أقل";
-"CallSettings.UseLessDataDescription" = "استخدم بيانات أقل للاتصال.";
 "CallSettings.Never" = "للأبد";
 "CallSettings.OnMobile" = "على شبكة الجوال";
 "CallSettings.Always" = "دائمًا";
@@ -2255,10 +2255,206 @@
 "Notification.CallIncoming" = "مكالمات واردة";
 "Notification.CallMissed" = "مكالمات فائتة";
 "Notification.CallCanceled" = "مكالمات ملغاة";
-"Notification.CallFormat" = "%1$@ %2$@"; // 1 - title, 2 - time
+"Notification.CallOutgoingShort" = "الصادرة";
+"Notification.CallIncomingShort" = "الواردة";
+"Notification.CallMissedShort" = "الفائتة";
+"Notification.CallCanceledShort" = "الملغاة";
+"Notification.CallFormat" = "%1$@، %2$@"; // 1 - time, 2 - duration
+
+
 
 "Call.ConnectionErrorTitle" = "غير قادر على الاتصال";
 "Call.ConnectionErrorMessage" = "يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.";
 
 "Call.CallBack" = "أعد الاتصال بالرقم";
 "Call.CallAgain" = "اتصل مرة أخرى";
+
+"Login.PhoneFloodError" = "المعذرة، قمت بحذف حسابك وإعادة إنشاؤه عدة مرات مؤخرًا. فضلًا انتظر لعدة أيام قبل محاولة إنشاء الحساب من جديد.";
+
+"Checkout.Title" = "الدفع";
+"Checkout.TotalAmount" = "الإجمالي";
+"Checkout.TotalPaidAmount" = "الإجمالي المدفوع";
+"Checkout.PaymentMethod" = "وسيلة الدفع";
+"Checkout.ShippingMethod" = "طريقة الشحن";
+"Checkout.ShippingAddress" = "معلومات الشحن";
+"Checkout.Name" = "الاسم";
+"Checkout.Email" = "بريد إلكتروني";
+"Checkout.Phone" = "هاتف";
+"Checkout.PayPrice" = "ادفع %@";
+"Checkout.PayNone" = "ادفع";
+
+"Checkout.PaymentMethod.Title" = "وسيلة الدفع";
+"Checkout.PaymentMethod.New" = "بطاقة جديدة...";
+
+"Checkout.NewCard.Title" = "بطاقة جديدة";
+"Checkout.NewCard.PaymentCard" = "بطاقة الدفع";
+"Checkout.NewCard.SaveInfo" = "حفظ معلومات الدفع";
+"Checkout.NewCard.SaveInfoEnableHelp" = "يمكنك حفظ معلومات الدفع لاستخدامها لاحقًا.\nفضلًا قم بتفعيل [التحقق بخطوتين] للتفعيل.";
+"Checkout.NewCard.SaveInfoHelp" = "يمكنك حفظ معلومات الدفع لاستخدامها لاحقًا.";
+"Checkout.NewCard.CardholderNameTitle" = "حامل البطاقة";
+"Checkout.NewCard.CardholderNamePlaceholder" = "اسم حامل البطاقة";
+"Checkout.NewCard.PostcodeTitle" = "عنوان الدفع";
+"Checkout.NewCard.PostcodePlaceholder" = "الرمز البريدي";
+
+"Checkout.ShippingOption.Title" = "وسيلة الشحن";
+"Checkout.ShippingOption.Header" = "اختر وسيلة الشحن";
+
+"Checkout.ErrorProviderAccountInvalid" = "هذا البوت لا يمكنه استقبال عمليات الدفع في الوقت الحالي. يرجى المحاولة لاحقًا.";
+"Checkout.ErrorProviderAccountTimeout" = "هذا البوت لا يمكنه معالجة عمليات الدفع في الوقت الحالي. يرجى المحاولة لاحقًا.";
+"Checkout.ErrorInvoiceAlreadyPaid" = "لقد قمت بالدفع مسبقًا لهذه السلعة.";
+
+"Checkout.ErrorGeneric" = "حدث خطأ أثناء معالجة عملية الدفع. لم يتم سحب المبلغ من بطاقتك.";
+"Checkout.ErrorPaymentFailed" = "خطأ في عملية الدفع. لم يتم سحب المبلغ من بطاقتك.";
+"Checkout.ErrorPrecheckoutFailed" = "هذا البوت لا يمكنه معالجة عمليات الدفع في الوقت الحالي. لم يتم سحب مبلغ من بطاقتك.";
+
+"CheckoutInfo.Title" = "معلومات الشحن";
+"CheckoutInfo.ShippingInfoTitle" = "عنوان الشحن";
+"CheckoutInfo.ShippingInfoAddress1" = "العنوان ١";
+"CheckoutInfo.ShippingInfoAddress1Placeholder" = "العنوان";
+"CheckoutInfo.ShippingInfoAddress2" = "العنوان ٢";
+"CheckoutInfo.ShippingInfoAddress2Placeholder" = "العنوان";
+"CheckoutInfo.ShippingInfoState" = "الولاية";
+"CheckoutInfo.ShippingInfoStatePlaceholder" = "الولاية";
+"CheckoutInfo.ShippingInfoCity" = "المدينة";
+"CheckoutInfo.ShippingInfoCityPlaceholder" = "المدينة";
+"CheckoutInfo.ShippingInfoCountry" = "الدولة";
+"CheckoutInfo.ShippingInfoCountryPlaceholder" = "الدولة";
+"CheckoutInfo.ShippingInfoPostcode" = "الرمز البريدي";
+"CheckoutInfo.ShippingInfoPostcodePlaceholder" = "الرمز البريدي";
+"CheckoutInfo.ReceiverInfoTitle" = "المستقبل";
+"CheckoutInfo.ReceiverInfoName" = "الاسم";
+"CheckoutInfo.ReceiverInfoNamePlaceholder" = "الاسم";
+"CheckoutInfo.ReceiverInfoEmail" = "البريد الالكتروني";
+"CheckoutInfo.ReceiverInfoEmailPlaceholder" = "البريد الالكتروني";
+"CheckoutInfo.ReceiverInfoPhone" = "هاتف";
+"CheckoutInfo.SaveInfo" = "حفظ المعلومات";
+"CheckoutInfo.SaveInfoHelp" = "يمكنك حفظ معلومات الشحن لاستخدامها لاحقًا.";
+"CheckoutInfo.Pay" = "ادفع";
+
+"Checkout.Receipt.Title" = "الفاتورة";
+
+"Message.ReplyActionButtonShowReceipt" = "أظهر الفاتورة";
+"Message.InvoiceShipmentLabel" = "الشحنة";
+"Message.InvoiceLabel" = "الفاتورة";
+
+"CheckoutInfo.ErrorShippingNotAvailable" = "الشحن لهذه الدولة غير متاح.";
+"CheckoutInfo.ErrorPostcodeInvalid" = "يرجى إدخال رمز بريدي صحيح.";
+"CheckoutInfo.ErrorStateInvalid" = "يرجى إدخال ولاية صحيحة.";
+"CheckoutInfo.ErrorCityInvalid" = "يرجى إدخال مدينة صحيحة.";
+"CheckoutInfo.ErrorNameInvalid" = "يرجى إدخال اسم صحيح.";
+"CheckoutInfo.ErrorEmailInvalid" = "يرجى إدخال بريد الكتروني صحيح.";
+"CheckoutInfo.ErrorPhoneInvalid" = "فضلًا أدخل رقم هاتف صحيح.";
+
+"Checkout.WebConfirmation.Title" = "إكمال الدفع";
+"Checkout.PasswordEntry.Title" = "تأكيد الدفع";
+"Checkout.PasswordEntry.Pay" = "ادفع";
+"Checkout.PasswordEntry.Text" = "بطاقتك %@ مسجلة مسبقًا. لتتمكن من استخدامها، يرجى إدخال كلمة مرور التحقق بخطوتين.";
+
+"Checkout.SavePasswordTimeout" = "هل ترغب في حفظ كلمة المرور الخاصة بك لـ %@؟";
+"Checkout.SavePasswordTimeoutAndTouchId" = "هل ترغب في حفظ كلمة المرور الخاصة بك لـ %@ واستخدام البصمة؟";
+"Checkout.PayWithTouchId" = "ادفع القفل باستخدام البصمة";
+"Checkout.EnterPassword" = "قم بإدخال كلمة المرور";
+
+"Your card has expired" = "صلاحية بطاقتك منتهية.";
+
+/* Error when the card was declined by the credit card networks */
+"Your card was declined" = "تم رفض بطاقتك.";
+
+/* Error when the card's expiration month is not valid */
+"Your card's expiration month is invalid" = "لقد قمت بإدخال شهر انتهاء غير صحيح.";
+
+/* Error when the card's expiration year is not valid */
+"Your card's expiration year is invalid" = "لقد قمت بإدخال سنة انتهاء غير صحيحة.";
+
+/* Error when the card number is not valid */
+"Your card's number is invalid" = "لقد قمت بإدخال رقم بطاقة غير صحيح.";
+
+/* Error when the card's CVC is not valid */
+"Your card's security code is invalid" = "لقد قمت بإدخال رمز أمان غير صحيح.";
+
+"MESSAGE_INVOICE" = "%1$@ أرسل فاتورة لـ %2$@";
+"CHAT_MESSAGE_INVOICE" = "%1$@ أرسل فاتورة لـ %3$@ للمجموعة %2$@";
+"PINNED_INVOICE" = "%1$@ ثبت فاتورة";
+
+"Message.PinnedInvoice" = "ثبت فاتورة";
+
+"User.DeletedAccount" = "حساب محذوف";
+
+"Settings.SaveEditedPhotos" = "احفظ الصور المحررة";
+
+"Message.PaymentSent" = "الدفع: %@";
+"Notification.PaymentSent" = "لقد قمت بتحويل مبلغ {amount} إلى {name} لـ {title} بنجاح";
+
+"Common.NotNow" = "ليس الآن";
+
+"Calls.RatingFeedback" = "اكتب ملاحظة";
+
+"Call.StatusIncoming" = "صوت تيليجرام...";
+"Call.StatusRequesting" = "جار الاتصال...";
+"Call.StatusWaiting" = "جار الانتظار...";
+"Call.StatusRinging" = "يتم الاتصال...";
+"Call.StatusConnecting" = "جاري الاتصال...";
+"Call.StatusOngoing" = "صوت تيليجرام %@";
+"Call.StatusEnded" = "تم إنهاء المكالمة";
+"Call.StatusFailed" = "فشلت المكالمة";
+"Call.StatusBusy" = "مشغول";
+"Call.Accept" = "السماح";
+"Call.Decline" = "رفض";
+
+"Call.StatusBar" = "اضغط للعودة للاتصال بـ %@";
+
+"UserInfo.Call" = "مكالمات صوتية";
+
+"Call.ParticipantVersionOutdatedError" = "تطبيق %@ لا يدعم المكالمات. ينبغي عليه تحديث تطبيقهم لتتمكن من الاتصال بهم.";
+
+"Privacy.Calls" = "مكالمات صوتية";
+
+"Privacy.Calls.WhoCanCallMe" = "من يستطيع الاتصال بي";
+"Privacy.Calls.CustomHelp" = "يمكنك تخصيص من يستطيع الاتصال بك بدقة تناسبك.";
+"Privacy.Calls.AlwaysAllow" = "اسمح دائمًا";
+"Privacy.Calls.NeverAllow" = "لا تسمح أبدًا";
+"Privacy.Calls.CustomShareHelp" = "هؤلاء المستخدمين بإمكانهم أو ليس بإمكانهم الاتصال بك بغض النظر عن الإعدادات أعلاه.";
+
+"Privacy.Calls.AlwaysAllow.Title" = "اسمح دائمًا";
+"Privacy.Calls.AlwaysAllow.Placeholder" = "اسمح دائمًا...";
+"Privacy.Calls.NeverAllow.Title" = "لا تسمح أبدًا";
+"Privacy.Calls.NeverAllow.Placeholder" = "لا تسمح أبدًا...";
+
+"PhotoEditor.QualityTool" = "الجودة";
+"PhotoEditor.QualityVeryLow" = "منخفض جدًا";
+"PhotoEditor.QualityLow" = "منخفض";
+"PhotoEditor.QualityMedium" = "متوسط";
+"PhotoEditor.QualityHigh" = "مرتفع";
+"PhotoEditor.QualityVeryHigh" = "مرتفع جدًا";
+
+"Settings.SaveEditedPhotos" = "احفظ الصور المحررة";
+
+"Calls.NoCallsPlaceholder" = "مكالمتك الحديثة ستظهر هنا";
+"Calls.NoMissedCallsPlacehoder" = "لا توجد لديك مكالمات فائتة";
+
+"Call.CallInProgressTitle" = "المكالمة نشطة";
+"Call.CallInProgressMessage" = "هل ترغب في إنهاء المكالمة مع %1$@ وبدء واحد جديدة مع %2$@؟";
+
+"Call.Message" = "رسالة";
+
+"UserInfo.TapToCall" = "اضغط لمكالمة مشفرة من البداية للنهاية";
+"Call.GroupFormat" = "%1$@ (%2$@)";
+
+"NetworkUsageSettings.CallDataSection" = "المكالمات";
+
+"Call.PrivacyErrorMessage" = "المعذرة، %@ لا يستقبل مكالمات.";
+
+"Notification.CallBack" = "أعد الاتصال بالرقم";
+
+"CallSettings.PrivacyDescription" = "اختر من يستطيع مكالمتك في  [إعدادات الخصوصية].";
+
+"Call.AudioRouteSpeaker" = "سماعة";
+"Call.AudioRouteHeadphones" = "سماعة الأذن";
+"Call.AudioRouteHide" = "إخفاء";
+
+"EncryptionKey.TapToEmojify" = "اضغط للتحويل لإيموجي";
+
+"Call.PhoneCallInProgressMessage" = "لا يمكنك إجراء مكالمة تيليجرام في حال كنت في مكالمة أخرى.";
+"Call.RecordingDisabledMessage" = "فضلا انه مكالمتك قبل تسجيل رسالة صوتية. ";
+
+"Call.EmojiDescription" = "إذا كانت هذه الايموجيات مطابقة للتي تظهر على شاشة %@، فالمكالمة 100%% آمنة. ";

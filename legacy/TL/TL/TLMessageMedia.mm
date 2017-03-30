@@ -8,6 +8,7 @@
 #import "TLPhoto.h"
 #import "TLDocument.h"
 #import "TLGame.h"
+#import "TLWebDocument.h"
 
 @implementation TLMessageMedia
 
@@ -378,6 +379,88 @@
         value.type = TLConstructedValueTypeObject;
         value.nativeObject = self.game;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x1ed73bd7, value));
+    }
+}
+
+
+@end
+
+@implementation TLMessageMedia$messageMediaInvoiceMeta : TLMessageMedia
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xb0e774bd;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x127e5278;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageMedia$messageMediaInvoiceMeta *object = [[TLMessageMedia$messageMediaInvoiceMeta alloc] init];
+    object.flags = metaObject->getInt32((int32_t)0x81915c23);
+    object.title = metaObject->getString((int32_t)0xcdebf414);
+    object.n_description = metaObject->getString((int32_t)0x9e47ce86);
+    object.photo = metaObject->getObject((int32_t)0xe6c52372);
+    object.receipt_msg_id = metaObject->getInt32((int32_t)0x33b4dedb);
+    object.currency = metaObject->getString((int32_t)0xd2a84177);
+    object.total_amount = metaObject->getInt64((int32_t)0x662699d7);
+    object.start_param = metaObject->getString((int32_t)0x90d398cb);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.flags;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x81915c23, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.title;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xcdebf414, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.n_description;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9e47ce86, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.photo;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe6c52372, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.receipt_msg_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x33b4dedb, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.currency;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xd2a84177, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.total_amount;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x662699d7, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.start_param;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x90d398cb, value));
     }
 }
 

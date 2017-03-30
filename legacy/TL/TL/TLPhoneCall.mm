@@ -4,8 +4,8 @@
 #import "../NSOutputStream+TL.h"
 
 #import "TLPhoneCallProtocol.h"
-#import "TLPhoneConnection.h"
 #import "TLPhoneCallDiscardReason.h"
+#import "TLPhoneConnection.h"
 
 @implementation TLPhoneCall
 
@@ -151,6 +151,210 @@
 
 @end
 
+@implementation TLPhoneCall$phoneCallRequested : TLPhoneCall
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x83761ce4;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x9627ce57;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLPhoneCall$phoneCallRequested *object = [[TLPhoneCall$phoneCallRequested alloc] init];
+    object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
+    object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
+    object.date = metaObject->getInt32((int32_t)0xb76958ba);
+    object.admin_id = metaObject->getInt32((int32_t)0xdf3d1ee7);
+    object.participant_id = metaObject->getInt32((int32_t)0x9abadf01);
+    object.g_a_hash = metaObject->getBytes((int32_t)0xb39b1140);
+    object.protocol = metaObject->getObject((int32_t)0xd45aa5f2);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.n_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.access_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8f305224, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.date;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xb76958ba, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.admin_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xdf3d1ee7, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.participant_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9abadf01, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.g_a_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xb39b1140, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.protocol;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xd45aa5f2, value));
+    }
+}
+
+
+@end
+
+@implementation TLPhoneCall$phoneCallDiscardedMeta : TLPhoneCall
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xc9d59add;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xf01017df;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLPhoneCall$phoneCallDiscardedMeta *object = [[TLPhoneCall$phoneCallDiscardedMeta alloc] init];
+    object.flags = metaObject->getInt32((int32_t)0x81915c23);
+    object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
+    object.reason = metaObject->getObject((int32_t)0x3405f57);
+    object.duration = metaObject->getInt32((int32_t)0xac00f752);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.flags;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x81915c23, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.n_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.reason;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x3405f57, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.duration;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xac00f752, value));
+    }
+}
+
+
+@end
+
+@implementation TLPhoneCall$phoneCallAccepted : TLPhoneCall
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x6d003d3f;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xd149f2bd;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLPhoneCall$phoneCallAccepted *object = [[TLPhoneCall$phoneCallAccepted alloc] init];
+    object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
+    object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
+    object.date = metaObject->getInt32((int32_t)0xb76958ba);
+    object.admin_id = metaObject->getInt32((int32_t)0xdf3d1ee7);
+    object.participant_id = metaObject->getInt32((int32_t)0x9abadf01);
+    object.g_b = metaObject->getBytes((int32_t)0x5643e234);
+    object.protocol = metaObject->getObject((int32_t)0xd45aa5f2);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.n_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.access_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8f305224, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.date;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xb76958ba, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.admin_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xdf3d1ee7, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.participant_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9abadf01, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.g_b;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x5643e234, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.protocol;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xd45aa5f2, value));
+    }
+}
+
+
+@end
+
 @implementation TLPhoneCall$phoneCall : TLPhoneCall
 
 
@@ -248,135 +452,6 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.start_date;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x1c46df41, value));
-    }
-}
-
-
-@end
-
-@implementation TLPhoneCall$phoneCallRequested : TLPhoneCall
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0x6c448ae8;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0x9627ce57;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
-{
-    TLPhoneCall$phoneCallRequested *object = [[TLPhoneCall$phoneCallRequested alloc] init];
-    object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
-    object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
-    object.date = metaObject->getInt32((int32_t)0xb76958ba);
-    object.admin_id = metaObject->getInt32((int32_t)0xdf3d1ee7);
-    object.participant_id = metaObject->getInt32((int32_t)0x9abadf01);
-    object.g_a = metaObject->getBytes((int32_t)0xa6887fe5);
-    object.protocol = metaObject->getObject((int32_t)0xd45aa5f2);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt64;
-        value.primitive.int64Value = self.n_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt64;
-        value.primitive.int64Value = self.access_hash;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8f305224, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.date;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xb76958ba, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.admin_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xdf3d1ee7, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.participant_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9abadf01, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeBytes;
-        value.nativeObject = self.g_a;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xa6887fe5, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.protocol;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xd45aa5f2, value));
-    }
-}
-
-
-@end
-
-@implementation TLPhoneCall$phoneCallDiscardedMeta : TLPhoneCall
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0xc9d59add;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0xf01017df;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
-{
-    TLPhoneCall$phoneCallDiscardedMeta *object = [[TLPhoneCall$phoneCallDiscardedMeta alloc] init];
-    object.flags = metaObject->getInt32((int32_t)0x81915c23);
-    object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
-    object.reason = metaObject->getObject((int32_t)0x3405f57);
-    object.duration = metaObject->getInt32((int32_t)0xac00f752);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.flags;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x81915c23, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt64;
-        value.primitive.int64Value = self.n_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.reason;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x3405f57, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.duration;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xac00f752, value));
     }
 }
 

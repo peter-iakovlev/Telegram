@@ -130,7 +130,7 @@
                 imagePlainForced = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];
                 
                 CGContextSetFillColorWithColor(context, UIColorRGB(0xc8c7cc).CGColor);
-                CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+                CGFloat separatorHeight = TGScreenPixel;
                 CGContextFillRect(context, CGRectMake(0.0f, 3.0f - separatorHeight, 1.0f, separatorHeight));
                 
                 image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];

@@ -157,6 +157,9 @@
 
 #import "TGApplication.h"
 
+#import "TGPaymentCheckoutController.h"
+#import "TGPaymentReceiptController.h"
+
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 60000 // iOS 6.0 or later
 #define NEEDS_DISPATCH_RETAIN_RELEASE 0
 #else                                         // iOS 5.X or earlier
@@ -1031,6 +1034,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
         @"/tg/conversation/historyCleared",
         @"/tg/removedMediasForMessageIds",
         @"/tg/conversation/*/readmessageContents",
+        @"/tg/calls/enabled",
         [NSString stringWithFormat:@"/messagesEditedInConversation/(%lld)", _conversationId],
         [NSString stringWithFormat:@"/tg/peerDraft/%lld", _conversationId],
     ] watcher:self];
@@ -1376,7 +1380,6 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                             case TGMessageActionEncryptedChatScreenshot:
                             case TGMessageActionEncryptedChatMessageScreenshot:
                             case TGMessageActionGameScore:
-                            case TGMessageActionPhoneCall:
                             {
                                 needsAuthor = true;
                                 break;
@@ -1510,6 +1513,8 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                     } else if (attachment.type == TGGameAttachmentType) {
                         documentAttachment = ((TGGameMediaAttachment *)attachment).document;
                         imageAttachment = ((TGGameMediaAttachment *)attachment).photo;
+                    } else if (attachment.type == TGInvoiceMediaAttachmentType) {
+                        imageAttachment = [((TGInvoiceMediaAttachment *)attachment) webpage].photo;
                     }
                     
                     bool fileDownloaded = true;
@@ -4644,6 +4649,9 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                         hiddenLink = false;
                     }
                 }
+                if (hiddenLink && ([url hasPrefix:@"http://telegram.me/"] || [url hasPrefix:@"http://t.me/"] || [url hasPrefix:@"https://telegram.me/"] || [url hasPrefix:@"https://t.me/"])) {
+                    hiddenLink = false;
+                }
                 [self actionStageActionRequested:@"openLinkRequested" options:@{@"url": url, @"hidden": @(hiddenLink)}];
             }
         } else if ([action isKindOfClass:[TGBotReplyMarkupButtonActionRequestLocation class]]) {
@@ -4789,12 +4797,12 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                                                 NSString *shareString = [NSString stringWithFormat:@"tgShareScoreUrl=%@%lld", [TGStringUtils stringByEscapingForURL:@"tg://gshare?h="], randomId];
                                                 NSString *finalUrl = addGameShareHash(url, shareString);
                                                 
-                                                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:finalUrl]];
+                                                //[[UIApplication sharedApplication] openURL:[NSURL URLWithString:finalUrl]];
                                                 
-                                                /*TGWebAppController *controller = [[TGWebAppController alloc] initWithUrl:[NSURL URLWithString:url] title:gameTitle botName:author.userName peerIdForActivityUpdates:peerId peerAccessHashForActivityUpdates:accessHash];
-                                                controller.shareGameData = [[TGWebAppControllerShareGameData alloc] initWithPeerId:peerId messageId:messageId shareName:shareName];
+                                                TGWebAppController *controller = [[TGWebAppController alloc] initWithUrl:[NSURL URLWithString:url] title:gameTitle botName:author.userName peerIdForActivityUpdates:peerId peerAccessHashForActivityUpdates:accessHash];
+                                                controller.shareGameData = [[TGWebAppControllerShareGameData alloc] initWithPeerId:peerId messageId:messageId botName:author.userName shareName:shareName];
                                                 
-                                                [TGAppDelegateInstance.rootController pushContentController:controller];*/
+                                                [TGAppDelegateInstance.rootController pushContentController:controller];
                                             }
                                         });
                                     } synchronous:false];
@@ -4859,12 +4867,45 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                     accessAllowedBlock();
                 }
             }
+        } else if ([action isKindOfClass:[TGBotReplyMarkupButtonActionPurchase class]]) {
+            TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:messageId peerId:_conversationId];
+            if (message != nil) {
+                bool hasReceipt = false;
+                int32_t receiptMessageId = 0;
+                for (TGMediaAttachment *media in message.mediaAttachments) {
+                    if (media.type == TGInvoiceMediaAttachmentType) {
+                        hasReceipt = ((TGInvoiceMediaAttachment *)media).receiptMessageId != 0;
+                        receiptMessageId = ((TGInvoiceMediaAttachment *)media).receiptMessageId;
+                        break;
+                    }
+                }
+                
+                if (hasReceipt) {
+                    TGPaymentReceiptController *receiptController = [[TGPaymentReceiptController alloc] initWithMessage:message receiptMessageId:receiptMessageId];
+                    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:receiptController];
+                    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+                        navigationController.presentationStyle = TGNavigationControllerPresentationStyleDefault;
+                        navigationController.modalPresentationStyle = UIModalPresentationFullScreen;
+                    }
+                    [self.controller presentViewController:navigationController animated:true completion:nil];
+                } else {
+                    TGPaymentCheckoutController *checkoutController = [[TGPaymentCheckoutController alloc] initWithMessage:message];
+                    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:checkoutController];
+                    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+                        navigationController.presentationStyle = TGNavigationControllerPresentationStyleDefault;
+                        navigationController.modalPresentationStyle = UIModalPresentationFullScreen;
+                    }
+                    [self.controller presentViewController:navigationController animated:true completion:nil];
+                }
+            }
         } else {
             [self controllerWantsToSendTextMessage:[[NSString alloc] initWithFormat:@"%@%@", @"", command] entities:nil asReplyToMessageId:replyMessageId withAttachedMessages:@[] disableLinkPreviews:false botContextResult:nil botReplyMarkup:nil];
         }
     } else if ([action isEqualToString:@"activateInstantPage"]) {
         int32_t messageId = [options[@"mid"] intValue];
-        TGInstantPageController *pageController = [[TGInstantPageController alloc] initWithWebPage:options[@"webpage"] peerId:_conversationId messageId:messageId];
+        TGWebPageMediaAttachment *webpage = options[@"webpage"];
+        NSString *fragment = options[@"fragment"];
+        TGInstantPageController *pageController = [[TGInstantPageController alloc] initWithWebPage:webpage anchor:fragment.length == 0 ? nil : fragment peerId:_conversationId messageId:messageId];
         [self.controller.navigationController pushViewController:pageController animated:true];
     }
     [super actionStageActionRequested:action options:options];
@@ -5633,6 +5674,15 @@ static id mediaIdForMessage(TGMessage *message)
                 
                 return [[TGMediaId alloc] initWithType:2 itemId:imageAttachment.imageId];
             }
+        } else if (attachment.type == TGInvoiceMediaAttachmentType) {
+            TGImageMediaAttachment *imageAttachment = [((TGInvoiceMediaAttachment *)attachment) webpage].photo;
+            
+            if (imageAttachment != nil) {
+                if (imageAttachment.imageId == 0)
+                    return nil;
+                
+                return [[TGMediaId alloc] initWithType:5 itemId:imageAttachment.localImageId];
+            }
         }
     }
     
@@ -5725,6 +5775,33 @@ static id mediaIdForMessage(TGMessage *message)
                         int contentHints = TGRemoteImageContentHintLargeFile;
                         if ([self imageDownloadsShouldAutosavePhotos] && !message.outgoing)
                             contentHints |= TGRemoteImageContentHintSaveToGallery;
+                        
+                        NSMutableDictionary *options = [[NSMutableDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:0], @"cancelTimeout", [TGRemoteImageView sharedCache], @"cache", [NSNumber numberWithBool:false], @"useCache", [NSNumber numberWithBool:false], @"allowThumbnailCache", [[NSNumber alloc] initWithInt:contentHints], @"contentHints", nil];
+                        [options setObject:[[NSDictionary alloc] initWithObjectsAndKeys:
+                                            [[NSNumber alloc] initWithInt:message.mid], @"messageId",
+                                            [[NSNumber alloc] initWithLongLong:message.cid], @"conversationId",
+                                            [[NSNumber alloc] initWithBool:false], @"forceSave",
+                                            mediaId, @"mediaId", imageAttachment.imageInfo, @"imageInfo",
+                                            [[NSNumber alloc] initWithBool:false], @"storeAsAsset",
+                                            nil] forKey:@"userProperties"];
+                        
+                        [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/img/(download:{filter:%@}%@)", @"maybeScale", url] options:options changePriority:highPriority messageId:message.mid itemId:mediaId groupId:conversationId itemClass:TGDownloadItemClassImage];
+                    }
+                }
+            }
+            else if (attachment.type == TGInvoiceMediaAttachmentType) {
+                TGImageMediaAttachment *imageAttachment = [((TGInvoiceMediaAttachment *)attachment) webpage].photo;
+                
+                if (imageAttachment != nil) {
+                    id mediaId = [[TGMediaId alloc] initWithType:5 itemId:imageAttachment.localImageId];
+                    
+                    NSString *url = [[imageAttachment imageInfo] closestImageUrlWithSize:CGSizeMake(1136, 1136) resultingSize:NULL pickLargest:true];
+                    
+                    if (url != nil)
+                    {
+                        int contentHints = TGRemoteImageContentHintLargeFile;
+                        //if ([self imageDownloadsShouldAutosavePhotos] && !message.outgoing)
+                        //    contentHints |= TGRemoteImageContentHintSaveToGallery;
                         
                         NSMutableDictionary *options = [[NSMutableDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:0], @"cancelTimeout", [TGRemoteImageView sharedCache], @"cache", [NSNumber numberWithBool:false], @"useCache", [NSNumber numberWithBool:false], @"allowThumbnailCache", [[NSNumber alloc] initWithInt:contentHints], @"contentHints", nil];
                         [options setObject:[[NSDictionary alloc] initWithObjectsAndKeys:

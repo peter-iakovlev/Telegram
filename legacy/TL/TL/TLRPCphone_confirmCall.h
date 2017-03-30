@@ -4,12 +4,15 @@
 #import "TLMetaRpc.h"
 
 @class TLInputPhoneCall;
-@class TLPhoneConnection;
+@class TLPhoneCallProtocol;
+@class TLphone_PhoneCall;
 
 @interface TLRPCphone_confirmCall : TLMetaRpc
 
-@property (nonatomic, retain) TLInputPhoneCall *n_id;
-@property (nonatomic, retain) NSData *a_or_b;
+@property (nonatomic, retain) TLInputPhoneCall *peer;
+@property (nonatomic, retain) NSData *g_a;
+@property (nonatomic) int64_t key_fingerprint;
+@property (nonatomic, retain) TLPhoneCallProtocol *protocol;
 
 - (Class)responseClass;
 

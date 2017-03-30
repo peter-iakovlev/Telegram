@@ -194,8 +194,9 @@
                         else if ([self isResendAction:action.action])
                             [actionsToProcess addObject:action];
                     }
-                    else
+                    else {
                         [actionsToProcess addObject:action];
+                    }
                 }
             }
             

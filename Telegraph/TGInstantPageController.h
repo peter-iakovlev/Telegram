@@ -8,7 +8,7 @@
 
 @property (nonatomic, strong, readonly) TGWebPageMediaAttachment *webPage;
 
-- (instancetype)initWithWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId;
+- (instancetype)initWithWebPage:(TGWebPageMediaAttachment *)webPage anchor:(NSString *)anchor peerId:(int64_t)peerId messageId:(int32_t)messageId;
 
 - (void)scrollToPIPLocation:(TGPIPSourceLocation *)location;
 

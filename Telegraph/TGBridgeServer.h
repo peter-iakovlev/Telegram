@@ -7,6 +7,7 @@
 
 @property (nonatomic, readonly) NSURL *temporaryFilesURL;
 
+@property (nonatomic, readonly) bool isPaired;
 @property (nonatomic, readonly) bool isWatchAppInstalled;
 @property (nonatomic, readonly) bool isRunning;
 - (void)startRunning;

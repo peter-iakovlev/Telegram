@@ -1136,6 +1136,31 @@ static bool isEmojiCharacter(NSString *singleChar)
     return model;
 }
 
++ (NSString *)stringForCurrency:(NSString *)__unused currency amount:(int64_t)__unused amount {
+    return nil;
+}
+
++ (NSString *)stringForEmojiHashOfData:(NSData *)data count:(NSInteger)count positionExtractor:(int32_t (^)(uint8_t *, int32_t, int32_t))positionExtractor
+{
+    if (data.length != 32)
+        return @"";
+    
+    NSArray *emojis = @[ @"😉", @"😍", @"😛", @"😭", @"😱", @"😡", @"😎", @"😴", @"😵", @"😈", @"😬", @"😇", @"😏", @"👮", @"👷", @"💂", @"👶", @"👨", @"👩", @"👴", @"👵", @"😻", @"😽", @"🙀", @"👺", @"🙈", @"🙉", @"🙊", @"💀", @"👽", @"💩", @"🔥", @"💥", @"💤", @"👂", @"👀", @"👃", @"👅", @"👄", @"👍", @"👎", @"👌", @"👊", @"✌️", @"✋️", @"👐", @"👆", @"👇", @"👉", @"👈", @"🙏", @"👏", @"💪", @"🚶", @"🏃", @"💃", @"👫", @"👪", @"👬", @"👭", @"💅", @"🎩", @"👑", @"👒", @"👟", @"👞", @"👠", @"👕", @"👗", @"👖", @"👙", @"👜", @"👓", @"🎀", @"💄", @"💛", @"💙", @"💜", @"💚", @"💍", @"💎", @"🐶", @"🐺", @"🐱", @"🐭", @"🐹", @"🐰", @"🐸", @"🐯", @"🐨", @"🐻", @"🐷", @"🐮", @"🐗", @"🐴", @"🐑", @"🐘", @"🐼", @"🐧", @"🐥", @"🐔", @"🐍", @"🐢", @"🐛", @"🐝", @"🐜", @"🐞", @"🐌", @"🐙", @"🐚", @"🐟", @"🐬", @"🐋", @"🐐", @"🐊", @"🐫", @"🍀", @"🌹", @"🌻", @"🍁", @"🌾", @"🍄", @"🌵", @"🌴", @"🌳", @"🌞", @"🌚", @"🌙", @"🌎", @"🌋", @"⚡️", @"☔️", @"❄️", @"⛄️", @"🌀", @"🌈", @"🌊", @"🎓", @"🎆", @"🎃", @"👻", @"🎅", @"🎄", @"🎁", @"🎈", @"🔮", @"🎥", @"📷", @"💿", @"💻", @"☎️", @"📡", @"📺", @"📻", @"🔉", @"🔔", @"⏳", @"⏰", @"⌚️", @"🔒", @"🔑", @"🔎", @"💡", @"🔦", @"🔌", @"🔋", @"🚿", @"🚽", @"🔧", @"🔨", @"🚪", @"🚬", @"💣", @"🔫", @"🔪", @"💊", @"💉", @"💰", @"💵", @"💳", @"✉️", @"📫", @"📦", @"📅", @"📁", @"✂️", @"📌", @"📎", @"✒️", @"✏️", @"📐", @"📚", @"🔬", @"🔭", @"🎨", @"🎬", @"🎤", @"🎧", @"🎵", @"🎹", @"🎻", @"🎺", @"🎸", @"👾", @"🎮", @"🃏", @"🎲", @"🎯", @"🏈", @"🏀", @"⚽️", @"⚾️", @"🎾", @"🎱", @"🏉", @"🎳", @"🏁", @"🏇", @"🏆", @"🏊", @"🏄", @"☕️", @"🍼", @"🍺", @"🍷", @"🍴", @"🍕", @"🍔", @"🍟", @"🍗", @"🍱", @"🍚", @"🍜", @"🍡", @"🍳", @"🍞", @"🍩", @"🍦", @"🎂", @"🍰", @"🍪", @"🍫", @"🍭", @"🍯", @"🍎", @"🍏", @"🍊", @"🍋", @"🍒", @"🍇", @"🍉", @"🍓", @"🍑", @"🍌", @"🍐", @"🍍", @"🍆", @"🍅", @"🌽", @"🏡", @"🏥", @"🏦", @"⛪️", @"🏰", @"⛺️", @"🏭", @"🗻", @"🗽", @"🎠", @"🎡", @"⛲️", @"🎢", @"🚢", @"🚤", @"⚓️", @"🚀", @"✈️", @"🚁", @"🚂", @"🚋", @"🚎", @"🚌", @"🚙", @"🚗", @"🚕", @"🚛", @"🚨", @"🚔", @"🚒", @"🚑", @"🚲", @"🚠", @"🚜", @"🚦", @"⚠️", @"🚧", @"⛽️", @"🎰", @"🗿", @"🎪", @"🎭", @"🇯🇵", @"🇰🇷", @"🇩🇪", @"🇨🇳", @"🇺🇸", @"🇫🇷", @"🇪🇸", @"🇮🇹", @"🇷🇺", @"🇬🇧", @"1️⃣", @"2️⃣", @"3️⃣", @"4️⃣", @"5️⃣", @"6️⃣", @"7️⃣", @"8️⃣", @"9️⃣", @"0️⃣", @"🔟", @"❗️", @"❓", @"♥️", @"♦️", @"💯", @"🔗", @"🔱", @"🔴", @"🔵", @"🔶", @"🔷" ];
+    
+    uint8_t bytes[32];
+    [data getBytes:bytes length:32];
+    
+    NSString *result = @"";
+    for (int32_t i = 0; i < count; i++)
+    {
+        int32_t position = positionExtractor(bytes, i, (int32_t)emojis.count);
+        NSString *emoji = emojis[position];
+        result = [result stringByAppendingString:emoji];
+    }
+    
+    return result;
+}
+
 @end
 
 #if defined(_MSC_VER)
@@ -1447,6 +1472,11 @@ bool TGIsLocaleArabic()
     return attributedString;
 }
 
+- (NSString *)urlAnchorPart {
+    NSURL *url = [[NSURL alloc] initWithString:self];
+    return [url fragment];
+}
+
 static unsigned char strToChar (char a, char b)
 {
     char encoder[3] = {'\0','\0','\0'};
@@ -1487,7 +1517,7 @@ static unsigned char strToChar (char a, char b)
              if (substring.length > 1) {
                  unichar ls = [substring characterAtIndex:1];
                  int uc = ((hs - 0xd800) * 0x400) + (ls - 0xdc00) + 0x10000;
-                 if (0x1d000 <= uc && uc <= 129300) {
+                 if (0x1d000 <= uc && uc <= 129316) {
                      
                      [temp setObject:substring forKey:@(uc)];
                  }
@@ -1638,6 +1668,29 @@ static unsigned char strToChar (char a, char b)
     for (int i = 0; i < (int)dataLength; ++i)
         [hexString appendString:[NSString stringWithFormat:@"%02lx", (unsigned long)dataBuffer[i]]];
     
+    return hexString;
+}
+
+- (NSString *)stringByEncodingInHexSeparatedByString:(NSString *)string
+{
+    const unsigned char *dataBuffer = (const unsigned char *)[self bytes];
+    if (dataBuffer == NULL)
+        return [NSString string];
+    
+    NSUInteger dataLength  = [self length];
+    NSMutableString *hexString  = [NSMutableString stringWithCapacity:(dataLength * 2)];
+    
+    NSString *divider = string;
+    for (int i = 0; i < (int)dataLength; ++i) {
+        if (i == (int)dataLength - 1)
+            divider = @"";
+        else if (i == (int)dataLength / 2 - 1)
+            divider = [divider stringByAppendingString:divider];
+        else
+            divider = string;
+        
+        [hexString appendString:[NSString stringWithFormat:@"%02lx%@", (unsigned long)dataBuffer[i], divider]];
+    }
     return hexString;
 }
 

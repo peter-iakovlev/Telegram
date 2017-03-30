@@ -429,14 +429,14 @@
         return [editableItem thumbnailImageSignal];
     };
     
-    controller.requestOriginalScreenSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem)
+    controller.requestOriginalScreenSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
     {
-        return [editableItem screenImageSignal];
+        return [editableItem screenImageSignal:position];
     };
     
-    controller.requestOriginalFullSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem)
+    controller.requestOriginalFullSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
     {
-        return [editableItem originalImageSignal];
+        return [editableItem originalImageSignal:position];
     };
     
     controller.requestAdjustments = ^id<TGMediaEditAdjustments> (id<TGMediaEditableItem> editableItem)

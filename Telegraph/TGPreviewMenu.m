@@ -179,9 +179,8 @@
         
         TGPreviewAboutItemView *aboutItem = [[TGPreviewAboutItemView alloc] initWithWebPageAttachment:webPage];
         
-        TGEmbedItemView *embedItem = [[TGEmbedItemView alloc] initWithWebPageAttachment:webPage thumbnailSignal:thumbnailSignal peerId:0 messageId:0];
+        TGEmbedItemView *embedItem = [[TGEmbedItemView alloc] initWithWebPageAttachment:webPage preview:true thumbnailSignal:thumbnailSignal peerId:0 messageId:0];
         embedItem.parentController = parentController;
-        embedItem.inPreviewContext = true;
         [items addObject:embedItem];
         
         __weak TGPreviewAboutItemView *weakAboutItem = aboutItem;
@@ -197,6 +196,7 @@
         copyItem.action = ^
         {
             TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+            progressWindow.skipMakeKeyWindowOnDismiss = true;
             [progressWindow show:true];
             [[UIPasteboard generalPasteboard] setString:coubUrl];
             [progressWindow dismissWithSuccess];
@@ -238,9 +238,8 @@
                         webPage.embedSize = CGSizeMake(1280.0f, 720.0f);
                 }
                 
-                TGEmbedItemView *embedItem = [[TGEmbedItemView alloc] initWithWebPageAttachment:webPage thumbnailSignal:thumbnailSignal peerId:0 messageId:0];
+                TGEmbedItemView *embedItem = [[TGEmbedItemView alloc] initWithWebPageAttachment:webPage preview:true thumbnailSignal:thumbnailSignal peerId:0 messageId:0];
                 embedItem.parentController = parentController;
-                embedItem.inPreviewContext = true;
                 [items addObject:embedItem];
                 
                 if (webPage.title.length > 0)
@@ -256,6 +255,7 @@
                 copyItem.action = ^
                 {
                     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                    progressWindow.skipMakeKeyWindowOnDismiss = true;
                     [progressWindow show:true];
                     [[UIPasteboard generalPasteboard] setString:webPage.url];
                     [progressWindow dismissWithSuccess];
@@ -286,6 +286,7 @@
                         TGMenuSheetButtonItemView *copyItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Preview.CopyAddress") type:TGMenuSheetButtonTypeDefault action:^
                         {
                             TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                            progressWindow.skipMakeKeyWindowOnDismiss = true;
                             [progressWindow show:true];
                             [[UIPasteboard generalPasteboard] setString:location.venue.address];
                             [progressWindow dismissWithSuccess];
@@ -315,6 +316,7 @@
                             TGMenuSheetButtonItemView *copyItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Preview.CopyAddress") type:TGMenuSheetButtonTypeDefault action:^
                             {
                                 TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                                progressWindow.skipMakeKeyWindowOnDismiss = true;
                                 [progressWindow show:true];
                                 [[UIPasteboard generalPasteboard] setString:location.venue.address];
                                 [progressWindow dismissWithSuccess];
@@ -404,6 +406,7 @@
                     saveGifItem.action = ^
                     {
                         TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                        progressWindow.skipMakeKeyWindowOnDismiss = true;
                         [progressWindow show:true];
                         [TGRecentGifsSignal addRecentGifFromDocument:document];
                         [progressWindow dismissWithSuccess];
@@ -419,9 +422,8 @@
                     CGSize thumbnailSize = TGFitSize(imageSize, CGSizeMake(320, 320));
                     SSignal *thumbnailSignal = [TGSharedPhotoSignals cachedRemoteDocumentThumbnail:concreteResult.document size:thumbnailSize pixelProcessingBlock:nil cacheVariantKey:@"mediaContextPanel" threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] diskCache:[TGSharedMediaUtils sharedMediaTemporaryPersistentCache]];
                     
-                    TGEmbedItemView *embedItem = [[TGEmbedItemView alloc] initWithDocumentAttachment:document thumbnailSignal:thumbnailSignal peerId:0 messageId:0];
+                    TGEmbedItemView *embedItem = [[TGEmbedItemView alloc] initWithDocumentAttachment:document preview:true thumbnailSignal:thumbnailSignal peerId:0 messageId:0];
                     embedItem.parentController = parentController;
-                    embedItem.inPreviewContext = true;
                     embedItem.hasNoAboutInformation = true;
                     [items addObject:embedItem];
                 }
@@ -490,9 +492,8 @@
                         CGSize thumbnailSize = TGFitSize(size, CGSizeMake(320, 320));
                         SSignal *thumbnailSignal = [TGSharedPhotoSignals cachedRemoteThumbnail:concreteResult.photo.imageInfo size:thumbnailSize pixelProcessingBlock:nil cacheVariantKey:@"mediaContextPanel" threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] diskCache:[TGSharedMediaUtils sharedMediaTemporaryPersistentCache]];
                         
-                        TGEmbedItemView *embedItem = [[TGEmbedItemView alloc] initWithWebPageAttachment:webPage thumbnailSignal:thumbnailSignal peerId:0 messageId:0];
+                        TGEmbedItemView *embedItem = [[TGEmbedItemView alloc] initWithWebPageAttachment:webPage preview:true thumbnailSignal:thumbnailSignal peerId:0 messageId:0];
                         embedItem.parentController = parentController;
-                        embedItem.inPreviewContext = true;
                         [items addObject:embedItem];
                         
                         if (webPage.title.length > 0)
@@ -508,6 +509,7 @@
                         copyItem.action = ^
                         {
                             TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                            progressWindow.skipMakeKeyWindowOnDismiss = true;
                             [progressWindow show:true];
                             [[UIPasteboard generalPasteboard] setString:webPage.url];
                             [progressWindow dismissWithSuccess];

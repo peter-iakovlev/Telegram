@@ -8,8 +8,8 @@
 @property (nonatomic, readonly) CGSize originalSize;
 
 - (SSignal *)thumbnailImageSignal;
-- (SSignal *)screenImageSignal;
-- (SSignal *)originalImageSignal;
+- (SSignal *)screenImageSignal:(NSTimeInterval)position;
+- (SSignal *)originalImageSignal:(NSTimeInterval)position;
 
 @end
 

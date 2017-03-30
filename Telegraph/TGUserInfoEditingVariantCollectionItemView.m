@@ -69,7 +69,7 @@
     
     CGRect bounds = self.bounds;
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     _separatorLayer.frame = CGRectMake(15.0f, bounds.size.height - separatorHeight, bounds.size.width - 15.0f, separatorHeight);
     
     CGFloat leftPadding = 35.0f + TGRetinaPixel;

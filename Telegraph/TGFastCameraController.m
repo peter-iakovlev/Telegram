@@ -1,6 +1,7 @@
 #import "TGFastCameraController.h"
 #import "TGCameraController.h"
 #import "TGTelegraph.h"
+#import "TGAppDelegate.h"
 
 #import "TGHacks.h"
 #import "TGImageBlur.h"
@@ -612,8 +613,8 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     if (originalImage == nil)
         return;
     
-    SSignal *savePhotoSignal = [[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:originalImage];
-    if (editedImage != nil)
+    SSignal *savePhotoSignal = TGAppDelegateInstance.saveCapturedMedia ? [[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:originalImage] : [SSignal complete];
+    if (TGAppDelegateInstance.saveEditedPhotos && editedImage != nil)
         savePhotoSignal = [savePhotoSignal then:[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:editedImage]];
     
     [savePhotoSignal startWithNext:nil];
@@ -621,6 +622,9 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
 
 - (void)_saveVideoToCameraRollWithURL:(NSURL *)url completion:(void (^)(void))completion
 {
+    if (!TGAppDelegateInstance.saveCapturedMedia)
+        return;
+    
     [[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithVideoAtUrl:url] startWithNext:nil error:^(__unused NSError *error)
     {
         if (completion != nil)

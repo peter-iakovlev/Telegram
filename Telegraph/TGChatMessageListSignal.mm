@@ -61,7 +61,7 @@
         _initialSignal = initialSignal;
         
         _actionHandle = [[ASHandle alloc] initWithDelegate:self];
-        
+
         
         if (_currentView.isChannelGroup)
         {

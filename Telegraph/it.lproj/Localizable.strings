@@ -76,6 +76,7 @@
 "PINNED_GAME" = "%1$@ ha fissato un gioco";
 
 "PHONE_CALL_REQUEST" = "%1$@ ti sta chiamando";
+"PHONE_CALL_MISSED" = "Hai perso una chiamata da %1$@";
 
 // Common
 "Common.OK" = "OK";
@@ -248,7 +249,7 @@
 "WelcomeScreen.Logout" = "Esci";
 "WelcomeScreen.Greeting" = "Benvenuto, %@!";
 "WelcomeScreen.ContactsAccessDisabled" = "Spiacenti, impossibile sincronizzare i contatti.";
-"WelcomeScreen.ContactsAccessHelp" = "La messaggistica di Telegram è basata sulla tua lista dei contatti. Vai nelle Impostazioni del tuo %@ — Privacy — Contatti e imposta Telegram su Sì.";
+"WelcomeScreen.ContactsAccessHelp" = "La messaggistica di Telegram è basata sulla tua lista dei contatti. Vai nelle Impostazioni del tuo %@ > Privacy > Contatti e imposta Telegram su Sì.";
 "WelcomeScreen.ContactsAccessSettings" = "Impostazioni";
 "WelcomeScreen.UpdatingTitle" = "Aggiorno";
 
@@ -270,7 +271,7 @@
 "DialogList.Typing" = "sta scrivendo";
 "DialogList.ClearHistoryConfirmation" = "Cancella cronologia";
 "DialogList.DeleteConversationConfirmation" = "Elimina ed esci";
-"DialogList.AwaitingEncryption" = "In attesa che %@ si colleghi…";
+"DialogList.AwaitingEncryption" = "Attendo che %@ si colleghi…";
 "DialogList.EncryptionRejected" = "Chat segreta annullata";
 "DialogList.EncryptionProcessing" = "Scambio delle chiavi di crittografia…";
 "DialogList.EncryptedChatStartedOutgoing" = "%@ si è unito alla tua chat segreta.";
@@ -346,7 +347,7 @@
 "Conversation.ClearAllConfirmation" = "Vuoi eliminare tutti i messaggi?";
 "Conversation.SearchImages" = "Cerca immagini";
 "Conversation.UnsupportedMedia" = "Questo messaggio non è supportato dalla tua versione di Telegram. Aggiorna l'app per visualizzarlo:\nhttp://telegram.org/update";
-"Conversation.EncryptionWaiting" = "In attesa che %@ si colleghi…";
+"Conversation.EncryptionWaiting" = "Attendo che %@ si colleghi…";
 "Conversation.EncryptionProcessing" = "Scambio chiavi di crittografia…";
 "Conversation.SupportPlaceholder" = "Hai una domanda su Telegram?";
 "Conversation.EmptyPlaceholder" = "Ancora nessun messaggio qui…";
@@ -462,7 +463,7 @@
 "Conversation.SlideToCancel" = "Annulla";
 "Conversation.ApplyLocalization" = "Applica traduzione";
 "Conversation.OpenFile" = "Apri file";
-"Conversation.MicrophoneAccessDisabled" = "Telegram deve accedere al tuo microfono per i messaggi vocali. Per favore vai in Impostazioni - Privacy - Microfono e imposta Telegram su Sì.";
+"Conversation.MicrophoneAccessDisabled" = "Telegram deve accedere al tuo microfono per i messaggi vocali. Per favore vai in Impostazioni > Privacy > Microfono e imposta Telegram su Sì.";
 
 // Media Picker
 "MediaPicker.Send" = "Invia";
@@ -531,9 +532,9 @@
 
 // Group Info
 "GroupInfo.Title" = "Info gruppo";
-"GroupInfo.GroupNamePlaceholder" = "Nome gruppo";
+"GroupInfo.GroupNamePlaceholder" = "Nome del gruppo";
 "GroupInfo.BroadcastListNamePlaceholder" = "Nome lista";
-"GroupInfo.SetGroupPhoto" = "Imposta foto gruppo";
+"GroupInfo.SetGroupPhoto" = "Imposta la foto del gruppo";
 "GroupInfo.SetGroupPhotoStop" = "Arresta";
 "GroupInfo.SetGroupPhotoDelete" = "Elimina foto";
 "GroupInfo.Notifications" = "Notifiche";
@@ -554,7 +555,7 @@
 
 // Encryption Key
 "EncryptionKey.Title" = "Chiave di crittografia";
-"EncryptionKey.Description" = "Questa immagine e il testo sono derivati dalla chiave di crittografia per questa chat segreta con %1$@. \n\nSe sono uguali sul dispositivo di %2$@, la crittografia end-to-end è garantita.\n\nUlteriori informazioni su telegram.org";
+"EncryptionKey.Description" = "L'immagine e il testo sono derivati dalla chiave di crittografia di questa chat segreta con %1$@. \n\nSe sono uguali sul dispositivo di %2$@, la crittografia end-to-end è garantita.\n\nUlteriori informazioni su telegram.org";
 
 // Conversation media
 "ConversationMedia.Title" = "Media";
@@ -562,7 +563,7 @@
 
 // Preview
 "Preview.VideoNotYetDownloaded" = "Scarica prima il video.";
-"Preview.GroupPhotoTitle" = "Foto gruppo";
+"Preview.GroupPhotoTitle" = "Foto del gruppo";
 "Preview.ProfilePhotoTitle" = "Foto profilo";
 "Preview.LoadingVideo" = "carico video...";
 "Preview.LoadingImage" = "carico immagine completa...";
@@ -669,7 +670,7 @@
 "BlockedUsers.BlockFormat" = "Blocca %@?";
 "BlockedUsers.BlockTitle" = "Blocca";
 "BlockedUsers.LeavePrefix" = "Lasciare";
-"BlockedUsers.Info" = "Gli utenti bloccati non potranno mandarti messaggi o aggiungerti ai gruppi. Non vedranno le tue immagini profilo, lo stato in linea e l'ultimo accesso.";
+"BlockedUsers.Info" = "Gli utenti bloccati non possono inviarti messaggi o aggiungerti ai gruppi. Non vedranno le tue foto profilo, lo stato in linea e l'ultimo accesso.";
 "BlockedUsers.AddNew" = "Aggiungi nuovo...";
 "BlockedUsers.Unblock" = "Sblocca";
 
@@ -893,7 +894,7 @@
 "Camera.FlashAuto" = "Auto";
 "Camera.Retake" = "Scarta";
 
-"Settings.PhoneNumber" = "Telefono";
+"Settings.PhoneNumber" = "Numero di telefono";
 
 "PhoneNumberHelp.Help" = "Puoi cambiare il tuo numero di telefono qui. Il tuo account e tutti i tuoi dati cloud — messaggi, file, contatti, etc. saranno trasferiti sul nuovo numero.\n\n**Importante:** a tutti i tuoi contatti di Telegram verrà aggiunto il tuo **nuovo numero** ai contatti, purché abbiano il tuo vecchio numero e tu non li abbia bloccati su Telegram.";
 "PhoneNumberHelp.Alert" = "Tutti i tuoi contatti Telegram avranno il tuo nuovo numero tra i loro contatti, purché abbiano il tuo vecchio numero e tu non li abbia bloccati su Telegram.";
@@ -1048,7 +1049,7 @@
 "DialogList.SearchSectionGlobal" = "Ricerca globale";
 "DialogList.SearchSectionMessages" = "Messaggi";
 
-"Username.LinkHint" = "Questo link apre una chat con te su Telegram:[\nhttps://telegram.me/%@]";
+"Username.LinkHint" = "Questo link apre una chat con te su Telegram:[ https://t.me/%@]";
 "Username.LinkCopied" = "Link copiato negli appunti";
 
 "SharedMedia.ItemsSelected_1" = "1 Selezionato";
@@ -1070,8 +1071,8 @@
 "PasscodeSettings.UnlockWithTouchId" = "Sblocca con Touch ID";
 "PasscodeSettings.SimplePasscode" = "Codice semplice";
 "PasscodeSettings.SimplePasscodeHelp" = "Un codice semplice è un numero a 4 cifre.";
-"PasscodeSettings.EncryptData" = "Crittografia database locale";
-"PasscodeSettings.EncryptDataHelp" = "Funzione sperimentale, usare con cautela. I tuoi dati locali di Telegram vengono crittografati, usando una chiave derivata dal tuo codice.";
+"PasscodeSettings.EncryptData" = "Crittografa database locale";
+"PasscodeSettings.EncryptDataHelp" = "Funzione sperimentale, usare con cautela. Crittografa i tuoi dati locali di Telegram, usando una chiave che deriva dal tuo codice.";
 
 "EnterPasscode.EnterTitle" = "Inserisci il codice di Telegram";
 "EnterPasscode.SetupTitle" = "Nuovo codice";
@@ -1304,7 +1305,7 @@
 "AuthSessions.TerminateSession" = "Termina sessione";
 "AuthSessions.OtherSessions" = "SESSIONI ATTIVE";
 "AuthSessions.EmptyTitle" = "Nessun'altra sessione";
-"AuthSessions.EmptyText" = "Ti puoi connettere a Telegram da altri dispositivi mobili, tablet e desktop usando lo stesso numero. Tutti i tuoi dati saranno sincronizzati istantaneamente.";
+"AuthSessions.EmptyText" = "Puoi accedere a Telegram da altri dispositivi mobili, tablet e desktop usando lo stesso numero. Tutti i tuoi dati saranno sincronizzati istantaneamente.";
 "AuthSessions.AppUnofficial" = "(ID: %@)";
 
 "WebPreview.GettingLinkInfo" = "Recupero le info del link...";
@@ -1343,7 +1344,7 @@
 "ChatSettings.Stickers" = "Sticker";
 
 "StickerPacksSettings.Title" = "Sticker";
-"StickerPacksSettings.ShowStickersButton" = "Mostra pannello sticker";
+"StickerPacksSettings.ShowStickersButton" = "Mostra scheda sticker";
 "StickerPacksSettings.ShowStickersButtonHelp" = "Un'icona sticker apparirà nel campo di scrittura.";
 
 "StickerPacksSettings.StickerPacksSection" = "SET DI STICKER";
@@ -1422,14 +1423,14 @@
 "Channels.Title" = "Canali";
 
 "Compose.NewChannel" = "Nuovo canale";
-"GroupInfo.ChannelListNamePlaceholder" = "Nome canale";
+"GroupInfo.ChannelListNamePlaceholder" = "Nome del canale";
 
 "Channel.MessagePhotoUpdated" = "Foto del canale aggiornata";
 "Channel.MessagePhotoRemoved" = "Foto del canale rimossa";
 "Channel.MessageTitleUpdated" = "Canale rinominato in \"%@\"";
 "Channel.TitleInfo" = "Info canale";
 
-"Channel.UpdatePhotoItem" = "Imposta foto canale";
+"Channel.UpdatePhotoItem" = "Imposta la foto del canale";
 
 "Channel.AboutItem" = "info";
 "Channel.LinkItem" = "condividi link";
@@ -1438,7 +1439,7 @@
 
 "Channel.Username.Title" = "Link";
 "Channel.Username.Help" = "Puoi scegliere un nome per il canale su **Telegram**. Se lo fai, le altre persone potranno trovare il tuo canale tramite questo nome.\n\nPuoi usare **a-z**, **0-9** e underscore. La lunghezza minima è di **5** caratteri.";
-"Channel.Username.LinkHint" = "Questo link apre il tuo canale su Telegram:[\nhttps://telegram.me/%@]";
+"Channel.Username.LinkHint" = "Questo link apre il tuo canale su Telegram:[\nhttps://t.me/%@]";
 "Channel.Username.InvalidTooShort" = "I nomi dei canali devono avere almeno 5 caratteri.";
 "Channel.Username.InvalidStartsWithNumber" = "I nomi dei canali non possono iniziare con un numero.";
 "Channel.Username.InvalidCharacters" = "Spiacenti, questo nome non è valido.";
@@ -1890,7 +1891,7 @@
 "Group.Username.InvalidTooShort" = "I nomi dei gruppi devono avere almeno 5 caratteri.";
 "Group.Username.InvalidStartsWithNumber" = "I nomi dei gruppi non possono iniziare con un numero.";
 
-"Group.Username.LinkHint" = "Questo link apre il tuo gruppo su Telegram:[\nhttps://telegram.me/%@]";
+"Group.Username.LinkHint" = "Questo link apre il tuo gruppo su Telegram:[\nhttps://t.me/%@]";
 
 "Notification.PinnedTextMessage" = "%@ ha fissato \"%@\"";
 "Notification.PinnedPhotoMessage" = "%@ ha fissato una foto";
@@ -2172,10 +2173,10 @@
 "Conversation.JumpToDate" = "Vai alla data";
 "Conversation.AddToReadingList" = "Aggiungi a “Elenco lettura”";
 
-"AccessDenied.CallMicrophone" = "Telegram ha bisogno di accedere al tuo microfono per le chiamate. Vai in Impostazioni —  Privacy —  Microfono e imposta Telegram su Sì.";
+"AccessDenied.CallMicrophone" = "Telegram ha bisogno di accedere al tuo microfono per le chiamate.\n\nVai in Impostazioni > Privacy > Microfono e imposta Telegram su Sì.";
 
 "Call.EncryptionKey.Title" = "Chiave di crittografia";
-"Call.EncryptionKey.Description" = "Questa immagine e il testo sono derivati dalla chiave di crittografia per questa chiamata con %1$@. \n\nSe sono uguali sul dispositivo di %2$@, la crittografia end-to-end è garantita.\n\nUlteriori informazioni su telegram.org";
+"Call.EncryptionKey.Description" = "L'immagine e il testo sono derivati dalla chiave di crittografia di questa chiamata con %1$@. \n\nSe sono uguali sul dispositivo di %2$@, la crittografia end-to-end è garantita.";
 
 "Application.Name" = "Telegram";
 "DialogList.Pin" = "Fissa";
@@ -2199,8 +2200,8 @@
 "NetworkUsageSettings.BytesSent" = "Byte inviati";
 "NetworkUsageSettings.BytesReceived" = "Byte ricevuti";
 
-"NetworkUsageSettings.ResetStats" = "Ripristina statistiche";
-"NetworkUsageSettings.ResetStatsConfirmation" = "Vuoi ripristinare le tue statistiche di utilizzo?";
+"NetworkUsageSettings.ResetStats" = "Azzera statistiche";
+"NetworkUsageSettings.ResetStatsConfirmation" = "Vuoi azzerare le tue statistiche di utilizzo?";
 "NetworkUsageSettings.CellularUsageSince" = "Utilizzo cellulare da %@";
 "NetworkUsageSettings.WifiUsageSince" = "Utilizzo Wi-Fi da %@";
 
@@ -2214,18 +2215,17 @@
 "CallSettings.Title" = "Chiamate vocali";
 "CallSettings.RecentCalls" = "Chiamate recenti";
 "CallSettings.TabIcon" = "Mostra scheda chiamate";
-"CallSettings.TabIconDescription" = "Un'icona di chiamata apparirà nella barra delle schede";
+"CallSettings.TabIconDescription" = "Un'icona di chiamata apparirà nella barra delle schede.";
 "CallSettings.UseLessData" = "Utilizza meno dati";
-"CallSettings.UseLessDataDescription" = "Utilizza meno dati per le chiamate.";
 "CallSettings.Never" = "Mai";
 "CallSettings.OnMobile" = "Con la rete mobile";
 "CallSettings.Always" = "Sempre";
 "CallSettings.UseLessDataLongDescription" = "Usare meno dati può migliorare l'esperienza su reti deboli, ma diminuirà leggermente la qualità audio.";
 
 "Calls.CallTabTitle" = "Scheda chiamate";
-"Calls.CallTabDescription" = "Puoi aggiungere una scheda chiamata nella barra delle schede.";
+"Calls.CallTabDescription" = "Puoi aggiungere una scheda chiamate nella barra delle schede.";
 "Calls.NotNow" = "Non ora";
-"Calls.AddTab" = "Aggiungi scheda";
+"Calls.AddTab" = "Aggiungi";
 "Calls.Search" = "Cerca chiamate";
 "Calls.NewCall" = "Nuova chiamata";
 
@@ -2255,10 +2255,206 @@
 "Notification.CallIncoming" = "Chiamata in entrata";
 "Notification.CallMissed" = "Chiamata persa";
 "Notification.CallCanceled" = "Chiamata annullata";
-"Notification.CallFormat" = "%1$@ %2$@"; // 1 - title, 2 - time
+"Notification.CallOutgoingShort" = "In uscita";
+"Notification.CallIncomingShort" = "In entrata";
+"Notification.CallMissedShort" = "Persa";
+"Notification.CallCanceledShort" = "Annullata";
+"Notification.CallFormat" = "%1$@, %2$@"; // 1 - time, 2 - duration
+
+
 
 "Call.ConnectionErrorTitle" = "Impossibile chiamare";
-"Call.ConnectionErrorMessage" = "Per favore controlla la tua connessione a internet e riprova.";
+"Call.ConnectionErrorMessage" = "Per favore controlla la tua connessione a Internet e riprova.";
 
 "Call.CallBack" = "Richiama";
-"Call.CallAgain" = "Chiama di nuovo";
+"Call.CallAgain" = "Richiama";
+
+"Login.PhoneFloodError" = "Spiacenti, hai eliminato e ricreato il tuo account troppe volte di recente. Per favore attendi alcuni giorni prima di iscriverti di nuovo.";
+
+"Checkout.Title" = "Cassa";
+"Checkout.TotalAmount" = "Totale";
+"Checkout.TotalPaidAmount" = "Totale pagato";
+"Checkout.PaymentMethod" = "Metodo di pagamento";
+"Checkout.ShippingMethod" = "Metodo di spedizione";
+"Checkout.ShippingAddress" = "Info di spedizione";
+"Checkout.Name" = "Nome";
+"Checkout.Email" = "E-mail";
+"Checkout.Phone" = "Telefono";
+"Checkout.PayPrice" = "Paga %@";
+"Checkout.PayNone" = "Paga";
+
+"Checkout.PaymentMethod.Title" = "Metodo di pagamento";
+"Checkout.PaymentMethod.New" = "Nuova carta...";
+
+"Checkout.NewCard.Title" = "Nuova carta";
+"Checkout.NewCard.PaymentCard" = "CARTA DI CREDITO";
+"Checkout.NewCard.SaveInfo" = "Salva informazioni di pagamento";
+"Checkout.NewCard.SaveInfoEnableHelp" = "Puoi salvare le tue informazioni di pagamento per uso futuro.\nPer favore [attiva la verifica in due passaggi] per abilitare questo.";
+"Checkout.NewCard.SaveInfoHelp" = "Puoi salvare le tue informazioni di pagamento per uso futuro.";
+"Checkout.NewCard.CardholderNameTitle" = "TITOLARE DELLA CARTA";
+"Checkout.NewCard.CardholderNamePlaceholder" = "Nome del titolare della carta";
+"Checkout.NewCard.PostcodeTitle" = "INDIRIZZO DI FATTURAZIONE";
+"Checkout.NewCard.PostcodePlaceholder" = "Codice postale";
+
+"Checkout.ShippingOption.Title" = "Metodo di spedizione";
+"Checkout.ShippingOption.Header" = "SCEGLI METODO DI SPEDIZIONE";
+
+"Checkout.ErrorProviderAccountInvalid" = "Questo bot non può accettare i pagamenti al momento. Per favore riprova più tardi.";
+"Checkout.ErrorProviderAccountTimeout" = "Questo bot non può elaborare i pagamenti al momento. Per favore riprova più tardi.";
+"Checkout.ErrorInvoiceAlreadyPaid" = "Hai già pagato per questo oggetto.";
+
+"Checkout.ErrorGeneric" = "Si è verificato un problema durante l'elaborazione del tuo pagamento. L'importo non è stato addebitato.";
+"Checkout.ErrorPaymentFailed" = "Pagamento fallito. L'importo non è stato addebitato.";
+"Checkout.ErrorPrecheckoutFailed" = "Il bot non ha potuto elaborare il tuo pagamento. L'importo non è stato addebitato.";
+
+"CheckoutInfo.Title" = "Info di spedizione";
+"CheckoutInfo.ShippingInfoTitle" = "INDIRIZZO DI SPEDIZIONE";
+"CheckoutInfo.ShippingInfoAddress1" = "Indirizzo 1";
+"CheckoutInfo.ShippingInfoAddress1Placeholder" = "Indirizzo";
+"CheckoutInfo.ShippingInfoAddress2" = "Indirizzo 2";
+"CheckoutInfo.ShippingInfoAddress2Placeholder" = "Indirizzo";
+"CheckoutInfo.ShippingInfoState" = "Provincia";
+"CheckoutInfo.ShippingInfoStatePlaceholder" = "Provincia";
+"CheckoutInfo.ShippingInfoCity" = "Città";
+"CheckoutInfo.ShippingInfoCityPlaceholder" = "Città";
+"CheckoutInfo.ShippingInfoCountry" = "Nazione";
+"CheckoutInfo.ShippingInfoCountryPlaceholder" = "Nazione";
+"CheckoutInfo.ShippingInfoPostcode" = "Codice postale";
+"CheckoutInfo.ShippingInfoPostcodePlaceholder" = "Codice postale";
+"CheckoutInfo.ReceiverInfoTitle" = "DESTINATARIO";
+"CheckoutInfo.ReceiverInfoName" = "Nome";
+"CheckoutInfo.ReceiverInfoNamePlaceholder" = "Nome e cognome";
+"CheckoutInfo.ReceiverInfoEmail" = "Email";
+"CheckoutInfo.ReceiverInfoEmailPlaceholder" = "Email";
+"CheckoutInfo.ReceiverInfoPhone" = "Telefono";
+"CheckoutInfo.SaveInfo" = "Salva info";
+"CheckoutInfo.SaveInfoHelp" = "Puoi salvare le tue informazioni di spedizione per uso futuro.";
+"CheckoutInfo.Pay" = "Paga";
+
+"Checkout.Receipt.Title" = "Ricevuta";
+
+"Message.ReplyActionButtonShowReceipt" = "Mostra ricevuta";
+"Message.InvoiceShipmentLabel" = "SPEDIZIONE";
+"Message.InvoiceLabel" = "FATTURA";
+
+"CheckoutInfo.ErrorShippingNotAvailable" = "La spedizione nel paese selezionato non è disponibile.";
+"CheckoutInfo.ErrorPostcodeInvalid" = "Per favore inserisci un codice postale valido.";
+"CheckoutInfo.ErrorStateInvalid" = "Per favore inserisci una provincia valida.";
+"CheckoutInfo.ErrorCityInvalid" = "Per favore inserisci una città valida.";
+"CheckoutInfo.ErrorNameInvalid" = "Per favore inserisci un nome valido.";
+"CheckoutInfo.ErrorEmailInvalid" = "Per favore inserisci un indirizzo e-mail valido.";
+"CheckoutInfo.ErrorPhoneInvalid" = "Per favore inserisci un numero di telefono valido.";
+
+"Checkout.WebConfirmation.Title" = "Completa il pagamento";
+"Checkout.PasswordEntry.Title" = "Conferma del pagamento";
+"Checkout.PasswordEntry.Pay" = "Paga";
+"Checkout.PasswordEntry.Text" = "La tua carta %@ è registrata. Per pagare con questa carta, per favore inserisci la tua password della verifica in due passaggi.";
+
+"Checkout.SavePasswordTimeout" = "Vuoi salvare la tua password per %@?";
+"Checkout.SavePasswordTimeoutAndTouchId" = "Vuoi salvare la tua password per %@ e usare invece il Touch ID?";
+"Checkout.PayWithTouchId" = "Paga con Touch ID";
+"Checkout.EnterPassword" = "Inserisci password";
+
+"Your card has expired" = "La tua carta è scaduta.";
+
+/* Error when the card was declined by the credit card networks */
+"Your card was declined" = "La tua carta è stata rifiutata.";
+
+/* Error when the card's expiration month is not valid */
+"Your card's expiration month is invalid" = "Hai inserito un mese di scadenza non valido.";
+
+/* Error when the card's expiration year is not valid */
+"Your card's expiration year is invalid" = "Hai inserito un anno di scadenza non valido.";
+
+/* Error when the card number is not valid */
+"Your card's number is invalid" = "Hai inserito un numero di carta non valido.";
+
+/* Error when the card's CVC is not valid */
+"Your card's security code is invalid" = "Hai inserito un codice di sicurezza non valido.";
+
+"MESSAGE_INVOICE" = "%1$@ ti ha inviato una fattura per %2$@";
+"CHAT_MESSAGE_INVOICE" = "%1$@ ha inviato una fattura per %3$@ al gruppo %2$@";
+"PINNED_INVOICE" = "%1$@ ha fissato una fattura";
+
+"Message.PinnedInvoice" = "ha fissato una fattura";
+
+"User.DeletedAccount" = "Account eliminato";
+
+"Settings.SaveEditedPhotos" = "Salva foto modificate";
+
+"Message.PaymentSent" = "Pagamento: %@";
+"Notification.PaymentSent" = "Hai appena trasferito con successo {amount} a {name} per {title}";
+
+"Common.NotNow" = "Non ora";
+
+"Calls.RatingFeedback" = "Scrivi un commento...";
+
+"Call.StatusIncoming" = "Telegram Audio...";
+"Call.StatusRequesting" = "Contatto...";
+"Call.StatusWaiting" = "Attendo...";
+"Call.StatusRinging" = "Squillo...";
+"Call.StatusConnecting" = "Connetto...";
+"Call.StatusOngoing" = "Telegram Audio %@";
+"Call.StatusEnded" = "Chiamata terminata";
+"Call.StatusFailed" = "Chiamata fallita";
+"Call.StatusBusy" = "Occupato";
+"Call.Accept" = "Accetta";
+"Call.Decline" = "Rifiuta";
+
+"Call.StatusBar" = "Tocca per tornare alla chiamata %@";
+
+"UserInfo.Call" = "Chiamata vocale";
+
+"Call.ParticipantVersionOutdatedError" = "L'app di %@ non supporta le chiamate. Deve aggiornare la sua app prima che tu possa chiamarlo.";
+
+"Privacy.Calls" = "Chiamate vocali";
+
+"Privacy.Calls.WhoCanCallMe" = "CHI PUÒ CHIAMARMI";
+"Privacy.Calls.CustomHelp" = "Puoi decidere chi può chiamarti con precisione granulare.";
+"Privacy.Calls.AlwaysAllow" = "Consenti sempre";
+"Privacy.Calls.NeverAllow" = "Non consentire mai";
+"Privacy.Calls.CustomShareHelp" = "Questi utenti potranno o non potranno chiamarti indipendentemente dalle impostazioni precedenti.";
+
+"Privacy.Calls.AlwaysAllow.Title" = "Consenti sempre";
+"Privacy.Calls.AlwaysAllow.Placeholder" = "Consenti sempre...";
+"Privacy.Calls.NeverAllow.Title" = "Non consentire mai";
+"Privacy.Calls.NeverAllow.Placeholder" = "Non consentire mai...";
+
+"PhotoEditor.QualityTool" = "Qualità";
+"PhotoEditor.QualityVeryLow" = "Molto bassa";
+"PhotoEditor.QualityLow" = "Bassa";
+"PhotoEditor.QualityMedium" = "Media";
+"PhotoEditor.QualityHigh" = "Alta";
+"PhotoEditor.QualityVeryHigh" = "Molto alta";
+
+"Settings.SaveEditedPhotos" = "Salva foto modificate";
+
+"Calls.NoCallsPlaceholder" = "Le tue chiamate recenti appariranno qui";
+"Calls.NoMissedCallsPlacehoder" = "Non hai chiamate perse";
+
+"Call.CallInProgressTitle" = "Chiamata in corso";
+"Call.CallInProgressMessage" = "Terminare la chiamata con %1$@ e iniziarne una nuova con %2$@?";
+
+"Call.Message" = "Messaggio";
+
+"UserInfo.TapToCall" = "Chiamata con crittografia end-to-end";
+"Call.GroupFormat" = "%1$@ (%2$@)";
+
+"NetworkUsageSettings.CallDataSection" = "CHIAMATE";
+
+"Call.PrivacyErrorMessage" = "Spiacenti, %@ non accetta le chiamate.";
+
+"Notification.CallBack" = "Richiama";
+
+"CallSettings.PrivacyDescription" = "Scegli chi può chiamarti nelle [Impostazioni di privacy].";
+
+"Call.AudioRouteSpeaker" = "Altoparlante";
+"Call.AudioRouteHeadphones" = "Cuffie";
+"Call.AudioRouteHide" = "Nascondi";
+
+"EncryptionKey.TapToEmojify" = "Tocca per mostrare le emoji";
+
+"Call.PhoneCallInProgressMessage" = "Non puoi chiamare con Telegram se c'è già una telefonata in corso.";
+"Call.RecordingDisabledMessage" = "Per favore termina la tua chiamata prima di registrare un messaggio vocale.";
+
+"Call.EmojiDescription" = "Se queste emoji sono le stesse sullo schermo di %@, questa chiamata è sicura al 100%%.";

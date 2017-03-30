@@ -186,6 +186,39 @@
 
 @end
 
+@implementation TGBotReplyMarkupButtonActionPurchase
+
+- (instancetype)initWithText:(NSString *)text {
+    self = [super init];
+    if (self != nil) {
+        _text = text;
+    }
+    return self;
+}
+
+- (instancetype)initWithKeyValueCoder:(PSKeyValueCoder *)coder {
+    return [self initWithText:[coder decodeStringForCKey:"text"]];
+}
+
+- (void)encodeWithKeyValueCoder:(PSKeyValueCoder *)coder {
+    [coder encodeString:_text forCKey:"text"];
+}
+
+
+- (instancetype)initWithCoder:(NSCoder *)aDecoder {
+    return [self initWithText:[aDecoder decodeObjectForKey:@"text"]];
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder {
+    [aCoder encodeObject:_text forKey:@"text"];
+}
+
+- (BOOL)isEqual:(id)object {
+    return [object isKindOfClass:[TGBotReplyMarkupButtonActionPurchase class]] && TGStringCompare(_text, ((TGBotReplyMarkupButtonActionPurchase *)object)->_text);
+}
+
+@end
+
 @implementation TGBotReplyMarkupButton
 
 - (instancetype)initWithText:(NSString *)text action:(id<PSCoding, NSCoding>)action

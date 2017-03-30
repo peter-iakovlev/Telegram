@@ -378,6 +378,38 @@ static inline NSString *dialogTimeFormat()
     return nil;
 }
 
++ (NSString *)stringForCallsListDate:(int)date
+{
+    time_t t = date;
+    struct tm timeinfo;
+    localtime_r(&t, &timeinfo);
+    
+    time_t t_now;
+    time(&t_now);
+    struct tm timeinfo_now;
+    localtime_r(&t_now, &timeinfo_now);
+    
+    if (timeinfo.tm_year != timeinfo_now.tm_year)
+    {
+        return [self stringForFullDateWithDay:timeinfo.tm_mday month:timeinfo.tm_mon + 1 year:timeinfo.tm_year];
+    }
+    else
+    {
+        int dayDiff = timeinfo.tm_yday - timeinfo_now.tm_yday;
+        
+        if(dayDiff == 0)
+            return TGLocalized(@"Weekday.Today");
+        else if(dayDiff == -1)
+            return TGLocalized(@"Weekday.Yesterday");
+        else if(dayDiff > -7 && dayDiff <= -2)
+            return weekdayNameShort(timeinfo.tm_wday);
+        else
+            return [self stringForDialogTime:date];
+    }
+    
+    return nil;
+}
+
 + (NSString *)stringForApproximateDate:(int)date
 {
     time_t t = date;

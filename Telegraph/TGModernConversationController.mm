@@ -99,8 +99,6 @@
 #import <AVFoundation/AVFoundation.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 
-#import "TGVideoConverter.h"
-
 #import "TGGiphySearchResultItem.h"
 #import "TGBingSearchResultItem.h"
 #import "TGWebSearchInternalImageResult.h"
@@ -732,7 +730,7 @@ typedef enum {
         {
             if (_snapshotImageView == nil)
             {
-                _snapshotImageView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGImageGetWidth(_snapshotImage) * (TGIsRetina() ? 0.5f : 1.0f), CGImageGetHeight(_snapshotImage) * (TGIsRetina() ? 0.5f : 1.0f))];
+                _snapshotImageView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGImageGetWidth(_snapshotImage) * (TGScreenPixel), CGImageGetHeight(_snapshotImage) * (TGScreenPixel))];
                 _snapshotImageView.userInteractionEnabled = false;
                 _snapshotImageView.transform = CGAffineTransformMakeRotation((CGFloat)M_PI);
                 _snapshotImageView.hidden = _loadingMessages;
@@ -1344,6 +1342,11 @@ typedef enum {
         {
             _titlePanelWrappingView.frame = CGRectMake(0.0f, self.controllerInset.top, _view.frame.size.width, _titlePanelWrappingView.frame.size.height);
         }
+    }
+    
+    if (_searchBar != nil)
+    {
+        _searchBar.frame = CGRectMake(0, 20.0f + self.additionalStatusBarHeight, _searchBar.frame.size.width, _searchBar.frame.size.height);
     }
 }
 
@@ -3168,6 +3171,7 @@ typedef enum {
         TGModernConversationEditingPanel *editingPanel = (TGModernConversationEditingPanel *)_currentInputPanel;
         [editingPanel setActionsEnabled:[_companion checkedMessageCount] != 0];
         [editingPanel setDeleteEnabled:[self canDeleteSelectedMessages]];
+        [editingPanel setForwardingEnabled:[_companion allowMessageForwarding] && [self canForwardAllSelectedMessages]];
     }
 }
 
@@ -3409,8 +3413,13 @@ typedef enum {
                     break;
                 }
                 case TGWebPageMediaAttachmentType:
+                case TGInvoiceMediaAttachmentType:
                 {
-                    webPage = ((TGWebPageMediaAttachment *)attachment);
+                    if (attachment.type == TGInvoiceMediaAttachmentType) {
+                        webPage = [((TGInvoiceMediaAttachment *)attachment) webpage];
+                    } else {
+                        webPage = ((TGWebPageMediaAttachment *)attachment);
+                    }
                     
                     bool isVideo = false;
                     for (id attribute in webPage.document.attributes) {
@@ -7577,6 +7586,12 @@ typedef enum {
         return false;
     }
     
+    if (TGTelegraphInstance.callManager.hasActiveCall)
+    {
+        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.CallInProgressTitle") message:TGLocalized(@"Call.RecordingDisabledMessage") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        return false;
+    }
+    
     return true;
 }
 
@@ -7887,6 +7902,22 @@ typedef enum {
                 }
                 
                 break;
+            }
+        }
+    }
+    return true;
+}
+
+- (bool)canForwardAllSelectedMessages {
+    NSArray *checkedMessageIds = [_companion checkedMessageIds];
+    
+    for (TGMessageModernConversationItem *item in _items) {
+        int32_t mid = item->_message.mid;
+        TGMessage *message = item->_message;
+        for (NSNumber *nMid in checkedMessageIds) {
+            if ([nMid intValue] == mid) {
+                if (message.actionInfo.actionType == TGMessageActionPhoneCall)
+                    return false;
             }
         }
     }
@@ -8971,7 +9002,7 @@ static UIView *_findBackArrow(UIView *view)
             }
         }
         
-        TGInstantPageController *pageController = [[TGInstantPageController alloc] initWithWebPage:location.webPage peerId:location.peerId messageId:location.messageId];
+        TGInstantPageController *pageController = [[TGInstantPageController alloc] initWithWebPage:location.webPage anchor:nil peerId:location.peerId messageId:location.messageId];
         [pageController scrollToPIPLocation:location];
         [self.navigationController pushViewController:pageController animated:true];
         
@@ -9076,7 +9107,7 @@ static UIView *_findBackArrow(UIView *view)
 {
     if (_searchBar == nil)
     {
-        _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, 20.0f, _view.frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleLight];
+        _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, 20.0f + self.additionalStatusBarHeight, _view.frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleLight];
         _searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _searchBar.delegate = self;
         [_searchBar setShowsCancelButton:true animated:false];
@@ -9590,6 +9621,7 @@ static UIView *_findBackArrow(UIView *view)
         
         NSString *fixedSharedLink = nil;
         bool isGame = false;
+        NSString *invoiceStartParam = nil;
         
         TGWebAppControllerShareGameData *shareGameData = nil;
         
@@ -9611,6 +9643,8 @@ static UIView *_findBackArrow(UIView *view)
                     shareName = ((TGGameMediaAttachment *)attachment).shortName;
                 } else if ([attachment isKindOfClass:[TGViaUserAttachment class]]) {
                     botUser = [TGDatabaseInstance() loadUser:((TGViaUserAttachment *)attachment).userId];
+                } else if ([attachment isKindOfClass:[TGInvoiceMediaAttachment class]]) {
+                    invoiceStartParam = ((TGInvoiceMediaAttachment *)attachment).invoiceStartParam;
                 }
             }
             if (botUser == nil) {
@@ -9620,12 +9654,16 @@ static UIView *_findBackArrow(UIView *view)
                 }
             }
             
-            if (botUser != nil && isGame) {
-                shareGameData = [[TGWebAppControllerShareGameData alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId messageId:mid botName:botUser.userName shareName:shareName];
-            }
-            
-            if (botUser != nil && shareName != nil && botUser.userName.length != 0) {
-                fixedSharedLink = [NSString stringWithFormat:@"https://telegram.me/%@?game=%@", botUser.userName, shareName];
+            if (botUser != nil && invoiceStartParam != nil) {
+                fixedSharedLink = [NSString stringWithFormat:@"https://t.me/%@?start=%@", botUser.userName, invoiceStartParam];
+            } else {
+                if (botUser != nil && isGame) {
+                    shareGameData = [[TGWebAppControllerShareGameData alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId messageId:mid botName:botUser.userName shareName:shareName];
+                }
+                
+                if (botUser != nil && shareName != nil && botUser.userName.length != 0) {
+                    fixedSharedLink = [NSString stringWithFormat:@"https://t.me/%@?game=%@", botUser.userName, shareName];
+                }
             }
         }
         

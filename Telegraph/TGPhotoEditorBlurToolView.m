@@ -30,7 +30,6 @@
 
 @implementation TGPhotoEditorBlurToolView
 
-@synthesize titleChanged = _titleChanged;
 @synthesize valueChanged = _valueChanged;
 @synthesize value = _value;
 @dynamic interactionEnded;
@@ -212,11 +211,6 @@
     }
 }
 
-- (bool)hideTitle
-{
-    return false;
-}
-
 - (void)setIntensitySliderHidden:(bool)hidden animated:(bool)animated
 {
     if (animated)
@@ -256,12 +250,6 @@
         
         _buttonsWrapper.hidden = !hidden;
         _buttonsWrapper.alpha = hidden ? 1.0f : 0.0f;
-    }
-    
-    if (self.titleChanged != nil)
-    {
-        PGBlurTool *blurTool = self.blurTool;
-        self.titleChanged(hidden ? blurTool.title : blurTool.intensityEditingTitle);
     }
 }
 

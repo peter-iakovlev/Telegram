@@ -4,7 +4,6 @@
 #import "TLMetaRpc.h"
 
 @class TLPhoto;
-@class TLPhoneCallDiscardReason;
 
 @interface TLMessageAction : NSObject <TLObject>
 
@@ -124,6 +123,13 @@
 
 @property (nonatomic) int64_t game_id;
 @property (nonatomic) int32_t score;
+
+@end
+
+@interface TLMessageAction$messageActionPaymentSent : TLMessageAction
+
+@property (nonatomic, retain) NSString *currency;
+@property (nonatomic) int64_t total_amount;
 
 @end
 

@@ -1,5 +1,7 @@
 //
-// Created by Grishka on 13.09.16.
+// libtgvoip is free and unencumbered public domain software.
+// For more information, see http://unlicense.org or the UNLICENSE file
+// you should have received with this source code distribution.
 //
 
 #include "AudioInputAndroid.h"
@@ -8,11 +10,11 @@
 
 extern JavaVM* sharedJVM;
 
-jmethodID CAudioInputAndroid::initMethod;
-jmethodID CAudioInputAndroid::releaseMethod;
-jmethodID CAudioInputAndroid::startMethod;
-jmethodID CAudioInputAndroid::stopMethod;
-jclass CAudioInputAndroid::jniClass;
+jmethodID CAudioInputAndroid::initMethod=NULL;
+jmethodID CAudioInputAndroid::releaseMethod=NULL;
+jmethodID CAudioInputAndroid::startMethod=NULL;
+jmethodID CAudioInputAndroid::stopMethod=NULL;
+jclass CAudioInputAndroid::jniClass=NULL;
 
 CAudioInputAndroid::CAudioInputAndroid(){
 	JNIEnv* env=NULL;
@@ -76,7 +78,7 @@ void CAudioInputAndroid::Start(){
 		didAttach=true;
 	}
 
-	env->CallVoidMethod(javaObject, startMethod);
+	failed=!env->CallBooleanMethod(javaObject, startMethod);
 
 	if(didAttach){
 		sharedJVM->DetachCurrentThread();

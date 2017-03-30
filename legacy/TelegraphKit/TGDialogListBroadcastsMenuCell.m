@@ -51,7 +51,7 @@
 {
     [super layoutSubviews];
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     _separatorView.frame = CGRectMake(0.0f, self.contentView.frame.size.height, self.contentView.frame.size.width, separatorHeight);
     
     [_newGroupButton sizeToFit];

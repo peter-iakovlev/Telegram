@@ -20,7 +20,6 @@
 @synthesize valueChanged = _valueChanged;
 @synthesize value = _value;
 @synthesize interactionEnded = _interactionEnded;
-@synthesize titleChanged;
 @synthesize isLandscape;
 @synthesize toolbarLandscapeSize;
 
@@ -109,11 +108,6 @@
 - (bool)isTracking
 {
     return _radialBlurView.isTracking || _linearBlurView.isTracking;
-}
-
-- (bool)hideTitle
-{
-    return false;
 }
 
 #pragma mark - Value

@@ -16,9 +16,10 @@
 @interface TGCallConnection : NSObject
 
 @property (nonatomic, strong, readonly) NSData *key;
+@property (nonatomic, strong, readonly) NSData *keyHash;
 @property (nonatomic, strong, readonly) TGCallConnectionDescription *defaultConnection;
 @property (nonatomic, strong, readonly) NSArray<TGCallConnectionDescription *> *alternativeConnections;
 
-- (instancetype)initWithKey:(NSData *)key defaultConnection:(TGCallConnectionDescription *)defaultConnection alternativeConnections:(NSArray<TGCallConnectionDescription *> *)alternativeConnections;
+- (instancetype)initWithKey:(NSData *)key keyHash:(NSData *)keyHash defaultConnection:(TGCallConnectionDescription *)defaultConnection alternativeConnections:(NSArray<TGCallConnectionDescription *> *)alternativeConnections;
 
 @end

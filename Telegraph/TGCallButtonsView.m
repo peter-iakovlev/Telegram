@@ -5,6 +5,7 @@
 
 #import "TGCallButton.h"
 #import "TGCallAcceptButton.h"
+#import "TGCallMessageButton.h"
 
 const CGFloat TGCallButtonsSpacing = 28.0f;
 
@@ -13,8 +14,9 @@ const CGFloat TGCallButtonsSpacing = 28.0f;
     TGCallButton *_declineButton;
     TGCallAcceptButton *_callButton;
     
+    TGCallMessageButton *_messageButton;
+    TGCallButton *_cancelButton;
     TGCallButton *_muteButton;
-    TGCallButton *_messageButton;
     TGCallButton *_speakerButton;
     
     TGCallState _currentState;
@@ -39,16 +41,13 @@ const CGFloat TGCallButtonsSpacing = 28.0f;
         [_callButton addTarget:self action:@selector(callButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_callButton];
         
-        
-        if (TGScreenSize().height > 480)
-        {
-            [_callButton setTitle:@"Accept" forState:UIControlStateNormal];
-            [_declineButton setTitle:@"Decline" forState:UIControlStateNormal];
-            //[_callButton setTitle:TGLocalized(@"Call.Accept") forState:UIControlStateNormal];
-            //[_declineButton setTitle:TGLocalized(@"Call.Decline") forState:UIControlStateNormal];
-        }
-        
         _declineButton.hidden = true;
+
+        _cancelButton = [[TGCallButton alloc] init];
+        _cancelButton.hasBorder = true;
+        [_cancelButton setImage:[UIImage imageNamed:@"CallCancelIcon"] forState:UIControlStateNormal];
+        [_cancelButton addTarget:self action:@selector(cancelButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_cancelButton];
         
         _muteButton = [[TGCallButton alloc] init];
         _muteButton.hasBorder = true;
@@ -56,21 +55,33 @@ const CGFloat TGCallButtonsSpacing = 28.0f;
         [_muteButton addTarget:self action:@selector(muteButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_muteButton];
         
-        _messageButton = [[TGCallButton alloc] init];
-        _messageButton.hasBorder = true;
-        [_messageButton setImage:[UIImage imageNamed:@"CallMessageIcon"] forState:UIControlStateNormal];
-        [_messageButton addTarget:self action:@selector(messageButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-        //[self addSubview:_messageButton];
-        
         _speakerButton = [[TGCallButton alloc] init];
         _speakerButton.hasBorder = true;
         [_speakerButton setImage:[UIImage imageNamed:@"CallSpeakerIcon"] forState:UIControlStateNormal];
         [_speakerButton addTarget:self action:@selector(speakerButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_speakerButton];
         
+        _messageButton = [[TGCallMessageButton alloc] init];
+        [_messageButton setImage:[UIImage imageNamed:@"CallQuickMessageIcon"] forState:UIControlStateNormal];
+        [_messageButton addTarget:self action:@selector(messageButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [_messageButton setTitle:TGLocalized(@"Call.Message") forState:UIControlStateNormal];
+        [self addSubview:_messageButton];
+        
         [_callButton setState:TGCallAcceptButtonStateEnd];
+        
+        if (TGScreenSize().height > 480)
+        {
+            [_cancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
+            [_callButton setTitle:TGLocalized(@"Call.Accept") forState:UIControlStateNormal];
+            [_declineButton setTitle:TGLocalized(@"Call.Decline") forState:UIControlStateNormal];
+        }
     }
     return self;
+}
+
+- (UIButton *)speakerButton
+{
+    return _speakerButton;
 }
 
 - (void)setState:(TGCallSessionState *)state
@@ -92,28 +103,29 @@ const CGFloat TGCallButtonsSpacing = 28.0f;
             _callButton.hidden = false;
             [_callButton setState:TGCallAcceptButtonStateAccept];
             
-            _muteButton.hidden = true;
             _messageButton.hidden = true;
+            _cancelButton.hidden = true;
+            _muteButton.hidden = true;
             _speakerButton.hidden = true;
             break;
             
         case TGCallStateAccepting:
         case TGCallStateOngoing:
         {
+            _messageButton.hidden = true;
+            _cancelButton.hidden = true;
+            
             _muteButton.hidden = false;
-            _messageButton.hidden = false;
             _speakerButton.hidden = false;
             
             if (previousState == TGCallStateReady)
             {
                 _muteButton.alpha = 0.0f;
-                _messageButton.alpha = 0.0f;
                 _speakerButton.alpha = 0.0f;
                 
                 [UIView animateWithDuration:0.2 animations:^
                 {
                     _muteButton.alpha = 1.0f;
-                    _messageButton.alpha = 1.0f;
                     _speakerButton.alpha = 1.0f;
                     _declineButton.alpha = 0.0f;
                 } completion:^(__unused BOOL finished)
@@ -137,7 +149,6 @@ const CGFloat TGCallButtonsSpacing = 28.0f;
                 [_callButton setState:TGCallAcceptButtonStateEnd];
                 
                 _muteButton.hidden = false;
-                _messageButton.hidden = false;
                 _speakerButton.hidden = false;
             }
         }
@@ -145,13 +156,13 @@ const CGFloat TGCallButtonsSpacing = 28.0f;
          
         case TGCallStateEnding:
         case TGCallStateEnded:
-        case TGCallStateBusy:
-        case TGCallStateInterrupted:
+        case TGCallStateMissed:
             if (previousState == TGCallStateOngoing)
             {
                 _muteButton.hidden = false;
-                _messageButton.hidden = false;
                 _speakerButton.hidden = false;
+                _cancelButton.hidden = true;
+                _messageButton.hidden = true;
                 
                 [_callButton setState:TGCallAcceptButtonStateEnd];
             }
@@ -159,28 +170,94 @@ const CGFloat TGCallButtonsSpacing = 28.0f;
             {
                 _twoButtons = true;
             }
+            break;
             
-            _declineButton.userInteractionEnabled = false;
-            _callButton.userInteractionEnabled = false;
-            
-            _muteButton.userInteractionEnabled = false;
-            _messageButton.userInteractionEnabled = false;
-            _speakerButton.userInteractionEnabled = false;
-            
-            self.alpha = 0.5f;
+        case TGCallStateBusy:
+            if (previousState == TGCallStateWaiting || previousState == TGCallStateWaitingReceived)
+            {
+                _twoButtons = true;
+                
+                _cancelButton.hidden = false;
+                _cancelButton.alpha = 0.0f;
+                
+                _messageButton.hidden = false;
+                _messageButton.alpha = 0.0f;
+                
+                [UIView animateWithDuration:0.2 animations:^
+                {
+                    _muteButton.alpha = 0.0f;
+                    _speakerButton.alpha = 0.0f;
+                    _cancelButton.alpha = 1.0f;
+                    _messageButton.alpha = 1.0f;
+                } completion:^(__unused BOOL finished)
+                {
+                    _messageButton.hidden = false;
+                    _cancelButton.hidden = false;
+                    _muteButton.hidden = true;
+                    _speakerButton.hidden = true;
+                    _muteButton.alpha = 1.0f;
+                    _speakerButton.alpha = 1.0f;
+                }];
+                
+                [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
+                {
+                     [_callButton setState:TGCallAcceptButtonStateAccept];
+                     [self layoutSubviews];
+                } completion:nil];
+                
+                maybeNeedsLayout = false;
+            }
             break;
             
         case TGCallStateRequesting:
         case TGCallStateWaiting:
         case TGCallStateWaitingReceived:
-            _declineButton.hidden = true;
-            _callButton.hidden = false;
-            [_callButton setState:TGCallAcceptButtonStateEnd];
-            
-            _muteButton.hidden = false;
-            _messageButton.hidden = false;
-            _speakerButton.hidden = false;
-            
+            if (previousState == TGCallStateBusy)
+            {
+                _twoButtons = false;
+                
+                _muteButton.alpha = 0.0f;
+                _speakerButton.alpha = 0.0f;
+                _muteButton.hidden = false;
+                _speakerButton.hidden = false;
+                
+                [UIView animateWithDuration:0.2 animations:^
+                {
+                    _muteButton.alpha = 1.0f;
+                    _speakerButton.alpha = 1.0f;
+                    _cancelButton.alpha = 0.0f;
+                    _messageButton.alpha = 0.0f;
+                } completion:^(__unused BOOL finished)
+                {
+                    if (finished)
+                    {
+                        _cancelButton.hidden = true;
+                        _messageButton.hidden = true;
+                    }
+                    
+                    _cancelButton.alpha = 1.0f;
+                    _messageButton.alpha = 1.0f;
+                }];
+                
+                [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
+                {
+                    [_callButton setState:TGCallAcceptButtonStateEnd];
+                    [self layoutSubviews];
+                } completion:nil];
+                
+                maybeNeedsLayout = false;
+            }
+            else
+            {
+                _messageButton.hidden = true;
+                _cancelButton.hidden = true;
+                _declineButton.hidden = true;
+                _callButton.hidden = false;
+                [_callButton setState:TGCallAcceptButtonStateEnd];
+                
+                _muteButton.hidden = false;
+                _speakerButton.hidden = false;
+            }
             break;
         
         default:
@@ -190,8 +267,42 @@ const CGFloat TGCallButtonsSpacing = 28.0f;
     if (maybeNeedsLayout)
         [self setNeedsLayout];
     
+    NSString *currentTitle = [_callButton titleForState:UIControlStateNormal];
+    if (currentTitle.length > 0)
+    {
+        NSString *title = TGLocalized(@"Call.Accept");
+        if (state.state == TGCallStateBusy)
+            title = TGLocalized(@"Call.CallAgain");
+        
+        if (![currentTitle isEqualToString:title])
+            [_callButton setTitle:title forState:UIControlStateNormal];
+    }
+    
     _muteButton.selected = state.mute;
-    _speakerButton.selected = state.speaker;
+    
+    bool hasBluetoothRoute = false;
+    for (TGAudioRoute *route in state.audioRoutes)
+    {
+        if (route.isBluetooth)
+        {
+            hasBluetoothRoute = true;
+            break;
+        }
+    }
+    
+    if (hasBluetoothRoute)
+    {
+        [_speakerButton setImage:[UIImage imageNamed:@"CallBluetoothIcon"] forState:UIControlStateNormal];
+        _speakerButton.selected = false;
+    }
+    else
+    {
+        [_speakerButton setImage:[UIImage imageNamed:@"CallSpeakerIcon"] forState:UIControlStateNormal];
+        _speakerButton.selected = state.speaker;
+        
+        if (TGIsPad())
+            _speakerButton.hidden = true;
+    }
 }
 
 - (void)setBackground:(NSObject<TGPasscodeBackground> *)background
@@ -218,22 +329,28 @@ const CGFloat TGCallButtonsSpacing = 28.0f;
         self.callPressed();
 }
 
+- (void)cancelButtonPressed
+{
+    if (self.cancelPressed != nil)
+        self.cancelPressed();
+}
+
 - (void)muteButtonPressed
 {
     if (self.mutePressed != nil)
         self.mutePressed();
 }
 
-- (void)messageButtonPressed
-{
-    if (self.messagePressed != nil)
-        self.messagePressed();
-}
-
 - (void)speakerButtonPressed
 {
     if (self.speakerPressed != nil)
         self.speakerPressed();
+}
+
+- (void)messageButtonPressed
+{
+    if (self.messagePressed != nil)
+        self.messagePressed();
 }
 
 + (CGFloat)bottomButtonsOffset
@@ -256,11 +373,13 @@ const CGFloat TGCallButtonsSpacing = 28.0f;
 
 - (void)layoutSubviews
 {
-    CGFloat offset = [TGCallButtonsView bottomButtonsOffset];
+    CGFloat offset = _muteButton.frame.size.height + [TGCallButtonsView bottomButtonsOffset];
     
-    _muteButton.frame = CGRectMake(0, _muteButton.frame.size.height + offset, _muteButton.frame.size.width, _muteButton.frame.size.height);
-    //_messageButton.frame = CGRectMake(_declineButton.frame.size.width + TGCallButtonsSpacing, 0, _messageButton.frame.size.width, _messageButton.frame.size.height);
-    _speakerButton.frame = CGRectMake(_declineButton.frame.size.width + _speakerButton.frame.size.width + 2 * TGCallButtonsSpacing, _speakerButton.frame.size.height + offset, _speakerButton.frame.size.width, _speakerButton.frame.size.height);
+    _muteButton.frame = CGRectMake(0, offset, _muteButton.frame.size.width, _muteButton.frame.size.height);
+    _cancelButton.frame = _muteButton.frame;
+    _speakerButton.frame = CGRectMake(_declineButton.frame.size.width + _speakerButton.frame.size.width + 2 * TGCallButtonsSpacing, offset, _speakerButton.frame.size.width, _speakerButton.frame.size.height);
+    
+    _messageButton.frame = CGRectMake(floor((self.frame.size.width - _callButton.frame.size.width) / 2.0f) + 90.0f, _speakerButton.frame.origin.y - 90.0f, _speakerButton.frame.size.width, 55.0f);
     
     for (TGCallButton *button in self.subviews)
     {
@@ -270,18 +389,16 @@ const CGFloat TGCallButtonsSpacing = 28.0f;
         [button setAbsoluteOffset:CGPointMake(self.frame.origin.x + button.frame.origin.x, self.frame.origin.y + button.frame.origin.y)];
     }
     
-    
-    
-    _declineButton.frame = CGRectMake((self.frame.size.width - _declineButton.frame.size.width) / 2.0f - 90.0f, CGRectGetMaxY(_messageButton.frame) + offset, _declineButton.frame.size.width, _declineButton.frame.size.height);
+    _declineButton.frame = CGRectMake(floor((self.frame.size.width - _declineButton.frame.size.width) / 2.0f) - 90.0f, offset, _declineButton.frame.size.width, _declineButton.frame.size.height);
     
     bool twoButtons = _twoButtons || _currentState == TGCallStateHandshake || _currentState == TGCallStateReady;
     if (twoButtons)
     {
-        _callButton.frame = CGRectMake((self.frame.size.width - _callButton.frame.size.width) / 2.0f + 90.0f, CGRectGetMaxY(_messageButton.frame) + offset, _callButton.frame.size.width, _callButton.frame.size.height);
+        _callButton.frame = CGRectMake(floor((self.frame.size.width - _callButton.frame.size.width) / 2.0f) + 90.0f, offset, _callButton.frame.size.width, _callButton.frame.size.height);
     }
     else
     {
-        _callButton.frame = CGRectMake((self.frame.size.width - _callButton.frame.size.width) / 2.0f, CGRectGetMaxY(_messageButton.frame) + offset, _callButton.frame.size.width, _callButton.frame.size.height);
+        _callButton.frame = CGRectMake(floor((self.frame.size.width - _callButton.frame.size.width) / 2.0f), offset, _callButton.frame.size.width, _callButton.frame.size.height);
     }
 }
 

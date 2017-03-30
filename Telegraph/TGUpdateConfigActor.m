@@ -188,6 +188,12 @@ static bool sharedExperimentalPasscodeBlurDisabledInitialized = false;
     sharedExperimentalPasscodeBlurDisabled = experimentalPasscodeBlurDisabled != 0;
     sharedExperimentalPasscodeBlurDisabledInitialized = true;
     
+    NSData *phoneCallsEnabledData = [TGDatabaseInstance() customProperty:@"phoneCallsEnabled"];
+    int32_t previousPhoneCallsEnabled = false;
+    if (phoneCallsEnabledData.length == 4) {
+        [phoneCallsEnabledData getBytes:&previousPhoneCallsEnabled];
+    }
+    
     int32_t maxChatParticipants = MAX(100, config.chat_size_max);
     [TGDatabaseInstance() setCustomProperty:@"maxChatParticipants" value:[NSData dataWithBytes:&maxChatParticipants length:4]];
     
@@ -203,8 +209,8 @@ static bool sharedExperimentalPasscodeBlurDisabledInitialized = false;
     int32_t maxChannelMessageEditTime = config.edit_time_limit;
     [TGDatabaseInstance() setCustomProperty:@"maxChannelMessageEditTime" value:[NSData dataWithBytes:&maxChannelMessageEditTime length:4]];
 		
-    int32_t phonecallsEnabled = config.flags & (1 << 1);
-    [TGDatabaseInstance() setCustomProperty:@"phoneCallsEnabled" value:[NSData dataWithBytes:&phonecallsEnabled length:4]];
+    int32_t phoneCallsEnabled = config.flags & (1 << 1);
+    [TGDatabaseInstance() setCustomProperty:@"phoneCallsEnabled" value:[NSData dataWithBytes:&phoneCallsEnabled length:4]];
     
     int32_t callReceiveTimeout = config.call_receive_timeout_ms;
     [TGDatabaseInstance() setCustomProperty:@"callReceiveTimeout" value:[NSData dataWithBytes:&callReceiveTimeout length:4]];
@@ -220,6 +226,15 @@ static bool sharedExperimentalPasscodeBlurDisabledInitialized = false;
     
     int32_t maxPinnedChats = config.pinned_dialogs_count_max;
     [TGDatabaseInstance() setCustomProperty:@"maxPinnedChats" value:[NSData dataWithBytes:&maxPinnedChats length:4]];
+    
+    if (phoneCallsEnabled != previousPhoneCallsEnabled) {
+        TGLog(@"phoneCallsEnabled changed to %d", phoneCallsEnabled);
+        
+        [TGDatabaseInstance() clearCachedUserLinks];
+        
+        bool enabled = (phoneCallsEnabled != 0);
+        [ActionStageInstance() dispatchResource:@"/tg/calls/enabled" resource:[[SGraphObjectNode alloc] initWithObject:@(enabled)]];
+    }
     
     //[TGApplicationFeatures setLargeGroupMemberCountLimit:(NSUInteger)config.chat_big_size];
     

@@ -19,6 +19,7 @@
     UILongPressGestureRecognizer *_pressGestureRecognizer;
     
     bool _needsTransitionIn;
+    UIImage *_delayedImage;
     
     UIView *_paintingContainerView;
     
@@ -93,6 +94,14 @@
     _snapshotView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _snapshotView.frame = self.bounds;
     [self insertSubview:_snapshotView atIndex:0];
+}
+
+- (void)setSnapshotImageOnTransition:(UIImage *)image
+{
+    if (![_snapshotView isKindOfClass:[UIImageView class]])
+        return;
+    
+    _delayedImage = image;
 }
 
 - (void)setSnapshotView:(UIView *)view
@@ -184,7 +193,26 @@
 - (void)performTransitionInIfNeeded
 {
     if (_needsTransitionIn)
+    {
         [self performTransitionInWithCompletion:nil];
+    }
+    else if (_delayedImage != nil)
+    {
+        UIImageView *transitionView = [[UIImageView alloc] initWithFrame:_snapshotView.frame];
+        transitionView.image = ((UIImageView *)_snapshotView).image;
+        [self insertSubview:transitionView aboveSubview:_snapshotView];
+        
+        ((UIImageView *)_snapshotView).image = _delayedImage;
+        _delayedImage = nil;
+        
+        [UIView animateWithDuration:0.3 animations:^
+         {
+             transitionView.alpha = 0.0f;
+         } completion:^(__unused BOOL finished)
+         {
+             [transitionView removeFromSuperview];
+         }];
+    }
 }
 
 - (void)prepareForTransitionOut
@@ -196,8 +224,7 @@
 {
     if (animated)
     {
-        [UIView animateWithDuration:0.2f
-                         animations:^
+        [UIView animateWithDuration:0.2f animations:^
         {
             _imageView.alpha = 0.0f;
         }];

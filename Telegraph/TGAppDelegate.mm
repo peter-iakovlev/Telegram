@@ -159,8 +159,6 @@
 #import <Intents/Intents.h>
 #import <Pushkit/Pushkit.h>
 
-#import "TGCallAlertView.h"
-
 NSString *TGDeviceProximityStateChangedNotification = @"TGDeviceProximityStateChangedNotification";
 
 CFAbsoluteTime applicationStartupTimestamp = 0;
@@ -305,6 +303,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+    TGIsRetina();
     TGLogSetEnabled([self enableLogging]);
     
     TGLog(@"didFinishLaunchingWithOptions state: %@, %d", [UIApplication sharedApplication], [UIApplication sharedApplication].applicationState);
@@ -331,6 +330,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [TGMessage registerMediaAttachmentParser:TGBotContextResultAttachmentType parser:[[TGBotContextResultAttachment alloc] init]];
     [TGMessage registerMediaAttachmentParser:TGViaUserAttachmentType parser:[[TGViaUserAttachment alloc] init]];
     [TGMessage registerMediaAttachmentParser:TGGameAttachmentType parser:[[TGGameMediaAttachment alloc] init]];
+    [TGMessage registerMediaAttachmentParser:TGInvoiceMediaAttachmentType parser:[[TGInvoiceMediaAttachment alloc] init]];
     
     TGLog(@"###### Early initialization ######");
     
@@ -1108,7 +1108,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
         maxBackgroundTime = 1;
     
 #ifdef DEBUG
-    maxBackgroundTime = 7.0;
+//    maxBackgroundTime = 7.0;
 #endif
     
     TGLog(@"Background time remaining: %d m %d s", (int)(maxBackgroundTime / 60.0), ((int)maxBackgroundTime) % 60);
@@ -1246,8 +1246,10 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
             realUrl = [NSURL URLWithString:[[url absoluteString] stringByReplacingOccurrencesOfString:@"tel:" withString:@"facetime:"]];
         }
     }
-    _callingWebView = [[UIWebView alloc] init];
-    [_callingWebView loadRequest:[NSURLRequest requestWithURL:realUrl]];
+    //_callingWebView = [[UIWebView alloc] init];
+    //[_callingWebView loadRequest:[NSURLRequest requestWithURL:realUrl]];
+    
+    [(TGApplication *)[TGApplication sharedApplication] nativeOpenURL:realUrl];
 }
 
 - (void)presentLoginController:(bool)clearControllerStates animated:(bool)animated showWelcomeScreen:(bool)showWelcomeScreen phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram codeSentViaPhone:(bool)codeSentViaPhone profileFirstName:(NSString *)profileFirstName profileLastName:(NSString *)profileLastName resetAccountState:(TGResetAccountState *)resetAccountState
@@ -1599,6 +1601,16 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
         _autosavePhotos = [value boolValue];
     else
         _autosavePhotos = false;
+    
+    if ((value = [userDefaults objectForKey:@"saveEditedPhotos"]) != nil)
+        _saveEditedPhotos = [value boolValue];
+    else
+        _saveEditedPhotos = true;
+    
+    if ((value = [userDefaults objectForKey:@"saveCapturedMedia"]) != nil)
+        _saveCapturedMedia = [value boolValue];
+    else
+        _saveCapturedMedia = true;
 
     if ((value = [userDefaults objectForKey:@"customChatBackground"]) != nil)
         _customChatBackground = [value boolValue];
@@ -1716,6 +1728,8 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [userDefaults setObject:[NSNumber numberWithBool:_exclusiveConversationControllers] forKey:@"exclusiveConversationControllers"];
     
     [userDefaults setObject:[NSNumber numberWithBool:_autosavePhotos] forKey:@"autosavePhotos"];
+    [userDefaults setObject:[NSNumber numberWithBool:_saveEditedPhotos] forKey:@"saveEditedPhotos"];
+     [userDefaults setObject:[NSNumber numberWithBool:_saveCapturedMedia] forKey:@"saveCapturedMedia"];
     [userDefaults setObject:[NSNumber numberWithBool:_customChatBackground] forKey:@"customChatBackground"];
 
     [userDefaults setObject:[NSNumber numberWithBool:_useDifferentBackend] forKey:@"useDifferentBackend"];
@@ -1738,10 +1752,6 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [userDefaults setObject:[NSNumber numberWithInt:_secretInlineBotsInitialized] forKey:@"secretInlineBotsInitialized"];
     
     [userDefaults setObject:[NSNumber numberWithInt:_callsDataUsageMode] forKey:@"callsDataUsageMode"];
-    
-    uint8_t show = _showCallsTab ? 1: 0;
-    NSData *data = [NSData dataWithBytes:&show length:1];
-    [data writeToFile:[[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"calls.tab"] atomically:true];
     
     [userDefaults synchronize];
 }
@@ -1913,6 +1923,9 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
         
         UIMutableUserNotificationCategory *channelActionCategory = [[UIMutableUserNotificationCategory alloc] init];
         [channelActionCategory setIdentifier:@"c"];
+        
+        UIMutableUserNotificationCategory *callActionCategory = [[UIMutableUserNotificationCategory alloc] init];
+        [callActionCategory setIdentifier:@"p"];
 
         bool exclusiveQuickReplySupported = ((iosMajorVersion() == 9 && iosMinorVersion() >= 1) || iosMajorVersion() > 9);
         {
@@ -2050,14 +2063,21 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
         }
         
         {
-            UIMutableUserNotificationAction *muteAction = [[UIMutableUserNotificationAction alloc] init];
-            [muteAction setActivationMode:UIUserNotificationActivationModeBackground];
-            [muteAction setTitle:TGLocalized(@"Notification.Mute1h")];
-            [muteAction setIdentifier:@"mute"];
-            [muteAction setDestructive:true];
-            [muteAction setAuthenticationRequired:false];
+            UIMutableUserNotificationAction *mute1Action = [[UIMutableUserNotificationAction alloc] init];
+            [mute1Action setActivationMode:UIUserNotificationActivationModeBackground];
+            [mute1Action setTitle:TGLocalized(@"Notification.Mute1h")];
+            [mute1Action setIdentifier:@"mute"];
+            [mute1Action setDestructive:true];
+            [mute1Action setAuthenticationRequired:false];
             
-            [channelActionCategory setActions:@[muteAction] forContext:UIUserNotificationActionContextDefault];
+            UIMutableUserNotificationAction *mute8Action = [[UIMutableUserNotificationAction alloc] init];
+            [mute8Action setActivationMode:UIUserNotificationActivationModeBackground];
+            [mute8Action setTitle:[NSString stringWithFormat:TGLocalized(@"MuteFor.Hours_3_10"), [NSString stringWithFormat:@"%d", 8]]];
+            [mute8Action setIdentifier:@"mute8h"];
+            [mute8Action setDestructive:true];
+            [mute8Action setAuthenticationRequired:false];
+            
+            [channelActionCategory setActions:@[mute1Action, mute8Action] forContext:UIUserNotificationActionContextDefault];
         }
         {
             UIMutableUserNotificationAction *muteAction = [[UIMutableUserNotificationAction alloc] init];
@@ -2070,7 +2090,42 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
             [channelActionCategory setActions:@[muteAction] forContext:UIUserNotificationActionContextMinimal];
         }
         
-        NSSet *categories = [NSSet setWithObjects:muteActionCategory, replyActionCategory, channelActionCategory, nil];
+        {
+            UIMutableUserNotificationAction *callAction = [[UIMutableUserNotificationAction alloc] init];
+            [callAction setTitle:TGLocalized(@"Notification.CallBack")];
+            [callAction setIdentifier:@"call"];
+            [callAction setDestructive:false];
+            [callAction setAuthenticationRequired:true];
+            [callAction setActivationMode:UIUserNotificationActivationModeForeground];
+            
+            UIMutableUserNotificationAction *replyAction = [[UIMutableUserNotificationAction alloc] init];
+            [replyAction setTitle:TGLocalized(@"Notification.Reply")];
+            [replyAction setIdentifier:@"reply"];
+            [replyAction setDestructive:false];
+            [replyAction setAuthenticationRequired:true];
+            [replyAction setActivationMode:UIUserNotificationActivationModeForeground];
+            
+            [callActionCategory setActions:@[callAction, replyAction] forContext:UIUserNotificationActionContextDefault];
+        }
+        {
+            UIMutableUserNotificationAction *callAction = [[UIMutableUserNotificationAction alloc] init];
+            [callAction setTitle:TGLocalized(@"Notification.CallBack")];
+            [callAction setIdentifier:@"call"];
+            [callAction setDestructive:false];
+            [callAction setAuthenticationRequired:true];
+            [callAction setActivationMode:UIUserNotificationActivationModeForeground];
+            
+            UIMutableUserNotificationAction *replyAction = [[UIMutableUserNotificationAction alloc] init];
+            [replyAction setTitle:TGLocalized(@"Notification.Reply")];
+            [replyAction setIdentifier:@"reply"];
+            [replyAction setDestructive:false];
+            [replyAction setAuthenticationRequired:true];
+            [replyAction setActivationMode:UIUserNotificationActivationModeForeground];
+            
+            [callActionCategory setActions:@[callAction, replyAction] forContext:UIUserNotificationActionContextMinimal];
+        }
+        
+        NSSet *categories = [NSSet setWithObjects:muteActionCategory, replyActionCategory, channelActionCategory, callActionCategory, nil];
         UIUserNotificationType types = (UIUserNotificationTypeAlert | UIUserNotificationTypeSound | UIUserNotificationTypeBadge);
         
         UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:types categories:categories];
@@ -2144,13 +2199,29 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
             }
         }];
         
-        [[TGTelegramNetworking instance] resume];
-        [[TGTelegramNetworking instance] wakeUpWithCompletion:^
+        if (_backgroundTaskIdentifier != UIBackgroundTaskInvalid)
         {
-            TGDispatchOnMainThread(^
+            UIBackgroundTaskIdentifier identifier = _backgroundTaskIdentifier;
+            _backgroundTaskIdentifier = UIBackgroundTaskInvalid;
+            [application endBackgroundTask:identifier];
+        }
+        if (_backgroundTaskExpirationTimer != nil)
+        {
+            if ([_backgroundTaskExpirationTimer isValid])
+                [_backgroundTaskExpirationTimer invalidate];
+            _backgroundTaskExpirationTimer = nil;
+        }
+        
+        [[[[[TGTelegraphInstance.callManager incomingCallInternalIds] take:1] mapToSignal:^SSignal *(NSNumber *internalId) {
+            return [[TGTelegraphInstance.callManager endedIncomingCallInternalIds] filter:^bool(NSNumber *endedInternalId) {
+                return [internalId isEqual:endedInternalId];
+            }];
+        }] deliverOn:[SQueue mainQueue]] startWithNext:^(__unused id next)
+        {
+            [application endBackgroundTask:taskIdentifier];
+            
+            TGDispatchAfter(2.0, dispatch_get_main_queue(), ^
             {
-                [application endBackgroundTask:taskIdentifier];
-                
                 if (_inBackground)
                 {
                     [[TGTelegramNetworking instance] pause];
@@ -2158,6 +2229,9 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                 }
             });
         }];
+        
+        [[TGTelegramNetworking instance] resume];
+        [[TGTelegramNetworking instance] wakeUpWithCompletion:^{}];
     }
 }
 
@@ -2209,8 +2283,11 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                 {
                     if (_inBackground)
                     {
-                        [[TGTelegramNetworking instance] pause];
-                        TGLog(@"paused network");
+                        if (!TGTelegraphInstance.callManager.hasActiveCall)
+                        {
+                            [[TGTelegramNetworking instance] pause];
+                            TGLog(@"paused network");
+                        }
                         
                         NSTimeInterval remainingTime = [[UIApplication sharedApplication] backgroundTimeRemaining];
                         if (remainingTime > 2.0) {
@@ -2924,8 +3001,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
         if (uniqueIdentifier != nil) {
             int64_t peerId = [uniqueIdentifier longLongValue];
             if (peerId != 0) {
-                if (peerId != 0)
-                {
+                if (peerId != 0) {
                     [[TGInterfaceManager instance] navigateToConversationWithId:peerId conversation:nil performActions:nil animated:false];
                 }
             }
@@ -2934,8 +3010,12 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
         INInteraction *interaction = [userActivity interaction];
         if ([interaction.intent isKindOfClass:[INStartAudioCallIntent class]])
         {
-            INPerson *person = [[(INStartAudioCallIntent *)(interaction.intent) contacts] firstObject];
-            NSString *handle = person.personHandle.value;
+            NSString *handle = userActivity.userInfo[@"handle"];
+            if (handle == nil)
+            {
+                INPerson *person = [[(INStartAudioCallIntent *)(interaction.intent) contacts] firstObject];
+                handle = person.personHandle.value;
+            }
             
             int32_t peerId = 0;
             if ([handle hasPrefix:@"TGCA"])
@@ -2945,7 +3025,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
             else
             {
                 NSArray *users = [TGDatabaseInstance() contactUsersMatchingPhone:handle];
-                peerId = [users.firstObject uid];
+                peerId = ((TGUser *)users.firstObject).uid;
             }
             
             [[TGInterfaceManager instance] callPeerWithId:peerId];
@@ -3018,7 +3098,11 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     else if ([identifier isEqualToString:@"like"])
         [self _likeActionForPeerId:peerId completion:completionHandler];
     else if ([identifier isEqualToString:@"mute"])
-        [self _muteActionForPeerId:peerId completion:completionHandler];
+        [self _muteActionForPeerId:peerId duration:1 completion:completionHandler];
+    else if ([identifier isEqualToString:@"mute8h"])
+        [self _muteActionForPeerId:peerId duration:8 completion:completionHandler];
+    else if ([identifier isEqualToString:@"call"])
+        [self _callActionForPeerId:peerId completion:completionHandler];
     else if (completionHandler)
         completionHandler();
 }
@@ -3038,9 +3122,22 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     else if ([identifier isEqualToString:@"like"])
         [self _likeActionForPeerId:peerId completion:completionHandler];
     else if ([identifier isEqualToString:@"mute"])
-        [self _muteActionForPeerId:peerId completion:completionHandler];
+        [self _muteActionForPeerId:peerId duration:1 completion:completionHandler];
+    else if ([identifier isEqualToString:@"mute8h"])
+        [self _muteActionForPeerId:peerId duration:8 completion:completionHandler];
+    else if ([identifier isEqualToString:@"call"])
+        [self _callActionForPeerId:peerId completion:completionHandler];
     else if (completionHandler)
         completionHandler();
+}
+
+- (void)_callActionForPeerId:(int64_t)peerId completion:(void (^)())completion
+{
+    if (peerId != 0)
+        [[TGInterfaceManager instance] callPeerWithId:peerId];
+    
+    if (completion != nil)
+        completion();
 }
 
 - (void)_replyActionForPeerId:(int64_t)peerId mid:(int32_t)mid openKeyboard:(bool)openKeyboard responseInfo:(NSDictionary *)responseInfo completion:(void (^)())completion
@@ -3072,7 +3169,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                 {
                     TGDispatchOnMainThread(^
                     {
-                        if (_inBackground)
+                        if (_inBackground && !TGTelegraphInstance.callManager.hasActiveCall)
                         {
                             [[TGTelegramNetworking instance] pause];
                             if (completion)
@@ -3135,7 +3232,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
             {
                 TGDispatchOnMainThread(^
                 {
-                    if (_inBackground)
+                    if (_inBackground && !TGTelegraphInstance.callManager.hasActiveCall)
                     {
                         [[TGTelegramNetworking instance] pause];
                         if (completion)
@@ -3159,12 +3256,12 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
         [[TGTelegramNetworking instance] resume];
 }
 
-- (void)_muteActionForPeerId:(int64_t)peerId completion:(void (^)())completion
+- (void)_muteActionForPeerId:(int64_t)peerId duration:(NSInteger)duration completion:(void (^)())completion
 {
     int muteUntil = 0;
     [TGDatabaseInstance() loadPeerNotificationSettings:peerId soundId:NULL muteUntil:&muteUntil previewText:NULL messagesMuted:NULL notFound:NULL];
     
-    int muteTime = 1 * 60 * 60;
+    int muteTime = (int)duration * 60 * 60;
     
     muteUntil = MAX(muteUntil, (int)[[TGTelegramNetworking instance] approximateRemoteTime] + muteTime);
     
@@ -3208,7 +3305,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
             {
                 TGDispatchOnMainThread(^
                 {
-                    if (_inBackground)
+                    if (_inBackground && !TGTelegraphInstance.callManager.hasActiveCall)
                     {
                         [[TGTelegramNetworking instance] pause];
                         
@@ -3653,9 +3750,19 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     return item;
 }
 
+- (NSString *)_callsTabFilePath
+{
+    return [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"enablecalls.tab"];
+}
+
+- (bool)callsTabFileExists
+{
+    return [[NSFileManager defaultManager] fileExistsAtPath:[self _callsTabFilePath]];
+}
+
 - (void)loadShowCallsTab
 {
-    NSData *data = [NSData dataWithContentsOfFile:[[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"calls.tab"]];
+    NSData *data = [NSData dataWithContentsOfFile:[self _callsTabFilePath]];
     bool flag = false;
     if (data.length != 0)
     {
@@ -3665,6 +3772,21 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
             flag = true;
     }
     _showCallsTab = flag;
+}
+
+- (void)setShowCallsTab:(int)showCallsTab
+{
+    _showCallsTab = showCallsTab;
+    
+    uint8_t show = showCallsTab ? 1: 0;
+    NSData *data = [NSData dataWithBytes:&show length:1];
+    [data writeToFile:[self _callsTabFilePath] atomically:true];
+}
+
+- (void)resetCallsTab
+{
+    _showCallsTab = false;
+    [[NSFileManager defaultManager] removeItemAtPath:[self _callsTabFilePath] error:NULL];
 }
 
 - (void)actionStageActionRequested:(NSString *)action options:(id)options

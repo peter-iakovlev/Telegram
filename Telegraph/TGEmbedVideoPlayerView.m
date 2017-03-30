@@ -16,7 +16,8 @@
     TGModernGalleryVideoView *_videoView;
     UIImageView *_watermarkView;
     
-    id _playerStartedObserver;
+    NSInteger _playbackTicks;
+    bool _playingStarted;
 }
 @end
 
@@ -111,7 +112,7 @@
         NSTimeInterval availableDuration = CMTimeGetSeconds(time);
         if (duration < DBL_EPSILON)
             duration = MAX(0.01, CMTimeGetSeconds(_player.currentItem.asset.duration));
-        downloadProgress = availableDuration / duration;
+        downloadProgress = MAX(0.0, MIN(1.0, availableDuration / duration));
     }
     
     TGEmbedPlayerState *newState = [TGEmbedPlayerState stateWithPlaying:playing duration:duration position:position downloadProgress:downloadProgress];
@@ -134,29 +135,28 @@
     [self _cleanWebView];
     _videoView = videoView;
     
-    __weak TGEmbedVideoPlayerView *weakSelf = self;
-    _playerStartedObserver = [player addBoundaryTimeObserverForTimes:@[[NSValue valueWithCMTime:CMTimeMake(10, 100)]] queue:NULL usingBlock:^
+    __weak TGEmbedVideoPlayerView *weakSelf = self;    
+    [player addPeriodicTimeObserverForInterval:CMTimeMake(1, 10) queue:dispatch_get_main_queue() usingBlock:^(CMTime time)
     {
         __strong TGEmbedVideoPlayerView *strongSelf = weakSelf;
         if (strongSelf != nil)
         {
-            [strongSelf _didBeginPlayback];
+            NSTimeInterval position = CMTimeGetSeconds(time);
+            if (!strongSelf->_playingStarted && position > DBL_EPSILON)
+            {
+                strongSelf->_playbackTicks++;
+                if (strongSelf->_playbackTicks > 2)
+                {
+                    strongSelf->_playingStarted = true;
+                    [strongSelf _didBeginPlayback];
+                    
+                    TGEmbedPlayerState *state = [TGEmbedPlayerState stateWithPlaying:true];
+                    [strongSelf updateState:state];
+                }
+            }
             
-            TGEmbedPlayerState *state = [TGEmbedPlayerState stateWithPlaying:true];
-            [strongSelf updateState:state];
-            
-            [strongSelf->_player removeTimeObserver:strongSelf->_playerStartedObserver];
-            strongSelf->_playerStartedObserver = nil;
-        }
-    }];
-    
-    [player addPeriodicTimeObserverForInterval:CMTimeMake(1, 2) queue:dispatch_get_main_queue() usingBlock:^(CMTime time)
-    {
-        __strong TGEmbedVideoPlayerView *strongSelf = weakSelf;
-        if (strongSelf != nil)
-        {
             TGEmbedPlayerState *state = strongSelf.state;
-            TGEmbedPlayerState *newState = [TGEmbedPlayerState stateWithPlaying:state.playing duration:state.duration position:CMTimeGetSeconds(time) downloadProgress:state.downloadProgress];
+            TGEmbedPlayerState *newState = [TGEmbedPlayerState stateWithPlaying:state.playing duration:state.duration position:position downloadProgress:state.downloadProgress];
             [strongSelf updateState:newState];
         }
     }];

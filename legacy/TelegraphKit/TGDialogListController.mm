@@ -2438,7 +2438,7 @@ NSString *authorNameYou = @"  __TGLocalized__YOU";
         sectionView.backgroundColor = UIColorRGB(0xf7f7f7);
         [sectionContainer addSubview:sectionView];
         
-        /*CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+        /*CGFloat separatorHeight = TGScreenPixel;
         UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, sectionView.frame.origin.y - (first ? separatorHeight : 0.0f), 10, separatorHeight)];
         separatorView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         separatorView.backgroundColor = TGSeparatorColor();

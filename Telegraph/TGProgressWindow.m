@@ -56,46 +56,54 @@
 
 - (void)dismiss:(bool)animated
 {
-    UIWindow *window = _weakWindow;
+    TGProgressWindow *window = (TGProgressWindow *)_weakWindow;
     
     window.userInteractionEnabled = false;
     if (animated)
     {
         [UIView animateWithDuration:0.3f delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
-         {
-             _containerView.alpha = 0.0f;
-         } completion:^(BOOL finished)
-         {
-             if (finished)
-             {
-                 window.hidden = true;
-                 
-                 NSArray *windows = [[UIApplication sharedApplication] windows];
-                 for (int i = (int)windows.count - 1; i >= 0; i--)
-                 {
-                     if ([windows objectAtIndex:i] != window)
-                         [[windows objectAtIndex:i] makeKeyWindow];
-                 }
-             }
-         }];
+        {
+            _containerView.alpha = 0.0f;
+        } completion:^(BOOL finished)
+        {
+            if (finished)
+            {
+                window.hidden = true;
+                
+                if (window.skipMakeKeyWindowOnDismiss)
+                    return;
+                
+                NSArray *windows = [[UIApplication sharedApplication] windows];
+                for (int i = (int)windows.count - 1; i >= 0; i--)
+                {
+                    if ([windows objectAtIndex:i] != window) {
+                        [[windows objectAtIndex:i] makeKeyWindow];
+                    }
+                }
+            }
+        }];
     }
     else
     {
         _containerView.alpha = 0.0f;
         window.hidden = true;
         
+        if (window.skipMakeKeyWindowOnDismiss)
+            return;
+        
         NSArray *windows = [[UIApplication sharedApplication] windows];
         for (int i = (int)windows.count - 1; i >= 0; i--)
         {
-            if ([windows objectAtIndex:i] != window)
+            if ([windows objectAtIndex:i] != window) {
                 [[windows objectAtIndex:i] makeKeyWindow];
+            }
         }
     }
 }
 
 - (void)dismissWithSuccess
 {
-    UIWindow *window = _weakWindow;
+    TGProgressWindow *window = (TGProgressWindow *)_weakWindow;
     
     [_activityIndicatorView removeFromSuperview];
     window.userInteractionEnabled = false;
@@ -105,22 +113,26 @@
     [_containerView addSubview:checkView];
     
     [UIView animateWithDuration:0.3 delay:0.5 options:0 animations:^
-     {
-         _containerView.alpha = 0.0f;
-     } completion:^(BOOL finished)
-     {
-         if (finished)
-         {
-             window.hidden = true;
-             
-             NSArray *windows = [[UIApplication sharedApplication] windows];
-             for (int i = (int)windows.count - 1; i >= 0; i--)
-             {
-                 if ([windows objectAtIndex:i] != window)
-                     [[windows objectAtIndex:i] makeKeyWindow];
-             }
-         }
-     }];
+    {
+        _containerView.alpha = 0.0f;
+    } completion:^(BOOL finished)
+    {
+        if (finished)
+        {
+            window.hidden = true;
+            
+            if (window.skipMakeKeyWindowOnDismiss)
+                return;
+            
+            NSArray *windows = [[UIApplication sharedApplication] windows];
+            for (int i = (int)windows.count - 1; i >= 0; i--)
+            {
+                if ([windows objectAtIndex:i] != window) {
+                    [[windows objectAtIndex:i] makeKeyWindow];
+                }
+            }
+        }
+    }];
 }
 
 - (BOOL)canBecomeFirstResponder {

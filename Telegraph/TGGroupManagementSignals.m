@@ -175,7 +175,7 @@
             int64_t peerId = 0;
             if ([chat isKindOfClass:[TLChat$chat class]]) {
                 title = ((TLChat$chat *)chat).title;
-                left = ((TLChat$chat *)chat).flags & (1 << 3);
+                left = ((TLChat$chat *)chat).flags & (1 << 2);
                 peerId = TGPeerIdFromGroupId(((TLChat$chat *)chat).n_id);
             } else if ([chat isKindOfClass:[TLChat$channel class]]) {
                 title = ((TLChat$channel *)chat).title;

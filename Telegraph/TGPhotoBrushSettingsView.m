@@ -206,7 +206,7 @@ const CGFloat TGPhotoBrushSettingsItemHeight = 44.0f;
             break;
     }
     
-    CGFloat thickness = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat thickness = TGScreenPixel;
     
     [_brushViews enumerateObjectsUsingBlock:^(TGModernButton *view, NSUInteger index, __unused BOOL *stop)
     {

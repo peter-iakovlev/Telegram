@@ -25,6 +25,7 @@ typedef enum {
 
 @interface TGCallUtils : NSObject
 
++ (bool)isOnPhoneCall;
 + (SSignal *)networkTypeSignal;
 
 @end

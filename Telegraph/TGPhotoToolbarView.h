@@ -1,4 +1,4 @@
-#import <UIKit/UIKit.h>
+#import "TGPhotoEditorButton.h"
 
 typedef enum
 {
@@ -10,7 +10,8 @@ typedef enum
     TGPhotoEditorPaintTab   = 1 << 4,
     TGPhotoEditorStickerTab = 1 << 5,
     TGPhotoEditorTextTab    = 1 << 6,
-    TGPhotoEditorGifTab     = 1 << 7
+    TGPhotoEditorGifTab     = 1 << 7,
+    TGPhotoEditorQualityTab = 1 << 8
 } TGPhotoEditorTab;
 
 @interface TGPhotoToolbarView : UIView
@@ -42,6 +43,8 @@ typedef enum
 - (void)setToolbarTabs:(TGPhotoEditorTab)tabs animated:(bool)animated;
 
 - (void)setActiveTab:(TGPhotoEditorTab)tab;
+
+- (TGPhotoEditorButton *)buttonForTab:(TGPhotoEditorTab)tab;
 
 - (void)calculateLandscapeSizeForPossibleButtonTitles:(NSArray *)possibleButtonTitles;
 - (CGFloat)landscapeSize;

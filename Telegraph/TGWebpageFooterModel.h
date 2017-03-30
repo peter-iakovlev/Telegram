@@ -1,6 +1,7 @@
 #import "TGModernViewModel.h"
 
 @class TGModernViewContext;
+@class TGWebPageMediaAttachment;
 
 typedef enum {
     TGWebpageFooterModelActionNone,
@@ -21,7 +22,7 @@ typedef enum {
 @property (nonatomic) bool mediaProgressVisible;
 @property (nonatomic) bool boundToContainer;
 
-- (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming;
+- (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming webpage:(TGWebPageMediaAttachment *)webpage;
 
 - (void)layoutForContainerSize:(CGSize)containerSize contentSize:(CGSize)contentSize infoWidth:(CGFloat)infoWidth needsContentUpdate:(bool *)needsContentUpdate bottomInset:(bool *)bottomInset;
 

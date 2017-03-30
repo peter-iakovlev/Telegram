@@ -73,18 +73,31 @@
     variantSize.height = CGCeil(variantSize.height);
     _variantLabel.frame = CGRectMake(self.bounds.size.width - variantSize.width - 10.0f, CGFloor((self.bounds.size.height - variantSize.height) / 2.0f), variantSize.width, variantSize.height);
     
+    CGFloat titleOffset = 52.0f;
+    if (_disableInsetIfNotChecked && !_checked) {
+        titleOffset = 12.0f;
+    }
+    
     CGSize titleSize = [_titleLabel.text sizeWithFont:_titleLabel.font];
-    titleSize.width = MIN(CGRectGetMinX(_variantLabel.frame) - 10.0f - 52.0f, CGCeil(titleSize.width));
+    titleSize.width = MIN(CGRectGetMinX(_variantLabel.frame) - 10.0f - titleOffset, CGCeil(titleSize.width));
     titleSize.height = CGCeil(titleSize.height);
-    _titleLabel.frame = CGRectMake(52.0f, CGFloor((self.bounds.size.height - titleSize.height) / 2.0f), titleSize.width, titleSize.height);
+    _titleLabel.frame = CGRectMake(titleOffset, CGFloor((self.bounds.size.height - titleSize.height) / 2.0f), titleSize.width, titleSize.height);
 }
 
 - (void)_buttonPressed {
-    _checked = !_checked;
-    _checkmarkView.hidden = !_checked;
+    if (!_disableAutoCheck) {
+        _checked = !_checked;
+        _checkmarkView.hidden = !_checked;
     
-    if (_onCheckedChanged) {
-        _onCheckedChanged(_checked);
+        if (_onCheckedChanged) {
+            _onCheckedChanged(_checked);
+        }
+    } else {
+        if (!_checked) {
+            if (_onCheckedChanged) {
+                _onCheckedChanged(!_checked);
+            }
+        }
     }
 }
 

@@ -252,7 +252,7 @@ static const CGFloat outerCircleMinScale = innerCircleRadius / outerCircleRadius
         {
             CGFloat distance = [touch locationInView:self].x - _touchLocation.x;
             
-            CGFloat value = (-distance) / 100.0f;
+            CGFloat value = (-distance) / 300.0f;
             value = MAX(0.0f, MIN(1.0f, value));
             
             CGFloat velocity = [_panRecognizer velocityInView:self].x;
@@ -267,7 +267,7 @@ static const CGFloat outerCircleMinScale = innerCircleRadius / outerCircleRadius
                 _innerCircleView.transform = CGAffineTransformMakeScale(scale, scale);
             }
             
-            if (distance < -100.0f)
+            if (distance < -300.0f)
             {
                 id<TGModernConversationInputMicButtonDelegate> delegate = _delegate;
                 if ([delegate respondsToSelector:@selector(micButtonInteractionCancelled:)])
@@ -312,8 +312,9 @@ static const CGFloat outerCircleMinScale = innerCircleRadius / outerCircleRadius
     {   
         CGFloat velocity = _lastVelocity;
         
+        CGFloat distance = [touch locationInView:self].x - _touchLocation.x;
         id<TGModernConversationInputMicButtonDelegate> delegate = _delegate;
-        if (velocity < -400.0f)
+        if (velocity < -400.0f || distance < -80.0f)
         {
             if ([delegate respondsToSelector:@selector(micButtonInteractionCancelled:)])
                 [delegate micButtonInteractionCancelled:_lastVelocity];

@@ -18,7 +18,7 @@ typedef enum {
     TGCallStateEnding,
     TGCallStateEnded,
     TGCallStateBusy,
-    TGCallStateInterrupted
+    TGCallStateMissed
 } TGCallState;
     
 @interface TGCallStateData : NSObject
@@ -27,9 +27,15 @@ typedef enum {
 @property (nonatomic, readonly) int64_t callId;
 @property (nonatomic, readonly) TGCallState state;
 @property (nonatomic, readonly) int64_t peerId;
+@property (nonatomic, readonly) int64_t accessHash;
 @property (nonatomic, strong, readonly) TGCallConnection *connection;
+@property (nonatomic, readonly) bool hungUpOutside;
+@property (nonatomic, readonly) bool needsRating;
+@property (nonatomic, readonly) bool needsDebug;
 
-- (instancetype)initWithInternalId:(NSNumber *)internalId callId:(int64_t)callId state:(TGCallState)state peerId:(int64_t)peerId connection:(TGCallConnection *)connection;
+@property (nonatomic, readonly) NSString *error;
+
+- (instancetype)initWithInternalId:(NSNumber *)internalId callId:(int64_t)callId accessHash:(int64_t)accessHash state:(TGCallState)state peerId:(int64_t)peerId connection:(TGCallConnection *)connection hungUpOutside:(bool)hungUpOutside needsRating:(bool)needsRating needsDebug:(bool)needsDebug error:(NSString *)error;
 
 @end
 

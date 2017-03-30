@@ -48,7 +48,14 @@
         
         _accountSettingsController = [[TGAccountSettingsController alloc] initWithUid:0];
         
-        _callsController = [[TGRecentCallsController alloc] initForSettings:false];
+        __weak TGRootController *weakSelf = self;
+        _callsController = [[TGRecentCallsController alloc] init];
+        _callsController.missedCountChanged = ^(NSInteger count)
+        {
+            __strong TGRootController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                [strongSelf->_mainTabsController setMissedCallsCount:(int)count];
+        };
         
         _mainTabsController = [[TGMainTabsController alloc] init];
         [_mainTabsController setViewControllers:[NSArray arrayWithObjects:_contactsController, _callsController, _dialogListController, _accountSettingsController, nil]];
@@ -118,7 +125,10 @@
     {
         __strong TGRootController *strongSelf = weakSelf;
         if (strongSelf != nil)
+        {
+            [strongSelf->_masterNavigationController setShowCallStatusBar:!hidden];
             [strongSelf->_detailNavigationController setShowCallStatusBar:!hidden];
+        }
     };
 }
 

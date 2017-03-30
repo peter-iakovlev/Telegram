@@ -84,7 +84,7 @@
         [separatorViews addObject:separatorView];
     }
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     
     for (NSString *item in items)
     {
@@ -218,7 +218,7 @@
     
     CGFloat contentHeight = 0.0f;
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     
     NSUInteger index = 0;
     for (UIButton *button in _buttons)

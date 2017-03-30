@@ -339,13 +339,12 @@ typedef enum {
         }
         
         NSMutableArray *actions = [[NSMutableArray alloc] init];
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"action": @"search"}];
-        [actions addObject:@{@"title": TGLocalized(@"Common.Edit"), @"action": @"edit"}];
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": [UIImage imageNamed:@"PanelSearchIcon"], @"action": @"search"}];
         if (_isMuted)
-            [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"action": @"unmute"}];
+            [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionUnmute"], TGAccentColor()), @"action": @"unmute"}];
         else
-            [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"action": @"mute"}];
-        //[actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"action": @"info"}];
+            [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionMute"], TGAccentColor()), @"action": @"mute"}];
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": [UIImage imageNamed:@"PanelInfoIcon"], @"action": @"info"}];
         
         [groupTitlePanel setButtonsWithTitlesAndActions:actions];
         
@@ -476,7 +475,7 @@ typedef enum {
                 static dispatch_once_t onceToken;
                 dispatch_once(&onceToken, ^
                 {
-                    muteImage = [UIImage imageNamed:@"ModernConversationTitleIconMute.png"];
+                    muteImage = [UIImage imageNamed:@"DialogList_Muted.png"];
                 });
                 
                 muteIcon.image = muteImage;
@@ -497,19 +496,22 @@ typedef enum {
     {
         NSString *panelAction = options[@"action"];
         
-        if ([panelAction isEqualToString:@"mute"])
+        if ([panelAction isEqualToString:@"mute"]) {
             [self requestGroupMute:true];
-        else if ([panelAction isEqualToString:@"unmute"])
-            [self requestGroupMute:false];
-        else if ([panelAction isEqualToString:@"edit"])
-        {
-            TGModernConversationController *controller = self.controller;
-            [controller enterEditingMode];
         }
-        else if ([panelAction isEqualToString:@"info"])
+        else if ([panelAction isEqualToString:@"unmute"]) {
+            [self requestGroupMute:false];
+        }
+        else if ([panelAction isEqualToString:@"edit"]) {
+            [self.controller enterEditingMode];
+        }
+        else if ([panelAction isEqualToString:@"info"]) {
             [self _controllerAvatarPressed];
-        else if ([panelAction isEqualToString:@"search"])
+            [self.controller hideTitlePanel];
+        }
+        else if ([panelAction isEqualToString:@"search"]) {
             [self navigateToMessageSearch];
+        }
     }
     else if ([action isEqualToString:@"actionPanelAction"])
     {

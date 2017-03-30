@@ -254,7 +254,6 @@
     if ((NSInteger)screenHeight == 480)
         _commentView.maxHeight = 60.0f;
     
-    
     CGFloat expandedHeight = MAX(TGMenuSheetButtonItemViewHeight * 2, TGMenuSheetButtonItemViewHeight + _textHeight + 17.0f);
     CGFloat defaultHeight = (_actionButton != nil) ? TGMenuSheetButtonItemViewHeight : 0.0f;
     return (_selectedCount == 0) ? defaultHeight : expandedHeight;

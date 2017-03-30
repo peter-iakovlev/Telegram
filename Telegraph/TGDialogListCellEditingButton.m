@@ -35,11 +35,17 @@
     return self;
 }
 
+- (void)setLabelOnly:(bool)labelOnly {
+    _labelOnly = labelOnly;
+    _labelView.font = TGSystemFontOfSize(_labelOnly ? 18.0f : 13.0f);
+}
+
 - (void)setTitle:(NSString *)title image:(UIImage *)image {
     _labelView.text = title;
     [_labelView sizeToFit];
     
-    _iconView.image = image;
+    if (!_labelOnly)
+        _iconView.image = image;
     [self setNeedsLayout];
 }
 
@@ -51,7 +57,8 @@
     CGSize labelSize = _labelView.bounds.size;
     CGSize iconSize = _iconView.image.size;
     
-    _labelView.frame = CGRectMake(CGFloor((bounds.size.width - labelSize.width) / 2.0f), 48.0f, labelSize.width, labelSize.height);
+    CGFloat labelY = _labelOnly ? 17.0f : 48.0f;
+    _labelView.frame = CGRectMake(CGFloor((bounds.size.width - labelSize.width) / 2.0f), labelY, labelSize.width, labelSize.height);
     _iconView.frame = CGRectMake(CGFloor((bounds.size.width - iconSize.width) / 2.0f), 14.0f, iconSize.width, iconSize.height);
 }
 

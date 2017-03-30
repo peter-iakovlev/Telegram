@@ -1,5 +1,7 @@
 //
-// Created by Grishka on 13.09.16.
+// libtgvoip is free and unencumbered public domain software.
+// For more information, see http://unlicense.org or the UNLICENSE file
+// you should have received with this source code distribution.
 //
 
 #include "AudioOutputAndroid.h"
@@ -8,11 +10,11 @@
 
 extern JavaVM* sharedJVM;
 
-jmethodID CAudioOutputAndroid::initMethod;
-jmethodID CAudioOutputAndroid::releaseMethod;
-jmethodID CAudioOutputAndroid::startMethod;
-jmethodID CAudioOutputAndroid::stopMethod;
-jclass CAudioOutputAndroid::jniClass;
+jmethodID CAudioOutputAndroid::initMethod=NULL;
+jmethodID CAudioOutputAndroid::releaseMethod=NULL;
+jmethodID CAudioOutputAndroid::startMethod=NULL;
+jmethodID CAudioOutputAndroid::stopMethod=NULL;
+jclass CAudioOutputAndroid::jniClass=NULL;
 
 CAudioOutputAndroid::CAudioOutputAndroid(){
 	JNIEnv* env=NULL;

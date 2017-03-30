@@ -1,5 +1,7 @@
 //
-// Created by Grishka on 19.06.16.
+// libtgvoip is free and unencumbered public domain software.
+// For more information, see http://unlicense.org or the UNLICENSE file
+// you should have received with this source code distribution.
 //
 
 #include "OpusDecoder.h"
@@ -20,7 +22,7 @@ COpusDecoder::COpusDecoder(CMediaStreamItf *dst){
 	outputBufferSize=0;
 	packetsNeeded=0;
 	lastDecodedOffset=0;
-	decodedQueue=new CBlockingQueue(32);
+	decodedQueue=new CBlockingQueue(33);
 	bufferPool=new CBufferPool(PACKET_SIZE, 32);
 	echoCanceller=NULL;
 	frameDuration=20;
@@ -147,6 +149,7 @@ void COpusDecoder::Start(){
 	init_mutex(mutex);
 	running=true;
 	start_thread(thread, COpusDecoder::StartThread, this);
+	set_thread_priority(thread, get_thread_max_priority());
 	set_thread_name(thread, "opus_decoder");
 }
 

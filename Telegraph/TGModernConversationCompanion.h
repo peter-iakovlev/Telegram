@@ -322,4 +322,6 @@ typedef enum {
 
 - (bool)isPeerAdmin;
 
+- (void)startVoiceCall;
+
 @end

@@ -106,7 +106,7 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
         [_fadeView addTarget:self action:@selector(dismissCommentViewAction) forControlEvents:UIControlEventTouchDown];
         [self addSubview:_fadeView];
         
-        _separator = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, TGIsRetina() ? 0.5f : 1.0f)];
+        _separator = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, TGScreenPixel)];
         _separator.alpha = 0.0f;
         _separator.backgroundColor = TGSeparatorColor();
         [self addSubview:_separator];

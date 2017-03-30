@@ -7,12 +7,16 @@
 
 @interface TGCallManager : NSObject
 
+@property (nonatomic, readonly) bool hasActiveCall;
+
 - (void)reset;
 - (SSignal *)requestCallWithPeerId:(int64_t)peerId;
 - (void)updateCallContextWithCallId:(int64_t)callId callContext:(id)callContext;
 
 - (SSignal *)callStateWithInternalId:(id)internalId;
 - (SSignal *)incomingCallInternalIds;
+
+- (SSignal *)endedIncomingCallInternalIds;
 
 - (SSignal *)acceptCallWithInternalId:(id)internalId;
 - (SSignal *)discardCallWithInternalId:(id)internalId reason:(TGCallDiscardReason)reason;

@@ -11,6 +11,7 @@
     UILabel *_prefixLabel;
     TGTextField *_textField;
     UIActivityIndicatorView *_activityIndicator;
+    CGFloat _minimalInset;
 }
 
 @end
@@ -107,6 +108,19 @@
     }
 }
 
+- (void)setMinimalInset:(CGFloat)minimalInset {
+    _minimalInset = minimalInset;
+    [self setNeedsLayout];
+}
+
+- (void)setAutoCapitalize:(bool)autoCapitalize {
+    if (autoCapitalize) {
+        _textField.autocapitalizationType = UITextAutocapitalizationTypeAllCharacters;
+    } else {
+        _textField.autocapitalizationType = UITextAutocapitalizationTypeSentences;
+    }
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
@@ -126,8 +140,12 @@
     CGFloat textOffset = 14.0f;
     if (_usernameLabel.text.length != 0) {
         textOffset = CGRectGetMaxX(_usernameLabel.frame) + 2.0f;
-    } else {
+        textOffset = MAX(_minimalInset, textOffset);
+    } else if (_prefixLabel.text.length != 0) {
         textOffset = CGRectGetMaxX(_prefixLabel.frame) + 2.0f - 22.0f;
+        textOffset = MAX(_minimalInset, textOffset);
+    } else {
+        textOffset = -5.0f;
     }
     
     _textField.frame = CGRectMake(textOffset, 0.0f, self.contentView.frame.size.width - 8.0f - 2.0f - textOffset, self.contentView.frame.size.height);
@@ -149,6 +167,9 @@
 
 - (BOOL)textFieldShouldReturn:(UITextField *)__unused textField
 {
+    if (_returnPressed) {
+        _returnPressed();
+    }
     return false;
 }
 

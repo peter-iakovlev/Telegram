@@ -87,8 +87,11 @@
 #import "TLUpdate$updateChannelTooLong.h"
 
 #import "TGCallContext.h"
+#import "TGCallSession.h"
 
 #import "TGGroupManagementSignals.h"
+
+#import "TGCallSignals.h"
 
 static int stateVersion = 0;
 static bool didRequestUpdates = false;
@@ -517,43 +520,93 @@ static bool _initialUpdatesScheduled = false;
     {
         NSString *currentVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
         NSString *versionKey = [[NSString alloc] initWithFormat:@"NotifiedVersionUpdate_%@", currentVersion];
+#ifdef DEBUG
+        //[[NSUserDefaults standardUserDefaults] removeObjectForKey:versionKey];
+#endif
         if (![[[NSUserDefaults standardUserDefaults] objectForKey:versionKey] boolValue]) {
+            NSString *previousVersion = [[NSUserDefaults standardUserDefaults] objectForKey:@"UpdateChangelog_PreviousVersion"];
+            if (previousVersion == nil) {
+                previousVersion = @"3.16";
+            }
+            
+#ifdef DEBUG
+            //previousVersion = @"3.15";
+            //currentVersion = @"4.444";
+#endif
+            
             bool skipUpdate = initial;
 #ifdef INTERNAL_RELEASE
-            skipUpdate = true;
+            //skipUpdate = true;
 #endif
             if (skipUpdate) {
                 [[NSUserDefaults standardUserDefaults] setObject:@true forKey:versionKey];
             } else {
-                [TGTelegraphInstance.disposeOnLogout add:[[TGServiceSignals appChangelogMessage] startWithNext:^(NSDictionary *dict) {
+                [TGTelegraphInstance.disposeOnLogout add:[[TGServiceSignals appChangelogMessages:previousVersion] startWithNext:^(NSArray *updates) {
                     [ActionStageInstance() dispatchOnStageQueue:^{
-                        if (TGTelegraphInstance.clientUserId != 0 && [dict[@"text"] respondsToSelector:@selector(characterAtIndex:)] && ((NSString *)dict[@"text"]).length != 0) {
-                            NSString *messageText = dict[@"text"];
-                            
-                            TGMessage *message = [[TGMessage alloc] init];
-                            message.mid = [[[TGDatabaseInstance() generateLocalMids:1] objectAtIndex:0] intValue];
-                            
-                            int uid = [TGTelegraphInstance createServiceUserIfNeeded];
-                            message.fromUid = uid;
-                            message.toUid = TGTelegraphInstance.clientUserId;
-                            message.date = [[TGTelegramNetworking instance] approximateRemoteTime];
-                            message.outgoing = false;
-                            message.cid = uid;
-                            
-                            TGUser *selfUser = [TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId];
-                            
-                            NSString *displayName = selfUser.firstName;
-                            if (displayName.length == 0)
-                                displayName = selfUser.lastName;
-                            
-                            message.text = messageText;
-                            
-                            message.mediaAttachments = dict[@"media"];
-                            
-                            [TGDatabaseInstance() transactionAddMessages:@[message] updateConversationDatas:nil notifyAdded:true];
-                            
-                            [[NSUserDefaults standardUserDefaults] setObject:@true forKey:versionKey];
+                        NSMutableArray *messages = [[NSMutableArray alloc] init];
+                        for (id update in updates) {
+                            if ([update isKindOfClass:[TLUpdate$updateServiceNotificationMeta class]])
+                            {
+                                TLUpdate$updateServiceNotificationMeta *updateServiceNotification = (TLUpdate$updateServiceNotificationMeta *)update;
+                                if (updateServiceNotification.flags & (1 << 0))
+                                {
+                                    TGDispatchOnMainThread(^
+                                    {
+                                        [TGAlertView presentAlertWithTitle:@"" message:updateServiceNotification.message cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+                                    });
+                                }
+                                else if (updateServiceNotification.inbox_date != 0)
+                                {
+                                    int uid = [TGTelegraphInstance createServiceUserIfNeeded];
+                                    
+                                    TGMessage *message = [[TGMessage alloc] init];
+                                    message.mid = [[[TGDatabaseInstance() generateLocalMids:1] objectAtIndex:0] intValue];
+                                    
+                                    message.fromUid = uid;
+                                    message.toUid = TGTelegraphInstance.clientUserId;
+                                    message.date = updateServiceNotification.inbox_date;
+                                    message.outgoing = false;
+                                    message.cid = uid;
+                                    
+                                    TGUser *selfUser = [TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId];
+                                    
+                                    NSString *displayName = selfUser.firstName;
+                                    if (displayName.length == 0)
+                                        displayName = selfUser.lastName;
+                                    
+                                    message.text = updateServiceNotification.message;
+                                    
+                                    NSMutableArray *mediaAttachments = [[NSMutableArray alloc] init];
+                                    
+                                    if (updateServiceNotification.entities.count != 0) {
+                                        NSArray *entities = [TGMessage parseTelegraphEntities:updateServiceNotification.entities];
+                                        if (entities.count != 0) {
+                                            TGMessageEntitiesAttachment *attachment = [[TGMessageEntitiesAttachment alloc] init];
+                                            attachment.entities = entities;
+                                            [mediaAttachments addObject:attachment];
+                                        }
+                                    }
+                                    
+                                    if (updateServiceNotification.media != nil) {
+                                        NSArray *medias = [TGMessage parseTelegraphMedia:updateServiceNotification.media];
+                                        if (medias.count != 0) {
+                                            [mediaAttachments addObjectsFromArray:medias];
+                                        }
+                                    }
+                                    
+                                    message.mediaAttachments = mediaAttachments;
+                                    
+                                    [messages addObject:message];
+                                }
+                            }
                         }
+                        
+                        if (messages.count != 0) {
+                            [TGDatabaseInstance() transactionAddMessages:messages updateConversationDatas:nil notifyAdded:true];
+                        }
+                        
+                        [[NSUserDefaults standardUserDefaults] setObject:@true forKey:versionKey];
+                        [[NSUserDefaults standardUserDefaults] setObject:currentVersion forKey:@"UpdateChangelog_PreviousVersion"];
                     }];
                 }]];
             }
@@ -571,6 +624,10 @@ static bool _initialUpdatesScheduled = false;
         [ActionStageInstance() requestActor:@"/tg/service/settings/push/(subscribe)" options:nil watcher:TGTelegraphInstance];
         
         [ActionStageInstance() requestActor:@"/tg/service/updateConfig/(background)" options:nil flags:0 watcher:TGTelegraphInstance];
+        
+        [TGTelegraphInstance.disposeOnLogout add:[[TGCallSignals serverCallsConfig] startWithNext:^(NSString *next) {
+            [TGCallSession applyCallsConfig:next];
+        }]];
     }
     
     [TGTelegraphInstance updatePresenceNow];
@@ -679,7 +736,11 @@ static bool _initialUpdatesScheduled = false;
     
     for (TLUpdate *update in otherUpdates)
     {
-        TGLog(@"update: %@", update);
+        if ([update respondsToSelector:@selector(pts)] && [update respondsToSelector:@selector(pts_count)]) {
+            TGLog(@"update: %@, pts: %d, ptsCount: %d", update, [(TLUpdate$updateNewMessage *)update pts], [(TLUpdate$updateNewMessage *)update pts_count]);
+        } else {
+            TGLog(@"update: %@", update);
+        }
         if ([update isKindOfClass:[TLUpdate$updateReadHistoryInbox class]])
         {
             TLUpdate$updateReadHistoryInbox *concreteUpdate = (TLUpdate$updateReadHistoryInbox *)update;
@@ -1256,7 +1317,7 @@ static bool _initialUpdatesScheduled = false;
             {
                 TGDispatchOnMainThread(^
                 {
-                    [[[TGAlertView alloc] initWithTitle:nil message:updateServiceNotification.message cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                    [TGAlertView presentAlertWithTitle:@"" message:updateServiceNotification.message cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                 });
             }
             else if (updateServiceNotification.inbox_date != 0)
@@ -1370,8 +1431,12 @@ static bool _initialUpdatesScheduled = false;
             TLUpdate$updatePhoneCall *updatePhoneCall = (TLUpdate$updatePhoneCall *)update;
             if ([updatePhoneCall.phone_call isKindOfClass:[TLPhoneCall$phoneCallRequested class]]) {
                 TLPhoneCall$phoneCallRequested *concreteCall = (TLPhoneCall$phoneCallRequested *)updatePhoneCall.phone_call;
-                TGCallRequestedContext *callContext = [[TGCallRequestedContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id gA:concreteCall.g_a];
-                [TGTelegraphInstance.callManager updateCallContextWithCallId:concreteCall.n_id callContext:callContext];
+                
+                if ([[TGTelegramNetworking instance] approximateRemoteTime] < concreteCall.date + [TGCallSession callReceiveTimeout])
+                {
+                    TGCallRequestedContext *callContext = [[TGCallRequestedContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id gAHash:concreteCall.g_a_hash declined:false];
+                    [TGTelegraphInstance.callManager updateCallContextWithCallId:concreteCall.n_id callContext:callContext];
+                }
             } else if ([updatePhoneCall.phone_call isKindOfClass:[TLPhoneCall$phoneCall class]]) {
                 TLPhoneCall$phoneCall *concreteCall = (TLPhoneCall$phoneCall *)updatePhoneCall.phone_call;
                 
@@ -1391,7 +1456,7 @@ static bool _initialUpdatesScheduled = false;
                         [alternativeConnections addObject:callConnection];
                 }
                 
-                TGCallAcceptedContext *callContext = [[TGCallAcceptedContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id gAOrB:concreteCall.g_a_or_b keyFingerprint:concreteCall.key_fingerprint defaultConnection:defaultConnection alternativeConnections:alternativeConnections];
+                TGCallConfirmedContext *callContext = [[TGCallConfirmedContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id gA:concreteCall.g_a_or_b keyFingerprint:concreteCall.key_fingerprint defaultConnection:defaultConnection alternativeConnections:alternativeConnections];
                 [TGTelegraphInstance.callManager updateCallContextWithCallId:concreteCall.n_id callContext:callContext];
             } else if ([updatePhoneCall.phone_call isKindOfClass:[TLPhoneCall$phoneCallDiscardedMeta class]]) {
                 TLPhoneCall$phoneCallDiscardedMeta *concreteCall = (TLPhoneCall$phoneCallDiscardedMeta *)updatePhoneCall.phone_call;
@@ -1404,11 +1469,17 @@ static bool _initialUpdatesScheduled = false;
                     reason = TGCallDiscardReasonHangup;
                 else if([concreteCall.reason isKindOfClass:[TLPhoneCallDiscardReason$phoneCallDiscardReasonBusy class]])
                     reason = TGCallDiscardReasonBusy;
-                TGCallDiscardedContext *callContext = [[TGCallDiscardedContext alloc] initWithCallId:concreteCall.n_id reason:reason];
+                bool needsRating = concreteCall.flags & (1 << 2);
+                bool needsDebug = concreteCall.flags & (1 << 3);
+                TGCallDiscardedContext *callContext = [[TGCallDiscardedContext alloc] initWithCallId:concreteCall.n_id reason:reason outside:true needsRating:needsRating needsDebug:needsDebug error:nil];
                 [TGTelegraphInstance.callManager updateCallContextWithCallId:concreteCall.n_id callContext:callContext];
             } else if ([updatePhoneCall.phone_call isKindOfClass:[TLPhoneCall$phoneCallWaitingMeta class]]) {
                 TLPhoneCall$phoneCallWaitingMeta *concreteCall = (TLPhoneCall$phoneCallWaitingMeta *)updatePhoneCall.phone_call;
-                TGCallWaitingContext *callContext = [[TGCallWaitingContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id a:nil dhConfig:nil receiveDate:concreteCall.receive_date];
+                TGCallWaitingContext *callContext = [[TGCallWaitingContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id a:nil gA:nil dhConfig:nil receiveDate:concreteCall.receive_date];
+                [TGTelegraphInstance.callManager updateCallContextWithCallId:concreteCall.n_id callContext:callContext];
+            } else if([updatePhoneCall.phone_call isKindOfClass:[TLPhoneCall$phoneCallAccepted class]]) {
+                TLPhoneCall$phoneCallAccepted *concreteCall = (TLPhoneCall$phoneCallAccepted *)updatePhoneCall.phone_call;
+                TGCallAcceptedContext *callContext = [[TGCallAcceptedContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id gA:nil gB:concreteCall.g_b];
                 [TGTelegraphInstance.callManager updateCallContextWithCallId:concreteCall.n_id callContext:callContext];
             }
         } else if ([update isKindOfClass:[TLUpdate$updatePinnedDialogsMeta class]]) {
@@ -1443,6 +1514,8 @@ static bool _initialUpdatesScheduled = false;
             updatedPinnedDialogs[@(peerId)] = @((updateDialogPinned.flags & (1 << 0)) != 0);
             [updatedPinnedDialogsKeyOrder removeObject:@(peerId)];
             [updatedPinnedDialogsKeyOrder addObject:@(peerId)];
+        } else if ([update isKindOfClass:[TLUpdate$updateConfig class]]) {
+            [ActionStageInstance() requestActor:@"/tg/service/updateConfig/(task)" options:nil flags:0 watcher:TGTelegraphInstance];
         }
     }
     

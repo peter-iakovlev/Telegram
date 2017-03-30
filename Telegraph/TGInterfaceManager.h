@@ -36,6 +36,7 @@
 - (void)navigateToProfileOfUser:(int)uid;
 - (void)navigateToProfileOfUser:(int)uid shareVCard:(void (^)())shareVCard;
 - (void)navigateToProfileOfUser:(int)uid encryptedConversationId:(int64_t)encryptedConversationId;
+- (void)navigateToProfileOfUser:(int)uid callMessages:(NSArray *)callMessages;
 - (void)navigateToSharedMediaOfConversationWithId:(int64_t)conversationId mode:(int)mode atMessage:(NSDictionary *)atMessage;
 
 - (void)displayBannerIfNeeded:(TGMessage *)message conversationId:(int64_t)conversationId;
@@ -46,6 +47,8 @@
 
 - (void)setupCallManager:(TGCallManager *)callManager;
 - (void)callPeerWithId:(int64_t)peerId;
-- (void)maybeDisplayCallTabAlert;
+- (void)callPeerWithId:(int64_t)peerId completion:(void (^)(void))completion;
+- (void)dismissAllCalls;
+- (void)maybeDisplayCallsTabAlert;
 
 @end

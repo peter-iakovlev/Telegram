@@ -208,7 +208,7 @@
 {
     [super layoutSubviews];
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     _stripeView.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, separatorHeight);
     _separatorView.frame = CGRectMake(0.0f, self.frame.size.height - separatorHeight, self.frame.size.width, separatorHeight);
     

@@ -2,7 +2,7 @@
 #import "TGOverlayControllerWindow.h"
 
 #import "TGFont.h"
-#import "POP/POP.h"
+#import <POP/POP.h>
 #import "TGHacks.h"
 #import "TGImageUtils.h"
 #import "TGPhotoEditorUtils.h"
@@ -659,11 +659,23 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     _remainingLabel.text = remainingString;
     
     CGFloat fractPosition = state.position / MAX(state.duration, 0.001);
-    [_scrubber setDownloadProgress:state.downloadProgress];
-    [_scrubber setPosition:fractPosition];
     
-    _scrubber.hidden = (state.duration < DBL_EPSILON);
-    _remainingLabel.hidden = (state.duration < DBL_EPSILON);
+    if (state.duration <= 0.01 || isnan(state.downloadProgress))
+    {
+        _remainingLabel.hidden = true;
+        _scrubber.hidden = true;
+    }
+    else
+    {
+        _remainingLabel.hidden = false;
+        _scrubber.hidden = false;
+    }
+    
+    if (!_scrubber.hidden)
+    {
+        [_scrubber setDownloadProgress:state.downloadProgress];
+        [_scrubber setPosition:fractPosition];
+    }
 }
 
 

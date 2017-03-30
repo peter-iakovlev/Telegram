@@ -61,6 +61,32 @@
         }
         return [text substringWithRange:[match rangeAtIndex:1]];
     }
+    
+    {
+        NSString *pattern = @"https?:\\/\\/t\\.me\\/([a-zA-Z0-9_\\/]+)(\\?.*)?$";
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:NULL];
+        NSTextCheckingResult *match = [regex firstMatchInString:text options:0 range:NSMakeRange(0, [text length])];
+        if (match != nil)
+        {
+            NSString *arguments = ([match numberOfRanges] >= 2 && [match rangeAtIndex:2].location != NSNotFound) ? [[text substringWithRange:[match rangeAtIndex:2]] substringFromIndex:1] : nil;
+            if (arguments.length != 0)
+            {
+                NSDictionary *dict = [TGStringUtils argumentDictionaryInUrlString:arguments];
+                if (dict.count == 1 && (dict[@"start"] != nil || dict[@"startgroup"] || dict[@"game"]))
+                {
+                    if (startPrivatePayload)
+                        *startPrivatePayload = dict[@"start"];
+                    if (startGroupPayload)
+                        *startGroupPayload = dict[@"startgroup"];
+                    if (gamePayload)
+                        *gamePayload = dict[@"game"];
+                }
+                else
+                    return nil;
+            }
+            return [text substringWithRange:[match rangeAtIndex:1]];
+        }
+    }
     return nil;
 }
 

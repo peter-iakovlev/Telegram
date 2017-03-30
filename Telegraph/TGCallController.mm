@@ -12,8 +12,11 @@
 #import "TGImageUtils.h"
 #import "TGStringUtils.h"
 #import "TGFont.h"
+#import "TGAlertView.h"
+#import "TGTimerTarget.h"
 
 #import "TGCallSession.h"
+#import "TGCallSignals.h"
 #import "TGCallKitAdapter.h"
 #import "TGAccessChecker.h"
 
@@ -21,6 +24,10 @@
 #import "TGCallDebugView.h"
 #import "TGCallAlertView.h"
 #import "TGCallRatingView.h"
+#import "TGCallStatusBarView.h"
+
+#import "TGMenuSheetController.h"
+#import "TGCallAudioRouteButtonItemView.h"
 
 @interface TGCallController ()
 {
@@ -31,21 +38,33 @@
     SMetaDisposable *_levelDisposable;
     
     int64_t _peerId;
+    int64_t _accessHash;
     
     bool _appeared;
+    bool _appearing;
     bool _dismissing;
     bool _disappearing;
+    bool _minimizing;
     bool _timerStarted;
     
-    bool _presentRatingAlert;
+    bool _proximityListenerEnabled;
     
-    UIButton *_debugButton;
+    NSArray *_audioRoutes;
+    TGAudioRoute *_activeAudioRoute;
+    
+    bool _presentRatingAlert;
+    bool _presentTabAlert;
+    NSString *_finalError;
+    
     TGCallDebugView *_debugView;
     
     SPipe *_durationPipe;
     
     CGFloat _previousStatusBarAlpha;
     CGFloat _previousStatusBarOffset;
+    
+    __weak TGMenuSheetController *_menuController;
+    NSTimer *_routeMenuCloseTimer;
     
     NSInteger _debugBitrate;
     NSInteger _debugPacketLoss;
@@ -86,9 +105,16 @@
     [UIView setAnimationsEnabled:false];
     self.view = [[TGCallView alloc] init];
     self.view.layer.rasterizationScale = TGScreenScaling();
+    
+    __weak TGCallController *weakSelf = self;
+    self.view.minimizeRequested = ^
+    {
+        __strong TGCallController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf minimize:true];
+    };
     [UIView setAnimationsEnabled:true];
 }
-
 
 - (void)viewWillAppear:(BOOL)animated
 {
@@ -106,7 +132,7 @@
         if (strongSelf != nil)
             [strongSelf->_session toggleMute];
     };
-    self.view.messagePressed = ^
+    self.view.backPressed = ^
     {
         __strong TGCallController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -116,7 +142,25 @@
     {
         __strong TGCallController *strongSelf = weakSelf;
         if (strongSelf != nil)
-            [strongSelf->_session toggleSpeaker];
+            [strongSelf speakerPressed];
+    };
+    self.view.cancelPressed = ^
+    {
+        __strong TGCallController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf dismissController:0];
+    };
+    self.view.debugPressed = ^
+    {
+        __strong TGCallController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf showDebug];
+    };
+    self.view.messagePressed = ^
+    {
+        __strong TGCallController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf message];
     };
 }
 
@@ -139,26 +183,17 @@
         if (state.startTime > DBL_EPSILON && !strongSelf->_timerStarted)
             [timer set:[strongSelf timerSignalForStartTime:state.startTime]];
         
-        if (state.state != TGCallStateEnding && state.state != TGCallStateEnded)
+        if (!strongSelf->_dismissing && state.state != TGCallStateEnding && state.state != TGCallStateEnded && state.state != TGCallStateBusy && state.state != TGCallStateMissed)
             strongSelf->_durationPipe.sink(@(duration));
         
         [strongSelf setState:state duration:duration];
         
         if (strongSelf->_peerId == 0 && state.peer.uid != 0)
             strongSelf->_peerId = state.peer.uid;
+        
+        if (strongSelf->_accessHash == 0 && state.stateData.accessHash != 0)
+            strongSelf->_accessHash = state.stateData.accessHash;
     }]];
-    
-    [_levelDisposable setDisposable:[[_session levelSignal] startWithNext:^(NSNumber *next)
-    {
-        __strong TGCallController *strongSelf = weakSelf;
-        if (strongSelf != nil && [next respondsToSelector:@selector(floatValue)])
-            [strongSelf.view setLevel:next.floatValue];
-    }]];
-    
-    _debugButton = [[UIButton alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height - 64, 64, 64)];
-    _debugButton.autoresizingMask = UIViewAutoresizingFlexibleTopMargin;
-    [_debugButton addTarget:self action:@selector(showDebug) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:_debugButton];
 }
 
 #pragma mark - Debug
@@ -216,11 +251,19 @@
 
 - (void)setState:(TGCallSessionState *)state duration:(NSTimeInterval)duration
 {
-    if (!_appeared && (![TGCallKitAdapter callKitAvailable] || state.state == TGCallStateAccepting || state.state == TGCallStateOngoing || _session.outgoing))
+    bool hasMicAccess = [TGCallSession hasMicrophoneAccess];
+    
+    if (!_appeared && (!hasMicAccess || ![TGCallKitAdapter callKitAvailable] || state.state == TGCallStateAccepting || state.state == TGCallStateOngoing || _session.outgoing))
         [self presentController];
     
+    if (_peer == nil && state.peer != nil)
+        _peer = state.peer;
+    
+    _audioRoutes = state.audioRoutes;
+    _activeAudioRoute = state.activeAudioRoute;
+    
     if (!_dismissing)
-        [self updateProximityListener:!state.speaker];
+        [self updateProximityListener];
     
     __weak TGCallController *weakSelf = self;
     switch (state.state)
@@ -258,16 +301,36 @@
             };
         }
             break;
-
+            
+        case TGCallStateBusy:
+        {
+            if (_durationPipe != nil)
+                _durationPipe.sink(nil);
+            
+            self.view.callPressed = ^
+            {
+                __strong TGCallController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf callAgainPressed];
+            };
+        }
+            break;
+            
         case TGCallStateEnded:
         case TGCallStateEnding:
-        case TGCallStateBusy:
-        case TGCallStateInterrupted:
+        case TGCallStateMissed:
         {
-            if (state.state != TGCallStateBusy && state.state != TGCallStateInterrupted && _session.duration > 10.0)
-                _presentRatingAlert = true;
+            if (state.stateData.error != nil)
+                _finalError = state.stateData.error;
+            if ((state.state == TGCallStateEnded || state.state == TGCallStateEnding) && _session.duration > 1.0)
+            {
+                _presentTabAlert = true;
+                if (state.stateData.needsRating)
+                    _presentRatingAlert = true;
+            }
             
-            [self dismissController:state.state == TGCallStateBusy ? 2.0 : 1.0];
+            NSTimeInterval delay = !self.overlayWindow.hidden ? 1.0f : 0.0f;
+            [self dismissController:delay];
         }
             break;
     }
@@ -287,6 +350,112 @@
     }];
 }
 
+- (void)callAgainPressed
+{
+    _accessHash = 0;
+    
+    _session = [TGTelegraphInstance.callManager sessionForOutgoingCallWithPeerId:_peerId];
+    [self commonInit];
+}
+
+- (void)speakerPressed
+{
+    bool hasBluetooth = false;
+    for (TGAudioRoute *route in _audioRoutes)
+    {
+        if (route.isBluetooth)
+        {
+            hasBluetooth = true;
+            break;
+        }
+    }
+    
+    if (hasBluetooth)
+        [self presentRouteMenu:_audioRoutes];
+    else
+        [_session toggleSpeaker];
+}
+
+- (void)presentRouteMenu:(NSArray *)routes
+{
+    if (_routeMenuCloseTimer != nil)
+    {
+        [_routeMenuCloseTimer invalidate];
+        _routeMenuCloseTimer = nil;
+    }
+     
+    TGMenuSheetController *controller = [[TGMenuSheetController alloc] init];
+    _menuController = controller;
+    TGMenuSheetController *weakController = controller;
+    controller.dismissesByOutsideTap = true;
+    controller.hasSwipeGesture = true;
+    
+    NSMutableArray *buttons = [[NSMutableArray alloc] init];
+    for (TGAudioRoute *route in routes)
+    {
+        UIImage *icon = nil;
+        if (route.isLoudspeaker)
+            icon = [UIImage imageNamed:@"CallRouteSpeaker"];
+        else if (route.isBluetooth)
+            icon = [UIImage imageNamed:@"CallRouteBluetooth"];
+        
+        if (icon != nil)
+            icon = TGTintedImage(icon, TGAccentColor());
+        
+        __weak TGCallController *weakSelf = self;
+        TGCallAudioRouteButtonItemView *routeItem = [[TGCallAudioRouteButtonItemView alloc] initWithTitle:route.name icon:icon selected:route == _activeAudioRoute action:^
+        {
+            __strong TGCallController *strongSelf = weakSelf;
+            __strong TGMenuSheetController *strongController = weakController;
+            if (strongSelf != nil)
+            {
+                [strongSelf->_session applyAudioRoute:route];
+                [strongController dismissAnimated:true];
+            }
+        }];
+        [buttons addObject:routeItem];
+    }
+    
+    TGMenuSheetButtonItemView *hideItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Call.AudioRouteHide") type:TGMenuSheetButtonTypeCancel action:^
+    {
+        __strong TGMenuSheetController *strongController = weakController;
+        [strongController dismissAnimated:true];
+    }];
+    [buttons addObject:hideItem];
+
+    [controller setItemViews:buttons];
+    
+    __weak TGCallController *weakSelf = self;
+    controller.sourceRect = ^
+    {
+        __strong TGCallController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return CGRectZero;
+        
+        return [strongSelf.view.speakerButton convertRect:strongSelf.view.speakerButton.bounds toView:strongSelf.view];
+    };
+    controller.didDismiss = ^(__unused bool manual)
+    {
+        __strong TGCallController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        [strongSelf->_routeMenuCloseTimer invalidate];
+        strongSelf->_routeMenuCloseTimer = nil;
+    };
+    [controller presentInViewController:self sourceView:self.view animated:true];
+    
+    _routeMenuCloseTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(menuTimerTick) interval:5.0 repeat:false];
+}
+
+- (void)menuTimerTick
+{
+    [_routeMenuCloseTimer invalidate];
+    _routeMenuCloseTimer = nil;
+    
+    [_menuController dismissAnimated:true];
+}
+
 + (void)requestMicrophoneAccess:(void (^)(bool granted))resultBlock
 {
     [[AVAudioSession sharedInstance] requestRecordPermission:^(BOOL granted)
@@ -299,36 +468,67 @@
     }];
 }
 
-- (void)updateProximityListener:(bool)maybeEnable
+- (void)updateProximityListener
 {
-    if (_proximityChangeHolder == nil && maybeEnable)
+    bool proximityRequired = !_activeAudioRoute.isBluetooth && !_activeAudioRoute.isLoudspeaker;
+    if (_proximityChangeHolder == nil && _proximityListenerEnabled && proximityRequired)
     {
         _proximityChangeHolder = [[TGHolder alloc] init];
         [TGAppDelegateInstance.deviceProximityListeners addHolder:_proximityChangeHolder];
     }
-    else if (_proximityChangeHolder != nil && !maybeEnable)
+    else if (_proximityChangeHolder != nil && (!proximityRequired || !_proximityListenerEnabled))
     {
         [TGAppDelegateInstance.deviceProximityListeners removeHolder:_proximityChangeHolder];
         _proximityChangeHolder = nil;
     }
 }
 
-static int callsCount = 0;
+- (void)setProximityListenerEnabled:(bool)enabled
+{
+    _proximityListenerEnabled = enabled;
+    [self updateProximityListener];
+}
 
-- (void)presentRatingAlertView:(int64_t)callId
+- (void)hangUpCall
+{
+    [_session hangUpCurrentCall];
+}
+
+- (void)hangUpCallWithCompletion:(void (^)())completion
+{
+    [_session hangUpCurrentCallCompletion:completion];
+}
+
+- (void)message
+{
+    [[TGInterfaceManager instance] navigateToConversationWithId:_peerId conversation:nil performActions:nil atMessage:nil clearStack:true openKeyboard:true canOpenKeyboardWhileInTransition:true animated:true];
+    [self dismissController:0];
+}
+
+#pragma mark - Alerts
+
+- (void)presentRatingAlertView:(int64_t)callId accessHash:(int64_t)accessHash
 {
     TGCallRatingView *ratingView = [[TGCallRatingView alloc] init];
+    __weak TGCallRatingView *weakRatingView = ratingView;
     TGCallAlertView *alertView = [TGCallAlertView presentAlertWithTitle:TGLocalized(@"Calls.RatingTitle") message:nil customView:ratingView cancelButtonTitle:TGLocalized(@"Calls.NotNow") doneButtonTitle:TGLocalized(@"Calls.SubmitRating") completionBlock:^(bool done)
     {
-        callsCount++;
-        
-        if (callsCount == 2)
-            [[TGInterfaceManager instance] maybeDisplayCallTabAlert];
+        if (_presentTabAlert)
+            [TGAppDelegateInstance.rootController.callsController maybeSuggestEnableCallsTab:false];
         
         if (!done)
             return;
+        
+        __strong TGCallRatingView *strongRatingView = weakRatingView;
+        [[TGCallSignals reportCallRatingWithCallId:callId accessHash:accessHash rating:(int32_t)strongRatingView.selectedStars comment:strongRatingView.comment] startWithNext:nil];
     }];
+    alertView.followsKeyboard = true;
     alertView.doneButton.enabled = false;
+    alertView.shouldDismissOnDimTap = ^bool
+    {
+        __strong TGCallRatingView *strongRatingView = weakRatingView;
+        return strongRatingView.comment.length == 0;
+    };
     
     __weak TGCallAlertView *weakAlertView = alertView;
     ratingView.onStarsSelected = ^
@@ -336,19 +536,48 @@ static int callsCount = 0;
         __strong TGCallAlertView *strongAlertView = weakAlertView;
         strongAlertView.doneButton.enabled = true;
     };
+    ratingView.onHeightChanged = ^(CGFloat height)
+    {
+        __strong TGCallAlertView *strongAlertView = weakAlertView;
+        [strongAlertView updateCustomViewHeight:height];
+    };
+}
+
+- (void)presentErrorAlertView:(NSString *)error
+{
+    NSString *text = [self _localizedStringForError:error];
+    if (text.length == 0)
+        return;
+    
+    if ([text rangeOfString:@"%@"].location != NSNotFound)
+        text = [NSString stringWithFormat:text, _peer.displayFirstName];
+    
+    [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.ConnectionErrorTitle") message:text cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+}
+
+- (NSString *)_localizedStringForError:(NSString *)error
+{
+    if ([error isEqualToString:@"PARTICIPANT_VERSION_OUTDATED"])
+        return TGLocalized(@"Call.ParticipantVersionOutdatedError");
+    else if ([error isEqualToString:@"USER_PRIVACY_RESTRICTED"])
+        return TGLocalized(@"Call.PrivacyErrorMessage");
+    
+    return nil;
 }
 
 #pragma mark - Transition
 
 - (void)presentController
 {
-    if (self.view.alpha > FLT_EPSILON)
+    if (self.view.alpha > FLT_EPSILON || _appearing || _minimizing)
         return;
-        
+    
+    _appearing = true;
+    _appeared = true;
+    
     _previousStatusBarAlpha = [TGHacks applicationStatusBarAlpha];
     _previousStatusBarOffset = [TGHacks applicationStatusBarOffset];
     
-    _appeared = true;
     self.overlayWindow.hidden = false;
     self.view.userInteractionEnabled = true;
     self.view.transform = CGAffineTransformMakeScale(1.1f, 1.1f);
@@ -365,10 +594,14 @@ static int callsCount = 0;
         [TGHacks setApplicationStatusBarOffset:0.0f];
     } completion:^(__unused BOOL finished)
     {
+        _appearing = false;
         self.view.layer.shouldRasterize = false;
+        
+        if (self.onTransitionIn != nil)
+            self.onTransitionIn();
     }];
     
-    [self updateProximityListener:true];
+    [self setProximityListenerEnabled:true];
     
     [[UIApplication sharedApplication] setIdleTimerDisabled:true];
 }
@@ -381,14 +614,15 @@ static int callsCount = 0;
     _dismissing = true;
     self.view.userInteractionEnabled = false;
     
-    [self updateProximityListener:false];
+    [self setProximityListenerEnabled:false];
     
-    if (self.onDismissBlock != nil)
-        self.onDismissBlock();
+    _durationPipe.sink(nil);
+    [TGAppDelegateInstance.rootController.callStatusBarView setSignal:[SSignal single:nil]];
     
     if (_appeared)
     {
         int64_t callId = _session.callId;
+        int64_t accessHash = _accessHash;
         
         TGDispatchAfter(delay, dispatch_get_main_queue(), ^
         {
@@ -396,11 +630,21 @@ static int callsCount = 0;
             [self animateDismissWithCompletion:^
             {
                 [self dismiss];
-                
-                if (_presentRatingAlert)
-                    [self presentRatingAlertView:callId];
             }];
         });
+        
+        if (delay > DBL_EPSILON)
+        {
+            TGDispatchAfter(delay + 0.2, dispatch_get_main_queue(), ^
+            {
+                if (_finalError.length > 0)
+                    [self presentErrorAlertView:_finalError];
+                else if (_presentRatingAlert)
+                    [self presentRatingAlertView:callId accessHash:accessHash];
+                else if (_presentTabAlert)
+                    [TGAppDelegateInstance.rootController.callsController maybeSuggestEnableCallsTab:false];
+            });
+        }
     }
     else
     {
@@ -413,28 +657,58 @@ static int callsCount = 0;
 
 - (void)minimize
 {
+    [self minimize:false];
+}
+
+- (void)minimize:(bool)fast
+{
+    if (self.overlayWindow.hidden)
+        return;
+    
+    _minimizing = true;
     self.view.userInteractionEnabled = false;
-    [self animateDismissWithCompletion:^
+    [self animateDismiss:fast completion:^
     {
+        _minimizing = false;
         self.overlayWindow.hidden = true;
     }];
 }
 
 - (void)animateDismissWithCompletion:(void (^)(void))completion
 {
-    [self updateProximityListener:false];
+    [self animateDismiss:false completion:completion];
+}
+
+- (void)animateDismiss:(bool)fast completion:(void (^)(void))completion
+{
+    [self setProximityListenerEnabled:false];
     
     self.view.layer.shouldRasterize = true;
     [self setNeedsStatusBarAppearanceUpdate];
+    if (fast)
+    {
+        [UIView animateWithDuration:0.2 animations:^
+        {
+            self.view.alpha = 0.0f;
+        }];
+    }
+    
     [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
     {
-        self.view.alpha = 0.0f;
+        if (!fast)
+            self.view.alpha = 0.0f;
+        [self.view centralize];
         self.view.transform = CGAffineTransformMakeScale(1.1f, 1.1f);
         
         [TGHacks setApplicationStatusBarAlpha:_previousStatusBarAlpha];
         [TGHacks setApplicationStatusBarOffset:_previousStatusBarOffset];
     } completion:^(__unused BOOL finished)
     {
+        self.view.transform = CGAffineTransformIdentity;
+        [self.view setNeedsLayout];
+        
+        [self.view resetPan];
+        
         if (completion != nil)
             completion();
         
@@ -454,7 +728,7 @@ static int callsCount = 0;
 
 - (BOOL)shouldAutorotate
 {
-    if (!TGIsPad())
+    if (!TGIsPad() && UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation))
         return false;
     
     return [super shouldAutorotate];
@@ -490,6 +764,16 @@ static int callsCount = 0;
 
 
 @implementation TGCallControllerWindow
+
+- (instancetype)initWithParentController:(TGViewController *)parentController contentController:(TGOverlayController *)contentController
+{
+    self = [super initWithParentController:parentController contentController:contentController];
+    if (self != nil)
+    {
+        self.windowLevel = UIWindowLevelStatusBar - 0.0001f;
+    }
+    return self;
+}
 
 static CGPoint TGCallControllerClampPointToScreenSize(__unused id self, __unused SEL _cmd, CGPoint point)
 {

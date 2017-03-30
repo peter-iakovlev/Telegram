@@ -24,7 +24,7 @@
     {
         self.backgroundColor = [UIColor whiteColor];
         
-        CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat separatorHeight = TGScreenPixel;
         
         _topSeparatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frame.size.width, separatorHeight)];
         _topSeparatorView.backgroundColor = TGSeparatorColor();
@@ -43,7 +43,7 @@
     
     CGRect frame = self.frame;
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     
     _topSeparatorView.frame = CGRectMake(0.0f, 0.0f, frame.size.width, separatorHeight);
     _bottomSeparatorView.frame = CGRectMake(0.0f, frame.size.height - separatorHeight, frame.size.width, separatorHeight);

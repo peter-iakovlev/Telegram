@@ -45,6 +45,8 @@
 
 #import "TLMessageFwdHeader$messageFwdHeader.h"
 
+#import "TGCurrencyFormatter.h"
+
 #import <set>
 #import <map>
 
@@ -313,12 +315,14 @@ static NSMutableArray *delayedNotifications()
     [self cancelTimeoutTimer];
     
     __weak TGApplyUpdatesActor *weakSelf = self;
-    _timeoutTimer = [[TGTimer alloc] initWithTimeout:MAX(0.0, MIN(2.0, 5.0 - _overallTimeout)) repeat:false completion:^
+    NSTimeInterval timeout = MAX(0.0, MIN(2.0, 5.0 - _overallTimeout));
+    _timeoutTimer = [[TGTimer alloc] initWithTimeout:timeout repeat:false completion:^
     {
         __strong TGApplyUpdatesActor *strongSelf = weakSelf;
         if (strongSelf != nil)
         {
             strongSelf->_timeoutTimer = nil;
+            TGLog(@"update timeout timer fired at %f", timeout);
             [strongSelf timeoutReached];
         }
     } queue:[ActionStageInstance() globalStageDispatchQueue]];
@@ -1421,6 +1425,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                         bool attachmentFound = false;
                         bool migrationFound = false;
                         bool skipMessage = false;
+                        bool phoneCall = false;
                         
                         for (TGMediaAttachment *attachment in message.mediaAttachments)
                         {
@@ -1629,8 +1634,15 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                     }
                                     case TGMessageActionPhoneCall:
                                     {
-                                        //TGCallDiscardReason reason = (TGCallDiscardReason)[actionAttachment.actionData[@"reason"] intValue];
-                                        skipMessage = true;
+                                        TGCallDiscardReason reason = (TGCallDiscardReason)[actionAttachment.actionData[@"reason"] intValue];
+                                        if (reason == TGCallDiscardReasonMissed) {
+                                            text = [NSString stringWithFormat:TGLocalized(@"PHONE_CALL_MISSED"), user.displayName];
+                                            phoneCall = true;
+                                        }
+                                        else {
+                                            skipMessage = true;
+                                        }
+                                        
                                         attachmentFound = true;
                                         break;
                                     }
@@ -1791,6 +1803,20 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                 attachmentFound = true;
                                 break;
                             }
+                            else if (attachment.type == TGInvoiceMediaAttachmentType) {
+                                TGInvoiceMediaAttachment *invoice = (TGInvoiceMediaAttachment *)attachment;
+                                
+                                NSString *priceString = [[TGCurrencyFormatter shared] formatAmount:invoice.totalAmount currency:invoice.currency];
+                                
+                                if (message.cid > 0) {
+                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_INVOICE"), user.displayName, priceString];
+                                } else {
+                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_INVOICE"), user.displayName, chatName, priceString];
+                                }
+                                
+                                attachmentFound = true;
+                                break;
+                            }
                         }
                         
                         if (migrationFound || skipMessage) {
@@ -1862,7 +1888,9 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                         
                         if (iosMajorVersion() >= 8 && !isLocked)
                         {
-                            if (TGPeerIdIsGroup(message.cid))
+                            if (phoneCall)
+                                localNotification.category = @"p";
+                            else if (TGPeerIdIsGroup(message.cid))
                                 localNotification.category = @"m";
                             else if (TGPeerIdIsChannel(message.cid))
                                 localNotification.category = @"c";

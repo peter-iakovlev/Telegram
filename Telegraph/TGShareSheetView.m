@@ -636,7 +636,7 @@ static CGFloat blurDynamicOffset = 5.0f;
     
     CGFloat containerWidth = self.frame.size.width - insets.left - insets.right;
     CGFloat containerHeight = 0.0f;
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     
     NSInteger index = -1;
     for (TGShareSheetItemView *itemView in _items)

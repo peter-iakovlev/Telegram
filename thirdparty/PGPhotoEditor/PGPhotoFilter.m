@@ -23,6 +23,7 @@
 @synthesize shouldBeSkipped = _shouldBeSkipped;
 @synthesize parametersChanged = _parametersChanged;
 @synthesize disabled = _disabled;
+@synthesize segmented = _segmented;
 
 - (instancetype)initWithDefinition:(PGPhotoFilterDefinition *)definition
 {

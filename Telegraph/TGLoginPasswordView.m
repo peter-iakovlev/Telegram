@@ -158,11 +158,11 @@
     }
     
     _grayBackground.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, topOffset);
-    _grayBackgroundSeparator.frame = CGRectMake(0.0f, topOffset, self.frame.size.width, TGIsRetina() ? 0.5f : 1.0f);
+    _grayBackgroundSeparator.frame = CGRectMake(0.0f, topOffset, self.frame.size.width, TGScreenPixel);
     
     _titleLabel.frame = CGRectMake(CGFloor((self.frame.size.width - _titleLabel.frame.size.width) / 2), titleLabelOffset, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
     
-    _passwordSeparatorView.frame = CGRectMake(sideInset, _grayBackgroundSeparator.frame.origin.y + 60.0f, self.frame.size.width - sideInset * 2.0f, TGIsRetina() ? 0.5f : 1.0f);
+    _passwordSeparatorView.frame = CGRectMake(sideInset, _grayBackgroundSeparator.frame.origin.y + 60.0f, self.frame.size.width - sideInset * 2.0f, TGScreenPixel);
     
     _passwordField.frame = CGRectMake(sideInset, _passwordSeparatorView.frame.origin.y - 46.0f, self.frame.size.width - sideInset * 2.0f, 56.0f);
     

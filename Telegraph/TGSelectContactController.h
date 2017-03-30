@@ -23,7 +23,10 @@
 
 @property (nonatomic, copy) void (^onChannelMembersInvited)(NSArray *users);
 @property (nonatomic, copy) void (^onCreateLink)();
+@property (nonatomic, copy) void (^onCall)(TGUser *);
 
 - (id)initWithCreateGroup:(bool)createGroup createEncrypted:(bool)createEncrypted createBroadcast:(bool)createBroadcast createChannel:(bool)createChannel inviteToChannel:(bool)inviteToChannel showLink:(bool)showLink;
+
+- (id)initWithCreateGroup:(bool)createGroup createEncrypted:(bool)createEncrypted createBroadcast:(bool)createBroadcast createChannel:(bool)createChannel inviteToChannel:(bool)inviteToChannel showLink:(bool)showLink call:(bool)call;
 
 @end

@@ -29,6 +29,7 @@ NSArray *TGDialogListCellEditingControlButtonsUnmuteUnpinDelete();
 - (void)setExpanded:(bool)expanded animated:(bool)animated;
 - (bool)isExpanded;
 - (void)setExpandable:(bool)expandable;
+- (void)setLabelOnly:(bool)labelOnly;
 
 @end
 

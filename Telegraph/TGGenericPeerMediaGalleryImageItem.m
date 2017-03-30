@@ -49,7 +49,7 @@
     [imageUri appendFormat:@"&messageId=%" PRId32 "", (int32_t)messageId];
     [imageUri appendFormat:@"&conversationId=%" PRId64 "", (int64_t)peerId];
     
-    NSString *escapedCacheUrl = (__bridge_transfer NSString *)CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (__bridge CFStringRef)legacyCacheUrl, (__bridge CFStringRef)@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-", (__bridge CFStringRef)@"&?= :/", kCFStringEncodingUTF8);
+    NSString *escapedCacheUrl = (__bridge_transfer NSString *)CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (__bridge CFStringRef)legacyCacheUrl, (__bridge CFStringRef)@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-", (__bridge CFStringRef)@"&?= :/+", kCFStringEncodingUTF8);
     [imageUri appendFormat:@"&legacy-cache-url=%@", escapedCacheUrl];
     
     self = [super initWithUri:imageUri imageSize:imageSize];

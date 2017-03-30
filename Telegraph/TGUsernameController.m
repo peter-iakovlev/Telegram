@@ -82,7 +82,7 @@ typedef enum {
             {
                 if (strongSelf->_usernameItem.username.length != 0)
                 {
-                    [[UIPasteboard generalPasteboard] setString:[[NSString alloc] initWithFormat:@"https://telegram.me/%@", strongSelf->_usernameItem.username]];
+                    [[UIPasteboard generalPasteboard] setString:[[NSString alloc] initWithFormat:@"https://t.me/%@", strongSelf->_usernameItem.username]];
                     [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Username.LinkCopied") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
                 }
             }

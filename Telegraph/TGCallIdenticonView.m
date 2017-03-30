@@ -12,6 +12,14 @@
     return self;
 }
 
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    [super touchesBegan:touches withEvent:event];
+    
+    if (self.onTap != nil)
+        self.onTap();
+}
+
 static int32_t get_bits(uint8_t const *bytes, unsigned int bitOffset, unsigned int numBits)
 {
     uint8_t const *data = bytes;

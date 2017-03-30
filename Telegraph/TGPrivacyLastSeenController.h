@@ -4,7 +4,8 @@
 
 typedef enum {
     TGPrivacySettingsModeLastSeen,
-    TGPrivacySettingsModeGroupsAndChannels
+    TGPrivacySettingsModeGroupsAndChannels,
+    TGPrivacySettingsModeCalls
 } TGPrivacySettingsMode;
 
 @interface TGPrivacyLastSeenController : TGCollectionMenuController

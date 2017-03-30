@@ -25,6 +25,8 @@
 
 #import "TGTelegraph.h"
 
+#import "TGCurrencyFormatter.h"
+
 @interface TGNotificationMessageViewModel () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate>
 {
     TGModernImageViewModel *_backgroundModel;
@@ -548,6 +550,8 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
                     formatString = TGLocalized(@"Notification.PinnedContactMessage");
                 } else if ([attachment isKindOfClass:[TGGameMediaAttachment class]]) {
                     formatString = TGLocalized(@"PINNED_GAME");
+                } else if ([attachment isKindOfClass:[TGInvoiceMediaAttachment class]]) {
+                    formatString = TGLocalized(@"PINNED_INVOICE");
                 }
             }
             
@@ -678,11 +682,9 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
             
             NSString *type = TGLocalized(missed ? (outgoing ? @"Notification.CallCanceled" : @"Notification.CallMissed") : (outgoing ? @"Notification.CallOutgoing" : @"Notification.CallIncoming"));
             
-            NSString *duration = nil;
-            if (!missed)
-                duration = [TGStringUtils stringForCallDurationSeconds:[actionMedia.actionData[@"duration"] intValue]];
-            
-            NSString *title = missed ? type : [NSString stringWithFormat:TGLocalized(@"Notification.CallTimeFormat"), type, duration];
+            int callDuration = [message.actionInfo.actionData[@"duration"] intValue];
+            NSString *duration = missed || callDuration < 1 ? nil : [TGStringUtils stringForCallDurationSeconds:callDuration];
+            NSString *title = duration != nil ? [NSString stringWithFormat:TGLocalized(@"Notification.CallTimeFormat"), type, duration] : type;
             NSString *time = [TGDateUtils stringForShortTime:(int)message.date daytimeVariant:NULL];
             
             NSString *formatString = TGLocalizedStatic(@"Notification.CallFormat");
@@ -694,6 +696,110 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
                 NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageActionTitleBoldFont], (NSString *)kCTFontAttributeName, nil];
                 additionalAttributes = [[NSArray alloc] initWithObjects:[[NSValue alloc] initWithBytes:&typeRange objCType:@encode(NSRange)], fontAttributes, nil];
             }
+            break;
+        }
+        case TGMessageActionPaymentSent: {
+            TGMessage *replyMessage = nil;
+            for (id attachment in message.mediaAttachments) {
+                if ([attachment isKindOfClass:[TGReplyMessageMediaAttachment class]]) {
+                    _navigateToMessageId = ((TGReplyMessageMediaAttachment *)attachment).replyMessageId;
+                    replyMessage = ((TGReplyMessageMediaAttachment *)attachment).replyMessage;
+                    break;
+                }
+            }
+            
+            NSString *stringAmount = [[TGCurrencyFormatter shared] formatAmount:[_actionMedia.actionData[@"totalAmount"] longLongValue] currency:_actionMedia.actionData[@"currency"]];
+            
+            if (replyMessage != nil) {
+                NSString *invoiceTitle = nil;
+                for (id attachment in replyMessage.mediaAttachments) {
+                    if ([attachment isKindOfClass:[TGInvoiceMediaAttachment class]]) {
+                        invoiceTitle = ((TGInvoiceMediaAttachment *)attachment).title;
+                        break;
+                    }
+                }
+                
+                NSString *formatStringBase = @"Notification.PaymentSent";
+                
+                NSMutableString *formatString = [[NSMutableString alloc] initWithString:TGLocalized(formatStringBase)];
+                
+                NSString *authorName = findUserInArray((int32_t)replyMessage.fromUid, additionalUsers).displayName;
+                if (authorName == nil) {
+                    authorName = @"";
+                }
+                
+                NSMutableArray *addAttributes = [[NSMutableArray alloc] init];
+                NSMutableArray *addTextCheckingResults = [[NSMutableArray alloc] init];
+                
+                for (int i = 0; i < 3; i++) {
+                    NSRange nameRange = [formatString rangeOfString:@"{name}"];
+                    NSRange amountRange = [formatString rangeOfString:@"{amount}"];
+                    NSRange titleRange = [formatString rangeOfString:@"{title}"];
+                    
+                    if (nameRange.location != NSNotFound) {
+                        if (amountRange.location == NSNotFound || amountRange.location > nameRange.location) {
+                            amountRange.location = NSNotFound;
+                        }
+                        if (titleRange.location == NSNotFound || titleRange.location > nameRange.location) {
+                            titleRange.location = NSNotFound;
+                        }
+                    }
+                    
+                    if (amountRange.location != NSNotFound) {
+                        if (nameRange.location == NSNotFound || nameRange.location > amountRange.location) {
+                            nameRange.location = NSNotFound;
+                        }
+                        if (titleRange.location == NSNotFound || titleRange.location > amountRange.location) {
+                            titleRange.location = NSNotFound;
+                        }
+                    }
+                    
+                    if (titleRange.location != NSNotFound) {
+                        if (amountRange.location == NSNotFound || amountRange.location > titleRange.location) {
+                            amountRange.location = NSNotFound;
+                        }
+                        if (nameRange.location == NSNotFound || nameRange.location > titleRange.location) {
+                            nameRange.location = NSNotFound;
+                        }
+                    }
+                    
+                    if (nameRange.location != NSNotFound) {
+                        [formatString replaceCharactersInRange:nameRange withString:authorName];
+                        
+                        NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageActionTitleBoldFont], (NSString *)kCTFontAttributeName, nil];
+                        NSRange fixedRange = NSMakeRange(nameRange.location, authorName.length);
+                        [addAttributes addObject:[[NSValue alloc] initWithBytes:&fixedRange objCType:@encode(NSRange)]];
+                        [addAttributes addObject:fontAttributes];
+                        
+                        [addTextCheckingResults addObject:[NSTextCheckingResult linkCheckingResultWithRange:fixedRange URL:[[NSURL alloc] initWithString:[[NSString alloc] initWithFormat:@"tg-user://%d", authorUid]]]];
+                    }
+                    
+                    if (amountRange.location != NSNotFound) {
+                        [formatString replaceCharactersInRange:amountRange withString:stringAmount];
+                        
+                        NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageActionTitleBoldFont], (NSString *)kCTFontAttributeName, nil];
+                        NSRange fixedRange = NSMakeRange(amountRange.location, stringAmount.length);
+                        [addAttributes addObject:[[NSValue alloc] initWithBytes:&fixedRange objCType:@encode(NSRange)]];
+                        [addAttributes addObject:fontAttributes];
+                    }
+                    
+                    if (titleRange.location != NSNotFound) {
+                        [formatString replaceCharactersInRange:titleRange withString:invoiceTitle];
+                        
+                        NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageActionTitleBoldFont], (NSString *)kCTFontAttributeName, nil];
+                        NSRange fixedRange = NSMakeRange(titleRange.location, invoiceTitle.length);
+                        [addAttributes addObject:[[NSValue alloc] initWithBytes:&fixedRange objCType:@encode(NSRange)]];
+                        [addAttributes addObject:fontAttributes];
+                    }
+                }
+                
+                additionalAttributes = addAttributes;
+                textCheckingResults = addTextCheckingResults;
+                actionText = formatString;
+            } else {
+                actionText = [[NSString alloc] initWithFormat:TGLocalized(@"Message.PaymentSent"), stringAmount];
+            }
+            
             break;
         }
         default:

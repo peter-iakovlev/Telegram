@@ -5,6 +5,7 @@
 typedef enum {
     TGCallDiscardReasonUnknown,
     TGCallDiscardReasonMissed,
+    TGCallDiscardReasonMissedTimeout,
     TGCallDiscardReasonDisconnect,
     TGCallDiscardReasonHangup,
     TGCallDiscardReasonRemoteHangup,

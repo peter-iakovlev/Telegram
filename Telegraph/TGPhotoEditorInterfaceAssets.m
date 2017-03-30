@@ -84,6 +84,60 @@
     return [UIImage imageNamed:@"PhotoEditorMuteActive.png"];
 }
 
++ (UIImage *)qualityIcon
+{
+    return [UIImage imageNamed:@"PhotoEditorQuality.png"];
+}
+
++ (UIImage *)quality240pIcon
+{
+    return [UIImage imageNamed:@"Quality240.png"];
+}
+
++ (UIImage *)quality360pIcon
+{
+    return [UIImage imageNamed:@"Quality360.png"];
+}
+
++ (UIImage *)quality480pIcon
+{
+    return [UIImage imageNamed:@"Quality480.png"];
+}
+
++ (UIImage *)quality720pIcon
+{
+    return [UIImage imageNamed:@"Quality720.png"];
+}
+
++ (UIImage *)quality1080pIcon
+{
+    return [UIImage imageNamed:@"QualityHD.png"];
+}
+
++ (UIImage *)qualityIconForPreset:(TGMediaVideoConversionPreset)preset
+{
+    switch (preset)
+    {
+        case TGMediaVideoConversionPresetCompressedVeryLow:
+            return [UIImage imageNamed:@"Quality240.png"];
+            
+        case TGMediaVideoConversionPresetCompressedLow:
+            return [UIImage imageNamed:@"Quality360.png"];
+            
+        case TGMediaVideoConversionPresetCompressedMedium:
+            return [UIImage imageNamed:@"Quality480.png"];
+            
+        case TGMediaVideoConversionPresetCompressedHigh:
+            return [UIImage imageNamed:@"Quality720.png"];
+            
+        case TGMediaVideoConversionPresetCompressedVeryHigh:
+            return [UIImage imageNamed:@"QualityHD.png"];
+            
+        default:
+            return [UIImage imageNamed:@"Quality480.png"];
+    }
+}
+
 + (UIColor *)toolbarSelectedIconColor
 {
     return UIColorRGB(0x171717);

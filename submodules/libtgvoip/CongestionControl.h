@@ -1,5 +1,7 @@
 //
-// Created by Grishka on 16.12.16.
+// libtgvoip is free and unencumbered public domain software.
+// For more information, see http://unlicense.org or the UNLICENSE file
+// you should have received with this source code distribution.
 //
 
 #ifndef LIBTGVOIP_CONGESTIONCONTROL_H
@@ -53,8 +55,8 @@ private:
 	double stateTransitionTime;
 	int tmpRttCount;
 	char rttHistorySize;
-	char rttHistoryTop;
-	char inflightHistoryTop;
+	unsigned int rttHistoryTop;
+	unsigned int inflightHistoryTop;
 	uint32_t lastSentSeq;
 	uint32_t tickCount;
 	size_t inflightDataSize;

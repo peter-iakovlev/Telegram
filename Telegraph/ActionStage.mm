@@ -70,10 +70,6 @@ ActionStage *ActionStageInstance()
         
         _liveNodeWatchers = [[NSMutableDictionary alloc] init];
         _actorMessagesWatchers = [[NSMutableDictionary alloc] init];
-        
-#ifdef INTERNAL_RELEASE
-        //[[NSRunLoop mainRunLoop] addTimer:[NSTimer timerWithTimeInterval:60.0 target:self selector:@selector(dumpGraphState) userInfo:nil repeats:true] forMode:NSRunLoopCommonModes];
-#endif
     }
     return self;
 }

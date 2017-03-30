@@ -38,6 +38,8 @@
                     break;
                 } else if ([attachment isKindOfClass:[TGGameMediaAttachment class]]) {
                     text = [@"🎮 " stringByAppendingString:((TGGameMediaAttachment *)attachment).title];
+                } else if ([attachment isKindOfClass:[TGInvoiceMediaAttachment class]]) {
+                    text = [@"" stringByAppendingString:((TGInvoiceMediaAttachment *)attachment).title];
                 } else if ([attachment isKindOfClass:[TGActionMediaAttachment class]]) {
                     /*TGActionMediaAttachment *actionAttachment = (TGActionMediaAttachment *)attachment;
                     switch (actionAttachment.actionType)

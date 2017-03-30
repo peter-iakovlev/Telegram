@@ -181,7 +181,7 @@
     }
     
     _grayBackground.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, topOffset);
-    _grayBackgroundSeparator.frame = CGRectMake(0.0f, topOffset, self.frame.size.width, TGIsRetina() ? 0.5f : 1.0f);
+    _grayBackgroundSeparator.frame = CGRectMake(0.0f, topOffset, self.frame.size.width, TGScreenPixel);
     
     _titleLabel.frame = CGRectMake(CGFloor((self.frame.size.width - _titleLabel.frame.size.width) / 2), titleLabelOffset, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
     

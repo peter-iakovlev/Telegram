@@ -331,6 +331,7 @@
             NSRange linkRange = [match range];
             
             bool useRange = false;
+            bool useRangeUnderline = false;
             
             if ([match isKindOfClass:[NSTextCheckingResult class]])
             {
@@ -406,10 +407,19 @@
                     case TGTextCheckingResultTypeBold:
                     {
                         if (boldFont == nil) {
-                            boldFont = TGCoreTextMediumFontOfSize(fontSize);
+                            boldFont = TGCoreTextBoldFontOfSize(fontSize);
                         }
                         
                         CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTFontAttributeName, boldFont);
+                        
+                        break;
+                    }
+                    case TGTextCheckingResultTypeColor:
+                    {
+                        if (((TGTextCheckingResult *)match).value != nil) {
+                            UIColor *color = ((TGTextCheckingResult *)match).value;
+                            CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTForegroundColorAttributeName, color.CGColor);
+                        }
                         
                         break;
                     }
@@ -427,6 +437,7 @@
                     {
                         url = ((TGTextCheckingResult *)match).contents;
                         useRange = true;
+                        useRangeUnderline = ((TGTextCheckingResult *)match).highlightAsLink;
                         
                         break;
                     }
@@ -446,6 +457,10 @@
                     if (flags & TGReusableLabelLayoutHighlightLinks)
                     {
                         CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTForegroundColorAttributeName, linkColor);
+                        
+                        if (enableUnderline && useRangeUnderline) {
+                            CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTUnderlineStyleAttributeName, (CFNumberRef)underlineStyle);
+                        }
                     }
                 }
             }
@@ -647,6 +662,11 @@
                     }
                 }
             }
+        }
+        
+        if ((flags & TGReusableLabelLayoutOffsetLastLine) && textLines.count != 0) {
+            pLineOrigins->at(textLines.count - 1).offset += 2.0f;
+            rect.size.height += 3.0f;
         }
         
         layout.size = CGSizeMake(CGFloor(rect.size.width), CGFloor(rect.size.height + fontLineHeight * 0.1f));

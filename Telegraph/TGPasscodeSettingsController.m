@@ -122,12 +122,16 @@
     return self;
 }
 
-- (bool)supportsTouchId
++ (bool)supportsTouchId
 {
-    if (iosMajorVersion() >= 8)
-    {
-        if ([[[LAContext alloc] init] canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:nil])
+    if (iosMajorVersion() >= 8) {
+        __autoreleasing NSError *error = nil;
+        if ([[[LAContext alloc] init] canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error]) {
             return true;
+        }
+        if (error.code != kLAErrorTouchIDNotAvailable) {
+            return true;
+        }
     }
     
     return false;
@@ -248,7 +252,7 @@
         optionsSectionIndex = [self indexForSection:_optionsSection];
         
         [self.menuSections addItemToSection:optionsSectionIndex item:_timeoutIntervalItem];
-        if ([self supportsTouchId])
+        if ([TGPasscodeSettingsController supportsTouchId])
             [self.menuSections addItemToSection:optionsSectionIndex item:_touchIdItem];
         [self.menuSections addItemToSection:optionsSectionIndex item:_simplePasscodeItem];
         [self.menuSections addItemToSection:optionsSectionIndex item:_optionsInfoItem];

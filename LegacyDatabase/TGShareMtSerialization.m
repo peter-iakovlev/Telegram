@@ -1,6 +1,6 @@
 #import "TGShareMtSerialization.h"
 
-#import "ApiLayer62.h"
+#import "ApiLayer65.h"
 
 #import <MTProtoKitDynamic/MTExportedAuthorizationData.h>
 #import <MTProtoKitDynamic/MTDatacenterAddress.h>
@@ -9,26 +9,26 @@
 
 - (NSUInteger)currentLayer
 {
-    return 62;
+    return 65;
 }
 
 - (id)parseMessage:(NSData *)data
 {
-    return [Api62__Environment parseObject:data];
+    return [Api65__Environment parseObject:data];
 }
 
 - (MTExportAuthorizationResponseParser)exportAuthorization:(int32_t)datacenterId data:(__autoreleasing NSData **)data
 {
-    Api62_FunctionContext *exportAuthorization = [Api62 auth_exportAuthorizationWithDcId:@(datacenterId)];
+    Api65_FunctionContext *exportAuthorization = [Api65 auth_exportAuthorizationWithDcId:@(datacenterId)];
     
     if (data)
         *data = exportAuthorization.payload;
     
     return ^MTExportedAuthorizationData *(NSData *data) {
         id response = exportAuthorization.responseParser(data);
-        if ([response isKindOfClass:[Api62_auth_ExportedAuthorization class]])
+        if ([response isKindOfClass:[Api65_auth_ExportedAuthorization class]])
         {
-            Api62_auth_ExportedAuthorization *exportedAuthorization = response;
+            Api65_auth_ExportedAuthorization *exportedAuthorization = response;
             return [[MTExportedAuthorizationData alloc] initWithAuthorizationBytes:exportedAuthorization.bytes authorizationId:[exportedAuthorization.pid intValue]];
         }
         return nil;
@@ -37,24 +37,24 @@
 
 - (NSData *)importAuthorization:(int32_t)authId bytes:(NSData *)bytes
 {
-    Api62_FunctionContext *importAuthorization = [Api62 auth_importAuthorizationWithPid:@(authId) bytes:bytes];
+    Api65_FunctionContext *importAuthorization = [Api65 auth_importAuthorizationWithPid:@(authId) bytes:bytes];
     
     return importAuthorization.payload;
 }
 
 - (MTRequestDatacenterAddressListParser)requestDatacenterAddressList:(int32_t)datacenterId data:(__autoreleasing NSData **)data
 {
-    Api62_FunctionContext *getConfig = [Api62 help_getConfig];
+    Api65_FunctionContext *getConfig = [Api65 help_getConfig];
     
     if (data)
         *data = getConfig.payload;
     
     return ^MTDatacenterAddressListData *(NSData *data) {
         id response = getConfig.responseParser(data);
-        if ([response isKindOfClass:[Api62_Config class]])
+        if ([response isKindOfClass:[Api65_Config class]])
         {
             NSMutableArray *addressList = [[NSMutableArray alloc] init];
-            for (Api62_DcOption *dcOption in ((Api62_Config *)response).dcOptions)
+            for (Api65_DcOption *dcOption in ((Api65_Config *)response).dcOptions)
             {
                 if ([dcOption.pid intValue] == datacenterId)
                 {

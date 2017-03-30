@@ -166,7 +166,7 @@
         _panelView.backgroundColor = UIColorRGBA(0xffffff, 0.96f);
     [self.view addSubview:_panelView];
     
-    CGFloat separatorWidth = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorWidth = TGScreenPixel;
     
     _cancelButton = [[TGHighlightableButton alloc] initWithFrame:CGRectMake(0, 0, CGFloor(_panelView.frame.size.width / 2) - separatorWidth, _panelView.frame.size.height)];
     _cancelButton.normalBackgroundColor = [UIColor clearColor];
@@ -231,7 +231,7 @@
     
     _panelView.frame = CGRectMake(0, screenSize.height - 49, screenSize.width, 49);
     
-    CGFloat separatorWidth = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorWidth = TGScreenPixel;
     
     _cancelButton.frame = CGRectMake(0, 0, CGFloor(_panelView.frame.size.width / 2) - separatorWidth, _panelView.frame.size.height);
     

@@ -591,7 +591,7 @@ static void addAttachmentImageCorners(void *memory, const unsigned int width, co
 
 void TGAddImageCorners(void *memory, const unsigned int width, const unsigned int height, const unsigned int stride, int radius)
 {
-    if (radius <= 0) {
+    if (radius <= 0 || radius > width || radius > height) {
         return;
     }
     

@@ -154,6 +154,11 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     return _window;
 }
 
+- (BOOL)shouldAutorotate
+{
+    return true;
+}
+
 - (void)removeWindow
 {
     _window.rootViewController = nil;

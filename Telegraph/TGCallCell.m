@@ -12,11 +12,13 @@
 
 #import "TGLetteredAvatarView.h"
 #import "TGModernButton.h"
+#import "TGDialogListCellEditingControls.h"
 
 @interface TGCallCell ()
 {
     CALayer *_separatorLayer;
-    
+ 
+    TGDialogListCellEditingControls *_wrapView;
     UIImageView *_typeIcon;
     TGLetteredAvatarView *_avatarView;
     
@@ -29,6 +31,8 @@
 @end
 
 @implementation TGCallCell
+
+@dynamic deletePressed;
 
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
 {
@@ -46,87 +50,90 @@
             [self.layer addSublayer:_separatorLayer];
         }
         
-        _typeIcon = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 34, 48)];
+        _wrapView = [[TGDialogListCellEditingControls alloc] init];
+        _wrapView.clipsToBounds = true;
+        [_wrapView setLabelOnly:true];
+        [self addSubview:_wrapView];
+        
+        _typeIcon = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 34, 56)];
         _typeIcon.contentMode = UIViewContentModeCenter;
-        [self addSubview:_typeIcon];
+        [_wrapView addSubview:_typeIcon];
         
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(10, 7 - TGRetinaPixel, 62 + TGRetinaPixel, 62 + TGRetinaPixel)];
         [_avatarView setSingleFontSize:35.0f doubleFontSize:21.0f useBoldFont:false];
         _avatarView.fadeTransition = cpuCoreCount() > 1;
-        [self addSubview:_avatarView];
+        [_wrapView addSubview:_avatarView];
         
         _nameLabel = [[UILabel alloc] init];
-        _nameLabel.font = TGMediumSystemFontOfSize(17.0f);
+        _nameLabel.font = TGSystemFontOfSize(17.0f);
         _nameLabel.textColor = UIColorRGB(0x000000);
-        [self addSubview:_nameLabel];
+        [_wrapView addSubview:_nameLabel];
         
-        CGFloat subtitleFontSize = TGIsPad() ? 14.0f : 13.0f;
+        CGFloat subtitleFontSize = 14.0f;
         
         _subLabel = [[UILabel alloc] init];
         _subLabel.font = TGSystemFontOfSize(subtitleFontSize);
         _subLabel.textColor = UIColorRGB(0x8e8e93);
-        [self addSubview:_subLabel];
+        [_wrapView addSubview:_subLabel];
         
         _dateLabel = [[UILabel alloc] init];
         _dateLabel.font = TGSystemFontOfSize(subtitleFontSize);
         _dateLabel.textColor = UIColorRGB(0x8e8e93);
-        [self addSubview:_dateLabel];
+        [_wrapView addSubview:_dateLabel];
         
         _infoButton = [[TGModernButton alloc] init];
         _infoButton.adjustsImageWhenHighlighted = false;
         [_infoButton setImage:[UIImage imageNamed:@"CallInfoIcon"] forState:UIControlStateNormal];
         [_infoButton addTarget:self action:@selector(infoButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:_infoButton];
+        [_wrapView addSubview:_infoButton];
     }
     return self;
 }
 
-- (void)setupWithMessage:(TGMessage *)message peer:(TGUser *)peer
+- (void)setDeletePressed:(void (^)(void))deletePressed
 {
-    _nameLabel.text = [peer displayName];
+    _wrapView.requestDelete = deletePressed;
+}
+
+- (void)prepareForReuse
+{
+    [_wrapView setExpanded:false animated:false];
+    
+    [super prepareForReuse];
+}
+
+- (void)setupWithCallGroup:(TGCallGroup *)group
+{
+    TGUser *peer = group.peer;
+    
+    TGMessage *message = group.message;
+    
+    [_wrapView setButtonBytes:@[ @(TGDialogListCellEditingControlsDelete) ]];
+    
+    UIColor *nameColor = group.failed ? UIColorRGB(0xfb2125) : [UIColor blackColor];
+    if (group.messages.count > 1)
+    {
+        NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:TGLocalized(@"Call.GroupFormat"), peer.displayName, [NSString stringWithFormat:@"%d", (int)group.messages.count]] attributes:@{ NSForegroundColorAttributeName: [UIColor blackColor], NSFontAttributeName: _nameLabel.font }];
+        if (group.failed)
+        {
+            NSRange nameRange = [text.string rangeOfString:peer.displayName];
+            if (nameRange.location != NSNotFound)
+                [text addAttribute:NSForegroundColorAttributeName value:nameColor range:nameRange];
+        }
+        _nameLabel.attributedText = text;
+    }
+    else
+    {
+        _nameLabel.text = peer.displayName;
+        _nameLabel.textColor = nameColor;
+    }
     [_nameLabel sizeToFit];
     
     _dateLabel.text = [TGDateUtils stringForMessageListDate:(int)message.date];
     [_dateLabel sizeToFit];
     
-    TGActionMediaAttachment *actionMedia = nil;
-    for (TGMediaAttachment *attachment in message.mediaAttachments)
-    {
-        if (attachment.type == TGActionMediaAttachmentType)
-        {
-            actionMedia = (TGActionMediaAttachment *)attachment;
-            break;
-        }
-    }
-    
-    bool outgoing = message.fromUid == TGTelegraphInstance.clientUserId;
-    bool missed = [actionMedia.actionData[@"reason"] intValue] == TGCallDiscardReasonMissed;
-    
-    if (missed)
-    {
-        static dispatch_once_t onceToken;
-        static UIImage *missedOutgoingImage;
-        static UIImage *missedIncomingImage;
-        dispatch_once(&onceToken, ^
-        {
-            missedOutgoingImage = TGTintedImage([UIImage imageNamed:@"CallOutgoing"], UIColorRGB(0xfc514b));
-            missedIncomingImage = TGTintedImage([UIImage imageNamed:@"CallIncoming"], UIColorRGB(0xfc514b));
-        });
-        _typeIcon.image = outgoing ? missedOutgoingImage : missedIncomingImage;
-    }
-    else
-    {
-        _typeIcon.image = outgoing ? [UIImage imageNamed:@"CallOutgoing"] : [UIImage imageNamed:@"CallIncoming"];
-    }
-    
-    NSString *type = TGLocalized(missed ? (outgoing ? @"Notification.CallCanceled" : @"Notification.CallMissed") : (outgoing ? @"Notification.CallOutgoing" : @"Notification.CallIncoming"));
-    
-    NSString *duration = nil;
-    if (!missed)
-        duration = [TGStringUtils stringForShortCallDurationSeconds:[actionMedia.actionData[@"duration"] intValue]];
-    
-    NSString *title = missed ? type : [NSString stringWithFormat:TGLocalized(@"Notification.CallTimeFormat"), type, duration];
-    _subLabel.text = title;
+    _typeIcon.image = group.outgoing ? [UIImage imageNamed:@"CallOutgoing"] : nil;
+    _subLabel.text = group.displayType;
     [_subLabel sizeToFit];
     
     CGFloat diameter = TGIsPad() ? 45.0f : 40.0f;
@@ -169,6 +176,7 @@
         [_avatarView loadUserPlaceholderWithSize:CGSizeMake(diameter, diameter) uid:(int32_t)peer.uid firstName:peer.firstName lastName:peer.lastName placeholder:placeholder];
     }
 
+    [self setNeedsLayout];
 }
 
 - (void)infoButtonPressed
@@ -183,6 +191,8 @@
     
     CGFloat contentOffset = self.contentView.frame.origin.x;
     
+    [_wrapView setExpandable:contentOffset <= FLT_EPSILON];
+    
     static Class separatorClass = nil;
     static dispatch_once_t onceToken2;
     dispatch_once(&onceToken2, ^{
@@ -196,11 +206,11 @@
                 frame.origin.x = 0.0f;
             } else {
                 if (contentOffset > FLT_EPSILON) {
-                    frame.size.width = self.bounds.size.width - 116.0f;
-                    frame.origin.x = 116.0f;
+                    frame.size.width = self.bounds.size.width - 122.0f;
+                    frame.origin.x = 122.0f;
                 } else {
-                    frame.size.width = self.bounds.size.width - 80.0f;
-                    frame.origin.x = 80.0f;
+                    frame.size.width = self.bounds.size.width - 86.0f;
+                    frame.origin.x = 86.0f;
                 }
             }
             if (!CGRectEqualToRect(subview.frame, frame)) {
@@ -210,10 +220,33 @@
         }
     }
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
-    CGFloat separatorInset = 98;
-    if (TGIsPad())
-        separatorInset += 21.0f;
+    static CGSize screenSize;
+    static CGFloat widescreenWidth;
+    
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        screenSize = TGScreenSize();
+        widescreenWidth = MAX(screenSize.width, screenSize.height);
+    });
+    
+    CGSize rawSize = self.frame.size;
+    CGSize size = rawSize;
+    if (!TGIsPad())
+    {
+        if (rawSize.width >= widescreenWidth - FLT_EPSILON)
+            size.width = screenSize.height - contentOffset;
+        else
+            size.width = screenSize.width - contentOffset;
+    }
+    else
+        size.width = rawSize.width - contentOffset;
+    
+    _wrapView.frame = CGRectMake(contentOffset, 0.0f, size.width, size.height);
+    
+    CGFloat separatorHeight = TGScreenPixel;
+    CGFloat separatorInset = 86.0f;
+
     _separatorLayer.frame = CGRectMake(separatorInset, self.frame.size.height - separatorHeight, self.frame.size.width - separatorInset, separatorHeight);
 
     CGRect frame = self.selectedBackgroundView.frame;
@@ -221,29 +254,25 @@
     frame.size.height = self.frame.size.height + 1;
     self.selectedBackgroundView.frame = frame;
     
-    CGFloat leftPadding = TGIsPad() ? 45.0f : 34.0f;
+    CGFloat leftPadding = TGIsPad() ? 36.0f : 34.0f;
     if (self.editing)
         leftPadding += 2;
     
-    int avatarWidth = 5 + 40;
+    CGRect avatarFrame = CGRectMake(leftPadding, 8.0f, 40, 40);
     if (TGIsPad())
-        avatarWidth += 8;
-
-    CGRect avatarFrame = CGRectMake(leftPadding, 4.0f, 40, 40);
-    if (TGIsPad())
-        avatarFrame = CGRectMake(leftPadding + 19, 5.0f, 45, 45);
+        avatarFrame = CGRectMake(leftPadding, 6.0f, 45, 45);
     
     if (!CGRectEqualToRect(_avatarView.frame, avatarFrame))
         _avatarView.frame = avatarFrame;
     
     leftPadding = CGRectGetMaxX(avatarFrame) + 12.0f;
     
-    _nameLabel.frame = CGRectMake(leftPadding, 5.0f, _nameLabel.frame.size.width, _nameLabel.frame.size.height);
-    _subLabel.frame = CGRectMake(leftPadding, 26.0f, _subLabel.frame.size.width, _subLabel.frame.size.height);
+    _dateLabel.frame = CGRectMake(self.frame.size.width - _dateLabel.frame.size.width - 48.0f, 20.0f, _dateLabel.frame.size.width, _dateLabel.frame.size.height);
     
-    _dateLabel.frame = CGRectMake(self.frame.size.width - _dateLabel.frame.size.width - 48.0f, 16.0f, _dateLabel.frame.size.width, _dateLabel.frame.size.height);
+    _nameLabel.frame = CGRectMake(leftPadding, 8.0f, _dateLabel.frame.origin.x - leftPadding - 8.0f, _nameLabel.frame.size.height);
+    _subLabel.frame = CGRectMake(leftPadding, 31.0f, _dateLabel.frame.origin.x - leftPadding - 8.0f, _subLabel.frame.size.height);
     
-    _infoButton.frame = CGRectMake(self.frame.size.width - 48.0f, 0, 48.0f, 48.0f);
+    _infoButton.frame = CGRectMake(self.frame.size.width - 48.0f, 0, 48.0f, 56.0f);
 }
 
 - (void)setIsLastCell:(bool)isLastCell {
@@ -251,6 +280,124 @@
         _isLastCell = isLastCell;
         [self setNeedsLayout];
     }
+}
+
+- (bool)isEditingControlsExpanded {
+    return [_wrapView isExpanded];
+}
+
+- (void)setEditingConrolsExpanded:(bool)expanded animated:(bool)animated {
+    [_wrapView setExpanded:expanded animated:animated];
+}
+
+@end
+
+
+@implementation TGCallGroup
+
+- (instancetype)initWithMessages:(NSArray *)messages peer:(TGUser *)peer failed:(bool)failed
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _messages = messages;
+        _peer = peer;
+        _failed = failed;
+    }
+    return self;
+}
+
+- (NSString *)identifier
+{
+    return [NSString stringWithFormat:@"%d_%d", _peer.uid, self.message.mid];
+}
+
+- (TGMessage *)message
+{
+    return _messages.firstObject;
+}
+
+- (bool)outgoing
+{
+    for (TGMessage *message in _messages)
+    {
+        if (message.outgoing)
+            return true;
+    }
+    return false;
+}
+
+typedef enum {
+    TGCallDisplayTypeOutgoing,
+    TGCallDisplayTypeIncoming,
+    TGCallDisplayTypeCancelled,
+    TGCallDisplayTypeMissed
+} TGCallDisplayType;
+
+- (NSString *)stringForDisplayType:(TGCallDisplayType)type
+{
+    switch (type)
+    {
+        case TGCallDisplayTypeOutgoing:
+            return TGLocalized(@"Notification.CallOutgoingShort");
+            
+        case TGCallDisplayTypeIncoming:
+            return TGLocalized(@"Notification.CallIncomingShort");
+            
+        case TGCallDisplayTypeCancelled:
+            return TGLocalized(@"Notification.CallCanceledShort");
+            
+        case TGCallDisplayTypeMissed:
+            return TGLocalized(@"Notification.CallMissedShort");
+            
+        default:
+            return nil;
+    }
+}
+
+- (NSString *)displayType
+{
+    if (self.failed)
+        return TGLocalized(@"Notification.CallMissedShort");
+    
+    NSString *finalType = @"";
+    NSMutableSet *types = [[NSMutableSet alloc] init];
+    for (TGMessage *message in self.messages)
+    {
+        bool outgoing = message.outgoing;
+        int reason = [message.actionInfo.actionData[@"reason"] intValue];
+        bool missed = reason == TGCallDiscardReasonMissed || reason == TGCallDiscardReasonBusy;
+        
+        TGCallDisplayType type = missed ? (outgoing ? TGCallDisplayTypeCancelled : TGCallDisplayTypeMissed) : (outgoing ? TGCallDisplayTypeOutgoing : TGCallDisplayTypeIncoming);
+        
+        [types addObject:@(type)];
+    }
+    
+    if (types.count > 1)
+        [types removeObject:@(TGCallDisplayTypeCancelled)];
+    
+    NSArray *typesArray = [types sortedArrayUsingDescriptors:@[[[NSSortDescriptor alloc] initWithKey:@"self" ascending:true]]];
+    for (NSNumber *typeValue in typesArray)
+    {
+        NSString *type = [self stringForDisplayType:(TGCallDisplayType)typeValue.integerValue];
+        if (finalType.length == 0)
+            finalType = type;
+        else
+            finalType = [finalType stringByAppendingFormat:@", %@", type];
+    }
+    
+    if (self.messages.count == 1)
+    {
+        TGMessage *message = self.message;
+        int reason = [message.actionInfo.actionData[@"reason"] intValue];
+        bool missed = reason == TGCallDiscardReasonMissed || reason == TGCallDiscardReasonBusy;
+        
+        int callDuration = [message.actionInfo.actionData[@"duration"] intValue];
+        NSString *duration = missed || callDuration < 1 ? nil : [TGStringUtils stringForShortCallDurationSeconds:callDuration];
+        finalType = duration != nil ? [NSString stringWithFormat:TGLocalized(@"Notification.CallTimeFormat"), finalType, duration] : finalType;
+    }
+    
+    return finalType;
 }
 
 @end

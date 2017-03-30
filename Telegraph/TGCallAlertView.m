@@ -4,8 +4,8 @@
 
 #import "TGFont.h"
 #import "TGImageUtils.h"
+#import "TGObserverProxy.h"
 
-#import "TGOverlayController.h"
 #import "TGOverlayControllerWindow.h"
 
 #import "TGModernButton.h"
@@ -13,18 +13,9 @@
 const CGFloat TGCallAlertViewWidth = 270.0f;
 const CGFloat TGCallAlertViewButtonHeight = 44.0f;
 
-@interface TGCallAlertViewController : TGOverlayController
-{
-    TGCallAlertView *_alertView;
-}
-
-- (instancetype)initWithView:(TGCallAlertView *)view;
-
-@end
-
 @interface TGCallAlertView ()
 {
-    UIView *_dimView;
+    UIButton *_dimView;
     UIView *_backgroundView;
     UILabel *_titleLabel;
     UILabel *_messageLabel;
@@ -35,6 +26,9 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
     TGModernButton *_doneButton;
     
     void (^_completionBlock)(bool);
+    
+    CGFloat _keyboardOffset;
+    id _keyboardWillChangeFrameProxy;
 }
 
 @property (nonatomic, copy) void (^onDismiss)(void);
@@ -52,8 +46,10 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
         
         _completionBlock = [completionBlock copy];
         
-        _dimView = [[UIView alloc] init];
+        _dimView = [[UIButton alloc] init];
+        _dimView.exclusiveTouch = true;
         _dimView.backgroundColor = UIColorRGBA(0x000000, 0.4f);
+        [_dimView addTarget:self action:@selector(dimPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_dimView];
         
         _backgroundView = [[UIView alloc] init];
@@ -136,6 +132,53 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
     return self;
 }
 
+- (void)setFollowsKeyboard:(bool)followsKeyboard
+{
+    _followsKeyboard = followsKeyboard;
+
+    if (followsKeyboard)
+    {
+        _keyboardWillChangeFrameProxy = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification];
+    }
+    else
+    {
+        _keyboardWillChangeFrameProxy = nil;
+    }
+}
+
+- (void)keyboardWillChangeFrame:(NSNotification *)notification
+{
+    NSTimeInterval duration = notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] == nil ? 0.3 : [notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+    int curve = [notification.userInfo[UIKeyboardAnimationCurveUserInfoKey] intValue];
+    CGRect screenKeyboardFrame = [notification.userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    CGRect keyboardFrame = [self.superview convertRect:screenKeyboardFrame fromView:nil];
+    
+    CGFloat keyboardHeight = (keyboardFrame.size.height <= FLT_EPSILON || keyboardFrame.size.width <= FLT_EPSILON) ? 0.0f : (self.superview.frame.size.height - keyboardFrame.origin.y);
+    keyboardHeight = MAX(keyboardHeight, 0.0f);
+    _keyboardOffset = keyboardHeight;
+
+    if (self.followsKeyboard)
+    {
+        if (duration >= FLT_EPSILON)
+        {
+            [UIView animateWithDuration:duration delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState | curve animations:^
+            {
+                [self layoutSubviews];
+            } completion:nil];
+        }
+        else
+        {
+            [self layoutSubviews];
+        }
+    }
+}
+
+- (void)updateCustomViewHeight:(CGFloat)height
+{
+    _customView.frame = CGRectMake(_customView.frame.origin.x, _customView.frame.origin.y, _customView.frame.size.width, height);
+    [self layoutSubviews];
+}
+
 - (void)cancelButtonPressed
 {
     [self dismiss:false];
@@ -144,6 +187,19 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
 - (void)doneButtonPressed
 {
     [self dismiss:true];
+}
+
+- (void)dimPressed
+{
+    if (self.shouldDismissOnDimTap != nil)
+    {
+        if (self.shouldDismissOnDimTap())
+            [self dismiss:false];
+    }
+    else
+    {
+        [self dismiss:false];
+    }
 }
 
 - (void)present
@@ -183,6 +239,7 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
 - (void)layoutSubviews
 {
     _dimView.frame = self.bounds;
+    bool isLandscape = self.bounds.size.width > self.bounds.size.height;
     
     CGFloat width = TGCallAlertViewWidth;
     CGFloat height = 20.0f;
@@ -216,7 +273,7 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
     
     height += 20.0f;
     
-    CGFloat separatorThickness = (TGScreenScaling() == 2) ? 0.5f : 1.0f;
+    CGFloat separatorThickness = TGSeparatorHeight();
     _horizontalSeparator.frame = CGRectMake(0, height, width, separatorThickness);
     _verticalSeparator.frame = CGRectMake(width / 2.0f, height, separatorThickness, TGCallAlertViewButtonHeight);
     
@@ -227,7 +284,26 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
     
     height = CGRectGetMaxY(_verticalSeparator.frame);
     
-    _backgroundView.frame = CGRectMake((self.bounds.size.width - width) / 2.0f, ceil((self.bounds.size.height - height) / 2.0f), width, height);
+    CGFloat keyboardOffset = self.followsKeyboard ? _keyboardOffset : 0;
+    CGFloat y = ceil((self.bounds.size.height - keyboardOffset - height) / 2.0f);
+    if (self.followsKeyboard && isLandscape)
+    {
+        CGFloat minY = self.bounds.size.height - keyboardOffset - height - 16.0f;
+        if (y > minY)
+        {
+            y = minY;
+            _titleLabel.alpha = 0.4f;
+        }
+        else
+        {
+            _titleLabel.alpha = 1.0f;
+        }
+    }
+    else
+    {
+        _titleLabel.alpha = 1.0f;
+    }
+    _backgroundView.frame = CGRectMake((self.bounds.size.width - width) / 2.0f, y, width, height);
 }
 
 + (TGCallAlertView *)presentAlertWithTitle:(NSString *)title message:(NSString *)message customView:(UIView *)customView cancelButtonTitle:(NSString *)cancelButtonTitle doneButtonTitle:(NSString *)doneButtonTitle completionBlock:(void (^)(bool))completionBlock

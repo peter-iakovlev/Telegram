@@ -1544,10 +1544,36 @@ typedef enum {
     NSMutableArray *items = [[NSMutableArray alloc] init];
     
     NSDictionary *images = webPage.instantPage.images;
+    NSDictionary *videos = webPage.instantPage.videos;
     if (webPage.photo != nil) {
         NSMutableDictionary *updatedImages = [[NSMutableDictionary alloc] initWithDictionary:images];
         updatedImages[@(webPage.photo.imageId)] = webPage.photo;
         images = updatedImages;
+    }
+    if (webPage.document != nil) {
+        TGVideoMediaAttachment *videoMedia = nil;
+        for (id attribute in webPage.document.attributes) {
+            if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                TGDocumentAttributeVideo *video = attribute;
+                
+                videoMedia = [[TGVideoMediaAttachment alloc] init];
+                videoMedia.videoId = webPage.document.documentId;
+                videoMedia.accessHash = webPage.document.accessHash;
+                videoMedia.duration = video.duration;
+                videoMedia.dimensions = video.size;
+                videoMedia.thumbnailInfo = webPage.document.thumbnailInfo;
+                videoMedia.caption = webPage.document.caption;
+                
+                TGVideoInfo *videoInfo = [[TGVideoInfo alloc] init];
+                [videoInfo addVideoWithQuality:1 url:[[NSString alloc] initWithFormat:@"video:%lld:%lld:%d:%d", videoMedia.videoId, videoMedia.accessHash, webPage.document.datacenterId, webPage.document.size] size:webPage.document.size];
+                videoMedia.videoInfo = videoInfo;
+            }
+        }
+        if (videoMedia != nil) {
+            NSMutableDictionary *updatedVideos = [[NSMutableDictionary alloc] initWithDictionary:videos];
+            updatedVideos[@(videoMedia.videoId)] = videoMedia;
+            videos = updatedVideos;
+        }
     }
     
     NSInteger mediaIndexCounter = 0;
@@ -1555,7 +1581,7 @@ typedef enum {
     
     TGInstantPageBlock *previousBlock = nil;
     for (TGInstantPageBlock *block in pageBlocks) {
-        TGInstantPageLayout *blockLayout = [self layoutBlock:block boundingWidth:boundingWidth horizontalInset:17.0f isCover:false fillToWidthAndHeight:false images:images videos:webPage.instantPage.videos webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:&mediaIndexCounter embedIndexCounter:&embedIndexCounter];
+        TGInstantPageLayout *blockLayout = [self layoutBlock:block boundingWidth:boundingWidth horizontalInset:17.0f isCover:false fillToWidthAndHeight:false images:images videos:videos webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:&mediaIndexCounter embedIndexCounter:&embedIndexCounter];
         CGFloat spacing = spacingBetweenBlocks(previousBlock, block);
         NSArray *blockItems = [blockLayout flattenedItemsWithOrigin:CGPointMake(0.0f, contentSize.height + spacing)];
         [items addObjectsFromArray:blockItems];

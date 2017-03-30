@@ -1197,7 +1197,7 @@
         [self updatePlayerRange:trimEndValue];
     }
     
-    TGVideoEditAdjustments *updatedAdjustments = [TGVideoEditAdjustments editAdjustmentsWithOriginalSize:_videoDimensions cropRect:cropRect cropOrientation:adjustments.cropOrientation cropLockedAspectRatio:adjustments.cropLockedAspectRatio cropMirrored:adjustments.cropMirrored trimStartValue:trimStartValue trimEndValue:trimEndValue paintingData:adjustments.paintingData sendAsGif:sendAsGif];
+    TGVideoEditAdjustments *updatedAdjustments = [TGVideoEditAdjustments editAdjustmentsWithOriginalSize:_videoDimensions cropRect:cropRect cropOrientation:adjustments.cropOrientation cropLockedAspectRatio:adjustments.cropLockedAspectRatio cropMirrored:adjustments.cropMirrored trimStartValue:trimStartValue trimEndValue:trimEndValue paintingData:adjustments.paintingData sendAsGif:sendAsGif preset:adjustments.preset];
     [self.item.editingContext setAdjustments:updatedAdjustments forItem:self.item.editableMediaItem];
     
     if (sendAsGif)
@@ -1211,12 +1211,13 @@
             
             NSMutableArray *actions = [[NSMutableArray alloc] init];
             [actions addObject:[[NSDictionary alloc] initWithObjectsAndKeys:TGLocalized(@"MediaPicker.VideoMuteDescription"), @"title", nil]];
+            _tooltipContainerView.menuView.forceArrowOnTop = true;
             _tooltipContainerView.menuView.multiline = true;
             [_tooltipContainerView.menuView setButtonsAndActions:actions watcherHandle:nil];
             _tooltipContainerView.menuView.buttonHighlightDisabled = true;
             [_tooltipContainerView.menuView sizeToFit];
         
-            CGRect iconViewFrame = CGRectMake(self.frame.size.width - (self.frame.size.width / 6 * 2 - 5) - 20, self.frame.size.height - 33, 40, 40);
+            CGRect iconViewFrame = CGRectMake(12, 188, 40, 40);
             [_tooltipContainerView showMenuFromRect:iconViewFrame animated:false];
         }
         
@@ -1287,7 +1288,7 @@
         UIImageOrientation cropOrientation = (adjustments != nil) ? adjustments.cropOrientation : UIImageOrientationUp;
         CGFloat cropLockedAspectRatio = (adjustments != nil) ? adjustments.cropLockedAspectRatio : 0.0f;
         
-        TGVideoEditAdjustments *updatedAdjustments = [TGVideoEditAdjustments editAdjustmentsWithOriginalSize:_videoDimensions cropRect:cropRect cropOrientation:cropOrientation cropLockedAspectRatio:cropLockedAspectRatio cropMirrored:adjustments.cropMirrored trimStartValue:_scrubberView.trimStartValue trimEndValue:_scrubberView.trimEndValue paintingData:adjustments.paintingData sendAsGif:adjustments.sendAsGif];
+        TGVideoEditAdjustments *updatedAdjustments = [TGVideoEditAdjustments editAdjustmentsWithOriginalSize:_videoDimensions cropRect:cropRect cropOrientation:cropOrientation cropLockedAspectRatio:cropLockedAspectRatio cropMirrored:adjustments.cropMirrored trimStartValue:_scrubberView.trimStartValue trimEndValue:_scrubberView.trimEndValue paintingData:adjustments.paintingData sendAsGif:adjustments.sendAsGif preset:adjustments.preset];
         
         [self.item.editingContext setAdjustments:updatedAdjustments forItem:self.item.editableMediaItem];
     }

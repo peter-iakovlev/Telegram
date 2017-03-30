@@ -5,6 +5,8 @@
 #import "TGBotReplyMarkup.h"
 #import "TL/TLMetaScheme.h"
 
+#import "TGPaymentForm.h"
+
 @interface TGBotSignals : NSObject
 
 + (TGBotInfo *)botInfoForInfo:(TLBotInfo *)info;
@@ -19,5 +21,10 @@
 
 + (SSignal *)shareBotGame:(int64_t)fromPeerId messageId:(int32_t)messageId toPeerId:(int64_t)peerId withScore:(bool)withScore;
 + (SSignal *)sendBotGame:(NSString *)shortName toPeerId:(int64_t)peerId botId:(int32_t)botId;
+
++ (SSignal *)paymentForm:(int32_t)messageId;
++ (SSignal *)paymentReceipt:(int32_t)messageId;
++ (SSignal *)validateRequestedPaymentInfo:(int32_t)messageId info:(TGPaymentRequestedInfo *)info saveInfo:(bool)saveInfo;
++ (SSignal *)sendPayment:(int32_t)messageId infoId:(NSString *)infoId shippingOptionId:(NSString *)shippingOptionId credentials:(id)credentials;
 
 @end

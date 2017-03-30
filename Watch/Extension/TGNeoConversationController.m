@@ -1144,7 +1144,12 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
         if (strongSelf == nil)
             return;
         
-        if (strongSelf->_context.context.micAccessAllowed)
+        bool override = false;
+#ifdef TARGET_OS_SIMULATOR
+        override = true;
+#endif
+        
+        if (override || strongSelf->_context.context.micAccessAllowed)
         {
             [TGInputController presentAudioControllerForInterfaceController:strongSelf completion:^(int64_t uniqueId, int32_t duration, NSURL *url)
             {

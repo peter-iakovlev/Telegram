@@ -26,6 +26,8 @@
 
 @property (nonatomic, copy) void (^menuRelayout)(void);
 
+@property (nonatomic, copy) void (^handleInternalPan)(UIPanGestureRecognizer *);
+
 - (instancetype)initWithItemViews:(NSArray *)itemViews sizeClass:(UIUserInterfaceSizeClass)sizeClass;
 
 - (void)menuWillAppearAnimated:(bool)animated;
@@ -37,6 +39,8 @@
 
 - (CGRect)activePanRect;
 - (bool)passPanOffset:(CGFloat)offset;
+
+- (void)didChangeAbsoluteFrame;
 
 @end
 

@@ -7,11 +7,12 @@
 
 @interface TGMessageReplyButtonsModel : TGModernViewModel
 
-@property (nonatomic, strong) TGBotReplyMarkup *replyMarkup;
 @property (nonatomic, copy) void (^buttonActivated)(TGBotReplyMarkupButton *, NSInteger);
 @property (nonatomic) NSUInteger buttonIndexInProgress;
 
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition;
 - (CGFloat)minimumWidth;
+
+- (void)setReplyMarkup:(TGBotReplyMarkup *)replyMarkup hasReceipt:(bool)hasReceipt;
 
 @end

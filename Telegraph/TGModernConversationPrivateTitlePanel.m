@@ -4,7 +4,7 @@
 
 - (id)initWithFrame:(CGRect)frame
 {
-    self = [super initWithFrame:CGRectMake(frame.origin.x, frame.origin.y, frame.size.width, 44.0f)];
+    self = [super initWithFrame:CGRectMake(frame.origin.x, frame.origin.y, frame.size.width, 54.0f)];
     if (self)
     {
     }

@@ -34,6 +34,8 @@
     UIImage *_buttonHighlightedBackground;
 }
 
+@property (nonatomic, strong) TGBotReplyMarkup *replyMarkup;
+
 @end
 
 @implementation TGMessageReplyButtonsModel
@@ -57,7 +59,7 @@
     return [TGMessageReplyButtonsView class];
 }
 
-- (void)setReplyMarkup:(TGBotReplyMarkup *)replyMarkup {
+- (void)setReplyMarkup:(TGBotReplyMarkup *)replyMarkup hasReceipt:(bool)hasReceipt {
     _replyMarkup = replyMarkup;
     
     while (_buttons.count != 0) {
@@ -69,7 +71,11 @@
     for (TGBotReplyMarkupRow *row in _replyMarkup.rows) {
         for (TGBotReplyMarkupButton *button in row.buttons) {
             index++;
-            TGModernButtonViewModel *buttonModel = [self makeButton:button.text action:button.action];
+            NSString *text = button.text;
+            if (hasReceipt && [button.action isKindOfClass:[TGBotReplyMarkupButtonActionPurchase class]]) {
+                text = TGLocalized(@"Message.ReplyActionButtonShowReceipt");
+            }
+            TGModernButtonViewModel *buttonModel = [self makeButton:text action:button.action];
             buttonModel.pressed = ^{
                 __strong TGMessageReplyButtonsModel *strongSelf = self;
                 if (strongSelf != nil) {

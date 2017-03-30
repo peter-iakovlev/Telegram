@@ -44,6 +44,7 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
+        self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         self.backgroundColor = [UIColor clearColor];
         
         _wrapperView = [[UIView alloc] initWithFrame:self.bounds];

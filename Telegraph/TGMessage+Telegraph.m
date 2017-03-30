@@ -166,6 +166,16 @@
         
         TGGameMediaAttachment *gameMedia = [[TGGameMediaAttachment alloc] initWithGameId:gameDesc.game.n_id accessHash:gameDesc.game.access_hash shortName:gameDesc.game.short_name title:gameDesc.game.title gameDescription:gameDesc.game.n_description photo:image document:document];
         [mediaAttachments addObject:gameMedia];
+    } else if ([media isKindOfClass:[TLMessageMedia$messageMediaInvoiceMeta class]]) {
+        TLMessageMedia$messageMediaInvoiceMeta *invoiceDesc = (TLMessageMedia$messageMediaInvoiceMeta *)media;
+        
+        TGWebDocument *photo = nil;
+        if (invoiceDesc.photo != nil) {
+            photo = [[TGWebDocument alloc] initWithUrl:invoiceDesc.photo.url accessHash:invoiceDesc.photo.access_hash size:invoiceDesc.photo.size mimeType:invoiceDesc.photo.mime_type attributes:[TGDocumentMediaAttachment parseAttribtues:invoiceDesc.photo.attributes] datacenterId:invoiceDesc.photo.dc_id];
+        }
+        
+        TGInvoiceMediaAttachment *invoice = [[TGInvoiceMediaAttachment alloc] initWithTitle:invoiceDesc.title text:invoiceDesc.n_description photo:photo currency:invoiceDesc.currency totalAmount:invoiceDesc.total_amount receiptMessageId:invoiceDesc.receipt_msg_id invoiceStartParam:invoiceDesc.start_param shippingAddressRequested:invoiceDesc.flags & (1 << 1) isTest:invoiceDesc.flags & (1 << 3)];
+        [mediaAttachments addObject:invoice];
     }
     
     return mediaAttachments;

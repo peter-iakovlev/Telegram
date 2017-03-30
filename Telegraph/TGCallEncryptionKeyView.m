@@ -5,11 +5,13 @@
 #import "TGCallUtils.h"
 #import "TGFont.h"
 #import "TGBlurEffect.h"
+#import "TGTimerTarget.h"
 
 #import "TGViewController.h"
 
 #import "UIControl+HitTestEdgeInsets.h"
 #import "TGModernButton.h"
+#import "TGMenuView.h"
 
 #import "TGCallSession.h"
 #import "TGUser.h"
@@ -27,21 +29,13 @@ typedef enum
     
     UIView *_wrapperView;
     TGModernButton *_backButton;
-    UILabel *_titleLabel;
-    
-    UIImageView *_keyImageView;
-    UILabel *_fingerprintLabel;
+
+    UILabel *_emojiLabel;
     UILabel *_descriptionLabel;
-    UIButton *_linkButton;
     
     NSString *_name;
     
-    NSData *_sha1;
-    
-    bool _keyInitialized;
-    
-    UIView *_initialIdenticonSuperview;
-    CGRect _initialIdenticonFrame;
+    bool _animating;
 }
 
 @end
@@ -79,27 +73,11 @@ typedef enum
         _wrapperView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [self addSubview:_wrapperView];
         
-        _titleLabel = [[UILabel alloc] init];
-        _titleLabel.font = TGMediumSystemFontOfSize(17);
-        _titleLabel.text = TGLocalized(@"Call.EncryptionKey.Title");
-        _titleLabel.textAlignment = NSTextAlignmentCenter;
-        _titleLabel.textColor = [UIColor whiteColor];
-        [_titleLabel sizeToFit];
-        [_wrapperView addSubview:_titleLabel];
-        
-        _keyImageView = [[UIImageView alloc] init];
-        [self addSubview:_keyImageView];
-        
-        _fingerprintLabel = [[UILabel alloc] init];
-        _fingerprintLabel.textColor = [UIColor blackColor];
-        _fingerprintLabel.backgroundColor = [UIColor clearColor];
-        NSString *fontName = @"CourierNew-Bold";
-        if (iosMajorVersion() >= 7) {
-            fontName = @"Menlo-Bold";
-        }
-        _fingerprintLabel.font = [UIFont fontWithName:fontName size:14];
-        _fingerprintLabel.numberOfLines = 4;
-        [_wrapperView addSubview:_fingerprintLabel];
+        _emojiLabel = [[UILabel alloc] init];
+        _emojiLabel.backgroundColor = [UIColor clearColor];
+        _emojiLabel.font = TGSystemFontOfSize(58);
+        _emojiLabel.textAlignment = NSTextAlignmentCenter;
+        [self addSubview:_emojiLabel];
         
         _descriptionLabel = [[UILabel alloc] init];
         _descriptionLabel.textColor = [UIColor blackColor];
@@ -109,20 +87,13 @@ typedef enum
         _descriptionLabel.numberOfLines = 0;
         [_wrapperView addSubview:_descriptionLabel];
         
-        _linkButton = [[UIButton alloc] init];
-        [_linkButton setBackgroundImage:[UIImage imageNamed:@"Transparent.png"] forState:UIControlStateNormal];
-        UIImage *rawLinkImage = [UIImage imageNamed:@"LinkFull.png"];
-        [_linkButton setBackgroundImage:[rawLinkImage stretchableImageWithLeftCapWidth:(int)(rawLinkImage.size.width / 2) topCapHeight:(int)(rawLinkImage.size.height / 2)] forState:UIControlStateHighlighted];
-        [_linkButton addTarget:self action:@selector(linkButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-        [_wrapperView addSubview:_linkButton];
-
         _backButton = [[TGModernButton alloc] initWithFrame:CGRectZero];
         _backButton.exclusiveTouch = true;
         _backButton.hitTestEdgeInsets = UIEdgeInsetsMake(-5, -20, -5, -5);
         _backButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
         _backButton.titleLabel.textAlignment = NSTextAlignmentLeft;
         _backButton.titleLabel.font = TGSystemFontOfSize(17);
-        [_backButton setTitle:@"00:00" forState:UIControlStateNormal];
+        [_backButton setTitle:TGLocalized(@"Common.Back") forState:UIControlStateNormal];
         [_backButton setTitleColor:[UIColor whiteColor]];
         [_backButton addTarget:self action:@selector(backButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_backButton];
@@ -130,8 +101,16 @@ typedef enum
         UIImageView *arrowView = [[UIImageView alloc] initWithFrame:CGRectMake(-19, 5.5f, 13, 22)];
         arrowView.image = [UIImage imageNamed:@"NavigationBackArrow"];
         [_backButton addSubview:arrowView];
+        
+        UITapGestureRecognizer *gestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapped:)];
+        [self addGestureRecognizer:gestureRecognizer];
     }
     return self;
+}
+
+- (void)tapped:(id)__unused sender
+{
+    [self backButtonPressed];
 }
 
 - (TGCallKeyViewTransitionType)_transitionType
@@ -151,8 +130,12 @@ typedef enum
     return type;
 }
 
-- (void)present
+- (bool)present
 {
+    if (_animating)
+        return false;
+    
+    _animating = true;
     self.hidden = false;
     
     _backButton.hidden = false;
@@ -168,19 +151,30 @@ typedef enum
         _wrapperView.alpha = 1.0f;
     }];
     
-    self.identiconView.frame = [self convertRect:self.identiconView.frame fromView:self.identiconView.superview];
-    _initialIdenticonFrame = self.identiconView.frame;
-    _initialIdenticonSuperview = self.identiconView.superview;
-    [self addSubview:self.identiconView];
+    _emojiLabel.center = self.emojiInitialCenter();
+    _emojiLabel.transform = CGAffineTransformMakeScale(0.4, 0.4);
     
     [UIView animateWithDuration:0.3 delay:0.0 options:(7 << 16) animations:^
     {
-        self.identiconView.frame = _keyImageView.frame;
-    } completion:nil];
+        CGRect targetRect = CGRectMake(floor((self.frame.size.width - _emojiLabel.frame.size.width) / 2) + 6.0f, floor((self.frame.size.height - _emojiLabel.frame.size.height) / 2) - 50.0f, _emojiLabel.frame.size.width, _emojiLabel.frame.size.height);
+        
+        _emojiLabel.center = CGPointMake(CGRectGetMidX(targetRect), CGRectGetMidY(targetRect));
+        _emojiLabel.transform = CGAffineTransformIdentity;
+    } completion:^(__unused BOOL finished)
+    {
+        _animating = false;
+        [self setNeedsLayout];
+    }];
+    
+    return true;
 }
 
-- (void)dismiss
+- (void)dismiss:(void (^)(void))completion
 {
+    if (_animating)
+        return;
+    
+    _animating = true;
     _backButton.hidden = true;
     
     TGCallKeyViewTransitionType type = [self _transitionType];
@@ -196,12 +190,15 @@ typedef enum
     
     [UIView animateWithDuration:0.3 delay:0.0 options:(7 << 16) animations:^
     {
-        self.identiconView.frame = _initialIdenticonFrame;
+        _emojiLabel.center = self.emojiInitialCenter();
+        _emojiLabel.transform = CGAffineTransformMakeScale(0.395, 0.395);
     } completion:^(__unused BOOL finished)
     {
-        [_initialIdenticonSuperview addSubview:self.identiconView];
-        self.identiconView.frame = [self convertRect:self.identiconView.frame toView:self.identiconView.superview];
         self.hidden = true;
+        _animating = false;
+        
+        if (completion != nil)
+            completion();
     }];
 }
 
@@ -211,13 +208,9 @@ typedef enum
         self.backPressed();
 }
 
-- (void)setState:(TGCallSessionState *)state duration:(NSTimeInterval)duration
+- (void)setState:(TGCallSessionState *)state
 {
-    NSString *durationString = duration >= 60 * 60 ? [NSString stringWithFormat:@"%02d:%02d:%02d", (int)(duration / 3600.0), (int)(duration / 60.0) % 60, (int)duration % 60] : [NSString stringWithFormat:@"%02d:%02d", (int)(duration / 60.0) % 60, (int)duration % 60];
-    [_backButton setTitle:durationString forState:UIControlStateNormal];
-    
     [self setName:state.peer.firstName];
-    [self setSha1:state.keySha1 sha256:state.keySha256];
 }
 
 - (void)setName:(NSString *)name
@@ -227,148 +220,42 @@ typedef enum
     
     _name = name;
         
-    NSString *textFormat = TGLocalized(@"Call.EncryptionKey.Description");
-    NSString *baseText = [[NSString alloc] initWithFormat:textFormat, name, name];
+    NSString *textFormat = TGLocalized(@"Call.EmojiDescription");
+    NSString *baseText = [[NSString alloc] initWithFormat:textFormat, name];
     
-    if ([_descriptionLabel respondsToSelector:@selector(setAttributedText:)])
-    {
-        NSDictionary *attrs = @{NSFontAttributeName: _descriptionLabel.font, NSForegroundColorAttributeName: [UIColor whiteColor]}; //[NSDictionary dictionaryWithObjectsAndKeys:@{_descriptionLabel.font, NSFontAttributeName, nil];
-        NSDictionary *subAttrs = @{NSFontAttributeName:[UIFont boldSystemFontOfSize:_descriptionLabel.font.pointSize], NSForegroundColorAttributeName: [UIColor whiteColor]};
-        NSDictionary *linkAtts = @{NSForegroundColorAttributeName: [UIColor whiteColor]};
-        
-        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:baseText attributes:attrs];
-        
-        [attributedText setAttributes:subAttrs range:NSMakeRange([textFormat rangeOfString:@"%1$@"].location, name.length)];
-        [attributedText setAttributes:subAttrs range:NSMakeRange([textFormat rangeOfString:@"%2$@"].location + (name.length - @"%1$@".length), name.length)];
-        [attributedText setAttributes:linkAtts range:[baseText rangeOfString:@"telegram.org"]];
-        
-        [_descriptionLabel setAttributedText:attributedText];
-    }
-    else
-    {
-        [_descriptionLabel setText:baseText];
-    }
+    NSDictionary *attrs = @{NSFontAttributeName: _descriptionLabel.font, NSForegroundColorAttributeName: [UIColor whiteColor]};
+    NSDictionary *subAttrs = @{NSFontAttributeName:[UIFont boldSystemFontOfSize:_descriptionLabel.font.pointSize], NSForegroundColorAttributeName: [UIColor whiteColor]};
+    
+    NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:baseText attributes:attrs];
+    [attributedText setAttributes:subAttrs range:NSMakeRange([textFormat rangeOfString:@"%@"].location, name.length)];
+    [_descriptionLabel setAttributedText:attributedText];
     
     [self setNeedsLayout];
 }
 
-- (void)setSha1:(NSData *)sha1 sha256:(NSData *)sha256
+- (void)setEmoji:(NSString *)emoji
 {
-    if (sha1 == nil || _keyInitialized)
-        return;
+    NSAttributedString *attributedString = [[NSAttributedString alloc] initWithString:emoji attributes:@{ NSFontAttributeName: _emojiLabel.font, NSKernAttributeName: @9.0f }];
     
-    _keyInitialized = true;
-    
-    if (sha1 != nil)
-    {
-        NSData *hashData = sha1;
-        if (hashData != nil)
-        {
-            if (sha256 != nil) {
-                NSMutableData *data = [[NSMutableData alloc] init];
-                [data appendData:sha1];
-                [data appendData:sha256];
-                
-                NSString *s1 = [[data subdataWithRange:NSMakeRange(0, 8)] stringByEncodingInHex];
-                NSString *s2 = [[data subdataWithRange:NSMakeRange(8, 8)] stringByEncodingInHex];
-                NSString *s3 = [[sha256 subdataWithRange:NSMakeRange(0, 8)] stringByEncodingInHex];
-                NSString *s4 = [[sha256 subdataWithRange:NSMakeRange(8, 8)] stringByEncodingInHex];
-                NSString *text = [[NSString alloc] initWithFormat:@"%@\n%@\n%@\n%@", s1, s2, s3, s4];
-                
-                if (![TGViewController isWidescreen]) {
-                    text = [[NSString alloc] initWithFormat:@"%@%@\n%@%@", s1, s2, s3, s4];
-                }
-                
-                NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
-                style.lineSpacing = 3.0f;
-                style.lineBreakMode = NSLineBreakByWordWrapping;
-                style.alignment = NSTextAlignmentCenter;
-                
-                CGFloat kerning = 1.75f;
-                CGSize screenSize = TGScreenSize();
-                if ((int)screenSize.height == 480)
-                {
-                    kerning = 1.0f;
-                    style.lineSpacing = 1.5f;
-                }
-                
-                NSAttributedString *attributedString = [[NSAttributedString alloc] initWithString:text attributes:@{NSParagraphStyleAttributeName: style, NSFontAttributeName: _fingerprintLabel.font, NSForegroundColorAttributeName: [UIColor whiteColor], NSKernAttributeName: @(kerning)}];
-                
-                _fingerprintLabel.attributedText = attributedString;
-            }
-        }
-    }
+    _emojiLabel.attributedText = attributedString;
+    [_emojiLabel sizeToFit];
     
     [self setNeedsLayout];
-}
-
-- (void)linkButtonPressed
-{
-    [[UIApplication sharedApplication] openURL:[[NSURL alloc] initWithString:@"https://telegram.org/faq#secret-chats"]];
 }
 
 - (void)layoutSubviews
 {
     [_backButton sizeToFit];
-    _backButton.frame = CGRectMake(27, 25.5f, ceil(_backButton.frame.size.width) + 4.0f, ceil(_backButton.frame.size.height));
+    _backButton.frame = CGRectMake(27, 25, MAX(55.0f, _backButton.frame.size.width + 5.0f), MAX(33.0f, _backButton.frame.size.height));
     
     CGSize screenSize = TGScreenSize();
-    
-    _fingerprintLabel.alpha = 1.0f;
-    
-    _titleLabel.frame = CGRectMake(ceil((self.frame.size.width - _titleLabel.frame.size.width) / 2.0f), 32, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
-    
-    CGFloat keyOffset = 0.0f;
-    CGFloat topInset = 0.0f;
-    CGFloat fingerprintOffset = 0.0f;
-    CGFloat keySize = 264;
-    
-    if (TGIsPad()) {
-        keyOffset += 12.0f;
-        fingerprintOffset += -12.0f;
-        topInset += 70.0f;
-    } else if ([TGViewController hasVeryLargeScreen]) {
-        keyOffset += 60.0f;
-        fingerprintOffset += 15.0f;
-        topInset += 102.0f;
-    } else if ([TGViewController hasLargeScreen]) {
-        keyOffset += 50.0f;
-        fingerprintOffset += 10.0f;
-        topInset += 89.0f;
-    } else if ([TGViewController isWidescreen]) {
-        keyOffset += 30.0f;
-        fingerprintOffset += 2.0f;
-        topInset += 70.0f;
-        keySize = 240.0f;
-    } else {
-        keyOffset += 24.0f;
-        fingerprintOffset += -2.0f;
-        topInset += 20.0f;
-        keySize = 216.0f;
-    }
-    
-    keyOffset += 44;
-    topInset += 25;
-    
-    if (_fingerprintLabel.text.length != 0) {
-        [_fingerprintLabel sizeToFit];
-        CGSize fingerprintSize = _fingerprintLabel.frame.size;
         
-        _fingerprintLabel.frame = CGRectMake(CGFloor((screenSize.width - fingerprintSize.width) / 2), fingerprintOffset + keyOffset + keySize + 24, fingerprintSize.width, fingerprintSize.height);
+    if (!_animating)
+    {
+        _emojiLabel.frame = CGRectMake(floor((self.frame.size.width - _emojiLabel.frame.size.width) / 2) + 6.0f, floor((self.frame.size.height - _emojiLabel.frame.size.height) / 2) - 50.0f, _emojiLabel.frame.size.width, _emojiLabel.frame.size.height);
     }
-    
-    CGSize labelSize = [_descriptionLabel sizeThatFits:CGSizeMake(screenSize.width - 20, 1000)];
-    
-    _keyImageView.frame = CGRectMake(CGFloor((self.frame.size.width - keySize) / 2), keyOffset, keySize, keySize);
-    
-    _descriptionLabel.frame = CGRectMake(CGFloor((screenSize.width - labelSize.width) / 2), _keyImageView.frame.origin.y + _keyImageView.frame.size.height + 24 + topInset, labelSize.width, labelSize.height);
-    
-    NSString *lineText = @"Learn more at telegram.org";
-    CGFloat lastWidth = [lineText sizeWithFont:_descriptionLabel.font].width;
-    CGFloat prefixWidth = [@"Learn more at " sizeWithFont:_descriptionLabel.font].width;
-    CGFloat suffixWidth = [@"telegram.org" sizeWithFont:_descriptionLabel.font].width;
-    
-    _linkButton.frame = CGRectMake(_descriptionLabel.frame.origin.x + CGFloor((_descriptionLabel.frame.size.width - lastWidth) / 2) + prefixWidth - 3, _descriptionLabel.frame.origin.y + _descriptionLabel.frame.size.height - 18, suffixWidth + 4, 19);
+    CGSize labelSize = [_descriptionLabel sizeThatFits:CGSizeMake(screenSize.width - 80, 1000)];
+    _descriptionLabel.frame = CGRectMake(floor((self.frame.size.width - labelSize.width) / 2), floor((self.frame.size.height - labelSize.height) / 2) + 30.0f, labelSize.width, labelSize.height);
 }
 
 @end

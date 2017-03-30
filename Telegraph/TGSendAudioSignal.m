@@ -164,6 +164,8 @@
     {
         TLInputMediaUploadedDocument *uploadedDocument = [[TLInputMediaUploadedDocument alloc] init];
         uploadedDocument.file = uploadInfo[@"file"];
+        uploadedDocument.mime_type = @"audio/ogg";
+        
         TLDocumentAttribute$documentAttributeAudio *audio = [[TLDocumentAttribute$documentAttributeAudio alloc] init];
         audio.duration = duration;
         audio.flags |= (1 << 10);
@@ -171,11 +173,7 @@
             audio.waveform = [waveform bitstream];
             audio.flags |= (1 << 2);
         }
-        
-        TLDocumentAttribute$documentAttributeFilename *filename = [[TLDocumentAttribute$documentAttributeFilename alloc] init];
-        filename.file_name = @"audio.ogg";
-        
-        uploadedDocument.attributes = @[audio, filename];
+        uploadedDocument.attributes = @[audio];
         
         return uploadedDocument;
     }];

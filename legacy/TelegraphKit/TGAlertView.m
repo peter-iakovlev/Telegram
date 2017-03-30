@@ -62,14 +62,23 @@
 
 + (void)presentAlertWithTitle:(NSString *)title message:(NSString *)message cancelButtonTitle:(NSString *)cancelButtonTitle okButtonTitle:(NSString *)okButtonTitle completionBlock:(void (^)(bool okButtonPressed))completionBlock {
     if (iosMajorVersion() >= 8) {
-        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title.length == 0 ? nil : title message:message preferredStyle:UIAlertControllerStyleAlert];
         
-        UIAlertAction* ok = [UIAlertAction actionWithTitle:okButtonTitle style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction * _Nonnull action) {
-            if (completionBlock) {
-                completionBlock(true);
-            }
-        }];
-        [alertController addAction:ok];
+        if (title != nil && message.length != 0) {
+            NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+            paragraphStyle.alignment = NSTextAlignmentNatural;
+            NSAttributedString *attributedString = [[NSAttributedString alloc] initWithString:message attributes:@{NSFontAttributeName: [UIFont systemFontOfSize:14.0], NSParagraphStyleAttributeName: paragraphStyle}];
+            [alertController setValue:attributedString forKey:@"attributedMessage"];
+        }
+        
+        if (okButtonTitle != nil) {
+            UIAlertAction* ok = [UIAlertAction actionWithTitle:okButtonTitle style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction * _Nonnull action) {
+                if (completionBlock) {
+                    completionBlock(true);
+                }
+            }];
+            [alertController addAction:ok];
+        }
         
         if (cancelButtonTitle != nil) {
             UIAlertAction* cancel = [UIAlertAction actionWithTitle:cancelButtonTitle style:UIAlertActionStyleCancel handler:^(__unused UIAlertAction * _Nonnull action) {

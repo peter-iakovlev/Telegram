@@ -160,14 +160,18 @@ static UIImage *pagerLeftButtonHighlightedImage() {
 
 - (void)sizeToFit
 {
+    NSString *title = [self attributedTitleForState:UIControlStateNormal].string;
+    if (title.length == 0)
+        title = [self titleForState:UIControlStateNormal];
+    
     if (self.isMultiline)
     {
-        CGSize size = [[self titleForState:UIControlStateNormal] sizeWithFont:self.titleLabel.font constrainedToSize:CGSizeMake(self.maxWidth - 34.0f, FLT_MAX) lineBreakMode:NSLineBreakByWordWrapping];
-        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, ceil(size.width) + 34, MAX(41.0f, ceil(size.height) + 20.0f));
+        CGSize size = [title sizeWithFont:self.titleLabel.font constrainedToSize:CGSizeMake(self.maxWidth - 18.0f, FLT_MAX) lineBreakMode:NSLineBreakByWordWrapping];
+        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, ceil(size.width) + 18, MAX(41.0f, ceil(size.height) + 20.0f));
     }
     else
     {
-        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, [[self titleForState:UIControlStateNormal] sizeWithFont:self.titleLabel.font].width + 34, 41);
+        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, [title sizeWithFont:self.titleLabel.font].width + 34, 41);
     }
 }
 
@@ -192,8 +196,6 @@ static UIImage *pagerLeftButtonHighlightedImage() {
     UIButton *_rightPagerButton;
     
     UIImageView *_containerMaskView;
-    
-    CGFloat _maxWidth;
 }
 
 @property (nonatomic, strong) NSMutableArray *buttonViews;
@@ -294,7 +296,14 @@ static UIImage *pagerLeftButtonHighlightedImage() {
     {
         index++;
         
-        NSString *title = [dict objectForKey:@"title"];
+        NSString *title = nil;
+        NSAttributedString *attributedTitle = nil;
+        
+        id titleValue = [dict objectForKey:@"title"];
+        if ([titleValue isKindOfClass:[NSString class]])
+            title = titleValue;
+        else if ([titleValue isKindOfClass:[NSAttributedString class]])
+            attributedTitle = titleValue;
         
         TGMenuButtonView *buttonView = nil;
         
@@ -323,7 +332,10 @@ static UIImage *pagerLeftButtonHighlightedImage() {
         buttonView.isTrailing = [dict[@"trailing"] boolValue];
         buttonView.isOptional = [dict[@"optional"] boolValue];
         
-        [buttonView setTitle:title forState:UIControlStateNormal];
+        if (title)
+            [buttonView setTitle:title forState:UIControlStateNormal];
+        else if (attributedTitle)
+            [buttonView setAttributedTitle:attributedTitle forState:UIControlStateNormal];
         buttonView.selected = false;
     }
     
@@ -655,7 +667,7 @@ static UIImage *pagerLeftButtonHighlightedImage() {
     CGFloat arrowX = CGFloor(_arrowLocation - _arrowTopView.frame.size.width / 2);
     arrowX = MIN(MAX(minArrowX, arrowX), maxArrowX);
     
-    _arrowTopView.frame = CGRectMake(arrowX, -9.0, _arrowTopView.frame.size.width, _arrowTopView.frame.size.height);
+    _arrowTopView.frame = CGRectMake(arrowX, -9.0 + TGScreenPixel, _arrowTopView.frame.size.width, _arrowTopView.frame.size.height);
     _arrowBottomView.frame = CGRectMake(arrowX, 37.0f + diff, _arrowBottomView.frame.size.width, _arrowBottomView.frame.size.height);
     
     _arrowTopView.hidden = !_arrowOnTop;
@@ -692,20 +704,29 @@ static UIImage *pagerLeftButtonHighlightedImage() {
         frame.origin.x = view.frame.size.width - 4 - frame.size.width;
     
     frame.origin.y = rect.origin.y - frame.size.height - 14;
-    if (frame.origin.y < 2)
+    if (self.forceArrowOnTop)
     {
-        frame.origin.y = rect.origin.y + rect.size.height + 17;
-        if (frame.origin.y + frame.size.height > view.frame.size.height - 14)
-        {
-            frame.origin.y = CGFloor((view.frame.size.height - frame.size.height) / 2);
-            _arrowOnTop = false;
-        }
-        else
-            _arrowOnTop = true;
+        _arrowOnTop = true;
     }
     else
     {
-        _arrowOnTop = false;
+        if (frame.origin.y < 2)
+        {
+            frame.origin.y = rect.origin.y + rect.size.height + 17;
+            if (frame.origin.y + frame.size.height > view.frame.size.height - 14)
+            {
+                frame.origin.y = CGFloor((view.frame.size.height - frame.size.height) / 2);
+                _arrowOnTop = false;
+            }
+            else
+            {
+                _arrowOnTop = true;
+            }
+        }
+        else
+        {
+            _arrowOnTop = false;
+        }
     }
     
     _arrowLocation = CGFloor(rect.origin.x + rect.size.width / 2) - frame.origin.x;

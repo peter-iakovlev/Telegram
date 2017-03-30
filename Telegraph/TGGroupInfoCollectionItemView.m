@@ -427,7 +427,7 @@
         _verifiedIcon.frame = CGRectOffset(_verifiedIcon.bounds, titleLabelFrame.origin.x + titleSize.width + 4.0f, titleLabelFrame.origin.y + 5.0f + TGRetinaPixel);
     }
     
-    _editingSeparator.frame = CGRectMake(92.0f, 62.0f, bounds.size.width - 92.0f, TGIsRetina() ? 0.5f : 1.0f);
+    _editingSeparator.frame = CGRectMake(92.0f, 62.0f, bounds.size.width - 92.0f, TGScreenPixel);
 }
 
 #pragma mark -

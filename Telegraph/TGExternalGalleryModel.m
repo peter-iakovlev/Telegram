@@ -54,7 +54,11 @@
             TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:webPage.photo.imageId accessHash:webPage.photo.accessHash orLocalId:0 peerId:peerId messageId:messageId legacyImageInfo:webPage.photo.imageInfo embeddedStickerDocuments:webPage.photo.embeddedStickerDocuments hasStickers:webPage.photo.hasStickers];
             imageItem.date = webPage.photo.date;
             imageItem.messageId = messageId;
-            imageItem.caption = webPage.photo.caption;
+            if ([webPage.pageType isEqualToString:@"invoice"]) {
+                imageItem.caption = webPage.pageDescription;
+            } else {
+                imageItem.caption = webPage.photo.caption;
+            }
             item = imageItem;
         }
         
@@ -67,6 +71,10 @@
 
 - (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultLeftAccessoryView
 {
+    if ([[_webPage pageType] isEqualToString:@"invoice"]) {
+        return nil;
+    }
+    
     TGGenericPeerMediaGalleryActionsAccessoryView *accessoryView = [[TGGenericPeerMediaGalleryActionsAccessoryView alloc] init];
     __weak TGExternalGalleryModel *weakSelf = self;
     accessoryView.action = ^(id<TGModernGalleryItem> item)
@@ -90,7 +98,7 @@
                     
                     if ([item isKindOfClass:[TGGenericPeerMediaGalleryImageItem class]]) {
                         NSString *lowercaseUrl = strongSelf->_webPage.url.lowercaseString;
-                        if (![lowercaseUrl hasPrefix:@"http://telegram.me/"] && ![lowercaseUrl hasPrefix:@"https://telegram.me/"] && ![lowercaseUrl hasPrefix:@"http://t.me/"] && ![lowercaseUrl hasPrefix:@"https://t.me/"]) {
+                        if (![lowercaseUrl hasPrefix:@"http://t.me/"] && ![lowercaseUrl hasPrefix:@"https://t.me/"] && ![lowercaseUrl hasPrefix:@"http://t.me/"] && ![lowercaseUrl hasPrefix:@"https://t.me/"]) {
                             [actions addObject:[[TGActionSheetAction alloc] initWithTitle:openInText action:@"open" type:TGActionSheetActionTypeGeneric]];
                         }
                     }

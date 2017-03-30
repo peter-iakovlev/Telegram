@@ -1,5 +1,7 @@
 #import "TGTabletMainView.h"
 
+#import "TGImageUtils.h"
+
 @interface TGTabletMainView ()
 {
     UIView *_stripeView;
@@ -29,7 +31,7 @@
         _fakeNavigationBarView.backgroundColor = UIColorRGBA(0xf7f7f7, 1.0f);
         [self addSubview:_fakeNavigationBarView];
         
-        CGFloat separatorHeight = [[UIScreen mainScreen] scale] > 1.0f + FLT_EPSILON ? 0.5f : 1.0f;
+        CGFloat separatorHeight = TGScreenPixel;
         _fakeNavigationBarSeparatorView = [[UIView alloc] initWithFrame:CGRectMake(detailViewContainerFrame.origin.x, 64.0f - separatorHeight, detailViewContainerFrame.size.width, separatorHeight)];
         _fakeNavigationBarSeparatorView.backgroundColor = UIColorRGB(0xb2b2b2);
         [self addSubview:_fakeNavigationBarSeparatorView];
@@ -47,8 +49,8 @@
         _masterViewContainer.clipsToBounds = true;
         [self addSubview:_masterViewContainer];
         
-        _stripeView = [[UIView alloc] initWithFrame:CGRectMake(CGRectGetMaxX(masterViewContainerFrame), 0.0f, 1.0f, masterViewContainerFrame.size.height)];
-        _stripeView.backgroundColor = UIColorRGB(0x8e8e93);
+        _stripeView = [[UIView alloc] initWithFrame:CGRectMake(CGRectGetMaxX(masterViewContainerFrame), 0.0f, TGScreenPixel, masterViewContainerFrame.size.height)];
+        _stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
         [self addSubview:_stripeView];
     }
     return self;
@@ -65,7 +67,7 @@
     CGRect masterViewContainerFrame = [self rectForMasterViewForFrame:frame];
     _masterViewContainer.frame = masterViewContainerFrame;
     
-    _stripeView.frame = CGRectMake(CGRectGetMaxX(masterViewContainerFrame), 0.0f, 1.0f, masterViewContainerFrame.size.height);
+    _stripeView.frame = CGRectMake(CGRectGetMaxX(masterViewContainerFrame), 0.0f, TGScreenPixel, masterViewContainerFrame.size.height);
     
     masterViewContainerFrame.origin = CGPointZero;
     _masterView.frame = masterViewContainerFrame;

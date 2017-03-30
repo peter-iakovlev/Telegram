@@ -26,6 +26,7 @@
 - (void)setUpdatingAvatar:(bool)updatingAvatar animated:(bool)animated;
 - (void)setAvatarOffset:(CGSize)avatarOffset;
 - (void)setNameOffset:(CGSize)nameOffset;
+- (void)setShowCall:(bool)showCall;
 
 - (id)avatarView;
 - (void)makeNameFieldFirstResponder;

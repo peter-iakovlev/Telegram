@@ -209,7 +209,7 @@
 }
 
 - (void)layoutSubviews {
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     _buttonSeparator.frame = CGRectMake(0.0f, self.frame.size.height - 57.5f, self.frame.size.width, separatorHeight);
     _button.frame = CGRectMake(0.0f, self.frame.size.height - 57.5f, self.bounds.size.width, 57.5f);
     

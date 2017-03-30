@@ -104,6 +104,8 @@
     
     [view setEditing:_editing animated:false];
     
+    [view setShowCall:_showCall];
+    
     _firstBind = false;
 }
 
@@ -306,9 +308,15 @@
     return _editingLastName;
 }
 
+- (void)setShowCall:(bool)showCall
+{
+    _showCall = showCall;
+    [((TGUserInfoCollectionItemView *)self.view) setShowCall:showCall];
+}
+
 - (void)actionStageActionRequested:(NSString *)action options:(id)options
 {
-    if ([action isEqualToString:@"avatarTapped"])
+    if ([action isEqualToString:@"avatarTapped"] || [action isEqualToString:@"callTapped"])
     {
         [_interfaceHandle requestAction:action options:options];
     }

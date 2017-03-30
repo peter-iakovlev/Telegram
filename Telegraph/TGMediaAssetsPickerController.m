@@ -1,5 +1,6 @@
 #import "TGMediaAssetsPickerController.h"
 
+#import "TGAppDelegate.h"
 #import "UICollectionView+Utils.h"
 #import "TGImageUtils.h"
 #import "TGPhotoEditorUtils.h"
@@ -356,7 +357,7 @@
         controller.didFinishRenderingFullSizeImage = ^(UIImage *resultImage)
         {
             __strong TGMediaAssetsPickerController *strongSelf = weakSelf;
-            if (strongSelf == nil)
+            if (strongSelf == nil || !TGAppDelegateInstance.saveEditedPhotos)
                 return;
             
             [[strongSelf->_assetsLibrary saveAssetWithImage:resultImage] startWithNext:nil];
@@ -378,14 +379,14 @@
             return [editableItem thumbnailImageSignal];
         };
         
-        controller.requestOriginalScreenSizeImage = ^(id<TGMediaEditableItem> editableItem)
+        controller.requestOriginalScreenSizeImage = ^(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
         {
-            return [editableItem screenImageSignal];
+            return [editableItem screenImageSignal:position];
         };
         
-        controller.requestOriginalFullSizeImage = ^(id<TGMediaEditableItem> editableItem)
+        controller.requestOriginalFullSizeImage = ^(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
         {
-            return [editableItem originalImageSignal];
+            return [editableItem originalImageSignal:position];
         };
         
         [self.navigationController pushViewController:controller animated:true];

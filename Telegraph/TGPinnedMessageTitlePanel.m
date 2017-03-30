@@ -52,7 +52,7 @@
 - (void)layoutSubviews {
     [super layoutSubviews];
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     _separatorView.frame = CGRectMake(0.0f, self.frame.size.height - separatorHeight, self.frame.size.width, separatorHeight);
     
     _replyPanel.frame = CGRectMake(0.0f, TGRetinaPixel, self.frame.size.width, 44.0f);

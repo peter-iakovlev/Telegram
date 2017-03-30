@@ -5,6 +5,7 @@
 
 #import "TGSwitchCollectionItem.h"
 #import "TGButtonCollectionItem.h"
+#import "TGVersionCollectionItem.h"
 
 #import "TGForwardTargetController.h"
 
@@ -67,6 +68,19 @@
         TGButtonCollectionItem *networkOverridesItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Network Overrides" action:@selector(networkOverridesPressed)];
         TGCollectionMenuSection *networkOverridesSection = [[TGCollectionMenuSection alloc] initWithItems:@[networkOverridesItem]];
         [self.menuSections addSection:networkOverridesSection];
+        
+        TGButtonCollectionItem *resetPaymentsItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Reset Saved Payment Info" action:@selector(resetPaymentsPressed)];
+        TGCollectionMenuSection *resetPaymentsSection = [[TGCollectionMenuSection alloc] initWithItems:@[resetPaymentsItem]];
+        [self.menuSections addSection:resetPaymentsSection];
+        
+        NSString *version = [NSString stringWithFormat:@"v%@", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]];
+        version = [NSString stringWithFormat:@"%@ (%@)", version, [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString *)kCFBundleVersionKey]];
+        TGVersionCollectionItem *versionItem = [[TGVersionCollectionItem alloc] initWithVersion:version];
+        
+        TGButtonCollectionItem *resetCallsTabItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Reset Calls Tab" action:@selector(resetCallsTabPressed)];
+        resetCallsTabItem.deselectAutomatically = true;
+        TGCollectionMenuSection *callsSection = [[TGCollectionMenuSection alloc] initWithItems:@[resetCallsTabItem, versionItem]];
+        [self.menuSections addSection:callsSection];
     }
     return self;
 }
@@ -225,6 +239,27 @@
 - (void)mailComposeController:(MFMailComposeViewController *)__unused controller didFinishWithResult:(MFMailComposeResult)__unused result error:(NSError *)__unused error
 {
     [self dismissViewControllerAnimated:true completion:nil];
+}
+
+- (void)resetPaymentsPressed {
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    [progressWindow show:true];
+    
+    TLRPCpayments_clearSavedInfo$payments_clearSavedInfo *clearSavedInfo = [[TLRPCpayments_clearSavedInfo$payments_clearSavedInfo alloc] init];
+    clearSavedInfo.flags = 1 | 2;
+    
+    [[[[[TGTelegramNetworking instance] requestSignal:clearSavedInfo] deliverOn:[SQueue mainQueue]] onDispose:^
+    {
+        TGDispatchOnMainThread(^
+        {
+            [progressWindow dismiss:true];
+        });
+    }] startWithNext:nil];
+}
+
+- (void)resetCallsTabPressed {
+    [TGAppDelegateInstance resetCallsTab];
+    [TGAppDelegateInstance.rootController.mainTabsController setCallsHidden:true animated:false];
 }
 
 @end

@@ -223,7 +223,7 @@
                     }
                     if (isGif)
                     {
-                        uploadMediaSignal = [TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:data name:fileName == nil ? @"animation.gif" : fileName mimeType:@"image/gif" attributes:@[ [Api62_DocumentAttribute documentAttributeAnimated], [Api62_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)image.size.width) h:@((int32_t)image.size.height)] ]];
+                        uploadMediaSignal = [TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:data name:fileName == nil ? @"animation.gif" : fileName mimeType:@"image/gif" attributes:@[ [Api65_DocumentAttribute documentAttributeAnimated], [Api65_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)image.size.width) h:@((int32_t)image.size.height)] ]];
                     }
                     else
                     {
@@ -241,7 +241,7 @@
             else if (description[@"video"] != nil)
             {
                 AVURLAsset *asset = description[@"video"];
-                uploadMediaSignal = [[TGShareVideoConverter convertSignalForAVAsset:asset] mapToSignal:^SSignal *(id value)
+                uploadMediaSignal = [[TGShareVideoConverter convertAVAsset:asset] mapToSignal:^SSignal *(id value)
                 {
                     if ([value isKindOfClass:[NSDictionary class]])
                     {
@@ -313,7 +313,7 @@
                 }
                 
                 NSMutableArray *attributes = [[NSMutableArray alloc] init];
-                [attributes addObject:[Api62_DocumentAttribute_documentAttributeAudio documentAttributeAudioWithFlags:@(flags) duration:description[@"duration"] title:title performer:artist waveform:waveform]];
+                [attributes addObject:[Api65_DocumentAttribute_documentAttributeAudio documentAttributeAudioWithFlags:@(flags) duration:description[@"duration"] title:title performer:artist waveform:waveform]];
                 
                 uploadMediaSignal = [TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:audioData name:fileName mimeType:description[@"mimeType"] attributes:attributes];
             }
@@ -345,7 +345,7 @@
                 if (strongSelf == nil)
                     return [SSignal fail:nil];
                 
-                if ([next isKindOfClass:[Api62_InputMedia class]])
+                if ([next isKindOfClass:[Api65_InputMedia class]])
                 {
                     return [SSignal single:[[TGUploadedMessageContentMedia alloc] initWithInputMedia:next]];
                 }

@@ -248,6 +248,7 @@ typedef void (^TGDatabaseCleanupEverythingBlock)();
 - (int)loadUserLink:(int)uid outdated:(bool *)outdated;
 - (void)storeUserLink:(int)uid link:(int)link;
 - (void)upgradeUserLinks;
+- (void)clearCachedUserLinks;
 
 - (TGMessage *)loadMessageWithMid:(int)mid peerId:(int64_t)peerId;
 - (TGMessage *)loadMediaMessageWithMid:(int)mid;

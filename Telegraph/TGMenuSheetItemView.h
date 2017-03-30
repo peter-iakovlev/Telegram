@@ -47,11 +47,15 @@ typedef enum
 
 @property (nonatomic, copy) void (^highlightUpdateBlock)(bool highlighted);
 
+@property (nonatomic, copy) void (^handleInternalPan)(UIPanGestureRecognizer *);
+
 - (void)_updateHeightAnimated:(bool)animated;
 - (void)_didLayoutSubviews;
 
 - (void)_willRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation duration:(NSTimeInterval)duration;
 - (void)_didRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation;
+
+- (void)didChangeAbsoluteFrame;
 
 - (void)menuView:(TGMenuSheetView *)menuView willAppearAnimated:(bool)animated;
 - (void)menuView:(TGMenuSheetView *)menuView didAppearAnimated:(bool)animated;

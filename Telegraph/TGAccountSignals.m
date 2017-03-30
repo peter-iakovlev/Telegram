@@ -132,7 +132,7 @@
         return [[TGDatabaseInstance() modify:^id{
             [TGDatabaseInstance() updateCachedUserData:TGTelegraphInstance.clientUserId block:^TGCachedUserData *(TGCachedUserData *data) {
                 if (data == nil) {
-                    return [[TGCachedUserData alloc] initWithAbout:about groupsInCommonCount:0 groupsInCommon:nil supportsCalls:false];
+                    return [[TGCachedUserData alloc] initWithAbout:about groupsInCommonCount:0 groupsInCommon:nil supportsCalls:false callsPrivate:false];
                 } else {
                     return [data updateAbout:about];
                 }

@@ -368,7 +368,7 @@ const CGFloat TGEmbedPlayerControlsPanelHeight = 32.0f;
         _remainingLabel.text = remainingString;
         
         CGFloat fractPosition = state.position / MAX(state.duration, 0.001);
-        if (state.duration < DBL_EPSILON)
+        if (state.duration <= 0.01 || isnan(state.downloadProgress))
         {
             _remainingLabel.hidden = true;
             _scrubber.hidden = true;
@@ -379,8 +379,11 @@ const CGFloat TGEmbedPlayerControlsPanelHeight = 32.0f;
             _scrubber.hidden = false;
         }
         
-        [_scrubber setDownloadProgress:state.downloadProgress];
-        [_scrubber setPosition:fractPosition];
+        if (!_scrubber.hidden)
+        {
+            [_scrubber setDownloadProgress:state.downloadProgress];
+            [_scrubber setPosition:fractPosition];
+        }
         
         if (!_watermarkDenyHiding)
             [self setInternalWatermarkHidden:_playing animated:true];

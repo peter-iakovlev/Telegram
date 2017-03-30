@@ -2,6 +2,7 @@
 
 #import <objc/runtime.h>
 
+#import "TGAppDelegate.h"
 #import "PGCameraShotMetadata.h"
 #import "PGPhotoEditorValues.h"
 #import "TGPhotoEditorUtils.h"
@@ -218,19 +219,23 @@
         
         if (strongSelf.shouldStoreAssets)
         {
-            [[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:strongSelf->_image] startWithNext:nil];
+            if (TGAppDelegateInstance.saveCapturedMedia)
+                [[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:strongSelf->_image] startWithNext:nil];
             
-            [[[[[[editingContext fullSizeImageUrlForItem:strongSelf->_image] filter:^bool(id result)
+            if (TGAppDelegateInstance.saveEditedPhotos)
             {
-                return [result isKindOfClass:[NSURL class]];
-            }] startOn:[SQueue concurrentDefaultQueue]] deliverOn:[SQueue mainQueue]] mapToSignal:^SSignal *(NSURL *url)
-            {
-                return [[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImageAtUrl:url] onCompletion:^
+                [[[[[[editingContext fullSizeImageUrlForItem:strongSelf->_image] filter:^bool(id result)
                 {
-                    __strong TGMediaEditingContext *strongEditingContext = editingContext;
-                    [strongEditingContext description];
-                }];
-            }] startWithNext:nil];
+                    return [result isKindOfClass:[NSURL class]];
+                }] startOn:[SQueue concurrentDefaultQueue]] deliverOn:[SQueue mainQueue]] mapToSignal:^SSignal *(NSURL *url)
+                {
+                    return [[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImageAtUrl:url] onCompletion:^
+                    {
+                        __strong TGMediaEditingContext *strongEditingContext = editingContext;
+                        [strongEditingContext description];
+                    }];
+                }] startWithNext:nil];
+            }
         }
         
         SSignal *originalSignal = [[[SSignal single:strongSelf->_image] map:^id(UIImage *image)
@@ -808,14 +813,14 @@
         return [editableItem thumbnailImageSignal];
     };
     
-    controller.requestOriginalScreenSizeImage = ^(id<TGMediaEditableItem> editableItem)
+    controller.requestOriginalScreenSizeImage = ^(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
     {
-        return [editableItem screenImageSignal];
+        return [editableItem screenImageSignal:position];
     };
     
-    controller.requestOriginalFullSizeImage = ^(id<TGMediaEditableItem> editableItem)
+    controller.requestOriginalFullSizeImage = ^(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
     {
-        return [editableItem originalImageSignal];
+        return [editableItem originalImageSignal:position];
     };
     
     [self addChildViewController:controller];

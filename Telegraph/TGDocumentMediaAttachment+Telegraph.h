@@ -15,6 +15,8 @@
 
 @interface TGDocumentMediaAttachment (Telegraph)
 
++ (NSArray *)parseAttribtues:(NSArray *)descs;
+
 - (instancetype)initWithTelegraphDocumentDesc:(TLDocument *)desc;
 - (instancetype)initWithSecret23Desc:(Secret23_DecryptedMessageMedia_decryptedMessageMediaExternalDocument *)desc;
 - (instancetype)initWithSecret46ExternalDesc:(Secret46_DecryptedMessageMedia_decryptedMessageMediaExternalDocument *)desc;

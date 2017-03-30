@@ -96,7 +96,7 @@ static void adjustSelectedBackgroundViewFrame(CGSize viewSize, int positionMask,
 {
     CGRect frame = backgroundView.frame;
     
-    float stripeHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat stripeHeight = TGScreenPixel;
     
     if ((positionMask & TGCollectionItemViewPositionFirstInBlock) && (positionMask & TGCollectionItemViewPositionLastInBlock))
     {
@@ -182,11 +182,11 @@ static void adjustSelectedBackgroundViewFrame(CGSize viewSize, int positionMask,
     
     adjustSelectedBackgroundViewFrame(viewSize, _itemPosition, _selectionInsets, self.selectedBackgroundView);
     
-    static float stripeHeight = 0.0f;
+    static CGFloat stripeHeight = 0.0f;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        stripeHeight = TGIsRetina() ? 0.5f : 1.0f;
+        stripeHeight = TGScreenPixel;
     });
     
     if (_itemPosition & TGCollectionItemViewPositionFirstInBlock)

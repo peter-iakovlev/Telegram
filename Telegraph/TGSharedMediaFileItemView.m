@@ -493,7 +493,7 @@
 {
     [super layoutSubviews];
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     UIEdgeInsets insets = UIEdgeInsetsMake(8.0f, self.editing ? [self editingInset] : 65.0f, 6.0f, 10.0f);
     _separatorView.frame = CGRectMake(insets.left, self.frame.size.height - separatorHeight, self.frame.size.width - insets.left, separatorHeight);
     

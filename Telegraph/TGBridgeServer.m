@@ -192,6 +192,11 @@
     return self.session.watchDirectoryURL;
 }
 
+- (bool)isPaired
+{
+    return self.session.isPaired;
+}
+
 - (bool)isWatchAppInstalled
 {
     return self.session.isWatchAppInstalled;

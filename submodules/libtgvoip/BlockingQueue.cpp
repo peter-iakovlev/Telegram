@@ -1,11 +1,14 @@
 //
-// Created by Grishka on 01.06.16.
+// libtgvoip is free and unencumbered public domain software.
+// For more information, see http://unlicense.org or the UNLICENSE file
+// you should have received with this source code distribution.
 //
 
 #include "BlockingQueue.h"
 
 CBlockingQueue::CBlockingQueue(size_t capacity){
 	this->capacity=capacity;
+	overflowCallback=NULL;
 	init_lock(lock);
 	init_mutex(mutex);
 }
@@ -27,7 +30,12 @@ void CBlockingQueue::Put(void *thing){
 	}
 	queue.push_back(thing);
 	while(queue.size()>capacity){
-		queue.pop_front();
+		if(overflowCallback){
+			overflowCallback(queue.front());
+			queue.pop_front();
+		}else{
+			abort();
+		}
 	}
 	unlock_mutex(mutex);
 }
@@ -70,3 +78,7 @@ void CBlockingQueue::PrepareDealloc(){
 	unlock_mutex(mutex);
 }
 
+
+void CBlockingQueue::SetOverflowCallback(void (*overflowCallback)(void *)){
+	this->overflowCallback=overflowCallback;
+}

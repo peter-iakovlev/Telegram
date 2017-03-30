@@ -2726,8 +2726,10 @@ inline static TGUser *loadUserFromDatabase(FMResultSet *result, PSKeyValueDecode
     
     if (user == nil)
     {
+        __block int32_t localUserId = 0;
         [self dispatchOnDatabaseThread:^
         {
+            localUserId = _localUserId;
             PSKeyValueDecoder *decoder = [[PSKeyValueDecoder alloc] init];
              FMResultSet *result = [_database executeQuery:[NSString stringWithFormat:@"SELECT * FROM %@ WHERE uid=?", _usersTableName], [[NSNumber alloc] initWithInt:uid]];
              if ([result next])
@@ -2749,7 +2751,7 @@ inline static TGUser *loadUserFromDatabase(FMResultSet *result, PSKeyValueDecode
             }
             TG_SYNCHRONIZED_END(_userByUid);
             
-            if (uid == _localUserId)
+            if (uid == localUserId)
             {
                 user.phonebookFirstName = nil;
                 user.phonebookLastName = nil;
@@ -15518,6 +15520,10 @@ typedef struct {
             [invalidatedPeerReadStates addObject:nPeerId];
         }
     }];
+    
+    if (maxIncomingReadIds.count > 0) {
+        [ActionStageInstance() dispatchResource:@"/tg/updatedMaxIncomingReadIds" resource:[[SGraphObjectNode alloc] initWithObject:maxIncomingReadIds]];
+    }
 }
 
 - (void)_applyMaxOutgoingReadIds:(NSDictionary <NSNumber *, NSNumber *> *)maxOutgoingReadIds peers:(NSMutableDictionary<NSNumber *, TGConversation *> *)peers modifiedPeerIds:(NSMutableSet<NSNumber *> *)modifiedPeerIds {
@@ -15962,6 +15968,10 @@ typedef struct {
             }
         }
     }
+    
+    if (peerIds.count > 0) {
+        [ActionStageInstance() dispatchResource:@"/tg/readPeerHistories" resource:[[SGraphObjectNode alloc] initWithObject:peerIds]];
+    }
 }
 
 - (void)_updateConversationDatas:(NSDictionary <NSNumber *, TGConversation *> *)conversationDatas peers:(NSMutableDictionary<NSNumber *, TGConversation *> *)peers modifiedPeerIds:(NSMutableSet<NSNumber *> *)modifiedPeerIds {
@@ -16210,6 +16220,8 @@ typedef struct {
         
         *outLegacyEnqueuedActions = true;
     }
+    
+    [ActionStageInstance() dispatchResource:@"/tg/conversationsCleared" resource:[[SGraphObjectNode alloc] initWithObject:@{@"peerIds": peerIds}]];
 }
 
 - (void)_removeConversationsWithPeerIds:(NSArray<NSNumber *> *)peerIds peers:(NSMutableDictionary<NSNumber *, TGConversation *> *)peers modifiedPeerIds:(NSMutableSet<NSNumber *> *)modifiedPeerIds outLegacyEnqueuedActions:(bool *)outLegacyEnqueuedActions {
@@ -16592,6 +16604,8 @@ forceReplacePinnedConversations:(bool)forceReplacePinnedConversations
         
         [removeMessagesByPeerId enumerateKeysAndObjectsUsingBlock:^(NSNumber *nPeerId, NSMutableArray<NSNumber *> *messageIds, __unused BOOL *stop) {
             [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messagesDeleted", [nPeerId longLongValue]] resource:[[SGraphObjectNode alloc] initWithObject:messageIds]];
+            
+            [ActionStageInstance() dispatchResource:@"/tg/messagesDeleted" resource:[[SGraphObjectNode alloc] initWithObject:@{ @"peerId": nPeerId, @"messageIds": messageIds}]];
         }];
         
         if (notifyAddedMessages && addMessages.count != 0) {
@@ -16662,11 +16676,16 @@ forceReplacePinnedConversations:(bool)forceReplacePinnedConversations
         
         NSMutableArray *remoteGifDocuments = [[NSMutableArray alloc] init];
         NSMutableArray *remoteStickerDocuments = [[NSMutableArray alloc] init];
+        NSMutableArray *calls = [[NSMutableArray alloc] init];
         
         for (TGMessage *message in messages)
         {
             if (message.actionInfo.actionType == TGMessageActionClearChat) {
                 continue;
+            }
+            
+            if (message.actionInfo.actionType == TGMessageActionPhoneCall) {
+                [calls addObject:message];
             }
             
             if (message.outgoing) {
@@ -16930,6 +16949,10 @@ forceReplacePinnedConversations:(bool)forceReplacePinnedConversations
                 [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/conversation/(%lld)/messages", [nPeerId longLongValue]] resource:[[SGraphObjectNode alloc] initWithObject:messages]];
             }
         }];
+     
+        if (calls.count != 0) {
+            [ActionStageInstance() dispatchResource:@"/tg/calls/added" resource:[[SGraphObjectNode alloc] initWithObject:calls]];
+        }
     } synchronous:false];
 }
 

@@ -17,6 +17,7 @@
 @property (nonatomic, strong) ASHandle *actionHandle;
 
 @property (nonatomic, strong) TGUserInfoCollectionItem *userInfoItem;
+@property (nonatomic, strong) TGCollectionMenuSection *callsSection;
 @property (nonatomic, strong) TGCollectionMenuSection *usernameSection;
 @property (nonatomic, strong) TGCollectionMenuSection *phonesSection;
 @property (nonatomic, strong) TGCollectionMenuSection *actionsSection;

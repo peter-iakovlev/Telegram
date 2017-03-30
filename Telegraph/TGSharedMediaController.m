@@ -976,7 +976,7 @@
     /*_filterPanelView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - 45.0f, self.view.frame.size.width, 45.0f)];
     _filterPanelView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
     _filterPanelView.backgroundColor = [UIColor whiteColor];
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _filterPanelView.frame.size.width, separatorHeight)];
     separatorView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     separatorView.backgroundColor = UIColorRGB(0xb2b2b2);

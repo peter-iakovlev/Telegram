@@ -90,7 +90,7 @@ NSString *const TGHashtagPanelCellKind = @"TGHashtagPanelCell";
     
     if (_separatorView != nil)
     {
-        CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat separatorHeight = TGScreenPixel;
         _separatorView.frame = CGRectMake(inset, self.frame.size.height - separatorHeight, self.frame.size.width - inset, separatorHeight);
     }
 }

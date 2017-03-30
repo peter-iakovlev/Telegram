@@ -32,7 +32,6 @@
 
 @implementation TGPhotoEditorCurvesHistogramView
 
-@synthesize titleChanged = _titleChanged;
 @synthesize valueChanged = _valueChanged;
 @synthesize value = _value;
 @synthesize interactionEnded = _interactionEnded;
@@ -147,11 +146,6 @@
 }
 
 - (bool)buttonPressed:(bool)__unused cancelButton
-{
-    return true;
-}
-
-- (bool)hideTitle
 {
     return true;
 }

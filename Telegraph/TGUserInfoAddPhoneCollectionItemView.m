@@ -31,7 +31,7 @@
         _separatorLayer.backgroundColor = TGSeparatorColor().CGColor;
         [self.backgroundView.layer addSublayer:_separatorLayer];
         
-        CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat separatorHeight = TGScreenPixel;
         self.selectionInsets = UIEdgeInsetsMake(separatorHeight, 0.0f, 0.0f, 0.0f);
         
         _addIconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernMenuAddIcon.png"]];
@@ -58,7 +58,7 @@
     
     CGRect bounds = self.bounds;
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     _separatorLayer.frame = CGRectMake(15.0f, bounds.size.height - separatorHeight, bounds.size.width - 15.0f, separatorHeight);
 }
 

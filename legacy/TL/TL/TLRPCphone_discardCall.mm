@@ -5,13 +5,14 @@
 
 #import "TLInputPhoneCall.h"
 #import "TLPhoneCallDiscardReason.h"
+#import "TLUpdates.h"
 
 @implementation TLRPCphone_discardCall
 
 
 - (Class)responseClass
 {
-    return [NSNumber class];
+    return [TLUpdates class];
 }
 
 - (int)impliedResponseSignature
@@ -21,7 +22,7 @@
 
 - (int)layerVersion
 {
-    return 61;
+    return 63;
 }
 
 - (int32_t)TLconstructorSignature
@@ -55,7 +56,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x5dfbcddc;
+    return (int32_t)0x78d413a6;
 }
 
 - (int32_t)TLconstructorName

@@ -49,10 +49,11 @@
     [super bindView:view];
     
     [((TGVariantCollectionItemView *)view) setTitle:_title];
-    [((TGVariantCollectionItemView *)view) setVariant:_variant];
+    [((TGVariantCollectionItemView *)view) setVariant:_variant variantColor:_variantColor];
     [((TGVariantCollectionItemView *)view) setIcon:_icon];
     [((TGVariantCollectionItemView *)view) setEnabled:_enabled];
     [((TGVariantCollectionItemView *)view) setHideArrow:_hideArrow];
+    [((TGVariantCollectionItemView *)view) setMinLeftPadding:_minLeftPadding];
 }
 
 - (void)itemSelected:(id)actionTarget
@@ -84,7 +85,7 @@
         _variant = variant;
         
         if ([self boundView] != nil)
-            [((TGVariantCollectionItemView *)[self boundView]) setVariant:_variant];
+            [((TGVariantCollectionItemView *)[self boundView]) setVariant:_variant variantColor:_variantColor];
     }
 }
 

@@ -299,6 +299,22 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLDataJSON$dataJSON
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x7d748d04;
+        constructor.predicate = @"dataJSON";
+        constructor.type = @"DataJSON";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"data";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLInputUser$inputUserEmpty
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0xb98886cf;
@@ -363,6 +379,34 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"score";
             arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLpayments_ValidatedRequestedInfo$payments_validatedRequestedInfoMeta
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x3cfc7e35;
+        constructor.predicate = @"payments.validatedRequestedInfoMeta";
+        constructor.type = @"payments.ValidatedRequestedInfo";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"id";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"shipping_options";
+            arg.type = @"Vector<ShippingOption>";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -953,6 +997,62 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLInputWebFileLocation$inputWebFileLocation
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xc239d686;
+        constructor.predicate = @"inputWebFileLocation";
+        constructor.type = @"InputWebFileLocation";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"url";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"access_hash";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLInputWebDocument$inputWebDocument
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x9bed434d;
+        constructor.predicate = @"inputWebDocument";
+        constructor.type = @"InputWebDocument";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"url";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"size";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"mime_type";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"attributes";
+            arg.type = @"Vector<DocumentAttribute>";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLcontacts_Link$contacts_link
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x3ace484c;
@@ -1069,6 +1169,76 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"key_fingerprint";
             arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLpayments_PaymentForm$payments_paymentFormMeta
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xf82b6dc0;
+        constructor.predicate = @"payments.paymentFormMeta";
+        constructor.type = @"payments.PaymentForm";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"bot_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"invoice";
+            arg.type = @"Invoice";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"provider_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"url";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"native_provider";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"native_params";
+            arg.type = @"DataJSON";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"saved_info";
+            arg.type = @"PaymentRequestedInfo";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"saved_credentials";
+            arg.type = @"PaymentSavedCredentials";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"users";
+            arg.type = @"Vector<User>";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -2867,6 +3037,82 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLpayments_PaymentReceipt$payments_paymentReceiptMeta
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x5f1794be;
+        constructor.predicate = @"payments.paymentReceiptMeta";
+        constructor.type = @"payments.PaymentReceipt";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"date";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"bot_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"invoice";
+            arg.type = @"Invoice";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"provider_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"info";
+            arg.type = @"PaymentRequestedInfo";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"shipping";
+            arg.type = @"ShippingOption";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"currency";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"total_amount";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"credentials_title";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"users";
+            arg.type = @"Vector<User>";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLChatParticipants$chatParticipants
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x3f460fed;
@@ -3345,7 +3591,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLConfig$configMeta
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0xdac7e3ee;
+        constructor.n_id = (int32_t)0x6cbca18d;
         constructor.predicate = @"configMeta";
         constructor.type = @"Config";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -3515,6 +3761,12 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"call_packet_timeout_ms";
             arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"me_url_prefix";
+            arg.type = @"string";
             [fields addObject:arg];
         }
         {
@@ -4191,6 +4443,34 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"texts";
             arg.type = @"Vector<RichText>";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLShippingOption$shippingOption
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xb6213cdf;
+        constructor.predicate = @"shippingOption";
+        constructor.type = @"ShippingOption";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"id";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"title";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"prices";
+            arg.type = @"Vector<LabeledPrice>";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -4943,6 +5223,50 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLaccount_TmpPassword$account_tmpPassword
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xdb64fd34;
+        constructor.predicate = @"account.tmpPassword";
+        constructor.type = @"account.TmpPassword";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"tmp_password";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"valid_until";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLphone_DiscardedCall$phone_discardedCall
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xd834f14e;
+        constructor.predicate = @"phone.discardedCall";
+        constructor.type = @"phone.DiscardedCall";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"updates";
+            arg.type = @"Updates";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLphone_PhoneCall$phone_phoneCall
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0xec82e140;
@@ -5422,6 +5746,28 @@ TLScheme *TLgetMetaScheme()
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"n_description";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLPaymentSavedCredentials$paymentSavedCredentialsCard
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xcdc27a1f;
+        constructor.predicate = @"paymentSavedCredentialsCard";
+        constructor.type = @"PaymentSavedCredentials";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"id";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"title";
             arg.type = @"string";
             [fields addObject:arg];
         }
@@ -6191,6 +6537,28 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLLabeledPrice$labeledPrice
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xcb296bf8;
+        constructor.predicate = @"labeledPrice";
+        constructor.type = @"LabeledPrice";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"label";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"amount";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLSchemeParam$schemeParam
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x21b59bef;
@@ -6701,6 +7069,28 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLpayments_SavedInfo$payments_savedInfoMeta
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xa2ffb0da;
+        constructor.predicate = @"payments.savedInfoMeta";
+        constructor.type = @"payments.SavedInfo";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"saved_info";
+            arg.type = @"PaymentRequestedInfo";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLBotInfo$botInfo
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x98e81d3a;
@@ -6863,6 +7253,34 @@ TLScheme *TLgetMetaScheme()
         constructor.predicate = @"storage.fileWebp";
         constructor.type = @"storage.FileType";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLInvoice$invoiceMeta
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x187882c1;
+        constructor.predicate = @"invoiceMeta";
+        constructor.type = @"Invoice";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"currency";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"prices";
+            arg.type = @"Vector<LabeledPrice>";
+            [fields addObject:arg];
+        }
         constructor.params = fields;
         [TLmetaSchemeTypes addObject:constructor];
     }
@@ -7423,6 +7841,50 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"email_unconfirmed_pattern";
             arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLInputPaymentCredentials$inputPaymentCredentialsSaved
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xc10eb2cf;
+        constructor.predicate = @"inputPaymentCredentialsSaved";
+        constructor.type = @"InputPaymentCredentials";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"id";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"tmp_password";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLInputPaymentCredentials$inputPaymentCredentials
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x3417d728;
+        constructor.predicate = @"inputPaymentCredentials";
+        constructor.type = @"InputPaymentCredentials";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"data";
+            arg.type = @"DataJSON";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -8225,6 +8687,28 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLMessageAction$messageActionPaymentSent
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x40699cd0;
+        constructor.predicate = @"messageActionPaymentSent";
+        constructor.type = @"MessageAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"currency";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"total_amount";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLEmbedPostMedia$embedPostPhoto
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0xe31ee77;
@@ -8511,6 +8995,22 @@ TLScheme *TLgetMetaScheme()
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x50f41ccf;
         constructor.predicate = @"keyboardButtonGame";
+        constructor.type = @"KeyboardButton";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"text";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLKeyboardButton$keyboardButtonBuy
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xafd93fbb;
+        constructor.predicate = @"keyboardButtonBuy";
         constructor.type = @"KeyboardButton";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
         {
@@ -8899,6 +9399,46 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"status";
             arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLupload_WebFile$upload_webFile
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x21e753bc;
+        constructor.predicate = @"upload.webFile";
+        constructor.type = @"upload.WebFile";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"size";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"mime_type";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_type";
+            arg.type = @"storage.FileType";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"mtime";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"bytes";
+            arg.type = @"bytes";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -9337,6 +9877,144 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLPhoneCall$phoneCallRequested
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x83761ce4;
+        constructor.predicate = @"phoneCallRequested";
+        constructor.type = @"PhoneCall";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"id";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"access_hash";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"date";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"admin_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"participant_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"g_a_hash";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"protocol";
+            arg.type = @"PhoneCallProtocol";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLPhoneCall$phoneCallDiscardedMeta
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xc9d59add;
+        constructor.predicate = @"phoneCallDiscardedMeta";
+        constructor.type = @"PhoneCall";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"id";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"reason";
+            arg.type = @"PhoneCallDiscardReason";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"duration";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLPhoneCall$phoneCallAccepted
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x6d003d3f;
+        constructor.predicate = @"phoneCallAccepted";
+        constructor.type = @"PhoneCall";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"id";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"access_hash";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"date";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"admin_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"participant_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"g_b";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"protocol";
+            arg.type = @"PhoneCallProtocol";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLPhoneCall$phoneCall
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0xffe6ab67;
@@ -9406,92 +10084,6 @@ TLScheme *TLgetMetaScheme()
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"start_date";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        constructor.params = fields;
-        [TLmetaSchemeTypes addObject:constructor];
-    }
-    {
-        //TLPhoneCall$phoneCallRequested
-        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x6c448ae8;
-        constructor.predicate = @"phoneCallRequested";
-        constructor.type = @"PhoneCall";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"id";
-            arg.type = @"long";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"access_hash";
-            arg.type = @"long";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"date";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"admin_id";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"participant_id";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"g_a";
-            arg.type = @"bytes";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"protocol";
-            arg.type = @"PhoneCallProtocol";
-            [fields addObject:arg];
-        }
-        constructor.params = fields;
-        [TLmetaSchemeTypes addObject:constructor];
-    }
-    {
-        //TLPhoneCall$phoneCallDiscardedMeta
-        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0xc9d59add;
-        constructor.predicate = @"phoneCallDiscardedMeta";
-        constructor.type = @"PhoneCall";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"flags";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"id";
-            arg.type = @"long";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"reason";
-            arg.type = @"PhoneCallDiscardReason";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"duration";
             arg.type = @"int";
             [fields addObject:arg];
         }
@@ -10147,6 +10739,46 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"type";
             arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLPaymentRequestedInfo$paymentRequestedInfoMeta
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xeb45a08f;
+        constructor.predicate = @"paymentRequestedInfoMeta";
+        constructor.type = @"PaymentRequestedInfo";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"name";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"phone";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"email";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"shipping_address";
+            arg.type = @"PostAddress";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -11071,6 +11703,110 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLMessageMedia$messageMediaInvoiceMeta
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xb0e774bd;
+        constructor.predicate = @"messageMediaInvoiceMeta";
+        constructor.type = @"MessageMedia";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"title";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"n_description";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"photo";
+            arg.type = @"WebDocument";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"receipt_msg_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"currency";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"total_amount";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"start_param";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLWebDocument$webDocument
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xc61acbd8;
+        constructor.predicate = @"webDocument";
+        constructor.type = @"WebDocument";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"url";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"access_hash";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"size";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"mime_type";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"attributes";
+            arg.type = @"Vector<DocumentAttribute>";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"dc_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLhelp_Support$help_support
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x17c6b5f6;
@@ -11147,6 +11883,52 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"rating";
             arg.type = @"double";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLPostAddress$postAddress
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x1e8caaeb;
+        constructor.predicate = @"postAddress";
+        constructor.type = @"PostAddress";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"street_line1";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"street_line2";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"city";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"state";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"country_iso2";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"post_code";
+            arg.type = @"string";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -11339,6 +12121,38 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"state";
             arg.type = @"updates.State";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLpayments_PaymentResult$payments_paymentResult
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x4e5f810d;
+        constructor.predicate = @"payments.paymentResult";
+        constructor.type = @"payments.PaymentResult";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"updates";
+            arg.type = @"Updates";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLpayments_PaymentResult$payments_paymentVerficationNeeded
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x6b56b921;
+        constructor.predicate = @"payments.paymentVerficationNeeded";
+        constructor.type = @"payments.PaymentResult";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"url";
+            arg.type = @"string";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -12723,28 +13537,6 @@ TLScheme *TLgetMetaScheme()
         constructor.method = @"phone.getDhConfig";
         constructor.type = @"phone.DhConfig";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
-        constructor.params = fields;
-        [TLmetaSchemeMethods addObject:constructor];
-    }
-    {
-        //TLRPCphone_confirmCall$phone_confirmCall
-        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0x3e383969;
-        constructor.method = @"phone.confirmCall";
-        constructor.type = @"PhoneConnection";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"id";
-            arg.type = @"InputPhoneCall";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"a_or_b";
-            arg.type = @"bytes";
-            [fields addObject:arg];
-        }
         constructor.params = fields;
         [TLmetaSchemeMethods addObject:constructor];
     }
@@ -14349,40 +15141,6 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"limit";
             arg.type = @"int";
-            [fields addObject:arg];
-        }
-        constructor.params = fields;
-        [TLmetaSchemeMethods addObject:constructor];
-    }
-    {
-        //TLRPChelp_getAppChangelog$help_getAppChangelog
-        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0x5bab7fb2;
-        constructor.method = @"help.getAppChangelog";
-        constructor.type = @"help.AppChangelog";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"device_model";
-            arg.type = @"string";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"system_version";
-            arg.type = @"string";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"app_version";
-            arg.type = @"string";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"lang_code";
-            arg.type = @"string";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -16075,7 +16833,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLRPCphone_requestCall$phone_requestCall
         TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0xa41aa5e4;
+        constructor.n_id = (int32_t)0x5b95b3d4;
         constructor.method = @"phone.requestCall";
         constructor.type = @"phone.PhoneCall";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -16093,7 +16851,7 @@ TLScheme *TLgetMetaScheme()
         }
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"g_a";
+            arg.name = @"g_a_hash";
             arg.type = @"bytes";
             [fields addObject:arg];
         }
@@ -16109,7 +16867,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLRPCphone_acceptCall$phone_acceptCall
         TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0x220f0b20;
+        constructor.n_id = (int32_t)0x3bd2b4a0;
         constructor.method = @"phone.acceptCall";
         constructor.type = @"phone.PhoneCall";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -16123,12 +16881,6 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"g_b";
             arg.type = @"bytes";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"key_fingerprint";
-            arg.type = @"long";
             [fields addObject:arg];
         }
         {
@@ -16151,40 +16903,6 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"peer";
             arg.type = @"InputPhoneCall";
-            [fields addObject:arg];
-        }
-        constructor.params = fields;
-        [TLmetaSchemeMethods addObject:constructor];
-    }
-    {
-        //TLRPCphone_discardCall$phone_discardCall
-        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0x5dfbcddc;
-        constructor.method = @"phone.discardCall";
-        constructor.type = @"Bool";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"peer";
-            arg.type = @"InputPhoneCall";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"duration";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"reason";
-            arg.type = @"PhoneCallDiscardReason";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"connection_id";
-            arg.type = @"long";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -16317,6 +17035,286 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"peer";
             arg.type = @"InputEncryptedChat";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCphone_discardCall$phone_discardCall
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x78d413a6;
+        constructor.method = @"phone.discardCall";
+        constructor.type = @"Updates";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"peer";
+            arg.type = @"InputPhoneCall";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"duration";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"reason";
+            arg.type = @"PhoneCallDiscardReason";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"connection_id";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCphone_setCallRating$phone_setCallRating
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x1c536a34;
+        constructor.method = @"phone.setCallRating";
+        constructor.type = @"Updates";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"peer";
+            arg.type = @"InputPhoneCall";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"rating";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"comment";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCupload_getWebFile$upload_getWebFile
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x24e6818d;
+        constructor.method = @"upload.getWebFile";
+        constructor.type = @"upload.WebFile";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"location";
+            arg.type = @"InputWebFileLocation";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"offset";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"limit";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCpayments_getPaymentForm$payments_getPaymentForm
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x99f09745;
+        constructor.method = @"payments.getPaymentForm";
+        constructor.type = @"payments.PaymentForm";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"msg_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCpayments_getPaymentReceipt$payments_getPaymentReceipt
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0xa092a980;
+        constructor.method = @"payments.getPaymentReceipt";
+        constructor.type = @"payments.PaymentReceipt";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"msg_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCpayments_validateRequestedInfo$payments_validateRequestedInfo
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x770a8e74;
+        constructor.method = @"payments.validateRequestedInfo";
+        constructor.type = @"payments.ValidatedRequestedInfo";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"msg_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"info";
+            arg.type = @"PaymentRequestedInfo";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCaccount_getTmpPassword$account_getTmpPassword
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x4a82327e;
+        constructor.method = @"account.getTmpPassword";
+        constructor.type = @"account.TmpPassword";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"password_hash";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"period";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCpayments_getSavedInfo$payments_getSavedInfo
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x227d824b;
+        constructor.method = @"payments.getSavedInfo";
+        constructor.type = @"payments.SavedInfo";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCpayments_clearSavedInfo$payments_clearSavedInfo
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0xd83d70c1;
+        constructor.method = @"payments.clearSavedInfo";
+        constructor.type = @"Bool";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPChelp_getAppChangelog$help_getAppChangelog
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x9010ef6f;
+        constructor.method = @"help.getAppChangelog";
+        constructor.type = @"Updates";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"prev_app_version";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCphone_getCallConfig$phone_getCallConfig
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x55451fa9;
+        constructor.method = @"phone.getCallConfig";
+        constructor.type = @"DataJSON";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCphone_saveCallDebug$phone_saveCallDebug
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x277add7e;
+        constructor.method = @"phone.saveCallDebug";
+        constructor.type = @"Bool";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"peer";
+            arg.type = @"InputPhoneCall";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"debug";
+            arg.type = @"DataJSON";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCphone_confirmCall$phone_confirmCall
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x2efe1722;
+        constructor.method = @"phone.confirmCall";
+        constructor.type = @"phone.PhoneCall";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"peer";
+            arg.type = @"InputPhoneCall";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"g_a";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"key_fingerprint";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"protocol";
+            arg.type = @"PhoneCallProtocol";
             [fields addObject:arg];
         }
         constructor.params = fields;

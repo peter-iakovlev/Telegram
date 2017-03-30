@@ -638,6 +638,9 @@ CGAffineTransform TGVideoCropTransformForOrientation(UIImageOrientation orientat
 
 CGAffineTransform TGVideoTransformForCrop(UIImageOrientation orientation, CGSize size, bool mirrored)
 {
+    if (TGOrientationIsSideward(orientation, NULL))
+        size = CGSizeMake(size.height, size.width);
+    
     CGAffineTransform transform = CGAffineTransformMakeTranslation(size.width / 2.0f, size.height / 2.0f);
     switch (orientation)
     {

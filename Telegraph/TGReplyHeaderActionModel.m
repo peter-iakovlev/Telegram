@@ -8,6 +8,7 @@
 
 #import "TGTelegraph.h"
 #import "TGStringUtils.h"
+#import "TGCurrencyFormatter.h"
 
 @implementation TGReplyHeaderActionModel
 
@@ -165,6 +166,12 @@
             messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.PinnedMessage"), [self titleForPeer:author shortName:false]];
             break;
         }
+        case TGMessageActionPaymentSent:
+        {
+            NSString *string = [[TGCurrencyFormatter shared] formatAmount:[actionMedia.actionData[@"totalAmount"] longLongValue] currency:actionMedia.actionData[@"currency"]];
+            messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Message.PaymentSent"), string];
+            break;
+        }
         case TGMessageActionGameScore:
         {
             NSString *gameTitle = nil;
@@ -251,18 +258,12 @@
                 authorUid = ((TGUser *)author).uid;
             }
 
-            
             bool outgoing = authorUid == TGTelegraphInstance.clientUserId;
             int reason = [actionMedia.actionData[@"reason"] intValue];
             bool missed = reason == TGCallDiscardReasonMissed || reason == TGCallDiscardReasonBusy;
             
             NSString *type = TGLocalized(missed ? (outgoing ? @"Notification.CallCanceled" : @"Notification.CallMissed") : (outgoing ? @"Notification.CallOutgoing" : @"Notification.CallIncoming"));
-            
-            NSString *duration = nil;
-            if (!missed)
-                duration = [TGStringUtils stringForCallDurationSeconds:[actionMedia.actionData[@"duration"] intValue]];
-            
-            messageText = missed ? type : [NSString stringWithFormat:TGLocalized(@"Notification.CallTimeFormat"), type, duration];
+            messageText = type;
             
             break;
         }

@@ -11,6 +11,7 @@
 @synthesize shouldBeSkipped = _shouldBeSkipped;
 @synthesize parametersChanged = _parametersChanged;
 @synthesize disabled = _disabled;
+@synthesize segmented = _segmented;
 
 - (instancetype)init
 {
@@ -157,9 +158,9 @@
 
 - (NSString *)stringValue
 {
-    if ([self.value isKindOfClass:[NSNumber class]])
+    if ([self.displayValue isKindOfClass:[NSNumber class]])
     {
-        NSNumber *value = (NSNumber *)self.value;
+        NSNumber *value = (NSNumber *)self.displayValue;
         CGFloat fractValue = value.floatValue / ABS(self.maximumValue);
         if (floorf(ABS(value.floatValue)) == 0)
             return nil;

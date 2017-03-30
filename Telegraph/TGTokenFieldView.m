@@ -67,7 +67,7 @@
     _currentNumberOfLines = 1;
     
     _shadowView = [[UIView alloc] init];
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     _shadowView.frame = CGRectMake(0, self.frame.size.height, self.frame.size.width, separatorHeight);
     _shadowView.backgroundColor = TGSeparatorColor();
     _shadowView.layer.zPosition = 1;
@@ -197,7 +197,7 @@
 {
     [super setFrame:frame];
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     _shadowView.frame = CGRectMake(0.0f, frame.size.height, frame.size.width, separatorHeight);
 }
 

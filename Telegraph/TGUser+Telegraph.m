@@ -130,7 +130,7 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
 
 - (id)initWithTelegraphUserDesc:(TLUser *)user
 {
-    self = [super init];
+    self = [self init];
     if (self != nil)
     {
         int32_t uid = 0;

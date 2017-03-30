@@ -329,6 +329,7 @@
         self.trimStartValue = videoAdjustments.trimStartValue;
         self.trimEndValue = videoAdjustments.trimEndValue;
         self.sendAsGif = videoAdjustments.sendAsGif;
+        self.preset = videoAdjustments.preset;
     }
 }
 
@@ -357,7 +358,7 @@
     {
         TGVideoEditAdjustments *initialAdjustments = (TGVideoEditAdjustments *)_initialAdjustments;
         
-        return [TGVideoEditAdjustments editAdjustmentsWithOriginalSize:self.originalSize cropRect:self.cropRect cropOrientation:self.cropOrientation cropLockedAspectRatio:self.cropLockedAspectRatio cropMirrored:self.cropMirrored trimStartValue:initialAdjustments.trimStartValue trimEndValue:initialAdjustments.trimEndValue paintingData:paintingData sendAsGif:self.sendAsGif];
+        return [TGVideoEditAdjustments editAdjustmentsWithOriginalSize:self.originalSize cropRect:self.cropRect cropOrientation:self.cropOrientation cropLockedAspectRatio:self.cropLockedAspectRatio cropMirrored:self.cropMirrored trimStartValue:initialAdjustments.trimStartValue trimEndValue:initialAdjustments.trimEndValue paintingData:paintingData sendAsGif:self.sendAsGif preset:self.preset];
     }
 }
 

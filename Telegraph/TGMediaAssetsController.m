@@ -6,6 +6,7 @@
 
 #import "TGMediaAssetMomentList.h"
 
+#import "TGAppDelegate.h"
 #import "TGFileUtils.h"
 #import "TGImageUtils.h"
 #import "TGPhotoEditorUtils.h"
@@ -26,7 +27,6 @@
 
 #import "TGPhotoEditorController.h"
 
-#import "TGVideoConverter.h"
 #import "TGVideoEditAdjustments.h"
 #import "TGPaintingData.h"
 
@@ -341,7 +341,7 @@
     if (selectedItems.count == 0 && currentItem != nil)
         [selectedItems addObject:currentItem];
     
-    if (storeAssets)
+    if (TGAppDelegateInstance.saveEditedPhotos && storeAssets)
     {
         NSMutableArray *fullSizeSignals = [[NSMutableArray alloc] init];
         for (TGMediaAsset *asset in selectedItems)

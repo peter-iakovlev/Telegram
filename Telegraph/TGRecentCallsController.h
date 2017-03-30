@@ -2,8 +2,11 @@
 
 @interface TGRecentCallsController : TGViewController
 
-- (instancetype)initForSettings:(bool)settings;
+@property (nonatomic, copy) void (^missedCountChanged)(NSInteger count);
 
+- (instancetype)initWithController:(TGRecentCallsController *)controller;
 - (void)clearData;
+
+- (void)maybeSuggestEnableCallsTab:(bool)automatically;
 
 @end

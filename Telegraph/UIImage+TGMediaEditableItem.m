@@ -42,7 +42,7 @@
     }] startOn:[SQueue concurrentDefaultQueue]];
 }
 
-- (SSignal *)screenImageSignal
+- (SSignal *)screenImageSignal:(NSTimeInterval)__unused position
 {
     CGSize size = TGFitSize(self.size, TGPhotoEditorScreenImageMaxSize());
     
@@ -61,7 +61,7 @@
     }] startOn:[SQueue concurrentDefaultQueue]];
 }
 
-- (SSignal *)originalImageSignal
+- (SSignal *)originalImageSignal:(NSTimeInterval)__unused position
 {
     return [SSignal single:self];
 }

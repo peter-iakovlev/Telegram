@@ -31,6 +31,7 @@
 #import "TGStickerPacksSettingsController.h"
 
 #import "TGNetworkUsageController.h"
+#import "TGCallDataSettingsController.h"
 
 @interface TGChatSettingsController () <TGTextSizeControllerDelegate>
 {
@@ -39,6 +40,8 @@
     TGSwitchCollectionItem *_privateAutoDownloadItem;
     TGSwitchCollectionItem *_groupAutoDownloadItem;
     TGSwitchCollectionItem *_autosavePhotosItem;
+    TGSwitchCollectionItem *_saveEditedPhotosItem;
+    TGVariantCollectionItem *_useLessDataItem;
     
     TGSwitchCollectionItem *_privateAudioAutoDownloadItem;
     TGSwitchCollectionItem *_groupAudioAutoDownloadItem;
@@ -83,6 +86,9 @@
         _autosavePhotosItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.SaveIncomingPhotos") isOn:TGAppDelegateInstance.autosavePhotos];
         _autosavePhotosItem.interfaceHandle = _actionHandle;
         
+        _saveEditedPhotosItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.SaveEditedPhotos") isOn:TGAppDelegateInstance.saveEditedPhotos];
+        _saveEditedPhotosItem.interfaceHandle = _actionHandle;
+        
         _privateAudioAutoDownloadItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.PrivateChats") isOn:TGAppDelegateInstance.autoDownloadAudioInPrivateChats];
         _privateAudioAutoDownloadItem.interfaceHandle = _actionHandle;
         _groupAudioAutoDownloadItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Groups") isOn:TGAppDelegateInstance.autoDownloadAudioInGroups];
@@ -121,6 +127,15 @@
         ]];
         [self.menuSections addSection:autoDownloadAudioSection];
         
+        _useLessDataItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"CallSettings.UseLessData") action:@selector(useLessDataPressed)];
+        _useLessDataItem.variant = [self labelForCallDataMode:TGAppDelegateInstance.callsDataUsageMode];
+        
+        TGCollectionMenuSection *callsSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+            [[TGHeaderCollectionItem alloc] initWithTitle:[TGLocalized(@"Settings.CallSettings") uppercaseString]],
+            _useLessDataItem
+        ]];
+        [self.menuSections addSection:callsSection];
+        
         bool preCondition = TGIsRTL();
 #ifdef DEBUG
         preCondition = true;
@@ -152,6 +167,7 @@
         TGCollectionMenuSection *otherSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Other")],
             _autosavePhotosItem,
+            _saveEditedPhotosItem,
             _autoPlayAnimationsItem
         ]];
         otherSection.insets = (UIEdgeInsets){otherSection.insets.top - 12.0f, otherSection.insets.left, otherSection.insets.bottom, otherSection.insets.right};
@@ -213,6 +229,11 @@
             TGAppDelegateInstance.autosavePhotos = switchItem.isOn;
             [TGAppDelegateInstance saveSettings];
         }
+        else if (switchItem == _saveEditedPhotosItem)
+        {
+            TGAppDelegateInstance.saveEditedPhotos = switchItem.isOn;
+            [TGAppDelegateInstance saveSettings];
+        }
         else if (switchItem == _privateAudioAutoDownloadItem)
         {
             TGAppDelegateInstance.autoDownloadAudioInPrivateChats = switchItem.isOn;
@@ -268,6 +289,34 @@
 
 - (void)networkPressed {
     [self.navigationController pushViewController:[[TGNetworkUsageController alloc] init] animated:true];
+}
+
+- (void)useLessDataPressed
+{
+    __weak TGChatSettingsController *weakSelf = self;
+    TGCallDataSettingsController *controller = [[TGCallDataSettingsController alloc] init];
+    controller.onModeChanged = ^(int mode)
+    {
+        __strong TGChatSettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            strongSelf->_useLessDataItem.variant = [strongSelf labelForCallDataMode:mode];
+    };
+    [self.navigationController pushViewController:controller animated:true];
+}
+
+- (NSString *)labelForCallDataMode:(int)dataMode
+{
+    switch (dataMode)
+    {
+        case 1:
+            return TGLocalized(@"CallSettings.OnMobile");
+            
+        case 2:
+            return TGLocalized(@"CallSettings.Always");
+            
+        default:
+            return TGLocalized(@"CallSettings.Never");
+    }
 }
 
 @end

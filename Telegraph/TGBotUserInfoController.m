@@ -917,7 +917,7 @@ static UIView *_findBackArrow(UIView *view)
 
 - (void)shareContactPressed
 {
-    NSString *linkString = [NSString stringWithFormat:@"https://telegram.me/%@", _user.userName];
+    NSString *linkString = [NSString stringWithFormat:@"https://t.me/%@", _user.userName];
     NSString *shareString = linkString;
     if (_user.about.length > 0)
         shareString = [NSString stringWithFormat:@"%@ %@", _user.about, shareString];

@@ -38,7 +38,6 @@ typedef enum
 
 @implementation TGPhotoEditorCurvesToolView
 
-@synthesize titleChanged = _titleChanged;
 @synthesize valueChanged = _valueChanged;
 @synthesize value = _value;
 @synthesize interactionEnded = _interactionEnded;
@@ -456,11 +455,6 @@ typedef enum
         _curveLayer.path = [path CGPath];
         _curveLayer.frame = CGRectMake(actualArea.origin.x, actualArea.origin.y, actualArea.size.width, actualArea.size.height);
     }];
-}
-
-- (bool)hideTitle
-{
-    return false;
 }
 
 - (void)transitionIn

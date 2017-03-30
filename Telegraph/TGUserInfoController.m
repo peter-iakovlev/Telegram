@@ -43,6 +43,12 @@
         infoSection.insets = infoSectionInsets;
         [self.menuSections addSection:infoSection];
         
+        _callsSection = [[TGCollectionMenuSection alloc] init];
+        UIEdgeInsets callsSectionInsets = _callsSection.insets;
+        callsSectionInsets.bottom = 0.0f;
+        _callsSection.insets = callsSectionInsets;
+        [self.menuSections addSection:_callsSection];
+        
         _phonesSection = [[TGCollectionMenuSection alloc] init];
         UIEdgeInsets phonesSectionInsets = _phonesSection.insets;
         phonesSectionInsets.bottom = 0.0f;

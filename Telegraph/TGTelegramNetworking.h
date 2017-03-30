@@ -48,7 +48,8 @@ typedef enum {
     TGNetworkMediaTypeTagImage = 1,
     TGNetworkMediaTypeTagVideo = 2,
     TGNetworkMediaTypeTagAudio = 3,
-    TGNetworkMediaTypeTagDocument = 4
+    TGNetworkMediaTypeTagDocument = 4,
+    TGNetworkMediaTypeTagCall = 5
 } TGNetworkMediaTypeTag;
 
 typedef enum {
@@ -81,6 +82,11 @@ typedef enum {
     TGTelegramNetworkUsageKeyMediaDocumentOutgoingWWAN = 21,
     TGTelegramNetworkUsageKeyMediaDocumentIncomingOther = 22,
     TGTelegramNetworkUsageKeyMediaDocumentOutgoingOther = 23,
+    
+    TGTelegramNetworkUsageKeyCallIncomingWWAN = 24,
+    TGTelegramNetworkUsageKeyCallOutgoingWWAN = 25,
+    TGTelegramNetworkUsageKeyCallIncomingOther = 26,
+    TGTelegramNetworkUsageKeyCallOutgoingOther = 27,
 } TGTelegramNetworkUsageKey;
 
 @interface TGTelegramNetworking : NSObject

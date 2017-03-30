@@ -212,7 +212,7 @@ const TGLocationPlacesService TGLocationPickerPlacesProvider = TGLocationPlacesS
     
     CGFloat mapHeight = [TGLocationPickerController mapHeight];
     
-    CGFloat stripeThickness = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat stripeThickness = TGScreenPixel;
     _tableViewTopInset = mapHeight + stripeThickness;
     
     _mapClipView = [[UIView alloc] initWithFrame:CGRectMake(0, -TGLocationPickerMapClipHeight, self.view.frame.size.width, TGLocationPickerMapClipHeight)];
@@ -950,7 +950,7 @@ const TGLocationPlacesService TGLocationPickerPlacesProvider = TGLocationPlacesS
         _nearbyVenuesTableView.contentOffset = CGPointMake(0, -_nearbyVenuesTableView.contentInset.top);
         _nearbyVenuesTableView.frame = CGRectMake(_nearbyVenuesTableView.frame.origin.x, 0, _nearbyVenuesTableView.frame.size.width, _nearbyVenuesTableView.frame.size.height);
         
-        CGFloat stripeThickness = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat stripeThickness = TGScreenPixel;
         _mapViewWrapper.frame = CGRectMake(0, TGLocationPickerMapClipHeight - [TGLocationPickerController mapHeight] - stripeThickness, self.view.frame.size.width, [TGLocationPickerController mapHeight] + stripeThickness);
         _mapView.frame = CGRectMake(_mapView.frame.origin.x, (_mapViewWrapper.frame.size.height - _mapView.frame.size.height) / 2, _mapView.frame.size.width, _mapView.frame.size.height);
     };

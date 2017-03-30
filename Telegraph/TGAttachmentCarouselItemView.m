@@ -2,6 +2,7 @@
 #import "TGMenuSheetButtonItemView.h"
 #import "TGMenuSheetView.h"
 
+#import "TGAppDelegate.h"
 #import "UICollectionView+Utils.h"
 #import "TGImageUtils.h"
 #import "TGStringUtils.h"
@@ -778,7 +779,7 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
         controller.didFinishRenderingFullSizeImage = ^(UIImage *resultImage)
         {
             __strong TGAttachmentCarouselItemView *strongSelf = weakSelf;
-            if (strongSelf == nil)
+            if (strongSelf == nil || !TGAppDelegateInstance.saveEditedPhotos)
                 return;
             
             [[strongSelf->_assetsLibrary saveAssetWithImage:resultImage] startWithNext:nil];
@@ -809,14 +810,14 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
             return [editableItem thumbnailImageSignal];
         };
         
-        controller.requestOriginalScreenSizeImage = ^(id<TGMediaEditableItem> editableItem)
+        controller.requestOriginalScreenSizeImage = ^(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
         {
-            return [editableItem screenImageSignal];
+            return [editableItem screenImageSignal:position];
         };
         
-        controller.requestOriginalFullSizeImage = ^(id<TGMediaEditableItem> editableItem)
+        controller.requestOriginalFullSizeImage = ^(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
         {
-            return [editableItem originalImageSignal];
+            return [editableItem originalImageSignal:position];
         };
         
         TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:_parentController contentController:controller];

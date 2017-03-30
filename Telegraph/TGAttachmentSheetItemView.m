@@ -64,7 +64,7 @@
 {
     [super layoutSubviews];
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     CGFloat separatorInset = [self wantsFullSeparator] ? 0.0f : 15.0f;
     _topSeparatorView.frame = CGRectMake(separatorInset, 0.0f, self.frame.size.width - separatorInset, separatorHeight);
     _bottomSeparatorView.frame = CGRectMake(separatorInset, self.frame.size.height - separatorHeight, self.frame.size.width - separatorInset, separatorHeight);

@@ -5,11 +5,12 @@
 @interface TGCallEncryptionKeyView : UIView
 
 @property (nonatomic, copy) void (^backPressed)(void);
-@property (nonatomic, weak) UIView *identiconView;
+@property (nonatomic, copy) CGPoint (^emojiInitialCenter)(void);
 
-- (void)setState:(TGCallSessionState *)state duration:(NSTimeInterval)duration;
+- (void)setState:(TGCallSessionState *)state;
+- (void)setEmoji:(NSString *)emoji;
 
-- (void)present;
-- (void)dismiss;
+- (bool)present;
+- (void)dismiss:(void (^)(void))completion;
 
 @end

@@ -1,5 +1,6 @@
 #import "TGWebSearchController.h"
 
+#import "TGAppDelegate.h"
 #import "ActionStage.h"
 
 #import "TGSearchBar.h"
@@ -369,7 +370,7 @@
         _toolbarView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - 44.0f, self.view.frame.size.width, 44.0f)];
         _toolbarView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
         _toolbarView.backgroundColor = UIColorRGBA(0xf7f7f7, 1.0f);
-        UIView *stripeView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _toolbarView.frame.size.width, TGIsRetina() ? 0.5f : 1.0f)];
+        UIView *stripeView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _toolbarView.frame.size.width, TGScreenPixel)];
         stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
         stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         [_toolbarView addSubview:stripeView];
@@ -1217,20 +1218,20 @@
             if (strongSelf.avatarCompletionBlock != nil)
                 strongSelf.avatarCompletionBlock(resultImage);
             
-            if ([editorValues toolsApplied])
+            if (TGAppDelegateInstance.saveEditedPhotos && [editorValues toolsApplied])
                 [[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:resultImage] startWithNext:nil];
         };
         controller.requestThumbnailImage = ^SSignal *(id<TGMediaEditableItem> editableItem)
         {
             return [editableItem thumbnailImageSignal];
         };
-        controller.requestOriginalScreenSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem)
+        controller.requestOriginalScreenSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
         {
-            return [editableItem screenImageSignal];
+            return [editableItem screenImageSignal:position];
         };
-        controller.requestOriginalFullSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem)
+        controller.requestOriginalFullSizeImage = ^SSignal *(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
         {
-            return [editableItem originalImageSignal];
+            return [editableItem originalImageSignal:position];
         };
         
         UINavigationController *navController = self.parentNavigationController ? : self.navigationController;

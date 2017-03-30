@@ -5,7 +5,7 @@
 
 @implementation TGSendMessageSignals
 
-+ (Api62_InputPeer *)inputPeerForPeerId:(TGPeerId)peerId users:(NSArray *)users isChannel:(bool *)isChannel
++ (Api65_InputPeer *)inputPeerForPeerId:(TGPeerId)peerId users:(NSArray *)users isChannel:(bool *)isChannel
 {
     switch (peerId.namespaceId)
     {
@@ -18,9 +18,9 @@
                     TGUserModel *user = (TGUserModel *)model;
                     
                     if (user.accessHash == -1)
-                        return [Api62_InputPeer inputPeerSelf];
+                        return [Api65_InputPeer inputPeerSelf];
                     else
-                        return [Api62_InputPeer inputPeerUserWithUserId:@(user.userId) accessHash:@(user.accessHash)];
+                        return [Api65_InputPeer inputPeerUserWithUserId:@(user.userId) accessHash:@(user.accessHash)];
                 }
             }
         }
@@ -28,7 +28,7 @@
             
         case TGPeerIdGroup:
         {
-            return [Api62_InputPeer inputPeerChatWithChatId:@(peerId.peerId)];
+            return [Api65_InputPeer inputPeerChatWithChatId:@(peerId.peerId)];
         }
             break;
             
@@ -42,7 +42,7 @@
                     if (isChannel != NULL)
                         *isChannel = !channel.isGroup;
                     
-                    return [Api62_InputPeer inputPeerChannelWithChannelId:@(channel.peerId.peerId) accessHash:@(channel.accessHash)];
+                    return [Api65_InputPeer inputPeerChannelWithChannelId:@(channel.peerId.peerId) accessHash:@(channel.accessHash)];
                 }
             }
         }
@@ -57,7 +57,7 @@
 + (SSignal *)sendTextMessageWithContext:(TGShareContext *)context peerId:(TGPeerId)peerId users:(NSArray *)users text:(NSString *)text
 {
     bool isChannel = false;
-    Api62_InputPeer *inputPeer = [self inputPeerForPeerId:peerId users:users isChannel:&isChannel];
+    Api65_InputPeer *inputPeer = [self inputPeerForPeerId:peerId users:users isChannel:&isChannel];
     if (inputPeer == nil)
         return [SSignal fail:nil];
     
@@ -68,13 +68,13 @@
         flags |= 16;
     flags |= (1 << 6);
     
-    return [context function:[Api62 messages_sendMessageWithFlags:@(flags) peer:inputPeer replyToMsgId:@(0) message:text randomId:@(randomId) replyMarkup:nil entities:@[]]];
+    return [context function:[Api65 messages_sendMessageWithFlags:@(flags) peer:inputPeer replyToMsgId:@(0) message:text randomId:@(randomId) replyMarkup:nil entities:@[]]];
 }
 
-+ (SSignal *)sendMediaWithContext:(TGShareContext *)context peerId:(TGPeerId)peerId users:(NSArray *)users inputMedia:(Api62_InputMedia *)inputMedia
++ (SSignal *)sendMediaWithContext:(TGShareContext *)context peerId:(TGPeerId)peerId users:(NSArray *)users inputMedia:(Api65_InputMedia *)inputMedia
 {
     bool isChannel = false;
-    Api62_InputPeer *inputPeer = [self inputPeerForPeerId:peerId users:users isChannel:&isChannel];
+    Api65_InputPeer *inputPeer = [self inputPeerForPeerId:peerId users:users isChannel:&isChannel];
     if (inputPeer == nil)
         return [SSignal fail:nil];
     
@@ -85,7 +85,7 @@
         flags |= 16;
     flags |= (1 << 6);
     
-    return [context function:[Api62 messages_sendMediaWithFlags:@(flags) peer:inputPeer replyToMsgId:@(0) media:inputMedia randomId:@(randomId) replyMarkup:nil]];
+    return [context function:[Api65 messages_sendMediaWithFlags:@(flags) peer:inputPeer replyToMsgId:@(0) media:inputMedia randomId:@(randomId) replyMarkup:nil]];
 }
 
 @end

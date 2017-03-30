@@ -110,9 +110,9 @@
                 return [[TGDatabaseInstance() modify:^id{
                     [TGDatabaseInstance() updateCachedUserData:user.uid block:^TGCachedUserData *(TGCachedUserData *data) {
                         if (data == nil) {
-                            return [[TGCachedUserData alloc] initWithAbout:result.about groupsInCommonCount:result.common_chats_count groupsInCommon:nil supportsCalls:result.flags & (1 << 4)];
+                            return [[TGCachedUserData alloc] initWithAbout:result.about groupsInCommonCount:result.common_chats_count groupsInCommon:nil supportsCalls:result.flags & (1 << 4) callsPrivate:result.flags & (1 << 5)];
                         } else {
-                            return [[[data updateAbout:result.about] updateGroupsInCommonCount:result.common_chats_count] updateSupportsCalls:result.flags & (1 << 4)];
+                            return [[[[data updateAbout:result.about] updateGroupsInCommonCount:result.common_chats_count] updateSupportsCalls:result.flags & (1 << 4)] updateCallsPrivate:result.flags & (1 << 5)];
                         }
                     }];
                     
@@ -146,7 +146,7 @@
                 return [[TGDatabaseInstance() modify:^id{
                     [TGDatabaseInstance() updateCachedUserData:user.uid block:^TGCachedUserData *(TGCachedUserData *data) {
                         if (data == nil) {
-                            return [[TGCachedUserData alloc] initWithAbout:nil groupsInCommonCount:(int32_t)conversations.count groupsInCommon:[[TGCachedUserGroupsInCommon alloc] initWithGroups:conversations] supportsCalls:false];
+                            return [[TGCachedUserData alloc] initWithAbout:nil groupsInCommonCount:(int32_t)conversations.count groupsInCommon:[[TGCachedUserGroupsInCommon alloc] initWithGroups:conversations] supportsCalls:false callsPrivate:false];
                         } else {
                             return [[data updateGroupsInCommon:[[TGCachedUserGroupsInCommon alloc] initWithGroups:conversations]] updateGroupsInCommonCount:(int32_t)conversations.count];
                         }

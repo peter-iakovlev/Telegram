@@ -25,11 +25,7 @@
     UIView *_portraitToolsWrapperView;
     UIView *_landscapeToolsWrapperView;
     
-    UILabel *_portraitTitleLabel;
-    UILabel *_landscapeTitleLabel;
-    
     UIView <TGPhotoEditorToolView> *_toolAreaView;
-    
     UIView <TGPhotoEditorToolView> *_portraitToolControlView;
     UIView <TGPhotoEditorToolView> *_landscapeToolControlView;
     
@@ -173,28 +169,6 @@
         [_landscapeToolsWrapperView addSubview:_landscapeToolControlView];
     }
     
-    bool hideTitle = _portraitToolControlView.hideTitle;
-    
-    _portraitTitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 8, 160, 20)];
-    _portraitTitleLabel.backgroundColor = [UIColor clearColor];
-    _portraitTitleLabel.font = [TGPhotoEditorInterfaceAssets editorItemTitleFont];
-    _portraitTitleLabel.text = [_editorItem.title uppercaseString];
-    _portraitTitleLabel.textAlignment = NSTextAlignmentCenter;
-    _portraitTitleLabel.textColor = [TGPhotoEditorInterfaceAssets editorItemTitleColor];
-    _portraitTitleLabel.userInteractionEnabled = false;
-    _portraitTitleLabel.hidden = hideTitle;
-    [_portraitToolsWrapperView addSubview:_portraitTitleLabel];
-
-    _landscapeTitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, _portraitToolsWrapperView.frame.size.width, 20)];
-    _landscapeTitleLabel.backgroundColor = [UIColor clearColor];
-    _landscapeTitleLabel.font = [TGPhotoEditorInterfaceAssets editorItemTitleFont];
-    _landscapeTitleLabel.text = [_editorItem.title uppercaseString];
-    _landscapeTitleLabel.textAlignment = NSTextAlignmentCenter;
-    _landscapeTitleLabel.textColor = [TGPhotoEditorInterfaceAssets editorItemTitleColor];
-    _landscapeTitleLabel.userInteractionEnabled = false;
-    _landscapeTitleLabel.hidden = hideTitle;
-    [_landscapeToolsWrapperView addSubview:_landscapeTitleLabel];
-    
     void(^cancelPressed)(void) = ^
     {
         __strong TGPhotoEditorItemController *strongSelf = weakSelf;
@@ -249,24 +223,6 @@
             [strongSelf removeFromParentViewController];
             [strongSelf.view removeFromSuperview];
         }];
-    };
-    
-    _portraitToolControlView.titleChanged = ^(NSString *title)
-    {
-        __strong TGPhotoEditorItemController *strongSelf = weakSelf;
-        if (strongSelf == nil)
-            return;
-        
-        [strongSelf setToolTitle:title];
-    };
-
-    _landscapeToolControlView.titleChanged = ^(NSString *title)
-    {
-        __strong TGPhotoEditorItemController *strongSelf = weakSelf;
-        if (strongSelf == nil)
-            return;
-        
-        [strongSelf setToolTitle:title];
     };
     
     NSString *cancelButton = TGLocalized(@"Common.Cancel");
@@ -379,26 +335,6 @@
 - (bool)navigationBarShouldBeHidden
 {
     return true;
-}
-
-- (void)setToolTitle:(NSString *)title
-{
-    if (UIInterfaceOrientationIsPortrait(self.interfaceOrientation) || [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
-    {
-        [UIView transitionWithView:_portraitTitleLabel duration:0.2f options:UIViewAnimationOptionTransitionCrossDissolve animations:^
-        {
-            _portraitTitleLabel.text = title;
-        } completion:nil];
-        _landscapeTitleLabel.text = title;
-    }
-    else
-    {
-        [UIView transitionWithView:_landscapeTitleLabel duration:0.2f options:UIViewAnimationOptionTransitionCrossDissolve animations:^
-        {
-            _landscapeTitleLabel.text = title;
-        } completion:nil];
-        _portraitTitleLabel.text = title;
-    }
 }
 
 - (void)_applyDefaultEnhanceIfNeeded
@@ -686,9 +622,6 @@
             {
                 _landscapeToolsWrapperView.frame = CGRectMake(0, (screenSide - referenceSize.height) / 2, panelToolbarLandscapeSize, _landscapeToolsWrapperView.frame.size.height);
                 _landscapeToolControlView.frame = CGRectMake(panelToolbarLandscapeSize - TGPhotoEditorPanelSize, 0, TGPhotoEditorPanelSize, _landscapeToolsWrapperView.frame.size.height);
-                 
-                _landscapeTitleLabel.transform = CGAffineTransformMakeRotation((CGFloat)M_PI_2);
-                _landscapeTitleLabel.frame = CGRectMake(_landscapeToolsWrapperView.frame.size.width - 28, 0, 20, _landscapeToolsWrapperView.frame.size.height);
                 
                 if (!_dismissing)
                     _landscapeButtonsView.frame = CGRectMake(0, 0, [_landscapeButtonsView landscapeSize], referenceSize.height);
@@ -697,8 +630,7 @@
             _landscapeToolsWrapperView.frame = CGRectMake((screenSide - referenceSize.width) / 2, (screenSide - referenceSize.height) / 2, panelToolbarLandscapeSize, referenceSize.height);
             
             _landscapeToolControlView.frame = CGRectMake(panelToolbarLandscapeSize - TGPhotoEditorPanelSize, 0, TGPhotoEditorPanelSize, _landscapeToolsWrapperView.frame.size.height);
-            _landscapeTitleLabel.frame = CGRectMake(_landscapeToolsWrapperView.frame.size.width - 28, 0, 20, _landscapeToolsWrapperView.frame.size.height);
-            
+
             _portraitToolsWrapperView.frame = CGRectMake((screenSide - referenceSize.width) / 2, screenSide - panelToolbarPortraitSize, referenceSize.width, panelToolbarPortraitSize);
         }
             break;
@@ -709,9 +641,6 @@
             {
                 _landscapeToolsWrapperView.frame = CGRectMake(screenSide - panelToolbarLandscapeSize, (screenSide - referenceSize.height) / 2, panelToolbarLandscapeSize, _landscapeToolsWrapperView.frame.size.height);
                 _landscapeToolControlView.frame = CGRectMake(0, 0, TGPhotoEditorPanelSize, _landscapeToolsWrapperView.frame.size.height);
-                 
-                _landscapeTitleLabel.transform = CGAffineTransformMakeRotation((CGFloat)-M_PI_2);
-                _landscapeTitleLabel.frame = CGRectMake(8, 0, 20, _landscapeToolsWrapperView.frame.size.height);
                 
                 if (!_dismissing)
                     _landscapeButtonsView.frame = CGRectMake(panelToolbarLandscapeSize - [_landscapeButtonsView landscapeSize], 0, [_landscapeButtonsView landscapeSize], referenceSize.height);
@@ -720,8 +649,7 @@
             _landscapeToolsWrapperView.frame = CGRectMake((screenSide + referenceSize.width) / 2 - panelToolbarLandscapeSize, (screenSide - referenceSize.height) / 2, panelToolbarLandscapeSize, referenceSize.height);
             
             _landscapeToolControlView.frame = CGRectMake(0, 0, TGPhotoEditorPanelSize, _landscapeToolsWrapperView.frame.size.height);
-            _landscapeTitleLabel.frame = CGRectMake(8, 0, 20, _landscapeToolsWrapperView.frame.size.height);
-            
+
             _portraitToolsWrapperView.frame = CGRectMake((screenSide - referenceSize.width) / 2, screenSide - panelToolbarPortraitSize, referenceSize.width, panelToolbarPortraitSize);
         }
             break;
@@ -744,8 +672,6 @@
         }
             break;
     }
-    
-    _portraitTitleLabel.frame = CGRectMake((_portraitToolsWrapperView.frame.size.width - _portraitTitleLabel.frame.size.width) / 2, _portraitTitleLabel.frame.origin.y, _portraitTitleLabel.frame.size.width, _portraitTitleLabel.frame.size.height);
     
     PGPhotoEditor *photoEditor = self.photoEditor;
     TGPhotoEditorPreviewView *previewView = self.previewView;

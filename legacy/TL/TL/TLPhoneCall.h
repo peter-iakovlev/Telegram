@@ -4,8 +4,8 @@
 #import "TLMetaRpc.h"
 
 @class TLPhoneCallProtocol;
-@class TLPhoneConnection;
 @class TLPhoneCallDiscardReason;
+@class TLPhoneConnection;
 
 @interface TLPhoneCall : NSObject <TLObject>
 
@@ -30,6 +30,36 @@
 
 @end
 
+@interface TLPhoneCall$phoneCallRequested : TLPhoneCall
+
+@property (nonatomic) int64_t access_hash;
+@property (nonatomic) int32_t date;
+@property (nonatomic) int32_t admin_id;
+@property (nonatomic) int32_t participant_id;
+@property (nonatomic, retain) NSData *g_a_hash;
+@property (nonatomic, retain) TLPhoneCallProtocol *protocol;
+
+@end
+
+@interface TLPhoneCall$phoneCallDiscardedMeta : TLPhoneCall
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic, retain) TLPhoneCallDiscardReason *reason;
+@property (nonatomic) int32_t duration;
+
+@end
+
+@interface TLPhoneCall$phoneCallAccepted : TLPhoneCall
+
+@property (nonatomic) int64_t access_hash;
+@property (nonatomic) int32_t date;
+@property (nonatomic) int32_t admin_id;
+@property (nonatomic) int32_t participant_id;
+@property (nonatomic, retain) NSData *g_b;
+@property (nonatomic, retain) TLPhoneCallProtocol *protocol;
+
+@end
+
 @interface TLPhoneCall$phoneCall : TLPhoneCall
 
 @property (nonatomic) int64_t access_hash;
@@ -42,25 +72,6 @@
 @property (nonatomic, retain) TLPhoneConnection *connection;
 @property (nonatomic, retain) NSArray *alternative_connections;
 @property (nonatomic) int32_t start_date;
-
-@end
-
-@interface TLPhoneCall$phoneCallRequested : TLPhoneCall
-
-@property (nonatomic) int64_t access_hash;
-@property (nonatomic) int32_t date;
-@property (nonatomic) int32_t admin_id;
-@property (nonatomic) int32_t participant_id;
-@property (nonatomic, retain) NSData *g_a;
-@property (nonatomic, retain) TLPhoneCallProtocol *protocol;
-
-@end
-
-@interface TLPhoneCall$phoneCallDiscardedMeta : TLPhoneCall
-
-@property (nonatomic) int32_t flags;
-@property (nonatomic, retain) TLPhoneCallDiscardReason *reason;
-@property (nonatomic) int32_t duration;
 
 @end
 

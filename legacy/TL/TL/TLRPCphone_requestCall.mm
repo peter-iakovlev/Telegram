@@ -56,7 +56,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xa41aa5e4;
+    return (int32_t)0x5b95b3d4;
 }
 
 - (int32_t)TLconstructorName
@@ -69,7 +69,7 @@
     TLRPCphone_requestCall$phone_requestCall *object = [[TLRPCphone_requestCall$phone_requestCall alloc] init];
     object.user_id = metaObject->getObject((int32_t)0xafdf4073);
     object.random_id = metaObject->getInt32((int32_t)0xca5a160a);
-    object.g_a = metaObject->getBytes((int32_t)0xa6887fe5);
+    object.g_a_hash = metaObject->getBytes((int32_t)0xb39b1140);
     object.protocol = metaObject->getObject((int32_t)0xd45aa5f2);
     return object;
 }
@@ -91,8 +91,8 @@
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypeBytes;
-        value.nativeObject = self.g_a;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xa6887fe5, value));
+        value.nativeObject = self.g_a_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xb39b1140, value));
     }
     {
         TLConstructedValue value;

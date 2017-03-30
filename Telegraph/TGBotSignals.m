@@ -59,6 +59,12 @@
 #import "TLRPCmessages_getBotCallbackAnswer.h"
 #import "TLRPCmessages_sendMedia_manual.h"
 
+#import "TLpayments_PaymentForm$payments_paymentForm.h"
+#import "TLInvoice$invoice.h"
+#import "TLpayments_SavedInfo$payments_savedInfo.h"
+#import "TLPaymentRequestedInfo$paymentRequestedInfo.h"
+#import "TLPayments_sendPaymentForm.h"
+
 @implementation TGBotSignals
 
 + (TGBotInfo *)botInfoForInfo:(TLBotInfo *)info
@@ -90,7 +96,7 @@
             NSMutableArray *buttons = [[NSMutableArray alloc] init];
             for (TLKeyboardButton *button in rowInfo.buttons)
             {
-                id<PSCoding> action = nil;
+                id<NSCoding, PSCoding> action = nil;
                 
                 if ([button isKindOfClass:[TLKeyboardButton$keyboardButtonUrl class]]) {
                     action = [[TGBotReplyMarkupButtonActionUrl alloc] initWithUrl:((TLKeyboardButton$keyboardButtonUrl *)button).url];
@@ -105,6 +111,9 @@
                 } else if ([button isKindOfClass:[TLKeyboardButton$keyboardButtonGame class]]) {
                     TLKeyboardButton$keyboardButtonGame *gameButton = (TLKeyboardButton$keyboardButtonGame *)button;
                     action = [[TGBotReplyMarkupButtonActionGame alloc] initWithText:gameButton.text];
+                } else if ([button isKindOfClass:[TLKeyboardButton$keyboardButtonBuy class]]) {
+                    TLKeyboardButton$keyboardButtonBuy *purchaseButton = (TLKeyboardButton$keyboardButtonBuy *)button;
+                    action = [[TGBotReplyMarkupButtonActionPurchase alloc] initWithText:purchaseButton.text];
                 }
                 
                 [buttons addObject:[[TGBotReplyMarkupButton alloc] initWithText:button.text action:action]];
@@ -126,7 +135,7 @@
             NSMutableArray *buttons = [[NSMutableArray alloc] init];
             for (TLKeyboardButton *button in rowInfo.buttons)
             {
-                id<PSCoding> action = nil;
+                id<NSCoding, PSCoding> action = nil;
                 
                 if ([button isKindOfClass:[TLKeyboardButton$keyboardButtonUrl class]]) {
                     action = [[TGBotReplyMarkupButtonActionUrl alloc] initWithUrl:((TLKeyboardButton$keyboardButtonUrl *)button).url];
@@ -141,6 +150,9 @@
                 } else if ([button isKindOfClass:[TLKeyboardButton$keyboardButtonGame class]]) {
                     TLKeyboardButton$keyboardButtonGame *gameButton = (TLKeyboardButton$keyboardButtonGame *)button;
                     action = [[TGBotReplyMarkupButtonActionGame alloc] initWithText:gameButton.text];
+                } else if ([button isKindOfClass:[TLKeyboardButton$keyboardButtonBuy class]]) {
+                    TLKeyboardButton$keyboardButtonBuy *purchaseButton = (TLKeyboardButton$keyboardButtonBuy *)button;
+                    action = [[TGBotReplyMarkupButtonActionPurchase alloc] initWithText:purchaseButton.text];
                 }
                 
                 [buttons addObject:[[TGBotReplyMarkupButton alloc] initWithText:button.text action:action]];
@@ -713,6 +725,177 @@
                 [[TGTelegramNetworking instance] addUpdates:updates];
                 return [SSignal complete];
             }];
+        }
+    }];
+}
+
++ (TGInvoice *)invoiceWithDesc:(TLInvoice$invoice *)invoiceDesc {
+    NSMutableArray<TGInvoicePrice *> *amounts = [[NSMutableArray alloc] init];
+    for (TLLabeledPrice *amount in invoiceDesc.prices) {
+        [amounts addObject:[[TGInvoicePrice alloc] initWithLabel:amount.label amount:amount.amount]];
+    }
+    
+    return [[TGInvoice alloc] initWithIsTest:invoiceDesc.test nameRequested:invoiceDesc.name_requested phoneRequested:invoiceDesc.phone_requested emailRequested:invoiceDesc.email_requested shippingAddressRequested:invoiceDesc.shipping_address_requested flexible:invoiceDesc.flexible currency:invoiceDesc.currency prices:amounts];
+}
+
++ (TGPaymentRequestedInfo *)requestedInfoWithDesc:(TLPaymentRequestedInfo$paymentRequestedInfo *)savedInfoDesc {
+    TGPostAddress *shippingAddress = nil;
+    if (savedInfoDesc.shipping_address != nil) {
+        TLPostAddress *postAddress = savedInfoDesc.shipping_address;
+        shippingAddress = [[TGPostAddress alloc] initWithStreetLine1:postAddress.street_line1 streetLine2:postAddress.street_line2 city:postAddress.city state:postAddress.state countryIso2:postAddress.country_iso2 postCode:postAddress.post_code];
+    }
+    
+    return [[TGPaymentRequestedInfo alloc] initWithName:savedInfoDesc.name phone:savedInfoDesc.phone email:savedInfoDesc.email shippingAddress:shippingAddress];
+}
+
++ (SSignal *)paymentForm:(int32_t)messageId {
+    TLRPCpayments_getPaymentForm$payments_getPaymentForm *getPaymentForm = [[TLRPCpayments_getPaymentForm$payments_getPaymentForm alloc] init];
+    getPaymentForm.msg_id = messageId;
+    return [[[TGTelegramNetworking instance] requestSignal:getPaymentForm] map:^id(TLpayments_PaymentForm$payments_paymentForm *result) {
+        TGInvoice *invoice = [self invoiceWithDesc:(TLInvoice$invoice *)result.invoice];
+        
+        TGPaymentRequestedInfo *savedInfo = [self requestedInfoWithDesc:(TLPaymentRequestedInfo$paymentRequestedInfo *)result.saved_info];
+        
+        TGPaymentSavedCredentialsCard *savedCredentials = nil;
+        if (result.saved_credentials != nil) {
+            TLPaymentSavedCredentials *credentials = result.saved_credentials;
+            savedCredentials = [[TGPaymentSavedCredentialsCard alloc] initWithCardId:credentials.n_id title:credentials.title];
+        }
+        
+        return [[TGPaymentForm alloc] initWithCanSaveCredentials:result.can_save_credentials passwordMissing:result.password_missing botId:result.bot_id url:result.url invoice:invoice providerId:result.provider_id nativeProvider:result.native_provider nativeParams:result.native_params.data savedInfo:savedInfo savedCredentials:savedCredentials];
+    }];
+}
+
++ (SSignal *)paymentReceipt:(int32_t)messageId {
+    TLRPCpayments_getPaymentReceipt$payments_getPaymentReceipt *getPaymentReceipt = [[TLRPCpayments_getPaymentReceipt$payments_getPaymentReceipt alloc] init];
+    getPaymentReceipt.msg_id = messageId;
+    return [[[TGTelegramNetworking instance] requestSignal:getPaymentReceipt] map:^id(TLpayments_PaymentReceipt$payments_paymentReceiptMeta *result) {
+        TGInvoice *invoice = [self invoiceWithDesc:(TLInvoice$invoice *)result.invoice];
+        TGPaymentRequestedInfo *info = result.info != nil ? [self requestedInfoWithDesc:(TLPaymentRequestedInfo$paymentRequestedInfo *)result.info] : nil;
+        TGShippingOption *shippingOption = result.shipping != nil ? [self shippingOptionWithDesc:result.shipping] : nil;
+        
+        return [[TGPaymentReceipt alloc] initWithDate:result.date botId:result.bot_id invoice:invoice providerId:result.provider_id info:info shippingOption:shippingOption currency:result.currency totalAmount:result.total_amount credentialsTitle:result.credentials_title];
+    }];
+}
+
++ (TLPaymentRequestedInfo$paymentRequestedInfo *)paymentInfoFromInfo:(TGPaymentRequestedInfo *)info {
+    TLPaymentRequestedInfo$paymentRequestedInfo *requestedInfo = [[TLPaymentRequestedInfo$paymentRequestedInfo alloc] init];
+    if (info.name != nil) {
+        requestedInfo.flags |= (1 << 0);
+        requestedInfo.name = info.name;
+    }
+    if (info.phone != nil) {
+        requestedInfo.flags |= (1 << 1);
+        requestedInfo.phone = info.phone;
+    }
+    if (info.email != nil) {
+        requestedInfo.flags |= (1 << 2);
+        requestedInfo.email = info.email;
+    }
+    if (info.shippingAddress != nil) {
+        requestedInfo.flags |= (1 << 3);
+        
+        TLPostAddress$postAddress *postAddress = [[TLPostAddress$postAddress alloc] init];
+        postAddress.street_line1 = info.shippingAddress.streetLine1;
+        postAddress.street_line2 = info.shippingAddress.streetLine2;
+        postAddress.city = info.shippingAddress.city;
+        postAddress.state = info.shippingAddress.state;
+        postAddress.country_iso2 = info.shippingAddress.countryIso2;
+        postAddress.post_code = info.shippingAddress.postCode;
+        requestedInfo.shipping_address = postAddress;
+    }
+
+    return requestedInfo;
+}
+            
++ (TGShippingOption *)shippingOptionWithDesc:(TLShippingOption *)option {
+    NSMutableArray *prices = [[NSMutableArray alloc] init];
+    for (TLLabeledPrice *price in option.prices) {
+        [prices addObject:[[TGInvoicePrice alloc] initWithLabel:price.label amount:price.amount]];
+    }
+    return [[TGShippingOption alloc] initWithOptionId:option.n_id title:option.title prices:prices];
+}
+
++ (SSignal *)validateRequestedPaymentInfo:(int32_t)messageId info:(TGPaymentRequestedInfo *)info saveInfo:(bool)saveInfo {
+    TLRPCpayments_validateRequestedInfo$payments_validateRequestedInfo *validateInfo = [[TLRPCpayments_validateRequestedInfo$payments_validateRequestedInfo alloc] init];
+    if (saveInfo) {
+        validateInfo.flags |= (1 << 0);
+    }
+    validateInfo.msg_id = messageId;
+    
+    validateInfo.info = [self paymentInfoFromInfo:info];
+    
+    SSignal *clearInfo = [SSignal single:@true];
+    if (!saveInfo) {
+        TLRPCpayments_clearSavedInfo$payments_clearSavedInfo *clearSavedInfo = [[TLRPCpayments_clearSavedInfo$payments_clearSavedInfo alloc] init];
+        clearSavedInfo.flags = (1 << 1);
+        clearInfo = [[TGTelegramNetworking instance] requestSignal:clearSavedInfo];
+    }
+    
+    return [[SSignal combineSignals:@[clearInfo, [[TGTelegramNetworking instance] requestSignal:validateInfo]]] map:^id(NSArray *combined) {
+        TLpayments_ValidatedRequestedInfo *result = combined[1];
+        NSMutableArray *shippingOptions = [[NSMutableArray alloc] init];
+        for (TLShippingOption *option in result.shipping_options) {
+            TGShippingOption *parsedOption = [self shippingOptionWithDesc:option];
+            [shippingOptions addObject:parsedOption];
+        }
+        return [[TGValidatedRequestedInfo alloc] initWithInfoId:result.n_id shippingOptions:shippingOptions];
+    }];
+}
+
+//payments.sendPaymentForm flags:# msg_id:int requested_info_id:flags.0?string shipping_option_id:flags.1?string credentials:InputPaymentCredentials = payments.PaymentResult;
++ (SSignal *)sendPayment:(int32_t)messageId infoId:(NSString *)infoId shippingOptionId:(NSString *)shippingOptionId credentials:(id)credentials {
+    TLPayments_sendPaymentForm *sendPaymentForm = [[TLPayments_sendPaymentForm alloc] init];
+    
+    sendPaymentForm.msg_id = messageId;
+    if (infoId != nil) {
+        sendPaymentForm.flags |= (1 << 0);
+        sendPaymentForm.requested_info_id = infoId;
+    }
+    if (shippingOptionId != nil) {
+        sendPaymentForm.flags |= (1 << 1);
+        sendPaymentForm.shipping_option_id = shippingOptionId;
+    }
+    
+    if ([credentials isKindOfClass:[TGPaymentCredentialsSaved class]]) {
+        TGPaymentCredentialsSaved *concreteCredentials = credentials;
+        TLInputPaymentCredentials$inputPaymentCredentialsSaved *savedCredentials = [[TLInputPaymentCredentials$inputPaymentCredentialsSaved alloc] init];
+        savedCredentials.n_id = concreteCredentials.cardId;
+        savedCredentials.tmp_password = concreteCredentials.tmpPassword;
+        sendPaymentForm.credentials = savedCredentials;
+    } else if ([credentials isKindOfClass:[TGPaymentCredentialsStripeToken class]]) {
+        TGPaymentCredentialsStripeToken *concreteCredentials = credentials;
+        TLInputPaymentCredentials$inputPaymentCredentials *newCredentials = [[TLInputPaymentCredentials$inputPaymentCredentials alloc] init];
+        TLDataJSON$dataJSON *dataJson = [[TLDataJSON$dataJSON alloc] init];
+        dataJson.data = [NSString stringWithFormat:@"{\"type\": \"card\", \"id\": \"%@\"}", concreteCredentials.tokenId];
+        newCredentials.data = dataJson;
+        if (concreteCredentials.saveCredentials) {
+            newCredentials.flags |= (1 << 0);
+        }
+        sendPaymentForm.credentials = newCredentials;
+    } else if ([credentials isKindOfClass:[TGPaymentCredentialsWebToken class]]) {
+        TGPaymentCredentialsWebToken *concreteCredentials = credentials;
+        TLInputPaymentCredentials$inputPaymentCredentials *newCredentials = [[TLInputPaymentCredentials$inputPaymentCredentials alloc] init];
+        TLDataJSON$dataJSON *dataJson = [[TLDataJSON$dataJSON alloc] init];
+        dataJson.data = concreteCredentials.data;
+        newCredentials.data = dataJson;
+        if (concreteCredentials.saveCredentials) {
+            newCredentials.flags |= (1 << 0);
+        }
+        sendPaymentForm.credentials = newCredentials;
+    } else {
+        return [SSignal fail:nil];
+    }
+    
+    return [[[TGTelegramNetworking instance] requestSignal:sendPaymentForm] map:^id(TLpayments_PaymentResult *result) {
+        if ([result isKindOfClass:[TLpayments_PaymentResult$payments_paymentResult class]]) {
+            [[TGTelegramNetworking instance] addUpdates:((TLpayments_PaymentResult$payments_paymentResult *)result).updates];
+            return nil;
+        } else if ([result isKindOfClass:[TLpayments_PaymentResult$payments_paymentVerficationNeeded class]]) {
+            return ((TLpayments_PaymentResult$payments_paymentVerficationNeeded *)result).url;
+        } else {
+            NSAssert(false, @"unexpected payment result");
+            return nil;
         }
     }];
 }

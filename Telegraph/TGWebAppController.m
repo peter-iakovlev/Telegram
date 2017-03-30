@@ -118,7 +118,7 @@
     NSString *fixedSharedLink = nil;
     
     if (shareGameData.shareName != nil) {
-        fixedSharedLink = [NSString stringWithFormat:@"https://telegram.me/%@?game=%@", shareGameData.botName, shareGameData.shareName];
+        fixedSharedLink = [NSString stringWithFormat:@"https://t.me/%@?game=%@", shareGameData.botName, shareGameData.shareName];
     }
     
     //__weak TGWebAppController *weakSelf = self;
@@ -289,8 +289,6 @@
 }
 
 - (void)userContentControllerDidReceiveScriptMessage:(WKScriptMessage *)message {
-    TGLog(@"received message %@", message.body);
-    
     if ([message.body respondsToSelector:@selector(objectForKey:)]) {
         NSString *eventName = [message.body objectForKey:@"eventName"];
         if ([eventName isEqual:@"share_game"] || [eventName isEqual:@"share_score"]) {

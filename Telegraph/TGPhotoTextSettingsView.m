@@ -223,7 +223,7 @@ const CGFloat TGPhotoTextSettingsItemHeight = 44.0f;
             break;
     }
 
-    CGFloat thickness = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat thickness = TGScreenPixel;
     
     [_fontViews enumerateObjectsUsingBlock:^(TGModernButton *view, NSUInteger index, __unused BOOL *stop)
     {

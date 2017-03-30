@@ -64,15 +64,15 @@ UIImage *TGScaleAndRoundCornersWithOffsetAndFlags(UIImage *image, CGSize size, C
     if (CGSizeEqualToSize(imageSize, CGSizeZero))
         imageSize = size;
     
-    float scale = 1.0f;
+    CGFloat scale = 1.0f;
     if (isRetina())
     {
-        scale = 2.0f;
-        size.width *= 2;
-        size.height *= 2;
-        imageSize.width *= 2;
-        imageSize.height *= 2;
-        radius *= 2;
+        scale = TGScreenScaling(); //2.0f;
+        size.width *= scale;
+        size.height *= scale;
+        imageSize.width *= scale;
+        imageSize.height *= scale;
+        radius *= scale;
     }
     
     UIGraphicsBeginImageContextWithOptions(imageSize, opaque, 1.0f);
@@ -941,6 +941,7 @@ CGSize TGScaleToFit(CGSize size, CGSize boundsSize)
 }
 
 CGFloat TGRetinaPixel = 0.5f;
+CGFloat TGScreenPixel = 0.5f;
 
 CGFloat TGRetinaFloor(CGFloat value)
 {
@@ -973,6 +974,7 @@ bool TGIsRetina()
         initialized = true;
         
         TGRetinaPixel = value ? 0.5f : 0.0f;
+        TGScreenPixel = 1.0f / [[UIScreen mainScreen] scale];
     }
     return value;
 }
@@ -989,6 +991,24 @@ CGFloat TGScreenScaling()
     
     return value;
 }
+
+CGFloat TGSeparatorHeight()
+{
+    static CGFloat value = 1.0f;
+    
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        CGFloat scale = TGScreenScaling();
+        if (fabs(scale - 2.0f) < FLT_EPSILON)
+            value = 0.5f;
+        else if (fabs(scale - 3.0f) < FLT_EPSILON)
+            value = 0.33f;
+    });
+    
+    return value;
+}
+
 
 bool TGIsPad()
 {

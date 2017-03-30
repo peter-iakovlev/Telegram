@@ -25,10 +25,12 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
 {
     TGMarqueeLabel *_nameLabel;
     UILabel *_statusLabel;
-    TGCallReceptionView *_receptionView;
     bool _needsFontUpdate;
     
     TGCallState _currentState;
+    
+    NSInteger _debugTapCount;
+    UITapGestureRecognizer *_tapGestureRecognizer;
 }
 @end
 
@@ -50,7 +52,11 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
         _nameLabel.trailingBuffer = 60.0f;
         _nameLabel.animationDelay = 2.0;
         [_nameLabel sizeToFit];
+        _nameLabel.userInteractionEnabled = true;
         [self addSubview:_nameLabel];
+        
+        _tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(nameTapped)];
+        [_nameLabel addGestureRecognizer:_tapGestureRecognizer];
         
         _statusLabel = [[UILabel alloc] init];
         _statusLabel.font = TGSystemFontOfSize([TGCallInfoView statusFontSize]);
@@ -60,12 +66,25 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
         _statusLabel.text = @"Status";
         [_statusLabel sizeToFit];
         [self addSubview:_statusLabel];
-        
-        _receptionView = [[TGCallReceptionView alloc] init];
-        _receptionView.alpha = 0.0f;
-        //[self addSubview:_receptionView];
     }
     return self;
+}
+
+- (void)nameTapped
+{
+    if (self.debugPressed == nil)
+        return;
+    
+#ifdef INTERNAL_RELEASE
+    self.debugPressed();
+#else
+    _debugTapCount++;
+    if (_debugTapCount == 10)
+    {
+        self.debugPressed();
+        _debugTapCount = 0;
+    }
+#endif
 }
 
 + (CGFloat)spacing
@@ -143,21 +162,37 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
     
     _statusLabel.hidden = false;
     
-    TGCallState previousState = _currentState;
     _currentState = state.state;
-    
     switch (_currentState)
     {
         case TGCallStateRequesting:
+        {
+            _statusLabel.text = TGLocalized(@"Call.StatusRequesting");
+        }
+            break;
+            
         case TGCallStateWaiting:
+        {
+            _statusLabel.text = TGLocalized(@"Call.StatusWaiting");
+        }
+            break;
+            
         case TGCallStateWaitingReceived:
+        {
+            _statusLabel.text = TGLocalized(@"Call.StatusRinging");
+        }
+            break;
+            
         case TGCallStateHandshake:
         case TGCallStateReady:
+        {
+            _statusLabel.text = TGLocalized(@"Call.StatusIncoming");
+        }
+            break;
+            
         case TGCallStateAccepting:
         {
-            _statusLabel.text = @"Telegram Call...";
-            //_statusLabel.text = TGLocalized(@"Call.StatusRequesting");
-            _receptionView.hidden = true;
+            _statusLabel.text = TGLocalized(@"Call.StatusConnecting");
         }
             break;
             
@@ -168,38 +203,25 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
             {
                 case TGCallTransmissionStateInitializing:
                 {
-                    _statusLabel.text = @"Connecting...";
-                    //_statusLabel.text = TGLocalized(@"Call.StatusConnecting");
+                    _statusLabel.text = TGLocalized(@"Call.StatusConnecting");
                 }
                     break;
                     
                 case TGCallTransmissionStateEstablished:
                 {
                     NSString *durationString = duration >= 60 * 60 ? [NSString stringWithFormat:@"%02d:%02d:%02d", (int)(duration / 3600.0), (int)(duration / 60.0) % 60, (int)duration % 60] : [NSString stringWithFormat:@"%02d:%02d", (int)(duration / 60.0) % 60, (int)duration % 60];
-                    _statusLabel.text = [NSString stringWithFormat:@"Telegram Call %@", durationString];
-                    //_statusLabel.text = [NSString stringWithFormat:TGLocalized(@"Call.StatusOngoing"), durationString];
+                    _statusLabel.text = [NSString stringWithFormat:TGLocalized(@"Call.StatusOngoing"), durationString];
                 }
                     break;
                     
                 case TGCallTransmissionStateFailed:
                 {
-                    _statusLabel.text = @"Failed";
-                    //_statusLabel.text = TGLocalized(@"Call.StatusFailed");
+                    _statusLabel.text = TGLocalized(@"Call.StatusFailed");
                 }
                     break;
                     
                 default:
                     break;
-            }
-            
-            if (previousState != TGCallStateOngoing)
-            {
-                _receptionView.hidden = false;
-                _receptionView.alpha = 0.0f;
-                [UIView animateWithDuration:0.2 animations:^
-                {
-                    _receptionView.alpha = 1.0f;
-                }];
             }
         }
             break;
@@ -207,31 +229,14 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
         case TGCallStateEnding:
         case TGCallStateEnded:
         case TGCallStateBusy:
-        case TGCallStateInterrupted:
+        case TGCallStateMissed:
         {
-            if (state.transmissionState == TGCallTransmissionStateFailed)
-                _statusLabel.text = @"Failed";
-                //_statusLabel.text = TGLocalized(@"Call.StatusFailed");
+            if (state.stateData.error.length > 0 || state.transmissionState == TGCallTransmissionStateFailed)
+                _statusLabel.text = TGLocalized(@"Call.StatusFailed");
             else if (state.state == TGCallStateBusy)
-                _statusLabel.text = @"Busy";
+                _statusLabel.text = TGLocalized(@"Call.StatusBusy");
             else
-                _statusLabel.text = @"Call Ended";
-                //_statusLabel.text = TGLocalized(@"Call.StatusEnded");
-            
-            if (previousState != _currentState)
-            {
-                _nameLabel.alpha = 0.5f;
-                _statusLabel.alpha = 0.5f;
-                
-                [UIView animateWithDuration:0.2 animations:^
-                {
-                    _receptionView.alpha = 0.0f;
-                } completion:^(__unused BOOL finished)
-                {
-                    _receptionView.hidden = true;
-                    _receptionView.alpha = 1.0f;
-                }];
-            }
+                _statusLabel.text = TGLocalized(@"Call.StatusEnded");
         }
             break;
             
@@ -262,9 +267,6 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
         _needsFontUpdate = false;
     }
     _statusLabel.frame = CGRectMake(0, _nameLabel.frame.size.height + [TGCallInfoView spacing], self.frame.size.width, ceil(_statusLabel.frame.size.height));
-    
-    CGSize qualitySize = TGCallQualityViewSize;
-    _receptionView.frame = CGRectMake((self.frame.size.width - qualitySize.width) / 2.0f, CGRectGetMaxY(_statusLabel.frame) + 15.0f, qualitySize.width, qualitySize.height);
 }
 
 @end

@@ -58,6 +58,10 @@ bool TGIsLocaleArabic();
 
 + (NSString *)stringForDeviceType;
 
++ (NSString *)stringForCurrency:(NSString *)currency amount:(int64_t)amount;
+
++ (NSString *)stringForEmojiHashOfData:(NSData *)data count:(NSInteger)count positionExtractor:(int32_t (^)(uint8_t *, int32_t, int32_t))positionExtractor;
+
 @end
 
 @interface NSString (Telegraph)
@@ -74,10 +78,13 @@ bool TGIsLocaleArabic();
 
 - (NSAttributedString *)attributedFormattedStringWithRegularFont:(UIFont *)regularFont boldFont:(UIFont *)boldFont lineSpacing:(CGFloat)lineSpacing paragraphSpacing:(CGFloat)paragraphSpacing alignment:(NSTextAlignment)alignment;
 
+- (NSString *)urlAnchorPart;
+
 @end
 
 @interface NSData (Telegraph)
 
 - (NSString *)stringByEncodingInHex;
+- (NSString *)stringByEncodingInHexSeparatedByString:(NSString *)string;
 
 @end

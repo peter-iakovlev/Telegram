@@ -10,6 +10,7 @@
 #import "TGSharedMediaUtils.h"
 #import "TGSharedMediaSignals.h"
 
+#import "TGMenuSheetView.h"
 #import "TGMenuSheetController.h"
 
 #import "TGEmbedPlayerController.h"
@@ -18,8 +19,15 @@
 
 const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
 
+@interface TGEmbedItemViewWindow : UIWindow
+
+@end
+
 @interface TGEmbedItemView ()
 {
+    bool _preview;
+    TGEmbedItemViewWindow *_embedWindow;
+    
     TGPIPSourceLocation *_location;
     
     CGSize _embedSize;
@@ -50,11 +58,11 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
 
 @dynamic hasNoAboutInformation;
 
-- (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId
+- (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage preview:(bool)preview peerId:(int64_t)peerId messageId:(int32_t)messageId
 {
     if (webPage.document == nil || [webPage.siteName.lowercaseString isEqualToString:@"coub"])
     {
-        return [self initWithWebPageAttachment:webPage thumbnailSignal:nil peerId:peerId messageId:messageId];
+        return [self initWithWebPageAttachment:webPage preview:preview thumbnailSignal:nil peerId:peerId messageId:messageId];
     }
     else
     {
@@ -87,31 +95,47 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
             thumbnailSignal = [TGSharedPhotoSignals squarePhotoThumbnail:webPage.photo ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:nil downloadLargeImage:true placeholder:nil];
         }
 
-        return [self initWithDocumentAttachment:webPage.document thumbnailSignal:thumbnailSignal peerId:peerId messageId:messageId];
+        return [self initWithDocumentAttachment:webPage.document preview:preview thumbnailSignal:thumbnailSignal peerId:peerId messageId:messageId];
     }
 }
 
-- (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage thumbnailSignal:(SSignal *)thumbnailSignal peerId:(int64_t)peerId messageId:(int32_t)messageId
+- (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage preview:(bool)preview thumbnailSignal:(SSignal *)thumbnailSignal peerId:(int64_t)peerId messageId:(int32_t)messageId
 {
-    return [self initWithMediaAttachment:webPage thumbnailSignal:thumbnailSignal peerId:peerId messageId:messageId];
+    return [self initWithMediaAttachment:webPage preview:preview thumbnailSignal:thumbnailSignal peerId:peerId messageId:messageId];
 }
 
-- (instancetype)initWithDocumentAttachment:(TGDocumentMediaAttachment *)attachment thumbnailSignal:(SSignal *)thumbnailSignal peerId:(int64_t)peerId messageId:(int32_t)messageId
+- (instancetype)initWithDocumentAttachment:(TGDocumentMediaAttachment *)attachment preview:(bool)preview thumbnailSignal:(SSignal *)thumbnailSignal peerId:(int64_t)peerId messageId:(int32_t)messageId
 {
-    return [self initWithMediaAttachment:attachment thumbnailSignal:thumbnailSignal peerId:peerId messageId:messageId];
+    return [self initWithMediaAttachment:attachment preview:preview thumbnailSignal:thumbnailSignal peerId:peerId messageId:messageId];
 }
 
-- (instancetype)initWithMediaAttachment:(TGMediaAttachment *)attachment thumbnailSignal:(SSignal *)thumbnailSignal peerId:(int64_t)peerId messageId:(int32_t)messageId
+- (instancetype)initWithMediaAttachment:(TGMediaAttachment *)attachment preview:(bool)preview thumbnailSignal:(SSignal *)thumbnailSignal peerId:(int64_t)peerId messageId:(int32_t)messageId
 {
     self = [super initWithType:TGMenuSheetItemTypeDefault];
     if (self != nil)
     {
+        _preview = preview;
         _location = [[TGPIPSourceLocation alloc] initWithEmbed:true peerId:peerId messageId:messageId localId:0 webPage:nil];
         self.backgroundColor = [UIColor blackColor];
         
         _wrapperView = [[UIView alloc] initWithFrame:CGRectZero];
         _wrapperView.clipsToBounds = true;
-        [self addSubview:_wrapperView];
+        if (!TGIsPad() && !preview)
+        {
+            _embedWindow = [[TGEmbedItemViewWindow alloc] init];
+            _embedWindow.backgroundColor = [UIColor clearColor];
+            _embedWindow.hidden = false;
+            [_embedWindow addSubview:_wrapperView];
+            
+            _wrapperView.layer.cornerRadius = TGMenuSheetCornerRadius;
+            
+            UIPanGestureRecognizer *gestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
+            [_wrapperView addGestureRecognizer:gestureRecognizer];
+        }
+        else
+        {
+            [self addSubview:_wrapperView];
+        }
         
         bool hasPIPPlayer = [TGEmbedPIPController hasPictureInPictureActiveForLocation:_location playerView:NULL];
         _hadPIPPlayer = hasPIPPlayer;
@@ -133,6 +157,7 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
             if (!hasPIPPlayer)
                 _playerView = [[TGEmbedInternalPlayerView alloc] initWithDocumentAttachment:_document thumbnailSignal:thumbnailSignal];
         }
+        _playerView.disallowPIP = preview;
         
         if (_playerView != nil)
         {
@@ -163,10 +188,10 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
     return self;
 }
 
-- (void)setInPreviewContext:(bool)inPreviewContext
+- (void)handlePan:(UIPanGestureRecognizer *)gestureRecognizer
 {
-    _inPreviewContext = inPreviewContext;
-    _playerView.disallowPIP = inPreviewContext;
+    if (self.handleInternalPan != nil)
+        self.handleInternalPan(gestureRecognizer);
 }
 
 - (void)_configurePlayerView
@@ -190,7 +215,7 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
         controller.transitionDuration = duration;
         controller.embedWrapperView = strongSelf;
         
-        if (strongSelf.inPreviewContext)
+        if (strongSelf->_preview)
             [controller setAboveStatusBar];
         
         strongSelf->_playerController = controller;
@@ -267,13 +292,13 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
     if (!_hadPIPPlayer)
         [_playerView setupWithEmbedSize:_embedSize];
     
-    _playerView.disableWatermarkAction = self.inPreviewContext;
-    _playerView.inhibitFullscreenButton = self.inPreviewContext;
+    _playerView.disableWatermarkAction = _preview;
+    _playerView.inhibitFullscreenButton = _preview;
 }
 
 - (void)menuView:(TGMenuSheetView *)__unused menuView didAppearAnimated:(bool)__unused animated
 {
-    if (self.inPreviewContext)
+    if (_preview)
         [_playerView onLockInPlace];
 }
 
@@ -324,7 +349,7 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
     {
         _embedSize = embedSize;
         _playerView.frame = CGRectMake(_playerView.frame.origin.x, _playerView.frame.origin.y, embedSize.width, embedSize.height);
-        _wrapperView.frame = CGRectMake(0, 0, embedSize.width, embedSize.height);
+        _wrapperView.frame = CGRectMake(_wrapperView.frame.origin.x, _wrapperView.frame.origin.y, embedSize.width, embedSize.height);
         _playerView.initialFrame = _playerView.frame;
         _placeholderView.frame = CGRectMake(0, 0, embedSize.width, embedSize.height);
     }
@@ -346,6 +371,27 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
     
     if (_playerView.superview == _wrapperView)
         _playerView.center = CGPointMake(_wrapperView.frame.size.width / 2.0f, _wrapperView.frame.size.height / 2.0f);
+}
+
+- (void)didChangeAbsoluteFrame
+{
+    CGRect frame = [self convertRect:self.bounds toView:nil];
+    frame.size.height += 15.0f;
+    _wrapperView.frame = frame;
+}
+
+@end
+
+
+@implementation TGEmbedItemViewWindow
+
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+{
+    UIView *view = [super hitTest:point withEvent:event];
+    if (view == self)
+        return nil;
+    
+    return view;
 }
 
 @end

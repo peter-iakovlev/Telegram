@@ -28,6 +28,7 @@
 #import "TGUserInfoAddPhoneCollectionItem.h"
 #import "TGUserInfoVariantCollectionItem.h"
 #import "TGUserInfoUsernameCollectionItem.h"
+#import "TGUserInfoCallsCollectionItem.h"
 
 #import "TGAppDelegate.h"
 #import "TGTelegraph.h"
@@ -50,6 +51,7 @@
 #import "TGSynchronizeContactsActor.h"
 
 #import "TGAlertView.h"
+#import "TGMenuView.h"
 
 #import "TGSharedMediaController.h"
 
@@ -89,8 +91,8 @@
     bool _isUserBlocked;
     int _userLink;
     
-    bool _phonecallsEnabled;
     bool _supportsCalls;
+    bool _callsPrivate;
     
     TGCollectionMenuSection *_notificationSettingsSection;
     TGUserInfoVariantCollectionItem *_normalNotificationsItem;
@@ -117,6 +119,11 @@
     id<SDisposable> _cachedDataDisposable;
     
     bool _checked3dTouch;
+    
+    NSArray *_callMessages;
+    
+    TGMenuContainerView *_tooltipContainerView;
+    NSTimer *_tooltipTimer;
 }
 
 @end
@@ -125,6 +132,12 @@
 
 - (instancetype)initWithUid:(int32_t)uid
 {
+    return [self initWithUid:uid withoutCompose:false];
+}
+
+- (instancetype)initWithUid:(int32_t)uid callMessages:(NSArray *)callMessages
+{
+    _callMessages = callMessages;
     return [self initWithUid:uid withoutCompose:false];
 }
 
@@ -154,6 +167,17 @@
         _defaultPhonesSectionInsets = self.phonesSection.insets;
         
         [self.userInfoItem setUser:_user animated:false];
+        
+        if (_withoutActions)
+        {
+            _defaultPhonesSectionInsets.bottom = 0;
+            
+            UIEdgeInsets actionsSectionInsets = self.actionsSection.insets;
+            actionsSectionInsets.bottom = 44.0f;
+            self.actionsSection.insets = actionsSectionInsets;
+        }
+        
+        [self _updateCalls];
         
         _notificationsItem = [[TGUserInfoEditingVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Notifications") variant:nil action:@selector(notificationsPressed)];
         _notificationsItem.deselectAutomatically = true;
@@ -194,14 +218,6 @@
         
         _about = [TGDatabaseInstance() _userCachedDataSync:_uid].about;
         
-        NSData *data = [TGDatabaseInstance() customProperty:@"phoneCallsEnabled"];
-        if (data.length >= 4)
-        {
-            int32_t phonecallsEnabled = 0;
-            [data getBytes:&phonecallsEnabled length:4];
-            _phonecallsEnabled = phonecallsEnabled;
-        }
-        
         [self _updatePhonesAndActions];
         [self _updateNotificationSettings:false];
         [self _updateSharedMediaCount];
@@ -216,6 +232,7 @@
                 @"/tg/contactlist",
                 @"/tg/phonebook",
                 @"/tg/blockedUsers",
+                @"/tg/calls/enabled",
                 [[NSString alloc] initWithFormat:@"/tg/sharedMediaCount/(%" PRIx64 ")", (int64_t)_uid]
             ] watcher:self];
             
@@ -230,7 +247,7 @@
         _cachedDataDisposable = [[[TGDatabaseInstance() userCachedData:_uid] deliverOn:[SQueue mainQueue]] startWithNext:^(TGCachedUserData *data) {
             __strong TGTelegraphUserInfoController *strongSelf = weakSelf;
             if (strongSelf != nil) {
-                if (!TGStringCompare(strongSelf->_about, data.about) || strongSelf->_groupsInCommonCount != data.groupsInCommonCount || strongSelf->_supportsCalls != data.supportsCalls) {
+                if (!TGStringCompare(strongSelf->_about, data.about) || strongSelf->_groupsInCommonCount != data.groupsInCommonCount || strongSelf->_supportsCalls != data.supportsCalls || strongSelf->_callsPrivate != data.callsPrivate) {
                     bool forceUpdate = !TGStringCompare(strongSelf->_about, data.about) || strongSelf->_supportsCalls != data.supportsCalls;
                     if ((strongSelf->_groupsInCommonCount != 0) != (data.groupsInCommonCount != 0)) {
                         forceUpdate = true;
@@ -239,6 +256,16 @@
                     strongSelf->_groupsInCommonCount = data.groupsInCommonCount;
                     [strongSelf->_groupsInCommonItem setVariant:[NSString stringWithFormat:@"%d", data.groupsInCommonCount]];
                     strongSelf->_supportsCalls = data.supportsCalls;
+                    strongSelf->_callsPrivate = data.callsPrivate;
+                    
+                    strongSelf.userInfoItem.showCall = strongSelf->_supportsCalls;
+                    
+                    if (strongSelf.userInfoItem.showCall)
+                    {
+                        TGDispatchAfter(0.3, dispatch_get_main_queue(), ^{
+                            [strongSelf setupCallTooltip];
+                        });
+                    }
                     
                     if (forceUpdate) {
                         [strongSelf _updatePhonesAndActions];
@@ -270,7 +297,36 @@
     [self check3DTouch];
 }
 
+- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+{
+    [super willRotateToInterfaceOrientation:toInterfaceOrientation duration:duration];
+    
+    [self tooltipTimerTick];
+}
+
 #pragma mark -
+
+- (void)_updateCalls
+{
+    if (_callMessages != nil)
+    {
+        NSUInteger callsSectionIndex = [self indexForSection:self.callsSection];
+        for (int i = (int)self.callsSection.items.count - 1; i >= 0; i--)
+        {
+            [self.menuSections deleteItemFromSection:callsSectionIndex atIndex:0];
+        }
+        
+        if (!_editing)
+        {
+            if (callsSectionIndex != NSNotFound)
+            {
+                TGUserInfoCallsCollectionItem *callsItem = [[TGUserInfoCallsCollectionItem alloc] init];
+                [callsItem setCallMessages:_callMessages];
+                [self.menuSections addItemToSection:callsSectionIndex item:callsItem];
+            }
+        }
+    }
+}
 
 - (void)_updatePhonesAndActions
 {
@@ -479,14 +535,6 @@
                     [self.menuSections addItemToSection:actionsSectionIndex item:[[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"UserInfo.SendMessage") action:@selector(sendMessagePressed)]];
                 }
                 
-                if (_phonecallsEnabled && !isCurrentUser && _supportsCalls)
-                {
-                    TGUserInfoButtonCollectionItem *callItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:@"Voice Call" action:@selector(callPressed)];
-                    //TGUserInfoButtonCollectionItem *callItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"UserInfo.Call") action:@selector(callPressed)];
-                    callItem.deselectAutomatically = true;
-                    [self.menuSections addItemToSection:actionsSectionIndex item:callItem];
-                }
-                
                 if (_phonebookInfo != nil)
                 {
                     _shareContactItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"UserInfo.ShareContact") action:@selector(shareContactPressed)];
@@ -500,16 +548,12 @@
                     addContactItem.deselectAutomatically = true;
                     [self.menuSections addItemToSection:actionsSectionIndex item:addContactItem];
                 }
-                
-                if ((_userLink & TGUserLinkKnown) && !(_userLink & (TGUserLinkForeignHasPhone | TGUserLinkForeignMutual)))
+            
+                if (_callMessages == nil && (_userLink & TGUserLinkKnown) && !(_userLink & (TGUserLinkForeignHasPhone | TGUserLinkForeignMutual)))
                 {
                     TGUserInfoButtonCollectionItem *shareContactInfoItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"UserInfo.ShareMyContactInfo") action:@selector(shareMyContactInfoPressed)];
                     shareContactInfoItem.deselectAutomatically = true;
                     [self.menuSections addItemToSection:actionsSectionIndex item:shareContactInfoItem];
-                }
-                else
-                {
-                    
                 }
                 
                 if (!isCurrentUser)
@@ -606,8 +650,11 @@
         [self animateCollectionCrossfade];
         
         [self enterEditingMode:false];
+        [self _updateCalls];
         [self _updatePhonesAndActions];
         [self.userInfoItem setEditing:true animated:false];
+        
+        [self tooltipTimerTick];
     }
 }
 
@@ -649,6 +696,7 @@ static UIView *_findBackArrow(UIView *view)
     [self animateCollectionCrossfade];
     
     [self leaveEditingMode:false];
+    [self _updateCalls];
     [self _updatePhonesAndActions];
     [self.userInfoItem setEditing:false animated:false];
     
@@ -736,6 +784,7 @@ static UIView *_findBackArrow(UIView *view)
         [self animateCollectionCrossfade];
 
         [self leaveEditingMode:false];
+        [self _updateCalls];
         [self _updatePhonesAndActions];
     }
 }
@@ -792,9 +841,59 @@ static UIView *_findBackArrow(UIView *view)
     [[TGInterfaceManager instance] navigateToConversationWithId:_uid conversation:nil];
 }
 
+- (void)setupCallTooltip
+{
+    bool displayed = [[[NSUserDefaults standardUserDefaults] objectForKey:@"TG_displayedProfileCallTooltip_v0"] boolValue];
+//#if defined(INTERNAL_RELEASE)
+//    displayed = false;
+//#endif
+    if (displayed)
+        return;
+    
+    if (_tooltipContainerView != nil)
+        return;
+    
+    _tooltipTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(tooltipTimerTick) interval:3.5 repeat:false];
+    
+    _tooltipContainerView = [[TGMenuContainerView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.view.frame.size.width, self.view.frame.size.height)];
+    _tooltipContainerView.menuView.forceArrowOnTop = true;
+    [self.view addSubview:_tooltipContainerView];
+    
+    NSMutableArray *actions = [[NSMutableArray alloc] init];
+    [actions addObject:[[NSDictionary alloc] initWithObjectsAndKeys:TGLocalized(@"UserInfo.TapToCall"), @"title", nil]];
+    
+    [_tooltipContainerView.menuView setButtonsAndActions:actions watcherHandle:self.actionHandle];
+    [_tooltipContainerView.menuView sizeToFit];
+    _tooltipContainerView.menuView.buttonHighlightDisabled = true;
+    
+    CGRect frame = [self.view convertRect:self.userInfoItem.boundView.bounds fromView:self.userInfoItem.boundView];
+    frame.origin.x = self.view.frame.size.width - 57.0f;
+    frame.origin.y += 130.0f;
+    frame.size.width = 44.0f;
+    frame.size.height = 44.0f;
+    [_tooltipContainerView showMenuFromRect:frame animated:false];
+    
+    [[NSUserDefaults standardUserDefaults] setObject:@true forKey:@"TG_displayedProfileCallTooltip_v0"];
+}
+
+- (void)tooltipTimerTick
+{
+    [_tooltipTimer invalidate];
+    _tooltipTimer = nil;
+    
+    [_tooltipContainerView hideMenu];
+}
+
 - (void)callPressed
 {
-    [[TGInterfaceManager instance] callPeerWithId:_uid];
+    if (_callsPrivate)
+    {
+        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.ConnectionErrorTitle") message:[NSString stringWithFormat:TGLocalized(@"Call.PrivacyErrorMessage"), _user.displayFirstName] cancelButtonTitle:TGLocalized(@"OK") okButtonTitle:nil completionBlock:nil] show];
+    }
+    else
+    {
+        [[TGInterfaceManager instance] callPeerWithId:_uid];
+    }
 }
 
 - (void)notificationsPressed
@@ -1463,6 +1562,17 @@ static UIView *_findBackArrow(UIView *view)
     {
         [self createAvatarGalleryControllerForPreviewMode:false];
     }
+    else if ([action isEqualToString:@"callTapped"])
+    {
+        [self callPressed];
+    }
+    else if ([action isEqualToString:@"menuAction"])
+    {
+        [_tooltipTimer invalidate];
+        _tooltipTimer = nil;
+        
+        [_tooltipContainerView hideMenu];
+    }
     
     [super actionStageActionRequested:action options:options];
 }
@@ -1543,6 +1653,23 @@ static UIView *_findBackArrow(UIView *view)
             {
                 _userLink = userLink;
                 [self _updatePhonesAndActions];
+            }
+        });
+    }
+    else if ([path isEqualToString:@"/tg/calls/enabled"])
+    {
+        bool enabled = [((SGraphObjectNode *)resource).object boolValue];
+        
+        TGDispatchOnMainThread(^
+        {
+            if (enabled)
+            {
+                _updatedCachedDataDisposable = [[TGUserSignal updatedUserCachedDataWithUserId:_uid] startWithNext:nil];
+            }
+            else
+            {
+                _supportsCalls = false;
+                self.userInfoItem.showCall = false;
             }
         });
     }
@@ -1684,7 +1811,7 @@ static UIView *_findBackArrow(UIView *view)
 
 - (void)shareUserInfoPressed
 {
-    NSString *linkString = [NSString stringWithFormat:@"https://telegram.me/%@", _user.userName];
+    NSString *linkString = [NSString stringWithFormat:@"https://t.me/%@", _user.userName];
     NSString *shareString = linkString;
     
     __weak TGTelegraphUserInfoController *weakSelf = self;

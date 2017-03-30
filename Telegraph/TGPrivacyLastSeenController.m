@@ -50,6 +50,9 @@
             case TGPrivacySettingsModeGroupsAndChannels:
                 self.title = TGLocalized(@"Privacy.GroupsAndChannels");
                 break;
+            case TGPrivacySettingsModeCalls:
+                self.title = TGLocalized(@"Privacy.Calls");
+                break;
         }
         
         _privacySettingsChanged = [privacySettingsChanged copy];
@@ -71,13 +74,17 @@
                 customHelpText = TGLocalized(@"Privacy.GroupsAndChannels.CustomHelp");
                 headerString = TGLocalized(@"Privacy.GroupsAndChannels.WhoCanAddMe");
                 break;
+            case TGPrivacySettingsModeCalls:
+                customHelpText = TGLocalized(@"Privacy.Calls.CustomHelp");
+                headerString = TGLocalized(@"Privacy.Calls.WhoCanCallMe");
+                break;
         }
         
         NSMutableArray *topSectionItems = [[NSMutableArray alloc] init];
         [topSectionItems addObject:[[TGHeaderCollectionItem alloc] initWithTitle:headerString]];
         [topSectionItems addObject:_everybodyItem];
         [topSectionItems addObject:_contactsItem];
-        if (_mode == TGPrivacySettingsModeLastSeen) {
+        if (_mode == TGPrivacySettingsModeLastSeen || _mode == TGPrivacySettingsModeCalls) {
             [topSectionItems addObject:_nobodyItem];
         }
         [topSectionItems addObject:[[TGCommentCollectionItem alloc] initWithText:customHelpText]];
@@ -101,6 +108,11 @@
                 alwaysString = TGLocalized(@"Privacy.GroupsAndChannels.AlwaysAllow");
                 neverString = TGLocalized(@"Privacy.GroupsAndChannels.NeverAllow");
                 helpText = TGLocalized(@"Privacy.GroupsAndChannels.CustomShareHelp");
+                break;
+            case TGPrivacySettingsModeCalls:
+                alwaysString = TGLocalized(@"Privacy.Calls.AlwaysAllow");
+                neverString = TGLocalized(@"Privacy.Calls.NeverAllow");
+                helpText = TGLocalized(@"Privacy.Calls.CustomShareHelp");
                 break;
         }
         
@@ -293,6 +305,10 @@ static UIView *_findBackArrow(UIView *view)
             titleString = TGLocalized(@"Privacy.GroupsAndChannels.AlwaysAllow.Title");
             placeholderString = TGLocalized(@"Privacy.GroupsAndChannels.AlwaysAllow.Placeholder");
             break;
+        case TGPrivacySettingsModeCalls:
+            titleString = TGLocalized(@"Privacy.Calls.AlwaysAllow.Title");
+            placeholderString = TGLocalized(@"Privacy.Calls.AlwaysAllow.Placeholder");
+            break;
     }
     
     __weak TGPrivacyLastSeenController *weakSelf = self;
@@ -343,6 +359,10 @@ static UIView *_findBackArrow(UIView *view)
         case TGPrivacySettingsModeGroupsAndChannels:
             titleString = TGLocalized(@"Privacy.GroupsAndChannels.NeverAllow.Title");
             placeholderString = TGLocalized(@"Privacy.GroupsAndChannels.NeverAllow.Placeholder");
+            break;
+        case TGPrivacySettingsModeCalls:
+            titleString = TGLocalized(@"Privacy.Calls.NeverAllow.Title");
+            placeholderString = TGLocalized(@"Privacy.Calls.NeverAllow.Placeholder");
             break;
     }
     

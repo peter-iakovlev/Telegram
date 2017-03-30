@@ -35,7 +35,6 @@
 
 @implementation TGPhotoEditorTintToolView
 
-@synthesize titleChanged = _titleChanged;
 @synthesize valueChanged = _valueChanged;
 @synthesize value = _value;
 @dynamic interactionEnded;
@@ -400,11 +399,6 @@
     
     if (self.valueChanged != nil)
         self.valueChanged(value, false);
-}
-
-- (bool)hideTitle
-{
-    return true;
 }
 
 - (void)setValue:(id)value

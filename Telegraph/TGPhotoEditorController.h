@@ -30,8 +30,8 @@ typedef enum {
 @property (nonatomic, copy) void (^beginCustomTransitionOut)(CGRect, UIView *, void(^)(void));
 
 @property (nonatomic, copy) SSignal *(^requestThumbnailImage)(id<TGMediaEditableItem> item);
-@property (nonatomic, copy) SSignal *(^requestOriginalScreenSizeImage)(id<TGMediaEditableItem> item);
-@property (nonatomic, copy) SSignal *(^requestOriginalFullSizeImage)(id<TGMediaEditableItem> item);
+@property (nonatomic, copy) SSignal *(^requestOriginalScreenSizeImage)(id<TGMediaEditableItem> item, NSTimeInterval position);
+@property (nonatomic, copy) SSignal *(^requestOriginalFullSizeImage)(id<TGMediaEditableItem> item, NSTimeInterval position);
 @property (nonatomic, copy) SSignal *(^requestMetadata)(id<TGMediaEditableItem> item);
 @property (nonatomic, copy) id<TGMediaEditAdjustments> (^requestAdjustments)(id<TGMediaEditableItem> item);
 
@@ -49,6 +49,9 @@ typedef enum {
 @property (nonatomic, strong) PGCameraShotMetadata *metadata;
 
 - (instancetype)initWithItem:(id<TGMediaEditableItem>)item intent:(TGPhotoEditorControllerIntent)intent adjustments:(id<TGMediaEditAdjustments>)adjustments caption:(NSString *)caption screenImage:(UIImage *)screenImage availableTabs:(TGPhotoEditorTab)availableTabs selectedTab:(TGPhotoEditorTab)selectedTab;
+
+- (void)dismissEditor;
+- (void)applyEditor;
 
 - (void)dismissAnimated:(bool)animated;
 

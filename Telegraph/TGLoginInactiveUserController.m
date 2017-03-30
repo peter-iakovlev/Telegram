@@ -238,7 +238,7 @@
     [self.view addSubview:_navigationBarBackgroundView];
     
     _stripeView = [[UIView alloc] init];
-    _stripeView.frame = CGRectMake(0.0f, _navigationBarBackgroundView.frame.size.height - (TGIsRetina() ? 0.5f : 1.0f), screenSize.width, TGIsRetina() ? 0.5f : 1.0f);
+    _stripeView.frame = CGRectMake(0.0f, _navigationBarBackgroundView.frame.size.height - (TGScreenPixel), screenSize.width, TGScreenPixel);
     _stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
     _stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     [_navigationBarBackgroundView addSubview:_stripeView];
@@ -544,7 +544,7 @@
     CGSize screenSize = [TGViewController screenSizeForInterfaceOrientation:orientation];
     
     _navigationBarBackgroundView.frame = CGRectMake(0.0f, 0.0f, screenSize.width, 20 + 44);
-    _stripeView.frame = CGRectMake(0.0f, _navigationBarBackgroundView.frame.size.height - (TGIsRetina() ? 0.5f : 1.0f), screenSize.width, TGIsRetina() ? 0.5f : 1.0f);
+    _stripeView.frame = CGRectMake(0.0f, _navigationBarBackgroundView.frame.size.height - (TGScreenPixel), screenSize.width, TGScreenPixel);
     
     _interfaceContainer.frame = CGRectMake(CGFloor((screenSize.width - _interfaceContainer.frame.size.width) / 2.0f), CGFloor((screenSize.height - _interfaceContainer.frame.size.height) / 2.0f), _interfaceContainer.frame.size.width, _interfaceContainer.frame.size.height);
     

@@ -32,6 +32,7 @@
 #import "TGTelegramNetworking.h"
 
 #import "TGStringUtils.h"
+#import "TGImageUtils.h"
 
 #import "TGAlertView.h"
 
@@ -495,15 +496,15 @@
         }
         
         NSMutableArray *actions = [[NSMutableArray alloc] init];
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"action": @"search"}];
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": [UIImage imageNamed:@"PanelSearchIcon"], @"action": @"search"}];
         if (_isGroup && _conversation.username.length != 0) {
-            [actions addObject:@{@"title": TGLocalized(@"ReportPeer.Report"), @"action": @"report"}];
+            [actions addObject:@{@"title": TGLocalized(@"ReportPeer.Report"), @"icon": [UIImage imageNamed:@"PanelReportIcon"], @"action": @"report"}];
         }
         if (_isMuted)
-            [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"action": @"unmute"}];
+            [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionUnmute"], TGAccentColor()), @"action": @"unmute"}];
         else
-            [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"action": @"mute"}];
-        
+            [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionMute"], TGAccentColor()), @"action": @"mute"}];
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": [UIImage imageNamed:@"PanelInfoIcon"], @"action": @"info"}];
         [groupTitlePanel setButtonsWithTitlesAndActions:actions];
         
         [controller setPrimaryTitlePanel:groupTitlePanel];
@@ -574,12 +575,12 @@
         } else if ([panelAction isEqualToString:@"unmute"]) {
             [self _commitEnableNotifications:true];
         } else if ([panelAction isEqualToString:@"edit"]) {
-            TGModernConversationController *controller = self.controller;
-            [controller enterEditingMode];
+            [self.controller enterEditingMode];
         } else if ([panelAction isEqualToString:@"report"]) {
             [self reportChannelPressed];
         } else if ([panelAction isEqualToString:@"info"]) {
             [self _controllerAvatarPressed];
+            [self.controller hideTitlePanel];
         } else if ([panelAction isEqualToString:@"search"]) {
             [self navigateToMessageSearch];
         }
@@ -671,7 +672,7 @@
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                muteImage = [UIImage imageNamed:@"ModernConversationTitleIconMute.png"];
+                muteImage = [UIImage imageNamed:@"DialogList_Muted.png"];
             });
             
             muteIcon.image = muteImage;

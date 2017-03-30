@@ -30,6 +30,12 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGTextCheckingResult.h"
+
+#import "TGCurrencyFormatter.h"
+
+#import "TGAnimationUtils.h"
+
 static UIImage *instantPageButtonBackground(UIColor *color) {
     CGFloat diameter = 8.0f;
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
@@ -65,6 +71,7 @@ static UIImage *instantPageButtonBackground(UIColor *color) {
     bool _isVideo;
     bool _activatedMedia;
     bool _isGame;
+    bool _isInvoice;
 }
 
 @end
@@ -174,9 +181,9 @@ static UIImage *durationInstantBackgroundImage()
     return image;
 }
 
-- (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage imageInText:(bool)imageInText
+- (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage imageInText:(bool)imageInText invoice:(TGInvoiceMediaAttachment *)invoice
 {
-    self = [super initWithContext:context incoming:incoming];
+    self = [super initWithContext:context incoming:incoming webpage:webPage];
     if (self != nil)
     {
         _webPage = webPage;
@@ -227,14 +234,51 @@ static UIImage *durationInstantBackgroundImage()
         bool isInstagram = [webPage.siteName.lowercaseString isEqualToString:@"instagram"];
         bool isCoub = [webPage.siteName.lowercaseString isEqualToString:@"coub"];
         bool isGame = [webPage.pageType isEqualToString:@"game"];
+        bool isInvoice = [webPage.pageType isEqualToString:@"invoice"];
         _isGame = isGame;
+        _isInvoice = isInvoice;
         
         if (webPage.pageDescription.length != 0)
         {
-            _textModel = [[TGModernTextViewModel alloc] initWithText:webPage.pageDescription font:textFont()];
-            _textModel.layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks;
-            _textModel.textCheckingResults = [TGMessage textCheckingResultsForText:webPage.pageDescription highlightMentionsAndTags:false highlightCommands:false entities:webPage.pageDescriptionEntities];
-            _textModel.maxNumberOfLines = _isGame ? 1000 : 16;
+            if (isInvoice && webPage.photo == nil && invoice.currency.length != 0) {
+                NSMutableString *updatedString = [[NSMutableString alloc] initWithString:webPage.pageDescription];
+                NSString *priceString = [NSString stringWithFormat:@"\n%@", [[TGCurrencyFormatter shared] formatAmount:invoice.totalAmount currency:invoice.currency]];
+                NSString *shipmentString = @"";
+                if (invoice.receiptMessageId != 0) {
+                    shipmentString = [@" " stringByAppendingString:TGLocalized(@"Checkout.Receipt.Title")];
+                } else {
+                    shipmentString = [@" " stringByAppendingString:TGLocalized(@"Message.InvoiceLabel")];
+                }
+                if (invoice.isTest) {
+                    shipmentString = [shipmentString stringByAppendingString:@" (Test)"];
+                }
+                [updatedString appendString:priceString];
+                [updatedString appendString:shipmentString];
+                
+                NSArray *currentCheckingResults = [TGMessage textCheckingResultsForText:webPage.pageDescription highlightMentionsAndTags:false highlightCommands:false entities:webPage.pageDescriptionEntities];
+                NSMutableArray *textCheckingResults = [[NSMutableArray alloc] initWithArray:currentCheckingResults != nil ? currentCheckingResults : @[]];
+                
+                [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:NSMakeRange(updatedString.length - shipmentString.length - priceString.length, priceString.length) type:TGTextCheckingResultTypeBold contents:@""]];
+                
+                UIColor *labelColor = nil;
+                if (incoming) {
+                    labelColor = UIColorRGBA(0x525252, 0.6f);
+                } else {
+                    labelColor = UIColorRGBA(0x008c09, 0.8f);
+                }
+                
+                [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:NSMakeRange(updatedString.length - shipmentString.length, shipmentString.length) type:TGTextCheckingResultTypeColor contents:@"" value:labelColor highlightAsLink:false]];
+                
+                _textModel = [[TGModernTextViewModel alloc] initWithText:updatedString font:textFont()];
+                _textModel.textCheckingResults = textCheckingResults;
+                _textModel.layoutFlags |= TGReusableLabelLayoutOffsetLastLine;
+            } else {
+                _textModel = [[TGModernTextViewModel alloc] initWithText:webPage.pageDescription font:textFont()];
+                _textModel.textCheckingResults = [TGMessage textCheckingResultsForText:webPage.pageDescription highlightMentionsAndTags:false highlightCommands:false entities:webPage.pageDescriptionEntities];
+            }
+            
+            _textModel.layoutFlags |= TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks;
+            _textModel.maxNumberOfLines = (_isGame || _isInvoice) ? 1000 : 16;
             _textModel.textColor = [UIColor blackColor];
             if (_imageInText)
             {
@@ -290,7 +334,7 @@ static UIImage *durationInstantBackgroundImage()
                 imageSize = CGSizeMake(50.0f, 50.0f);
             else
             {
-                if (_isAnimation || _isVideo || isGame) {
+                if (_isAnimation || _isVideo || isGame || isInvoice) {
                     static CGSize fitSize;
                     static CGSize fitSizeGame;
                     static dispatch_once_t onceToken;
@@ -304,7 +348,7 @@ static UIImage *durationInstantBackgroundImage()
                         }
                     });
                     CGSize currentFitSize = fitSize;
-                    if (isGame) {
+                    if (isGame || isInvoice) {
                         currentFitSize = fitSizeGame;
                     }
                     imageSize = TGFitSize(TGScaleToFill(imageSize, currentFitSize), currentFitSize);
@@ -361,7 +405,12 @@ static UIImage *durationInstantBackgroundImage()
                         return [TGSharedPhotoSignals sharedPhotoImage:webPage.photo size:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:8.0f] cacheKey:key];
                     } identifier:key];
                 } else {
-                    NSString *key = [[NSString alloc] initWithFormat:@"webpage-image-thumbnail-%" PRId64 "", webPage.photo.imageId];
+                    NSString *key;
+                    if (webPage.photo.imageId != 0) {
+                        key = [[NSString alloc] initWithFormat:@"webpage-image-thumbnail-%" PRId64 "", webPage.photo.imageId];
+                    } else {
+                        key = [[NSString alloc] initWithFormat:@"webpage-image-thumbnail-local%" PRId64 "", webPage.photo.localImageId];
+                    }
                     __weak TGArticleWebpageFooterModel *weakSelf = self;
                     _imageDataInvalidationBlock = ^{
                         __strong TGArticleWebpageFooterModel *strongSelf = weakSelf;
@@ -371,13 +420,13 @@ static UIImage *durationInstantBackgroundImage()
                     };
                     [_imageViewModel setSignalGenerator:^SSignal *
                     {
-                        return [TGSharedPhotoSignals squarePhotoThumbnail:webPage.photo ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:8.0f] downloadLargeImage:isInstagram || isGame placeholder:nil];
+                        return [TGSharedPhotoSignals squarePhotoThumbnail:webPage.photo ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:8.0f] downloadLargeImage:isInstagram || isGame || isInvoice placeholder:nil];
                     } identifier:key];
                 }
             }
             _imageViewModel.frame = CGRectMake(0.0f, 0.0f, imageSize.width, imageSize.height);
             _imageViewModel.skipDrawInContext = true;
-            if (_imageInText || _isGame) {
+            if (_imageInText || _isGame || isInvoice) {
                 _imageViewModel.showProgress = false;
             } else {
                 [_imageViewModel setManualProgress:true];
@@ -423,15 +472,28 @@ static UIImage *durationInstantBackgroundImage()
                         _serviceIconModel = [[TGModernImageViewModel alloc] initWithImage:[UIImage imageNamed:@"InlineMediaInstagramVideoIcon.png"]];
                         [_serviceIconModel sizeToFit];
                         [_imageViewModel addSubmodel:_serviceIconModel];
-                    } else if (isGame && false) {
+                    } else if (isInvoice) {
                         _durationModel = [[TGModernFlatteningViewModel alloc] init];
                         
-                        _durationBackgroundModel = [[TGModernImageViewModel alloc] initWithImage:isGame ? durationGameBackgroundImage() : durationBackgroundImage()];
+                        _durationBackgroundModel = [[TGModernImageViewModel alloc] initWithImage:(isGame || isInvoice) ? durationGameBackgroundImage() : durationBackgroundImage()];
                         [_durationModel addSubmodel:_durationBackgroundModel];
                         
-                        NSString *durationText = TGLocalized(@"Message.GamePreviewLabel");
+                        NSMutableString *updatedString = [[NSMutableString alloc] init];
+                        NSString *priceString = [NSString stringWithFormat:@"%@", [[TGCurrencyFormatter shared] formatAmount:invoice.totalAmount currency:invoice.currency]];
+                        NSString *shipmentString = @"";
+                        if (invoice.receiptMessageId != 0) {
+                            shipmentString = [@" " stringByAppendingString:TGLocalized(@"Checkout.Receipt.Title")];
+                        } else {
+                            shipmentString = [@" " stringByAppendingString:TGLocalized(@"Message.InvoiceLabel")];
+                        }
+                        if (invoice.isTest) {
+                            shipmentString = [shipmentString stringByAppendingString:@" (Test)"];
+                        }
+                        [updatedString appendString:priceString];
+                        [updatedString appendString:shipmentString];
                         
-                        _durationLabelModel = [[TGModernTextViewModel alloc] initWithText:durationText font:durationFont()];
+                        _durationLabelModel = [[TGModernTextViewModel alloc] initWithText:updatedString font:durationFont()];
+                        _durationLabelModel.textCheckingResults = @[[[TGTextCheckingResult alloc] initWithRange:NSMakeRange(0, priceString.length) type:TGTextCheckingResultTypeBold contents:@""]];
                         _durationLabelModel.textColor = [UIColor whiteColor];
                         [_durationLabelModel layoutForContainerSize:CGSizeMake(200.0f, 200.0f)];
                         [_durationModel addSubmodel:_durationLabelModel];
@@ -712,7 +774,12 @@ static UIImage *durationInstantBackgroundImage()
 
 - (void)setMediaVisible:(bool)mediaVisible
 {
+    bool wasHidden = _imageViewModel.hidden;
     _imageViewModel.hidden = !mediaVisible;
+    
+    if (wasHidden && mediaVisible && _isInvoice) {
+        [_durationModel.boundView.layer animateAlphaFrom:0.0f to:1.0f duration:0.2 timingFunction:kCAMediaTimingFunctionDefault removeOnCompletion:true completion:nil];
+    }
 }
 
 - (void)layoutContentInRect:(CGRect)rect bottomInset:(CGFloat *)bottomInset
@@ -768,14 +835,14 @@ static UIImage *durationInstantBackgroundImage()
     
     if (_durationModel != nil)
     {
-        CGRect durationBackgroundFrame = CGRectMake(0.0f, 0.0f, _durationLabelModel.frame.size.width + 12.0f - (_isGame ? 1.0f : 0.0f), 18.0f);
-        if (!_isGame && _webPage.instantPage != nil) {
+        CGRect durationBackgroundFrame = CGRectMake(0.0f, 0.0f, _durationLabelModel.frame.size.width + 12.0f - ((_isGame || _isInvoice) ? 1.0f : 0.0f), 18.0f);
+        if (!_isGame && !_isInvoice && _webPage.instantPage != nil) {
             durationBackgroundFrame.size.width += 20.0f;
             durationBackgroundFrame.size.height += 8.0f;
         }
         _durationBackgroundModel.frame = durationBackgroundFrame;
         CGRect durationModelFrame = CGRectMake(_imageViewModel.frame.size.width - _durationBackgroundModel.frame.size.width - 4.0f, _imageViewModel.frame.size.height - _durationBackgroundModel.frame.size.height - 4.0f, _durationBackgroundModel.frame.size.width, _durationBackgroundModel.frame.size.height);
-        if (_isGame) {
+        if (_isGame || _isInvoice) {
             durationModelFrame.origin = CGPointMake(4.0f, 4.0f);
         } else if (_webPage.instantPage != nil) {
             durationModelFrame.origin = CGPointMake(4.0f, 4.0f);
@@ -786,7 +853,7 @@ static UIImage *durationInstantBackgroundImage()
         
         CGRect durationLabelFrame = CGRectMake(5.0f, 0.0f, _durationLabelModel.frame.size.width, _durationLabelModel.frame.size.height);
         
-        if (!_isGame && _webPage.instantPage != nil) {
+        if (!_isGame && !_isInvoice && _webPage.instantPage != nil) {
             durationLabelFrame.origin.x += 16.0f;
             durationLabelFrame.origin.y += 2.0f;
         }

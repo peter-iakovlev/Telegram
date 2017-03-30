@@ -1170,14 +1170,14 @@ static CGRect viewFrame(UIView *view)
 
 - (void)micButtonInteractionUpdate:(CGFloat)value
 {
-    CGFloat offset = value * 100.0f;
+    CGFloat offset = value * 300.0f;
     
     offset = MAX(0.0f, offset - 5.0f);
     
-    if (value < 0.3f)
-        offset = value / 0.6f * offset;
+    if (value <= 0.2f)
+        offset = value / 0.5f * offset;
     else
-        offset -= 0.15f * 100.0f;
+        offset -= 0.11f * 300.0f;
     
     _slideToCancelArrow.transform = CGAffineTransformMakeTranslation(-offset, 0.0f);
     
@@ -1194,7 +1194,7 @@ static CGRect viewFrame(UIView *view)
     {
         CGFloat labelWidth = [TGLocalized(@"Conversation.SlideToCancel") sizeWithFont:TGSystemFontOfSize(14.0f)].width;
         CGFloat arrowOrigin = CGFloor((TGScreenSize().width - labelWidth) / 2.0f) - 9.0f - 6.0f;
-        CGFloat timerWidth = 82.0f;
+        CGFloat timerWidth = 90.0f;
         
         freeOffsetLimit = MAX(0.0f, arrowOrigin - timerWidth);
     });
@@ -1465,7 +1465,7 @@ static CGRect viewFrame(UIView *view)
         _overlayDisabledView.frame = self.bounds;
     }
     
-    _stripeLayer.frame = CGRectMake(-3.0f, -TGRetinaPixel, frame.size.width + 6.0f, TGRetinaPixel);
+    _stripeLayer.frame = CGRectMake(-3.0f, -TGScreenPixel, frame.size.width + 6.0f, TGScreenPixel);
     _backgroundView.frame = CGRectMake(-3.0f, 0.0f, frame.size.width + 6.0f, frame.size.height);
     
     bool displayPanels = [self shouldDisplayPanels];
@@ -1596,6 +1596,7 @@ static CGRect viewFrame(UIView *view)
 {
 #if TG_ENABLE_AUDIO_NOTES
     CGFloat avoidOffset = 400.0f;
+    CGFloat hideOffset = 60.0f;
     
     if (show)
     {
@@ -1620,7 +1621,6 @@ static CGRect viewFrame(UIView *view)
                 indicatorImage = TGCircleImage(9.0f, UIColorRGB(0xF33D2B));
             });
             _recordIndicatorView = [[UIImageView alloc] initWithImage:indicatorImage];
-            //_recordIndicatorView.alpha = 0.0f;
         }
         
         setViewFrame(_recordIndicatorView, CGRectMake(11.0f, _currentExtendedPanel.frame.size.height + CGFloor(([self baseHeight] - 9.0f) / 2.0f) + (TGIsPad() ? 1.0f : 0.0f), 9.0f, 9.0f));
@@ -1682,15 +1682,16 @@ static CGRect viewFrame(UIView *view)
         _slideToCancelArrow.transform = CGAffineTransformMakeTranslation(300.0f, 0.0f);
         _slideToCancelLabel.transform = CGAffineTransformMakeTranslation(300.0f, 0.0f);
         
-        [UIView animateWithDuration:0.26 delay:0.0 options:0 animations:^
+        [UIView animateWithDuration:0.16 delay:0.0 options:0 animations:^
         {
             _inputFieldClippingContainer.alpha = 0.0f;
             _fieldBackground.alpha = 0.0f;
-            _fieldBackground.transform = CGAffineTransformMakeTranslation(-avoidOffset, 0.0f);
-            _panelAccessoryView.transform = CGAffineTransformMakeTranslation(-avoidOffset, 0.0f);
+            _fieldBackground.transform = CGAffineTransformMakeTranslation(0.0f, hideOffset);
+            _panelAccessoryView.transform = CGAffineTransformMakeTranslation(0.0f, hideOffset);
+            _attachButton.transform = CGAffineTransformMakeTranslation(-avoidOffset, 0.0f);
             for (UIButton *button in _modeButtons)
             {
-                button.transform = CGAffineTransformMakeTranslation(-avoidOffset, 0.0f);
+                button.transform = CGAffineTransformMakeTranslation(0.0f, hideOffset);
             }
             _panelAccessoryView.alpha = 0.0f;
             _inputFieldPlaceholder.alpha = 0.0f;
@@ -1698,17 +1699,14 @@ static CGRect viewFrame(UIView *view)
 
         int animationCurveOption = iosMajorVersion() >= 7 ? (7 << 16) : 0;
         
-        [UIView animateWithDuration:0.15 animations:^
+        [UIView animateWithDuration:0.25 delay:0.04 options:animationCurveOption animations:^
         {
-            _attachButton.alpha = 0.0f;
-            _attachButton.transform = CGAffineTransformMakeTranslation(-avoidOffset, 0.0f);
-        }];
-        
-        [UIView animateWithDuration:0.25 delay:0.06 options:animationCurveOption animations:^
-        {
-            //_recordIndicatorView.alpha = 1.0f;
             _recordIndicatorView.transform = CGAffineTransformIdentity;
-        } completion:nil];
+        } completion:^(BOOL finished)
+        {
+            if (finished)
+                [self addRecordingDotAnimation];
+        }];
         
         [UIView animateWithDuration:0.25 delay:0.0 options:animationCurveOption animations:^
         {
@@ -1720,15 +1718,10 @@ static CGRect viewFrame(UIView *view)
         {
             _slideToCancelArrow.alpha = 1.0f;
             _slideToCancelArrow.transform = CGAffineTransformIdentity;
-        } completion:nil];
-        
-        [UIView animateWithDuration:0.18 delay:0.04 options:animationCurveOption animations:^
-        {
+            
             _slideToCancelLabel.alpha = 1.0f;
             _slideToCancelLabel.transform = CGAffineTransformIdentity;
         } completion:nil];
-        
-        [self addRecordingDotAnimation];
     }
     else
     {
@@ -1746,11 +1739,11 @@ static CGRect viewFrame(UIView *view)
         }
         else
         {
-            _attachButton.transform = CGAffineTransformMakeTranslation(avoidOffset, 0.0f);
-            _fieldBackground.transform = CGAffineTransformMakeTranslation(avoidOffset, 0.0f);
+            _attachButton.transform = CGAffineTransformMakeTranslation(0.0f, hideOffset);
+            _fieldBackground.transform = CGAffineTransformMakeTranslation(0.0f, hideOffset);
         }
         
-        [UIView animateWithDuration:0.25 delay:0.0 options:options animations:^
+        [UIView animateWithDuration:0.22 delay:0.0 options:options animations:^
         {
             _inputFieldClippingContainer.alpha = 1.0f;
             _fieldBackground.alpha = 1.0f;
@@ -1758,29 +1751,22 @@ static CGRect viewFrame(UIView *view)
             _inputFieldPlaceholder.alpha = 1.0f;
             _panelAccessoryView.alpha = 1.0f;
             _panelAccessoryView.transform = CGAffineTransformIdentity;
+            _attachButton.transform = CGAffineTransformIdentity;
             for (UIButton *button in _modeButtons)
             {
                 button.transform = CGAffineTransformIdentity;
             }
         } completion:nil];
         
-        [UIView animateWithDuration:0.25 delay:0 options:options animations:^
-        {
-            _attachButton.alpha = 1.0f;
-            _attachButton.transform = CGAffineTransformIdentity;
-        } completion:nil];
 
         int animationCurveOption = iosMajorVersion() >= 7 ? (7 << 16) : 0;
         [UIView animateWithDuration:0.25 * durationFactor delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState | animationCurveOption animations:^
         {
-            //_recordIndicatorView.alpha = 0.0f;
             _recordIndicatorView.transform = CGAffineTransformMakeTranslation(-90.0f, 0.0f);
         } completion:^(BOOL finished)
         {
             if (finished)
-            {
                 [_recordIndicatorView removeFromSuperview];
-            }
         }];
         
         [UIView animateWithDuration:0.25 * durationFactor delay:0.05 * durationFactor options:UIViewAnimationOptionBeginFromCurrentState | animationCurveOption animations:^
@@ -1790,26 +1776,18 @@ static CGRect viewFrame(UIView *view)
         } completion:^(BOOL finished)
         {
             if (finished)
-            {
                 [_recordDurationLabel removeFromSuperview];
-            }
         }];
         
         [UIView animateWithDuration:0.2 * durationFactor delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState | animationCurveOption animations:^
         {
             _slideToCancelArrow.alpha = 0.0f;
-            _slideToCancelArrow.transform = CGAffineTransformMakeTranslation(-200, 0.0f);
-        } completion:^(__unused BOOL finished)
-        {
-        }];
+            _slideToCancelArrow.transform = CGAffineTransformMakeTranslation(-avoidOffset, 0.0f);
         
-        [UIView animateWithDuration:0.2 * durationFactor delay:0.05 * durationFactor options:UIViewAnimationOptionBeginFromCurrentState | animationCurveOption animations:^
-        {
             _slideToCancelLabel.alpha = 0.0f;
-            _slideToCancelLabel.transform = CGAffineTransformMakeTranslation(-200, 0.0f);
-        } completion:^(__unused BOOL finished)
-        {
-        }];
+            _slideToCancelLabel.transform = CGAffineTransformMakeTranslation(-avoidOffset, 0.0f);
+            
+        } completion:nil];
     }
 #endif
 }

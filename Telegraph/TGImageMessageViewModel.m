@@ -330,7 +330,7 @@ static CTFontRef textFontForSize(CGFloat size)
                     [strongSelf->_context.companionHandle requestAction:@"activateCommand" options:dict];
                 }
             };
-            _replyButtonsModel.replyMarkup = replyMarkup;
+            [_replyButtonsModel setReplyMarkup:replyMarkup hasReceipt:false];
             [self addSubmodel:_replyButtonsModel];
         }
     }
@@ -996,10 +996,10 @@ static CTFontRef textFontForSize(CGFloat size)
         }
         if (_imageModel.boundView != nil) {
             [_replyButtonsModel unbindView:viewStorage];
-            _replyButtonsModel.replyMarkup = replyMarkup;
+            [_replyButtonsModel setReplyMarkup:replyMarkup hasReceipt:false];
             [_replyButtonsModel bindViewToContainer:_imageModel.boundView.superview viewStorage:viewStorage];
         } else {
-            _replyButtonsModel.replyMarkup = replyMarkup;
+            [_replyButtonsModel setReplyMarkup:replyMarkup hasReceipt:false];
         }
         if (sizeUpdated) {
             *sizeUpdated = true;
@@ -2065,7 +2065,7 @@ static CTFontRef textFontForSize(CGFloat size)
             
             if (_viaUser != nil) {
                 NSString *formatString = [@" " stringByAppendingString:TGLocalized(@"Conversation.MessageViaUser")];
-                NSString *viaUserName = [@"@" stringByAppendingString:_viaUser.userName];
+                NSString *viaUserName = [@"@" stringByAppendingString:_viaUser.userName == nil ? @"" : _viaUser.userName];
                 NSRange range = [formatString rangeOfString:@"%@"];
                 NSString *finalString = [[NSString alloc] initWithFormat:formatString, viaUserName];
                 
@@ -2124,7 +2124,7 @@ static CTFontRef textFontForSize(CGFloat size)
         
         if (_viaUser != nil && _forwardedHeaderModel == nil) {
             NSString *formatString = TGLocalized(@"Conversation.MessageViaUser");
-            NSString *viaUserName = [@"@" stringByAppendingString:_viaUser.userName];
+            NSString *viaUserName = [@"@" stringByAppendingString:_viaUser.userName != nil ? _viaUser.userName : @""];
             //viaUserName = @"qwoifehiqowfhipoqewipfhqweiopfhpoiqwehfiohpqiew";
             NSRange range = [formatString rangeOfString:@"%@"];
             

@@ -17,7 +17,7 @@
 	<key>CFBundlePackageType</key>
 	<string>XPC!</string>
 	<key>CFBundleShortVersionString</key>
-	<string>3.16</string>
+	<string>3.18</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>NSExtension</key>
@@ -29,6 +29,7 @@
 			<key>IntentsSupported</key>
 			<array>
 				<string>INSendMessageIntent</string>
+				<string>INStartAudioCallIntent</string>
 			</array>
 		</dict>
 		<key>NSExtensionPointIdentifier</key>

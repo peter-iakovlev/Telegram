@@ -5,6 +5,7 @@
 @class TLInputFileLocation;
 @class TGMemoryImageCache;
 @class TGModernCache;
+@class TLInputWebFileLocation;
 
 typedef enum {
     TGSharedMediaImageDataQualityLow,
@@ -33,7 +34,9 @@ typedef enum {
 @interface TGSharedMediaSignals : NSObject
 
 + (TLInputFileLocation *)inputFileLocationForImageUrl:(NSString *)imageUrl datacenterId:(NSInteger *)outDatacenterId;
++ (TLInputWebFileLocation *)inputWebFileLocationForImageUrl:(NSString *)imageUrl datacenterId:(NSInteger *)outDatacenterId;
 + (SSignal *)memoizedDataSignalForRemoteLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag;
++ (SSignal *)memoizedDataSignalForRemoteWebLocation:(TLInputWebFileLocation *)location datacenterId:(NSInteger)datacenterId reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag;
 + (SSignal *)memoizedDataSignalForHttpUrl:(NSString *)httpUrl;
 
 + (SSignal *)sharedMediaImageWithSize:(CGSize)size

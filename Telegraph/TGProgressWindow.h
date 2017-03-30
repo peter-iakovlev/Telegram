@@ -10,6 +10,8 @@
 
 @interface TGProgressWindow : UIWindow
 
+@property (nonatomic, assign) bool skipMakeKeyWindowOnDismiss;
+
 - (void)show:(bool)animated;
 - (void)showWithDelay:(NSTimeInterval)delay;
 

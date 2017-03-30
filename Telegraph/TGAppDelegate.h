@@ -26,6 +26,8 @@
 
 #import "TGMessage.h"
 
+#import "TGApplicationMainWindow.h"
+
 extern CFAbsoluteTime applicationStartupTimestamp;
 extern CFAbsoluteTime mainLaunchTimestamp;
 
@@ -50,7 +52,7 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 
 @property (nonatomic, strong, readonly) ASHandle *actionHandle;
 
-@property (nonatomic, strong) UIWindow *window;
+@property (nonatomic, strong) TGApplicationMainWindow *window;
 @property (nonatomic, strong) UIWindow *contentWindow;
 
 @property (nonatomic) bool isManuallyLocked;
@@ -69,6 +71,8 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 @property (nonatomic) bool exclusiveConversationControllers;
 
 @property (nonatomic) bool autosavePhotos;
+@property (nonatomic) bool saveEditedPhotos;
+@property (nonatomic) bool saveCapturedMedia;
 @property (nonatomic) bool customChatBackground;
 
 @property (nonatomic) bool autoDownloadPhotosInGroups;
@@ -86,7 +90,6 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 @property (nonatomic) bool secretInlineBotsInitialized;
 
 @property (nonatomic) int callsDataUsageMode;
-@property (nonatomic) int showCallsTab;
 
 @property (nonatomic) int alwaysShowStickersMode;
 
@@ -106,6 +109,10 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 @property (nonatomic) bool disableBackgroundMode;
 @property (nonatomic, readonly) bool inBackground;
 @property (nonatomic, readonly) bool backgroundTaskOngoing;
+
+@property (nonatomic) int showCallsTab;
+- (bool)callsTabFileExists;
+- (void)resetCallsTab;
 
 - (void)resetLocalization;
 

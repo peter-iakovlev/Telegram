@@ -76,6 +76,7 @@
 "PINNED_GAME" = "%1$@ 님이 게임을 고정함";
 
 "PHONE_CALL_REQUEST" = "%1$@님으로 부터 전화가 왔습니다";
+"PHONE_CALL_MISSED" = "%1$@으로부터 부재중 전화가 있습니다.";
 
 // Common
 "Common.OK" = "확인";
@@ -248,7 +249,7 @@
 "WelcomeScreen.Logout" = "로그아웃";
 "WelcomeScreen.Greeting" = "%@님 환영합니다!";
 "WelcomeScreen.ContactsAccessDisabled" = "연락처를 동기화할 수 없습니다.";
-"WelcomeScreen.ContactsAccessHelp" = "텔레그램은 친구에게 메시지를 보내기 위해 연락처를 참조합니다. %@의 '설정' — '개인 정보 보호' — '연락처'로 이동하여 텔레그램을 활성화하세요.";
+"WelcomeScreen.ContactsAccessHelp" = "Telegram에서는 기존 연락처 목록을 토대로 메시지를 보냅니다. %@의 '설정' - '개인 정보 보호' - '연락처'로 가서 Telegram을 활성화하세요.";
 "WelcomeScreen.ContactsAccessSettings" = "설정";
 "WelcomeScreen.UpdatingTitle" = "업데이트 중";
 
@@ -462,7 +463,7 @@
 "Conversation.SlideToCancel" = "밀어서 취소";
 "Conversation.ApplyLocalization" = "언어 파일 적용";
 "Conversation.OpenFile" = "파일 열기";
-"Conversation.MicrophoneAccessDisabled" = "텔레그램에서 음성메시지를 보내기 위해 마이크에 대한 접근 권한을 필요로 합니다. '설정' — '개인 정보 보호' — '마이크'로 이동하여 텔레그램을 활성화하세요.";
+"Conversation.MicrophoneAccessDisabled" = "Telegram이 음성 메시지를 보내기 위해 마이크에 대한 접근 권한을 필요로 합니다.\n설정>'개인 정보 보호>마이크로 가서 Telegram을 활성화하세요.";
 
 // Media Picker
 "MediaPicker.Send" = "전송";
@@ -1048,7 +1049,7 @@
 "DialogList.SearchSectionGlobal" = "전체 검색";
 "DialogList.SearchSectionMessages" = "메시지";
 
-"Username.LinkHint" = "이 링크는 회원님의 대화방으로 이동합니다.:[\n https://telegram.me/%@]";
+"Username.LinkHint" = "이 링크는 회원님과 대화창이 생성됩니다.:[\nhttps://t.me/%@]";
 "Username.LinkCopied" = "클립보드로 링크가 복사되었습니다.";
 
 "SharedMedia.ItemsSelected_1" = "1 개 선택";
@@ -1438,7 +1439,7 @@
 
 "Channel.Username.Title" = "링크";
 "Channel.Username.Help" = "**Telegram**에서 채널명을 선택 할 수 있습니다. 설정을 하셨을 경우 다른 유저들이 검색할 수 있습니다.\n\n채널명으로  **a-z**, **0-9** 과 _ 를 사용가능하며,  최소 **5** 글자 이상을 기입하셔야 합니다";
-"Channel.Username.LinkHint" = "이 링크는 회원님의 채널로 이동합니다.:[\nhttps://telegram.me/%@]";
+"Channel.Username.LinkHint" = "이 링크는 회원님의 텔레그램 채널로 이동합니다.:[\nhttps://t.me/%@]";
 "Channel.Username.InvalidTooShort" = "채널명은 최소 5 글자 이상 입력해야 합니다.";
 "Channel.Username.InvalidStartsWithNumber" = "채널명은 숫자로 시작 할 수 없습니다.";
 "Channel.Username.InvalidCharacters" = "올바르지 않은 이름입니다.";
@@ -1685,7 +1686,7 @@
 
 "Watch.Notification.Joined" = "님이 Telegram을 가입하였습니다.";
 
-"Watch.MessageView.Title" = "메싲";
+"Watch.MessageView.Title" = "메시지";
 "Watch.MessageView.Forward" = "전달";
 "Watch.MessageView.Reply" = "답장";
 "Watch.MessageView.ViewOnPhone" = "폰에서 보기";
@@ -1890,7 +1891,7 @@
 "Group.Username.InvalidTooShort" = "그룹명은 최소 5 글자 이상 입력해야 합니다.";
 "Group.Username.InvalidStartsWithNumber" = "그룹명은 숫자로 시작 할 수 없습니다.";
 
-"Group.Username.LinkHint" = "이 링크는 텔레그램 그룹으로 이동합니다.:[\nhttp://telegram.me/%@]";
+"Group.Username.LinkHint" = "이 링크는 회원님의 텔레그램 그룹으로 이동합니다.:[\nhttps://t.me/%@]";
 
 "Notification.PinnedTextMessage" = "%@님이 \"%@\"를 고정함";
 "Notification.PinnedPhotoMessage" = "%@ 님이 사진을 고정함";
@@ -2172,10 +2173,10 @@
 "Conversation.JumpToDate" = "날자로 이동";
 "Conversation.AddToReadingList" = "읽기 리스트에 추가";
 
-"AccessDenied.CallMicrophone" = "텔레그램에서 음성메시지를 보내기 위해 마이크에 대한 접근 권한을 필요로 합니다.\n\n '설정' — '개인 정보 보호' — '마이크'로 이동하여 텔레그램을 활성화하세요.";
+"AccessDenied.CallMicrophone" = "Telegram이 음성 전화를 걸기 위하여 마이크에 대한 접근 권한을 필요로 합니다.\n설정>'개인 정보 보호>마이크로 가서 Telegram을 활성화하세요.";
 
 "Call.EncryptionKey.Title" = "암호화 키";
-"Call.EncryptionKey.Description" = "이 이미지와 텍스트는 %1$@ 님과의 현재 비밀대화에 대한 비밀키에서 파생된 것입니다.\n\n이 이미지와 텍스트가 %2$@ 님의 휴대전화와 동일하다면 end-to-end 암호화가 정상적으로 진행되고 있음을 보장합니다.\n\n더 자세한 사항은 telegram.org를 참고해 주세요.";
+"Call.EncryptionKey.Description" = "이 이미지와 텍스트는 %1$@ 님과의 현재 음성 전화에 대한 비밀키에서 파생된 것입니다.\n\n이 이미지와 텍스트가 %2$@ 님의 휴대전화와 동일하다면 단말기간의 암호화가 정상적으로 진행되고 있음을 보장합니다.";
 
 "Application.Name" = "Telegram";
 "DialogList.Pin" = "고정";
@@ -2216,11 +2217,10 @@
 "CallSettings.TabIcon" = "전화 탭 보기";
 "CallSettings.TabIconDescription" = "전화 아이콘이 탭바에 표시됩니다.";
 "CallSettings.UseLessData" = "적은 데이터 사용";
-"CallSettings.UseLessDataDescription" = "전화에 적은 데이터 사용";
 "CallSettings.Never" = "거부";
 "CallSettings.OnMobile" = "통신사망";
 "CallSettings.Always" = "항상";
-"CallSettings.UseLessDataLongDescription" = "불안정한 네트워크에서 적은 데이터를 사용할 경우 통화개선이 있을수 있지만, 음성품질이 소폭 하락할 수 있습니다.";
+"CallSettings.UseLessDataLongDescription" = "불안정한 네트워크에서 적은 데이터를 사용할 경우 개선이 있을수 있지만, 음성품질이 소폭 하락할 수 있습니다.";
 
 "Calls.CallTabTitle" = "전화 탭";
 "Calls.CallTabDescription" = "탭 바에 전화 탭을 추가 할 수 있습니다";
@@ -2255,10 +2255,206 @@
 "Notification.CallIncoming" = "수신 전화";
 "Notification.CallMissed" = "부재중 전화";
 "Notification.CallCanceled" = "취소된 전화";
-"Notification.CallFormat" = "%1$@ %2$@"; // 1 - title, 2 - time
+"Notification.CallOutgoingShort" = "발신";
+"Notification.CallIncomingShort" = "수신";
+"Notification.CallMissedShort" = "부재중";
+"Notification.CallCanceledShort" = "취ㅗ";
+"Notification.CallFormat" = "%1$@, %2$@"; // 1 - time, 2 - duration
+
+
 
 "Call.ConnectionErrorTitle" = "전화 안됨";
 "Call.ConnectionErrorMessage" = "인터넷 연결을 확인한 후 다시 시도해 주세요.";
 
 "Call.CallBack" = "전화 회신";
 "Call.CallAgain" = "다시 전화걸기";
+
+"Login.PhoneFloodError" = "죄송합니다, 최근에 계정 재가입을 너무 많이 시도하였습니다. 몇일 후에 다시 시도해주세요.";
+
+"Checkout.Title" = "체크아웃";
+"Checkout.TotalAmount" = "전체";
+"Checkout.TotalPaidAmount" = "전체 지불한 금액";
+"Checkout.PaymentMethod" = "결제방법";
+"Checkout.ShippingMethod" = "배송방법";
+"Checkout.ShippingAddress" = "배송정보";
+"Checkout.Name" = "이름";
+"Checkout.Email" = "이메일";
+"Checkout.Phone" = "전화번호";
+"Checkout.PayPrice" = "%@ 결제";
+"Checkout.PayNone" = "결제";
+
+"Checkout.PaymentMethod.Title" = "결제방법";
+"Checkout.PaymentMethod.New" = "새로운 신용카드...";
+
+"Checkout.NewCard.Title" = "새로운 신용카드";
+"Checkout.NewCard.PaymentCard" = "결제 카드";
+"Checkout.NewCard.SaveInfo" = "결제정보 저장";
+"Checkout.NewCard.SaveInfoEnableHelp" = "향후 결제정보로 사용할 수 있게 저장 할 수 있습니다.\n[2단계 인증을 사용하셔서] 활성화 해주세요.";
+"Checkout.NewCard.SaveInfoHelp" = "향후 사용을 위하여 결제정보를 저장 할 수 있습니다.";
+"Checkout.NewCard.CardholderNameTitle" = "카드 소지자";
+"Checkout.NewCard.CardholderNamePlaceholder" = "카드 소지자 이름";
+"Checkout.NewCard.PostcodeTitle" = "결제주소";
+"Checkout.NewCard.PostcodePlaceholder" = "우편번호";
+
+"Checkout.ShippingOption.Title" = "배송방법";
+"Checkout.ShippingOption.Header" = "배송방법 선택";
+
+"Checkout.ErrorProviderAccountInvalid" = "이봇은 현재 결제를 받을 수 없습니다. 나중에 다시 시도하세요.";
+"Checkout.ErrorProviderAccountTimeout" = "이봇은 현재 결제를 처리 할 수 없습니다. 나중에 다시 시도하세요.";
+"Checkout.ErrorInvoiceAlreadyPaid" = "이미 아이템에 대하여 지불을 하였습니다.";
+
+"Checkout.ErrorGeneric" = "결제진행시 에러가 발생하였습니다. 카드로 청구가 되지 않았습니다.";
+"Checkout.ErrorPaymentFailed" = "결제 실패. 카드로 청구가 되지 않았습니다.";
+"Checkout.ErrorPrecheckoutFailed" = "봇이 결제처리를 할 수 없었습니다. 카드로 청구가 되지 않았습니다.";
+
+"CheckoutInfo.Title" = "배송정보";
+"CheckoutInfo.ShippingInfoTitle" = "배송주소";
+"CheckoutInfo.ShippingInfoAddress1" = "주소1";
+"CheckoutInfo.ShippingInfoAddress1Placeholder" = "주소";
+"CheckoutInfo.ShippingInfoAddress2" = "주소2";
+"CheckoutInfo.ShippingInfoAddress2Placeholder" = "주소";
+"CheckoutInfo.ShippingInfoState" = "주";
+"CheckoutInfo.ShippingInfoStatePlaceholder" = "주";
+"CheckoutInfo.ShippingInfoCity" = "시";
+"CheckoutInfo.ShippingInfoCityPlaceholder" = "ㅅ";
+"CheckoutInfo.ShippingInfoCountry" = "국가";
+"CheckoutInfo.ShippingInfoCountryPlaceholder" = "국가";
+"CheckoutInfo.ShippingInfoPostcode" = "우편번호";
+"CheckoutInfo.ShippingInfoPostcodePlaceholder" = "우편번호";
+"CheckoutInfo.ReceiverInfoTitle" = "수신자";
+"CheckoutInfo.ReceiverInfoName" = "이름";
+"CheckoutInfo.ReceiverInfoNamePlaceholder" = "이름 성";
+"CheckoutInfo.ReceiverInfoEmail" = "이메일";
+"CheckoutInfo.ReceiverInfoEmailPlaceholder" = "이메일";
+"CheckoutInfo.ReceiverInfoPhone" = "전화번호";
+"CheckoutInfo.SaveInfo" = "정보 저장";
+"CheckoutInfo.SaveInfoHelp" = "향후 사용을 위하여 배송정보를 저장 할 수 있습니다.";
+"CheckoutInfo.Pay" = "결제";
+
+"Checkout.Receipt.Title" = "영수증";
+
+"Message.ReplyActionButtonShowReceipt" = "영수증 보기";
+"Message.InvoiceShipmentLabel" = "배송";
+"Message.InvoiceLabel" = "인보이스";
+
+"CheckoutInfo.ErrorShippingNotAvailable" = "선택한 국가로 배송을 할 수 없습니다.";
+"CheckoutInfo.ErrorPostcodeInvalid" = "올바른 우편번호를 입력해주세요.";
+"CheckoutInfo.ErrorStateInvalid" = "올바른 주를 입력해주세요.";
+"CheckoutInfo.ErrorCityInvalid" = "올바른 시를 입력해주세요.";
+"CheckoutInfo.ErrorNameInvalid" = "올바른 이름을 입력해주세요.";
+"CheckoutInfo.ErrorEmailInvalid" = "올바른 이메일주소를 입력해주세요.";
+"CheckoutInfo.ErrorPhoneInvalid" = "올바른 전화번호를 입력해주세요.";
+
+"Checkout.WebConfirmation.Title" = "결제 완료";
+"Checkout.PasswordEntry.Title" = "결제 확인";
+"Checkout.PasswordEntry.Pay" = "결제";
+"Checkout.PasswordEntry.Text" = "%@ 카드정보가 파일로 있습니다. 이 카드로 결제하시려면 2단계 비밀번호를 입력해주세요";
+
+"Checkout.SavePasswordTimeout" = "%@에 대하여 비밀번호를 저장하시겠습니까?";
+"Checkout.SavePasswordTimeoutAndTouchId" = "%@에 대하여 비밀번호를 저장하고 터치ID를 대신 사용하시겠습니까?";
+"Checkout.PayWithTouchId" = "터치ID로 결제";
+"Checkout.EnterPassword" = "비밀번호 입력";
+
+"Your card has expired" = "신용카드가 만료되었습니다.";
+
+/* Error when the card was declined by the credit card networks */
+"Your card was declined" = "신용카드가 거절되었습니다.";
+
+/* Error when the card's expiration month is not valid */
+"Your card's expiration month is invalid" = "올바르지 않은 유효기간을 입력하였습니다.";
+
+/* Error when the card's expiration year is not valid */
+"Your card's expiration year is invalid" = "올바르지 않은 유료기간 연도를 입력하였습니다.";
+
+/* Error when the card number is not valid */
+"Your card's number is invalid" = "올바르지 않은 카드 번호를 입력하였습니다.";
+
+/* Error when the card's CVC is not valid */
+"Your card's security code is invalid" = "올바르지 않은 보안코드를 입력하였습니다.";
+
+"MESSAGE_INVOICE" = "%2$@에 대한 인보이스를 %1$@님이 보냈습니다.";
+"CHAT_MESSAGE_INVOICE" = "%3$@에 대한 인보이스를 %1$@님이 %2$@그룹에 보냈습니다.";
+"PINNED_INVOICE" = "%1$@님이 인보이스를 고정하였습니다";
+
+"Message.PinnedInvoice" = "인보이스 고정";
+
+"User.DeletedAccount" = "계정 삭제";
+
+"Settings.SaveEditedPhotos" = "수정된 사진 저장";
+
+"Message.PaymentSent" = "결제 : %@";
+"Notification.PaymentSent" = "{name}에게 {title}에 대한 {amount}을 성공적으로 지불하였습니다";
+
+"Common.NotNow" = "지금은 안됨";
+
+"Calls.RatingFeedback" = "코멘트 쓰기..";
+
+"Call.StatusIncoming" = "텔레그램 오디오...";
+"Call.StatusRequesting" = "연락중...";
+"Call.StatusWaiting" = "대기 중...";
+"Call.StatusRinging" = "발신중..";
+"Call.StatusConnecting" = "연결중...";
+"Call.StatusOngoing" = "텔레그램 오디오 %@";
+"Call.StatusEnded" = "전화 종료";
+"Call.StatusFailed" = "전화 실패";
+"Call.StatusBusy" = "통화중";
+"Call.Accept" = "승인";
+"Call.Decline" = "거절";
+
+"Call.StatusBar" = "%@에게 전화를 회신하려면 눌러주세요";
+
+"UserInfo.Call" = "보이스콜";
+
+"Call.ParticipantVersionOutdatedError" = "%@의 앱은 현재 전화기능을 지원하고 있지 않습니다. 앱 업데이트 후에 전화가 가능합니다.";
+
+"Privacy.Calls" = "보이스콜";
+
+"Privacy.Calls.WhoCanCallMe" = "전화 가능한 분";
+"Privacy.Calls.CustomHelp" = "전화가 가능한 분에 대한 설정이 가능합니다.";
+"Privacy.Calls.AlwaysAllow" = "항상 허용";
+"Privacy.Calls.NeverAllow" = "항상 거부";
+"Privacy.Calls.CustomShareHelp" = "이 사용자들은 위의 설정과 무관하게 전화가 되거나 안될 수 있습니다.";
+
+"Privacy.Calls.AlwaysAllow.Title" = "항상 허용";
+"Privacy.Calls.AlwaysAllow.Placeholder" = "항상 허용...";
+"Privacy.Calls.NeverAllow.Title" = "항상 거부";
+"Privacy.Calls.NeverAllow.Placeholder" = "항상 거부...";
+
+"PhotoEditor.QualityTool" = "품질";
+"PhotoEditor.QualityVeryLow" = "매우 낮음";
+"PhotoEditor.QualityLow" = "낮음";
+"PhotoEditor.QualityMedium" = "중간";
+"PhotoEditor.QualityHigh" = "높음";
+"PhotoEditor.QualityVeryHigh" = "매우 높음";
+
+"Settings.SaveEditedPhotos" = "수정된 사진 저장";
+
+"Calls.NoCallsPlaceholder" = "최근 전화내역이 여기에 표시됨";
+"Calls.NoMissedCallsPlacehoder" = "부재중 전화가 없습니다.";
+
+"Call.CallInProgressTitle" = "전화중";
+"Call.CallInProgressMessage" = "%1$@와 통화를 끝내고 %2$@와 통화를 시작하겠습니까?";
+
+"Call.Message" = "메시지";
+
+"UserInfo.TapToCall" = "탭을 하여 단대단 암호화 전화로 전환합니다.";
+"Call.GroupFormat" = "%1$@ (%2$@)";
+
+"NetworkUsageSettings.CallDataSection" = "통화";
+
+"Call.PrivacyErrorMessage" = "죄송합니다, %@님은 수신거부 상태입니다";
+
+"Notification.CallBack" = "전화 회신";
+
+"CallSettings.PrivacyDescription" = "[보안 설정]에서 음성 전화 수신 가능한 사람 선택";
+
+"Call.AudioRouteSpeaker" = "스피커";
+"Call.AudioRouteHeadphones" = "헤드폰";
+"Call.AudioRouteHide" = "숨김";
+
+"EncryptionKey.TapToEmojify" = "탭을 하여 이모티콘화";
+
+"Call.PhoneCallInProgressMessage" = "통화중일 경우 텔레그램 전화를 사용할 수 없습니다.";
+"Call.RecordingDisabledMessage" = "음성 메시지를 녹음하시려면 통화가 끝나야합니다.";
+
+"Call.EmojiDescription" = "%@님과 이모티콘이 일치한다면, 이 통화는 100%% 안전합니다";

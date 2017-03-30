@@ -112,7 +112,7 @@
     
     CGRect frame = self.frame;
     
-    _separatorView.frame = CGRectMake(0.0f, 0.0f, frame.size.width, TGIsRetina() ? 0.5f : 1.0f);
+    _separatorView.frame = CGRectMake(0.0f, 0.0f, frame.size.width, TGScreenPixel);
     _shareButton.frame = CGRectMake(frame.size.width - 56.0f, TGRetinaPixel, 56.0f, 44.0f);
     _deleteButton.frame = CGRectMake(0.0f, TGRetinaPixel, 52.0f, 44.0f);
     

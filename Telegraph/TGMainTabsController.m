@@ -73,6 +73,7 @@
         _label.backgroundColor = [UIColor clearColor];
         _label.textColor = [UIColor whiteColor];
         _label.font = TGSystemFontOfSize(13);
+        _label.textAlignment = NSTextAlignmentCenter;
         [self addSubview:_label];
     }
     return self;
@@ -107,14 +108,15 @@
         self.hidden = false;
         
         CGRect frame = _backgroundView.frame;
-        CGFloat textWidth = _label.frame.size.width;
-        frame.size.width = MAX(18.0f, textWidth + 10.0f + TGRetinaPixel * 2.0f);
-        frame.origin.x = _backgroundView.superview.frame.size.width - frame.size.width;
+        CGFloat textWidth = ceil(_label.frame.size.width);
+        frame.size.width = count < 10 ? 18.0f : MAX(18.0f, textWidth + 10.0f + TGRetinaPixel * 2.0f);
+        frame.origin.x = _backgroundView.superview.frame.size.width - frame.size.width - 1.0f;
         _backgroundView.frame = frame;
         
         CGRect labelFrame = _label.frame;
-        labelFrame.origin.x = 5.0f + TGRetinaPixel + frame.origin.x;
+        labelFrame.origin.x = frame.origin.x;
         labelFrame.origin.y = 1;
+        labelFrame.size.width = frame.size.width;
         _label.frame = labelFrame;
     }
 }
@@ -150,6 +152,7 @@
         _label.highlightedTextColor = TGAccentColor();
         _label.font = [TGTabBarButton labelFont];
         _label.text = title;
+        _label.textAlignment = NSTextAlignmentCenter;
         [_label sizeToFit];
         _label.frame = CGRectMake(_label.frame.origin.x, _label.frame.origin.y, ceil(_label.frame.size.width), ceil(_label.frame.size.height));
         [self addSubview:_label];
@@ -166,8 +169,8 @@
 
 - (void)layoutSubviews
 {
-    _imageView.frame = CGRectMake(ceil(self.frame.size.width - _imageView.frame.size.width) / 2, [self iconVerticalOffset], _imageView.frame.size.width, _imageView.frame.size.height);
-    _label.frame = CGRectMake(ceil(self.frame.size.width - _label.frame.size.width) / 2, [self labelVerticalOffset], _label.frame.size.width, _label.frame.size.height);
+    _imageView.frame = CGRectMake(floor((self.frame.size.width - _imageView.frame.size.width) / 2), [self iconVerticalOffset], _imageView.frame.size.width, _imageView.frame.size.height);
+    _label.frame = CGRectMake(0, [self labelVerticalOffset], self.frame.size.width, _label.frame.size.height);
 }
 
 - (CGFloat)iconVerticalOffset
@@ -207,7 +210,7 @@
         if (!TGIsPad())
             font = TGSystemFontOfSize(10);
         else
-            font = TGSystemFontOfSize(14);
+            font = TGSystemFontOfSize(11);
     });
     return font;
 }
@@ -218,6 +221,9 @@
 @interface TGTabBar : UIView
 {
     bool _skipNextLayout;
+    
+    int _callsCount;
+    int _messagesCount;
 }
 
 @property (nonatomic, weak) id<TGTabBarDelegate> tabDelegate;
@@ -371,7 +377,8 @@
         [self setNeedsLayout];
     }
     
-    [_callsBadge setCount:callsCount];
+    _callsCount = callsCount;
+    [self updateCounts];
 }
 
 - (void)setUnreadCount:(int)unreadCount
@@ -387,7 +394,14 @@
         [self setNeedsLayout];
     }
     
-    [_messagesBadge setCount:unreadCount];
+    _messagesCount = unreadCount;
+    [self updateCounts];
+}
+
+- (void)updateCounts
+{
+    [_callsBadge setCount:_callsCount];
+    [_messagesBadge setCount:MAX(0, _messagesCount - _callsCount)];
 }
 
 - (void)layoutButtons
@@ -403,10 +417,6 @@
         if (buttonsCount == 3 && index > 1)
             index--;
         
-        CGFloat horizontalOffset = 0.0f;
-        if (index == 0 || index == buttonsCount - 1)
-            horizontalOffset = [self sideIconOffsetForWidth:viewSize.width] * (index == 0 ? 1 : -1);
-        
         button.frame = CGRectMake(index * buttonWidth, 0, buttonWidth, self.frame.size.height);
         
         TGTabBarBadge *badge = nil;
@@ -418,7 +428,7 @@
         if (badge != nil)
         {
             CGRect badgeFrame = badge.frame;
-            badgeFrame.origin.x = button.frame.size.width / 2.0f + 7 + TGRetinaPixel;
+            badgeFrame.origin.x = button.frame.size.width / 2.0f + 6.0f + (_callsHidden ? 0 : TGRetinaPixel);
             badgeFrame.origin.y = 2 - button.frame.origin.y;
             badge.frame = badgeFrame;
         }
@@ -432,7 +442,7 @@
     CGSize viewSize = self.frame.size;
     
     _backgroundView.frame = CGRectMake(0, 0, viewSize.width, viewSize.height);
-    CGFloat stripeHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat stripeHeight = TGScreenPixel;
     _stripeView.frame = CGRectMake(0, -stripeHeight, viewSize.width, stripeHeight);
     
     [self layoutButtons];

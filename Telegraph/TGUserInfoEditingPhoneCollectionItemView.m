@@ -40,7 +40,7 @@
         [self.editingContentView.layer addSublayer:_separatorLayer];
         
         _fieldSeparator = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernUserInfoPhoneEditingSeparator.png"]];
-        _fieldSeparator.frame = CGRectMake(109.0f, 0.0f, TGIsRetina() ? 0.5f : 1.0f, 44.0f);
+        _fieldSeparator.frame = CGRectMake(109.0f, 0.0f, TGScreenPixel, 44.0f);
         [self.editingContentView addSubview:_fieldSeparator];
         
         _labelButton = [[TGModernButton alloc] initWithFrame:CGRectMake(46.0f, TGRetinaPixel, 46.0f, 44.0f)];
@@ -55,7 +55,7 @@
         _arrowView.frame = CGRectMake(96.0f, 17.0f + TGRetinaPixel, arrowSize.width, arrowSize.height);
         [self.editingContentView addSubview:_arrowView];
         
-        CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat separatorHeight = TGScreenPixel;
         self.optionsOffset = CGPointMake(0.0f, -separatorHeight);
         
         _phoneField = [[TGPhoneTextField alloc] init];
@@ -90,7 +90,7 @@
     [super layoutSubviews];
     
     CGRect bounds = self.bounds;
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     _separatorLayer.frame = CGRectMake(15.0f, bounds.size.height - separatorHeight, bounds.size.width + 256.0f, separatorHeight);
     
     _phoneField.frame = CGRectMake(122.0f, TGRetinaPixel, bounds.size.width - 122.0f - 8.0f, bounds.size.height);

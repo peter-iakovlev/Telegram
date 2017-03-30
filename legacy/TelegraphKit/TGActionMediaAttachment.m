@@ -172,6 +172,14 @@
         [data appendBytes:&reason length:4];
         int32_t duration = [_actionData[@"duration"] intValue];
         [data appendBytes:&duration length:4];
+    } else if (actionType == TGMessageActionPaymentSent) {
+        NSString *curreny = _actionData[@"currency"];
+        NSData *currencyBytes = [curreny dataUsingEncoding:NSUTF8StringEncoding];
+        int32_t currencyLength = (int32_t)currencyBytes.length;
+        [data appendBytes:&currencyLength length:4];
+        [data appendData:currencyBytes];
+        int32_t totalAmount = [_actionData[@"totalAmount"] intValue];
+        [data appendBytes:&totalAmount length:4];
     }
 
     int dataLength = (int)data.length - dataLengthPtr - 4;
@@ -363,6 +371,15 @@
         int32_t duration = 0;
         [is read:(uint8_t *)&duration maxLength:4];
         actionAttachment.actionData = @{@"callId": @(callId), @"reason": @(reason), @"duration": @(duration)};
+    } else if (actionType == TGMessageActionPaymentSent) {
+        int32_t currencyLength = 0;
+        [is read:(uint8_t *)&currencyLength maxLength:4];
+        uint8_t *titleBytes = malloc(currencyLength);
+        [is read:titleBytes maxLength:currencyLength];
+        NSString *title = [[NSString alloc] initWithBytesNoCopy:titleBytes length:currencyLength encoding:NSUTF8StringEncoding freeWhenDone:true];
+        int32_t totalAmount = 0;
+        [is read:(uint8_t *)&totalAmount maxLength:4];
+        actionAttachment.actionData = @{@"currency": title, @"totalAmount": @(totalAmount)};
     }
     
     return actionAttachment;

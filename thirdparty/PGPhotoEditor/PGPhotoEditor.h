@@ -1,9 +1,10 @@
 #import <Foundation/Foundation.h>
 #import <SSignalKit/SSignalKit.h>
 
+#import "TGVideoEditAdjustments.h"
+
 @class TGPhotoEditorPreviewView;
 @class TGPaintingData;
-@protocol TGMediaEditAdjustments;
 
 @interface PGPhotoEditor : NSObject
 
@@ -18,6 +19,7 @@
 @property (nonatomic, assign) NSTimeInterval trimStartValue;
 @property (nonatomic, assign) NSTimeInterval trimEndValue;
 @property (nonatomic, assign) bool sendAsGif;
+@property (nonatomic, assign) TGMediaVideoConversionPreset preset;
 
 @property (nonatomic, weak) TGPhotoEditorPreviewView *previewOutput;
 @property (nonatomic, readonly) NSArray *tools;

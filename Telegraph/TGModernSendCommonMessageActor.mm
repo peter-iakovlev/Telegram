@@ -39,8 +39,8 @@
 
 #import "TGMediaAssetsLibrary.h"
 #import "TGMediaAssetImageSignals.h"
-#import "TGVideoConverter.h"
-#import "TGVideoEditAdjustments.h"
+#import "TGMediaVideoConverter.h"
+#import "TGMediaLiveUploadWatcher.h"
 
 #import "TGImageUtils.h"
 #import "TGStringUtils.h"
@@ -877,16 +877,7 @@
 
             TGVideoEditAdjustments *adjustments = [TGVideoEditAdjustments editAdjustmentsWithDictionary:assetVideoMessage.adjustments];
             bool liveUpload = assetVideoMessage.liveUpload;
-            bool passthrough = assetVideoMessage.passthrough;
             bool useMediaCache = assetVideoMessage.useMediaCache;
-            
-            SSignal *(^hashSignal)(AVAsset *) = ^(AVAsset *avAsset)
-            {
-                if ([adjustments cropAppliedForAvatar:false] || [adjustments trimApplied] || [adjustments sendAsGif])
-                    return [SSignal single:nil];
-                
-                return [TGVideoConverter hashSignalForAVAsset:avAsset];
-            };
             
             if (!assetVideoMessage.document || assetVideoMessage.isAnimation)
                 self.uploadProgressContainsPreDownloads = true;
@@ -938,30 +929,32 @@
                 if ([value isKindOfClass:[AVAsset class]])
                 {
                     AVAsset *avAsset = (AVAsset *)value;
+                    
                     SSignal *(^convertSignal)(NSString *) = ^SSignal *(NSString *hash)
                     {
                         assetVideoMessage.videoHash = hash;
-                        return [[TGVideoConverter convertSignalForAVAsset:avAsset adjustments:adjustments liveUpload:liveUpload passthrough:passthrough] map:^id(id value)
+                                                
+                        return [[TGMediaVideoConverter convertAVAsset:avAsset adjustments:adjustments watcher:liveUpload ? [[TGMediaLiveUploadWatcher alloc] init] : nil] map:^id(id value)
                         {
-                            if ([value isKindOfClass:[NSDictionary class]])
+                            if ([value isKindOfClass:[TGMediaVideoConversionResult class]])
                             {
-                                NSMutableDictionary *dict = [value mutableCopy];
+                                NSMutableDictionary *dict = [[(TGMediaVideoConversionResult *)value dictionary] mutableCopy];
                                 if (hash != nil)
                                     dict[@"hash"] = hash;
-                                
+
                                 return @{ @"convertResult": dict };
                             }
                             else if ([value isKindOfClass:[NSNumber class]])
                             {
                                 return @{ @"convertProgress": value };
                             }
-                            return value;
+                            return nil;
                         }];
                     };
                     
                     if (useMediaCache)
                     {
-                        return [hashSignal(avAsset) mapToSignal:^SSignal *(NSString *hash)
+                        return [[TGMediaVideoConverter hashForAVAsset:avAsset adjustments:adjustments] mapToSignal:^SSignal *(NSString *hash)
                         {
                             if (hash != nil && [TGImageDownloadActor serverMediaDataForAssetUrl:hash])
                             {
@@ -1161,12 +1154,13 @@
                     
                     [self uploadFilesWithExtensions:files mediaTypeTag:TGNetworkMediaTypeTagVideo];
                 }
-            } error:^(__unused id error)
+            } error:^(id error)
             {
                 __strong TGModernSendCommonMessageActor *strongSelf = weakSelf;
                 if (strongSelf != nil)
                 {
-                    TGLog(@"Cloud photo load error");
+                    if ([error isKindOfClass:[NSError class]])
+                        TGLog(@"VIDEO ERROR: %@", [error localizedDescription]);
                     [strongSelf _fail];
                 }
             } completed:nil]];

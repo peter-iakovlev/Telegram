@@ -131,6 +131,7 @@ static UIImage *buttonImageForType(TGDialogListCellEditingControlButton button) 
     UIScrollView *_scroller;
     NSArray *_buttonTypes;
     NSMutableArray<TGDialogListCellEditingButton *> *_buttons;
+    bool _labelOnly;
 }
 
 @end
@@ -231,6 +232,7 @@ static UIImage *buttonImageForType(TGDialogListCellEditingControlButton button) 
             [self addSubview:button];
         }
         button.hidden = false;
+        button.labelOnly = _labelOnly;
         TGDialogListCellEditingControlButton buttonType = (TGDialogListCellEditingControlButton)[nButtonType intValue];
         [button setTitle:buttonTitleForType(buttonType) image:buttonImageForType(buttonType)];
         [button setBackgroundColor:buttonColorForType(buttonType) force:true];
@@ -341,6 +343,11 @@ static UIImage *buttonImageForType(TGDialogListCellEditingControlButton button) 
     if (recognizer.state == UIGestureRecognizerStateEnded && [self isExpanded]) {
         [self setExpanded:false animated:true];
     }
+}
+
+- (void)setLabelOnly:(bool)labelOnly {
+    _labelOnly = labelOnly;
+    [self resetButtons];
 }
 
 @end

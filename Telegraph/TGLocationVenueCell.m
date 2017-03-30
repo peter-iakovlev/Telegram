@@ -75,7 +75,7 @@ const CGFloat TGLocationVenueCellHeight = 48.5f;
     [super layoutSubviews];
     
     CGFloat padding = 65.0f;
-    CGFloat separatorThickness = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorThickness = TGScreenPixel;
 
     _iconView.frame = CGRectMake(14, 4, 40, 40);
     _titleLabel.frame = CGRectMake(padding, 5, self.frame.size.width - padding - 14, 20);

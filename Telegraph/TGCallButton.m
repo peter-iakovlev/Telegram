@@ -13,6 +13,7 @@
 @property (nonatomic, assign) CGColorRef backColor;
 @property (nonatomic, strong) UIColor *strokeColor;
 @property (nonatomic, assign) CGFloat iconRotation;
+@property (nonatomic, assign) CGFloat iconTargetRotation;
 
 @end
 
@@ -45,6 +46,7 @@ const CGSize TGCallNormalButtonSize = { 75.0f, 75.0f };
         self.adjustsImageWhenHighlighted = false;
         self.titleLabel.font = TGSystemFontOfSize(14.0f);
         self.titleLabel.textAlignment = NSTextAlignmentCenter;
+        self.titleLabel.numberOfLines = 1;
         [self setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     }
     return self;
@@ -98,6 +100,12 @@ const CGSize TGCallNormalButtonSize = { 75.0f, 75.0f };
         _iconImage = image;
     }
     [self setNeedsDisplay];
+}
+
+- (void)setTitle:(NSString *)title forState:(UIControlState)state
+{
+    title = [title stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
+    [super setTitle:title forState:state];
 }
 
 - (void)setHasBorder:(bool)hasBorder
@@ -179,6 +187,7 @@ const CGSize TGCallNormalButtonSize = { 75.0f, 75.0f };
 
 - (void)setIconRotation:(CGFloat)iconRotation
 {
+    ((TGCallButtonBackgroundLayer *)self.layer).iconTargetRotation = iconRotation;
     ((TGCallButtonBackgroundLayer *)self.layer).iconRotation = iconRotation;
 }
 
@@ -206,39 +215,36 @@ const CGSize TGCallNormalButtonSize = { 75.0f, 75.0f };
     if (_hasBorder)
     {
         CGFloat selectionIntensity = sourceLayer.selectionIntensity;
+        CGFloat alpha = 0.5 + selectionIntensity * 0.5f;
         CGFloat highlightIntensity = sourceLayer.highlightIntensity;
-        CGFloat alpha = MIN(1.0f, 0.4f + 0.25 * highlightIntensity + selectionIntensity * 0.5f);
-        
-        if (_background != nil)
+        if (highlightIntensity > FLT_EPSILON)
         {
-            CGContextBeginPath(context);
-            CGContextAddEllipseInRect(context, CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height));
-            CGContextClip(context);
-            
-            [[_background backgroundImage] drawInRect:CGRectMake(-_absoluteOffset.x, -_absoluteOffset.y, [_background size].width, [_background size].height) blendMode:kCGBlendModeCopy alpha:1.0f];
-            
-            CGContextSetFillColorWithColor(context, [UIColor colorWithWhite:1.0f alpha:alpha].CGColor);
-            CGContextFillEllipseInRect(context, rect);
-            
-            CGContextSetBlendMode(context, kCGBlendModeNormal);
-            CGSize imageSize =_iconImage.size;
-            if (selectionIntensity > 0.0f)
-            {
-                [_iconImage drawInRect:CGRectMake((self.frame.size.width - imageSize.width) / 2.0f, (self.frame.size.height - imageSize.height) / 2.0f, imageSize.width, imageSize.height) blendMode:kCGBlendModeDestinationOut alpha:selectionIntensity];
-            
-                [_iconImage drawInRect:CGRectMake((self.frame.size.width - imageSize.width) / 2.0f, (self.frame.size.height - imageSize.height) / 2.0f, imageSize.width, imageSize.height) blendMode:kCGBlendModeNormal alpha:1.0f - selectionIntensity];
-            }
-            else
-            {
-                [_iconImage drawInRect:CGRectMake((self.frame.size.width - imageSize.width) / 2.0f, (self.frame.size.height - imageSize.height) / 2.0f, imageSize.width, imageSize.height) blendMode:kCGBlendModeNormal alpha:1.0f];
-            }
+            CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffff, alpha * highlightIntensity).CGColor);
+            CGContextFillEllipseInRect(context, CGRectInset(rect, 1.45f, 1.45f));
+        }
+        
+        CGContextSetStrokeColorWithColor(context, UIColorRGBA(0xffffff, alpha).CGColor);
+        CGContextSetLineWidth(context, 1.5f);
+        CGContextStrokeEllipseInRect(context, CGRectInset(rect, 1.5f / 2.0f, 1.5f / 2.0f));
+        
+        CGSize imageSize =_iconImage.size;
+        
+        if (selectionIntensity > 0.0f)
+        {
+            [_iconImage drawInRect:CGRectMake((self.frame.size.width - imageSize.width) / 2.0f, (self.frame.size.height - imageSize.height) / 2.0f, imageSize.width, imageSize.height) blendMode:kCGBlendModeDestinationOut alpha:selectionIntensity];
+        
+            [_iconImage drawInRect:CGRectMake((self.frame.size.width - imageSize.width) / 2.0f, (self.frame.size.height - imageSize.height) / 2.0f, imageSize.width, imageSize.height) blendMode:kCGBlendModeNormal alpha:1.0f - selectionIntensity];
+        }
+        else
+        {
+            [_iconImage drawInRect:CGRectMake((self.frame.size.width - imageSize.width) / 2.0f, (self.frame.size.height - imageSize.height) / 2.0f, imageSize.width, imageSize.height) blendMode:kCGBlendModeNormal alpha:1.0f];
         }
     }
     else
     {
         CGColorRef backColor = [sourceLayer backColor];
         CGContextSetFillColorWithColor(context, backColor);
-        CGContextFillEllipseInRect(context, CGRectInset(rect, 1.5f, 1.5f));
+        CGContextFillEllipseInRect(context, rect);
         
         _iconImageView.transform = CGAffineTransformMakeRotation(sourceLayer.iconRotation);
     }
@@ -276,8 +282,9 @@ const CGSize TGCallNormalButtonSize = { 75.0f, 75.0f };
 {
     [super layoutSubviews];
     
+    [self.titleLabel sizeToFit];
     CGRect frame = self.titleLabel.frame;
-    frame = CGRectMake(0, self.bounds.size.height + 6.0f, self.bounds.size.width, frame.size.height);
+    frame = CGRectMake(floor((self.frame.size.width - frame.size.width) / 2.0f), self.bounds.size.height + 6.0f, frame.size.width, frame.size.height);
     self.titleLabel.frame = frame;
 }
 
@@ -367,8 +374,22 @@ NSString *const TGCallButtonIconRotationKey = @"iconRotation";
         
         if ([key isEqualToString:TGCallButtonIconRotationKey])
         {
-            [animation setFromValue:@([self.presentationLayer iconRotation])];
-            [animation setByValue:@([self.presentationLayer iconRotation] - M_PI_2)];
+            //CGFloat fromValue = [self.presentationLayer iconRotation];
+            
+            CGFloat fromValue = 0.0f;
+            CGFloat byValue = 0.0f;
+            if (fabs(self.iconTargetRotation) < DBL_EPSILON)
+            {
+                fromValue = -2.35619f;
+                byValue = -2.35619f - M_PI_2;
+            }
+            else
+            {
+                byValue = 2 * M_PI - 2.35619f;
+            }
+            
+            [animation setFromValue:@(fromValue)];
+            [animation setByValue:@(byValue)];
         }
         [animation setToValue:nil];
         return animation;

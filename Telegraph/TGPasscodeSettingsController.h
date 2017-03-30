@@ -2,6 +2,7 @@
 
 @interface TGPasscodeSettingsController : TGCollectionMenuController
 
++ (bool)supportsTouchId;
 + (bool)enableTouchId;
 
 @end

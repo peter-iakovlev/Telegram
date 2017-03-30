@@ -27,6 +27,8 @@
 
 #import "TGNavigationBar.h"
 
+#import "TGStringUtils.h"
+
 @interface TGInstantPageController () {
     TGWebPageMediaAttachment *_webPage;
     int64_t _peerId;
@@ -42,13 +44,14 @@
     SMetaDisposable *_openWebpageDisposable;
     
     TGPIPSourceLocation *_targetPIPLocation;
+    NSString *_initialAnchor;
 }
 
 @end
 
 @implementation TGInstantPageController
 
-- (instancetype)initWithWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId {
+- (instancetype)initWithWebPage:(TGWebPageMediaAttachment *)webPage anchor:(NSString *)anchor peerId:(int64_t)peerId messageId:(int32_t)messageId {
     self = [super init];
     if (self != nil) {
         _webPage = webPage;
@@ -58,6 +61,7 @@
         _statusBarStyle = UIStatusBarStyleLightContent;
         _shareDisposable = [[SMetaDisposable alloc] init];
         _openWebpageDisposable = [[SMetaDisposable alloc] init];
+        _initialAnchor = anchor;
         
         __weak TGInstantPageController *weakSelf = self;
         _updatePageDisposable = [[[TGWebpageSignals updatedWebpage:webPage] deliverOn:[SQueue mainQueue]] startWithNext:^(TGWebPageMediaAttachment *updatedWebPage) {
@@ -91,6 +95,7 @@
     _pageView.messageId = _messageId;
     _pageView.webPage = _webPage;
     _pageView.statusBarHeight = [self controllerStatusBarHeight];
+    _pageView.initialAnchor = _initialAnchor;
     [self.view addSubview:_pageView];
     
     __weak TGInstantPageController *weakSelf = self;
@@ -120,7 +125,7 @@
                     __strong TGInstantPageController *strongSelf = weakSelf;
                     if (strongSelf != nil) {
                         if (webPage != nil) {
-                            [strongSelf.navigationController pushViewController:[[TGInstantPageController alloc] initWithWebPage:webPage peerId:0 messageId:0] animated:true];
+                            [strongSelf.navigationController pushViewController:[[TGInstantPageController alloc] initWithWebPage:webPage anchor:[url urlAnchorPart] peerId:0 messageId:0] animated:true];
                         } else {
                             [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
                         }
@@ -302,7 +307,7 @@
     _pageView.openFeedback = ^{
         __strong TGInstantPageController *strongSelf = weakSelf;
         if (strongSelf != nil) {
-            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://telegram.me/previews?start=webpage%lld", strongSelf->_webPage.webPageId]]];
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://t.me/previews?start=webpage%lld", strongSelf->_webPage.webPageId]]];
         }
     };
 }

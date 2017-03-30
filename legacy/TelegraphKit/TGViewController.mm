@@ -934,6 +934,9 @@ static std::set<int> autorotationLockIds;
 
 - (void)setNeedsStatusBarAppearanceUpdate
 {
+    if (iosMajorVersion() < 7)
+        return;
+    
     [super setNeedsStatusBarAppearanceUpdate];
     
     if (iosMajorVersion() < 8)

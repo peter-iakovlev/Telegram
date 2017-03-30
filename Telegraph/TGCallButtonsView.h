@@ -6,11 +6,14 @@
 
 @interface TGCallButtonsView : UIView
 
+@property (nonatomic, readonly) UIButton *speakerButton;
+
 @property (nonatomic, copy) void (^declinePressed)(void);
 @property (nonatomic, copy) void (^callPressed)(void);
 
-@property (nonatomic, copy) void (^mutePressed)(void);
+@property (nonatomic, copy) void (^cancelPressed)(void);
 @property (nonatomic, copy) void (^messagePressed)(void);
+@property (nonatomic, copy) void (^mutePressed)(void);
 @property (nonatomic, copy) void (^speakerPressed)(void);
 
 - (void)setState:(TGCallSessionState *)state;

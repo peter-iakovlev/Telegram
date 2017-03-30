@@ -19,6 +19,8 @@
 - (void)setPaintingImageWithData:(TGPaintingData *)values;
 - (void)setPaintingHidden:(bool)hidden;
 
+- (void)setSnapshotImageOnTransition:(UIImage *)image;
+
 - (void)setCropRect:(CGRect)cropRect cropOrientation:(UIImageOrientation)cropOrientation cropRotation:(CGFloat)cropRotation cropMirrored:(bool)cropMirrored originalSize:(CGSize)originalSize;
 
 - (UIView *)originalSnapshotView;

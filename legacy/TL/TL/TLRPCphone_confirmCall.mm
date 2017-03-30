@@ -4,24 +4,25 @@
 #import "../NSOutputStream+TL.h"
 
 #import "TLInputPhoneCall.h"
-#import "TLPhoneConnection.h"
+#import "TLPhoneCallProtocol.h"
+#import "TLphone_PhoneCall.h"
 
 @implementation TLRPCphone_confirmCall
 
 
 - (Class)responseClass
 {
-    return [TLPhoneConnection class];
+    return [TLphone_PhoneCall class];
 }
 
 - (int)impliedResponseSignature
 {
-    return 0;
+    return (int)0xec82e140;
 }
 
 - (int)layerVersion
 {
-    return 8;
+    return 64;
 }
 
 - (int32_t)TLconstructorSignature
@@ -55,7 +56,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x3e383969;
+    return (int32_t)0x2efe1722;
 }
 
 - (int32_t)TLconstructorName
@@ -66,8 +67,10 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCphone_confirmCall$phone_confirmCall *object = [[TLRPCphone_confirmCall$phone_confirmCall alloc] init];
-    object.n_id = metaObject->getObject((int32_t)0x7a5601fb);
-    object.a_or_b = metaObject->getBytes((int32_t)0xd2c3dff4);
+    object.peer = metaObject->getObject((int32_t)0x9344c37d);
+    object.g_a = metaObject->getBytes((int32_t)0xa6887fe5);
+    object.key_fingerprint = metaObject->getInt64((int32_t)0x3633de43);
+    object.protocol = metaObject->getObject((int32_t)0xd45aa5f2);
     return object;
 }
 
@@ -76,14 +79,26 @@
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.n_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
+        value.nativeObject = self.peer;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9344c37d, value));
     }
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypeBytes;
-        value.nativeObject = self.a_or_b;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xd2c3dff4, value));
+        value.nativeObject = self.g_a;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xa6887fe5, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.key_fingerprint;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x3633de43, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.protocol;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xd45aa5f2, value));
     }
 }
 

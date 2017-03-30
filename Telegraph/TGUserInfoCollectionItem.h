@@ -19,6 +19,7 @@
 @property (nonatomic) bool automaticallyManageUserPresence;
 @property (nonatomic) bool useRealName;
 @property (nonatomic) bool disableAvatar;
+@property (nonatomic) bool showCall;
 @property (nonatomic) CGFloat additinalHeight;
 @property (nonatomic) CGSize avatarOffset;
 @property (nonatomic) CGSize nameOffset;

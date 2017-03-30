@@ -25,7 +25,7 @@
         [_button setTitleColor:TGAccentColor()];
         _button.titleLabel.font = TGSystemFontOfSize(20.0f + TGRetinaPixel);
         [_button addTarget:self action:@selector(_buttonPressed) forControlEvents:UIControlEventTouchUpInside];
-        CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat separatorHeight = TGScreenPixel;
         _button.backgroundSelectionInsets = UIEdgeInsetsMake(1.0f + separatorHeight, 0.0f, 1.0f, 0.0f);
         _button.highlightBackgroundColor = TGSelectionColor();
         _button.highlighted = false;

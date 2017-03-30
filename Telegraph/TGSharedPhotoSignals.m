@@ -16,6 +16,8 @@
 
 #import "TGDocumentMediaAttachment.h"
 
+#import "TGSharedMediaUtils.h"
+
 #import <AVFoundation/AVFoundation.h>
 
 @implementation TGSharedPhotoSignals
@@ -306,6 +308,15 @@
     
     return [TGSharedMediaSignals squareThumbnail:cachedSizeLowPath cachedSizePath:cachedSizePath ofSize:size renderSize:renderSize pixelProcessingBlock:pixelProcessingBlock fullSizeImageSignalGenerator:^SSignal *
     {
+        if ([highQualityUrl hasPrefix:@"webdoc"]) {
+            return [SSignal defer:^SSignal *{
+                NSData *data = [[TGSharedMediaUtils sharedMediaTemporaryPersistentCache] getValueForKey:[highQualityUrl dataUsingEncoding:NSUTF8StringEncoding]];
+                if (data != nil) {
+                    return [SSignal single:[[UIImage alloc] initWithData:data]];
+                }
+                return [SSignal fail:nil];
+            }];
+        }
         return [self localImageForFullSizeImage:imageAttachment];
     } lowQualityThumbnailSignalGenerator:^SSignal *
     {

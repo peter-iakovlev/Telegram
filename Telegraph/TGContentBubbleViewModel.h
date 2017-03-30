@@ -17,6 +17,7 @@
 @class TGReplyHeaderModel;
 @class TGWebpageFooterModel;
 @class TGWebPageMediaAttachment;
+@class TGInvoiceMediaAttachment;
 
 @class TGDoubleTapGestureRecognizer;
 @class TGMessageViewCountContentProperty;
@@ -54,6 +55,7 @@ extern bool debugShowMessageIds;
     int32_t _date;
     
     bool _hasAvatar;
+    bool _inhibitChecks;
     
     int64_t _forwardedPeerId;
     int64_t _forwardedMessageId;
@@ -72,7 +74,7 @@ extern bool debugShowMessageIds;
 - (void)setAuthorNameColor:(UIColor *)authorNameColor;
 - (void)setForwardHeader:(id)forwardPeer forwardAuthor:(id)forwardAuthor messageId:(int32_t)messageId;
 - (void)setReplyHeader:(TGMessage *)replyHeader peer:(id)peer;
-- (void)setWebPageFooter:(TGWebPageMediaAttachment *)webPage viewStorage:(TGModernViewStorage *)viewStorage;
+- (void)setWebPageFooter:(TGWebPageMediaAttachment *)webPage invoice:(TGInvoiceMediaAttachment *)invoice viewStorage:(TGModernViewStorage *)viewStorage;
 
 - (void)messageDoubleTapGesture:(TGDoubleTapGestureRecognizer *)recognizer;
 - (void)gestureRecognizer:(TGDoubleTapGestureRecognizer *)recognizer didBeginAtPoint:(CGPoint)point;

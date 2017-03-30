@@ -69,6 +69,16 @@
     return self;
 }
 
+- (NSString *)placeholder
+{
+    return _placeholderView.text;
+}
+
+- (void)setPlaceholder:(NSString *)placeholder
+{
+    _placeholderView.text = placeholder;
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];

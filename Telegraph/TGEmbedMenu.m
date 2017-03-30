@@ -1,5 +1,7 @@
 #import "TGEmbedMenu.h"
 
+#import "TGImageUtils.h"
+
 #import "TGViewController.h"
 #import "TGMenuSheetController.h"
 #import "TGMenuSheetView.h"
@@ -29,7 +31,7 @@
     
     NSMutableArray *itemViews = [[NSMutableArray alloc] init];
     
-    TGEmbedItemView *embedView = [[TGEmbedItemView alloc] initWithWebPageAttachment:attachment peerId:peerId messageId:messageId];
+    TGEmbedItemView *embedView = [[TGEmbedItemView alloc] initWithWebPageAttachment:attachment preview:false peerId:peerId messageId:messageId];
     embedView.parentController = parentController;
     [itemViews addObject:embedView];
     
@@ -82,8 +84,13 @@
             CGPoint viewOffset = CGPointZero;
             if (offset > FLT_EPSILON)
             {
-                viewOffset.x = TGMenuSheetPhoneEdgeInsets.left;
-                viewOffset.y = -offset + TGMenuSheetPhoneEdgeInsets.top;
+                viewOffset.y = -offset;
+                
+                if (TGIsPad())
+                {
+                    viewOffset.x += TGMenuSheetPhoneEdgeInsets.left;
+                    viewOffset.y += TGMenuSheetPhoneEdgeInsets.top;
+                }
             }
             
             [TGEmbedPIPController cancelPictureInPictureWithOffset:viewOffset];

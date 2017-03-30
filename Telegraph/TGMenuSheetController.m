@@ -424,6 +424,7 @@ typedef enum
                 self.willPresent(menuHeight);
             }
             
+            [self viewWillLayoutSubviews];
             [_sheetView menuWillAppearAnimated:animated];
             [self animateSheetViewToPosition:0 velocity:0 type:TGMenuSheetAnimationPresent completion:^
             {
@@ -549,6 +550,7 @@ typedef enum
     void (^changeBlock)(void) = ^
     {
         _containerView.frame = CGRectMake(_containerView.frame.origin.x, position, _containerView.frame.size.width, _containerView.frame.size.height);
+        [_sheetView didChangeAbsoluteFrame];
     };
     void (^completionBlock)(BOOL) = ^(__unused BOOL finished)
     {
@@ -600,7 +602,7 @@ typedef enum
 {
     if (_sheetView == nil)
         return;
-
+    
     if (_hasSwipeGesture && [self sizeClass] != UIUserInterfaceSizeClassRegular)
     {
         if (_gestureRecognizer != nil)
@@ -613,11 +615,21 @@ typedef enum
         _gestureRecognizer.direction = TGMenuPanDirectionVertical;
         _gestureRecognizer.delegate = self;
         [_sheetView addGestureRecognizer:_gestureRecognizer];
+        
+        __weak TGMenuSheetController *weakSelf = self;
+        _sheetView.handleInternalPan = ^(UIPanGestureRecognizer *gestureRecognizer)
+        {
+            __strong TGMenuSheetController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                [strongSelf handlePan:gestureRecognizer];
+        };
     }
     else
     {
         [_sheetView removeGestureRecognizer:_gestureRecognizer];
         _gestureRecognizer = nil;
+        
+        _sheetView.handleInternalPan = nil;
     }
 }
 
@@ -724,6 +736,7 @@ typedef enum
 - (void)applySheetOffset:(CGFloat)offset
 {
     _containerView.frame = CGRectMake(_containerView.frame.origin.x, self.view.frame.origin.y + offset, self.view.frame.size.width, self.view.frame.size.height);
+    [_sheetView didChangeAbsoluteFrame];
 }
 
 - (CGFloat)swipeOffsetForOffset:(CGFloat)offset
@@ -825,7 +838,11 @@ typedef enum
             _sheetView.menuWidth = referenceSize.width;
         
         [self repositionMenuWithReferenceSize:referenceSize];
+        
+        [_sheetView layoutSubviews];
     }
+    
+    [_sheetView didChangeAbsoluteFrame];
 }
 
 - (void)repositionMenuWithReferenceSize:(CGSize)referenceSize
@@ -875,8 +892,6 @@ typedef enum
 
     CGFloat keyboardHeight = (keyboardFrame.size.height <= FLT_EPSILON || keyboardFrame.size.width <= FLT_EPSILON) ? 0.0f : (self.view.frame.size.height - keyboardFrame.origin.y);
     keyboardHeight = MAX(keyboardHeight, 0.0f);
-    //if (keyboardHeight > FLT_EPSILON)
-    //    keyboardHeight += [self insets].bottom;
     
     if (self.followsKeyboard)
     {

@@ -84,7 +84,7 @@
             {
                 self.backgroundColor = UIColorRGB(0xfafafa);
                 
-                CGFloat stripeHeight = TGIsRetina() ? 0.5f : 1.0f;
+                CGFloat stripeHeight = TGScreenPixel;
                 _bottomStripe = [[UIView alloc] initWithFrame:CGRectMake(0.0f, frame.size.height - stripeHeight, frame.size.width, stripeHeight)];
                 _bottomStripe.backgroundColor = UIColorRGB(0xd8d8d8);
                 [self addSubview:_bottomStripe];
@@ -118,7 +118,7 @@
     _collectionView.frame = CGRectMake(0.0f, 0.0f, size.width, size.height);
     [_collectionLayout invalidateLayout];
     
-    CGFloat stripeHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat stripeHeight = TGScreenPixel;
     _bottomStripe.frame = CGRectMake(0.0f, size.height - stripeHeight, size.width, stripeHeight);
 }
 

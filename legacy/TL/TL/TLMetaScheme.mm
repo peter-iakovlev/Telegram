@@ -17,11 +17,13 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLPeer$peerUser new]);
     TLMetaClassStore::registerObjectClass([TLPeer$peerChat new]);
     TLMetaClassStore::registerObjectClass([TLPeer$peerChannel new]);
+    TLMetaClassStore::registerObjectClass([TLDataJSON$dataJSON new]);
     TLMetaClassStore::registerVectorClass([NSArray_PrivacyRule new]);
     TLMetaClassStore::registerObjectClass([TLInputUser$inputUserEmpty new]);
     TLMetaClassStore::registerObjectClass([TLInputUser$inputUserSelf new]);
     TLMetaClassStore::registerObjectClass([TLInputUser$inputUser new]);
     TLMetaClassStore::registerObjectClass([TLHighScore$highScore new]);
+    TLMetaClassStore::registerObjectClass([TLpayments_ValidatedRequestedInfo$payments_validatedRequestedInfoMeta new]);
     TLMetaClassStore::registerObjectClass([TLSendMessageAction$sendMessageTypingAction new]);
     TLMetaClassStore::registerObjectClass([TLSendMessageAction$sendMessageCancelAction new]);
     TLMetaClassStore::registerObjectClass([TLSendMessageAction$sendMessageRecordVideoAction new]);
@@ -54,11 +56,14 @@ void TLRegisterClasses()
     TLMetaClassStore::registerVectorClass([NSArray_TopPeer new]);
     TLMetaClassStore::registerObjectClass([TLInputPhoneCall$inputPhoneCall new]);
     TLMetaClassStore::registerObjectClass([TLMsgResendReq$msg_resend_req new]);
+    TLMetaClassStore::registerObjectClass([TLInputWebFileLocation$inputWebFileLocation new]);
+    TLMetaClassStore::registerObjectClass([TLInputWebDocument$inputWebDocument new]);
     TLMetaClassStore::registerObjectClass([TLcontacts_Link$contacts_link new]);
     TLMetaClassStore::registerObjectClass([TLInputEncryptedFile$inputEncryptedFileEmpty new]);
     TLMetaClassStore::registerObjectClass([TLInputEncryptedFile$inputEncryptedFileUploaded new]);
     TLMetaClassStore::registerObjectClass([TLInputEncryptedFile$inputEncryptedFile new]);
     TLMetaClassStore::registerObjectClass([TLInputEncryptedFile$inputEncryptedFileBigUploaded new]);
+    TLMetaClassStore::registerObjectClass([TLpayments_PaymentForm$payments_paymentFormMeta new]);
     TLMetaClassStore::registerObjectClass([TLMsgsStateInfo$msgs_state_info new]);
     TLMetaClassStore::registerObjectClass([TLWallPaper$wallPaper new]);
     TLMetaClassStore::registerObjectClass([TLWallPaper$wallPaperSolid new]);
@@ -138,6 +143,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerVectorClass([NSArray_Photo new]);
     TLMetaClassStore::registerObjectClass([TLMessage$messageEmpty new]);
     TLMetaClassStore::registerObjectClass([TLMessage$message new]);
+    TLMetaClassStore::registerObjectClass([TLpayments_PaymentReceipt$payments_paymentReceiptMeta new]);
     TLMetaClassStore::registerObjectClass([TLChatParticipants$chatParticipants new]);
     TLMetaClassStore::registerObjectClass([TLInputNotifyPeer$inputNotifyPeer new]);
     TLMetaClassStore::registerObjectClass([TLInputNotifyPeer$inputNotifyUsers new]);
@@ -205,6 +211,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLRichText$textConcat new]);
     TLMetaClassStore::registerVectorClass([NSArray_FoundGif new]);
     TLMetaClassStore::registerVectorClass([NSArray_StickerSet new]);
+    TLMetaClassStore::registerObjectClass([TLShippingOption$shippingOption new]);
     TLMetaClassStore::registerObjectClass([TLReceivedNotifyMessage$receivedNotifyMessage new]);
     TLMetaClassStore::registerObjectClass([TLGame$gameMeta new]);
     TLMetaClassStore::registerObjectClass([TLUserFull$userFullMeta new]);
@@ -244,7 +251,9 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLphone_DhConfig$phone_dhConfig new]);
     TLMetaClassStore::registerObjectClass([TLInputStickeredMedia$inputStickeredMediaPhoto new]);
     TLMetaClassStore::registerObjectClass([TLInputStickeredMedia$inputStickeredMediaDocument new]);
+    TLMetaClassStore::registerObjectClass([TLaccount_TmpPassword$account_tmpPassword new]);
     TLMetaClassStore::registerVectorClass([NSArray_DcNetworkStats new]);
+    TLMetaClassStore::registerObjectClass([TLphone_DiscardedCall$phone_discardedCall new]);
     TLMetaClassStore::registerObjectClass([TLphone_PhoneCall$phone_phoneCall new]);
     TLMetaClassStore::registerObjectClass([TLInputPrivacyKey$inputPrivacyKeyStatusTimestamp new]);
     TLMetaClassStore::registerObjectClass([TLInputPrivacyKey$inputPrivacyKeyChatInvite new]);
@@ -274,6 +283,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerVectorClass([NSArray_InputContact new]);
     TLMetaClassStore::registerObjectClass([TLDisabledFeature$disabledFeature new]);
     TLMetaClassStore::registerVectorClass([NSArray_Update new]);
+    TLMetaClassStore::registerObjectClass([TLPaymentSavedCredentials$paymentSavedCredentialsCard new]);
     TLMetaClassStore::registerObjectClass([TLKeyboardButtonRow$keyboardButtonRow new]);
     TLMetaClassStore::registerObjectClass([TLmessages_BotCallbackAnswer$messages_botCallbackAnswerMeta new]);
     TLMetaClassStore::registerObjectClass([TLContactLink$contactLinkUnknown new]);
@@ -306,6 +316,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLStickerSet$stickerSet new]);
     TLMetaClassStore::registerObjectClass([TLGeoPlaceName$geoPlaceName new]);
     TLMetaClassStore::registerObjectClass([TLPeerSettings$peerSettings new]);
+    TLMetaClassStore::registerVectorClass([NSArray_ShippingOption new]);
     TLMetaClassStore::registerObjectClass([TLauth_CheckedPhone$auth_checkedPhone new]);
     TLMetaClassStore::registerVectorClass([NSArray_Chat new]);
     TLMetaClassStore::registerObjectClass([TLInputDocument$inputDocumentEmpty new]);
@@ -313,6 +324,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLFoundGif$foundGif new]);
     TLMetaClassStore::registerObjectClass([TLFoundGif$foundGifCached new]);
     TLMetaClassStore::registerObjectClass([TLMsgsStateReq$msgs_state_req new]);
+    TLMetaClassStore::registerObjectClass([TLLabeledPrice$labeledPrice new]);
     TLMetaClassStore::registerObjectClass([TLSchemeParam$schemeParam new]);
     TLMetaClassStore::registerObjectClass([TLTopPeerCategory$topPeerCategoryBotsPM new]);
     TLMetaClassStore::registerObjectClass([TLTopPeerCategory$topPeerCategoryBotsInline new]);
@@ -348,6 +360,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLauth_ExportedAuthorization$auth_exportedAuthorization new]);
     TLMetaClassStore::registerVectorClass([NSArray_BotInfo new]);
     TLMetaClassStore::registerObjectClass([TLContact$contact new]);
+    TLMetaClassStore::registerObjectClass([TLpayments_SavedInfo$payments_savedInfoMeta new]);
     TLMetaClassStore::registerObjectClass([TLBotInfo$botInfo new]);
     TLMetaClassStore::registerObjectClass([TLhelp_AppChangelog$help_appChangelogEmpty new]);
     TLMetaClassStore::registerObjectClass([TLhelp_AppChangelog$help_appChangelog new]);
@@ -361,6 +374,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLstorage_FileType$storage_filePartial new]);
     TLMetaClassStore::registerObjectClass([TLstorage_FileType$storage_fileMp4 new]);
     TLMetaClassStore::registerObjectClass([TLstorage_FileType$storage_fileWebp new]);
+    TLMetaClassStore::registerObjectClass([TLInvoice$invoiceMeta new]);
     TLMetaClassStore::registerObjectClass([TLBotCommand$botCommand new]);
     TLMetaClassStore::registerObjectClass([TLupdates_State$updates_state new]);
     TLMetaClassStore::registerObjectClass([TLInitConnection$initConnection new]);
@@ -387,6 +401,8 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLcontacts_ForeignLink$contacts_foreignLinkMutual new]);
     TLMetaClassStore::registerObjectClass([TLaccount_Password$account_noPassword new]);
     TLMetaClassStore::registerObjectClass([TLaccount_Password$account_password new]);
+    TLMetaClassStore::registerObjectClass([TLInputPaymentCredentials$inputPaymentCredentialsSaved new]);
+    TLMetaClassStore::registerObjectClass([TLInputPaymentCredentials$inputPaymentCredentials new]);
     TLMetaClassStore::registerObjectClass([TLP_Q_inner_data$p_q_inner_data new]);
     TLMetaClassStore::registerObjectClass([TLEncryptedFile$encryptedFileEmpty new]);
     TLMetaClassStore::registerObjectClass([TLEncryptedFile$encryptedFile new]);
@@ -429,6 +445,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLMessageAction$messageActionPinMessage new]);
     TLMetaClassStore::registerObjectClass([TLMessageAction$messageActionHistoryClear new]);
     TLMetaClassStore::registerObjectClass([TLMessageAction$messageActionGameScore new]);
+    TLMetaClassStore::registerObjectClass([TLMessageAction$messageActionPaymentSent new]);
     TLMetaClassStore::registerObjectClass([TLEmbedPostMedia$embedPostPhoto new]);
     TLMetaClassStore::registerObjectClass([TLEmbedPostMedia$embedPostVideo new]);
     TLMetaClassStore::registerObjectClass([TLmessages_Message$messages_messageEmpty new]);
@@ -445,6 +462,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLKeyboardButton$keyboardButtonRequestGeoLocation new]);
     TLMetaClassStore::registerObjectClass([TLKeyboardButton$keyboardButtonSwitchInline new]);
     TLMetaClassStore::registerObjectClass([TLKeyboardButton$keyboardButtonGame new]);
+    TLMetaClassStore::registerObjectClass([TLKeyboardButton$keyboardButtonBuy new]);
     TLMetaClassStore::registerObjectClass([TLUser$userEmpty new]);
     TLMetaClassStore::registerObjectClass([TLUser$user new]);
     TLMetaClassStore::registerVectorClass([NSArray_Contact new]);
@@ -467,6 +485,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLMsgsAllInfo$msgs_all_info new]);
     TLMetaClassStore::registerObjectClass([TLMsgDetailedInfo$msg_detailed_info new]);
     TLMetaClassStore::registerObjectClass([TLMsgDetailedInfo$msg_new_detailed_info new]);
+    TLMetaClassStore::registerObjectClass([TLupload_WebFile$upload_webFile new]);
     TLMetaClassStore::registerVectorClass([NSArray_int new]);
     TLMetaClassStore::registerObjectClass([TLContactLocated$contactLocated new]);
     TLMetaClassStore::registerObjectClass([TLContactLocated$contactLocatedPreview new]);
@@ -490,9 +509,10 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLChannelParticipant$channelParticipantCreator new]);
     TLMetaClassStore::registerObjectClass([TLPhoneCall$phoneCallEmpty new]);
     TLMetaClassStore::registerObjectClass([TLPhoneCall$phoneCallWaitingMeta new]);
-    TLMetaClassStore::registerObjectClass([TLPhoneCall$phoneCall new]);
     TLMetaClassStore::registerObjectClass([TLPhoneCall$phoneCallRequested new]);
     TLMetaClassStore::registerObjectClass([TLPhoneCall$phoneCallDiscardedMeta new]);
+    TLMetaClassStore::registerObjectClass([TLPhoneCall$phoneCallAccepted new]);
+    TLMetaClassStore::registerObjectClass([TLPhoneCall$phoneCall new]);
     TLMetaClassStore::registerVectorClass([NSArray_HighScore new]);
     TLMetaClassStore::registerObjectClass([TLMessageEntity$messageEntityUnknown new]);
     TLMetaClassStore::registerObjectClass([TLMessageEntity$messageEntityMention new]);
@@ -522,6 +542,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLInputFile$inputFile new]);
     TLMetaClassStore::registerObjectClass([TLInputFile$inputFileBig new]);
     TLMetaClassStore::registerObjectClass([TLSchemeType$schemeType new]);
+    TLMetaClassStore::registerObjectClass([TLPaymentRequestedInfo$paymentRequestedInfoMeta new]);
     TLMetaClassStore::registerObjectClass([TLDestroySessionRes$destroy_session_ok new]);
     TLMetaClassStore::registerObjectClass([TLDestroySessionRes$destroy_session_none new]);
     TLMetaClassStore::registerVectorClass([NSArray_KeyboardButton new]);
@@ -573,10 +594,13 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaVenue new]);
     TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaDocument new]);
     TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaGame new]);
+    TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaInvoiceMeta new]);
+    TLMetaClassStore::registerObjectClass([TLWebDocument$webDocument new]);
     TLMetaClassStore::registerObjectClass([TLhelp_Support$help_support new]);
     TLMetaClassStore::registerObjectClass([TLcontacts_TopPeers$contacts_topPeersNotModified new]);
     TLMetaClassStore::registerObjectClass([TLcontacts_TopPeers$contacts_topPeers new]);
     TLMetaClassStore::registerObjectClass([TLTopPeer$topPeer new]);
+    TLMetaClassStore::registerObjectClass([TLPostAddress$postAddress new]);
     TLMetaClassStore::registerObjectClass([TLcontacts_Suggested$contacts_suggested new]);
     TLMetaClassStore::registerObjectClass([TLInputContact$inputPhoneContact new]);
     TLMetaClassStore::registerObjectClass([TLauth_CodeType$auth_codeTypeSms new]);
@@ -588,6 +612,9 @@ void TLRegisterClasses()
     TLMetaClassStore::registerVectorClass([NSArray_SchemeParam new]);
     TLMetaClassStore::registerObjectClass([TLmessages_PeerDialogs$messages_peerDialogs new]);
     TLMetaClassStore::registerVectorClass([NSArray_Authorization new]);
+    TLMetaClassStore::registerObjectClass([TLpayments_PaymentResult$payments_paymentResult new]);
+    TLMetaClassStore::registerObjectClass([TLpayments_PaymentResult$payments_paymentVerficationNeeded new]);
+    TLMetaClassStore::registerVectorClass([NSArray_LabeledPrice new]);
     TLMetaClassStore::registerVectorClass([NSArray_StickerSetCovered new]);
     TLMetaClassStore::registerObjectClass([TLPageBlock$pageBlockTitle new]);
     TLMetaClassStore::registerObjectClass([TLPageBlock$pageBlockSubtitle new]);
@@ -664,7 +691,6 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLRPCmessages_getChats$messages_getChats new]);
     TLMetaClassStore::registerObjectClass([TLRPCmessages_getFullChat$messages_getFullChat new]);
     TLMetaClassStore::registerObjectClass([TLRPCphone_getDhConfig$phone_getDhConfig new]);
-    TLMetaClassStore::registerObjectClass([TLRPCphone_confirmCall$phone_confirmCall new]);
     TLMetaClassStore::registerObjectClass([TLRPCphone_declineCall$phone_declineCall new]);
     TLMetaClassStore::registerObjectClass([TLRPCupdates_getState$updates_getState new]);
     TLMetaClassStore::registerObjectClass([TLRPCupdates_subscribe$updates_subscribe new]);
@@ -741,7 +767,6 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLRPCmessages_getStickerSet$messages_getStickerSet new]);
     TLMetaClassStore::registerObjectClass([TLRPCmessages_uninstallStickerSet$messages_uninstallStickerSet new]);
     TLMetaClassStore::registerObjectClass([TLRPCphotos_getUserPhotos$photos_getUserPhotos new]);
-    TLMetaClassStore::registerObjectClass([TLRPChelp_getAppChangelog$help_getAppChangelog new]);
     TLMetaClassStore::registerObjectClass([TLRPCmessages_search$messages_search new]);
     TLMetaClassStore::registerObjectClass([TLRPCmessages_forwardMessages$messages_forwardMessages new]);
     TLMetaClassStore::registerObjectClass([TLRPCmessages_getMessagesViews$messages_getMessagesViews new]);
@@ -818,11 +843,23 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLRPCphone_requestCall$phone_requestCall new]);
     TLMetaClassStore::registerObjectClass([TLRPCphone_acceptCall$phone_acceptCall new]);
     TLMetaClassStore::registerObjectClass([TLRPCphone_receivedCall$phone_receivedCall new]);
-    TLMetaClassStore::registerObjectClass([TLRPCphone_discardCall$phone_discardCall new]);
     TLMetaClassStore::registerObjectClass([TLRPCmessages_toggleDialogPin$messages_toggleDialogPin new]);
     TLMetaClassStore::registerObjectClass([TLRPCmessages_reorderPinnedDialogs$messages_reorderPinnedDialogs new]);
     TLMetaClassStore::registerObjectClass([TLRPCmessages_getPinnedDialogs$messages_getPinnedDialogs new]);
     TLMetaClassStore::registerObjectClass([TLRPCmessages_getDialogs$messages_getDialogs new]);
     TLMetaClassStore::registerObjectClass([TLRPCmessages_deleteMessages$messages_deleteMessages new]);
     TLMetaClassStore::registerObjectClass([TLRPCmessages_reportEncryptedSpam$messages_reportEncryptedSpam new]);
+    TLMetaClassStore::registerObjectClass([TLRPCphone_discardCall$phone_discardCall new]);
+    TLMetaClassStore::registerObjectClass([TLRPCphone_setCallRating$phone_setCallRating new]);
+    TLMetaClassStore::registerObjectClass([TLRPCupload_getWebFile$upload_getWebFile new]);
+    TLMetaClassStore::registerObjectClass([TLRPCpayments_getPaymentForm$payments_getPaymentForm new]);
+    TLMetaClassStore::registerObjectClass([TLRPCpayments_getPaymentReceipt$payments_getPaymentReceipt new]);
+    TLMetaClassStore::registerObjectClass([TLRPCpayments_validateRequestedInfo$payments_validateRequestedInfo new]);
+    TLMetaClassStore::registerObjectClass([TLRPCaccount_getTmpPassword$account_getTmpPassword new]);
+    TLMetaClassStore::registerObjectClass([TLRPCpayments_getSavedInfo$payments_getSavedInfo new]);
+    TLMetaClassStore::registerObjectClass([TLRPCpayments_clearSavedInfo$payments_clearSavedInfo new]);
+    TLMetaClassStore::registerObjectClass([TLRPChelp_getAppChangelog$help_getAppChangelog new]);
+    TLMetaClassStore::registerObjectClass([TLRPCphone_getCallConfig$phone_getCallConfig new]);
+    TLMetaClassStore::registerObjectClass([TLRPCphone_saveCallDebug$phone_saveCallDebug new]);
+    TLMetaClassStore::registerObjectClass([TLRPCphone_confirmCall$phone_confirmCall new]);
 }

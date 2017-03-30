@@ -22,6 +22,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGSharedMediaUtils.h"
+
 @interface TGGalleryPhotoDataSource () <ASWatcher>
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -222,6 +224,11 @@
 {
     NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://?", [TGGalleryPhotoDataSource uriPrefix]].length]];
     
+    NSString *legacyCacheUrl = args[@"legacy-cache-url"];
+    if ([legacyCacheUrl hasPrefix:@"webdoc"]) {
+        return true;
+    }
+    
     if ((![args[@"id"] respondsToSelector:@selector(longLongValue)] && ![args[@"local-id"] respondsToSelector:@selector(longLongValue)]))
     {
         return false;
@@ -302,6 +309,15 @@
     }
     
     NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[[NSString alloc] initWithFormat:@"%@://?", [TGGalleryPhotoDataSource uriPrefix]].length]];
+    
+    NSString *legacyCacheUrl = args[@"legacy-cache-url"];
+    if ([legacyCacheUrl hasPrefix:@"webdoc"]) {
+        NSData *data = [[TGSharedMediaUtils sharedMediaTemporaryPersistentCache] getValueForKey:[legacyCacheUrl dataUsingEncoding:NSUTF8StringEncoding]];
+        if (data != nil) {
+            return [[TGDataResource alloc] initWithImage:[UIImage imageWithData:data] decoded:false];
+        }
+        return nil;
+    }
     
     if ((![args[@"id"] respondsToSelector:@selector(longLongValue)] && ![args[@"local-id"] respondsToSelector:@selector(longLongValue)]) || ![args[@"width"] respondsToSelector:@selector(intValue)] || ![args[@"height"] respondsToSelector:@selector(intValue)])
     {

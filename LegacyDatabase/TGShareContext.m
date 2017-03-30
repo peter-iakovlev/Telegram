@@ -46,7 +46,7 @@
     [_mtProto stop];
 }
 
-- (SSignal *)function:(Api62_FunctionContext *)functionContext
+- (SSignal *)function:(Api65_FunctionContext *)functionContext
 {
     __weak TGShareContext *weakSelf = self;
     return [[SSignal alloc] initWithGenerator:^id<SDisposable> (SSubscriber *subscriber)
@@ -144,7 +144,7 @@
     [_datacenterPoolsLock unlock];
 }
 
-- (SSignal *)datacenter:(NSInteger)datacenterId function:(Api62_FunctionContext *)functionContext
+- (SSignal *)datacenter:(NSInteger)datacenterId function:(Api65_FunctionContext *)functionContext
 {
     __weak TGShareContext *weakSelf = self;
     return [[self pooledConnectionContextForDatacenter:datacenterId] mapToSignal:^SSignal *(TGDatacenterConnectionContext *datacenterConnectionContext)

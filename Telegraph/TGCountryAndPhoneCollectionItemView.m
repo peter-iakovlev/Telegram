@@ -37,7 +37,7 @@
             
             if (i == 0)
             {
-                CGFloat lineWidth = TGIsRetina() ? 0.5f : 1.0f;
+                CGFloat lineWidth = TGScreenPixel;
                 CGFloat verticalOffset = 44.0f;
                 CGContextSetLineWidth(context, lineWidth);
                 CGContextSetStrokeColorWithColor(context, TGSeparatorColor().CGColor);
@@ -51,7 +51,7 @@
             }
             else
             {
-                CGFloat lineWidth = TGIsRetina() ? 0.5f : 1.0f;
+                CGFloat lineWidth = TGScreenPixel;
                 CGFloat verticalOffset = 44.0f;
                 CGContextSetFillColorWithColor(context, TGSelectionColor().CGColor);
                 CGContextSetStrokeColorWithColor(context, TGSeparatorColor().CGColor);
@@ -465,7 +465,7 @@
 {
     TGLoginCountriesController *countriesController = [[TGLoginCountriesController alloc] init];
     __weak TGCountryAndPhoneCollectionItemView *weakSelf = self;
-    countriesController.countrySelected = ^(int code, NSString *name)
+    countriesController.countrySelected = ^(int code, NSString *name, __unused NSString *countryId)
     {
         __strong TGCountryAndPhoneCollectionItemView *strongSelf = weakSelf;
         if (strongSelf != nil)

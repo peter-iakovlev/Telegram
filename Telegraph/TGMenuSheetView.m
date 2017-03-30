@@ -123,7 +123,24 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     return self;
 }
 
+- (void)didChangeAbsoluteFrame
+{
+    for (TGMenuSheetItemView *itemView in _itemViews)
+    {
+        [itemView didChangeAbsoluteFrame];
+    }
+}
+
 #pragma mark -
+
+- (void)setHandleInternalPan:(void (^)(UIPanGestureRecognizer *))handleInternalPan
+{
+    _handleInternalPan = [handleInternalPan copy];
+    for (TGMenuSheetItemView *itemView in self.itemViews)
+    {
+        itemView.handleInternalPan = handleInternalPan;
+    }
+}
 
 - (void)addItemsView:(TGMenuSheetItemView *)itemView
 {
@@ -136,6 +153,7 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     
     itemView.sizeClass = _sizeClass;
     itemView.tag = _itemViews.count;
+    itemView.handleInternalPan = [self.handleInternalPan copy];
     
     switch (itemView.type)
     {
@@ -273,7 +291,7 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     if (previousItemView != nil)
         topDivider = _dividerViews[@(previousItemView.tag)][TGMenuDividerBottom];
         
-    UIView *bottomDivider = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, TGIsRetina() ? 0.5f : 1.0f)];
+    UIView *bottomDivider = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, TGScreenPixel)];
     bottomDivider.backgroundColor = TGSeparatorColor();
     
     NSMutableDictionary *dividers = [[NSMutableDictionary alloc] init];

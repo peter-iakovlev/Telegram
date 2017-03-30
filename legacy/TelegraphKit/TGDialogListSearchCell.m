@@ -116,18 +116,18 @@
     CGFloat titleFontSize = _attributedSubtitleText.length == 0 ? 19.0f : 17.0f;
     if (_boldMode == 0)
     {
-        _titleLabelFirst.font = [UIFont systemFontOfSize:titleFontSize];
-        _titleLabelSecond.font = [UIFont boldSystemFontOfSize:titleFontSize];
+        _titleLabelFirst.font = TGSystemFontOfSize(titleFontSize);
+        _titleLabelSecond.font = TGMediumSystemFontOfSize(titleFontSize);
     }
     else if (_boldMode == 1)
     {
-        _titleLabelFirst.font = [UIFont boldSystemFontOfSize:titleFontSize];
-        _titleLabelSecond.font = [UIFont systemFontOfSize:titleFontSize];
+        _titleLabelFirst.font = TGMediumSystemFontOfSize(titleFontSize);
+        _titleLabelSecond.font = TGSystemFontOfSize(titleFontSize);
     }
     else
     {
-        _titleLabelFirst.font = [UIFont systemFontOfSize:titleFontSize];
-        _titleLabelSecond.font = [UIFont systemFontOfSize:titleFontSize];
+        _titleLabelFirst.font = TGSystemFontOfSize(titleFontSize);
+        _titleLabelSecond.font = TGSystemFontOfSize(titleFontSize);
     }
     
     if (_titleTextSecond == nil || _titleTextSecond.length == 0)
@@ -240,7 +240,7 @@
     [super layoutSubviews];
     
     if (_separatorLayer != nil) {
-        CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat separatorHeight = TGScreenPixel;
         _separatorLayer.frame = CGRectMake(65.0f, self.frame.size.height - separatorHeight, self.frame.size.width - 65.0f, separatorHeight);
     }
     
@@ -283,7 +283,7 @@
     
     if (_attributedSubtitleText.length == 0)
     {
-        titleLabelsY = (int)((int)((viewSize.height - titleSizeGeneric.height) / 2) - 1);
+        titleLabelsY = (int)((int)((viewSize.height - titleSizeGeneric.height) / 2));
         
         if (!_titleLabelFirst.hidden)
         {

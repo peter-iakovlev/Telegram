@@ -1,6 +1,7 @@
 #import "TGCallBackgroundView.h"
 
 #import "UIImage+ImageEffects.h"
+#import "TGImageUtils.h"
 
 #import "TGCallSession.h"
 #import "TGMediaSignals.h"
@@ -27,7 +28,7 @@
         self.contentMode = UIViewContentModeScaleAspectFill;
         _dimView = [[UIView alloc] initWithFrame:self.bounds];
         _dimView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        _dimView.backgroundColor = [UIColor colorWithWhite:0.0f alpha:0.3f];
+        _dimView.backgroundColor = [UIColor colorWithWhite:0.0f alpha:0.4f];
         [self addSubview:_dimView];
     }
     return self;
@@ -45,10 +46,12 @@
     
     if (state.peer.photoUrlSmall.length == 0)
     {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(8.0f, self.frame.size.height), true, 0.0f);
+        CGSize screenSize = TGScreenSize();
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(8.0f, screenSize.height), true, 0.0f);
         CGContextRef context = UIGraphicsGetCurrentContext();
         
-        CGColorRef colors[2] = {
+        CGColorRef colors[2] =
+        {
             CGColorRetain(UIColorRGB(0x466f92).CGColor),
             CGColorRetain(UIColorRGB(0x244f74).CGColor)
         };
@@ -65,7 +68,7 @@
         
         CGColorSpaceRelease(colorSpace);
         
-        CGContextDrawLinearGradient(context, gradient, CGPointMake(0.0f, 0.0f), CGPointMake(0.0f, self.frame.size.height), 0);
+        CGContextDrawLinearGradient(context, gradient, CGPointMake(0.0f, 0.0f), CGPointMake(0.0f, screenSize.height), 0);
     
         [self setImage:UIGraphicsGetImageFromCurrentImageContext() big:true empty:true];
         UIGraphicsEndImageContext();

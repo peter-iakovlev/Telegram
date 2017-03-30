@@ -20,6 +20,7 @@
 {
     switch (reason) {
         case TGCallDiscardReasonMissed:
+        case TGCallDiscardReasonMissedTimeout:
             return [[TLPhoneCallDiscardReason$phoneCallDiscardReasonMissed alloc] init];
             
         case TGCallDiscardReasonDisconnect:

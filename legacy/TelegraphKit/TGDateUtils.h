@@ -23,6 +23,7 @@
 + (NSString *)stringForApproximateDate:(int)date;
 + (NSString *)stringForRelativeLastSeen:(int)date;
 + (NSString *)stringForFullDate:(int)date;
++ (NSString *)stringForCallsListDate:(int)date;
 
 @end
 

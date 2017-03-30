@@ -66,7 +66,7 @@
     
     if (_drawsFullSeparator)
     {
-        CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat separatorHeight = TGScreenPixel;
         _topStripeView.frame = CGRectMake(self.separatorInset, 0.0f, self.frame.size.width - self.separatorInset, separatorHeight * 2.0f);
     }
     

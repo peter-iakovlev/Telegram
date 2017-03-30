@@ -1,16 +1,34 @@
+#import <AVFoundation/AVFoundation.h>
 #import "TGMediaEditingContext.h"
+
+typedef enum
+{
+    TGMediaVideoConversionPresetCompressedDefault,
+    TGMediaVideoConversionPresetCompressedVeryLow,
+    TGMediaVideoConversionPresetCompressedLow,
+    TGMediaVideoConversionPresetCompressedMedium,
+    TGMediaVideoConversionPresetCompressedHigh,
+    TGMediaVideoConversionPresetCompressedVeryHigh,
+    TGMediaVideoConversionPresetAnimation
+} TGMediaVideoConversionPreset;
 
 @interface TGVideoEditAdjustments : NSObject <TGMediaEditAdjustments>
 
 @property (nonatomic, readonly) NSTimeInterval trimStartValue;
 @property (nonatomic, readonly) NSTimeInterval trimEndValue;
+@property (nonatomic, readonly) TGMediaVideoConversionPreset preset;
 @property (nonatomic, readonly) bool sendAsGif;
+
+- (CMTimeRange)trimTimeRange;
 
 - (bool)trimApplied;
 
-- (bool)isCropAndRotationEqualWith:(id<TGMediaEditAdjustments>)adjusments;
+- (bool)isCropAndRotationEqualWith:(id<TGMediaEditAdjustments>)adjustments;
 
 - (NSDictionary *)dictionary;
+
+- (instancetype)editAdjustmentsWithPreset:(TGMediaVideoConversionPreset)preset maxDuration:(NSTimeInterval)maxDuration;
++ (instancetype)editAdjustmentsWithOriginalSize:(CGSize)originalSize preset:(TGMediaVideoConversionPreset)preset;
 
 + (instancetype)editAdjustmentsWithDictionary:(NSDictionary *)dictionary;
 
@@ -22,7 +40,8 @@
                                  trimStartValue:(NSTimeInterval)trimStartValue
                                    trimEndValue:(NSTimeInterval)trimEndValue
                                    paintingData:(TGPaintingData *)paintingData
-                                      sendAsGif:(bool)sendAsGif;
+                                      sendAsGif:(bool)sendAsGif
+                                         preset:(TGMediaVideoConversionPreset)preset;
 
 @end
 

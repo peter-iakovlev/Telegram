@@ -11,6 +11,9 @@
     CXCallController *_callController;
     SQueue *_queue;
     
+    SPipe *_audioSessionActivationPipe;
+    SPipe *_audioSessionDeactivationPipe;
+
     NSMapTable *_sessions;
     NSMutableDictionary *_actionCompletionBlocks;
 }
@@ -25,6 +28,9 @@
     {
         _queue = [[SQueue alloc] init];
         _sessions = [[NSMapTable alloc] initWithKeyOptions:NSMapTableStrongMemory valueOptions:NSMapTableWeakMemory capacity:8];
+        
+        _audioSessionActivationPipe = [[SPipe alloc] init];
+        _audioSessionDeactivationPipe = [[SPipe alloc] init];
         
         _provider = [[CXProvider alloc] initWithConfiguration:[TGCallKitAdapter configuration]];
         [_provider setDelegate:self queue:_queue._dispatch_queue];
@@ -43,20 +49,31 @@
     config.maximumCallsPerCallGroup = 1;
     config.maximumCallGroups = 1;
     config.supportedHandleTypes = [NSSet setWithObjects:@(CXHandleTypeGeneric), @(CXHandleTypePhoneNumber), nil];
-    //config.iconTemplateImageData = UIImagePNGRepresentation(nil);
-    //config.ringtoneSoune = @"Ringtone.caf"
-    
+    config.iconTemplateImageData = UIImagePNGRepresentation([UIImage imageNamed:@"CallKitLogo"]);
+
     return config;
 }
 
 - (void)startCallWithPeerId:(int64_t)peerId uuid:(NSUUID *)uuid
 {
     TGUser *user = nil;
-    CXStartCallAction *action = [[CXStartCallAction alloc] initWithCallUUID:uuid handle:[self _handleForPeerId:peerId outUser:&user]];
+    CXHandle *handle = [self _handleForPeerId:peerId outUser:&user];
+    CXStartCallAction *action = [[CXStartCallAction alloc] initWithCallUUID:uuid handle:handle];
     action.contactIdentifier = user.displayName;
     
     CXTransaction *transaction = [[CXTransaction alloc] initWithAction:action];
-    [self _requestTransaction:transaction completion:nil];
+    [self _requestTransaction:transaction completion:^(__unused bool succeed)
+    {
+        CXCallUpdate *update = [[CXCallUpdate alloc] init];
+        update.remoteHandle = handle;
+        update.localizedCallerName = user.displayName;
+        update.supportsHolding = false;
+        update.supportsGrouping = false;
+        update.supportsUngrouping = false;
+        update.supportsDTMF = false;
+        
+        [_provider reportCallWithUUID:uuid updated:update];
+    }];
 }
 
 - (void)updateCallWithUUID:(NSUUID *)uuid connectingAtDate:(NSDate *)date
@@ -75,7 +92,11 @@
     {
         CXEndCallAction *action = [[CXEndCallAction alloc] initWithCallUUID:uuid];
         CXTransaction *transaction = [[CXTransaction alloc] initWithAction:action];
-        [self _requestTransaction:transaction completion:nil];
+        
+        TGDispatchOnMainThread(^
+        {
+            [self _requestTransaction:transaction completion:nil];
+        });
         
         if (completion != nil)
             _actionCompletionBlocks[action.UUID] = completion;
@@ -109,28 +130,47 @@
 {
     [_callController requestTransaction:transaction completion:^(NSError *error)
     {
+        if (error != nil)
+        {
+            TGLog(@"CALLKITERROR %@", error);
+        }
         if (completion != nil)
             completion(error == nil);
     }];
 }
 
-- (void)reportIncomingCallWithPeerId:(int64_t)peerId uuid:(NSUUID *)uuid completion:(void (^)(bool))completion
+- (void)reportIncomingCallWithPeerId:(int64_t)peerId session:(TGCallSession *)session uuid:(NSUUID *)uuid completion:(void (^)(bool))completion
 {
+    TGLog(@"CALLKIT REPORT INCOMING CALL %@", uuid);
+    
     TGUser *user = nil;
     CXCallUpdate *update = [[CXCallUpdate alloc] init];
     update.remoteHandle = [self _handleForPeerId:peerId outUser:&user];
     update.localizedCallerName = user.displayName;
+    update.supportsHolding = false;
+    update.supportsGrouping = false;
+    update.supportsUngrouping = false;
+    update.supportsDTMF = false;
     
-    TGCallSession *session = [self _sessionForUUID:uuid];
-    TGDispatchOnMainThread(^
-    {
-        [session setupAudioSession];
-    });
+    SVariable *audioSessionActivated = [[SVariable alloc] init];
+    [audioSessionActivated set:[SSignal single:@false]];
+    [audioSessionActivated set:_audioSessionActivationPipe.signalProducer()];
+    session.audioSessionActivated = audioSessionActivated;
     
-    [_provider reportNewIncomingCallWithUUID:uuid update:update completion:^(NSError *error)
+    [session setupAudioSession:^
     {
-        if (completion != nil)
-            completion(error == nil);
+        TGDispatchOnMainThread(^
+        {
+            [_provider reportNewIncomingCallWithUUID:uuid update:update completion:^(NSError *error)
+            {
+                bool silent = ([error.domain isEqualToString:CXErrorDomainIncomingCall] && error.code == CXErrorCodeIncomingCallErrorFilteredByDoNotDisturb);
+                TGDispatchOnMainThread(^
+                {
+                    if (completion != nil)
+                        completion(silent);
+                });
+            }];
+        });
     }];
 }
 
@@ -165,7 +205,8 @@
     
     TGDispatchOnMainThread(^
     {
-        [session setupAudioSession];
+        [session markCallAcceptedTime];
+        [session setupAudioSession:nil];
         [action fulfill];
     });
 }
@@ -182,7 +223,6 @@
     TGDispatchOnMainThread(^
     {
         [session acceptIncomingCall];
-        
         [action fulfill];
     });
 }
@@ -198,8 +238,10 @@
     
     TGDispatchOnMainThread(^
     {
-        [session hangUpCurrentCall:true];
-        [action fulfill];
+        if (!session.hungUpOutside)
+            [session hangUpCurrentCall:true];
+
+        [action fulfillWithDateEnded:[NSDate date]];
         
         if (_actionCompletionBlocks[action.UUID] != nil)
         {
@@ -208,16 +250,6 @@
             _actionCompletionBlocks[action.UUID] = nil;
         }
     });
-}
-
-- (void)provider:(CXProvider *)__unused provider performSetHeldCallAction:(CXSetHeldCallAction *)action
-{
-    TGCallSession *session = [self _sessionForUUID:action.callUUID];
-    if (session == nil)
-    {
-        [action fail];
-        return;
-    }
 }
 
 - (void)provider:(CXProvider *)__unused provider performSetMutedCallAction:(CXSetMutedCallAction *)action
@@ -232,11 +264,15 @@
 
 - (void)provider:(CXProvider *)__unused provider didActivateAudioSession:(AVAudioSession *)__unused audioSession
 {
+    TGLog(@"CallKitAdapter: did activate audio session");
+    _audioSessionActivationPipe.sink(@true);
 }
 
 - (void)provider:(CXProvider *)__unused provider didDeactivateAudioSession:(AVAudioSession *)__unused audioSession
 {
+    TGLog(@"CallKitAdapter: did deactivate audio session");
     [TGCallSession resetAudioSession];
+    _audioSessionDeactivationPipe.sink(@true);
 }
 
 - (void)addCallSession:(TGCallSession *)session uuid:(NSUUID *)uuid
@@ -244,6 +280,11 @@
     [_queue dispatch:^
     {
         [_sessions setObject:session forKey:uuid];
+        
+        SVariable *audioSessionDeactivated = [[SVariable alloc] init];
+        [audioSessionDeactivated set:[SSignal single:@false]];
+        [audioSessionDeactivated set:_audioSessionDeactivationPipe.signalProducer()];
+        session.audioSessionDeactivated = audioSessionDeactivated;
     }];
 }
 
@@ -257,11 +298,7 @@
 
 + (bool)callKitAvailable
 {
-#ifdef INTERNAL_RELEASE
     return iosMajorVersion() >= 10;
-#else
-    return false;
-#endif
 }
 
 @end

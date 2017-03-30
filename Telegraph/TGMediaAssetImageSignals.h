@@ -54,6 +54,7 @@ typedef enum
 
 + (SSignal *)videoThumbnailsForAsset:(TGMediaAsset *)asset size:(CGSize)size timestamps:(NSArray *)timestamps;
 + (SSignal *)videoThumbnailsForAVAsset:(AVAsset *)avAsset size:(CGSize)size timestamps:(NSArray *)timestamps;
++ (SSignal *)videoThumbnailForAsset:(TGMediaAsset *)asset size:(CGSize)size timestamp:(CMTime)timestamp;
 + (SSignal *)videoThumbnailForAVAsset:(AVAsset *)avAsset size:(CGSize)size timestamp:(CMTime)timestamp;
 
 + (SSignal *)saveUncompressedVideoForAsset:(TGMediaAsset *)asset toPath:(NSString *)path;

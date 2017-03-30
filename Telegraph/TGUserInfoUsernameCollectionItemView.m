@@ -20,7 +20,7 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        self.selectionInsets = UIEdgeInsetsMake(TGIsRetina() ? 0.5f : 1.0f, 0.0f, 0.0f, 0.0f);
+        self.selectionInsets = UIEdgeInsetsMake(TGScreenPixel, 0.0f, 0.0f, 0.0f);
         
         _separatorLayer = [[CALayer alloc] init];
         _separatorLayer.backgroundColor = TGSeparatorColor().CGColor;
@@ -59,7 +59,7 @@
     
     CGRect bounds = self.bounds;
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     _separatorLayer.frame = CGRectMake(35.0f, bounds.size.height - separatorHeight, bounds.size.width - 35.0f, separatorHeight);
     
     CGFloat leftPadding = 35.0f + TGRetinaPixel;

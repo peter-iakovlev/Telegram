@@ -3,9 +3,12 @@
 #import "TGModernFlatteningViewModel.h"
 #import "TGModernColorViewModel.h"
 
+#import "TGWebPageMediaAttachment.h"
+
 @interface TGWebpageFooterModel ()
 {
     TGModernColorViewModel *_lineModel;
+    bool _isInvoice;
 }
 
 @end
@@ -25,14 +28,18 @@ static UIColor *colorForLine(bool incoming)
     return incoming ? incomingColor : outgoingColor;
 }
 
-- (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming
+- (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming webpage:(TGWebPageMediaAttachment *)webpage
 {
     self = [super init];
     if (self != nil)
     {
         _context = context;
         _lineModel = [[TGModernColorViewModel alloc] initWithColor:colorForLine(incoming)];
-        [self addSubmodel:_lineModel];
+        if ([webpage.pageType isEqualToString:@"invoice"]) {
+            _isInvoice = true;
+        } else {
+            [self addSubmodel:_lineModel];
+        }
     }
     return self;
 }
@@ -50,9 +57,9 @@ static UIColor *colorForLine(bool incoming)
 {
     CGSize webpageSize = [self contentSizeForContainerSize:CGSizeMake(containerSize.width - 2.0f - 2.0f, containerSize.height) contentSize:contentSize infoWidth:infoWidth needsContentsUpdate:needsContentUpdate];
     CGFloat bottomInset = 0.0f;
-    [self layoutContentInRect:CGRectMake(2.0f, 7.0f, MAX(webpageSize.width, contentSize.width), webpageSize.height) bottomInset:&bottomInset];
+    [self layoutContentInRect:CGRectMake(_isInvoice ? -9.0 : 2.0f, 7.0f, MAX(webpageSize.width, contentSize.width), webpageSize.height) bottomInset:&bottomInset];
     _lineModel.frame = CGRectMake(2.0f, 7.0f, 2.0f, webpageSize.height - 7.0f - 2.0f - bottomInset);
-    self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, webpageSize.width + 0.0f, webpageSize.height);
+    self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, webpageSize.width - (_isInvoice ? 10.0 : 0.0), webpageSize.height);
     if (hasBottomInset) {
         *hasBottomInset = bottomInset > FLT_EPSILON;
     }

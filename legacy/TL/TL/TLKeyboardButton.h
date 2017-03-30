@@ -49,3 +49,8 @@
 
 @end
 
+@interface TLKeyboardButton$keyboardButtonBuy : TLKeyboardButton
+
+
+@end
+

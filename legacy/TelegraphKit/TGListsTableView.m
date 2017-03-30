@@ -72,7 +72,7 @@
     }
     
     UIView *tableHeaderView = self.tableHeaderView;
-    if (tableHeaderView != nil)
+    if (tableHeaderView != nil && [tableHeaderView respondsToSelector:@selector(updateClipping:)])
     {
         [(TGSearchBar *)tableHeaderView updateClipping:bounds.origin.y + self.contentInset.top];
     }

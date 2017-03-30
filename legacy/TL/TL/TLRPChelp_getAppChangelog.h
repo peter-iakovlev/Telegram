@@ -3,14 +3,11 @@
 #import "TLObject.h"
 #import "TLMetaRpc.h"
 
-@class TLhelp_AppChangelog;
+@class TLUpdates;
 
 @interface TLRPChelp_getAppChangelog : TLMetaRpc
 
-@property (nonatomic, retain) NSString *device_model;
-@property (nonatomic, retain) NSString *system_version;
-@property (nonatomic, retain) NSString *app_version;
-@property (nonatomic, retain) NSString *lang_code;
+@property (nonatomic, retain) NSString *prev_app_version;
 
 - (Class)responseClass;
 

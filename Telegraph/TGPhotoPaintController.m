@@ -2323,7 +2323,7 @@ const CGFloat TGPhotoPaintStickerKeyboardSize = 260.0f;
             return [SSignal fail:nil];
         return [SSignal single:result];
     }];
-    SSignal *imageSignal = [editorController.requestOriginalScreenSizeImage(item) take:1];
+    SSignal *imageSignal = [editorController.requestOriginalScreenSizeImage(item, 0) take:1];
     SSignal *detectSignal = [[imageSignal filter:^bool(UIImage *image)
     {
         if (![image isKindOfClass:[UIImage class]])

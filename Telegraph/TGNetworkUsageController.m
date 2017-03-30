@@ -32,6 +32,8 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
             @(TGTelegramNetworkUsageKeyMediaAudioOutgoingWWAN),
             @(TGTelegramNetworkUsageKeyMediaDocumentIncomingWWAN),
             @(TGTelegramNetworkUsageKeyMediaDocumentOutgoingWWAN),
+            @(TGTelegramNetworkUsageKeyCallIncomingWWAN),
+            @(TGTelegramNetworkUsageKeyCallOutgoingWWAN),
             
             @(TGTelegramNetworkUsageKeyDataIncomingOther),
             @(TGTelegramNetworkUsageKeyDataOutgoingOther),
@@ -44,7 +46,9 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
             @(TGTelegramNetworkUsageKeyMediaAudioIncomingOther),
             @(TGTelegramNetworkUsageKeyMediaAudioOutgoingOther),
             @(TGTelegramNetworkUsageKeyMediaDocumentIncomingOther),
-            @(TGTelegramNetworkUsageKeyMediaDocumentOutgoingOther)
+            @(TGTelegramNetworkUsageKeyMediaDocumentOutgoingOther),
+            @(TGTelegramNetworkUsageKeyCallIncomingOther),
+            @(TGTelegramNetworkUsageKeyCallOutgoingOther)
         ]] startWithNext:^(id next) {
             if (next == nil) {
                 [subscriber putNext:@{}];
@@ -76,6 +80,8 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
     TGVariantCollectionItem *_cellularMediaAudioInItem;
     TGVariantCollectionItem *_cellularMediaDocumentOutItem;
     TGVariantCollectionItem *_cellularMediaDocumentInItem;
+    TGVariantCollectionItem *_cellularCallOutItem;
+    TGVariantCollectionItem *_cellularCallInItem;
     TGVariantCollectionItem *_cellularTotalOutItem;
     TGVariantCollectionItem *_cellularTotalInItem;
     
@@ -89,6 +95,8 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
     TGVariantCollectionItem *_wifiMediaAudioInItem;
     TGVariantCollectionItem *_wifiMediaDocumentOutItem;
     TGVariantCollectionItem *_wifiMediaDocumentInItem;
+    TGVariantCollectionItem *_wifiCallOutItem;
+    TGVariantCollectionItem *_wifiCallInItem;
     TGVariantCollectionItem *_wifiTotalOutItem;
     TGVariantCollectionItem *_wifiTotalInItem;
     
@@ -177,6 +185,15 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
         _cellularMediaDocumentInItem.selectable = false;
         _cellularMediaDocumentInItem.highlightable = false;
         
+        _cellularCallOutItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"NetworkUsageSettings.BytesSent") action:@selector(noOp)];
+        _cellularCallOutItem.hideArrow = true;
+        _cellularCallOutItem.selectable = false;
+        _cellularCallOutItem.highlightable = false;
+        _cellularCallInItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"NetworkUsageSettings.BytesReceived") action:@selector(noOp)];
+        _cellularCallInItem.hideArrow = true;
+        _cellularCallInItem.selectable = false;
+        _cellularCallInItem.highlightable = false;
+        
         _cellularTotalOutItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"NetworkUsageSettings.BytesSent") action:@selector(noOp)];
         _cellularTotalOutItem.hideArrow = true;
         _cellularTotalOutItem.selectable = false;
@@ -230,6 +247,15 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
         _wifiMediaDocumentInItem.hideArrow = true;
         _wifiMediaDocumentInItem.selectable = false;
         _wifiMediaDocumentInItem.highlightable = false;
+        
+        _wifiCallOutItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"NetworkUsageSettings.BytesSent") action:@selector(noOp)];
+        _wifiCallOutItem.hideArrow = true;
+        _wifiCallOutItem.selectable = false;
+        _wifiCallOutItem.highlightable = false;
+        _wifiCallInItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"NetworkUsageSettings.BytesReceived") action:@selector(noOp)];
+        _wifiCallInItem.hideArrow = true;
+        _wifiCallInItem.selectable = false;
+        _wifiCallInItem.highlightable = false;
         
         _wifiTotalOutItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"NetworkUsageSettings.BytesSent") action:@selector(noOp)];
         _wifiTotalOutItem.hideArrow = true;
@@ -296,6 +322,11 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
             int64_t mediaDocumentIncomingOther = [dict[@(TGTelegramNetworkUsageKeyMediaDocumentIncomingOther)] longLongValue];
             int64_t mediaDocumentOutgoingOther = [dict[@(TGTelegramNetworkUsageKeyMediaDocumentOutgoingOther)] longLongValue];
             
+            int64_t callIncomingWWAN = [dict[@(TGTelegramNetworkUsageKeyCallIncomingWWAN)] longLongValue];
+            int64_t callOutgoingWWAN = [dict[@(TGTelegramNetworkUsageKeyCallOutgoingWWAN)] longLongValue];
+            int64_t callIncomingOther = [dict[@(TGTelegramNetworkUsageKeyCallIncomingOther)] longLongValue];
+            int64_t callOutgoingOther = [dict[@(TGTelegramNetworkUsageKeyCallOutgoingOther)] longLongValue];
+            
             [strongSelf->_cellularDataInItem setVariant:[TGStringUtils stringForFileSize:dataIncomingWWAN + mediaGenericIncomingWWAN]];
             [strongSelf->_cellularDataOutItem setVariant:[TGStringUtils stringForFileSize:dataOutgoingWWAN + mediaGenericOutgoingWWAN]];
             
@@ -310,6 +341,9 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
             
             [strongSelf->_cellularMediaDocumentInItem setVariant:[TGStringUtils stringForFileSize:mediaDocumentIncomingWWAN]];
             [strongSelf->_cellularMediaDocumentOutItem setVariant:[TGStringUtils stringForFileSize:mediaDocumentOutgoingWWAN]];
+            
+            [strongSelf->_cellularCallInItem setVariant:[TGStringUtils stringForFileSize:callIncomingWWAN]];
+            [strongSelf->_cellularCallOutItem setVariant:[TGStringUtils stringForFileSize:callOutgoingWWAN]];
             
             [strongSelf->_wifiDataInItem setVariant:[TGStringUtils stringForFileSize:dataIncomingOther + mediaGenericIncomingOther]];
             [strongSelf->_wifiDataOutItem setVariant:[TGStringUtils stringForFileSize:dataOutgoingOther + mediaGenericOutgoingOther]];
@@ -326,11 +360,14 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
             [strongSelf->_wifiMediaDocumentInItem setVariant:[TGStringUtils stringForFileSize:mediaDocumentIncomingOther]];
             [strongSelf->_wifiMediaDocumentOutItem setVariant:[TGStringUtils stringForFileSize:mediaDocumentOutgoingOther]];
             
-            [strongSelf->_cellularTotalInItem setVariant:[TGStringUtils stringForFileSize:dataIncomingWWAN + mediaGenericIncomingWWAN + mediaImageIncomingWWAN + mediaVideoIncomingWWAN + mediaAudioIncomingWWAN + mediaDocumentIncomingWWAN]];
-            [strongSelf->_cellularTotalOutItem setVariant:[TGStringUtils stringForFileSize:dataOutgoingWWAN + mediaGenericOutgoingWWAN + mediaImageOutgoingWWAN + mediaVideoOutgoingWWAN + mediaAudioOutgoingWWAN + mediaDocumentOutgoingWWAN]];
+            [strongSelf->_wifiCallInItem setVariant:[TGStringUtils stringForFileSize:callIncomingOther]];
+            [strongSelf->_wifiCallOutItem setVariant:[TGStringUtils stringForFileSize:callOutgoingOther]];
             
-            [strongSelf->_wifiTotalInItem setVariant:[TGStringUtils stringForFileSize:dataIncomingOther + mediaGenericIncomingOther + mediaImageIncomingOther + mediaVideoIncomingOther + mediaAudioIncomingOther + mediaDocumentIncomingOther]];
-            [strongSelf->_wifiTotalOutItem setVariant:[TGStringUtils stringForFileSize:dataOutgoingOther + mediaGenericOutgoingOther + mediaImageOutgoingOther + mediaVideoOutgoingOther + mediaAudioOutgoingOther + mediaDocumentOutgoingOther]];
+            [strongSelf->_cellularTotalInItem setVariant:[TGStringUtils stringForFileSize:dataIncomingWWAN + mediaGenericIncomingWWAN + mediaImageIncomingWWAN + mediaVideoIncomingWWAN + mediaAudioIncomingWWAN + mediaDocumentIncomingWWAN + callIncomingWWAN]];
+            [strongSelf->_cellularTotalOutItem setVariant:[TGStringUtils stringForFileSize:dataOutgoingWWAN + mediaGenericOutgoingWWAN + mediaImageOutgoingWWAN + mediaVideoOutgoingWWAN + mediaAudioOutgoingWWAN + mediaDocumentOutgoingWWAN + callOutgoingWWAN]];
+            
+            [strongSelf->_wifiTotalInItem setVariant:[TGStringUtils stringForFileSize:dataIncomingOther + mediaGenericIncomingOther + mediaImageIncomingOther + mediaVideoIncomingOther + mediaAudioIncomingOther + mediaDocumentIncomingOther + callIncomingOther]];
+            [strongSelf->_wifiTotalOutItem setVariant:[TGStringUtils stringForFileSize:dataOutgoingOther + mediaGenericOutgoingOther + mediaImageOutgoingOther + mediaVideoOutgoingOther + mediaAudioOutgoingOther + mediaDocumentOutgoingOther + callOutgoingOther]];
         }
     }]];
 }
@@ -350,6 +387,8 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
     TGVariantCollectionItem *mediaAudioInItem = nil;
     TGVariantCollectionItem *mediaDocumentOutItem = nil;
     TGVariantCollectionItem *mediaDocumentInItem = nil;
+    TGVariantCollectionItem *callOutItem = nil;
+    TGVariantCollectionItem *callInItem = nil;
     TGVariantCollectionItem *totalOutItem = nil;
     TGVariantCollectionItem *totalInItem = nil;
     
@@ -364,6 +403,8 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
         mediaAudioInItem = _wifiMediaAudioInItem;
         mediaDocumentOutItem = _wifiMediaDocumentOutItem;
         mediaDocumentInItem = _wifiMediaDocumentInItem;
+        callOutItem = _wifiCallOutItem;
+        callInItem = _wifiCallInItem;
         totalOutItem = _wifiTotalOutItem;
         totalInItem = _wifiTotalInItem;
     } else {
@@ -377,6 +418,8 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
         mediaAudioInItem = _cellularMediaAudioInItem;
         mediaDocumentOutItem = _cellularMediaDocumentOutItem;
         mediaDocumentInItem = _cellularMediaDocumentInItem;
+        callOutItem = _cellularCallOutItem;
+        callInItem = _cellularCallInItem;
         totalOutItem = _cellularTotalOutItem;
         totalInItem = _cellularTotalInItem;
     }
@@ -418,6 +461,13 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
         mediaDocumentInItem
     ]];
     [self.menuSections addSection:mediaDocumentSection];
+    
+    TGCollectionMenuSection *callSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+        [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"NetworkUsageSettings.CallDataSection")],
+        callOutItem,
+        callInItem
+    ]];
+    [self.menuSections addSection:callSection];
     
     TGCollectionMenuSection *totalSection = [[TGCollectionMenuSection alloc] initWithItems:@[
         [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"NetworkUsageSettings.TotalSection")],
@@ -499,6 +549,8 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
                     @(TGTelegramNetworkUsageKeyMediaAudioOutgoingOther),
                     @(TGTelegramNetworkUsageKeyMediaDocumentIncomingOther),
                     @(TGTelegramNetworkUsageKeyMediaDocumentOutgoingOther),
+                    @(TGTelegramNetworkUsageKeyCallIncomingOther),
+                    @(TGTelegramNetworkUsageKeyCallOutgoingOther),
                 ];
             } else {
                 keys = @[
@@ -514,6 +566,8 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
                     @(TGTelegramNetworkUsageKeyMediaAudioOutgoingWWAN),
                     @(TGTelegramNetworkUsageKeyMediaDocumentIncomingWWAN),
                     @(TGTelegramNetworkUsageKeyMediaDocumentOutgoingWWAN),
+                    @(TGTelegramNetworkUsageKeyCallIncomingWWAN),
+                    @(TGTelegramNetworkUsageKeyCallOutgoingWWAN),
                 ];
             }
             [dataManager resetKeys:keys completion:^{

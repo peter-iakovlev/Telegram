@@ -88,6 +88,10 @@
 {
 }
 
+- (void)didChangeAbsoluteFrame
+{
+}
+
 - (void)menuView:(TGMenuSheetView *)__unused menuView willAppearAnimated:(bool)__unused animated
 {
 }

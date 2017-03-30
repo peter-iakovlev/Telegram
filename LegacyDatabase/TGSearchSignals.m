@@ -148,22 +148,22 @@ static void enumerateStringParts(NSString *string, void (^block)(NSString *, boo
     if (query.length < 5)
         return [SSignal single:@{@"chats": @[], @"users": @[]}];
     
-    return [[context function:[Api62 contacts_searchWithQ:query limit:@(100)]] map:^id(Api62_contacts_Found *result)
+    return [[context function:[Api65 contacts_searchWithQ:query limit:@(100)]] map:^id(Api65_contacts_Found *result)
     {
         NSMutableArray *chatModels = [[NSMutableArray alloc] init];
         NSMutableArray *userModels = [[NSMutableArray alloc] init];
         
-        for (Api62_User *user in result.users)
+        for (Api65_User *user in result.users)
         {
             TGUserModel *userModel = [TGChatListSignal userModelWithApiUser:user];
             if (userModel != nil)
                 [userModels addObject:userModel];
         }
         
-        for (Api62_Peer *peerFound in result.results)
+        for (Api65_Peer *peerFound in result.results)
         {
-            if ([peerFound isKindOfClass:[Api62_Peer_peerUser class]]) {
-                int32_t userId = [((Api62_Peer_peerUser *)peerFound).userId intValue];
+            if ([peerFound isKindOfClass:[Api65_Peer_peerUser class]]) {
+                int32_t userId = [((Api65_Peer_peerUser *)peerFound).userId intValue];
                 
                 for (TGUserModel *userModel in userModels)
                 {

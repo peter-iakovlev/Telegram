@@ -82,10 +82,14 @@ bool TGIsRetina();
 CGFloat TGScreenScaling();
 bool TGIsPad();
     
+CGFloat TGSeparatorHeight();
+
+    
 CGSize TGScreenSize();
 CGSize TGNativeScreenSize();
     
 extern CGFloat TGRetinaPixel;
+extern CGFloat TGScreenPixel;
     
 void TGDrawSvgPath(CGContextRef context, NSString *path);
 

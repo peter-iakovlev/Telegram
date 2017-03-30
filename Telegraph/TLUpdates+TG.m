@@ -216,6 +216,8 @@
 {
     if ([self isKindOfClass:[TLUpdate$updateNewMessage class]]) {
         return true;
+    } else if ([self isKindOfClass:[TLUpdate$updateEditMessage class]]) {
+        return true;
     } else if ([self isKindOfClass:[TLUpdate$updateDeleteMessages class]]) {
         return true;
     } else if ([self isKindOfClass:[TLUpdate$updateReadHistoryInbox class]]) {

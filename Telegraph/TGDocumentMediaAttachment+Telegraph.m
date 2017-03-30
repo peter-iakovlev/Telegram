@@ -16,6 +16,65 @@
 
 @implementation TGDocumentMediaAttachment (Telegraph)
 
++ (NSArray *)parseAttribtues:(NSArray *)descs {
+    NSMutableArray *attributes = [[NSMutableArray alloc] init];
+    for (id attribute in descs)
+    {
+        if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeFilename class]])
+        {
+            TLDocumentAttribute$documentAttributeFilename *concreteAttribute = attribute;
+            [attributes addObject:[[TGDocumentAttributeFilename alloc] initWithFilename:concreteAttribute.file_name]];
+        }
+        else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeAnimated class]])
+        {
+            [attributes addObject:[[TGDocumentAttributeAnimated alloc] init]];
+        }
+        else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeImageSize class]])
+        {
+            TLDocumentAttribute$documentAttributeImageSize *concreteAttribute = attribute;
+            [attributes addObject:[[TGDocumentAttributeImageSize alloc] initWithSize:CGSizeMake(concreteAttribute.w, concreteAttribute.h)]];
+        }
+        else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeStickerMeta class]])
+        {
+            TLDocumentAttribute$documentAttributeStickerMeta *concreteAttribute = (TLDocumentAttribute$documentAttributeStickerMeta *)attribute;
+            id<TGStickerPackReference> packReference = nil;
+            if ([concreteAttribute.stickerset isKindOfClass:[TLInputStickerSet$inputStickerSetID class]])
+            {
+                TLInputStickerSet$inputStickerSetID *concreteStickerset = (TLInputStickerSet$inputStickerSetID *)concreteAttribute.stickerset;
+                packReference = [[TGStickerPackIdReference alloc] initWithPackId:concreteStickerset.n_id packAccessHash:concreteStickerset.access_hash shortName:nil];
+            }
+            else if ([concreteAttribute.stickerset isKindOfClass:[TLInputStickerSet$inputStickerSetShortName class]])
+            {
+                TLInputStickerSet$inputStickerSetShortName *concreteStickerset = (TLInputStickerSet$inputStickerSetShortName *)concreteAttribute.stickerset;
+                packReference = [[TGStickerPackShortnameReference alloc] initWithShortName:concreteStickerset.short_name];
+            }
+            TGStickerMaskDescription *maskDescription = nil;
+            if (concreteAttribute.mask_coords != nil) {
+                maskDescription = [[TGStickerMaskDescription alloc] initWithN:concreteAttribute.mask_coords.n point:CGPointMake((CGFloat)concreteAttribute.mask_coords.x, (CGFloat)concreteAttribute.mask_coords.y) zoom:concreteAttribute.mask_coords.zoom];
+            }
+            
+            [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:concreteAttribute.alt packReference:packReference mask:maskDescription]];
+        }
+        else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeVideo class]])
+        {
+            TLDocumentAttribute$documentAttributeVideo *concreteAttribute = (TLDocumentAttribute$documentAttributeVideo *)attribute;
+            [attributes addObject:[[TGDocumentAttributeVideo alloc] initWithSize:CGSizeMake(concreteAttribute.w, concreteAttribute.h) duration:concreteAttribute.duration]];
+        }
+        else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeAudio class]])
+        {
+            TLDocumentAttribute$documentAttributeAudio *concreteAttribute = attribute;
+            
+            TGAudioWaveform *waveform = nil;
+            if (concreteAttribute.waveform.length != 0) {
+                waveform = [[TGAudioWaveform alloc] initWithBitstream:concreteAttribute.waveform bitsPerSample:5];
+            }
+            
+            [attributes addObject:[[TGDocumentAttributeAudio alloc] initWithIsVoice:concreteAttribute.is_voice title:concreteAttribute.title performer:concreteAttribute.performer duration:concreteAttribute.duration waveform:waveform]];
+        }
+    }
+    return attributes;
+}
+
 - (instancetype)initWithTelegraphDocumentDesc:(TLDocument *)desc
 {
     self = [super init];
@@ -34,62 +93,7 @@
             self.date = concreteDocument.date;
             self.version = concreteDocument.version;
             
-            NSMutableArray *attributes = [[NSMutableArray alloc] init];
-            for (id attribute in concreteDocument.attributes)
-            {
-                if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeFilename class]])
-                {
-                    TLDocumentAttribute$documentAttributeFilename *concreteAttribute = attribute;
-                    [attributes addObject:[[TGDocumentAttributeFilename alloc] initWithFilename:concreteAttribute.file_name]];
-                }
-                else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeAnimated class]])
-                {
-                    [attributes addObject:[[TGDocumentAttributeAnimated alloc] init]];
-                }
-                else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeImageSize class]])
-                {
-                    TLDocumentAttribute$documentAttributeImageSize *concreteAttribute = attribute;
-                    [attributes addObject:[[TGDocumentAttributeImageSize alloc] initWithSize:CGSizeMake(concreteAttribute.w, concreteAttribute.h)]];
-                }
-                else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeStickerMeta class]])
-                {
-                    TLDocumentAttribute$documentAttributeStickerMeta *concreteAttribute = (TLDocumentAttribute$documentAttributeStickerMeta *)attribute;
-                    id<TGStickerPackReference> packReference = nil;
-                    if ([concreteAttribute.stickerset isKindOfClass:[TLInputStickerSet$inputStickerSetID class]])
-                    {
-                        TLInputStickerSet$inputStickerSetID *concreteStickerset = (TLInputStickerSet$inputStickerSetID *)concreteAttribute.stickerset;
-                        packReference = [[TGStickerPackIdReference alloc] initWithPackId:concreteStickerset.n_id packAccessHash:concreteStickerset.access_hash shortName:nil];
-                    }
-                    else if ([concreteAttribute.stickerset isKindOfClass:[TLInputStickerSet$inputStickerSetShortName class]])
-                    {
-                        TLInputStickerSet$inputStickerSetShortName *concreteStickerset = (TLInputStickerSet$inputStickerSetShortName *)concreteAttribute.stickerset;
-                        packReference = [[TGStickerPackShortnameReference alloc] initWithShortName:concreteStickerset.short_name];
-                    }
-                    TGStickerMaskDescription *maskDescription = nil;
-                    if (concreteAttribute.mask_coords != nil) {
-                        maskDescription = [[TGStickerMaskDescription alloc] initWithN:concreteAttribute.mask_coords.n point:CGPointMake((CGFloat)concreteAttribute.mask_coords.x, (CGFloat)concreteAttribute.mask_coords.y) zoom:concreteAttribute.mask_coords.zoom];
-                    }
-                    
-                    [attributes addObject:[[TGDocumentAttributeSticker alloc] initWithAlt:concreteAttribute.alt packReference:packReference mask:maskDescription]];
-                }
-                else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeVideo class]])
-                {
-                    TLDocumentAttribute$documentAttributeVideo *concreteAttribute = (TLDocumentAttribute$documentAttributeVideo *)attribute;
-                    [attributes addObject:[[TGDocumentAttributeVideo alloc] initWithSize:CGSizeMake(concreteAttribute.w, concreteAttribute.h) duration:concreteAttribute.duration]];
-                }
-                else if ([attribute isKindOfClass:[TLDocumentAttribute$documentAttributeAudio class]])
-                {
-                    TLDocumentAttribute$documentAttributeAudio *concreteAttribute = attribute;
-                    
-                    TGAudioWaveform *waveform = nil;
-                    if (concreteAttribute.waveform.length != 0) {
-                        waveform = [[TGAudioWaveform alloc] initWithBitstream:concreteAttribute.waveform bitsPerSample:5];
-                    }
-                    
-                    [attributes addObject:[[TGDocumentAttributeAudio alloc] initWithIsVoice:concreteAttribute.is_voice title:concreteAttribute.title performer:concreteAttribute.performer duration:concreteAttribute.duration waveform:waveform]];
-                }
-            }
-            self.attributes = attributes;
+            self.attributes = [TGDocumentMediaAttachment parseAttribtues:concreteDocument.attributes];
             self.mimeType = concreteDocument.mime_type;
             self.size = concreteDocument.size;
             

@@ -138,7 +138,7 @@
     _grayBackground.backgroundColor = UIColorRGB(0xf2f2f2);
     [self.view addSubview:_grayBackground];
     
-    _separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, _grayBackground.frame.origin.y + _grayBackground.frame.size.height, screenSize.width, TGIsRetina() ? 0.5f : 1.0f)];
+    _separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, _grayBackground.frame.origin.y + _grayBackground.frame.size.height, screenSize.width, TGScreenPixel)];
     _separatorView.backgroundColor = TGSeparatorColor();
     [self.view addSubview:_separatorView];
     
@@ -202,11 +202,11 @@
     [_addPhotoButton addSubview:addPhotoLabelFirst];
     [_addPhotoButton addSubview:addPhotoLabelSecond];
     
-    _firstNameSeparator = [[UIView alloc] initWithFrame:CGRectMake(134.0f, _separatorView.frame.origin.y + 64.0f, screenSize.width - 134.0f, TGIsRetina() ? 0.5f : 1.0f)];
+    _firstNameSeparator = [[UIView alloc] initWithFrame:CGRectMake(134.0f, _separatorView.frame.origin.y + 64.0f, screenSize.width - 134.0f, TGScreenPixel)];
     _firstNameSeparator.backgroundColor = TGSeparatorColor();
     [self.view addSubview:_firstNameSeparator];
     
-    _lastNameSeparator = [[UIView alloc] initWithFrame:CGRectMake(134.0f, _separatorView.frame.origin.y + 121.0f, screenSize.width - 134.0f, TGIsRetina() ? 0.5f : 1.0f)];
+    _lastNameSeparator = [[UIView alloc] initWithFrame:CGRectMake(134.0f, _separatorView.frame.origin.y + 121.0f, screenSize.width - 134.0f, TGScreenPixel)];
     _lastNameSeparator.backgroundColor = TGSeparatorColor();
     [self.view addSubview:_lastNameSeparator];
     
@@ -372,9 +372,9 @@
     
     _avatarView.frame = CGRectMake(10 + TGRetinaPixel + sideInset, _separatorView.frame.origin.y + 11, 110, 110);
     
-    _firstNameSeparator.frame = CGRectMake(134.0f + sideInset, _separatorView.frame.origin.y + 64.0f, screenSize.width - 134.0f - sideInset * 2.0f, TGIsRetina() ? 0.5f : 1.0f);
+    _firstNameSeparator.frame = CGRectMake(134.0f + sideInset, _separatorView.frame.origin.y + 64.0f, screenSize.width - 134.0f - sideInset * 2.0f, TGScreenPixel);
     
-    _lastNameSeparator.frame = CGRectMake(134.0f + sideInset, _separatorView.frame.origin.y + 121.0f, screenSize.width - 134.0f - sideInset * 2.0f, TGIsRetina() ? 0.5f : 1.0f);
+    _lastNameSeparator.frame = CGRectMake(134.0f + sideInset, _separatorView.frame.origin.y + 121.0f, screenSize.width - 134.0f - sideInset * 2.0f, TGScreenPixel);
     
     _firstNameField.frame = CGRectMake(135.0f + sideInset, _firstNameSeparator.frame.origin.y - 56.0f, screenSize.width - 134.0f - 8.0f - sideInset * 2.0f, 56.0f);
     

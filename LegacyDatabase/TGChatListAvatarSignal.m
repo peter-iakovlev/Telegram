@@ -13,8 +13,8 @@ static OSSpinLock imageDataLock;
 
 + (SSignal *)remoteChatListAvatarWithContext:(TGShareContext *)context location:(TGFileLocation *)location
 {
-    Api62_InputFileLocation_inputFileLocation *inputFileLocation = [Api62_InputFileLocation inputFileLocationWithVolumeId:@(location.volumeId) localId:@(location.localId) secret:@(location.secret)];
-    return [[context datacenter:location.datacenterId function:[Api62 upload_getFileWithLocation:inputFileLocation offset:@(0) limit:@(1024 * 1024)]] map:^id(Api62_upload_File *result)
+    Api65_InputFileLocation_inputFileLocation *inputFileLocation = [Api65_InputFileLocation inputFileLocationWithVolumeId:@(location.volumeId) localId:@(location.localId) secret:@(location.secret)];
+    return [[context datacenter:location.datacenterId function:[Api65 upload_getFileWithLocation:inputFileLocation offset:@(0) limit:@(1024 * 1024)]] map:^id(Api65_upload_File *result)
     {
         [context.persistentCache setValue:result.bytes forKey:[[location description] dataUsingEncoding:NSUTF8StringEncoding]];
         

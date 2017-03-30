@@ -110,6 +110,8 @@ MTInternalIdClass(TGDownloadWorker)
     NSMutableArray *_currentWakeUpCompletions;
     
     UIWindow *_currentPasswordEntryWindow;
+    
+    SMetaDisposable *_updateCallsConfig;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -203,7 +205,7 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
                 [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.10" port:443 preferForMedia:false restrictToTcp:false]
             ]]];
             [_context setSeedAddressSetForDatacenterWithId:2 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                                                                                                                  [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.40" port:443 preferForMedia:false restrictToTcp:false]
+                [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.40" port:443 preferForMedia:false restrictToTcp:false]
                                                                                                                                   ]]];
         }
         else
@@ -605,7 +607,7 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
 }
 
 - (void)performDeferredServiceTasks
-{
+{    
 #if TGUseModernNetworking
 #else
     [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/network/requestFutureSalts/(%d)", [[TGSession instance] datacenterWithId:TG_DEFAULT_DATACENTER_ID].datacenterId] options:nil flags:0 watcher:[TGSession instance]];
@@ -1610,6 +1612,8 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
             return [[MTNetworkUsageCalculationInfo alloc] initWithFilePath:[self baseUsagePath] incomingWWANKey:TGTelegramNetworkUsageKeyMediaAudioIncomingWWAN outgoingWWANKey:TGTelegramNetworkUsageKeyMediaAudioOutgoingWWAN incomingOtherKey:TGTelegramNetworkUsageKeyMediaAudioIncomingOther outgoingOtherKey:TGTelegramNetworkUsageKeyMediaAudioOutgoingOther];
         case TGNetworkMediaTypeTagDocument:
             return [[MTNetworkUsageCalculationInfo alloc] initWithFilePath:[self baseUsagePath] incomingWWANKey:TGTelegramNetworkUsageKeyMediaDocumentIncomingWWAN outgoingWWANKey:TGTelegramNetworkUsageKeyMediaDocumentOutgoingWWAN incomingOtherKey:TGTelegramNetworkUsageKeyMediaDocumentIncomingOther outgoingOtherKey:TGTelegramNetworkUsageKeyMediaDocumentOutgoingOther];
+        case TGNetworkMediaTypeTagCall:
+            return [[MTNetworkUsageCalculationInfo alloc] initWithFilePath:[self baseUsagePath] incomingWWANKey:TGTelegramNetworkUsageKeyCallIncomingWWAN outgoingWWANKey:TGTelegramNetworkUsageKeyCallOutgoingWWAN incomingOtherKey:TGTelegramNetworkUsageKeyCallIncomingOther outgoingOtherKey:TGTelegramNetworkUsageKeyCallOutgoingOther];
         default:
             return [[MTNetworkUsageCalculationInfo alloc] initWithFilePath:[self baseUsagePath] incomingWWANKey:TGTelegramNetworkUsageKeyMediaGenericIncomingWWAN outgoingWWANKey:TGTelegramNetworkUsageKeyMediaGenericOutgoingWWAN incomingOtherKey:TGTelegramNetworkUsageKeyMediaGenericIncomingOther outgoingOtherKey:TGTelegramNetworkUsageKeyMediaGenericOutgoingOther];
     }

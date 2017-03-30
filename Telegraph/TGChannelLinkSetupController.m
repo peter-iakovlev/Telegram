@@ -95,7 +95,7 @@ typedef enum {
     _usernameItem.usernameValid = true;
     _usernameItem.placeholder = @"";
     _usernameItem.title = @"";
-    _usernameItem.prefix = @"telegram.me/";
+    _usernameItem.prefix = @"t.me/";
     __weak TGChannelLinkSetupController *weakSelf = self;
     _usernameItem.usernameChanged = ^(NSString *username)
     {
@@ -122,7 +122,7 @@ typedef enum {
         {
             if (strongSelf->_usernameItem.username.length != 0)
             {
-                [[UIPasteboard generalPasteboard] setString:[[NSString alloc] initWithFormat:@"http://telegram.me/%@", strongSelf->_usernameItem.username]];
+                [[UIPasteboard generalPasteboard] setString:[[NSString alloc] initWithFormat:@"http://t.me/%@", strongSelf->_usernameItem.username]];
                 [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Username.LinkCopied") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
             }
         }

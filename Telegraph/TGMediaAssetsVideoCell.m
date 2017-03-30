@@ -93,7 +93,15 @@ NSString *const TGMediaAssetsVideoCellKind = @"TGMediaAssetsVideoCellKind";
     if (![asset isKindOfClass:[TGMediaAsset class]])
         return;
     
-    _durationLabel.text = [NSString stringWithFormat:@"%d:%02d", (int)ceil(asset.videoDuration) / 60, (int)ceil(asset.videoDuration) % 60];
+    
+    NSString *durationString = nil;
+    int duration = (int)ceil(asset.videoDuration);
+    if (duration >= 3600)
+        durationString = [NSString stringWithFormat:@"%d:%02d:%02d", duration / 3600, duration / 60, duration % 60];
+    else
+        durationString = [NSString stringWithFormat:@"%d:%02d", duration / 60, duration % 60];
+        
+    _durationLabel.text = durationString;
     
     if (asset.subtypes & TGMediaAssetSubtypeVideoTimelapse)
         _iconView.image = [UIImage imageNamed:@"ModernMediaItemTimelapseIcon"];

@@ -34,6 +34,7 @@ typedef enum {
     TGContactsModeIgnorePrivateBots = (2 << 16),
     TGContactsModeSearchGlobal = (2 << 17),
     TGContactsModeIgnoreBots = (2 << 18),
+    TGContactsModeCalls = (2 << 19),
 } TGContactsMode;
 
 @interface TGContactsController : TGViewController <TGViewControllerNavigationBarAppearance, ASWatcher>

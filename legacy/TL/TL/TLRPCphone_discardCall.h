@@ -5,6 +5,7 @@
 
 @class TLInputPhoneCall;
 @class TLPhoneCallDiscardReason;
+@class TLUpdates;
 
 @interface TLRPCphone_discardCall : TLMetaRpc
 

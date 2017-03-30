@@ -130,6 +130,14 @@ static Class TGMediaAssetImageSignalsClass = nil;
     return [signal startOn:[self _thumbnailQueue]];
 }
 
++ (SSignal *)videoThumbnailForAsset:(TGMediaAsset *)asset size:(CGSize)size timestamp:(CMTime)timestamp
+{
+    return [[self avAssetForVideoAsset:asset] mapToSignal:^SSignal *(AVAsset *avAsset)
+    {
+        return [self videoThumbnailForAVAsset:avAsset size:size timestamp:timestamp];
+    }];
+}
+
 + (SSignal *)videoThumbnailForAVAsset:(AVAsset *)avAsset size:(CGSize)size timestamp:(CMTime)timestamp
 {
     SSignal *signal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
@@ -137,6 +145,8 @@ static Class TGMediaAssetImageSignalsClass = nil;
         AVAssetImageGenerator *generator = [[AVAssetImageGenerator alloc] initWithAsset:avAsset];
         generator.appliesPreferredTrackTransform = true;
         generator.maximumSize = size;
+        generator.requestedTimeToleranceBefore = kCMTimeZero;
+        generator.requestedTimeToleranceAfter = kCMTimeZero;
         
         [generator generateCGImagesAsynchronouslyForTimes:@[ [NSValue valueWithCMTime:timestamp] ] completionHandler:^(__unused CMTime requestedTime, CGImageRef imageRef, __unused CMTime actualTime, AVAssetImageGeneratorResult result, __unused NSError *error)
         {

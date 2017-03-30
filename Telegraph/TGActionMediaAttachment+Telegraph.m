@@ -102,6 +102,10 @@
         } else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionPhoneCall class]]) {
             self.actionType = TGMessageActionPhoneCall;
             self.actionData = @{@"callId": @(((TLMessageAction$messageActionPhoneCall *)actionDesc).call_id), @"reason": @([TGCallDiscardReasonAdapter reasonForTLObject:((TLMessageAction$messageActionPhoneCall *)actionDesc).reason]), @"duration": @(((TLMessageAction$messageActionPhoneCall *)actionDesc).duration), };
+        } else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionPaymentSent class]]) {
+            TLMessageAction$messageActionPaymentSent *action = (TLMessageAction$messageActionPaymentSent *)actionDesc;
+            self.actionType = TGMessageActionPaymentSent;
+            self.actionData = @{@"currency": action.currency, @"totalAmount": @(action.total_amount)};
         }
     }
     return self;

@@ -185,7 +185,7 @@
         _groupInfoSection = [[TGCollectionMenuSection alloc] initWithItems:infoSectionItems];
         _groupInfoSection.insets = UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, 0.0f);
         
-        NSString *linkText = _conversation.username.length == 0 ? @"" : [@"https://telegram.me/" stringByAppendingString:_conversation.username];
+        NSString *linkText = _conversation.username.length == 0 ? @"" : [@"https://t.me/" stringByAppendingString:_conversation.username];
         _aboutItem = [[TGUserInfoTextCollectionItem alloc] init];
         _aboutItem.title = TGLocalized(@"Channel.Info.Description");
         _aboutItem.text = _conversation.about;
@@ -868,7 +868,7 @@
         _conversation = conversation;
         [_groupInfoItem setConversation:_conversation];
         
-        NSString *linkText = _conversation.username.length == 0 ? @"" : [@"https://telegram.me/" stringByAppendingString:_conversation.username];
+        NSString *linkText = _conversation.username.length == 0 ? @"" : [@"https://t.me/" stringByAppendingString:_conversation.username];
         
         if (!TGStringCompare(_aboutItem.text, _conversation.about)) {
             reloadData = true;
@@ -1195,7 +1195,7 @@
     __weak TGChannelInfoController *weakSelf = self;
     if (_conversation.username.length != 0)
     {
-        NSString *linkString = [NSString stringWithFormat:@"https://telegram.me/%@", _conversation.username];
+        NSString *linkString = [NSString stringWithFormat:@"https://t.me/%@", _conversation.username];
         NSString *shareString = linkString;
         if (_conversation.about.length > 0)
         {

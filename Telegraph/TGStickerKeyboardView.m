@@ -225,7 +225,7 @@ typedef enum {
         [_tabPanel setTrendingStickersBadge:_trendingStickersBadge];
         [self addSubview:_tabPanel];
         
-        CGFloat stripeHeight = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat stripeHeight = TGScreenPixel;
         _topStripe = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frame.size.width, stripeHeight)];
         _topStripe.backgroundColor = UIColorRGB(0xd8d8d8);
         if (style != TGStickerKeyboardViewDarkBlurredStyle)
@@ -502,7 +502,7 @@ typedef enum {
     [_gifsCollectionLayout invalidateLayout];
     [_trendingCollectionLayout invalidateLayout];
     
-    CGFloat stripeHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat stripeHeight = TGScreenPixel;
     _topStripe.frame = CGRectMake(0.0f, 0.0f, size.width, stripeHeight);
 }
 

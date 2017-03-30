@@ -120,7 +120,7 @@
         _lastSeenItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.LastSeen") action:@selector(lastSeenPressed)];
         _blockedUsersItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.BlockedUsers") action:@selector(blockedUsersPressed)];
         _groupsAndChannelsItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Privacy.GroupsAndChannels") action:@selector(groupsAndChannelsPressed)];
-        _callsItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Privacy.Calls") action:@selector(groupsAndChannelsPressed)];
+        _callsItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Privacy.Calls") action:@selector(callsPressed)];
         NSMutableArray *lastSeenSectionItems = [[NSMutableArray alloc] init];
         NSData *phoneCallsEnabledData = [TGDatabaseInstance() customProperty:@"phoneCallsEnabled"];
         int32_t phoneCallsEnabled = false;
@@ -285,7 +285,7 @@
 
 - (void)callsPressed {
     __weak TGPrivacySettingsController *weakSelf = self;
-    [self.navigationController pushViewController:[[TGPrivacyLastSeenController alloc] initWithMode:TGPrivacySettingsModeGroupsAndChannels privacySettings:_accountSettings.groupsAndChannelsSettings privacySettingsChanged:^(TGNotificationPrivacyAccountSetting *privacySettings)
+    [self.navigationController pushViewController:[[TGPrivacyLastSeenController alloc] initWithMode:TGPrivacySettingsModeCalls privacySettings:_accountSettings.callSettings privacySettingsChanged:^(TGNotificationPrivacyAccountSetting *privacySettings)
     {
         __strong TGPrivacySettingsController *strongSelf = weakSelf;
         if (strongSelf != nil)

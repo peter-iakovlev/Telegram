@@ -32,11 +32,20 @@ typedef enum {
 
 @implementation TGUser
 
+- (instancetype)init {
+    self = [super init];
+    if (self != nil) {
+        TG_SYNCHRONIZED_INIT(_cachedValues);
+    }
+    return self;
+}
+
 - (instancetype)initWithKeyValueCoder:(PSKeyValueCoder *)coder
 {
     self = [super init];
     if (self != nil)
     {
+        TG_SYNCHRONIZED_INIT(_cachedValues);
         _kind = [coder decodeInt32ForCKey:"k"];
         if (_kind == TGUserKindBot || _kind == TGUserKindSmartBot)
         {
@@ -108,7 +117,7 @@ typedef enum {
 
 - (NSString *)firstName
 {
-    return (_phonebookFirstName.length != 0 || _phonebookLastName.length != 0) ? _phonebookFirstName : ((_firstName.length != 0 || _lastName.length != 0) ? _firstName : (_phoneNumber.length == 0 ? @"Name Hidden" : [self formattedPhoneNumber]));
+    return (_phonebookFirstName.length != 0 || _phonebookLastName.length != 0) ? _phonebookFirstName : ((_firstName.length != 0 || _lastName.length != 0) ? _firstName : (_phoneNumber.length == 0 ? TGLocalized(@"User.DeletedAccount") : [self formattedPhoneNumber]));
 }
 
 - (NSString *)lastName

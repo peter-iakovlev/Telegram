@@ -26,6 +26,7 @@
 #import "TGBotContextResultAttachment.h"
 #import "TGViaUserAttachment.h"
 #import "TGGameMediaAttachment.h"
+#import "TGInvoiceMediaAttachment.h"
 
 #import "TGMessageViewCountContentProperty.h"
 

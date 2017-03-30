@@ -26,6 +26,8 @@
 
 #import "TGDialogListCellEditingControls.h"
 
+#import "TGCurrencyFormatter.h"
+
 static UIImage *deliveredCheckmark()
 {
     static UIImage *image = nil;
@@ -400,7 +402,7 @@ static UIColor *mediaTextColor = nil;
         
         bool fadeTransition = cpuCoreCount() > 1;
         
-        _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(10, 7 - TGRetinaPixel, 62 + TGRetinaPixel, 62 + TGRetinaPixel)];
+        _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(10, 7, 62, 62)];
         [_avatarView setSingleFontSize:35.0f doubleFontSize:21.0f useBoldFont:false];
         _avatarView.fadeTransition = fadeTransition;
         [_wrapView addSubview:_avatarView];
@@ -499,7 +501,7 @@ static UIColor *mediaTextColor = nil;
         UIView *selectedView = self.selectedBackgroundView;
         if (selectedView != nil && (self.selected || self.highlighted))
         {
-            CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+            CGFloat separatorHeight = TGScreenPixel;
             selectedView.frame = CGRectMake(0, -separatorHeight, selectedView.frame.size.width, self.frame.size.height + separatorHeight);
         }
         
@@ -533,7 +535,7 @@ static UIColor *mediaTextColor = nil;
         UIView *selectedView = self.selectedBackgroundView;
         if (selectedView != nil && (self.selected || self.highlighted))
         {
-            CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+            CGFloat separatorHeight = TGScreenPixel;
             selectedView.frame = CGRectMake(0, -separatorHeight, selectedView.frame.size.width, self.frame.size.height + separatorHeight);
         }
         
@@ -556,7 +558,7 @@ static UIColor *mediaTextColor = nil;
     UIView *selectedView = self.selectedBackgroundView;
     if (selectedView != nil)
     {
-        CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+        CGFloat separatorHeight = TGScreenPixel;
         selectedView.frame = CGRectMake(0, -separatorHeight, selectedView.frame.size.width, self.frame.size.height + separatorHeight);
     }
     
@@ -1185,6 +1187,8 @@ static NSArray *editingButtonTypes(bool muted, bool pinned, bool mutable) {
                                 formatString = TGLocalized(@"Message.PinnedContactMessage");
                             } else if ([attachment isKindOfClass:[TGGameMediaAttachment class]]) {
                                 formatString = TGLocalized(@"Message.PinnedGame");
+                            }  else if ([attachment isKindOfClass:[TGInvoiceMediaAttachment class]]) {
+                                formatString = TGLocalized(@"Message.PinnedInvoice");
                             }
                         }
                         
@@ -1249,8 +1253,17 @@ static NSArray *editingButtonTypes(bool muted, bool pinned, bool mutable) {
                         int reason = [actionAttachment.actionData[@"reason"] intValue];
                         bool missed = reason == TGCallDiscardReasonMissed || reason == TGCallDiscardReasonBusy;
                         
-                         NSString *type = TGLocalized(missed ? (outgoing ? @"Notification.CallCanceled" : @"Notification.CallMissed") : (outgoing ? @"Notification.CallOutgoing" : @"Notification.CallIncoming"));
-                        _messageText = type;
+                        NSString *type = TGLocalized(missed ? (outgoing ? @"Notification.CallCanceled" : @"Notification.CallMissed") : (outgoing ? @"Notification.CallOutgoing" : @"Notification.CallIncoming"));
+                        int callDuration = [actionAttachment.actionData[@"duration"] intValue];
+                        NSString *duration = missed || callDuration < 1 ? nil : [TGStringUtils stringForCallDurationSeconds:callDuration];
+                        NSString *title = duration != nil ? [NSString stringWithFormat:TGLocalized(@"Notification.CallTimeFormat"), type, duration] : type;
+                        _messageText = title;
+                        _messageTextColor = actionTextColor;
+                        break;
+                    }
+                    case TGMessageActionPaymentSent: {
+                        NSString *string = [[TGCurrencyFormatter shared] formatAmount:[actionAttachment.actionData[@"totalAmount"] longLongValue] currency:actionAttachment.actionData[@"currency"]];
+                        _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Message.PaymentSent"), string];
                         _messageTextColor = actionTextColor;
                         break;
                     }
@@ -1403,6 +1416,12 @@ static NSArray *editingButtonTypes(bool muted, bool pinned, bool mutable) {
             }
             else if (attachment.type == TGGameAttachmentType) {
                 _messageText = [@"🎮 " stringByAppendingString:((TGGameMediaAttachment *)attachment).title];
+                _messageTextColor = mediaTextColor;
+                //_mediaIcon = [UIImage imageNamed:@"MediaVoice"];
+                attachmentFound = true;
+                break;
+            } else if (attachment.type == TGInvoiceMediaAttachmentType) {
+                _messageText = [@"" stringByAppendingString:((TGInvoiceMediaAttachment *)attachment).title];
                 _messageTextColor = mediaTextColor;
                 //_mediaIcon = [UIImage imageNamed:@"MediaVoice"];
                 attachmentFound = true;
@@ -1737,7 +1756,7 @@ static NSArray *editingButtonTypes(bool muted, bool pinned, bool mutable) {
     
     TG_TIMESTAMP_MEASURE(cellLayout);
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     
     CGSize rawSize = self.frame.size;
     
@@ -1868,7 +1887,7 @@ static NSArray *editingButtonTypes(bool muted, bool pinned, bool mutable) {
         
         TG_TIMESTAMP_MEASURE(cellLayout);
         
-        _deliveredCheckmark.frame = CGRectMake(dateFrame.origin.x - 15, 13.0f, 13, 11);
+        _deliveredCheckmark.frame = CGRectMake(dateFrame.origin.x - 16, 13.0f, 14, 11);
         _readCheckmark.frame = CGRectMake(dateFrame.origin.x - 20, 13.0f, 18, 11);
         
         if (_pendingIndicator != nil)

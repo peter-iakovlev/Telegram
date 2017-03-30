@@ -277,7 +277,7 @@ static TGCollectionMenuView *_findCollectionMenuView(UIView *baseView)
     
     CGRect bounds = self.bounds;
     
-    CGFloat separatorHeight = TGIsRetina() ? 0.5f : 1.0f;
+    CGFloat separatorHeight = TGScreenPixel;
     
     _editingScrollView.contentSize = CGSizeMake(bounds.size.width + 82.0f, bounds.size.height + separatorHeight);
     _editingScrollView.frame = CGRectMake(0.0f, 0.0f, bounds.size.width, bounds.size.height + separatorHeight);

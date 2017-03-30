@@ -1058,14 +1058,14 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
                 return [editableItem thumbnailImageSignal];
             };
             
-            controller.requestOriginalScreenSizeImage = ^(id<TGMediaEditableItem> editableItem)
+            controller.requestOriginalScreenSizeImage = ^(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
             {
-                return [editableItem screenImageSignal];
+                return [editableItem screenImageSignal:position];
             };
             
-            controller.requestOriginalFullSizeImage = ^(id<TGMediaEditableItem> editableItem)
+            controller.requestOriginalFullSizeImage = ^(id<TGMediaEditableItem> editableItem, NSTimeInterval position)
             {
-                return [editableItem originalImageSignal];
+                return [editableItem originalImageSignal:position];
             };
             
             overlayController = (TGOverlayController *)controller;
@@ -1160,11 +1160,11 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
 
 - (void)_savePhotoToCameraRollWithOriginalImage:(UIImage *)originalImage editedImage:(UIImage *)editedImage
 {
-    if (originalImage == nil)
+    if (!TGAppDelegateInstance.saveEditedPhotos || originalImage == nil)
         return;
     
-    SSignal *savePhotoSignal = [[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:originalImage];
-    if (editedImage != nil)
+    SSignal *savePhotoSignal = TGAppDelegateInstance.saveCapturedMedia ? [[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:originalImage] : [SSignal complete];
+    if (TGAppDelegateInstance.saveEditedPhotos && editedImage != nil)
         savePhotoSignal = [savePhotoSignal then:[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:editedImage]];
     
     [savePhotoSignal startWithNext:nil];
@@ -1172,6 +1172,9 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
 
 - (void)_saveVideoToCameraRollWithURL:(NSURL *)url completion:(void (^)(void))completion
 {
+    if (!TGAppDelegateInstance.saveCapturedMedia)
+        return;
+    
     [[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithVideoAtUrl:url] startWithNext:nil error:^(__unused NSError *error)
     {
         if (completion != nil)

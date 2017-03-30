@@ -2277,8 +2277,15 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     }
     else if ([action isEqualToString:@"callRequested"])
     {
-        TGModernConversationController *controller = _controller;
-        [controller openCallMenuForMessageId:[options[@"mid"] intValue]];
+        if ([options[@"immediate"] boolValue])
+        {
+            [self startVoiceCall];
+        }
+        else
+        {
+            TGModernConversationController *controller = _controller;
+            [controller openCallMenuForMessageId:[options[@"mid"] intValue]];
+        }
     }
 }
 
@@ -2874,6 +2881,9 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 
 - (bool)isPeerAdmin {
     return false;
+}
+
+- (void)startVoiceCall {
 }
 
 @end

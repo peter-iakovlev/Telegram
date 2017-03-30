@@ -106,7 +106,7 @@
     [_collectionView registerClass:[TGWallpaperItemCell class] forCellWithReuseIdentifier:@"_wallpaper"];
     [self.view addSubview:_collectionView];
     
-    [self setExplicitTableInset:UIEdgeInsetsMake(-(TGIsRetina() ? 0.5f : 1.0f), 0, 0, 0)];
+    [self setExplicitTableInset:UIEdgeInsetsMake(-(TGScreenPixel), 0, 0, 0)];
     if (![self _updateControllerInset:false])
         [self controllerInsetUpdated:UIEdgeInsetsZero];
 }

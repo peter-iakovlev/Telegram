@@ -292,3 +292,36 @@
 
 @end
 
+@implementation TLKeyboardButton$keyboardButtonBuy : TLKeyboardButton
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xafd93fbb;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x681b516f;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+{
+    TLKeyboardButton$keyboardButtonBuy *object = [[TLKeyboardButton$keyboardButtonBuy alloc] init];
+    object.text = metaObject->getString((int32_t)0x94f1580d);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.text;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x94f1580d, value));
+    }
+}
+
+
+@end
+

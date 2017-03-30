@@ -17,6 +17,7 @@
     UILabel *_variantLabel;
     UIImageView *_iconView;
     UIImageView *_disclosureIndicator;
+    CGFloat _minLeftPadding;
 }
 
 @end
@@ -52,9 +53,10 @@
     [self setNeedsLayout];
 }
 
-- (void)setVariant:(NSString *)variant
+- (void)setVariant:(NSString *)variant variantColor:(UIColor *)variantColor
 {
     _variantLabel.text = variant;
+    _variantLabel.textColor = variantColor == nil ? UIColorRGB(0x929297) : variantColor;
     [self setNeedsLayout];
 }
 
@@ -82,6 +84,11 @@
     _disclosureIndicator.hidden = hideArrow;
 }
 
+- (void)setMinLeftPadding:(CGFloat)minLeftPadding {
+    _minLeftPadding = minLeftPadding;
+    [self setNeedsLayout];
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
@@ -106,7 +113,11 @@
     if (titleSize.width + labelSpacing + variantSize.width <= availableWidth)
     {
         _titleLabel.frame = CGRectMake(startingX, titleY, titleSize.width, titleSize.height);
-        _variantLabel.frame = CGRectMake(startingX + availableWidth - variantSize.width, variantY, variantSize.width, variantSize.height);
+        CGFloat variantOffset = startingX + availableWidth - variantSize.width;
+        if (_minLeftPadding > FLT_EPSILON) {
+            variantOffset = MAX(startingX + titleSize.width + 4.0, _minLeftPadding);
+        }
+        _variantLabel.frame = CGRectMake(variantOffset, variantY, variantSize.width, variantSize.height);
     }
     else if (titleSize.width > variantSize.width)
     {
