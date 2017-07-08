@@ -140,6 +140,11 @@
     return false;
 }
 
+- (bool)allowMessageExternalSharing
+{
+    return false;
+}
+
 - (bool)allowReplies {
     return [self layer] >= 45;
 }
@@ -161,6 +166,11 @@
 - (bool)allowCaptionedMedia
 {
     return [self layer] >= 45;
+}
+
+- (bool)allowVideoMessages
+{
+    return [super allowVideoMessages] && [self layer] >= 66;
 }
 
 - (bool)encryptUploads
@@ -320,7 +330,7 @@
         }
         
         TGModernConversationController *controller = self.controller;
-        [controller setCustomInputPanel:panel];
+        [controller setDefaultInputPanel:panel];
     }
 }
 
@@ -329,6 +339,12 @@
     self.layer = layer;
     
     [self updateDebugPanel];
+    
+    TGDispatchOnMainThread(^
+    {
+        TGModernConversationController *controller = self.controller;
+        [controller updateFeaturesAvailability];
+    });
 }
 
 - (void)updateDebugPanel
@@ -500,7 +516,7 @@
 {
     [TGDatabaseInstance() dispatchOnDatabaseThread:^
     {
-        NSMutableArray *readMesageIds = [[NSMutableArray alloc] init];
+        NSMutableArray *readMessageIds = [[NSMutableArray alloc] init];
         
         for (NSNumber *nMessageId in messageIds)
         {
@@ -510,11 +526,11 @@
                 bool initiatedCountdown = false;
                 [TGDatabaseInstance() messageCountdownLocalTime:[nMessageId intValue] enqueueIfNotQueued:true initiatedCountdown:&initiatedCountdown];
                 if (initiatedCountdown)
-                    [readMesageIds addObject:nMessageId];
+                    [readMessageIds addObject:nMessageId];
             }
         }
         
-        if (readMesageIds.count != 0)
+        if (readMessageIds.count != 0)
         {
             [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
         }
@@ -534,7 +550,10 @@
             {
                 case TGImageMediaAttachmentType:
                 case TGVideoMediaAttachmentType:
-                    canBeRead = item->_message.messageLifetime > 0 && item->_message.messageLifetime <= 60;
+                    if (attachment.type == TGVideoMediaAttachmentType && ((TGVideoMediaAttachment *)attachment).roundMessage)
+                        canBeRead = true;
+                    else
+                        canBeRead = item->_message.messageLifetime > 0 && item->_message.messageLifetime <= 60;
                     break;
                 case TGAudioMediaAttachmentType:
                     canBeRead = true;

@@ -117,7 +117,7 @@
         [_iconView setOverlayType:TGMessageImageViewOverlayPlayMedia];
         
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(18.0, 9.0f, 44.0f, 44.0f)];
-        [_avatarView setSingleFontSize:15.0f doubleFontSize:15.0f useBoldFont:true];
+        [_avatarView setSingleFontSize:18.0f doubleFontSize:18.0f useBoldFont:true];
         [self addSubview:_avatarView];
         
         _overlayView = [[TGMessageImageViewOverlayView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 25.0f, 25.0f)];

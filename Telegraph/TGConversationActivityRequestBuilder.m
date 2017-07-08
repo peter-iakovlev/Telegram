@@ -43,6 +43,28 @@
             self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId accessHash:[options[@"accessHash"] longLongValue] activity:[[TLSendMessageAction$sendMessageRecordAudioAction alloc] init] actor:self];
         }
     }
+    else if ([activity isEqualToString:@"recordingVideoMessage"])
+    {
+        if ([options[@"encryptedConversationId"] longLongValue] != 0)
+        {
+            
+        }
+        else
+        {
+            self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId accessHash:[options[@"accessHash"] longLongValue] activity:[[TLSendMessageAction$sendMessageRecordRoundAction alloc] init] actor:self];
+        }
+    }
+    else if ([activity isEqualToString:@"uploadingVideoMessage"])
+    {
+        if ([options[@"encryptedConversationId"] longLongValue] != 0)
+        {
+            
+        }
+        else
+        {
+            self.cancelToken = [TGTelegraphInstance doReportConversationActivity:conversationId accessHash:[options[@"accessHash"] longLongValue] activity:[[TLSendMessageAction$sendMessageUploadRoundAction alloc] init] actor:self];
+        }
+    }
     else if ([activity isEqualToString:@"uploadingAudio"])
     {
         if ([options[@"encryptedConversationId"] longLongValue] != 0)

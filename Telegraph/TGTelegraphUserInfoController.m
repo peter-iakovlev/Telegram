@@ -74,6 +74,8 @@
 #import <Contacts/Contacts.h>
 #import <AddressBook/AddressBook.h>
 
+#import "TGMenuSheetController.h"
+
 @interface TGTelegraphUserInfoController () <TGAlertSoundControllerDelegate, TGUserInfoEditingPhoneCollectionItemDelegate, TGPhoneLabelPickerControllerDelegate, TGCreateContactControllerDelegate, TGAddToExistingContactControllerDelegate>
 {
     bool _editing;
@@ -829,11 +831,87 @@ static UIView *_findBackArrow(UIView *view)
                 url = [NSURL URLWithString:phone];
             }
         
-            [TGAppDelegateInstance performPhoneCall:[NSURL URLWithString:[[NSString alloc] initWithFormat:@"tel:%@", phone]]];
+            
+            TGMenuSheetController *controller = [[TGMenuSheetController alloc] init];
+            controller.dismissesByOutsideTap = true;
+            controller.hasSwipeGesture = true;
+            
+            __weak TGMenuSheetController *weakController = controller;
+            __weak TGTelegraphUserInfoController *weakSelf = self;
+            TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
+            {
+                __strong TGMenuSheetController *strongController = weakController;
+                if (strongController != nil)
+                    [strongController dismissAnimated:true];
+            }];
+            
+            TGMenuSheetTitleItemView *titleItem = [[TGMenuSheetTitleItemView alloc] initWithTitle:nil subtitle:[TGPhoneUtils formatPhone:phoneItem.phone forceInternational:false]];
+        
+            if (_supportsCalls)
+            {
+                TGMenuSheetButtonItemView *telegramItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"UserInfo.TelegramCall") type:TGMenuSheetButtonTypeDefault action:^
+                {
+                    __strong TGTelegraphUserInfoController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                        [strongSelf callPressed];
+                    
+                    __strong TGMenuSheetController *strongController = weakController;
+                    if (strongController != nil)
+                        [strongController dismissAnimated:true];
+                }];
+                
+                TGMenuSheetButtonItemView *phoneItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"UserInfo.PhoneCall") type:TGMenuSheetButtonTypeDefault action:^
+                {
+                    [TGAppDelegateInstance performPhoneCall:[NSURL URLWithString:[[NSString alloc] initWithFormat:@"tel:%@", phone]]];
+                    __strong TGMenuSheetController *strongController = weakController;
+                    if (strongController != nil)
+                        [strongController dismissAnimated:true];
+                }];
+                
+                [controller setItemViews:@[ titleItem, telegramItem, phoneItem, cancelItem ]];
+            }
+            else
+            {
+                TGMenuSheetButtonItemView *phoneItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Conversation.Call") type:TGMenuSheetButtonTypeDefault action:^
+                {
+                    [TGAppDelegateInstance performPhoneCall:[NSURL URLWithString:[[NSString alloc] initWithFormat:@"tel:%@", phone]]];
+                    __strong TGMenuSheetController *strongController = weakController;
+                    if (strongController != nil)
+                        [strongController dismissAnimated:true];
+                }];
+            
+                [controller setItemViews:@[ titleItem, phoneItem, cancelItem ]];
+            }
+            
+            controller.sourceRect = ^
+            {
+                __strong TGTelegraphUserInfoController *strongSelf = weakSelf;
+                if (strongSelf == nil)
+                    return CGRectZero;
+                
+                return [strongSelf sourceRectForPhoneItem:item];
+            };
+            [controller presentInViewController:self sourceView:self.view animated:true];
             
             break;
         }
     }
+}
+
+- (CGRect)sourceRectForPhoneItem:(TGUserInfoPhoneCollectionItem *)phoneItem
+{
+    for (TGUserInfoPhoneCollectionItem *item in self.phonesSection.items)
+    {
+        if (item == phoneItem)
+        {
+            if (item.view != nil)
+                return [item.view convertRect:item.view.bounds toView:self.view];
+                
+            return CGRectZero;
+        }
+    }
+    
+    return CGRectZero;
 }
 
 - (void)sendMessagePressed
@@ -1082,6 +1160,8 @@ static UIView *_findBackArrow(UIView *view)
     [TGShareMenu presentInParentController:self menuController:nil buttonTitle:nil buttonAction:nil shareAction:^(NSArray *peerIds, NSString *caption)
     {
         [[TGShareSignals shareContact:contact toPeerIds:peerIds caption:caption] startWithNext:nil];
+        
+        [[[TGProgressWindow alloc] init] dismissWithSuccess];
     } externalShareItemSignal:externalShareItem sourceView:self.view sourceRect:sourceRect barButtonItem:nil];
 }
 
@@ -1128,7 +1208,6 @@ static UIView *_findBackArrow(UIView *view)
         contactData = (__bridge NSData *)(ABPersonCreateVCardRepresentationWithPeople((__bridge CFArrayRef)@[ (__bridge id)contact ]));
         
         filename = user.displayName;
-        
     }
     
     if (contactData.length == 0)
@@ -1812,7 +1891,6 @@ static UIView *_findBackArrow(UIView *view)
 - (void)shareUserInfoPressed
 {
     NSString *linkString = [NSString stringWithFormat:@"https://t.me/%@", _user.userName];
-    NSString *shareString = linkString;
     
     __weak TGTelegraphUserInfoController *weakSelf = self;
     CGRect (^sourceRect)(void) = ^CGRect
@@ -1825,12 +1903,14 @@ static UIView *_findBackArrow(UIView *view)
     };
     
     [TGShareMenu presentInParentController:self menuController:nil buttonTitle:TGLocalized(@"ShareMenu.CopyShareLink") buttonAction:^
-     {
-         [[UIPasteboard generalPasteboard] setString:linkString];
-     } shareAction:^(NSArray *peerIds, NSString *caption)
-     {
-         [[TGShareSignals shareText:shareString toPeerIds:peerIds caption:caption] startWithNext:nil];
-     } externalShareItemSignal:[SSignal single:shareString] sourceView:self.view sourceRect:sourceRect barButtonItem:nil];
+    {
+        [[UIPasteboard generalPasteboard] setString:linkString];
+    } shareAction:^(NSArray *peerIds, NSString *caption)
+    {
+        [[TGShareSignals shareText:linkString toPeerIds:peerIds caption:caption] startWithNext:nil];
+        
+        [[[TGProgressWindow alloc] init] dismissWithSuccess];
+    } externalShareItemSignal:[SSignal single:[NSURL URLWithString:linkString]] sourceView:self.view sourceRect:sourceRect barButtonItem:nil];
 }
 
 - (void)check3DTouch

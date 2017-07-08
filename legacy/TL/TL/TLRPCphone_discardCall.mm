@@ -22,7 +22,7 @@
 
 - (int)layerVersion
 {
-    return 63;
+    return 64;
 }
 
 - (int32_t)TLconstructorSignature
@@ -37,7 +37,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -64,7 +64,7 @@
     return (int32_t)0xf204e6fb;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCphone_discardCall$phone_discardCall *object = [[TLRPCphone_discardCall$phone_discardCall alloc] init];
     object.peer = metaObject->getObject((int32_t)0x9344c37d);

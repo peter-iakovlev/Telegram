@@ -3,6 +3,7 @@
 "MESSAGE_NOTEXT" = "%1$@님이 메시지를 보냈습니다";
 "MESSAGE_PHOTO" = "%1$@님이 사진을 보냈습니다";
 "MESSAGE_VIDEO" = "%1$@님이 동영상을 보냈습니다";
+"MESSAGE_ROUND" = "%1$@ 님이 영상 메시지를 보냈습니다";
 "MESSAGE_CONTACT" = "%1$@님이 연락처를 공유했습니다";
 "MESSAGE_GEO" = "%1$@님이 위치를 보냈습니다";
 "MESSAGE_DOC" = "%1$@님이 파일을 보냈습니다";
@@ -20,6 +21,7 @@
 "CHAT_MESSAGE_NOTEXT" = "%1$@님이 %2$@ 그룹으로 메시지를 보냈습니다";
 "CHAT_MESSAGE_PHOTO" = "%1$@님이 %2$@ 그룹으로 사진을 보냈습니다";
 "CHAT_MESSAGE_VIDEO" = "%1$@님이 %2$@ 그룹으로 동영상을 보냈습니다";
+"CHAT_MESSAGE_ROUND" = "%1$@ 님이 %2$@ 그룹에 영상 메시지를 보냈습니다";
 "CHAT_MESSAGE_CONTACT" = "%1$@님이 %2$@ 그룹에 연락처를 공유했습니다";
 "CHAT_MESSAGE_GEO" = "%1$@님이 %2$@ 그룹으로 위치를 보냈습니다";
 "CHAT_MESSAGE_DOC" = "%1$@님이 %2$@ 그룹에 파일을 보냈습니다";
@@ -51,6 +53,7 @@
 "CHANNEL_MESSAGE_NOTEXT" = "%1$@ 님이 메시지를 보냈습니다";
 "CHANNEL_MESSAGE_PHOTO" = "%1$@ 님이 사진을 보냈습니다";
 "CHANNEL_MESSAGE_VIDEO" = "%1$@ 님이 동영상을 보냈습니다";
+"CHANNEL_MESSAGE_ROUND" = "%1$@님이 영상메시지를 보냈습니다";
 "CHANNEL_MESSAGE_DOC" = "%1$@님이 문서를 보냈습니다";
 "CHANNEL_MESSAGE_STICKER" = "%1$@님이 %2$@스티커를 작성했습니다.";
 "CHANNEL_MESSAGE_AUDIO" = "%1$@님이 음성메시지를 보냈습니다";
@@ -63,6 +66,7 @@
 "PINNED_NOTEXT" = "%1$@ 님이 메시지를 고정함";
 "PINNED_PHOTO" = "%1$@ 님이 사진을 고정함";
 "PINNED_VIDEO" = "%1$@ 님이 동영상을 고정함";
+"PINNED_ROUND" = "%1$@ 님이 영상메시지를 고정함";
 "PINNED_DOC" = "%1$@ 님이 파일을 고정함";
 "PINNED_STICKER" = "%1$@님이 %2$@스티커를 고정했습니다.";
 "PINNED_AUDIO" = "%1$@ 님이 음성메시지를 고정함";
@@ -266,6 +270,7 @@
 "DialogList.SingleRecordingAudioSuffix" = "%@님이 녹음 중";
 "DialogList.SingleUploadingPhotoSuffix" = "%@님이 사진 보내는 중";
 "DialogList.SingleUploadingVideoSuffix" = "%@님이 동영상 보내는 중";
+"DialogList.SingleRecordingVideoMessageSuffix" = "%@님이 영상 녹화 중";
 "DialogList.SingleUploadingFileSuffix" = "%@님이 파일 보내는 중";
 "DialogList.MultipleTypingSuffix" = "%d 명이 입력 중";
 "DialogList.Typing" = "입력 중";
@@ -772,6 +777,7 @@
 "Activity.UploadingVideo" = "동영상 보내는 중";
 "Activity.UploadingDocument" = "파일 보내는 중";
 "Activity.RecordingAudio" = "녹음 중";
+"Activity.RecordingVideoMessage" = "영상 녹화 중";
 "Activity.Location" = "위치 고르는 중";
 
 "Service.NetworkConfigurationUpdatedMessage" = "연결 설정을 업데이트했습니다.";
@@ -894,7 +900,7 @@
 "Camera.FlashAuto" = "자동";
 "Camera.Retake" = "다시";
 
-"Settings.PhoneNumber" = "전화번호";
+"Settings.PhoneNumber" = "번호변경";
 
 "PhoneNumberHelp.Help" = "텔레그램 가입 번호를 여기서 변경할 수 있습니다. 계정 및 클라우드에 저장된 메시지나 사진/동영상, 대화상대 등이 새 번호로 이동됩니다.\n\n**주의:** 회원님의 옛 전화번호를 알고 있으며 회원님이 차단한 대화상대가 아니라면, 텔레그램 대화상대 모두의 연락처에 회원님의 **새 전화번호**가 추가됩니다.";
 "PhoneNumberHelp.Alert" = "회원님의 옛 전화번호를 알고 있으며 회원님이 차단한 대화상대가 아니라면, 텔레그램 대화상대 모두의 연락처에 회원님의 새 전화번호가 추가됩니다.";
@@ -1676,7 +1682,7 @@
 "Watch.UserInfo.Mute_2" = "2시간동안 음소거";
 "Watch.UserInfo.Mute_3_10" = "%@시간동안 음소거";
 "Watch.UserInfo.Mute_any" = "%@시간동안 음소거";
-"Watch.UserInfo.Mute" = "음소거";
+"Watch.UserInfo.MuteTitle" = "음소거";
 "Watch.UserInfo.Unmute" = "음소거 햊";
 
 "Watch.GroupInfo.Title" = "그룹 정보";
@@ -1896,6 +1902,7 @@
 "Notification.PinnedTextMessage" = "%@님이 \"%@\"를 고정함";
 "Notification.PinnedPhotoMessage" = "%@ 님이 사진을 고정함";
 "Notification.PinnedVideoMessage" = "%@ 님이 비디오를 고정함";
+"Notification.PinnedRoundMessage" = "%@님이 영상메시지를 고정함";
 "Notification.PinnedAudioMessage" = "%@님이 음성메시지를 고정함";
 "Notification.PinnedDocumentMessage" = "%@님이 파일을 고정함";
 "Notification.PinnedAnimationMessage" = "%@님이 GIF를 고정함";
@@ -1923,7 +1930,7 @@
 "ConvertToSupergroup.HelpTitle" = "**슈퍼그룹:**";
 "ConvertToSupergroup.HelpText" = "• 새로운 회원이 전체 메시지 확인 가능\n• 모든 회원에게 메시지가 삭제됨\n• 관리자가 중요한 메시지 고정가능\n• 생성자는 그룹 공개 링크 설정 가능";
 
-"ConvertToSupergroup.Note" = "**주위**: 이 작업은 되돌릴수 없습니다.";
+"ConvertToSupergroup.Note" = "**주의**: 이 작업은 되돌릴수 없습니다.";
 
 "GroupInfo.GroupType" = "그룹 타입";
 
@@ -2355,22 +2362,22 @@
 "Checkout.PayWithTouchId" = "터치ID로 결제";
 "Checkout.EnterPassword" = "비밀번호 입력";
 
-"Your card has expired" = "신용카드가 만료되었습니다.";
+"Your_card_has_expired" = "신용카드가 만료되었습니다.";
 
 /* Error when the card was declined by the credit card networks */
-"Your card was declined" = "신용카드가 거절되었습니다.";
+"Your_card_was_declined" = "신용카드가 거절되었습니다.";
 
 /* Error when the card's expiration month is not valid */
-"Your card's expiration month is invalid" = "올바르지 않은 유효기간을 입력하였습니다.";
+"Your_cards_expiration_month_is_invalid" ="올바르지 않은 유효기간을 입력하였습니다.";
 
 /* Error when the card's expiration year is not valid */
-"Your card's expiration year is invalid" = "올바르지 않은 유료기간 연도를 입력하였습니다.";
+"Your_cards_expiration_year_is_invalid" ="올바르지 않은 유료기간 연도를 입력하였습니다.";
 
 /* Error when the card number is not valid */
-"Your card's number is invalid" = "올바르지 않은 카드 번호를 입력하였습니다.";
+"Your_cards_number_is_invalid" = "올바르지 않은 카드 번호를 입력하였습니다.";
 
 /* Error when the card's CVC is not valid */
-"Your card's security code is invalid" = "올바르지 않은 보안코드를 입력하였습니다.";
+"Your_cards_security_code_is_invalid" = "올바르지 않은 보안코드를 입력하였습니다.";
 
 "MESSAGE_INVOICE" = "%2$@에 대한 인보이스를 %1$@님이 보냈습니다.";
 "CHAT_MESSAGE_INVOICE" = "%3$@에 대한 인보이스를 %1$@님이 %2$@그룹에 보냈습니다.";
@@ -2457,4 +2464,44 @@
 "Call.PhoneCallInProgressMessage" = "통화중일 경우 텔레그램 전화를 사용할 수 없습니다.";
 "Call.RecordingDisabledMessage" = "음성 메시지를 녹음하시려면 통화가 끝나야합니다.";
 
-"Call.EmojiDescription" = "%@님과 이모티콘이 일치한다면, 이 통화는 100%% 안전합니다";
+"Call.EmojiDescription" = "If these emoji are the same on %@'s screen, this call is 100%% secure.";
+
+"Message.VideoMessage" = "영상 메시지";
+
+"Conversation.HoldForAudio" = "꾹 눌러 음성을 녹음하세요. 탭하여 영상으로 전환하세요.";
+"Conversation.HoldForVideo" = "꾹 눌러 영상을 녹화하세요. 탭하여 음성으로 전환하세요.";
+
+"UserInfo.TelegramCall" = "텔레그램 전화";
+"UserInfo.PhoneCall" = "휴대폰 전화";
+
+"SharedMedia.CategoryMedia" = "미디어";
+"SharedMedia.CategoryDocs" = "문서";
+"SharedMedia.CategoryLinks" = "링크";
+"SharedMedia.CategoryOther" = "오디오";
+
+"AccessDenied.VideoMessageCamera" = "Telegram이 영상 메시지를 보내기 위해 카메라에 대한 접근 권한을 필요로 합니다.\n\n'설정' - '개인 정보 보호' - '카메라'로 가서 Telegram을 활성화하세요.";
+"AccessDenied.VideoMessageMicrophone" = "Telegram이 영상 메시지를 보내기 위해 마이크에 대한 접근 권한을 필요로 합니다.\n\n'설정' - '개인 정보 보호' - '마이크'로 가서 Telegram을 활성화하세요.";
+
+"ChatSettings.AutomaticVideoMessageDownload" = "영상 메시지 자동 다운로드";
+
+"ForwardedVideoMessages_1" = "영상 메시지 전달";
+"ForwardedVideoMessages_2" = "2개의 전달된 영상 메시지";
+"ForwardedVideoMessages_3_10" = "%@ 개의 전달된 영상 메시지";
+"ForwardedVideoMessages_any" = "%@ 개의 전달된 영상 메시지";
+
+"Conversation.DiscardVoiceMessageTitle" = "음성 메시지 지우기";
+"Conversation.DiscardVoiceMessageDescription" = "녹음을 중단하고 음성 메시지를 지우시겠습니까?";
+"Conversation.DiscardVoiceMessageAction" = "지우기";
+
+"Message.ForwardedMessageShort" = "전달한 사람\n%@";
+
+"Checkout.LiabilityAlertTitle" = "경고";
+"Checkout.LiabilityAlert" = "결제는 %1$@의 개발자로 바로 갑니다. 텔레그램은 그 어떠한 보장도 하지 않음으로 진행시 위험을 감수 하셔야 합니다. 문제발생시, %1$@의 개발자나 사용하시는 은행에게 문의를 부탁드립니다.";
+
+"InstantPage.AutoNightTheme" = "자동-밤 테마";
+
+"Privacy.PaymentsTitle" = "PAYMENTS";
+"Privacy.PaymentsClearInfo" = "Clear payment & shipping info";
+"Privacy.PaymentsClearInfoHelp" = "You can delete your shipping info and instruct all payment providers to remove your saved credit cards. Note that Telegram never stores your credit card data.";
+"Privacy.PaymentsClear.PaymentInfo" = "Payment Info";
+"Privacy.PaymentsClear.ShippingInfo" = "Shipping Info";

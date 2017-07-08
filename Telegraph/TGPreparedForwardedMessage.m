@@ -48,6 +48,7 @@
                     _forwardPeerId = forwardedMessageAttachment.forwardPeerId;
                     _forwardAuthorUserId = forwardedMessageAttachment.forwardAuthorUserId;
                     _forwardPostId = forwardedMessageAttachment.forwardPostId;
+                    _forwardSourcePeerId = forwardedMessageAttachment.forwardSourcePeerId;
                 }
             }
             else if ([attachment isKindOfClass:[TGReplyMessageMediaAttachment class]])
@@ -72,9 +73,8 @@
             } else {
                 _forwardPeerId = innerMessage.fromUid;
             }
+            _forwardSourcePeerId = innerMessage.cid;
         }
-        
-        _forwardSourcePeerId = innerMessage.cid;
     }
     return self;
 }
@@ -96,6 +96,7 @@
         forwardAttachment.forwardMid = _forwardMid;
         forwardAttachment.forwardPostId = _forwardPostId;
         forwardAttachment.forwardAuthorUserId = _forwardAuthorUserId;
+        forwardAttachment.forwardSourcePeerId = _forwardSourcePeerId;
     }
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];

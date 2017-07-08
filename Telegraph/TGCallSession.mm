@@ -1,9 +1,10 @@
 #import "TGCallSession.h"
 
+#import <libkern/OSAtomic.h>
+
 #import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioToolbox.h>
-#import <MTProtoKit/MTEncryption.h>
-#import <MTProtoKit/MTNetworkUsageManager.h>
+#import <MtProtoKit/MTProtoKit.h>
 
 #import "TGAppDelegate.h"
 #import "TGTelegramNetworking.h"
@@ -34,16 +35,16 @@ typedef enum
 } TGCallTone;
 
 @interface VoIPControllerHolder : NSObject {
-    CVoIPController *_controller;
+    tgvoip::VoIPController *_controller;
 }
 
-@property (nonatomic, assign, readonly) CVoIPController *controller;
+@property (nonatomic, assign, readonly) tgvoip::VoIPController *controller;
 
 @end
 
 @implementation VoIPControllerHolder
 
-- (instancetype)initWithController:(CVoIPController *)controller {
+- (instancetype)initWithController:(tgvoip::VoIPController *)controller {
     self = [super init];
     if (self != nil) {
         _controller = controller;
@@ -51,7 +52,7 @@ typedef enum
     return self;
 }
 
-- (CVoIPController *)controller {
+- (tgvoip::VoIPController *)controller {
     return _controller;
 }
 
@@ -95,6 +96,7 @@ const NSTimeInterval TGCallPacketTimeout = 10;
 
     SVariable *_transmissionState;
     SPipe *_transmissionPipe;
+    TGCallTransmissionState _previousTransmissionState;
 
     SPipe *_audioTogglesPipe;
     SPipe *_audioContextPipe;
@@ -120,6 +122,7 @@ const NSTimeInterval TGCallPacketTimeout = 10;
     bool _speaker;
     NSNumber *_targetSpeaker;
     NSNumber *_delayedSpeaker;
+    OSSpinLock _speakerLock;
 
     TGObserverProxy *_applicationWillResignActiveProxy;
     TGObserverProxy *_applicationDidBecomeActiveProxy;
@@ -147,7 +150,8 @@ const NSTimeInterval TGCallPacketTimeout = 10;
         _transmissionPipe = [[SPipe alloc] init];
         _transmissionState = [[SVariable alloc] init];
         [_transmissionState set:_transmissionPipe.signalProducer()];
-
+        _previousTransmissionState = TGCallTransmissionStateInitializing;
+        
         _audioTogglesPipe = [[SPipe alloc] init];
         [self _updateAudioToggles];
 
@@ -197,20 +201,12 @@ const NSTimeInterval TGCallPacketTimeout = 10;
 - (void)_setCallSignal:(SSignal *)signal
 {
     __weak TGCallSession *weakSelf = self;
-
-    __block SMetaDisposable *disposable = _disposable;
     _disposable = [[SMetaDisposable alloc] init];
-    [disposable setDisposable:[[signal deliverOn:[SQueue mainQueue]] startWithNext:^(TGCallStateData *next)
+    [_disposable setDisposable:[[signal deliverOn:[SQueue mainQueue]] startWithNext:^(TGCallStateData *next)
     {
         __strong TGCallSession *strongSelf = weakSelf;
         if (strongSelf != nil)
             [strongSelf updateWithState:next];
-
-        if (disposable != nil)
-        {
-            [disposable setDisposable:nil];
-            disposable = nil;
-        }
     } error:^(__unused id error)
     {
         __strong TGCallSession *strongSelf = weakSelf;
@@ -221,7 +217,7 @@ const NSTimeInterval TGCallPacketTimeout = 10;
     }]];
 }
 
-static void controllerStateCallback(CVoIPController *controller, int state)
+static void controllerStateCallback(tgvoip::VoIPController *controller, int state)
 {
     TGCallSession *session = (__bridge TGCallSession *)controller->implData;
     [session controllerStateChanged:state];
@@ -233,15 +229,16 @@ static void controllerStateCallback(CVoIPController *controller, int state)
     [_controller modify:^id(VoIPControllerHolder *current) {
         assert(current == nil);
 
-        CVoIPController *controller = new CVoIPController();
+        tgvoip::VoIPController *controller = new tgvoip::VoIPController();
         controller->implData = (__bridge void *)self;
         controller->SetStateCallback(&controllerStateCallback);
 
-        CVoIPController::crypto.sha1 = &TGCallSha1;
-        CVoIPController::crypto.sha256 = &TGCallSha256;
-        CVoIPController::crypto.rand_bytes = &TGCallRandomBytes;
-        CVoIPController::crypto.aes_ige_encrypt = &TGCallAesIgeEncryptInplace;
-        CVoIPController::crypto.aes_ige_decrypt = &TGCallAesIgeDecryptInplace;
+        tgvoip::VoIPController::crypto.sha1 = &TGCallSha1;
+        tgvoip::VoIPController::crypto.sha256 = &TGCallSha256;
+        tgvoip::VoIPController::crypto.rand_bytes = &TGCallRandomBytes;
+        tgvoip::VoIPController::crypto.aes_ige_encrypt = &TGCallAesIgeEncryptInplace;
+        tgvoip::VoIPController::crypto.aes_ige_decrypt = &TGCallAesIgeDecryptInplace;
+        tgvoip::VoIPController::crypto.aes_ctr_encrypt = &TGCallAesCtrEncrypt;
 
         return [[VoIPControllerHolder alloc] initWithController:controller];
     }];
@@ -259,47 +256,82 @@ static void controllerStateCallback(CVoIPController *controller, int state)
         case STATE_FAILED:
             tranmissionState = TGCallTransmissionStateFailed;
             break;
+            
+        case STATE_RECONNECTING:
+            tranmissionState = TGCallTransmissionStateReconnecting;
+            break;
 
         default:
             break;
     }
 
+    if (tranmissionState == _previousTransmissionState)
+        return;
+    
+    if (tranmissionState == TGCallTransmissionStateReconnecting)
+        [self playTone:TGCallToneConnecting];
+    else if (tranmissionState == TGCallTransmissionStateEstablished)
+        [self stopAudio];
+    
     if (tranmissionState == TGCallTransmissionStateEstablished && _startTime < DBL_EPSILON)
     {
-        [self stopAudio];
         _startTime = CFAbsoluteTimeGetCurrent();
 
         if (self.onConnected != nil)
             self.onConnected();
     }
+    
 
     _transmissionPipe.sink(@(tranmissionState));
 
-    if (tranmissionState == TGCallTransmissionStateFailed)
+    TGDispatchOnMainThread(^
     {
-        [self playTone:TGCallToneFailed];
-        [self _discardCurrentCallWithReason:TGCallDiscardReasonDisconnect];
-    }
+        if (tranmissionState == TGCallTransmissionStateFailed)
+        {
+            [self playTone:TGCallToneEnded];
+            [self _discardCurrentCallWithReason:TGCallDiscardReasonDisconnect];
+        }
+    });
+    
+    _previousTransmissionState = tranmissionState;
 }
 
 #pragma mark - Transmission
 
-- (void)setupVoipEndpoint:(voip_endpoint_t *)endpoint withConnection:(TGCallConnectionDescription *)connection
+- (NSString *)callLogsPath
 {
-    struct in_addr addrIpV4;
-    if (!inet_aton(connection.ipv4.UTF8String, &addrIpV4))
-        TGLog(@"CallSession: invalid ipv4 address");
+    NSString *path = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"calls"];
 
-    struct in6_addr addrIpV6;
-    if (!inet_pton(AF_INET6, connection.ipv6.UTF8String, &addrIpV6))
-        TGLog(@"CallSession: invalid ipv6 address");
-
-    endpoint->id = connection.identifier;
-    endpoint->port = (uint32_t)connection.port;
-    endpoint->address = addrIpV4;
-    endpoint->address6 = addrIpV6;
-    endpoint->type = EP_TYPE_UDP_RELAY;
-    [connection.peerTag getBytes:endpoint->peerTag length:16];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:nil])
+        [[NSFileManager defaultManager] createDirectoryAtPath:path withIntermediateDirectories:true attributes:nil error:nil];
+    
+    NSMutableArray *logs = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:path error:nil] mutableCopy];
+    if (logs.count > 20)
+    {
+        NSString *oldestLogPath = [path stringByAppendingPathComponent:logs.firstObject];
+        NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:oldestLogPath error:nil];
+        NSDate *oldestDate = attributes.fileModificationDate;
+        
+        for (NSString *log in logs)
+        {
+            if ([log hasSuffix:@".log"])
+            {
+                NSString *logPath = [path stringByAppendingPathComponent:log];
+                NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:logPath error:nil];
+                NSDate *date = attributes.fileModificationDate;
+                if ([date compare:oldestDate] == NSOrderedAscending)
+                {
+                    oldestLogPath = logPath;
+                    oldestDate = date;
+                }
+            }
+        }
+        
+        [[NSFileManager defaultManager] removeItemAtPath:oldestLogPath error:nil];
+        [logs removeObject:oldestLogPath.lastPathComponent];
+    }
+    
+    return path;
 }
 
 - (void)startTransmissionIfNeeded:(TGCallStateData *)state
@@ -319,33 +351,69 @@ static void controllerStateCallback(CVoIPController *controller, int state)
 
         [[[[readySignal filter:^bool(NSNumber *value) {
             return value;
-        }] timeout:1.5 onQueue:[SQueue mainQueue] orSignal:[SSignal single:@true]] take:1] startWithNext:^(__unused id next)
+        }] timeout:10.5 onQueue:[SQueue mainQueue] orSignal:[SSignal single:@true]] take:1] startWithNext:^(__unused id next)
         {
             [self startNetworkTypeMonitoring];
 
             [_controller with:^id(VoIPControllerHolder *controller) {
-                size_t endpointsCount = 1 + state.connection.alternativeConnections.count;
-                voip_endpoint_t endpoints[endpointsCount];
-
+                std::vector<tgvoip::Endpoint> endpoints;
                 NSArray *connections = [@[state.connection.defaultConnection] arrayByAddingObjectsFromArray:state.connection.alternativeConnections];
-                for (NSUInteger i = 0; i < connections.count; i++)
-                {
-                    [self setupVoipEndpoint:&endpoints[i] withConnection:connections[i]];
+                for (TGCallConnectionDescription *connection in connections) {
+                    struct in_addr addrIpV4;
+                    if (!inet_aton(connection.ipv4.UTF8String, &addrIpV4)) {
+                        NSLog(@"CallSession: invalid ipv4 address");
+                    }
+                    
+                    struct in6_addr addrIpV6;
+                    if (!inet_pton(AF_INET6, connection.ipv6.UTF8String, &addrIpV6)) {
+                        NSLog(@"CallSession: invalid ipv6 address");
+                    }
+                    
+                    tgvoip::IPv4Address address(std::string(connection.ipv4.UTF8String));
+                    tgvoip::IPv6Address addressv6(std::string(connection.ipv6.UTF8String));
+                    unsigned char peerTag[16];
+                    [connection.peerTag getBytes:peerTag length:16];
+                    endpoints.push_back(tgvoip::Endpoint(connection.identifier, (uint16_t)connection.port, address, addressv6, EP_TYPE_UDP_RELAY, peerTag));
                 }
 
                 voip_config_t config;
                 config.init_timeout = [TGCallSession callConnectTimeout];
                 config.recv_timeout = [TGCallSession callPacketTimeout];
                 config.data_saving = TGAppDelegateInstance.callsDataUsageMode;
-				memset(config.logFilePath, 0, sizeof(config.logFilePath));
                 config.enableAEC = false;
                 config.enableNS = true;
                 config.enableAGC = true;
-
+                
+                memset(config.logFilePath, 0, sizeof(config.logFilePath));
+                
+                NSString *logPath = [[self callLogsPath] stringByAppendingPathComponent:[NSString stringWithFormat:@"%lld-%lld.log", state.callId, state.accessHash]];
+                if (logPath.length < 256)
+                {
+                    const char *c = [logPath UTF8String];
+                    strncpy(config.logFilePath, c, logPath.length);
+                }
+                
+                if (TGAppDelegateInstance.callsUseProxy)
+                {
+                    MTSocksProxySettings *proxySettings = [[TGTelegramNetworking instance] context].apiEnvironment.socksProxySettings;
+                    if (proxySettings != nil) {
+                        std::string username = "";
+                        if (proxySettings.username != nil) {
+                            username = std::string(proxySettings.username.UTF8String);
+                        }
+                        std::string password = "";
+                        if (proxySettings.password != nil) {
+                            password = std::string(proxySettings.password.UTF8String);
+                        }
+                        
+                        controller.controller->SetProxy(tgvoip::PROXY_SOCKS5, std::string(proxySettings.ip.UTF8String), proxySettings.port, username, password);
+                    }
+                }
+                
                 controller.controller->SetConfig(&config);
 
                 controller.controller->SetEncryptionKey((char *)state.connection.key.bytes, _outgoing);
-                controller.controller->SetRemoteEndpoints(endpoints, endpointsCount, true);
+                controller.controller->SetRemoteEndpoints(endpoints, !TGAppDelegateInstance.callsDisableP2P);
                 controller.controller->Start();
 
                 controller.controller->Connect();
@@ -439,7 +507,7 @@ static void controllerStateCallback(CVoIPController *controller, int state)
     if (_internalId != nil)
     {
         [self markCallAcceptedTime];
-        [self _setCallSignal:[TGTelegraphInstance.callManager acceptCallWithInternalId:_internalId]];
+        [TGTelegraphInstance.callManager acceptCallWithInternalId:_internalId];
     }
 }
 
@@ -469,11 +537,11 @@ static void controllerStateCallback(CVoIPController *controller, int state)
 
 - (void)_discardCurrentCallWithReason:(TGCallDiscardReason)reason
 {
-    if (_internalId != nil && !_discarded)
-    {
-        _discarded = true;
-        [self _setCallSignal:[TGTelegraphInstance.callManager discardCallWithInternalId:_internalId reason:reason]];
-    }
+    if (_internalId == nil || _discarded)
+        return;
+    
+    _discarded = true;
+    [TGTelegraphInstance.callManager discardCallWithInternalId:_internalId reason:reason];
 }
 
 #pragma mark - Timeout
@@ -567,7 +635,7 @@ static void controllerStateCallback(CVoIPController *controller, int state)
 
             //(*pResult)[std::string(key.UTF8String)] = std::string(valueText.UTF8String);
         }];
-        CVoIPServerConfig::GetSharedInstance()->Update((const char **)values, index);
+        tgvoip::ServerConfig::GetSharedInstance()->Update((const char **)values, index);
         for (int i = 0; i < (int)dict.count * 2; i++) {
             free(values[i]);
         }
@@ -718,8 +786,6 @@ static id<SDisposable> audioSession;
         AVAudioSession *session = [AVAudioSession sharedInstance];
 		[session setPreferredIOBufferDuration:0.005 error:NULL];
 
-        [self _updatePolarPattern:false];
-
         TGDispatchOnMainThread(^
         {
             if (completion != nil)
@@ -742,6 +808,9 @@ static id<SDisposable> audioSession;
 
 + (bool)hasMicrophoneAccess
 {
+    if (iosMajorVersion() < 7)
+        return true;
+    
     return [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio] == AVAuthorizationStatusAuthorized;
 }
 
@@ -766,9 +835,12 @@ static id<SDisposable> audioSession;
 - (void)toggleSpeaker
 {
     bool newValue = !_speaker;
+    
+    OSSpinLockLock(&_speakerLock);
     _targetSpeaker = @(newValue);
     _delayedSpeaker = _targetSpeaker;
-
+    OSSpinLockUnlock(&_speakerLock);
+    
     [[TGCallSession audioQueue] dispatch:^
     {
         AVAudioSession *session = [AVAudioSession sharedInstance];
@@ -778,30 +850,15 @@ static id<SDisposable> audioSession;
         if (!success)
             TGLog(@"CallSession: failed to override output audio port: %@", error.localizedDescription);
 
-        [TGCallSession _updatePolarPattern:newValue];
-        
         TGDispatchOnMainThread(^
         {
+            OSSpinLockLock(&_speakerLock);
             _targetSpeaker = nil;
+            OSSpinLockUnlock(&_speakerLock);
         });
     }];
 
     [self _updateAudioToggles];
-}
-
-+ (void)_updatePolarPattern:(bool)__unused speaker
-{
-//    if (false && iosMajorVersion() >= 7)
-//    {
-//        AVAudioSession *session = [AVAudioSession sharedInstance];
-//        AVAudioSessionDataSourceDescription *src = session.inputDataSource;
-//        if ([src.orientation isEqualToString:AVAudioSessionOrientationFront])
-//        {
-//            NSString *polarPattern = speaker ? AVAudioSessionPolarPatternOmnidirectional : AVAudioSessionPolarPatternCardioid;
-//            if ([src.supportedPolarPatterns containsObject:polarPattern])
-//                [src setPreferredPolarPattern:polarPattern error:NULL];
-//        }
-//    }
 }
 
 - (void)applyAudioRoute:(TGAudioRoute *)audioRoute
@@ -810,7 +867,12 @@ static id<SDisposable> audioSession;
     {
         [[TGAudioSessionManager instance] applyRoute:audioRoute];
         if (!audioRoute.isLoudspeaker)
+        {
+            OSSpinLockLock(&_speakerLock);
             _speaker = audioRoute.isLoudspeaker;
+            OSSpinLockUnlock(&_speakerLock);
+        }
+        
         [self _updateAudioToggles];
     }];
 }
@@ -1101,10 +1163,14 @@ static id<SDisposable> audioSession;
         NSMutableArray *audioRoutes = [[NSMutableArray alloc] init];
         TGAudioRoute *activeRoute = nil;
         bool hasHeadphones = false;
+        
+        OSSpinLockLock(&_speakerLock);
         bool speaker = strongSelf->_speaker;
-        if (strongSelf->_targetSpeaker != nil)
+        NSNumber *targetSpeaker = strongSelf->_targetSpeaker;
+        NSNumber *delayedSpeaker = strongSelf->_delayedSpeaker;
+        if (targetSpeaker != nil)
         {
-            speaker = strongSelf->_targetSpeaker.boolValue;
+            speaker = targetSpeaker.boolValue;
         }
         else if (currentState == TGCallStateWaitingReceived || currentState == TGCallStateOngoing)
         {
@@ -1119,10 +1185,11 @@ static id<SDisposable> audioSession;
                 }
             }
         }
-        else if (strongSelf->_delayedSpeaker != nil)
+        else if (delayedSpeaker != nil)
         {
-            speaker = strongSelf->_delayedSpeaker.boolValue;
+            speaker = delayedSpeaker.boolValue;
         }
+        OSSpinLockUnlock(&_speakerLock);
         
         for (AVAudioSessionPortDescription *input in inputs)
         {
@@ -1158,8 +1225,10 @@ static id<SDisposable> audioSession;
         if (activeRoute == nil)
             activeRoute = builtInRoute;
         
+        OSSpinLockLock(&_speakerLock);
         strongSelf->_speaker = speaker;
-
+        OSSpinLockUnlock(&_speakerLock);
+        
         return [[TGCallAudioContext alloc] initWithAvailableRoutes:audioRoutes activeRoute:activeRoute speaker:speaker];
     }];
 }

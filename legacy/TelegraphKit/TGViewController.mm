@@ -1386,6 +1386,13 @@ static std::set<int> autorotationLockIds;
 - (void)layoutControllerForSize:(CGSize)__unused size duration:(NSTimeInterval)__unused duration {
 }
 
+- (NSArray<id<UIPreviewActionItem>> *)previewActionItems {
+    if (self.externalPreviewActionItems != nil)
+        return self.externalPreviewActionItems();
+    
+    return [super previewActionItems];
+}
+
 @end
 
 @interface UINavigationController (DelegateAutomaticDismissKeyboard)

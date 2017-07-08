@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x84e1c318;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLcontacts_Requests$contacts_requests *object = [[TLcontacts_Requests$contacts_requests alloc] init];
     object.requests = metaObject->getArray((int32_t)0x5926a24b);
@@ -86,7 +86,7 @@
     return (int32_t)0x190088f5;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLcontacts_Requests$contacts_requestsSlice *object = [[TLcontacts_Requests$contacts_requestsSlice alloc] init];
     object.count = metaObject->getInt32((int32_t)0x5fa6aa74);

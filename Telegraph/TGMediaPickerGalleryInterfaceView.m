@@ -434,6 +434,11 @@
         tabs &= ~ TGPhotoEditorToolsTab;
     }
     
+    if (iosMajorVersion() < 8)
+    {
+        tabs &= ~ TGPhotoEditorQualityTab;
+    }
+    
     [_portraitToolbarView setToolbarTabs:tabs animated:animated];
     [_landscapeToolbarView setToolbarTabs:tabs animated:animated];
     
@@ -469,8 +474,12 @@
             {
                 [strongSelf->_captionMixin setCaptionPanelHidden:false animated:true];
             }
+            
+            CGSize originalSize = CGSizeZero;
+            if ([editableMediaItem respondsToSelector:@selector(originalSize)])
+                originalSize = editableMediaItem.originalSize;
 
-            [strongSelf updateEditorButtonsForAdjustments:adjustments dimensions:editableMediaItem.originalSize];
+            [strongSelf updateEditorButtonsForAdjustments:adjustments dimensions:originalSize];
         }]];
         
         [_captionDisposable setDisposable:[[galleryEditableItem.editingContext captionSignalForItem:editableMediaItem] startWithNext:^(NSString *caption)

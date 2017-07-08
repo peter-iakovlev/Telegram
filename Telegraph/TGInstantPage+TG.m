@@ -1,6 +1,7 @@
 #import "TGInstantPage+TG.h"
 
 #import "TGMessage+Telegraph.h"
+#import "TGConversation+Telegraph.h"
 
 #import "TGImageMediaAttachment+Telegraph.h"
 #import "TGDocumentMediaAttachment+Telegraph.h"
@@ -133,6 +134,13 @@ static TGInstantPageBlock *parseBlock(TLPageBlock *blockDesc) {
         return [[TGInstantPageBlockEmbedPost alloc] initWithAuthor:block.author date:block.date caption:parseText(block.caption) url:block.url webpageId:block.webpage_id blocks:blocks authorPhotoId:block.author_photo_id];
     } else if ([blockDesc isKindOfClass:[TLPageBlock$pageBlockAnchor class]]) {
         return [[TGInstantPageBlockAnchor alloc] initWithName:((TLPageBlock$pageBlockAnchor *)blockDesc).name];
+    } else if ([blockDesc isKindOfClass:[TLPageBlock$pageBlockChannel class]]) {
+        TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:((TLPageBlock$pageBlockChannel *)blockDesc).channel];
+        conversation.kind = TGConversationKindTemporaryChannel;
+        return [[TGInstantPageBlockChannel alloc] initWithChannel:conversation];
+    } else if ([blockDesc isKindOfClass:[TLPageBlock$pageBlockAudio class]]) {
+        TLPageBlock$pageBlockAudio *block = (TLPageBlock$pageBlockAudio *)blockDesc;
+        return [[TGInstantPageBlockAudio alloc] initWithAudioId:block.audio_id caption:parseText(block.caption)];
     }
     return nil;
 }
@@ -150,12 +158,13 @@ static TGInstantPageBlock *parseBlock(TLPageBlock *blockDesc) {
     
     NSMutableDictionary *images = [[NSMutableDictionary alloc] init];
     NSMutableDictionary *videos = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary *documents = [[NSMutableDictionary alloc] init];
     for (id mediaDesc in pageDescription.photos) {
         TGImageMediaAttachment *imageMedia = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:mediaDesc];
         images[@(((TGImageMediaAttachment *)imageMedia).imageId)] = imageMedia;
     }
-    for (id videoDesc in pageDescription.videos) {
-        TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:videoDesc];
+    for (id documentDesc in pageDescription.documents) {
+        TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:documentDesc];
         
         bool isAnimated = false;
         TGVideoMediaAttachment *videoMedia = nil;
@@ -189,9 +198,10 @@ static TGInstantPageBlock *parseBlock(TLPageBlock *blockDesc) {
         if (videoMedia != nil) {
             videos[@(videoMedia.videoId)] = videoMedia;
         }
+        documents[@(documentAttachment.documentId)] = documentAttachment;
     }
     
-    return [[TGInstantPage alloc] initWithIsPartial:[pageDescription isKindOfClass:[TLPage$pagePart class]] blocks:blocks images:images videos:videos];
+    return [[TGInstantPage alloc] initWithIsPartial:[pageDescription isKindOfClass:[TLPage$pagePart class]] blocks:blocks images:images videos:videos documents:documents];
 }
 
 @end

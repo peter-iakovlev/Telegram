@@ -4,6 +4,34 @@
 #import "TGTelegramNetworking.h"
 #import "MediaBoxContexts.h"
 
+#import "TGCdnFileData.h"
+
+#import "TGNetworkWorker.h"
+
+#import <MTProtoKit/MTProtoKit.h>
+
+#import "MediaBoxContexts.h"
+
+@interface MultipartFetchRequestData : NSObject
+    
+@property (nonatomic, strong, readonly) TGNetworkWorkerGuard *worker;
+@property (nonatomic, strong, readonly) id data;
+
+@end
+
+@implementation MultipartFetchRequestData
+
+- (instancetype)initWithWorker:(TGNetworkWorkerGuard *)worker data:(id)data {
+    self = [super init];
+    if (self != nil) {
+        _worker = worker;
+        _data = data;
+    }
+    return self;
+}
+
+@end
+
 @interface MultipartPendingPart : NSObject
 
 @property (nonatomic, readonly) int32_t size;
@@ -28,29 +56,40 @@
     int32_t _parallelParts;
     int32_t _defaultPartSize;
     
+    id<TelegramCloudMediaResource> _resource;
+    TGNetworkMediaTypeTag _mediaTypeTag;
+    
     SQueue *_queue;
     
     int32_t _committedOffset;
     NSRange _range;
     NSNumber *_completeSize;
     
-    SSignal *(^_fetchPart)(int32_t, int32_t);
     void (^_partReady)(NSData *);
     void (^_completed)();
     
     NSMutableDictionary<NSNumber *, MultipartPendingPart *> *_fetchingParts;
     NSMutableDictionary<NSNumber *, NSData *> *_fetchedParts;
+    
+    SVariable *_requestData;
+    bool _switchedToCdn;
+    bool _reuploadedToCdn;
+    
+    SMetaDisposable *_reuploadToCdnDisposable;
 }
 
 @end
 
 @implementation MultipartFetchManager
 
-- (instancetype)initWithSize:(NSNumber *)size range:(NSRange)range fetchPart:(SSignal *(^)(int32_t, int32_t))fetchPart partReady:(void (^)(NSData *))partReady completed:(void (^)())completed {
+- (instancetype)initWithResource:(id<TelegramCloudMediaResource>)resource mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag size:(NSNumber *)size range:(NSRange)range partReady:(void (^)(NSData *))partReady completed:(void (^)())completed {
     self = [super init];
     if (self != nil) {
         _defaultPartSize = 128 * 1024;
         _queue = [[SQueue alloc] init];
+        
+        _resource = resource;
+        _mediaTypeTag = mediaTypeTag;
         
         _fetchingParts = [[NSMutableDictionary alloc] init];
         _fetchedParts = [[NSMutableDictionary alloc] init];
@@ -64,9 +103,15 @@
             _parallelParts = 1;
         }
         _committedOffset = (int32_t)range.location;
-        _fetchPart = [fetchPart copy];
         _partReady = [partReady copy];
         _completed = [completed copy];
+        
+        _reuploadToCdnDisposable = [[SMetaDisposable alloc] init];
+        
+        _requestData = [[SVariable alloc] init];
+        [_requestData set:[[SSignal combineSignals:@[[[TGTelegramNetworking instance] downloadWorkerForDatacenterId:[resource datacenterId] type:_mediaTypeTag], [SSignal single:[resource apiInputLocation]]]] map:^id(NSArray *values) {
+            return [[MultipartFetchRequestData alloc] initWithWorker:values[0] data:values[1]];
+        }]];
     }
     return self;
 }
@@ -82,6 +127,7 @@
         for (MultipartPendingPart *part in _fetchingParts.allValues) {
             [part.disposable dispose];
         }
+        [_reuploadToCdnDisposable dispose];
     }];
 }
 
@@ -120,7 +166,13 @@
                 
                 int32_t partSize = (int32_t)(MIN(upperBound - (NSUInteger)nextOffset, (NSUInteger)_defaultPartSize));
                 
-                SSignal *part = [_fetchPart(nextOffset, partSize) deliverOn:_queue];
+                int32_t updatedLimit = partSize;
+                while (updatedLimit % 4096 != 0 || 1048576 % updatedLimit != 0) {
+                    updatedLimit++;
+                }
+                
+                SSignal *part = [[self fetchPart:nextOffset limit:updatedLimit] deliverOn:_queue];
+                
                 int32_t partOffset = nextOffset;
                 _fetchingParts[@(nextOffset)] = [[MultipartPendingPart alloc] initWithSize:partSize disposable:[part startWithNext:^(NSData *data) {
                     __strong MultipartFetchManager *strongSelf = weakSelf;
@@ -145,38 +197,117 @@
         }
     }
 }
+    
+- (SSignal *)fetchPart:(int32_t)offset limit:(int32_t)limit {
+    __weak MultipartFetchManager *weakSelf = self;
+    SQueue *queue = _queue;
+    return [[[_requestData signal] mapToSignal:^SSignal *(MultipartFetchRequestData *requestData) {
+        id requestRpc = nil;
+        if ([requestData.data isKindOfClass:[TLInputFileLocation class]]) {
+            TLRPCupload_getFile$upload_getFile *getFile = [[TLRPCupload_getFile$upload_getFile alloc] init];
+            getFile.location = requestData.data;
+            getFile.offset = offset;
+            getFile.limit = limit;
+            requestRpc = getFile;
+        } else if ([requestData.data isKindOfClass:[TGCdnFileData class]]) {
+            TGCdnFileData *fileData = requestData.data;
+            TLRPCupload_getCdnFile$upload_getCdnFile *getFile = [[TLRPCupload_getCdnFile$upload_getCdnFile alloc] init];
+            getFile.file_token = fileData.token;
+            getFile.offset = offset;
+            getFile.limit = limit;
+            requestRpc = getFile;
+        } else {
+            return [SSignal never];
+        }
+        
+        return [[[[TGTelegramNetworking instance] requestSignal:requestRpc worker:requestData.worker] deliverOn:queue] mapToSignal:^SSignal *(id next) {
+            __strong MultipartFetchManager *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                if ([next isKindOfClass:[TLupload_File$upload_file class]]) {
+                    TLupload_File$upload_file *part = next;
+                    return [SSignal single:part.bytes];
+                } else if ([next isKindOfClass:[TLupload_File$upload_fileCdnRedirect class]]) {
+                    TLupload_File$upload_fileCdnRedirect *redirect = (TLupload_File$upload_fileCdnRedirect *)next;
+                    [strongSelf switchToCdn:[[TGCdnFileData alloc] initWithCdnId:redirect.dc_id token:redirect.file_token encryptionKey:redirect.encryption_key encryptionIv:redirect.encryption_iv]];
+                    return [SSignal never];
+                } else if ([next isKindOfClass:[TLupload_CdnFile$upload_cdnFile class]]) {
+                    TGCdnFileData *fileData = (TGCdnFileData *)requestData.data;
+                    NSData *bytes = ((TLupload_CdnFile$upload_cdnFile *)next).bytes;
+                    NSMutableData *encryptionIv = [[NSMutableData alloc] initWithData:fileData.encryptionIv];
+                    int32_t ivOffset = offset / 16;
+                    ivOffset = NSSwapInt(ivOffset);
+                    memcpy(encryptionIv.mutableBytes + encryptionIv.length - 4, &ivOffset, 4);
+                    NSData *data = MTAesCtrDecrypt(bytes, fileData.encryptionKey, encryptionIv);
+                    return [SSignal single:data];
+                } else if ([next isKindOfClass:[TLupload_CdnFile$upload_cdnFileReuploadNeeded class]]) {
+                    TLupload_CdnFile$upload_cdnFileReuploadNeeded *reupload = (TLupload_CdnFile$upload_cdnFileReuploadNeeded *)next;
+                    TGCdnFileData *fileData = (TGCdnFileData *)requestData.data;
+                    [strongSelf reuploadToCdn:fileData requestToken:reupload.request_token];
+                    return [SSignal never];
+                } else {
+                    return [SSignal complete];
+                }
+            } else {
+                return [SSignal complete];
+            }
+        }];
+    }] take:1];
+}
+    
+- (void)switchToCdn:(TGCdnFileData *)fileData {
+    if (_switchedToCdn) {
+        return;
+    }
+    
+    _switchedToCdn = true;
+    [_requestData set:[[SSignal combineSignals:@[[[TGTelegramNetworking instance] downloadWorkerForDatacenterId:fileData.cdnId type:_mediaTypeTag isCdn:true], [SSignal single:fileData]]] map:^id(NSArray *values) {
+        return [[MultipartFetchRequestData alloc] initWithWorker:values[0] data:values[1]];
+    }]];
+}
+    
+- (void)reuploadToCdn:(TGCdnFileData *)fileData requestToken:(NSData *)requestToken {
+    if (_reuploadedToCdn) {
+        return;
+    }
+    
+    _reuploadedToCdn = true;
+    
+    __weak MultipartFetchManager *weakSelf = self;
+    [_reuploadToCdnDisposable setDisposable:[[[[[TGTelegramNetworking instance] downloadWorkerForDatacenterId:[_resource datacenterId] type:TGNetworkMediaTypeTagGeneric] deliverOn:_queue] mapToSignal:^SSignal *(TGNetworkWorkerGuard *worker) {
+        TLRPCupload_reuploadCdnFile$upload_reuploadCdnFile *reupload = [[TLRPCupload_reuploadCdnFile$upload_reuploadCdnFile alloc] init];
+        reupload.file_token = fileData.token;
+        reupload.request_token = requestToken;
+        return [[TGTelegramNetworking instance] requestSignal:reupload worker:worker];
+    }] startWithNext:^(__unused id next) {
+        __strong MultipartFetchManager *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            strongSelf->_reuploadedToCdn = false;
+            [strongSelf->_requestData set:[[SSignal combineSignals:@[[[TGTelegramNetworking instance] downloadWorkerForDatacenterId:fileData.cdnId type:strongSelf->_mediaTypeTag isCdn:true], [SSignal single:fileData]]] map:^id(NSArray *values) {
+                return [[MultipartFetchRequestData alloc] initWithWorker:values[0] data:values[1]];
+            }]];
+        }
+    } error:^(__unused id error) {
+        __strong MultipartFetchManager *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+        }
+    } completed:nil]];
+}
 
 @end
 
-SSignal *multipartFetch(id<TelegramCloudMediaResource> resource, __unused NSNumber *size, NSRange range, TGNetworkMediaTypeTag mediaTypeTag) {
-    return [[[TGTelegramNetworking instance] downloadWorkerForDatacenterId:[resource datacenterId] type:mediaTypeTag] mapToSignal:^SSignal *(TGNetworkWorkerGuard *worker) {
-        return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
-            SSignal *(^fetchPart)(int32_t, int32_t) = ^SSignal *(int32_t offset, int32_t limit) {
-                TLRPCupload_getFile$upload_getFile *getFile = [[TLRPCupload_getFile$upload_getFile alloc] init];
-                getFile.location = [resource apiInputLocation];
-                getFile.offset = offset;
-                getFile.limit = limit;
-                return [[[TGTelegramNetworking instance] requestSignal:getFile worker:worker] mapToSignal:^SSignal *(id next) {
-                    if ([next isKindOfClass:[TLupload_File class]]) {
-                        TLupload_File *part = next;
-                        return [SSignal single:part.bytes];
-                    } else {
-                        return [SSignal complete];
-                    }
-                }];
-            };
-            
-            MultipartFetchManager *manager = [[MultipartFetchManager alloc] initWithSize:size range:range fetchPart:fetchPart partReady:^(NSData *data) {
-                [subscriber putNext:[[MediaResourceDataFetchResult alloc] initWithData:data complete:false]];
-            } completed:^{
-                [subscriber putNext:[[MediaResourceDataFetchResult alloc] initWithData:[NSData data] complete:true]];
-            }];
-            
-            [manager start];
-            
-            return [[SBlockDisposable alloc] initWithBlock:^{
-                [manager cancel];
-            }];
+SSignal *multipartFetch(id<TelegramCloudMediaResource> resource, NSNumber *size, NSRange range, TGNetworkMediaTypeTag mediaTypeTag) {
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+        MultipartFetchManager *manager = [[MultipartFetchManager alloc] initWithResource:resource mediaTypeTag:mediaTypeTag size:size range:range partReady:^(NSData *data) {
+            [subscriber putNext:[[MediaResourceDataFetchResult alloc] initWithData:data complete:false]];
+        } completed:^{
+            [subscriber putNext:[[MediaResourceDataFetchResult alloc] initWithData:[NSData data] complete:true]];
+            [subscriber putCompletion];
+        }];
+        
+        [manager start];
+        
+        return [[SBlockDisposable alloc] initWithBlock:^{
+            [manager cancel];
         }];
     }];
 }

@@ -5,9 +5,7 @@
 
 @interface TGShareChatListCell : UITableViewCell
 
-- (void)setChatModel:(TGChatModel *)chatModel associatedUsers:(NSArray *)associatedUsers shareContext:(TGShareContext *)shareContext;
-
-- (void)setSelectionEnabled:(bool)enabled animated:(bool)animated;
+- (void)setChatModel:(TGChatModel *)chatModel associatedUsers:(id)associatedUsers shareContext:(TGShareContext *)shareContext;
 - (void)setChecked:(bool)checked animated:(bool)animated;
 
 @end

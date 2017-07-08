@@ -35,7 +35,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -62,7 +62,7 @@
     return (int32_t)0xfd586d9b;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCcontacts_resolveUsername$contacts_resolveUsername *object = [[TLRPCcontacts_resolveUsername$contacts_resolveUsername alloc] init];
     object.username = metaObject->getString((int32_t)0x626830ca);

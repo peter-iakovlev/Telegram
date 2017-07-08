@@ -43,7 +43,7 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
     if (self != nil)
     {
         self.alpha = 0.0f;
-        
+        self.tag = 0xbeef;
         _completionBlock = [completionBlock copy];
         
         _dimView = [[UIButton alloc] init];
@@ -72,7 +72,7 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
             [_titleLabel sizeToFit];
             [_backgroundView addSubview:_titleLabel];
             
-            CGSize size = [_titleLabel sizeThatFits:CGSizeMake(TGCallAlertViewWidth, FLT_MAX)];
+            CGSize size = [_titleLabel sizeThatFits:CGSizeMake(TGCallAlertViewWidth - 20.0f * 2, FLT_MAX)];
             _titleLabel.frame = CGRectMake(0.0f, 0.0f, ceil(size.width), ceil(size.height));
         }
         
@@ -94,7 +94,7 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
             [_messageLabel sizeToFit];
             [_backgroundView addSubview:_messageLabel];
             
-            CGSize size = [_messageLabel sizeThatFits:CGSizeMake(TGCallAlertViewWidth, FLT_MAX)];
+            CGSize size = [_messageLabel sizeThatFits:CGSizeMake(TGCallAlertViewWidth - 20.0f * 2, FLT_MAX)];
             _messageLabel.frame = CGRectMake(0.0f, 0.0f, ceil(size.width), ceil(size.height));
         }
         
@@ -266,6 +266,9 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
     
     if (_messageLabel != nil)
     {
+        if (_customView == nil && _titleLabel != nil)
+            height -= 9.0f;
+        
         _messageLabel.frame = CGRectMake((width - _messageLabel.frame.size.width) / 2.0f, height, _messageLabel.frame.size.width, _messageLabel.frame.size.height);
         
         height = CGRectGetMaxY(_messageLabel.frame);

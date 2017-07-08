@@ -3,6 +3,8 @@
 #import "TGFont.h"
 #import "TGImageUtils.h"
 
+#import "TGOverlayControllerWindow.h"
+
 #import "TGEmbedPlayerView.h"
 #import "TGEmbedInternalPlayerView.h"
 
@@ -19,7 +21,7 @@
 
 const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
 
-@interface TGEmbedItemViewWindow : UIWindow
+@interface TGEmbedItemViewWindow : TGOverlayControllerWindow
 
 @end
 
@@ -123,6 +125,9 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
         if (!TGIsPad() && !preview)
         {
             _embedWindow = [[TGEmbedItemViewWindow alloc] init];
+            TGOverlayWindowViewController *controller = [[TGOverlayWindowViewController alloc] init];
+            controller.isImportant = true;
+            _embedWindow.rootViewController = controller;
             _embedWindow.backgroundColor = [UIColor clearColor];
             _embedWindow.hidden = false;
             [_embedWindow addSubview:_wrapperView];
@@ -182,7 +187,7 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
         _smallActivationHeight = screenSize.width;
         
         CGSize dimensions = [self _dimensions];
-        if (dimensions.width > dimensions.height)
+        if (dimensions.width > dimensions.height && _playerView._controlsType == TGEmbedPlayerControlsTypeFull)
             _mayRequestFullscreenOnOrientationChange = true;
     }
     return self;

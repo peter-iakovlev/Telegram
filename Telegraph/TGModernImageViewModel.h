@@ -14,6 +14,7 @@
 @property (nonatomic) CGBlendMode blendMode;
 
 @property (nonatomic) UIEdgeInsets extendedEdges;
+@property (nonatomic) bool accountForTransform;
 
 - (instancetype)initWithImage:(UIImage *)image;
 

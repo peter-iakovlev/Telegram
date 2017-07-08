@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xf656bba1;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLRpcDropAnswer$rpc_answer_unknown *object = [[TLRpcDropAnswer$rpc_answer_unknown alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0x59e94eb6;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLRpcDropAnswer$rpc_answer_dropped_running *object = [[TLRpcDropAnswer$rpc_answer_dropped_running alloc] init];
     return object;
@@ -98,7 +98,7 @@
     return (int32_t)0x57b1a9a2;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRpcDropAnswer$rpc_answer_dropped *object = [[TLRpcDropAnswer$rpc_answer_dropped alloc] init];
     object.msg_id = metaObject->getInt64((int32_t)0xf1cc383f);

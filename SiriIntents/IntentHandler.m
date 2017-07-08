@@ -83,7 +83,7 @@ static INPerson *personWithContact(CNContact *contact) {
     if (_database == nil) {
         _database = [[SVariable alloc] init];
         [_database set:[[self shareContext] mapToSignal:^id(TGShareContext *context) {
-            return [context legacyDatabase];
+            return [SSignal single:context.legacyDatabase];
         }]];
     }
     return [[_database signal] deliverOn:[self queue]];
@@ -160,28 +160,26 @@ static INPerson *personWithContact(CNContact *contact) {
             }
             return @[[INPersonResolutionResult disambiguationWithPeopleToDisambiguate:persons]];
         } else {
-            NSString *phone = contacts[0].phoneNumbers.firstObject.value.stringValue;
-            if (phone.length == 0) {
-                return @[[INPersonResolutionResult needsValue]];
-            } else {
-                //NSArray<TGLegacyUser *> *users = [database contactUsersMatchingQuery:[recipient displayName]];
-                NSArray<TGLegacyUser *> *users = [database contactUsersMatchingPhone:phone];
-                if (users.count == 0) {
-                    return @[[INPersonResolutionResult unsupported]];
-                } else if (users.count == 1) {
-                    NSMutableArray *results  = [[NSMutableArray alloc] init];
-                    [results addObject:[INPersonResolutionResult successWithResolvedPerson:personWithLegacyUser(users[0])]];
-                    for (NSInteger i = 0; i < initialRecipients.count - 1; i++)
-                        [results addObject:[INPersonResolutionResult notRequired]];
-                    return results;
-                } else {
-                    NSMutableArray<INPerson *> *persons = [[NSMutableArray alloc] init];
-                    for (TGLegacyUser *user in users) {
-                        [persons addObject:personWithLegacyUser(user)];
+            for (CNLabeledValue<CNPhoneNumber*> *phoneNumber in contacts[0].phoneNumbers) {
+                NSString *phone = phoneNumber.value.stringValue;
+                if (phone.length != 0) {
+                    NSArray<TGLegacyUser *> *users = [database contactUsersMatchingPhoneSync:phone];
+                    if (users.count == 1) {
+                        NSMutableArray *results  = [[NSMutableArray alloc] init];
+                        [results addObject:[INPersonResolutionResult successWithResolvedPerson:personWithLegacyUser(users[0])]];
+                        for (NSInteger i = 0; i < initialRecipients.count - 1; i++)
+                            [results addObject:[INPersonResolutionResult notRequired]];
+                        return results;
+                    } else {
+                        NSMutableArray<INPerson *> *persons = [[NSMutableArray alloc] init];
+                        for (TGLegacyUser *user in users) {
+                            [persons addObject:personWithLegacyUser(user)];
+                        }
+                        return @[[INPersonResolutionResult disambiguationWithPeopleToDisambiguate:persons]];
                     }
-                    return @[[INPersonResolutionResult disambiguationWithPeopleToDisambiguate:persons]];
                 }
             }
+            return @[[INPersonResolutionResult needsValue]];
         }
         
         return @[[INPersonResolutionResult needsValue]];

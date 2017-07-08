@@ -13,25 +13,82 @@
 
 using namespace std;
 
-class CBlockingQueue{
+namespace tgvoip{
+
+template<typename T>
+class BlockingQueue{
 public:
-	CBlockingQueue(size_t capacity);
-	~CBlockingQueue();
-	void Put(void* thing);
-	void* GetBlocking();
-	void* Get();
-	unsigned int Size();
-	void PrepareDealloc();
-	void SetOverflowCallback(void (*overflowCallback)(void*));
+	BlockingQueue(size_t capacity) : semaphore(capacity, 0){
+		this->capacity=capacity;
+		overflowCallback=NULL;
+		init_mutex(mutex);
+	};
+
+	~BlockingQueue(){
+		semaphore.Release();
+		free_mutex(mutex);
+	}
+
+	void Put(T thing){
+		MutexGuard sync(mutex);
+		queue.push_back(thing);
+		bool didOverflow=false;
+		while(queue.size()>capacity){
+			didOverflow=true;
+			if(overflowCallback){
+				overflowCallback(queue.front());
+				queue.pop_front();
+			}else{
+				abort();
+			}
+		}
+		if(!didOverflow)
+			semaphore.Release();
+	}
+
+	T GetBlocking(){
+		semaphore.Acquire();
+		MutexGuard sync(mutex);
+		T r=GetInternal();
+		return r;
+	}
+
+	T Get(){
+		MutexGuard sync(mutex);
+		if(queue.size()>0)
+			semaphore.Acquire();
+		T r=GetInternal();
+		return r;
+	}
+
+	unsigned int Size(){
+		return queue.size();
+	}
+
+	void PrepareDealloc(){
+
+	}
+
+	void SetOverflowCallback(void (*overflowCallback)(T)){
+		this->overflowCallback=overflowCallback;
+	}
 
 private:
-	void* GetInternal();
-	list<void*> queue;
-	size_t capacity;
-	tgvoip_lock_t lock;
-	tgvoip_mutex_t mutex;
-	void (*overflowCallback)(void*);
-};
+	T GetInternal(){
+		//if(queue.size()==0)
+		//	return NULL;
+		T r=queue.front();
+		queue.pop_front();
+		return r;
+	}
 
+	list<T> queue;
+	size_t capacity;
+	//tgvoip_lock_t lock;
+	Semaphore semaphore;
+	tgvoip_mutex_t mutex;
+	void (*overflowCallback)(T);
+};
+}
 
 #endif //LIBTGVOIP_BLOCKINGQUEUE_H

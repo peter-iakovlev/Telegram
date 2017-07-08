@@ -12,19 +12,11 @@
 
 @interface TGTooltipView : UIView
 
-@property (nonatomic, strong) ASHandle *watcherHandle;
+@property (nonatomic, assign) CGFloat maxWidth;
+@property (nonatomic, weak) UIView *sourceView;
+@property (nonatomic) NSInteger numberOfLines;
 
-@property (nonatomic, strong) UIImageView *leftView;
-@property (nonatomic, strong) UIImageView *centerView;
-@property (nonatomic, strong) UIImageView *centerUpView;
-@property (nonatomic, strong) UIImageView *rightView;
-
-@property (nonatomic) CGFloat minLeftWidth;
-@property (nonatomic) CGFloat minRightWidth;
-
-@property (nonatomic) CGPoint arrowLocation;
-
-- (id)initWithLeftImage:(UIImage *)leftImage centerImage:(UIImage *)centerImage centerUpImage:(UIImage *)centerUpImage rightImage:(UIImage *)rightImage;
+- (void)setText:(NSString *)text animated:(bool)animated;
 
 @end
 
@@ -33,8 +25,10 @@
 @property (nonatomic, strong) TGTooltipView *tooltipView;
 
 @property (nonatomic, readonly) bool isShowingTooltip;
+@property (nonatomic) CGRect showingTooltipFromRect;
 
 - (void)showTooltipFromRect:(CGRect)rect;
+- (void)showTooltipFromRect:(CGRect)rect animated:(bool)animated;
 - (void)hideTooltip;
 
 @end

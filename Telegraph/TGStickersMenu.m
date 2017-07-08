@@ -16,6 +16,9 @@
 
 #import "TGArchivedStickerPacksAlert.h"
 
+#import "ActionStage.h"
+#import "TGTelegraph.h"
+
 const int64_t TGStickersBultinPackIdentifier = 1842540969984001;
 
 @implementation TGStickersMenu
@@ -74,6 +77,7 @@ const int64_t TGStickersBultinPackIdentifier = 1842540969984001;
     
     NSMutableArray *itemViews = [[NSMutableArray alloc] init];
     TGStickersCollectionItemView *collectionItem = [[TGStickersCollectionItemView alloc] init];
+    collectionItem.hasShare = showShareAction;
     if (sendSticker != nil)
     {
         collectionItem.sendSticker = ^(TGDocumentMediaAttachment *sticker)
@@ -87,6 +91,19 @@ const int64_t TGStickersBultinPackIdentifier = 1842540969984001;
             [strongController dismissAnimated:true manual:true];
         };
     }
+    collectionItem.openLink = ^(NSString *link) {
+        __strong TGMenuSheetController *strongController = weakController;
+        if (strongController == nil)
+            return;
+        
+        [strongController dismissAnimated:true manual:true];
+        
+        if ([link hasPrefix:@"mention://"])
+        {
+            NSString *domain = [link substringFromIndex:@"mention://".length];
+            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/resolveDomain/(%@,profile)", domain] options:@{@"domain": domain, @"profile": @true, @"keepStack": @true} flags:0 watcher:TGTelegraphInstance];
+        }
+    };
     [itemViews addObject:collectionItem];
 
     TGMenuSheetButtonItemView *modifyItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:nil type:TGMenuSheetButtonTypeDefault action:nil];
@@ -290,17 +307,14 @@ const int64_t TGStickersBultinPackIdentifier = 1842540969984001;
             }
             else
             {
-                TGProgressWindow *progressWindow = nil;
                 if (firstInstallation) {
-                    progressWindow = [[TGProgressWindow alloc] init];
+                    [[[TGProgressWindow alloc] init] dismissWithSuccess];
                 }
                 
                 SSignal *installStickerPackAndGetArchivedSignal = packIsMask ? [TGMaskStickersSignals installStickerPackAndGetArchived:packReference hintUnarchive:packIsArchived] : [TGStickersSignals installStickerPackAndGetArchived:packReference hintUnarchive:packIsArchived];
                     
                 [[installStickerPackAndGetArchivedSignal deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *archivedPacks)
                 {
-                    [progressWindow dismissWithSuccess];
-                    
                     if (archivedPacks.count != 0) {
                         __strong TGViewController *strongParentController = (TGViewController *)weakParentController;
                         if ([strongParentController isKindOfClass:[TGViewController class]]) {

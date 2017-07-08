@@ -35,7 +35,7 @@ const CGFloat TGNotificationForwardHeaderHeight = 29.0f;
         else if ([author isKindOfClass:[TGConversation class]])
             authorName = ((TGConversation *)author).chatTitle;
         
-        NSString *text = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Message.ForwardedMessage"), authorName];
+        NSString *text = [[NSString alloc] initWithFormat:TGLocalized(@"Message.ForwardedMessage"), authorName];
         _textLabel.text = text;
         
         [_textLabel sizeToFit];

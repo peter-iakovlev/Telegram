@@ -403,7 +403,7 @@ static ASQueue *taskManagementQueue()
         
         UIImage *image = nil;
         
-        if ([[NSFileManager defaultManager] fileExistsAtPath:videoPath isDirectory:NULL])
+        if (![args[@"secret"] boolValue] && [[NSFileManager defaultManager] fileExistsAtPath:videoPath isDirectory:NULL])
         {
             AVAsset *asset = [AVAsset assetWithURL:[NSURL fileURLWithPath:videoPath]];
             
@@ -440,16 +440,16 @@ static ASQueue *taskManagementQueue()
                 }
             }
             
-            if (!isLocal)
+            if (!isLocal || image.size.width < 70)
                 lowQualityThumbnail = true;
         }
         
         if (image != nil)
         {
-            const float cacheFactor = 0.85f;
+            const float cacheFactor = 0.95f;
             CGSize cachedImageSize = CGSizeMake(CGCeil(size.width * cacheFactor), CGCeil(size.height * cacheFactor));
             CGSize cachedRenderSize = CGSizeMake(CGCeil(renderSize.width * cacheFactor), CGCeil(renderSize.height * cacheFactor));
-            UIGraphicsBeginImageContextWithOptions(cachedImageSize, true, 2.0f);
+            UIGraphicsBeginImageContextWithOptions(cachedImageSize, true, 0.0f);
             
             CGRect imageRect = CGRectMake((cachedImageSize.width - cachedRenderSize.width) / 2.0f, (cachedImageSize.height - cachedRenderSize.height) / 2.0f, cachedRenderSize.width, cachedRenderSize.height);
             [image drawInRect:imageRect blendMode:kCGBlendModeCopy alpha:1.0f];
@@ -459,14 +459,14 @@ static ASQueue *taskManagementQueue()
             
             if (thumbnailSourceImage != nil && !lowQualityThumbnail)
             {
-                NSData *thumbnailSourceData = UIImageJPEGRepresentation(thumbnailSourceImage, 0.8f);
+                NSData *thumbnailSourceData = UIImageJPEGRepresentation(thumbnailSourceImage, 0.85f);
                 [thumbnailSourceData writeToFile:thumbnailPath atomically:true];
             }
         }
     }
     else
     {
-        UIGraphicsBeginImageContextWithOptions(size, true, 2.0f);
+        UIGraphicsBeginImageContextWithOptions(size, true, 0.0f);
         
         CGRect imageRect = CGRectMake(0.0f, 0.0f, size.width, size.height);
         [thumbnailSourceImage drawInRect:imageRect blendMode:kCGBlendModeCopy alpha:1.0f];
@@ -477,6 +477,7 @@ static ASQueue *taskManagementQueue()
     
     bool isFlat = [args[@"flat"] boolValue];
     int cornerRadius = [args[@"cornerRadius"] intValue];
+    int inset = [args[@"inset"] intValue];
     
     if (thumbnailSourceImage != nil)
     {
@@ -488,7 +489,12 @@ static ASQueue *taskManagementQueue()
         uint32_t *averageColorPtr = needsAverageColor ? &averageColorValue : NULL;
         
         if ([args[@"secret"] boolValue])
-            thumbnailImage = TGSecretBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, ![args[@"flat"] boolValue]);
+        {
+            if (isFlat && cornerRadius > 0)
+                thumbnailImage = TGSecretBlurredAttachmentWithCornerRadiusImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, ![args[@"flat"] boolValue], cornerRadius);
+            else
+                thumbnailImage = TGSecretBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, ![args[@"flat"] boolValue]);
+        }
         else
         {
             if (lowQualityThumbnail)
@@ -501,7 +507,7 @@ static ASQueue *taskManagementQueue()
             else
             {
                 if (isFlat && cornerRadius > 0)
-                    thumbnailImage  =TGLoadedAttachmentWithCornerRadiusImage(thumbnailSourceImage, size, averageColorPtr, !isFlat, cornerRadius);
+                    thumbnailImage = TGLoadedAttachmentWithCornerRadiusImage(thumbnailSourceImage, size, averageColorPtr, !isFlat, cornerRadius, inset);
                 else
                     thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, averageColorPtr, !isFlat);
             }

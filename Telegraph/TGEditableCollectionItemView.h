@@ -8,6 +8,8 @@
 
 #import "TGCollectionItemView.h"
 
+@class TGCollectionMenuView;
+
 typedef enum {
     TGEditableCollectionItemViewIndicatorDelete,
     TGEditableCollectionItemViewIndicatorAdd
@@ -25,6 +27,9 @@ typedef enum {
 
 @property (nonatomic) CGPoint optionsOffset;
 
+@property (nonatomic) bool disableControls;
+@property (nonatomic, copy) void (^customOpenControls)();
+
 - (void)setShowsDeleteIndicator:(bool)showsDeleteIndicator animated:(bool)animated;
 - (void)setShowsEditingOptions:(bool)showsEditingOptions animated:(bool)animated;
 - (void)setEnableEditing:(bool)enableEditing animated:(bool)animated;
@@ -32,5 +37,9 @@ typedef enum {
 - (void)deleteAction;
 
 - (void)_requestSelection;
+
+- (UIView *)hitTestDeleteIndicator:(CGPoint)point;
+
+- (TGCollectionMenuView *)_collectionMenuView;
 
 @end

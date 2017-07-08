@@ -1,12 +1,13 @@
 #import "TGWidgetController.h"
 #import <NotificationCenter/NotificationCenter.h>
+#import <LegacyDatabase/LegacyDatabase.h>
 
+#import "TGWidget.h"
 #import "TGWidgetSignals.h"
-#import "TGWidgetUser.h"
-
 #import "TGWidgetUserCell.h"
 
-const UIEdgeInsets TGWidgetCollectionInsets = { 19.0f, 8.0f, 8.0f, 8.0f };
+const UIEdgeInsets TGWidgetCollectionInsets = { 16.0f, 8.0f, 8.0f, 8.0f };
+const UIEdgeInsets TGWidgetCollectionSmallInsets = { 16.0f, 4.0f, 8.0f, 4.0f };
 
 @interface TGWidgetController () <NCWidgetProviding, UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout>
 {
@@ -17,7 +18,9 @@ const UIEdgeInsets TGWidgetCollectionInsets = { 19.0f, 8.0f, 8.0f, 8.0f };
     
     SMetaDisposable *_disposable;
     NSArray *_users;
-    int32_t _clientUserId;
+    NSDictionary *_unreadCounts;
+    
+    TGShareContext *_context;
 }
 @end
 
@@ -68,30 +71,24 @@ const UIEdgeInsets TGWidgetCollectionInsets = { 19.0f, 8.0f, 8.0f, 8.0f };
     [_effectView.contentView addSubview:_label];
 }
 
-- (void)viewDidLoad
+- (void)viewWillAppear:(BOOL)animated
 {
+    [super viewWillAppear:animated];
+    
     __weak TGWidgetController *weakSelf = self;
-    [_disposable setDisposable:[[TGWidgetSignals peopleSignal] startWithNext:^(NSDictionary *data)
+    _disposable = [[SMetaDisposable alloc] init];
+    [_disposable setDisposable:[[[TGWidgetSignals topPeersSignal] deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *next)
     {
         __strong TGWidgetController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
-        if (data != nil)
-        {
-            NSArray *users = data[@"users"];
-            if (users.count > 0)
-                [strongSelf updateCollectionViewWithUsers:users];
-            else
-                [strongSelf setNoUsers];
-            
-            strongSelf->_clientUserId = (int32_t)[data[@"clientUserId"] integerValue];
-        }
+        if (next != nil)
+            [strongSelf updateCollectionViewWithUsers:next[@"users"] unreadCounts:next[@"unreadCounts"] context:next[@"context"]];
         else
-        {
             [strongSelf setLoginRequired];
-        }
     }]];
+    
 }
 
 - (void)viewDidLayoutSubviews
@@ -101,12 +98,23 @@ const UIEdgeInsets TGWidgetCollectionInsets = { 19.0f, 8.0f, 8.0f, 8.0f };
     _collectionView.frame = CGRectMake(0.0f, 0.0f, self.view.frame.size.width, 205.0f);
 }
 
-- (void)updateCollectionViewWithUsers:(NSArray *)users
+- (void)updateCollectionViewWithUsers:(NSArray *)users unreadCounts:(NSDictionary *)unreadCounts context:(TGShareContext *)context
 {
     _users = users;
+    _context = context;
+    _unreadCounts = unreadCounts;
     
-    _collectionView.hidden = false;
-    [_collectionView reloadData];
+    if (users.count == 0)
+    {
+        [self setNoUsers];
+    }
+    else
+    {
+        [self _setLabelText:nil];
+        _collectionView.hidden = false;
+        [_collectionView reloadData];
+        [_collectionView layoutSubviews];
+    }
     
     [self.extensionContext setWidgetLargestAvailableDisplayMode:users.count > 4 ? NCWidgetDisplayModeExpanded : NCWidgetDisplayModeCompact];
 }
@@ -137,7 +145,7 @@ const UIEdgeInsets TGWidgetCollectionInsets = { 19.0f, 8.0f, 8.0f, 8.0f };
 - (void)_setLabelText:(NSString *)text
 {
     _label.text = text;
-    _label.hidden = false;
+    _label.hidden = text.length == 0;
 }
 
 #pragma mark - Collection View Data Source
@@ -151,8 +159,9 @@ const UIEdgeInsets TGWidgetCollectionInsets = { 19.0f, 8.0f, 8.0f, 8.0f };
 {
     TGWidgetUserCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:TGWidgetUserCellIdentifier forIndexPath:indexPath];
     
-    TGWidgetUser *user = _users[indexPath.row];
-    [cell setUser:user avatarSignal:[TGWidgetSignals userAvatarWithUser:user clientUserId:_clientUserId] effectView:_effectView];
+    TGLegacyUser *user = _users[indexPath.row];
+    NSUInteger unreadCount = [_unreadCounts[@(user.userId)] unsignedIntegerValue];
+    [cell setUser:user avatarSignal:[TGWidgetSignals userAvatarWithContext:_context user:user] unreadCount:unreadCount effectView:_effectView];
     
     if ([self isCompactDisplayMode] && indexPath.row > 3)
         [cell setHidden:true animated:false];
@@ -164,7 +173,7 @@ const UIEdgeInsets TGWidgetCollectionInsets = { 19.0f, 8.0f, 8.0f, 8.0f };
 
 - (void)collectionView:(UICollectionView *)__unused collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    TGWidgetUser *user = _users[indexPath.row];
+    TGLegacyUser *user = _users[indexPath.row];
     [self openApplicationWithUser:user];
 }
 
@@ -189,28 +198,35 @@ const UIEdgeInsets TGWidgetCollectionInsets = { 19.0f, 8.0f, 8.0f, 8.0f };
 
 - (CGSize)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)__unused indexPath
 {
+    if ([UIScreen mainScreen].bounds.size.width == 320)
+        return TGWidgetSmallUserCellSize;
+
     return TGWidgetUserCellSize;
 }
 
 - (UIEdgeInsets)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout insetForSectionAtIndex:(NSInteger)__unused section
 {
+    UIEdgeInsets insets = TGWidgetCollectionInsets;
+    if ([UIScreen mainScreen].bounds.size.width == 320)
+        insets = TGWidgetCollectionSmallInsets;
+    
     CGFloat width = collectionView.frame.size.width;
     NSInteger itemsCount = [collectionView numberOfItemsInSection:0];
-    NSInteger columns = (NSInteger)floor((width - TGWidgetCollectionInsets.left - TGWidgetCollectionInsets.right) / (_collectionLayout.itemSize.width + _collectionLayout.minimumInteritemSpacing));
+    NSInteger columns = (NSInteger)floor((width - insets.left - insets.right) / (_collectionLayout.itemSize.width + _collectionLayout.minimumInteritemSpacing));
     
     if (itemsCount >= columns)
-        return UIEdgeInsetsMake(TGWidgetCollectionInsets.top, TGWidgetCollectionInsets.left, TGWidgetCollectionInsets.bottom, TGWidgetCollectionInsets.right);
+        return UIEdgeInsetsMake(insets.top, insets.left, insets.bottom, insets.right);
     
     CGFloat inset = (width - (_collectionLayout.itemSize.width + _collectionLayout.minimumInteritemSpacing) * itemsCount - _collectionLayout.minimumInteritemSpacing) / 2.0f;
     
-    return UIEdgeInsetsMake(TGWidgetCollectionInsets.top, inset, TGWidgetCollectionInsets.bottom, inset);
+    return UIEdgeInsetsMake(insets.top, inset, insets.bottom, inset);
 }
 
 #pragma mark - Widget
 
-- (void)openApplicationWithUser:(TGWidgetUser *)user
+- (void)openApplicationWithUser:(TGLegacyUser *)user
 {
-    NSURL *url = [[NSURL alloc] initWithString:[NSString stringWithFormat:@"tg://user?id=%d", user.identifier]];
+    NSURL *url = [[NSURL alloc] initWithString:[NSString stringWithFormat:@"tg://user?id=%d", user.userId]];
     [self.extensionContext openURL:url completionHandler:nil];
 }
 

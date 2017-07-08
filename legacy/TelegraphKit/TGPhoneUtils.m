@@ -79,4 +79,23 @@
     return result;
 }
 
++ (bool)maybePhone:(NSString *)phone
+{
+    if (phone.length < 2)
+        return false;
+    
+    bool hasDigits = false;
+    for (int i = 0; i < (int)phone.length; i++)
+    {
+        unichar c = [phone characterAtIndex:i];
+        if (c >= '0' && c <= '9')
+            hasDigits = true;
+        
+        if (!((c >= '0' && c <= '9') || c == '(' || c == ')' || c == '+' || c == '-' || c == ' '))
+            return false;
+    }
+    
+    return hasDigits;
+}
+
 @end

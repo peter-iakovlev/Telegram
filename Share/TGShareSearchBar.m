@@ -88,7 +88,7 @@
             
             
             CGContextSetFillColorWithColor(context, TGColorWithHex(0xc8c7cc).CGColor);
-            CGFloat separatorHeight = 0.5f;
+            CGFloat separatorHeight = 1.0f / [[UIScreen mainScreen] scale];
             CGContextFillRect(context, CGRectMake(0.0f, 3.0f - separatorHeight, 1.0f, separatorHeight));
             
             image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];

@@ -10,6 +10,7 @@
 - (void)setPrefix:(NSString *)prefix;
 - (void)setSecureEntry:(bool)secureEntry;
 - (void)setKeyboardType:(UIKeyboardType)keyboardType;
+- (void)setReturnKeyType:(UIReturnKeyType)returnKeyType;
 - (void)setUsername:(NSString *)username;
 - (void)setUsernameValid:(bool)usernameValid;
 - (void)setUsernameChecking:(bool)usernameChecking;

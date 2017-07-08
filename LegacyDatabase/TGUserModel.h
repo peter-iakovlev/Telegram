@@ -2,6 +2,8 @@
 
 #import <LegacyDatabase/TGFileLocation.h>
 
+@class TGPrivateChatModel;
+
 @interface TGUserModel : NSObject
 
 @property (nonatomic, readonly) int32_t userId;
@@ -15,5 +17,7 @@
 - (instancetype)initWithUserId:(int32_t)userId accessHash:(int64_t)accessHash firstName:(NSString *)firstName lastName:(NSString *)lastName avatarLocation:(TGFileLocation *)avatarLocation;
 
 - (NSString *)displayName;
+
+- (TGPrivateChatModel *)chatModel;
 
 @end

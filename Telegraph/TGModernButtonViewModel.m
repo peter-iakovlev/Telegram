@@ -28,6 +28,7 @@
         [view setTitle:_title];
         [view setTitleFont:_font];
         [view setImage:_image];
+        [view setHighlightedImage:_highlightedImage];
         [view setExtendedEdgeInsets:_extendedEdgeInsets];
         [view setSupplementaryIcon:_supplementaryIcon];
         

@@ -4,6 +4,8 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <AddressBook/AddressBook.h>
 #import <AVFoundation/AVFoundation.h>
+#import <PassKit/PassKit.h>
+
 #import "TGPhoneUtils.h"
 #import "TGMimeTypeMap.h"
 
@@ -39,6 +41,8 @@
             else if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeText])
                 [providers addObject:provider];
             else if ([provider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeData])
+                [providers addObject:provider];
+            else if ([provider hasItemConformingToTypeIdentifier:@"com.apple.pkpass"])
                 [providers addObject:provider];
         }
     }
@@ -106,7 +110,11 @@
                 }
             }];
         }
-        
+        else if ([provider hasItemConformingToTypeIdentifier:@"com.apple.pkpass"])
+        {
+            dataSignal = [self signalForPassKitItemProvider:provider];
+        }
+
         if (dataSignal != nil)
             [itemSignals addObject:dataSignal];
     }
@@ -349,6 +357,37 @@
                 TGContactModel *contact = [[TGContactModel alloc] initWithFirstName:firstName lastName:lastName phoneNumbers:personPhones];
                 [subscriber putNext:@{@"contact": contact}];
                 [subscriber putCompletion];
+            }
+        }];
+        
+        return nil;
+    }];
+}
+
++ (SSignal *)signalForPassKitItemProvider:(NSItemProvider *)itemProvider
+{
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+    {
+        [itemProvider loadItemForTypeIdentifier:@"com.apple.pkpass" options:nil completionHandler:^(id data, NSError *error)
+        {
+            if (error != nil)
+            {
+                [subscriber putError:nil];
+            }
+            else
+            {
+                NSError *parseError;
+                PKPass *pass = [[PKPass alloc] initWithData:data error:&parseError];
+                if (parseError != nil)
+                {
+                    [subscriber putError:nil];
+                }
+                else
+                {
+                    NSString *fileName = [NSString stringWithFormat:@"%@.pkpass", pass.serialNumber];
+                    [subscriber putNext:@{@"data": data, @"fileName": fileName, @"mimeType": @"application/vnd.apple.pkpass"}];
+                    [subscriber putCompletion];
+                }
             }
         }];
         

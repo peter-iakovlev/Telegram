@@ -137,6 +137,18 @@ typedef enum
     [_mainSheetView removeFromSuperview];
     _mainSheetView = [[TGMenuSheetView alloc] initWithItemViews:mainItemViews sizeClass:UIUserInterfaceSizeClassCompact];
     
+    __weak TGItemMenuSheetPreviewView *weakSelf = self;
+    void (^menuRelayout)(void) = ^
+    {
+        __strong TGItemMenuSheetPreviewView *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        strongSelf->_mainSheetView.frame = [strongSelf _mainViewFrameExpanded:strongSelf.presentActionsImmediately];
+    };
+    _mainSheetView.menuRelayout = menuRelayout;
+    
+    
     [_arrowView removeFromSuperview];
     _arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"PreviewUpArrow"]];
     _arrowView.alpha = 0.0f;
@@ -290,7 +302,8 @@ typedef enum
     }
     else
     {
-        completionBlock(true);
+        if (completionBlock != nil)
+            completionBlock(true);
     }
 }
 

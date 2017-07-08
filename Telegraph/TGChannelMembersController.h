@@ -4,7 +4,7 @@
 
 typedef enum {
     TGChannelMembersModeMembers,
-    TGChannelMembersModeBlacklist,
+    TGChannelMembersModeBannedAndRestricted,
     TGChannelMembersModeAdmins
 } TGChannelMembersMode;
 

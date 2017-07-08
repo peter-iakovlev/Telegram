@@ -77,12 +77,14 @@
     _lowerWindow.frame = [UIApplication sharedApplication].keyWindow.frame;
     _lowerWindow.windowLevel = UIWindowLevelStatusBar - 0.002;
     _lowerWindow.hidden = false;
+    _lowerWindow.tag = 0xbeef;
     [_lowerWindow addSubview:self];
     
     _upperWindow = [[TGCallStatusBarWindow alloc] init];
     _upperWindow.frame = [UIApplication sharedApplication].keyWindow.frame;
     _upperWindow.windowLevel = UIWindowLevelStatusBar + 0.00001;
     _upperWindow.statusBarPressed = _statusBarPressed;
+    _upperWindow.tag = 0xbeef;
     _upperWindow.hidden = false;
 }
 

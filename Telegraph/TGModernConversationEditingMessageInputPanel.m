@@ -203,7 +203,7 @@
 
 - (CGFloat)preferredHeight
 {
-    return 39.0f;
+    return 41.0f;
 }
 
 - (void)setSendAreaWidth:(CGFloat)sendAreaWidth attachmentAreaWidth:(CGFloat)attachmentAreaWidth
@@ -226,36 +226,39 @@
 {
     [super layoutSubviews];
     
-    CGSize boundsSize = CGSizeMake(self.bounds.size.width, [self preferredHeight]);
-    
-    CGFloat leftPadding = 0.0f;
-    if (_imageView != nil)
+    [UIView performWithoutAnimation:^
     {
-        leftPadding += 40.0f;
-        _imageView.frame = CGRectMake(_attachmentAreaWidth + 12.0f, 7.0f, 35.0f, 35.0f);
+        CGSize boundsSize = CGSizeMake(self.bounds.size.width, [self preferredHeight]);
         
-        _imageIconView.frame = CGRectMake(TGRetinaFloor((_imageView.frame.size.width - _imageIconView.frame.size.width) / 2.0f), TGRetinaFloor((_imageView.frame.size.height - _imageIconView.frame.size.height) / 2.0f), _imageIconView.frame.size.width, _imageIconView.frame.size.height);
-    }
-    
-    if (_activityIndicator != nil) {
-        _activityIndicator.frame = CGRectMake(12.0f, CGFloor((self.frame.size.height - _activityIndicator.frame.size.height) / 2.0f) + 4.0f, _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
-    }
-    
-    CGSize nameSize = [_nameLabel.text sizeWithFont:_nameLabel.font];
-    nameSize.width = MIN(nameSize.width, boundsSize.width - _attachmentAreaWidth - 40.0f - _sendAreaWidth - leftPadding);
-    
-    CGSize contentLabelSize = [_contentLabel.text sizeWithFont:_contentLabel.font];
-    contentLabelSize.width = MIN(contentLabelSize.width, boundsSize.width - _attachmentAreaWidth - 40.0f - _sendAreaWidth - leftPadding);
-    
-    if (_largeDismissButton) {
-        _closeButton.frame = CGRectMake(boundsSize.width - _sendAreaWidth - _closeButton.frame.size.width, CGFloor((boundsSize.height - _closeButton.frame.size.height) / 2.0f + 4.0f) , _closeButton.frame.size.width, _closeButton.frame.size.height);
-    } else {
-        _closeButton.frame = CGRectMake(boundsSize.width - _sendAreaWidth - _closeButton.frame.size.width - 4.0f, 12.0f, _closeButton.frame.size.width, _closeButton.frame.size.height);
-    }
-    _lineView.frame = CGRectMake(_attachmentAreaWidth + 4.0f, 7.0f + _lineInsets.top, 2.0f, boundsSize.height - 7.0f + 3.0f - _lineInsets.top - _lineInsets.bottom);
-    _nameLabel.frame = CGRectMake(_attachmentAreaWidth + 16.0f + leftPadding, 5.0f, CGCeil(nameSize.width), CGCeil(nameSize.height));
-    _timerLabel.frame = CGRectMake(CGRectGetMaxX(_nameLabel.frame) + 4.0f, _nameLabel.frame.origin.y + 2.0f, _timerLabel.frame.size.width, _timerLabel.frame.size.height);
-    _contentLabel.frame = CGRectMake(_attachmentAreaWidth + 16.0f + leftPadding, 24.0f, CGCeil(contentLabelSize.width), CGCeil(contentLabelSize.height));
+        CGFloat leftPadding = 0.0f;
+        if (_imageView != nil)
+        {
+            leftPadding += 40.0f;
+            _imageView.frame = CGRectMake(_attachmentAreaWidth + 12.0f, 6.0f, 35.0f, 35.0f);
+            
+            _imageIconView.frame = CGRectMake(TGRetinaFloor((_imageView.frame.size.width - _imageIconView.frame.size.width) / 2.0f), TGRetinaFloor((_imageView.frame.size.height - _imageIconView.frame.size.height) / 2.0f), _imageIconView.frame.size.width, _imageIconView.frame.size.height);
+        }
+        
+        if (_activityIndicator != nil) {
+            _activityIndicator.frame = CGRectMake(12.0f, CGFloor((self.frame.size.height - _activityIndicator.frame.size.height) / 2.0f) + 4.0f, _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
+        }
+        
+        CGSize nameSize = [_nameLabel.text sizeWithFont:_nameLabel.font];
+        nameSize.width = MIN(nameSize.width, boundsSize.width - _attachmentAreaWidth - 40.0f - _sendAreaWidth - leftPadding);
+        
+        CGSize contentLabelSize = [_contentLabel.text sizeWithFont:_contentLabel.font];
+        contentLabelSize.width = MIN(contentLabelSize.width, boundsSize.width - _attachmentAreaWidth - 40.0f - _sendAreaWidth - leftPadding);
+        
+        if (_largeDismissButton) {
+            _closeButton.frame = CGRectMake(boundsSize.width - _sendAreaWidth - _closeButton.frame.size.width, CGFloor((boundsSize.height - _closeButton.frame.size.height) / 2.0f + 4.0f) , _closeButton.frame.size.width, _closeButton.frame.size.height);
+        } else {
+            _closeButton.frame = CGRectMake(boundsSize.width - _sendAreaWidth - _closeButton.frame.size.width - 4.0f, 11.0f, _closeButton.frame.size.width, _closeButton.frame.size.height);
+        }
+        _lineView.frame = CGRectMake(_attachmentAreaWidth + 4.0f, 6.0f + _lineInsets.top, 2.0f, boundsSize.height - 6.0f - _lineInsets.top - _lineInsets.bottom);
+        _nameLabel.frame = CGRectMake(_attachmentAreaWidth + 16.0f + leftPadding, 5.0f, CGCeil(nameSize.width), CGCeil(nameSize.height));
+        _timerLabel.frame = CGRectMake(CGRectGetMaxX(_nameLabel.frame) + 4.0f, _nameLabel.frame.origin.y + 2.0f, _timerLabel.frame.size.width, _timerLabel.frame.size.height);
+        _contentLabel.frame = CGRectMake(_attachmentAreaWidth + 16.0f + leftPadding, 24.0f, CGCeil(contentLabelSize.width), CGCeil(contentLabelSize.height));
+    }];
 }
 
 - (void)updateMessage:(TGMessage *)message {

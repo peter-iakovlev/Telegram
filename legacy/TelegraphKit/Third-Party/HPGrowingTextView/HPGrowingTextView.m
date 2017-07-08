@@ -24,7 +24,6 @@ NSString *TGMentionBoldAttributeName = @"TGMentionBoldAttributeName";
 
 @interface HPGrowingTextView ()
 {
-    bool _ignoreChangeNotification;
     UIColor *_intrinsicTextColor;
     UIFont *_intrinsicTextFont;
 }
@@ -435,6 +434,16 @@ NSString *TGMentionBoldAttributeName = @"TGMentionBoldAttributeName";
 }
 
 #pragma mark -
+
+- (BOOL)textViewShouldBeginEditing:(UITextView *)__unused textView
+{
+    id<HPGrowingTextViewDelegate> delegate = _delegate;
+    
+    if ([delegate respondsToSelector:@selector(growingTextViewShouldBeginEditing:)])
+        return [delegate growingTextViewShouldBeginEditing:self];
+    
+    return true;
+}
 
 - (void)textViewDidBeginEditing:(UITextView *)__unused textView
 {

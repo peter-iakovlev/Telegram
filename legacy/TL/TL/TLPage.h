@@ -8,7 +8,7 @@
 
 @property (nonatomic, retain) NSArray *blocks;
 @property (nonatomic, retain) NSArray *photos;
-@property (nonatomic, retain) NSArray *videos;
+@property (nonatomic, retain) NSArray *documents;
 
 @end
 

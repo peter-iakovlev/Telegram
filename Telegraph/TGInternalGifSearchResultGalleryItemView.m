@@ -29,7 +29,7 @@
     UIView *_containerView;
     TGImageView *_imageView;
     TGModernAnimatedImagePlayer *_player;
-    TGVTAcceleratedVideoView *_acceleratedVideoView;
+    UIView<TGInlineVideoPlayerView> *_acceleratedVideoView;
     
     CGSize _imageSize;
     
@@ -64,7 +64,7 @@
         _imageView.userInteractionEnabled = true;
         [_containerView addSubview:_imageView];
         
-        _acceleratedVideoView = [[TGVTAcceleratedVideoView alloc] init];
+        _acceleratedVideoView = [[[TGVTAcceleratedVideoView videoViewClass] alloc] init];
         _acceleratedVideoView.userInteractionEnabled = false;
         _acceleratedVideoView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [_imageView addSubview:_acceleratedVideoView];

@@ -52,7 +52,7 @@ NSString *const TGUserInfoHeaderIdentifier = @"TGUserInfoHeader";
             [self.avatarGroup setBackgroundImageSignal:[[TGBridgeMediaSignals avatarWithUrl:_currentAvatarPhoto type:TGBridgeMediaAvatarTypeProfile] onError:^(id error)
             {
                 __strong TGUserInfoHeaderController *strongSelf = weakSelf;
-                if (strongSelf == nil)
+                if (strongSelf != nil)
                     strongSelf->_currentAvatarPhoto = nil;
             }] isVisible:self.isVisible];
         }
@@ -137,7 +137,7 @@ NSString *const TGUserInfoHeaderIdentifier = @"TGUserInfoHeader";
             [self.avatarGroup setBackgroundImageSignal:[[TGBridgeMediaSignals avatarWithUrl:_currentAvatarPhoto type:TGBridgeMediaAvatarTypeProfile] onError:^(id error)
             {
                 __strong TGUserInfoHeaderController *strongSelf = weakSelf;
-                if (strongSelf == nil)
+                if (strongSelf != nil)
                     strongSelf->_currentAvatarPhoto = nil;
             }] isVisible:self.isVisible];
         }

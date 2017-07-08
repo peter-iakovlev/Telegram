@@ -60,7 +60,7 @@
 - (NSString *)actionTextForMessage:(TGMessage *)message {
     NSString *actionText = @"";
     if (message.hole != nil) {
-        actionText = TGLocalizedStatic(@"Channel.NotificationLoading");
+        actionText = TGLocalized(@"Channel.NotificationLoading");
 #ifdef DEBUG
         actionText = [actionText stringByAppendingString:[[NSString alloc] initWithFormat:@" (%d ... %d)", message.hole.minId, message.hole.maxId]];
 #endif

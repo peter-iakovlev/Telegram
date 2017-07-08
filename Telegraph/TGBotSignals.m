@@ -424,7 +424,7 @@
                             if ([maybeResult respondsToSelector:@selector(objectForKey:)]) {
                                 if ([maybeResult[@"result"] isKindOfClass:[TGBotContextResults class]]) {
                                     int32_t timestamp = (int32_t)[[TGTelegramNetworking instance] approximateRemoteTime];
-                                    if (maybeResult[@"cacheTime"] != nil && maybeResult[@"cacheTimestamp"] != nil && timestamp <= [maybeResult[@"cacheTimestamp"] intValue] + [maybeResult[@"cacheTime"] intValue]) {
+                                    if (maybeResult[@"cacheTime"] != nil && maybeResult[@"cacheTimestamp"] != nil && timestamp <= ([maybeResult[@"cacheTimestamp"] intValue] + [maybeResult[@"cacheTime"] intValue])) {
                                         result = maybeResult[@"result"];
                                     }
                                 }
@@ -495,8 +495,9 @@
                         
                         if (location == nil && result.cache_time > 0) {
                             @try {
+                                int32_t cacheTime = result.cache_time;
                                 int32_t timestamp = (int32_t)[[TGTelegramNetworking instance] approximateRemoteTime];
-                                NSData *data = [NSKeyedArchiver archivedDataWithRootObject:@{@"result": apiResults, @"cacheTimestamp": @(timestamp), @"cacheTime": @(result.cache_time)}];
+                                NSData *data = [NSKeyedArchiver archivedDataWithRootObject:@{@"result": apiResults, @"cacheTimestamp": @(timestamp), @"cacheTime": @(cacheTime)}];
                                 [TGDatabaseInstance() cacheBotCallbackResponse:request response:data];
                             } @catch(__unused NSException *e) {
                             }
@@ -752,6 +753,8 @@
     TLRPCpayments_getPaymentForm$payments_getPaymentForm *getPaymentForm = [[TLRPCpayments_getPaymentForm$payments_getPaymentForm alloc] init];
     getPaymentForm.msg_id = messageId;
     return [[[TGTelegramNetworking instance] requestSignal:getPaymentForm] map:^id(TLpayments_PaymentForm$payments_paymentForm *result) {
+        [TGUserDataRequestBuilder executeUserDataUpdate:result.users];
+        
         TGInvoice *invoice = [self invoiceWithDesc:(TLInvoice$invoice *)result.invoice];
         
         TGPaymentRequestedInfo *savedInfo = [self requestedInfoWithDesc:(TLPaymentRequestedInfo$paymentRequestedInfo *)result.saved_info];

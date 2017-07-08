@@ -11,7 +11,7 @@
 + (SSignal *)acceptedIncomingCallWithCallId:(int64_t)callId accessHash:(int64_t)accessHash dhConfig:(id)dhConfig bBytes:(NSData *)bBytes gBBytes:(NSData *)gBBytes gAHash:(NSData *)gAHash;
 + (SSignal *)confirmedCallWithCallId:(int64_t)callId accessHash:(int64_t)accessHash key:(NSData *)key gABytes:(NSData *)gABytes keyId:(int64_t)keyId;
 
-+ (SSignal *)reportCallRatingWithCallId:(int64_t)callId accessHash:(int64_t)accessHash rating:(int32_t)rating comment:(NSString *)comment;
++ (SSignal *)reportCallRatingWithCallId:(int64_t)callId accessHash:(int64_t)accessHash rating:(int32_t)rating comment:(NSString *)comment includeLogs:(bool)includeLogs;
 + (SSignal *)serverCallsConfig;
 + (SSignal *)saveCallDebug:(int64_t)callId accessHash:(int64_t)accessHash data:(NSString *)data;
 

@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xed7d341e;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLReportReason$inputReportReasonSpam *object = [[TLReportReason$inputReportReasonSpam alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0xc48824f5;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLReportReason$inputReportReasonViolence *object = [[TLReportReason$inputReportReasonViolence alloc] init];
     return object;
@@ -98,7 +98,7 @@
     return (int32_t)0xebc89a31;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLReportReason$inputReportReasonPornography *object = [[TLReportReason$inputReportReasonPornography alloc] init];
     return object;
@@ -124,7 +124,7 @@
     return (int32_t)0xc92626ed;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLReportReason$inputReportReasonOther *object = [[TLReportReason$inputReportReasonOther alloc] init];
     object.text = metaObject->getString((int32_t)0x94f1580d);

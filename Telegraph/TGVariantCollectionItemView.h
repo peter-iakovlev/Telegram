@@ -13,6 +13,7 @@
 - (void)setTitle:(NSString *)title;
 - (void)setVariant:(NSString *)variant variantColor:(UIColor *)variantColor;
 - (void)setIcon:(UIImage *)icon;
+- (void)setVariantIcon:(UIImage *)variantIcon;
 - (void)setEnabled:(bool)enabled;
 - (void)setHideArrow:(bool)hideArrow;
 - (void)setMinLeftPadding:(CGFloat)minLeftPadding;

@@ -2,6 +2,12 @@
 
 #import "TGModernImageView.h"
 
+@interface TGModernImageViewModel ()
+{
+    bool _accountForTransform;
+}
+@end
+
 @implementation TGModernImageViewModel
 
 - (instancetype)initWithImage:(UIImage *)image
@@ -12,6 +18,14 @@
         _image = image;
     }
     return self;
+}
+
+- (void)setAccountForTransform:(bool)accountForTransform
+{
+    _accountForTransform = accountForTransform;
+    TGModernImageView *view = (TGModernImageView *)[self boundView];
+    if (view != nil)
+        [view setAccountForTransform:_accountForTransform];
 }
 
 - (Class)viewClass
@@ -35,6 +49,7 @@
         view.image = _image;
     
     view.extendedEdges = _extendedEdges;
+    [view setAccountForTransform:_accountForTransform];
 }
 
 - (void)drawInContext:(CGContextRef)context

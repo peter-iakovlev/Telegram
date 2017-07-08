@@ -37,7 +37,7 @@ static int cachedBlockListVersion = -1;
                 if (peerId > 0)
                     userIds.push_back((int)peerId);
             }
-            std::tr1::shared_ptr<std::map<int, TGUser *> > userMap = [TGDatabaseInstance() loadUsers:userIds];
+            std::shared_ptr<std::map<int, TGUser *> > userMap = [TGDatabaseInstance() loadUsers:userIds];
             
             NSMutableArray *users = [[NSMutableArray alloc] initWithCapacity:userMap->size()];
             for (NSNumber *nPeerId in blockedList)
@@ -91,7 +91,7 @@ static int cachedBlockListVersion = -1;
                     if (peerId > 0)
                         userIds.push_back((int)peerId);
                 }
-                std::tr1::shared_ptr<std::map<int, TGUser *> > userMap = [TGDatabaseInstance() loadUsers:userIds];
+                std::shared_ptr<std::map<int, TGUser *> > userMap = [TGDatabaseInstance() loadUsers:userIds];
                 
                 NSMutableArray *users = [[NSMutableArray alloc] initWithCapacity:userMap->size()];
                 for (NSNumber *nPeerId in blockedList)

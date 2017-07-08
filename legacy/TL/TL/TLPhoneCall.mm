@@ -22,7 +22,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -49,7 +49,7 @@
     return (int32_t)0xc76344fc;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPhoneCall$phoneCallEmpty *object = [[TLPhoneCall$phoneCallEmpty alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
@@ -82,7 +82,7 @@
     return (int32_t)0xdc7555ab;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPhoneCall$phoneCallWaitingMeta *object = [[TLPhoneCall$phoneCallWaitingMeta alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
@@ -164,7 +164,7 @@
     return (int32_t)0x9627ce57;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPhoneCall$phoneCallRequested *object = [[TLPhoneCall$phoneCallRequested alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
@@ -239,7 +239,7 @@
     return (int32_t)0xf01017df;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPhoneCall$phoneCallDiscardedMeta *object = [[TLPhoneCall$phoneCallDiscardedMeta alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
@@ -293,7 +293,7 @@
     return (int32_t)0xd149f2bd;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPhoneCall$phoneCallAccepted *object = [[TLPhoneCall$phoneCallAccepted alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
@@ -368,7 +368,7 @@
     return (int32_t)0xc9908a15;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPhoneCall$phoneCall *object = [[TLPhoneCall$phoneCall alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);

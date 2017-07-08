@@ -689,13 +689,17 @@
 
 - (void)session:(WCSession *)__unused session didReceiveFile:(WCSessionFile *)file
 {
+    NSDictionary *metadata = file.metadata;
+    if (metadata == nil || ![metadata[TGBridgeIncomingFileTypeKey] isEqualToString:TGBridgeIncomingFileTypeAudio])
+        return;
+    
+    NSError *error;
+    NSURL *tempURL = [NSURL URLWithString:file.fileURL.lastPathComponent relativeToURL:self.temporaryFilesURL];
+    [[NSFileManager defaultManager] createDirectoryAtPath:self.temporaryFilesURL.path withIntermediateDirectories:true attributes:nil error:&error];
+    [[NSFileManager defaultManager] moveItemAtURL:file.fileURL toURL:tempURL error:&error];
+    
     [[TGBridgeServer queue] dispatch:^{
-        NSDictionary *metadata = file.metadata;
-        if (metadata == nil)
-            return;
-        
-        if ([metadata[TGBridgeIncomingFileTypeKey] isEqualToString:TGBridgeIncomingFileTypeAudio])
-            [TGBridgeAudioHandler handleIncomingAudioWithURL:file.fileURL metadata:metadata server:self];
+        [TGBridgeAudioHandler handleIncomingAudioWithURL:tempURL metadata:metadata server:self];
     }];
 }
 

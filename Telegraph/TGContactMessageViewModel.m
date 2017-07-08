@@ -172,6 +172,9 @@
                 _hasAvatar = true;
             } else if ([authorPeer isKindOfClass:[TGConversation class]]) {
                 title = ((TGConversation *)authorPeer).chatTitle;
+                if ([context isAdminLog]) {
+                    _hasAvatar = true;
+                }
             }
             _authorNameModel = [[TGModernTextViewModel alloc] initWithText:title font:[assetsSource messageAuthorNameFont]];
             [_contentModel addSubmodel:_authorNameModel];
@@ -378,7 +381,7 @@
             incomingForwardColor = UIColorRGBA(0x007bff, 1.0f);
             outgoingForwardColor = UIColorRGBA(0x00a516, 1.0f);
             
-            formatNameRange = [TGLocalizedStatic(@"Message.ForwardedMessage") rangeOfString:@"%@"];
+            formatNameRange = [TGLocalized(@"Message.ForwardedMessage") rangeOfString:@"%@"];
         });
         
         NSString *title = @"";
@@ -394,7 +397,7 @@
             title = [[NSString alloc] initWithFormat:@"%@ (%@)", title, ((TGUser *)forwardAuthor).displayName];
         }
         
-        NSString *text = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Message.ForwardedMessage"), title];
+        NSString *text = [[NSString alloc] initWithFormat:TGLocalized(@"Message.ForwardedMessage"), title];
         
         _forwardedHeaderModel = [[TGModernTextViewModel alloc] initWithText:text font:[[TGTelegraphConversationMessageAssetsSource instance] messageForwardTitleFont]];
         _forwardedHeaderModel.textColor = _incomingAppearance ? incomingForwardColor : outgoingForwardColor;

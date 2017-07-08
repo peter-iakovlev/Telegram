@@ -295,7 +295,9 @@
 
 - (SSignal *)libraryChanged
 {
-    return [[_libraryChangePipe.signalProducer() delay:0.5 onQueue:_queue] switchToLatest];
+    return [[_libraryChangePipe.signalProducer() map:^SSignal *(id data) {
+        return [[SSignal single:data] delay:0.5 onQueue:_queue];
+    }] switchToLatest];
 }
 
 #pragma mark -

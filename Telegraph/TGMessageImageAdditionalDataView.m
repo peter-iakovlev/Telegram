@@ -19,6 +19,8 @@ static const float luminanceThreshold = 0.8f;
     NSString *_text;
     CGSize _textSize;
     bool _textSizeInitialized;
+    NSTextAlignment _textAlignment;
+    UIColor *_timestampColor;
 }
 
 @end
@@ -31,6 +33,8 @@ static const float luminanceThreshold = 0.8f;
     if (self != nil)
     {
         self.opaque = false;
+        _textAlignment = NSTextAlignmentLeft;
+        _timestampColor = UIColorRGBA(0x000000, 0.4f);
     }
     return self;
 }
@@ -40,6 +44,18 @@ static const float luminanceThreshold = 0.8f;
     if (_backdropArea != backdropArea)
     {
         _backdropArea = backdropArea;
+        [self setNeedsDisplay];
+    }
+}
+
+- (void)setTimestampColor:(UIColor *)timestampColor
+{
+    if (timestampColor == nil)
+        timestampColor = UIColorRGBA(0x000000, 0.4f);
+    
+    if (_timestampColor != timestampColor)
+    {
+        _timestampColor = timestampColor;
         [self setNeedsDisplay];
     }
 }
@@ -78,6 +94,15 @@ static const float luminanceThreshold = 0.8f;
     return _textSize;
 }
 
+- (void)setTextAlignment:(NSTextAlignment)textAlignment
+{
+    if (_textAlignment != textAlignment)
+    {
+        _textAlignment = textAlignment;
+        [self setNeedsDisplay];
+    }
+}
+
 - (void)drawRect:(CGRect)__unused rect
 {
     __unused CGPoint position = self.frame.origin;
@@ -87,7 +112,11 @@ static const float luminanceThreshold = 0.8f;
     
     CGFloat contentWidth = MIN([self textSize].width + 11.0f, self.frame.size.width);
     
-    CGRect backgroundRect = CGRectMake(0.0f, 0.0f, contentWidth, 18.0f);
+    CGFloat x = 0.0f;
+    if (_textAlignment == NSTextAlignmentCenter)
+        x = floor((self.frame.size.width - contentWidth) / 2.0f);
+    
+    CGRect backgroundRect = CGRectMake(x, 0.0f, contentWidth, 18.0f);
     
     CGContextBeginPath(context);
     CGContextAddEllipseInRect(context, CGRectMake(backgroundRect.origin.x, backgroundRect.origin.y, backgroundRect.size.height, backgroundRect.size.height));
@@ -95,13 +124,8 @@ static const float luminanceThreshold = 0.8f;
     CGContextAddEllipseInRect(context, CGRectMake(backgroundRect.origin.x + backgroundRect.size.width - backgroundRect.size.height, backgroundRect.origin.y, backgroundRect.size.height, backgroundRect.size.height));
     CGContextClip(context);
     
-    static UIColor *color = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        color = UIColorRGBA(0x000000, 0.4f);
-    });
-    CGContextSetFillColorWithColor(context, color.CGColor);
+
+    CGContextSetFillColorWithColor(context, _timestampColor.CGColor);
     CGContextFillRect(context, backgroundRect);
     
     CGFloat luminance = 0.0f;
@@ -119,7 +143,7 @@ static const float luminanceThreshold = 0.8f;
 
     UIColor *textColor = luminance > luminanceThreshold ? UIColorRGBA(0x525252, 0.6f) : [UIColor whiteColor];
     CGContextSetFillColorWithColor(context, textColor.CGColor);
-    [_text drawInRect:CGRectMake(6.0f, 2.5f, contentWidth - 11.0f, [self textSize].height) withFont:[self textFont] lineBreakMode:NSLineBreakByTruncatingTail];
+    [_text drawInRect:CGRectMake(backgroundRect.origin.x + 6.0f, 2.5f, contentWidth - 11.0f, [self textSize].height) withFont:[self textFont] lineBreakMode:NSLineBreakByTruncatingTail];
 }
 
 @end

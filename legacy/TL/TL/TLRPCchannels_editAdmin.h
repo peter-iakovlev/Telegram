@@ -5,14 +5,14 @@
 
 @class TLInputChannel;
 @class TLInputUser;
-@class TLChannelParticipantRole;
+@class TLChannelAdminRights;
 @class TLUpdates;
 
 @interface TLRPCchannels_editAdmin : TLMetaRpc
 
 @property (nonatomic, retain) TLInputChannel *channel;
 @property (nonatomic, retain) TLInputUser *user_id;
-@property (nonatomic, retain) TLChannelParticipantRole *role;
+@property (nonatomic, retain) TLChannelAdminRights *admin_rights;
 
 - (Class)responseClass;
 

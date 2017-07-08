@@ -458,6 +458,13 @@
 
 + (void)requestMicrophoneAccess:(void (^)(bool granted))resultBlock
 {
+    if (iosMajorVersion() < 7)
+    {
+        if (resultBlock != nil)
+            resultBlock(true);
+        return;
+    }
+
     [[AVAudioSession sharedInstance] requestRecordPermission:^(BOOL granted)
     {
         TGDispatchOnMainThread(^
@@ -507,27 +514,39 @@
 
 #pragma mark - Alerts
 
-- (void)presentRatingAlertView:(int64_t)callId accessHash:(int64_t)accessHash
++ (void)presentRatingAlertView:(int64_t)callId accessHash:(int64_t)accessHash presentTabAlert:(bool)presentTabAlert
 {
     TGCallRatingView *ratingView = [[TGCallRatingView alloc] init];
     __weak TGCallRatingView *weakRatingView = ratingView;
     TGCallAlertView *alertView = [TGCallAlertView presentAlertWithTitle:TGLocalized(@"Calls.RatingTitle") message:nil customView:ratingView cancelButtonTitle:TGLocalized(@"Calls.NotNow") doneButtonTitle:TGLocalized(@"Calls.SubmitRating") completionBlock:^(bool done)
     {
-        if (_presentTabAlert)
-            [TGAppDelegateInstance.rootController.callsController maybeSuggestEnableCallsTab:false];
-        
         if (!done)
             return;
         
         __strong TGCallRatingView *strongRatingView = weakRatingView;
-        [[TGCallSignals reportCallRatingWithCallId:callId accessHash:accessHash rating:(int32_t)strongRatingView.selectedStars comment:strongRatingView.comment] startWithNext:nil];
+        if (strongRatingView.selectedStars < 4)
+        {
+            [self presentSendLogsViewWithCompletion:^(bool includeLogs) {
+                [[TGCallSignals reportCallRatingWithCallId:callId accessHash:accessHash rating:(int32_t)strongRatingView.selectedStars comment:strongRatingView.comment includeLogs:includeLogs] startWithNext:nil];
+                
+                if (presentTabAlert)
+                    [TGAppDelegateInstance.rootController.callsController maybeSuggestEnableCallsTab:false];
+            }];
+        }
+        else
+        {
+            [[TGCallSignals reportCallRatingWithCallId:callId accessHash:accessHash rating:(int32_t)strongRatingView.selectedStars comment:strongRatingView.comment includeLogs:false] startWithNext:nil];
+            
+            if (presentTabAlert)
+                [TGAppDelegateInstance.rootController.callsController maybeSuggestEnableCallsTab:false];
+        }
     }];
     alertView.followsKeyboard = true;
     alertView.doneButton.enabled = false;
     alertView.shouldDismissOnDimTap = ^bool
     {
         __strong TGCallRatingView *strongRatingView = weakRatingView;
-        return strongRatingView.comment.length == 0;
+        return strongRatingView.comment.length == 0 || strongRatingView.selectedStars == 5;
     };
     
     __weak TGCallAlertView *weakAlertView = alertView;
@@ -540,6 +559,20 @@
     {
         __strong TGCallAlertView *strongAlertView = weakAlertView;
         [strongAlertView updateCustomViewHeight:height];
+    };
+}
+
++ (void)presentSendLogsViewWithCompletion:(void (^)(bool))completion
+{
+    TGCallAlertView *alertView = [TGCallAlertView presentAlertWithTitle:TGLocalized(@"Call.ReportIncludeLog") message:TGLocalized(@"Call.ReportIncludeLogDescription") customView:nil cancelButtonTitle:TGLocalized(@"Call.ReportSkip") doneButtonTitle:TGLocalized(@"Call.ReportSend") completionBlock:^(bool done)
+    {
+        if (completion != nil)
+            completion(done);
+    }];
+    alertView.followsKeyboard = true;
+    alertView.shouldDismissOnDimTap = ^bool
+    {
+        return true;
     };
 }
 
@@ -640,7 +673,7 @@
                 if (_finalError.length > 0)
                     [self presentErrorAlertView:_finalError];
                 else if (_presentRatingAlert)
-                    [self presentRatingAlertView:callId accessHash:accessHash];
+                    [TGCallController presentRatingAlertView:callId accessHash:accessHash presentTabAlert:_presentTabAlert];
                 else if (_presentTabAlert)
                     [TGAppDelegateInstance.rootController.callsController maybeSuggestEnableCallsTab:false];
             });

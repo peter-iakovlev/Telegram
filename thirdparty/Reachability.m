@@ -16,6 +16,9 @@
 
 #import "Reachability.h"
 
+#import <SSignalKit/SSignalKit.h>
+#import <libkern/OSAtomic.h>
+
 #pragma mark IPv6 Support
 //Reachability fully support IPv6.  For full details, see ReadMe.md.
 
@@ -47,16 +50,52 @@ static void PrintReachabilityFlags(SCNetworkReachabilityFlags flags, const char*
 #endif
 }
 
+static int32_t nextKey = 1;
+static SAtomic *contexts() {
+    static SAtomic *instance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        instance = [[SAtomic alloc] initWithValue:@{}];
+    });
+    return instance;
+}
+
+static void withContext(int32_t key, void (^f)(Reachability *)) {
+    Reachability *reachability = [contexts() with:^id(NSDictionary *dict) {
+        return dict[@(key)];
+    }];
+    f(reachability);
+}
+
+static int32_t addContext(Reachability *context) {
+    int32_t key = OSAtomicIncrement32(&nextKey);
+    [contexts() modify:^id(NSMutableDictionary *dict) {
+        NSMutableDictionary *updatedDict = [[NSMutableDictionary alloc] initWithDictionary:dict];
+        updatedDict[@(key)] = context;
+        return updatedDict;
+    }];
+    return key;
+}
+
+static void removeContext(int32_t key) {
+    [contexts() modify:^id(NSMutableDictionary *dict) {
+        NSMutableDictionary *updatedDict = [[NSMutableDictionary alloc] initWithDictionary:dict];
+        [updatedDict removeObjectForKey:@(key)];
+        return updatedDict;
+    }];
+}
 
 static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReachabilityFlags flags, void* info)
 {
 #pragma unused (target, flags)
-	NSCAssert(info != NULL, @"info was NULL in ReachabilityCallback");
-	NSCAssert([(__bridge NSObject*) info isKindOfClass: [Reachability class]], @"info was wrong class in ReachabilityCallback");
+	//NSCAssert(info != NULL, @"info was NULL in ReachabilityCallback");
+	//NSCAssert([(__bridge NSObject*) info isKindOfClass: [Reachability class]], @"info was wrong class in ReachabilityCallback");
 
-    Reachability *reachability = (__bridge Reachability *)info;
-    if ([reachability isKindOfClass:[Reachability class]] && reachability.reachabilityChanged != nil)
-        reachability.reachabilityChanged(reachability.currentReachabilityStatus);
+    int32_t key = (int32_t)((intptr_t)info);
+    withContext(key, ^(Reachability *context) {
+        if ([context isKindOfClass:[Reachability class]] && context.reachabilityChanged != nil)
+            context.reachabilityChanged(context.currentReachabilityStatus);
+    });
 }
 
 
@@ -64,6 +103,7 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
 
 @implementation Reachability
 {
+    int32_t _key;
 	SCNetworkReachabilityRef _reachabilityRef;
 }
 
@@ -82,6 +122,9 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
             CFRelease(reachability);
         }
 	}
+    if (returnValue) {
+        returnValue->_key = addContext(returnValue);
+    }
 	return returnValue;
 }
 
@@ -103,6 +146,9 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
             CFRelease(reachability);
         }
 	}
+    if (returnValue) {
+        returnValue->_key = addContext(returnValue);
+    }
 	return returnValue;
 }
 
@@ -128,7 +174,7 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
 - (BOOL)startNotifier
 {
 	BOOL returnValue = NO;
-	SCNetworkReachabilityContext context = {0, (__bridge void *)(self), NULL, NULL, NULL};
+	SCNetworkReachabilityContext context = {0, (void *)((intptr_t)_key), NULL, NULL, NULL};
 
 	if (SCNetworkReachabilitySetCallback(_reachabilityRef, ReachabilityCallback, &context))
 	{
@@ -153,6 +199,7 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
 
 - (void)dealloc
 {
+    removeContext(_key);
 	[self stopNotifier];
 	if (_reachabilityRef != NULL)
 	{

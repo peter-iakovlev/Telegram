@@ -24,5 +24,6 @@
 - (NSUInteger)indexOfItem:(TGCollectionItem *)item;
 - (void)addItem:(TGCollectionItem *)item;
 - (void)replaceItems:(NSArray *)items;
+- (void)replaceItemAtIndex:(NSUInteger)index withItem:(TGCollectionItem *)item;
 
 @end

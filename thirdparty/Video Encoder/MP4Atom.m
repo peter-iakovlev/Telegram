@@ -36,13 +36,13 @@ static unsigned int to_host(unsigned char* p)
     return YES;
 }
 
-- (NSData*) readAt:(int64_t) offset size:(int) length
+- (NSData *)readAt:(int64_t)offset size:(int)length
 {
     [_file seekToFileOffset:_offset + offset];
     return [_file readDataOfLength:length];
 }
 
-- (BOOL) setChildOffset:(int64_t) offset
+- (BOOL)setChildOffset:(int64_t) offset
 {
     _nextChild = offset;
     return YES;
@@ -53,7 +53,10 @@ static unsigned int to_host(unsigned char* p)
     if (_nextChild <= (_length - 8))
     {
         [_file seekToFileOffset:_offset + _nextChild];
-        NSData* data = [_file readDataOfLength:8];
+        NSData *data = [_file readDataOfLength:8];
+        if (data == nil || data.length == 0)
+            return nil;
+        
         int cHeader = 8;
         unsigned char* p = (unsigned char*) [data bytes];
         int64_t len = to_host(p);

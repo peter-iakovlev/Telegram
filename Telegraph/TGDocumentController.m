@@ -77,7 +77,7 @@
 
 - (void)actionButtonTapped:(id)sender
 {
-    if (self.useDefaultAction)
+    if (self.useDefaultAction || self.shareAction == nil)
     {
         [super actionButtonTapped:sender];
         return;

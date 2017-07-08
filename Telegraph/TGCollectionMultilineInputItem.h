@@ -6,6 +6,7 @@
 @property (nonatomic, strong) NSString *text;
 @property (nonatomic) bool editable;
 @property (nonatomic) NSUInteger maxLength;
+@property (nonatomic) CGFloat minHeight;
 @property (nonatomic, copy) void (^textChanged)(NSString *);
 @property (nonatomic, copy) void (^heightChanged)();
 @property (nonatomic, copy) void (^selected)();

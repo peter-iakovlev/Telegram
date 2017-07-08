@@ -811,17 +811,14 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
                 _resetButton.transform = CGAffineTransformIdentity;
                 _resetButton.frame = CGRectMake(0, 0, _resetButtonWidth, 24);
                 
-                CGFloat xOrigin = 0;
+                CGFloat xOrigin = 0.0f;
                 if (_resetButton.frame.size.width > _buttonsWrapperView.frame.size.width)
                 {
                     _resetButton.transform = CGAffineTransformMakeRotation((CGFloat)M_PI_2);
-                    xOrigin = 8;
+                    xOrigin = 8.0f;
                 }
                 
-                _resetButton.frame = CGRectMake(_buttonsWrapperView.frame.size.width - _resetButton.frame.size.width - xOrigin,
-                                                (_buttonsWrapperView.frame.size.height - _resetButton.frame.size.height) / 2,
-                                                _resetButton.frame.size.width,
-                                                _resetButton.frame.size.height);
+                _resetButton.frame = CGRectMake(_buttonsWrapperView.frame.size.width - _resetButton.frame.size.width - xOrigin, (_buttonsWrapperView.frame.size.height - _resetButton.frame.size.height) / 2.0f, _resetButton.frame.size.width, _resetButton.frame.size.height);
             }
                 break;
                 
@@ -843,17 +840,14 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
                 _resetButton.transform = CGAffineTransformIdentity;
                 _resetButton.frame = CGRectMake(0, 0, _resetButtonWidth, 24);
                 
-                CGFloat xOrigin = 0;
+                CGFloat xOrigin = 0.0f;
                 if (_resetButtonWidth > _buttonsWrapperView.frame.size.width)
                 {
                     _resetButton.transform = CGAffineTransformMakeRotation((CGFloat)-M_PI_2);
-                    xOrigin = 8;
+                    xOrigin = 8.0f;
                 }
                 
-                _resetButton.frame = CGRectMake(xOrigin,
-                                                (_buttonsWrapperView.frame.size.height - _resetButton.frame.size.height) / 2,
-                                                _resetButton.frame.size.width,
-                                                _resetButton.frame.size.height);
+                _resetButton.frame = CGRectMake(xOrigin, (_buttonsWrapperView.frame.size.height - _resetButton.frame.size.height) / 2, _resetButton.frame.size.width, _resetButton.frame.size.height);
             }
                 break;
                 
@@ -873,10 +867,7 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
                                                       _aspectRatioButton.frame.size.height);
                 
                 _resetButton.transform = CGAffineTransformIdentity;
-                _resetButton.frame = CGRectMake((_buttonsWrapperView.frame.size.width - _resetButton.frame.size.width) / 2,
-                                                10,
-                                                _resetButtonWidth,
-                                                24);
+                _resetButton.frame = CGRectMake((_buttonsWrapperView.frame.size.width - _resetButton.frame.size.width) / 2, 10, _resetButtonWidth, 24);
             }
                 break;
         }

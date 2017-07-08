@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xd0f49303;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLEncryptedChat$encryptedChatEmpty *object = [[TLEncryptedChat$encryptedChatEmpty alloc] init];
     object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
@@ -79,7 +79,7 @@
     return (int32_t)0x1602df74;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLEncryptedChat$encryptedChatWaiting *object = [[TLEncryptedChat$encryptedChatWaiting alloc] init];
     object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
@@ -140,7 +140,7 @@
     return (int32_t)0xe2266ec5;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLEncryptedChat$encryptedChatDiscarded *object = [[TLEncryptedChat$encryptedChatDiscarded alloc] init];
     object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
@@ -173,7 +173,7 @@
     return (int32_t)0x49581c53;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLEncryptedChat$encryptedChatRequested *object = [[TLEncryptedChat$encryptedChatRequested alloc] init];
     object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
@@ -241,7 +241,7 @@
     return (int32_t)0xd6d39e97;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLEncryptedChat$encryptedChat *object = [[TLEncryptedChat$encryptedChat alloc] init];
     object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);

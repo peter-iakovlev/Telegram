@@ -2,79 +2,161 @@
 
 #import <QuartzCore/QuartzCore.h>
 
-@interface TGTooltipView ()
+#import "TGFont.h"
+#import "TGImageUtils.h"
+
+@interface TGTooltipView () <UIScrollViewDelegate>
+{
+    UIImageView *_backgroundView;
+    UIImageView *_arrowView;
+    UILabel *_textLabel;
+    
+    CGFloat _arrowLocation;
+}
+
+@property (nonatomic, strong) ASHandle *watcherHandle;
 
 @end
 
 @implementation TGTooltipView
 
-- (id)initWithLeftImage:(UIImage *)leftImage centerImage:(UIImage *)centerImage centerUpImage:(UIImage *)centerUpImage rightImage:(UIImage *)rightImage
+- (instancetype)initWithFrame:(CGRect)frame
 {
-    self = [super initWithFrame:CGRectZero];
+    self = [super initWithFrame:frame];
     if (self)
     {
         self.alpha = 0.0f;
-        self.layer.anchorPoint = CGPointMake(0.5f, 1.0f);
         self.transform = CGAffineTransformMakeScale(0.1f, 0.1f);
         
-        _leftView = [[UIImageView alloc] initWithImage:leftImage];
-        [self addSubview:_leftView];
+        _numberOfLines = 1;
         
-        _rightView = [[UIImageView alloc] initWithImage:rightImage];
-        [self addSubview:_rightView];
+        _maxWidth = 310.0f;
+       
+        _backgroundView = [[UIImageView alloc] initWithImage:[TGTintedImage([UIImage imageNamed:@"TooltipBackground"], UIColorRGBA(0x252525, 0.96f)) stretchableImageWithLeftCapWidth:9.0f topCapHeight:9.0f]];
+        [self addSubview:_backgroundView];
         
-        _centerView = [[UIImageView alloc] initWithImage:centerImage];
-        [self addSubview:_centerView];
+        _arrowView = [[UIImageView alloc] initWithImage:TGTintedImage([UIImage imageNamed:@"TooltipArrow"], UIColorRGBA(0x252525, 0.96f))];
+        [self addSubview:_arrowView];
         
-        _centerUpView = [[UIImageView alloc] initWithImage:centerUpImage];
-        [self addSubview:_centerUpView];
-        
-        _minLeftWidth = leftImage.size.width;
-        _minRightWidth = rightImage.size.width;
+        _arrowLocation = 50;
     }
     return self;
 }
 
-- (void)setArrowLocation:(CGPoint)arrowLocation
+- (void)setText:(NSString *)text
 {
-    _arrowLocation = arrowLocation;
-    _centerView.hidden = arrowLocation.y < 0;
-    _centerUpView.hidden = !_centerView.hidden;
+    [self setText:text animated:false];
+}
+
+- (void)setText:(NSString *)text animated:(bool)animated
+{
+    if (_textLabel == nil)
+    {
+        _textLabel = [[UILabel alloc] init];
+        _textLabel.font = TGSystemFontOfSize(14);
+        _textLabel.textColor = [UIColor whiteColor];
+        _textLabel.userInteractionEnabled = false;
+        _textLabel.textAlignment = NSTextAlignmentCenter;
+        [self addSubview:_textLabel];
+    }
     
-    [self setNeedsLayout];
+    _textLabel.numberOfLines = _numberOfLines;
+    
+    if (animated)
+    {
+        UIView *snapshotView = [_textLabel snapshotViewAfterScreenUpdates:false];
+        snapshotView.frame = _textLabel.frame;
+        [self addSubview:snapshotView];
+        
+        _textLabel.text = text;
+        _textLabel.alpha = 0.0f;
+        
+        [UIView animateWithDuration:0.2 animations:^
+        {
+            _textLabel.alpha = 1.0f;
+            snapshotView.alpha = 0.0f;
+            [self sizeToFit];
+            snapshotView.frame = CGRectMake(_textLabel.frame.origin.x, snapshotView.frame.origin.y, snapshotView.frame.size.width, snapshotView.frame.size.height);
+        } completion:^(__unused BOOL finished)
+        {
+            [snapshotView removeFromSuperview];
+        }];
+    }
+    else
+    {
+        _textLabel.text = text;
+        
+        if (_numberOfLines == 1) {
+            [_textLabel sizeToFit];
+        } else {
+            CGSize textSize = [_textLabel.text sizeWithFont:_textLabel.font constrainedToSize:CGSizeMake(_maxWidth - 20.0f, CGFLOAT_MAX) lineBreakMode:NSLineBreakByWordWrapping];
+            textSize.width = CGCeil(textSize.width);
+            textSize.height = CGCeil(textSize.height);
+            _textLabel.frame = CGRectMake(_textLabel.frame.origin.x, _textLabel.frame.origin.y, textSize.width, textSize.height);
+        }
+    }
+}
+
+- (void)sizeToFit
+{
+    CGAffineTransform transform = self.transform;
+    self.transform = CGAffineTransformIdentity;
+    
+    CGFloat maxWidth = _maxWidth;
+    CGFloat inset = 11.0f;
+
+    if (_numberOfLines == 1) {
+        [_textLabel sizeToFit];
+    } else {
+        CGSize textSize = [_textLabel.text sizeWithFont:_textLabel.font constrainedToSize:CGSizeMake(maxWidth - 20.0f, CGFLOAT_MAX) lineBreakMode:NSLineBreakByWordWrapping];
+        textSize.width = CGCeil(textSize.width);
+        textSize.height = CGCeil(textSize.height);
+        _textLabel.frame = CGRectMake(_textLabel.frame.origin.x, _textLabel.frame.origin.y, textSize.width, textSize.height);
+    }
+    
+    CGFloat minArrowX = 10.0f;
+    CGFloat maxArrowX = self.frame.size.width - 10.0f;
+    
+    CGFloat arrowX = CGFloor(_arrowLocation - _arrowView.frame.size.width / 2);
+    arrowX = MIN(MAX(minArrowX, arrowX), maxArrowX);
+    
+    _arrowView.frame = CGRectMake(arrowX + TGScreenPixel, 38.0f - TGScreenPixel, _arrowView.frame.size.width, _arrowView.frame.size.height);
+    
+    CGFloat backgroundOffset = 19.0f + _textLabel.frame.size.height - 36.0f;
+    
+    CGFloat backgroundWidth = MIN(maxWidth, _textLabel.frame.size.width + inset * 2.0f);
+    
+    CGFloat labelWidth = backgroundWidth - inset * 2.0f;
+    if (_numberOfLines != 1) {
+        labelWidth = _textLabel.frame.size.width;
+        backgroundOffset += 1.0f;
+    }
+    
+    CGFloat x = arrowX - (backgroundWidth - _arrowView.frame.size.width) / 2.0f;
+    x = MAX(4.0f, MIN(x, self.frame.size.width - backgroundWidth - 4.0f));
+    _backgroundView.frame = CGRectMake(x, 2.0f - backgroundOffset, backgroundWidth, 36.0f + backgroundOffset);
+    _textLabel.frame = CGRectMake(_backgroundView.frame.origin.x + 12.0f, 12.0f - TGScreenPixel - backgroundOffset, labelWidth, _textLabel.frame.size.height);
+    
+    self.transform = transform;
 }
 
 - (void)showInView:(UIView *)view fromRect:(CGRect)rect
+{
+    [self showInView:view fromRect:rect animated:true];
+}
+
+- (void)showInView:(UIView *)__unused view fromRect:(CGRect)rect animated:(bool)animated
 {
     CGAffineTransform transform = self.transform;
     self.transform = CGAffineTransformIdentity;
     
     CGRect frame = self.frame;
-    frame.origin.x = CGFloor(rect.origin.x + rect.size.width / 2 - frame.size.width / 2);
-    if (frame.origin.x < 4)
-        frame.origin.x = 4;
-    if (frame.origin.x + frame.size.width > view.frame.size.width - 4)
-        frame.origin.x = view.frame.size.width - 4 - frame.size.width;
-    
-    frame.origin.y = rect.origin.y - frame.size.height - 1;
-    if (frame.origin.y < 2)
-    {
-        frame.origin.y = rect.origin.y + rect.size.height + 10;
-        if (frame.origin.y + frame.size.height > view.frame.size.height - 14)
-        {
-            frame.origin.y = CGFloor((view.frame.size.height - frame.size.height) / 2);
-        }
-    }
-    
-    self.arrowLocation = CGPointMake(CGFloor(rect.origin.x + rect.size.width / 2) - frame.origin.x, CGFloor(rect.origin.y + rect.size.height / 2) - frame.origin.y);
-    
-    CGFloat arrowX = MAX(_minLeftWidth, MIN(frame.size.width - _minRightWidth - _centerView.frame.size.width, _arrowLocation.x));
-    
-    self.layer.anchorPoint = CGPointMake(MAX(0.0f, MIN(1.0f, arrowX / frame.size.width)), _arrowLocation.y < 0 ? -0.2f : 1.0f);
+    frame.origin.y = rect.origin.y - frame.size.height - 14;
+
+    _arrowLocation = CGFloor(rect.origin.x + rect.size.width / 2) - frame.origin.x;
     
     self.frame = frame;
-    [self setNeedsLayout];
-    [self layoutIfNeeded];
+    [self sizeToFit];
     
     self.transform = transform;
     
@@ -83,35 +165,48 @@
     
     self.alpha = 1.0f;
     
-    [UIView animateWithDuration:0.142 delay:0 options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState animations:^
+    if (animated)
     {
-        self.transform = CGAffineTransformMakeScale(1.06f, 1.06f);
-    } completion:^(BOOL finished)
-    {
-        if(finished)
+        [UIView animateWithDuration:0.142 delay:0 options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState animations:^
         {
-            [UIView animateWithDuration:0.1 delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
+            self.transform = CGAffineTransformMakeScale(1.07f, 1.07f);
+        } completion:^(BOOL finished)
+        {
+            if(finished)
             {
-                self.transform = CGAffineTransformMakeScale(0.97f, 0.97f);
-            } completion:^(BOOL finished)
-            {
-                if (finished)
+                [UIView animateWithDuration:0.08 delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
                 {
-                    [UIView animateWithDuration:0.065 delay:0 options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState animations:^
+                    self.transform = CGAffineTransformMakeScale(0.967f, 0.967f);
+                } completion:^(BOOL finished)
+                {
+                    if (finished)
                     {
-                        self.transform = CGAffineTransformIdentity;
-                    } completion:^(BOOL finished)
-                    {
-                        if (finished)
+                        [UIView animateWithDuration:0.06 delay:0 options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState animations:^
                         {
-                            self.layer.shouldRasterize = false;
-                        }
-                    }];
-                }
-            }];
-        }
-    }];
+                            self.transform = CGAffineTransformIdentity;
+                        } completion:^(BOOL finished)
+                        {
+                            if (finished)
+                            {
+                                self.layer.shouldRasterize = false;
+                            }
+                        }];
+                    }
+                }];
+            }
+        }];
+    }
+    else
+    {
+        self.transform = CGAffineTransformIdentity;
+        self.alpha = 0.0f;
+        [UIView animateWithDuration:0.3 animations:^
+        {
+            self.alpha = 1.0f;
+        }];
+    }
 }
+
 - (void)hide:(dispatch_block_t)completion
 {
     [UIView animateWithDuration:0.2 delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^
@@ -129,43 +224,49 @@
     }];
 }
 
-- (void)layoutSubviews
-{
-    [super layoutSubviews];
-    
-    CGSize viewSize = self.bounds.size;
-    
-    CGFloat arrowX = MAX(_minLeftWidth, MIN(viewSize.width - _minRightWidth - _centerView.frame.size.width, CGFloor(_arrowLocation.x - _centerView.frame.size.width / 2)));
-    _centerView.frame = CGRectMake(arrowX, 0, _centerView.frame.size.width, _centerView.frame.size.height);
-    _centerUpView.frame = CGRectOffset(_centerView.frame, 0, -8);
-    _leftView.frame = CGRectMake(0, 0, _centerView.frame.origin.x, _leftView.frame.size.height);
-    _rightView.frame = CGRectMake(_centerView.frame.origin.x + _centerView.frame.size.width, 0, viewSize.width - (_centerView.frame.origin.x + _centerView.frame.size.width), _rightView.frame.size.height);
-}
-
 @end
 
-@interface TGTooltipContainerView ()
+#pragma mark -
 
+@interface TGTooltipContainerView ()
+{
+    bool _skipHitTest;
+}
 @end
 
 @implementation TGTooltipContainerView
 
-- (id)initWithFrame:(CGRect)frame
+- (instancetype)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
     if (self != nil)
     {
+        _tooltipView = [[TGTooltipView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frame.size.width, 41.0f)];
+        [self addSubview:_tooltipView];
     }
     return self;
 }
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
+    if (_skipHitTest)
+        return nil;
+    
     UIView *result = [super hitTest:point withEvent:event];
+    UIView *superViewResult = nil;
+    if (self.tooltipView.sourceView != nil)
+    {
+        _skipHitTest = true;
+        superViewResult = [self.superview hitTest:[self convertPoint:point toView:self.superview] withEvent:event];
+        _skipHitTest = false;
+    }
+    
+    if (self.tooltipView.sourceView != nil && superViewResult == self.tooltipView.sourceView)
+        return nil;
+    
     if (result == self || result == nil)
     {
         [self hideTooltip];
-        
         return nil;
     }
     
@@ -174,8 +275,14 @@
 
 - (void)showTooltipFromRect:(CGRect)rect
 {
+    [self showTooltipFromRect:rect animated:true];
+}
+
+- (void)showTooltipFromRect:(CGRect)rect animated:(bool)animated
+{
     _isShowingTooltip = true;
-    [_tooltipView showInView:self fromRect:rect];
+    _showingTooltipFromRect = rect;
+    [_tooltipView showInView:self fromRect:rect animated:animated];
 }
 
 - (void)setFrame:(CGRect)frame
@@ -191,8 +298,9 @@
     if (_isShowingTooltip)
     {
         _isShowingTooltip = false;
+        _showingTooltipFromRect = CGRectZero;
         
-        [_tooltipView.watcherHandle requestAction:@"menuWillHide" options:nil];
+        [_tooltipView.watcherHandle requestAction:@"tooltipWillHide" options:nil];
         
         [_tooltipView hide:^
         {

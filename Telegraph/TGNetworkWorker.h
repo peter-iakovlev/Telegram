@@ -32,8 +32,10 @@
 @property (nonatomic, readonly) NSInteger datacenterId;
 
 @property (nonatomic, strong) MTNetworkUsageCalculationInfo *usageCalculationInfo;
+    
+@property (nonatomic, readonly) bool isCdn;
 
-- (instancetype)initWithContext:(MTContext *)context datacenterId:(NSInteger)datacenterId masterDatacenterId:(NSInteger)masterDatacenterId;
+- (instancetype)initWithContext:(MTContext *)context datacenterId:(NSInteger)datacenterId masterDatacenterId:(NSInteger)masterDatacenterId isCdn:(bool)isCdn;
 
 - (bool)isBusy;
 - (void)setIsBusy:(bool)isBusy;

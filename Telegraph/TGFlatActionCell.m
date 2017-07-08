@@ -5,6 +5,8 @@
 #import "TGImageUtils.h"
 #import "TGFont.h"
 
+#import "TGPhoneUtils.h"
+
 static UIImage *plusImage() {
     static UIImage *image = nil;
     static dispatch_once_t onceToken;
@@ -25,12 +27,11 @@ static UIImage *plusImage() {
 @interface TGFlatActionCell ()
 {
     CALayer *_separatorLayer;
+    NSString *_phoneNumber;
 }
 
 @property (nonatomic, strong) UILabel *titleLabel;
 @property (nonatomic, strong) UIImageView *iconView;
-
-@property (nonatomic) TGFlatActionCellMode mode;
 
 @end
 
@@ -81,6 +82,10 @@ static UIImage *plusImage() {
         _titleLabel.text = TGLocalized(@"Compose.NewChannelButton");
     else if (mode == TGFlatActionCellModeCreateChannelGroup)
         _titleLabel.text = TGLocalized(@"Compose.NewChannelGroupButton");
+    else if (mode == TGFlatActionCellModeAddPhoneNumber)
+        _titleLabel.text = [NSString stringWithFormat:TGLocalized(@"Contacts.AddPhoneNumber"), _phoneNumber];
+    else if (mode == TGFlatActionCellModeShareApp)
+        _titleLabel.text = TGLocalized(@"Contacts.ShareTelegram");
 
     static UIImage *inviteIcon = nil;
     static UIImage *friendsIcon = nil;
@@ -90,9 +95,9 @@ static UIImage *plusImage() {
     if (inviteIcon == nil)
     {
         inviteIcon = plusImage();
-        friendsIcon = [UIImage imageNamed:@"ModernContactListCreateGroupIcon.png"];
-        encryptedIcon = [UIImage imageNamed:@"ModernContactListCreateSecretChatIcon.png"];
-        broadcastsIcon = [UIImage imageNamed:@"ModernContactListBroadcastIcon.png"];
+        friendsIcon = TGTintedImage([UIImage imageNamed:@"ModernContactListCreateGroupIcon.png"], TGAccentColor());
+        encryptedIcon = TGTintedImage([UIImage imageNamed:@"ModernContactListCreateSecretChatIcon.png"], TGAccentColor());
+        broadcastsIcon = TGTintedImage([UIImage imageNamed:@"ModernContactListBroadcastIcon.png"], TGAccentColor());
     }
     
     CGFloat verticalOffset = TGIsPad() ? 4.0f : 0.0f;
@@ -100,11 +105,11 @@ static UIImage *plusImage() {
     
     if (mode == TGFlatActionCellModeInvite)
     {
-        _iconView.image = inviteIcon;
+        _iconView.image = TGTintedImage([UIImage imageNamed:@"ModernContactListAddMemberIcon.png"], TGAccentColor());
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
-        iconFrame.origin = CGPointMake(26.0f - TGRetinaPixel + horizontalOffset, 15.0f + verticalOffset);
+        iconFrame.origin = CGPointMake(14.0f + horizontalOffset, 5.0f + verticalOffset);
         _iconView.frame = iconFrame;
     }
     else if (mode == TGFlatActionCellModeCreateGroup || mode == TGFlatActionCellModeCreateGroupContacts || mode == TGFlatActionCellModeCreateChannelGroup)
@@ -113,7 +118,7 @@ static UIImage *plusImage() {
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
-        iconFrame.origin = CGPointMake(20 - TGRetinaPixel + horizontalOffset, 9 + verticalOffset);
+        iconFrame.origin = CGPointMake(14 + horizontalOffset, 5 + verticalOffset);
         _iconView.frame = iconFrame;
     }
     else if (mode == TGFlatActionCellModeCreateEncrypted)
@@ -122,7 +127,7 @@ static UIImage *plusImage() {
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
-        iconFrame.origin = CGPointMake(20 - TGRetinaPixel + horizontalOffset - 1, 8 + verticalOffset);
+        iconFrame.origin = CGPointMake(14 + horizontalOffset - 1, 4 + verticalOffset);
         _iconView.frame = iconFrame;
     }
     else if (mode == TGFlatActionCellModeChannels || mode == TGFlatActionCellModeCreateChannel)
@@ -131,9 +136,33 @@ static UIImage *plusImage() {
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
-        iconFrame.origin = CGPointMake(20 - TGRetinaPixel + horizontalOffset - 1 + 2, 8 + verticalOffset + 3);
+        iconFrame.origin = CGPointMake(14 + horizontalOffset, 1 + verticalOffset + 3);
         _iconView.frame = iconFrame;
     }
+    else if (mode == TGFlatActionCellModeAddPhoneNumber)
+    {
+        _iconView.image = TGTintedImage([UIImage imageNamed:@"ModernContactListAddMemberIcon.png"], TGAccentColor());
+        [_iconView sizeToFit];
+        
+        CGRect iconFrame = _iconView.frame;
+        iconFrame.origin = CGPointMake(14.0f + horizontalOffset, 5.0f + verticalOffset);
+        _iconView.frame = iconFrame;
+    }
+    else if (mode == TGFlatActionCellModeShareApp)
+    {
+        _iconView.image = TGTintedImage([UIImage imageNamed:@"ModernContactListInviteIcon.png"], TGAccentColor());
+        [_iconView sizeToFit];
+        
+        CGRect iconFrame = _iconView.frame;
+        iconFrame.origin = CGPointMake(14.0f + horizontalOffset, 5.0f + verticalOffset);
+        _iconView.frame = iconFrame;
+    }
+}
+
+- (void)setPhoneNumber:(NSString *)phoneNumber
+{
+    _phoneNumber = [TGPhoneUtils formatPhone:phoneNumber forceInternational:true];
+    [self setMode:TGFlatActionCellModeAddPhoneNumber];
 }
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated

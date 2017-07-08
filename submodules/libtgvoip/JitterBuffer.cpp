@@ -10,9 +10,11 @@
 #include "VoIPServerConfig.h"
 #include <math.h>
 
-CJitterBuffer::CJitterBuffer(CMediaStreamItf *out, uint32_t step):bufferPool(JITTER_SLOT_SIZE, JITTER_SLOT_COUNT){
+using namespace tgvoip;
+
+JitterBuffer::JitterBuffer(MediaStreamItf *out, uint32_t step):bufferPool(JITTER_SLOT_SIZE, JITTER_SLOT_COUNT){
 	if(out)
-		out->SetCallback(CJitterBuffer::CallbackOut, this);
+		out->SetCallback(JitterBuffer::CallbackOut, this);
 	this->step=step;
 	memset(slots, 0, sizeof(jitter_packet_t)*JITTER_SLOT_COUNT);
 	minDelay=6;
@@ -22,51 +24,54 @@ CJitterBuffer::CJitterBuffer(CMediaStreamItf *out, uint32_t step):bufferPool(JIT
 	dontIncMinDelay=0;
 	dontDecMinDelay=0;
 	lostPackets=0;
+	outstandingDelayChange=0;
 	if(step<30){
-		minMinDelay=(uint32_t) CVoIPServerConfig::GetSharedInstance()->GetInt("jitter_min_delay_20", 6);
-		maxMinDelay=(uint32_t) CVoIPServerConfig::GetSharedInstance()->GetInt("jitter_max_delay_20", 25);
-		maxUsedSlots=(uint32_t) CVoIPServerConfig::GetSharedInstance()->GetInt("jitter_max_slots_20", 50);
+		minMinDelay=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_min_delay_20", 6);
+		maxMinDelay=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_max_delay_20", 25);
+		maxUsedSlots=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_max_slots_20", 50);
 	}else if(step<50){
-		minMinDelay=(uint32_t) CVoIPServerConfig::GetSharedInstance()->GetInt("jitter_min_delay_40", 4);
-		maxMinDelay=(uint32_t) CVoIPServerConfig::GetSharedInstance()->GetInt("jitter_max_delay_40", 15);
-		maxUsedSlots=(uint32_t) CVoIPServerConfig::GetSharedInstance()->GetInt("jitter_max_slots_40", 30);
+		minMinDelay=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_min_delay_40", 4);
+		maxMinDelay=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_max_delay_40", 15);
+		maxUsedSlots=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_max_slots_40", 30);
 	}else{
-		minMinDelay=(uint32_t) CVoIPServerConfig::GetSharedInstance()->GetInt("jitter_min_delay_60", 1);
-		maxMinDelay=(uint32_t) CVoIPServerConfig::GetSharedInstance()->GetInt("jitter_max_delay_60", 10);
-		maxUsedSlots=(uint32_t) CVoIPServerConfig::GetSharedInstance()->GetInt("jitter_max_slots_60", 20);
+		minMinDelay=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_min_delay_60", 1);
+		maxMinDelay=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_max_delay_60", 10);
+		maxUsedSlots=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_max_slots_60", 20);
 	}
-	lossesToReset=(uint32_t) CVoIPServerConfig::GetSharedInstance()->GetInt("jitter_losses_to_reset", 20);
-	resyncThreshold=CVoIPServerConfig::GetSharedInstance()->GetDouble("jitter_resync_threshold", 1.0);
+	lossesToReset=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_losses_to_reset", 20);
+	resyncThreshold=ServerConfig::GetSharedInstance()->GetDouble("jitter_resync_threshold", 1.0);
+	//dump=fopen("/sdcard/tgvoip_jitter_dump.txt", "a");
+	//fprintf(dump, "==================================\n");
 	Reset();
 	init_mutex(mutex);
 }
 
-CJitterBuffer::~CJitterBuffer(){
+JitterBuffer::~JitterBuffer(){
 	Reset();
 	free_mutex(mutex);
 }
 
-void CJitterBuffer::SetMinPacketCount(uint32_t count){
+void JitterBuffer::SetMinPacketCount(uint32_t count){
 	if(minDelay==count)
 		return;
 	minDelay=count;
 	Reset();
 }
 
-int CJitterBuffer::GetMinPacketCount(){
+int JitterBuffer::GetMinPacketCount(){
 	return minDelay;
 }
 
-size_t CJitterBuffer::CallbackIn(unsigned char *data, size_t len, void *param){
-	//((CJitterBuffer*)param)->HandleInput(data, len);
+size_t JitterBuffer::CallbackIn(unsigned char *data, size_t len, void *param){
+	//((JitterBuffer*)param)->HandleInput(data, len);
 	return 0;
 }
 
-size_t CJitterBuffer::CallbackOut(unsigned char *data, size_t len, void *param){
-	return ((CJitterBuffer*)param)->HandleOutput(data, len, 0);
+size_t JitterBuffer::CallbackOut(unsigned char *data, size_t len, void *param){
+	return 0; //((JitterBuffer*)param)->HandleOutput(data, len, 0, NULL);
 }
 
-void CJitterBuffer::HandleInput(unsigned char *data, size_t len, uint32_t timestamp){
+void JitterBuffer::HandleInput(unsigned char *data, size_t len, uint32_t timestamp){
 	jitter_packet_t pkt;
 	pkt.size=len;
 	pkt.buffer=data;
@@ -77,7 +82,7 @@ void CJitterBuffer::HandleInput(unsigned char *data, size_t len, uint32_t timest
 	//LOGV("in, ts=%d", timestamp);
 }
 
-void CJitterBuffer::Reset(){
+void JitterBuffer::Reset(){
 	wasReset=true;
 	needBuffering=true;
 	lastPutTimestamp=0;
@@ -96,15 +101,31 @@ void CJitterBuffer::Reset(){
 	expectNextAtTime=0;
 	memset(deviationHistory, 0, sizeof(deviationHistory));
 	deviationPtr=0;
+	outstandingDelayChange=0;
+	dontChangeDelay=0;
 }
 
 
-size_t CJitterBuffer::HandleOutput(unsigned char *buffer, size_t len, int offsetInSteps){
+size_t JitterBuffer::HandleOutput(unsigned char *buffer, size_t len, int offsetInSteps, int* playbackScaledDuration){
 	jitter_packet_t pkt;
 	pkt.buffer=buffer;
 	pkt.size=len;
 	lock_mutex(mutex);
 	int result=GetInternal(&pkt, offsetInSteps);
+	if(playbackScaledDuration){
+		if(outstandingDelayChange!=0){
+			if(outstandingDelayChange<0){
+				*playbackScaledDuration=40;
+				outstandingDelayChange+=20;
+			}else{
+				*playbackScaledDuration=80;
+				outstandingDelayChange-=20;
+			}
+			LOGV("outstanding delay change: %d", outstandingDelayChange);
+		}else{
+			*playbackScaledDuration=60;
+		}
+	}
 	unlock_mutex(mutex);
 	if(result==JR_OK){
 		return pkt.size;
@@ -114,9 +135,9 @@ size_t CJitterBuffer::HandleOutput(unsigned char *buffer, size_t len, int offset
 }
 
 
-int CJitterBuffer::GetInternal(jitter_packet_t* pkt, int offset){
+int JitterBuffer::GetInternal(jitter_packet_t* pkt, int offset){
 	/*if(needBuffering && lastPutTimestamp<nextTimestamp){
-		LOGV("jitter: don't have timestamp %lld, buffering", nextTimestamp);
+		LOGV("jitter: don't have timestamp %lld, buffering", (long long int)nextTimestamp);
 		Advance();
 		return JR_BUFFERING;
 	}*/
@@ -134,7 +155,7 @@ int CJitterBuffer::GetInternal(jitter_packet_t* pkt, int offset){
 
 	if(i<JITTER_SLOT_COUNT){
 		if(pkt && pkt->size<slots[i].size){
-			LOGE("jitter: packet won't fit into provided buffer of %d (need %d)", slots[i].size, pkt->size);
+			LOGE("jitter: packet won't fit into provided buffer of %d (need %d)", int(slots[i].size), int(pkt->size));
 		}else{
 			if(pkt) {
 				pkt->size = slots[i].size;
@@ -151,7 +172,7 @@ int CJitterBuffer::GetInternal(jitter_packet_t* pkt, int offset){
 		return JR_OK;
 	}
 
-	LOGW("jitter: found no packet for timestamp %lld (last put = %d, lost = %d)", timestampToGet, lastPutTimestamp, lostCount);
+	LOGW("jitter: found no packet for timestamp %lld (last put = %d, lost = %d)", (long long int)timestampToGet, lastPutTimestamp, lostCount);
 
 	if(offset==0)
 		Advance();
@@ -178,7 +199,7 @@ int CJitterBuffer::GetInternal(jitter_packet_t* pkt, int offset){
 	return JR_BUFFERING;
 }
 
-void CJitterBuffer::PutInternal(jitter_packet_t* pkt){
+void JitterBuffer::PutInternal(jitter_packet_t* pkt){
 	if(pkt->size>JITTER_SLOT_SIZE){
 		LOGE("The packet is too big to fit into the jitter buffer");
 		return;
@@ -187,8 +208,9 @@ void CJitterBuffer::PutInternal(jitter_packet_t* pkt){
 	int i;
 	if(wasReset){
 		wasReset=false;
+		outstandingDelayChange=0;
 		nextTimestamp=((int64_t)pkt->timestamp)-step*minDelay;
-		LOGI("jitter: resyncing, next timestamp = %lld (step=%d, minDelay=%d)", nextTimestamp, step, minDelay);
+		LOGI("jitter: resyncing, next timestamp = %lld (step=%d, minDelay=%d)", (long long int)nextTimestamp, step, minDelay);
 	}
 	
 	for(i=0;i<JITTER_SLOT_COUNT;i++){
@@ -208,7 +230,7 @@ void CJitterBuffer::PutInternal(jitter_packet_t* pkt){
 			prevTime=slots[i].recvTime;
 		}
 	}*/
-	double time=CVoIPController::GetCurrentTime();
+	double time=VoIPController::GetCurrentTime();
 	if(expectNextAtTime!=0){
 		double dev=expectNextAtTime-time;
 		//LOGV("packet dev %f", dev);
@@ -258,16 +280,17 @@ void CJitterBuffer::PutInternal(jitter_packet_t* pkt){
 		memcpy(slots[i].buffer, pkt->buffer, pkt->size);
 	else
 		LOGE("WTF!!");
+	//fprintf(dump, "%f %d\n", time-prevRecvTime, GetCurrentDelay());
 	prevRecvTime=time;
 }
 
 
-void CJitterBuffer::Advance(){
+void JitterBuffer::Advance(){
 	nextTimestamp+=step;
 }
 
 
-int CJitterBuffer::GetCurrentDelay(){
+int JitterBuffer::GetCurrentDelay(){
 	int delay=0;
 	int i;
 	for(i=0;i<JITTER_SLOT_COUNT;i++){
@@ -277,7 +300,7 @@ int CJitterBuffer::GetCurrentDelay(){
 	return delay;
 }
 
-void CJitterBuffer::Tick(){
+void JitterBuffer::Tick(){
 	lock_mutex(mutex);
 	int i;
 
@@ -335,7 +358,7 @@ void CJitterBuffer::Tick(){
 	memmove(&delayHistory[1], delayHistory, 63*sizeof(int));
 	delayHistory[0]=GetCurrentDelay();
 
-	int avgDelay=0;
+	avgDelay=0;
 	int min=100;
 	for(i=0;i<32;i++){
 		avgDelay+=delayHistory[i];
@@ -370,8 +393,10 @@ void CJitterBuffer::Tick(){
 		if(diff>1)
 			diff=1;
 		if((diff>0 && dontIncMinDelay==0) || (diff<0 && dontDecMinDelay==0)){
-			nextTimestamp+=diff*(int32_t)step;
+			//nextTimestamp+=diff*(int32_t)step;
 			minDelay+=diff;
+			outstandingDelayChange+=diff*60;
+			dontChangeDelay+=32;
 			LOGD("new delay from stddev %d", minDelay);
 			if(diff<0){
 				dontDecMinDelay+=25;
@@ -381,11 +406,24 @@ void CJitterBuffer::Tick(){
 			}
 		}
 	}
+	lastMeasuredJitter=stddev;
+	lastMeasuredDelay=stddevDelay;
 	//LOGV("stddev=%.3f, avg=%.3f, ndelay=%d, dontDec=%u", stddev, avgdev, stddevDelay, dontDecMinDelay);
+	if(dontChangeDelay==0){
+		if(avgDelay>minDelay+0.5){
+			outstandingDelayChange-=avgDelay>minDelay+2 ? 60 : 20;
+			dontChangeDelay+=10;
+		}else if(avgDelay<minDelay-0.3){
+			outstandingDelayChange+=20;
+			dontChangeDelay+=10;
+		}
+	}
+	if(dontChangeDelay>0)
+		dontChangeDelay--;
 
 	//LOGV("jitter: avg delay=%d, delay=%d, late16=%.1f, dontDecMinDelay=%d", avgDelay, delayHistory[0], avgLate16, dontDecMinDelay);
-	if(!adjustingDelay) {
-		if (((minDelay==1 ? (avgDelay>=3) : (avgDelay>=minDelay/2)) && delayHistory[0]>minDelay && avgLate16<=0.1 && absolutelyNoLatePackets && dontDecMinDelay<32 && min>minDelay) /*|| (avgRecvTimeDiff>0 && delayHistory[0]>minDelay/2 && avgRecvTimeDiff*1000<step/2)*/) {
+	/*if(!adjustingDelay) {
+		if (((minDelay==1 ? (avgDelay>=3) : (avgDelay>=minDelay/2)) && delayHistory[0]>minDelay && avgLate16<=0.1 && absolutelyNoLatePackets && dontDecMinDelay<32 && min>minDelay)) {
 			LOGI("jitter: need adjust");
 			adjustingDelay=true;
 		}
@@ -402,7 +440,7 @@ void CJitterBuffer::Tick(){
 				LOGI("jitter: done adjusting");
 			}
 		}
-	}
+	}*/
 
 	tickCount++;
 
@@ -410,7 +448,7 @@ void CJitterBuffer::Tick(){
 }
 
 
-void CJitterBuffer::GetAverageLateCount(double *out){
+void JitterBuffer::GetAverageLateCount(double *out){
 	double avgLate64=0, avgLate32=0, avgLate16=0;
 	int i;
 	for(i=0;i<64;i++){
@@ -429,10 +467,22 @@ void CJitterBuffer::GetAverageLateCount(double *out){
 }
 
 
-int CJitterBuffer::GetAndResetLostPacketCount(){
+int JitterBuffer::GetAndResetLostPacketCount(){
 	lock_mutex(mutex);
 	int r=lostPackets;
 	lostPackets=0;
 	unlock_mutex(mutex);
 	return r;
+}
+
+double JitterBuffer::GetLastMeasuredJitter(){
+	return lastMeasuredJitter;
+}
+
+double JitterBuffer::GetLastMeasuredDelay(){
+	return lastMeasuredDelay;
+}
+
+double JitterBuffer::GetAverageDelay(){
+	return avgDelay;
 }

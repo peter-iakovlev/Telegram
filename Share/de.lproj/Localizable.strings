@@ -2,6 +2,7 @@
 "Share.Next" = "Weiter";
 "Share.OK" = "OK";
 "Share.Search" = "Suchen";
+"Share.Send" = "Senden";
 
 "Share.Title" = "Teilen";
 "Share.ShareWithPerson" = "Mit %@ teilen?";
@@ -24,4 +25,8 @@
 "Share.RecentSection" = "Letzte";
 "Share.RecentSectionClear" = "Leeren";
 
+"Share.PeopleSection" = "Leute";
+
 "Share.TouchId" = "Pincode eingeben";
+
+"Share.AddCaption" = "Schreibe eine Nachricht...";

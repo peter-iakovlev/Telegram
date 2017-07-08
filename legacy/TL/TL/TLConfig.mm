@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -38,7 +38,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x6cbca18d;
+    return (int32_t)0x5f688205;
 }
 
 - (int32_t)TLconstructorName
@@ -46,7 +46,7 @@
     return (int32_t)0x75d38a0e;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLConfig$configMeta *object = [[TLConfig$configMeta alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
@@ -78,6 +78,8 @@
     object.call_connect_timeout_ms = metaObject->getInt32((int32_t)0x20390966);
     object.call_packet_timeout_ms = metaObject->getInt32((int32_t)0x18855e6);
     object.me_url_prefix = metaObject->getString((int32_t)0xf0f97064);
+    object.suggested_lang_code = metaObject->getString((int32_t)0x71655114);
+    object.lang_pack_version = metaObject->getInt32((int32_t)0xa3b7dbcd);
     object.disabled_features = metaObject->getArray((int32_t)0x4f56c735);
     return object;
 }
@@ -257,6 +259,18 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.me_url_prefix;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xf0f97064, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.suggested_lang_code;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x71655114, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.lang_pack_version;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xa3b7dbcd, value));
     }
     {
         TLConstructedValue value;

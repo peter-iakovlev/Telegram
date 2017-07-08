@@ -3,6 +3,7 @@
 #import "PGCamera.h"
 
 @class PGCameraMovieWriter;
+@class TGLiveUploadActorData;
 
 @interface PGCameraCaptureSession : AVCaptureSession
 
@@ -29,6 +30,9 @@
 @property (nonatomic, copy) void(^changingPosition)(void);
 @property (nonatomic, copy) bool(^requestPreviewIsMirrored)(void);
 
+@property (nonatomic, assign) bool compressVideo;
+@property (nonatomic, assign) bool liveUpload;
+
 - (instancetype)initWithMode:(PGCameraMode)mode position:(PGCameraPosition)position;
 
 - (void)performInitialConfigurationWithCompletion:(void (^)(void))completion;
@@ -40,7 +44,7 @@
 - (void)reset;
 - (void)resetFlashMode;
 
-- (void)startVideoRecordingWithOrientation:(AVCaptureVideoOrientation)orientation mirrored:(bool)mirrored completion:(void (^)(NSURL *outputURL, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success))completion;
+- (void)startVideoRecordingWithOrientation:(AVCaptureVideoOrientation)orientation mirrored:(bool)mirrored completion:(void (^)(NSURL *outputURL, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, TGLiveUploadActorData *liveUploadData, bool success))completion;
 - (void)stopVideoRecording;
 
 - (void)captureNextFrameCompletion:(void (^)(UIImage * image))completion;

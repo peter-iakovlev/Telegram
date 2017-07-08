@@ -567,7 +567,6 @@ typedef enum
     
     TGTableDataEntry *firstRowData = [tableData firstObject];
     previousSection = firstRowData.section;
-    previousRow = firstRowData.row;
     
     for (TGTableDataEntry *tableEntry in tableData)
     {
@@ -592,7 +591,6 @@ typedef enum
         }
         
         previousSection = tableEntry.section;
-        previousRow = tableEntry.row;
 
         TGTableDataEntry *newTableEntry = [[TGTableDataEntry alloc] initWithControllerClass:tableEntry.controllerClass section:section row:row];
         [newTableData addObject:newTableEntry];

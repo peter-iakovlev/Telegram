@@ -138,9 +138,10 @@
         if (canSave) {
             NSMutableArray *saveItems = [[NSMutableArray alloc] init];
             _saveItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Checkout.NewCard.SaveInfo") isOn:false];
+            _saveItem.isEnabled = allowSaving;
             [saveItems addObject:_saveItem];
             if (!allowSaving) {
-                TGCommentCollectionItem *commentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Checkout.NewCard.SaveInfoEnableHelp")];
+                TGCommentCollectionItem *commentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Checkout.NewCard.SaveInfoEnableHelp") paragraphSpacing:0.0 clearFormatting:true];
                 commentItem.action = ^{
                     __strong TGAddPaymentCardController *strongSelf = weakSelf;
                     if (strongSelf != nil) {

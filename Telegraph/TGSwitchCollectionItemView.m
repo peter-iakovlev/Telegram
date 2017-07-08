@@ -10,6 +10,8 @@
 
 #import "TGFont.h"
 
+#import "TGIconSwitchView.h"
+
 @interface TGSwitchCollectionItemView ()
 {
     UILabel *_titleLabel;
@@ -32,11 +34,21 @@
         _titleLabel.textAlignment = NSTextAlignmentLeft;
         [self addSubview:_titleLabel];
         
-        _switchView = [[UISwitch alloc] init];
+        if ([self isKindOfClass:[TGPermissionSwitchCollectionItemView class]] && iosMajorVersion() >= 8) {
+            _switchView = [[TGIconSwitchView alloc] init];
+            _switchView.layer.allowsGroupOpacity = true;
+        } else {
+            _switchView = [[UISwitch alloc] init];
+        }
         [_switchView addTarget:self action:@selector(switchValueChanged) forControlEvents:UIControlEventValueChanged];
+        
         [self addSubview:_switchView];
     }
     return self;
+}
+
+- (void)setFullSeparator:(bool)fullSeparator {
+    self.separatorInset = fullSeparator ? 0.0f : 15.0f;
 }
 
 - (void)setTitle:(NSString *)title
@@ -47,6 +59,12 @@
 - (void)setIsOn:(bool)isOn animated:(bool)animated
 {
     [_switchView setOn:isOn animated:animated];
+}
+
+- (void)setIsEnabled:(bool)isEnabled {
+    _titleLabel.alpha = isEnabled ? 1.0f : 0.5f;
+    _switchView.userInteractionEnabled = isEnabled;
+    _switchView.alpha = isEnabled ? 1.0f : 0.5f;
 }
 
 - (void)switchValueChanged
@@ -67,5 +85,9 @@
     
     _titleLabel.frame = CGRectMake(15.0f, CGFloor((bounds.size.height - 26.0f) / 2.0f), bounds.size.width - 15.0f - 4.0f - switchSize.width - 6.0f, 26.0f);
 }
+
+@end
+
+@implementation TGPermissionSwitchCollectionItemView
 
 @end

@@ -36,7 +36,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -63,7 +63,7 @@
     return (int32_t)0xbcb4fbc5;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCmessages_getAttachedStickers$messages_getAttachedStickers *object = [[TLRPCmessages_getAttachedStickers$messages_getAttachedStickers alloc] init];
     object.media = metaObject->getObject((int32_t)0x598de2e7);

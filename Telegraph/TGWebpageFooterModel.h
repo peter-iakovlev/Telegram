@@ -39,6 +39,7 @@ typedef enum {
 - (TGWebpageFooterModelAction)webpageActionAtPoint:(CGPoint)point;
 - (bool)activateWebpageContents;
 - (bool)webpageContentsActivated;
+- (void)activateMediaPlayback;
 - (NSString *)linkAtPoint:(CGPoint)point regionData:(__autoreleasing NSArray **)regionData;
 
 - (UIView *)referenceViewForImageTransition;
@@ -47,7 +48,7 @@ typedef enum {
 - (void)updateMediaProgressVisible:(bool)mediaProgressVisible mediaProgress:(float)mediaProgress animated:(bool)animated;
 
 - (void)imageDataInvalidated:(NSString *)imageUrl;
-- (void)stopInlineMedia;
+- (void)stopInlineMedia:(int32_t)excludeMid;
 - (void)resumeInlineMedia;
 
 - (void)updateMessageId:(int32_t)messageId;

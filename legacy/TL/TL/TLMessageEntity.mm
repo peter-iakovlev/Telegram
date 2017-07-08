@@ -20,7 +20,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -47,7 +47,7 @@
     return (int32_t)0x49391fa8;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityUnknown *object = [[TLMessageEntity$messageEntityUnknown alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -87,7 +87,7 @@
     return (int32_t)0xec0b00e2;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityMention *object = [[TLMessageEntity$messageEntityMention alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -127,7 +127,7 @@
     return (int32_t)0xc5e2530d;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityHashtag *object = [[TLMessageEntity$messageEntityHashtag alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -167,7 +167,7 @@
     return (int32_t)0x7731806e;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityBotCommand *object = [[TLMessageEntity$messageEntityBotCommand alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -207,7 +207,7 @@
     return (int32_t)0xf95ff8ac;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityUrl *object = [[TLMessageEntity$messageEntityUrl alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -247,7 +247,7 @@
     return (int32_t)0xbdc7f80;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityEmail *object = [[TLMessageEntity$messageEntityEmail alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -287,7 +287,7 @@
     return (int32_t)0xe4046999;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityBold *object = [[TLMessageEntity$messageEntityBold alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -327,7 +327,7 @@
     return (int32_t)0x1d3611f9;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityItalic *object = [[TLMessageEntity$messageEntityItalic alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -367,7 +367,7 @@
     return (int32_t)0xe801eca;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityCode *object = [[TLMessageEntity$messageEntityCode alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -407,7 +407,7 @@
     return (int32_t)0xebd4d098;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityPre *object = [[TLMessageEntity$messageEntityPre alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -454,7 +454,7 @@
     return (int32_t)0x6c3e5402;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityTextUrl *object = [[TLMessageEntity$messageEntityTextUrl alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -501,7 +501,7 @@
     return (int32_t)0xe727402c;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$messageEntityMentionName *object = [[TLMessageEntity$messageEntityMentionName alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
@@ -548,7 +548,7 @@
     return (int32_t)0x7b78b06f;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageEntity$inputMessageEntityMentionName *object = [[TLMessageEntity$inputMessageEntityMentionName alloc] init];
     object.offset = metaObject->getInt32((int32_t)0xfc56269);

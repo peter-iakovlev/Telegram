@@ -14,6 +14,8 @@ extern CGFloat TGModernFlatteningViewModelTilingLimit;
 
 @interface TGModernFlatteningViewModel : TGModernViewModel
 
+@property (nonatomic, assign) bool allowSpecialUserInteraction;
+
 - (id)initWithContext:(TGModernViewContext *)context;
 
 - (void)setTiledMode:(bool)tiledMode;

@@ -103,7 +103,7 @@
 {
 }
 
-- (void)stopInlineMedia
+- (void)stopInlineMedia:(int32_t)__unused excludeMid
 {
 }
 

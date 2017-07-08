@@ -34,7 +34,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -61,7 +61,7 @@
     return (int32_t)0x33ae9178;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPChelp_saveNetworkStats$help_saveNetworkStats *object = [[TLRPChelp_saveNetworkStats$help_saveNetworkStats alloc] init];
     object.stats = metaObject->getArray((int32_t)0x2887a01d);

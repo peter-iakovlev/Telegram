@@ -40,6 +40,11 @@
     _labelView.font = TGSystemFontOfSize(_labelOnly ? 18.0f : 13.0f);
 }
 
+- (void)setSmallLabel:(bool)smallLabel {
+    _smallLabel = smallLabel;
+    _labelView.font = TGSystemFontOfSize(_smallLabel ? 14.0f : (_labelOnly ? 18.0f : 13.0f));
+}
+
 - (void)setTitle:(NSString *)title image:(UIImage *)image {
     _labelView.text = title;
     [_labelView sizeToFit];
@@ -58,6 +63,11 @@
     CGSize iconSize = _iconView.image.size;
     
     CGFloat labelY = _labelOnly ? 17.0f : 48.0f;
+    if (_smallLabel) {
+        labelY = 15.0f;
+    } else if (_offsetLabel) {
+        labelY = 14.0f;
+    }
     _labelView.frame = CGRectMake(CGFloor((bounds.size.width - labelSize.width) / 2.0f), labelY, labelSize.width, labelSize.height);
     _iconView.frame = CGRectMake(CGFloor((bounds.size.width - iconSize.width) / 2.0f), 14.0f, iconSize.width, iconSize.height);
 }

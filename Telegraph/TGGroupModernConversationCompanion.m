@@ -39,6 +39,8 @@
 #import "TGModernGalleryController.h"
 #import "TGGroupAvatarGalleryModel.h"
 
+#import "TGLocalization.h"
+
 typedef enum {
     TGGroupParticipationStatusMember = 0,
     TGGroupParticipationStatusLeft = 1,
@@ -83,26 +85,12 @@ typedef enum {
 
 - (NSString *)stringForMemberCount:(int)memberCount
 {
-    if (memberCount == 1)
-        return TGLocalizedStatic(@"Conversation.StatusMembers_1");
-    else if (memberCount == 2)
-        return TGLocalizedStatic(@"Conversation.StatusMembers_2");
-    else if (memberCount >= 3 && memberCount <= 10)
-        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusMembers_3_10"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
-    else
-        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusMembers_any"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
+    return [effectiveLocalization() getPluralized:@"Conversation.StatusMembers" count:memberCount];
 }
 
 - (NSString *)stringForOnlineCount:(int)onlineCount
 {
-    if (onlineCount == 1)
-        return TGLocalizedStatic(@"Conversation.StatusOnline_1");
-    else if (onlineCount == 2)
-        return TGLocalizedStatic(@"Conversation.StatusOnline_2");
-    else if (onlineCount >= 3 && onlineCount <= 10)
-        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusOnline_3_10"), [TGStringUtils stringWithLocalizedNumber:onlineCount]];
-    else
-        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusOnline_any"), [TGStringUtils stringWithLocalizedNumber:onlineCount]];
+    return [effectiveLocalization() getPluralized:@"Conversation.StatusOnline" count:onlineCount];
 }
 
 - (id)stringForMemberCount:(int)memberCount onlineCount:(int)onlineCount participationStatus:(TGGroupParticipationStatus)participationStatus
@@ -141,6 +129,10 @@ typedef enum {
         return TGLocalized(@"Activity.RecordingAudio");
     else if ([activity isEqualToString:@"uploadingAudio"])
         return TGLocalized(@"Activity.UploadingAudio");
+    else if ([activity isEqualToString:@"recordingVideoMessage"])
+        return TGLocalized(@"Activity.RecordingVideoMessage");
+    else if ([activity isEqualToString:@"uploadingVideoMessage"])
+        return TGLocalized(@"Activity.UploadingVideoMessage");
     else if ([activity isEqualToString:@"uploadingPhoto"])
         return TGLocalized(@"Activity.UploadingPhoto");
     else if ([activity isEqualToString:@"uploadingVideo"])
@@ -159,6 +151,8 @@ typedef enum {
 {
     if ([activity isEqualToString:@"recordingAudio"])
         return TGModernConversationTitleViewActivityAudioRecording;
+    else if ([activity isEqualToString:@"recordingVideoMessage"])
+        return TGModernConversationTitleViewActivityVideoMessageRecording;
     else if ([activity isEqualToString:@"uploadingPhoto"])
         return TGModernConversationTitleViewActivityUploading;
     else if ([activity isEqualToString:@"uploadingVideo"])
@@ -310,46 +304,43 @@ typedef enum {
                 [unblockPanel setActionWithTitle:TGLocalized(@"ConversationProfile.LeaveDeleteAndExit") action:@"deleteAndExit"];
                 unblockPanel.delegate = controller;
                 unblockPanel.companionHandle = actionHandle;
-                [controller setCustomInputPanel:unblockPanel];
+                [controller setDefaultInputPanel:unblockPanel];
             }
             else
-                [controller setCustomInputPanel:nil];
+                [controller setDefaultInputPanel:nil];
         });
     }
 }
 
 - (void)_createOrUpdatePrimaryTitlePanel:(bool)createIfNeeded
 {
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+    TGModernConversationController *controller = self.controller;
+    
+    TGModernConversationGroupTitlePanel *groupTitlePanel = nil;
+    if ([[controller primaryTitlePanel] isKindOfClass:[TGModernConversationGroupTitlePanel class]])
+        groupTitlePanel = (TGModernConversationGroupTitlePanel *)[controller primaryTitlePanel];
+    else
     {
-        TGModernConversationController *controller = self.controller;
-        
-        TGModernConversationGroupTitlePanel *groupTitlePanel = nil;
-        if ([[controller primaryTitlePanel] isKindOfClass:[TGModernConversationGroupTitlePanel class]])
-            groupTitlePanel = (TGModernConversationGroupTitlePanel *)[controller primaryTitlePanel];
-        else
+        if (createIfNeeded)
         {
-            if (createIfNeeded)
-            {
-                groupTitlePanel = [[TGModernConversationGroupTitlePanel alloc] init];
-                groupTitlePanel.companionHandle = self.actionHandle;
-            }
-            else
-                return;
+            groupTitlePanel = [[TGModernConversationGroupTitlePanel alloc] init];
+            groupTitlePanel.companionHandle = self.actionHandle;
         }
-        
-        NSMutableArray *actions = [[NSMutableArray alloc] init];
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": [UIImage imageNamed:@"PanelSearchIcon"], @"action": @"search"}];
-        if (_isMuted)
-            [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionUnmute"], TGAccentColor()), @"action": @"unmute"}];
         else
-            [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionMute"], TGAccentColor()), @"action": @"mute"}];
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": [UIImage imageNamed:@"PanelInfoIcon"], @"action": @"info"}];
-        
-        [groupTitlePanel setButtonsWithTitlesAndActions:actions];
-        
-        [controller setPrimaryTitlePanel:groupTitlePanel];
+            return;
     }
+    
+    NSMutableArray *actions = [[NSMutableArray alloc] init];
+    [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": [UIImage imageNamed:@"PanelSearchIcon"], @"action": @"search"}];
+    if (_isMuted)
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionUnmute"], TGAccentColor()), @"action": @"unmute"}];
+    else
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionMute"], TGAccentColor()), @"action": @"mute"}];
+    [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": [UIImage imageNamed:@"PanelInfoIcon"], @"action": @"info"}];
+    
+    [groupTitlePanel setButtonsWithTitlesAndActions:actions];
+    
+    [controller setPrimaryTitlePanel:groupTitlePanel];
 }
 
 - (void)_loadControllerPrimaryTitlePanel
@@ -412,6 +403,11 @@ typedef enum {
 - (bool)shouldAutomaticallyDownloadAudios
 {
     return TGAppDelegateInstance.autoDownloadAudioInGroups;
+}
+
+- (bool)shouldAutomaticallyDownloadVideoMessages
+{
+    return TGAppDelegateInstance.autoDownloadVideoMessageInGroups;
 }
 
 - (NSString *)_sendMessagePathForMessageId:(int32_t)mid

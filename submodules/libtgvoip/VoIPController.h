@@ -1,11 +1,23 @@
+//
+// libtgvoip is free and unencumbered public domain software.
+// For more information, see http://unlicense.org or the UNLICENSE file
+// you should have received with this source code distribution.
+//
+
 #ifndef __VOIPCONTROLLER_H
 #define __VOIPCONTROLLER_H
 
+#ifndef _WIN32
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#endif
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
 #include <stdint.h>
 #include <vector>
 #include <string>
+#include <map>
 #include "audio/AudioInput.h"
 #include "BlockingQueue.h"
 #include "BufferOutputStream.h"
@@ -15,37 +27,20 @@
 #include "OpusEncoder.h"
 #include "EchoCanceller.h"
 #include "CongestionControl.h"
+#include "NetworkSocket.h"
 
-#ifdef __APPLE__
-#import <Foundation/Foundation.h>
-#endif
-
-#define LIBTGVOIP_VERSION "0.3.0"
-
-#define PKT_INIT 1
-#define PKT_INIT_ACK 2
-#define PKT_STREAM_STATE 3
-#define PKT_STREAM_DATA 4
-#define PKT_UPDATE_STREAMS 5
-#define PKT_PING 6
-#define PKT_PONG 7
-#define PKT_STREAM_DATA_X2 8
-#define PKT_STREAM_DATA_X3 9
-#define PKT_LAN_ENDPOINT 10
-#define PKT_NETWORK_CHANGED 11
-#define PKT_SWITCH_PREF_RELAY 12
-#define PKT_SWITCH_TO_P2P 13
-#define PKT_NOP 14
+#define LIBTGVOIP_VERSION "1.0"
 
 #define STATE_WAIT_INIT 1
 #define STATE_WAIT_INIT_ACK 2
 #define STATE_ESTABLISHED 3
 #define STATE_FAILED 4
+#define STATE_RECONNECTING 5
 
-#define ERROR_UNKNOWN 0
-#define ERROR_INCOMPATIBLE 1
-#define ERROR_TIMEOUT 2
-#define ERROR_AUDIO_IO 3
+#define TGVOIP_ERROR_UNKNOWN 0
+#define TGVOIP_ERROR_INCOMPATIBLE 1
+#define TGVOIP_ERROR_TIMEOUT 2
+#define TGVOIP_ERROR_AUDIO_IO 3
 
 #define NET_TYPE_UNKNOWN 0
 #define NET_TYPE_GPRS 1
@@ -60,68 +55,18 @@
 #define NET_TYPE_DIALUP 10
 #define NET_TYPE_OTHER_MOBILE 11
 
-#define IS_MOBILE_NETWORK(x) (x==NET_TYPE_GPRS || x==NET_TYPE_EDGE || x==NET_TYPE_3G || x==NET_TYPE_HSPA || x==NET_TYPE_LTE || x==NET_TYPE_OTHER_MOBILE)
-
-#define PROTOCOL_NAME 0x50567247 // "GrVP" in little endian (reversed here)
-#define PROTOCOL_VERSION 3
-#define MIN_PROTOCOL_VERSION 3
-#define MIN_UDP_PORT 16384
-#define MAX_UDP_PORT 32768
-
-#define STREAM_DATA_FLAG_LEN16 0x40
-#define STREAM_DATA_FLAG_HAS_MORE_FLAGS 0x80
-
-#define STREAM_TYPE_AUDIO 1
-#define STREAM_TYPE_VIDEO 2
-
-#define CODEC_OPUS 1
-
 #define EP_TYPE_UDP_P2P_INET 1
 #define EP_TYPE_UDP_P2P_LAN 2
 #define EP_TYPE_UDP_RELAY 3
 #define EP_TYPE_TCP_RELAY 4
 
-/*flags:# voice_call_id:flags.2?int128 in_seq_no:flags.4?int out_seq_no:flags.4?int
-	 * recent_received_mask:flags.5?int proto:flags.3?int extra:flags.1?string raw_data:flags.0?string*/
-#define PFLAG_HAS_DATA 1
-#define PFLAG_HAS_EXTRA 2
-#define PFLAG_HAS_CALL_ID 4
-#define PFLAG_HAS_PROTO 8
-#define PFLAG_HAS_SEQ 16
-#define PFLAG_HAS_RECENT_RECV 32
-
-#define INIT_FLAG_DATA_SAVING_ENABLED 1
-
 #define DATA_SAVING_NEVER 0
 #define DATA_SAVING_MOBILE 1
 #define DATA_SAVING_ALWAYS 2
 
-#define TLID_DECRYPTED_AUDIO_BLOCK 0xDBF948C1
-#define TLID_SIMPLE_AUDIO_BLOCK 0xCC0D0E76
-#define TLID_UDP_REFLECTOR_PEER_INFO 0x27D9371C
-#define PAD4(x) (4-(x+(x<=253 ? 1 : 0))%4)
-
-inline int pad4(int x){
-	int r=PAD4(x);
-	if(r==4)
-		return 0;
-	return r;
-}
-
-struct voip_endpoint_t{ // make this a class maybe?
-	int64_t id;
-	uint32_t port;
-	in_addr address;
-	in6_addr address6;
-	char type;
-	unsigned char peerTag[16];
-
-	double _lastPingTime;
-	uint32_t _lastPingSeq;
-	double _rtts[6];
-	double _averageRtt;
-};
-typedef struct voip_endpoint_t voip_endpoint_t;
+#ifdef _WIN32
+#undef GetCurrentTime
+#endif
 
 struct voip_stream_t{
 	int32_t userID;
@@ -150,12 +95,25 @@ struct voip_config_t{
 	double recv_timeout;
 	int data_saving;
 	char logFilePath[256];
+	char statsDumpFilePath[256];
 
 	bool enableAEC;
 	bool enableNS;
 	bool enableAGC;
 };
 typedef struct voip_config_t voip_config_t;
+
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+// temporary fix for nasty linking errors
+struct voip_legacy_endpoint_t{
+	const char* address;
+	const char* address6;
+	uint16_t port;
+	int64_t id;
+	unsigned char peerTag[16];
+};
+typedef struct voip_legacy_endpoint_t voip_legacy_endpoint_t;
+#endif
 
 struct voip_stats_t{
 	uint64_t bytesSentWifi;
@@ -171,6 +129,7 @@ struct voip_crypto_functions_t{
 	void (*sha256)(uint8_t* msg, size_t length, uint8_t* output);
 	void (*aes_ige_encrypt)(uint8_t* in, uint8_t* out, size_t length, uint8_t* key, uint8_t* iv);
 	void (*aes_ige_decrypt)(uint8_t* in, uint8_t* out, size_t length, uint8_t* key, uint8_t* iv);
+	void (*aes_ctr_encrypt)(uint8_t* inout, size_t length, uint8_t* key, uint8_t* iv, uint8_t* ecount, uint32_t* num);
 };
 typedef struct voip_crypto_functions_t voip_crypto_functions_t;
 
@@ -180,71 +139,236 @@ inline bool seqgt(uint32_t s1, uint32_t s2){
 	return ((s1>s2) && (s1-s2<=SEQ_MAX/2)) || ((s1<s2) && (s2-s1>SEQ_MAX/2));
 }
 
-class CVoIPController
+namespace tgvoip{
+
+	enum{
+		PROXY_NONE=0,
+		PROXY_SOCKS5,
+		//PROXY_HTTP
+	};
+
+class Endpoint{
+	friend class VoIPController;
+public:
+	Endpoint(int64_t id, uint16_t port, IPv4Address& address, IPv6Address& v6address, char type, unsigned char* peerTag);
+	Endpoint();
+	int64_t id;
+	uint16_t port;
+	IPv4Address address;
+	IPv6Address v6address;
+	char type;
+	unsigned char peerTag[16];
+
+private:
+	double lastPingTime;
+	uint32_t lastPingSeq;
+	double rtts[6];
+	double averageRTT;
+	NetworkSocket* socket;
+};
+
+class AudioDevice{
+public:
+	std::string id;
+	std::string displayName;
+};
+
+class AudioOutputDevice : public AudioDevice{
+
+};
+
+class AudioInputDevice : public AudioDevice{
+
+};
+
+class VoIPController
 {
 public:
-	CVoIPController();
-	~CVoIPController();
+	VoIPController();
+	~VoIPController();
 
-	void SetRemoteEndpoints(voip_endpoint_t* endpoints, size_t count, bool allowP2p);
+	/**
+	 * Set the initial endpoints (relays)
+	 * @param endpoints Endpoints converted from phone.PhoneConnection TL objects
+	 * @param allowP2p Whether p2p connectivity is allowed
+	 */
+	void SetRemoteEndpoints(std::vector<Endpoint> endpoints, bool allowP2p);
+	/**
+	 * Initialize and start all the internal threads
+	 */
 	void Start();
+	/**
+	 * Initiate connection
+	 */
 	void Connect();
-	voip_endpoint_t* GetRemoteEndpoint();
+	Endpoint& GetRemoteEndpoint();
+	/**
+	 * Get the debug info string to be displayed in client UI
+	 * @param buffer The buffer to put the string into
+	 * @param len The length of the buffer
+	 */
 	void GetDebugString(char* buffer, size_t len);
+	/**
+	 * Notify the library of network type change
+	 * @param type The new network type
+	 */
 	void SetNetworkType(int type);
+	/**
+	 * Get the average round-trip time for network packets
+	 * @return
+	 */
 	double GetAverageRTT();
-	void SetStateCallback(void (*f)(CVoIPController*, int));
+	/**
+	 * Set the function to be called whenever the connection state changes
+	 * @param f
+	 */
+	void SetStateCallback(void (*f)(VoIPController*, int));
 	static double GetCurrentTime();
+	/**
+	 * Use this field to store any of your context data associated with this call
+	 */
 	void* implData;
+	/**
+	 *
+	 * @param mute
+	 */
 	void SetMicMute(bool mute);
+	/**
+	 *
+	 * @param key
+	 * @param isOutgoing
+	 */
 	void SetEncryptionKey(char* key, bool isOutgoing);
+	/**
+	 *
+	 * @param cfg
+	 */
 	void SetConfig(voip_config_t* cfg);
     float GetOutputLevel();
 	void DebugCtl(int request, int param);
+	/**
+	 *
+	 * @param stats
+	 */
 	void GetStats(voip_stats_t* stats);
+	/**
+	 *
+	 * @return
+	 */
 	int64_t GetPreferredRelayID();
+	/**
+	 *
+	 * @return
+	 */
 	int GetLastError();
+	/**
+	 *
+	 */
 	static voip_crypto_functions_t crypto;
+	/**
+	 *
+	 * @return
+	 */
 	static const char* GetVersion();
 #ifdef TGVOIP_USE_AUDIO_SESSION
     void SetAcquireAudioSession(void (^)(void (^)()));
     void ReleaseAudioSession(void (^completion)());
 #endif
+		/**
+		 *
+		 * @return
+		 */
 	std::string GetDebugLog();
+		/**
+		 *
+		 * @param buffer
+		 */
 	void GetDebugLog(char* buffer);
 	size_t GetDebugLogLength();
+		/**
+		 *
+		 * @return
+		 */
+	static std::vector<AudioInputDevice> EnumerateAudioInputs();
+		/**
+		 *
+		 * @return
+		 */
+	static std::vector<AudioOutputDevice> EnumerateAudioOutputs();
+		/**
+		 *
+		 * @param id
+		 */
+	void SetCurrentAudioInput(std::string id);
+		/**
+		 *
+		 * @param id
+		 */
+	void SetCurrentAudioOutput(std::string id);
+		/**
+		 *
+		 * @return
+		 */
+	std::string GetCurrentAudioInputID();
+		/**
+		 *
+		 * @return
+		 */
+	std::string GetCurrentAudioOutputID();
+	/**
+	 * Set the proxy server to route the data through. Call this before connecting.
+	 * @param protocol PROXY_NONE, PROXY_SOCKS4, or PROXY_SOCKS5
+	 * @param address IP address or domain name of the server
+	 * @param port Port of the server
+	 * @param username Username; empty string for anonymous
+	 * @param password Password; empty string if none
+	 */
+	void SetProxy(int protocol, std::string address, uint16_t port, std::string username, std::string password);
 
 private:
+	struct PendingOutgoingPacket{
+		uint32_t seq;
+		unsigned char type;
+		size_t len;
+		unsigned char* data;
+		Endpoint* endpoint;
+	};
+	enum{
+		UDP_UNKNOWN=0,
+		UDP_PING_SENT,
+		UDP_AVAILABIE,
+		UDP_NOT_AVAILABLE
+	};
+
 	static void* StartRecvThread(void* arg);
 	static void* StartSendThread(void* arg);
 	static void* StartTickThread(void* arg);
 	void RunRecvThread();
 	void RunSendThread();
 	void RunTickThread();
-	void SendPacket(unsigned char* data, size_t len, voip_endpoint_t* ep);
+	void SendPacket(unsigned char* data, size_t len, Endpoint* ep);
 	void HandleAudioInput(unsigned char* data, size_t len);
 	void UpdateAudioBitrate();
 	void SetState(int state);
 	void UpdateAudioOutputState();
 	void SendInit();
-	void SendInitAck();
+	void InitUDPProxy();
 	void UpdateDataSavingState();
-	void SendP2pPing(int endpointType);
 	void KDF(unsigned char* msgKey, size_t x, unsigned char* aesKey, unsigned char* aesIv);
-	void GetLocalNetworkItfInfo(in_addr *addr, char *outName);
-	uint16_t GenerateLocalUDPPort();
-	CBufferOutputStream* GetOutgoingPacketBuffer();
-	uint32_t WritePacketHeader(CBufferOutputStream* s, unsigned char type, uint32_t length);
+	void WritePacketHeader(uint32_t seq, BufferOutputStream* s, unsigned char type, uint32_t length);
 	static size_t AudioInputCallback(unsigned char* data, size_t length, void* param);
 	void SendPublicEndpointsRequest();
-	voip_endpoint_t* GetEndpointByType(int type);
+	void SendPublicEndpointsRequest(Endpoint& relay);
+	Endpoint* GetEndpointByType(int type);
 	void SendPacketReliably(unsigned char type, unsigned char* data, size_t len, double retryInterval, double timeout);
+	uint32_t GenerateOutSeq();
 	void LogDebugInfo();
+	void SendUdpPing(Endpoint* endpoint);
 	int state;
-	int udpSocket;
-	std::vector<voip_endpoint_t*> endpoints;
-	voip_endpoint_t* currentEndpoint;
-	voip_endpoint_t* preferredRelay;
+	std::vector<Endpoint*> endpoints;
+	Endpoint* currentEndpoint;
+	Endpoint* preferredRelay;
+	Endpoint* peerPreferredRelay;
 	bool runReceiver;
 	uint32_t seq;
 	uint32_t lastRemoteSeq;
@@ -256,15 +380,15 @@ private:
 	uint32_t sendLossCountHistory[32];
 	uint32_t audioTimestampIn;
 	uint32_t audioTimestampOut;
-	CAudioInput* audioInput;
-	CAudioOutput* audioOutput;
-	CJitterBuffer* jitterBuffer;
-	COpusDecoder* decoder;
-	COpusEncoder* encoder;
-	CBlockingQueue* sendQueue;
-	CEchoCanceller* echoCanceller;
-	std::vector<CBufferOutputStream*> emptySendBuffers;
+	tgvoip::audio::AudioInput* audioInput;
+	tgvoip::audio::AudioOutput* audioOutput;
+	JitterBuffer* jitterBuffer;
+	OpusDecoder* decoder;
+	OpusEncoder* encoder;
+	BlockingQueue<PendingOutgoingPacket>* sendQueue;
+	EchoCanceller* echoCanceller;
     tgvoip_mutex_t sendBufferMutex;
+	tgvoip_mutex_t endpointsMutex;
 	bool stopping;
 	bool audioOutStarted;
 	tgvoip_thread_t recvThread;
@@ -277,30 +401,22 @@ private:
 	double rttHistory[32];
 	bool waitingForAcks;
 	int networkType;
-	int audioPacketGrouping;
-	int audioPacketsWritten;
 	int dontSendPackets;
 	int lastError;
 	bool micMuted;
 	uint32_t maxBitrate;
-	CBufferOutputStream* currentAudioPacket;
-	void (*stateCallback)(CVoIPController*, int);
+	void (*stateCallback)(VoIPController*, int);
 	std::vector<voip_stream_t*> outgoingStreams;
 	std::vector<voip_stream_t*> incomingStreams;
 	unsigned char encryptionKey[256];
 	unsigned char keyFingerprint[8];
 	unsigned char callID[16];
 	double stateChangeTime;
-	bool needSendP2pPing;
 	bool waitingForRelayPeerInfo;
-	double relayPeerInfoReqTime;
-	double lastP2pPingTime;
-	int p2pPingCount;
-	uint16_t localUdpPort;
 	bool allowP2p;
 	bool dataSavingMode;
 	bool dataSavingRequestedByPeer;
-	char activeNetItfName[32];
+	std::string activeNetItfName;
 	double publicEndpointsReqTime;
 	std::vector<voip_queued_packet_t*> queuedPackets;
 	tgvoip_mutex_t queuedPacketsMutex;
@@ -308,13 +424,36 @@ private:
 	double lastRecvPacketTime;
 	voip_config_t config;
 	int32_t peerVersion;
-	CCongestionControl* conctl;
+	CongestionControl* conctl;
 	voip_stats_t stats;
 	bool receivedInit;
 	bool receivedInitAck;
 	std::vector<std::string> debugLogs;
 	bool isOutgoing;
+	NetworkSocket* udpSocket;
+	NetworkSocket* realUdpSocket;
+	FILE* statsDump;
+	std::string currentAudioInput;
+	std::string currentAudioOutput;
+	bool useTCP;
+	bool useUDP;
+	bool didAddTcpRelays;
+	double setEstablishedAt;
+	SocketSelectCanceller* selectCanceller;
+	NetworkSocket* openingTcpSocket;
 
+	BufferPool outgoingPacketsBufferPool;
+	int udpConnectivityState;
+	double lastUdpPingTime;
+	int udpPingCount;
+
+	int proxyProtocol;
+	std::string proxyAddress;
+	uint16_t proxyPort;
+	std::string proxyUsername;
+	std::string proxyPassword;
+	IPv4Address* resolvedProxyAddress;
+	
 	/*** server config values ***/
 	uint32_t maxAudioBitrate;
 	uint32_t maxAudioBitrateEDGE;
@@ -330,17 +469,28 @@ private:
 	double relaySwitchThreshold;
 	double p2pToRelaySwitchThreshold;
 	double relayToP2pSwitchThreshold;
+	double reconnectingTimeout;
 
 #ifdef TGVOIP_USE_AUDIO_SESSION
-    void (^acquireAudioSession)(void (^)());
-	bool needNotifyAcquiredAudioSession;
+void (^acquireAudioSession)(void (^)());
+bool needNotifyAcquiredAudioSession;
 #endif
 
-#ifdef __APPLE__
 public:
-	static double machTimebase;
-	static uint64_t machTimestart;
+#ifdef __APPLE__
+static double machTimebase;
+static uint64_t machTimestart;
+#if TARGET_OS_IPHONE
+// temporary fix for nasty linking errors
+void SetRemoteEndpoints(voip_legacy_endpoint_t* buffer, size_t count, bool allowP2P);
+#endif
+#endif
+#ifdef _WIN32
+static int64_t win32TimeScale;
+static bool didInitWin32TimeScale;
 #endif
 };
+
+}
 
 #endif

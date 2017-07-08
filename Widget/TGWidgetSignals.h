@@ -1,11 +1,11 @@
 #import <SSignalKit/SSignalKit.h>
 
-@class TGWidgetUser;
+@class TGShareContext;
+@class TGLegacyUser;
 
 @interface TGWidgetSignals : NSObject
 
-+ (SSignal *)peopleSignal;
-
-+ (SSignal *)userAvatarWithUser:(TGWidgetUser *)user clientUserId:(int32_t)clientUserId;
++ (SSignal *)topPeersSignal;
++ (SSignal *)userAvatarWithContext:(TGShareContext *)context user:(TGLegacyUser *)user;
 
 @end

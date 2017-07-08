@@ -460,7 +460,6 @@ const CGFloat TGCallSwipeDistanceThreshold = 128.0f;
     
     NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:baseText attributes:attrs];
     [attributedText setAttributes:subAttrs range:NSMakeRange([textFormat rangeOfString:@"%@"].location, name.length)];
-
     
     _tooltipTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(tooltipTimerTick) interval:5.5 repeat:false];
     
@@ -477,7 +476,7 @@ const CGFloat TGCallSwipeDistanceThreshold = 128.0f;
     [_tooltipContainerView showMenuFromRect:frame animated:false];
     
     if (!manual)
-    [[NSUserDefaults standardUserDefaults] setObject:@(displayed + 1) forKey:@"TG_displayedCallEmojiTooltip_v0"];
+        [[NSUserDefaults standardUserDefaults] setObject:@(displayed + 1) forKey:@"TG_displayedCallEmojiTooltip_v0"];
 }
 
 - (void)tooltipTimerTick

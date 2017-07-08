@@ -9,6 +9,7 @@
 @property (nonatomic) UIEdgeInsets lineInsets;
 @property (nonatomic) bool largeDismissButton;
 
+@property (nonatomic, copy) void (^pressed)();
 @property (nonatomic, copy) void (^dismiss)();
 
 - (instancetype)initWithMessage:(TGMessage *)message;

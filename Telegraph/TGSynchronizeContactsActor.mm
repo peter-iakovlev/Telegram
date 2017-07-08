@@ -831,6 +831,16 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
         
         std::map<int, int> newExportIdToPhoneId;
         
+        NSArray *users = [TGDatabaseInstance() loadContactUsers];
+        std::map<int, TGUser *> usersMap;
+        for (TGUser *user in users)
+        {
+            if (user.contactId != 0)
+                usersMap.insert(std::pair<int, TGUser *>(user.contactId, user));
+        }
+        
+        std::set<int> explicitExport;
+        
         for (CFIndex i = 0; i < count; i++)
         {
             ABRecordRef person = CFArrayGetValueAtIndex(people, i);
@@ -910,6 +920,9 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
                 [newExportState appendBytes:&exportId length:4];
                 
                 newExportIdToPhoneId.insert(std::pair<int, int>(exportId, phoneId));
+                
+                if (usersMap.find(phoneId) == usersMap.end())
+                    explicitExport.insert(phoneId);
                 
                 TGContactBinding *binding = [[TGContactBinding alloc] init];
                 binding.phoneId = phoneId;
@@ -1058,7 +1071,7 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
                     lastExportState.insert(exportId);
             }
         }
-        
+    
         NSMutableArray *currentExportActions = nil;
         
         for (std::map<int, int>::iterator it = newExportIdToPhoneId.begin(); it != newExportIdToPhoneId.end(); it++)
@@ -1069,7 +1082,24 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
                 if (currentExportActions == nil)
                     currentExportActions = [[NSMutableArray alloc] init];
                 [currentExportActions addObject:[[TGExportContactFutureAction alloc] initWithContactId:it->second]];
+                
+                explicitExport.erase(it->second);
             }
+        }
+        
+        NSData *completedExplicitExport = [TGDatabaseInstance() customProperty:@"explicitExport"];
+        if (completedExplicitExport == nil)
+        {
+            if (currentExportActions == nil)
+                currentExportActions = [[NSMutableArray alloc] init];
+            
+            for (std::set<int>::iterator it = explicitExport.begin(); it != explicitExport.end(); it++)
+            {
+                [currentExportActions addObject:[[TGExportContactFutureAction alloc] initWithContactId:*it]];
+            }
+            
+            bool flag = true;
+            [TGDatabaseInstance() setCustomProperty:@"explicitExport" value:[NSData dataWithBytes:&flag length:sizeof(bool)]];
         }
         
         if (currentExportActions != nil && currentExportActions.count != 0)
@@ -1204,7 +1234,7 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
     [self deleteContactsSuccess:uids];
 }
 
-- (void)exportContactsSuccess:(NSArray *)importedPhonesArray users:(NSArray *)users
+- (void)exportContactsSuccess:(NSArray *)importedPhonesArray popularContacts:(NSArray *)popularContacts users:(NSArray *)users
 {
     [TGDatabaseInstance() removeFutureActionsWithType:TGExportContactFutureActionType uniqueIds:_currentActionIds];
     _currentActionIds = nil;
@@ -1225,6 +1255,8 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
             [addedRemoteUids addObject:[[NSNumber alloc] initWithInt:importedPhone.user_id]];
         }
     }
+    
+    [TGDatabaseInstance() replacePopularInvitees:popularContacts];
     
     if (addedRemoteUids.count != 0)
     {

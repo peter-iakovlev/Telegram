@@ -124,7 +124,9 @@
     
     TGCollectionMenuSection *_notificationsAndMediaSection;
     TGUserInfoVariantCollectionItem *_notificationsItem;
-    TGUserInfoVariantCollectionItem *_soundItem;
+    TGVariantCollectionItem *_editingNotificationsItem;
+    TGVariantCollectionItem *_soundItem;
+    TGUserInfoVariantCollectionItem *_sharedMediaItem;
     
     NSMutableDictionary *_groupNotificationSettings;
     NSInteger _sharedMediaCount;
@@ -163,10 +165,7 @@
         
         TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:_peerId];
         
-        if (conversation.chatIsAdmin) {
-            [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Edit") style:UIBarButtonItemStylePlain target:self action:@selector(editPressed)] animated:false];
-        } else {
-        }
+        [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Edit") style:UIBarButtonItemStylePlain target:self action:@selector(editPressed)] animated:false];
         
         [self setTitleText:TGLocalized(@"Channel.TitleInfo")];
         
@@ -238,7 +237,7 @@
         _editingInfoSection = [[TGCollectionMenuSection alloc] initWithItems:@[_channelLinkItem, _channelAboutItem, [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.About.Help")]]];
         
         _signMessagesItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.SignMessages") isOn:false];
-        _signMessagesItem.toggled = ^(bool value) {
+        _signMessagesItem.toggled = ^(bool value, __unused TGSwitchCollectionItem *item) {
             __strong TGChannelInfoController *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 [strongSelf updateSignMessages:value];
@@ -248,10 +247,12 @@
         
         _notificationsItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Notifications") variant:nil action:@selector(notificationsPressed)];
         _notificationsItem.deselectAutomatically = true;
-        _soundItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Sound") variant:nil action:@selector(soundPressed)];
+        _editingNotificationsItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Notifications") variant:nil action:@selector(notificationsPressed)];
+        _notificationsItem.deselectAutomatically = true;
+        _soundItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Sound") variant:nil action:@selector(soundPressed)];
         _soundItem.deselectAutomatically = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad;
         
-        TGUserInfoVariantCollectionItem *_sharedMediaItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.SharedMedia") variant:@"" action:@selector(sharedMediaPressed)];
+        _sharedMediaItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.SharedMedia") variant:@"" action:@selector(sharedMediaPressed)];
         
         _notificationsAndMediaSection = [[TGCollectionMenuSection alloc] initWithItems:@[_notificationsItem, _sharedMediaItem]];
         UIEdgeInsets notificationsAndMediaSectionInsets = _notificationsAndMediaSection.insets;
@@ -340,18 +341,47 @@
     }
     
     if (editing) {
-        _groupInfoItem.transparent = false;
-        if ([_groupInfoSection indexOfItem:_setGroupPhotoItem] == NSNotFound) {
-            [_groupInfoSection insertItem:_setGroupPhotoItem atIndex:1];
-        }
         _groupInfoSection.insets = UIEdgeInsetsMake(0.0f, 0.0f, 35.0f, 0.0f);
+        _groupInfoItem.transparent = false;
+        if (_conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.canChangeInfo) {
+            if ([_groupInfoSection indexOfItem:_setGroupPhotoItem] == NSNotFound) {
+                [_groupInfoSection insertItem:_setGroupPhotoItem atIndex:1];
+            }
+        } else {
+            [_groupInfoSection deleteItem:_setGroupPhotoItem];
+        }
         
         [self.menuSections addSection:_groupInfoSection];
-        [self.menuSections addSection:_editingInfoSection];
+        
+        while (_editingInfoSection.items.count != 0) {
+            [_editingInfoSection deleteItemAtIndex:0];
+        }
         
         if (_conversation.channelRole == TGChannelRoleCreator) {
+            [_editingInfoSection addItem:_channelLinkItem];
+        }
+        
+        if (_conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.canChangeInfo) {
+            [_editingInfoSection addItem:_channelAboutItem];
+            [_editingInfoSection addItem:[[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.About.Help")]];
+        }
+        
+        if (_editingInfoSection.items.count != 0) {
+            [self.menuSections addSection:_editingInfoSection];
+        }
+        
+        if (_conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.canChangeInfo) {
             [self.menuSections addSection:_editingSignMessagesSection];
         }
+        
+        while (_notificationsAndMediaSection.items.count != 0) {
+            [_notificationsAndMediaSection deleteItemAtIndex:0];
+        }
+        
+        [_notificationsAndMediaSection addItem:_editingNotificationsItem];
+        [_notificationsAndMediaSection addItem:_soundItem];
+        
+        [self.menuSections addSection:_notificationsAndMediaSection];
         
         if (_conversation.channelRole == TGChannelRoleCreator) {
             [self.menuSections addSection:_deleteChannelSection];
@@ -365,10 +395,34 @@
         
         [self.menuSections addSection:_groupInfoSection];
         [self.menuSections addSection:_infoSection];
-        if (_conversation.channelRole == TGChannelRoleCreator || _conversation.channelRole == TGChannelRoleModerator || _conversation.channelRole == TGChannelRolePublisher) {
+        
+        while (_adminInfoSection.items.count != 0) {
+            [_adminInfoSection deleteItemAtIndex:0];
+        }
+        
+        if (_conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.hasAnyRights) {
+            [_adminInfoSection addItem:_infoManagementItem];
+            
+            if (_conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.canBanUsers) {
+                //[_adminInfoSection addItem:_infoBlacklistItem];
+            }
+            
+            [_adminInfoSection addItem:_infoMembersItem];
+        }
+        
+        if (_adminInfoSection.items.count != 0) {
             [self.menuSections addSection:_adminInfoSection];
         }
+        
+        while (_notificationsAndMediaSection.items.count != 0) {
+            [_notificationsAndMediaSection deleteItemAtIndex:0];
+        }
+        
+        [_notificationsAndMediaSection addItem:_notificationsItem];
+        [_notificationsAndMediaSection addItem:_sharedMediaItem];
+        
         [self.menuSections addSection:_notificationsAndMediaSection];
+        
         if (_conversation.kind == TGConversationKindPersistentChannel && _conversation.channelRole != TGChannelRoleCreator) {
             [self.menuSections addSection:_leaveSection];
         }
@@ -424,7 +478,7 @@
     {
         _editing = true;
         
-        [_groupInfoItem setEditing:true animated:false];
+        [_groupInfoItem setEditing:_conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.canChangeInfo animated:false];
         [self _setupSections:true];
         [self enterEditingMode:true];
         
@@ -826,6 +880,7 @@
     }
     
     [_notificationsItem setVariant:variant];
+    [_editingNotificationsItem setVariant:variant];
     
     int groupSoundId = [[_groupNotificationSettings objectForKey:@"soundId"] intValue];
     _soundItem.variant = [self soundNameFromId:groupSoundId];
@@ -848,6 +903,7 @@
     if (!TGStringCompare(_notificationsItem.variant, variant))
     {
         [_notificationsItem setVariant:variant];
+        [_editingNotificationsItem setVariant:variant];
     }
 }
 
@@ -861,7 +917,7 @@
     {
         bool reloadData = false;
         
-        if (_conversation.channelRole != conversation.channelRole) {
+        if (_conversation.channelRole != conversation.channelRole || !TGObjectCompare(_conversation.channelAdminRights, conversation.channelAdminRights)) {
             reloadData = true;
         }
         
@@ -1197,15 +1253,15 @@
     {
         NSString *linkString = [NSString stringWithFormat:@"https://t.me/%@", _conversation.username];
         NSString *shareString = linkString;
+        NSString *externalString = shareString;
         if (_conversation.about.length > 0)
         {
             NSString *aboutText = _conversation.about;
             if (aboutText.length > 200)
                 aboutText = [[aboutText substringToIndex:200] stringByAppendingString:@"..."];
 
-            shareString = [NSString stringWithFormat:@"%@ %@", aboutText, shareString];
+            externalString = [NSString stringWithFormat:@"%@ %@", aboutText, externalString];
         }
-        
         
         CGRect (^sourceRect)(void) = ^CGRect
         {
@@ -1222,7 +1278,9 @@
         } shareAction:^(NSArray *peerIds, NSString *caption)
         {
             [[TGShareSignals shareText:shareString toPeerIds:peerIds caption:caption] startWithNext:nil];
-        } externalShareItemSignal:[SSignal single:shareString] sourceView:self.view sourceRect:sourceRect barButtonItem:nil];
+            
+            [[[TGProgressWindow alloc] init] dismissWithSuccess];
+        } externalShareItemSignal:[SSignal single:externalString] sourceView:self.view sourceRect:sourceRect barButtonItem:nil];
     }
     else
     {
@@ -1295,7 +1353,7 @@
 }
 
 - (void)infoBlacklistPressed {
-    [self.navigationController pushViewController:[[TGChannelMembersController alloc] initWithConversation:_conversation mode:TGChannelMembersModeBlacklist] animated:true];
+    [self.navigationController pushViewController:[[TGChannelMembersController alloc] initWithConversation:_conversation mode:TGChannelMembersModeBannedAndRestricted] animated:true];
 }
 
 - (void)infoMembersPressed {
@@ -1304,7 +1362,7 @@
 
 - (void)sharedMediaPressed {
     TGSharedMediaController *controller = [[TGSharedMediaController alloc] initWithPeerId:_peerId accessHash:_conversation.accessHash important:true];
-    controller.channelAllowDelete = _conversation.channelRole == TGChannelRoleCreator;
+    controller.channelAllowDelete = _conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.canDeleteMessages;
     [self.navigationController pushViewController:controller animated:true];
 }
 

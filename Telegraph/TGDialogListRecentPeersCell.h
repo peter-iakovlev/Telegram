@@ -12,7 +12,9 @@
 
 + (CGFloat)heightForWidth:(CGFloat)width count:(NSInteger)count expanded:(bool)expanded;
 
-- (void)setRecentPeers:(TGDialogListRecentPeers *)recentPeers;
+- (void)setRecentPeers:(TGDialogListRecentPeers *)recentPeers unreadCounts:(NSDictionary *)unreadCounts;
+- (void)updateUnreadCounts:(NSDictionary *)unreadCounts;
+- (void)updateSelectedPeerIds:(NSArray *)peerIds;
 
 - (int64_t)peerAtPoint:(CGPoint)point frame:(CGRect *)frame;
 

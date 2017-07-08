@@ -6,7 +6,8 @@ typedef enum {
     TGSharedMediaControllerModeVideo,
     TGSharedMediaControllerModeFile,
     TGSharedMediaControllerModeLink,
-    TGSharedMediaControllerModeAudio
+    TGSharedMediaControllerModeAudio,
+    TGSharedMediaControllerModeVoiceRound
 } TGSharedMediaControllerMode;
 
 @interface TGSharedMediaController : TGViewController

@@ -7,8 +7,11 @@
  */
 
 #import "TGAudioPlayer.h"
+#import <AVFoundation/AVFoundation.h>
 
 @interface TGNativeAudioPlayer : TGAudioPlayer
+
+@property (nonatomic, readonly) AVPlayer *player;
 
 - (instancetype)initWithPath:(NSString *)path music:(bool)music controlAudioSession:(bool)controlAudioSession;
 

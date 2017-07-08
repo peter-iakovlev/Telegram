@@ -11,6 +11,7 @@
 @property (nonatomic, copy) bool (^isItemHidden)(id<TGSharedMediaItem>);
 @property (nonatomic, copy) bool (^isItemSelected)(id<TGSharedMediaItem>);
 @property (nonatomic, copy) void (^toggleItemSelection)(id<TGSharedMediaItem>);
+@property (nonatomic, copy) void (^itemLongPressed)(id<TGSharedMediaItem>);
 @property (nonatomic) bool editing;
 
 - (void)enqueueImageViewWithUri;

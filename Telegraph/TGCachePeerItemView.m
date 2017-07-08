@@ -23,7 +23,7 @@
     self = [super initWithFrame:frame];
     if (self != nil) {
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 40.0f, 40.0f)];
-        [_avatarView setSingleFontSize:14.0f doubleFontSize:14.0f useBoldFont:false];
+        [_avatarView setSingleFontSize:18.0f doubleFontSize:18.0f useBoldFont:false];
         
         [self.contentView addSubview:_avatarView];
         

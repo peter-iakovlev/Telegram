@@ -403,7 +403,7 @@ static UIColor *mediaTextColor = nil;
         bool fadeTransition = cpuCoreCount() > 1;
         
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(10, 7, 62, 62)];
-        [_avatarView setSingleFontSize:35.0f doubleFontSize:21.0f useBoldFont:false];
+        [_avatarView setSingleFontSize:28.0f doubleFontSize:21.0f useBoldFont:false];
         _avatarView.fadeTransition = fadeTransition;
         [_wrapView addSubview:_avatarView];
         
@@ -1231,7 +1231,10 @@ static NSArray *editingButtonTypes(bool muted, bool pinned, bool mutable) {
                             }
                         }
                         
-                        NSMutableString *formatString = [[NSMutableString alloc] initWithString:TGLocalized(formatStringBase)];
+                        NSString *baseString = TGLocalized(formatStringBase);
+                        baseString = [baseString stringByReplacingOccurrencesOfString:@"%@" withString:@"{score}"];
+                        
+                        NSMutableString *formatString = [[NSMutableString alloc] initWithString:baseString];
                         
                         NSRange scoreRange = [formatString rangeOfString:@"{score}"];
                         if (scoreRange.location != NSNotFound) {
@@ -1298,7 +1301,7 @@ static NSArray *editingButtonTypes(bool muted, bool pinned, bool mutable) {
                 }
                 else
                 {
-                    _messageText = TGLocalized(@"Message.Video");
+                    _messageText = videoMediaAttachment.roundMessage ? TGLocalized(@"Message.VideoMessage") : TGLocalized(@"Message.Video");
                     _messageTextColor = mediaTextColor;
                 }
                 //_mediaIcon = [UIImage imageNamed:@"MediaVideo"];

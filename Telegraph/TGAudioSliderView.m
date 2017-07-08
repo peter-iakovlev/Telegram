@@ -447,7 +447,7 @@
     if (_status == nil) {
         [self setDurationLabelFromSeconds:_duration];
     } else {
-        [self setDurationLabelFromSeconds:(int32_t)(_status.offset * _status.duration)];
+        [self setDurationLabelFromSeconds:(int32_t)(_status.duration - _status.offset * _status.duration)];
     }
 }
 

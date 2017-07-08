@@ -39,6 +39,7 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
         _maximumValue = 1.0f;
         _startValue = 0.0f;
         _value = _startValue;
+        _dotSize = 10.5f;
         
         _lineSize = TGPhotoEditorSliderViewLineSize;
         _knobPadding = TGPhotoEditorSliderViewInternalMargin;
@@ -126,10 +127,30 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
     }
     
     CGContextSetFillColorWithColor(context, _backColor.CGColor);
-    CGContextFillRect(context, backFrame);
+    
+    if (self.trackCornerRadius > FLT_EPSILON)
+    {
+        CGContextAddPath(context, [UIBezierPath bezierPathWithRoundedRect:backFrame cornerRadius:self.trackCornerRadius].CGPath);
+        CGContextClosePath(context);
+        CGContextFillPath(context);
+    }
+    else
+    {
+        CGContextFillRect(context, backFrame);
+    }
     
     CGContextSetFillColorWithColor(context, _trackColor.CGColor);
-    CGContextFillRect(context, trackFrame);
+    
+    if (self.trackCornerRadius > FLT_EPSILON)
+    {
+        CGContextAddPath(context, [UIBezierPath bezierPathWithRoundedRect:trackFrame cornerRadius:self.trackCornerRadius].CGPath);
+        CGContextClosePath(context);
+        CGContextFillPath(context);
+    }
+    else
+    {
+        CGContextFillRect(context, trackFrame);
+    }
     
     if (!_startHidden)
     {
@@ -141,16 +162,25 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
     {
         for (NSInteger i = 0; i < self.positionsCount; i++)
         {
-            CGContextSetBlendMode(context, kCGBlendModeClear);
-            CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
+            if ([self.backgroundColor isEqual:[UIColor clearColor]])
+            {
+                CGContextSetBlendMode(context, kCGBlendModeClear);
+                CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
+            }
+            else
+            {
+                CGContextSetFillColorWithColor(context, self.backgroundColor.CGColor);
+            }
             
-            CGRect dotRect = CGRectMake(totalLength / (self.positionsCount - 1) * i, (sideLength - 13.5f) / 2, 13.5f, 13.5f);
+            CGFloat inset = 1.5f;
+            CGFloat outerSize = _dotSize + inset * 2.0f;
+            CGRect dotRect = CGRectMake(margin - outerSize / 2.0f + totalLength / (self.positionsCount - 1) * i, (sideLength - outerSize) / 2, outerSize, outerSize);
             if (vertical)
                 dotRect = CGRectMake(dotRect.origin.y, dotRect.origin.x, dotRect.size.height, dotRect.size.width);
             
             CGContextFillEllipseInRect(context, dotRect);
             
-            dotRect = CGRectInset(dotRect, 1.5f, 1.5f);
+            dotRect = CGRectInset(dotRect, inset, inset);
         
             CGContextSetBlendMode(context, kCGBlendModeNormal);
             bool highlighted = CGRectGetMidX(dotRect) < CGRectGetMaxX(trackFrame);
@@ -179,6 +209,7 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
 - (void)setBackColor:(UIColor *)backColor
 {
     _backColor = backColor;
+    [self setNeedsDisplay];
 }
 
 - (UIColor *)trackColor
@@ -189,6 +220,7 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
 - (void)setTrackColor:(UIColor *)trackColor
 {
     _trackColor = trackColor;
+    [self setNeedsDisplay];
 }
 
 - (UIImage *)knobImage
@@ -227,6 +259,13 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
         _startHidden = true;
 
     [self setNeedsLayout];
+    [self setNeedsDisplay];
+}
+
+- (void)setDotSize:(CGFloat)dotSize
+{
+    _dotSize = dotSize;
+    [self setNeedsDisplay];
 }
 
 - (void)layoutSubviews

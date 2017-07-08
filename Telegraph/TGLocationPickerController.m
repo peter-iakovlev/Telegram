@@ -182,8 +182,8 @@ const TGLocationPlacesService TGLocationPickerPlacesProvider = TGLocationPlacesS
     _nearbyVenuesTableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     [self.view addSubview:_nearbyVenuesTableView];
     
-    if ([_nearbyVenuesTableView respondsToSelector:@selector(setCellLayoutMarginsFollowReadableWidth:)])
-        _nearbyVenuesTableView.cellLayoutMarginsFollowReadableWidth = false;
+    //if ([_nearbyVenuesTableView respondsToSelector:@selector(setCellLayoutMarginsFollowReadableWidth:)])
+    //    _nearbyVenuesTableView.cellLayoutMarginsFollowReadableWidth = false;
     
     if (TGLocationPickerPlacesProvider == TGLocationPlacesServiceFoursquare)
     {

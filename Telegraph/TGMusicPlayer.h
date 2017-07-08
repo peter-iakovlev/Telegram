@@ -4,6 +4,8 @@
 #import "TGMusicPlayerPlaylist.h"
 #import "TGMusicPlayerItem.h"
 
+#import "TGAudioPlayer.h"
+
 typedef struct {
     bool downloaded;
     bool downloading;
@@ -23,6 +25,7 @@ typedef enum {
 
 @interface TGMusicPlayerStatus : NSObject
 
+@property (nonatomic, strong, readonly) TGAudioPlayer *player;
 @property (nonatomic, strong, readonly) TGMusicPlayerItem *item;
 @property (nonatomic, readonly) TGMusicPlayerItemPosition position;
 
@@ -30,6 +33,7 @@ typedef enum {
 @property (nonatomic, readonly) CGFloat offset;
 @property (nonatomic, readonly) TGMusicPlayerDownloadingStatus downloadedStatus;
 @property (nonatomic, readonly) bool isVoice;
+@property (nonatomic, readonly) bool isRoundMessage;
 
 @property (nonatomic, readonly) CGFloat duration;
 
@@ -55,6 +59,7 @@ typedef enum {
 - (void)controlPlay;
 - (void)controlPause;
 - (void)controlPause:(void (^)())completion;
+- (void)controlPlayPause;
 - (void)controlNext;
 - (void)controlPrevious;
 - (void)controlSeekToPosition:(CGFloat)position;

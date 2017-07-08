@@ -31,6 +31,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGCdnFileData.h"
+
 static NSMutableDictionary *rewriteDict()
 {
     static NSMutableDictionary *dict = nil;
@@ -47,9 +49,11 @@ class TGVideoPartData
 public:
     id token;
     NSTimeInterval startTime;
+    int partOffset;
     int partLength;
     int downloadedLength;
     NSData *downloadedData;
+    bool restart;
     
 public:
     TGVideoPartData()
@@ -57,8 +61,10 @@ public:
         token = nil;
         startTime = CFAbsoluteTimeGetCurrent();
         downloadedLength = 0;
+        partOffset = 0;
         partLength = 0;
         downloadedData = nil;
+        restart = false;
     }
     
     TGVideoPartData(TGVideoPartData const &other)
@@ -67,9 +73,11 @@ public:
         {
             token = other.token;
             startTime = other.startTime;
+            partOffset = other.partOffset;
             partLength = other.partLength;
             downloadedLength = other.downloadedLength;
             downloadedData = other.downloadedData;
+            restart = other.restart;
         }
     }
     
@@ -79,9 +87,11 @@ public:
         {
             token = other.token;
             startTime = other.startTime;
+            partOffset = other.partOffset;
             partLength = other.partLength;
             downloadedLength = other.downloadedLength;
             downloadedData = other.downloadedData;
+            restart = other.restart;
         }
         return *this;
     }
@@ -110,6 +120,11 @@ public:
     TGNetworkWorkerGuard *_worker2;
     
     int _nextWorker;
+    
+    TGCdnFileData *_cdnFileData;
+    
+    SMetaDisposable *_reuploadDisposable;
+    bool _isReuploading;
 }
 
 @property (nonatomic, strong) NSString *storeFilePath;
@@ -439,6 +454,13 @@ public:
                             [fileManager createFileAtPath:_tempStoreFilePath contents:[NSData data] attributes:nil];
                         }
                         
+                        if ([videoUrl hasPrefix:@"mt-encrypted-file://"] && self.videoAttachment.roundMessage)
+                        {
+                            [fileManager removeItemAtPath:_tempStoreFilePath error:&error];
+                            [fileManager createFileAtPath:_tempStoreFilePath contents:[NSData data] attributes:nil];
+                            fileSize = 0;
+                        }
+                        
                         _downloadedFileSize = fileSize;
                         
                         _fileStream = [[NSOutputStream alloc] initToFileAtPath:_tempStoreFilePath append:true];
@@ -558,70 +580,84 @@ public:
         }
         else
         {
-            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+            if (_videoAttachment.roundMessage && _encryptionKey != nil)
             {
-                TGLog(@"Generating video preview");
-                
-                AVAsset *asset = [AVAsset assetWithURL:[NSURL fileURLWithPath:_storeFilePath]];
-                AVAssetImageGenerator *imageGenerator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
-                imageGenerator.maximumSize = CGSizeMake(800, 800);
-                imageGenerator.appliesPreferredTrackTransform = true;
-                NSError *imageError = nil;
-                CGImageRef imageRef = [imageGenerator copyCGImageAtTime:CMTimeMake(0, asset.duration.timescale) actualTime:NULL error:&imageError];
-                
-                UIImage *image = [[UIImage alloc] initWithCGImage:imageRef];
-                UIImage *thumbnailImage = nil;
-                
-                if (imageRef != nil)
-                {
-                    if (_videoAttachment != nil)
-                    {
-                        NSString *thumbnailUrl = [_videoAttachment.thumbnailInfo closestImageUrlWithSize:CGSizeMake(90, 90) resultingSize:NULL];
-                        thumbnailImage = TGScaleImageToPixelSize(image, TGFitSize(CGSizeMake(image.size.width * image.scale, image.size.height * image.scale), CGSizeMake(200, 200)));
-                        NSData *thumbnailData = UIImageJPEGRepresentation(thumbnailImage, 0.85f);
-                        
-                        if (thumbnailData != nil)
-                        {
-                            [[TGRemoteImageView sharedCache] removeFromMemoryCache:thumbnailUrl matchEnd:true];
-                            [[TGRemoteImageView sharedCache] cacheImage:nil withData:thumbnailData url:thumbnailUrl availability:TGCacheDisk];
-                            
-                            [ActionStageInstance() dispatchOnStageQueue:^
-                            {
-                                TGFileDownloadActor *fileActor = (TGFileDownloadActor *)[ActionStageInstance() executingActorWithPath:[[NSString alloc] initWithFormat:@"/tg/file/(%@)", thumbnailUrl]];
-                                if (fileActor != nil)
-                                {
-                                    [fileActor completeWithData:thumbnailData];
-                                }
-                                else
-                                {
-                                    [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/as/media/imageThumbnailUpdated"] resource:thumbnailUrl];
-                                }
-                            }];
-                        }
-                    }
-                    
-                    [[TGRemoteImageView sharedCache] cacheImage:nil withData:UIImageJPEGRepresentation(image, 0.87f) url:_thumbnailFilePath availability:TGCacheDisk];
-                    
-                    if (imageRef != NULL)
-                        CGImageRelease(imageRef);
-                }
-                
                 NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
                 [result setObject:_storeFilePath forKey:@"filePath"];
-                if (imageRef != nil)
-                    [result setObject:_thumbnailFilePath forKey:@"thumbnailPath"];
-                
-                if (image != nil)
-                    [ActionStageInstance() dispatchResource:@"/as/media/previewReady" resource:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:_videoId], @"videoId", image, @"image", nil]];
-                
-                TGLog(@"Generated video preview");
-                
+
                 [ActionStageInstance() actionCompleted:self.path result:result];
-            });
+            }
+            else
+            {
+                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+                {
+                    TGLog(@"Generating video preview");
+                    
+                    AVAsset *asset = [AVAsset assetWithURL:[NSURL fileURLWithPath:_storeFilePath]];
+                    AVAssetImageGenerator *imageGenerator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
+                    imageGenerator.maximumSize = CGSizeMake(800, 800);
+                    imageGenerator.appliesPreferredTrackTransform = true;
+                    NSError *imageError = nil;
+                    CGImageRef imageRef = [imageGenerator copyCGImageAtTime:CMTimeMake(0, asset.duration.timescale) actualTime:NULL error:&imageError];
+                    
+                    UIImage *image = [[UIImage alloc] initWithCGImage:imageRef];
+                    UIImage *thumbnailImage = nil;
+                    
+                    if (imageRef != nil)
+                    {
+                        if (_videoAttachment != nil)
+                        {
+                            NSString *thumbnailUrl = [_videoAttachment.thumbnailInfo closestImageUrlWithSize:CGSizeMake(90, 90) resultingSize:NULL];
+                            thumbnailImage = TGScaleImageToPixelSize(image, TGFitSize(CGSizeMake(image.size.width * image.scale, image.size.height * image.scale), CGSizeMake(200, 200)));
+                            NSData *thumbnailData = UIImageJPEGRepresentation(thumbnailImage, 0.85f);
+                            
+                            if (thumbnailData != nil)
+                            {
+                                [[TGRemoteImageView sharedCache] removeFromMemoryCache:thumbnailUrl matchEnd:true];
+                                [[TGRemoteImageView sharedCache] cacheImage:nil withData:thumbnailData url:thumbnailUrl availability:TGCacheDisk];
+                                
+                                [ActionStageInstance() dispatchOnStageQueue:^
+                                {
+                                    TGFileDownloadActor *fileActor = (TGFileDownloadActor *)[ActionStageInstance() executingActorWithPath:[[NSString alloc] initWithFormat:@"/tg/file/(%@)", thumbnailUrl]];
+                                    if (fileActor != nil)
+                                    {
+                                        [fileActor completeWithData:thumbnailData];
+                                    }
+                                    else
+                                    {
+                                        [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/as/media/imageThumbnailUpdated"] resource:thumbnailUrl];
+                                    }
+                                }];
+                            }
+                        }
+                        
+                        [[TGRemoteImageView sharedCache] cacheImage:nil withData:UIImageJPEGRepresentation(image, 0.87f) url:_thumbnailFilePath availability:TGCacheDisk];
+                        
+                        if (imageRef != NULL)
+                            CGImageRelease(imageRef);
+                    }
+                    
+                    NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
+                    [result setObject:_storeFilePath forKey:@"filePath"];
+                    if (imageRef != nil)
+                        [result setObject:_thumbnailFilePath forKey:@"thumbnailPath"];
+                    
+                    if (image != nil)
+                        [ActionStageInstance() dispatchResource:@"/as/media/previewReady" resource:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:_videoId], @"videoId", image, @"image", nil]];
+                    
+                    TGLog(@"Generated video preview");
+                    
+                    [ActionStageInstance() actionCompleted:self.path result:result];
+                });
+            }
         }
     }
     else
     {
+        if (_worker1 == nil || _isReuploading) {
+            return;
+        }
+        
         if (!_reportedProgress)
         {
             _reportedProgress = true;
@@ -635,7 +671,7 @@ public:
         
         for (std::map<int, TGVideoPartData>::iterator it = _downloadingParts.begin(); it != _downloadingParts.end(); it++)
         {
-            if (it->second.downloadedData == nil)
+            if (it->second.downloadedData == nil && !it->second.restart)
                 activeDownloadingParts++;
         }
         
@@ -651,6 +687,12 @@ public:
                 {
                     if (it->first + it->second.partLength > nextDownloadOffset)
                         nextDownloadOffset = it->first + it->second.partLength;
+                    
+                    if (it->second.restart) {
+                        it->second.restart = false;
+                        
+                        requestList.push_back(std::pair<int, int>(it->second.partOffset, it->second.partLength));
+                    }
                 }
                 
                 if (nextDownloadOffset >= _videoFileLength)
@@ -660,6 +702,7 @@ public:
                 
                 requestList.push_back(std::pair<int, int>(nextDownloadOffset, partLength));
                 TGVideoPartData videoPartData;
+                videoPartData.partOffset = nextDownloadOffset;
                 videoPartData.partLength = partLength;
                 _downloadingParts[nextDownloadOffset] = videoPartData;
                 activeDownloadingParts++;
@@ -670,6 +713,7 @@ public:
                 
                 requestList.push_back(std::pair<int, int>(it->first, it->second));
                 TGVideoPartData videoPartData;
+                videoPartData.partOffset = it->first;
                 videoPartData.partLength = it->second;
                 _downloadingParts[it->first] = videoPartData;
                 activeDownloadingParts++;
@@ -678,10 +722,18 @@ public:
             }
         }
         
-        //[self printParts];
-        
         for (std::vector<std::pair<int, int> >::iterator it = requestList.begin(); it != requestList.end(); it++)
         {
+            MTRequest *request = [[MTRequest alloc] init];
+            
+            int offset = it->first;
+            int length = it->second;
+            
+            int32_t updatedLimit = length;
+            while (updatedLimit % 4096 != 0 || 1048576 % updatedLimit != 0) {
+                updatedLimit++;
+            }
+            
             id location = nil;
             if (_encryptionKey != nil)
             {
@@ -695,19 +747,24 @@ public:
                 ((TLInputFileLocation$inputDocumentFileLocation *)location).n_id = _videoId;
                 ((TLInputFileLocation$inputDocumentFileLocation *)location).access_hash = _accessHash;
             }
-
-#if TGUseModernNetworking
-            MTRequest *request = [[MTRequest alloc] init];
             
-            TLRPCupload_getFile$upload_getFile *getFile = [[TLRPCupload_getFile$upload_getFile alloc] init];
-            
-            int offset = it->first;
-            int length = it->second;
-            
-            getFile.location = location;
-            getFile.offset = offset;
-            getFile.limit = length;
-            request.body = getFile;
+            if (_cdnFileData != nil) {
+                TLRPCupload_getCdnFile$upload_getCdnFile *getFile = [[TLRPCupload_getCdnFile$upload_getCdnFile alloc] init];
+                
+                getFile.file_token = _cdnFileData.token;
+                getFile.offset = offset;
+                
+                getFile.limit = updatedLimit;
+                request.body = getFile;
+            } else {
+                TLRPCupload_getFile$upload_getFile *getFile = [[TLRPCupload_getFile$upload_getFile alloc] init];
+                
+                getFile.location = location;
+                getFile.offset = offset;
+                
+                getFile.limit = updatedLimit;
+                request.body = getFile;
+            }
             
             __weak TGVideoDownloadActor *weakSelf = self;
             [request setCompleted:^(TLupload_File *result, __unused NSTimeInterval timestamp, id error)
@@ -716,8 +773,36 @@ public:
                 {
                     __strong TGVideoDownloadActor *strongSelf = weakSelf;
                     
-                    if (error == nil)
-                        [strongSelf filePartDownloadSuccess:location offset:offset length:length data:result.bytes];
+                    if (error == nil) {
+                        if ([result isKindOfClass:[TLupload_File$upload_file class]]) {
+                            [strongSelf filePartDownloadSuccess:location offset:offset length:length data:((TLupload_File$upload_file *)result).bytes];
+                        } else if ([result isKindOfClass:[TLupload_File$upload_fileCdnRedirect class]]) {
+                            auto it = strongSelf->_downloadingParts.find(offset);
+                            if (it != strongSelf->_downloadingParts.end()) {
+                                it->second.restart = true;
+                            }
+                            
+                            TLupload_File$upload_fileCdnRedirect *redirect = (TLupload_File$upload_fileCdnRedirect *)result;
+                            [strongSelf switchToCdn:[[TGCdnFileData alloc] initWithCdnId:redirect.dc_id token:redirect.file_token encryptionKey:redirect.encryption_key encryptionIv:redirect.encryption_iv]];
+                        } else if ([result isKindOfClass:[TLupload_CdnFile$upload_cdnFile class]]) {
+                            TGCdnFileData *fileData = strongSelf->_cdnFileData;
+                            NSData *bytes = ((TLupload_CdnFile$upload_cdnFile *)result).bytes;
+                            NSMutableData *encryptionIv = [[NSMutableData alloc] initWithData:fileData.encryptionIv];
+                            int32_t ivOffset = offset / 16;
+                            ivOffset = NSSwapInt(ivOffset);
+                            memcpy(((uint8_t *)encryptionIv.mutableBytes) + encryptionIv.length - 4, &ivOffset, 4);
+                            NSData *data = MTAesCtrDecrypt(bytes, fileData.encryptionKey, encryptionIv);
+                            [strongSelf filePartDownloadSuccess:location offset:offset length:length data:data];
+                        } else if ([result isKindOfClass:[TLupload_CdnFile$upload_cdnFileReuploadNeeded class]]) {
+                            auto it = strongSelf->_downloadingParts.find(offset);
+                            if (it != strongSelf->_downloadingParts.end()) {
+                                it->second.restart = true;
+                            }
+                            
+                            TLupload_CdnFile$upload_cdnFileReuploadNeeded *reupload = (TLupload_CdnFile$upload_cdnFileReuploadNeeded *)result;
+                            [strongSelf reuploadToCdn:reupload.request_token];
+                        }
+                    }
                     else
                         [strongSelf filePartDownloadFailed:location offset:offset length:length];
                 }];
@@ -743,21 +828,66 @@ public:
             
             id token = request.internalId;
             [worker.strongWorker addRequest:request];
-#else
-
-            id token = nil;
-            if (_encryptionKey != nil)
-            {
-                token = [TGTelegraphInstance doDownloadFilePart:_datacenterId location:location offset:it->first length:it->second actor:(id<TGFileDownloadActor>)self];
-            }
-            else
-            {                
-                token = [TGTelegraphInstance doDownloadFilePart:_datacenterId location:location offset:it->first length:it->second actor:(id<TGFileDownloadActor>)self];
-            }
-#endif
+            
             _downloadingParts[it->first].token = token;
         }
     }
+}
+    
+- (void)switchToCdn:(TGCdnFileData *)fileData {
+    if (_cdnFileData != nil) {
+        return;
+    }
+    
+    _cdnFileData = fileData;
+    
+    _worker1 = nil;
+    _worker2 = nil;
+    
+    __weak TGVideoDownloadActor *weakSelf = self;
+    _worker1Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:fileData.cdnId type:TGNetworkMediaTypeTagVideo isCdn:true completion:^(TGNetworkWorkerGuard *worker)
+    {
+        __strong TGVideoDownloadActor *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            [strongSelf downloadFilePartsWithWorker:worker];
+        }
+    }];
+    
+    _worker2Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:fileData.cdnId type:TGNetworkMediaTypeTagVideo isCdn:true completion:^(TGNetworkWorkerGuard *worker)
+    {
+        __strong TGVideoDownloadActor *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            [strongSelf assignAdditionalWorker:worker];
+        }
+    }];
+}
+    
+- (void)reuploadToCdn:(NSData *)requestToken {
+    if (_isReuploading) {
+        return;
+    }
+    _isReuploading = true;
+    if (_reuploadDisposable == nil) {
+        _reuploadDisposable = [[SMetaDisposable alloc] init];
+    }
+    NSData *fileToken = _cdnFileData.token;
+    __weak TGVideoDownloadActor *weakSelf = self;
+    [_reuploadDisposable setDisposable:[[[[TGTelegramNetworking instance] downloadWorkerForDatacenterId:_datacenterId type:TGNetworkMediaTypeTagGeneric] mapToSignal:^SSignal *(TGNetworkWorkerGuard *worker) {
+        TLRPCupload_reuploadCdnFile$upload_reuploadCdnFile *reupload = [[TLRPCupload_reuploadCdnFile$upload_reuploadCdnFile alloc] init];
+        reupload.file_token = fileToken;
+        reupload.request_token = requestToken;
+        return [[TGTelegramNetworking instance] requestSignal:reupload worker:worker];
+    }] startWithNext:^(__unused id next) {
+        [ActionStageInstance() dispatchOnStageQueue:^{
+            __strong TGVideoDownloadActor *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                strongSelf->_isReuploading = false;
+                [strongSelf downloadFileParts];
+            }
+        }];
+    } error:nil completed:nil]];
 }
 
 - (void)videoPartDownloadProgress:(int)offset packetLength:(int)packetLength progress:(float)progress

@@ -104,27 +104,27 @@ NSString *const STPIncorrectCVC = @"com.stripe.lib:IncorrectCVC";
 #pragma mark Strings
 
 + (nonnull NSString *)stp_cardErrorInvalidNumberUserMessage {
-    return STPLocalizedString(@"Your card's number is invalid", @"Error when the card number is not valid");
+    return STPLocalizedString(@"Your_cards_number_is_invalid", @"Error when the card number is not valid");
 }
 
 + (nonnull NSString *)stp_cardInvalidCVCUserMessage {
-    return STPLocalizedString(@"Your card's security code is invalid", @"Error when the card's CVC is not valid");
+    return STPLocalizedString(@"Your_cards_security_code_is_invalid", @"Error when the card's CVC is not valid");
 }
 
 + (nonnull NSString *)stp_cardErrorInvalidExpMonthUserMessage {
-    return STPLocalizedString(@"Your card's expiration month is invalid", @"Error when the card's expiration month is not valid");
+    return STPLocalizedString(@"Your_cards_expiration_month_is_invalid", @"Error when the card's expiration month is not valid");
 }
 
 + (nonnull NSString *)stp_cardErrorInvalidExpYearUserMessage {
-    return STPLocalizedString(@"Your card's expiration year is invalid", @"Error when the card's expiration year is not valid");
+    return STPLocalizedString(@"Your_cards_expiration_year_is_invalid", @"Error when the card's expiration year is not valid");
 }
 
 + (nonnull NSString *)stp_cardErrorExpiredCardUserMessage {
-    return STPLocalizedString(@"Your card has expired", @"Error when the card has already expired");
+    return STPLocalizedString(@"Your_card_has_expired", @"Error when the card has already expired");
 }
 
 + (nonnull NSString *)stp_cardErrorDeclinedUserMessage {
-    return STPLocalizedString(@"Your card was declined", @"Error when the card was declined by the credit card networks");
+    return STPLocalizedString(@"Your_card_was_declined", @"Error when the card was declined by the credit card networks");
 }
 
 + (nonnull NSString *)stp_unexpectedErrorMessage {

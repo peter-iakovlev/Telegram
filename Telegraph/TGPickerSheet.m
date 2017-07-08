@@ -10,6 +10,8 @@
 #import "TGSecretTimerValueControllerItemView.h"
 #import "TGPopoverController.h"
 
+#import "TGLocalization.h"
+
 @interface TGPickerSheetOverlayController () <UIPickerViewDelegate, UIPickerViewDataSource>
 {
     bool _dateMode;
@@ -20,6 +22,7 @@
     UIDatePicker *_datePicker;
     UIPickerView *_pickerView;
     TGModernButton *_doneButton;
+    bool _banTimeout;
 }
 
 @property (nonatomic, strong) NSString *emptyValue;
@@ -41,10 +44,11 @@
     return self;
 }
 
-- (instancetype)initWithDateMode {
+- (instancetype)initWithDateMode:(bool)banTimeout {
     self = [super init];
     if (self != nil) {
         _dateMode = true;
+        _banTimeout = banTimeout;
     }
     return self;
 }
@@ -95,10 +99,16 @@
     
     if (_dateMode) {
         _datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(0.0f, 32.0f + CGFloor((_containerView.frame.size.height - 44.0f - 216.0f) / 2.0f), _containerView.frame.size.width, 216.0)];
+        _datePicker.locale = [NSLocale localeWithLocaleIdentifier:effectiveLocalization().code];
         _datePicker.datePickerMode = UIDatePickerModeDate;
         
-        _datePicker.maximumDate = [NSDate dateWithTimeIntervalSinceNow:2.0];
-        _datePicker.minimumDate = [NSDate dateWithTimeIntervalSince1970:1376438400];
+        if (_banTimeout) {
+            _datePicker.datePickerMode = UIDatePickerModeDateAndTime;
+            _datePicker.minimumDate = [NSDate dateWithTimeIntervalSinceNow:2.0];
+        } else {
+            _datePicker.maximumDate = [NSDate dateWithTimeIntervalSinceNow:2.0];
+            _datePicker.minimumDate = [NSDate dateWithTimeIntervalSince1970:1376438400];
+        }
         
         _datePicker.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         [_containerView addSubview:_datePicker];
@@ -124,7 +134,9 @@
     [_doneButton setTitleEdgeInsets:UIEdgeInsetsMake(0.0f, buttonInset, 0.0f, buttonInset)];
     _doneButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
     _doneButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
-    if (_dateMode) {
+    if (_banTimeout) {
+        [_doneButton setTitle:TGLocalized(@"Common.Done") forState:UIControlStateNormal];
+    } else if (_dateMode) {
         [_doneButton setTitle:TGLocalized(@"Conversation.JumpToDate") forState:UIControlStateNormal];
     } else {
         [_doneButton setTitle:TGLocalized(@"Common.Done") forState:UIControlStateNormal];
@@ -152,8 +164,9 @@
 
 - (void)doneButtonPressed
 {
-    if (_dateMode && _onDate) {
+    if (_dateMode && _onDate) { {
         _onDate([_datePicker.date timeIntervalSince1970]);
+    }
     } else if (!_dateMode && _onDone) {
         NSInteger index = [_pickerView selectedRowInComponent:0];
         if (index >= 0 && index < (NSInteger)_timerValues.count)
@@ -377,6 +390,7 @@
     
     void (^_action)(id);
     void (^_dateAction)(NSTimeInterval);
+    bool _banTimeout;
 }
 
 @end
@@ -395,11 +409,12 @@
     return self;
 }
 
-- (instancetype)initWithDateSelection:(void (^)(NSTimeInterval item))action {
+- (instancetype)initWithDateSelection:(void (^)(NSTimeInterval item))action banTimeout:(bool)banTimeout {
     self = [super init];
     if (self != nil) {
         _dateSelection = true;
         _dateAction = [action copy];
+        _banTimeout = banTimeout;
     }
     return self;
 }
@@ -413,7 +428,7 @@
         _controllerWindow.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         _controllerWindow.hidden = false;
         if (_dateSelection) {
-            _controllerWindow.rootViewController = [[TGPickerSheetOverlayController alloc] initWithDateMode];
+            _controllerWindow.rootViewController = [[TGPickerSheetOverlayController alloc] initWithDateMode:_banTimeout];
         } else {
             _controllerWindow.rootViewController = [[TGPickerSheetOverlayController alloc] init];
         }

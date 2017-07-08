@@ -44,10 +44,13 @@
 
 - (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)__unused player successfully:(BOOL)__unused flag
 {
-    if (self.completionBlock != nil)
-        self.completionBlock();
-    
-    _player.delegate = nil;
+    TGDispatchOnMainThread(^
+    {
+        if (self.completionBlock != nil)
+            self.completionBlock();
+        
+        _player.delegate = nil;
+    });
 }
 
 + (instancetype)playFileURL:(NSURL *)url loops:(NSInteger)loops completion:(void (^)(void))completion

@@ -10,5 +10,6 @@
 @property (nonatomic) bool isSearching;
 
 - (void)setOffset:(NSUInteger)offset count:(NSUInteger)count;
+- (void)setNone;
 
 @end

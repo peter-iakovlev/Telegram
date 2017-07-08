@@ -64,7 +64,7 @@
     if (self)
     {   
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(15, 15 + TGRetinaPixel, 66, 66)];
-        [_avatarView setSingleFontSize:35.0f doubleFontSize:21.0f useBoldFont:false];
+        [_avatarView setSingleFontSize:28.0f doubleFontSize:28.0f useBoldFont:false];
         _avatarView.fadeTransition = true;
         _avatarView.userInteractionEnabled = true;
         [_avatarView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(avatarTapGesture:)]];
@@ -97,6 +97,8 @@
             _firstNameField.textAlignment = NSTextAlignmentNatural;
         _firstNameField.alpha = 0.0f;
         _firstNameField.hidden = true;
+        _firstNameField.autocorrectionType = UITextAutocorrectionTypeNo;
+        _firstNameField.spellCheckingType = UITextSpellCheckingTypeNo;
         [self addSubview:_firstNameField];
         
         _lastNameField = [[TGTextField alloc] init];
@@ -113,6 +115,8 @@
             _lastNameField.textAlignment = NSTextAlignmentNatural;
         _lastNameField.alpha = 0.0f;
         _lastNameField.hidden = true;
+        _lastNameField.autocorrectionType = UITextAutocorrectionTypeNo;
+        _lastNameField.spellCheckingType = UITextSpellCheckingTypeNo;
         [self addSubview:_lastNameField];
         
         _editingFirstNameSeparator = [[UIView alloc] init];
@@ -453,12 +457,14 @@
     _callButton.frame = CGRectMake(self.frame.size.width - 57.0f, 25.0f, _callButton.frame.size.width, _callButton.frame.size.height);
     
     CGFloat maxNameWidth = bounds.size.width - 92 - 14;
+    CGFloat maxStatusWidth = bounds.size.width - 92 - 14;
     
     if (_verifiedIcon.superview != nil) {
         maxNameWidth -= _verifiedIcon.bounds.size.width + 5.0f;
     }
     if (!_callButton.hidden) {
         maxNameWidth -= 54.0f;
+        maxStatusWidth -= 54.0f;
     }
     
     CGSize nameLabelSize = [_nameLabel sizeThatFits:CGSizeMake(maxNameWidth, 1000)];
@@ -466,7 +472,8 @@
     CGRect firstNameLabelFrame = CGRectMake(92 + _nameOffset.width, 26 + TGRetinaPixel + _nameOffset.height, nameLabelSize.width, nameLabelSize.height);
     _nameLabel.frame = firstNameLabelFrame;
     
-    CGSize statusLabelSize = [_statusLabel sizeThatFits:CGSizeMake(bounds.size.width - 92 - 14, 1000)];
+    CGSize statusLabelSize = [_statusLabel sizeThatFits:CGSizeMake(maxStatusWidth, 1000)];
+    statusLabelSize.width = MIN(statusLabelSize.width, maxStatusWidth);
     CGRect statusLabelFrame = CGRectMake(92 + _nameOffset.width, 53 + _nameOffset.height, statusLabelSize.width, statusLabelSize.height);
     if (!CGRectEqualToRect(statusLabelFrame, _statusLabel.frame))
         _statusLabel.frame = statusLabelFrame;

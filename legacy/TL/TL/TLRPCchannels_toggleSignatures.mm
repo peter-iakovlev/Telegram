@@ -36,7 +36,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -63,7 +63,7 @@
     return (int32_t)0x10df3b5a;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCchannels_toggleSignatures$channels_toggleSignatures *object = [[TLRPCchannels_toggleSignatures$channels_toggleSignatures alloc] init];
     object.channel = metaObject->getObject((int32_t)0xe11f3d41);

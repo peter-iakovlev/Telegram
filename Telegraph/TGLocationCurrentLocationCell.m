@@ -149,7 +149,7 @@ const CGFloat TGLocationCurrentLocationCellHeight = 57;
 - (void)layoutSubviews
 {
     [super layoutSubviews];
-    
+        
     CGFloat padding = 65.0f;
     _titleLabel.frame = CGRectMake(padding, 9, self.frame.size.width - padding - 14, 20);
     _subtitleLabel.frame = CGRectMake(padding, 29 + TGRetinaPixel, self.frame.size.width - padding - 14, 20);

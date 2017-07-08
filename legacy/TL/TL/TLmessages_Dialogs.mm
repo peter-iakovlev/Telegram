@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x861842fe;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLmessages_Dialogs$messages_dialogs *object = [[TLmessages_Dialogs$messages_dialogs alloc] init];
     object.dialogs = metaObject->getArray((int32_t)0x708be67);
@@ -100,7 +100,7 @@
     return (int32_t)0xb12352b4;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLmessages_Dialogs$messages_dialogsSlice *object = [[TLmessages_Dialogs$messages_dialogsSlice alloc] init];
     object.count = metaObject->getInt32((int32_t)0x5fa6aa74);

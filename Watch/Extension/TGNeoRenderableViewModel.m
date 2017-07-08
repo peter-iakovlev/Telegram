@@ -19,6 +19,7 @@
                                                      size.width * scale, size.height * scale,
                                                      8, size.width * scale * 4, colorSpace,
                                                      kCGImageAlphaPremultipliedFirst);
+        CFRelease(colorSpace);
         
         if (context == nil)
         {

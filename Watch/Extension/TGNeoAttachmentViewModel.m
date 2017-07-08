@@ -24,6 +24,7 @@
     NSMutableAttributedString *attributedText = nil;
     NSString *messageIcon = nil;
     bool useNormalColor = false;
+    bool inhibitsInitials = false;
     
     CGFloat fontSize = font.pointSize;
     
@@ -217,7 +218,7 @@
                 case TGBridgeMessageActionJoinedByLink:
                 {
                     NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
-                    NSString *formatString = TGLocalizedStatic(@"Notification.JoinedGroupByLink");
+                    NSString *formatString = TGLocalized(@"Notification.JoinedGroupByLink");
                     actionText = [[NSString alloc] initWithFormat:formatString, authorName, actionAttachment.actionData[@"title"]];
                     
                     NSRange formatNameRange = [formatString rangeOfString:@"%@"];
@@ -231,7 +232,7 @@
                 case TGBridgeMessageActionCreateChat:
                 {
                     NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
-                    NSString *formatString = TGLocalizedStatic(@"Notification.CreatedChatWithTitle");
+                    NSString *formatString = TGLocalized(@"Notification.CreatedChatWithTitle");
                     actionText = [[NSString alloc] initWithFormat:formatString, authorName, actionAttachment.actionData[@"title"]];
                     
                     NSRange formatNameRange = [formatString rangeOfString:@"%@"];
@@ -258,7 +259,7 @@
                 {
                     TGBridgeUser *user = users[@([actionAttachment.actionData[@"uid"] int32Value])];
                     NSString *authorName = [TGStringUtils initialsForFirstName:user.firstName lastName:user.lastName single:false];
-                    NSString *formatString = TGLocalizedStatic(@"Notification.ChannelInviter");
+                    NSString *formatString = TGLocalized(@"Notification.ChannelInviter");
                     
                     actionText = [[NSString alloc] initWithFormat:formatString, authorName];
                     
@@ -316,7 +317,7 @@
                     }
                 }
                 
-                _inhibitsInitials = true;
+                inhibitsInitials = true;
             }
         }
         else if ([attachment isKindOfClass:[TGBridgeUnsupportedMediaAttachment class]])
@@ -332,6 +333,7 @@
     self = [super init];
     if (self != nil)
     {
+        _inhibitsInitials = inhibitsInitials;
         if (attributedText != nil)
         {
             _textModel = [[TGNeoLabelViewModel alloc] initWithAttributedText:attributedText];
@@ -349,10 +351,6 @@
                     _iconModel.frame = CGRectMake(0, -2, 17, 18);
                 [self addSubmodel:_iconModel];
             }
-            
-            CGFloat textOffset = 0;
-            if (_iconModel != nil)
-                textOffset = CGRectGetMaxX(_iconModel.frame) + 2;
             
             UIColor *color = useNormalColor ? normalColor : subTitleColor;
             

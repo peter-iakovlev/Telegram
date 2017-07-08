@@ -33,7 +33,7 @@
         color = CGColorRetain(UIColorRGB(0x86868d).CGColor);
     });
     
-    NSString *text = TGLocalizedStatic(@"Conversation.UnreadMessages");
+    NSString *text = TGLocalized(@"Conversation.UnreadMessages");
     CGSize textSize = [text sizeWithFont:font];
     
     CGContextSetFillColorWithColor(context, color);

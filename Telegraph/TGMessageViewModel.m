@@ -4,6 +4,7 @@
 #import "TGImageUtils.h"
 
 #import "TGUser.h"
+#import "TGConversation.h"
 #import "TGMessage.h"
 
 #import "TGModernViewContext.h"
@@ -15,6 +16,10 @@
 #import "TGMessageModernConversationItem.h"
 
 #import "TGModernLetteredAvatarViewModel.h"
+
+#import "TGModernImageViewModel.h"
+
+#import "TGTelegraphConversationMessageAssetsSource.h"
 
 static CGFloat preferredTextFontSize;
 
@@ -151,6 +156,10 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
     
     TGModernButtonViewModel *_checkAreaModel;
     TGModernCheckButtonViewModel *_checkButtonModel;
+    
+    TGModernImageViewModel *_replyIconModel;
+    
+    UIImpactFeedbackGenerator *_feedbackGenerator;
 }
 
 @end
@@ -194,7 +203,35 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
             _avatarModel = [[TGModernLetteredAvatarViewModel alloc] initWithSize:CGSizeMake(38.0f, 38.0f) placeholder:placeholder];
             _avatarModel.skipDrawInContext = true;
             [self addSubmodel:_avatarModel];
+        } else if ([authorPeer isKindOfClass:[TGConversation class]] && context != nil && [context isAdminLog]) {
+            TGConversation *author = authorPeer;
+            _firstName = author.chatTitle;
+            
+            static UIImage *placeholder = nil;
+            static dispatch_once_t onceToken2;
+            dispatch_once(&onceToken2, ^
+            {
+                UIGraphicsBeginImageContextWithOptions(CGSizeMake(40.0f, 40.0f), false, 0.0f);
+                CGContextRef context = UIGraphicsGetCurrentContext();
+                
+                //!placeholder
+                CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
+                CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 40.0f, 40.0f));
+                CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
+                CGContextSetLineWidth(context, 1.0f);
+                CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, 39.0f, 39.0f));
+                
+                placeholder = UIGraphicsGetImageFromCurrentImageContext();
+                UIGraphicsEndImageContext();
+            });
+            
+            _avatarModel = [[TGModernLetteredAvatarViewModel alloc] initWithSize:CGSizeMake(38.0f, 38.0f) placeholder:placeholder];
+            _avatarModel.skipDrawInContext = true;
+            [self addSubmodel:_avatarModel];
         }
+        
+        if (iosMajorVersion() >= 10)
+            _feedbackGenerator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
     }
     return self;
 }
@@ -280,6 +317,10 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
 {
 }
 
+- (void)updateMessageVisibility
+{
+}
+
 - (void)updateInlineMediaContext
 {
 }
@@ -288,7 +329,7 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
 {
 }
 
-- (void)stopInlineMedia
+- (void)stopInlineMedia:(int32_t)__unused excludeMid
 {
 }
 
@@ -457,6 +498,20 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
         [(UIButton *)[_checkButtonModel boundView] addTarget:self action:@selector(checkButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     if (_checkAreaModel != nil)
         [(UIButton *)[_checkAreaModel boundView] addTarget:self action:@selector(checkButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+    
+    //_replyPanGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(replyPanGesture:)];
+    //_replyPanGestureRecognizer.delegate = self;
+    //[container addGestureRecognizer:_replyPanGestureRecognizer];
+}
+
+- (void)moveViewToContainer:(UIView *)container
+{
+    //if (_replyPanGestureRecognizer != nil)
+    //    [_replyPanGestureRecognizer.view removeGestureRecognizer:_replyPanGestureRecognizer];
+    
+    [super moveViewToContainer:container];
+    
+    //[container addGestureRecognizer:_replyPanGestureRecognizer];
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
@@ -466,6 +521,10 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
         [[_avatarModel boundView] removeGestureRecognizer:_boundAvatarTapRecognizer];
         _boundAvatarTapRecognizer = nil;
     }
+    
+    _replyPanOffset = 0.0f;
+    //[_replyPanGestureRecognizer.view removeGestureRecognizer:_replyPanGestureRecognizer];
+    //_replyPanGestureRecognizer = nil;
     
     if (_checkButtonModel != nil)
         [(UIButton *)[_checkButtonModel boundView] removeTarget:self action:@selector(checkButtonPressed) forControlEvents:UIControlEventTouchUpInside];
@@ -483,6 +542,133 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
     }
 }
 
+- (void)updateReplySwipeInteraction:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage ended:(bool)ended
+{
+    CGFloat inset = _avatarModel != nil ? 0.0f : 0.0f;
+    if (!ended)
+    {
+        if (_replyIconModel == nil)
+        {
+            CGFloat x = _replyPanOffset > 0 ? inset : self.frame.size.width;
+
+            _replyIconModel = [[TGModernImageViewModel alloc] initWithImage:[[TGTelegraphConversationMessageAssetsSource instance] systemSwipeReplyIcon]];
+            _replyIconModel.frame = CGRectMake(x, CGFloor((self.frame.size.height - 33.0f) / 2.0f), 33.0f, 33.0f);
+            _replyIconModel.skipDrawInContext = true;
+            [self addSubmodel:_replyIconModel];
+            
+            if (container != nil)
+                [_replyIconModel bindViewToContainer:container viewStorage:viewStorage];
+            
+            _replyIconModel.alpha = 0.0f;
+            [_replyIconModel boundView].transform = CGAffineTransformMakeScale(0.01f, 0.01f);
+        }
+    }
+    else
+    {
+        UIView<TGModernView> *iconView = nil;
+        
+        [self removeSubmodel:_replyIconModel viewStorage:viewStorage];
+        iconView = [_replyIconModel _dequeueView:viewStorage];
+        
+        CGFloat x = _replyPanOffset > 0 ? inset + _replyPanOffset / 2.0f : self.frame.size.width + _replyPanOffset / 2.0f;
+        iconView.center = CGPointMake(x, self.frame.size.height / 2.0f);
+        [container addSubview:iconView];
+        _replyIconModel = nil;
+        
+        [UIView animateWithDuration:0.2 delay:0.0 options:(iosMajorVersion() >= 7 ? (7 << 16) : 0) | UIViewAnimationOptionBeginFromCurrentState animations:^
+        {
+            CGFloat x = _replyPanOffset > 0 ? inset : self.frame.size.width;
+            _replyPanOffset = 0.0f;
+            
+            if (self.frame.size.width > FLT_EPSILON)
+                [self layoutForContainerSize:CGSizeMake(self.frame.size.width, 0.0f)];
+            
+            iconView.center = CGPointMake(x, self.frame.size.height / 2.0f);
+            iconView.transform = CGAffineTransformMakeScale(0.01f, 0.01f);
+            iconView.alpha = 0.0f;
+        } completion:^(__unused BOOL finished)
+        {
+            if (iconView != nil)
+            {
+                [iconView removeFromSuperview];
+                iconView.transform = CGAffineTransformIdentity;
+                iconView.alpha = 1.0f;
+                [viewStorage enqueueView:iconView];
+            }
+        }];
+    }
+}
+
+- (void)replyPanGesture:(UIPanGestureRecognizer *)recognizer
+{
+    CGFloat inset = _avatarModel != nil ? 0.0f : 0.0f;
+    if (recognizer.state == UIGestureRecognizerStateChanged)
+    {
+        CGFloat translation = [recognizer translationInView:recognizer.view.superview].x * -1.0f;
+        _replyPanOffset = MAX(-160.0f, MIN(0.0f, _replyPanOffset + translation));
+        [recognizer setTranslation:CGPointZero inView:recognizer.view.superview];
+        
+        if (fabs(_replyPanOffset) >= 85.0f)
+        {
+            if (_replyIconModel == nil)
+                _context.replySwipeInteraction(_mid, false);
+            
+            if (_replyIconModel.alpha < FLT_EPSILON)
+            {
+                [_feedbackGenerator impactOccurred];
+                
+                void (^animationBlock)(void) = ^
+                {
+                    [_replyIconModel boundView].transform = CGAffineTransformIdentity;
+                    _replyIconModel.alpha = 1.0f;
+                };
+                
+                if (iosMajorVersion() >= 7)
+                {
+                    [UIView animateWithDuration:0.5 delay:0.0 usingSpringWithDamping:0.4 initialSpringVelocity:0.2 options:kNilOptions animations:animationBlock completion:nil];
+                }
+                else
+                {
+                    [UIView animateWithDuration:0.2 animations:animationBlock];
+                }
+            }
+        }
+        else
+        {
+            if (_replyIconModel == nil)
+                [_feedbackGenerator prepare];
+            
+            _replyIconModel.alpha = (float)fabs(_replyPanOffset / 85.0f);
+        }
+        
+        CGFloat x = _replyPanOffset > 0 ? inset + _replyPanOffset / 2.0f : self.frame.size.width + _replyPanOffset / 2.0f;
+        [_replyIconModel boundView].center = CGPointMake(x, self.frame.size.height / 2.0f);
+        
+        [self layoutForContainerSize:CGSizeMake(self.frame.size.width, 0.0f)];
+    }
+    else if (recognizer.state == UIGestureRecognizerStateEnded || recognizer.state == UIGestureRecognizerStateCancelled)
+    {
+        if (recognizer.state == UIGestureRecognizerStateEnded && fabs(_replyPanOffset) > 85.0f)
+            [_context.companionHandle requestAction:@"replyRequested" options:@{@"mid": @(_mid)}];
+        
+        _context.replySwipeInteraction(_mid, true);
+    }
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
+{
+    if (gestureRecognizer == _replyPanGestureRecognizer)
+    {
+        UIPanGestureRecognizer *panGestureRecognizer = (UIPanGestureRecognizer *)gestureRecognizer;
+        CGPoint velocity = [panGestureRecognizer velocityInView:gestureRecognizer.view];
+        if (fabs(velocity.y) > fabs(velocity.x))
+            return false;
+        
+        return _context.canReplyToMessageId(_mid);
+    }
+    return true;
+}
+
 - (void)checkButtonPressed
 {
     if (_checkButtonModel != nil)
@@ -496,7 +682,7 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize)
 {
     if (_avatarModel != nil)
     {
-        _avatarModel.frame = CGRectMake(TGGetMessageViewModelLayoutConstants()->avatarInset + (_editing ? 42.0f : 0.0f), self.frame.size.height - 38 - _avatarOffset, 38, 38);
+        _avatarModel.frame = CGRectMake(TGGetMessageViewModelLayoutConstants()->avatarInset + (_editing ? 42.0f : 0.0f) + _replyPanOffset, self.frame.size.height - 38 - _avatarOffset, 38, 38);
         _avatarModel.alpha = (_collapseFlags & TGModernConversationItemCollapseBottom) ? 0.0f : 1.0f;
     }
     

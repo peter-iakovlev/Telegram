@@ -221,14 +221,11 @@
     
     [[TGTelegraphInstance.musicPlayer.playingStatus take:1] startWithNext:^(TGMusicPlayerStatus *status)
     {
-        [[TGInterfaceManager instance] navigateToSharedMediaOfConversationWithId:status.item.peerId mode:TGSharedMediaControllerModeAudio atMessage:nil];
+        if (status.item.peerId != 0) {
+            [[TGInterfaceManager instance] navigateToSharedMediaOfConversationWithId:status.item.peerId mode:TGSharedMediaControllerModeAudio atMessage:nil];
         
-        //[_view dismissToRect:CGRectZero completion:^
-        //{
-        [self dismissAnimated:true];
-        //}];
-        
-        //[self updateStatusBarAppearanceAnimated:true];
+            [self dismissAnimated:true];
+        }
     }];
 }
 

@@ -220,10 +220,10 @@ NSString *const TGMessageViewMessageRowIdentifier = @"TGMessageViewMessageRow";
                         _currentAvatarPhoto = user.photoSmall;
                         
                         __weak TGMessageViewMessageRowController *weakSelf = self;
-                        [self.avatarGroup setBackgroundImageSignal:[[TGBridgeMediaSignals avatarWithUrl:_currentAvatarPhoto type:TGBridgeMediaAvatarTypeSmall] onNext:^(id next)
+                        [self.avatarGroup setBackgroundImageSignal:[[TGBridgeMediaSignals avatarWithUrl:_currentAvatarPhoto type:TGBridgeMediaAvatarTypeSmall] onError:^(id next)
                         {
                             __strong TGMessageViewMessageRowController *strongSelf = weakSelf;
-                            if (strongSelf == nil)
+                            if (strongSelf != nil)
                                 strongSelf->_currentAvatarPhoto = nil;
                         }] isVisible:self.isVisible];
                     }

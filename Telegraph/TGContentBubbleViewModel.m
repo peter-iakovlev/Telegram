@@ -57,6 +57,7 @@
 #import "TGAudioWebpageFooterModel.h"
 #import "TGMusicWebpageFooterModel.h"
 #import "TGStickerWebpageFooterModel.h"
+#import "TGRoundVideoWebpageFooterModel.h"
 
 bool debugShowMessageIds = false;
 
@@ -135,6 +136,7 @@ bool debugShowMessageIds = false;
         [self addSubmodel:_backgroundModel];
         
         _contentModel = [[TGModernFlatteningViewModel alloc] initWithContext:_context];
+        _contentModel.allowSpecialUserInteraction = true;
         _contentModel.viewUserInteractionDisabled = true;
         [self addSubmodel:_contentModel];
         
@@ -152,6 +154,10 @@ bool debugShowMessageIds = false;
             
             if ([authorPeer isKindOfClass:[TGUser class]]) {
                 _hasAvatar = true;
+            } else if ([authorPeer isKindOfClass:[TGConversation class]]) {
+                if ([context isAdminLog]) {
+                    _hasAvatar = true;
+                }
             }
             
             static CTFontRef dateFont = NULL;
@@ -209,7 +215,7 @@ bool debugShowMessageIds = false;
             }
         }
         
-        if (_incomingAppearance && (isChannel || _context.isBot || isBot || _context.isPublicGroup || hasGameAction || hasPayAction)) {
+        if (_incomingAppearance && (isChannel || _context.isBot || isBot || _context.isPublicGroup || hasGameAction || hasPayAction) && !_context.isAdminLog) {
             [_backgroundModel setPartialMode:false];
             
             _shareButtonModel = [[TGModernButtonViewModel alloc] init];
@@ -242,7 +248,7 @@ bool debugShowMessageIds = false;
                     dateFont = CTFontCreateWithName((__bridge CFStringRef)font.fontName, font.pointSize, nil);
                 }
             });
-            _editedLabelModel = [[TGModernLabelViewModel alloc] initWithText:TGLocalizedStatic(@"Conversation.MessageEditedLabel") textColor:_dateModel.textColor font:dateFont maxWidth:CGFLOAT_MAX];
+            _editedLabelModel = [[TGModernLabelViewModel alloc] initWithText:TGLocalized(@"Conversation.MessageEditedLabel") textColor:_dateModel.textColor font:dateFont maxWidth:CGFLOAT_MAX];
             [_contentModel addSubmodel:_editedLabelModel];
         }
         
@@ -410,7 +416,7 @@ bool debugShowMessageIds = false;
 
         NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageForwardNameFont], (NSString *)kCTFontAttributeName, nil];
         
-        NSString *text = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Message.ForwardedMessage"), authorName];
+        NSString *text = [[NSString alloc] initWithFormat:TGLocalized(@"Message.ForwardedMessage"), authorName];
         if (_viaUser != nil && _viaUser.userName.length != 0) {
             NSString *formatString = [@" " stringByAppendingString:TGLocalized(@"Conversation.MessageViaUser")];
             NSString *viaUserName = [@"@" stringByAppendingString:_viaUser.userName];
@@ -551,14 +557,14 @@ bool debugShowMessageIds = false;
 - (void)setWebPageFooter:(TGWebPageMediaAttachment *)webPage invoice:(TGInvoiceMediaAttachment *)invoice viewStorage:(TGModernViewStorage *)viewStorage
 {
     _webPage = webPage;
-    if (webPage.url.length == 0 && ![webPage.pageType isEqualToString:@"game"] && ![webPage.pageType isEqualToString:@"invoice"])
+    if (webPage.url.length == 0 && ![webPage.pageType isEqualToString:@"game"] && ![webPage.pageType isEqualToString:@"invoice"] && ![webPage.pageType isEqualToString:@"message"])
     {
     }
     else
     {
         bool isAnimationOrVideo = false;
         bool imageInText = true;
-        if ([webPage.pageType isEqualToString:@"photo"] || [webPage.pageType isEqualToString:@"video"] || [webPage.pageType isEqualToString:@"gif"] || [webPage.pageType isEqualToString:@"game"] || [webPage.pageType isEqualToString:@"invoice"]) {
+        if ([webPage.pageType isEqualToString:@"photo"] || [webPage.pageType isEqualToString:@"video"] || [webPage.pageType isEqualToString:@"gif"] || [webPage.pageType isEqualToString:@"game"] || [webPage.pageType isEqualToString:@"invoice"] || [webPage.pageType isEqualToString:@"message"]) {
             imageInText = false;
             isAnimationOrVideo = true;
         } else if ([webPage.pageType isEqualToString:@"article"]) {
@@ -576,6 +582,7 @@ bool debugShowMessageIds = false;
         bool isMusic = false;
         bool isVoice = false;
         bool isSticker = false;
+        bool isRoundVideo = false;
         
         for (id attribute in webPage.document.attributes) {
             if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
@@ -585,7 +592,12 @@ bool debugShowMessageIds = false;
                     isMusic = true;
                 }
             } else if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
-                isAnimationOrVideo = true;
+                if (((TGDocumentAttributeVideo *)attribute).isRoundMessage) {
+                    isRoundVideo = true;
+                }
+                else {
+                    isAnimationOrVideo = true;
+                }
             } else if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]]) {
                 isSticker = true;
             }
@@ -609,6 +621,12 @@ bool debugShowMessageIds = false;
             [_webPageFooterModel updateMediaProgressVisible:_mediaProgressVisible mediaProgress:_mediaProgress animated:false];
             _webPageFooterModel.boundToContainer = _boundToContainer;
             [_contentModel addSubmodel:_webPageFooterModel];
+        } else if (isRoundVideo) {
+            _webPageFooterModel = [[TGRoundVideoWebpageFooterModel alloc] initWithContext:_context messageId:_mid incoming:_incomingAppearance webPage:webPage];
+            _webPageFooterModel.mediaIsAvailable = _mediaIsAvailable;
+            [_webPageFooterModel updateMediaProgressVisible:_mediaProgressVisible mediaProgress:_mediaProgress animated:false];
+            _webPageFooterModel.boundToContainer = _boundToContainer;
+            [_contentModel addSubmodel:_webPageFooterModel];
         } else if (webPage.photo == nil && webPage.document != nil && !isAnimationOrVideo) {
             _webPageFooterModel = [[TGDocumentWebpageFooterModel alloc] initWithContext:_context incoming:_incomingAppearance webPage:webPage hasViews:_messageViews != nil];
             _webPageFooterModel.mediaIsAvailable = _mediaIsAvailable;
@@ -620,6 +638,19 @@ bool debugShowMessageIds = false;
             _webPageFooterModel.mediaIsAvailable = _mediaIsAvailable;
             [_webPageFooterModel updateMediaProgressVisible:_mediaProgressVisible mediaProgress:_mediaProgress animated:false];
             _webPageFooterModel.boundToContainer = _boundToContainer;
+            __weak TGContentBubbleViewModel *weakSelf = self;
+            ((TGArticleWebpageFooterModel *)_webPageFooterModel).instantPagePressed = ^{
+                __strong TGContentBubbleViewModel *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    [strongSelf instantPageButtonPressed];
+                }
+            };
+            ((TGArticleWebpageFooterModel *)_webPageFooterModel).viewGroupPressed = ^{
+                __strong TGContentBubbleViewModel *strongSelf = weakSelf;
+                if (strongSelf != nil && webPage.url != nil) {
+                    [strongSelf->_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": webPage.url}];
+                }
+            };
             [_contentModel addSubmodel:_webPageFooterModel];
         }
     }
@@ -631,6 +662,10 @@ bool debugShowMessageIds = false;
     
     _shareButtonModel.hidden = webPage == nil;
     _hasInvoice = invoice != nil;
+}
+
+- (void)instantPageButtonPressed {
+    
 }
 
 - (UIView *)referenceViewForImageTransition
@@ -1063,7 +1098,7 @@ bool debugShowMessageIds = false;
                     dateFont = CTFontCreateWithName((__bridge CFStringRef)font.fontName, font.pointSize, nil);
                 }
             });
-            _editedLabelModel = [[TGModernLabelViewModel alloc] initWithText:TGLocalizedStatic(@"Conversation.MessageEditedLabel") textColor:_dateModel.textColor font:dateFont maxWidth:CGFLOAT_MAX];
+            _editedLabelModel = [[TGModernLabelViewModel alloc] initWithText:TGLocalized(@"Conversation.MessageEditedLabel") textColor:_dateModel.textColor font:dateFont maxWidth:CGFLOAT_MAX];
             [_contentModel addSubmodel:_editedLabelModel];
             
             if (sizeUpdated) {
@@ -1501,6 +1536,9 @@ bool debugShowMessageIds = false;
     if (_incomingAppearance && _editing)
         backgroundFrame.origin.x += 42.0f;
     
+    if (!_editing && fabs(_replyPanOffset) > FLT_EPSILON)
+        backgroundFrame.origin.x += _replyPanOffset;
+    
     if (contentSize.height <= FLT_EPSILON && _webPageFooterModel == nil) {
         backgroundFrame.size.height -= 10.0f;
     }
@@ -1655,9 +1693,9 @@ bool debugShowMessageIds = false;
     [_webPageFooterModel imageDataInvalidated:imageUrl];
 }
 
-- (void)stopInlineMedia
+- (void)stopInlineMedia:(int32_t)excludeMid
 {
-    [_webPageFooterModel stopInlineMedia];
+    [_webPageFooterModel stopInlineMedia:excludeMid];
 }
 
 - (void)resumeInlineMedia {

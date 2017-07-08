@@ -81,6 +81,11 @@
     [_disposables dispose];
 }
 
+- (bool)supportsPIP
+{
+    return false;
+}
+
 - (void)_watermarkAction
 {
     [super _watermarkAction];

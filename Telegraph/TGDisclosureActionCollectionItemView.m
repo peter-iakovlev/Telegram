@@ -40,6 +40,8 @@
     _titleLabel.text = title;
     
     [self setNeedsLayout];
+    
+    [_titleLabel setNeedsDisplay];
 }
 
 - (void)setIcon:(UIImage *)icon

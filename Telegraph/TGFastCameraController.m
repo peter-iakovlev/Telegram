@@ -278,7 +278,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
         [_buttonHandler ignoreEventsFor:1.0f andDisable:false];
         
         __weak TGFastCameraController *weakSelf = self;
-        [_camera startVideoRecordingForMoment:false completion:^(NSURL *outputURL, __unused CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success)
+        [_camera startVideoRecordingForMoment:false completion:^(NSURL *outputURL, __unused CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, __unused TGLiveUploadActorData *liveUploadData, bool success)
          {
              __strong TGFastCameraController *strongSelf = weakSelf;
              if (strongSelf == nil)
@@ -329,7 +329,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     __weak TGFastCameraController *weakSelf = self;
     TGOverlayController *overlayController = nil;
     
-    TGCameraPhotoPreviewController *controller = [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata backButtonTitle:TGLocalized(@"Common.Cancel")];
+    TGCameraPhotoPreviewController *controller = [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata backButtonTitle:TGLocalized(@"Common.Cancel") doneButtonTitle:TGLocalized(@"MediaPicker.Send")];
     controller.allowCaptions = self.allowCaptions;
     controller.shouldStoreAssets = self.shouldStoreCapturedAssets;
     controller.suggestionContext = self.suggestionContext;
@@ -370,7 +370,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
             [strongSelf dismissTransitionForResultController:strongController success:false];
     };
     
-    controller.sendPressed = ^(UIImage *resultImage, NSString *caption, NSArray *stickers)
+    controller.sendPressed = ^(__unused TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers)
     {
         __strong TGFastCameraController *strongSelf = weakSelf;
         if (strongSelf == nil)
@@ -412,6 +412,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     generator.maximumSize = CGSizeMake(640.0f, 640.0f);
     CGImageRef imageRef = [generator copyCGImageAtTime:kCMTimeZero actualTime:NULL error:NULL];
     UIImage *thumbnailImage = [[UIImage alloc] initWithCGImage:imageRef];
+    CGImageRelease(imageRef);
     
     __weak TGFastCameraController *weakSelf = self;
     

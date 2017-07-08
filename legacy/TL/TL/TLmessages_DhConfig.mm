@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x4271272b;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLmessages_DhConfig$messages_dhConfigNotModified *object = [[TLmessages_DhConfig$messages_dhConfigNotModified alloc] init];
     object.random = metaObject->getBytes((int32_t)0x5e7f46f5);
@@ -79,7 +79,7 @@
     return (int32_t)0x911db814;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLmessages_DhConfig$messages_dhConfig *object = [[TLmessages_DhConfig$messages_dhConfig alloc] init];
     object.g = metaObject->getInt32((int32_t)0x75e1067a);

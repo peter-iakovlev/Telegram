@@ -368,6 +368,19 @@
     return false;
 }
 
+- (bool)isRoundVideo {
+    for (id attribute in _attributes) {
+        if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+            TGDocumentAttributeVideo *video = attribute;
+            if (video.isRoundMessage) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
 - (CGSize)pictureSize {
     for (id attribute in _attributes) {
         if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]]) {

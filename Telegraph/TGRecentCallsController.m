@@ -51,6 +51,8 @@
     SSignal *_currentLoadMoreSignal;
     
     NSInteger _lastMissedCount;
+    
+    id<SDisposable> _localizationUpdatedDisposable;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -94,9 +96,20 @@
         {
             _usersModel = [[NSDictionary alloc] init];
             _listModel = [[NSArray alloc] init];
-            
-            [self initialize];
+           
+            TGDispatchAfter(1.0, dispatch_get_main_queue(), ^
+            {
+                [self initialize];
+            });
         }
+        
+        __weak TGRecentCallsController *weakSelf = self;
+        _localizationUpdatedDisposable = [[TGAppDelegateInstance.localizationUpdated deliverOn:[SQueue mainQueue]] startWithNext:^(__unused id next) {
+            __strong TGRecentCallsController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf updateLocalization];
+            }
+        }];
     }
     return self;
 }
@@ -291,6 +304,25 @@
         _placeholderLabel.text = text;
         [self.view setNeedsLayout];
     }
+}
+
+- (void)viewWillLayoutSubviews
+{
+    [super viewWillLayoutSubviews];
+    
+    UINavigationBar *navigationBar = self.navigationController.navigationBar;
+    CGRect frame = _segmentedControl.frame;
+    if (navigationBar.frame.size.height >= 44)
+    {
+        frame.size.height = 29.0f;
+        frame.origin.y = (navigationBar.frame.size.height - 29.0f) / 2.0f;
+    }
+    else
+    {
+        frame.origin.y = 4.0f;
+        frame.size.height = navigationBar.frame.size.height - frame.origin.y * 2;
+    }
+    _segmentedControl.frame = frame;
 }
 
 - (void)viewDidLayoutSubviews
@@ -1174,7 +1206,11 @@
 
 - (SSignal *)searchSignalWithQuery:(NSString *)query maxMessageId:(int32_t)maxMessageId count:(int32_t)count
 {
-    return [TGMessageSearchSignals searchPeer:0 accessHash:0 query:query filter:TGMessageSearchFilterPhoneCalls maxMessageId:maxMessageId limit:count];
+    if (TGTelegraphInstance.clientUserId != 0) {
+        return [TGMessageSearchSignals searchPeer:0 accessHash:0 query:query filter:TGMessageSearchFilterPhoneCalls maxMessageId:maxMessageId limit:count];
+    } else {
+        return [SSignal never];
+    }
 }
 
 - (void)updateMissedCallsCount
@@ -1233,6 +1269,22 @@
     {
         [[TGInterfaceManager instance] maybeDisplayCallsTabAlert];
     }
+}
+
+- (void)updateLocalization {
+    NSArray *items = @[TGLocalized(@"Calls.All"), TGLocalized(@"Calls.Missed")];
+    for (NSUInteger i = 0; i < items.count; i++) {
+        [_segmentedControl setTitle:items[i] forSegmentAtIndex:i];
+    }
+    
+    _placeholderLabel.text = TGLocalized(@"Calls.NoCallsPlaceholder");
+    [self updatePlaceholder];
+    
+    [self.view layoutSubviews];
+    
+    [self updateBarButtonItemsAnimated:false];
+    
+    [_tableView reloadData];
 }
 
 @end

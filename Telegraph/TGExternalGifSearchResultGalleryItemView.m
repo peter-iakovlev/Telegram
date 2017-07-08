@@ -29,7 +29,7 @@
 @interface TGExternalGifSearchResultGalleryItemView () <ASWatcher> {
     UIView *_containerView;
     TGImageView *_imageView;
-    TGVTAcceleratedVideoView *_acceleratedVideoView;
+    UIView<TGInlineVideoPlayerView> *_acceleratedVideoView;
     TGModernAnimatedImagePlayer *_player;
     
     CGSize _imageSize;
@@ -149,7 +149,7 @@
     
     if (_isVideo) {
         if (_acceleratedVideoView == nil) {
-            _acceleratedVideoView = [[TGVTAcceleratedVideoView alloc] initWithFrame:_imageView.bounds];
+            _acceleratedVideoView = [[[TGVTAcceleratedVideoView videoViewClass] alloc] initWithFrame:_imageView.bounds];
             _acceleratedVideoView.userInteractionEnabled = false;
             _acceleratedVideoView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
             [_imageView insertSubview:_acceleratedVideoView atIndex:0];

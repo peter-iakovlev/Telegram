@@ -1,5 +1,11 @@
 #import "TGSharedMediaItemView.h"
 
+@interface TGSharedMediaItemView ()
+{
+    UILongPressGestureRecognizer *_longPressGestureRecognizer;
+}
+@end
+
 @implementation TGSharedMediaItemView
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -8,8 +14,17 @@
     if (self != nil)
     {
         self.layer.zPosition = -1.0f;
+        
+        _longPressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+        [self addGestureRecognizer:_longPressGestureRecognizer];
     }
     return self;
+}
+
+- (void)handleLongPress:(UILongPressGestureRecognizer *)__unused gestureRecognizer
+{
+    if (self.itemLongPressed != nil)
+        self.itemLongPressed(self.item);
 }
 
 - (void)enqueueImageViewWithUri

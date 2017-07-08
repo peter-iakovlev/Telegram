@@ -132,35 +132,37 @@
     int64_t peerId = [metadata[TGBridgeIncomingFilePeerIdKey] int64Value];
     int32_t replyToMid = [metadata[TGBridgeIncomingFileReplyToMidKey] int32Value];
     
-    NSURL *tempURL = [NSURL URLWithString:url.lastPathComponent relativeToURL:server.temporaryFilesURL];
-    
-    NSError *error;
-    [[NSFileManager defaultManager] moveItemAtURL:url toURL:tempURL error:&error];
-    
     NSString *signalKey = [[NSString alloc] initWithFormat:@"convertAudio_%lld", uniqueId];
     [[[server server] onNext:^(TGBridgeServer *server) {
         [server startSignalForKey:signalKey producer:^SSignal *{
             SSignal *convertSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
             {
-                TGBridgeAudioEncoder *encoder = [[TGBridgeAudioEncoder alloc] initWithURL:tempURL];
-                [encoder startWithCompletion:^(TGDataItem *dataItem, int32_t duration, TGLiveUploadActorData *liveData)
+                TGBridgeAudioEncoder *encoder = [[TGBridgeAudioEncoder alloc] initWithURL:url];
+                if (encoder != nil)
                 {
-                    if (dataItem != nil)
+                    [encoder startWithCompletion:^(TGDataItem *dataItem, int32_t duration, TGLiveUploadActorData *liveData)
                     {
-                        NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
-                        result[@"dataItem"] = dataItem;
-                        result[@"duration"] = @(duration);
-                        if (liveData != nil)
-                            result[@"liveData"] = liveData;
-                        
-                        [subscriber putNext:result];
-                        [subscriber putCompletion];
-                    }
-                    else
-                    {
-                        [subscriber putError:nil];
-                    }
-                }];
+                        if (dataItem != nil)
+                        {
+                            NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
+                            result[@"dataItem"] = dataItem;
+                            result[@"duration"] = @(duration);
+                            if (liveData != nil)
+                                result[@"liveData"] = liveData;
+                            
+                            [subscriber putNext:result];
+                            [subscriber putCompletion];
+                        }
+                        else
+                        {
+                            [subscriber putError:nil];
+                        }
+                    }];
+                }
+                else
+                {
+                    [subscriber putError:nil];
+                }
                 
                 return nil;
             }];

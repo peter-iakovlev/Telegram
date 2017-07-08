@@ -84,6 +84,11 @@
     _textField.keyboardType = keyboardType;
 }
 
+- (void)setReturnKeyType:(UIReturnKeyType)returnKeyType
+{
+    _textField.returnKeyType = returnKeyType;
+}
+
 - (void)setUsername:(NSString *)username
 {
     _textField.text = username;

@@ -1,5 +1,9 @@
 #import "TGInstantPage.h"
 
+#import "TGConversation.h"
+#import "PSKeyValueEncoder.h"
+#import "PSKeyValueDecoder.h"
+
 @implementation TGRichText
 
 - (instancetype)initWithCoder:(NSCoder *)__unused aDecoder {
@@ -278,6 +282,34 @@
     [aCoder encodeObject:_block forKey:@"block"];
 }
 
+
+@end
+
+@implementation TGInstantPageBlockChannel
+
+- (instancetype)initWithChannel:(TGConversation *)channel {
+    self = [super init];
+    if (self != nil) {
+        _channel = channel;
+    }
+    return self;
+}
+    
+- (instancetype)initWithCoder:(NSCoder *)aDecoder {
+    self = [super init];
+    if (self != nil) {
+        NSData *data = [aDecoder decodeObjectForKey:@"channelData"];
+        PSKeyValueDecoder *decoder = [[PSKeyValueDecoder alloc] initWithData:data];
+        _channel = (TGConversation *)[decoder decodeObjectForKey:@"channel"];
+    }
+    return self;
+}
+    
+- (void)encodeWithCoder:(NSCoder *)aCoder {
+    PSKeyValueEncoder *encoder = [[PSKeyValueEncoder alloc] init];
+    [encoder encodeObject:_channel forKey:@"channel"];
+    [aCoder encodeObject:[encoder data] forKey:@"channelData"];
+}
 
 @end
 
@@ -802,15 +834,43 @@
 
 @end
 
+@implementation TGInstantPageBlockAudio
+
+- (instancetype)initWithAudioId:(int64_t)audioId caption:(TGRichText *)caption {
+    self = [super init];
+    if (self != nil) {
+        _audioId = audioId;
+        _caption = caption;
+    }
+    return self;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)aDecoder {
+    self = [super init];
+    if (self != nil) {
+        _audioId = [aDecoder decodeInt64ForKey:@"audioId"];
+        _caption = [aDecoder decodeObjectForKey:@"caption"];
+    }
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder {
+    [aCoder encodeInt64:_audioId forKey:@"audioId"];
+    [aCoder encodeObject:_caption forKey:@"caption"];
+}
+
+@end
+
 @implementation TGInstantPage
 
-- (instancetype)initWithIsPartial:(bool)isPartial blocks:(NSArray<TGInstantPageBlock *> *)blocks images:(NSDictionary *)images videos:(NSDictionary *)videos {
+- (instancetype)initWithIsPartial:(bool)isPartial blocks:(NSArray<TGInstantPageBlock *> *)blocks images:(NSDictionary *)images videos:(NSDictionary *)videos documents:(NSDictionary<NSNumber *,TGDocumentMediaAttachment *> *)documents {
     self = [super init];
     if (self != nil) {
         _isPartial = isPartial;
         _blocks = blocks;
         _images = images;
         _videos = videos;
+        _documents = documents;
     }
     return self;
 }
@@ -822,6 +882,7 @@
         _blocks = [aDecoder decodeObjectForKey:@"blocks"];
         _images = [aDecoder decodeObjectForKey:@"images"];
         _videos = [aDecoder decodeObjectForKey:@"videos"];
+        _documents = [aDecoder decodeObjectForKey:@"documents"];
     }
     return self;
 }
@@ -831,6 +892,7 @@
     [aCoder encodeObject:_blocks forKey:@"blocks"];
     [aCoder encodeObject:_images forKey:@"images"];
     [aCoder encodeObject:_videos forKey:@"videos"];
+    [aCoder encodeObject:_documents forKey:@"documents"];
 }
 
 - (BOOL)isEqual:(id)object {

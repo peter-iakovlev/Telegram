@@ -37,6 +37,8 @@
 
 @property (nonatomic) bool searchResultsTableViewHidden;
 
+@property (nonatomic) bool simpleLayout;
+
 - (void)setSearchResultsTableViewHidden:(bool)searchResultsTableViewHidden animated:(bool)animated;
 
 - (void)setIsActive:(bool)isActive animated:(bool)animated;

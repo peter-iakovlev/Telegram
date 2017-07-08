@@ -1,19 +1,20 @@
 #import "TGMusicPlayerView.h"
 
+#import <MediaPlayer/MediaPlayer.h>
+#import <pop/POP.h>
+
+#import "TGTelegraph.h"
+#import "TGInterfaceManager.h"
+
+#import "TGDateUtils.h"
 #import "TGImageUtils.h"
 #import "TGFont.h"
 
 #import "TGModernButton.h"
 
-#import "TGTelegraph.h"
-
 #import "TGMusicPlayerController.h"
-
 #import "TGNavigationController.h"
-
-#import "TGDateUtils.h"
-
-#import <pop/POP.h>
+#import "TGVideoMessagePIPController.h"
 
 @interface TGMusicPlayerView ()
 {
@@ -39,6 +40,10 @@
     bool _isVoice;
     
     bool _updateLabelsLayout;
+    
+    MPVolumeView *_volumeOverlayFixView;
+    
+    TGVideoMessagePIPController *_pipController;
 }
 
 @end
@@ -112,6 +117,16 @@
         }];
         
         _updateLabelsLayout = true;
+        
+        _pipController = [[TGVideoMessagePIPController alloc] init];
+        _pipController.messageVisibilitySignal = ^SSignal *(int64_t peerId, int32_t messageId)
+        {
+            return [[[TGInterfaceManager instance] messageVisibilitySignalWithConversationId:peerId messageId:messageId] deliverOn:[SQueue mainQueue]];
+        };
+        _pipController.requestedDismissal = ^
+        {
+            [TGTelegraphInstance.musicPlayer setPlaylist:nil initialItemKey:nil metadata:nil];
+        };
     }
     return self;
 }
@@ -128,6 +143,24 @@
     
     if (_updateLabelsLayout)
         [self setNeedsLayout];
+}
+
+- (void)inhibitVolumeOverlay
+{
+    if (_volumeOverlayFixView != nil)
+        return;
+    
+    UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
+    UIView *rootView = keyWindow.rootViewController.view;
+    
+    _volumeOverlayFixView = [[MPVolumeView alloc] initWithFrame:CGRectMake(10000, 10000, 20, 20)];
+    [rootView addSubview:_volumeOverlayFixView];
+}
+
+- (void)releaseVolumeOverlay
+{
+    [_volumeOverlayFixView removeFromSuperview];
+    _volumeOverlayFixView = nil;
 }
 
 - (void)setStatus:(TGMusicPlayerStatus *)status
@@ -148,7 +181,13 @@
                 title = authorName;
                 performer = [TGDateUtils stringForApproximateDate:status.item.date];
             } else {
-                title = TGLocalized(@"MusicPlayer.VoiceNote");
+                if (status.item.isVideo) {
+                    title = TGLocalized(@"Message.VideoMessage");
+                } else {
+                    title = TGLocalized(@"MusicPlayer.VoiceNote");
+                }
+                if (status.item.date > 0)
+                    performer = [TGDateUtils stringForApproximateDate:status.item.date];
             }
         } else {
             title = status.item.title;
@@ -177,6 +216,11 @@
         }
     }
     
+    if (_currentStatus != nil)
+        [self inhibitVolumeOverlay];
+    else
+        [self releaseVolumeOverlay];
+    
     static POPAnimatableProperty *property = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
@@ -200,7 +244,7 @@
     _pauseButton.hidden = status.paused;
     _scrubbingIndicator.hidden = status.isVoice;
     
-    if (status == nil || status.paused || status.duration < FLT_EPSILON || status.offset < 0.01)
+    if (status == nil || status.paused || status.duration < FLT_EPSILON || status.offset < 0.01 || _scrubbingIndicator.hidden)
     {
         [self pop_removeAnimationForKey:@"scrubbingIndicator"];
         
@@ -292,8 +336,22 @@
 
 - (void)minimizedButtonPressed
 {
-    if (_currentStatus.item == nil || _currentStatus.item.isVoice)
+    if (_currentStatus.item == nil)
         return;
+    
+    if (_currentStatus.item.isVoice)
+    {
+        NSNumber *key = (NSNumber *)_currentStatus.item.key;
+        int32_t mid = 0;
+        if ([key isKindOfClass:[NSNumber class]])
+            mid = [key int32Value];
+        
+        if (mid == 0)
+            return;
+        
+        [[TGInterfaceManager instance] navigateToConversationWithId:_currentStatus.item.peerId conversation:nil performActions:nil atMessage:@{ @"mid": @(mid), @"useExisting": @true } clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
+        return;
+    }
     
     TGMusicPlayerController *controller = [[TGMusicPlayerController alloc] init];
     UINavigationController *navigationController = _navigationController;
@@ -315,8 +373,11 @@
         presentedController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
     }
     
-    NSNumber *value = [NSNumber numberWithInt:UIInterfaceOrientationPortrait];
-    [[UIDevice currentDevice] setValue:value forKey:@"orientation"];
+    if (!TGIsPad())
+    {
+        NSNumber *value = [NSNumber numberWithInt:UIInterfaceOrientationPortrait];
+        [[UIDevice currentDevice] setValue:value forKey:@"orientation"];
+    }
     
     [navigationController presentViewController:presentedController animated:true completion:nil];
     

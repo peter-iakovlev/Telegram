@@ -35,7 +35,8 @@
             return [[TLMessagesFilter$inputMessagesFilterChatPhotos alloc] init];
         case TGMessageSearchFilterPhoneCalls:
             return [[TLMessagesFilter$inputMessagesFilterPhoneCalls alloc] init];
-            
+        case TGMessageSearchFilterVoiceRound:
+            return [[TLMessagesFilter$inputMessagesFilterRoundVideo alloc] init];
     }
 }
 
@@ -63,6 +64,8 @@
             return TGSharedMediaCacheItemTypeNone;
         case TGMessageSearchFilterPhoneCalls:
             return TGSharedMediaCacheItemTypeNone;
+        case TGMessageSearchFilterVoiceRound:
+            return TGSharedMediaCacheItemTypeVoiceVideoMessage;
     }
 }
 

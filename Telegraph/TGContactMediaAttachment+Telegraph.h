@@ -8,7 +8,7 @@
 
 #import "TGContactMediaAttachment.h"
 
-#import "tl/TLMetaScheme.h"
+#import "TL/TLMetaScheme.h"
 
 @interface TGContactMediaAttachment (Telegraph)
 

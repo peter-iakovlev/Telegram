@@ -1,4 +1,5 @@
 #import "TGUserModel.h"
+#import "TGPrivateChatModel.h"
 
 @implementation TGUserModel
 
@@ -25,6 +26,11 @@
     else if (_lastName.length != 0)
         return _lastName;
     return @"";
+}
+
+- (TGPrivateChatModel *)chatModel
+{
+    return [[TGPrivateChatModel alloc] initWithUserId:_userId];
 }
 
 @end

@@ -16,7 +16,7 @@
 
 - (int)impliedResponseSignature
 {
-    return (int)0x96a18d5;
+    return 0;
 }
 
 - (int)layerVersion
@@ -36,7 +36,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -63,7 +63,7 @@
     return (int32_t)0x446d2c15;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCupload_getFile$upload_getFile *object = [[TLRPCupload_getFile$upload_getFile alloc] init];
     object.location = metaObject->getObject((int32_t)0x504a1f06);

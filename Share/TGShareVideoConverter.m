@@ -901,6 +901,8 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
     NSInteger bitrate = [self _audioBitrateKbpsForPreset:preset];
     NSInteger channels = [self _audioChannelsCountForPreset:preset];
     
+    NSInteger sampleRate = bitrate >= 32 ? 44100 : 16000;
+    
     AudioChannelLayout acl;
     bzero( &acl, sizeof(acl));
     acl.mChannelLayoutTag = channels > 1 ? kAudioChannelLayoutTag_Stereo : kAudioChannelLayoutTag_Mono;
@@ -908,7 +910,7 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
     return @
     {
         AVFormatIDKey: @(kAudioFormatMPEG4AAC),
-        AVSampleRateKey: @44100.0f,
+        AVSampleRateKey: @(sampleRate),
         AVEncoderBitRateKey: @(bitrate * 1000),
         AVNumberOfChannelsKey: @(channels),
         AVChannelLayoutKey: [NSData dataWithBytes:&acl length:sizeof(acl)]
@@ -961,10 +963,10 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
             return 1100;
             
         case TGMediaVideoConversionPresetCompressedHigh:
-            return 2400;
+            return 2500;
             
         case TGMediaVideoConversionPresetCompressedVeryHigh:
-            return 3600;
+            return 4000;
             
         default:
             return 700;
@@ -991,7 +993,7 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
             return 64;
             
         default:
-            return 32;
+            return 24;
     }
 }
 

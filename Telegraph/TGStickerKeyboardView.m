@@ -2,7 +2,11 @@
 
 #import <AudioToolbox/AudioToolbox.h>
 
+#import "TGAppDelegate.h"
+#import "TGStickerPacksSettingsController.h"
+
 #import "TGStickerCollectionViewCell.h"
+#import "TGStickerCollectionHeader.h"
 #import "TGStickerKeyboardTabPanel.h"
 
 #import "TGDocumentMediaAttachment.h"
@@ -56,7 +60,7 @@ typedef enum {
     TGStickerKeyboardViewStyle _style;
     TGStickerKeyboardTabPanel *_tabPanel;
     CGFloat _lastContentOffset;
-
+    
     UICollectionView *_gifsCollectionView;
     TGGifKeyboardBalancedLayout *_gifsCollectionLayout;
     
@@ -87,6 +91,8 @@ typedef enum {
     UIPanGestureRecognizer *_panRecognizer;
     TGForceTouchGestureRecognizer *_forceTouchRecognizer;
     
+    UIPanGestureRecognizer *_tabPanRecognizer;
+    
     TGStickerKeyboardViewMode _mode;
     
     bool _ignoreSetSection;
@@ -103,6 +109,8 @@ typedef enum {
     SAtomic *_accumulatedReadFeaturedPackIds;
     STimer *_accumulatedReadFeaturedPackIdsTimer;
     NSMutableSet *_alreadyReadFeaturedPackIds;
+    
+    bool _expanded;
 }
 
 @end
@@ -121,6 +129,7 @@ typedef enum {
     {
         _style = style;
         
+        CGFloat tabPanelHeight = 45.0f;
         if (style == TGStickerKeyboardViewDarkBlurredStyle)
         {
             if (iosMajorVersion() >= 8)
@@ -133,9 +142,12 @@ typedef enum {
         else
         {
             self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            self.backgroundColor = UIColorRGB(0xe8ebef);
+            self.backgroundColor = UIColorRGB(0xe8ebf0);
         }
-    
+        
+        if (style == TGStickerKeyboardViewDefaultStyle)
+            tabPanelHeight -= 3.0f;
+        
         self.clipsToBounds = true;
         
         _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
@@ -148,8 +160,9 @@ typedef enum {
         _collectionView.showsVerticalScrollIndicator = false;
         _collectionView.alwaysBounceVertical = true;
         _collectionView.delaysContentTouches = false;
-        _collectionView.contentInset = UIEdgeInsetsMake(45.0f + preloadInset, 0.0f, preloadInset, 0.0f);
+        _collectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + preloadInset, 0.0f, preloadInset, 0.0f);
         [_collectionView registerClass:[TGStickerCollectionViewCell class] forCellWithReuseIdentifier:@"TGStickerCollectionViewCell"];
+        [_collectionView registerClass:[TGStickerCollectionHeader class] forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"TGStickerCollectionHeader"];
         [self addSubview:_collectionView];
         
         _trendingCollectionLayout = [[UICollectionViewFlowLayout alloc] init];
@@ -162,13 +175,13 @@ typedef enum {
         _trendingCollectionView.showsVerticalScrollIndicator = true;
         _trendingCollectionView.alwaysBounceVertical = true;
         _trendingCollectionView.delaysContentTouches = false;
-        _trendingCollectionView.contentInset = UIEdgeInsetsMake(45.0f + gifInset, 0.0f, gifInset, 0.0f);
+        _trendingCollectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + gifInset, 0.0f, gifInset, 0.0f);
         _trendingCollectionView.scrollIndicatorInsets = _trendingCollectionView.contentInset;
         [_trendingCollectionView registerClass:[TGTrendingStickerPackKeyboardCell class] forCellWithReuseIdentifier:@"TGTrendingStickerPackKeyboardCell"];
         [self addSubview:_trendingCollectionView];
         
         _gifsCollectionLayout = [[TGGifKeyboardBalancedLayout alloc] init];
-        _gifsCollectionLayout.preferredRowSize = 93.0f;
+        _gifsCollectionLayout.preferredRowSize = TGIsPad() ? 115.0f : 93.0f;
         _gifsCollectionLayout.sectionInset = UIEdgeInsetsZero;
         _gifsCollectionLayout.minimumInteritemSpacing = 0.5f;
         _gifsCollectionLayout.minimumLineSpacing = 0.5f;
@@ -181,7 +194,7 @@ typedef enum {
         _gifsCollectionView.showsVerticalScrollIndicator = false;
         _gifsCollectionView.alwaysBounceVertical = true;
         _gifsCollectionView.delaysContentTouches = false;
-        _gifsCollectionView.contentInset = UIEdgeInsetsMake(45.0f + gifInset, 0.0f, gifInset, 0.0f);
+        _gifsCollectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + gifInset, 0.0f, gifInset, 0.0f);
         [_gifsCollectionView registerClass:[TGGifKeyboardCell class] forCellWithReuseIdentifier:@"TGGifKeyboardCell"];
         [self addSubview:_gifsCollectionView];
         
@@ -195,13 +208,14 @@ typedef enum {
         [_collectionView addGestureRecognizer:_panRecognizer];
         
         __weak TGStickerKeyboardView *weakSelf = self;
-        _tabPanel = [[TGStickerKeyboardTabPanel alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frame.size.width, 45.0f) style:style];
+        _tabPanel = [[TGStickerKeyboardTabPanel alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frame.size.width, tabPanelHeight) style:style];
         _tabPanel.currentStickerPackIndexChanged = ^(NSUInteger index)
         {
             __strong TGStickerKeyboardView *strongSelf = weakSelf;
             if (strongSelf != nil) {
+                bool fromGifs = strongSelf->_mode != TGStickerKeyboardViewModeStickers;
                 [strongSelf setMode:TGStickerKeyboardViewModeStickers];
-                [strongSelf scrollToSection:index];
+                [strongSelf scrollToSection:index fromGifs:fromGifs];
             }
         };
         _tabPanel.navigateToGifs = ^{
@@ -222,13 +236,42 @@ typedef enum {
                 [strongSelf setMode:TGStickerKeyboardViewModeTrendingLast];
             }
         };
+        _tabPanel.toggleExpanded = ^ {
+            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+            if (strongSelf != nil && strongSelf.requestedExpand != nil) {
+                strongSelf.requestedExpand(!strongSelf->_expanded);
+            }
+        };
+        _tabPanel.expandInteraction = ^(CGFloat offset) {
+            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+            if (strongSelf != nil && strongSelf.expandInteraction != nil) {
+                strongSelf.expandInteraction(offset);
+            }
+        };
+        _tabPanel.openSettings = ^{
+            [TGAppDelegateInstance.rootController presentViewController:[TGNavigationController navigationControllerWithControllers:@[[[TGStickerPacksSettingsController alloc] initWithEditing:true masksMode:false]]] animated:true completion:nil];
+            
+            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+            if (strongSelf != nil && strongSelf.isExpanded) {
+                strongSelf.requestedExpand(false);
+            }
+        };
         [_tabPanel setTrendingStickersBadge:_trendingStickersBadge];
         [self addSubview:_tabPanel];
+        
+        if (_style == TGMenuSheetItemTypeDefault && !TGIsPad())
+        {
+            _tabPanRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleTabPan:)];
+            _tabPanRecognizer.delegate = self;
+            _tabPanRecognizer.cancelsTouchesInView = true;
+            _tabPanel.exclusiveTouch = true;
+            [_tabPanel addGestureRecognizer:_tabPanRecognizer];
+        }
         
         CGFloat stripeHeight = TGScreenPixel;
         _topStripe = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frame.size.width, stripeHeight)];
         _topStripe.backgroundColor = UIColorRGB(0xd8d8d8);
-        if (style != TGStickerKeyboardViewDarkBlurredStyle)
+        if (style != TGStickerKeyboardViewDarkBlurredStyle && style != TGStickerKeyboardViewDefaultStyle)
             [self addSubview:_topStripe];
         
         SSignal *combinedSignal = [SSignal combineSignals:@[(iosMajorVersion() >= 8 && !TGIsPad() && _style == TGStickerKeyboardViewDefaultStyle) ? [TGRecentGifsSignal recentGifs] : [SSignal single:@[]], [TGStickersSignals stickerPacks], [TGRecentStickersSignal recentStickers]]];
@@ -363,7 +406,7 @@ typedef enum {
                         
                         TGMenuSheetButtonItemView *deleteItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Preview.DeleteGif") type:TGMenuSheetButtonTypeDestructive action:nil];
                         
-                        TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Conversation.Send") type:TGMenuSheetButtonTypeSend action:nil];
+                        TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"ShareMenu.Send") type:TGMenuSheetButtonTypeSend action:nil];
                         
                         TGItemMenuSheetPreviewView *previewView = [[TGItemMenuSheetPreviewView alloc] initWithMainItemViews:@[ gifItem ] actionItemViews:@[ deleteItem, sendItem ]];
                         
@@ -461,7 +504,7 @@ typedef enum {
         height = (_style == TGStickerKeyboardViewDarkBlurredStyle) ? 258.0f : 216.0f;
     
     self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, width, height);
-    [self.superview.superview setNeedsLayout];    
+    [self.superview.superview setNeedsLayout];
 }
 
 - (void)setFrame:(CGRect)frame
@@ -482,16 +525,26 @@ typedef enum {
         [self layoutForSize:bounds.size];
 }
 
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    if (_expanded)
+        return CGRectContainsPoint(CGRectMake(0, -15.0f, self.bounds.size.width, self.bounds.size.height + 15.0f), point);
+    
+    return [super pointInside:point withEvent:event];
+}
+
 - (void)layoutForSize:(CGSize)size
 {
-    _tabPanel.frame = CGRectMake(0.0f, 0.0f, size.width, 45.0f);
+    _tabPanel.frame = CGRectMake(0.0f, 0.0f, size.width, _tabPanel.frame.size.height);
+    [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
+    
     if (_mode == TGStickerKeyboardViewModeStickers) {
         _collectionView.frame = CGRectMake(0.0f, -preloadInset, size.width, size.height + preloadInset * 2.0f);
         _gifsCollectionView.frame = CGRectMake(-size.width, -gifInset, size.width, size.height + gifInset * 2.0f);
         _trendingCollectionView.frame = CGRectMake(size.width, -gifInset, size.width, size.height + gifInset * 2.0f);
     } else if (_mode == TGStickerKeyboardViewModeGifs) {
-        _collectionView.frame = CGRectMake(-size.width, -preloadInset, size.width, size.height + preloadInset * 2.0f);
-        _gifsCollectionView.frame = CGRectMake(size.width, -gifInset, size.width, size.height + gifInset * 2.0f);
+        _collectionView.frame = CGRectMake(size.width, -preloadInset, size.width, size.height + preloadInset * 2.0f);
+        _gifsCollectionView.frame = CGRectMake(0.0f, -gifInset, size.width, size.height + gifInset * 2.0f);
         _trendingCollectionView.frame = CGRectMake(size.width * 2.0f, -gifInset, size.width, size.height + gifInset * 2.0f);
     } else {
         _collectionView.frame = CGRectMake(-size.width * 2.0, -preloadInset, size.width, size.height + preloadInset * 2.0f);
@@ -562,28 +615,30 @@ typedef enum {
     } else if (collectionView == _trendingCollectionView) {
         return UIEdgeInsetsZero;
     } else {
-        CGFloat sideInset = (collectionView.frame.size.width < 330.0f) ? 3.0f : 15.0f;
+        CGFloat topInset = 8.0f;
+        CGFloat inset = 12.0f;
+        CGFloat sideInset = (collectionView.frame.size.width < 330.0f) ? 3.0f : inset;
         
         if (_recentDocuments.count == 0 && _stickerPacks.count == 1)
         {
             if (section == 0)
                 return UIEdgeInsetsZero;
             
-            return UIEdgeInsetsMake(15.0f, sideInset, 15.0f, sideInset);
+            return UIEdgeInsetsMake(topInset, sideInset, inset, sideInset);
         }
         
         if (section == 0)
         {
             if (_recentDocuments.count == 0)
-                return UIEdgeInsetsMake(15.0f, sideInset, 0.0f, sideInset);
+                return UIEdgeInsetsMake(inset, sideInset, 0.0f, sideInset);
             else
             {
-                return UIEdgeInsetsMake(15.0f, sideInset, [self collectionView:collectionView layout:collectionViewLayout minimumLineSpacingForSectionAtIndex:section], sideInset);
+                return UIEdgeInsetsMake(topInset, sideInset, [self collectionView:collectionView layout:collectionViewLayout minimumLineSpacingForSectionAtIndex:section], sideInset);
             }
         }
         else if (section == (NSInteger)_stickerPacks.count)
-            return UIEdgeInsetsMake(0.0f, sideInset, 15.0f, sideInset);
-        return UIEdgeInsetsMake(0.0f, sideInset, [self collectionView:collectionView layout:collectionViewLayout minimumLineSpacingForSectionAtIndex:section], sideInset);
+            return UIEdgeInsetsMake(topInset, sideInset, inset, sideInset);
+        return UIEdgeInsetsMake(topInset, sideInset, [self collectionView:collectionView layout:collectionViewLayout minimumLineSpacingForSectionAtIndex:section], sideInset);
     }
 }
 
@@ -609,9 +664,15 @@ typedef enum {
     }
 }
 
+- (void)setMaskWithTabPanelOffset:(CGFloat)offset
+{
+    CGFloat value = fabs(offset) / _tabPanel.frame.size.height;
+    [_tabPanel setInnerAlpha:MAX(0.0f, 1.0f - (value * 1.25f))];
+}
+
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
-    if (scrollView == _collectionView || scrollView == _trendingCollectionView || scrollView == _gifsCollectionView)
+    if (scrollView == _collectionView || scrollView == _trendingCollectionView || (scrollView == _gifsCollectionView && _mode == TGStickerKeyboardViewModeGifs))
     {
         CGFloat delta = scrollView.contentOffset.y - _lastContentOffset;
         _lastContentOffset = scrollView.contentOffset.y;
@@ -622,14 +683,23 @@ typedef enum {
         }
         
         CGRect tabPanelFrame = _tabPanel.frame;
-        if (scrollView.contentOffset.y <= - 45.0f - inset)
-            tabPanelFrame.origin.y = 0.0f;
-        else if (scrollView.contentOffset.y < scrollView.contentSize.height - scrollView.frame.size.height)
-            tabPanelFrame.origin.y -= delta;
-        tabPanelFrame.origin.y = MAX(-45.0f - preloadInset, MIN(0.0f, tabPanelFrame.origin.y));
-        _tabPanel.frame = tabPanelFrame;
         
-        if (!_ignoreSetSection) {
+        if (!_ignoreSetSection)
+        {
+            if (scrollView.contentOffset.y <= -_tabPanel.frame.size.height - inset)
+                tabPanelFrame.origin.y = 0.0f;
+            else
+                tabPanelFrame.origin.y -= delta;
+            tabPanelFrame.origin.y = MAX(-_tabPanel.frame.size.height, MIN(0.0f, tabPanelFrame.origin.y));
+        }
+        
+        if (_expanded)
+            tabPanelFrame.origin.y = 0.0f;
+        
+        _tabPanel.frame = tabPanelFrame;
+        [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
+        
+        if (!_ignoreSetSection && _mode != TGStickerKeyboardViewModeGifs) {
             [self updateCurrentSection];
         }
     }
@@ -668,13 +738,41 @@ typedef enum {
     }
 }
 
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
+{
+    if (_style != TGStickerKeyboardViewDefaultStyle || decelerate)
+        return;
+    
+    if (scrollView == _collectionView || scrollView == _trendingCollectionView || scrollView == _gifsCollectionView)
+    {
+        if (_expanded)
+            return;
+        
+        CGFloat y = _tabPanel.frame.origin.y;
+        if (y < -FLT_EPSILON && y > -_tabPanel.frame.size.height + FLT_EPSILON)
+        {
+            [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
+             {
+                 CGRect frame = _tabPanel.frame;
+                 if (scrollView.contentOffset.y <= -preloadInset || fabs(y) < _tabPanel.frame.size.height / 2.0f)
+                     frame.origin.y = 0.0f;
+                 else
+                     frame.origin.y = -_tabPanel.frame.size.height;
+                 
+                 _tabPanel.frame = frame;
+                 [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
+             } completion:nil];
+        }
+    }
+}
+
 - (void)updateCurrentSection {
     if (_mode == TGStickerKeyboardViewModeGifs) {
         [_tabPanel setCurrentGifsModeSelected];
     } else if (_mode == TGStickerKeyboardViewModeTrendingFirst || _mode == TGStickerKeyboardViewModeTrendingLast) {
         [_tabPanel setCurrentTrendingModeSelected];
     } else {
-        NSArray *layoutAttributes = [_collectionLayout layoutAttributesForElementsInRect:CGRectMake(0.0f, _collectionView.contentOffset.y + 45.0f + preloadInset + 7.0f, _collectionView.frame.size.width, _collectionView.frame.size.height - 45.0f - preloadInset - 7.0f)];
+        NSArray *layoutAttributes = [_collectionLayout layoutAttributesForElementsInRect:CGRectMake(0.0f, _collectionView.contentOffset.y + _tabPanel.frame.size.height + preloadInset + 7.0f, _collectionView.frame.size.width, _collectionView.frame.size.height - _tabPanel.frame.size.height - preloadInset - 7.0f)];
         NSInteger minSection = INT_MAX;
         for (UICollectionViewLayoutAttributes *attributes in layoutAttributes)
         {
@@ -709,6 +807,30 @@ typedef enum {
         return _recentDocuments[indexPath.item];
     else
         return ((TGStickerPack *)_stickerPacks[indexPath.section - 1]).documents[indexPath.item];
+}
+
+- (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
+{
+    if (collectionView == _collectionView && [kind isEqualToString:UICollectionElementKindSectionHeader])
+    {
+        TGStickerCollectionHeader *view = [collectionView dequeueReusableSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"TGStickerCollectionHeader" forIndexPath:indexPath];
+        view.title = indexPath.section == 0 ? TGLocalized(@"Stickers.FrequentlyUsed") : [_stickerPacks[indexPath.section - 1] title];
+        return view;
+    }
+    
+    return nil;
+}
+
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout referenceSizeForHeaderInSection:(NSInteger)__unused section
+{
+    if (collectionView == _collectionView)
+    {
+        if (section == 0 && _recentDocuments.count == 0)
+            return CGSizeZero;
+        
+        return CGSizeMake(collectionView.bounds.size.width, 23.0f);
+    }
+    return CGSizeZero;
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
@@ -777,9 +899,25 @@ typedef enum {
 
 - (void)scrollToSection:(NSUInteger)section
 {
+    [self scrollToSection:section fromGifs:false];
+}
+
+- (void)scrollToSection:(NSUInteger)section fromGifs:(bool)fromGifs
+{
     _ignoreSetSection = false;
     
     [_tabPanel setCurrentStickerPackIndex:section animated:false];
+    
+    if (!_expanded && section != 0 && !fromGifs)
+    {
+        [UIView animateWithDuration:0.15 delay:0.0 options:kNilOptions animations:^
+        {
+            CGRect frame = _tabPanel.frame;
+            frame.origin.y = -_tabPanel.frame.size.height;
+            _tabPanel.frame = frame;
+            [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
+        } completion:nil];
+    }
     
     if (section == 0)
     {
@@ -802,12 +940,10 @@ typedef enum {
         } else if (((TGStickerPack *)_stickerPacks[section - 1]).documents.count != 0) {
             UICollectionViewLayoutAttributes *attributes = [_collectionView layoutAttributesForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:section]];
             
-            CGFloat verticalOffset = attributes.frame.origin.y - [self collectionView:_collectionView layout:_collectionLayout minimumLineSpacingForSectionAtIndex:section];
-            CGFloat effectiveInset = 0.0f;
-            if (verticalOffset < _collectionView.contentOffset.y)
+            CGFloat verticalOffset = attributes.frame.origin.y - [self collectionView:_collectionView layout:_collectionLayout minimumLineSpacingForSectionAtIndex:section] - [self collectionView:_collectionView layout:_collectionLayout referenceSizeForHeaderInSection:section].height;
+            CGFloat effectiveInset = preloadInset;
+            if (_expanded)
                 effectiveInset = _collectionView.contentInset.top;
-            else
-                effectiveInset = preloadInset;
             
             CGFloat contentOffset = verticalOffset - effectiveInset;
             if (contentOffset > _collectionView.contentSize.height - _collectionView.frame.size.height + _collectionView.contentInset.bottom) {
@@ -837,7 +973,8 @@ typedef enum {
     
     [_collectionView reloadData];
     
-    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:(_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:(_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
+    bool disableTrending = _style == TGStickerKeyboardViewDarkBlurredStyle;
+    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
 }
 
 - (void)setRecentGifs:(NSArray *)recentGifs {
@@ -885,7 +1022,8 @@ typedef enum {
     
     _ignoreGifCellContents = false;
     
-    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:(_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:(_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
+    bool disableTrending = _style == TGStickerKeyboardViewDarkBlurredStyle;
+    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
     
     [self scrollViewDidScroll:_gifsCollectionView];
     
@@ -903,7 +1041,8 @@ typedef enum {
     
     [_trendingCollectionView reloadData];
     
-    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:(_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:(_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
+    bool disableTrending = _style == TGStickerKeyboardViewDarkBlurredStyle;
+    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
 }
 
 - (void)setInstalledTrendingPacks:(NSSet *)installedTrendingPacks {
@@ -967,11 +1106,15 @@ typedef enum {
     [self updateRecentDocuments];
     
     [_collectionView reloadData];
-    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:(_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:(_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
+    bool disableTrending = _style == TGStickerKeyboardViewDarkBlurredStyle;
+    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
     
     if (!TGObjectCompare(_recentGifsOriginal, _recentGifs)) {
         [self setRecentGifs:_recentGifsOriginal];
     }
+    
+    _tabPanel.frame = CGRectMake(_tabPanel.frame.origin.x, 0.0f, _tabPanel.frame.size.width, _tabPanel.frame.size.height);
+    [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
     
     [self updateCurrentSection];
     
@@ -1005,49 +1148,60 @@ typedef enum {
                     __weak TGStickerKeyboardView *weakSelf = self;
                     __weak TGStickerItemPreviewView *weakPreviewView = previewView;
                     NSMutableArray *actions = [[NSMutableArray alloc] init];
-                    TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Conversation.Send") type:TGMenuSheetButtonTypeSend action:^
-                    {
-                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
-                        __strong TGStickerKeyboardView *strongSelf = weakSelf;
-                        if (strongSelf == nil || strongPreviewView == nil)
-                            return;
-                    
-                        [strongPreviewView performCommit];
-                        
-                        TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
-                        {
-                            if (strongSelf->_stickerSelected)
-                                strongSelf->_stickerSelected(strongPreviewView.item);
-                        });
-                    }];
+                    TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"ShareMenu.Send") type:TGMenuSheetButtonTypeSend action:^
+                                                           {
+                                                               __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                                                               __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                                                               if (strongSelf == nil || strongPreviewView == nil)
+                                                                   return;
+                                                               
+                                                               [strongPreviewView performCommit];
+                                                               
+                                                               TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                                                                               {
+                                                                                   if (strongSelf->_stickerSelected)
+                                                                                       strongSelf->_stickerSelected(strongPreviewView.item);
+                                                                               });
+                                                           }];
                     [actions addObject:sendItem];
                     
+                    //                    TGMenuSheetButtonItemView *favoriteItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Stickers.AddToFavorites") type:TGMenuSheetButtonTypeDefault action:^
+                    //                    {
+                    //                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                    //                        __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                    //                        if (strongSelf == nil || strongPreviewView == nil)
+                    //                            return;
+                    //
+                    //                        [strongPreviewView performDismissal];
+                    //                    }];
+                    //                    [actions addObject:favoriteItem];
+                    
                     TGMenuSheetButtonItemView *viewItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"StickerPack.ViewPack") type:TGMenuSheetButtonTypeDefault action:^
-                    {
-                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
-                        __strong TGStickerKeyboardView *strongSelf = weakSelf;
-                        if (strongSelf == nil || strongPreviewView == nil)
-                            return;
-
-                        [strongPreviewView performDismissal];
-                        
-                        TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
-                        {
-                            [strongSelf viewPack:strongPreviewView.stickerPack sticker:strongPreviewView.item recent:strongPreviewView.recent];
-                        });
-                    }];
+                                                           {
+                                                               __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                                                               __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                                                               if (strongSelf == nil || strongPreviewView == nil)
+                                                                   return;
+                                                               
+                                                               [strongPreviewView performDismissal];
+                                                               
+                                                               TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                                                                               {
+                                                                                   [strongSelf viewPack:strongPreviewView.stickerPack sticker:strongPreviewView.item recent:strongPreviewView.recent];
+                                                                               });
+                                                           }];
                     [actions addObject:viewItem];
                     
                     TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeDefault action:^
-                    {
-                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
-                        if (strongPreviewView == nil)
-                            return;
-                        
-                        [strongPreviewView performDismissal];
-                    }];
+                                                             {
+                                                                 __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                                                                 if (strongPreviewView == nil)
+                                                                     return;
+                                                                 
+                                                                 [strongPreviewView performDismissal];
+                                                             }];
                     [actions addObject:cancelItem];
-                
+                    
                     [previewView setupWithMainItemViews:nil actionItemViews:actions];
                     
                     TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithParentController:parentViewController previewView:previewView];
@@ -1138,10 +1292,80 @@ typedef enum {
 {
     if (_previewController != nil && gestureRecognizer.state == UIGestureRecognizerStateRecognized)
     {
-        AudioServicesPlaySystemSound(1519);
         TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
         [previewView presentActions];
+        
+        if (fabs(CFAbsoluteTimeGetCurrent() - previewView.lastFeedbackTime) > 1.0)
+            AudioServicesPlaySystemSound(1519);
     }
+}
+
+- (void)handleTabPan:(UIPanGestureRecognizer *)gestureRecognizer
+{
+    if (_mode == TGStickerKeyboardViewModeGifs)
+        return;
+    
+    CGPoint translation = [gestureRecognizer translationInView:nil];
+    if (_expanded)
+        translation.y = MAX(0.0f, translation.y);
+    else
+        translation.y = MIN(0.0f, translation.y);
+    
+    CGPoint velocity = [gestureRecognizer velocityInView:nil];
+    
+    if (gestureRecognizer.state == UIGestureRecognizerStateBegan)
+    {
+        
+    }
+    else if (gestureRecognizer.state == UIGestureRecognizerStateChanged)
+    {
+        if (self.expandInteraction != nil)
+            self.expandInteraction(translation.y);
+    }
+    else if (gestureRecognizer.state == UIGestureRecognizerStateEnded)
+    {
+        if (self.requestedExpand == nil)
+            return;
+        
+        if (_expanded)
+        {
+            if (translation.y > 100 || velocity.y > 200.0f)
+                self.requestedExpand(false);
+            else
+                self.requestedExpand(true);
+        }
+        else
+        {
+            if (translation.y < -100 || velocity.y < -200.0f)
+                self.requestedExpand(true);
+            else
+                self.requestedExpand(false);
+        }
+    }
+    else if (gestureRecognizer.state == UIGestureRecognizerStateCancelled)
+    {
+        self.requestedExpand(_expanded);
+    }
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
+{
+    if (gestureRecognizer == _tabPanRecognizer)
+    {
+        UIPanGestureRecognizer *panGestureRecognizer = (UIPanGestureRecognizer *)gestureRecognizer;
+        
+        CGPoint velocity = [panGestureRecognizer velocityInView:gestureRecognizer.view];
+        
+        if (fabs(velocity.x) > fabs(velocity.y))
+            return false;
+        
+        if (_expanded)
+            return velocity.y > 2.0f;
+        else
+            return velocity.y < 2.0f;
+    }
+    
+    return true;
 }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
@@ -1180,6 +1404,22 @@ typedef enum {
                 _trendingCollectionView.frame = CGRectMake(0.0f, -gifInset, size.width, size.height + gifInset * 2.0f);
             }
         }];
+        
+        if (mode == TGStickerKeyboardViewModeGifs)
+        {
+            if (_recentDocuments.count != 0)
+            {
+                [_collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionTop animated:false];
+            }
+            else
+            {
+                [_collectionView setContentOffset:CGPointMake(0.0f, -_collectionView.contentInset.top) animated:false];
+            }
+        }
+        else
+        {
+            [_gifsCollectionView setContentOffset:_gifsCollectionView.contentOffset animated:false];
+        }
         
         [self scrollViewDidScroll:_gifsCollectionView];
     }
@@ -1324,6 +1564,50 @@ typedef enum {
 - (void)commitReadFeaturedPackIds {
     NSArray *packIds = [_accumulatedReadFeaturedPackIds swap:nil];
     [TGStickersSignals markFeaturedStickerPackAsRead:packIds];
+}
+
+- (bool)isExpanded
+{
+    return _expanded;
+}
+
+- (void)setExpanded:(bool)expanded
+{
+    _expanded = expanded;
+    [_tabPanel setExpanded:expanded];
+    
+    _tabPanel.frame = CGRectMake(_tabPanel.frame.origin.x, 0.0f, _tabPanel.frame.size.width, _tabPanel.frame.size.height);
+    [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
+}
+
+- (void)updateExpanded
+{
+    [_tabPanel updateExpanded:true];
+}
+
+- (CGFloat)preferredHeight:(bool)landscape
+{
+    if (TGIsPad())
+        return landscape ? 398.0f : 313.0f;
+    
+    if ([TGViewController hasVeryLargeScreen])
+        return landscape ? 194.0f : 271.0f;
+    else if ([TGViewController hasLargeScreen])
+        return landscape ? 194.0f : 258.0f;
+    else if ([TGViewController isWidescreen])
+        return landscape ? 193.0f : 253.0f;
+    
+    return landscape ? 193.0f : 253.0f;
+}
+
+- (bool)isInteracting
+{
+    return _tabPanRecognizer.state == UIGestureRecognizerStateChanged;
+}
+
+- (bool)isGif
+{
+    return _mode == TGStickerKeyboardViewModeGifs;
 }
 
 @end

@@ -13,6 +13,7 @@
 @property (nonatomic) bool autoCapitalize;
 @property (nonatomic) bool secureEntry;
 @property (nonatomic) UIKeyboardType keyboardType;
+@property (nonatomic) UIReturnKeyType returnKeyType;
 
 @property (nonatomic) CGFloat minimalInset;
 

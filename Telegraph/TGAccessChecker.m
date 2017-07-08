@@ -86,6 +86,10 @@
                 case TGMicrophoneAccessIntentCall:
                     message = TGLocalized(@"AccessDenied.CallMicrophone");
                     break;
+                    
+                case TGMicrophoneAccessIntentVideoMessage:
+                    message = TGLocalized(@"AccessDenied.VideoMessageMicrophone");
+                    break;
             }
             
             [[[TGAccessRequiredAlertView alloc] initWithMessage:message
@@ -107,7 +111,7 @@
     }
 }
 
-+ (bool)checkCameraAuthorizationStatusWithAlertDismissComlpetion:(void (^)(void))alertDismissCompletion
++ (bool)checkCameraAuthorizationStatusForIntent:(TGCameraAccessIntent)intent alertDismissCompletion:(void (^)(void))alertDismissCompletion
 {
 #if TARGET_IPHONE_SIMULATOR
     if (true) {
@@ -128,7 +132,19 @@
     {
         case PGCameraAuthorizationStatusDenied:
         {
-            [[[TGAccessRequiredAlertView alloc] initWithMessage:TGLocalized(@"AccessDenied.Camera")
+            NSString *message = nil;
+            switch (intent)
+            {
+                case TGCameraAccessIntentDefault:
+                    message = TGLocalized(@"AccessDenied.Camera");
+                    break;
+                    
+                case TGCameraAccessIntentVideoMessage:
+                    message = TGLocalized(@"AccessDenied.VideoMessageCamera");
+                    break;
+            }
+            
+            [[[TGAccessRequiredAlertView alloc] initWithMessage:message
                                              showSettingsButton:true
                                                 completionBlock:alertDismissCompletion] show];
         }

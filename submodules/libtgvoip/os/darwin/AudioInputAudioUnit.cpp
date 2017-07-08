@@ -13,32 +13,36 @@
 
 #define BUFFER_SIZE 960
 
-CAudioInputAudioUnit::CAudioInputAudioUnit(CAudioUnitIO* io){
+using namespace tgvoip;
+using namespace tgvoip::audio;
+
+AudioInputAudioUnit::AudioInputAudioUnit(){
 	remainingDataSize=0;
 	isRecording=false;
-	this->io=io;
+	this->io=AudioUnitIO::Get();
 	io->AttachInput(this);
 }
 
-CAudioInputAudioUnit::~CAudioInputAudioUnit(){
+AudioInputAudioUnit::~AudioInputAudioUnit(){
 	io->DetachInput();
+	AudioUnitIO::Release();
 }
 
-void CAudioInputAudioUnit::Configure(uint32_t sampleRate, uint32_t bitsPerSample, uint32_t channels){
+void AudioInputAudioUnit::Configure(uint32_t sampleRate, uint32_t bitsPerSample, uint32_t channels){
 	io->Configure(sampleRate, bitsPerSample, channels);
 }
 
-void CAudioInputAudioUnit::Start(){
+void AudioInputAudioUnit::Start(){
 	isRecording=true;
 	io->EnableInput(true);
 }
 
-void CAudioInputAudioUnit::Stop(){
+void AudioInputAudioUnit::Stop(){
 	isRecording=false;
 	io->EnableInput(false);
 }
 
-void CAudioInputAudioUnit::HandleBufferCallback(AudioBufferList *ioData){
+void AudioInputAudioUnit::HandleBufferCallback(AudioBufferList *ioData){
 	int i;
 	for(i=0;i<ioData->mNumberBuffers;i++){
 		AudioBuffer buf=ioData->mBuffers[i];

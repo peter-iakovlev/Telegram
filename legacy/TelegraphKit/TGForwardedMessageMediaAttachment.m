@@ -16,6 +16,7 @@
 {
     TGForwardedMessageMediaAttachment *attachment = [[TGForwardedMessageMediaAttachment alloc] init];
     
+    attachment.forwardSourcePeerId = _forwardSourcePeerId;
     attachment.forwardPeerId = _forwardPeerId;
     attachment.forwardDate = _forwardDate;
     attachment.forwardAuthorUserId = _forwardAuthorUserId;
@@ -27,7 +28,7 @@
 
 - (void)serialize:(NSMutableData *)data
 {
-    int32_t magic = 0x72413fab;
+    int32_t magic = 0x72413fac;
     [data appendBytes:&magic length:4];
     
     int dataLengthPtr = (int)data.length;
@@ -40,6 +41,8 @@
     
     [data appendBytes:&_forwardAuthorUserId length:4];
     [data appendBytes:&_forwardPostId length:4];
+    
+    [data appendBytes:&_forwardSourcePeerId length:8];
     
     int dataLength = (int)(data.length - dataLengthPtr - 4);
     [data replaceBytesInRange:NSMakeRange(dataLengthPtr, 4) withBytes:&dataLength];
@@ -59,6 +62,9 @@
         [is read:(uint8_t *)&dataLength maxLength:4];
     } else if (magic == 0x72413fab) {
         version = 3;
+        [is read:(uint8_t *)&dataLength maxLength:4];
+    } else if (magic == 0x72413fac) {
+        version = 4;
         [is read:(uint8_t *)&dataLength maxLength:4];
     } else {
         dataLength = magic;
@@ -92,6 +98,12 @@
         int32_t forwardPostId = 0;
         [is read:(uint8_t *)&forwardPostId maxLength:4];
         messageAttachment.forwardPostId = forwardPostId;
+    }
+    
+    if (version >= 4) {
+        int64_t forwardSourcePeerId = 0;
+        [is read:(uint8_t *)&forwardSourcePeerId maxLength:8];
+        messageAttachment.forwardSourcePeerId = forwardSourcePeerId;
     }
     
     return messageAttachment;

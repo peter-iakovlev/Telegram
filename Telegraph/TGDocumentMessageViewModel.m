@@ -48,6 +48,9 @@
     
     NSString *_titleText;
     NSString *_sizeText;
+    
+    NSArray *_currentLinkSelectionViews;
+    NSArray *_textCheckingResults;
 }
 
 @end
@@ -73,6 +76,8 @@ static CTFontRef textFontForSize(CGFloat size)
     self = [super initWithMessage:message authorPeer:authorPeer viaUser:viaUser context:context];
     if (self != nil)
     {
+        _textCheckingResults = document.textCheckingResults;
+        
         CGSize dimensions = CGSizeZero;
         _legacyThumbnailCacheUri = [document.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:&dimensions];
         dimensions.width *= 10.0f;
@@ -138,15 +143,15 @@ static CTFontRef textFontForSize(CGFloat size)
         }
         else if (document.size >= 1024 * 1024)
         {
-            sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Megabytes"), (float)(float)document.size / (1024 * 1024)];
+            sizeString = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.Megabytes"), (float)(float)document.size / (1024 * 1024)];
         }
         else if (document.size >= 1024)
         {
-            sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Kilobytes"), (int)(int)(document.size / 1024)];
+            sizeString = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.Kilobytes"), (int)(int)(document.size / 1024)];
         }
         else
         {
-            sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Bytes"), (int)(int)(document.size)];
+            sizeString = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.Bytes"), (int)(int)(document.size)];
         }
         
         _sizeText = sizeString;
@@ -159,6 +164,7 @@ static CTFontRef textFontForSize(CGFloat size)
         });
         
         _textModel = [[TGModernTextViewModel alloc] initWithText:document.caption font:textFontForSize(TGGetMessageViewModelLayoutConstants()->textFontSize)];
+        _textModel.textCheckingResults = _textCheckingResults;
         _textModel.textColor = [assetsSource messageTextColor];
         if (message.isBroadcast)
             _textModel.additionalTrailingWidth += 10.0f;
@@ -193,12 +199,14 @@ static CTFontRef textFontForSize(CGFloat size)
 {
     [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
     
+    NSArray *currentTextCheckingResults = nil;
     TGDocumentMediaAttachment *document = nil;
     for (TGMediaAttachment *attachment in message.mediaAttachments)
     {
         if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
         {
             document = (TGDocumentMediaAttachment *)attachment;
+            currentTextCheckingResults = document.textCheckingResults;
             break;
         }
     }
@@ -213,19 +221,22 @@ static CTFontRef textFontForSize(CGFloat size)
     }
     else if (document.size >= 1024 * 1024)
     {
-        sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Megabytes"), (float)(float)document.size / (1024 * 1024)];
+        sizeString = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.Megabytes"), (float)(float)document.size / (1024 * 1024)];
     }
     else if (document.size >= 1024)
     {
-        sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Kilobytes"), (int)(int)(document.size / 1024)];
+        sizeString = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.Kilobytes"), (int)(int)(document.size / 1024)];
     }
     else
     {
-        sizeString = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.Bytes"), (int)(int)(document.size)];
+        sizeString = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.Bytes"), (int)(int)(document.size)];
     }
     
     if (!TGStringCompare(_textModel.text, document.caption)) {
+        _textCheckingResults = currentTextCheckingResults;
+        
         _textModel.text = document.caption;
+        _textModel.textCheckingResults = currentTextCheckingResults;
         if (sizeUpdated != NULL)
             *sizeUpdated = true;
     }
@@ -414,8 +425,15 @@ static CTFontRef textFontForSize(CGFloat size)
         } else {
             textSize.height += 8.0f;
         }
+        if (infoWidth < FLT_EPSILON) {
+            textSize.height -= 15.0f;
+        }
     } else {
         textSize.width = MAX(textSize.width, MIN(containerSize.width, infoWidth + sizeWidth + previewSize.width + 16.0f));
+        
+        if (infoWidth < FLT_EPSILON) {
+            textSize.height -= 12.0f;
+        }
     }
     
     if (_authorSignatureModel != nil) {
@@ -456,39 +474,249 @@ static CTFontRef textFontForSize(CGFloat size)
     [super layoutForContainerSize:containerSize];
 }
 
+- (void)clearLinkSelection
+{
+    for (UIView *linkView in _currentLinkSelectionViews)
+    {
+        [linkView removeFromSuperview];
+    }
+    _currentLinkSelectionViews = nil;
+}
+
+- (void)updateLinkSelection:(CGPoint)point
+{
+    if ([_contentModel boundView] != nil)
+    {
+        [self clearLinkSelection];
+        
+        CGPoint offset = CGPointMake(_contentModel.frame.origin.x - _backgroundModel.frame.origin.x, _contentModel.frame.origin.y - _backgroundModel.frame.origin.y);
+        
+        NSArray *regionData = nil;
+        NSString *link = [_textModel linkAtPoint:CGPointMake(point.x - _textModel.frame.origin.x - offset.x, point.y - _textModel.frame.origin.y - offset.y) regionData:&regionData];
+        
+        CGPoint regionOffset = CGPointZero;
+        
+        if (link != nil)
+        {
+            CGRect topRegion = regionData.count > 0 ? [regionData[0] CGRectValue] : CGRectZero;
+            CGRect middleRegion = regionData.count > 1 ? [regionData[1] CGRectValue] : CGRectZero;
+            CGRect bottomRegion = regionData.count > 2 ? [regionData[2] CGRectValue] : CGRectZero;
+            
+            topRegion.origin = CGPointMake(topRegion.origin.x + regionOffset.x, topRegion.origin.y + regionOffset.y);
+            middleRegion.origin = CGPointMake(middleRegion.origin.x + regionOffset.x, middleRegion.origin.y + regionOffset.y);
+            bottomRegion.origin = CGPointMake(bottomRegion.origin.x + regionOffset.x, bottomRegion.origin.y + regionOffset.y);
+            
+            UIImageView *topView = nil;
+            UIImageView *middleView = nil;
+            UIImageView *bottomView = nil;
+            
+            UIImageView *topCornerLeft = nil;
+            UIImageView *topCornerRight = nil;
+            UIImageView *bottomCornerLeft = nil;
+            UIImageView *bottomCornerRight = nil;
+            
+            NSMutableArray *linkHighlightedViews = [[NSMutableArray alloc] init];
+            
+            topView = [[UIImageView alloc] init];
+            middleView = [[UIImageView alloc] init];
+            bottomView = [[UIImageView alloc] init];
+            
+            topCornerLeft = [[UIImageView alloc] init];
+            topCornerRight = [[UIImageView alloc] init];
+            bottomCornerLeft = [[UIImageView alloc] init];
+            bottomCornerRight = [[UIImageView alloc] init];
+            
+            if (topRegion.size.height != 0)
+            {
+                topView.hidden = false;
+                topView.frame = topRegion;
+                if (middleRegion.size.height == 0 && bottomRegion.size.height == 0)
+                    topView.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkFull];
+                else
+                    topView.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkFull];
+            }
+            else
+            {
+                topView.hidden = true;
+                topView.frame = CGRectZero;
+            }
+            
+            if (middleRegion.size.height != 0)
+            {
+                middleView.hidden = false;
+                middleView.frame = middleRegion;
+                if (bottomRegion.size.height == 0)
+                    middleView.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkFull];
+                else
+                    middleView.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkFull];
+            }
+            else
+            {
+                middleView.hidden = true;
+                middleView.frame = CGRectZero;
+            }
+            
+            if (bottomRegion.size.height != 0)
+            {
+                bottomView.hidden = false;
+                bottomView.frame = bottomRegion;
+                bottomView.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkFull];
+            }
+            else
+            {
+                bottomView.hidden = true;
+                bottomView.frame = CGRectZero;
+            }
+            
+            topCornerLeft.hidden = true;
+            topCornerRight.hidden = true;
+            bottomCornerLeft.hidden = true;
+            bottomCornerRight.hidden = true;
+            
+            if (topRegion.size.height != 0 && middleRegion.size.height != 0)
+            {
+                if (topRegion.origin.x == middleRegion.origin.x)
+                {
+                    topCornerLeft.hidden = false;
+                    topCornerLeft.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkCornerLR];
+                    topCornerLeft.frame = CGRectMake(topRegion.origin.x, topRegion.origin.y + topRegion.size.height - 3.5f, 4, 7);
+                }
+                else if (topRegion.origin.x < middleRegion.origin.x + middleRegion.size.width - 3.5f)
+                {
+                    topCornerLeft.hidden = false;
+                    topCornerLeft.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkCornerBT];
+                    topCornerLeft.frame = CGRectMake(topRegion.origin.x - 3.5f, topRegion.origin.y + topRegion.size.height - 4, 7, 4);
+                }
+                
+                if (topRegion.origin.x + topRegion.size.width == middleRegion.origin.x + middleRegion.size.width)
+                {
+                    topCornerRight.hidden = false;
+                    topCornerRight.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkCornerRL];
+                    topCornerRight.frame = CGRectMake(topRegion.origin.x + topRegion.size.width - 4, topRegion.origin.y + topRegion.size.height - 3.5f, 4, 7);
+                }
+                else if (topRegion.origin.x + topRegion.size.width < middleRegion.origin.x + middleRegion.size.width - 3.5f)
+                {
+                    topCornerRight.hidden = false;
+                    topCornerRight.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkCornerBT];
+                    topCornerRight.frame = CGRectMake(topRegion.origin.x + topRegion.size.width - 3.5f, topRegion.origin.y + topRegion.size.height - 4, 7, 4);
+                }
+                else if (bottomRegion.size.height == 0 && topRegion.origin.x < middleRegion.origin.x + middleRegion.size.width - 3.5f && topRegion.origin.x + topRegion.size.width > middleRegion.origin.x + middleRegion.size.width + 3.5f)
+                {
+                    topCornerRight.hidden = false;
+                    topCornerRight.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkCornerTB];
+                    topCornerRight.frame = CGRectMake(middleRegion.origin.x + middleRegion.size.width - 3.5f, middleRegion.origin.y, 7, 4);
+                }
+            }
+            
+            if (middleRegion.size.height != 0 && bottomRegion.size.height != 0)
+            {
+                if (middleRegion.origin.x == bottomRegion.origin.x)
+                {
+                    bottomCornerLeft.hidden = false;
+                    bottomCornerLeft.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkCornerLR];
+                    bottomCornerLeft.frame = CGRectMake(middleRegion.origin.x, middleRegion.origin.y + middleRegion.size.height - 3.5f, 4, 7);
+                }
+                
+                if (bottomRegion.origin.x + bottomRegion.size.width < middleRegion.origin.x + middleRegion.size.width - 3.5f)
+                {
+                    bottomCornerRight.hidden = false;
+                    bottomCornerRight.image = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkCornerTB];
+                    bottomCornerRight.frame = CGRectMake(bottomRegion.origin.x + bottomRegion.size.width - 3.5f, bottomRegion.origin.y, 7, 4);
+                }
+            }
+            
+            if (!topView.hidden)
+                [linkHighlightedViews addObject:topView];
+            if (!middleView.hidden)
+                [linkHighlightedViews addObject:middleView];
+            if (!bottomView.hidden)
+                [linkHighlightedViews addObject:bottomView];
+            
+            if (!topCornerLeft.hidden)
+                [linkHighlightedViews addObject:topCornerLeft];
+            if (!topCornerRight.hidden)
+                [linkHighlightedViews addObject:topCornerRight];
+            if (!bottomCornerLeft.hidden)
+                [linkHighlightedViews addObject:bottomCornerLeft];
+            if (!bottomCornerRight.hidden)
+                [linkHighlightedViews addObject:bottomCornerRight];
+            
+            for (UIView *partView in linkHighlightedViews)
+            {
+                partView.frame = CGRectOffset(partView.frame, _textModel.frame.origin.x, _textModel.frame.origin.y + 1);
+                [[_contentModel boundView] addSubview:partView];
+            }
+            
+            _currentLinkSelectionViews = linkHighlightedViews;
+        }
+    }
+}
+
 - (int)gestureRecognizer:(TGDoubleTapGestureRecognizer *)__unused recognizer shouldFailTap:(CGPoint)__unused point
 {
-    point = [recognizer locationInView:[_contentModel boundView]];
+    CGPoint convertedPoint = [recognizer locationInView:[_contentModel boundView]];
+    
     if (_textModel.frame.size.height > FLT_EPSILON && point.y >= CGRectGetMinY(_textModel.frame)) {
-        return false;
+        if (([_textModel linkAtPoint:CGPointMake(convertedPoint.x - _textModel.frame.origin.x, convertedPoint.y - _textModel.frame.origin.y) regionData:NULL] != nil || (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, convertedPoint)) || (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, convertedPoint)) ||
+             (_viaUserModel && CGRectContainsPoint(_viaUserModel.frame, convertedPoint)))) {
+            return 3;
+        }
+        
+        return 0;
     }
+    
     return 3;
+}
+
+- (void)gestureRecognizer:(TGDoubleTapGestureRecognizer *)__unused recognizer didBeginAtPoint:(CGPoint)point
+{
+    [self updateLinkSelection:point];
+}
+
+- (bool)gestureRecognizerShouldLetScrollViewStealTouches:(TGDoubleTapGestureRecognizer *)__unused recognizer
+{
+    return true;
+}
+
+- (void)gestureRecognizerDidFail:(TGDoubleTapGestureRecognizer *)__unused recognizer
+{
+    [self clearLinkSelection];
 }
 
 - (void)messageDoubleTapGesture:(TGDoubleTapGestureRecognizer *)recognizer
 {
     if (recognizer.state != UIGestureRecognizerStateBegan)
     {
-        if (recognizer.state == UIGestureRecognizerStateRecognized)
+        [self clearLinkSelection];
+    }
+    
+    if (recognizer.state == UIGestureRecognizerStateRecognized)
+    {
+        CGPoint point = [recognizer locationInView:[_contentModel boundView]];
+        NSString *linkCandidate = [_textModel linkAtPoint:CGPointMake(point.x - _textModel.frame.origin.x, point.y - _textModel.frame.origin.y) regionData:NULL];
+        
+        if (recognizer.longTapped)
         {
-            CGPoint point = [recognizer locationInView:[_contentModel boundView]];
-            
-            if (recognizer.longTapped)
+            if (linkCandidate != nil)
+                [_context.companionHandle requestAction:@"openLinkWithOptionsRequested" options:@{@"url": linkCandidate}];
+            else
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
-            else if (recognizer.doubleTapped)
-                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
-            else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
-                if (TGPeerIdIsChannel(_forwardedPeerId)) {
-                    [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
-                } else {
-                    [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
-                }
+        }
+        else if (recognizer.doubleTapped)
+            [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+        else if (linkCandidate != nil)
+            [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": linkCandidate, @"mid": @(_mid)}];
+        else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
+            if (TGPeerIdIsChannel(_forwardedPeerId)) {
+                [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(_forwardedPeerId), @"messageId": @(_forwardedMessageId)}];
+            } else {
+                [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @((int32_t)_forwardedPeerId)}];
             }
-            else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
-                [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
-            else if (_textModel.frame.size.height <= FLT_EPSILON || point.y < CGRectGetMinY(_textModel.frame)) {
-                [self activateMedia];
-            }
+        }
+        else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
+            [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
+        else if (_textModel.frame.size.height <= FLT_EPSILON || point.y < CGRectGetMinY(_textModel.frame)) {
+            [self activateMedia];
         }
     }
 }

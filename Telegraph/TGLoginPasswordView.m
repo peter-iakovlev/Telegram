@@ -10,8 +10,6 @@
 
 @interface TGLoginPasswordView () <UITextFieldDelegate>
 {
-    UIView *_grayBackground;
-    UIView *_grayBackgroundSeparator;
     TGTextField *_passwordField;
     UIView *_passwordSeparatorView;
     UILabel *_titleLabel;
@@ -31,18 +29,10 @@
     {
         self.backgroundColor = [UIColor whiteColor];
         
-        _grayBackground = [[UIView alloc] init];
-        _grayBackground.backgroundColor = UIColorRGB(0xf2f2f2);
-        [self addSubview:_grayBackground];
-        
-        _grayBackgroundSeparator = [[UIView alloc] init];
-        _grayBackgroundSeparator.backgroundColor = TGSeparatorColor();
-        [self addSubview:_grayBackgroundSeparator];
-        
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.backgroundColor = [UIColor clearColor];
         _titleLabel.textColor = [UIColor blackColor];
-        _titleLabel.font = TGIsPad() ? TGUltralightSystemFontOfSize(48.0f) : TGSystemFontOfSize(26.0f);
+        _titleLabel.font = TGIsPad() ? TGUltralightSystemFontOfSize(48.0f) : TGLightSystemFontOfSize(30.0f);
         _titleLabel.text = TGLocalized(@"LoginPassword.Title");
         [_titleLabel sizeToFit];
         [self addSubview:_titleLabel];
@@ -112,6 +102,9 @@
 {
     [super layoutSubviews];
     
+    CGSize screenSize = CGSizeZero;
+    screenSize = [TGViewController screenSize:(self.frame.size.width < self.frame.size.height) ? UIDeviceOrientationPortrait : UIDeviceOrientationLandscapeLeft];
+    
     CGFloat topOffset = 0.0f;
     CGFloat titleLabelOffset = 0.0f;
     CGFloat noticeLabelOffset = 0.0f;
@@ -123,7 +116,93 @@
     CGFloat resetFirstButtonOffset = 0.0f;
     CGFloat resetSecondButtonOffset = 0.0f;
     
+    CGFloat didNotReceiveCodeOffset = 0.0f;
+    CGFloat timeoutOffset = 0.0f;
+    
     if (TGIsPad())
+    {
+        if (screenSize.width < screenSize.height)
+        {
+            titleLabelOffset = 94.0f;
+            noticeLabelOffset = 175.0f;
+            topOffset = 310.0f;
+            
+            didNotReceiveCodeOffset = 660.0f;
+            timeoutOffset = 660.0f;
+        }
+        else
+        {
+            titleLabelOffset = 54.0f;
+            noticeLabelOffset = 125.0f;
+            topOffset = 180.0f;
+            
+            didNotReceiveCodeOffset = 320.0f;
+            timeoutOffset = 320.0f;
+        }
+        
+        sideInset = 130.0f;
+        resetFirstButtonOffset = 24.0f;
+        resetSecondButtonOffset = 6.0f;
+        
+        if (_resetMode) {
+            topOffset -= 40.0f;
+            didNotReceiveCodeOffset -= 35.0f;
+        }
+    }
+    else
+    {
+        topOffset = [TGViewController isWidescreen] ? 131.0f : 90.0f;
+        titleLabelOffset = ([TGViewController isWidescreen] ? 71.0f : 48.0f) + 9.0f;
+        noticeLabelOffset = 100.0f;
+        topOffset = 120.0f;
+        
+        if (screenSize.height < 481.0f) {
+            titleLabelOffset = 52.0f;
+            noticeLabelOffset = 95.0f;
+            topOffset = 138.0f;
+            didNotReceiveCodeOffset = 215.0f;
+            timeoutOffset = 215.0f;
+            if (_resetMode) {
+                topOffset -= 35.0f;
+                didNotReceiveCodeOffset -= 35.0f;
+            }
+        } else if (screenSize.height < 569.0f) {
+            titleLabelOffset = 68.0f;
+            noticeLabelOffset = 115.0f;
+            topOffset = 170.0f;
+            didNotReceiveCodeOffset = 300.0f;
+            timeoutOffset = 290.0f;
+            if (_resetMode) {
+                topOffset -= 35.0f;
+                didNotReceiveCodeOffset -= 35.0f;
+            }
+        } else if (screenSize.height < 668.0f) {
+            titleLabelOffset = 74.0f;
+            noticeLabelOffset = 135.0f;
+            topOffset = 220.0f;
+            didNotReceiveCodeOffset = 388.0f;
+            timeoutOffset = 388.0f;
+            if (_resetMode) {
+                topOffset -= 40.0f;
+                didNotReceiveCodeOffset -= 35.0f;
+            }
+        } else {
+            titleLabelOffset = 84.0f;
+            noticeLabelOffset = 145.0f;
+            topOffset = 260.0f;
+            didNotReceiveCodeOffset = 460.0f;
+            timeoutOffset = 460.0f;
+            if (_resetMode) {
+                topOffset -= 35.0f;
+                didNotReceiveCodeOffset -= 35.0f;
+            }
+        }
+        resetFirstButtonOffset = 24.0f;
+        resetSecondButtonOffset = 6.0f;
+        sideInset = 32.0f;
+    }
+    
+    /*if (TGIsPad())
     {
         if (self.frame.size.width < self.frame.size.height)
         {
@@ -141,8 +220,6 @@
         hintOffset = 13.0f;
         helpOffset = 24.0f;
         buttonOffset = 0.0f;
-        resetFirstButtonOffset = 24.0f;
-        resetSecondButtonOffset = 6.0f;
     }
     else
     {
@@ -155,24 +232,21 @@
         sideInset = 32.0f;
         resetFirstButtonOffset = 24.0f;
         resetSecondButtonOffset = 6.0f;
-    }
-    
-    _grayBackground.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, topOffset);
-    _grayBackgroundSeparator.frame = CGRectMake(0.0f, topOffset, self.frame.size.width, TGScreenPixel);
+    }*/
     
     _titleLabel.frame = CGRectMake(CGFloor((self.frame.size.width - _titleLabel.frame.size.width) / 2), titleLabelOffset, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
     
-    _passwordSeparatorView.frame = CGRectMake(sideInset, _grayBackgroundSeparator.frame.origin.y + 60.0f, self.frame.size.width - sideInset * 2.0f, TGScreenPixel);
+    _passwordSeparatorView.frame = CGRectMake(sideInset, topOffset + 60.0f, self.frame.size.width - sideInset * 2.0f, TGScreenPixel);
     
     _passwordField.frame = CGRectMake(sideInset, _passwordSeparatorView.frame.origin.y - 46.0f, self.frame.size.width - sideInset * 2.0f, 56.0f);
     
     CGSize helpSize = [_helpLabel.text sizeWithFont:_helpLabel.font constrainedToSize:CGSizeMake(250.0f, CGFLOAT_MAX) lineBreakMode:NSLineBreakByWordWrapping];
     helpSize.width = CGCeil(helpSize.width);
     helpSize.height = CGCeil(helpSize.height);
-    _helpLabel.frame = CGRectMake(CGFloor((self.frame.size.width - helpSize.width) / 2.0f), CGRectGetMaxY(_passwordSeparatorView.frame) + helpOffset, helpSize.width, helpSize.height);
+    _helpLabel.frame = CGRectMake(CGFloor((self.frame.size.width - helpSize.width) / 2.0f), noticeLabelOffset, helpSize.width, helpSize.height);
     
     [_forgotPasswordButton sizeToFit];
-    _forgotPasswordButton.frame = CGRectMake(CGFloor((self.frame.size.width - _forgotPasswordButton.frame.size.width) / 2.0f), (_resetMode ? CGRectGetMaxY(_passwordSeparatorView.frame) : CGRectGetMaxY(_helpLabel.frame)) + (_resetMode ? resetFirstButtonOffset : buttonOffset), _forgotPasswordButton.frame.size.width, _forgotPasswordButton.frame.size.height);
+    _forgotPasswordButton.frame = CGRectMake(CGFloor((self.frame.size.width - _forgotPasswordButton.frame.size.width) / 2.0f), _resetMode ? (didNotReceiveCodeOffset - resetSecondButtonOffset) : didNotReceiveCodeOffset, _forgotPasswordButton.frame.size.width, _forgotPasswordButton.frame.size.height);
     
     [_resetButton sizeToFit];
     _resetButton.frame = CGRectMake(CGFloor((self.frame.size.width - _resetButton.frame.size.width) / 2.0f), CGRectGetMaxY(_forgotPasswordButton.frame) + resetSecondButtonOffset, _resetButton.frame.size.width, _resetButton.frame.size.height);

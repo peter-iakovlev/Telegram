@@ -62,8 +62,10 @@
     
     bool _transitionInProgress;
     bool _dismissing;
+    bool _appeared;
     
     NSString *_backButtonTitle;
+    NSString *_doneButtonTitle;
     
     TGPhotoCaptionInputMixin *_captionMixin;
     CGFloat _scrollViewVerticalOffset;
@@ -77,10 +79,10 @@
 
 - (instancetype)initWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata
 {
-    return [self initWithImage:image metadata:metadata backButtonTitle:TGLocalized(@"Camera.Retake")];
+    return [self initWithImage:image metadata:metadata backButtonTitle:TGLocalized(@"Camera.Retake") doneButtonTitle:TGLocalized(@"MediaPicker.Send")];
 }
 
-- (instancetype)initWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata backButtonTitle:(NSString *)backButtonTitle
+- (instancetype)initWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata backButtonTitle:(NSString *)backButtonTitle doneButtonTitle:(NSString *)doneButtonTitle
 {
     self = [super init];
     if (self != nil)
@@ -94,6 +96,7 @@
         self.automaticallyManageScrollViewInsets = false;
         
         _backButtonTitle = backButtonTitle;
+        _doneButtonTitle = doneButtonTitle;
     }
     return self;
 }
@@ -270,7 +273,9 @@
         NSArray *stickers = [editingContext adjustmentsForItem:strongSelf->_image].paintingData.stickers;
         [[imageSignal deliverOn:[SQueue mainQueue]] startWithNext:^(UIImage *result)
         {
-            strongSelf.sendPressed(result, caption, stickers);
+            strongSelf.sendPressed(self, result, caption, stickers);
+            strongSelf.view.userInteractionEnabled = true;
+            strongSelf->_dismissing = false;
         }];
     };
     
@@ -295,14 +300,14 @@
         tabs |= TGPhotoEditorToolsTab;
     }
     
-    _portraitToolbarView = [[TGPhotoToolbarView alloc] initWithBackButtonTitle:_backButtonTitle doneButtonTitle:TGLocalized(@"MediaPicker.Send") accentedDone:false solidBackground:false];
+    _portraitToolbarView = [[TGPhotoToolbarView alloc] initWithBackButtonTitle:_backButtonTitle doneButtonTitle:_doneButtonTitle accentedDone:false solidBackground:false];
     [_portraitToolbarView setToolbarTabs:tabs animated:false];
     _portraitToolbarView.cancelPressed = cancelPressed;
     _portraitToolbarView.donePressed = donePressed;
     _portraitToolbarView.tabPressed = tabPressed;
     [_wrapperView addSubview:_portraitToolbarView];
     
-    _landscapeToolbarView = [[TGPhotoToolbarView alloc] initWithBackButtonTitle:_backButtonTitle doneButtonTitle:TGLocalized(@"MediaPicker.Send") accentedDone:false solidBackground:false];
+    _landscapeToolbarView = [[TGPhotoToolbarView alloc] initWithBackButtonTitle:_backButtonTitle doneButtonTitle:_doneButtonTitle accentedDone:false solidBackground:false];
     [_landscapeToolbarView setToolbarTabs:tabs animated:false];
     _landscapeToolbarView.cancelPressed = cancelPressed;
     _landscapeToolbarView.donePressed = donePressed;
@@ -369,7 +374,12 @@
 
 - (void)dismiss
 {
-    if (self.overlayWindow != nil)
+    if (self.navigationController != nil)
+    {
+        TGOverlayController *parentController = (TGOverlayController *)self.navigationController.parentViewController;
+        [parentController dismiss];
+    }
+    else if (self.overlayWindow != nil)
     {
         [super dismiss];
     }
@@ -409,6 +419,12 @@
 
 - (void)transitionIn
 {
+    [TGHacks setApplicationStatusBarAlpha:0.0f];
+    
+    if (_appeared)
+        return;
+    
+    _appeared = true;
     _transitionInProgress = true;
     
     _captionMixin.inputPanel.alpha = 0.0f;

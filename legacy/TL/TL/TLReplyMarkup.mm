@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x4fd88fbd;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLReplyMarkup$replyKeyboardHide *object = [[TLReplyMarkup$replyKeyboardHide alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
@@ -79,7 +79,7 @@
     return (int32_t)0x8f52bf3f;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLReplyMarkup$replyKeyboardForceReply *object = [[TLReplyMarkup$replyKeyboardForceReply alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
@@ -112,7 +112,7 @@
     return (int32_t)0x82aadd81;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLReplyMarkup$replyKeyboardMarkup *object = [[TLReplyMarkup$replyKeyboardMarkup alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
@@ -152,7 +152,7 @@
     return (int32_t)0xb4cb9b07;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLReplyMarkup$replyInlineMarkup *object = [[TLReplyMarkup$replyInlineMarkup alloc] init];
     object.rows = metaObject->getArray((int32_t)0x441aa5c6);

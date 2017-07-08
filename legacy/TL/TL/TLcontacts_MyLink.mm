@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xb4cf4e51;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLcontacts_MyLink$contacts_myLinkEmpty *object = [[TLcontacts_MyLink$contacts_myLinkEmpty alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0x35bdcac7;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLcontacts_MyLink$contacts_myLinkRequested *object = [[TLcontacts_MyLink$contacts_myLinkRequested alloc] init];
     object.contact = metaObject->getBool((int32_t)0xa9d2a4b);
@@ -105,7 +105,7 @@
     return (int32_t)0xc69f50c4;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLcontacts_MyLink$contacts_myLinkContact *object = [[TLcontacts_MyLink$contacts_myLinkContact alloc] init];
     return object;

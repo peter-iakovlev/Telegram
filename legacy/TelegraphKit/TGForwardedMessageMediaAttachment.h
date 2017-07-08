@@ -12,6 +12,8 @@
 
 @interface TGForwardedMessageMediaAttachment : TGMediaAttachment <NSCopying, TGMediaAttachmentParser>
 
+@property (nonatomic) int64_t forwardSourcePeerId;
+
 @property (nonatomic) int64_t forwardPeerId;
 @property (nonatomic) int forwardDate;
 

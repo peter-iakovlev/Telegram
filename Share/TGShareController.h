@@ -4,9 +4,7 @@
 
 @interface TGShareController : UINavigationController
 
-@property (nonatomic, readonly, strong) TGShareToolbarView *toolbarView;
-
-- (void)sendToPeers:(NSArray *)peers models:(NSArray *)models;
+- (void)sendToPeers:(NSArray *)peers models:(NSArray *)models caption:(NSString *)caption;
 - (void)dismissForCancel:(bool)forCancel;
 
 @end

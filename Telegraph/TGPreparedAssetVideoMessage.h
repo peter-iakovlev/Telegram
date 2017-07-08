@@ -4,6 +4,7 @@
 
 @class TGImageInfo;
 @class SSignalQueue;
+@class TGLiveUploadActorData;
 
 @interface TGPreparedAssetVideoMessage : TGPreparedMessage
 
@@ -21,6 +22,7 @@
 @property (nonatomic, strong) NSString *videoHash;
 @property (nonatomic, assign) bool isCloud;
 @property (nonatomic, strong) NSArray *stickerDocuments;
+@property (nonatomic, assign) bool roundMessage;
 
 @property (nonatomic, readonly) bool document;
 @property (nonatomic, readonly) int64_t localDocumentId;
@@ -31,7 +33,9 @@
 
 @property (nonatomic, strong) SSignalQueue *uploadQueue;
 
-- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier assetURL:(NSURL *)assetURL localVideoId:(int64_t)localVideoId imageInfo:(TGImageInfo *)imageInfo duration:(NSTimeInterval)duration dimensions:(CGSize)dimensions adjustments:(NSDictionary *)adjustments useMediaCache:(bool)useMediaCache liveUpload:(bool)liveUpload passthrough:(bool)passthrough caption:(NSString *)caption isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments;
+@property (nonatomic, strong) TGLiveUploadActorData *liveData;
+
+- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier assetURL:(NSURL *)assetURL localVideoId:(int64_t)localVideoId imageInfo:(TGImageInfo *)imageInfo duration:(NSTimeInterval)duration dimensions:(CGSize)dimensions adjustments:(NSDictionary *)adjustments useMediaCache:(bool)useMediaCache liveUpload:(bool)liveUpload passthrough:(bool)passthrough caption:(NSString *)caption isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments roundMessage:(bool)roundMessage;
 
 - (void)setImageInfoWithThumbnailData:(NSData *)data thumbnailSize:(CGSize)thumbnailSize;
 

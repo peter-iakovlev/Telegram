@@ -7,6 +7,7 @@
 #import "TGMessage.h"
 
 #import "TGDownloadManager.h"
+#import "TGVideoDownloadActor.h"
 
 #import "TGBotContextResult.h"
 #import "TGBotContextExternalResult.h"
@@ -84,9 +85,10 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
             return [[TGMediaId alloc] initWithType:3 itemId:document.localDocumentId];
     } else if ([item.media isKindOfClass:[TGAudioMediaAttachment class]]) {
         TGAudioMediaAttachment *audio = item.media;
-        
-        id mediaId = [[TGMediaId alloc] initWithType:4 itemId:audio.audioId != 0 ? audio.audioId : audio.localAudioId];
-        return mediaId;
+        return [[TGMediaId alloc] initWithType:4 itemId:audio.audioId != 0 ? audio.audioId : audio.localAudioId];
+    } else if ([item.media isKindOfClass:[TGVideoMediaAttachment class]]) {
+        TGVideoMediaAttachment *video = item.media;
+        return [[TGMediaId alloc] initWithType:1 itemId:video.videoId != 0 ? video.videoId : video.localVideoId];
     }
     return nil;
 }
@@ -154,6 +156,17 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
                 id mediaId = [[TGMediaId alloc] initWithType:4 itemId:audio.audioId != 0 ? audio.audioId : audio.localAudioId];
                 
                 [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/audio/(%" PRId32 ":%" PRId64 ":%@)", audio.datacenterId, audio.audioId, audio.audioUri.length != 0 ? audio.audioUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:audio, @"audioAttachment", nil] changePriority:priority messageId:[(NSNumber *)_item.key intValue] itemId:mediaId groupId:[_item peerId] itemClass:TGDownloadItemClassAudio];
+            }
+        } else if ([_item.media isKindOfClass:[TGVideoMediaAttachment class]]) {
+            TGVideoMediaAttachment *video = _item.media;
+            if (video.videoId != 0) {
+                id mediaId = [[TGMediaId alloc] initWithType:1 itemId:video.videoId];
+            
+                NSString *videoUri = [video.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL];
+                if (videoUri != nil)
+                {
+                    [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/as/media/video/(%@)", videoUri] options:[[NSDictionary alloc] initWithObjectsAndKeys:video, @"videoAttachment", nil] changePriority:priority messageId:[(NSNumber *)_item.key intValue] itemId:mediaId groupId:[_item peerId]  itemClass:TGDownloadItemClassVideo];
+                }
             }
         }
     }];
@@ -280,6 +293,8 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
                 return path;
             }
         }
+    } else if ([item.media isKindOfClass:[TGVideoMediaAttachment class]]) {
+        return [TGVideoDownloadActor localPathForVideoUrl:[((TGVideoMediaAttachment *)item.media).videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL]];
     }
     return nil;
 }

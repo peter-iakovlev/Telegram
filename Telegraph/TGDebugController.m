@@ -24,6 +24,10 @@
 
 #import "TGTelegraph.h"
 
+#import "TGDatabase.h"
+
+#import "TGAccountSignals.h"
+
 @interface TGDebugController () <MFMailComposeViewControllerDelegate, UINavigationControllerDelegate>
 {
     TGSwitchCollectionItem *_logsEnabledItem;
@@ -39,7 +43,7 @@
     if (self != nil)
     {
         _logsEnabledItem = [[TGSwitchCollectionItem alloc] initWithTitle:@"Enable Logging" isOn:[TGAppDelegateInstance enableLogging]];
-        _logsEnabledItem.toggled = ^(bool logsEnabled)
+        _logsEnabledItem.toggled = ^(bool logsEnabled, __unused TGSwitchCollectionItem *item)
         {
             [TGAppDelegateInstance setEnableLogging:logsEnabled];
         };
@@ -72,6 +76,14 @@
         TGButtonCollectionItem *resetPaymentsItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Reset Saved Payment Info" action:@selector(resetPaymentsPressed)];
         TGCollectionMenuSection *resetPaymentsSection = [[TGCollectionMenuSection alloc] initWithItems:@[resetPaymentsItem]];
         [self.menuSections addSection:resetPaymentsSection];
+        
+        TGButtonCollectionItem *databaseItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Switch to WAL" action:@selector(walPressed)];
+        TGCollectionMenuSection *databaseSection = [[TGCollectionMenuSection alloc] initWithItems:@[databaseItem]];
+        [self.menuSections addSection:databaseSection];
+        
+        TGButtonCollectionItem *fetchDebugIpsItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Fetch IPs" action:@selector(fetchDebugIps)];
+        TGCollectionMenuSection *fetchDebugIpsItemSection = [[TGCollectionMenuSection alloc] initWithItems:@[fetchDebugIpsItem]];
+        [self.menuSections addSection:fetchDebugIpsItemSection];
         
         NSString *version = [NSString stringWithFormat:@"v%@", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]];
         version = [NSString stringWithFormat:@"%@ (%@)", version, [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString *)kCFBundleVersionKey]];
@@ -223,10 +235,14 @@
 - (void)resetTooltipsPressed {
     NSArray *keys = @
     [
-        @"TG_didShowSilentBroadcastTooltip",
         @"TG_displayedGifsTooltip_v0",
         @"TG_displayedCameraHoldToVideoTooltip_v0",
-        @"TG_displayedBotResultsPreviewTooltip_v0"
+        @"TG_displayedPrivateRecordModeTooltip_v0",
+        @"TG_displayedChannelRecordModeTooltip_v0",
+        @"TG_displayedPrivateRevertRecordModeTooltip_v0",
+        @"TG_displayedChannelRevertRecordModeTooltip_v0",
+        @"TG_lastPrivateRecordModeIsVideo_v0",
+        @"TG_lastChannelRecordModeIsAudio_v0",
     ];
 
     for (NSString *key in keys)
@@ -234,6 +250,8 @@
     
 
     [[NSUserDefaults standardUserDefaults] synchronize];
+    
+    [TGDatabaseInstance() setCustomProperty:@"checkedLocalization" value:nil];
 }
 
 - (void)mailComposeController:(MFMailComposeViewController *)__unused controller didFinishWithResult:(MFMailComposeResult)__unused result error:(NSError *)__unused error
@@ -260,6 +278,22 @@
 - (void)resetCallsTabPressed {
     [TGAppDelegateInstance resetCallsTab];
     [TGAppDelegateInstance.rootController.mainTabsController setCallsHidden:true animated:false];
+}
+
+- (void)walPressed {
+    [TGDatabaseInstance() switchToWal];
+}
+
+- (void)fetchDebugIps {
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+    [progressWindow show:true];
+    [[[TGAccountSignals fetchBackupIps:false] onDispose:^{
+        TGDispatchOnMainThread(^{
+            [progressWindow dismiss:true];
+        });
+    }] startWithNext:nil completed:^{
+        
+    }];
 }
 
 @end

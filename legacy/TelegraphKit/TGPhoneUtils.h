@@ -16,4 +16,6 @@
 + (NSString *)cleanPhone:(NSString *)phone;
 + (NSString *)cleanInternationalPhone:(NSString *)phone forceInternational:(bool)forceInternational;
 
++ (bool)maybePhone:(NSString *)phone;
+
 @end

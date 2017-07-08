@@ -13,6 +13,7 @@
 @interface TGSendMessageSignals : NSObject
 
 + (SSignal *)sendTextMessageWithPeerId:(int64_t)peerId text:(NSString *)text replyToMid:(int32_t)replyToMid;
++ (SSignal *)sendTextMessageWithPeerId:(int64_t)peerId text:(NSString *)text entities:(NSArray *)entities replyToMid:(int32_t)replyToMid;
 
 + (SSignal *)sendLocationWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid locationAttachment:(TGLocationMediaAttachment *)locationAttachment;
 + (SSignal *)sendRemoteDocumentWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid documentAttachment:(TGDocumentMediaAttachment *)documentAttachment;
@@ -24,12 +25,15 @@
 
 + (SSignal *)sendMediaWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid attachment:(TGMediaAttachment *)attachment uploadSignal:(SSignal *)uploadSignal mediaProducer:(TLInputMedia *(^)(NSDictionary *uploadInfo))mediaProducer;
 
++ (SSignal *)commitSendMediaWithMessage:(TGMessage *)message mediaProducer:(TLInputMedia *(^)(NSDictionary *))mediaProducer;
+
 @end
 
 
 @interface TGShareSignals : NSObject
 
 + (SSignal *)shareText:(NSString *)text toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
++ (SSignal *)shareText:(NSString *)text entities:(NSArray *)entities toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
 + (SSignal *)sharePhoto:(TGImageMediaAttachment *)photo toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
 + (SSignal *)shareVideo:(TGVideoMediaAttachment *)document toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
 + (SSignal *)shareContact:(TGContactMediaAttachment *)contact toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;

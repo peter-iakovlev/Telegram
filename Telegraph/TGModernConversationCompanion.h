@@ -163,7 +163,7 @@ typedef enum {
 - (NSDictionary *)documentDescriptionFromBotContextResult:(TGBotContextResult *)result text:(NSString *)text botContextResult:(TGBotContextResultAttachment *)botContextResult;
 - (NSDictionary *)imageDescriptionFromMediaAsset:(TGMediaAsset *)asset previewImage:(UIImage *)previewImage document:(bool)document fileName:(NSString *)fileName caption:(NSString *)caption;
 - (NSDictionary *)videoDescriptionFromMediaAsset:(TGMediaAsset *)asset previewImage:(UIImage *)previewImage adjustments:(TGVideoEditAdjustments *)adjustments document:(bool)document fileName:(NSString *)fileName stickers:(NSArray *)stickers caption:(NSString *)caption;
-- (NSDictionary *)videoDescriptionFromVideoURL:(NSURL *)videoURL previewImage:(UIImage *)previewImage dimensions:(CGSize)dimensions duration:(NSTimeInterval)duration adjustments:(TGVideoEditAdjustments *)adjustments stickers:(NSArray *)stickers caption:(NSString *)caption;
+- (NSDictionary *)videoDescriptionFromVideoURL:(NSURL *)videoURL previewImage:(UIImage *)previewImage dimensions:(CGSize)dimensions duration:(NSTimeInterval)duration adjustments:(TGVideoEditAdjustments *)adjustments stickers:(NSArray *)stickers caption:(NSString *)caption roundMessage:(bool)roundMessage liveUploadData:(id)liveUploadData;
 - (NSDictionary *)documentDescriptionFromICloudDriveItem:(TGICloudItem *)item;
 - (NSDictionary *)documentDescriptionFromDropboxItem:(TGDropboxItem *)item;
 - (NSDictionary *)documentDescriptionFromGoogleDriveItem:(TGGoogleDriveItem *)item;
@@ -200,18 +200,22 @@ typedef enum {
 - (bool)imageDownloadsShouldAutosavePhotos;
 - (bool)shouldAutomaticallyDownloadPhotos;
 - (bool)shouldAutomaticallyDownloadAnimations;
+- (bool)shouldAutomaticallyDownloadVideoMessages;
 - (bool)allowMessageForwarding;
+- (bool)allowMessageExternalSharing;
 - (bool)allowReplies;
 - (bool)allowMessageEntities;
 - (bool)allowExternalContent;
 - (bool)allowContactSharing;
 - (bool)allowVenueSharing;
 - (bool)allowCaptionedMedia;
+- (bool)allowVideoMessages;
 - (bool)encryptUploads;
+- (bool)canPostMessages;
 - (NSDictionary *)userActivityData;
 - (TGApplicationFeaturePeerType)applicationFeaturePeerType;
 
-- (void)updateControllerEmptyState;
+- (void)updateControllerEmptyState:(bool)force;
 - (void)clearCheckedMessages;
 - (void)setMessageChecked:(int32_t)messageId checked:(bool)checked;
 - (int)checkedMessageCount;
@@ -258,6 +262,7 @@ typedef enum {
 - (void)updateMediaAccessTimeForMessageId:(int32_t)messageId;
 
 - (id)acquireAudioRecordingActivityHolder;
+- (id)acquireVideoMessageRecordingActivityHolder;
 - (id)acquireLocationPickingActivityHolder;
 
 - (void)serviceNotificationsForMessageIds:(NSArray *)messageIds;
@@ -323,5 +328,11 @@ typedef enum {
 - (bool)isPeerAdmin;
 
 - (void)startVoiceCall;
+- (bool)supportsCalls;
+
+- (bool)canAttachLinkPreviews;
+- (NSNumber *)inlineMediaRestrictionTimeout;
+- (NSNumber *)mediaRestrictionTimeout;
+- (NSNumber *)stickerRestrictionTimeout;
 
 @end

@@ -19,14 +19,18 @@
 
 #import <MTProtoKit/MTEncryption.h>
 #import <MTProtoKit/MTRequest.h>
+
+#import "TGCdnFileData.h"
     
 @interface TGFilePartInfo : NSObject
 
 @property (nonatomic, strong) id token;
 @property (nonatomic) NSTimeInterval startTime;
+@property (nonatomic) int partOffset;
 @property (nonatomic) int partLength;
 @property (nonatomic) int downloadedLength;
 @property (nonatomic) NSData *downloadedData;
+@property (nonatomic) bool restart;
 
 @end
 
@@ -73,6 +77,12 @@
     int _nextWorker;
     
     bool _completeWithData;
+    
+    TGCdnFileData *_cdnFileData;
+    TGNetworkMediaTypeTag _mediaTypeTag;
+    
+    SMetaDisposable *_reuploadDisposable;
+    bool _isReuploading;
 }
 
 @end
@@ -134,6 +144,8 @@
         [_encryptionContextStream close];
         _encryptionContextStream = nil;
     }
+    
+    [_reuploadDisposable dispose];
 }
 
 - (void)storeCurrentIv
@@ -203,8 +215,8 @@
         _fileStream = [[NSOutputStream alloc] initToFileAtPath:_tempStoreFilePath append:true];
         [_fileStream open];
         
-#if TGUseModernNetworking
         TGNetworkMediaTypeTag mediaTypeTag = (TGNetworkMediaTypeTag)([options[@"mediaTypeTag"] intValue]);
+        _mediaTypeTag = mediaTypeTag;
         __weak TGMultipartFileDownloadActor *weakSelf = self;
         _worker1Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:_datacenterId type:mediaTypeTag completion:^(TGNetworkWorkerGuard *worker)
         {
@@ -223,9 +235,6 @@
                 [strongSelf assignAdditionalWorker:worker];
             }
         }];
-#else
-        [self downloadFilePartsWithWorker:nil];
-#endif
     }
     else
     {
@@ -281,6 +290,10 @@
 
 - (void)downloadFileParts
 {
+    if (_worker1 == nil) {
+        return;
+    }
+    
     if (_size != 0 && _downloadedFileSize >= _size)
     {
         if (_fileStream != nil)
@@ -321,7 +334,7 @@
         
         [_downloadingParts enumerateKeysAndObjectsUsingBlock:^(__unused NSNumber *offset, TGFilePartInfo *partInfo, __unused BOOL *stop)
         {
-            if (partInfo.downloadedData == nil)
+            if (partInfo.downloadedData == nil && !partInfo.restart)
                 activeDownloadingParts++;
         }];
         
@@ -337,6 +350,14 @@
                 {
                     if ([offset intValue] + partInfo.partLength > nextDownloadOffset)
                         nextDownloadOffset = [offset intValue] + partInfo.partLength;
+                    if (partInfo.restart) {
+                        partInfo.restart = false;
+                        
+                        TGFilePartRequestInfo *requestInfo = [[TGFilePartRequestInfo alloc] init];
+                        requestInfo.offset = partInfo.partOffset;
+                        requestInfo.length = partInfo.partLength;
+                        [requestList addObject:requestInfo];
+                    }
                 }];
                 
                 if (_size != 0 && nextDownloadOffset >= _size)
@@ -354,6 +375,7 @@
                 [requestList addObject:requestInfo];
                 
                 TGFilePartInfo *partInfo = [[TGFilePartInfo alloc] init];
+                partInfo.partOffset = nextDownloadOffset;
                 partInfo.partLength = partLength;
                 _downloadingParts[@(nextDownloadOffset)] = partInfo;
                 
@@ -365,6 +387,7 @@
                 [requestList addObject:explicitPartRequest];
                 
                 TGFilePartInfo *partInfo = [[TGFilePartInfo alloc] init];
+                partInfo.partOffset = explicitPartRequest.offset;
                 partInfo.partLength = explicitPartRequest.length;
                 _downloadingParts[@(explicitPartRequest.offset)] = partInfo;
                 activeDownloadingParts++;
@@ -375,16 +398,32 @@
         
         for (TGFilePartRequestInfo *requestInfo in requestList)
         {
-#if TGUseModernNetworking
             MTRequest *request = [[MTRequest alloc] init];
             
-            TLRPCupload_getFile$upload_getFile *getFile = [[TLRPCupload_getFile$upload_getFile alloc] init];
+            int32_t updatedLimit = requestInfo.length;
+            while (updatedLimit % 4096 != 0 || 1048576 % updatedLimit != 0) {
+                updatedLimit++;
+            }
             
             TLInputFileLocation *location = _fileLocation;
-            getFile.location = location;
-            getFile.offset = requestInfo.offset;
-            getFile.limit = requestInfo.length;
-            request.body = getFile;
+            
+            if (_cdnFileData != nil) {
+                TLRPCupload_getCdnFile$upload_getCdnFile *getFile = [[TLRPCupload_getCdnFile$upload_getCdnFile alloc] init];
+                
+                getFile.file_token = _cdnFileData.token;
+                getFile.offset = requestInfo.offset;
+                
+                getFile.limit = updatedLimit;
+                request.body = getFile;
+            } else {
+                TLRPCupload_getFile$upload_getFile *getFile = [[TLRPCupload_getFile$upload_getFile alloc] init];
+                
+                getFile.location = location;
+                getFile.offset = requestInfo.offset;
+                
+                getFile.limit = updatedLimit;
+                request.body = getFile;
+            }
             
             __weak TGMultipartFileDownloadActor *weakSelf = self;
             [request setCompleted:^(TLupload_File *result, __unused NSTimeInterval timestamp, id error)
@@ -393,10 +432,37 @@
                 {
                     __strong TGMultipartFileDownloadActor *strongSelf = weakSelf;
                     
-                    if (error == nil)
-                        [strongSelf filePartDownloadSuccess:location offset:requestInfo.offset length:requestInfo.length data:result.bytes];
-                    else
-                        [strongSelf filePartDownloadFailed:location offset:requestInfo.offset length:requestInfo.length];
+                    if (strongSelf != nil) {
+                        if (error == nil) {
+                            if ([result isKindOfClass:[TLupload_File$upload_file class]]) {
+                                [strongSelf filePartDownloadSuccess:location offset:requestInfo.offset length:requestInfo.length data:((TLupload_File$upload_file *)result).bytes];
+                            } else if ([result isKindOfClass:[TLupload_File$upload_fileCdnRedirect class]]) {
+                                ((TGFilePartInfo *)strongSelf->_downloadingParts[@(requestInfo.offset)]).restart = true;
+                                TLupload_File$upload_fileCdnRedirect *redirect = (TLupload_File$upload_fileCdnRedirect *)result;
+                                [strongSelf switchToCdn:[[TGCdnFileData alloc] initWithCdnId:redirect.dc_id token:redirect.file_token encryptionKey:redirect.encryption_key encryptionIv:redirect.encryption_iv]];
+                            } else if ([result isKindOfClass:[TLupload_CdnFile$upload_cdnFile class]]) {
+                                TGCdnFileData *fileData = strongSelf->_cdnFileData;
+                                NSData *bytes = ((TLupload_CdnFile$upload_cdnFile *)result).bytes;
+                                NSMutableData *encryptionIv = [[NSMutableData alloc] initWithData:fileData.encryptionIv];
+                                int32_t ivOffset = requestInfo.offset / 16;
+                                ivOffset = NSSwapInt(ivOffset);
+                                memcpy(encryptionIv.mutableBytes + encryptionIv.length - 4, &ivOffset, 4);
+                                NSData *data = nil;
+                                if (bytes.length != 0) {
+                                    data = MTAesCtrDecrypt(bytes, fileData.encryptionKey, encryptionIv);
+                                } else {
+                                    data = [NSData data];
+                                }
+                                [strongSelf filePartDownloadSuccess:location offset:requestInfo.offset length:requestInfo.length data:data];
+                            } else if ([result isKindOfClass:[TLupload_CdnFile$upload_cdnFileReuploadNeeded class]]) {
+                                ((TGFilePartInfo *)strongSelf->_downloadingParts[@(requestInfo.offset)]).restart = true;
+                                TLupload_CdnFile$upload_cdnFileReuploadNeeded *reupload = (TLupload_CdnFile$upload_cdnFileReuploadNeeded *)result;
+                                [strongSelf reuploadToCdn:reupload.request_token];
+                            }
+                        }
+                        else
+                            [strongSelf filePartDownloadFailed:location offset:requestInfo.offset length:requestInfo.length];
+                    }
                 }];
             }];
             
@@ -420,12 +486,66 @@
             
             id token = request.internalId;
             [worker.strongWorker addRequest:request];
-#else
-            id token = [TGTelegraphInstance doDownloadFilePart:_datacenterId location:_fileLocation offset:requestInfo.offset length:requestInfo.length actor:(id<TGFileDownloadActor>)self];
-#endif
+
             ((TGFilePartInfo *)_downloadingParts[@(requestInfo.offset)]).token = token;
         }
     }
+}
+    
+- (void)switchToCdn:(TGCdnFileData *)fileData {
+    if (_cdnFileData != nil) {
+        return;
+    }
+    
+    _cdnFileData = fileData;
+    
+    _worker1 = nil;
+    _worker2 = nil;
+    
+    __weak TGMultipartFileDownloadActor *weakSelf = self;
+    _worker1Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:fileData.cdnId type:_mediaTypeTag isCdn:true completion:^(TGNetworkWorkerGuard *worker)
+    {
+        __strong TGMultipartFileDownloadActor *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            [strongSelf downloadFilePartsWithWorker:worker];
+        }
+    }];
+    
+    _worker2Token = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:fileData.cdnId type:_mediaTypeTag isCdn:true completion:^(TGNetworkWorkerGuard *worker)
+    {
+        __strong TGMultipartFileDownloadActor *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            [strongSelf assignAdditionalWorker:worker];
+        }
+    }];
+}
+    
+- (void)reuploadToCdn:(NSData *)requestToken {
+    if (_isReuploading) {
+        return;
+    }
+    _isReuploading = true;
+    if (_reuploadDisposable == nil) {
+        _reuploadDisposable = [[SMetaDisposable alloc] init];
+    }
+    NSData *fileToken = _cdnFileData.token;
+    __weak TGMultipartFileDownloadActor *weakSelf = self;
+    [_reuploadDisposable setDisposable:[[[[TGTelegramNetworking instance] downloadWorkerForDatacenterId:_datacenterId type:TGNetworkMediaTypeTagGeneric] mapToSignal:^SSignal *(TGNetworkWorkerGuard *worker) {
+        TLRPCupload_reuploadCdnFile$upload_reuploadCdnFile *reupload = [[TLRPCupload_reuploadCdnFile$upload_reuploadCdnFile alloc] init];
+        reupload.file_token = fileToken;
+        reupload.request_token = requestToken;
+        return [[TGTelegramNetworking instance] requestSignal:reupload worker:worker];
+    }] startWithNext:^(__unused id next) {
+        [ActionStageInstance() dispatchOnStageQueue:^{
+            __strong TGMultipartFileDownloadActor *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                strongSelf->_isReuploading = false;
+                [strongSelf downloadFileParts];
+            }
+        }];
+    } error:nil completed:nil]];
 }
 
 - (void)filePartDownloadProgress:(TLInputFileLocation *)__unused location offset:(int)offset length:(int)__unused length packetLength:(int)packetLength progress:(float)progress

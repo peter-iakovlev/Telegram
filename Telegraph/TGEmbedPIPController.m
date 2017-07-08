@@ -3,6 +3,7 @@
 #import "TGPIPAblePlayerView.h"
 
 #import <AVKit/AVKit.h>
+#import <MediaPlayer/MediaPlayer.h>
 
 #import "TGEmbedPIPPlaceholderView.h"
 #import "TGEmbedItemView.h"
@@ -635,7 +636,8 @@ void freedomPIPInit();
     TGEmbedPIPCorner corner = _currentCorner;
     bool shouldHide = _hidden;
     
-    switch (_currentCorner) {
+    switch (_currentCorner)
+    {
         case TGEmbedPIPCornerTopLeft:
             if ((angle > 0 && angle < 90 - TGEmbedPIPAngleEpsilon) || angle > 360 - TGEmbedPIPAngleEpsilon)
             {
@@ -923,6 +925,8 @@ static TGEmbedPIPCorner defaultCorner = TGEmbedPIPCornerTopRight;
 {
     __weak UIView<TGPIPAblePlayerView> *weakView = view;
     [[self playerViews] addObject:weakView];
+    
+    [self inhibitVolumeOverlay];
 }
 
 + (NSHashTable *)playerViews
@@ -934,6 +938,34 @@ static TGEmbedPIPCorner defaultCorner = TGEmbedPIPCornerTopRight;
         views = [NSHashTable weakObjectsHashTable];
     });
     return views;
+}
+
++ (bool)hasPlayerViews
+{
+    return [self playerViews].allObjects.count;
+}
+
+static MPVolumeView *volumeOverlayFixView;
+
++ (void)inhibitVolumeOverlay
+{
+    if (volumeOverlayFixView != nil)
+        return;
+    
+    UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
+    UIView *rootView = keyWindow.rootViewController.view;
+    
+    volumeOverlayFixView = [[MPVolumeView alloc] initWithFrame:CGRectMake(10000, 10000, 20, 20)];
+    [rootView addSubview:volumeOverlayFixView];
+}
+
++ (void)maybeReleaseVolumeOverlay
+{
+    if ([self hasPlayerViews])
+        return;
+    
+    [volumeOverlayFixView removeFromSuperview];
+    volumeOverlayFixView = nil;
 }
 
 + (UIView<TGPIPAblePlayerView> *)activeNonPIPPlayerView

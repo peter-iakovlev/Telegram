@@ -34,6 +34,9 @@
 
 - (void)setPlayProgress:(CGFloat)playProgress
 {
+    if (isnan(playProgress))
+        playProgress = 0.0f;
+    
     _playProgress = playProgress;
     [self setNeedsLayout];
 }
@@ -49,6 +52,9 @@
     [super layoutSubviews];
     
     CGFloat playedWidth = floor(self.frame.size.width * _playProgress);
+    if (isnan(playedWidth))
+        playedWidth = 0.0f;
+    
     _playProgressView.frame = CGRectMake(0, 0, playedWidth, self.frame.size.height);
     _remainingProgressView.frame = CGRectMake(playedWidth, 0, self.frame.size.width - playedWidth, self.frame.size.height);
     

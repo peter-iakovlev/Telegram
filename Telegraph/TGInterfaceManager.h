@@ -7,7 +7,7 @@
  */
 
 #import <Foundation/Foundation.h>
-
+#import <SSignalKit/SSignalKit.h>
 #import "ActionStage.h"
 
 @class TGMessage;
@@ -22,12 +22,14 @@
 + (TGInterfaceManager *)instance;
 
 - (void)preload;
+- (void)resetStartupTime:(NSTimeInterval)value;
 
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation;
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation animated:(bool)animated;
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions;
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions animated:(bool)animated;
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions atMessage:(NSDictionary *)atMessage clearStack:(bool)clearStack openKeyboard:(bool)openKeyboard canOpenKeyboardWhileInTransition:(bool)canOpenKeyboardWhileInTransition animated:(bool)animated;
+- (void)navigateToChannelLogWithConversation:(TGConversation *)conversation animated:(bool)animated;
 - (TGModernConversationController *)configuredPreviewConversationControlerWithId:(int64_t)conversationId;
 
 - (TGModernConversationController *)currentControllerWithPeerId:(int64_t)peerId;
@@ -50,5 +52,9 @@
 - (void)callPeerWithId:(int64_t)peerId completion:(void (^)(void))completion;
 - (void)dismissAllCalls;
 - (void)maybeDisplayCallsTabAlert;
+- (bool)hasCallControllerInForeground;
+
+- (SSignal *)callControllerInForeground;
+- (SSignal *)messageVisibilitySignalWithConversationId:(int64_t)conversationId messageId:(int32_t)messageId;
 
 @end

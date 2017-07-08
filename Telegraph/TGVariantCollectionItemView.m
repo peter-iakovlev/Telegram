@@ -16,6 +16,7 @@
     UILabel *_titleLabel;
     UILabel *_variantLabel;
     UIImageView *_iconView;
+    UIImageView *_variantIconView;
     UIImageView *_disclosureIndicator;
     CGFloat _minLeftPadding;
 }
@@ -51,6 +52,7 @@
 {
     _titleLabel.text = title;
     [self setNeedsLayout];
+    [_titleLabel setNeedsDisplay];
 }
 
 - (void)setVariant:(NSString *)variant variantColor:(UIColor *)variantColor
@@ -58,6 +60,7 @@
     _variantLabel.text = variant;
     _variantLabel.textColor = variantColor == nil ? UIColorRGB(0x929297) : variantColor;
     [self setNeedsLayout];
+    [_variantLabel setNeedsDisplay];
 }
 
 - (void)setIcon:(UIImage *)icon
@@ -71,6 +74,21 @@
     
     _iconView.image = icon;
     self.separatorInset = (icon != nil) ? 59.0f : 15.0f;
+    
+    [self setNeedsLayout];
+}
+
+- (void)setVariantIcon:(UIImage *)variantIcon {
+    if (_variantIconView == nil && variantIcon != nil) {
+        _variantIconView = [[UIImageView alloc] init];
+        _variantIconView.contentMode = UIViewContentModeCenter;
+        [self addSubview:_variantIconView];
+    } else if (variantIcon == nil) {
+        [_variantIconView removeFromSuperview];
+        _variantIconView = nil;
+    }
+    
+    _variantIconView.image = variantIcon;
     
     [self setNeedsLayout];
 }
@@ -137,6 +155,10 @@
     if (_iconView.image != nil)
     {
         _iconView.frame = CGRectMake(_iconView.frame.origin.x, (self.frame.size.height - _iconView.frame.size.height) / 2, _iconView.frame.size.width, _iconView.frame.size.height);
+    }
+    
+    if (_variantIconView.image != nil) {
+        _variantIconView.frame = CGRectMake(CGRectGetMinX(_variantLabel.frame) - 8.0 - _variantIconView.image.size.width, CGFloor(self.frame.size.height - _variantIconView.image.size.height) / 2, _variantIconView.image.size.width, _variantIconView.image.size.height);
     }
 }
 

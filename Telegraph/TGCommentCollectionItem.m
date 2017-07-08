@@ -40,10 +40,10 @@
 }
 
 - (instancetype)initWithFormattedText:(NSString *)text {
-    return [self initWithFormattedText:text paragraphSpacing:0.0f];
+    return [self initWithFormattedText:text paragraphSpacing:0.0f clearFormatting:false];
 }
 
-- (instancetype)initWithFormattedText:(NSString *)text paragraphSpacing:(CGFloat)paragraphSpacing
+- (instancetype)initWithFormattedText:(NSString *)text paragraphSpacing:(CGFloat)paragraphSpacing clearFormatting:(bool)clearFormatting
 {
     self = [super init];
     if (self != nil)
@@ -53,7 +53,7 @@
         self.selectable = false;
         _alpha = 1.0f;
         
-        _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:true paragraphSpacing:paragraphSpacing];
+        _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:true paragraphSpacing:paragraphSpacing alignment:NSTextAlignmentNatural fontSize:14.0f clearFormatting:clearFormatting];
         _textColor = UIColorRGB(0x6d6d72);
     }
     return self;
@@ -75,10 +75,10 @@
 }
 
 + (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing {
-    return [self attributedStringFromText:text allowFormatting:allowFormatting paragraphSpacing:paragraphSpacing alignment:NSTextAlignmentNatural fontSize:14.0f];
+    return [self attributedStringFromText:text allowFormatting:allowFormatting paragraphSpacing:paragraphSpacing alignment:NSTextAlignmentNatural fontSize:14.0f clearFormatting:false];
 }
 
-+ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing alignment:(NSTextAlignment)alignment fontSize:(CGFloat)fontSize
++ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing alignment:(NSTextAlignment)alignment fontSize:(CGFloat)fontSize clearFormatting:(bool)clearFormatting
 {
     if (text.length == 0)
         return [[NSAttributedString alloc] initWithString:@"" attributes:nil];
@@ -140,10 +140,12 @@
         [attributedString addAttributes:boldAttributes range:[nRange rangeValue]];
     }
     
-    NSDictionary *linkAttributes = @{NSForegroundColorAttributeName: TGAccentColor()};
-    for (NSValue *nRange in linkRanges)
-    {
-        [attributedString addAttributes:linkAttributes range:[nRange rangeValue]];
+    if (!clearFormatting) {
+        NSDictionary *linkAttributes = @{NSForegroundColorAttributeName: TGAccentColor()};
+        for (NSValue *nRange in linkRanges)
+        {
+            [attributedString addAttributes:linkAttributes range:[nRange rangeValue]];
+        }
     }
 
     return attributedString;

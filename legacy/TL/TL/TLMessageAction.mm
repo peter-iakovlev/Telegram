@@ -20,7 +20,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -47,7 +47,7 @@
     return (int32_t)0x510bb26a;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLMessageAction$messageActionEmpty *object = [[TLMessageAction$messageActionEmpty alloc] init];
     return object;
@@ -73,7 +73,7 @@
     return (int32_t)0x6dbcb651;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionChatCreate *object = [[TLMessageAction$messageActionChatCreate alloc] init];
     object.title = metaObject->getString((int32_t)0xcdebf414);
@@ -113,7 +113,7 @@
     return (int32_t)0xb765cec5;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionChatEditTitle *object = [[TLMessageAction$messageActionChatEditTitle alloc] init];
     object.title = metaObject->getString((int32_t)0xcdebf414);
@@ -146,7 +146,7 @@
     return (int32_t)0x95d33c18;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionChatEditPhoto *object = [[TLMessageAction$messageActionChatEditPhoto alloc] init];
     object.photo = metaObject->getObject((int32_t)0xe6c52372);
@@ -179,7 +179,7 @@
     return (int32_t)0xb7e0dd8f;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLMessageAction$messageActionChatDeletePhoto *object = [[TLMessageAction$messageActionChatDeletePhoto alloc] init];
     return object;
@@ -205,7 +205,7 @@
     return (int32_t)0x3481dd7e;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionChatDeleteUser *object = [[TLMessageAction$messageActionChatDeleteUser alloc] init];
     object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
@@ -238,7 +238,7 @@
     return (int32_t)0x1faf63c6;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionSentRequest *object = [[TLMessageAction$messageActionSentRequest alloc] init];
     object.has_phone = metaObject->getBool((int32_t)0x217cda81);
@@ -271,7 +271,7 @@
     return (int32_t)0xc771c6c;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLMessageAction$messageActionAcceptRequest *object = [[TLMessageAction$messageActionAcceptRequest alloc] init];
     return object;
@@ -297,7 +297,7 @@
     return (int32_t)0x949ac2ac;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionChatJoinedByLink *object = [[TLMessageAction$messageActionChatJoinedByLink alloc] init];
     object.inviter_id = metaObject->getInt32((int32_t)0x9ddfbd93);
@@ -330,7 +330,7 @@
     return (int32_t)0xde6ac75e;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionChannelCreate *object = [[TLMessageAction$messageActionChannelCreate alloc] init];
     object.title = metaObject->getString((int32_t)0xcdebf414);
@@ -363,7 +363,7 @@
     return (int32_t)0x19080453;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionChannelToggleComments *object = [[TLMessageAction$messageActionChannelToggleComments alloc] init];
     object.enabled = metaObject->getBool((int32_t)0x335ec0ee);
@@ -396,7 +396,7 @@
     return (int32_t)0xa414884f;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionChatMigrateTo *object = [[TLMessageAction$messageActionChatMigrateTo alloc] init];
     object.channel_id = metaObject->getInt32((int32_t)0x1cfcdb86);
@@ -429,7 +429,7 @@
     return (int32_t)0x5474cbda;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLMessageAction$messageActionChatDeactivate *object = [[TLMessageAction$messageActionChatDeactivate alloc] init];
     return object;
@@ -455,7 +455,7 @@
     return (int32_t)0x7613c945;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLMessageAction$messageActionChatActivate *object = [[TLMessageAction$messageActionChatActivate alloc] init];
     return object;
@@ -481,7 +481,7 @@
     return (int32_t)0xb37541c7;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionChannelMigrateFrom *object = [[TLMessageAction$messageActionChannelMigrateFrom alloc] init];
     object.title = metaObject->getString((int32_t)0xcdebf414);
@@ -521,7 +521,7 @@
     return (int32_t)0xf4f77cb2;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionChatAddUser *object = [[TLMessageAction$messageActionChatAddUser alloc] init];
     object.users = metaObject->getArray((int32_t)0x933e5ff3);
@@ -554,7 +554,7 @@
     return (int32_t)0x9bfff3e5;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionChatAddUserLegacy *object = [[TLMessageAction$messageActionChatAddUserLegacy alloc] init];
     object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
@@ -587,7 +587,7 @@
     return (int32_t)0xce93aa0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLMessageAction$messageActionPinMessage *object = [[TLMessageAction$messageActionPinMessage alloc] init];
     return object;
@@ -613,7 +613,7 @@
     return (int32_t)0x8e5afb58;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLMessageAction$messageActionHistoryClear *object = [[TLMessageAction$messageActionHistoryClear alloc] init];
     return object;
@@ -639,7 +639,7 @@
     return (int32_t)0x4e1def96;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionGameScore *object = [[TLMessageAction$messageActionGameScore alloc] init];
     object.game_id = metaObject->getInt64((int32_t)0xdac07ef4);
@@ -679,7 +679,7 @@
     return (int32_t)0x9c224127;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageAction$messageActionPaymentSent *object = [[TLMessageAction$messageActionPaymentSent alloc] init];
     object.currency = metaObject->getString((int32_t)0xd2a84177);

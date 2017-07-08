@@ -9,6 +9,8 @@
 
 #import "TL/TLMetaScheme.h"
 
+#import "TGModernSendCommonMessageActor.h"
+
 #import "TLRPCmessages_sendMessage_manual.h"
 #import "TLRPCmessages_sendMedia_manual.h"
 
@@ -25,7 +27,12 @@ NSString *const TGChannelGroupKey = @"channelGroup";
 
 @implementation TGSendMessageSignals
 
-+ (SSignal *)sendTextMessageWithPeerId:(int64_t)peerId text:(NSString *)text replyToMid:(int32_t)replyToMid
++ (SSignal *)sendTextMessageWithPeerId:(int64_t)peerId text:(NSString *)text  replyToMid:(int32_t)replyToMid
+{
+    return [self sendTextMessageWithPeerId:peerId text:text entities:nil replyToMid:replyToMid];
+}
+
++ (SSignal *)sendTextMessageWithPeerId:(int64_t)peerId text:(NSString *)text entities:(NSArray *)entities replyToMid:(int32_t)replyToMid
 {
     SSignal *(^sendMessage)(TGMessage *, int64_t, bool) = ^SSignal *(TGMessage *message, int64_t accessHash, bool isChannelGroup)
     {
@@ -40,6 +47,11 @@ NSString *const TGChannelGroupKey = @"channelGroup";
             flags |= (1 << 0);
         if (TGPeerIdIsChannel(peerId) && !isChannelGroup)
             flags |= 16;
+        
+        if (entities.count > 0) {
+            sendMessage.entities = [TGModernSendCommonMessageActor convertEntities:entities];
+            flags |= (1 << 3);
+        }
         
         sendMessage.flags = flags;
         
@@ -110,7 +122,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
     
     return [[self _channelInfoSignalForPeerId:peerId] mapToSignal:^SSignal *(NSDictionary *info)
     {
-        return [[self _addMessageToDatabaseWithPeerId:peerId replyToMid:replyToMid text:text attachment:nil isChannelGroup:[info[TGChannelGroupKey] boolValue]] mapToSignal:^SSignal *(TGMessage *message)
+        return [[self _addMessageToDatabaseWithPeerId:peerId replyToMid:replyToMid text:text entities:entities attachment:nil isChannelGroup:[info[TGChannelGroupKey] boolValue]] mapToSignal:^SSignal *(TGMessage *message)
         {
             return sendMessage(message, [info[TGAccessHashKey] int64Value], [info[TGChannelGroupKey] boolValue]);
         }];
@@ -125,7 +137,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
     }] : [SSignal single:nil];
 }
 
-+ (SSignal *)_addMessageToDatabaseWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid text:(NSString *)text attachment:(TGMediaAttachment *)attachment isChannelGroup:(bool)isChannelGroup
++ (SSignal *)_addMessageToDatabaseWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid text:(NSString *)text entities:(NSArray *)entities attachment:(TGMediaAttachment *)attachment isChannelGroup:(bool)isChannelGroup
 {
     return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
@@ -136,6 +148,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
         message.fromUid = TGTelegraphInstance.clientUserId;
         message.toUid = peerId;
         message.deliveryState = TGMessageDeliveryStatePending;
+        message.entities = entities;
         
         int64_t randomId = 0;
         arc4random_buf(&randomId, 8);
@@ -227,6 +240,17 @@ NSString *const TGChannelGroupKey = @"channelGroup";
     }]];
 }
 
++ (SSignal *)commitSendMediaWithMessage:(TGMessage *)message mediaProducer:(TLInputMedia *(^)(NSDictionary *))mediaProducer
+{
+    return [[self _channelInfoSignalForPeerId:message.cid] mapToSignal:^SSignal *(NSDictionary *info)
+    {
+        int64_t accessHash = [info[TGAccessHashKey] int64Value];
+        bool channelGroup = [info[TGChannelGroupKey] boolValue];
+        
+        return [self _sendMediaWithMessage:message accessHash:accessHash isChannelGroup:channelGroup replyToMid:0 uploadInfo:nil mediaProducer:mediaProducer];
+    }];
+}
+
 + (SSignal *)sendMediaWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid attachment:(TGMediaAttachment *)attachment uploadSignal:(SSignal *)uploadSignal mediaProducer:(TLInputMedia *(^)(NSDictionary *uploadInfo))mediaProducer
 {
     return [[self _channelInfoSignalForPeerId:peerId] mapToSignal:^SSignal *(NSDictionary *info)
@@ -234,7 +258,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
         int64_t accessHash = [info[TGAccessHashKey] int64Value];
         bool channelGroup = [info[TGChannelGroupKey] boolValue];
         
-        return [[self _addMessageToDatabaseWithPeerId:peerId replyToMid:replyToMid text:nil attachment:attachment isChannelGroup:channelGroup] mapToSignal:^SSignal *(TGMessage *message)
+        return [[self _addMessageToDatabaseWithPeerId:peerId replyToMid:replyToMid text:nil entities:nil attachment:attachment isChannelGroup:channelGroup] mapToSignal:^SSignal *(TGMessage *message)
         {
             SSignal *(^sendSignal)(NSDictionary *) = ^SSignal *(NSDictionary *uploadInfo)
             {
@@ -536,12 +560,17 @@ NSString *const TGChannelGroupKey = @"channelGroup";
 
 + (SSignal *)shareText:(NSString *)text toPeerIds:(NSArray *)peerIds caption:(NSString *)caption
 {
+    return [self shareText:text entities:nil toPeerIds:peerIds caption:caption];
+}
+
++ (SSignal *)shareText:(NSString *)text entities:(NSArray *)entities toPeerIds:(NSArray *)peerIds caption:(NSString *)caption
+{
     NSMutableArray *signals = [[NSMutableArray alloc] init];
     
     for (NSNumber *peerIdVal in peerIds)
     {
         int64_t peerId = peerIdVal.int64Value;
-        SSignal *signal = [TGSendMessageSignals sendTextMessageWithPeerId:peerId text:text replyToMid:0];
+        SSignal *signal = [TGSendMessageSignals sendTextMessageWithPeerId:peerId text:text entities:entities replyToMid:0];
         if (caption.length > 0)
             signal = [[TGSendMessageSignals sendTextMessageWithPeerId:peerId text:caption replyToMid:0] then:signal];
         

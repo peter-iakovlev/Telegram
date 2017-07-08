@@ -8,7 +8,7 @@
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"
 
-#import <MTProtoKit/MTDatacenterAddress.h>
+#import <MTProtoKit/MTProtoKit.h>
 
 #import "TGDatabase.h"
 #import "TGMessage+Telegraph.h"
@@ -80,6 +80,7 @@
 #import "TGConversationAddMessagesActor.h"
 
 #import <pthread.h>
+#import <mach/mach.h>
 
 #import <objc/runtime.h>
 
@@ -117,6 +118,7 @@
 #import <HockeySDK/HockeySDK.h>
 
 #import "TGGroupManagementSignals.h"
+#import "TGChannelManagementSignals.h"
 
 #import "TGSendMessageSignals.h"
 #import "TGChatMessageListSignal.h"
@@ -147,8 +149,6 @@
 #import "TGLoginResetAccountProtectedController.h"
 #import "TGCancelAccountResetController.h"
 
-#import "TGWidgetSync.h"
-#import "TGWidgetUser+TGUser.h"
 #import "TGMediaSignals.h"
 
 #import "UIImage+ImageEffects.h"
@@ -158,6 +158,13 @@
 
 #import <Intents/Intents.h>
 #import <Pushkit/Pushkit.h>
+
+#import "TGWebpageSignals.h"
+#import "TGInstantPageController.h"
+
+#import "TGCameraController.h"
+
+#import "TGMessageUniqueIdContentProperty.h"
 
 NSString *TGDeviceProximityStateChangedNotification = @"TGDeviceProximityStateChangedNotification";
 
@@ -213,9 +220,11 @@ TGTelegraph *telegraph = nil;
     TGGroupInviteSheet *_groupInviteSheet;
     
     PKPushRegistry *_pushRegistry;
+    SPipe *_localizationUpdatedPipe;
 }
 
 @property (nonatomic) bool tokenAlreadyRequested;
+@property (nonatomic) NSData *pushToken;
 @property (nonatomic, strong) id<TGDeviceTokenListener> deviceTokenListener;
 
 @property (nonatomic) UIBackgroundTaskIdentifier backgroundTaskIdentifier;
@@ -238,6 +247,8 @@ TGTelegraph *telegraph = nil;
     if (self != nil)
     {
         [[TGBridgeServer instanceSignal] startWithNext:nil];
+        _localizationUpdatedPipe = [[SPipe alloc] init];
+        _localizationUpdated = _localizationUpdatedPipe.signalProducer();
     }
     return self;
 }
@@ -301,10 +312,28 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
         return [super nextResponder];
 }
 
+static void reportMemoryUsage() {
+    struct task_basic_info info;
+    mach_msg_type_number_t size = sizeof(info);
+    kern_return_t kerr = task_info(mach_task_self(),
+                                   TASK_BASIC_INFO,
+                                   (task_info_t)&info,
+                                   &size);
+    if( kerr == KERN_SUCCESS ) {
+        TGLog(@"Memory in use (in MB): %f", ((CGFloat)info.resident_size / 1000000));
+    }
+}
+
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     TGIsRetina();
     TGLogSetEnabled([self enableLogging]);
+    
+#ifdef INTERNAL_RELEASE
+    [[[TGTimer alloc] initWithTimeout:5.0 repeat:true completion:^{
+        reportMemoryUsage();
+    } queue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)] start];
+#endif
     
     TGLog(@"didFinishLaunchingWithOptions state: %@, %d", [UIApplication sharedApplication], [UIApplication sharedApplication].applicationState);
     
@@ -400,6 +429,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                     }];
                     
                     [TGEmbedPIPController restore];
+                    [self resetRemoteDeviceLocked];
                 }
                 else
                 {
@@ -830,7 +860,9 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 {
     if ([UIApplication sharedApplication].applicationState == UIApplicationStateActive)
     {
-        [[TGTelegramNetworking instance] resume];
+        if (_passcodeWindow == nil || _passcodeWindow.hidden) {
+            [[TGTelegramNetworking instance] resume];
+        }
     }
 }
 
@@ -904,6 +936,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                             }];
                             
                             [TGEmbedPIPController restore];
+                            [self resetRemoteDeviceLocked];
                         });
                     }
                 }];
@@ -926,6 +959,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                         }];
 
                         [TGEmbedPIPController restore];
+                        [self resetRemoteDeviceLocked];
                     });
                 };
                 controller.checkCurrentPasscode = ^bool (NSString *passcode)
@@ -976,6 +1010,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                              }];
                             
                             [TGEmbedPIPController restore];
+                            [self resetRemoteDeviceLocked];
                         });
                     }
                 };
@@ -998,6 +1033,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                         }];
                         
                         [TGEmbedPIPController restore];
+                        [self resetRemoteDeviceLocked];
                     });
                 };
                 [controller resetMode:mode];
@@ -1065,6 +1101,8 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [TGDatabaseInstance() processAndScheduleSelfDestruct];
     [TGDatabaseInstance() processAndScheduleMediaCleanup];
     [TGDatabaseInstance() processAndScheduleMute];
+    
+    //[[TGInterfaceManager instance] resetStartupTime];
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
@@ -1230,8 +1268,10 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [[TGInterfaceManager instance] localizationUpdated];
     
     [[[TGBridgeServer instanceSignal] onNext:^(TGBridgeServer *server) {
-        [server putNext:@(TGIsCustomLocalizationActive()) forKey:@"localization"];
+        //[server putNext:@(TGIsCustomLocalizationActive()) forKey:@"localization"];
     }] startWithNext:nil];
+    
+    _localizationUpdatedPipe.sink(@true);
     
 }
 
@@ -1607,9 +1647,9 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     else
         _saveEditedPhotos = true;
     
-    if ((value = [userDefaults objectForKey:@"saveCapturedMedia"]) != nil)
-        _saveCapturedMedia = [value boolValue];
-    else
+    //if ((value = [userDefaults objectForKey:@"saveCapturedMedia"]) != nil)
+    //    _saveCapturedMedia = [value boolValue];
+    //else
         _saveCapturedMedia = true;
 
     if ((value = [userDefaults objectForKey:@"customChatBackground"]) != nil)
@@ -1669,6 +1709,16 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     else
         _autoDownloadAudioInPrivateChats = true;
     
+    if ((value = [userDefaults objectForKey:@"autoDownloadVideoMessageInGroups"]) != nil)
+        _autoDownloadVideoMessageInGroups = [value boolValue];
+    else
+        _autoDownloadVideoMessageInGroups = true;
+    
+    if ((value = [userDefaults objectForKey:@"autoDownloadVideoMessageInPrivateChats"]) != nil)
+        _autoDownloadVideoMessageInPrivateChats = [value boolValue];
+    else
+        _autoDownloadVideoMessageInPrivateChats = true;
+    
     if ((value = [userDefaults objectForKey:@"autoPlayAudio"]) != nil)
         _autoPlayAudio = [value boolValue];
     else
@@ -1704,6 +1754,21 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     else
         _callsDataUsageMode = 0;
     
+    if ((value = [userDefaults objectForKey:@"callsDisableP2P"]) != nil)
+        _callsDisableP2P = [value boolValue];
+    else
+        _callsDisableP2P = false;
+    
+    if ((value = [userDefaults objectForKey:@"callsDisableCallKit"]) != nil)
+        _callsDisableCallKit = [value boolValue];
+    else
+        _callsDisableCallKit = false;
+    
+    if ((value = [userDefaults objectForKey:@"callsUseProxy"]) != nil)
+        _callsUseProxy = [value boolValue];
+    else
+        _callsUseProxy = false;
+    
 #if defined(DEBUG)
     _allowSecretWebpages = false;
     _allowSecretWebpagesInitialized = false;
@@ -1729,7 +1794,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     
     [userDefaults setObject:[NSNumber numberWithBool:_autosavePhotos] forKey:@"autosavePhotos"];
     [userDefaults setObject:[NSNumber numberWithBool:_saveEditedPhotos] forKey:@"saveEditedPhotos"];
-     [userDefaults setObject:[NSNumber numberWithBool:_saveCapturedMedia] forKey:@"saveCapturedMedia"];
+    [userDefaults setObject:[NSNumber numberWithBool:_saveCapturedMedia] forKey:@"saveCapturedMedia"];
     [userDefaults setObject:[NSNumber numberWithBool:_customChatBackground] forKey:@"customChatBackground"];
 
     [userDefaults setObject:[NSNumber numberWithBool:_useDifferentBackend] forKey:@"useDifferentBackend"];
@@ -1740,6 +1805,8 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [userDefaults setObject:[NSNumber numberWithBool:_autoDownloadPhotosInPrivateChats] forKey:@"autoDownloadPhotosInPrivateChats"];
     [userDefaults setObject:[NSNumber numberWithBool:_autoDownloadAudioInGroups] forKey:@"autoDownloadAudioInGroups"];
     [userDefaults setObject:[NSNumber numberWithBool:_autoDownloadAudioInPrivateChats] forKey:@"autoDownloadAudioInPrivateChats"];
+    [userDefaults setObject:[NSNumber numberWithBool:_autoDownloadVideoMessageInGroups] forKey:@"autoDownloadVideoMessageInGroups"];
+    [userDefaults setObject:[NSNumber numberWithBool:_autoDownloadVideoMessageInPrivateChats] forKey:@"autoDownloadVideoMessageInPrivateChats"];
     
     [userDefaults setObject:[NSNumber numberWithBool:_autoPlayAudio] forKey:@"autoPlayAudio"];
     [userDefaults setObject:[NSNumber numberWithBool:_autoPlayAnimations] forKey:@"autoPlayAnimations"];
@@ -1752,6 +1819,10 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [userDefaults setObject:[NSNumber numberWithInt:_secretInlineBotsInitialized] forKey:@"secretInlineBotsInitialized"];
     
     [userDefaults setObject:[NSNumber numberWithInt:_callsDataUsageMode] forKey:@"callsDataUsageMode"];
+    
+    [userDefaults setObject:[NSNumber numberWithBool:_callsDisableP2P] forKey:@"callsDisableP2P"];
+    [userDefaults setObject:[NSNumber numberWithBool:_callsDisableCallKit] forKey:@"callsDisableCallKit"];
+    [userDefaults setObject:[NSNumber numberWithBool:_callsUseProxy] forKey:@"callsUseProxy"];
     
     [userDefaults synchronize];
 }
@@ -2152,6 +2223,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 - (void)application:(UIApplication*)__unused application didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken
 {
     _tokenAlreadyRequested = true;
+    _pushToken = deviceToken;
     
     NSString *token = [[deviceToken description] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"<>"]];
     token = [token stringByReplacingOccurrencesOfString:@" " withString:@""];
@@ -2182,8 +2254,14 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [[TGAccountSignals registerDeviceToken:token voip:true] startWithNext:nil];
 }
 
-- (void)pushRegistry:(PKPushRegistry *)__unused registry didReceiveIncomingPushWithPayload:(PKPushPayload *)__unused payload forType:(PKPushType)type
+- (void)pushRegistry:(PKPushRegistry *)__unused registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(PKPushType)type
 {
+#ifdef INTERNAL_RELEASE
+    TGLog(@"voip push: %@", payload.dictionaryPayload);
+#endif
+    
+    [self processPossibleAnnouncement:payload.dictionaryPayload];
+    
     if (type != PKPushTypeVoIP)
         return;
     
@@ -2257,6 +2335,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 #endif
     
     [self processPossibleConfigUpdateNotification:userInfo];
+    [self processPossibleAnnouncement:userInfo];
     
     if (!_inBackground)
         return;
@@ -2267,6 +2346,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 - (void)application:(UIApplication *)__unused application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
 {
     [self processPossibleConfigUpdateNotification:userInfo];
+    [self processPossibleAnnouncement:userInfo];
     
     if ([application applicationState] != UIApplicationStateActive)
     {
@@ -2360,6 +2440,201 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     [self _replyActionForPeerId:conversationId mid:0 openKeyboard:false responseInfo:nil completion:nil];
 }
 
+- (void)processPossibleAnnouncement:(NSDictionary *)dict {
+    if ([dict[@"announcement"] respondsToSelector:@selector(intValue)]) {
+        NSDictionary *aps = dict[@"aps"];
+        if ([aps respondsToSelector:@selector(objectForKey:)] && [aps[@"alert"] respondsToSelector:@selector(characterAtIndex:)]) {
+            int globalMessageSoundId = 1;
+            bool globalMessagePreviewText = true;
+            int globalMessageMuteUntil = 0;
+            bool notFound = false;
+            [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 1 soundId:&globalMessageSoundId muteUntil:&globalMessageMuteUntil previewText:&globalMessagePreviewText messagesMuted:NULL notFound:&notFound];
+            if (notFound)
+            {
+                globalMessageSoundId = 1;
+                globalMessagePreviewText = true;
+            }
+            
+            int globalGroupSoundId = 1;
+            bool globalGroupPreviewText = true;
+            int globalGroupMuteUntil = 0;
+            notFound = false;
+            [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 2 soundId:&globalGroupSoundId muteUntil:&globalGroupMuteUntil previewText:&globalGroupPreviewText messagesMuted:NULL notFound:&notFound];
+            if (notFound)
+            {
+                globalGroupSoundId = 1;
+                globalGroupPreviewText = true;
+            }
+            
+            NSString *alert = aps[@"alert"];
+            int32_t timestamp = (int32_t)[[NSDate date] timeIntervalSince1970];
+            
+            int uid = [TGTelegraphInstance createServiceUserIfNeeded];
+            int32_t uniqueId = [dict[@"announcement"] intValue];
+            
+            [TGDatabaseInstance() loadMessagesFromConversation:uid maxMid:INT32_MAX maxDate:INT32_MAX maxLocalMid:INT32_MAX atMessageId:0 limit:20 extraUnread:false completion:^(NSArray *messages, __unused bool historyExistsBelow) {
+                TGDispatchOnMainThread(^{
+                    bool found = false;
+                    for (TGMessage *message in messages) {
+                        TGMessageUniqueIdContentProperty *prop = message.contentProperties[@"uniqueId"];
+                        if (prop.value == uniqueId) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!found) {
+                        TGMessage *message = [[TGMessage alloc] init];
+                        message.mid = [[[TGDatabaseInstance() generateLocalMids:1] objectAtIndex:0] intValue];
+                        
+                        message.fromUid = uid;
+                        message.toUid = TGTelegraphInstance.clientUserId;
+                        message.date = timestamp;
+                        message.outgoing = false;
+                        message.cid = uid;
+                        
+                        message.text = alert;
+                        message.contentProperties = @{@"uniqueId": [[TGMessageUniqueIdContentProperty alloc] initWithValue: uniqueId]};
+                        
+                        [TGDatabaseInstance() transactionAddMessages:@[message] updateConversationDatas:@{} notifyAdded:true];
+                        
+                        if ([UIApplication sharedApplication].applicationState == UIApplicationStateActive) {
+                            return;
+                        }
+                        
+                        UILocalNotification *localNotification = [[UILocalNotification alloc] init];
+                        if (localNotification == nil) {
+                            return;
+                        }
+                        
+                        TGUser *user = nil;
+                        NSString *chatName = nil;
+                        
+                        int64_t notificationPeerId = 0;
+                        
+                        if (message.cid <= INT_MIN)
+                        {
+                            notificationPeerId = [TGDatabaseInstance() encryptedParticipantIdForConversationId:message.cid];
+                        }
+                        else if (message.cid > 0)
+                        {
+                            user = [TGDatabaseInstance() loadUser:(int)message.cid];
+                            notificationPeerId = message.cid;
+                        }
+                        else
+                        {
+                            if (message.containsMention)
+                                notificationPeerId = message.fromUid;
+                            else
+                                notificationPeerId = message.cid;
+                            user = [TGDatabaseInstance() loadUser:(int)message.fromUid];
+                            TGConversation *conversation = [TGDatabaseInstance() loadConversationWithIdCached:message.cid];
+                            if (conversation != nil)
+                                chatName = conversation.chatTitle;
+                            else
+                                chatName = [TGDatabaseInstance() loadConversationWithId:message.cid].chatTitle;
+                        }
+                        
+                        if ([TGDatabaseInstance() isPeerMuted:notificationPeerId])
+                            return;
+                        
+                        int soundId = 1;
+                        bool notFound = false;
+                        int muteUntil = 0;
+                        [TGDatabaseInstance() loadPeerNotificationSettings:notificationPeerId soundId:&soundId muteUntil:&muteUntil previewText:NULL messagesMuted:NULL notFound:&notFound];
+                        if (notFound)
+                        {
+                            soundId = 1;
+                        }
+                        
+                        if (soundId == 1) {
+                            soundId = (message.cid > 0 || message.cid <= INT_MIN) ? globalMessageSoundId : globalGroupSoundId;
+                        }
+                        
+                        if (true) {
+                            if (message.cid > 0 || message.cid <= INT_MIN)
+                            {
+                                if (globalMessageMuteUntil > 0)
+                                    return;
+                            }
+                            else
+                            {
+                                if (globalGroupMuteUntil > 0)
+                                    return;
+                            }
+                        }
+                        
+                        NSString *text = message.text;
+                        bool attachmentFound = false;
+                        
+                        if (soundId > 0)
+                            localNotification.soundName = [[NSString alloc] initWithFormat:@"%d.m4a", soundId];
+                        
+                        if (message.cid <= INT_MIN)
+                        {
+                            text = [[NSString alloc] initWithFormat:TGLocalized(@"ENCRYPTED_MESSAGE"), @""];
+                        }
+                        else if (message.cid > 0)
+                        {
+                            if (globalMessagePreviewText && !attachmentFound)
+                                text = [[NSString alloc] initWithFormat:@"%@: %@", user.displayName, message.text];
+                            else if (!attachmentFound)
+                                text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_NOTEXT"), user.displayName];
+                        }
+                        else
+                        {
+                            if (globalGroupPreviewText && !attachmentFound)
+                                text = [[NSString alloc] initWithFormat:@"%@@%@: %@", user.displayName, chatName, message.text];
+                            else if (!attachmentFound)
+                                text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_NOTEXT"), user.displayName, chatName];
+                        }
+                        
+                        bool isLocked = [TGAppDelegateInstance isCurrentlyLocked];
+                        if (isLocked)
+                        {
+                            text = [[NSString alloc] initWithFormat:TGLocalized(@"LOCKED_MESSAGE"), @""];
+                        }
+                        
+                        static dispatch_once_t onceToken;
+                        static NSString *tokenString = nil;
+                        dispatch_once(&onceToken, ^
+                                      {
+                                          unichar tokenChar = 0x2026;
+                                          tokenString = [[NSString alloc] initWithCharacters:&tokenChar length:1];
+                                      });
+                        
+                        if (text.length > 256)
+                        {
+                            text = [NSString stringWithFormat:@"%@%@", [text substringToIndex:255], tokenString];
+                        }
+                        
+                        text = [text stringByReplacingOccurrencesOfString:@"%" withString:@"%%"];
+                        
+#ifdef INTERNAL_RELEASE
+                        text = [@"[L] " stringByAppendingString:text];
+#endif
+                        localNotification.alertBody = text;
+                        localNotification.userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithLongLong:message.cid], @"cid", @(message.mid), @"mid", nil];
+                        
+                        if (iosMajorVersion() >= 8 && !isLocked)
+                        {
+                            if (TGPeerIdIsGroup(message.cid))
+                                localNotification.category = @"m";
+                            else if (TGPeerIdIsChannel(message.cid))
+                                localNotification.category = @"c";
+                            else if (message.cid > INT_MIN)
+                                localNotification.category = @"r";
+                        }
+                        
+                        if (text != nil)
+                            [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
+                    }
+                });
+            }];
+        }
+    }
+}
+
 - (void)processPossibleConfigUpdateNotification:(NSDictionary *)userInfo
 {
     if (userInfo[@"dc"] != nil && [userInfo[@"dc"] respondsToSelector:@selector(intValue)] && userInfo[@"addr"] != nil && [userInfo[@"addr"] respondsToSelector:@selector(rangeOfString:)])
@@ -2376,8 +2651,8 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
             TGLog(@"===== Updating dc%d: %@:%d", datacenterId, ip, port);
             
             if (ip.length != 0)
-            {                
-                [[TGTelegramNetworking instance] mergeDatacenterAddress:datacenterId address:[[MTDatacenterAddress alloc] initWithIp:ip port:(uint16_t)(port == 0 ? 443 : port) preferForMedia:false restrictToTcp:false]];
+            {
+                [[TGTelegramNetworking instance] mergeDatacenterAddress:datacenterId address:[[MTDatacenterAddress alloc] initWithIp:ip port:(uint16_t)(port == 0 ? 443 : port) preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]];
             }
         }
     }
@@ -2474,7 +2749,13 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 
 - (void)handleOpenDocument:(NSURL *)url animated:(bool)__unused animated keepStack:(bool)keepStack
 {
-    if (TGTelegraphInstance.clientUserId != 0 && TGTelegraphInstance.clientIsActivated)
+    bool isSocks = false;
+    if ([url.scheme isEqualToString:@"telegram"] || [url.scheme isEqualToString:@"tg"]) {
+        if ([url.resourceSpecifier hasPrefix:@"//socks?"]) {
+            isSocks = true;
+        }
+    }
+    if ((TGTelegraphInstance.clientUserId != 0 && TGTelegraphInstance.clientIsActivated) || isSocks)
     {
         if ([url isFileURL])
         {
@@ -2709,7 +2990,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                         if (invitationInfo.alreadyAccepted && !invitationInfo.left)
                         {
                             if (invitationInfo.peerId != 0) {
-                                [[TGInterfaceManager instance] navigateToConversationWithId:invitationInfo.peerId conversation:nil];
+                                [[TGInterfaceManager instance] navigateToConversationWithId:invitationInfo.peerId conversation:nil performActions:nil atMessage:nil clearStack:!keepStack openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
                             } else {
                                 NSString *format = TGLocalized(@"GroupInfo.InvitationLinkAlreadyAccepted");
                                 NSString *text = [[NSString alloc] initWithFormat:format, invitationInfo.title];
@@ -2733,7 +3014,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                                                                  });
                                       }] startWithNext:^(TGConversation *conversation)
                                      {
-                                         [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:conversation.isChannel ? conversation : nil];
+                                         [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:conversation.isChannel ? conversation : nil performActions:nil atMessage:nil clearStack:!keepStack openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
                                      } error:^(__unused id error)
                                      {
                                          NSString *text = TGLocalized(@"GroupInfo.InvitationLinkDoesNotExist");
@@ -2777,7 +3058,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                                             });
                                         }] startWithNext:^(TGConversation *conversation)
                                         {
-                                            [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:conversation.isChannel ? conversation : nil];
+                                            [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:conversation.isChannel ? conversation : nil performActions:nil atMessage:nil clearStack:!keepStack openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
                                         } error:^(__unused id error)
                                         {
                                             NSString *text = TGLocalized(@"GroupInfo.InvitationLinkDoesNotExist");
@@ -2819,6 +3100,65 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                     NSMutableDictionary *linkInfo = [[NSMutableDictionary alloc] init];
                     NSString *url = dict[@"url"];
                     if ([url hasPrefix:@"http://"] || [url hasPrefix:@"https://"]) {
+                        void (^presentForwardController)(TGForwardTargetController *) = ^(TGForwardTargetController *forwardController)
+                        {
+                            forwardController.skipConfirmation = true;
+                            
+                            [self resetControllerStack];
+                            
+                            TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[forwardController]];
+                            
+                            [_rootController clearContentControllers];
+                            [_rootController dismissViewControllerAnimated:false completion:nil];
+                            
+                            if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+                            {
+                                navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
+                                navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
+                            }
+                            
+                            [_rootController presentViewController:navigationController animated:false completion:nil];
+                        };
+                        
+                        NSURL *concreteURL = [NSURL URLWithString:url];
+                        if ([concreteURL.host isEqualToString:@"telesco.pe"])
+                        {
+                            if (concreteURL.pathComponents.count >= 3)
+                            {
+                                NSString *username = concreteURL.pathComponents[1];
+                                int32_t messageId = (int32_t)[concreteURL.pathComponents[2] integerValue];
+                                
+                                if (username.length > 0 && messageId != 0)
+                                {
+                                    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+                                    [progressWindow showWithDelay:0.2];
+                                    
+                                    [[[TGChannelManagementSignals resolveChannelWithUsername:username] mapToSignal:^SSignal *(TGConversation *channel) {
+                                        return [TGChannelManagementSignals preloadedChannelAtMessage:channel.conversationId messageId:messageId];
+                                    }] startWithNext:^(TGConversation *channel)
+                                    {
+                                        TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:messageId peerId:channel.conversationId];
+                                        if (message != nil)
+                                        {
+                                            TGDispatchOnMainThread(^
+                                            {
+                                                [progressWindow dismiss:true];
+                                                TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:@[ message ] sendMessages:nil shareLink:nil showSecretChats:true];
+                                                presentForwardController(forwardController);
+                                            });
+                                        }
+                                    } error:^(__unused id error)
+                                    {
+                                        TGDispatchOnMainThread(^
+                                        {
+                                            [progressWindow dismiss:true];
+                                        });
+                                    } completed:nil];
+                                    return;
+                                }
+                            }
+                        }
+
                         linkInfo[@"url"] = url;
                         
                         if ([dict[@"text"] respondsToSelector:@selector(characterAtIndex:)]) {
@@ -2826,22 +3166,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                         }
                         
                         TGForwardTargetController *forwardController = [[TGForwardTargetController alloc] initWithForwardMessages:nil sendMessages:nil shareLink:linkInfo showSecretChats:true];
-                        forwardController.skipConfirmation = true;
-                        
-                        [self resetControllerStack];
-                        
-                        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[forwardController]];
-                        
-                        [_rootController clearContentControllers];
-                        [_rootController dismissViewControllerAnimated:false completion:nil];
-                        
-                        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
-                        {
-                            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-                            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-                        }
-                        
-                        [_rootController presentViewController:navigationController animated:false completion:nil];
+                        presentForwardController(forwardController);
                     }
                 }
             }
@@ -2898,6 +3223,54 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                             [TGWebAppController presentShare:shareData parentController:topController withScore:true];
                         }
                     }
+                }
+            }
+            else if ([url.resourceSpecifier hasPrefix:@"//socks?"]) {
+                NSDictionary *dict = [TGStringUtils argumentDictionaryInUrlString:[url query]];
+                if ([dict[@"server"] respondsToSelector:@selector(characterAtIndex:)] && [dict[@"port"] respondsToSelector:@selector(intValue)]) {
+                    NSString *username = nil;
+                    NSString *password = nil;
+                    
+                    if ([dict[@"user"] respondsToSelector:@selector(characterAtIndex:)] && [dict[@"pass"] respondsToSelector:@selector(characterAtIndex:)]) {
+                        username = dict[@"user"];
+                        password = dict[@"pass"];
+                    }
+                    
+                    NSString *text = nil;
+                    if (username.length != 0 && password.length != 0) {
+                        text = [NSString stringWithFormat:TGLocalized(@"Settings.ApplyProxyAlertCredentials"), dict[@"server"], dict[@"port"], dict[@"user"], dict[@"pass"]];
+                    } else {
+                        text = [NSString stringWithFormat:TGLocalized(@"Settings.ApplyProxyAlert"), dict[@"server"], dict[@"port"]];
+                    }
+                    
+                    [TGAlertView presentAlertWithTitle:nil message:text cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Settings.ApplyProxyAlertEnable") completionBlock:^(bool okButtonPressed) {
+                        if (okButtonPressed) {
+                            MTSocksProxySettings *updatedSettings = [[MTSocksProxySettings alloc] initWithIp:dict[@"server"] port:(uint16_t)[dict[@"port"] intValue] username:username password:password];
+                            
+                            NSData *data = nil;
+                            if (updatedSettings != nil) {
+                                NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                                if (updatedSettings.ip != nil && updatedSettings.port != 0) {
+                                    dict[@"ip"] = updatedSettings.ip;
+                                    dict[@"port"] = @(updatedSettings.port);
+                                }
+                                if (updatedSettings.username.length != 0) {
+                                    dict[@"username"] = updatedSettings.username;
+                                }
+                                if (updatedSettings.password.length != 0) {
+                                    dict[@"password"] = updatedSettings.password;
+                                }
+                                data = [NSKeyedArchiver archivedDataWithRootObject:dict];
+                            } else {
+                                data = [NSData data];
+                            }
+                            [TGDatabaseInstance() setCustomProperty:@"socksProxyData" value:data];
+                            
+                            [[[TGTelegramNetworking instance] context] updateApiEnvironment:^MTApiEnvironment *(MTApiEnvironment *apiEnvironment) {
+                                return [apiEnvironment withUpdatedSocksProxySettings:updatedSettings];
+                            }];
+                        }
+                    }];
                 }
             }
         }
@@ -3035,6 +3408,28 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     return true;
 }
 
+- (void)handleOpenInstantView:(NSString *)url {
+    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+    [progressWindow showWithDelay:0.1];
+    
+    [[[[[TGWebpageSignals webpagePreview:url] take:1] onDispose:^{
+        TGDispatchOnMainThread(^{
+            [progressWindow dismiss:true];
+        });
+    }] deliverOn:[SQueue mainQueue]] startWithNext:^(TGWebPageMediaAttachment *webpage) {
+        if (webpage.instantPage != nil) {
+            if (TGAppDelegateInstance.rootController.presentedViewController != nil) {
+                [TGAppDelegateInstance.rootController dismissViewControllerAnimated:false completion:nil];
+            }
+            [TGAppDelegateInstance.rootController pushContentController:[[TGInstantPageController alloc] initWithWebPage:webpage anchor:nil peerId:0 messageId:0]];
+        } else {
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        }
+    } error:^(__unused id error) {
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+    } completed:nil];
+}
+
 - (void)application:(UIApplication *)__unused application didFailToContinueUserActivityWithType:(NSString *)__unused userActivityType error:(NSError *)__unused error
 {
     [_progressWindow dismiss:true];
@@ -3042,16 +3437,31 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 
 - (void)application:(UIApplication *)__unused application performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem completionHandler:(void (^)(BOOL))completionHandler
 {
-    [_rootController clearContentControllers];
     [_rootController.mainTabsController setSelectedIndex:2];
+    
+    if (_rootController.associatedWindowStack.count > 0)
+    {
+        for (TGOverlayControllerWindow *window in _rootController.associatedWindowStack)
+        {
+            if ([window isKindOfClass:[TGOverlayControllerWindow class]])
+                [window dismiss];
+        }
+    }
     
     if ([shortcutItem.type isEqualToString:@"compose"])
     {
+        [_rootController clearContentControllers];
         [_rootController.dialogListController.dialogListCompanion composeMessageAndOpenSearch:false];
     }
     else if ([shortcutItem.type isEqualToString:@"search"])
     {
+        [_rootController clearContentControllers];
         [_rootController.dialogListController startSearch];
+    }
+    else if ([shortcutItem.type isEqualToString:@"camera"])
+    {
+        [_rootController clearContentControllers];
+        [TGCameraController startShortcutCamera];
     }
     else if ([shortcutItem.type isEqualToString:@"conversation"])
     {
@@ -3439,7 +3849,9 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     {
         _didUpdateDeviceLocked = false;
         
-        [self resetRemoteDeviceLocked];
+        if (![self isCurrentlyLocked]) {
+            [self resetRemoteDeviceLocked];
+        }
     }
     
     if ([self isCurrentlyLocked])
@@ -3491,6 +3903,10 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                 documentFileCount++;
                 [fileManager moveItemAtPath:[defaultDocumentsPath stringByAppendingPathComponent:fileName] toPath:[documentsPath stringByAppendingPathComponent:fileName] error:nil];
             }
+            
+            NSString *localizationPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0] stringByAppendingPathComponent:@"localization"];
+            
+            [fileManager copyItemAtPath:localizationPath toPath:[documentsPath stringByAppendingPathComponent:@"localization"] error:nil];
             
             TGLog(@"Moved %d document items to container", documentFileCount);
             
@@ -3626,8 +4042,32 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 
 - (void)setupShortcutItems
 {
-    [self setupChatShortcutItems];
+    if (iosMajorVersion() >= 10)
+        [self setupMenuShortcutItems];
+    else
+        [self setupChatShortcutItems];
 }
+
+- (void)setupMenuShortcutItems
+{
+    if (TGTelegraphInstance.clientUserId != 0 && TGTelegraphInstance.clientIsActivated)
+    {
+        UIApplicationShortcutItem *searchItem = [[UIApplicationShortcutItem alloc] initWithType:@"search" localizedTitle:TGLocalized(@"Common.Search") localizedSubtitle:nil icon:[UIApplicationShortcutIcon iconWithType:UIApplicationShortcutIconTypeSearch] userInfo:nil];
+        
+        UIApplicationShortcutItem *newItem = [[UIApplicationShortcutItem alloc] initWithType:@"compose" localizedTitle:TGLocalized(@"Compose.NewMessage") localizedSubtitle:nil icon:[UIApplicationShortcutIcon iconWithType:UIApplicationShortcutIconTypeCompose] userInfo:nil];
+        
+        UIApplicationShortcutItem *cameraItem = [[UIApplicationShortcutItem alloc] initWithType:@"camera" localizedTitle:TGLocalized(@"Camera.Title") localizedSubtitle:nil icon:[UIApplicationShortcutIcon iconWithType:UIApplicationShortcutIconTypeCapturePhoto] userInfo:nil];
+        
+        UIApplicationShortcutItem *cloudItem = [[UIApplicationShortcutItem alloc] initWithType:@"conversation" localizedTitle:TGLocalized(@"CloudStorage.Title") localizedSubtitle:nil icon:[UIApplicationShortcutIcon iconWithType:UIApplicationShortcutIconTypeCloud] userInfo:@{ @"cid": @(TGTelegraphInstance.clientUserId) }];
+        
+        [UIApplication sharedApplication].shortcutItems = @[ searchItem, newItem, cameraItem, cloudItem ];
+    }
+    else
+    {
+        [UIApplication sharedApplication].shortcutItems = nil;
+    }
+}
+
 
 - (void)setupChatShortcutItems
 {
@@ -3820,6 +4260,14 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                         NSString *alertText = TGLocalized(@"ConversationProfile.UnknownAddMemberError");
                         if ([errorDescription isEqualToString:@"USER_ALREADY_PARTICIPANT"])
                             alertText = TGLocalized(@"Target.InviteToGroupErrorAlreadyInvited");
+                        else if ([errorDescription isEqualToString:@"CHAT_ADMIN_REQUIRED"]) {
+                            TGUser *botUser = [TGDatabaseInstance() loadUser:_currentStartGameBot.uid];
+                            if (botUser.isBot) {
+                                alertText = TGLocalized(@"Group.Members.AddMemberBotErrorNotAllowed");
+                            } else {
+                                alertText = TGLocalized(@"Group.Members.AddMemberErrorNotAllowed");
+                            }
+                        }
                         
                         [[[TGAlertView alloc] initWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
                     } completed:^{
@@ -3858,11 +4306,28 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                     NSString *alertText = TGLocalized(@"ConversationProfile.UnknownAddMemberError");
                     if ([errorDescription isEqualToString:@"USER_ALREADY_PARTICIPANT"])
                         alertText = TGLocalized(@"Target.InviteToGroupErrorAlreadyInvited");
+                    else if ([errorDescription isEqualToString:@"CHAT_ADMIN_REQUIRED"]) {
+                        TGUser *botUser = [TGDatabaseInstance() loadUser:uid];
+                        if (botUser.isBot) {
+                            alertText = TGLocalized(@"Group.Members.AddMemberBotErrorNotAllowed");
+                        } else {
+                            alertText = TGLocalized(@"Group.Members.AddMemberErrorNotAllowed");
+                        }
+                    }
                     
                     [[[TGAlertView alloc] initWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
                 } completed:nil];
             }
         }
+    }
+}
+
+- (void)updatePushRegistration {
+    if (_pushToken != nil) {
+        NSString *token = [[_pushToken description] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"<>"]];
+        token = [token stringByReplacingOccurrencesOfString:@" " withString:@""];
+        
+        [[TGAccountSignals registerDeviceToken:token voip:false] startWithNext:nil];
     }
 }
 

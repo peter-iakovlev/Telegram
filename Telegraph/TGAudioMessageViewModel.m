@@ -300,7 +300,7 @@ static CTFontRef textFontForSize(CGFloat size)
                 } else {
                     strongSelf->_status = nil;
                 }
-                [self updateButtonText:false];
+                [strongSelf updateButtonText:false];
             }
         }];
     }
@@ -416,10 +416,16 @@ static CTFontRef textFontForSize(CGFloat size)
     if (_textModel.text.length != 0 && ![_textModel.text isEqualToString:@" "]) {
         textSize = _textModel.frame.size;
         textSize.height += 10.0f;
+        if (infoWidth < FLT_EPSILON) {
+            height -= 10.0f;
+        }
     } else {
         height += (infoWidth > (width - 80.0f) ? 12.0f : 0.0f);
+        if (infoWidth < FLT_EPSILON) {
+            height -= 2.0f;
+        }
     }
-    
+        
     return CGSizeMake(width, height + textSize.height);
 }
 

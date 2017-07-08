@@ -15,9 +15,14 @@
 @optional
 
 - (void)micButtonInteractionBegan;
-- (void)micButtonInteractionCancelled:(CGFloat)velocity;
-- (void)micButtonInteractionCompleted:(CGFloat)velocity;
-- (void)micButtonInteractionUpdate:(CGFloat)value;
+- (void)micButtonInteractionCancelled:(CGPoint)velocity;
+- (void)micButtonInteractionCompleted:(CGPoint)velocity;
+- (void)micButtonInteractionUpdate:(CGPoint)value;
+- (void)micButtonInteractionLocked;
+- (void)micButtonInteractionRequestedLockedAction;
+- (void)micButtonInteractionStopped;
+
+- (bool)micButtonShouldLock;
 
 @end
 
@@ -25,10 +30,18 @@
 
 @property (nonatomic, weak) id<TGModernConversationInputMicButtonDelegate> delegate;
 
+@property (nonatomic, strong) UIImage *icon;
 @property (nonatomic, strong) UIImageView *iconView;
+@property (nonatomic, assign) bool blocking;
+@property (nonatomic, readonly) bool locked;
+@property (nonatomic) bool fadeDisabled;
 
 - (void)animateIn;
 - (void)animateOut;
 - (void)addMicLevel:(CGFloat)level;
+
+- (void)updateOverlay;
+
+- (void)_commitLocked;
 
 @end

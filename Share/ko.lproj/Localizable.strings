@@ -2,6 +2,7 @@
 "Share.Next" = "다음";
 "Share.OK" = "확인";
 "Share.Search" = "검색";
+"Share.Send" = "전송";
 
 "Share.Title" = "공유";
 "Share.ShareWithPerson" = "%@님에게 공유하시겠습니까?";
@@ -24,4 +25,8 @@
 "Share.RecentSection" = "최근";
 "Share.RecentSectionClear" = "지우기";
 
-"Share.TouchId" = "Enter your passcode";
+"Share.PeopleSection" = "사람";
+
+"Share.TouchId" = "잠금번호 입력";
+
+"Share.AddCaption" = "코멘트 쓰기..";

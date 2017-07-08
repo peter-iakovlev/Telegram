@@ -19,6 +19,7 @@
 #import "TGAlertView.h"
 
 #import "TGSelectContactController.h"
+#import "TGGroupInfoShareLinkController.h"
 
 #import "TGGroupManagementSignals.h"
 #import "TGRevokeLinkConversationItem.h"
@@ -140,6 +141,10 @@ typedef enum {
         _privateLinkItem.text = _exportedLink;
         _privateLinkItem.editable = false;
         _privateLinkItem.deselectAutomatically = true;
+        _privateLinkItem.selected = ^{
+            __strong TGSetupChannelAfterCreationController *strongSelf = weakSelf;
+            [strongSelf privateLinkPressed];
+        };
         
         _linkPrivateSection = [[TGCollectionMenuSection alloc] initWithItems:@[_privateLinkItem, privateCommentItem]];
         
@@ -469,6 +474,25 @@ typedef enum {
         _isPrivate = true;
         [self updateIsPrivate];
     }
+}
+
+- (void)privateLinkPressed {
+    if (!_modal)
+        return;
+    
+    __weak TGSetupChannelAfterCreationController *weakSelf = self;
+    TGGroupInfoShareLinkController *controller = [[TGGroupInfoShareLinkController alloc] initWithPeerId:_conversation.conversationId accessHash:_conversation.accessHash currentLink:_exportedLink];
+    controller.linkChanged = ^(NSString *link) {
+        __strong TGSetupChannelAfterCreationController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        strongSelf->_exportedLink = link;
+        strongSelf->_privateLinkItem.text = link;
+        [strongSelf.collectionLayout invalidateLayout];
+        [strongSelf.collectionView layoutSubviews];
+    };
+    [self.navigationController pushViewController:controller animated:true];
 }
 
 - (void)setConversationsToDelete:(NSArray<TGConversation *> *)conversationsToDelete force:(bool)force {

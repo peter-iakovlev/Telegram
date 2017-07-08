@@ -17,6 +17,7 @@
 {
     UIButton *_deleteButton;
     UIButton *_forwardButton;
+    UIButton *_shareButton;
     
     CALayer *_stripeLayer;
 }
@@ -42,16 +43,19 @@
     self = [super initWithFrame:CGRectMake(frame.origin.x, frame.origin.y, frame.size.width, [self baseHeight])];
     if (self)
     {
-        self.backgroundColor = UIColorRGBA(0xfafafa, 0.98f);
+        self.backgroundColor = UIColorRGB(0xf7f7f7);
         
         _stripeLayer = [[CALayer alloc] init];
-        _stripeLayer.backgroundColor = UIColorRGBA(0xb3aab2, 0.4f).CGColor;
+        _stripeLayer.backgroundColor = UIColorRGB(0xb2b2b2).CGColor;
         [self.layer addSublayer:_stripeLayer];
         
         UIImage *deleteImage = [UIImage imageNamed:@"ModernConversationActionDelete.png"];
         UIImage *deleteDisabledImage = [UIImage imageNamed:@"ModernConversationActionDelete_Disabled.png"];
         UIImage *forwardImage = [UIImage imageNamed:@"ModernConversationActionForward.png"];
         UIImage *forwardDisabledImage = [UIImage imageNamed:@"ModernConversationActionForward_Disabled.png"];
+        
+        UIImage *shareImage = TGTintedImage([UIImage imageNamed:@"ActionsWhiteIcon"], TGAccentColor());
+        UIImage *shareDisabledImage = TGTintedImage([UIImage imageNamed:@"ActionsWhiteIcon"], UIColorRGB(0xd0d0d0));
         
         _deleteButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 52.0f, [self baseHeight])];
         [_deleteButton setImage:deleteImage forState:UIControlStateNormal];
@@ -68,6 +72,14 @@
         _forwardButton.adjustsImageWhenHighlighted = false;
         [_forwardButton addTarget:self action:@selector(forwardButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_forwardButton];
+        
+        _shareButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 56.0f, [self baseHeight])];
+        [_shareButton setImage:shareImage forState:UIControlStateNormal];
+        [_shareButton setImage:shareDisabledImage forState:UIControlStateDisabled];
+        _shareButton.adjustsImageWhenDisabled = false;
+        _shareButton.adjustsImageWhenHighlighted = false;
+        [_shareButton addTarget:self action:@selector(shareButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_shareButton];
     }
     return self;
 }
@@ -81,10 +93,16 @@
     _deleteButton.hidden = !deleteEnabled;
 }
 
+- (void)setShareEnabled:(bool)shareEnabled
+{
+    _shareButton.hidden = !shareEnabled;
+}
+
 - (void)setActionsEnabled:(bool)actionsEnabled
 {
     _deleteButton.enabled = actionsEnabled;
     _forwardButton.enabled = actionsEnabled;
+    _shareButton.enabled = actionsEnabled;
 }
 
 - (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight
@@ -119,6 +137,7 @@
     
     _stripeLayer.frame = CGRectMake(0.0f, -TGRetinaPixel, self.frame.size.width, TGRetinaPixel);
     
+    _shareButton.frame = CGRectMake(floor((self.frame.size.width - 56.0f) / 2.0f), 0.0f, 56.0f, [self baseHeight]);
     _forwardButton.frame = CGRectMake(self.frame.size.width - 56.0f, 0.0f, 56.0f, [self baseHeight]);
 }
 
@@ -136,6 +155,13 @@
     id<TGModernConversationEditingPanelDelegate> delegate = (id<TGModernConversationEditingPanelDelegate>)self.delegate;
     if ([delegate respondsToSelector:@selector(editingPanelRequestedForwardMessages:)])
         [delegate editingPanelRequestedForwardMessages:self];
+}
+
+- (void)shareButtonPressed
+{
+    id<TGModernConversationEditingPanelDelegate> delegate = (id<TGModernConversationEditingPanelDelegate>)self.delegate;
+    if ([delegate respondsToSelector:@selector(editingPanelRequestedShareMessages:)])
+        [delegate editingPanelRequestedShareMessages:self];
 }
 
 @end

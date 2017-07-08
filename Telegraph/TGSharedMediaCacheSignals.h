@@ -11,7 +11,7 @@ typedef enum {
     TGSharedMediaCacheItemTypeLink = 6,
     TGSharedMediaCacheItemTypeSticker = 7,
     TGSharedMediaCacheItemTypeGif = 8,
-    TGSharedMediaCacheItemTypeVoiceNote = 9
+    TGSharedMediaCacheItemTypeVoiceVideoMessage = 9
 } TGSharedMediaCacheItemType;
 
 @interface TGSharedMediaCacheSignals : NSObject

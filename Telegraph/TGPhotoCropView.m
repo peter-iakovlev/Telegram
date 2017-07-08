@@ -460,7 +460,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
 
 #pragma mark - Backdrop
 
-- (void)showBackdropViewAnimated:(bool)animated
+- (void)_layoutBackdrop
 {
     if (iosMajorVersion() < 9 || _imageView.image == nil)
         return;
@@ -471,6 +471,14 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     UIView *snapshotView = [_scrollView setSnapshotViewEnabled:true];
     snapshotView.frame = _scrollView.frame;
     [_areaWrapperView insertSubview:snapshotView aboveSubview:_blurView];
+}
+
+- (void)showBackdropViewAnimated:(bool)animated
+{
+    if (iosMajorVersion() < 9 || _imageView.image == nil)
+        return;
+    
+    [self _layoutBackdrop];
     
     if (animated)
     {
@@ -554,8 +562,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     _confirmTimer = nil;
     
     _cropRect = [_scrollView zoomedRect];
-    CGSize minimumSizes = CGSizeMake(_originalSize.width / _scrollView.maximumZoomScale,
-                                     _originalSize.height / _scrollView.maximumZoomScale);
+    CGSize minimumSizes = CGSizeMake(_originalSize.width / _scrollView.maximumZoomScale, _originalSize.height / _scrollView.maximumZoomScale);
     
     CGRect constrainedCropRect = _cropRect;
     if (_cropRect.size.width < minimumSizes.width && _cropRect.size.height < minimumSizes.height)
@@ -1073,6 +1080,12 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
 
 - (void)layoutSubviews
 {
+    void (^layoutBackdrop)(void) = ^
+    {
+        if (!_animatingRotation)
+            [self _layoutBackdrop];
+    };
+    
     if (_imageView == nil)
     {
         [self setup];
@@ -1092,7 +1105,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
         void (^layoutBlock)(void) = ^
         {
             if (!_areaView.isTracking && !_animatingConfirm)
-                [self _layoutAreaViewAnimated:false completion:nil];
+                [self _layoutAreaViewAnimated:false completion:layoutBackdrop];
             
             [self _zoomToCropRectWithFrame:_scrollView.bounds animated:false completion:nil];
         };
@@ -1105,7 +1118,7 @@ const CGFloat TGPhotoCropViewOverscreenSize = 1000;
     else
     {
         if (!_areaView.isTracking && !_animatingConfirm)
-            [self _layoutAreaViewAnimated:false completion:nil];
+            [self _layoutAreaViewAnimated:false completion:layoutBackdrop];
         
         if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
             [self _zoomToCropRectWithFrame:_scrollView.bounds animated:false completion:nil];

@@ -8,7 +8,7 @@
 
 #import "TGActor.h"
 
-#import "tl/TLMetaScheme.h"
+#import "TL/TLMetaScheme.h"
 
 #import "ASWatcher.h"
 

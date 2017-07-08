@@ -6,6 +6,8 @@
 
 @interface TGPreviewAboutItemView : TGMenuSheetItemView
 
+@property (nonatomic, assign) bool singleLine;
+
 - (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)attachment;
 - (instancetype)initWithLocationAttachment:(TGLocationMediaAttachment *)attachment;
 - (instancetype)initWithDocumentAttachment:(TGDocumentMediaAttachment *)attachment;

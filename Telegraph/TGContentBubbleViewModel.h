@@ -82,6 +82,7 @@ extern bool debugShowMessageIds;
 - (bool)gestureRecognizerShouldHandleLongTap:(TGDoubleTapGestureRecognizer *)recognizer;
 - (int)gestureRecognizer:(TGDoubleTapGestureRecognizer *)recognizer shouldFailTap:(CGPoint)point;
 - (void)doubleTapGestureRecognizerSingleTapped:(TGDoubleTapGestureRecognizer *)recognizer;
+- (void)instantPageButtonPressed;
 
 - (void)layoutContentForHeaderHeight:(CGFloat)headerHeight;
 - (void)layoutContentForHeaderHeight:(CGFloat)headerHeight containerSize:(CGSize)containerSize;

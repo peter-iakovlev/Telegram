@@ -700,7 +700,6 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
             
             strongSelf->_player = [AVPlayer playerWithURL:next];
             strongSelf->_player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
-            strongSelf->_player.muted = true;
             
             UIView *previousVideoView = strongSelf->_videoView;
             strongSelf->_videoView = [[TGModernGalleryVideoView alloc] initWithFrame:strongSelf->_previewView.frame player:strongSelf->_player];

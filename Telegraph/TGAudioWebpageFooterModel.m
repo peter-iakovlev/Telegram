@@ -179,7 +179,7 @@
     _sliderModel.parentOffset = itemPosition;
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize contentSize:(CGSize)__unused topContentSize infoWidth:(CGFloat)infoWidth needsContentsUpdate:(bool *)__unused dneedsContentsUpdate
+- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize contentSize:(CGSize)__unused topContentSize infoWidth:(CGFloat)__unused infoWidth needsContentsUpdate:(bool *)__unused dneedsContentsUpdate
 {
     return CGSizeMake(MAX(160, MIN(205, _duration * 30)), 51.0f);
 }

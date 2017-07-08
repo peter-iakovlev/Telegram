@@ -34,6 +34,7 @@
     UIView *_webView;
     bool _confirmation;
     bool _canSave;
+    bool _allowSaving;
 }
 
 @end
@@ -47,6 +48,7 @@
         _confirmation = confirmation;
         
         _canSave = canSave && allowSaving;
+        _allowSaving = allowSaving;
         
         if (_confirmation) {
             self.title = TGLocalized(@"Checkout.WebConfirmation.Title");
@@ -146,8 +148,8 @@
                 NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:[eventData dataUsingEncoding:NSUTF8StringEncoding] options:0 error:&error];
                 if (dict != nil && [dict respondsToSelector:@selector(objectForKey:)] && dict[@"title"] != nil && dict[@"credentials"] != nil) {
                     NSData *data = [NSJSONSerialization dataWithJSONObject:dict[@"credentials"] options:0 error:&error];
+                    __weak TGPaymentWebController *weakSelf = self;
                     if (_canSave) {
-                        __weak TGPaymentWebController *weakSelf = self;
                         [TGAlertView presentAlertWithTitle:nil message:TGLocalized(@"Checkout.NewCard.SaveInfoHelp") cancelButtonTitle:TGLocalized(@"Common.NotNow") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:^(bool okButtonPressed) {
                             __strong TGPaymentWebController *strongSelf = weakSelf;
                             if (strongSelf != nil) {
@@ -156,11 +158,26 @@
                                     strongSelf->_completed(credentials, dict[@"title"], okButtonPressed);
                                 }
                             }
-                        }];
+                        } disableKeyboardWorkaround:true];
+                    } else if (_allowSaving) {
+                        NSString *text = TGLocalized(@"Checkout.NewCard.SaveInfoEnableHelp");
+                        text = [text stringByReplacingOccurrencesOfString:@"[" withString:@""];
+                        text = [text stringByReplacingOccurrencesOfString:@"]" withString:@""];
+                        [TGAlertView presentAlertWithTitle:nil message:text cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed) {
+                            __strong TGPaymentWebController *strongSelf = weakSelf;
+                            if (strongSelf != nil) {
+                                NSString *credentials = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                                if (strongSelf->_completed) {
+                                    strongSelf->_completed(credentials, dict[@"title"], false);
+                                }
+                            }
+                        } disableKeyboardWorkaround:true];
+                    } else {
+                        NSString *credentials = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                        _completed(credentials, dict[@"title"], false);
                     }
                 }
             }
-            //credentials
         }
     }
 }

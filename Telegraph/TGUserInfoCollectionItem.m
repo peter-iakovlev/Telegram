@@ -58,12 +58,12 @@
 
 - (NSString *)currentFirstName
 {
-    return (_updatingFirstName != nil || _updatingLastName != nil) ? _updatingFirstName : (_useRealName ? _user.realFirstName : _user.firstName);
+    return (_updatingFirstName != nil || _updatingLastName != nil) ? _updatingFirstName : (_useRealName ? _user.realFirstName : [_user.firstName stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]]);
 }
 
 - (NSString *)currentLastName
 {
-    return (_updatingFirstName != nil || _updatingLastName != nil) ? _updatingLastName : (_useRealName ? _user.realLastName : _user.lastName);
+    return (_updatingFirstName != nil || _updatingLastName != nil) ? _updatingLastName : (_useRealName ? _user.realLastName : [_user.lastName stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]]);
 }
 
 - (void)bindView:(TGUserInfoCollectionItemView *)view
@@ -264,7 +264,7 @@
     {
         if (accentColored != NULL)
             *accentColored = true;
-        return TGLocalizedStatic(@"Presence.online");
+        return TGLocalized(@"Presence.online");
     }
     if (presence.lastSeen != 0)
         return [TGDateUtils stringForRelativeLastSeen:presence.lastSeen];

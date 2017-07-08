@@ -34,7 +34,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -61,7 +61,7 @@
     return (int32_t)0x24bb22af;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCaccount_updateDeviceLocked$account_updateDeviceLocked *object = [[TLRPCaccount_updateDeviceLocked$account_updateDeviceLocked alloc] init];
     object.period = metaObject->getInt32((int32_t)0xc19ffb71);

@@ -6,8 +6,8 @@
 
 #import "NSObject+TGLock.h"
 
-#include <tr1/unordered_map>
-#include <tr1/unordered_set>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #import "TGDateUtils.h"
@@ -18,7 +18,7 @@
 
 @interface TGReusableLabelLayoutData ()
 {
-    std::tr1::unordered_map<int, std::tr1::unordered_map<int, int> > _lineOffsets;
+    std::unordered_map<int, std::unordered_map<int, int> > _lineOffsets;
     std::vector<TGLinePosition> _lineOrigins;
     
     std::vector<TGLinkData> _links;
@@ -32,14 +32,14 @@
 @property (nonatomic) CGFloat fontLineHeight;
 @property (nonatomic) CGFloat fontLineSpacing;
 
-- (std::tr1::unordered_map<int, std::tr1::unordered_map<int, int> > *)lineOffsets;
+- (std::unordered_map<int, std::unordered_map<int, int> > *)lineOffsets;
 
 @end
 
 @implementation TGReusableLabelLayoutData
 
 
-- (std::tr1::unordered_map<int, std::tr1::unordered_map<int, int> > *)lineOffsets
+- (std::unordered_map<int, std::unordered_map<int, int> > *)lineOffsets
 {
     return &_lineOffsets;
 }

@@ -43,11 +43,14 @@
 
 #import "TGPeerIdAdapter.h"
 
+#import "TGLocalization.h"
+
 typedef enum {
     TGDialogListStateNormal = 0,
     TGDialogListStateConnecting = 1,
-    TGDialogListStateUpdating = 2,
-    TGDialogListStateWaitingForNetwork = 3
+    TGDialogListStateConnectingToProxy = 2,
+    TGDialogListStateUpdating = 3,
+    TGDialogListStateWaitingForNetwork = 4
 } TGDialogListState;
 
 @interface TGTelegraphDialogListCompanion ()
@@ -502,14 +505,7 @@ typedef enum {
 
 - (NSString *)stringForMemberCount:(int)memberCount
 {
-    if (memberCount == 1)
-        return TGLocalizedStatic(@"Conversation.StatusRecipients_1");
-    else if (memberCount == 2)
-        return TGLocalizedStatic(@"Conversation.StatusRecipients_2");
-    else if (memberCount >= 3 && memberCount <= 10)
-        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusRecipients_3_10"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
-    else
-        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusRecipients_any"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
+    return [effectiveLocalization() getPluralized:@"Conversation.StatusRecipients" count:(int32_t)memberCount];
 }
 
 - (void)initializeDialogListData:(TGConversation *)conversation customUser:(TGUser *)customUser selfUser:(TGUser *)selfUser
@@ -585,7 +581,7 @@ typedef enum {
         NSString *title = nil;
         NSArray *titleLetters = nil;
         
-        if (user.uid == [TGTelegraphInstance serviceUserUid])
+        if (user.uid == [TGTelegraphInstance serviceUserUid] || user.uid == [TGTelegraphInstance voipSupportUserUid])
             title = [user displayName];
         else if ((user.phoneNumber.length != 0 && ![TGDatabaseInstance() uidIsRemoteContact:user.uid]))
             title = user.formattedPhoneNumber;
@@ -1069,8 +1065,13 @@ typedef enum {
         {
             if (state & 4)
                 newState = TGDialogListStateWaitingForNetwork;
-            else
-                newState = TGDialogListStateConnecting;
+            else {
+                if (state & 8) {
+                    newState = TGDialogListStateConnectingToProxy;
+                } else {
+                    newState = TGDialogListStateConnecting;
+                }
+            }
         }
         else if (state & 1)
             newState = TGDialogListStateUpdating;
@@ -1085,13 +1086,15 @@ typedef enum {
                 NSString *title = nil;
                 if (newState == TGDialogListStateConnecting)
                     title = TGLocalized(@"State.Connecting");
+                else if (newState == TGDialogListStateConnectingToProxy)
+                    title = TGLocalized(@"State.ConnectingToProxy");
                 else if (newState == TGDialogListStateUpdating)
                     title = TGLocalized(@"State.Updating");
                 else if (newState == TGDialogListStateWaitingForNetwork)
                     title = TGLocalized(@"State.WaitingForNetwork");
                 
                 TGDialogListController *dialogListController = self.dialogListController;
-                [dialogListController titleStateUpdated:title isLoading:newState != TGDialogListStateNormal];
+                [dialogListController titleStateUpdated:title isLoading:newState != TGDialogListStateNormal isProxy:newState == TGDialogListStateConnectingToProxy];
             });
         }
     }
@@ -1581,7 +1584,7 @@ typedef enum {
                 
                 NSString *title = nil;
                 
-                if (user.uid == [TGTelegraphInstance serviceUserUid])
+                if (user.uid == [TGTelegraphInstance serviceUserUid] || user.uid == [TGTelegraphInstance voipSupportUserUid])
                     title = [user displayName];
                 else if (user.phoneNumber.length != 0 && ![TGDatabaseInstance() uidIsRemoteContact:user.uid])
                     title = user.formattedPhoneNumber;
@@ -1629,6 +1632,8 @@ typedef enum {
 {
     if ([activity isEqualToString:@"recordingAudio"])
         return TGLocalized(@"DialogList.SingleRecordingAudioSuffix");
+    else if ([activity isEqualToString:@"recordingVideoMessage"])
+        return TGLocalized(@"DialogList.SingleRecordingVideoMessageSuffix");
     else if ([activity isEqualToString:@"uploadingPhoto"])
         return TGLocalized(@"DialogList.SingleUploadingPhotoSuffix");
     else if ([activity isEqualToString:@"uploadingVideo"])
@@ -1645,6 +1650,8 @@ typedef enum {
 {
     if ([activity isEqualToString:@"recordingAudio"])
         return TGLocalized(@"Activity.RecordingAudio");
+    else if ([activity isEqualToString:@"recordingVideoMessage"])
+        return TGLocalized(@"Activity.RecordingVideoMessage");
     else if ([activity isEqualToString:@"uploadingPhoto"])
         return TGLocalized(@"Activity.UploadingPhoto");
     else if ([activity isEqualToString:@"uploadingVideo"])

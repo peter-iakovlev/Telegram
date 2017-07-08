@@ -21,7 +21,7 @@
     self = [super initWithServer:server];
     if (self != nil)
     {
-        _localizationSignal = [[SSignal single:@(TGIsCustomLocalizationActive())] then:[[server server] mapToSignal:^SSignal *(TGBridgeServer *server) {
+        _localizationSignal = [[SSignal single:@(false)] then:[[server server] mapToSignal:^SSignal *(TGBridgeServer *server) {
             return [server pipeForKey:@"localization"];
         }]];
         

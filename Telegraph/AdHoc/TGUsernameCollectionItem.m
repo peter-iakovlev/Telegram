@@ -38,6 +38,7 @@
     [view setPlaceholder:_placeholder];
     [view setSecureEntry:_secureEntry];
     [view setKeyboardType:_keyboardType];
+    [view setReturnKeyType:_returnKeyType];
     [view setUsername:_username];
     [view setUsernameValid:_usernameValid];
     [view setMinimalInset:_minimalInset];

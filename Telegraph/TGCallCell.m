@@ -60,7 +60,7 @@
         [_wrapView addSubview:_typeIcon];
         
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(10, 7 - TGRetinaPixel, 62 + TGRetinaPixel, 62 + TGRetinaPixel)];
-        [_avatarView setSingleFontSize:35.0f doubleFontSize:21.0f useBoldFont:false];
+        [_avatarView setSingleFontSize:18.0f doubleFontSize:18.0f useBoldFont:false];
         _avatarView.fadeTransition = cpuCoreCount() > 1;
         [_wrapView addSubview:_avatarView];
         
@@ -113,7 +113,10 @@
     UIColor *nameColor = group.failed ? UIColorRGB(0xfb2125) : [UIColor blackColor];
     if (group.messages.count > 1)
     {
-        NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:TGLocalized(@"Call.GroupFormat"), peer.displayName, [NSString stringWithFormat:@"%d", (int)group.messages.count]] attributes:@{ NSForegroundColorAttributeName: [UIColor blackColor], NSFontAttributeName: _nameLabel.font }];
+        NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
+        style.lineBreakMode = NSLineBreakByTruncatingMiddle;
+        
+        NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:TGLocalized(@"Call.GroupFormat"), peer.displayName, [NSString stringWithFormat:@"%d", (int)group.messages.count]] attributes:@{ NSForegroundColorAttributeName: [UIColor blackColor], NSFontAttributeName: _nameLabel.font, NSParagraphStyleAttributeName: style }];
         if (group.failed)
         {
             NSRange nameRange = [text.string rangeOfString:peer.displayName];

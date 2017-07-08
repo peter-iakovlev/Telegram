@@ -62,7 +62,7 @@
         
         _allMembersSwitchItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatAdmins.AllMembersAreAdmins") isOn:true];
         __weak TGGroupAdminsController *weakSelf = self;
-        _allMembersSwitchItem.toggled = ^(bool value) {
+        _allMembersSwitchItem.toggled = ^(bool value, __unused TGSwitchCollectionItem *item) {
             __strong TGGroupAdminsController *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 [strongSelf toggleAllMembersAreAdmins:value];

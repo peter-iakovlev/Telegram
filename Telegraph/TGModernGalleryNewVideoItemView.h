@@ -13,6 +13,7 @@
     bool _playerViewDetached;
     
     CGSize _videoDimensions;
+    bool _disablePictureInPicture;
 }
 
 - (bool)shouldLoopVideo:(NSUInteger)currentLoopCount;

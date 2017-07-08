@@ -132,7 +132,7 @@ static id<PSCoding> readObject(uint8_t const **currentPtr, PSKeyValueDecoder *te
 
 static  void skipObject(uint8_t const **currentPtr)
 {
-    uint32_t objectLength = *((uint32_t *)currentPtr);
+    uint32_t objectLength = *((uint32_t *)(*currentPtr));
     (*currentPtr) += 4 + objectLength;
 }
 

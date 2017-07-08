@@ -9,6 +9,8 @@
 @property (nonatomic) UIEdgeInsets insets;
 @property (nonatomic) CGSize videoSize;
 
+@property (nonatomic, readonly) NSString *videoPath;
+
 - (void)setVideoPathSignal:(SSignal *)signal;
 
 @end

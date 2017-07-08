@@ -15,13 +15,14 @@
 
 - (SSignal *)callStateWithInternalId:(id)internalId;
 - (SSignal *)incomingCallInternalIds;
-
 - (SSignal *)endedIncomingCallInternalIds;
 
-- (SSignal *)acceptCallWithInternalId:(id)internalId;
-- (SSignal *)discardCallWithInternalId:(id)internalId reason:(TGCallDiscardReason)reason;
+- (void)acceptCallWithInternalId:(id)internalId;
+- (void)discardCallWithInternalId:(id)internalId reason:(TGCallDiscardReason)reason;
 
 - (TGCallSession *)sessionForIncomingCallWithInternalId:(id)internalId;
 - (TGCallSession *)sessionForOutgoingCallWithPeerId:(int64_t)peerId;
+
+- (void)_dispatch:(dispatch_block_t)block;
 
 @end

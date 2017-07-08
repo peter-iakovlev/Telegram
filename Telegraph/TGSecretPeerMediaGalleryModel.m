@@ -81,6 +81,9 @@
                 else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
                 {
                     TGVideoMediaAttachment *videoMedia = attachment;
+                    if (videoMedia.roundMessage)
+                        continue;
+                    
                     TGSecretPeerMediaGalleryVideoItem *videoItem = [[TGSecretPeerMediaGalleryVideoItem alloc] initWithVideoMedia:videoMedia peerId:_peerId messageId:message.mid messageCountdownTime:messageCountdownTime messageLifetime:message.messageLifetime];
                     //videoItem.author = [TGDatabaseInstance() loadUser:(int32_t)message.fromUid];
                     //videoItem.date = message.date;

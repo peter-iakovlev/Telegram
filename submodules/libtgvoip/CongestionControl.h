@@ -8,6 +8,7 @@
 #define LIBTGVOIP_CONGESTIONCONTROL_H
 
 #include <stdlib.h>
+#include <stdint.h>
 #include "threading.h"
 
 #define TGVOIP_CONCTL_STARTUP 0
@@ -19,6 +20,8 @@
 #define TGVOIP_CONCTL_ACT_DECREASE 2
 #define TGVOIP_CONCTL_ACT_NONE 0
 
+namespace tgvoip{
+
 struct tgvoip_congestionctl_packet_t{
 	uint32_t seq;
 	double sendTime;
@@ -26,10 +29,10 @@ struct tgvoip_congestionctl_packet_t{
 };
 typedef struct tgvoip_congestionctl_packet_t tgvoip_congestionctl_packet_t;
 
-class CCongestionControl{
+class CongestionControl{
 public:
-	CCongestionControl();
-	~CCongestionControl();
+	CongestionControl();
+	~CongestionControl();
 
 	void PacketSent(uint32_t seq, size_t size);
 	void PacketAcknowledged(uint32_t seq);
@@ -63,6 +66,6 @@ private:
 	size_t cwnd;
 	tgvoip_mutex_t mutex;
 };
-
+}
 
 #endif //LIBTGVOIP_CONGESTIONCONTROL_H

@@ -5,7 +5,7 @@
 
 #import "TLInputChannel.h"
 #import "TLInputUser.h"
-#import "TLChannelParticipantRole.h"
+#import "TLChannelAdminRights.h"
 #import "TLUpdates.h"
 
 @implementation TLRPCchannels_editAdmin
@@ -23,7 +23,7 @@
 
 - (int)layerVersion
 {
-    return 41;
+    return 68;
 }
 
 - (int32_t)TLconstructorSignature
@@ -38,7 +38,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -57,7 +57,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xeb7611d0;
+    return (int32_t)0x20b88214;
 }
 
 - (int32_t)TLconstructorName
@@ -65,12 +65,12 @@
     return (int32_t)0xcdb8de75;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCchannels_editAdmin$channels_editAdmin *object = [[TLRPCchannels_editAdmin$channels_editAdmin alloc] init];
     object.channel = metaObject->getObject((int32_t)0xe11f3d41);
     object.user_id = metaObject->getObject((int32_t)0xafdf4073);
-    object.role = metaObject->getObject((int32_t)0x4040314c);
+    object.admin_rights = metaObject->getObject((int32_t)0x86c3114f);
     return object;
 }
 
@@ -91,8 +91,8 @@
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.role;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x4040314c, value));
+        value.nativeObject = self.admin_rights;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x86c3114f, value));
     }
 }
 

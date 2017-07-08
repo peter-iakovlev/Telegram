@@ -41,7 +41,7 @@
     if (self)
     {
         _avatarView = [[TGLetteredAvatarView alloc] init];
-        [_avatarView setSingleFontSize:17.0f doubleFontSize:17.0f useBoldFont:true];
+        [_avatarView setSingleFontSize:18.0f doubleFontSize:18.0f useBoldFont:true];
         [self addSubview:_avatarView];
         
         if (iosMajorVersion() < 7)
@@ -144,7 +144,7 @@
 - (void)layoutSubviews
 {
     CGFloat scaling = 1.0f;
-    if (UIInterfaceOrientationIsPortrait(_orientation))
+    if (UIInterfaceOrientationIsPortrait(_orientation) || TGIsPad())
     {
         CGFloat rtlOffset = -23.0f;
         if (TGAppDelegateInstance.rootController.isRTL) {

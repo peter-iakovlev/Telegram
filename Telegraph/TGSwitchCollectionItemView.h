@@ -22,7 +22,13 @@
 
 @property (nonatomic, weak) id<TGSwitchCollectionItemViewDelegate> delegate;
 
+- (void)setFullSeparator:(bool)fullSeparator;
 - (void)setTitle:(NSString *)title;
 - (void)setIsOn:(bool)isOn animated:(bool)animated;
+- (void)setIsEnabled:(bool)isEnabled;
+
+@end
+
+@interface TGPermissionSwitchCollectionItemView : TGSwitchCollectionItemView
 
 @end

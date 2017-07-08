@@ -51,8 +51,9 @@
 - (void)setModernHighlight:(bool)modernHighlight
 {
     _modernHighlight = modernHighlight;
-    if (!_modernHighlight)
+    if (!_modernHighlight) {
         self.alpha = 1.0f;
+    }
 }
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
@@ -199,7 +200,7 @@
         }
         else
         {
-            CGFloat alpha = (highlighted ? 0.4f : 1.0f) * (self.enabled ? 1.0f : 0.5f);
+            CGFloat alpha = (highlighted ? 0.4f : 1.0f) * (self.fadeDisabled ? 0.5f : (self.enabled ? 1.0f : 0.5f));
             
             if (ABS(alpha - self.alpha) > FLT_EPSILON)
             {
@@ -236,7 +237,7 @@
     
     if (_modernHighlight && _highlightImage == nil && _highlightBackgroundColor == nil)
     {
-        CGFloat alpha = (self.highlighted ? 0.4f : 1.0f) * (self.enabled ? 1.0f : 0.5f);
+        CGFloat alpha = (self.highlighted ? 0.4f : 1.0f) * (self.fadeDisabled ? 0.5f : (self.enabled ? 1.0f : 0.5f));
         self.alpha = alpha;
     }
 }
@@ -247,7 +248,16 @@
     
     if (_modernHighlight && _highlightImage == nil)
     {
-        CGFloat alpha = (self.highlighted ? 0.4f : 1.0f) * (self.enabled ? 1.0f : 0.5f);
+        CGFloat alpha = (self.highlighted ? 0.4f : 1.0f) * (self.fadeDisabled ? 0.5f : (self.enabled ? 1.0f : 0.5f));
+        self.alpha = alpha;
+    }
+}
+
+- (void)setFadeDisabled:(bool)fadeDisabled {
+    _fadeDisabled = fadeDisabled;
+    if (_modernHighlight && _highlightImage == nil)
+    {
+        CGFloat alpha = (self.highlighted ? 0.4f : 1.0f) * (self.fadeDisabled ? 0.5f : (self.enabled ? 1.0f : 0.5f));
         self.alpha = alpha;
     }
 }
@@ -258,6 +268,11 @@
     
     if (_modernHighlight && _highlightImage == nil)
         [self setTitleColor:self.tintColor forState:UIControlStateNormal];
+}
+
+- (CGFloat)stateAlpha {
+    CGFloat alpha = (self.highlighted ? 0.4f : 1.0f) * (self.fadeDisabled ? 0.5f : (self.enabled ? 1.0f : 0.5f));
+    return alpha;
 }
 
 @end

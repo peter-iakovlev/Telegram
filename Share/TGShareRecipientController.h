@@ -6,6 +6,4 @@
 
 - (void)setShareContext:(TGShareContext *)shareContext;
 
-- (void)proceed;
-
 @end

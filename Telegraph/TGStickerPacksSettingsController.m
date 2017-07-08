@@ -78,7 +78,7 @@
         
         _showStickersButtonItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"StickerPacksSettings.ShowStickersButton") isOn:TGAppDelegateInstance.alwaysShowStickersMode == 2];
         
-        _showStickersButtonItem.toggled = ^(bool value)
+        _showStickersButtonItem.toggled = ^(bool value, __unused TGSwitchCollectionItem *item)
         {
             TGAppDelegateInstance.alwaysShowStickersMode = value ? 2 : 1;
             [TGAppDelegateInstance saveSettings];
@@ -113,6 +113,10 @@
         {
             NSString *username = @"stickers";
             [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/resolveDomain/(%@)", username] options:@{@"domain": username} flags:0 watcher:TGTelegraphInstance];
+            
+            __strong TGStickerPacksSettingsController *strongSelf = weakSelf;
+            if (strongSelf.presentingViewController != nil)
+                [strongSelf.presentingViewController dismissViewControllerAnimated:true completion:nil];
         };
         [hintItem setFormattedText:hintString];
         
@@ -241,7 +245,7 @@
 {
     if ([self isOrderChanged]) {
         TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
-        [progressWindow showWithDelay:0.1];
+        [progressWindow showWithDelay:0.2];
         
         NSMutableArray *currentStickerPacksReferences = [[NSMutableArray alloc] init];
         for (TGStickerPack *pack in [self currentStickerPacks]) {
@@ -451,15 +455,15 @@
                     [strongSelf toggleStickerPack:stickerPack hidden:false];
                 }
             } else if ([action isEqualToString:@"delete"]) {
-                TGProgressWindow *progresWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-                [progresWindow show:true];
+                TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                [progressWindow showWithDelay:0.2];
                 
                 SSignal *removeStickerPackSignal = masksMode ? [TGMaskStickersSignals removeStickerPack:stickerPack.packReference hintArchived:false] : [TGStickersSignals removeStickerPack:stickerPack.packReference hintArchived:false];
                 [[[removeStickerPackSignal deliverOn:[SQueue mainQueue]] onDispose:^
                 {
                     TGDispatchOnMainThread(^
                     {
-                        [progresWindow dismiss:true];
+                        [progressWindow dismiss:true];
                     });
                 }] startWithNext:^(__unused id next)
                 {
@@ -518,8 +522,8 @@
         {
             if (okButtonPressed)
             {
-                TGProgressWindow *progresWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-                [progresWindow show:true];
+                TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                [progressWindow showWithDelay:0.2];
                 
                 if (hide) {
                     __strong TGStickerPacksSettingsController *strongSelf = weakSelf;
@@ -532,7 +536,7 @@
                     {
                         TGDispatchOnMainThread(^
                         {
-                            [progresWindow dismiss:true];
+                            [progressWindow dismiss:true];
                         });
                     }] startWithNext:^(__unused id next)
                     {
@@ -581,7 +585,7 @@
 
 - (void)toggleStickerPack:(TGStickerPack *)stickerPack hidden:(bool)hidden {
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
-    [progressWindow show:true];
+    [progressWindow showWithDelay:0.2];
     
     __weak TGStickerPacksSettingsController *weakSelf = self;
     SSignal *toggleStickerPackHiddenSignal = _masksMode ? [TGMaskStickersSignals toggleStickerPackHidden:stickerPack.packReference hidden:hidden] : [TGStickersSignals toggleStickerPackHidden:stickerPack.packReference hidden:hidden];

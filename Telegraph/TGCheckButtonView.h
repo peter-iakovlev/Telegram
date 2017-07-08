@@ -3,6 +3,7 @@
 typedef enum
 {
     TGCheckButtonStyleDefault,
+    TGCheckButtonStyleDefaultBlue,
     TGCheckButtonStyleBar,
     TGCheckButtonStyleMedia,
     TGCheckButtonStyleGallery,

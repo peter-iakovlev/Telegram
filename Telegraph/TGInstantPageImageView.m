@@ -26,7 +26,7 @@
     id<MediaResource> _fullSizeResource;
     SMetaDisposable *_fetchDisposable;
     SVariable *_data;
-    TGVTAcceleratedVideoView *_videoView;
+    UIView<TGInlineVideoPlayerView> *_videoView;
     bool _isVisible;
     SMetaDisposable *_dataDisposable;
     MediaResourceStatus *_resourceStatus;
@@ -192,7 +192,7 @@
             if ([_media.media isKindOfClass:[TGVideoMediaAttachment class]]) {
                 if ([_arguments isKindOfClass:[TGInstantPageVideoMediaArguments class]] && ((TGInstantPageVideoMediaArguments *)_arguments).autoplay) {
                     if (_videoView == nil) {
-                        _videoView = [[TGVTAcceleratedVideoView alloc] initWithFrame:self.bounds];
+                        _videoView = [[[TGVTAcceleratedVideoView videoViewClass] alloc] initWithFrame:self.bounds];
                         _videoView.userInteractionEnabled = false;
                         [self addSubview:_videoView];
                         __weak TGInstantPageImageView *weakSelf = self;

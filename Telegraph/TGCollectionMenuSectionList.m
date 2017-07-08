@@ -63,6 +63,10 @@
     [_sections removeObjectAtIndex:section];
 }
 
+- (void)deleteSectionByReference:(TGCollectionMenuSection *)section {
+    [_sections removeObject:section];
+}
+
 - (void)addItemToSection:(NSUInteger)section item:(TGCollectionItem *)item
 {
     TGCollectionMenuSection *menuSection = _sections[section];

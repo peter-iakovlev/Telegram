@@ -40,7 +40,8 @@ typedef enum {
     TGMessageActionClearChat = 26,
     TGMessageActionGameScore = 27,
     TGMessageActionPhoneCall = 28,
-    TGMessageActionPaymentSent = 29
+    TGMessageActionPaymentSent = 29,
+    TGMessageActionCustom = 1000
 } TGMessageAction;
 
 @interface TGActionMediaAttachment : TGMediaAttachment <TGMediaAttachmentParser>

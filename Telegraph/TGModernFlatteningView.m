@@ -51,4 +51,25 @@
     self.layer.contents = nil;
 }
 
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    if (self.specialUserInteraction) {
+        UIView *result = nil;
+        for (UIView *view in self.subviews) {
+            if ([view isKindOfClass:[TGModernFlatteningView class]]) {
+                result = [view hitTest:[self convertPoint:point toView:view] withEvent:event];
+            } else if (view.tag == 0xbeef) {
+                result = view;
+                break;
+            }
+        }
+        
+        if (result.tag == 0xbeef && CGRectContainsPoint([self convertRect:result.bounds fromView:result], point))
+            return result;
+        
+        return nil;
+    }
+    
+    return [super hitTest:point withEvent:event];
+}
+
 @end

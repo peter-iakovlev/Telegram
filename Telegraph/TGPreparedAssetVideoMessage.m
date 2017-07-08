@@ -14,7 +14,7 @@
 
 @implementation TGPreparedAssetVideoMessage
 
-- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier assetURL:(NSURL *)assetURL localVideoId:(int64_t)localVideoId imageInfo:(TGImageInfo *)imageInfo duration:(NSTimeInterval)duration dimensions:(CGSize)dimensions adjustments:(NSDictionary *)adjustments useMediaCache:(bool)useMediaCache liveUpload:(bool)liveUpload passthrough:(bool)passthrough caption:(NSString *)caption isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments
+- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier assetURL:(NSURL *)assetURL localVideoId:(int64_t)localVideoId imageInfo:(TGImageInfo *)imageInfo duration:(NSTimeInterval)duration dimensions:(CGSize)dimensions adjustments:(NSDictionary *)adjustments useMediaCache:(bool)useMediaCache liveUpload:(bool)liveUpload passthrough:(bool)passthrough caption:(NSString *)caption isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments roundMessage:(bool)roundMessage
 {
     self = [super init];
     if (self != nil)
@@ -37,6 +37,7 @@
         _mimeType = mimeType;
         _attributes = attributes;
         _stickerDocuments = stickerDocuments;
+        _roundMessage = roundMessage;
         
         self.replyMessage = replyMessage;
         self.replyMarkup = replyMarkup;
@@ -172,6 +173,7 @@
     [videoInfo addVideoWithQuality:1 url:[[NSString alloc] initWithFormat:@"local-video:local%llx.mov", _localVideoId] size:_fileSize];
     videoAttachment.videoInfo = videoInfo;
     videoAttachment.caption = self.caption;
+    videoAttachment.roundMessage = self.roundMessage;
     [attachments addObject:videoAttachment];
     
     TGLocalMessageMetaMediaAttachment *mediaMeta = [[TGLocalMessageMetaMediaAttachment alloc] init];
@@ -187,7 +189,7 @@
     }
     
     message.mediaAttachments = attachments;
-    message.contentProperties = @{@"mediaAsset": [[TGMediaAssetContentProperty alloc] initWithAssetIdentifier:_assetIdentifier assetURL:_assetURL isVideo:true editAdjustments:_adjustments isCloud:_isCloud useMediaCache:_useMediaCache liveUpload:_liveUpload passthrough:_passthrough]};
+    message.contentProperties = @{@"mediaAsset": [[TGMediaAssetContentProperty alloc] initWithAssetIdentifier:_assetIdentifier assetURL:_assetURL isVideo:true editAdjustments:_adjustments isCloud:_isCloud useMediaCache:_useMediaCache liveUpload:_liveUpload passthrough:_passthrough roundMessage:_roundMessage]};
     
     return message;
 }
@@ -224,7 +226,7 @@
     }
     
     message.mediaAttachments = attachments;
-    message.contentProperties = @{@"mediaAsset": [[TGMediaAssetContentProperty alloc] initWithAssetIdentifier:_assetIdentifier assetURL:_assetURL isVideo:true editAdjustments:nil isCloud:_isCloud useMediaCache:false liveUpload:false passthrough:false]};
+    message.contentProperties = @{@"mediaAsset": [[TGMediaAssetContentProperty alloc] initWithAssetIdentifier:_assetIdentifier assetURL:_assetURL isVideo:true editAdjustments:nil isCloud:_isCloud useMediaCache:false liveUpload:false passthrough:false roundMessage:false]};
     
     return message;
 }

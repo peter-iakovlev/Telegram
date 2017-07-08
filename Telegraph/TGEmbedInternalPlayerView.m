@@ -65,11 +65,6 @@
     //[_currentAudioSession dispose];
 }
 
-- (bool)supportsPIP
-{
-    return false;
-}
-
 - (void)setupWithEmbedSize:(CGSize)embedSize
 {
     [super setupWithEmbedSize:embedSize];

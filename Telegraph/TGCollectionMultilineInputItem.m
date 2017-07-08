@@ -22,6 +22,8 @@
 - (CGSize)itemSizeForContainerSize:(CGSize)containerSize {
     _currentContainerWidth = containerSize.width;
     CGFloat textHeight = [TGCollectionMultilineInputItemView heightForText:_text width:containerSize.width];
+    if (_minHeight > FLT_EPSILON)
+        textHeight = MAX(_minHeight, textHeight);
     return CGSizeMake(containerSize.width, textHeight);
 }
 
@@ -67,6 +69,11 @@
     [(TGCollectionMultilineInputItemView *)[self boundView] setEditable:editable];
     
     self.selectable = !editable;
+}
+
+- (void)setText:(NSString *)text {
+    _text = text;
+    ((TGCollectionMultilineInputItemView *)self.boundView).text = text;
 }
 
 - (bool)itemWantsMenu {

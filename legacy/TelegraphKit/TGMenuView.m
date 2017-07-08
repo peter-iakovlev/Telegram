@@ -482,6 +482,12 @@ static UIImage *pagerLeftButtonHighlightedImage() {
             //titleInset.right += 2;
         }
         
+        if (_multiline)
+        {
+            titleInset.left = 9.0f;
+            titleInset.right = 9.0f;
+        }
+        
         buttonView.titleEdgeInsets = titleInset;
     }
 }

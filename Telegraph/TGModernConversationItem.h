@@ -46,7 +46,7 @@ typedef enum {
 - (void)updateProgress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated;
 - (void)updateInlineMediaContext;
 - (void)updateAnimationsEnabled;
-- (void)stopInlineMedia;
+- (void)stopInlineMedia:(int32_t)excludeMid;
 - (void)resumeInlineMedia;
 
 @end

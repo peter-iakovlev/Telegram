@@ -8,6 +8,7 @@
 @interface TGAttachmentSheetCheckmarkVariantItemView () {
     TGModernButton *_button;
     UIImageView *_checkmarkView;
+    UIImageView *_iconView;
     UILabel *_titleLabel;
     UILabel *_variantLabel;
     bool _checked;
@@ -18,6 +19,10 @@
 @implementation TGAttachmentSheetCheckmarkVariantItemView
 
 - (instancetype)initWithTitle:(NSString *)title variant:(NSString *)variant checked:(bool)checked {
+    return [self initWithTitle:title variant:variant checked:checked image:nil];
+}
+
+- (instancetype)initWithTitle:(NSString *)title variant:(NSString *)variant checked:(bool)checked image:(UIImage *)image {
     self = [super init];
     if (self != nil) {
         _button = [[TGModernButton alloc] init];
@@ -27,6 +32,11 @@
         _button.stretchHighlightImage = true;
         _button.highlighted = false;
         [self addSubview:_button];
+        
+        if (image != nil) {
+            _iconView = [[UIImageView alloc] initWithImage:image];
+            [self addSubview:_iconView];
+        }
         
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.backgroundColor = [UIColor clearColor];
@@ -76,6 +86,13 @@
     CGFloat titleOffset = 52.0f;
     if (_disableInsetIfNotChecked && !_checked) {
         titleOffset = 12.0f;
+    }
+    
+    CGFloat imageWidth = 0.0f;
+    if (_iconView != nil) {
+        imageWidth = _iconView.frame.size.width + 8.0f;
+        _iconView.frame = CGRectMake(titleOffset, CGFloor((self.bounds.size.height - _iconView.frame.size.height) / 2.0f), _iconView.frame.size.width, _iconView.frame.size.height);
+        titleOffset += imageWidth;
     }
     
     CGSize titleSize = [_titleLabel.text sizeWithFont:_titleLabel.font];

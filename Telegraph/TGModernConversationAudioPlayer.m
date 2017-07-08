@@ -12,15 +12,12 @@
 
 #import "TGModernConversationAudioPlayerContext.h"
 
-#import "TGAudioPlayer.h"
-
 @interface TGModernConversationAudioPlayer () <TGAudioPlayerDelegate>
 {
     NSString *_filePath;
     bool _music;
     bool _controlAudioSession;
     
-    TGAudioPlayer *_audioPlayer;
     NSTimer *_timer;
     
     TGModernConversationAudioPlayerContext *_inlineMediaContext;

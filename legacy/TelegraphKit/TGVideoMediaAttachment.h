@@ -33,5 +33,6 @@
 @property (nonatomic, readonly) NSArray *textCheckingResults;
 
 @property (nonatomic) bool loopVideo;
+@property (nonatomic) bool roundMessage;
 
 @end

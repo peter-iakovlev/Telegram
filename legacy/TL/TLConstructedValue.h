@@ -11,7 +11,7 @@
 
 #include <Foundation/Foundation.h>
 
-#include <tr1/memory>
+#include <memory>
 
 class TLMetaObject;
 

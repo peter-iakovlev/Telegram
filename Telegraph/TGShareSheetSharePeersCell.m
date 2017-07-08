@@ -1,6 +1,7 @@
 #import "TGShareSheetSharePeersCell.h"
 
 #import "TGLetteredAvatarView.h"
+#import "TGCheckButtonView.h"
 
 #import "TGConversation.h"
 #import "TGUser.h"
@@ -18,6 +19,9 @@
     bool _isSelected;
     bool _isSecret;
     UILongPressGestureRecognizer *_longTapRecognizer;
+    TGCheckButtonView *_checkView;
+    UIImageView *_badgeBackgroundView;
+    UILabel *_badgeLabel;
 }
 
 @end
@@ -28,7 +32,7 @@
     self = [super initWithFrame:frame];
     if (self != nil) {
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 60.0f, 60.0f)];
-        [_avatarView setSingleFontSize:24.0f doubleFontSize:20.0f useBoldFont:false];
+        [_avatarView setSingleFontSize:28.0f doubleFontSize:28.0f useBoldFont:false];
         [self.contentView addSubview:_avatarView];
         
         static UIImage *circleImage = nil;
@@ -149,6 +153,56 @@
     return _peerId;
 }
 
+- (void)setUnreadCount:(int32_t)unreadCount {
+    [self setBadgeText:unreadCount > 0 ? [NSString stringWithFormat:@"%d", unreadCount] : nil];
+}
+
+- (void)setBadgeText:(NSString *)text
+{
+    if (_badgeBackgroundView == nil)
+    {
+        static dispatch_once_t onceToken;
+        static UIImage *badgeBackgroundImage;
+        dispatch_once(&onceToken, ^
+        {
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(22, 22), false, 0);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0, 0, 22, 22));
+            badgeBackgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:12 topCapHeight:12];
+            UIGraphicsEndImageContext();
+        });
+        
+        _badgeBackgroundView = [[UIImageView alloc] initWithImage:badgeBackgroundImage];
+        [self addSubview:_badgeBackgroundView];
+        
+        _badgeLabel = [[UILabel alloc] init];
+        _badgeLabel.backgroundColor = [UIColor clearColor];
+        _badgeLabel.font = TGLightSystemFontOfSize(15);
+        _badgeLabel.textAlignment = NSTextAlignmentCenter;
+        _badgeLabel.textColor = [UIColor whiteColor];
+        [_badgeBackgroundView addSubview:_badgeLabel];
+    }
+    
+    if (text == nil)
+    {
+        _badgeBackgroundView.hidden = true;
+    }
+    else
+    {
+        _badgeBackgroundView.hidden = false;
+        _badgeLabel.text = text;
+        [_badgeLabel sizeToFit];
+        
+        CGFloat badgeWidth = round(_badgeLabel.frame.size.width) + 13.0f;
+        if (badgeWidth < 25.0f)
+            badgeWidth = 22.0f;
+        
+        _badgeBackgroundView.frame = CGRectMake(round(74.0f - 18.0f - badgeWidth / 2.0f), -2.0f, badgeWidth, 22);
+        _badgeLabel.frame = CGRectMake(TGScreenPixelFloor((badgeWidth - _badgeLabel.frame.size.width) / 2), 1.0f + TGScreenPixel, _badgeLabel.frame.size.width, _badgeLabel.frame.size.height);
+    }
+}
+
 - (void)updateSelectedPeerIds:(NSSet *)selectedPeerIds animated:(bool)animated {
     [self updateSelected:[selectedPeerIds containsObject:@(_peerId)] animated:animated];
 }
@@ -168,6 +222,18 @@
         }
         
         _selectedCircleView.hidden = !selected;
+        
+        if (_isSelected && _checkView == nil)
+        {
+            _checkView = [[TGCheckButtonView alloc] initWithStyle:TGCheckButtonStyleShare];
+            _checkView.userInteractionEnabled = false;
+            [_checkView setSelected:true animated:false];
+            [self addSubview:_checkView];
+        }
+        else if (_checkView != nil)
+        {
+            [_checkView setSelected:selected animated:false];
+        }
     }
 }
 
@@ -178,7 +244,9 @@
     _selectedCircleView.center = _avatarView.center;
     
     CGSize titleSize = [_titleLabel.text sizeWithFont:_titleLabel.font];
-    _titleLabel.frame = CGRectMake(0.0f, CGRectGetMaxY(_avatarView.frame) + 4.0f, self.bounds.size.width, titleSize.height);
+    _titleLabel.frame = CGRectMake(0.0f, 64.0f, self.bounds.size.width, titleSize.height);
+    
+    _checkView.frame = CGRectMake(self.bounds.size.width / 2.0f + 30.0f - _checkView.frame.size.width + 6.0f, 60.0f - _checkView.frame.size.height + 6.0f, _checkView.frame.size.width, _checkView.frame.size.height);
 }
 
 - (void)setLongTap:(void (^)(int64_t))longTap {

@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x45f41192;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLPhoneCallDiscardReason$phoneCallDiscardReasonMissed *object = [[TLPhoneCallDiscardReason$phoneCallDiscardReasonMissed alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0x957ab535;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLPhoneCallDiscardReason$phoneCallDiscardReasonDisconnect *object = [[TLPhoneCallDiscardReason$phoneCallDiscardReasonDisconnect alloc] init];
     return object;
@@ -98,7 +98,7 @@
     return (int32_t)0x36169835;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLPhoneCallDiscardReason$phoneCallDiscardReasonHangup *object = [[TLPhoneCallDiscardReason$phoneCallDiscardReasonHangup alloc] init];
     return object;
@@ -124,7 +124,7 @@
     return (int32_t)0xcce41369;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLPhoneCallDiscardReason$phoneCallDiscardReasonBusy *object = [[TLPhoneCallDiscardReason$phoneCallDiscardReasonBusy alloc] init];
     return object;

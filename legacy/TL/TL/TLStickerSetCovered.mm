@@ -21,7 +21,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -48,7 +48,7 @@
     return (int32_t)0x41bf2fa7;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLStickerSetCovered$stickerSetCovered *object = [[TLStickerSetCovered$stickerSetCovered alloc] init];
     object.set = metaObject->getObject((int32_t)0xb2c820f9);
@@ -88,7 +88,7 @@
     return (int32_t)0x511fc2e1;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLStickerSetCovered$stickerSetMultiCovered *object = [[TLStickerSetCovered$stickerSetMultiCovered alloc] init];
     object.set = metaObject->getObject((int32_t)0xb2c820f9);

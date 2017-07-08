@@ -63,14 +63,14 @@ static void setViewFrame(UIView *view, CGRect frame)
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(16, 16), false, 0.0f);
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(33, 33), false, 0.0f);
             CGContextRef context = UIGraphicsGetCurrentContext();
             CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffff, 0.1f).CGColor);
             
-            UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, 16, 16) cornerRadius:5];
+            UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, 33, 33) cornerRadius:16.5f];
             [path fill];
             
-            fieldBackgroundImage = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(8, 8, 8, 8)];
+            fieldBackgroundImage = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(16, 16, 16, 16)];
             UIGraphicsEndImageContext();
         });
         
@@ -787,11 +787,6 @@ static void setViewFrame(UIView *view, CGRect frame)
 
 #pragma mark - Style
 
-- (UIFont *)_setButtonFont
-{
-    return TGMediumSystemFontOfSize(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone ? 17 : 18);
-}
-
 - (UIEdgeInsets)_inputFieldInsets
 {
     static UIEdgeInsets insets;
@@ -799,9 +794,9 @@ static void setViewFrame(UIView *view, CGRect frame)
     dispatch_once(&onceToken, ^
     {
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
-            insets = UIEdgeInsetsMake(9.0f, 9.0f, 9.0f, 9.0f);
+            insets = UIEdgeInsetsMake(6.0f, 6.0f, 6.0f, 6.0f);
         else
-            insets = UIEdgeInsetsMake(12.0f, 12.0f, 12.0f, 12.0f);
+            insets = UIEdgeInsetsMake(11.0f, 11.0f, 11.0f, 11.0f);
     });
     
     return insets;
@@ -813,10 +808,10 @@ static void setViewFrame(UIView *view, CGRect frame)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
-            insets = UIEdgeInsetsMake(-4 - TGRetinaPixel, 1.0f, 0.0f, 0.0f);
+        if (!TGIsPad())
+            insets = UIEdgeInsetsMake(-3.0f, 8.0f, 0.0f, 0.0f);
         else
-            insets = UIEdgeInsetsMake(-1, 4.0f, 0.0f, 0.0f);
+            insets = UIEdgeInsetsMake(-2.0f, 8.0f, 0.0f, 0.0f);
     });
     
     return insets;
@@ -828,10 +823,10 @@ static void setViewFrame(UIView *view, CGRect frame)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
-            offset = CGPointMake(5.0f, 3.0f);
+        if (!TGIsPad())
+            offset = CGPointMake(12.0f, 5.0f + TGScreenPixel);
         else
-            offset = CGPointMake(8.0f, 5.0f);
+            offset = CGPointMake(12.0f, 6.0f);
     });
     
     return offset;
@@ -846,7 +841,7 @@ static void setViewFrame(UIView *view, CGRect frame)
         inputFieldHeight += 4;
     
     UIEdgeInsets inputFieldInsets = [self _inputFieldInsets];
-    CGFloat height = MAX([self baseHeight], inputFieldHeight - 8 + inputFieldInsets.top + inputFieldInsets.bottom);
+    CGFloat height = MAX([self baseHeight], inputFieldHeight - 4 + inputFieldInsets.top + inputFieldInsets.bottom);
     
     return height;
 }
@@ -857,7 +852,7 @@ static void setViewFrame(UIView *view, CGRect frame)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        value = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone ? 46.0f : 57.0f;
+        value = !TGIsPad() ? 45.0f : 56.0f;
     });
     
     return value;
@@ -931,7 +926,7 @@ static void setViewFrame(UIView *view, CGRect frame)
     UIEdgeInsets inputFieldInternalEdgeInsets = [self _inputFieldInternalEdgeInsets];
     CGRect onelineFrame = _fieldBackground.frame;
     onelineFrame.origin.x += inputFieldInternalEdgeInsets.left + 5;
-    onelineFrame.origin.y += inputFieldInternalEdgeInsets.top;
+    onelineFrame.origin.y += inputFieldInternalEdgeInsets.top + TGScreenPixel;
     onelineFrame.size.width -= inputFieldInternalEdgeInsets.left * 2 + 10;
     onelineFrame.size.height = 36;
     setViewFrame(_inputFieldOnelineLabel, onelineFrame);

@@ -1,5 +1,7 @@
 #import "PGCameraMovieWriter.h"
 
+#import "TGMediaLiveUploadWatcher.h"
+
 #import <SSignalKit/SSignalKit.h>
 #import "TGImageUtils.h"
 #import "TGPhotoEditorUtils.h"
@@ -30,6 +32,8 @@
     
     bool _stopIminent;
     void (^_finishCompletion)(void);
+    
+    TGMediaLiveUploadWatcher *_watcher;
 }
 @end
 
@@ -66,6 +70,9 @@
         
         if ([[NSFileManager defaultManager] fileExistsAtPath:path])
             [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+        
+        if (self.liveUpload)
+            _watcher = [[TGMediaLiveUploadWatcher alloc] init];
         
         _assetWriter = [[AVAssetWriter alloc] initWithURL:[NSURL fileURLWithPath:path] fileType:[PGCameraMovieWriter outputFileType] error:&error];
 
@@ -106,6 +113,8 @@
         
         [_assetWriter startWriting];
         _isRecording = true;
+        
+        [_watcher setupWithFileURL:[NSURL fileURLWithPath:path]];
     }];
 }
 
@@ -124,7 +133,7 @@
             TGDispatchOnMainThread(^
             {
                 if (self.finishedWithMovieAtURL != nil)
-                    self.finishedWithMovieAtURL(nil, CGAffineTransformIdentity, CGSizeZero, 0.0, false);
+                    self.finishedWithMovieAtURL(nil, CGAffineTransformIdentity, CGSizeZero, 0.0, nil, false);
                 TGLog(@"ERROR: camera movie writer failed to write movie: %@", _assetWriter.error);
                 
                 _assetWriter = nil;
@@ -157,16 +166,20 @@
             {
                 if (strongSelf.finishedWithMovieAtURL != nil)
                 {
+                    id liveUploadData = nil;
+                    if (strongSelf->_watcher != nil)
+                        liveUploadData = [strongSelf->_watcher fileUpdated:true];
+                    
                     AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:strongSelf->_assetWriter.outputURL options:nil];
                     AVAssetTrack *track = [[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];
                     CGSize dimensions = TGTransformDimensionsWithTransform(track.naturalSize, strongSelf->_videoTransform);
-                    strongSelf.finishedWithMovieAtURL(strongSelf->_assetWriter.outputURL, strongSelf->_videoTransform, dimensions, strongSelf.currentDuration, true);
+                    strongSelf.finishedWithMovieAtURL(strongSelf->_assetWriter.outputURL, strongSelf->_videoTransform, dimensions, strongSelf.currentDuration, liveUploadData, true);
                 }
             }
             else
             {
                 if (strongSelf.finishedWithMovieAtURL != nil)
-                    strongSelf.finishedWithMovieAtURL(strongSelf->_assetWriter.outputURL, CGAffineTransformIdentity, CGSizeZero, 0.0, false);
+                    strongSelf.finishedWithMovieAtURL(strongSelf->_assetWriter.outputURL, CGAffineTransformIdentity, CGSizeZero, 0.0, nil, false);
                 TGLog(@"ERROR: camera movie writer failed to write movie: %@", strongSelf->_assetWriter.error);
             }
             
@@ -197,7 +210,7 @@
                 _isRecording = false;
                 
                 if (self.finishedWithMovieAtURL != nil)
-                    self.finishedWithMovieAtURL(_assetWriter.outputURL, CGAffineTransformIdentity, CGSizeZero, 0.0, false);
+                    self.finishedWithMovieAtURL(_assetWriter.outputURL, CGAffineTransformIdentity, CGSizeZero, 0.0, nil, false);
             }
             return;
         }

@@ -80,7 +80,7 @@
     [super layoutSubviews];
     
     _backgroundView.frame = self.bounds;
-    _stripeLayer.frame = CGRectMake(0.0f, self.frame.size.height - TGRetinaPixel, self.frame.size.width, TGRetinaPixel);
+    _stripeLayer.frame = CGRectMake(0.0f, self.frame.size.height - TGScreenPixel, self.frame.size.width, TGScreenPixel);
     
     if (_actionButton.hidden)
     {

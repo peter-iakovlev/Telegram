@@ -60,6 +60,10 @@
         object.inlineBotPlaceholder = [is readString];
     }
     
+    if (object.flags & (1 << 22)) {
+        __unused NSString *langCode = [is readString];
+    }
+    
     return object;
 }
 

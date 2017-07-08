@@ -111,6 +111,8 @@ typedef enum {
 
 @property (nonatomic, readonly) UIUserInterfaceSizeClass currentSizeClass;
 
+@property (nonatomic, copy) NSArray<id<UIPreviewActionItem>> *(^externalPreviewActionItems)(void);
+
 - (void)setExplicitTableInset:(UIEdgeInsets)explicitTableInset scrollIndicatorInset:(UIEdgeInsets)scrollIndicatorInset;
 
 - (void)adjustToInterfaceOrientation:(UIInterfaceOrientation)orientation;

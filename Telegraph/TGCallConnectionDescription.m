@@ -6,8 +6,8 @@
     self = [super init];
     if (self != nil) {
         _identifier = identifier;
-        _ipv4 = ipv4;
-        _ipv6 = ipv6;
+        _ipv4 = ipv4 ?: @"";
+        _ipv6 = ipv6 ?: @"";
         _port = port;
         _peerTag = peerTag;
     }

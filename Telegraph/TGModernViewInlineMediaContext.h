@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-#import <MtProtoKit/MTTime.h>
+#import <MTProtoKit/MTTime.h>
 
 @protocol TGModernViewInlineMediaContextDelegate <NSObject>
 

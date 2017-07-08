@@ -51,9 +51,18 @@
     [view setTitleAlignment:_alignment];
     [view setEnabled:_enabled];
     [view setIcon:_icon];
+    [view setIconOffset:_iconOffset];
     
     view.leftInset = _leftInset;
     [view setAdditionalSeparatorInset:_additionalSeparatorInset];
+}
+
+- (void)setIconOffset:(CGPoint)iconOffset
+{
+    _iconOffset = iconOffset;
+    
+    if (self.view != nil)
+        [(TGButtonCollectionItemView *)self.view setIconOffset:iconOffset];
 }
 
 - (void)setTitle:(NSString *)title

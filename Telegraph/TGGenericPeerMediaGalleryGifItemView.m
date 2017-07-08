@@ -18,7 +18,7 @@
 @interface TGGenericPeerMediaGalleryGifItemView ()
 {
     UIView *_wrapperView;
-    TGVTAcceleratedVideoView *_videoView;
+    UIView<TGInlineVideoPlayerView> *_videoView;
     
     SMetaDisposable *_converterDisposable;
 }
@@ -134,7 +134,7 @@
                 if (exists) {
                     if ([document.mimeType isEqualToString:@"video/mp4"]) {
                         [strongSelf->_videoView removeFromSuperview];
-                        strongSelf->_videoView = [[TGVTAcceleratedVideoView alloc] initWithFrame:strongSelf->_wrapperView.bounds];
+                        strongSelf->_videoView = [[[TGVTAcceleratedVideoView videoViewClass] alloc] initWithFrame:strongSelf->_wrapperView.bounds];
                         strongSelf->_videoView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
                         [strongSelf->_wrapperView addSubview:strongSelf->_videoView];
                         [strongSelf->_videoView setPath:filePath];
@@ -183,7 +183,7 @@
                             if (strongSelf != nil && [document isEqual:((TGGenericPeerMediaGalleryGifItem *)strongSelf.item).media])
                             {
                                 [strongSelf->_videoView removeFromSuperview];
-                                strongSelf->_videoView = [[TGVTAcceleratedVideoView alloc] initWithFrame:strongSelf->_wrapperView.bounds];
+                                strongSelf->_videoView = [[[TGVTAcceleratedVideoView videoViewClass] alloc] initWithFrame:strongSelf->_wrapperView.bounds];
                                 strongSelf->_videoView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
                                 [strongSelf->_wrapperView addSubview:strongSelf->_videoView];
                                 [strongSelf->_videoView setPath:path];

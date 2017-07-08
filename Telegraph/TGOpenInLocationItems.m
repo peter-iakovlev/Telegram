@@ -42,6 +42,10 @@ NSString *const TGOpenInLocationDirectionsKey = @"directions";
 
 @end
 
+@interface TGOpenInLyftItem : TGOpenInLocationItem
+
+@end
+
 @interface TGOpenInCitymapperItem : TGOpenInLocationItem
 
 @end
@@ -61,20 +65,21 @@ NSString *const TGOpenInLocationDirectionsKey = @"directions";
     static dispatch_once_t onceToken;
     static NSArray *appItems;
     dispatch_once(&onceToken, ^
-    {
-        appItems = @
-        [
-            [TGOpenInFoursquareItem class],
-            [TGOpenInMapsItem class],
-            [TGOpenInGoogleMapsItem class],
-            [TGOpenInUberItem class],
-            [TGOpenInCitymapperItem class],
-            [TGOpenInYandexNavigatorItem class],
-            [TGOpenInYandexMapsItem class],
-            [TGOpenInHereItem class],
-            [TGOpenInWazeItem class]
-         ];
-    });
+                  {
+                      appItems = @
+                      [
+                       [TGOpenInFoursquareItem class],
+                       [TGOpenInMapsItem class],
+                       [TGOpenInGoogleMapsItem class],
+                       [TGOpenInYandexMapsItem class],
+                       [TGOpenInUberItem class],
+                       [TGOpenInLyftItem class],
+                       [TGOpenInCitymapperItem class],
+                       [TGOpenInYandexNavigatorItem class],
+                       [TGOpenInHereItem class],
+                       [TGOpenInWazeItem class]
+                       ];
+                  });
     return appItems;
 }
 
@@ -369,7 +374,7 @@ NSString *const TGOpenInLocationDirectionsKey = @"directions";
 {
     TGLocationMediaAttachment *location = (TGLocationMediaAttachment *)self.object;
     TGVenueAttachment *venue = location.venue;
-        
+    
     NSURL *openInURL = [NSURL URLWithString:[NSString stringWithFormat:@"foursquare://venues/%@", venue.venueId]];
     [TGOpenInLocationItem openURL:openInURL];
 }
@@ -418,7 +423,7 @@ NSString *const TGOpenInLocationDirectionsKey = @"directions";
     
     TGVenueAttachment *venue = location.venue;
     NSString *dropoffName = venue.title.length > 0 ? [TGStringUtils stringByEscapingForURL:venue.title] : @"";
-    NSString *dropoffAddress = venue.address.length > 0 ?  [TGStringUtils stringByEscapingForURL:venue.address] : @"";
+    NSString *dropoffAddress = venue.address.length > 0 ? [TGStringUtils stringByEscapingForURL:venue.address] : @"";
     NSString *productId = @"";
     
     NSURL *openInURL = [NSURL URLWithString:[[NSString alloc] initWithFormat:@"uber://?client_id=&action=setPickup&pickup=my_location&dropoff[latitude]=%f&dropoff[longitude]=%f&dropoff[nickname]=%@&dropoff[formatted_address]=%@&product_id=%@&link_text=&partner_deeplink=", coordinate.latitude, coordinate.longitude, dropoffName, dropoffAddress, productId]];
@@ -431,12 +436,34 @@ NSString *const TGOpenInLocationDirectionsKey = @"directions";
     return @"uber";
 }
 
-+ (bool)canOpen:(id)object directions:(bool)directions
+@end
+
+
+@implementation TGOpenInLyftItem
+
+- (NSString *)title
 {
-    if (!directions)
-        return false;
+    return @"Lyft";
+}
+
+- (NSInteger)storeIdentifier
+{
+    return 529379082;
+}
+
+- (void)performOpenIn
+{
+    TGLocationMediaAttachment *location = (TGLocationMediaAttachment *)self.object;
+    CLLocationCoordinate2D coordinate = [TGOpenInLocationItem coordinateForLocation:location];
     
-    return [super canOpen:object directions:directions];
+    NSURL *openInURL = [NSURL URLWithString:[[NSString alloc] initWithFormat:@"lyft://ridetype?id=lyft&destination[latitude]=%f&destination[longitude]=%f", coordinate.latitude, coordinate.longitude]];
+    
+    [TGOpenInLocationItem openURL:openInURL];
+}
+
++ (NSString *)defaultURLScheme
+{
+    return @"lyft";
 }
 
 @end

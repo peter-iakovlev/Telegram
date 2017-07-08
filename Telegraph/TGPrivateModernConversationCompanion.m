@@ -187,7 +187,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 
 - (bool)shouldDisplayContactLinkPanel
 {
-    if (_conversationId == [TGTelegraphInstance serviceUserUid] || _conversationId == TGTelegraphInstance.clientUserId)
+    if (_conversationId == [TGTelegraphInstance serviceUserUid] || _conversationId == [TGTelegraphInstance voipSupportUserUid] || _conversationId == TGTelegraphInstance.clientUserId)
         return false;
     return true;
 }
@@ -500,6 +500,9 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     if (user.uid == [TGTelegraphInstance serviceUserUid])
         return @"Telegram";
     
+    if (user.uid == [TGTelegraphInstance voipSupportUserUid])
+        return @"VoIP Support";
+    
     if (isContact || user.phoneNumber.length == 0)
         return user.displayName;
     
@@ -524,7 +527,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         {
             if (accentColored != NULL)
                 *accentColored = true;
-            return TGLocalizedStatic(@"Presence.online");
+            return TGLocalized(@"Presence.online");
         }
         else if (user.presence.lastSeen != 0)
             return [TGDateUtils stringForRelativeLastSeen:user.presence.lastSeen];
@@ -539,6 +542,10 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         return TGLocalized(@"Activity.RecordingAudio");
     else if ([activity isEqualToString:@"uploadingAudio"])
         return TGLocalized(@"Activity.UploadingAudio");
+    else if ([activity isEqualToString:@"recordingVideoMessage"])
+        return TGLocalized(@"Activity.RecordingVideoMessage");
+    else if ([activity isEqualToString:@"uploadingVideoMessage"])
+        return TGLocalized(@"Activity.UploadingVideoMessage");
     else if ([activity isEqualToString:@"uploadingPhoto"])
         return TGLocalized(@"Activity.UploadingPhoto");
     else if ([activity isEqualToString:@"uploadingVideo"])
@@ -557,6 +564,8 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 {
     if ([activity isEqualToString:@"recordingAudio"])
         return TGModernConversationTitleViewActivityAudioRecording;
+    else if ([activity isEqualToString:@"recordingVideoMessage"])
+        return TGModernConversationTitleViewActivityVideoMessageRecording;
     else if ([activity isEqualToString:@"uploadingPhoto"])
         return TGModernConversationTitleViewActivityUploading;
     else if ([activity isEqualToString:@"uploadingVideo"])
@@ -686,7 +695,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         }
         return _botStartPanel;
     }
-    return _unblockPanel;
+    return nil;
 }
 
 - (UIView *)_conversationHeader
@@ -723,6 +732,11 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     return TGAppDelegateInstance.autoDownloadAudioInPrivateChats;
 }
 
+- (bool)shouldAutomaticallyDownloadVideoMessages
+{
+    return TGAppDelegateInstance.autoDownloadVideoMessageInPrivateChats;
+}
+
 - (NSString *)_sendMessagePathForMessageId:(int32_t)mid
 {
     return [[NSString alloc] initWithFormat:@"/tg/sendCommonMessage/(%@)/(%d)", [self _conversationIdPathComponent], mid];
@@ -756,40 +770,37 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 
 - (void)_createOrUpdatePrimaryTitlePanel:(bool)createIfNeeded
 {
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+    TGModernConversationController *controller = self.controller;
+    
+    TGModernConversationPrivateTitlePanel *privateTitlePanel = nil;
+    if ([[controller primaryTitlePanel] isKindOfClass:[TGModernConversationPrivateTitlePanel class]])
+        privateTitlePanel = (TGModernConversationPrivateTitlePanel *)[controller primaryTitlePanel];
+    else
     {
-        TGModernConversationController *controller = self.controller;
-        
-        TGModernConversationPrivateTitlePanel *privateTitlePanel = nil;
-        if ([[controller primaryTitlePanel] isKindOfClass:[TGModernConversationPrivateTitlePanel class]])
-            privateTitlePanel = (TGModernConversationPrivateTitlePanel *)[controller primaryTitlePanel];
-        else
+        if (createIfNeeded)
         {
-            if (createIfNeeded)
-            {
-                privateTitlePanel = [[TGModernConversationPrivateTitlePanel alloc] init];
-                privateTitlePanel.companionHandle = self.actionHandle;
-            }
-            else
-                return;
+            privateTitlePanel = [[TGModernConversationPrivateTitlePanel alloc] init];
+            privateTitlePanel.companionHandle = self.actionHandle;
         }
-        
-        NSMutableArray *actions = [[NSMutableArray alloc] init];
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": [UIImage imageNamed:@"PanelSearchIcon"], @"action": @"search"}];
-        if (_isMuted)
-            [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionUnmute"], TGAccentColor()), @"action": @"unmute"}];
         else
-            [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionMute"], TGAccentColor()), @"action": @"mute"}];
-        
-        if (_supportsCalls) {
-            [actions addObject:@{@"title": TGLocalized(@"Conversation.Call"), @"icon": TGTintedImage([UIImage imageNamed:@"TabIconCalls"], TGAccentColor()), @"action": @"call"}];
-        }
-        
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": [UIImage imageNamed:@"PanelInfoIcon"], @"action": @"info"}];
-        [privateTitlePanel setButtonsWithTitlesAndActions:actions];
-
-        [controller setPrimaryTitlePanel:privateTitlePanel];
+            return;
     }
+    
+    NSMutableArray *actions = [[NSMutableArray alloc] init];
+    [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": [UIImage imageNamed:@"PanelSearchIcon"], @"action": @"search"}];
+    if (_isMuted)
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionUnmute"], TGAccentColor()), @"action": @"unmute"}];
+    else
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionMute"], TGAccentColor()), @"action": @"mute"}];
+    
+    if (_supportsCalls) {
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Call"), @"icon": TGTintedImage([UIImage imageNamed:@"TabIconCalls"], TGAccentColor()), @"action": @"call"}];
+    }
+    
+    [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": [UIImage imageNamed:@"PanelInfoIcon"], @"action": @"info"}];
+    [privateTitlePanel setButtonsWithTitlesAndActions:actions];
+
+    [controller setPrimaryTitlePanel:privateTitlePanel];
 }
 
 - (void)_loadControllerPrimaryTitlePanel
@@ -1258,15 +1269,17 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 }
 
 - (void)startVoiceCall {
-    if (_callsPrivate)
-    {
+    if (_callsPrivate) {
         TGUser *user = [TGDatabaseInstance() loadUser:_uid];
         [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.ConnectionErrorTitle") message:[NSString stringWithFormat:TGLocalized(@"Call.PrivacyErrorMessage"), user.displayFirstName] cancelButtonTitle:TGLocalized(@"OK") okButtonTitle:nil completionBlock:nil] show];
     }
-    else
-    {
+    else {
         [[TGInterfaceManager instance] callPeerWithId:_uid];
     }
+}
+
+- (bool)supportsCalls {
+    return _supportsCalls;
 }
 
 @end

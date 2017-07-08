@@ -183,7 +183,9 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
                     CGRect rect = CGRectMake(0, 0, size.width, size.height);
                     UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
                     CGContextRef context = UIGraphicsGetCurrentContext();
-                    CGContextSetFillColorWithColor(context, TGColorWithHex(0x29c519).CGColor);
+                    
+                    UIColor *color = style == TGCheckButtonStyleDefaultBlue ? TGAccentColor() : TGColorWithHex(0x29c519);
+                    CGContextSetFillColorWithColor(context, color.CGColor);
                     CGContextFillEllipseInRect(context, CGRectInset(rect, insideInset, insideInset));
                     
                     fillImage = UIGraphicsGetImageFromCurrentImageContext();

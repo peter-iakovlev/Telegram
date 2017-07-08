@@ -26,9 +26,7 @@
     
     UIView *_inputFieldClippingContainer;
     HPGrowingTextView *_inputField;
-    
-    CGFloat _sendButtonWidth;
-    
+        
     NSArray *_modeButtons;
     TGModernConversationAssociatedInputPanel *_associatedPanel;
     TGStickerKeyboardView *_stickerKeyboardView;
@@ -49,8 +47,6 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        _sendButtonWidth = MIN(100.0f, [TGLocalized(@"Conversation.Send") sizeWithFont:TGMediumSystemFontOfSize(17)].width + 8.0f);
-        
         _wrapperView = [[UIView alloc] initWithFrame:self.bounds];
         _wrapperView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [self addSubview:_wrapperView];
@@ -64,7 +60,7 @@
         _fieldBackground = [[UIView alloc] initWithFrame:CGRectZero];
         _fieldBackground.alpha = 0.82f;
         _fieldBackground.backgroundColor = UIColorRGB(0x666666);
-        _fieldBackground.layer.cornerRadius = 5;
+        _fieldBackground.layer.cornerRadius = 16;
         [_wrapperView addSubview:_fieldBackground];
         
         UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleFieldBackgroundTap:)];
@@ -78,24 +74,25 @@
             stickerImage = TGTintedImage([UIImage imageNamed:@"ConversationInputFieldStickerIcon.png"], UIColorRGB(0xffffff));
             keyboardImage = TGTintedImage([UIImage imageNamed:@"ConversationInputFieldKeyboardIcon.png"], UIColorRGB(0xffffff));
         });
-        
+
         _stickerModeButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 28, 28)];
         _stickerModeButton.adjustsImageWhenHighlighted = false;
+        _stickerModeButton.alpha = 0.8f;
         _stickerModeButton.exclusiveTouch = true;
         [_stickerModeButton setImage:stickerImage forState:UIControlStateNormal];
         [_stickerModeButton addTarget:self action:@selector(stickerModeButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         
         _keyboardModeButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 28, 28)];
         _keyboardModeButton.adjustsImageWhenHighlighted = false;
+        _keyboardModeButton.alpha = 0.8f;
         _keyboardModeButton.exclusiveTouch = true;
         [_keyboardModeButton setImage:keyboardImage forState:UIControlStateNormal];
         [_keyboardModeButton addTarget:self action:@selector(keyboardModeButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         
-        _sendButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, _sendButtonWidth, self.frame.size.height)];
+        _sendButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, self.frame.size.height, self.frame.size.height)];
         _sendButton.enabled = false;
-        _sendButton.titleLabel.font = TGMediumSystemFontOfSize(17);
-        [_sendButton setTitle:TGLocalized(@"Conversation.Send") forState:UIControlStateNormal];
-        [_sendButton setTitleColor:[UIColor whiteColor]];
+        _sendButton.adjustsImageWhenHighlighted = false;
+        [_sendButton setImage:[UIImage imageNamed:@"NotificationSend"] forState:UIControlStateNormal];
         [_sendButton addTarget:self action:@selector(sendButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_sendButton];
         
@@ -573,9 +570,6 @@
 
 - (void)localizationUpdated
 {
-    _sendButtonWidth = MIN(100.0f, [TGLocalized(@"Conversation.Send") sizeWithFont:TGMediumSystemFontOfSize(17)].width + 8.0f);
-    [_sendButton setTitle:TGLocalized(@"Conversation.Send") forState:UIControlStateNormal];
-    [self setNeedsLayout];
 }
 
 - (void)reset
@@ -590,7 +584,7 @@
 
 - (CGFloat)_baseHeight
 {
-    return 46;
+    return 45;
 }
 
 - (UIEdgeInsets)_inputFieldInsets
@@ -599,7 +593,7 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        insets = UIEdgeInsetsMake(9.0f, 9.0f, 9.0f, 0.0f);
+        insets = UIEdgeInsetsMake(9.0f, 7.0f - TGScreenPixel, 13.0f, 0.0f);
     });
     
     return insets;
@@ -611,7 +605,7 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        insets = UIEdgeInsetsMake(-4 - TGRetinaPixel, 1.0f, 0.0f, 0.0f);
+        insets = UIEdgeInsetsMake(-2.0f - TGScreenPixel, 8.0f, 0.0f, 0.0f);
     });
     
     return insets;
@@ -627,18 +621,10 @@
 
 - (CGFloat)heightForInputFieldHeight:(CGFloat)inputFieldHeight
 {
-    if (inputFieldHeight < FLT_EPSILON)
-        inputFieldHeight = 36;
-    
     UIEdgeInsets inputFieldInsets = [self _inputFieldInsets];
-    CGFloat height = MAX([self _baseHeight], inputFieldHeight - 8 + inputFieldInsets.top + inputFieldInsets.bottom);
+    CGFloat height = MAX([self _baseHeight], inputFieldHeight - 4 + inputFieldInsets.top + inputFieldInsets.bottom);
     
     return height;
-}
-
-- (UIEdgeInsets)edgeInsets
-{
-    return UIEdgeInsetsMake(9, 9, 9, 50);
 }
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
@@ -685,8 +671,8 @@ static void setViewFrame(UIView *view, CGRect frame)
     _separatorView.frame = CGRectMake(0, 0, frame.size.width, _separatorView.frame.size.height);
     
     UIEdgeInsets inputFieldInsets = [self _inputFieldInsets];
-    CGFloat inputContainerHeight = [self heightForInputFieldHeight:self.isFirstResponder ? _inputField.frame.size.height : 0];
-    setViewFrame(_fieldBackground, CGRectMake(inputFieldInsets.left, inputFieldInsets.top, frame.size.width - inputFieldInsets.left - inputFieldInsets.right - _sendButtonWidth, inputContainerHeight - inputFieldInsets.top - inputFieldInsets.bottom));
+    CGFloat inputContainerHeight = [self heightForInputFieldHeight:_inputField.frame.size.height];
+    setViewFrame(_fieldBackground, CGRectMake(inputFieldInsets.left, inputFieldInsets.top, frame.size.width - inputFieldInsets.left - inputFieldInsets.right - _sendButton.frame.size.width, MAX(32, inputContainerHeight - inputFieldInsets.top - inputFieldInsets.bottom)));
     
     UIEdgeInsets inputFieldInternalEdgeInsets = [self _inputFieldInternalEdgeInsets];
     
@@ -700,11 +686,11 @@ static void setViewFrame(UIView *view, CGRect frame)
         setViewFrame(_inputField, inputFieldFrame);
     }
 
-    _sendButton.frame = CGRectMake(frame.size.width - _sendButton.frame.size.width, frame.size.height - _sendButton.frame.size.height, _sendButtonWidth, _sendButton.frame.size.height);
+    _sendButton.frame = CGRectMake(frame.size.width - _sendButton.frame.size.width, frame.size.height - _sendButton.frame.size.height - 2.0f, _sendButton.frame.size.width, _sendButton.frame.size.height);
 
-    _stickerModeButton.frame = CGRectMake(CGRectGetMaxX(_fieldBackground.frame) - _stickerModeButton.frame.size.width - 4.0f, CGRectGetMinY(_fieldBackground.frame), _stickerModeButton.frame.size.width, _stickerModeButton.frame.size.height);
+    _stickerModeButton.frame = CGRectMake(CGRectGetMaxX(_fieldBackground.frame) - _stickerModeButton.frame.size.width - 4.0f, CGRectGetMinY(_fieldBackground.frame) + 2.0f, _stickerModeButton.frame.size.width, _stickerModeButton.frame.size.height);
     
-    _keyboardModeButton.frame = CGRectMake(CGRectGetMaxX(_fieldBackground.frame) - _keyboardModeButton.frame.size.width - 4.0f, CGRectGetMinY(_fieldBackground.frame), _keyboardModeButton.frame.size.width, _keyboardModeButton.frame.size.height);
+    _keyboardModeButton.frame = CGRectMake(CGRectGetMaxX(_fieldBackground.frame) - _keyboardModeButton.frame.size.width - 4.0f, CGRectGetMinY(_fieldBackground.frame) + 2.0f, _keyboardModeButton.frame.size.width, _keyboardModeButton.frame.size.height);
 }
 
 @end

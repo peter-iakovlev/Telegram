@@ -10,4 +10,6 @@
 
 - (void)setStyle:(TGStickerKeyboardViewStyle)style;
 
+- (void)setInnerAlpha:(CGFloat)innerAlpha;
+
 @end

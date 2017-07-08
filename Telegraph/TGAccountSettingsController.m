@@ -67,6 +67,8 @@
 
 #import "TGStickersSignals.h"
 
+#import "TGLocalizationSelectionController.h"
+
 @interface TGAccountSettingsController () <TGWallpaperControllerDelegate>
 {
     int32_t _uid;
@@ -83,6 +85,7 @@
     TGVariantCollectionItem *_usernameItem;
     TGVariantCollectionItem *_phoneNumberItem;
     TGVariantCollectionItem *_aboutItem;
+    TGVariantCollectionItem *_languageItem;
     
     TGDisclosureActionCollectionItem *_notificationsItem;
     TGDisclosureActionCollectionItem *_privacySettingsItem;
@@ -201,7 +204,8 @@
         _phoneNumberItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.PhoneNumber") action:@selector(phoneNumberPressed)];
         _usernameItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.Username") action:@selector(usernamePressed)];
         _aboutItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.About") action:@selector(aboutPressed)];
-        TGCollectionMenuSection *usernameSection = [[TGCollectionMenuSection alloc] initWithItems:@[_phoneNumberItem, _usernameItem/*, _aboutItem*/]];
+        _languageItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.AppLanguage") variant:TGLocalized(@"Localization.LanguageName") action:@selector(languagePressed)];
+        TGCollectionMenuSection *usernameSection = [[TGCollectionMenuSection alloc] initWithItems:@[_phoneNumberItem, _usernameItem, _languageItem]];
         [self.menuSections addSection:usernameSection];
         
         _supportItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.Support") action:@selector(supportPressed)];
@@ -981,6 +985,7 @@
     _privacySettingsItem.title = TGLocalized(@"Settings.PrivacySettings");
     _chatSettingsItem.title = TGLocalized(@"Settings.ChatSettings");
     
+    _stickerSettingsItem.title = TGLocalized(@"ChatSettings.Stickers");
     
     _setProfilePhotoItem.title = TGLocalized(@"Settings.SetProfilePhoto");
     _wallpapersItem.title = TGLocalized(@"Settings.ChatBackground");
@@ -988,6 +993,12 @@
     _aboutItem.title = TGLocalized(@"Settings.About");
     _phoneNumberItem.title = TGLocalized(@"Settings.PhoneNumber");
     _supportItem.title = TGLocalized(@"Settings.Support");
+    _callSettingsItem.title = TGLocalized(@"CallSettings.RecentCalls");
+    
+    _faqItem.title = TGLocalized(@"Settings.FAQ");
+    
+    _languageItem.title = TGLocalized(@"Settings.AppLanguage");
+    _languageItem.variant = TGLocalized(@"Localization.LanguageName");
     
     [_profileDataItem localizationUpdated];
 }
@@ -1003,6 +1014,10 @@
         navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
     }
     [self presentViewController:navigationController animated:true completion:nil];
+}
+    
+- (void)languagePressed {
+    [self.navigationController pushViewController:[[TGLocalizationSelectionController alloc] init] animated:true];
 }
 
 @end

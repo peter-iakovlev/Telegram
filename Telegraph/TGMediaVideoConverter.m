@@ -9,12 +9,8 @@
 #import "TGVideoEditAdjustments.h"
 #import "TGPaintingData.h"
 
-@interface TGMediaVideoConversionPresetSettings : NSObject
+@interface TGMediaVideoConversionPresetSettings ()
 
-+ (CGSize)maximumSizeForPreset:(TGMediaVideoConversionPreset)preset;
-+ (NSDictionary *)videoSettingsForPreset:(TGMediaVideoConversionPreset)preset dimensions:(CGSize)dimensions;
-
-+ (NSDictionary *)audioSettingsForPreset:(TGMediaVideoConversionPreset)preset;
 + (bool)keepAudioForPreset:(TGMediaVideoConversionPreset)preset;
 
 + (NSInteger)_videoBitrateKbpsForPreset:(TGMediaVideoConversionPreset)preset;
@@ -34,6 +30,8 @@
     
     void (^_completionBlock)(void);
 }
+
+@property (nonatomic, readonly) bool succeed;
 
 - (instancetype)initWithAssetReaderOutput:(AVAssetReaderOutput *)assetReaderOutput assetWriterInput:(AVAssetWriterInput *)assetWriterInput;
 
@@ -116,7 +114,7 @@
                 
                 CGSize dimensions = [avAsset tracksWithMediaType:AVMediaTypeVideo].firstObject.naturalSize;
                 TGMediaVideoConversionPreset preset = adjustments.sendAsGif ? TGMediaVideoConversionPresetAnimation : [self _presetFromAdjustments:adjustments];
-                if (!CGSizeEqualToSize(dimensions, CGSizeZero) && preset != TGMediaVideoConversionPresetAnimation)
+                if (!CGSizeEqualToSize(dimensions, CGSizeZero) && preset != TGMediaVideoConversionPresetAnimation && preset != TGMediaVideoConversionPresetVideoMessage)
                 {
                     TGMediaVideoConversionPreset bestPreset = [self bestAvailablePresetForDimensions:dimensions];
                     if (preset > bestPreset)
@@ -151,8 +149,11 @@
                     return;
                 }
                 
-                if (watcher != nil)
-                    [watcher setupWithFileURL:outputUrl];
+                TGDispatchAfter(1.0, queue._dispatch_queue, ^
+                {
+                    if (watcher != nil)
+                        [watcher setupWithFileURL:outputUrl];
+                });
                 
                 [self processWithConversionContext:context completionBlock:^
                 {
@@ -163,17 +164,18 @@
                         if (result == AVAssetImageGeneratorSucceeded)
                             coverImage = [UIImage imageWithCGImage:image];
                          
+                         __block TGMediaVideoConversionResult *contextResult = nil;
                          [context modify:^id(TGMediaVideoConversionContext *resultContext)
                          {
                              id liveUploadData = nil;
                              if (watcher != nil)
                                  liveUploadData = [watcher fileUpdated:true];
                              
-                             TGMediaVideoConversionResult *result = [TGMediaVideoConversionResult resultWithFileURL:outputUrl fileSize:0 duration:CMTimeGetSeconds(resultContext.timeRange.duration) dimensions:resultContext.dimensions coverImage:coverImage liveUploadData:liveUploadData];
-                             [subscriber putNext:result];
+                             contextResult = [TGMediaVideoConversionResult resultWithFileURL:outputUrl fileSize:0 duration:CMTimeGetSeconds(resultContext.timeRange.duration) dimensions:resultContext.dimensions coverImage:coverImage liveUploadData:liveUploadData];
                              return [resultContext finishedContext];
                          }];
                          
+                         [subscriber putNext:contextResult];
                          [subscriber putCompletion];
                      }];
                 }];
@@ -184,7 +186,7 @@
         {
             [context modify:^id(TGMediaVideoConversionContext *currentContext)
             {
-                if (currentContext.finishedContext)
+                if (currentContext.finished)
                     return currentContext;
                 
                 [currentContext.videoProcessor cancel];
@@ -215,7 +217,12 @@
         outputDimensions = CGSizeMake(outputDimensions.height, outputDimensions.width);
     
     AVMutableVideoComposition *videoComposition = [AVMutableVideoComposition videoComposition];
-    videoComposition.frameDuration = CMTimeMake(1, (int32_t)videoTrack.nominalFrameRate);
+    if (videoTrack.nominalFrameRate > 0)
+        videoComposition.frameDuration = CMTimeMake(1, (int32_t)videoTrack.nominalFrameRate);
+    else if (CMTimeCompare(videoTrack.minFrameDuration, kCMTimeZero) == 1)
+        videoComposition.frameDuration = videoTrack.minFrameDuration;
+    else
+        videoComposition.frameDuration = CMTimeMake(1, 30);
     
     AVMutableCompositionTrack *trimVideoTrack = [composition addMutableTrackWithMediaType:AVMediaTypeVideo preferredTrackID:kCMPersistentTrackID_Invalid];
     [trimVideoTrack insertTimeRange:timeRange ofTrack:videoTrack atTime:kCMTimeZero error:NULL];
@@ -418,7 +425,16 @@
         }
         else
         {
-            if (context.assetReader.status != AVAssetReaderStatusFailed)
+            bool audioProcessingFailed = false;
+            bool videoProcessingFailed = false;
+            
+            if (context.audioProcessor != nil)
+                audioProcessingFailed = !context.audioProcessor.succeed;
+            
+            if (context.videoProcessor != nil)
+                videoProcessingFailed = !context.videoProcessor.succeed;
+            
+            if (!audioProcessingFailed && !videoProcessingFailed && context.assetReader.status != AVAssetReaderStatusFailed)
             {
                 [context.assetWriter finishWritingWithCompletionHandler:^
                 {
@@ -568,13 +584,12 @@
 {
     TGMediaVideoConversionPreset preset = TGMediaVideoConversionPresetCompressedVeryHigh;
     CGFloat maxSide = MAX(dimensions.width, dimensions.height);
-    for (NSInteger i = TGMediaVideoConversionPresetCompressedVeryHigh; i >= TGMediaVideoConversionPresetCompressedMedium; i--)
+    for (NSInteger i = TGMediaVideoConversionPresetCompressedVeryHigh; i >= TGMediaVideoConversionPresetCompressedLow; i--)
     {
         CGFloat presetMaxSide = [TGMediaVideoConversionPresetSettings maximumSizeForPreset:(TGMediaVideoConversionPreset)i].width;
+        preset = (TGMediaVideoConversionPreset)i;
         if (maxSide >= presetMaxSide)
             break;
-        
-        preset = (TGMediaVideoConversionPreset)i;
     }
     return preset;
 }
@@ -604,6 +619,7 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
         
         _queue = [[SQueue alloc] init];
         _finished = false;
+        _succeed = false;
     }
     return self;
 }
@@ -618,7 +634,8 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
             return;
         
         bool ended = false;
-        while ([_assetWriterInput isReadyForMoreMediaData] && !ended)
+        bool failed = false;
+        while ([_assetWriterInput isReadyForMoreMediaData] && !ended && !failed)
         {
             CMSampleBufferRef sampleBuffer = [_assetReaderOutput copyNextSampleBuffer];
             if (sampleBuffer != NULL)
@@ -626,10 +643,17 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
                 if (progressBlock != nil)
                     progressBlock(progressOfSampleBufferInTimeRange(sampleBuffer, timeRange));
                 
-                bool success = [_assetWriterInput appendSampleBuffer:sampleBuffer];
-                CFRelease(sampleBuffer);
+                bool success = false;
+                @try {
+                    success = [_assetWriterInput appendSampleBuffer:sampleBuffer];
+                } @catch (NSException *exception) {
+                    if ([exception.name isEqualToString:NSInternalInconsistencyException])
+                        success = false;
+                } @finally {
+                    CFRelease(sampleBuffer);
+                }
                 
-                ended = !success;
+                failed = !success;
             }
             else
             {
@@ -637,8 +661,11 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
             }
         }
         
-        if (ended)
+        if (ended || failed)
+        {
+            _succeed = !failed;
             [self _finish];
+        }
     }];
 }
 
@@ -708,21 +735,25 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
     int fd = open([_fileURL.path UTF8String], O_NONBLOCK | O_RDONLY);
     if (fd > 0)
     {
-        dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, fd, 0, _queue._dispatch_queue);
+        dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _queue._dispatch_queue);
+        
+        int32_t interval = 1;
+        dispatch_source_set_timer(source, dispatch_time(DISPATCH_TIME_NOW, interval * NSEC_PER_SEC), interval * NSEC_PER_SEC, (1ull * NSEC_PER_SEC) / 10);
         
         __block NSUInteger lastFileSize = 0;
-        
         __weak TGMediaVideoFileWatcher *weakSelf = self;
         dispatch_source_set_event_handler(source, ^
         {
+            __strong TGMediaVideoFileWatcher *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
             struct stat st;
             fstat(fd, &st);
             
             if (st.st_size > (long long)(lastFileSize + 32 * 1024))
             {
                 lastFileSize = (NSUInteger)st.st_size;
-                
-                __strong TGMediaVideoFileWatcher *strongSelf = weakSelf;
                 [strongSelf fileUpdated:false];
             }
         });
@@ -849,7 +880,7 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
 
 @implementation TGMediaVideoConversionResult
 
-+ (instancetype)resultWithFileURL:(NSURL *)fileUrl fileSize:(NSUInteger)fileSize duration:(NSTimeInterval)duration dimensions:(CGSize)dimensions coverImage:(UIImage *)coverImage liveUploadData:(id)livaUploadData
++ (instancetype)resultWithFileURL:(NSURL *)fileUrl fileSize:(NSUInteger)fileSize duration:(NSTimeInterval)duration dimensions:(CGSize)dimensions coverImage:(UIImage *)coverImage liveUploadData:(id)liveUploadData
 {
     TGMediaVideoConversionResult *result = [[TGMediaVideoConversionResult alloc] init];
     result->_fileURL = fileUrl;
@@ -857,7 +888,7 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
     result->_duration = duration;
     result->_dimensions = dimensions;
     result->_coverImage = coverImage;
-    result->_liveUploadData = livaUploadData;
+    result->_liveUploadData = liveUploadData;
     return result;
 }
 
@@ -897,6 +928,12 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
             
         case TGMediaVideoConversionPresetCompressedVeryHigh:
             return (CGSize){ 1920.0f, 1920.0f };
+            
+        case TGMediaVideoConversionPresetVideoMessage:
+        {
+            NSInteger side = [self vmSide];
+            return (CGSize){ side, side };
+        }
             
         default:
             return (CGSize){ 640.0f, 640.0f };
@@ -978,6 +1015,9 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
         case TGMediaVideoConversionPresetCompressedVeryHigh:
             return 4000;
             
+        case TGMediaVideoConversionPresetVideoMessage:
+            return [self vmBitrate];
+            
         default:
             return 700;
     }
@@ -1001,6 +1041,9 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
             
         case TGMediaVideoConversionPresetCompressedVeryHigh:
             return 64;
+            
+        case TGMediaVideoConversionPresetVideoMessage:
+            return 32;
             
         default:
             return 32;
@@ -1029,6 +1072,58 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
         default:
             return 1;
     }
+}
+
++ (NSNumber *)_vmSide
+{
+    return [[NSUserDefaults standardUserDefaults] objectForKey:@"videoMessageSide"];
+}
+
++ (NSInteger)vmSide
+{
+    NSNumber *value = [self _vmSide];
+    if (!value)
+        value = @(240);
+    
+    return value.integerValue;
+}
+
++ (void)setVMSide:(NSInteger)side
+{
+    [[NSUserDefaults standardUserDefaults] setObject:@(side) forKey:@"videoMessageSide"];
+}
+
++ (NSNumber *)_vmBitrate
+{
+    return [[NSUserDefaults standardUserDefaults] objectForKey:@"videoMessageBitrate"];
+}
+
++ (NSInteger)vmBitrate
+{
+    NSNumber *value = [self _vmBitrate];
+    if (!value)
+        value = @(300);
+    
+    return value.integerValue;
+}
+
++ (void)setVMBitrate:(NSInteger)bitrate
+{
+    [[NSUserDefaults standardUserDefaults] setObject:@(bitrate) forKey:@"videoMessageBitrate"];
+}
+
++ (bool)showVMSize
+{
+    NSNumber *value = [[NSUserDefaults standardUserDefaults] objectForKey:@"videoMessageShowSize"];
+    if (value == nil)
+        value = @false;
+    
+    return value.boolValue;
+}
+
++ (void)setShowVMSize:(bool)on
+{
+    [[NSUserDefaults standardUserDefaults] setObject:@(on) forKey:@"videoMessageShowSize"];
 }
 
 @end

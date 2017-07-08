@@ -21,10 +21,23 @@
 @property (nonatomic, strong) NSString *customStatus;
 @property (nonatomic, strong) NSString *customLabel;
 @property (nonatomic) bool displaySwitch;
+@property (nonatomic) bool displayCheck;
 @property (nonatomic) bool enableSwitch;
 @property (nonatomic) bool switchIsOn;
+@property (nonatomic) bool checkIsOn;
+@property (nonatomic) bool requiresFullSeparator;
+
+@property (nonatomic) bool canPromote;
+@property (nonatomic) bool canRestrict;
+@property (nonatomic) bool canBan;
+@property (nonatomic) bool canDelete;
 
 @property (nonatomic, copy) void (^toggled)(bool value);
+@property (nonatomic, copy) void (^pressed)();
+
+@property (nonatomic, copy) void (^requestDelete)();
+@property (nonatomic, copy) void (^requestRestrict)();
+@property (nonatomic, copy) void (^requestPromote)();
 
 - (void)setCanEdit:(bool)canEdit;
 - (void)setCanEdit:(bool)canEdit animated:(bool)animated;

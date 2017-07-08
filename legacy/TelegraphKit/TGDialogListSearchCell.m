@@ -69,7 +69,7 @@
         [self.contentView addSubview:_subtitleLabel];
         
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(5, 5, 40, 40)];
-        [_avatarView setSingleFontSize:17.0f doubleFontSize:17.0f useBoldFont:true];
+        [_avatarView setSingleFontSize:18.0f doubleFontSize:18.0f useBoldFont:true];
         _avatarView.fadeTransition = true;
         [self.contentView addSubview:_avatarView];
         

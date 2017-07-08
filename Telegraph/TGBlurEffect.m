@@ -33,6 +33,65 @@
 
 @end
 
+@interface TGProgressBlur : TGBlurEffect
+
+@end
+
+@implementation TGProgressBlur
+
++ (instancetype)effectWithStyle:(UIBlurEffectStyle)style
+{
+    id result = [super effectWithStyle:style radius:10.0f];
+    object_setClass(result, self);
+    
+    return result;
+}
+
+- (id)effectSettings
+{
+    id settings = [super effectSettings];
+    [settings setValue:@0.55f forKey:@"grayscaleTintAlpha"];
+    return settings;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    id result = [super copyWithZone:zone];
+    object_setClass(result, [self class]);
+    return result;
+}
+
+@end
+
+@interface TGLightProgressBlur : TGBlurEffect
+
+@end
+
+@implementation TGLightProgressBlur
+
++ (instancetype)effectWithStyle:(UIBlurEffectStyle)style
+{
+    id result = [super effectWithStyle:style radius:10.0f];
+    object_setClass(result, self);
+    
+    return result;
+}
+
+- (id)effectSettings
+{
+    id settings = [super effectSettings];
+    [settings setValue:@0.55f forKey:@"darkeningTintAlpha"];
+    return settings;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    id result = [super copyWithZone:zone];
+    object_setClass(result, [self class]);
+    return result;
+}
+
+@end
 
 @interface TGItemPreviewBlur : TGBlurEffect
 
@@ -146,6 +205,15 @@
     return (TGBlurEffect *)[TGCallBlur effectWithStyle:UIBlurEffectStyleDark];
 }
 
++ (instancetype)progressBlurEffect
+{
+    return (TGBlurEffect *)[TGProgressBlur effectWithStyle:UIBlurEffectStyleDark];
+}
+
++ (instancetype)lightProgressBlurEffect
+{
+    return (TGBlurEffect *)[TGLightProgressBlur effectWithStyle:UIBlurEffectStyleLight];
+}
 
 @end
 

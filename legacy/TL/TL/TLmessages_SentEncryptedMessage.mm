@@ -20,7 +20,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -47,7 +47,7 @@
     return (int32_t)0x3870329c;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLmessages_SentEncryptedMessage$messages_sentEncryptedMessage *object = [[TLmessages_SentEncryptedMessage$messages_sentEncryptedMessage alloc] init];
     object.date = metaObject->getInt32((int32_t)0xb76958ba);
@@ -80,7 +80,7 @@
     return (int32_t)0xb2f767d7;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLmessages_SentEncryptedMessage$messages_sentEncryptedFile *object = [[TLmessages_SentEncryptedMessage$messages_sentEncryptedFile alloc] init];
     object.date = metaObject->getInt32((int32_t)0xb76958ba);

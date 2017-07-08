@@ -6,6 +6,7 @@
 
 #import "ActionStage.h"
 
+#import "TGImageUtils.h"
 #import "TGDatabase.h"
 #import "TGBotSignals.h"
 
@@ -88,6 +89,11 @@
         
         _url = url;
         _botName = botName;
+
+        if (TGIsPad())
+        {
+            self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Close") style:UIBarButtonItemStylePlain target:self action:@selector(closePressed)];
+        }
         
         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(sharePressed)];
         
@@ -107,6 +113,10 @@
     [ActionStageInstance() removeWatcher:self];
     
     [_shareDisposable dispose];
+}
+
+- (void)closePressed {
+    [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
 }
 
 - (void)sharePressed {

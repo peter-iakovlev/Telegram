@@ -103,7 +103,7 @@
     if (mainItems.count == 0)
         return nil;
     
-    TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Conversation.Send") type:TGMenuSheetButtonTypeSend action:^
+    TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"ShareMenu.Send") type:TGMenuSheetButtonTypeSend action:^
     {
         __strong TGItemMenuSheetPreviewView *strongPreviewView = weakPreviewView;
         if (strongPreviewView == nil)

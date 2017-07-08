@@ -320,7 +320,7 @@ static const CGFloat swipeDistanceThreshold = 128.0f;
 {
     _interfaceView.alpha = 0.0f;
     self.backgroundColor = UIColorRGBA(0x000000, 0.0f);
-    [UIView animateWithDuration:duration delay:0.05 options:0 animations:^
+    [UIView animateWithDuration:duration delay:0.0 options:0 animations:^
     {
         _interfaceView.alpha = 1.0f;
         self.backgroundColor = UIColorRGBA(0x000000, 1.0f);

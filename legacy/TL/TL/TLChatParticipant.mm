@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xbb7c75d2;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLChatParticipant$chatParticipant *object = [[TLChatParticipant$chatParticipant alloc] init];
     object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
@@ -93,7 +93,7 @@
     return (int32_t)0x3eceaec9;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLChatParticipant$chatParticipantCreator *object = [[TLChatParticipant$chatParticipantCreator alloc] init];
     object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
@@ -126,7 +126,7 @@
     return (int32_t)0x22e1e015;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLChatParticipant$chatParticipantAdmin *object = [[TLChatParticipant$chatParticipantAdmin alloc] init];
     object.user_id = metaObject->getInt32((int32_t)0xafdf4073);

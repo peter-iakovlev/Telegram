@@ -263,6 +263,9 @@
         requiredHeight = [self baseHeight];
     }
     
+    if (_style == TGSearchBarStyleLight)
+        requiredHeight += 4.0f;
+    
     CGRect frame = self.frame;
     frame.size.height = requiredHeight;
     self.frame = frame;

@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x22cb4913;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLTopPeerCategory$topPeerCategoryBotsPM *object = [[TLTopPeerCategory$topPeerCategoryBotsPM alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0xc769f11d;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLTopPeerCategory$topPeerCategoryBotsInline *object = [[TLTopPeerCategory$topPeerCategoryBotsInline alloc] init];
     return object;
@@ -98,7 +98,7 @@
     return (int32_t)0x504523b9;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLTopPeerCategory$topPeerCategoryCorrespondents *object = [[TLTopPeerCategory$topPeerCategoryCorrespondents alloc] init];
     return object;
@@ -124,7 +124,7 @@
     return (int32_t)0xd4870810;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLTopPeerCategory$topPeerCategoryGroups *object = [[TLTopPeerCategory$topPeerCategoryGroups alloc] init];
     return object;
@@ -150,7 +150,7 @@
     return (int32_t)0x861caef;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLTopPeerCategory$topPeerCategoryChannels *object = [[TLTopPeerCategory$topPeerCategoryChannels alloc] init];
     return object;

@@ -1,194 +1,183 @@
 #import "TGWidgetSignals.h"
 #import <libkern/OSAtomic.h>
+#import <UIKit/UIKit.h>
 #import <CommonCrypto/CommonDigest.h>
-#import "TGColor.h"
 
-#import "TGWidgetUser.h"
+#import "TGWidget.h"
+#import <LegacyDatabase/LegacyDatabase.h>
 
 NSString *const TGWidgetSyncIdentifier = @"org.telegram.WidgetUpdate";
+const CGSize TGWidgetAvatarSize = { 56.0f, 56.0f };
+const NSTimeInterval TGWidgetUpdateThrottleInterval = 20.0;
 
 @implementation TGWidgetSignals
 
 #pragma mark - Signal
 
-+ (SSignal *)peopleSignal
+static SVariable *topPeersVar;
+static NSTimeInterval lastRefreshTime;
+static NSDictionary *cachedUnreadCounts;
+
++ (SSignal *)resultSignalWithContext:(id)context users:(NSArray *)users unreadCounts:(NSDictionary *)unreadCounts
 {
-    SSignal *dataSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-    {
-        NSDictionary *data = [self widgetData];
-        [subscriber putNext:data];
-        [subscriber putCompletion];
-        
-        return nil;
-    }];
+    if (context == nil)
+        context = [NSNull null];
+    if (users == nil)
+        users = [[NSArray alloc] init];
+    //if (unreadCounts == nil)
+    unreadCounts = [[NSDictionary alloc] init];
     
-    return dataSignal;
+    return [SSignal single:@{ @"context": context, @"users": users, @"unreadCounts": unreadCounts }];
+}
+
++ (SSignal *)topPeersSignal
+{
+    SSignal *(^makeRemoteSignal)(TGShareContext *, NSArray *) = ^SSignal *(TGShareContext *context, NSArray *users)
+    {
+//        NSTimeInterval timeout = (TGWidgetUpdateThrottleInterval + lastRefreshTime) - CFAbsoluteTimeGetCurrent();
+//        if (timeout < DBL_EPSILON)
+//        {
+//            lastRefreshTime = CFAbsoluteTimeGetCurrent();
+//            return [[self remoteUnreadCountForUsers:users context:context] mapToSignal:^SSignal *(NSDictionary *unreadCounts)
+//            {
+//                cachedUnreadCounts = unreadCounts;
+//                return [self resultSignalWithContext:context users:users unreadCounts:cachedUnreadCounts];
+//            }];
+//        }
+//        else
+//        {
+            return [self resultSignalWithContext:context users:users unreadCounts:cachedUnreadCounts];
+//        }
+    };
+    
+    SSignal *(^makeLoadSignal)(bool) = ^SSignal *(bool fireInitialSignal)
+    {
+        return [[[TGWidget instance] shareContext] mapToSignal:^SSignal *(TGShareContext *context)
+        {
+            if ([context isKindOfClass:[TGShareContext class]])
+            {
+                TGLegacyDatabase *database = ((TGShareContext *)context).legacyDatabase;
+                
+                NSArray *users = [database topUsers];
+                NSDictionary *unreadCounts = nil;
+                SSignal *resultSignal = nil;
+                
+                if (fireInitialSignal)
+                {
+                    unreadCounts = [database unreadCountsForUsers:users];
+                    cachedUnreadCounts = unreadCounts;
+                    resultSignal = [self resultSignalWithContext:context users:users unreadCounts:cachedUnreadCounts];
+                }
+                
+                SSignal *remoteSignal = makeRemoteSignal(context, users);
+                if (resultSignal != nil)
+                    return [resultSignal then:remoteSignal];
+                else
+                    return remoteSignal;
+            }
+            return [SSignal single:nil];
+        }];
+    };
+    
+    if (topPeersVar == nil)
+    {
+        topPeersVar = [[SVariable alloc] init];
+        [topPeersVar set:makeLoadSignal(true)];
+    }
+    else
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            [topPeersVar set:makeLoadSignal(false)];
+        });
+    }
+    
+    return topPeersVar.signal;
+}
+
++ (SSignal *)remoteUnreadCountForUsers:(NSArray *)users context:(TGShareContext *)context
+{
+    if (users.count == 0)
+        return [SSignal single:[NSDictionary dictionary]];
+    
+    NSMutableArray *peers = [[NSMutableArray alloc] init];
+    for (TGLegacyUser *user in users)
+    {
+        [peers addObject:[Api69_InputPeer inputPeerUserWithUserId:@(user.userId) accessHash:@(user.accessHash)]];
+    }
+    
+    return [[context function:[Api69 messages_getPeerDialogsWithPeers:peers]] map:^id(Api69_messages_PeerDialogs *dialogs)
+    {
+        NSMutableDictionary *counts = [[NSMutableDictionary alloc] init];
+        for (Api69_Dialog *dialog in dialogs.dialogs)
+        {
+            int32_t peerId = 0;
+            if ([dialog.peer isKindOfClass:[Api69_Peer_peerUser class]])
+                peerId = (int32_t)[[(Api69_Peer_peerUser *)dialog.peer userId] integerValue];
+            
+            if (peerId != 0)
+                counts[@(peerId)] = dialog.unreadCount;
+        }
+        return counts;
+    }];
 }
 
 #pragma mark - 
 
-+ (SSignal *)userAvatarWithUser:(TGWidgetUser *)user clientUserId:(int32_t)clientUserId
++ (SSignal *)userAvatarWithContext:(TGShareContext *)context user:(TGLegacyUser *)user
 {
-    int32_t peerId = user.identifier;
-    
-    SSignal *placeholderSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-    {
-        NSString *letters = [user initials];
-        
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(56.0f, 56.0f), false, 0.0f);
-        CGContextRef contextRef = UIGraphicsGetCurrentContext();
-        
-        CGContextBeginPath(contextRef);
-        CGContextAddEllipseInRect(contextRef, CGRectMake(0.0f, 0.0f, 56.0f, 56.0f));
-        CGContextClip(contextRef);
-        
-        NSArray *gradientColors = [self gradientColorsForPeerId:peerId myUserId:clientUserId];
-        CGColorRef colors[2] =
-        {
-            CGColorRetain(((UIColor *)gradientColors[0]).CGColor),
-            CGColorRetain(((UIColor *)gradientColors[1]).CGColor)
-        };
-        
-        CFArrayRef colorsArray = CFArrayCreate(kCFAllocatorDefault, (const void **)&colors, 2, NULL);
-        CGFloat locations[2] = {0.0f, 1.0f};
-        
-        CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-        CGGradientRef gradient = CGGradientCreateWithColors(colorSpace, colorsArray, (CGFloat const *)&locations);
-        
-        CFRelease(colorsArray);
-        CFRelease(colors[0]);
-        CFRelease(colors[1]);
-        
-        CGColorSpaceRelease(colorSpace);
-        
-        CGContextDrawLinearGradient(contextRef, gradient, CGPointMake(0.0f, 0.0f), CGPointMake(0.0f, 56.0f), 0);
-        
-        CFRelease(gradient);
-        
-        UIFont *font = [UIFont systemFontOfSize:letters.length == 1 ? 22.0f : 20.0f weight:UIFontWeightLight];
-        CGSize lettersSize = [letters sizeWithAttributes:@{NSFontAttributeName: font}];
-        [letters drawAtPoint:CGPointMake((CGFloat)(floor(56.0f - lettersSize.width) / 2.0f), (CGFloat)(floor(56.0f - lettersSize.height) / 2.0f)) withAttributes:@{NSFontAttributeName: font, NSForegroundColorAttributeName: [UIColor whiteColor]}];
-        
-        UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    
-        [subscriber putNext:image];
-        [subscriber putCompletion];
-        
-        return nil;
-    }];
-    
-    SSignal *avatarSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-    {
-        if (user.avatarPath == nil)
-        {
-            [subscriber putError:nil];
-            return nil;
-        }
-        
-        UIImage *image = [[UIImage alloc] initWithContentsOfFile:user.avatarPath];
-        if (image != nil)
-        {
-            [subscriber putNext:image];
-            [subscriber putCompletion];
-            return nil;
-        }
-        
-        [subscriber putError:nil];
-        return nil;
-    }];
-    
-    return [avatarSignal catch:^SSignal *(__unused id error)
-    {
-        return placeholderSignal;
-    }];
+    if (user.photoSmall.length == 0)
+        return [TGChatListAvatarSignal chatListAvatarWithContext:context letters:[self initialsForFirstName:user.firstName lastName:user.lastName] peerId:TGPeerIdPrivateMake(user.userId) imageSize:TGWidgetAvatarSize];
+    else
+        return [TGChatListAvatarSignal chatListAvatarWithContext:context location:[[TGFileLocation alloc] initWithFileUrl:user.photoSmall] imageSize:TGWidgetAvatarSize];
 }
 
 #pragma mark -
 
-+ (NSDictionary *)widgetData
+static bool isEmojiCharacter(NSString *singleChar)
 {
-    NSData *widgetData = [self loadWidgetData];
-    if (widgetData == nil)
-        return nil;
+    const unichar high = [singleChar characterAtIndex:0];
     
-    NSDictionary *dict = [NSKeyedUnarchiver unarchiveObjectWithData:widgetData];
-    return dict;
-}
-
-#pragma mark - File
-
-+ (NSString *)filePath
-{
-    NSString *documentsPath;
-    NSString *groupName = [@"group." stringByAppendingString:[[NSBundle mainBundle] bundleIdentifier]];
-    groupName = [groupName substringWithRange:NSMakeRange(0, groupName.length - @".Widget".length)];
-    
-    NSURL *groupURL = [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:groupName];
-    if (groupURL != nil)
+    if (0xd800 <= high && high <= 0xdbff && singleChar.length >= 2)
     {
-        NSString *path = [[groupURL path] stringByAppendingPathComponent:@"Documents"];
-        [[NSFileManager defaultManager] createDirectoryAtPath:path withIntermediateDirectories:true attributes:nil error:NULL];
+        const unichar low = [singleChar characterAtIndex:1];
+        const int codepoint = ((high - 0xd800) * 0x400) + (low - 0xdc00) + 0x10000;
         
-        documentsPath = path;
+        return (0x1d000 <= codepoint && codepoint <= 0x1f77f);
     }
-
-    return [documentsPath stringByAppendingPathComponent:@"widget.data"];
+    
+    return (0x2100 <= high && high <= 0x27bf);
 }
 
-+ (NSData *)loadWidgetData
++ (NSString *)_cleanedUpString:(NSString *)string
 {
-    return [NSData dataWithContentsOfFile:[self filePath]];
+    NSMutableString *__block buffer = [NSMutableString stringWithCapacity:string.length];
+    
+    [string enumerateSubstringsInRange:NSMakeRange(0, string.length)
+                               options:NSStringEnumerationByComposedCharacterSequences
+                            usingBlock: ^(NSString* substring, __unused NSRange substringRange, __unused NSRange enclosingRange, __unused BOOL* stop)
+     {
+         [buffer appendString:isEmojiCharacter(substring) ? @"" : substring];
+     }];
+    
+    return buffer;
 }
 
-#pragma mark - 
-
-static inline int colorIndexForUid(int32_t uid, int32_t myUserId)
++ (NSString *)initialsForFirstName:(NSString *)firstName lastName:(NSString *)lastName
 {
-    static const int numColors = 8;
+    NSString *initials = @"";
     
-    int colorIndex = 0;
+    NSString *cleanFirstName = [self _cleanedUpString:firstName];
+    NSString *cleanLastName = [self _cleanedUpString:lastName];
     
-    char buf[16];
-    snprintf(buf, 16, "%d%d", (int)uid, (int)myUserId);
-    unsigned char digest[CC_MD5_DIGEST_LENGTH];
-    CC_MD5(buf, (CC_LONG)strlen(buf), digest);
-    colorIndex = ABS(digest[ABS(uid % 16)]) % numColors;
+    if (cleanFirstName.length != 0 && cleanLastName.length != 0)
+        initials = [[NSString alloc] initWithFormat:@"%@\u200B%@", [cleanFirstName substringToIndex:1], [cleanLastName substringToIndex:1]];
+    else if (cleanFirstName.length != 0)
+        initials = [cleanFirstName substringToIndex:1];
+    else if (cleanLastName.length != 0)
+        initials = [cleanLastName substringToIndex:1];
     
-    return colorIndex;
-}
-
-+ (NSArray *)gradientColorsForPeerId:(int32_t)peerId myUserId:(int32_t)myUserId
-{
-    static OSSpinLock lock = 0;
-    static NSMutableDictionary *dict = nil;
-    static NSArray *colors = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        dict = [[NSMutableDictionary alloc] init];
-        colors = @
-        [
-            @[TGColorWithHex(0xff516a), TGColorWithHex(0xff885e)],
-            @[TGColorWithHex(0xffa85c), TGColorWithHex(0xffcd6a)],
-            @[TGColorWithHex(0x54cb68), TGColorWithHex(0xa0de7e)],
-            @[TGColorWithHex(0x2a9ef1), TGColorWithHex(0x72d5fd)],
-            @[TGColorWithHex(0x665fff), TGColorWithHex(0x82b1ff)],
-            @[TGColorWithHex(0xd669ed), TGColorWithHex(0xe0a2f3)],
-        ];
-    });
-    
-    OSSpinLockLock(&lock);
-    NSNumber *key = [NSNumber numberWithLongLong:((long long)peerId)];
-    NSNumber *index = dict[key];
-    if (index == nil)
-    {
-        index = @(colorIndexForUid(peerId, myUserId));
-        dict[key] = index;
-    }
-    OSSpinLockUnlock(&lock);
-    
-    return colors[[index intValue] % 6];
+    return [initials uppercaseString];
 }
 
 @end

@@ -11,9 +11,9 @@
 
 #import <Foundation/Foundation.h>
 
-#include <tr1/memory>
+#include <memory>
 #include <vector>
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 #include "TLMetaType.h"
 #include "TLMetaField.h"
@@ -28,19 +28,19 @@ class TLMetaConstructor
 public:
     int32_t name;
     int32_t signature;
-    std::tr1::shared_ptr<std::vector<TLMetaField> > fields;
-    std::tr1::shared_ptr<std::tr1::unordered_map<int32_t, int> > fieldNameToIndex;
-    std::tr1::shared_ptr<TLMetaType> resultType;
+    std::shared_ptr<std::vector<TLMetaField> > fields;
+    std::shared_ptr<std::unordered_map<int32_t, int> > fieldNameToIndex;
+    std::shared_ptr<TLMetaType> resultType;
     
 public:
-    TLMetaConstructor(int32_t name, int32_t signature, std::tr1::shared_ptr<std::vector<TLMetaField> > fields, std::tr1::shared_ptr<TLMetaType> resultType);
+    TLMetaConstructor(int32_t name, int32_t signature, std::shared_ptr<std::vector<TLMetaField> > fields, std::shared_ptr<TLMetaType> resultType);
     virtual ~TLMetaConstructor();
     
     inline int32_t getName() { return name; }
     inline int32_t getSignature() { return signature; }
     
-    inline std::tr1::shared_ptr<TLMetaType> getResultType() { return resultType; }
-    inline std::tr1::shared_ptr<std::vector<TLMetaField> > getFields() { return fields; }
+    inline std::shared_ptr<TLMetaType> getResultType() { return resultType; }
+    inline std::shared_ptr<std::vector<TLMetaField> > getFields() { return fields; }
     
     TLConstructedValue construct(NSInputStream *is, id<TLSerializationEnvironment> environment, TLSerializationContext *context, __autoreleasing NSError **error);
     void serialize(NSOutputStream *os, id object);

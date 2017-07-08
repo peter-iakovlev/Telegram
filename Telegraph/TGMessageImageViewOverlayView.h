@@ -20,6 +20,7 @@ typedef enum {
 
 @property (nonatomic, readonly) CGFloat progress;
 
+- (void)setBlurless:(bool)blurless;
 - (void)setRadius:(CGFloat)radius;
 - (void)setOverlayBackgroundColorHint:(UIColor *)overlayBackgroundColorHint;
 - (void)setOverlayStyle:(TGMessageImageViewOverlayStyle)overlayStyle;

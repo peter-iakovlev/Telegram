@@ -73,3 +73,14 @@
 
 @end
 
+@interface TLSendMessageAction$sendMessageRecordRoundAction : TLSendMessageAction
+
+
+@end
+
+@interface TLSendMessageAction$sendMessageUploadRoundAction : TLSendMessageAction
+
+@property (nonatomic) int32_t progress;
+
+@end
+

@@ -245,7 +245,7 @@ static void addRoundedRectToPath(CGContextRef context, CGRect rect, float ovalWi
 SSignal *imageMediaTransform(MediaBox *mediaBox, TGImageMediaAttachment *image, bool autoFetchFullSize) {
     return [imageMediaDatas(mediaBox, image, autoFetchFullSize) map:^id(ImageResourceDatas *datas) {
         DrawingContext *(^transform)(TransformImageArguments *) = ^DrawingContext *(TransformImageArguments *arguments) {
-            DrawingContext *context = [[DrawingContext alloc] initWithSize:arguments.boundingSize scale:0.0f clear:false];
+            DrawingContext *context = [[DrawingContext alloc] initWithSize:arguments.boundingSize scale:0.0f clear:true];
             
             CGSize fittedSize = TGScaleToFill(arguments.imageSize, arguments.boundingSize);
             CGRect fittedRect = CGRectMake((arguments.boundingSize.width - fittedSize.width) / 2.0f, (arguments.boundingSize.height - fittedSize.height) / 2.0f, fittedSize.width, fittedSize.height);
@@ -301,8 +301,8 @@ SSignal *imageMediaTransform(MediaBox *mediaBox, TGImageMediaAttachment *image, 
             
             [context withFlippedContext:^(CGContextRef context) {
                 if (arguments.cornerRadius > FLT_EPSILON) {
-                    CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-                    CGContextFillRect(context, CGRectMake(0.0f, 0.0f, arguments.boundingSize.width, arguments.boundingSize.height));
+                    //CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
+                    //CGContextFillRect(context, CGRectMake(0.0f, 0.0f, arguments.boundingSize.width, arguments.boundingSize.height));
                     
                     CGContextBeginPath(context);
                     CGRect rect = CGRectMake(0.0f, 0.0f, arguments.boundingSize.width, arguments.boundingSize.height);
@@ -313,8 +313,8 @@ SSignal *imageMediaTransform(MediaBox *mediaBox, TGImageMediaAttachment *image, 
                 
                 CGContextSetBlendMode(context, kCGBlendModeCopy);
                 if (!CGSizeEqualToSize(arguments.boundingSize, arguments.imageSize)) {
-                    CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-                    CGContextFillRect(context, CGRectMake(0.0f, 0.0f, arguments.boundingSize.width, arguments.boundingSize.height));
+                    //CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
+                    //CGContextFillRect(context, CGRectMake(0.0f, 0.0f, arguments.boundingSize.width, arguments.boundingSize.height));
                 }
                 
                 if (blurredThumbnailImage != nil) {

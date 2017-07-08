@@ -423,10 +423,10 @@ static inline uint32_t premultipliedPixel(uint32_t rgb, uint32_t alpha)
 
 static void addAttachmentImageCorners(void *memory, const unsigned int width, const unsigned int height, const unsigned int stride)
 {
-    const int scale = TGIsRetina() ? 2 : 1;
+    const int scale = (int)TGScreenScaling(); //TGIsRetina() ? 2 : 1;
     
     const int shadowSize = 1;
-    const int strokeWidth = scale >= 2 ? 3 : 2;
+    const int strokeWidth = 1 + scale;
     const int radius = 13 * scale;
     
     const int contextWidth = radius * 2 + shadowSize * 2 + strokeWidth * 2;
@@ -436,8 +436,8 @@ static void addAttachmentImageCorners(void *memory, const unsigned int width, co
     static uint8_t *contextMemory = NULL;
     static uint8_t *alphaMemory = NULL;
 
-    const uint32_t shadowColorRaw = 0x44000000;
-    const uint32_t shadowColorArgb = premultipliedPixel(shadowColorRaw & 0xffffff, ((shadowColorRaw >> 24) & 0xff) - 30);
+    const uint32_t shadowColorRaw = 0x7f86a9c9;
+    const uint32_t shadowColorArgb = premultipliedPixel(shadowColorRaw & 0xffffff, ((shadowColorRaw >> 24) & 0xff) - 20);
     static uint32_t strokeColorArgb = 0xffffffff;
     
     static dispatch_once_t onceToken;
@@ -595,7 +595,7 @@ void TGAddImageCorners(void *memory, const unsigned int width, const unsigned in
         return;
     }
     
-    const int scale = TGIsRetina() ? 2 : 1;
+    const int scale = 2; //TGIsRetina() ? 2 : 1;
     
     const int contextWidth = radius * scale;
     const int contextHeight = radius * scale;
@@ -830,9 +830,11 @@ UIImage *TGAverageColorAttachmentImage(UIColor *color, bool attachmentBorder)
 
 UIImage *TGAverageColorAttachmentWithCornerRadiusImage(UIColor *color, bool attachmentBorder, int cornerRadius)
 {
-    CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
+    CGFloat scale = TGScreenScaling();
     
     CGSize size = CGSizeMake(36.0f, 36.0f);
+    if (cornerRadius > size.width / 2)
+        size = CGSizeMake(cornerRadius * 2, cornerRadius * 2);
     
     const struct { int width, height; } targetContextSize = { (int)(size.width * scale), (int)(size.height * scale)};
     
@@ -1053,7 +1055,7 @@ UIImage *TGBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *averag
 
 UIImage *TGBlurredAttachmentWithCornerRadiusImage(UIImage *source, CGSize size, uint32_t *averageColor, bool attachmentBorder, int cornerRadius)
 {
-    CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
+    CGFloat scale = TGScreenScaling(); // //TGIsRetina() ? 2.0f : 1.0f;
     
     CGSize fittedSize = fitSize(size, CGSizeMake(90, 90));
     
@@ -1172,7 +1174,12 @@ UIImage *TGBlurredAttachmentWithCornerRadiusImage(UIImage *source, CGSize size, 
 
 UIImage *TGSecretBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *averageColor, bool attachmentBorder)
 {
-    CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
+    return TGSecretBlurredAttachmentWithCornerRadiusImage(source, size, averageColor, attachmentBorder, 13);
+}
+
+UIImage *TGSecretBlurredAttachmentWithCornerRadiusImage(UIImage *source, CGSize size, uint32_t *averageColor, bool attachmentBorder, CGFloat cornerRadius)
+{
+    CGFloat scale = TGScreenScaling(); //TGIsRetina() ? 2.0f : 1.0f;
     
     CGSize fittedSize = fitSize(size, CGSizeMake(40, 40));
     
@@ -1275,7 +1282,7 @@ UIImage *TGSecretBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *
     if (attachmentBorder) {
         addAttachmentImageCorners(targetMemory, targetContextSize.width, targetContextSize.height, (int)targetBytesPerRow);
     } else {
-        TGAddImageCorners(targetMemory, targetContextSize.width, targetContextSize.height, (int)targetBytesPerRow, (int)(13 * scale));
+        TGAddImageCorners(targetMemory, targetContextSize.width, targetContextSize.height, (int)targetBytesPerRow, (int)(cornerRadius * scale));
     }
     
     CGImageRef bitmapImage = CGBitmapContextCreateImage(targetContext);
@@ -1298,7 +1305,7 @@ UIImage *TGSecretBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *
 
 UIImage *TGBlurredFileImage(UIImage *source, CGSize size, uint32_t *averageColor, int borderRadius)
 {
-    CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
+    CGFloat scale = TGScreenScaling(); //TGIsRetina() ? 2.0f : 1.0f;
     
     CGSize fittedSize = fitSize(size, CGSizeMake(90, 90));
     
@@ -1557,12 +1564,12 @@ UIImage *TGBlurredRectangularImage(UIImage *source, CGSize size, CGSize renderSi
 
 UIImage *TGLoadedAttachmentImage(UIImage *source, CGSize size, uint32_t *averageColor, bool attachmentBorder)
 {
-    return TGLoadedAttachmentWithCornerRadiusImage(source, size, averageColor, attachmentBorder, 14);
+    return TGLoadedAttachmentWithCornerRadiusImage(source, size, averageColor, attachmentBorder, 14, 0);
 }
 
-UIImage *TGLoadedAttachmentWithCornerRadiusImage(UIImage *source, CGSize size, uint32_t *averageColor, bool attachmentBorder, int cornerRadius)
+UIImage *TGLoadedAttachmentWithCornerRadiusImage(UIImage *source, CGSize size, uint32_t *averageColor, bool attachmentBorder, int cornerRadius, int inset)
 {
-    CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
+    CGFloat scale = TGScreenScaling(); //TGIsRetina() ? 2.0f : 1.0f;
     
     CGFloat actionCircleDiameter = 50.0f;
     
@@ -1614,7 +1621,7 @@ UIImage *TGLoadedAttachmentWithCornerRadiusImage(UIImage *source, CGSize size, u
     CGContextTranslateCTM(targetContext, targetContextSize.width / 2.0f, targetContextSize.height / 2.0f);
     CGContextScaleCTM(targetContext, 1.0f, -1.0f);
     CGContextTranslateCTM(targetContext, -targetContextSize.width / 2.0f, -targetContextSize.height / 2.0f);
-    [source drawInRect:CGRectMake(0, 0, targetContextSize.width, targetContextSize.height) blendMode:kCGBlendModeCopy alpha:1.0f];
+    [source drawInRect:CGRectMake(-inset, -inset, targetContextSize.width + inset * 2, targetContextSize.height + inset * 2) blendMode:kCGBlendModeCopy alpha:1.0f];
     UIGraphicsPopContext();
     
     if (averageColor != NULL)
@@ -1699,7 +1706,7 @@ UIImage *TGAnimationFrameAttachmentImage(UIImage *source, CGSize size, CGSize re
 
 UIImage *TGLoadedFileImage(UIImage *source, CGSize size, uint32_t *averageColor, int borderRadius)
 {
-    CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
+    CGFloat scale = TGScreenScaling(); //TGIsRetina() ? 2.0f : 1.0f;
     
     CGFloat actionCircleDiameter = 50.0f;
     
@@ -1792,7 +1799,7 @@ UIImage *TGReducedAttachmentImage(UIImage *source, CGSize originalSize, bool att
 
 UIImage *TGReducedAttachmentWithCornerRadiusImage(UIImage *source, CGSize originalSize, bool attachmentBorder, int cornerRadius)
 {
-    CGFloat scale = TGIsRetina() ? 2.0f : 1.0f;
+    CGFloat scale = TGScreenScaling(); //TGIsRetina() ? 2.0f : 1.0f;
     
     CGSize size = CGSizeMake(CGFloor(originalSize.width * 0.4f), CGFloor(originalSize.height * 0.4f));
     

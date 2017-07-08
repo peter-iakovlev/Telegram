@@ -18,5 +18,6 @@
 - (void)setTitleAlignment:(NSTextAlignment)alignment;
 - (void)setEnabled:(bool)enabled;
 - (void)setIcon:(UIImage *)icon;
+- (void)setIconOffset:(CGPoint)iconOffset;
 
 @end

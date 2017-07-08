@@ -99,6 +99,11 @@
         _read = ![_context isMessageUnread:message];
         _deliveryState = message.deliveryState;
         _hasAvatar = authorPeer != nil && [authorPeer isKindOfClass:[TGUser class]];
+        if ([authorPeer isKindOfClass:[TGConversation class]]) {
+            if ([context isAdminLog]) {
+                _hasAvatar = true;
+            }
+        }
         _messageViews = message.viewCount;
         _message = message;
         
@@ -129,6 +134,9 @@
         [imageUri appendFormat:@"&size=%d", (int)_document.size];
         [imageUri appendFormat:@"&width=%d&height=%d", (int)displaySize.width, (int)displaySize.height];
         [imageUri appendFormat:@"&mime-type=%@", [TGStringUtils stringByEscapingForURL:_document.mimeType]];
+        if (_document.documentUri.length != 0) {
+            [imageUri appendFormat:@"&documentUri=%@", [TGStringUtils stringByEscapingForURL:_document.documentUri]];
+        }
         
         [_imageModel setUri:imageUri];
         
@@ -137,7 +145,7 @@
         [self addSubmodel:_imageModel];
         
         _imageModel.flexibleTimestamp = true;
-        [_imageModel setTimestampColor:[[TGTelegraphConversationMessageAssetsSource instance] systemMessageBackgroundColor]];
+        [_imageModel setTimestampColor:UIColorRGBA(0x000000, 0.3f)];
         [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)message.date] signatureString:nil displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:false];
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
         [_imageModel setIsBroadcast:message.isBroadcast];
@@ -442,6 +450,9 @@
     [imageUri appendFormat:@"&size=%d", (int)_document.size];
     [imageUri appendFormat:@"&width=%d&height=%d", (int)displaySize.width, (int)displaySize.height];
     [imageUri appendFormat:@"&mime-type=%@", [TGStringUtils stringByEscapingForURL:_document.mimeType]];
+    if (_document.documentUri.length != 0) {
+        [imageUri appendFormat:@"&documentUri=%@", [TGStringUtils stringByEscapingForURL:_document.documentUri]];
+    }
     
     [_imageModel setUri:imageUri];
     
@@ -678,12 +689,12 @@
             {
                 UIImageView *temporaryView = _temporaryHighlightView;
                 [UIView animateWithDuration:0.4 animations:^
-                 {
-                     temporaryView.alpha = 0.0f;
-                 } completion:^(__unused BOOL finished)
-                 {
-                     [temporaryView removeFromSuperview];
-                 }];
+                {
+                    temporaryView.alpha = 0.0f;
+                } completion:^(__unused BOOL finished)
+                {
+                    [temporaryView removeFromSuperview];
+                }];
                 _temporaryHighlightView = nil;
             }
         }
@@ -725,7 +736,7 @@
         CGRect contentFrame = CGRectZero;
         if (_replyHeaderModel != nil) {
             [_replyHeaderModel layoutForContainerSize:CGSizeMake(availableWidth, 0.0f) updateContent:&updateContent];
-            contentFrame = CGRectMake(0.0f, 0.0f, _replyHeaderModel.frame.size.width + 14.0f, _replyHeaderModel.frame.size.height + 4.0f);
+            contentFrame = CGRectMake(0.0f, 0.0f, _replyHeaderModel.frame.size.width + 17.0f, _replyHeaderModel.frame.size.height + 5.0f);
             
             if (_replyHeaderViaUserModel != nil) {
                 if ([_replyHeaderViaUserModel layoutNeedsUpdatingForContainerSize:CGSizeMake(availableWidth, 0.0f)]) {
@@ -755,10 +766,10 @@
         else
             contentFrame.origin.x = 9.0f + (_editing ? 42.0f : 0.0f);
         
-        contentFrame.origin.y = CGRectGetMaxY(imageFrame) - contentFrame.size.height - 4.0f - 8.0f;
+        contentFrame.origin.y = 0.0f; //CGRectGetMaxY(imageFrame) - contentFrame.size.height - 4.0f - 8.0f;
         
         _contentModel.frame = contentFrame;
-        _replyHeaderModel.frame = CGRectMake(5.0f, _replyHeaderViaUserModel == nil ? 0.0f : (_replyHeaderViaUserModel.frame.size.height + 2.0), _replyHeaderModel.frame.size.width, _replyHeaderModel.frame.size.height);
+        _replyHeaderModel.frame = CGRectMake(7.0f, _replyHeaderViaUserModel == nil ? 0.0f : (_replyHeaderViaUserModel.frame.size.height + 2.0), _replyHeaderModel.frame.size.width, _replyHeaderModel.frame.size.height);
         _replyBackgroundModel.frame = CGRectMake(contentFrame.origin.x, contentFrame.origin.y + 3.0f, contentFrame.size.width - 2.0f, contentFrame.size.height - 5.0f);
         
         if ((_incomingAppearance && _replyBackgroundModel.frame.origin.x < CGRectGetMaxX(imageFrame)) || (!_incomingAppearance && CGRectGetMaxX(_replyBackgroundModel.frame) > imageFrame.origin.x))

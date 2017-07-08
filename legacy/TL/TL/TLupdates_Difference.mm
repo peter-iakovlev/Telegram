@@ -20,7 +20,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -47,7 +47,7 @@
     return (int32_t)0xe47016d4;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLupdates_Difference$updates_differenceEmpty *object = [[TLupdates_Difference$updates_differenceEmpty alloc] init];
     object.date = metaObject->getInt32((int32_t)0xb76958ba);
@@ -87,7 +87,7 @@
     return (int32_t)0xc92fa56d;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLupdates_Difference$updates_difference *object = [[TLupdates_Difference$updates_difference alloc] init];
     object.n_new_messages = metaObject->getArray((int32_t)0xe7cf9f7c);
@@ -155,7 +155,7 @@
     return (int32_t)0xb6d9f085;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLupdates_Difference$updates_differenceSlice *object = [[TLupdates_Difference$updates_differenceSlice alloc] init];
     object.n_new_messages = metaObject->getArray((int32_t)0xe7cf9f7c);
@@ -223,7 +223,7 @@
     return (int32_t)0x3105285b;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLupdates_Difference$updates_differenceTooLong *object = [[TLupdates_Difference$updates_differenceTooLong alloc] init];
     object.pts = metaObject->getInt32((int32_t)0x4fc5f572);

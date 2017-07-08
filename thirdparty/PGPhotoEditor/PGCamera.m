@@ -27,8 +27,6 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
     
     bool _subscribedForCameraChanges;
     
-    bool _shownAudioAccessDisabled;
-    
     bool _invalidated;
     bool _wasCapturingOnEnterBackground;
     
@@ -329,6 +327,23 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
     [self.captureSession captureNextFrameCompletion:completion];
 }
 
+- (UIImage *)normalizeImageOrientation:(UIImage *)image
+{
+    if (image.imageOrientation == UIImageOrientationUp) {
+        return image;
+    }
+    
+    CGRect newRect = CGRectMake(0.0f, 0.0f, image.size.width, image.size.height);
+    
+    UIGraphicsBeginImageContextWithOptions(newRect.size, true, image.scale);
+    [image drawInRect:newRect];
+    
+    UIImage *normalized = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return normalized;
+}
+
 - (void)takePhotoWithCompletion:(void (^)(UIImage *result, PGCameraShotMetadata *metadata))completion
 {
     [[PGCamera cameraQueue] dispatch:^
@@ -343,7 +358,6 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
             AVCaptureConnection *imageConnection = [self.captureSession.imageOutput connectionWithMediaType:AVMediaTypeVideo];
             [imageConnection setVideoMirrored:previewConnection.videoMirrored];
             
-            bool isMirrored = previewConnection.videoMirrored;
             UIInterfaceOrientation orientation = UIInterfaceOrientationPortrait;
             if (self.requestedCurrentInterfaceOrientation != nil)
                 orientation = self.requestedCurrentInterfaceOrientation(NULL);
@@ -369,8 +383,9 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
                     }
                     
                     PGCameraShotMetadata *metadata = [[PGCameraShotMetadata alloc] init];
-                    metadata.frontal = isMirrored;
                     metadata.deviceAngle = [PGCameraShotMetadata relativeDeviceAngleFromAngle:_deviceAngleSampler.currentDeviceAngle orientation:orientation];
+                    
+                    image = [self normalizeImageOrientation:image];
                     
                     if (completion != nil)
                         completion(image, metadata);
@@ -386,7 +401,7 @@ NSString *const PGCameraAdjustingFocusKey = @"adjustingFocus";
     }];
 }
 
-- (void)startVideoRecordingForMoment:(bool)moment completion:(void (^)(NSURL *, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success))completion
+- (void)startVideoRecordingForMoment:(bool)moment completion:(void (^)(NSURL *, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, TGLiveUploadActorData *liveUploadData, bool success))completion
 {
     [[PGCamera cameraQueue] dispatch:^
     {

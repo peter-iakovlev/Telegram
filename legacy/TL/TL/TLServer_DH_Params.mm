@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xf001b9ed;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLServer_DH_Params$server_DH_params_fail *object = [[TLServer_DH_Params$server_DH_params_fail alloc] init];
     object.nonce = metaObject->getBytes((int32_t)0x48cbe731);
@@ -93,7 +93,7 @@
     return (int32_t)0xf1e19570;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLServer_DH_Params$server_DH_params_ok *object = [[TLServer_DH_Params$server_DH_params_ok alloc] init];
     object.nonce = metaObject->getBytes((int32_t)0x48cbe731);

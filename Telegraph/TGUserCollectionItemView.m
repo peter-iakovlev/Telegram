@@ -33,7 +33,7 @@
     if (self != nil)
     {
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 40.0f, 40.0f)];
-        [_avatarView setSingleFontSize:17.0f doubleFontSize:17.0f useBoldFont:true];
+        [_avatarView setSingleFontSize:18.0f doubleFontSize:18.0f useBoldFont:true];
         _avatarView.fadeTransition = true;
         [self.editingContentView addSubview:_avatarView];
         

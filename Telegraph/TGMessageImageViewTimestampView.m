@@ -321,6 +321,9 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
 
 
 + (NSString *)stringForCount:(int32_t)count {
+    if (count < 0)
+        count = 0;
+    
     if (count < 1000) {
         return [[NSString alloc] initWithFormat:@"%d", (int)count];
     } else if (count < 1000 * 1000) {

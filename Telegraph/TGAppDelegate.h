@@ -48,12 +48,16 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 
 @end
 
+@class SSignal;
+
 @interface TGAppDelegate : UIResponder <UIApplicationDelegate, ASWatcher>
 
 @property (nonatomic, strong, readonly) ASHandle *actionHandle;
 
 @property (nonatomic, strong) TGApplicationMainWindow *window;
 @property (nonatomic, strong) UIWindow *contentWindow;
+
+@property (nonatomic, strong, readonly) SSignal *localizationUpdated;
 
 @property (nonatomic) bool isManuallyLocked;
 @property (nonatomic) int32_t automaticLockTimeout;
@@ -81,6 +85,9 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 @property (nonatomic) bool autoDownloadAudioInGroups;
 @property (nonatomic) bool autoDownloadAudioInPrivateChats;
 
+@property (nonatomic) bool autoDownloadVideoMessageInGroups;
+@property (nonatomic) bool autoDownloadVideoMessageInPrivateChats;
+
 @property (nonatomic) bool autoPlayAudio;
 @property (nonatomic) bool autoPlayAnimations;
 
@@ -90,6 +97,9 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 @property (nonatomic) bool secretInlineBotsInitialized;
 
 @property (nonatomic) int callsDataUsageMode;
+@property (nonatomic) bool callsDisableP2P;
+@property (nonatomic) bool callsDisableCallKit;
+@property (nonatomic) bool callsUseProxy;
 
 @property (nonatomic) int alwaysShowStickersMode;
 
@@ -148,6 +158,8 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 - (void)handleOpenDocument:(NSURL *)url animated:(bool)animated;
 - (void)handleOpenDocument:(NSURL *)url animated:(bool)animated keepStack:(bool)keepStack;
 
+- (void)handleOpenInstantView:(NSString *)url;
+
 - (void)previewStickerPackWithReference:(id<TGStickerPackReference>)packReference;
 
 - (void)inviteBotToGroup:(TGUser *)user payload:(NSString *)payload;
@@ -160,5 +172,7 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 - (void)setEnableLogging:(bool)enableLogging;
 
 - (void)setupShortcutItems;
+
+- (void)updatePushRegistration;
 
 @end

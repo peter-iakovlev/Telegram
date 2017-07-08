@@ -600,6 +600,7 @@ const NSInteger TGVideoConverterGifVideoBitrate = 500000;
                                          {
                                              if (nextBuffer)
                                                  [audioWriterInput appendSampleBuffer:nextBuffer];
+                                             CFRelease(nextBuffer);
                                          }
                                          else
                                          {

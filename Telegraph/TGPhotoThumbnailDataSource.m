@@ -444,7 +444,7 @@ static ASQueue *taskManagementQueue()
         
         if (image != nil)
         {
-            const float cacheFactor = 0.85f;
+            const float cacheFactor = 1.0f;
             CGSize cachedImageSize = CGSizeMake(CGCeil(size.width * cacheFactor), CGCeil(size.height * cacheFactor));
             CGSize cachedRenderSize = CGSizeMake(CGCeil(renderSize.width * cacheFactor), CGCeil(renderSize.height * cacheFactor));
             UIGraphicsBeginImageContextWithOptions(cachedImageSize, true, 2.0f);
@@ -457,7 +457,7 @@ static ASQueue *taskManagementQueue()
             
             if (thumbnailSourceImage != nil && !lowQualityThumbnail)
             {
-                NSData *thumbnailSourceData = UIImageJPEGRepresentation(thumbnailSourceImage, 0.8f);
+                NSData *thumbnailSourceData = UIImageJPEGRepresentation(thumbnailSourceImage, 0.85f);
                 [thumbnailSourceData writeToFile:thumbnailPath atomically:true];
             }
         }
@@ -501,7 +501,7 @@ static ASQueue *taskManagementQueue()
             else
             {
                 if (isFlat && cornerRadius > 0)
-                    thumbnailImage  =TGLoadedAttachmentWithCornerRadiusImage(thumbnailSourceImage, size, averageColorPtr, !isFlat, cornerRadius);
+                    thumbnailImage = TGLoadedAttachmentWithCornerRadiusImage(thumbnailSourceImage, size, averageColorPtr, !isFlat, cornerRadius, 0);
                 else
                     thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, averageColorPtr, !isFlat);
             }

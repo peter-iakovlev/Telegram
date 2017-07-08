@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x2a94ab03;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLEmbedPostMedia$embedPostPhoto *object = [[TLEmbedPostMedia$embedPostPhoto alloc] init];
     object.photo_id = metaObject->getInt64((int32_t)0xa4b26129);
@@ -79,7 +79,7 @@
     return (int32_t)0x4b4ff7f9;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLEmbedPostMedia$embedPostVideo *object = [[TLEmbedPostMedia$embedPostVideo alloc] init];
     object.video_id = metaObject->getInt64((int32_t)0xa09c03ef);

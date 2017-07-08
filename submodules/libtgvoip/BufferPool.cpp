@@ -9,7 +9,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-CBufferPool::CBufferPool(unsigned int size, unsigned int count){
+using namespace tgvoip;
+
+BufferPool::BufferPool(unsigned int size, unsigned int count){
 	assert(count<=64);
 	init_mutex(mutex);
 	buffers[0]=(unsigned char*) malloc(size*count);
@@ -19,14 +21,15 @@ CBufferPool::CBufferPool(unsigned int size, unsigned int count){
 		buffers[i]=buffers[0]+i*size;
 	}
 	usedBuffers=0;
+	this->size=size;
 }
 
-CBufferPool::~CBufferPool(){
+BufferPool::~BufferPool(){
 	free_mutex(mutex);
 	free(buffers[0]);
 }
 
-unsigned char* CBufferPool::Get(){
+unsigned char* BufferPool::Get(){
 	lock_mutex(mutex);
 	int i;
 	for(i=0;i<bufferCount;i++){
@@ -40,7 +43,7 @@ unsigned char* CBufferPool::Get(){
 	return NULL;
 }
 
-void CBufferPool::Reuse(unsigned char* buffer){
+void BufferPool::Reuse(unsigned char* buffer){
 	lock_mutex(mutex);
 	int i;
 	for(i=0;i<bufferCount;i++){
@@ -54,3 +57,10 @@ void CBufferPool::Reuse(unsigned char* buffer){
 	abort();
 }
 
+size_t BufferPool::GetSingleBufferSize(){
+	return size;
+}
+
+size_t BufferPool::GetBufferCount(){
+	return (size_t) bufferCount;
+}

@@ -29,7 +29,7 @@
     self = [super init];
     if (self != nil) {
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 75.0f, 75.0f)];
-        [_avatarView setSingleFontSize:26.0f doubleFontSize:26.0f useBoldFont:false];
+        [_avatarView setSingleFontSize:28.0f doubleFontSize:28.0f useBoldFont:false];
         
         CGSize size = CGSizeMake(75.0f, 75.0f);
         static UIImage *placeholder = nil;

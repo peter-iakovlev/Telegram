@@ -1604,7 +1604,7 @@
         strongSelf.view.userInteractionEnabled = false;
         [strongSelf->_currentTabController prepareTransitionOutSaving:false];
         
-        if (strongSelf.navigationController != nil)
+        if (strongSelf.navigationController != nil && [strongSelf.navigationController.viewControllers containsObject:strongSelf])
         {
             [strongSelf.navigationController popViewControllerAnimated:true];
         }

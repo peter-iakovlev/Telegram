@@ -160,9 +160,11 @@ static UIColor *colorForLine(bool incoming)
     [_nameModel layoutForContainerSize:maxTextSize];
     [_textModel layoutForContainerSize:maxTextSize];
     
+    CGFloat additionalOffset = _system ? 1.0f : 0.0f;
+    
     CGRect nameFrame = _nameModel.frame;
     nameFrame.origin.x = leftInset;
-    nameFrame.origin.y = 3.0f;
+    nameFrame.origin.y = 3.0f + additionalOffset;;
     _nameModel.frame = nameFrame;
     
     CGRect textFrame = _textModel.frame;

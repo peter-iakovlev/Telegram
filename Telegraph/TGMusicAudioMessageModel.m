@@ -298,7 +298,7 @@ static CTFontRef textFontForSize(CGFloat size)
     [self updateImageOverlay:false];
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)needsContentsUpdate infoWidth:(CGFloat)__unused infoWidth
+- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)needsContentsUpdate infoWidth:(CGFloat)infoWidth
 {
     CGFloat additionalWidth = 0.0f;
     if (_performerModel.frame.size.width < _titleModel.frame.size.width)
@@ -334,7 +334,11 @@ static CTFontRef textFontForSize(CGFloat size)
         //textSize.width = MAX(textSize.width, MIN(containerSize.width, infoWidth + sizeWidth + previewSize.width + 16.0f));
     }
     
-    return CGSizeMake(57.0f + 10.0f + MAX(_titleModel.frame.size.width, _performerModel.frame.size.width) + 30.0f, 59.0f + textSize.height);
+    CGSize size = CGSizeMake(57.0f + 10.0f + MAX(_titleModel.frame.size.width, _performerModel.frame.size.width) + 30.0f, 59.0f + textSize.height);
+    if (infoWidth > size.width - 40.0f) {
+        size.height += 10.0f;
+    }
+    return size;
 }
 
 - (void)layoutForContainerSize:(CGSize)containerSize

@@ -18,6 +18,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGCdnFileData.h"
+
 @interface TGFileDownloadActor () <TGRawHttpActor>
 {
     NSData *_encryptionKey;
@@ -26,6 +28,8 @@
     int _finalFileSize;
     
     id _workerToken;
+    
+    SMetaDisposable *_disposable;
 }
 
 @property (nonatomic, strong) TGNetworkWorkerGuard *worker;
@@ -49,6 +53,7 @@
     }
     
     [_worker releaseWorker];
+    [_disposable dispose];
 }
 
 - (void)prepare:(NSDictionary *)options
@@ -130,7 +135,6 @@
                 
                 [ActionStageInstance() nodeRetrieveProgress:self.path progress:0.001f];
                 
-#if TGUseModernNetworking
                 TGNetworkMediaTypeTag mediaTypeTag = (TGNetworkMediaTypeTag)[options[@"mediaTypeTag"] intValue];
                 __weak TGFileDownloadActor *weakSelf = self;
                 _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:dcId type:mediaTypeTag completion:^(TGNetworkWorkerGuard *worker)
@@ -154,8 +158,8 @@
                             {
                                 __strong TGFileDownloadActor *strongSelf = weakSelf;
                                 
-                                if (error == nil)
-                                    [strongSelf filePartDownloadSuccess:location offset:0 length:(int)size data:response.bytes];
+                                if (error == nil && [response isKindOfClass:[TLupload_File$upload_file class]])
+                                    [strongSelf filePartDownloadSuccess:location offset:0 length:(int)size data:((TLupload_File$upload_file *)response).bytes];
                                 else
                                     [strongSelf filePartDownloadFailed:location offset:0 length:(int)size];
                             }];
@@ -175,10 +179,6 @@
                         [worker.strongWorker addRequest:request];
                     }
                 }];
-                
-#else
-                self.cancelToken = [TGTelegraphInstance doDownloadFilePart:dcId location:location offset:0 length:size actor:self];
-#endif
             }
         }
         
@@ -193,63 +193,143 @@
     if (extractFileUrlComponents(url, &datacenterId, &volumeId, &fileId, &secret) && datacenterId != 0)
     {
         [ActionStageInstance() nodeRetrieveProgress:self.path progress:0.001f];
-#if TGUseModernNetworking
+
         TGNetworkMediaTypeTag mediaTypeTag = (TGNetworkMediaTypeTag)[options[@"mediaTypeTag"] intValue];
         __weak TGFileDownloadActor *weakSelf = self;
         _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:datacenterId type:mediaTypeTag completion:^(TGNetworkWorkerGuard *worker)
         {
             __strong TGFileDownloadActor *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                strongSelf.worker = worker;
-                
-                TLRPCupload_getFile$upload_getFile *getFile = [[TLRPCupload_getFile$upload_getFile alloc] init];
-                
-                TLInputFileLocation$inputFileLocation *location = [[TLInputFileLocation$inputFileLocation alloc] init];
-                location.volume_id = volumeId;
-                location.local_id = fileId;
-                location.secret = secret;
-                
-                getFile.location = location;
-                
-                MTRequest *request = [[MTRequest alloc] init];
-                request.body = getFile;
-                
-                [request setCompleted:^(TLupload_File *response, __unused NSTimeInterval timestamp, id error)
-                {
-                    [ActionStageInstance() dispatchOnStageQueue:^
-                    {
-                        __strong TGFileDownloadActor *strongSelf = weakSelf;
-                        
-                        if (error == nil)
-                            [strongSelf fileDownloadSuccess:volumeId fileId:fileId secret:secret data:response.bytes];
-                        else
-                            [strongSelf fileDownloadFailed:volumeId fileId:fileId secret:secret];
-                    }];
-                }];
-                
-                [request setProgressUpdated:^(float progress, __unused NSUInteger packetLength)
-                {
-                    [ActionStageInstance() dispatchOnStageQueue:^
-                    {
-                        __strong TGFileDownloadActor *strongSelf = weakSelf;
-                        [strongSelf fileDownloadProgress:volumeId fileId:fileId secret:secret progress:progress];
-                    }];
-                }];
-                
-                strongSelf.cancelToken = request.internalId;
-                
-                [worker.strongWorker addRequest:request];
+            if (strongSelf != nil) {
+                [strongSelf proceedWithWorker:worker type:mediaTypeTag fileData:nil datacenterId:datacenterId volumeId:volumeId fileId:fileId secret:secret];
             }
         }];
-#else
-        self.cancelToken = [TGTelegraphInstance doDownloadFile:datacenterId volumeId:volumeId fileId:fileId secret:secret actor:self];
-#endif
     }
     else
     {
         [ActionStageInstance() nodeRetrieveFailed:self.path];
     }
+}
+    
+- (void)proceedWithWorker:(TGNetworkWorkerGuard *)worker type:(TGNetworkMediaTypeTag)mediaTypeTag fileData:(TGCdnFileData *)fileData datacenterId:(NSInteger)datacenterId volumeId:(int64_t)volumeId fileId:(int32_t)fileId secret:(int64_t)secret {
+    self.worker = worker;
+    
+    id requestData = nil;
+    if (fileData != nil) {
+        TLRPCupload_getCdnFile$upload_getCdnFile *getCdnFile = [[TLRPCupload_getCdnFile$upload_getCdnFile alloc] init];
+        getCdnFile.file_token = fileData.token;
+        getCdnFile.offset = 0;
+        getCdnFile.limit = 1 * 1024 * 1024;
+        requestData = getCdnFile;
+    } else {
+        TLRPCupload_getFile$upload_getFile *getFile = [[TLRPCupload_getFile$upload_getFile alloc] init];
+        
+        TLInputFileLocation$inputFileLocation *location = [[TLInputFileLocation$inputFileLocation alloc] init];
+        location.volume_id = volumeId;
+        location.local_id = fileId;
+        location.secret = secret;
+        
+        getFile.location = location;
+        getFile.limit = 1 * 1024 * 1024;
+        
+        requestData = getFile;
+    }
+    
+    MTRequest *request = [[MTRequest alloc] init];
+    request.body = requestData;
+    
+    __weak TGFileDownloadActor *weakSelf = self;
+    [request setCompleted:^(TLupload_File *response, __unused NSTimeInterval timestamp, id error) {
+        [ActionStageInstance() dispatchOnStageQueue:^ {
+            __strong TGFileDownloadActor *strongSelf = weakSelf;
+            
+            if (error == nil) {
+                if (fileData == nil) {
+                    if ([response isKindOfClass:[TLupload_File$upload_file class]]) {
+                        [strongSelf fileDownloadSuccess:volumeId fileId:fileId secret:secret data:((TLupload_File$upload_file *)response).bytes];
+                    } else if ([response isKindOfClass:[TLupload_File$upload_fileCdnRedirect class]]) {
+                        TLupload_File$upload_fileCdnRedirect *redirect = (TLupload_File$upload_fileCdnRedirect *)response;
+                        [strongSelf switchToCdn:redirect.dc_id fileData:[[TGCdnFileData alloc] initWithCdnId:redirect.dc_id token:redirect.file_token encryptionKey:redirect.encryption_key encryptionIv:redirect.encryption_iv] type:mediaTypeTag datacenterId:datacenterId volumeId:volumeId fileId:fileId secret:secret];
+                    } else {
+                        [strongSelf fileDownloadFailed:volumeId fileId:fileId secret:secret];
+                    }
+                } else {
+                    if ([response isKindOfClass:[TLupload_CdnFile$upload_cdnFile class]]) {
+                        NSData *bytes = ((TLupload_CdnFile$upload_cdnFile *)response).bytes;
+                        NSMutableData *encryptionIv = [[NSMutableData alloc] initWithData:fileData.encryptionIv];
+                        int32_t offset = 0 / 8;
+                        NSSwapInt(offset);
+                        memcpy(encryptionIv.mutableBytes + encryptionIv.length - 4, &offset, 4);
+                        NSData *data = MTAesCtrDecrypt(bytes, fileData.encryptionKey, encryptionIv);
+                        [strongSelf fileDownloadSuccess:volumeId fileId:fileId secret:secret data:data];
+                    } else if ([response isKindOfClass:[TLupload_CdnFile$upload_cdnFileReuploadNeeded class]]) {
+                        TLupload_CdnFile$upload_cdnFileReuploadNeeded *reupload = (TLupload_CdnFile$upload_cdnFileReuploadNeeded *)response;
+                        [strongSelf reuploadCdnFile:(fileData.cdnId) fileData:fileData requestToken:reupload.request_token type:mediaTypeTag datacenterId:datacenterId volumeId:volumeId fileId:fileId secret:secret];
+                    } else {
+                        [strongSelf fileDownloadFailed:volumeId fileId:fileId secret:secret];
+                    }
+                }
+            }
+            else {
+                [strongSelf fileDownloadFailed:volumeId fileId:fileId secret:secret];
+            }
+        }];
+    }];
+    
+    [request setProgressUpdated:^(float progress, __unused NSUInteger packetLength) {
+        [ActionStageInstance() dispatchOnStageQueue:^ {
+            __strong TGFileDownloadActor *strongSelf = weakSelf;
+            [strongSelf fileDownloadProgress:volumeId fileId:fileId secret:secret progress:progress];
+        }];
+    }];
+    
+    self.cancelToken = request.internalId;
+    
+    [worker.strongWorker addRequest:request];
+}
+    
+- (void)switchToCdn:(int32_t)cdnId fileData:(TGCdnFileData *)fileData type:(TGNetworkMediaTypeTag)mediaTypeTag datacenterId:(NSInteger)datacenterId volumeId:(int64_t)volumeId fileId:(int32_t)fileId secret:(int64_t)secret {
+    [[TGTelegramNetworking instance] cancelDownloadWorkerRequestByToken:_workerToken];
+    _workerToken = nil;
+    
+    __weak TGFileDownloadActor *weakSelf = self;
+    _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:cdnId type:mediaTypeTag isCdn:true completion:^(TGNetworkWorkerGuard *worker) {
+        __strong TGFileDownloadActor *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            [strongSelf proceedWithWorker:worker type:mediaTypeTag fileData:fileData datacenterId:datacenterId volumeId:volumeId fileId:fileId secret:secret];
+        }
+    }];
+}
+    
+- (void)reuploadCdnFile:(int32_t)cdnId fileData:(TGCdnFileData *)fileData requestToken:(NSData *)requestToken type:(TGNetworkMediaTypeTag)mediaTypeTag datacenterId:(NSInteger)datacenterId volumeId:(int64_t)volumeId fileId:(int32_t)fileId secret:(int64_t)secret {
+    __weak TGFileDownloadActor *weakSelf = self;
+    _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:datacenterId type:mediaTypeTag completion:^(TGNetworkWorkerGuard *worker)
+    {
+        __strong TGFileDownloadActor *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            MTRequest *request = [[MTRequest alloc] init];
+            TLRPCupload_reuploadCdnFile$upload_reuploadCdnFile *requestData = [[TLRPCupload_reuploadCdnFile$upload_reuploadCdnFile alloc] init];
+            requestData.file_token = fileData.token;
+            requestData.request_token = requestToken;
+            request.body = requestData;
+            
+            [request setCompleted:^(__unused id response, __unused NSTimeInterval timestamp, id error) {
+                [ActionStageInstance() dispatchOnStageQueue:^{
+                    __strong TGFileDownloadActor *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        if (error == nil) {
+                            [strongSelf switchToCdn:cdnId fileData:fileData type:mediaTypeTag datacenterId:datacenterId volumeId:volumeId fileId:fileId secret:secret];
+                        } else {
+                            [strongSelf fileDownloadFailed:volumeId fileId:fileId secret:secret];
+                        }
+                    }
+                }];
+            }];
+            
+            strongSelf.cancelToken = request.internalId;
+            
+            [worker.strongWorker addRequest:request];
+        }
+    }];
 }
 
 - (void)completeWithData:(NSData *)data
@@ -358,6 +438,8 @@
         [_worker.strongWorker cancelRequestById:self.cancelToken];
     
     [_worker releaseWorker];
+    
+    [_disposable dispose];
     
     [super cancel];
 }

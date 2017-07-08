@@ -31,13 +31,19 @@
         
         _title = title;
         _isOn = isOn;
+        
+        _isEnabled = true;
     }
     return self;
 }
 
 - (Class)itemViewClass
 {
-    return [TGSwitchCollectionItemView class];
+    if (_isPermission) {
+        return [TGPermissionSwitchCollectionItemView class];
+    } else {
+        return [TGSwitchCollectionItemView class];
+    }
 }
 
 - (CGSize)itemSizeForContainerSize:(CGSize)containerSize
@@ -49,8 +55,10 @@
 {
     [super bindView:view];
     
+    [((TGSwitchCollectionItemView *)view) setFullSeparator:_fullSeparator];
     [((TGSwitchCollectionItemView *)view) setTitle:_title];
     [((TGSwitchCollectionItemView *)view) setIsOn:_isOn animated:false];
+    [((TGSwitchCollectionItemView *)view) setIsEnabled:_isEnabled];
     ((TGSwitchCollectionItemView *)view).delegate = self;
 }
 
@@ -95,7 +103,7 @@
         _isOn = isOn;
         
         if (_toggled)
-            _toggled(isOn);
+            _toggled(isOn, self);
         [_interfaceHandle requestAction:@"switchItemChanged" options:@{@"item": self, @"value": @(_isOn)}];
     }
 }

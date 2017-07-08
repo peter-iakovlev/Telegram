@@ -35,6 +35,7 @@
 
 #import "TGMediaAssetsLibrary.h"
 #import "TGMediaAssetImageSignals.h"
+#import "TGVideoConverter.h"
 #import "TGMediaVideoConverter.h"
 #import "TGMediaLiveUploadWatcher.h"
 
@@ -90,7 +91,7 @@
 
 + (NSUInteger)currentLayer
 {
-    return 46;
+    return 66;
 }
 
 + (NSString *)genericPath
@@ -143,6 +144,12 @@
             } else {
                 return [Secret46_DecryptedMessageMedia decryptedMessageMediaVenueWithLat:@(latitude) plong:@(longitude) title:venue.title == nil ? @"" : venue.title address:venue.address == nil ? @"" : venue.address provider:venue.provider == nil ? @"" : venue.provider venueId:venue.venueId == nil ? @"" : venue.venueId];
             }
+        case 66:
+            if (venue == nil) {
+                return [Secret66_DecryptedMessageMedia decryptedMessageMediaGeoPointWithLat:@(latitude) plong:@(longitude)];
+            } else {
+                return [Secret66_DecryptedMessageMedia decryptedMessageMediaVenueWithLat:@(latitude) plong:@(longitude) title:venue.title == nil ? @"" : venue.title address:venue.address == nil ? @"" : venue.address provider:venue.provider == nil ? @"" : venue.provider venueId:venue.venueId == nil ? @"" : venue.venueId];
+            }
         default:
             break;
     }
@@ -164,6 +171,8 @@
             return [Secret23_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv];
         case 46:
             return [Secret46_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
+        case 66:
+            return [Secret66_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
         default:
             break;
     }
@@ -185,6 +194,8 @@
             return [Secret23_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb: thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) duration:@(duration) mimeType:mimeType w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv];
         case 46:
             return [Secret46_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb: thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) duration:@(duration) mimeType:mimeType w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
+        case 66:
+            return [Secret66_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb: thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) duration:@(duration) mimeType:mimeType w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
     }
     
     return nil;
@@ -231,6 +242,49 @@
                 return [Secret46_DocumentAttribute documentAttributeVideoWithDuration:@(concreteAttribute.duration) w:@((int)concreteAttribute.size.width) h:@((int)concreteAttribute.size.height)];
             }
             break;
+        case 66:
+            if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]]) {
+                return [Secret66_DocumentAttribute documentAttributeAnimated];
+            } else if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                TGDocumentAttributeAudio *concreteAttribute = attribute;
+                int32_t flags = 0;
+                if (concreteAttribute.isVoice) {
+                    flags |= (1 << 10);
+                }
+                if (concreteAttribute.title != nil) {
+                    flags |= (1 << 0);
+                }
+                if (concreteAttribute.performer != nil) {
+                    flags |= (1 << 1);
+                }
+                if (concreteAttribute.waveform != nil) {
+                    flags |= (1 << 2);
+                }
+                
+                return [Secret66_DocumentAttribute documentAttributeAudioWithFlags:@(flags) duration:@(concreteAttribute.duration) title:concreteAttribute.title performer:concreteAttribute.performer waveform:[concreteAttribute.waveform bitstream]];
+            } else if ([attribute isKindOfClass:[TGDocumentAttributeFilename class]]) {
+                TGDocumentAttributeFilename *concreteAttribute = attribute;
+                return [Secret66_DocumentAttribute documentAttributeFilenameWithFileName:concreteAttribute.filename == nil ? @"" : concreteAttribute.filename];
+            } else if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]]) {
+                TGDocumentAttributeImageSize *concreteAttribute = attribute;
+                return [Secret66_DocumentAttribute documentAttributeImageSizeWithW:@((int)concreteAttribute.size.width) h:@((int)concreteAttribute.size.height)];
+            } else if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]]) {
+                TGDocumentAttributeSticker *concreteAttribute = attribute;
+                id stickerset = [Secret66_InputStickerSet inputStickerSetEmpty];
+                NSString *shortName = [TGStickersSignals stickerPackShortName:concreteAttribute.packReference];
+                if (shortName.length != 0) {
+                    stickerset = [Secret66_InputStickerSet inputStickerSetShortNameWithShortName:shortName];
+                }
+                return [Secret66_DocumentAttribute documentAttributeStickerWithAlt:concreteAttribute.alt == nil ? @"" : concreteAttribute.alt stickerset:stickerset];
+            } else if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                TGDocumentAttributeVideo *concreteAttribute = attribute;
+                int32_t flags = 0;
+                if (concreteAttribute.isRoundMessage) {
+                    flags |= (1 << 0);
+                }
+                return [Secret66_DocumentAttribute documentAttributeVideoWithFlags:@(flags) duration:@(concreteAttribute.duration) w:@((int)concreteAttribute.size.width) h:@((int)concreteAttribute.size.height)];
+            }
+            break;
     }
     return nil;
 }
@@ -272,6 +326,8 @@
             }
         case 46:
             return [Secret46_DecryptedMessageMedia decryptedMessageMediaDocumentWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) mimeType:mimeType size:@(size) key:key iv:iv attributes:convertedAttributes caption:caption == nil ? @"" : caption];
+        case 66:
+            return [Secret66_DecryptedMessageMedia decryptedMessageMediaDocumentWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) mimeType:mimeType size:@(size) key:key iv:iv attributes:convertedAttributes caption:caption == nil ? @"" : caption];
         default:
             break;
     }
@@ -293,6 +349,8 @@
             return [Secret23_DecryptedMessageMedia decryptedMessageMediaAudioWithDuration:@(duration) mimeType:mimeType size:@(size) key:key iv:iv];
         case 46:
             return [Secret46_DecryptedMessageMedia decryptedMessageMediaAudioWithDuration:@(duration) mimeType:mimeType size:@(size) key:key iv:iv];
+        case 66:
+            return [Secret66_DecryptedMessageMedia decryptedMessageMediaAudioWithDuration:@(duration) mimeType:mimeType size:@(size) key:key iv:iv];
         default:
             break;
     }
@@ -316,6 +374,9 @@
                 case 46:
                     convertedAttribute = [Secret46_DocumentAttribute documentAttributeFilenameWithFileName:((TGDocumentAttributeFilename *)attribute).filename];
                     break;
+                case 66:
+                    convertedAttribute = [Secret66_DocumentAttribute documentAttributeFilenameWithFileName:((TGDocumentAttributeFilename *)attribute).filename];
+                    break;
                 default:
                     break;
             }
@@ -333,6 +394,9 @@
                 case 46:
                     convertedAttribute = [Secret46_DocumentAttribute documentAttributeAnimated];
                     break;
+                case 66:
+                    convertedAttribute = [Secret66_DocumentAttribute documentAttributeAnimated];
+                    break;
                 default:
                     break;
             }
@@ -349,6 +413,9 @@
                     break;
                 case 46:
                     convertedAttribute = [Secret46_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)((TGDocumentAttributeImageSize *)attribute).size.width) h:@((int32_t)((TGDocumentAttributeImageSize *)attribute).size.height)];
+                    break;
+                case 66:
+                    convertedAttribute = [Secret66_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)((TGDocumentAttributeImageSize *)attribute).size.width) h:@((int32_t)((TGDocumentAttributeImageSize *)attribute).size.height)];
                     break;
                 default:
                     break;
@@ -373,6 +440,16 @@
                         stickerset = [Secret46_InputStickerSet inputStickerSetShortNameWithShortName:shortName];
                     }
                     convertedAttribute = [Secret46_DocumentAttribute documentAttributeStickerWithAlt:concreteAttribute.alt == nil ? @"" : concreteAttribute.alt stickerset:stickerset];
+                    break;
+                }
+                case 66:
+                {
+                    Secret66_InputStickerSet *stickerset = [Secret66_InputStickerSet inputStickerSetEmpty];
+                    NSString *shortName = [TGStickersSignals stickerPackShortName:concreteAttribute.packReference];
+                    if (shortName.length != 0) {
+                        stickerset = [Secret66_InputStickerSet inputStickerSetShortNameWithShortName:shortName];
+                    }
+                    convertedAttribute = [Secret66_DocumentAttribute documentAttributeStickerWithAlt:concreteAttribute.alt == nil ? @"" : concreteAttribute.alt stickerset:stickerset];
                     break;
                 }
                 default:
@@ -410,6 +487,16 @@
             Secret46_PhotoSize_photoCachedSize *cachedSize = [Secret46_PhotoSize photoCachedSizeWithType:@"s" location:[Secret46_FileLocation_fileLocation fileLocationWithDcId:@(thumbDcId) volumeId:@(thumbVolumeId) localId:@(thumbLocalId) secret:@(thumbSecret)] w:@(thumbnailSize.width) h:@(thumbnailSize.height) bytes:thumbnailData];
             return [Secret46_DecryptedMessageMedia decryptedMessageMediaExternalDocumentWithPid:@(n_id) accessHash:@(accessHash) date:@(date) mimeType:mimeType == nil ? @"" : mimeType size:@(size) thumb:cachedSize dcId:@(dcId) attributes:[self convertDocumentAttributes:attributes toLayer:layer]];
         }
+        case 66:
+        {
+            int32_t thumbDcId = 0;
+            int64_t thumbVolumeId = 0;
+            int32_t thumbLocalId = 0;
+            int64_t thumbSecret = 0;
+            extractFileUrlComponents(thumbnailUri, &thumbDcId, &thumbVolumeId, &thumbLocalId, &thumbSecret);
+            Secret66_PhotoSize_photoCachedSize *cachedSize = [Secret66_PhotoSize photoCachedSizeWithType:@"s" location:[Secret66_FileLocation_fileLocation fileLocationWithDcId:@(thumbDcId) volumeId:@(thumbVolumeId) localId:@(thumbLocalId) secret:@(thumbSecret)] w:@(thumbnailSize.width) h:@(thumbnailSize.height) bytes:thumbnailData];
+            return [Secret66_DecryptedMessageMedia decryptedMessageMediaExternalDocumentWithPid:@(n_id) accessHash:@(accessHash) date:@(date) mimeType:mimeType == nil ? @"" : mimeType size:@(size) thumb:cachedSize dcId:@(dcId) attributes:[self convertDocumentAttributes:attributes toLayer:layer]];
+        }
         default:
             break;
     }
@@ -424,6 +511,9 @@
     switch (layer) {
         case 46:
             return [Secret46_DecryptedMessageMedia decryptedMessageMediaWebPageWithUrl:url];
+            break;
+        case 66:
+            return [Secret66_DecryptedMessageMedia decryptedMessageMediaWebPageWithUrl:url];
             break;
         default:
             break;
@@ -459,6 +549,9 @@
             case 46:
                 return [Secret46_MessageEntity messageEntityBoldWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
+            case 66:
+                return [Secret66_MessageEntity messageEntityBoldWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
             default:
                 break;
         }
@@ -466,6 +559,9 @@
         switch (layer) {
             case 46:
                 return [Secret46_MessageEntity messageEntityBotCommandWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
+            case 66:
+                return [Secret66_MessageEntity messageEntityBotCommandWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
             default:
                 break;
@@ -475,6 +571,9 @@
             case 46:
                 return [Secret46_MessageEntity messageEntityCodeWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
+            case 66:
+                return [Secret66_MessageEntity messageEntityCodeWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
             default:
                 break;
         }
@@ -482,6 +581,9 @@
         switch (layer) {
             case 46:
                 return [Secret46_MessageEntity messageEntityEmailWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
+            case 66:
+                return [Secret66_MessageEntity messageEntityEmailWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
             default:
                 break;
@@ -491,6 +593,9 @@
             case 46:
                 return [Secret46_MessageEntity messageEntityHashtagWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
+            case 66:
+                return [Secret66_MessageEntity messageEntityHashtagWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
             default:
                 break;
         }
@@ -498,6 +603,9 @@
         switch (layer) {
             case 46:
                 return [Secret46_MessageEntity messageEntityItalicWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
+            case 66:
+                return [Secret66_MessageEntity messageEntityItalicWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
             default:
                 break;
@@ -507,6 +615,9 @@
             case 46:
                 return [Secret46_MessageEntity messageEntityMentionWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
+            case 66:
+                return [Secret66_MessageEntity messageEntityMentionWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
             default:
                 break;
         }
@@ -514,6 +625,9 @@
         TGMessageEntityPre *concreteEntity = (TGMessageEntityPre *)entity;
         switch (layer) {
             case 46:
+                return [Secret46_MessageEntity messageEntityPreWithOffset:@(entity.range.location) length:@(entity.range.length) language:concreteEntity.language == nil ? @"" : concreteEntity.language];
+                break;
+            case 66:
                 return [Secret46_MessageEntity messageEntityPreWithOffset:@(entity.range.location) length:@(entity.range.length) language:concreteEntity.language == nil ? @"" : concreteEntity.language];
                 break;
             default:
@@ -525,6 +639,9 @@
             case 46:
                 return [Secret46_MessageEntity messageEntityTextUrlWithOffset:@(entity.range.location) length:@(entity.range.length) url:concreteEntity.url == nil ? @"" : concreteEntity.url];
                 break;
+            case 66:
+                return [Secret46_MessageEntity messageEntityTextUrlWithOffset:@(entity.range.location) length:@(entity.range.length) url:concreteEntity.url == nil ? @"" : concreteEntity.url];
+                break;
             default:
                 break;
         }
@@ -532,6 +649,9 @@
         switch (layer) {
             case 46:
                 return [Secret46_MessageEntity messageEntityUrlWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
+            case 66:
+                return [Secret66_MessageEntity messageEntityUrlWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
             default:
                 break;
@@ -777,7 +897,29 @@
             
             if (media != nil)
             {
-                if ([self isMediaLocallyAvailable:media])
+                if ([media isKindOfClass:[TGDocumentMediaAttachment class]] && ((TGDocumentMediaAttachment *)media).isStickerWithPack) {
+                    TGDocumentMediaAttachment *document = media;
+                    
+                    CGSize thumSize = CGSizeZero;
+                    NSString *thumbnailUri = [document.thumbnailInfo imageUrlForLargestSize:&thumSize];
+                    NSData *thumbnailData = nil;
+                    
+                    if (thumbnailUri != nil) {
+                        [NSData dataWithContentsOfFile:[[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId version:0] stringByAppendingPathComponent:@"thumbnail"]];
+                        if (thumbnailData == nil)
+                        {
+                            thumbnailData = [NSData dataWithContentsOfFile:[[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId version:0] stringByAppendingPathComponent:@"thumbnail-high"]];
+                        }
+                    }
+                    
+                    id media = [self decryptedExternalDocumentWithLayer:[self currentPeerLayer] id:document.documentId accessHash:document.accessHash date:document.date mimeType:document.mimeType size:document.size thumbnailUri:thumbnailUri thumbnailData:thumbnailData thumbnailSize:thumSize dcId:document.datacenterId attributes:document.attributes];
+                    
+                    int64_t randomId = self.preparedMessage.randomId;
+                    if (randomId == 0)
+                        arc4random_buf(&randomId, 8);
+                    
+                    _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:nil watcher:self];
+                } else if ([self isMediaLocallyAvailable:media])
                 {
                     if ([self doesMediaRequireUpload:media])
                     {
@@ -1006,80 +1148,101 @@
             
             NSString *tempFilePath = TGTemporaryFileName(nil);
             
-            SSignal *sourceSignal = nil;
-            if (assetVideoMessage.assetIdentifier != nil)
+            SSignal *signal = nil;
+            if (assetVideoMessage.roundMessage && assetVideoMessage.adjustments == nil)
             {
-                sourceSignal = [[[TGMediaAssetsLibrary sharedLibrary] assetWithIdentifier:assetVideoMessage.assetIdentifier] mapToSignal:^SSignal *(TGMediaAsset *asset)
-                {
-                    if (!assetVideoMessage.document || assetVideoMessage.isAnimation)
-                    {
-                        return [[TGMediaAssetImageSignals avAssetForVideoAsset:asset allowNetworkAccess:false] catch:^SSignal *(id error)
-                        {
-                            if (![error isKindOfClass:[NSNumber class]] && !assetVideoMessage.isCloud)
-                                return [SSignal fail:error];
-                            
-                            return [TGMediaAssetImageSignals avAssetForVideoAsset:asset allowNetworkAccess:true];
-                        }];
-                    }
-                    else
-                    {
-                        if (asset.subtypes & TGMediaAssetSubtypeVideoHighFrameRate)
-                            self.uploadProgressContainsPreDownloads = true;
-                        
-                        return [[TGMediaAssetImageSignals saveUncompressedVideoForAsset:asset toPath:tempFilePath allowNetworkAccess:false] catch:^SSignal *(id error)
-                        {
-                            if (![error isKindOfClass:[NSNumber class]] && !assetVideoMessage.isCloud)
-                                return [SSignal fail:error];
-                            
-                            self.uploadProgressContainsPreDownloads = true;
-                            return [TGMediaAssetImageSignals saveUncompressedVideoForAsset:asset toPath:tempFilePath allowNetworkAccess:true];
-                        }];
-                    }
-                }];
-            }
-            else if (assetVideoMessage.assetURL != nil)
-            {
-                sourceSignal = [SSignal single:[[AVURLAsset alloc] initWithURL:assetVideoMessage.assetURL options:nil]];
+                NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                if ([[NSFileManager defaultManager] fileExistsAtPath:assetVideoMessage.assetURL.path])
+                    dict[@"fileUrl"] = assetVideoMessage.assetURL;
+                else
+                    dict[@"fileUrl"] = [NSURL fileURLWithPath:assetVideoMessage.localVideoPath];
+                dict[@"duration"] = @(assetVideoMessage.duration);
+                dict[@"dimensions"] = [NSValue valueWithCGSize:assetVideoMessage.dimensions];
+                dict[@"previewImage"] = [UIImage imageWithContentsOfFile:assetVideoMessage.localThumbnailDataPath];
+                if (assetVideoMessage.liveData)
+                    dict[@"liveUploadData"] = assetVideoMessage.liveData;
+                
+                signal = [SSignal single:@{ @"convertResult": dict }];
             }
             else
             {
-                sourceSignal = [SSignal fail:nil];
-            }
-            
-            SSignal *signal = [videoDownloadQueue() enqueue:[sourceSignal mapToSignal:^SSignal *(id value)
-            {
-                if ([value isKindOfClass:[AVAsset class]])
+                SSignal *sourceSignal = nil;
+                if (assetVideoMessage.assetIdentifier != nil)
                 {
-                    AVAsset *avAsset = (AVAsset *)value;
-                    
-                    return [[TGMediaVideoConverter convertAVAsset:avAsset adjustments:adjustments watcher:liveUpload ? [[TGMediaLiveUploadWatcher alloc] init] : nil] map:^id(id value)
+                    sourceSignal = [[[TGMediaAssetsLibrary sharedLibrary] assetWithIdentifier:assetVideoMessage.assetIdentifier] mapToSignal:^SSignal *(TGMediaAsset *asset)
                     {
-                        if ([value isKindOfClass:[TGMediaVideoConversionResult class]])
+                        if (!assetVideoMessage.document || assetVideoMessage.isAnimation)
                         {
-                            NSMutableDictionary *dict = [[(TGMediaVideoConversionResult *)value dictionary] mutableCopy];
-                            return @{ @"convertResult": dict };
+                            return [[TGMediaAssetImageSignals avAssetForVideoAsset:asset allowNetworkAccess:false] catch:^SSignal *(id error)
+                            {
+                                if (![error isKindOfClass:[NSNumber class]] && !assetVideoMessage.isCloud)
+                                    return [SSignal fail:error];
+                                
+                                return [TGMediaAssetImageSignals avAssetForVideoAsset:asset allowNetworkAccess:true];
+                            }];
                         }
-                        else if ([value isKindOfClass:[NSNumber class]])
+                        else
                         {
-                            return @{ @"convertProgress": value };
+                            if (asset.subtypes & TGMediaAssetSubtypeVideoHighFrameRate)
+                                self.uploadProgressContainsPreDownloads = true;
+                            
+                            return [[TGMediaAssetImageSignals saveUncompressedVideoForAsset:asset toPath:tempFilePath allowNetworkAccess:false] catch:^SSignal *(id error)
+                            {
+                                if (![error isKindOfClass:[NSNumber class]] && !assetVideoMessage.isCloud)
+                                    return [SSignal fail:error];
+                                
+                                self.uploadProgressContainsPreDownloads = true;
+                                return [TGMediaAssetImageSignals saveUncompressedVideoForAsset:asset toPath:tempFilePath allowNetworkAccess:true];
+                            }];
                         }
-                        return nil;
                     }];
                 }
-                else if ([value isKindOfClass:[NSString class]])
+                else if (assetVideoMessage.assetURL != nil)
                 {
-                    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-                    dict[@"filePath"] = tempFilePath;
-                    dict[@"fileName"] = value;
-                    return [SSignal single:@{ @"fileResult": dict }];
+                    sourceSignal = [SSignal single:[[AVURLAsset alloc] initWithURL:assetVideoMessage.assetURL options:nil]];
                 }
-                else if ([value isKindOfClass:[NSNumber class]])
+                else
                 {
-                    return [SSignal single:@{ @"downloadProgress": value }];
+                    sourceSignal = [SSignal fail:nil];
                 }
-                
-                return [SSignal single:value];
-            }]];
+            
+                signal = [videoDownloadQueue() enqueue:[sourceSignal mapToSignal:^SSignal *(id value)
+                {
+                    if ([value isKindOfClass:[AVAsset class]])
+                    {
+                        AVAsset *avAsset = (AVAsset *)value;
+                        
+                        SSignal *innerConvertSignal = iosMajorVersion() < 8 ? [TGVideoConverter convertSignalForAVAsset:avAsset adjustments:adjustments liveUpload:liveUpload passthrough:false] : [TGMediaVideoConverter convertAVAsset:avAsset adjustments:adjustments watcher:liveUpload ? [[TGMediaLiveUploadWatcher alloc] init] : nil];
+                        
+                        return [innerConvertSignal map:^id(id value)
+                        {
+                            if ([value isKindOfClass:[TGMediaVideoConversionResult class]])
+                            {
+                                NSMutableDictionary *dict = [[(TGMediaVideoConversionResult *)value dictionary] mutableCopy];
+                                return @{ @"convertResult": dict };
+                            }
+                            else if ([value isKindOfClass:[NSNumber class]])
+                            {
+                                return @{ @"convertProgress": value };
+                            }
+                            return nil;
+                        }];
+                    }
+                    else if ([value isKindOfClass:[NSString class]])
+                    {
+                        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                        dict[@"filePath"] = tempFilePath;
+                        dict[@"fileName"] = value;
+                        return [SSignal single:@{ @"fileResult": dict }];
+                    }
+                    else if ([value isKindOfClass:[NSNumber class]])
+                    {
+                        return [SSignal single:@{ @"downloadProgress": value }];
+                    }
+                    
+                    return [SSignal single:value];
+                }]];
+            }
             
             __weak TGModernSendSecretMessageActor *weakSelf = self;
             [self.disposables add:[[signal deliverOn:[SQueue wrapConcurrentNativeQueue:[ActionStageInstance() globalStageDispatchQueue]]] startWithNext:^(id next)
@@ -1123,8 +1286,6 @@
                     [TGDatabaseInstance() transactionUpdateMessages:@[messageUpdate] updateConversationDatas:nil];
                     
                     updatedMessage = [TGDatabaseInstance() loadMessageWithMid:self.preparedMessage.mid peerId:_conversationId];
-                    id resource = [[SGraphObjectNode alloc] initWithObject:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:self.preparedMessage.mid], updatedMessage, nil]];
-                    [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messagesChanged", _conversationId] resource:resource];
                     
                     if (assetVideoMessage.isAnimation)
                     {
@@ -1152,6 +1313,9 @@
                         
                         [self uploadFilesWithExtensions:@[@[[assetVideoMessage localVideoPath], @"bin", @(true)]] mediaTypeTag:TGNetworkMediaTypeTagVideo];
                     }
+                    
+                    id resource = [[SGraphObjectNode alloc] initWithObject:[[NSArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:self.preparedMessage.mid], updatedMessage, nil]];
+                    [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messagesChanged", _conversationId] resource:resource];
                 }
                 else if (dict[@"fileResult"] != nil)
                 {
@@ -1663,7 +1827,13 @@
             CGSize thumbnailSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
             NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbnailSize), 0.6f);
             
-            id media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int32_t)videoAttachment.duration dimensions:videoAttachment.dimensions mimeType:@"video/mp4" caption:videoAttachment.caption size:videoSize key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+            id media = nil;
+            if (videoAttachment.roundMessage) {
+                NSArray *attributes = @[[[TGDocumentAttributeVideo alloc] initWithRoundMessage:true size:videoAttachment.dimensions duration:(int32_t)videoAttachment.duration], [[TGDocumentAttributeFilename alloc] initWithFilename:@"video.mp4"]];
+                media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:attributes mimeType:@"video/mp4" caption:videoAttachment.caption size:videoSize key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+            } else {
+                media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int32_t)videoAttachment.duration dimensions:videoAttachment.dimensions mimeType:@"video/mp4" caption:videoAttachment.caption size:videoSize key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+            }
             
             int64_t randomId = self.preparedMessage.randomId;
             if (randomId == 0)
@@ -2473,7 +2643,13 @@
                 CGSize thumbnailSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
                 NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbnailSize), 0.6f);
                 
-                id media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int)assetVideoMessage.duration dimensions:assetVideoMessage.dimensions mimeType:@"video/mp4" caption:assetVideoMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                id media = nil;
+                if (assetVideoMessage.roundMessage) {
+                    NSArray *attributes = @[[[TGDocumentAttributeVideo alloc] initWithRoundMessage:true size:assetVideoMessage.dimensions duration:(int32_t)assetVideoMessage.duration], [[TGDocumentAttributeFilename alloc] initWithFilename:@"video.mp4"]];
+                    media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:attributes mimeType:@"video/mp4" caption:assetVideoMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                } else {
+                    media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int)assetVideoMessage.duration dimensions:assetVideoMessage.dimensions mimeType:@"video/mp4" caption:assetVideoMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                }
                 
                 int64_t randomId = self.preparedMessage.randomId;
                 if (randomId == 0)
@@ -2949,6 +3125,24 @@
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageWithFlags:@(flags) randomId:@(randomId) ttl:@(lifetime) message:text media:media entities:entities viaBotName:viaBotName replyToRandomId:replyToRandomId == 0 ? nil : @(replyToRandomId)]];
             break;
         }
+        case 66:
+        {
+            int32_t flags = 0;
+            if (media != nil) {
+                flags |= (1 << 9);
+            }
+            if (entities != nil) {
+                flags |= (1 << 7);
+            }
+            if (viaBotName.length != 0) {
+                flags |= (1 << 11);
+            }
+            if (replyToRandomId != 0) {
+                flags |= (1 << 3);
+            }
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageWithFlags:@(flags) randomId:@(randomId) ttl:@(lifetime) message:text media:media entities:entities viaBotName:viaBotName replyToRandomId:replyToRandomId == 0 ? nil : @(replyToRandomId)]];
+            break;
+        }
         default:
             break;
     }
@@ -3178,6 +3372,9 @@
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionSetMessageTTLWithTtlSeconds:@(ttl)]]];
             break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionSetMessageTTLWithTtlSeconds:@(ttl)]]];
+            break;
         default:
             break;
     }
@@ -3209,6 +3406,9 @@
             break;
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionDeleteMessagesWithRandomIds:randomIds]]];
+            break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionDeleteMessagesWithRandomIds:randomIds]]];
             break;
         default:
             break;
@@ -3242,6 +3442,9 @@
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionFlushHistory]]];
             break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionFlushHistory]]];
+            break;
         default:
             break;
     }
@@ -3269,6 +3472,9 @@
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionReadMessagesWithRandomIds:randomIds]]];
             break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionReadMessagesWithRandomIds:randomIds]]];
+            break;
         default:
             break;
     }
@@ -3295,6 +3501,9 @@
             break;
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionScreenshotMessagesWithRandomIds:randomIds]]];
+            break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionScreenshotMessagesWithRandomIds:randomIds]]];
             break;
         default:
             break;
@@ -3328,6 +3537,9 @@
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionNotifyLayerWithLayer:@(notifyLayer)]]];
             break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionNotifyLayerWithLayer:@(notifyLayer)]]];
+            break;
         default:
             break;
     }
@@ -3355,6 +3567,9 @@
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionResendWithStartSeqNo:@(fromSeq) endSeqNo:@(toSeq)]]];
             break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionResendWithStartSeqNo:@(fromSeq) endSeqNo:@(toSeq)]]];
+            break;
         default:
             break;
     }
@@ -3380,6 +3595,9 @@
             break;
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionRequestKeyWithExchangeId:@(exchangeId) gA:g_a]]];
+            break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionRequestKeyWithExchangeId:@(exchangeId) gA:g_a]]];
             break;
         default:
             break;
@@ -3407,6 +3625,9 @@
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionAcceptKeyWithExchangeId:@(exchangeId) gB:g_b keyFingerprint:@(keyFingerprint)]]];
             break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionAcceptKeyWithExchangeId:@(exchangeId) gB:g_b keyFingerprint:@(keyFingerprint)]]];
+            break;
         default:
             break;
     }
@@ -3432,6 +3653,9 @@
             break;
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionCommitKeyWithExchangeId:@(exchangeId) keyFingerprint:@(keyFingerprint)]]];
+            break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionCommitKeyWithExchangeId:@(exchangeId) keyFingerprint:@(keyFingerprint)]]];
             break;
         default:
             break;
@@ -3459,6 +3683,9 @@
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionAbortKeyWithExchangeId:@(exchangeId)]]];
             break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionAbortKeyWithExchangeId:@(exchangeId)]]];
+            break;
         default:
             break;
     }
@@ -3484,6 +3711,9 @@
             break;
         case 46:
             messageData = [Secret46__Environment serializeObject:[Secret46_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret46_DecryptedMessageAction decryptedMessageActionNoop]]];
+            break;
+        case 66:
+            messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionNoop]]];
             break;
         default:
             break;

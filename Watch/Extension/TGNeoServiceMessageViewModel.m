@@ -170,6 +170,7 @@ const UIEdgeInsets TGNeoChatInfoInsets = { 12, 0, 12, 0 };
                     {
                         actionText = TGLocalized(@"Notification.ChannelCreated");
                     }
+                        break;
                         
                     case TGBridgeMessageActionChannelInviter:
                     {

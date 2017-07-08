@@ -20,7 +20,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -47,7 +47,7 @@
     return (int32_t)0x1561e8e7;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPhotoSize$photoSizeEmpty *object = [[TLPhotoSize$photoSizeEmpty alloc] init];
     object.type = metaObject->getString((int32_t)0x9211ab0a);
@@ -80,7 +80,7 @@
     return (int32_t)0x2585930b;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPhotoSize$photoSize *object = [[TLPhotoSize$photoSize alloc] init];
     object.type = metaObject->getString((int32_t)0x9211ab0a);
@@ -141,7 +141,7 @@
     return (int32_t)0xa80b2929;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPhotoSize$photoCachedSize *object = [[TLPhotoSize$photoCachedSize alloc] init];
     object.type = metaObject->getString((int32_t)0x9211ab0a);

@@ -23,6 +23,9 @@
 
 #import "TGGenericPeerGalleryItem.h"
 
+#import "TGPeerIdAdapter.h"
+#import "TGGenericPeerMediaGalleryVideoItem.h"
+
 @interface TGModernGalleryNewVideoItemView () <ASWatcher>
 {
     TGMessageImageViewOverlayView *_progressView;
@@ -222,6 +225,10 @@
     
     _videoDimensions = dimensions;
     
+    _disablePictureInPicture = false;
+    if ([item isKindOfClass:[TGGenericPeerMediaGalleryVideoItem class]] && TGPeerIdIsAdminLog(((TGGenericPeerMediaGalleryVideoItem *)item).peerId)) {
+        _disablePictureInPicture = true;
+    }
     [self _initializePlayerWithPath:videoPath duration:duration synchronously:synchronously];
     
     [self layoutSubviews];
@@ -464,7 +471,7 @@
 {
     _mediaAvailable = available;
     
-    [_scrubbingInterfaceView setPictureInPictureEnabled:available];
+    [_scrubbingInterfaceView setPictureInPictureEnabled:available && !_disablePictureInPicture];
 }
 
 - (void)setProgressVisible:(bool)progressVisible value:(float)value animated:(bool)animated

@@ -19,4 +19,7 @@
 
 - (void)localizationUpdated;
 
+- (CGRect)frameForRightmostTab;
+- (UIView *)viewForRightmostTab;
+
 @end

@@ -92,7 +92,7 @@
     return [TGDatabaseInstance() modify:^id{
         NSMutableArray *userIds = [[NSMutableArray alloc] init];
         NSInteger count = 0;
-        for (TGUser *user in [TGDatabaseInstance() _syncCachedRecentInlineBots]) {
+        for (TGUser *user in [TGDatabaseInstance() _syncCachedRecentInlineBots:0.0f]) {
             [userIds addObject:@(user.uid)];
             count++;
             if (count == 5) {

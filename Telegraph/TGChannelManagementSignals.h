@@ -2,15 +2,35 @@
 #import <SSignalKit/SSignalKit.h>
 
 #import "TGConversation.h"
+#import "TGChannelAdminLogEntry.h"
 
 @class TGMessageHole;
 @class TGConversation;
 @class TGUser;
 
+@class TLChannelParticipant;
+
 typedef enum {
     TGChannelHistoryHoleDirectionEarlier,
     TGChannelHistoryHoleDirectionLater
 } TGChannelHistoryHoleDirection;
+
+typedef struct {
+    bool join;
+    bool leave;
+    bool invite;
+    bool ban;
+    bool unban;
+    bool kick;
+    bool unkick;
+    bool promote;
+    bool demote;
+    bool info;
+    bool settings;
+    bool pinned;
+    bool edit;
+    bool del;
+} TGChannelEventFilter;
 
 @interface TGChannelManagementSignals : NSObject
 
@@ -39,11 +59,11 @@ typedef enum {
 + (SSignal *)consumeMessages:(int64_t)peerId accessHash:(int64_t)accessHash messageIds:(NSArray *)messageIds;
 
 + (SSignal *)toggleChannelEverybodyCanInviteMembers:(int64_t)peerId accessHash:(int64_t)accessHash enabled:(bool)enabled;
-
-+ (SSignal *)channelChangeMemberKicked:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user kicked:(bool)kicked;
-+ (SSignal *)channelChangeRole:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user role:(TGChannelRole)role;
++ (SSignal *)updateChannelAdminRights:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user rights:(TGChannelAdminRights *)rights;
++ (SSignal *)updateChannelBannedRightsAndGetMembership:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user rights:(TGChannelBannedRights *)rights;
 + (SSignal *)channelRole:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user;
 + (SSignal *)channelBlacklistMembers:(int64_t)peerId accessHash:(int64_t)accessHash offset:(NSUInteger)offset count:(NSUInteger)count;
++ (SSignal *)channelBannedMembers:(int64_t)peerId accessHash:(int64_t)accessHash offset:(NSUInteger)offset count:(NSUInteger)count;
 + (SSignal *)channelMembers:(int64_t)peerId accessHash:(int64_t)accessHash offset:(NSUInteger)offset count:(NSUInteger)count;
 + (SSignal *)channelAdmins:(int64_t)peerId accessHash:(int64_t)accessHash offset:(NSUInteger)offset count:(NSUInteger)count;
 + (SSignal *)channelInviterUser:(int64_t)peerId accessHash:(int64_t)accessHash;
@@ -58,5 +78,11 @@ typedef enum {
 + (SSignal *)updatePinnedMessage:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId notify:(bool)notify;
 + (SSignal *)removeAllUserMessages:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user;
 + (SSignal *)reportUserSpam:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user messageIds:(NSArray *)messageIds;
+
++ (SSignal *)resolveChannelWithUsername:(NSString *)username;
+
++ (SSignal *)channelAdminLogEvents:(int64_t)peerId accessHash:(int64_t)accessHash minEntryId:(int64_t)minEntryId count:(int32_t)count filter:(TGChannelEventFilter)filter searchQuery:(NSString *)searchQuery userIds:(NSArray *)userIds;
+
++ (TGCachedConversationMember *)parseMember:(TLChannelParticipant *)desc;
 
 @end

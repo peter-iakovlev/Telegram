@@ -46,7 +46,7 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize);
 }
 #endif
 
-@interface TGMessageViewModel : TGModernViewModel
+@interface TGMessageViewModel : TGModernViewModel <UIGestureRecognizerDelegate>
 {
     TGModernViewContext *_context;
     id _authorPeer;
@@ -57,6 +57,9 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize);
     bool _editing;
     
     bool _needsEditingCheckButton;
+    
+    UIPanGestureRecognizer *_replyPanGestureRecognizer;
+    CGFloat _replyPanOffset;
 }
 
 @property (nonatomic) bool needsRelativeBoundsUpdates;
@@ -86,12 +89,15 @@ void TGUpdateMessageViewModelLayoutConstants(CGFloat baseFontPointSize);
 - (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated;
 - (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)viewStorage delayDisplay:(bool)delayDisplay;
 - (void)updateMediaVisibility;
+- (void)updateMessageVisibility;
 - (void)updateMessageAttributes;
 - (void)updateEditingState:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage animationDelay:(NSTimeInterval)animationDelay;
 - (void)updateInlineMediaContext;
 - (void)updateAnimationsEnabled;
-- (void)stopInlineMedia;
+- (void)stopInlineMedia:(int32_t)excludeMid;
 - (void)resumeInlineMedia;
+
+- (void)updateReplySwipeInteraction:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage ended:(bool)ended;
 
 - (NSString *)linkAtPoint:(CGPoint)point;
 - (bool)isPreviewableAtPoint:(CGPoint)point;

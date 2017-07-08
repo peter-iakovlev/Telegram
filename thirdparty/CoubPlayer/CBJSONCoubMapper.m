@@ -69,33 +69,11 @@
 	if(attributes[@"permalink"])
 		coub.permalink = attributes[@"permalink"];
 
-//	if(attributes[@"recoub_to"])
-//	{
-//		coub.creationDateAsString = attributes[@"created_at"];
-//
-//		recoubInfo = attributes;
-//		attributes = attributes[@"recoub_to"] ? attributes[@"recoub_to"];
-//	}
-
 	if(attributes[@"id"])
 		coub.coubID = [attributes[@"id"] stringValue];
 
 	coub.originalPermalink = attributes[@"permalink"];
 	coub.originalCreationDateAsString = attributes[@"created_at"];
-
-//	[attributes enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop)
-//	{
-//		NSString *propertyKey = kCoubJSONKeys[key];
-//		if(propertyKey)
-//		{
-//			id currentValue = [coub respondsToSelector:NSSelectorFromString(propertyKey)] ? [coub valueForKey:propertyKey] : nil;
-//			if(currentValue != value && ![currentValue isEqual:value])
-//				[coub setValue:value forKey:propertyKey];
-//		}
-//	}];
-
-
-	//coub.title = @"Anne hathaway rappini";
 
 	if (coub.author == nil)
 	{
@@ -113,15 +91,6 @@
 	if(attributes[@"is_done"])
 		coub.isDone = [attributes[@"is_done"] boolValue];
 
-//	if(!coub.isDraft && !coub.isDone)
-//		coub.state = CBCoubDraftProcessing;
-
-//	if(coub.isDone == NO)
-//		return coub;
-//	else
-//		coub.state = CBCoubDraftCompleted;
-
-	// The coub API is a complete mess wrt URLs
 	NSString *remoteVideoLocation = nil;
 	NSDictionary *fileVersions = attributes[@"file_versions"];
 	if(fileVersions)
@@ -130,27 +99,45 @@
 	}
 	if(!remoteVideoLocation)
 		remoteVideoLocation = attributes[@"file"];
+    if(!remoteVideoLocation || [remoteVideoLocation isEqual:[NSNull null]])
+        remoteVideoLocation = fileVersions[@"mobile"][@"gifv"];
+    
 	if(remoteVideoLocation)
 	{
 		//
 		NSRange r1 = [remoteVideoLocation rangeOfString:@"iphone_"];
 		NSRange r2 = [remoteVideoLocation rangeOfString:@"_iphone"];
+        
+        if (r1.location == NSNotFound)
+        {
+            r1 = [remoteVideoLocation rangeOfString:@"gifv_"];
+            r2 = [remoteVideoLocation rangeOfString:@"_gifv"];
+        }
+        
+        if (r1.location != NSNotFound)
+        {
+            NSInteger loc = r1.length+r1.location;
+            NSString *someVideoMetadataString = [remoteVideoLocation substringWithRange:NSMakeRange(loc, r2.location - loc)];
 
-		NSInteger loc = r1.length+r1.location;
-		NSString *someVideoMetadataString = [remoteVideoLocation substringWithRange:NSMakeRange(loc, r2.location - loc)];
+            remoteVideoLocation = fileVersions[@"web"][@"template"];
+            NSRange r3 = [remoteVideoLocation rangeOfString:@"%{"];
 
-		remoteVideoLocation = fileVersions[@"web"][@"template"];
-		NSRange r3 = [remoteVideoLocation rangeOfString:@"%{"];
-
-		remoteVideoLocation = [remoteVideoLocation substringToIndex:r3.location];
-		remoteVideoLocation = [NSString stringWithFormat:@"%@mp4_med_size_%@_med.mp4", remoteVideoLocation, someVideoMetadataString];
-		coub.remoteVideoLocation = remoteVideoLocation;
+            remoteVideoLocation = [remoteVideoLocation substringToIndex:r3.location];
+            remoteVideoLocation = [NSString stringWithFormat:@"%@mp4_med_size_%@_med.mp4", remoteVideoLocation, someVideoMetadataString];
+            coub.remoteVideoLocation = remoteVideoLocation;
+        }
+        else if ([remoteVideoLocation rangeOfString:@"mp4_med_size_"].location != NSNotFound)
+        {
+            coub.remoteVideoLocation = remoteVideoLocation;
+        }
 	}
 
 
 	NSString *remoteAudioLocation = [attributes[@"audio_versions"] coubURIFromVersionTemplateWithPreferredSubstitutions:@[@"low", @"mid", @"high"]];
 	if(!remoteAudioLocation)
 		remoteAudioLocation = attributes[@"audio_file_url"];
+    if(!remoteAudioLocation || [remoteAudioLocation isEqual:[NSNull null]])
+        remoteAudioLocation = fileVersions[@"mobile"][@"mp3"];
 	if(remoteAudioLocation)
 		coub.remoteAudioLocation = remoteAudioLocation;
 

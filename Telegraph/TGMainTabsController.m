@@ -722,6 +722,8 @@
     {
         [controller localizationUpdated];
     }
+    
+    [_customTabBar layoutSubviews];
 }
 
 - (void)dismissViewControllerAnimated:(BOOL)flag completion:(void (^)(void))completion
@@ -741,6 +743,14 @@
             return UIStatusBarStyleDefault;
         }
     }
+}
+
+- (CGRect)frameForRightmostTab {
+    return [(TGTabBarButton *)_customTabBar.tabButtons.lastObject frame];
+}
+
+- (UIView *)viewForRightmostTab {
+    return _customTabBar.tabButtons.lastObject;
 }
 
 @end

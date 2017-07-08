@@ -222,6 +222,14 @@
     
     TGDispatchOnMainThread(^
     {
+        __weak TGCallKitAdapter *weakSelf = self;
+        session.onStartedConnecting = ^{
+            __strong TGCallKitAdapter *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf updateCallWithUUID:action.callUUID connectingAtDate:[NSDate date]];
+            }
+        };
+        
         [session acceptIncomingCall];
         [action fulfill];
     });

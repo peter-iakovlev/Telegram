@@ -29,6 +29,12 @@
         } else if ([attachment isKindOfClass:[TGWebPageMediaAttachment class]]) {
             document = ((TGWebPageMediaAttachment *)attachment).document;
             break;
+        } else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]]) {
+            if (((TGVideoMediaAttachment *)attachment).roundMessage) {
+                TGMusicPlayerItem *item = [[TGMusicPlayerItem alloc] initWithKey:@(message.mid) media:attachment peerId:message.cid author:author date:(int32_t)message.date performer:nil title:nil duration:((TGVideoMediaAttachment *)attachment).duration];
+                item->_isVoice = true;
+                return item;
+            }
         }
     }
     
@@ -39,8 +45,18 @@
             {
                 TGDocumentAttributeAudio *audio = attribute;
                 TGMusicPlayerItem *item = [[TGMusicPlayerItem alloc] initWithKey:@(message.mid) media:document peerId:message.cid author:author date:(int32_t)message.date performer:audio.performer title:audio.title duration:audio.duration];
-                item->_isVoice = ((TGDocumentAttributeAudio *)attribute).isVoice;
+                item->_isVoice = audio.isVoice;
                 return item;
+            }
+            else if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]])
+            {
+                TGDocumentAttributeVideo *video = attribute;
+                if (video.isRoundMessage)
+                {
+                    TGMusicPlayerItem *item = [[TGMusicPlayerItem alloc] initWithKey:@(message.mid) media:document peerId:message.cid author:author date:(int32_t)message.date performer:nil title:nil duration:video.duration];
+                    item->_isVoice = true;
+                    return item;
+                }
             }
         }
     }
@@ -78,6 +94,20 @@
     return nil;
 }
 
++ (instancetype)itemWithInstantDocument:(TGDocumentMediaAttachment *)document {
+    for (id attribute in document.attributes)
+    {
+        if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
+        {
+            TGDocumentAttributeAudio *audio = attribute;
+            TGMusicPlayerItem *item = [[TGMusicPlayerItem alloc] initWithKey:@(document.documentId) media:document peerId:0 author:nil date:0 performer:audio.performer title:audio.title duration:audio.duration];
+            item->_isVoice = audio.isVoice;
+            return item;
+        }
+    }
+    return nil;
+}
+
 - (instancetype)initWithKey:(id<NSObject, NSCopying>)key media:(id)media peerId:(int64_t)peerId author:(TGUser *)author date:(int32_t)date performer:(NSString *)performer title:(NSString *)title duration:(int32_t)duration
 {
     self = [super init];
@@ -97,6 +127,16 @@
 
 - (bool)isVoice {
     return _isVoice;
+}
+
+- (bool)isVideo {
+    return [self.media isKindOfClass:[TGVideoMediaAttachment class]] || ([self.media isKindOfClass:[TGDocumentMediaAttachment class]] && ((TGDocumentMediaAttachment *)self.media).isRoundVideo);
+}
+
+- (TGImageInfo *)thumbnailInfo {
+    if ([self.media isKindOfClass:[TGVideoMediaAttachment class]])
+        return ((TGVideoMediaAttachment *)self.media).thumbnailInfo;
+    return nil;
 }
 
 @end

@@ -7,10 +7,10 @@
 
 #import "TLObject.h"
 
-TLMetaConstructor::TLMetaConstructor(int32_t name_, int32_t signature_, std::tr1::shared_ptr<std::vector<TLMetaField> > fields_, std::tr1::shared_ptr<TLMetaType> resultType_) :
+TLMetaConstructor::TLMetaConstructor(int32_t name_, int32_t signature_, std::shared_ptr<std::vector<TLMetaField> > fields_, std::shared_ptr<TLMetaType> resultType_) :
     name(name_), signature(signature_), fields(fields_), resultType(resultType_)
 {
-    fieldNameToIndex = std::tr1::shared_ptr<std::tr1::unordered_map<int32_t, int> >(new std::tr1::unordered_map<int32_t, int>());
+    fieldNameToIndex = std::shared_ptr<std::unordered_map<int32_t, int> >(new std::unordered_map<int32_t, int>());
     
     std::vector<TLMetaField>::iterator fieldsEnd = fields->end();
     int index = -1;
@@ -27,7 +27,7 @@ TLMetaConstructor::~TLMetaConstructor()
 
 TLConstructedValue TLMetaConstructor::construct(NSInputStream *is, id<TLSerializationEnvironment> environment, __unused TLSerializationContext *context, __autoreleasing NSError **error)
 {
-    std::tr1::shared_ptr<std::vector<TLConstructedValue> > values(new std::vector<TLConstructedValue>());
+    std::shared_ptr<std::vector<TLConstructedValue> > values(new std::vector<TLConstructedValue>());
     
     std::vector<TLMetaField>::iterator fieldsEnd = fields->end();
     for (std::vector<TLMetaField>::iterator it = fields->begin(); it != fieldsEnd; it++)
@@ -62,7 +62,7 @@ TLConstructedValue TLMetaConstructor::construct(NSInputStream *is, id<TLSerializ
     
     TLConstructedValue result;
     result.type = TLConstructedValueTypeObject;
-    std::tr1::shared_ptr<TLMetaObject> metaObject(new TLMetaObject(fields, fieldNameToIndex, values));
+    std::shared_ptr<TLMetaObject> metaObject(new TLMetaObject(fields, fieldNameToIndex, values));
     result.nativeObject = [objectClass TLbuildFromMetaObject:metaObject];
     
     return result;

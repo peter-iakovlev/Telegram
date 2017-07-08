@@ -19,8 +19,21 @@
 
 @end
 
+@interface TLChannelParticipantsFilter$channelParticipantsBanned : TLChannelParticipantsFilter
+
+@property (nonatomic, retain) NSString *q;
+
+@end
+
+@interface TLChannelParticipantsFilter$channelParticipantsSearch : TLChannelParticipantsFilter
+
+@property (nonatomic, retain) NSString *q;
+
+@end
+
 @interface TLChannelParticipantsFilter$channelParticipantsKicked : TLChannelParticipantsFilter
 
+@property (nonatomic, retain) NSString *q;
 
 @end
 

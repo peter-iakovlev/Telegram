@@ -9,6 +9,8 @@
 #import "TGPeerIdAdapter.h"
 #import "TGChannelManagementSignals.h"
 #import "TGGroupManagementSignals.h"
+#import "TGModernConversationController.h"
+#import "TGGenericModernConversationCompanion.h"
 
 #import "TGProgressWindow.h"
 
@@ -31,6 +33,8 @@ static NSArray<TGConversation *> *sortedConversations(NSArray<TGConversation *> 
     
     UIActivityIndicatorView *_activityIndicator;
     SMetaDisposable *_navigateDisposable;
+    
+    bool _checked3dTouch;
 }
 
 @end
@@ -85,6 +89,12 @@ static NSArray<TGConversation *> *sortedConversations(NSArray<TGConversation *> 
         [_activityIndicator startAnimating];
         self.collectionView.hidden = true;
     }
+}
+
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    
+    [self check3DTouch];
 }
 
 - (void)setConversations:(NSArray<TGConversation *> *)conversations {
@@ -152,6 +162,43 @@ static NSArray<TGConversation *> *sortedConversations(NSArray<TGConversation *> 
             }
         }
     }]];
+}
+
+- (void)check3DTouch {
+    if (_checked3dTouch) {
+        return;
+    }
+    _checked3dTouch = true;
+    if (iosMajorVersion() >= 9) {
+        if (self.traitCollection.forceTouchCapability == UIForceTouchCapabilityAvailable) {
+            [self registerForPreviewingWithDelegate:(id)self sourceView:self.view];
+        }
+    }
+}
+
+- (UIViewController *)previewingContext:(id<UIViewControllerPreviewing>)previewingContext viewControllerForLocation:(CGPoint)location {
+    CGPoint tablePoint = [self.view convertPoint:location toView:self.collectionView];
+    for (TGCollectionItemView *cell in self.collectionView.visibleCells) {
+        if ([cell.boundItem isKindOfClass:[TGConversationCollectionItem class]] && CGRectContainsPoint([cell convertRect:cell.bounds toView:self.collectionView], tablePoint)) {
+            TGConversationCollectionItem *item = (TGConversationCollectionItem *)cell.boundItem;
+            
+            previewingContext.sourceRect = [self.view convertRect:CGRectInset(cell.frame, 0.0f, 1.0f) fromView:self.collectionView];
+            
+            TGModernConversationController *controller = [[TGInterfaceManager instance] configuredPreviewConversationControlerWithId:item.conversation.conversationId];
+            return controller;
+        }
+    }
+    
+    return nil;
+}
+
+- (void)previewingContext:(id<UIViewControllerPreviewing>)__unused previewingContext commitViewController:(UIViewController *)viewControllerToCommit {
+    if ([viewControllerToCommit isKindOfClass:[TGModernConversationController class]]) {
+        TGGenericModernConversationCompanion *companion = (TGGenericModernConversationCompanion *)(((TGModernConversationController *)viewControllerToCommit).companion);
+        if (companion != nil && companion.conversationId != 0) {
+            [[TGInterfaceManager instance] navigateToConversationWithId:companion.conversationId conversation:nil];
+        }
+    }
 }
 
 @end

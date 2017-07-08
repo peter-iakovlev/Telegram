@@ -26,6 +26,12 @@
         [_replyPanel setSendAreaWidth:14.0f - TGRetinaPixel attachmentAreaWidth:6.0f];
         _replyPanel.largeDismissButton = true;
         __weak TGPinnedMessageTitlePanel *weakSelf = self;
+        _replyPanel.pressed = ^{
+            __strong TGPinnedMessageTitlePanel *strongSelf = weakSelf;
+            if (strongSelf != nil && strongSelf->_tapped) {
+                strongSelf->_tapped();
+            }
+        };
         _replyPanel.dismiss = ^{
             __strong TGPinnedMessageTitlePanel *strongSelf = weakSelf;
             if (strongSelf != nil && strongSelf.dismiss) {

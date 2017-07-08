@@ -20,7 +20,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -47,7 +47,7 @@
     return (int32_t)0x7783ed5e;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLpayments_PaymentResult$payments_paymentResult *object = [[TLpayments_PaymentResult$payments_paymentResult alloc] init];
     object.updates = metaObject->getObject((int32_t)0x9ae046f4);
@@ -80,7 +80,7 @@
     return (int32_t)0x4aeb3c30;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLpayments_PaymentResult$payments_paymentVerficationNeeded *object = [[TLpayments_PaymentResult$payments_paymentVerficationNeeded alloc] init];
     object.url = metaObject->getString((int32_t)0xeaf7861e);

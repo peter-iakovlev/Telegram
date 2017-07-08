@@ -2,6 +2,7 @@
 #import "PGCameraMovieWriter.h"
 
 #import "TGPhotoEditorUtils.h"
+#import "TGMediaVideoConverter.h"
 
 #import <Endian.h>
 
@@ -754,7 +755,7 @@ const NSInteger PGCameraFrameRate = 30;
 
 #pragma mark - 
 
-- (void)startVideoRecordingWithOrientation:(AVCaptureVideoOrientation)orientation mirrored:(bool)mirrored completion:(void (^)(NSURL *outputURL, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success))completion
+- (void)startVideoRecordingWithOrientation:(AVCaptureVideoOrientation)orientation mirrored:(bool)mirrored completion:(void (^)(NSURL *outputURL, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, __unused TGLiveUploadActorData *liveUploadData, bool success))completion
 {
     if (_movieWriter.isRecording)
         return;
@@ -775,7 +776,14 @@ const NSInteger PGCameraFrameRate = 30;
     NSDictionary *videoSettings = [_videoOutput recommendedVideoSettingsForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
     NSDictionary *audioSettings = [_audioOutput recommendedAudioSettingsForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
     
+    if (self.compressVideo)
+    {
+        videoSettings = [TGMediaVideoConversionPresetSettings videoSettingsForPreset:TGMediaVideoConversionPresetCompressedMedium dimensions:CGSizeMake(848, 480)];
+        audioSettings = [TGMediaVideoConversionPresetSettings audioSettingsForPreset:TGMediaVideoConversionPresetCompressedMedium];
+    }
+    
     _movieWriter = [[PGCameraMovieWriter alloc] initWithVideoTransform:TGTransformForVideoOrientation(orientation, mirrored) videoOutputSettings:videoSettings audioOutputSettings:audioSettings];
+    _movieWriter.liveUpload = self.liveUpload;
     _movieWriter.finishedWithMovieAtURL = completion;
     [_movieWriter startRecording];
 }

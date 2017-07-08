@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x9d3e7f82;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLWebPage$webPageEmpty *object = [[TLWebPage$webPageEmpty alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
@@ -79,7 +79,7 @@
     return (int32_t)0xf3e5a76c;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLWebPage$webPagePending *object = [[TLWebPage$webPagePending alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
@@ -119,7 +119,7 @@
     return (int32_t)0x5607474b;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLWebPage$webPage *object = [[TLWebPage$webPage alloc] init];
     return object;
@@ -145,7 +145,7 @@
     return (int32_t)0x1a1d275f;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLWebPage$webPageNotModified *object = [[TLWebPage$webPageNotModified alloc] init];
     return object;

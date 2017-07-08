@@ -7,6 +7,8 @@
 
 #import "TGBotReplyMarkup.h"
 
+#import "TGViewController.h"
+
 @interface TGCommandKeyboardScrollView : UIScrollView
 
 @end
@@ -271,6 +273,42 @@
         }
         rowIndex++;
     }
+}
+
+- (bool)isExpanded
+{
+    return false;
+}
+
+- (void)setExpanded:(bool)__unused expanded
+{
+    
+}
+
+- (CGFloat)preferredHeight:(bool)landscape
+{
+    if (!self.matchDefaultHeight)
+    {
+        CGFloat height = [self sizeThatFits:CGSizeZero].height;
+        return height;
+    }
+    
+    if (TGIsPad())
+        return landscape ? 398.0f : 313.0f;
+    
+    if ([TGViewController hasVeryLargeScreen])
+        return landscape ? 194.0f : 271.0f;
+    else if ([TGViewController hasLargeScreen])
+        return landscape ? 194.0f : 258.0f;
+    else if ([TGViewController isWidescreen])
+        return landscape ? 193.0f : 253.0f;
+    
+    return landscape ? 193.0f : 253.0f;
+}
+
+- (bool)isInteracting
+{
+    return false;
 }
 
 @end

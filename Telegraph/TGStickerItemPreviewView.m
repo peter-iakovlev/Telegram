@@ -18,6 +18,8 @@ static const CGFloat TGStickersTopMargin = 140.0f;
     
     TGMessageImageView *_imageView;
     UIView *_altWrapperView;
+    
+    UIImpactFeedbackGenerator *_feedbackGenerator;
 }
 @end
 
@@ -41,6 +43,9 @@ static const CGFloat TGStickersTopMargin = 140.0f;
         _imageView = [[TGMessageImageView alloc] init];
         _imageView.expectExtendedEdges = true;
         [self.wrapperView addSubview:_imageView];
+        
+        if (iosMajorVersion() >= 10)
+            _feedbackGenerator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
     }
     return self;
 }
@@ -103,6 +108,10 @@ static const CGFloat TGStickersTopMargin = 140.0f;
 {
     if (sticker.documentId != _sticker.documentId || sticker.localDocumentId != _sticker.localDocumentId)
     {
+        [_feedbackGenerator impactOccurred];
+        [_feedbackGenerator prepare];
+        _lastFeedbackTime = CFAbsoluteTimeGetCurrent();
+        
         bool animated = false;
         if (iosMajorVersion() >= 7 && _sticker != sticker)
             animated = true;

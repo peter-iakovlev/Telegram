@@ -2,6 +2,8 @@
 
 @class TGImageMediaAttachment;
 @class TGVideoMediaAttachment;
+@class TGDocumentMediaAttachment;
+@class TGConversation;
 
 @interface TGRichText : NSObject <NSCoding>
 
@@ -94,6 +96,13 @@
 
 @end
 
+@interface TGInstantPageBlockChannel : TGInstantPageBlock
+    
+@property (nonatomic, strong, readonly) TGConversation *channel;
+    
+- (instancetype)initWithChannel:(TGConversation *)channel;
+    
+@end
 
 @interface TGInstantPageBlockTitle : TGInstantPageBlock
 
@@ -252,8 +261,6 @@
 
 @end
 
-//pageBlockEmbedPost url:string webpage_id:long author_photo_id:long author:string date:int blocks:Vector<PageBlock> caption:RichText = PageBlock;
-
 @interface TGInstantPageBlockEmbedPost : TGInstantPageBlock
 
 @property (nonatomic, strong, readonly) NSString *author;
@@ -268,13 +275,23 @@
 
 @end
 
+@interface TGInstantPageBlockAudio : TGInstantPageBlock
+
+@property (nonatomic, readonly) int64_t audioId;
+@property (nonatomic, strong, readonly) TGRichText *caption;
+
+- (instancetype)initWithAudioId:(int64_t)audioId caption:(TGRichText *)caption;
+
+@end
+
 @interface TGInstantPage : NSObject <NSCoding>
 
 @property (nonatomic, readonly) bool isPartial;
 @property (nonatomic, strong, readonly) NSArray<TGInstantPageBlock *> *blocks;
 @property (nonatomic, strong, readonly) NSDictionary<NSNumber *, TGImageMediaAttachment *> *images;
 @property (nonatomic, strong, readonly) NSDictionary<NSNumber *, TGVideoMediaAttachment *> *videos;
+@property (nonatomic, strong, readonly) NSDictionary<NSNumber *, TGDocumentMediaAttachment *> *documents;
 
-- (instancetype)initWithIsPartial:(bool)isPartial blocks:(NSArray<TGInstantPageBlock *> *)blocks images:(NSDictionary<NSNumber *, TGImageMediaAttachment *> *)images videos:(NSDictionary<NSNumber *, TGVideoMediaAttachment *> *)videos;
+- (instancetype)initWithIsPartial:(bool)isPartial blocks:(NSArray<TGInstantPageBlock *> *)blocks images:(NSDictionary<NSNumber *, TGImageMediaAttachment *> *)images videos:(NSDictionary<NSNumber *, TGVideoMediaAttachment *> *)videos documents:(NSDictionary<NSNumber *, TGDocumentMediaAttachment *> *)documents;
 
 @end

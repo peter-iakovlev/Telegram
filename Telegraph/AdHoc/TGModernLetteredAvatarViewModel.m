@@ -65,7 +65,7 @@
     [super bindViewToContainer:container viewStorage:viewStorage];
     
     TGModernLetteredAvatarView *view = (TGModernLetteredAvatarView *)[self boundView];
-    [view setSingleFontSize:14.0f doubleFontSize:14.0f useBoldFont:true];
+    [view setSingleFontSize:16.0f doubleFontSize:16.0f useBoldFont:false];
     view.fadeTransition = true;
     
     if (_avatarUri.length == 0) {

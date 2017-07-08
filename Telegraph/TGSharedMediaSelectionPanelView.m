@@ -8,8 +8,9 @@
 @interface TGSharedMediaSelectionPanelView ()
 {
     UIView *_separatorView;
-    TGModernButton *_shareButton;
+    TGModernButton *_forwardButton;
     TGModernButton *_deleteButton;
+    TGModernButton *_shareButton;
     UILabel *_label;
 }
 
@@ -27,32 +28,31 @@
         _separatorView.backgroundColor = UIColorRGB(0xb2b2b2);
         [self addSubview:_separatorView];
         
-        _shareButton = [[TGModernButton alloc] init];
-        _shareButton.modernHighlight = true;
-        [_shareButton addTarget:self action:@selector(shareButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:_shareButton];
+        _forwardButton = [[TGModernButton alloc] init];
+        _forwardButton.modernHighlight = true;
+        [_forwardButton addTarget:self action:@selector(forwardButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_forwardButton];
         
         _deleteButton = [[TGModernButton alloc] init];
         _deleteButton.modernHighlight = true;
         [_deleteButton addTarget:self action:@selector(deleteButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_deleteButton];
         
-        _label = [[UILabel alloc] init];
-        _label.backgroundColor = [UIColor clearColor];
-        _label.textColor = TGAccentColor();
-        _label.font = TGSystemFontOfSize(17.0f);
-        [self addSubview:_label];
-        
+        _shareButton = [[TGModernButton alloc] init];
+        _shareButton.modernHighlight = true;
+        [_shareButton addTarget:self action:@selector(shareButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_shareButton];
+
         [self _updateButtonImages];
     }
     return self;
 }
 
-- (void)setShareEnabled:(bool)shareEnabled
+- (void)setForwardEnabled:(bool)forwardEnabled
 {
-    _shareEnabled = shareEnabled;
+    _forwardEnabled = forwardEnabled;
     
-    _shareButton.hidden = !_shareEnabled;
+    _forwardButton.hidden = !_forwardEnabled;
 }
 
 - (void)setDeleteEnabled:(bool)deleteEnabled {
@@ -61,13 +61,19 @@
     _deleteButton.hidden = !_deleteEnabled;
 }
 
+- (void)setShareEnabled:(bool)shareEnabled {
+    _shareEnabled = shareEnabled;
+    
+    _shareButton.hidden = !_shareEnabled;
+}
+
 - (void)setSelecterItemCount:(NSUInteger)selecterItemCount
 {
     bool updateImages = (_selecterItemCount == 0) != (selecterItemCount == 0);
     _selecterItemCount = selecterItemCount;
     if (updateImages)
         [self _updateButtonImages];
-    _shareButton.userInteractionEnabled = _selecterItemCount != 0;
+    _forwardButton.userInteractionEnabled = _selecterItemCount != 0;
     _deleteButton.userInteractionEnabled = _selecterItemCount != 0;
     
     if (_selecterItemCount == 0)
@@ -82,23 +88,32 @@
 
 - (void)_updateButtonImages
 {
-    UIImage *shareImage = _selecterItemCount == 0 ? [UIImage imageNamed:@"ModernConversationActionForward_Disabled.png"] : [UIImage imageNamed:@"ModernConversationActionForward.png"];
-    [_shareButton setImage:shareImage forState:UIControlStateNormal];
+    UIImage *forwardImage = _selecterItemCount == 0 ? [UIImage imageNamed:@"ModernConversationActionForward_Disabled.png"] : [UIImage imageNamed:@"ModernConversationActionForward.png"];
+    [_forwardButton setImage:forwardImage forState:UIControlStateNormal];
     
     UIImage *deleteImage = _selecterItemCount == 0 ? [UIImage imageNamed:@"ModernConversationActionDelete_Disabled.png"] : [UIImage imageNamed:@"ModernConversationActionDelete.png"];
     [_deleteButton setImage:deleteImage forState:UIControlStateNormal];
+    
+    UIImage *shareImage = _selecterItemCount == 0 ? TGTintedImage([UIImage imageNamed:@"ActionsWhiteIcon"], UIColorRGB(0xd0d0d0)) : TGTintedImage([UIImage imageNamed:@"ActionsWhiteIcon"], TGAccentColor());
+    [_shareButton setImage:shareImage forState:UIControlStateNormal];
 }
 
-- (void)shareButtonPressed
+- (void)forwardButtonPressed
 {
-    if (_shareSelectedItems)
-        _shareSelectedItems();
+    if (_forwardSelectedItems)
+        _forwardSelectedItems();
 }
 
 - (void)deleteButtonPressed
 {
     if (_deleteSelectedItems)
         _deleteSelectedItems();
+}
+
+- (void)shareButtonPressed
+{
+    if (_shareSelectedItems)
+        _shareSelectedItems();
 }
 
 - (void)layoutLabel
@@ -113,8 +128,9 @@
     CGRect frame = self.frame;
     
     _separatorView.frame = CGRectMake(0.0f, 0.0f, frame.size.width, TGScreenPixel);
-    _shareButton.frame = CGRectMake(frame.size.width - 56.0f, TGRetinaPixel, 56.0f, 44.0f);
+    _forwardButton.frame = CGRectMake(frame.size.width - 56.0f, TGRetinaPixel, 56.0f, 44.0f);
     _deleteButton.frame = CGRectMake(0.0f, TGRetinaPixel, 52.0f, 44.0f);
+    _shareButton.frame = CGRectMake(floor((self.frame.size.width - 56.0f) / 2.0f), 0.0f, 56.0f, 44.0f);
     
     [self layoutLabel];
 }

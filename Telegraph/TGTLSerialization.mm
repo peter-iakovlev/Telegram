@@ -174,7 +174,7 @@
     return [TGTLSerialization serializeMessage:importAuthorization];
 }
 
-- (MTRequestDatacenterAddressListParser)requestDatacenterAddressList:(int32_t)datacenterId data:(__autoreleasing NSData **)data
+- (MTRequestDatacenterAddressListParser)requestDatacenterAddressWithData:(__autoreleasing NSData **)data
 {
     NSData *getConfigData = [TGTLSerialization serializeMessage:[[TLRPChelp_getConfig$help_getConfig alloc] init]];
     if (data)
@@ -185,18 +185,21 @@
         id result = [self parseMessage:response];
         if ([result isKindOfClass:[TLConfig class]])
         {
-            NSMutableArray *addressList = [[NSMutableArray alloc] init];
+            NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
             
             for (TLDcOption$modernDcOption *dcOption in ((TLConfig *)result).dc_options)
             {
-                if (dcOption.n_id == datacenterId)
-                {
-                    MTDatacenterAddress *address = [[MTDatacenterAddress alloc] initWithIp:dcOption.ip_address port:(uint16_t)dcOption.port preferForMedia:dcOption.flags & (1 << 1) restrictToTcp:dcOption.flags & (1 << 2)];
-                    [addressList addObject:address];
+                NSMutableArray *array = dict[@(dcOption.n_id)];
+                if (array == nil) {
+                    array = [[NSMutableArray alloc] init];
+                    dict[@(dcOption.n_id)] = array;
                 }
+                
+                MTDatacenterAddress *address = [[MTDatacenterAddress alloc] initWithIp:dcOption.ip_address port:(uint16_t)dcOption.port preferForMedia:dcOption.flags & (1 << 1) restrictToTcp:dcOption.flags & (1 << 2) cdn:dcOption.flags & (1 << 3)  preferForProxy:dcOption.flags & (1 << 4)];
+                [array addObject:address];
             }
             
-            return [[MTDatacenterAddressListData alloc] initWithAddressList:addressList];
+            return [[MTDatacenterAddressListData alloc] initWithAddressList:dict];
         }
         return nil;
     };
@@ -204,7 +207,7 @@
 
 - (NSUInteger)currentLayer
 {
-    return 65;
+    return 69;
 }
 
 @end

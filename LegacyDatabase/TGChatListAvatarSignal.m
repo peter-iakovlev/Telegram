@@ -11,33 +11,38 @@ static OSSpinLock imageDataLock;
 
 @implementation TGChatListAvatarSignal
 
-+ (SSignal *)remoteChatListAvatarWithContext:(TGShareContext *)context location:(TGFileLocation *)location
++ (SSignal *)remoteChatListAvatarWithContext:(TGShareContext *)context location:(TGFileLocation *)location imageSize:(CGSize)imageSize
 {
-    Api65_InputFileLocation_inputFileLocation *inputFileLocation = [Api65_InputFileLocation inputFileLocationWithVolumeId:@(location.volumeId) localId:@(location.localId) secret:@(location.secret)];
-    return [[context datacenter:location.datacenterId function:[Api65 upload_getFileWithLocation:inputFileLocation offset:@(0) limit:@(1024 * 1024)]] map:^id(Api65_upload_File *result)
+    NSString *key = [NSString stringWithFormat:@"%@-%d", [location description], (int)imageSize.width];
+    Api69_InputFileLocation_inputFileLocation *inputFileLocation = [Api69_InputFileLocation inputFileLocationWithVolumeId:@(location.volumeId) localId:@(location.localId) secret:@(location.secret)];
+    return [[context datacenter:location.datacenterId function:[Api69 upload_getFileWithLocation:inputFileLocation offset:@(0) limit:@(1024 * 1024)]] map:^id(Api69_upload_File *result)
     {
-        [context.persistentCache setValue:result.bytes forKey:[[location description] dataUsingEncoding:NSUTF8StringEncoding]];
-        
-        OSSpinLockLock(&imageDataLock);
-        UIImage *image = [[UIImage alloc] initWithData:result.bytes];
-        OSSpinLockUnlock(&imageDataLock);
-        
-        image = TGRoundImage(image, CGSizeMake(40.0f, 40.0f));
-        [context.memoryImageCache setImage:image forKey:[location description] attributes:nil];
-        return image;
+        if ([result isKindOfClass:[Api69_upload_File_upload_file class]]) {
+            [context.persistentCache setValue:((Api69_upload_File_upload_file *)result).bytes forKey:[[location description] dataUsingEncoding:NSUTF8StringEncoding]];
+            
+            OSSpinLockLock(&imageDataLock);
+            UIImage *image = [[UIImage alloc] initWithData:((Api69_upload_File_upload_file *)result).bytes];
+            OSSpinLockUnlock(&imageDataLock);
+            
+            image = TGRoundImage(image, imageSize);
+            [context.memoryImageCache setImage:image forKey:key attributes:nil];
+            return image;
+        } else {
+            return nil;
+        }
     }];
 }
 
-+ (SSignal *)chatListAvatarWithContext:(TGShareContext *)context location:(TGFileLocation *)location
++ (SSignal *)chatListAvatarWithContext:(TGShareContext *)context location:(TGFileLocation *)location imageSize:(CGSize)imageSize
 {
-    NSString *key = [location description];
+    NSString *key = [NSString stringWithFormat:@"%@-%d", [location description], (int)imageSize.width];
     UIImage *image = [context.memoryImageCache imageForKey:key attributes:NULL];
     if (image != nil)
         return [SSignal single:image];
     
     SSignal *loadFromCacheSignal = [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
-        NSData *data = [context.persistentCache getValueForKey:[key dataUsingEncoding:NSUTF8StringEncoding]];
+        NSData *data = [context.persistentCache getValueForKey:[location.description dataUsingEncoding:NSUTF8StringEncoding]];
         if (data == nil)
             [subscriber putError:nil];
         else
@@ -46,8 +51,8 @@ static OSSpinLock imageDataLock;
             UIImage *image = [[UIImage alloc] initWithData:data];
             OSSpinLockUnlock(&imageDataLock);
             
-            image = TGRoundImage(image, CGSizeMake(40.0f, 40.0f));
-            [context.memoryImageCache setImage:image forKey:[location description] attributes:nil];
+            image = TGRoundImage(image, imageSize);
+            [context.memoryImageCache setImage:image forKey:key attributes:nil];
             [subscriber putNext:image];
             [subscriber putCompletion];
         }
@@ -56,7 +61,7 @@ static OSSpinLock imageDataLock;
     
     return [loadFromCacheSignal catch:^SSignal *(__unused id error)
     {
-        return [self remoteChatListAvatarWithContext:context location:location];
+        return [self remoteChatListAvatarWithContext:context location:location imageSize:imageSize];
     }];
 }
 
@@ -127,20 +132,20 @@ static inline int colorIndexForGroupId(int64_t groupId)
     return colors[[index intValue] % 6];
 }
 
-+ (SSignal *)chatListAvatarWithContext:(TGShareContext *)context letters:(NSString *)letters peerId:(TGPeerId)peerId
++ (SSignal *)chatListAvatarWithContext:(TGShareContext *)context letters:(NSString *)letters peerId:(TGPeerId)peerId imageSize:(CGSize)imageSize
 {
-    NSString *key = [[NSString alloc] initWithFormat:@"GradientAvatar-%d.%d-%@", (int)peerId.namespaceId, (int)peerId.peerId, letters];
+    NSString *key = [[NSString alloc] initWithFormat:@"GradientAvatar-%d.%d-%@-%d", (int)peerId.namespaceId, (int)peerId.peerId, letters, (int)imageSize.width];
     UIImage *image = [context.memoryImageCache imageForKey:key attributes:NULL];
     if (image != nil)
         return [SSignal single:image];
     
     return [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(40.0f, 40.0f), false, 0.0f);
+        UIGraphicsBeginImageContextWithOptions(imageSize, false, 0.0f);
         CGContextRef contextRef = UIGraphicsGetCurrentContext();
         
         CGContextBeginPath(contextRef);
-        CGContextAddEllipseInRect(contextRef, CGRectMake(0.0f, 0.0f, 40.0f, 40.0f));
+        CGContextAddEllipseInRect(contextRef, CGRectMake(0.0f, 0.0f, imageSize.width, imageSize.height));
         CGContextClip(contextRef);
         
         NSArray *gradientColors = [self gradientColorsForPeerId:peerId myUserId:context.clientUserId];
@@ -161,13 +166,20 @@ static inline int colorIndexForGroupId(int64_t groupId)
         
         CGColorSpaceRelease(colorSpace);
         
-        CGContextDrawLinearGradient(contextRef, gradient, CGPointMake(0.0f, 0.0f), CGPointMake(0.0f, 40.0f), 0);
+        CGContextDrawLinearGradient(contextRef, gradient, CGPointMake(0.0f, 0.0f), CGPointMake(0.0f, imageSize.height), 0);
         
         CFRelease(gradient);
         
-        UIFont *font = [UIFont systemFontOfSize:letters.length == 1 ? 18.0f : 16.0f];
+        CGFloat fontSize = 18.0f;
+        if (imageSize.width > 56.0f)
+            fontSize = 28.0f;
+        else if (imageSize.width > 40.0f)
+            fontSize = 24.0f;
+        
+        UIFont *font = [UIFont fontWithName:@".SFCompactRounded-Semibold" size:fontSize];
+        
         CGSize lettersSize = [letters sizeWithAttributes:@{NSFontAttributeName: font}];
-        [letters drawAtPoint:CGPointMake((CGFloat)(floor(40.0f - lettersSize.width) / 2.0f), (CGFloat)(floor(40.0f - lettersSize.height) / 2.0f)) withAttributes:@{NSFontAttributeName: font, NSForegroundColorAttributeName: [UIColor whiteColor]}];
+        [letters drawAtPoint:CGPointMake((CGFloat)(floor(imageSize.width - lettersSize.width) / 2.0f), (CGFloat)(floor(imageSize.height - lettersSize.height) / 2.0f)) withAttributes:@{NSFontAttributeName: font, NSForegroundColorAttributeName: [UIColor whiteColor]}];
         
         UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();

@@ -127,7 +127,7 @@ static OSSpinLock cachedPacksLock = 0;
                 isExternalPack = false;
         }
         
-        if (isExternalPack)
+        if (true || isExternalPack)
         {
             if (TGAppDelegateInstance.alwaysShowStickersMode == 0)
             {

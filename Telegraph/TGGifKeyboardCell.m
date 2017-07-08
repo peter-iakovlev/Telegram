@@ -15,7 +15,7 @@
 
 @interface TGGifKeyboardCellContents () <ASWatcher> {
     TGImageView *_imageView;
-    TGVTAcceleratedVideoView *_videoView;
+    UIView<TGInlineVideoPlayerView> *_videoView;
     SMetaDisposable *_converterDisposable;
     
     TGMessageImageViewOverlayView *_overlayView;
@@ -187,7 +187,7 @@
                 if (exists) {
                     if ([document.mimeType isEqualToString:@"video/mp4"]) {
                         [strongSelf->_videoView removeFromSuperview];
-                        strongSelf->_videoView = [[TGVTAcceleratedVideoView alloc] initWithFrame:strongSelf.bounds];
+                        strongSelf->_videoView = [[[TGVTAcceleratedVideoView videoViewClass] alloc] initWithFrame:strongSelf.bounds];
                         [strongSelf addSubview:strongSelf->_videoView];
                         [strongSelf->_videoView setPath:filePath];
                     } else if ([document.mimeType isEqualToString:@"image/gif"]) {
@@ -233,7 +233,7 @@
                             __strong TGGifKeyboardCellContents *strongSelf = weakSelf;
                             if (strongSelf != nil && [strongSelf->_document isEqual:document]) {
                                 [strongSelf->_videoView removeFromSuperview];
-                                strongSelf->_videoView = [[TGVTAcceleratedVideoView alloc] initWithFrame:strongSelf.bounds];
+                                strongSelf->_videoView = [[[TGVTAcceleratedVideoView videoViewClass] alloc] initWithFrame:strongSelf.bounds];
                                 [strongSelf addSubview:strongSelf->_videoView];
                                 [strongSelf->_videoView setPath:path];
                             }

@@ -10,7 +10,13 @@ typedef enum {
     TGMicrophoneAccessIntentVoice,
     TGMicrophoneAccessIntentVideo,
     TGMicrophoneAccessIntentCall,
+    TGMicrophoneAccessIntentVideoMessage
 } TGMicrophoneAccessIntent;
+
+typedef enum {
+    TGCameraAccessIntentDefault,
+    TGCameraAccessIntentVideoMessage
+} TGCameraAccessIntent;
 
 typedef enum {
     TGLocationAccessIntentSend,
@@ -25,7 +31,7 @@ typedef enum {
 
 + (bool)checkMicrophoneAuthorizationStatusForIntent:(TGMicrophoneAccessIntent)intent alertDismissCompletion:(void (^)(void))alertDismissCompletion;
 
-+ (bool)checkCameraAuthorizationStatusWithAlertDismissComlpetion:(void (^)(void))alertDismissCompletion;
++ (bool)checkCameraAuthorizationStatusForIntent:(TGCameraAccessIntent)intent alertDismissCompletion:(void (^)(void))alertDismissCompletion;
 
 + (bool)checkLocationAuthorizationStatusForIntent:(TGLocationAccessIntent)intent alertDismissComlpetion:(void (^)(void))alertDismissCompletion;
 

@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x5ade6b35;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLInputEncryptedFile$inputEncryptedFileEmpty *object = [[TLInputEncryptedFile$inputEncryptedFileEmpty alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0xa2934e84;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputEncryptedFile$inputEncryptedFileUploaded *object = [[TLInputEncryptedFile$inputEncryptedFileUploaded alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
@@ -126,7 +126,7 @@
     return (int32_t)0xd60eda43;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputEncryptedFile$inputEncryptedFile *object = [[TLInputEncryptedFile$inputEncryptedFile alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
@@ -166,7 +166,7 @@
     return (int32_t)0xb131c22b;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputEncryptedFile$inputEncryptedFileBigUploaded *object = [[TLInputEncryptedFile$inputEncryptedFileBigUploaded alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);

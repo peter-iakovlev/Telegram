@@ -17,14 +17,14 @@
 {
     TGImageInfo *imageInfo = [[TGImageInfo alloc] init];
     
-    CGSize size = CGSizeMake(160.0f, 110.0f);
+    CGSize size = CGSizeMake(210.0f, 144.0f);
     
-    [imageInfo addImageWithSize:CGSizeMake(140, 120) url:[[NSString alloc] initWithFormat:@"map-thumbnail://?latitude=%f&longitude=%f&width=%d&height=%d", latitude, longitude, (int)size.width, (int)size.height]];
+    [imageInfo addImageWithSize:CGSizeMake(190, 124) url:[[NSString alloc] initWithFormat:@"map-thumbnail://?latitude=%f&longitude=%f&width=%d&height=%d", latitude, longitude, (int)size.width, (int)size.height]];
     
     self = [super initWithMessage:message imageInfo:imageInfo authorPeer:authorPeer context:context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyHeader replyAuthor:replyAuthor viaUser:viaUser];
     if (self != nil)
     {
-        self.imageModel.frame = CGRectMake(0, 0, 160, 110);
+        self.imageModel.frame = CGRectMake(0, 0, size.width, size.height);
     }
     return self;
 }

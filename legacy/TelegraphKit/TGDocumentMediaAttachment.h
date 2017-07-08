@@ -50,5 +50,6 @@
 - (id<TGStickerPackReference>)stickerPackReference;
 - (bool)isVoice;
 - (CGSize)pictureSize;
+- (bool)isRoundVideo;
 
 @end

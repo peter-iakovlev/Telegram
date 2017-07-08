@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x176b8be2;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLmessages_FeaturedStickers$messages_featuredStickersNotModified *object = [[TLmessages_FeaturedStickers$messages_featuredStickersNotModified alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0xfb99259c;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLmessages_FeaturedStickers$messages_featuredStickers *object = [[TLmessages_FeaturedStickers$messages_featuredStickers alloc] init];
     object.n_hash = metaObject->getInt32((int32_t)0xc152e470);

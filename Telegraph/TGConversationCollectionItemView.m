@@ -83,7 +83,7 @@
         self.separatorInset = 65.0f;
         
         _avatarView = [[TGLetteredAvatarView alloc] init];
-        [_avatarView setSingleFontSize:17.0f doubleFontSize:17.0f useBoldFont:true];
+        [_avatarView setSingleFontSize:18.0f doubleFontSize:18.0f useBoldFont:true];
         _avatarView.fadeTransition = true;
         [self.contentView addSubview:_avatarView];
         

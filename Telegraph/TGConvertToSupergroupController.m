@@ -31,7 +31,7 @@
         TGCommentCollectionItem *helpTitleItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"ConvertToSupergroup.HelpTitle")];
         [helpItems addObject:helpTitleItem];
         
-        TGCommentCollectionItem *helpTextItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"ConvertToSupergroup.HelpText") paragraphSpacing:4.0f];
+        TGCommentCollectionItem *helpTextItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"ConvertToSupergroup.HelpText") paragraphSpacing:4.0f clearFormatting:false];
         helpTextItem.topInset -= 4.0f;
         [helpItems addObject:helpTextItem];
         

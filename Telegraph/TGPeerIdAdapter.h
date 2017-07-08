@@ -13,6 +13,10 @@ static inline bool TGPeerIdIsChannel(int64_t peerId) {
     return peerId <= ((int64_t)INT32_MIN) * 2 && peerId > ((int64_t)INT32_MIN) * 3;
 }
 
+static inline bool TGPeerIdIsAdminLog(int64_t peerId) {
+    return peerId <= ((int64_t)INT32_MIN) * 3 && peerId > ((int64_t)INT32_MIN) * 4;
+}
+
 static inline int32_t TGChannelIdFromPeerId(int64_t peerId) {
     if (TGPeerIdIsChannel(peerId)) {
         return (int32_t)(((int64_t)INT32_MIN) * 2 - peerId);
@@ -23,6 +27,10 @@ static inline int32_t TGChannelIdFromPeerId(int64_t peerId) {
 
 static inline int64_t TGPeerIdFromChannelId(int32_t channelId) {
     return ((int64_t)INT32_MIN) * 2 - ((int64_t)channelId);
+}
+
+static inline int64_t TGPeerIdFromAdminLogId(int32_t channelId) {
+    return ((int64_t)INT32_MIN) * 3 - ((int64_t)channelId);
 }
 
 static inline int64_t TGPeerIdFromGroupId(int32_t groupId) {

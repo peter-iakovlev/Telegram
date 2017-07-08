@@ -42,6 +42,7 @@ extern int32_t TGMessageModernConversationItemLocalUserId;
 - (void)updateMessage:(TGMessage *)message fromMessage:(TGMessage *)fromMessage viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated;
 - (void)updateMediaVisibility;
 - (void)updateMessageAttributes;
+- (void)updateMessageVisibility;
 - (void)updateEditingState:(TGModernViewStorage *)viewStorage animationDelay:(NSTimeInterval)animationDelay;
 - (void)imageDataInvalidated:(NSString *)imageUrl;
 - (void)setTemporaryHighlighted:(bool)temporaryHighlighted viewStorage:(TGModernViewStorage *)viewStorage;
@@ -53,5 +54,7 @@ extern int32_t TGMessageModernConversationItemLocalUserId;
 - (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict;
 - (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict ifPresentInDict:(NSMutableDictionary *)anotherDict;
 - (void)restoreBoundModelViewFramesRecursively:(NSMutableDictionary *)dict;
+
+- (void)updateReplySwipeInteraction:(TGModernViewStorage *)viewStorage ended:(bool)ended;
 
 @end

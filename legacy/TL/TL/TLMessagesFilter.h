@@ -65,3 +65,13 @@
 
 @end
 
+@interface TLMessagesFilter$inputMessagesFilterRoundVideo : TLMessagesFilter
+
+
+@end
+
+@interface TLMessagesFilter$inputMessagesFilterRoundVoice : TLMessagesFilter
+
+
+@end
+

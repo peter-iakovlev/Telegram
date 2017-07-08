@@ -115,6 +115,10 @@ typedef enum {
     return _firstName.length != 0 || _lastName.length != 0 || _phonebookFirstName.length != 0 || _phonebookLastName.length != 0;
 }
 
+- (bool)isBot {
+    return _kind == TGUserKindBot || _kind == TGUserKindSmartBot;
+}
+
 - (NSString *)firstName
 {
     return (_phonebookFirstName.length != 0 || _phonebookLastName.length != 0) ? _phonebookFirstName : ((_firstName.length != 0 || _lastName.length != 0) ? _firstName : (_phoneNumber.length == 0 ? TGLocalized(@"User.DeletedAccount") : [self formattedPhoneNumber]));

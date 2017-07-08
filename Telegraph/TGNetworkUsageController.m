@@ -570,7 +570,7 @@ static SSignal *statsSignal(MTNetworkUsageCalculationInfo *baseInfo) {
                     @(TGTelegramNetworkUsageKeyCallOutgoingWWAN),
                 ];
             }
-            [dataManager resetKeys:keys completion:^{
+            [dataManager resetKeys:keys setKeys:@{} completion:^{
                 TGDispatchOnMainThread(^{
                     if (strongSelf->_wifiMode) {
                         strongSelf->_lastWifiReset = (int32_t)[[NSDate date] timeIntervalSince1970];

@@ -7,7 +7,8 @@
 @property (nonatomic, strong, readonly) NSString *firstName;
 @property (nonatomic, strong, readonly) NSString *lastName;
 @property (nonatomic, strong, readonly) NSString *phoneNumber;
+@property (nonatomic, strong, readonly) NSString *photoSmall;
 
-- (instancetype)initWithUserId:(int32_t)userId accessHash:(int64_t)accessHash firstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber;
+- (instancetype)initWithUserId:(int32_t)userId accessHash:(int64_t)accessHash firstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber photoSmall:(NSString *)photoSmall;
 
 @end

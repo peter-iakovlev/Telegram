@@ -2,6 +2,7 @@
 "Share.Next" = "Volgende";
 "Share.OK" = "OK";
 "Share.Search" = "Zoeken";
+"Share.Send" = "Stuur";
 
 "Share.Title" = "Delen";
 "Share.ShareWithPerson" = "Delen met %@?";
@@ -24,4 +25,8 @@
 "Share.RecentSection" = "Recent";
 "Share.RecentSectionClear" = "Wissen";
 
+"Share.PeopleSection" = "Mensen";
+
 "Share.TouchId" = "Toegangscode invoeren";
+
+"Share.AddCaption" = "Opmerking toevoegen";

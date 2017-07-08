@@ -12,4 +12,6 @@
 
 @property (nonatomic) UIEdgeInsets extendedEdges;
 
+- (void)setAccountForTransform:(bool)accountForTransform;
+
 @end

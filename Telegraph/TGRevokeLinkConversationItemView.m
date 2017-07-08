@@ -23,7 +23,7 @@
         self.optionText = TGLocalized(@"GroupInfo.InviteLink.RevokeAlert.Revoke");
         
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(46.0f, 5.0f, 40.0f, 40.0f)];
-        [_avatarView setSingleFontSize:20.0f doubleFontSize:16.0f useBoldFont:true];
+        [_avatarView setSingleFontSize:18.0f doubleFontSize:18.0f useBoldFont:true];
         [self.editingContentView addSubview:_avatarView];
         
         _titleLabel = [[UILabel alloc] init];

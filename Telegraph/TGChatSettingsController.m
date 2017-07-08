@@ -33,6 +33,15 @@
 #import "TGNetworkUsageController.h"
 #import "TGCallDataSettingsController.h"
 
+#import "TGUsernameCollectionItem.h"
+
+#import "TGProxySetupController.h"
+
+#import <MTProtoKit/MTProtoKit.h>
+#import "TGTelegramNetworking.h"
+
+#import "TGDatabase.h"
+
 @interface TGChatSettingsController () <TGTextSizeControllerDelegate>
 {
     TGVariantCollectionItem *_textSizeItem;
@@ -46,11 +55,18 @@
     TGSwitchCollectionItem *_privateAudioAutoDownloadItem;
     TGSwitchCollectionItem *_groupAudioAutoDownloadItem;
     
+    TGSwitchCollectionItem *_privateVideoMessageAutoDownloadItem;
+    TGSwitchCollectionItem *_groupVideoMessageAutoDownloadItem;
+    
     TGSwitchCollectionItem *_autoPlayAnimationsItem;
     
     TGSwitchCollectionItem *_useRTLItem;
     
+    TGVariantCollectionItem *_useProxyItem;
+    
     TGProgressWindow *_progressWindow;
+    
+    MTSocksProxySettings *_proxySettings;
 }
 
 @end
@@ -94,6 +110,11 @@
         _groupAudioAutoDownloadItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Groups") isOn:TGAppDelegateInstance.autoDownloadAudioInGroups];
         _groupAudioAutoDownloadItem.interfaceHandle = _actionHandle;
         
+        _privateVideoMessageAutoDownloadItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.PrivateChats") isOn:TGAppDelegateInstance.autoDownloadVideoMessageInPrivateChats];
+        _privateVideoMessageAutoDownloadItem.interfaceHandle = _actionHandle;
+        _groupVideoMessageAutoDownloadItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Groups") isOn:TGAppDelegateInstance.autoDownloadVideoMessageInGroups];
+        _groupVideoMessageAutoDownloadItem.interfaceHandle = _actionHandle;
+        
         _autoPlayAnimationsItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutoPlayAnimations") isOn:TGAppDelegateInstance.autoPlayAnimations];
         _autoPlayAnimationsItem.interfaceHandle = _actionHandle;
         
@@ -127,6 +148,13 @@
         ]];
         [self.menuSections addSection:autoDownloadAudioSection];
         
+        TGCollectionMenuSection *autoDownloadVideoMessageSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.AutomaticVideoMessageDownload")],
+            _privateVideoMessageAutoDownloadItem,
+            _groupVideoMessageAutoDownloadItem,
+        ]];
+        [self.menuSections addSection:autoDownloadVideoMessageSection];
+        
         _useLessDataItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"CallSettings.UseLessData") action:@selector(useLessDataPressed)];
         _useLessDataItem.variant = [self labelForCallDataMode:TGAppDelegateInstance.callsDataUsageMode];
         
@@ -153,7 +181,7 @@
             [self.menuSections addSection:languageSection];
         }
         
-        if (TGIsCustomLocalizationActive())
+        /*if (TGIsCustomLocalizationActive())
         {
             TGButtonCollectionItem *resetLanguageItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.RevertLanguage") action:@selector(resetLanguagePressed)];
             resetLanguageItem.deselectAutomatically = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad;
@@ -162,7 +190,7 @@
                 resetLanguageItem
             ]];
             [self.menuSections addSection:languageSection];
-        }
+        }*/
         
         TGCollectionMenuSection *otherSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Other")],
@@ -173,6 +201,16 @@
         otherSection.insets = (UIEdgeInsets){otherSection.insets.top - 12.0f, otherSection.insets.left, otherSection.insets.bottom, otherSection.insets.right};
         [self.menuSections addSection:otherSection];
         
+        _proxySettings = [[TGTelegramNetworking instance] context].apiEnvironment.socksProxySettings;
+        
+        _useProxyItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.ConnectionType.UseProxy") variant:_proxySettings != nil ? TGLocalized(@"ChatSettings.ConnectionType.UseSocks5") : TGLocalized(@"GroupInfo.SharedMediaNone") action:@selector(useProxyPressed)];
+        _useProxyItem.deselectAutomatically = true;
+        TGCollectionMenuSection *proxySection = [[TGCollectionMenuSection alloc] initWithItems:@[
+            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.ConnectionType.Title")],
+            _useProxyItem
+        ]];
+        [self.menuSections addSection:proxySection];
+        
         self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Back") style:UIBarButtonItemStylePlain target:self action:@selector(backPressed)];
     }
     return self;
@@ -182,6 +220,11 @@
 {
     [_actionHandle reset];
     [ActionStageInstance() removeWatcher:self];
+}
+
+- (void)videoMessagePressed
+{
+    
 }
 
 #pragma mark -
@@ -244,6 +287,16 @@
             TGAppDelegateInstance.autoDownloadAudioInGroups = switchItem.isOn;
             [TGAppDelegateInstance saveSettings];
         }
+        else if (switchItem == _privateVideoMessageAutoDownloadItem)
+        {
+            TGAppDelegateInstance.autoDownloadVideoMessageInPrivateChats = switchItem.isOn;
+            [TGAppDelegateInstance saveSettings];
+        }
+        else if (switchItem == _groupVideoMessageAutoDownloadItem)
+        {
+            TGAppDelegateInstance.autoDownloadVideoMessageInGroups = switchItem.isOn;
+            [TGAppDelegateInstance saveSettings];
+        }
         else if (switchItem == _autoPlayAnimationsItem)
         {
             TGAppDelegateInstance.autoPlayAnimations = switchItem.isOn;
@@ -262,7 +315,7 @@
 {
 }
 
-- (void)resetLanguagePressed
+/*- (void)resetLanguagePressed
 {
     TGResetLocalization();
     [TGAppDelegateInstance resetLocalization];
@@ -273,7 +326,7 @@
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     [progressWindow show:false];
     [progressWindow dismissWithSuccess];
-}
+}*/
 
 - (void)stickersPressed
 {
@@ -317,6 +370,43 @@
         default:
             return TGLocalized(@"CallSettings.Never");
     }
+}
+
+- (void)useProxyPressed {
+    TGProxySetupController *controller = [[TGProxySetupController alloc] initWithCurrentSettings];
+    __weak TGChatSettingsController *weakSelf = self;
+    controller.completion = ^(MTSocksProxySettings *updatedSettings, bool inactive) {
+        __strong TGChatSettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            NSData *data = nil;
+            if (updatedSettings != nil) {
+                NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                if (updatedSettings.ip != nil && updatedSettings.port != 0) {
+                    dict[@"ip"] = updatedSettings.ip;
+                    dict[@"port"] = @(updatedSettings.port);
+                }
+                if (updatedSettings.username.length != 0) {
+                    dict[@"username"] = updatedSettings.username;
+                }
+                if (updatedSettings.password.length != 0) {
+                    dict[@"password"] = updatedSettings.password;
+                }
+                dict[@"inactive"] = @(inactive);
+                data = [NSKeyedArchiver archivedDataWithRootObject:dict];
+            } else {
+                data = [NSData data];
+            }
+            [TGDatabaseInstance() setCustomProperty:@"socksProxyData" value:data];
+            strongSelf->_proxySettings = inactive ? nil : updatedSettings;
+            strongSelf->_useProxyItem.variant = (!inactive && updatedSettings != nil) ? TGLocalized(@"ChatSettings.ConnectionType.UseSocks5") : TGLocalized(@"GroupInfo.SharedMediaNone");
+            
+            [[[TGTelegramNetworking instance] context] updateApiEnvironment:^MTApiEnvironment *(MTApiEnvironment *apiEnvironment) {
+                return [apiEnvironment withUpdatedSocksProxySettings:inactive ? nil : updatedSettings];
+            }];
+        }
+    };
+    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];
+    [self presentViewController:navigationController animated:true completion:nil];
 }
 
 @end

@@ -119,7 +119,8 @@ static const TGTwoColors colors[] = {
 - (TGTwoColors)_colorsForUid:(int32_t)uid
 {
     if (uid == 0)
-        return (TGTwoColors){.top = 0x8a8d91, .bottom = 0xbfc1c3};
+        return (TGTwoColors){.top = 0xb1b1b1, .bottom = 0xcdcdcd };
+
     
     int colorIndex = [[TGInterfaceAssets instance] userColorIndex:uid];
     
@@ -159,8 +160,8 @@ static const TGTwoColors colors[] = {
         TGTwoColors twoColors = [self _colorsForUid:uid];
         
         CGColorRef colors[2] = {
-            CGColorRetain(UIColorRGB(twoColors.top).CGColor),
-            CGColorRetain(UIColorRGB(twoColors.bottom).CGColor)
+            CGColorRetain(UIColorRGB(twoColors.bottom).CGColor),
+            CGColorRetain(UIColorRGB(twoColors.top).CGColor)
         };
         
         CFArrayRef colorsArray = CFArrayCreate(kCFAllocatorDefault, (const void **)&colors, 2, NULL);
@@ -179,7 +180,7 @@ static const TGTwoColors colors[] = {
         
         CFRelease(gradient);
         
-        if (uid == 0)
+        if (false && uid == 0)
         {
             CGFloat lineWidth = size.width > 40.0f ? 1.0f : 1.0f;
             CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
@@ -212,8 +213,8 @@ static const TGTwoColors colors[] = {
         TGTwoColors twoColors = [self _colorsForGroupId:gid];
         
         CGColorRef colors[2] = {
-            CGColorRetain(UIColorRGB(twoColors.top).CGColor),
-            CGColorRetain(UIColorRGB(twoColors.bottom).CGColor)
+            CGColorRetain(UIColorRGB(twoColors.bottom).CGColor),
+            CGColorRetain(UIColorRGB(twoColors.top).CGColor)
         };
         
         CFArrayRef colorsArray = CFArrayCreate(kCFAllocatorDefault, (const void **)&colors, 2, NULL);

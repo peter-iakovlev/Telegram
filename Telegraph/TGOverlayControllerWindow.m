@@ -24,7 +24,11 @@
     if ([topViewController isKindOfClass:[TGViewController class]])
     {
         TGViewController *concreteTopViewController = (TGViewController *)topViewController;
-        if (concreteTopViewController.associatedWindowStack.count != 0)
+        if (concreteTopViewController.presentedViewController != nil)
+        {
+            topViewController = concreteTopViewController.presentedViewController;
+        }
+        else if (concreteTopViewController.associatedWindowStack.count != 0)
         {
             for (UIWindow *window in concreteTopViewController.associatedWindowStack.reverseObjectEnumerator)
             {
@@ -58,7 +62,7 @@
 
 - (BOOL)prefersStatusBarHidden
 {
-    bool value = [[self statusBarAppearanceSourceController] prefersStatusBarHidden];
+    bool value = self.forceStatusBarHidden || [[self statusBarAppearanceSourceController] prefersStatusBarHidden];
     return value;
 }
 

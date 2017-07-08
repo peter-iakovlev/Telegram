@@ -2,8 +2,8 @@
 
 @interface TGPrivacyCustomShareListController : TGCollectionMenuController
 
-- (instancetype)initWithTitle:(NSString *)title contactSearchPlaceholder:(NSString *)contactSearchPlaceholder userIds:(NSArray *)userIds userIdsChanged:(void (^)(NSArray *))userIdsChanged;
+- (instancetype)initWithTitle:(NSString *)title contactSearchPlaceholder:(NSString *)contactSearchPlaceholder userIds:(NSArray *)userIds dialogs:(bool)dialogs userIdsChanged:(void (^)(NSArray *))userIdsChanged;
 
-+ (id)presentAddInterfaceWithTitle:(NSString *)title contactSearchPlaceholder:(NSString *)contactSearchPlaceholder onController:(UIViewController *)controller completion:(void (^)(NSArray *))completion;
++ (id)presentAddInterfaceWithTitle:(NSString *)title contactSearchPlaceholder:(NSString *)contactSearchPlaceholder onController:(UIViewController *)controller dialogs:(bool)dialogs completion:(void (^)(NSArray *))completion;
 
 @end

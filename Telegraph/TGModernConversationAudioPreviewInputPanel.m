@@ -117,10 +117,10 @@
         _send = [send copy];
         _waveform = waveform;
         
-        self.backgroundColor = UIColorRGBA(0xfafafa, 0.98f);
+        self.backgroundColor = UIColorRGB(0xf7f7f7);
         
         _stripeLayer = [[CALayer alloc] init];
-        _stripeLayer.backgroundColor = UIColorRGBA(0xb3aab2, 0.4f).CGColor;
+        _stripeLayer.backgroundColor = UIColorRGB(0xb2b2b2).CGColor;
         [self.layer addSublayer:_stripeLayer];
         
         UIImage *deleteImage = [UIImage imageNamed:@"ModernConversationActionDelete.png"];
@@ -136,28 +136,26 @@
         sendButton.modernHighlight = true;
         _sendButton = sendButton;
         _sendButton.exclusiveTouch = true;
-        [_sendButton setTitle:TGLocalized(@"Conversation.Send") forState:UIControlStateNormal];
-        [_sendButton setTitleColor:TGAccentColor() forState:UIControlStateNormal];
-        [_sendButton setTitleColor:UIColorRGB(0x8e8e93) forState:UIControlStateDisabled];
-        _sendButton.titleLabel.font = [self sendButtonFont];
+        [_sendButton setImage:[UIImage imageNamed:@"ModernConversationSend"] forState:UIControlStateNormal];
+        _sendButton.adjustsImageWhenHighlighted = false;
         [_sendButton addTarget:self action:@selector(sendButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_sendButton];
         
-        _sendButtonWidth = MIN(100.0f, [TGLocalized(@"Conversation.Send") sizeWithFont:TGMediumSystemFontOfSize(17)].width + 8.0f);
+        _sendButtonWidth = 45.0f;
         
         _waveformBackgroundView = [[UIImageView alloc] init];
         {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(10.0f, 10.0f), false, 0.0f);
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(33.0f, 33.0f), false, 0.0f);
             CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGB(0x1195f2).CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 10.0f, 10.0f));
-            _waveformBackgroundView.image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:5 topCapHeight:5];
+            CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 33.0f, 33.0f));
+            _waveformBackgroundView.image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:16 topCapHeight:16];
             UIGraphicsEndImageContext();
         }
         [self addSubview:_waveformBackgroundView];
         
         _durationLabel = [[UILabel alloc] init];
-        _durationLabel.backgroundColor = UIColorRGB(0x1195f2);
+        _durationLabel.backgroundColor = TGAccentColor();
         _durationLabel.textColor = [UIColor whiteColor];
         _durationLabel.font = TGSystemFontOfSize(11.5f);
         _durationLabel.text = @"0:42";
@@ -252,23 +250,23 @@
     _sendButton.frame = CGRectMake(self.frame.size.width - _sendButtonWidth + sendButtonOffset.x * 2.0f, self.frame.size.height - [self baseHeight], _sendButtonWidth - sendButtonOffset.x * 2.0f, [self baseHeight] - 1.0f);
     
     _deleteButton.transform = CGAffineTransformIdentity;
-    _deleteButton.frame = CGRectMake(-5.0f, 0.0f + verticalOffset, 52.0f, [self baseHeight]);
+    _deleteButton.frame = CGRectMake(-3.0f, 0.0f + verticalOffset, 52.0f, [self baseHeight]);
     _deleteButton.transform = CGAffineTransformMakeScale(0.88f, 0.88f);
     
-    _playPauseIcon.frame = CGRectMake(48.5f, 13.5f + verticalOffset, 19.0f, 19.0f);
+    _playPauseIcon.frame = CGRectMake(52.5f, 12.5f + verticalOffset, 19.0f, 19.0f);
     
-    _waveformBackgroundView.frame = CGRectMake(41.0f, 9.0f + verticalOffset, self.frame.size.width - 41.0f - _sendButtonWidth - 2.0f, [self baseHeight] - 9.0f - 8.0f);
+    _waveformBackgroundView.frame = CGRectMake(45.0f, 6.0f - TGScreenPixel + verticalOffset, self.frame.size.width - 45.0f - _sendButtonWidth - 2.0f, [self baseHeight] - (7.0f - TGScreenPixel) - 5.0f);
     
-    _waveformButton.frame = CGRectMake(41.0f, 0.0f + verticalOffset, self.frame.size.width - 41.0f - _sendButtonWidth - 2.0f, [self baseHeight]);
+    _waveformButton.frame = CGRectMake(45.0f, 0.0f + verticalOffset, self.frame.size.width - 45.0f - _sendButtonWidth - 2.0f, [self baseHeight]);
     
-    _waveformView.frame = CGRectMake(41.0f + 35.0f, 9.0f + verticalOffset, self.frame.size.width - 41.0f - 35.0f - _sendButtonWidth - 2.0f - 0.0f - _durationLabel.frame.size.width, [self baseHeight] - 9.0f - 8.0f - 7.5f);
+    _waveformView.frame = CGRectMake(45.0f + 35.0f, 9.0f + verticalOffset, self.frame.size.width - 45.0f - 35.0f - _sendButtonWidth - 2.0f - 0.0f - _durationLabel.frame.size.width, [self baseHeight] - 9.0f - 8.0f - 7.5f);
     CGRect waveformBounds = _waveformView.bounds;
     _waveformView.backgroundView.frame = waveformBounds;
     _waveformView.foregroundView.frame = waveformBounds;
     waveformBounds.size.width *= _audioPosition;
     _waveformView.foregroundClippingView.frame = waveformBounds;
     
-    _durationLabel.frame = CGRectMake(CGRectGetMaxX(_waveformBackgroundView.frame) - 10.0f - _durationLabel.frame.size.width, 16.0f + verticalOffset, _durationLabel.frame.size.width, _durationLabel.frame.size.height);
+    _durationLabel.frame = CGRectMake(CGRectGetMaxX(_waveformBackgroundView.frame) - 10.0f - _durationLabel.frame.size.width, 15.0f + verticalOffset, _durationLabel.frame.size.width, _durationLabel.frame.size.height);
 }
 
 #pragma mark -

@@ -57,6 +57,7 @@
         case TGAudioSessionTypePlayVoice:
         case TGAudioSessionTypePlayMusic:
         case TGAudioSessionTypePlayVideo:
+        case TGAudioSessionTypePlayEmbedVideo:
             return AVAudioSessionCategoryPlayback;
         case TGAudioSessionTypePlayAndRecord:
         case TGAudioSessionTypePlayAndRecordHeadphones:
@@ -103,7 +104,7 @@
                     
                     NSError *error = nil;
                     
-                    TGLog(@"(TGAudioSessionManager setting category %d active overriding port: %d)", (int)type, ((type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo)) ? 1 : 0);
+                    TGLog(@"(TGAudioSessionManager setting category %d active overriding port: %d)", (int)type, ((type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo || type == TGAudioSessionTypePlayEmbedVideo)) ? 1 : 0);
                     [[AVAudioSession sharedInstance] setCategory:[self nativeCategoryForType:type] withOptions:(type == TGAudioSessionTypePlayAndRecord || type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypeCall) ? AVAudioSessionCategoryOptionAllowBluetooth : 0 error:&error];
                     if (error != nil)
                         TGLog(@"(TGAudioSessionManager setting category %d error %@)", (int)type, error);
@@ -114,7 +115,7 @@
                     if (error != nil)
                         TGLog(@"(TGAudioSessionManager setting active error %@)", error);
                     //if ((type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo)) {
-                    [[AVAudioSession sharedInstance] overrideOutputAudioPort:(type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo || type == TGAudioSessionTypeCall) ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error];
+                    [[AVAudioSession sharedInstance] overrideOutputAudioPort:(type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypePlayMusic || type == TGAudioSessionTypePlayVideo || type == TGAudioSessionTypePlayEmbedVideo || type == TGAudioSessionTypeCall) ? AVAudioSessionPortOverrideNone : AVAudioSessionPortOverrideSpeaker error:&error];
                     //}
                     if (error != nil)
                         TGLog(@"(TGAudioSessionManager override port error %@)", error);
@@ -158,7 +159,7 @@
         bool ignore = false;
         pthread_mutex_lock(&_mutex);
         {
-            if (_currentType == TGAudioSessionTypeCall)
+            if (_currentType == TGAudioSessionTypeCall || _currentType == TGAudioSessionTypePlayEmbedVideo)
                 ignore = true;
         }
         pthread_mutex_unlock(&_mutex);

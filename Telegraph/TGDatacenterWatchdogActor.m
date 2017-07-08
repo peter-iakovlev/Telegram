@@ -216,7 +216,7 @@
         
         for (TLDcOption$modernDcOption *dcOption in config.dc_options)
         {
-            MTDatacenterAddress *configAddress = [[MTDatacenterAddress alloc] initWithIp:dcOption.ip_address port:(uint16_t)dcOption.port preferForMedia:dcOption.flags & (1 << 1) restrictToTcp:dcOption.flags & (1 << 2)];
+            MTDatacenterAddress *configAddress = [[MTDatacenterAddress alloc] initWithIp:dcOption.ip_address port:(uint16_t)dcOption.port preferForMedia:dcOption.flags & (1 << 1) restrictToTcp:dcOption.flags & (1 << 2) cdn:dcOption.flags & (1 << 3) preferForProxy:dcOption.flags & (1 << 4)];
             
             NSMutableArray *array = addressListByDatacenterId[@(dcOption.n_id)];
             if (array == nil)
@@ -238,7 +238,7 @@
             if (currentAddressSet == nil || ![addressSet isEqual:currentAddressSet])
             {
                 TGLog(@"[TGDatacenterWatchdogActor#%p updating datacenter %d address set to %@]", self, [nDatacenterId intValue], addressSet);
-                [context updateAddressSetForDatacenterWithId:[nDatacenterId integerValue] addressSet:addressSet];
+                [context updateAddressSetForDatacenterWithId:[nDatacenterId integerValue] addressSet:addressSet forceUpdateSchemes:false];
             }
         }];
         

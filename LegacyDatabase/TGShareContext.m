@@ -14,7 +14,7 @@
 
 @implementation TGShareContext
 
-- (instancetype)initWithContainerUrl:(NSURL *)containerUrl mtContext:(MTContext *)mtContext mtProto:(MTProto *)mtProto mtRequestService:(MTRequestMessageService *)mtRequestService clientUserId:(int32_t)clientUserId
+- (instancetype)initWithContainerUrl:(NSURL *)containerUrl mtContext:(MTContext *)mtContext mtProto:(MTProto *)mtProto mtRequestService:(MTRequestMessageService *)mtRequestService clientUserId:(int32_t)clientUserId legacyDatabase:(TGLegacyDatabase *)legacyDatabase
 {
     self = [super init];
     if (self != nil)
@@ -26,6 +26,8 @@
         _mtContext = mtContext;
         _mtProto = mtProto;
         _mtRequestService = mtRequestService;
+        
+        _legacyDatabase = legacyDatabase;
         
         _datacenterPoolsLock = [[NSLock alloc] init];
         _datacenterPools = [[NSMutableDictionary alloc] init];
@@ -46,7 +48,7 @@
     [_mtProto stop];
 }
 
-- (SSignal *)function:(Api65_FunctionContext *)functionContext
+- (SSignal *)function:(Api69_FunctionContext *)functionContext
 {
     __weak TGShareContext *weakSelf = self;
     return [[SSignal alloc] initWithGenerator:^id<SDisposable> (SSubscriber *subscriber)
@@ -144,7 +146,7 @@
     [_datacenterPoolsLock unlock];
 }
 
-- (SSignal *)datacenter:(NSInteger)datacenterId function:(Api65_FunctionContext *)functionContext
+- (SSignal *)datacenter:(NSInteger)datacenterId function:(Api69_FunctionContext *)functionContext
 {
     __weak TGShareContext *weakSelf = self;
     return [[self pooledConnectionContextForDatacenter:datacenterId] mapToSignal:^SSignal *(TGDatacenterConnectionContext *datacenterConnectionContext)
@@ -170,33 +172,6 @@
             __strong TGShareContext *strongSelf = weakSelf;
             [strongSelf returnPooledDatacenterConnectionContext:context datacenterId:datacenterId];
         }];
-    }];
-}
-
-- (SSignal *)legacyDatabase {
-    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {;
-        NSString *documentsPath = [[_containerUrl path] stringByAppendingPathComponent:@"Documents"];
-        NSString *databaseName = @"tgdata";
-        
-        NSString *baseDatabasePath = [documentsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.db", (databaseName == nil ? @"tgdata" : databaseName)]];
-        
-        NSString *encryptedDatabasePath = [baseDatabasePath stringByAppendingString:@".y"];
-        
-        NSString *databasePath = nil;
-        
-        if ([[NSFileManager defaultManager] fileExistsAtPath:encryptedDatabasePath]) {
-            databasePath = encryptedDatabasePath;
-        } else {
-            databasePath = baseDatabasePath;
-        }
-        
-        TGLegacyDatabase *database = [[TGLegacyDatabase alloc] initWithPath:databasePath];
-        if (database != nil) {
-            [subscriber putNext:database];
-        }
-        [subscriber putCompletion];
-        
-        return nil;
     }];
 }
 

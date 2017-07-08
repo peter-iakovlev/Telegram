@@ -12,4 +12,6 @@
 
 @interface TGModernFlatteningView : UIView <TGModernView>
 
+@property (nonatomic, assign) bool specialUserInteraction;
+
 @end

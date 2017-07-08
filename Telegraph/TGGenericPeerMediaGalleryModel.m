@@ -237,6 +237,9 @@
             else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
             {
                 TGVideoMediaAttachment *videoMedia = attachment;
+                if (videoMedia.roundMessage)
+                    continue;
+                
                 TGGenericPeerMediaGalleryVideoItem *videoItem = [[TGGenericPeerMediaGalleryVideoItem alloc] initWithVideoMedia:videoMedia peerId:_peerId messageId:message.mid];
                 
                 videoItem.authorPeer = [self authorPeerForId:message.fromUid];
@@ -353,6 +356,9 @@
                 else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
                 {
                     TGVideoMediaAttachment *videoMedia = attachment;
+                    if (videoMedia.roundMessage)
+                        continue;
+                    
                     TGGenericPeerMediaGalleryVideoItem *videoItem = [[TGGenericPeerMediaGalleryVideoItem alloc] initWithVideoMedia:videoMedia peerId:_peerId messageId:message.mid];
                     
                     videoItem.authorPeer = [self authorPeerForId:message.fromUid];
@@ -428,6 +434,9 @@
             else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
             {
                 TGVideoMediaAttachment *videoMedia = attachment;
+                if (videoMedia.roundMessage)
+                    continue;
+                
                 TGGenericPeerMediaGalleryVideoItem *videoItem = [[TGGenericPeerMediaGalleryVideoItem alloc] initWithVideoMedia:videoMedia peerId:_peerId messageId:message.mid];
                 
                 videoItem.authorPeer = [self authorPeerForId:message.fromUid];
@@ -477,6 +486,9 @@
 
 - (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultLeftAccessoryView
 {
+    if (_disableActions) {
+        return nil;
+    }
     TGGenericPeerMediaGalleryActionsAccessoryView *accessoryView = [[TGGenericPeerMediaGalleryActionsAccessoryView alloc] init];
     __weak TGGenericPeerMediaGalleryActionsAccessoryView *weakAccessoryView = accessoryView;
     __weak TGGenericPeerMediaGalleryModel *weakSelf = self;
@@ -682,6 +694,9 @@
 
 - (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultRightAccessoryView
 {
+    if (_disableActions) {
+        return nil;
+    }
     TGGenericPeerMediaGalleryDeleteAccessoryView *accessoryView = [[TGGenericPeerMediaGalleryDeleteAccessoryView alloc] init];
     __weak TGGenericPeerMediaGalleryModel *weakSelf = self;
     accessoryView.action = ^(id<TGModernGalleryItem> item)

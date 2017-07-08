@@ -9,7 +9,7 @@
 
 #import "TGTextCheckingResult.h"
 
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 static void *NSTextCheckingResultTelegramHiddenLinkKey = &NSTextCheckingResultTelegramHiddenLinkKey;
 
@@ -25,7 +25,7 @@ static void *NSTextCheckingResultTelegramHiddenLinkKey = &NSTextCheckingResultTe
 
 @end
 
-static std::tr1::unordered_map<int, id<TGMediaAttachmentParser> > mediaAttachmentParsers;
+static std::unordered_map<int, id<TGMediaAttachmentParser> > mediaAttachmentParsers;
 
 typedef enum {
     TGMessageFlagBroadcast = 1,
@@ -286,6 +286,22 @@ typedef enum {
     _hasNoCheckingResults = false;
 }
 
+- (NSArray *)effectiveTextAndEntities {
+    NSArray *entities = nil;
+    for (id media in self.mediaAttachments) {
+        if ([media isKindOfClass:[TGImageMediaAttachment class]]) {
+            return @[((TGImageMediaAttachment *)media).caption ?: @"", @[]];
+        } else if ([media isKindOfClass:[TGVideoMediaAttachment class]]) {
+            return @[((TGImageMediaAttachment *)media).caption ?: @"", @[]];
+        } else if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+            return @[((TGImageMediaAttachment *)media).caption ?: @"", @[]];
+        } else if ([media isKindOfClass:[TGMessageEntitiesAttachment class]]) {
+            entities = ((TGMessageEntitiesAttachment *)media).entities;
+        }
+    }
+    return @[_text ?: @"", entities ?: @[]];
+}
+
 - (bool)local
 {
     return _mid >= TGMessageLocalMidBaseline;
@@ -362,7 +378,7 @@ typedef enum {
             NSError *error = nil;
             static NSDataDetector *dataDetector = nil;
             if (dataDetector == nil)
-                dataDetector = [NSDataDetector dataDetectorWithTypes:(int)(NSTextCheckingTypeLink | NSTextCheckingTypePhoneNumber) error:&error];
+                dataDetector = [NSDataDetector dataDetectorWithTypes:(int)(NSTextCheckingTypePhoneNumber) error:&error];
             [dataDetector enumerateMatchesInString:text options:0 range:NSMakeRange(0, text.length) usingBlock:^(NSTextCheckingResult *match, __unused NSMatchingFlags flags, __unused BOOL *stop)
              {
                  NSTextCheckingType type = [match resultType];
@@ -402,7 +418,7 @@ typedef enum {
         if (c >= '0' && c <= '9')
         {
             digitsInRow++;
-            if (digitsInRow >= 6)
+            if (digitsInRow >= 3)
             {
                 containsSomething = true;
                 break;
@@ -478,10 +494,12 @@ typedef enum {
         }];
         
         static NSCharacterSet *characterSet = nil;
+        static NSCharacterSet *punctuationSet = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
             characterSet = [NSCharacterSet alphanumericCharacterSet];
+            punctuationSet = [NSCharacterSet punctuationCharacterSet];
         });
         
         if (containsSomething && (highlightMentionsAndTags || highlightCommands))
@@ -531,7 +549,7 @@ typedef enum {
                     
                     if (c == '@')
                     {
-                        if (previous == 0 || previous == ' ' || previous == '\n') {
+                        if (previous == 0 || previous == ' ' || previous == '\n' || previous == '[' || previous == ']' || previous == '(' || previous == ')' || previous == ':') {
                             mentionStart = i;
                         }
                     }
@@ -961,7 +979,7 @@ typedef enum {
         int type = 0;
         [is read:(uint8_t *)&type maxLength:4];
         
-        std::tr1::unordered_map<int, id<TGMediaAttachmentParser> >::iterator it = mediaAttachmentParsers.find(type);
+        std::unordered_map<int, id<TGMediaAttachmentParser> >::iterator it = mediaAttachmentParsers.find(type);
         if (it == mediaAttachmentParsers.end())
         {
             TGLog(@"***** Unknown media attachment type %d", type);
@@ -1015,6 +1033,28 @@ typedef enum {
     
     PSKeyValueDecoder *decoder = [[PSKeyValueDecoder alloc] initWithData:data];
     return [decoder decodeObjectsByKeys];
+}
+
+- (void)removeReplyAndMarkup {
+    if (_mediaAttachments.count != 0) {
+        for (NSUInteger i = 0; i < _mediaAttachments.count; i++) {
+            if ([_mediaAttachments[i] isKindOfClass:[TGReplyMessageMediaAttachment class]]) {
+                NSMutableArray *result = [[NSMutableArray alloc] initWithArray:_mediaAttachments];
+                [result removeObjectAtIndex:i];
+                _mediaAttachments = result;
+                break;
+            }
+        }
+        
+        for (NSUInteger i = 0; i < _mediaAttachments.count; i++) {
+            if ([_mediaAttachments[i] isKindOfClass:[TGReplyMarkupAttachment class]]) {
+                NSMutableArray *result = [[NSMutableArray alloc] initWithArray:_mediaAttachments];
+                [result removeObjectAtIndex:i];
+                _mediaAttachments = result;
+                break;
+            }
+        }
+    }
 }
 
 @end

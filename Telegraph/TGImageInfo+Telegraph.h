@@ -12,6 +12,7 @@
 
 #import "SecretLayer23.h"
 #import "SecretLayer46.h"
+#import "SecretLayer66.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,5 +31,6 @@ bool extractFileUrlComponents(NSString *fileUrl, int *datacenterId, int64_t *vol
 - (id)initWithTelegraphSizesDescription:(NSArray *)sizesDesc cachedData:(__autoreleasing NSData **)cachedData;
 - (id)initWithSecret23SizesDescription:(NSArray *)sizesDesc cachedData:(__autoreleasing NSData **)cachedData;
 - (id)initWithSecret46SizesDescription:(NSArray *)sizesDesc cachedData:(__autoreleasing NSData **)cachedData;
+- (id)initWithSecret66SizesDescription:(NSArray *)sizesDesc cachedData:(__autoreleasing NSData **)cachedData;
 
 @end

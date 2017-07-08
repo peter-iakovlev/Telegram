@@ -9,7 +9,8 @@ typedef enum
     TGMediaVideoConversionPresetCompressedMedium,
     TGMediaVideoConversionPresetCompressedHigh,
     TGMediaVideoConversionPresetCompressedVeryHigh,
-    TGMediaVideoConversionPresetAnimation
+    TGMediaVideoConversionPresetAnimation,
+    TGMediaVideoConversionPresetVideoMessage
 } TGMediaVideoConversionPreset;
 
 @interface TGVideoEditAdjustments : NSObject <TGMediaEditAdjustments>

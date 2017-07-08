@@ -9,7 +9,7 @@
 
 @interface TGChatListAvatarSignal : NSObject
 
-+ (SSignal *)chatListAvatarWithContext:(TGShareContext *)context location:(TGFileLocation *)location;
-+ (SSignal *)chatListAvatarWithContext:(TGShareContext *)context letters:(NSString *)letters peerId:(TGPeerId)peerId;
++ (SSignal *)chatListAvatarWithContext:(TGShareContext *)context location:(TGFileLocation *)location imageSize:(CGSize)imageSize;
++ (SSignal *)chatListAvatarWithContext:(TGShareContext *)context letters:(NSString *)letters peerId:(TGPeerId)peerId imageSize:(CGSize)imageSize;
 
 @end

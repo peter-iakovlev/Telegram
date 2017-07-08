@@ -443,6 +443,9 @@ const NSInteger TGYTPlayerStateBufferingCode = 3;
 + (bool)_supportsWebPage:(TGWebPageMediaAttachment *)webPage
 {
     NSString *url = webPage.embedUrl;
+    if ([url rangeOfString:@"list"].location != NSNotFound)
+        return false;
+    
     return ([url hasPrefix:@"http://www.youtube.com/watch?v="] || [url hasPrefix:@"https://www.youtube.com/watch?v="] || [url hasPrefix:@"http://m.youtube.com/watch?v="] || [url hasPrefix:@"https://m.youtube.com/watch?v="] || [url hasPrefix:@"http://youtu.be/"] || [url hasPrefix:@"https://youtu.be/"] || [url hasPrefix:@"https://www.youtube.com/embed/"]);
 }
 

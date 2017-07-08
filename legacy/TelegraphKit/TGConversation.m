@@ -520,6 +520,8 @@
         _pinnedMessageId = [coder decodeInt32ForCKey:"pmi"];
         _chatCreationDate = [coder decodeInt32ForCKey:"ccd"];
         _pinnedDate = [coder decodeInt32ForCKey:"pdt"];
+        _channelAdminRights = [coder decodeObjectForCKey:"car"];
+        _channelBannedRights = [coder decodeObjectForCKey:"cbr"];
     }
     return self;
 }
@@ -567,6 +569,8 @@
     [coder encodeString:_restrictionReason forCKey:"rr"];
     [coder encodeInt32:_pinnedMessageId forCKey:"pmi"];
     [coder encodeInt32:_chatCreationDate forCKey:"ccd"];
+    [coder encodeObject:_channelAdminRights forCKey:"car"];
+    [coder encodeObject:_channelBannedRights forCKey:"cbr"];
 }
 
 - (id)copyWithZone:(NSZone *)__unused zone
@@ -629,6 +633,9 @@
     
     conversation->_draft = _draft;
     conversation.pinnedDate = _pinnedDate;
+    
+    conversation->_channelAdminRights = _channelAdminRights;
+    conversation->_channelBannedRights = _channelBannedRights;
     
     return conversation;
 }
@@ -753,6 +760,14 @@
     if (_pinnedDate != other->_pinnedDate) {
         return false;
     }
+    
+    if (!TGObjectCompare(_channelAdminRights, other->_channelAdminRights)) {
+        return false;
+    }
+    
+    if (!TGObjectCompare(_channelBannedRights, other->_channelBannedRights)) {
+        return false;
+    }
         
     return true;
 }
@@ -801,6 +816,14 @@
     }
     
     if (_maxKnownMessageId != other->_maxKnownMessageId) {
+        return false;
+    }
+    
+    if (!TGObjectCompare(_channelAdminRights, other->_channelAdminRights)) {
+        return false;
+    }
+    
+    if (!TGObjectCompare(_channelBannedRights, other->_channelBannedRights)) {
         return false;
     }
     
@@ -982,6 +1005,8 @@
     if (conversation.encryptedData != nil) {
         self.encryptedData = conversation.encryptedData;
     }
+    self.channelAdminRights = conversation.channelAdminRights;
+    self.channelBannedRights = conversation.channelBannedRights;
 }
 
 - (void)mergeChannel:(TGConversation *)channel {
@@ -1001,6 +1026,8 @@
         self.hasExplicitContent = channel.hasExplicitContent;
         self.signaturesEnabled = channel.signaturesEnabled;
         self.restrictionReason = channel.restrictionReason;
+        self.channelAdminRights = channel.channelAdminRights;
+        self.channelBannedRights = channel.channelBannedRights;
     }
     self.everybodyCanAddMembers = channel.everybodyCanAddMembers;
     _channelIsReadOnly = channel.channelIsReadOnly;
@@ -1027,7 +1054,7 @@
         return true;
     }
     
-    return (_channelRole == TGChannelRoleCreator || _channelRole == TGChannelRolePublisher || !_channelIsReadOnly) && !_leftChat && !_kickedFromChat;
+    return (_channelRole == TGChannelRoleCreator || _channelAdminRights.canPostMessages || !_channelIsReadOnly) && !_leftChat && !_kickedFromChat;
 }
 
 + (NSString *)chatTitleForDecoder:(PSKeyValueCoder *)coder {
@@ -1043,18 +1070,6 @@
         _flags |= TGConversationFlagPostAsChannel;
     } else {
         _flags &= ~TGConversationFlagPostAsChannel;
-    }
-}
-
-- (bool)displayExpanded {
-    return _flags & TGConversationFlagDisplayExpanded;
-}
-
-- (void)setDisplayExpanded:(bool)displayExpanded {
-    if (displayExpanded) {
-        _flags |= TGConversationFlagDisplayExpanded;
-    } else {
-        _flags &= ~TGConversationFlagDisplayExpanded;
     }
 }
 

@@ -242,6 +242,8 @@
     
     int dataIndex = 0;
     
+    NSMutableArray *requests = [[NSMutableArray alloc] init];
+    
     for (NSArray *itemDesc in filePathsAndExtensions)
     {
 #ifdef DEBUG
@@ -280,9 +282,12 @@
         
         options[@"mediaTypeTag"] = @(mediaTypeTag);
         
-        [ActionStageInstance() requestActor:actorPath options:options watcher:self];
+        [requests addObject:@{@"actorPath":actorPath, @"options":options }];
     }
-
+    
+    for (NSDictionary *request in requests)
+        [ActionStageInstance() requestActor:request[@"actorPath"] options:request[@"options"] watcher:self];
+    
     [self beginUploadProgress];
 }
 

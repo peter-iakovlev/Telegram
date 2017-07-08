@@ -35,7 +35,7 @@ static inline CGFloat TGPaintDistance(CGPoint a, CGPoint b)
     CGFloat xd = (a.x - b.x);
     CGFloat yd = (a.y - b.y);
     
-    return sqrt(xd * xd + yd * yd);
+    return (CGFloat)(sqrt(xd * xd + yd * yd));
 }
 
 static inline CGPoint TGPaintCenterOfRect(CGRect rect)

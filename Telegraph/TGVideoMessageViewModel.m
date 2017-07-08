@@ -56,7 +56,7 @@
     return [videosDirectory stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"%@%" PRIx64 ".mov", local ? @"local" : @"remote", videoId]];
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo video:(TGVideoMediaAttachment *)video authorPeer:(id)authorPeer context:(TGModernViewContext *)context forwardPeer:(id)forwardPeer forwardAuthor:(id)forwardAuthor forwardMessageId:(int32_t)forwardMessageId replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor viaUser:(TGUser *)viaUser
+- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo video:(TGVideoMediaAttachment *)video authorPeer:(id)authorPeer context:(TGModernViewContext *)context forwardPeer:(id)forwardPeer forwardAuthor:(id)forwardAuthor forwardMessageId:(int32_t)forwardMessageId replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor viaUser:(TGUser *)viaUser webPage:(TGWebPageMediaAttachment *)webPage
 {
     TGImageInfo *previewImageInfo = imageInfo;
     
@@ -89,7 +89,7 @@
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
     }
     
-    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyHeader replyAuthor:replyAuthor viaUser:viaUser caption:video.caption textCheckingResults:video.textCheckingResults];
+    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyHeader replyAuthor:replyAuthor viaUser:viaUser caption:video.caption textCheckingResults:video.textCheckingResults webPage:webPage];
     if (self != nil)
     {
         _video = video;
@@ -158,11 +158,11 @@
         }
         else if (_videoSize < 1024 * 1024)
         {
-            labelText = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.DownloadProgressKilobytes"), (int)(_videoSize * progress / 1024), (int)(_videoSize / 1024)];
+            labelText = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.DownloadProgressKilobytes"), (int)(_videoSize * progress / 1024), (int)(_videoSize / 1024)];
         }
         else
         {
-            labelText = [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.DownloadProgressMegabytes"), (float)_videoSize * progress / (1024 * 1024), (float)_videoSize / (1024 * 1024)];
+            labelText = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.DownloadProgressMegabytes"), (float)_videoSize * progress / (1024 * 1024), (float)_videoSize / (1024 * 1024)];
         }
     }
     else

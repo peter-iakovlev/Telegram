@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x15bce3ba;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLcontacts_ForeignLink$contacts_foreignLinkUnknown *object = [[TLcontacts_ForeignLink$contacts_foreignLinkUnknown alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0xf0395e38;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLcontacts_ForeignLink$contacts_foreignLinkRequested *object = [[TLcontacts_ForeignLink$contacts_foreignLinkRequested alloc] init];
     object.has_phone = metaObject->getBool((int32_t)0x217cda81);
@@ -105,7 +105,7 @@
     return (int32_t)0xc7d5d948;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLcontacts_ForeignLink$contacts_foreignLinkMutual *object = [[TLcontacts_ForeignLink$contacts_foreignLinkMutual alloc] init];
     return object;

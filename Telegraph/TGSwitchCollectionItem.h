@@ -13,10 +13,13 @@
 @interface TGSwitchCollectionItem : TGCollectionItem
 
 @property (nonatomic, strong) ASHandle *interfaceHandle;
-@property (nonatomic, copy) void (^toggled)(bool value);
+@property (nonatomic, copy) void (^toggled)(bool value, TGSwitchCollectionItem *item);
 
 @property (nonatomic, strong) NSString *title;
 @property (nonatomic) bool isOn;
+@property (nonatomic) bool isEnabled;
+@property (nonatomic) bool isPermission;
+@property (nonatomic) bool fullSeparator;
 
 - (instancetype)initWithTitle:(NSString *)title isOn:(bool)isOn;
 

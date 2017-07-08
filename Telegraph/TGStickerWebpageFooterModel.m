@@ -97,7 +97,7 @@
     _imageModel.parentOffset = itemPosition;
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize contentSize:(CGSize)__unused topContentSize infoWidth:(CGFloat)infoWidth needsContentsUpdate:(bool *)__unused needsContentsUpdate
+- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize contentSize:(CGSize)__unused topContentSize infoWidth:(CGFloat)__unused infoWidth needsContentsUpdate:(bool *)__unused needsContentsUpdate
 {
     CGSize size = _imageModel.frame.size;
     size.width += 4.0f;

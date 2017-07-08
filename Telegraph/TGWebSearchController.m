@@ -1502,7 +1502,7 @@
         
         SSignal *signal = [SSignal single:item];
         
-        if ([item conformsToProtocol:@protocol(TGMediaEditableItem)] && [item respondsToSelector:@selector(screenImageSignal)])
+        if ([item conformsToProtocol:@protocol(TGMediaEditableItem)] && [item respondsToSelector:@selector(screenImageSignal:)])
         {
             signal = [[[[_editingContext imageSignalForItem:(id<TGMediaEditableItem>)item] filter:^bool(id result)
             {

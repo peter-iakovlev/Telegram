@@ -56,7 +56,7 @@ typedef enum {
 - (void)deleteContactsSuccess:(NSArray *)uids;
 - (void)deleteContactsFailed:(NSArray *)uids;
 
-- (void)exportContactsSuccess:(NSArray *)importedPhonesArray users:(NSArray *)users;
+- (void)exportContactsSuccess:(NSArray *)importedPhonesArray popularContacts:(NSArray *)popularContacts users:(NSArray *)users;
 - (void)exportContactsFailed;
 
 - (void)contactIdsRequestSuccess:(NSArray *)contactIds;

@@ -40,7 +40,7 @@ NSString *const TGShareCollectionCellIdentifier = @"TGShareCollectionCell";
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 60.0f, 60.0f)];
         _avatarView.backgroundColor = [UIColor whiteColor];
         _avatarView.opaque = true;
-        [_avatarView setSingleFontSize:24.0f doubleFontSize:20.0f useBoldFont:false];
+        [_avatarView setSingleFontSize:28.0f doubleFontSize:28.0f useBoldFont:false];
         [self.contentView addSubview:_avatarView];
         
         static UIImage *circleImage = nil;
@@ -74,7 +74,6 @@ NSString *const TGShareCollectionCellIdentifier = @"TGShareCollectionCell";
         _titleLabel.textAlignment = NSTextAlignmentCenter;
         _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
         [self.contentView addSubview:_titleLabel];
-
     }
     return self;
 }

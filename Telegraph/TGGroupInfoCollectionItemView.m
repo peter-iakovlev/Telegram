@@ -46,7 +46,7 @@
     if (self)
     {   
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(15, 10, 66, 66)];
-        [_avatarView setSingleFontSize:35.0f doubleFontSize:21.0f useBoldFont:false];
+        [_avatarView setSingleFontSize:28.0f doubleFontSize:28.0f useBoldFont:false];
         _avatarView.fadeTransition = true;
         _avatarView.userInteractionEnabled = true;
         [_avatarView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(avatarTapGesture:)]];
@@ -60,7 +60,7 @@
         _titleLabel.textColor = [UIColor blackColor];
         _titleLabel.font = TGBoldSystemFontOfSize(20);
         _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-        _titleLabel.numberOfLines = 1;
+        _titleLabel.numberOfLines = 2;
         [self addSubview:_titleLabel];
     }
     return self;
@@ -418,10 +418,10 @@
     }
     
     titleSize.width = MIN(titleSize.width, maxTitleWidth);
-    CGRect titleLabelFrame = CGRectMake(92, 30, titleSize.width, titleSize.height);
+    CGRect titleLabelFrame = CGRectMake(92, floor((93.0f - titleSize.height) / 2.0f) - 2.0f, titleSize.width, titleSize.height);
     
     _titleLabel.frame = titleLabelFrame;
-    _titleField.frame = CGRectMake(titleLabelFrame.origin.x, titleLabelFrame.origin.y - 10, maxTitleWidth, titleLabelFrame.size.height + 20);
+    _titleField.frame = CGRectMake(titleLabelFrame.origin.x, 22, maxTitleWidth, 44);
     
     if (_verifiedIcon.superview != nil) {
         _verifiedIcon.frame = CGRectOffset(_verifiedIcon.bounds, titleLabelFrame.origin.x + titleSize.width + 4.0f, titleLabelFrame.origin.y + 5.0f + TGRetinaPixel);

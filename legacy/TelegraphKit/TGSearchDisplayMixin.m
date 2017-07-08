@@ -107,8 +107,12 @@
             }
             else
             {
-                CGRect searchBarReferenceFrame = [_searchBar convertRect:_searchBar.bounds toView:referenceView.superview];
-                dimViewFrame.origin.y = searchBarReferenceFrame.origin.y + searchBarReferenceFrame.size.height;
+                if (_simpleLayout) {
+                    dimViewFrame.origin.y = _controllerInset.top;
+                } else {
+                    CGRect searchBarReferenceFrame = [_searchBar convertRect:_searchBar.bounds toView:referenceView.superview];
+                    dimViewFrame.origin.y = searchBarReferenceFrame.origin.y + searchBarReferenceFrame.size.height;
+                }
             }
             
             [[referenceView superview] insertSubview:_tableViewContainer aboveSubview:referenceView];
@@ -120,7 +124,11 @@
             _dimView.layer.frame = dimViewFrame;
             
             CGRect tableViewContainerFrame = referenceView.frame;
-            tableViewContainerFrame.origin.y = _controllerInset.top + _searchBar.frame.size.height;
+            if (_simpleLayout) {
+                tableViewContainerFrame.origin.y = _controllerInset.top;
+            } else {
+                tableViewContainerFrame.origin.y = _controllerInset.top + _searchBar.frame.size.height;
+            }
             _tableViewContainer.frame = tableViewContainerFrame;
             
             _tableViewContainer.layer.frame = _tableViewContainer.frame;
@@ -240,14 +248,22 @@
     if (_dimView != nil && _dimView.superview != nil)
     {
         CGRect frame = _dimView.superview.bounds;
-        frame.origin.y = _controllerInset.top + _searchBar.frame.size.height;
+        if (_simpleLayout) {
+            frame.origin.y = _controllerInset.top;
+        } else {
+            frame.origin.y = _controllerInset.top + _searchBar.frame.size.height;
+        }
         _dimView.frame = frame;
     }
     
     if (_tableViewContainer != nil && _tableViewContainer.superview != nil)
     {
         CGRect tableViewContainerFrame = _tableViewContainer.frame;
-        tableViewContainerFrame.origin.y = _controllerInset.top + _searchBar.frame.size.height;
+        if (_simpleLayout) {
+            tableViewContainerFrame.origin.y = _controllerInset.top;
+        } else {
+            tableViewContainerFrame.origin.y = _controllerInset.top + _searchBar.frame.size.height;
+        }
         _tableViewContainer.frame = tableViewContainerFrame;
     }
     

@@ -35,6 +35,8 @@
 @property (nonatomic) int32_t call_connect_timeout_ms;
 @property (nonatomic) int32_t call_packet_timeout_ms;
 @property (nonatomic, retain) NSString *me_url_prefix;
+@property (nonatomic, retain) NSString *suggested_lang_code;
+@property (nonatomic) int32_t lang_pack_version;
 @property (nonatomic, retain) NSArray *disabled_features;
 
 @end

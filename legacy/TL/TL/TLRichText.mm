@@ -20,7 +20,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -47,7 +47,7 @@
     return (int32_t)0x161255a;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLRichText$textEmpty *object = [[TLRichText$textEmpty alloc] init];
     return object;
@@ -73,7 +73,7 @@
     return (int32_t)0xbc9c9c54;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRichText$textPlain *object = [[TLRichText$textPlain alloc] init];
     object.text = metaObject->getString((int32_t)0x94f1580d);
@@ -106,7 +106,7 @@
     return (int32_t)0xa8b7999d;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRichText$textBold *object = [[TLRichText$textBold alloc] init];
     object.text = metaObject->getObject((int32_t)0x94f1580d);
@@ -139,7 +139,7 @@
     return (int32_t)0x83a88724;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRichText$textItalic *object = [[TLRichText$textItalic alloc] init];
     object.text = metaObject->getObject((int32_t)0x94f1580d);
@@ -172,7 +172,7 @@
     return (int32_t)0xbd3ac160;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRichText$textUnderline *object = [[TLRichText$textUnderline alloc] init];
     object.text = metaObject->getObject((int32_t)0x94f1580d);
@@ -205,7 +205,7 @@
     return (int32_t)0x91885697;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRichText$textStrike *object = [[TLRichText$textStrike alloc] init];
     object.text = metaObject->getObject((int32_t)0x94f1580d);
@@ -238,7 +238,7 @@
     return (int32_t)0x8ecfe758;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRichText$textFixed *object = [[TLRichText$textFixed alloc] init];
     object.text = metaObject->getObject((int32_t)0x94f1580d);
@@ -271,7 +271,7 @@
     return (int32_t)0xe0e8b8d3;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRichText$textUrl *object = [[TLRichText$textUrl alloc] init];
     object.text = metaObject->getObject((int32_t)0x94f1580d);
@@ -318,7 +318,7 @@
     return (int32_t)0xe5503523;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRichText$textEmail *object = [[TLRichText$textEmail alloc] init];
     object.text = metaObject->getObject((int32_t)0x94f1580d);
@@ -358,7 +358,7 @@
     return (int32_t)0xe17b82e;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRichText$textConcat *object = [[TLRichText$textConcat alloc] init];
     object.texts = metaObject->getArray((int32_t)0x8c957ffa);

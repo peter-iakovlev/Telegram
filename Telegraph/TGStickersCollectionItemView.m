@@ -22,6 +22,10 @@
 #import "TGItemPreviewController.h"
 #import "TGStickerItemPreviewView.h"
 
+#import "TGMessage.h"
+
+#import "TGTextCheckingResult.h"
+
 const UIEdgeInsets TGStickersCollectionInsets = { 58.0f, 20.0f, 12.0f, 20.0f };
 const CGFloat TGStickersCollectionLoadingHeight = 145.0f;
 const CGFloat TGStickersCollectionLoadingLandscapeHeight = 145.0f;
@@ -31,6 +35,28 @@ const NSInteger TGStickersCollectionNumberOfTimerTicks = 10;
 const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
 
 @interface TGStickersCollectionView  : TGMenuSheetCollectionView
+
+@end
+
+@interface TGTextLabelLink : NSObject
+
+@property (nonatomic, readonly) NSRange range;
+@property (nonatomic, strong, readonly) UIButton *button;
+@property (nonatomic, strong, readonly) NSString *link;
+
+@end
+
+@implementation TGTextLabelLink
+
+- (instancetype)initWithRange:(NSRange)range button:(UIButton *)button link:(NSString *)link {
+    self = [super init];
+    if (self != nil) {
+        _range = range;
+        _button = button;
+        _link = link;
+    }
+    return self;
+}
 
 @end
 
@@ -46,6 +72,7 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     
     UIActivityIndicatorView *_activityIndicator;
     UILabel *_titleLabel;
+    NSArray<TGTextLabelLink *> *_titleLinks;
     
     UILabel *_errorLabel;
 
@@ -177,7 +204,40 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     [_activityIndicator stopAnimating];
     _activityIndicator.hidden = true;
     
-    _titleLabel.text = stickerPack.title;
+    for (TGTextLabelLink *link in _titleLinks) {
+        [link.button removeFromSuperview];
+    }
+    _titleLinks = nil;
+    
+    NSMutableArray<TGTextLabelLink *> *titleLinks = [[NSMutableArray alloc] init];
+    NSArray *textResults = [TGMessage textCheckingResultsForText:stickerPack.title highlightMentionsAndTags:true highlightCommands:false entities:nil];
+    NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:stickerPack.title attributes:@{NSFontAttributeName: _titleLabel.font, NSForegroundColorAttributeName: [UIColor blackColor]}];
+    
+    static UIImage *buttonImage = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        UIImage *rawImage = [UIImage imageNamed:@"LinkFull.png"];
+        buttonImage = [rawImage stretchableImageWithLeftCapWidth:(int)(rawImage.size.width / 2) topCapHeight:(int)(rawImage.size.height / 2)];
+    });
+    
+    for (id result in textResults) {
+        if ([result isKindOfClass:[TGTextCheckingResult class]]) {
+            TGTextCheckingResult *textResult = result;
+            if (textResult.type == TGTextCheckingResultTypeMention) {
+                [string addAttribute:NSForegroundColorAttributeName value:TGAccentColor() range:textResult.range];
+                UIButton *button = [[UIButton alloc] init];
+                [button setBackgroundImage:buttonImage forState:UIControlStateHighlighted];
+                [button addTarget:self action:@selector(titleLinkButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+                [_titleLabel.superview addSubview:button];
+                
+                [titleLinks addObject:[[TGTextLabelLink alloc] initWithRange:textResult.range button:button link:[@"mention://" stringByAppendingString:textResult.contents]]];
+            }
+        }
+    }
+    
+    _titleLabel.attributedText = string;
+    _titleLinks = titleLinks;
+    
     [_titleLabel sizeToFit];
         
     CGRect titleFrame = _titleLabel.frame;
@@ -688,7 +748,7 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     }
     else
     {
-        CGFloat maxExpandedHeight = TGStickersCollectionInsets.top + (_collectionViewLayout.itemSize.height + _collectionViewLayout.minimumLineSpacing) * 4.5f;
+        CGFloat maxExpandedHeight = screenHeight - (self.hasShare ? 209.0f : 152.0f);
         CGFloat expandedHeight = TGStickersCollectionInsets.top + rows * (_collectionViewLayout.itemSize.height + _collectionViewLayout.minimumLineSpacing) + TGStickersCollectionInsets.bottom;
 
         CGFloat buttonsHeight = self.collapseInLandscape ? 2 * TGMenuSheetButtonItemViewHeight : TGMenuSheetButtonItemViewHeight;
@@ -736,9 +796,28 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     
     _collectionView.frame = CGRectMake(0.0f, TGStickersCollectionInsets.top, self.frame.size.width, self.frame.size.height - TGStickersCollectionInsets.top);
     _activityIndicator.center = CGPointMake(self.frame.size.width / 2.0f, self.frame.size.height / 2.0f);
-    _titleLabel.frame = CGRectMake(floor((self.frame.size.width - _titleLabel.frame.size.width) / 2.0f), 16.0f, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
+    CGRect titleFrame = CGRectMake(floor((self.frame.size.width - _titleLabel.frame.size.width) / 2.0f), 16.0f, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
+    _titleLabel.frame = titleFrame;
     _separator.frame = CGRectMake(0, TGStickersCollectionInsets.top, self.frame.size.width, _separator.frame.size.height);
     _errorLabel.frame = CGRectMake(floor((self.frame.size.width - _errorLabel.frame.size.width) / 2.0f), floor((self.frame.size.height - _errorLabel.frame.size.height) / 2.0f), _errorLabel.frame.size.width, _errorLabel.frame.size.height);
+    
+    for (TGTextLabelLink *link in _titleLinks) {
+        NSAttributedString *previousString = [_titleLabel.attributedText attributedSubstringFromRange:NSMakeRange(0, link.range.location)];
+        CGSize previousSize = [previousString boundingRectWithSize:CGSizeMake(400.0f, 400.0f) options:NSStringDrawingUsesLineFragmentOrigin context:nil].size;
+        CGSize linkSize = [[_titleLabel.attributedText attributedSubstringFromRange:link.range] boundingRectWithSize:CGSizeMake(400.0f, 400.0f) options:NSStringDrawingUsesLineFragmentOrigin context:nil].size;
+        link.button.frame = CGRectMake(titleFrame.origin.x + previousSize.width - 1.0f, titleFrame.origin.y - 1.0f, linkSize.width + 2.0f, titleFrame.size.height + 2.0f);
+    }
+}
+
+- (void)titleLinkButtonPressed:(UIButton *)button {
+    for (TGTextLabelLink *link in _titleLinks) {
+        if (link.button == button) {
+            if (_openLink) {
+                _openLink(link.link);
+            }
+            break;
+        }
+    }
 }
 
 @end

@@ -215,7 +215,7 @@
             __weak TGStickerAssociatedInputPanel *weakSelf = self;
             __weak TGStickerItemPreviewView *weakPreviewView = previewView;
             NSMutableArray *actions = [[NSMutableArray alloc] init];
-            TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Conversation.Send") type:TGMenuSheetButtonTypeSend action:^
+            TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"ShareMenu.Send") type:TGMenuSheetButtonTypeSend action:^
             {
                 __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
                 __strong TGStickerAssociatedInputPanel *strongSelf = weakSelf;

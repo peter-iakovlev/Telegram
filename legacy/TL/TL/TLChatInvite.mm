@@ -21,7 +21,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -48,7 +48,7 @@
     return (int32_t)0x1601d4c5;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLChatInvite$chatInviteAlready *object = [[TLChatInvite$chatInviteAlready alloc] init];
     object.chat = metaObject->getObject((int32_t)0xa8950b16);
@@ -81,7 +81,7 @@
     return (int32_t)0x9906c635;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLChatInvite$chatInviteMeta *object = [[TLChatInvite$chatInviteMeta alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);

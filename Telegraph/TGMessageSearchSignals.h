@@ -10,7 +10,8 @@ typedef enum {
     TGMessageSearchFilterPhotoVideoFile,
     TGMessageSearchFilterLink,
     TGMessageSearchFilterGroupPhotos,
-    TGMessageSearchFilterPhoneCalls
+    TGMessageSearchFilterPhoneCalls,
+    TGMessageSearchFilterVoiceRound
 } TGMessageSearchFilter;
 
 @interface TGMessageSearchSignals : NSObject

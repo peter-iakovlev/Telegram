@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x89555221;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLInputStickerSet$inputStickerSetEmpty *object = [[TLInputStickerSet$inputStickerSetEmpty alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0x51e3c528;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputStickerSet$inputStickerSetID *object = [[TLInputStickerSet$inputStickerSetID alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
@@ -112,7 +112,7 @@
     return (int32_t)0x555e5c99;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputStickerSet$inputStickerSetShortName *object = [[TLInputStickerSet$inputStickerSetShortName alloc] init];
     object.short_name = metaObject->getString((int32_t)0xfccec594);

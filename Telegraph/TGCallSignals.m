@@ -7,14 +7,17 @@
 
 #import "TGRequestEncryptedChatActor.h"
 
-#import <MTProtoKit/MTProtoKit.h>
+#import <MtProtoKit/MTProtoKit.h>
 
 #import "TGAppDelegate.h"
+#import "TGUploadFileSignals.h"
+#import "TGSendMessageSignals.h"
+#import "TLInputMediaUploadedDocument.h"
 
 #import "TGCallContext.h"
 
 const int32_t TGCallMinLayer = 65;
-const int32_t TGCallMaxLayer = 65;
+const int32_t TGCallMaxLayer = 66;
 
 @implementation TGCallSignals
 
@@ -102,7 +105,7 @@ const int32_t TGCallMaxLayer = 65;
             requestCall.g_a_hash = gAHash;
             requestCall.protocol = [self protocol];
             
-            return [[[TGTelegramNetworking instance] requestSignal:requestCall] mapToSignal:^SSignal *(TLphone_PhoneCall *result) {
+            return [[[TGTelegramNetworking instance] requestSignal:requestCall continueOnServerErrors:false failOnFloodErrors:true] mapToSignal:^SSignal *(TLphone_PhoneCall *result) {
                 if ([result.phone_call isKindOfClass:[TLPhoneCall$phoneCallWaitingMeta class]]) {
                     TLPhoneCall$phoneCallWaitingMeta *concreteCall = (TLPhoneCall$phoneCallWaitingMeta *)result.phone_call;
                     return [SSignal single:[[TGCallWaitingContext alloc] initWithCallId:concreteCall.n_id accessHash:concreteCall.access_hash date:concreteCall.date adminId:concreteCall.admin_id participantId:concreteCall.participant_id a:aBytes gA:gA dhConfig:config receiveDate:concreteCall.receive_date]];
@@ -258,15 +261,68 @@ const int32_t TGCallMaxLayer = 65;
     }];
 }
 
-+ (SSignal *)reportCallRatingWithCallId:(int64_t)callId accessHash:(int64_t)accessHash rating:(int32_t)rating comment:(NSString *)comment {
++ (SSignal *)_reportCallRatingWithCallId:(int64_t)callId accessHash:(int64_t)accessHash rating:(int32_t)rating comment:(NSString *)comment {
     TLRPCphone_setCallRating$phone_setCallRating *setCallRating = [[TLRPCphone_setCallRating$phone_setCallRating alloc] init];
-    TLInputPhoneCall$inputPhoneCall *inputCall;
+    TLInputPhoneCall$inputPhoneCall *inputCall = [[TLInputPhoneCall$inputPhoneCall alloc] init];
     inputCall.n_id = callId;
     inputCall.access_hash = accessHash;
     setCallRating.peer = inputCall;
     setCallRating.rating = rating;
     setCallRating.comment = comment;
     return [[TGTelegramNetworking instance] requestSignal:setCallRating];
+}
+
++ (SSignal *)reportCallRatingWithCallId:(int64_t)callId accessHash:(int64_t)accessHash rating:(int32_t)rating comment:(NSString *)comment includeLogs:(bool)includeLogs
+{
+    int32_t voipUid = [TGTelegraphInstance createVoipSupportUserIfNeeded];
+    
+    SSignal *signal = [self _reportCallRatingWithCallId:callId accessHash:accessHash rating:rating comment:nil];
+    if (comment.length > 0)
+        signal = [signal then:[TGSendMessageSignals sendTextMessageWithPeerId:voipUid text:comment replyToMid:0]];
+    
+    if (includeLogs)
+    {
+        NSString *logsPath = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"calls"];
+        NSString *logPath = [logsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%lld-%lld.log", callId, accessHash]];
+        
+        SSignal *logSignal = [SSignal complete];
+        
+        if (logPath.length > 0)
+        {
+            NSData *logData = [NSData dataWithContentsOfFile:logPath];
+            if (logData != nil)
+            {
+                SSignal *uploadSignal = [[TGUploadFileSignals uploadedFileWithData:logData mediaTypeTag:TGNetworkMediaTypeTagDocument] map:^id(TLInputFile *file)
+                {
+                    return @{ @"file": file };
+                }];
+                
+                TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
+                TGDocumentAttributeFilename *filename = [[TGDocumentAttributeFilename alloc] initWithFilename:[NSString stringWithFormat:@"call-%lld.log", callId]];
+                documentAttachment.attributes = @[ filename ];
+                documentAttachment.mimeType = @"text/plain";
+                
+                uploadSignal = [uploadSignal then:[TGSendMessageSignals sendMediaWithPeerId:voipUid replyToMid:0 attachment:documentAttachment uploadSignal:uploadSignal mediaProducer:^TLInputMedia *(NSDictionary *uploadInfo)
+                {
+                    TLInputMediaUploadedDocument *uploadedDocument = [[TLInputMediaUploadedDocument alloc] init];
+                    uploadedDocument.file = uploadInfo[@"file"];
+                    uploadedDocument.mime_type = @"text/plain";
+                    
+                    TLDocumentAttribute$documentAttributeFilename *filenameAttribute = [[TLDocumentAttribute$documentAttributeFilename alloc] init];
+                    filenameAttribute.file_name = documentAttachment.fileName;
+                    uploadedDocument.attributes = @[ filenameAttribute ];
+                    
+                    return uploadedDocument;
+                }]];
+                
+                logSignal = uploadSignal;
+            }
+        }
+        
+        signal = [signal then:logSignal];
+    }
+    
+    return signal;
 }
 
 + (SSignal *)serverCallsConfig {
@@ -277,7 +333,7 @@ const int32_t TGCallMaxLayer = 65;
 
 + (SSignal *)saveCallDebug:(int64_t)callId accessHash:(int64_t)accessHash data:(NSString *)data {
     TLRPCphone_saveCallDebug$phone_saveCallDebug *saveCallDebug = [[TLRPCphone_saveCallDebug$phone_saveCallDebug alloc] init];
-    TLInputPhoneCall$inputPhoneCall *inputCall;
+    TLInputPhoneCall$inputPhoneCall *inputCall = [[TLInputPhoneCall$inputPhoneCall alloc] init];
     inputCall.n_id = callId;
     inputCall.access_hash = accessHash;
     saveCallDebug.peer = inputCall;

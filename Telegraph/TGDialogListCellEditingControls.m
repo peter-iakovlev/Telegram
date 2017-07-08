@@ -65,15 +65,21 @@ NSArray *TGDialogListCellEditingControlButtonsUnmuteUnpinDelete() {
 static NSString *buttonTitleForType(TGDialogListCellEditingControlButton button) {
     switch (button) {
         case TGDialogListCellEditingControlsDelete:
-            return TGLocalizedStatic(@"Common.Delete");
+            return TGLocalized(@"Common.Delete");
         case TGDialogListCellEditingControlsPin:
-            return TGLocalizedStatic(@"DialogList.Pin");
+            return TGLocalized(@"DialogList.Pin");
         case TGDialogListCellEditingControlsUnpin:
-            return TGLocalizedStatic(@"DialogList.Unpin");
+            return TGLocalized(@"DialogList.Unpin");
         case TGDialogListCellEditingControlsMute:
-            return TGLocalizedStatic(@"Conversation.Mute");
+            return TGLocalized(@"Conversation.Mute");
         case TGDialogListCellEditingControlsUnmute:
-            return TGLocalizedStatic(@"Conversation.Unmute");
+            return TGLocalized(@"Conversation.Unmute");
+        case TGDialogListCellEditingControlsPromote:
+            return TGLocalized(@"GroupInfo.ActionPromote");
+        case TGDialogListCellEditingControlsBan:
+            return TGLocalized(@"GroupInfo.ActionBan");
+        case TGDialogListCellEditingControlsRestrict:
+            return TGLocalized(@"GroupInfo.ActionRestrict");
     }
 }
 
@@ -95,6 +101,12 @@ static UIColor *buttonColorForType(TGDialogListCellEditingControlButton button) 
             return lightGrayColor;
         case TGDialogListCellEditingControlsMute:
         case TGDialogListCellEditingControlsUnmute:
+            return grayColor;
+        case TGDialogListCellEditingControlsPromote:
+            return lightGrayColor;
+        case TGDialogListCellEditingControlsBan:
+            return redColor;
+        case TGDialogListCellEditingControlsRestrict:
             return grayColor;
     }
 }
@@ -124,14 +136,54 @@ static UIImage *buttonImageForType(TGDialogListCellEditingControlButton button) 
             return muteImage;
         case TGDialogListCellEditingControlsUnmute:
             return unmuteImage;
+        default:
+            return nil;
     }
 }
 
+@interface TGDialogListCellEditingControlsScroller : UIScrollView
+
+@end
+
+static CGPoint validatedPoint(CGPoint value) {
+    if (isnan(value.x)) {
+        value.x = 0.0f;
+    }
+    if (isnan(value.y)) {
+        value.y = 0.0f;
+    }
+    return value;
+}
+
+static CGRect validatedRect(CGRect value) {
+    value.origin = validatedPoint(value.origin);
+    return value;
+}
+
+@implementation TGDialogListCellEditingControlsScroller
+
+- (void)setContentOffset:(CGPoint)contentOffset {
+    [super setContentOffset:validatedPoint(contentOffset)];
+}
+
+- (void)setContentOffset:(CGPoint)contentOffset animated:(BOOL)animated {
+    [super setContentOffset:validatedPoint(contentOffset) animated:animated];
+}
+
+- (void)setBounds:(CGRect)bounds {
+    [super setBounds:validatedRect(bounds)];
+}
+
+@end
+
 @interface TGDialogListCellEditingControls () <UIScrollViewDelegate> {
-    UIScrollView *_scroller;
+    TGDialogListCellEditingControlsScroller *_scroller;
     NSArray *_buttonTypes;
     NSMutableArray<TGDialogListCellEditingButton *> *_buttons;
     bool _labelOnly;
+    bool _smallLabels;
+    bool _offsetLabels;
+    bool _isExpanded;
 }
 
 @end
@@ -141,7 +193,7 @@ static UIImage *buttonImageForType(TGDialogListCellEditingControlButton button) 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self != nil) {
-        _scroller = [[UIScrollView alloc] init];
+        _scroller = [[TGDialogListCellEditingControlsScroller alloc] init];
         _scroller.directionalLockEnabled = true;
         _scroller.showsHorizontalScrollIndicator = false;
         _scroller.showsVerticalScrollIndicator = false;
@@ -207,6 +259,12 @@ static UIImage *buttonImageForType(TGDialogListCellEditingControlButton button) 
         }
         [_scroller setContentOffset:offset animated:false];
     }
+    if (_isExpanded != expanded) {
+        _isExpanded = expanded;
+        if (_expandedUpdated) {
+            _expandedUpdated(expanded);
+        }
+    }
 }
 
 - (bool)isExpanded {
@@ -233,6 +291,8 @@ static UIImage *buttonImageForType(TGDialogListCellEditingControlButton button) 
         }
         button.hidden = false;
         button.labelOnly = _labelOnly;
+        button.smallLabel = _smallLabels;
+        button.offsetLabel = _offsetLabels;
         TGDialogListCellEditingControlButton buttonType = (TGDialogListCellEditingControlButton)[nButtonType intValue];
         [button setTitle:buttonTitleForType(buttonType) image:buttonImageForType(buttonType)];
         [button setBackgroundColor:buttonColorForType(buttonType) force:true];
@@ -268,6 +328,14 @@ static UIImage *buttonImageForType(TGDialogListCellEditingControlButton button) 
 - (void)updateButtonFrames {
     CGFloat offset = _scroller.bounds.origin.x;
     CGRect bounds = self.bounds;
+    
+    bool expanded = offset > FLT_EPSILON;
+    if (expanded != _isExpanded) {
+        _isExpanded = expanded;
+        if (_expandedUpdated) {
+            _expandedUpdated(expanded);
+        }
+    }
     
     self.bounds = CGRectMake(offset, 0.0f, bounds.size.width, bounds.size.height);
     
@@ -336,6 +404,21 @@ static UIImage *buttonImageForType(TGDialogListCellEditingControlButton button) 
                 _toggleMute(false);
             }
             break;
+        case TGDialogListCellEditingControlsBan:
+            if (_requestDelete) {
+                _requestDelete();
+            }
+            break;
+        case TGDialogListCellEditingControlsPromote:
+            if (_requestPromote) {
+                _requestPromote();
+            }
+            break;
+        case TGDialogListCellEditingControlsRestrict:
+            if (_requestRestrict) {
+                _requestRestrict();
+            }
+            break;
     }
 }
 
@@ -347,6 +430,16 @@ static UIImage *buttonImageForType(TGDialogListCellEditingControlButton button) 
 
 - (void)setLabelOnly:(bool)labelOnly {
     _labelOnly = labelOnly;
+    [self resetButtons];
+}
+
+- (void)setSmallLabels:(bool)smallLabels {
+    _smallLabels = smallLabels;
+    [self resetButtons];
+}
+
+- (void)setOffsetLabels:(bool)offsetLabels {
+    _offsetLabels = offsetLabels;
     [self resetButtons];
 }
 

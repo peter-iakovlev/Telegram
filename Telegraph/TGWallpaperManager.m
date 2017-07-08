@@ -82,7 +82,7 @@
             
             if ([wallpaperInfo hasData])
             {
-                _wallpaperImageData = [[NSData alloc] initWithContentsOfFile:fileName];
+                _wallpaperImageData = [[NSData alloc] initWithContentsOfFile:fileName options:NSDataReadingMappedIfSafe error:nil];
                 
                 if (_wallpaperImageData != nil)
                 {
@@ -90,7 +90,9 @@
                     _wallpaperInfo = [TGWallpaperInfo infoWithDictionary:infoDict];
                 }
                 
-                if (_wallpaperInfo == nil)
+                if ([_wallpaperInfo isKindOfClass:[TGBuiltinWallpaperInfo class]] && ((TGBuiltinWallpaperInfo *)_wallpaperInfo).isDefault && ((TGBuiltinWallpaperInfo *)_wallpaperInfo).version < TGBuilitinWallpaperCurrentVersion)
+                    [self setCurrentWallpaperWithInfo:[self builtinWallpaperList][0] force:true];
+                else if (_wallpaperInfo == nil)
                     [self setCurrentWallpaperWithInfo:[self builtinWallpaperList][0]];
             }
             else
@@ -160,7 +162,12 @@
 
 - (void)setCurrentWallpaperWithInfo:(TGWallpaperInfo *)wallpaperInfo
 {
-    if (![_wallpaperInfo isEqual:wallpaperInfo])
+    [self setCurrentWallpaperWithInfo:wallpaperInfo force:false];
+}
+
+- (void)setCurrentWallpaperWithInfo:(TGWallpaperInfo *)wallpaperInfo force:(bool)force
+{
+    if (force || ![_wallpaperInfo isEqual:wallpaperInfo])
     {
         if ([wallpaperInfo hasData])
         {
@@ -254,7 +261,7 @@
         }
         else
         {
-            [array addObject:[[TGBuiltinWallpaperInfo alloc] initWithBuiltinId:i tintColor:tintColor systemAlpha:systemAlpha buttonsAlpha:buttonsAlpha highlightedButtonAlpha:highlightedButtonAlpha progressAlpha:progressAlpha]];
+            [array addObject:[[TGBuiltinWallpaperInfo alloc] initWithBuiltinId:i tintColor:tintColor systemAlpha:systemAlpha buttonsAlpha:buttonsAlpha highlightedButtonAlpha:highlightedButtonAlpha progressAlpha:progressAlpha version:TGBuilitinWallpaperCurrentVersion]];
         }
     }
     

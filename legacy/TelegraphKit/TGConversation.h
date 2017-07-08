@@ -16,6 +16,9 @@
 
 #import "TGDatabaseMessageDraft.h"
 
+#import "TGChannelAdminRights.h"
+#import "TGChannelBannedRights.h"
+
 #define TGConversationKindPersistentChannel 0
 #define TGConversationKindTemporaryChannel 1
 
@@ -25,7 +28,6 @@
 #define TGConversationPinnedDateBase 1600000000
 
 typedef enum {
-    TGConversationFlagDisplayExpanded = (1 << 0),
     TGConversationFlagPostAsChannel = (1 << 1),
     TGConversationFlagKicked = (1 << 2),
     TGConversationFlagVerified = (1 << 3),
@@ -238,7 +240,6 @@ typedef enum {
 @property (nonatomic) bool isBroadcast;
 @property (nonatomic) bool isChannel;
 
-@property (nonatomic) bool displayExpanded;
 @property (nonatomic) bool postAsChannel;
 @property (nonatomic) bool hasAdmins;
 @property (nonatomic) bool isAdmin;
@@ -266,6 +267,9 @@ typedef enum {
 
 @property (nonatomic, readonly) int32_t date;
 @property (nonatomic, readonly) int32_t unpinnedDate;
+
+@property (nonatomic, strong) TGChannelAdminRights *channelAdminRights;
+@property (nonatomic, strong) TGChannelBannedRights *channelBannedRights;
 
 - (id)initWithConversationId:(int64_t)conversationId unreadCount:(int)unreadCount serviceUnreadCount:(int)serviceUnreadCount;
 

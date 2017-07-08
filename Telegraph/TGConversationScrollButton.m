@@ -23,11 +23,17 @@
             CGContextRef context = UIGraphicsGetCurrentContext();
             CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.5f, 0.5f, 37.0f, 37.0f));
-            CGContextSetStrokeColorWithColor(context, UIColorRGBA(0x000000, 0.15f).CGColor);
-            CGContextSetLineWidth(context, 0.5f);
+            CGContextSetStrokeColorWithColor(context, UIColorRGB(0xb2b2b2).CGColor);
+            CGContextSetLineWidth(context, TGScreenPixel);
             CGContextStrokeEllipseInRect(context, CGRectMake(0.25f, 0.25f, 37.5f, 37.5f));
-            CGContextSetLineWidth(context, 1.5f);
-            CGContextSetStrokeColorWithColor(context, UIColorRGB(0x88888D).CGColor);
+            
+            CGFloat arrowLineWidth = 1.5f;
+            CGFloat scale = (int)TGScreenScaling();
+            if (scale >= 3.0)
+                arrowLineWidth = 5.0f / 3.0f;
+            
+            CGContextSetLineWidth(context, arrowLineWidth);
+            CGContextSetStrokeColorWithColor(context, UIColorRGB(0x858e99).CGColor);
             CGContextSetLineCap(context, kCGLineCapRound);
             CGContextSetLineJoin(context, kCGLineJoinRound);
             CGContextBeginPath(context);

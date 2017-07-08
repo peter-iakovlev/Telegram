@@ -6,13 +6,15 @@
 #import <SSignalKit/SSignalKit.h>
 
 #import <SSignalKit/SSignalKit.h>
-#import <LegacyDatabase/ApiLayer65.h>
+#import <LegacyDatabase/ApiLayer69.h>
 
 #import <LegacyDatabase/TGModernCache.h>
 #import <LegacyDatabase/TGMemoryImageCache.h>
 #import <LegacyDatabase/TGMemoryCache.h>
 
 #import <LegacyDatabase/TGDatacenterConnectionContext.h>
+
+@class TGLegacyDatabase;
 
 @interface TGShareContext : NSObject
 
@@ -23,20 +25,18 @@
 @property (nonatomic, strong, readonly) MTContext *mtContext;
 @property (nonatomic, strong, readonly) MTProto *mtProto;
 @property (nonatomic, strong, readonly) MTRequestMessageService *mtRequestService;
+@property (nonatomic, strong, readonly) TGLegacyDatabase *legacyDatabase;
 
 @property (nonatomic, strong, readonly) TGModernCache *persistentCache;
 @property (nonatomic, strong, readonly) TGMemoryImageCache *memoryImageCache;
 @property (nonatomic, strong, readonly) TGMemoryCache *memoryCache;
 @property (nonatomic, strong, readonly) SThreadPool *sharedThreadPool;
 
-- (instancetype)initWithContainerUrl:(NSURL *)containerUrl mtContext:(MTContext *)mtContext mtProto:(MTProto *)mtProto mtRequestService:(MTRequestMessageService *)mtRequestService clientUserId:(int32_t)clientUserId;
+- (instancetype)initWithContainerUrl:(NSURL *)containerUrl mtContext:(MTContext *)mtContext mtProto:(MTProto *)mtProto mtRequestService:(MTRequestMessageService *)mtRequestService clientUserId:(int32_t)clientUserId legacyDatabase:(TGLegacyDatabase *)legacyDatabase;
 
-- (SSignal *)function:(Api65_FunctionContext *)functionContext;
-- (SSignal *)datacenter:(NSInteger)datacenterId function:(Api65_FunctionContext *)functionContext;
+- (SSignal *)function:(Api69_FunctionContext *)functionContext;
+- (SSignal *)datacenter:(NSInteger)datacenterId function:(Api69_FunctionContext *)functionContext;
 
 - (SSignal *)connectionContextForDatacenter:(NSInteger)datacenterId;
-
-- (SSignal *)legacyDatabase;
-
 
 @end

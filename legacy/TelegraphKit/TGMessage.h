@@ -240,6 +240,8 @@ static inline TGMessageSortKey TGTaggedMessageSortKeyExtract(NSData *data, int32
 @property (nonatomic, strong) TGMessageHole *hole;
 @property (nonatomic, strong) TGMessageGroup *group;
 
+- (NSArray *)effectiveTextAndEntities;
+
 - (bool)local;
 
 + (void)registerMediaAttachmentParser:(int)type parser:(id<TGMediaAttachmentParser>)parser;
@@ -255,6 +257,8 @@ static inline TGMessageSortKey TGTaggedMessageSortKeyExtract(NSData *data, int32
 - (NSData *)serializeContentProperties;
 + (NSData *)serializeContentProperties:(NSDictionary *)contentProperties;
 + (NSDictionary *)parseContentProperties:(NSData *)data;
+
+- (void)removeReplyAndMarkup;
 
 @end
 

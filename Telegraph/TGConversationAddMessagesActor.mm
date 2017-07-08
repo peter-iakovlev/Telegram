@@ -98,7 +98,7 @@
     bool playNotification = false;
     bool needsSound = false;
     
-    std::tr1::shared_ptr<std::map<int64_t, std::set<int> > > pProcessedUsersStoppedTyping(new std::map<int64_t, std::set<int> >());
+    std::shared_ptr<std::map<int64_t, std::set<int> > > pProcessedUsersStoppedTyping(new std::map<int64_t, std::set<int> >());
 
     NSMutableDictionary *messagesByConversation = [[NSMutableDictionary alloc] init];
     std::set<int64_t> conversationsWithNotification;

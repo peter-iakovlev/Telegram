@@ -70,6 +70,9 @@ CGFloat TGModernFlatteningViewModelTilingLimit = 512.0f;
 {
     [super bindViewToContainer:container viewStorage:viewStorage];
     
+    TGModernFlatteningView *view = (TGModernFlatteningView *)[self boundView];
+    view.specialUserInteraction = self.allowSpecialUserInteraction;
+    
     _viewStorage = viewStorage;
     
     [self _updateSubmodelContents];
@@ -188,7 +191,6 @@ CGFloat TGModernFlatteningViewModelTilingLimit = 512.0f;
         [UIView performWithoutAnimation:^
         {
             TGModernFlatteningView *view = (TGModernFlatteningView *)[self boundView];
-            
             CGSize tiledViewSize = CGSizeMake(view.frame.size.width, TGModernFlatteningViewModelTilingLimit);
             
             CGRect frame = self.frame;

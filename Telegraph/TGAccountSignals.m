@@ -4,7 +4,8 @@
 #import "TL/TLMetaScheme.h"
 
 #import <MTProtoKit/MTContext.h>
-#import <MTProtoKit/MTProto.h>
+#import <MTProtoKit/MTProtoKit.h>
+#import <MTProtoKit/MTEncryption.h>
 
 #import "TGTelegraph.h"
 
@@ -15,6 +16,42 @@
 #import "TLauth_SentCode$auth_sentCode.h"
 
 #import "TGPeerIdAdapter.h"
+
+#import "../../config.h"
+
+#import "TGLocalization.h"
+#import "TGTLSerialization.h"
+#import "TLDcOption$modernDcOption.h"
+
+@interface TGFetchHttpHelper : NSObject <TGRawHttpActor> {
+    void (^_completion)(NSData *);
+}
+
+@end
+
+@implementation TGFetchHttpHelper
+
+- (instancetype)initWithCompletion:(void (^)(NSData *))completion {
+    self = [super init];
+    if (self != nil) {
+        _completion = [completion copy];
+    }
+    return self;
+}
+
+- (void)httpRequestSuccess:(NSString *)__unused url response:(NSData *)response {
+    if (_completion) {
+        _completion(response);
+    }
+}
+
+- (void)httpRequestFailed:(NSString *)__unused url {
+    if (_completion) {
+        _completion(nil);
+    }
+}
+
+@end
 
 @implementation TGAccountSignals
 
@@ -191,6 +228,194 @@
     unregisterDevice.token_type = voip ? 9 : 1;
     unregisterDevice.token = deviceToken;
     return [[TGTelegramNetworking instance] requestSignal:unregisterDevice];
+}
+
++ (SSignal *)fetchBackupIpsGoogle:(bool)isTesting {
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+        NSDictionary *headers = @{@"Host": @"dns-telegram.appspot.com"};
+        
+        TGFetchHttpHelper *helper = [[TGFetchHttpHelper alloc] initWithCompletion:^(NSData *data) {
+            NSString *text = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            text = [text stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"="]];
+            NSData *result = [[NSData alloc] initWithBase64EncodedString:text options:NSDataBase64DecodingIgnoreUnknownCharacters];
+            NSMutableData *finalData = [[NSMutableData alloc] initWithData:result];
+            [finalData setLength:256];
+            MTBackupDatacenterData *datacenterData = MTIPDataDecode(finalData);
+            if (datacenterData != nil) {
+                [subscriber putNext:datacenterData];
+            }
+            [subscriber putCompletion];
+        }];
+        
+        id cancelToken = [TGTelegraphInstance doRequestRawHttp:isTesting ? @"https://google.com/test/" : @"https://google.com/" maxRetryCount:0 acceptCodes:@[@400, @403] httpHeaders:headers actor:helper];
+        
+        return [[SBlockDisposable alloc] initWithBlock:^{
+            [helper description];
+            [TGTelegraphInstance cancelRequestByToken:cancelToken];
+        }];
+    }];
+}
+
++ (SSignal *)fetchBackupIpsResolveGoogle:(bool)isTesting {
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+        NSDictionary *headers = @{@"Host": @"dns.google.com"};
+        
+        TGFetchHttpHelper *helper = [[TGFetchHttpHelper alloc] initWithCompletion:^(NSData *data) {
+            NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            if ([dict respondsToSelector:@selector(objectForKey:)]) {
+                NSArray *answer = dict[@"Answer"];
+                NSMutableArray *strings = [[NSMutableArray alloc] init];
+                if ([answer respondsToSelector:@selector(objectAtIndex:)]) {
+                    for (NSDictionary *value in answer) {
+                        if ([value respondsToSelector:@selector(objectForKey:)]) {
+                            NSString *part = value[@"data"];
+                            if ([part respondsToSelector:@selector(characterAtIndex:)]) {
+                                [strings addObject:part];
+                            }
+                        }
+                    }
+                    [strings sortUsingComparator:^NSComparisonResult(NSString *lhs, NSString *rhs) {
+                        if (lhs.length > rhs.length) {
+                            return NSOrderedAscending;
+                        } else {
+                            return NSOrderedDescending;
+                        }
+                    }];
+                    
+                    NSString *finalString = @"";
+                    for (NSString *string in strings) {
+                        finalString = [finalString stringByAppendingString:[string stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"="]]];
+                    }
+                    
+                    NSData *result = [[NSData alloc] initWithBase64EncodedString:finalString options:NSDataBase64DecodingIgnoreUnknownCharacters];
+                    NSMutableData *finalData = [[NSMutableData alloc] initWithData:result];
+                    [finalData setLength:256];
+                    MTBackupDatacenterData *datacenterData = MTIPDataDecode(finalData);
+                    if (datacenterData != nil) {
+                        
+                        [subscriber putNext:datacenterData];
+                    }
+                }
+            }
+            [subscriber putCompletion];
+        }];
+        
+        id cancelToken = [TGTelegraphInstance doRequestRawHttp:[NSString stringWithFormat:@"https://google.com/resolve?name=%@&type=16", isTesting ? @"tap.stel.com" : @"ap.stel.com"] maxRetryCount:0 acceptCodes:@[@400, @403] httpHeaders:headers actor:helper];
+        
+        return [[SBlockDisposable alloc] initWithBlock:^{
+            [helper description];
+            [TGTelegraphInstance cancelRequestByToken:cancelToken];
+        }];
+    }];
+}
+
++ (SSignal *)fetchBackupIps:(bool)isTestingEnvironment {
+    NSArray *signals = @[[self fetchBackupIpsGoogle:isTestingEnvironment], [self fetchBackupIpsResolveGoogle:isTestingEnvironment]];
+    
+    return [[[SSignal mergeSignals:signals] take:1] mapToSignal:^SSignal *(MTBackupDatacenterData *data) {
+        if (data != nil && data.addressList.count != 0) {
+            MTApiEnvironment *apiEnvironment = [[MTApiEnvironment alloc] init];
+            
+            NSMutableDictionary *datacenterAddressOverrides = [[NSMutableDictionary alloc] init];
+            
+            MTBackupDatacenterAddress *address = data.addressList[0];
+            datacenterAddressOverrides[@(data.datacenterId)] = [[MTDatacenterAddress alloc] initWithIp:address.ip port:(uint16_t)address.port preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false];
+            apiEnvironment.datacenterAddressOverrides = datacenterAddressOverrides;
+            
+            int32_t apiId = 0;
+            NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
+            SETUP_API_ID(apiId)
+            
+            apiEnvironment.apiId = apiId;
+            
+            apiEnvironment.layer = @([[[TGTLSerialization alloc] init] currentLayer]);
+            
+            apiEnvironment = [apiEnvironment withUpdatedLangPackCode:currentNativeLocalization().code];
+
+            MTContext *context = [[MTContext alloc] initWithSerialization:[[TGTLSerialization alloc] init] apiEnvironment:apiEnvironment];
+            
+            if (data.datacenterId != 0) {
+                context.keychain = [TGTelegramNetworking instance].context.keychain;
+            }
+            
+            MTProto *mtProto = [[MTProto alloc] initWithContext:context datacenterId:data.datacenterId usageCalculationInfo:nil];
+            MTRequestMessageService *requestService = [[MTRequestMessageService alloc] initWithContext:context];
+            [mtProto addMessageService:requestService];
+            
+            [mtProto resume];
+            return [[[[self requestSignal:[[TLRPChelp_getConfig$help_getConfig alloc] init] requestService:requestService] onNext:^(TLConfig *config) {
+                NSMutableDictionary *addressListByDatacenterId = [[NSMutableDictionary alloc] init];
+                
+                for (TLDcOption$modernDcOption *dcOption in config.dc_options)
+                {
+                    MTDatacenterAddress *configAddress = [[MTDatacenterAddress alloc] initWithIp:dcOption.ip_address port:(uint16_t)dcOption.port preferForMedia:dcOption.flags & (1 << 1) restrictToTcp:dcOption.flags & (1 << 2) cdn:dcOption.flags & (1 << 3) preferForProxy:dcOption.flags & (1 << 4)];
+                    
+                    NSMutableArray *array = addressListByDatacenterId[@(dcOption.n_id)];
+                    if (array == nil)
+                    {
+                        array = [[NSMutableArray alloc] init];
+                        addressListByDatacenterId[@(dcOption.n_id)] = array;
+                    }
+                    
+                    if (![array containsObject:configAddress])
+                        [array addObject:configAddress];
+                }
+                
+                [addressListByDatacenterId enumerateKeysAndObjectsUsingBlock:^(NSNumber *nDatacenterId, NSArray *addressList, __unused BOOL *stop) {
+                     MTDatacenterAddressSet *addressSet = [[MTDatacenterAddressSet alloc] initWithAddressList:addressList];
+                     
+                     MTDatacenterAddressSet *currentAddressSet = [context addressSetForDatacenterWithId:[nDatacenterId integerValue]];
+                     
+                     if (currentAddressSet == nil || ![addressSet isEqual:currentAddressSet])
+                     {
+                         TGLog(@"[Backup address fetch (%@): updating datacenter %d address set to %@]", isTestingEnvironment ? @"testing" : @"production", [nDatacenterId intValue], addressSet);
+                         [[TGTelegramNetworking instance].context updateAddressSetForDatacenterWithId:[nDatacenterId integerValue] addressSet:addressSet forceUpdateSchemes:true];
+                     }
+                 }];
+            }] onDispose:^{
+                [mtProto stop];
+            }] delay:2.0 onQueue:[SQueue concurrentDefaultQueue]];
+        }
+        return [SSignal complete];
+    }];
+}
+
++ (SSignal *)requestSignal:(TLMetaRpc *)rpc requestService:(MTRequestMessageService *)requestService
+{
+    return [[SSignal alloc] initWithGenerator:^(SSubscriber *subscriber)
+    {
+        MTRequest *request = [[MTRequest alloc] init];
+        request.body = rpc;
+        [request setCompleted:^(id result, __unused NSTimeInterval timestamp, id error)
+        {
+            if (error == nil)
+            {
+                [subscriber putNext:result];
+                [subscriber putCompletion];
+            }
+            else
+            {
+                [subscriber putError:error];
+            }
+        }];
+        
+        [request setProgressUpdated:^(float value, __unused NSUInteger completeSize)
+        {
+            [subscriber putNext:@(value)];
+        }];
+        
+        [request setShouldContinueExecutionWithErrorContext:^bool(__unused MTRequestErrorContext *errorContext)
+        {
+            return true;
+        }];
+        
+        [requestService addRequest:request];
+        id requestToken = request.internalId;
+        
+        return [[SBlockDisposable alloc] initWithBlock:^ {
+            [requestService removeRequestByInternalId:requestToken];
+        }];
+    }];
 }
 
 @end

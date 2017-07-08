@@ -16,4 +16,7 @@
 
 + (instancetype)callBlurEffect;
 
++ (instancetype)progressBlurEffect;
++ (instancetype)lightProgressBlurEffect;
+
 @end

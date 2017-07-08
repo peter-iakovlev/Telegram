@@ -7,6 +7,10 @@
 @property (nonatomic) bool showProgress;
 @property (nonatomic) bool manualProgress;
 
+@property (nonatomic) UIEdgeInsets inlineVideoInsets;
+@property (nonatomic) CGSize inlineVideoSize;
+@property (nonatomic) CGFloat inlineVideoCornerRadius;
+
 @property (nonatomic) CGRect transitionContentRect;
 
 - (void)setSignalGenerator:(SSignal *(^)())signalGenerator identifier:(NSString *)identifier;

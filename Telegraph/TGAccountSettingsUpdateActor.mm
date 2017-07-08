@@ -374,7 +374,7 @@
 {
     [TGDatabaseInstance() setLocalUserStatusPrivacyRules:_accountSettings.notificationSettings changedLoadedUsers:^(NSArray *users)
     {
-        std::tr1::shared_ptr<std::map<int, TGUserPresence> > pMap(new std::map<int, TGUserPresence>());
+        std::shared_ptr<std::map<int, TGUserPresence> > pMap(new std::map<int, TGUserPresence>());
         for (TGUser *user in users)
         {
             pMap->insert(std::pair<int, TGUserPresence>(user.uid, user.presence));

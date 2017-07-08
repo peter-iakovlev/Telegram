@@ -4,6 +4,8 @@
     UILabel *_label;
     UIView *_backgroundView;
     void (^_openFeedback)();
+    
+    TGInstantPagePresentation *_presentation;
 }
 
 @end
@@ -29,40 +31,51 @@
     return size.height + insets.top + insets.bottom;
 }
 
-- (instancetype)initWithFrame:(CGRect)frame {
+- (instancetype)initWithFrame:(CGRect)frame presentation:(TGInstantPagePresentation *)presentation {
     self = [super initWithFrame:frame];
     if (self != nil) {
         _backgroundView = [[UIView alloc] init];
-        _backgroundView.backgroundColor = UIColorRGB(0xe8eaec);
         [self addSubview:_backgroundView];
         
         _label = [[UILabel alloc] init];
         _label.backgroundColor = [UIColor clearColor];
-        _label.attributedText = [TGInstantPageFooterButtonView attributedString];
+        _label.attributedText = [[NSAttributedString alloc] initWithString:TGLocalized(@"InstantPage.FeedbackButton") attributes:@{NSFontAttributeName: [UIFont systemFontOfSize: 13.0], NSForegroundColorAttributeName: presentation.panelSubtextColor}];
         [self addSubview:_label];
         _label.userInteractionEnabled = false;
         
-        static UIImage *defaultImage = nil;
-        static UIImage *highlightedImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(1.0f, 1.0f), true, 1.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGB(0xe8eaec).CGColor);
-            CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 1.0f));
-            defaultImage = UIGraphicsGetImageFromCurrentImageContext();
-            CGContextSetFillColorWithColor(context, UIColorRGB(0xd3d6d7).CGColor);
-            CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 1.0f));
-            highlightedImage = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-        });
-        
-        [self setBackgroundImage:defaultImage forState:UIControlStateNormal];
-        [self setBackgroundImage:highlightedImage forState:UIControlStateHighlighted];
-        
         [self addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];
+        
+        [self updatePresentation:presentation];
     }
     return self;
+}
+
+- (void)updatePresentation:(TGInstantPagePresentation *)presentation {
+    if ([presentation isEqual:_presentation]) {
+        return;
+    }
+    
+    _presentation = presentation;
+    
+    _backgroundView.backgroundColor = presentation.panelColor;
+    
+    UIImage *defaultImage = nil;
+    UIImage *highlightedImage = nil;
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(1.0f, 1.0f), true, 1.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, presentation.panelColor.CGColor);
+    CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 1.0f));
+    defaultImage = UIGraphicsGetImageFromCurrentImageContext();
+    CGContextSetFillColorWithColor(context, presentation.panelHighlightColor.CGColor);
+    CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 1.0f));
+    highlightedImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    [self setBackgroundImage:defaultImage forState:UIControlStateNormal];
+    [self setBackgroundImage:highlightedImage forState:UIControlStateHighlighted];
+    
+    _label.attributedText = [[NSAttributedString alloc] initWithString:TGLocalized(@"InstantPage.FeedbackButton") attributes:@{NSFontAttributeName: [UIFont systemFontOfSize: 13.0], NSForegroundColorAttributeName: presentation.panelSubtextColor}];
 }
 
 - (void)layoutSubviews {

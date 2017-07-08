@@ -14,6 +14,7 @@
 #import "TGMainTabsController.h"
 
 #import "TGCallStatusBarView.h"
+#import "TGVolumeBarView.h"
 
 @interface TGRootController ()
 {
@@ -130,6 +131,12 @@
             [strongSelf->_detailNavigationController setShowCallStatusBar:!hidden];
         }
     };
+    
+    if (!TGIsPad())
+    {
+        _volumeBarView = [[TGVolumeBarView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 16.0f)];
+        _volumeBarView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    }
 }
 
 - (void)pushContentController:(UIViewController *)contentController {
@@ -183,6 +190,8 @@
         [self updateSizeClass];
         [_sizeClassVariable set:[SSignal single:@(_currentSizeClass)]];
     }
+    
+    //[self setNeedsStatusBarAppearanceUpdate];
 }
 
 - (void)updateSizeClass {
@@ -299,12 +308,20 @@
     }
 }
 
+- (BOOL)prefersStatusBarHidden
+{
+    //if (!TGIsPad() && UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation))
+    //    return true;
+    
+    return [super prefersStatusBarHidden];
+}
+
 - (SSignal *)sizeClass {
     return [_sizeClassVariable signal];
 }
 
 - (bool)isSplitView {
-    if (iosMajorVersion() < 9 || [UIDevice currentDevice].userInterfaceIdiom != UIUserInterfaceIdiomPad)
+    if (iosMajorVersion() < 9 || !TGIsPad())
         return false;
     
     if (self.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClassCompact)

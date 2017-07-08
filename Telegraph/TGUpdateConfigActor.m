@@ -24,6 +24,9 @@
 
 #import "TGTelegramNetworking.h"
 
+#import "TGLocalization.h"
+#import "TGLocalizationSignals.h"
+
 static NSTimeInterval configInvalidationDate = 0.0;
 
 static bool sharedExperimentalPasscodeBlurDisabled = false;
@@ -234,6 +237,12 @@ static bool sharedExperimentalPasscodeBlurDisabledInitialized = false;
         
         bool enabled = (phoneCallsEnabled != 0);
         [ActionStageInstance() dispatchResource:@"/tg/calls/enabled" resource:[[SGraphObjectNode alloc] initWithObject:@(enabled)]];
+    }
+    
+    [TGDatabaseInstance() setSuggestedLocalizationCode:config.suggested_lang_code];
+    
+    if (config.lang_pack_version != currentNativeLocalization().version) {
+        [TGTelegraphInstance.disposeOnLogout add:[[TGLocalizationSignals pollLocalization] startWithNext:nil]];
     }
     
     //[TGApplicationFeatures setLargeGroupMemberCountLimit:(NSUInteger)config.chat_big_size];

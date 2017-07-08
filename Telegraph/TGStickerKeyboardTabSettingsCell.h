@@ -1,4 +1,4 @@
-#import <UIKit/UIKit.h>
+#import "TGStickerKeyboardView.h"
 
 typedef enum {
     TGStickerKeyboardTabSettingsCellSettings,
@@ -13,5 +13,8 @@ typedef enum {
 @property (nonatomic) TGStickerKeyboardTabSettingsCellMode mode;
 
 - (void)setBadge:(NSString *)badge;
+- (void)setStyle:(TGStickerKeyboardViewStyle)style;
+
+- (void)setInnerAlpha:(CGFloat)innerAlpha;
 
 @end

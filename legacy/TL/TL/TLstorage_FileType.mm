@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xdaaa77af;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLstorage_FileType$storage_fileUnknown *object = [[TLstorage_FileType$storage_fileUnknown alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0x30e964f3;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLstorage_FileType$storage_fileJpeg *object = [[TLstorage_FileType$storage_fileJpeg alloc] init];
     return object;
@@ -98,7 +98,7 @@
     return (int32_t)0xf76b52ef;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLstorage_FileType$storage_fileGif *object = [[TLstorage_FileType$storage_fileGif alloc] init];
     return object;
@@ -124,7 +124,7 @@
     return (int32_t)0x66b8981;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLstorage_FileType$storage_filePng *object = [[TLstorage_FileType$storage_filePng alloc] init];
     return object;
@@ -150,7 +150,7 @@
     return (int32_t)0x19ddb5ca;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLstorage_FileType$storage_filePdf *object = [[TLstorage_FileType$storage_filePdf alloc] init];
     return object;
@@ -176,7 +176,7 @@
     return (int32_t)0x4f837c26;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLstorage_FileType$storage_fileMp3 *object = [[TLstorage_FileType$storage_fileMp3 alloc] init];
     return object;
@@ -202,7 +202,7 @@
     return (int32_t)0xbfa46836;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLstorage_FileType$storage_fileMov *object = [[TLstorage_FileType$storage_fileMov alloc] init];
     return object;
@@ -228,7 +228,7 @@
     return (int32_t)0x17b5e28e;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLstorage_FileType$storage_filePartial *object = [[TLstorage_FileType$storage_filePartial alloc] init];
     return object;
@@ -254,7 +254,7 @@
     return (int32_t)0x14eef747;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLstorage_FileType$storage_fileMp4 *object = [[TLstorage_FileType$storage_fileMp4 alloc] init];
     return object;
@@ -280,7 +280,7 @@
     return (int32_t)0x8aebc1a6;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLstorage_FileType$storage_fileWebp *object = [[TLstorage_FileType$storage_fileWebp alloc] init];
     return object;

@@ -8,11 +8,11 @@
 
 #import <Foundation/Foundation.h>
 
-#include <tr1/memory>
+#include <memory>
 
 @interface TGSharedPtrWrapper : NSObject
 
-- (void)setPtr:(std::tr1::shared_ptr<void> const &)ptr;
-- (std::tr1::shared_ptr<void> const &)ptr;
+- (void)setPtr:(std::shared_ptr<void> const &)ptr;
+- (std::shared_ptr<void> const &)ptr;
 
 @end

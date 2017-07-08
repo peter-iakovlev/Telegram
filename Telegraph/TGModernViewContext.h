@@ -36,6 +36,8 @@ typedef struct {
 @property (nonatomic) bool autoplayAnimations;
 
 @property (nonatomic) bool outgoingMessagesAreAlwaysRead;
+@property (nonatomic) bool isAdminLog;
+@property (nonatomic) bool adminLogIsGroup;
 
 @property (nonatomic, strong) SSignal *playingAudioMessageStatus;
 @property (nonatomic, copy) void (^playAudioMessageId)(int32_t);
@@ -43,6 +45,9 @@ typedef struct {
 @property (nonatomic, copy) void (^pauseAudioMessage)();
 
 @property (nonatomic, strong) SSignal *callbackInProgress;
+
+@property (nonatomic, copy) void (^replySwipeInteraction)(int32_t, bool);
+@property (nonatomic, copy) bool (^canReplyToMessageId)(int32_t);
 
 - (bool)isMediaVisibleInMessage:(int32_t)messageId;
 - (bool)isMessageChecked:(int32_t)messageId;

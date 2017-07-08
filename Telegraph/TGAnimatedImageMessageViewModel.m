@@ -110,12 +110,14 @@
         
         CGFloat scale = [UIScreen mainScreen].scale;
         self.imageModel.inlineVideoSize = CGSizeMake(renderSize.width * scale, renderSize.height * scale);
-        
+        self.imageModel.inlineVideoCornerRadius = 14.0f;
         if (_contentModel != nil) {
             self.imageModel.inlineVideoInsets = UIEdgeInsetsZero;
         } else {
             self.imageModel.inlineVideoInsets = UIEdgeInsetsMake(2.0f, 2.0f, 2.0f, 2.0f);
         }
+        
+        self.avatarOffset -= 1.0f;
     }
     return self;
 }
@@ -204,10 +206,16 @@
 {
 }
 
-- (void)stopInlineMedia
+- (void)stopInlineMedia:(int32_t)__unused excludeMid
 {
-    [((TGMessageImageViewContainer *)self.imageModel.boundView).imageView setVideoPathSignal:nil];
+    bool wasActivated = _activatedMedia;
     _activatedMedia = false;
+    
+    if (wasActivated)
+    {
+        [((TGMessageImageViewContainer *)self.imageModel.boundView).imageView hideVideo];
+        [((TGMessageImageViewContainer *)self.imageModel.boundView).imageView setVideoPathSignal:nil];
+    }
     
     [self updateImageOverlay:false];
 }

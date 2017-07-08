@@ -13,6 +13,7 @@
 @property (nonatomic, strong) NSString *title;
 @property (nonatomic, strong) NSString *variant;
 @property (nonatomic, strong) UIImage *icon;
+@property (nonatomic, strong) UIImage *variantIcon;
 @property (nonatomic) SEL action;
 @property (nonatomic) bool enabled;
 @property (nonatomic) bool hideArrow;

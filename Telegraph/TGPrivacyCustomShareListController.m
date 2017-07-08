@@ -80,6 +80,7 @@
     
     TGCollectionMenuSection *_usersSection;
     NSArray *_users;
+    bool _dialogs;
     
     void (^_userIdsChanged)(NSArray *);
     
@@ -92,13 +93,14 @@
 
 @implementation TGPrivacyCustomShareListController
 
-- (instancetype)initWithTitle:(NSString *)title contactSearchPlaceholder:(NSString *)contactSearchPlaceholder userIds:(NSArray *)userIds userIdsChanged:(void (^)(NSArray *))userIdsChanged
+- (instancetype)initWithTitle:(NSString *)title contactSearchPlaceholder:(NSString *)contactSearchPlaceholder userIds:(NSArray *)userIds dialogs:(bool)dialogs userIdsChanged:(void (^)(NSArray *))userIdsChanged
 {
     self = [super init];
     if (self != nil)
     {
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         _userIdsChanged = [userIdsChanged copy];
+        _dialogs = dialogs;
         
         _contactSearchPlaceholder = contactSearchPlaceholder;
         
@@ -120,12 +122,12 @@
     return self;
 }
 
-+ (id)presentAddInterfaceWithTitle:(NSString *)title contactSearchPlaceholder:(NSString *)contactSearchPlaceholder onController:(UIViewController *)controller completion:(void (^)(NSArray *))completion
++ (id)presentAddInterfaceWithTitle:(NSString *)title contactSearchPlaceholder:(NSString *)contactSearchPlaceholder onController:(UIViewController *)controller dialogs:(bool)dialogs completion:(void (^)(NSArray *))completion
 {
     TGPrivacyCustomShareListControllerAddCoordinator *coordinator = [[TGPrivacyCustomShareListControllerAddCoordinator alloc] init];
     coordinator.completion = completion;
     
-    TGForwardTargetController *selectionController = [[TGForwardTargetController alloc] initWithSelectPrivacyTarget:title placeholder:contactSearchPlaceholder];
+    TGForwardTargetController *selectionController = [[TGForwardTargetController alloc] initWithSelectPrivacyTarget:title placeholder:contactSearchPlaceholder dialogs:dialogs];
     selectionController.watcherHandle = coordinator.actionHandle;
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[selectionController]];
     
@@ -166,7 +168,7 @@
 - (void)addNewPressed
 {
     __weak TGPrivacyCustomShareListController *weakSelf = self;
-    _coordinator = [TGPrivacyCustomShareListController presentAddInterfaceWithTitle:self.title contactSearchPlaceholder:_contactSearchPlaceholder onController:self completion:^(NSArray *userIds)
+    _coordinator = [TGPrivacyCustomShareListController presentAddInterfaceWithTitle:self.title contactSearchPlaceholder:_contactSearchPlaceholder onController:self dialogs:_dialogs completion:^(NSArray *userIds)
     {
         __strong TGPrivacyCustomShareListController *strongSelf = weakSelf;
         if (strongSelf != nil)

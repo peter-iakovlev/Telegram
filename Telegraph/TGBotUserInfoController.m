@@ -919,8 +919,15 @@ static UIView *_findBackArrow(UIView *view)
 {
     NSString *linkString = [NSString stringWithFormat:@"https://t.me/%@", _user.userName];
     NSString *shareString = linkString;
+    NSString *externalString = shareString;
     if (_user.about.length > 0)
-        shareString = [NSString stringWithFormat:@"%@ %@", _user.about, shareString];
+    {
+        NSString *aboutText = _user.about;
+        if (aboutText.length > 200)
+            aboutText = [[aboutText substringToIndex:200] stringByAppendingString:@"..."];
+        
+        externalString = [NSString stringWithFormat:@"%@ %@", aboutText, externalString];
+    }
     
     __weak TGBotUserInfoController *weakSelf = self;
     CGRect (^sourceRect)(void) = ^CGRect
@@ -938,6 +945,8 @@ static UIView *_findBackArrow(UIView *view)
     } shareAction:^(NSArray *peerIds, NSString *caption)
     {
         [[TGShareSignals shareText:shareString toPeerIds:peerIds caption:caption] startWithNext:nil];
+        
+        [[[TGProgressWindow alloc] init] dismissWithSuccess];
     } externalShareItemSignal:[SSignal single:shareString] sourceView:self.view sourceRect:sourceRect barButtonItem:nil];
 }
 
@@ -1276,6 +1285,7 @@ static UIView *_findBackArrow(UIView *view)
         [progressWindow show:true];
         
         if (conversation.isChannel) {
+            TGUser *user = _user;
             [[[[TGChannelManagementSignals inviteUsers:conversation.conversationId accessHash:conversation.accessHash users:@[_user]] deliverOn:[SQueue mainQueue]] onDispose:^{
                 TGDispatchOnMainThread(^{
                     [progressWindow dismiss:true];
@@ -1285,6 +1295,14 @@ static UIView *_findBackArrow(UIView *view)
                 NSString *alertText = TGLocalized(@"ConversationProfile.UnknownAddMemberError");
                 if ([errorDescription isEqualToString:@"USER_ALREADY_PARTICIPANT"])
                     alertText = TGLocalized(@"Target.InviteToGroupErrorAlreadyInvited");
+                else if ([errorDescription isEqualToString:@"CHAT_ADMIN_REQUIRED"]) {
+                    TGUser *botUser = [TGDatabaseInstance() loadUser:user.uid];
+                    if (botUser.isBot) {
+                        alertText = TGLocalized(@"Group.Members.AddMemberBotErrorNotAllowed");
+                    } else {
+                        alertText = TGLocalized(@"Group.Members.AddMemberErrorNotAllowed");
+                    }
+                }
                 
                 [[[TGAlertView alloc] initWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
             } completed:^{
@@ -1295,6 +1313,7 @@ static UIView *_findBackArrow(UIView *view)
             }];
             
         } else {
+            int32_t uid = _uid;
             [[[[TGGroupManagementSignals inviteUserWithId:_uid toGroupWithId:TGGroupIdFromPeerId(conversation.conversationId)] deliverOn:[SQueue mainQueue]] onDispose:^
             {
                 [progressWindow dismiss:true];
@@ -1310,6 +1329,14 @@ static UIView *_findBackArrow(UIView *view)
                 NSString *alertText = TGLocalized(@"ConversationProfile.UnknownAddMemberError");
                 if ([errorDescription isEqualToString:@"USER_ALREADY_PARTICIPANT"])
                     alertText = TGLocalized(@"Target.InviteToGroupErrorAlreadyInvited");
+                else if ([errorDescription isEqualToString:@"CHAT_ADMIN_REQUIRED"]) {
+                    TGUser *botUser = [TGDatabaseInstance() loadUser:uid];
+                    if (botUser.isBot) {
+                        alertText = TGLocalized(@"Group.Members.AddMemberBotErrorNotAllowed");
+                    } else {
+                        alertText = TGLocalized(@"Group.Members.AddMemberErrorNotAllowed");
+                    }
+                }
                 
                 [[[TGAlertView alloc] initWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
             } completed:nil];

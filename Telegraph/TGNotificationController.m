@@ -81,9 +81,6 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     TGNotificationItem *_currentItem;
     NSMutableArray *_queue;
     
-    bool _ignoringStartupNotifications;
-    bool _ignoringCompleted;
-    
     STimer *_timer;
     NSUInteger _ticksToTransition;
  
@@ -319,29 +316,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
 }
 
 - (void)displayNotificationForConversation:(TGConversation *)conversation identifier:(int32_t)identifier replyToMid:(int32_t)replyToMid duration:(NSTimeInterval)duration configure:(void (^)(TGNotificationContentView *view, bool *isRepliable))configure
-{
-    if (!_ignoringCompleted && !_ignoringStartupNotifications)
-    {
-        if (CFAbsoluteTimeGetCurrent() - mainLaunchTimestamp < 2.0)
-        {
-            _ignoringStartupNotifications = true;
-            TGDispatchAfter(2.0, dispatch_get_main_queue(), ^
-            {
-                _ignoringStartupNotifications = false;
-                _ignoringCompleted = true;
-            });
-            
-            return;
-        }
-        else
-        {
-            _ignoringCompleted = true;
-        }
-    }
-    
-    if (_ignoringStartupNotifications)
-        return;
-    
+{    
     if (_currentItem.identifier == identifier)
         return;
     

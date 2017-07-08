@@ -61,12 +61,17 @@
 }
 
 + (void)presentAlertWithTitle:(NSString *)title message:(NSString *)message cancelButtonTitle:(NSString *)cancelButtonTitle okButtonTitle:(NSString *)okButtonTitle completionBlock:(void (^)(bool okButtonPressed))completionBlock {
-    if (iosMajorVersion() >= 8) {
+    [self presentAlertWithTitle:title message:message cancelButtonTitle:cancelButtonTitle okButtonTitle:okButtonTitle completionBlock:completionBlock disableKeyboardWorkaround:false];
+}
+
++ (void)presentAlertWithTitle:(NSString *)title message:(NSString *)message cancelButtonTitle:(NSString *)cancelButtonTitle okButtonTitle:(NSString *)okButtonTitle completionBlock:(void (^)(bool okButtonPressed))completionBlock disableKeyboardWorkaround:(bool)disableKeyboardWorkaround {
+    if (iosMajorVersion() >= 8 && !disableKeyboardWorkaround) {
         UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title.length == 0 ? nil : title message:message preferredStyle:UIAlertControllerStyleAlert];
         
         if (title != nil && message.length != 0) {
             NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
             paragraphStyle.alignment = NSTextAlignmentNatural;
+            paragraphStyle.lineSpacing = 2.0f;
             NSAttributedString *attributedString = [[NSAttributedString alloc] initWithString:message attributes:@{NSFontAttributeName: [UIFont systemFontOfSize:14.0], NSParagraphStyleAttributeName: paragraphStyle}];
             [alertController setValue:attributedString forKey:@"attributedMessage"];
         }
@@ -90,14 +95,16 @@
         }
         
         UIWindow *targetWindow = TGAppDelegateInstance.window;
-        for (UIWindow *window in [UIApplication sharedApplication].windows.reverseObjectEnumerator) {
-            if (window.rootViewController != nil && ([NSStringFromClass([window class]) hasPrefix:@"UITextEffec"] || [NSStringFromClass([window class]) hasPrefix:@"UIRemoteKe"])) {
-                targetWindow = window;
-                break;
+        if (!disableKeyboardWorkaround) {
+            for (UIWindow *window in [UIApplication sharedApplication].windows.reverseObjectEnumerator) {
+                if (window.rootViewController != nil && ([NSStringFromClass([window class]) hasPrefix:@"UITextEffec"] || [NSStringFromClass([window class]) hasPrefix:@"UIRemoteKe"])) {
+                    targetWindow = window;
+                    break;
+                }
             }
         }
         UIViewController *controller = targetWindow.rootViewController;
-        if (controller.view.window == nil && controller.presentedViewController != nil) {
+        if (controller.view.window == nil && controller.presentedViewController != nil && !disableKeyboardWorkaround) {
             controller = controller.presentedViewController;
         }
         [controller presentViewController:alertController animated:true completion:nil];

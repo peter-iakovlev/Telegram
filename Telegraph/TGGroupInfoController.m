@@ -69,6 +69,8 @@
 
 #import "TGConvertToSupergroupController.h"
 
+#import "TGLocalization.h"
+
 @interface TGGroupInfoController () <TGGroupInfoSelectContactControllerDelegate, TGAlertSoundControllerDelegate>
 {
     bool _editing;
@@ -156,7 +158,7 @@
         
         _notificationsItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Notifications") isOn:false];
         __weak TGGroupInfoController *weakSelf = self;
-        _notificationsItem.toggled = ^(bool value) {
+        _notificationsItem.toggled = ^(bool value, __unused TGSwitchCollectionItem *item) {
             __strong TGGroupInfoController *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 [strongSelf _commitEnableNotifications:value orMuteFor:0];
@@ -181,7 +183,8 @@
         _usersSectionHeader = [[TGHeaderCollectionItem alloc] initWithTitle:@""];
         _addParticipantItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.AddParticipant") action:@selector(addParticipantPressed)];
         _addParticipantItem.leftInset = 65.0f;
-        _addParticipantItem.icon = [UIImage imageNamed:@"GroupInfoIconAddMember.png"];
+        _addParticipantItem.icon = [UIImage imageNamed:@"ModernContactListAddMemberIcon.png"];
+        _addParticipantItem.iconOffset = CGPointMake(3.0f, 0.0f);
         _addParticipantItem.titleColor = TGAccentColor();
         _addParticipantItem.deselectAutomatically = true;
         _usersSection = [[TGCollectionMenuSection alloc] initWithItems:@[
@@ -656,6 +659,9 @@
 
 - (void)addParticipantPressed
 {
+    if ([self inPopover])
+        [self.presentingViewController.view endEditing:true];
+    
     if ([self showGroupUpgradeNotice]) {
         int64_t conversationId = _conversationId;
         __weak TGGroupInfoController *weakSelf = self;
@@ -1118,7 +1124,7 @@
 
     } else {
         _addParticipantItem.title = TGLocalized(@"GroupInfo.AddParticipant");
-        _addParticipantItem.icon = [UIImage imageNamed:@"GroupInfoIconAddMember.png"];
+        _addParticipantItem.icon = [UIImage imageNamed:@"ModernContactListAddMemberIcon.png"];
         
         if ([_usersSection indexOfItem:_usersSectionUpgradeNotice1] != NSNotFound) {
             [_usersSection deleteItem:_usersSectionUpgradeNotice1];
@@ -1126,15 +1132,7 @@
             forceReload = true;
         }
         
-        NSString *title = @"";
-        if (sortedUsers.count == 1)
-            title = TGLocalized(@"GroupInfo.ParticipantCount_1");
-        else if (sortedUsers.count == 2)
-            title = TGLocalized(@"GroupInfo.ParticipantCount_2");
-        else if (sortedUsers.count >= 3 && sortedUsers.count <= 10)
-            title = [NSString localizedStringWithFormat:TGLocalized(@"GroupInfo.ParticipantCount_3_10"), [TGStringUtils stringWithLocalizedNumber:sortedUsers.count]];
-        else
-            title = [NSString localizedStringWithFormat:TGLocalized(@"GroupInfo.ParticipantCount_any"), [TGStringUtils stringWithLocalizedNumber:sortedUsers.count]];
+        NSString *title = [effectiveLocalization() getPluralized:@"GroupInfo.ParticipantCount" count:(int32_t)sortedUsers.count];
         [_usersSectionHeader setTitle:title];
     }
     
@@ -1213,6 +1211,7 @@
                 
                 bool canEdit = userItem.selectable && canEditInPrinciple;
                 [userItem setCanEdit:canEdit];
+                userItem.canDelete = canEdit;
                 
                 [userItem setUser:user];
                 [userItem setDisabled:disabled];

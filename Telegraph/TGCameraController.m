@@ -18,6 +18,8 @@
 #import "TGPhotoEditorAnimation.h"
 #import "TGAccessChecker.h"
 
+#import "TGCameraShareSignals.h"
+
 #import "PGCamera.h"
 #import "PGCameraCaptureSession.h"
 #import "PGCameraDeviceAngleSampler.h"
@@ -53,6 +55,11 @@
 #import "TGMediaAssetsLibrary.h"
 
 #import "TGTimerTarget.h"
+
+#import "TGApplicationFeatures.h"
+#import "TGAlertView.h"
+
+#import "TGShareTargetController.h"
 
 const CGFloat TGCameraSwipeMinimumVelocity = 600.0f;
 const CGFloat TGCameraSwipeVelocityThreshold = 700.0f;
@@ -95,6 +102,8 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
 @interface TGCameraController () <UIGestureRecognizerDelegate>
 {
     bool _standalone;
+    bool _shortcut;
+
     TGCameraControllerIntent _intent;
     PGCamera *_camera;
     PGCameraVolumeButtonHandler *_buttonHandler;
@@ -835,7 +844,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
             
             strongSelf->_stopRecordingOnRelease = true;
             
-            [strongSelf->_camera startVideoRecordingForMoment:false completion:^(NSURL *outputURL, __unused CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success)
+            [strongSelf->_camera startVideoRecordingForMoment:false completion:^(NSURL *outputURL, __unused CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, __unused TGLiveUploadActorData *liveUploadData, bool success)
             {
                 __strong TGCameraController *strongSelf = weakSelf;
                 if (strongSelf == nil)
@@ -856,7 +865,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
     {
         _startRecordingTimer = nil;
         
-        [_camera startVideoRecordingForMoment:false completion:^(NSURL *outputURL, __unused CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success)
+        [_camera startVideoRecordingForMoment:false completion:^(NSURL *outputURL, __unused CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, __unused TGLiveUploadActorData *liveUploadData, bool success)
         {
             __strong TGCameraController *strongSelf = weakSelf;
             if (strongSelf == nil)
@@ -949,7 +958,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
             [_buttonHandler ignoreEventsFor:1.0f andDisable:false];
             
             __weak TGCameraController *weakSelf = self;
-            [_camera startVideoRecordingForMoment:false completion:^(NSURL *outputURL, __unused CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success)
+            [_camera startVideoRecordingForMoment:false completion:^(NSURL *outputURL, __unused CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, __unused TGLiveUploadActorData *liveUploadData, bool success)
             {
                 __strong TGCameraController *strongSelf = weakSelf;
                 if (strongSelf == nil)
@@ -1017,8 +1026,10 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
                 
                 CGRect startFrame = CGRectZero;
                 if (referenceFrame != NULL)
+                {
                     startFrame = *referenceFrame;
-                *referenceFrame = strongSelf->_previewView.frame;
+                    *referenceFrame = strongSelf->_previewView.frame;
+                }
                 
                 [strongSelf transitionBackFromResultControllerWithReferenceFrame:startFrame];
                 
@@ -1037,7 +1048,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
                 TGDispatchOnMainThread(^
                 {
                     if (strongSelf.finishedWithPhoto != nil)
-                        strongSelf.finishedWithPhoto(resultImage, nil, nil);
+                        strongSelf.finishedWithPhoto(nil, resultImage, nil, nil);
                     
                     if (self.shouldStoreCapturedAssets)
                     {
@@ -1074,7 +1085,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
             
         default:
         {
-            TGCameraPhotoPreviewController *controller = [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata];
+            TGCameraPhotoPreviewController *controller = _shortcut ? [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata backButtonTitle:TGLocalized(@"Camera.Retake") doneButtonTitle:TGLocalized(@"Common.Next")] : [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata];
             controller.allowCaptions = self.allowCaptions;
             controller.shouldStoreAssets = self.shouldStoreCapturedAssets;
             controller.suggestionContext = self.suggestionContext;
@@ -1118,14 +1129,17 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
                 [[UIApplication sharedApplication] setIdleTimerDisabled:true];
             };
             
-            controller.sendPressed = ^(UIImage *resultImage, NSString *caption, NSArray *stickers)
+            controller.sendPressed = ^(TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers)
             {
                 __strong TGCameraController *strongSelf = weakSelf;
                 if (strongSelf == nil)
                     return;
                 
                 if (strongSelf.finishedWithPhoto != nil)
-                    strongSelf.finishedWithPhoto(resultImage, caption, stickers);
+                    strongSelf.finishedWithPhoto(controller, resultImage, caption, stickers);
+                
+                if (strongSelf->_shortcut)
+                    return;
                 
                 __strong TGOverlayController *strongController = weakController;
                 if (strongController != nil)
@@ -1139,7 +1153,18 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
     
     if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone)
     {
-        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:overlayController];
+        TGOverlayController *contentController = overlayController;
+        if (_shortcut)
+        {
+            contentController = [[TGOverlayController alloc] init];
+            
+            TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[overlayController]];
+            overlayController.navigationBarShouldBeHidden = true;
+            [contentController addChildViewController:navigationController];
+            [contentController.view addSubview:navigationController.view];
+        }
+        
+        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:contentController];
         controllerWindow.windowLevel = self.view.window.windowLevel + 0.0001f;
         controllerWindow.hidden = false;
     }
@@ -1226,6 +1251,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
     generator.maximumSize = CGSizeMake(640.0f, 640.0f);
     CGImageRef imageRef = [generator copyCGImageAtTime:kCMTimeZero actualTime:NULL error:NULL];
     UIImage *thumbnailImage = [[UIImage alloc] initWithCGImage:imageRef];
+    CGImageRelease(imageRef);
     
     __weak TGCameraController *weakSelf = self;
     
@@ -1290,8 +1316,6 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
         [itemView stop];
         [itemView setPlayButtonHidden:true animated:true];
         
-        [strongSelf dismissTransitionForResultController:strongController];
-        
         TGVideoEditAdjustments *adjustments = (TGVideoEditAdjustments *)[strongSelf->_editingContext adjustmentsForItem:videoItem.avAsset];
         NSString *caption = [strongSelf->_editingContext captionForItem:videoItem.avAsset];
         
@@ -1314,8 +1338,13 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
         [[thumbnailSignal deliverOn:[SQueue mainQueue]] startWithNext:^(UIImage *thumbnailImage)
         {
             if (strongSelf.finishedWithVideo != nil)
-                strongSelf.finishedWithVideo(url, thumbnailImage, duration, dimensions, adjustments, caption, adjustments.paintingData.stickers);
+                strongSelf.finishedWithVideo(strongController, url, thumbnailImage, duration, dimensions, adjustments, caption, adjustments.paintingData.stickers);
         }];
+        
+        if (strongSelf->_shortcut)
+            return;
+        
+        [strongSelf dismissTransitionForResultController:strongController];
         
         if (strongSelf.shouldStoreCapturedAssets)
             [strongSelf _saveVideoToCameraRollWithURL:url completion:nil];
@@ -1390,9 +1419,31 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
     galleryController.completedTransitionOut = ^
     {
         [snapshotView removeFromSuperview];
+        
+        TGModernGalleryController *strongGalleryController = weakGalleryController;
+        if (strongGalleryController != nil && strongGalleryController.overlayWindow == nil)
+        {
+            TGNavigationController *navigationController = (TGNavigationController *)strongGalleryController.navigationController;
+            TGOverlayControllerWindow *window = (TGOverlayControllerWindow *)navigationController.view.window;
+            if ([window isKindOfClass:[TGOverlayControllerWindow class]])
+                [window dismiss];
+                
+        }
     };
     
-    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:galleryController];
+    TGOverlayController *contentController = galleryController;
+    if (_shortcut)
+    {
+        contentController = [[TGOverlayController alloc] init];
+        
+        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[galleryController]];
+        galleryController.navigationBarShouldBeHidden = true;
+        
+        [contentController addChildViewController:navigationController];
+        [contentController.view addSubview:navigationController.view];
+    }
+    
+    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:contentController];
     controllerWindow.hidden = false;
     controllerWindow.windowLevel = self.view.window.windowLevel + 0.0001f;
     galleryController.view.clipsToBounds = true;
@@ -1889,6 +1940,100 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
         default:
             return UIInterfaceOrientationUnknown;
     }
+}
+
++ (void)startShortcutCamera
+{
+    __autoreleasing NSString *disabledMessage = nil;
+    if (![TGApplicationFeatures isPhotoUploadEnabledForPeerType:TGApplicationFeaturePeerPrivate disabledMessage:&disabledMessage])
+    {
+        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"FeatureDisabled.Oops") message:disabledMessage cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        return;
+    }
+    
+    if (![TGAccessChecker checkCameraAuthorizationStatusForIntent:TGCameraAccessIntentDefault alertDismissCompletion:nil])
+        return;
+    
+    if (TGAppDelegateInstance.rootController.isSplitView)
+        return;
+    
+    TGCameraController *controller = [[TGCameraController alloc] init];
+    controller->_shortcut = true;
+    controller.isImportant = true;
+    controller.shouldStoreCapturedAssets = true;
+    controller.allowCaptions = true;
+    
+    TGCameraControllerWindow *controllerWindow = [[TGCameraControllerWindow alloc] initWithParentController:TGAppDelegateInstance.rootController contentController:controller];
+    controllerWindow.hidden = false;
+    
+    CGSize screenSize = TGScreenSize();
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone)
+        controllerWindow.frame = CGRectMake(0, 0, screenSize.width, screenSize.height);
+    
+    CGRect startFrame = CGRectMake(0, screenSize.height, screenSize.width, screenSize.height);
+    [controller beginTransitionInFromRect:startFrame];
+    
+    __weak TGCameraController *weakCameraController = controller;
+    controller.finishedWithPhoto = ^(TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers)
+    {
+        __autoreleasing NSString *disabledMessage = nil;
+        if (![TGApplicationFeatures isPhotoUploadEnabledForPeerType:TGApplicationFeaturePeerPrivate disabledMessage:&disabledMessage])
+        {
+            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"FeatureDisabled.Oops") message:disabledMessage cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            return;
+        }
+        
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+        dict[@"type"] = @"image";
+        dict[@"image"] = resultImage;
+        if (caption.length > 0)
+            dict[@"caption"] = caption;
+        if (stickers.count > 0)
+            dict[@"stickers"] = stickers;
+        
+        __strong TGCameraController *strongCameraController = weakCameraController;
+        [TGCameraController showTargetController:@[dict] cameraController:strongCameraController resultController:controller navigationController:(TGNavigationController *)controller.navigationController];
+    };
+    
+    controller.finishedWithVideo = ^(TGOverlayController *controller, NSURL *videoURL, UIImage *previewImage, NSTimeInterval duration, CGSize dimensions, TGVideoEditAdjustments *adjustments, NSString *caption, NSArray *stickers)
+    {
+        __autoreleasing NSString *disabledMessage = nil;
+        if (![TGApplicationFeatures isFileUploadEnabledForPeerType:TGApplicationFeaturePeerPrivate disabledMessage:&disabledMessage])
+        {
+            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"FeatureDisabled.Oops") message:disabledMessage cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            return;
+        }
+        
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+        dict[@"type"] = @"cameraVideo";
+        dict[@"url"] = videoURL;
+        dict[@"duration"] = @(duration);
+        dict[@"dimensions"] = [NSValue valueWithCGSize:dimensions];
+        if (adjustments != nil)
+            dict[@"adjustments"] = adjustments;
+        if (previewImage != nil)
+            dict[@"previewImage"] = previewImage;
+        if (caption.length > 0)
+            dict[@"caption"] = caption;
+        if (stickers.count > 0)
+            dict[@"stickers"] = stickers;
+        
+        __strong TGCameraController *strongCameraController = weakCameraController;
+        [TGCameraController showTargetController:@[dict] cameraController:strongCameraController resultController:controller navigationController:(TGNavigationController *)controller.navigationController];
+    };
+}
+
++ (void)showTargetController:(NSArray *)fileArray cameraController:(TGCameraController *)cameraController resultController:(TGOverlayController *)resultController navigationController:(TGNavigationController *)navigationController
+{
+    [TGHacks setApplicationStatusBarAlpha:1.0f];
+    
+    TGShareTargetController *controller = [[TGShareTargetController alloc] init];
+    controller.completionBlock = ^(NSArray *selectedPeerIds)
+    {
+        [cameraController dismissTransitionForResultController:resultController];
+        [[TGCameraShareSignals shareMedia:[fileArray firstObject] peerIds:selectedPeerIds] startWithNext:nil];
+    };
+    [navigationController pushViewController:controller animated:true];
 }
 
 + (bool)useLegacyCamera

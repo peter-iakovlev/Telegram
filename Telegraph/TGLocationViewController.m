@@ -361,7 +361,7 @@
     NSInteger longMinutes = longSeconds / 60;
     longSeconds %= 60;
     
-    NSString *result = [NSString stringWithFormat:@"%@%02ld° %02ld' %02ld\" %@%02ld° %02ld' %02ld\"", latDegrees >= 0 ? @"N" : @"S", labs(latDegrees), latMinutes, latSeconds, longDegrees >= 0 ? @"E" : @"W", labs(longDegrees), longMinutes, longSeconds];
+    NSString *result = [NSString stringWithFormat:@"%@%02ld° %02ld' %02ld\" %@%02ld° %02ld' %02ld\"", latDegrees >= 0 ? @"N" : @"S", labs(latDegrees), (long)latMinutes, (long)latSeconds, longDegrees >= 0 ? @"E" : @"W", labs(longDegrees), (long)longMinutes, (long)longSeconds];
     
     return result;
 }

@@ -10,13 +10,10 @@
 
 #import "ASQueue.h"
 
-#import <AVFoundation/AVFoundation.h>
-
 #import "TGObserverProxy.h"
 
 @interface TGNativeAudioPlayer ()
 {
-    AVPlayer *_audioPlayer;
     AVPlayerItem *_currentItem;
     TGObserverProxy *_didPlayToEndObserver;
 }
@@ -32,18 +29,18 @@
     {
         __autoreleasing NSError *error = nil;
         NSString *realPath = path;
-        NSArray *audioExtensions = @[@"mp3", @"aac", @"m4a"];
+        NSArray *audioExtensions = @[@"mp3", @"aac", @"m4a", @"mov", @"mp4"];
         if (![audioExtensions containsObject:realPath.pathExtension.lowercaseString]) {
             realPath = [path stringByAppendingPathExtension:@"mp3"];
             [[NSFileManager defaultManager] createSymbolicLinkAtPath:realPath withDestinationPath:path error:nil];
         }
         _currentItem = [[AVPlayerItem alloc] initWithURL:[NSURL fileURLWithPath:realPath]];
         if (_currentItem != nil) {
-            _audioPlayer = [[AVPlayer alloc] initWithPlayerItem:_currentItem];
+            _player = [[AVPlayer alloc] initWithPlayerItem:_currentItem];
             _didPlayToEndObserver = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(playerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:_currentItem];
         }
         
-        if (_audioPlayer == nil || error != nil)
+        if (_player == nil || error != nil)
         {
             [self cleanupWithError];
         }
@@ -63,12 +60,12 @@
 
 - (void)cleanup
 {
-    AVPlayer *audioPlayer = _audioPlayer;
-    _audioPlayer = nil;
+    AVPlayer *player = _player;
+    _player = nil;
     
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
-        [audioPlayer pause];
+        [player pause];
     }];
     
     [self _endAudioSessionFinal];
@@ -84,7 +81,7 @@
             CMTime targetTime = CMTimeMakeWithSeconds(position, NSEC_PER_SEC);
             [_currentItem seekToTime:targetTime toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
         }
-        [_audioPlayer play];
+        [_player play];
     }];
 }
 
@@ -92,7 +89,7 @@
 {
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
-        [_audioPlayer pause];
+        [_player pause];
         if (completion) {
             completion();
         }
@@ -103,7 +100,7 @@
 {
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
-        [_audioPlayer pause];
+        [_player pause];
     }];
 }
 
@@ -135,7 +132,7 @@
 
 - (void)playerItemDidPlayToEndTime:(NSNotification *)__unused notification
 {
-    [_audioPlayer pause];
+    [_player pause];
     
     [self _notifyFinished];
 }

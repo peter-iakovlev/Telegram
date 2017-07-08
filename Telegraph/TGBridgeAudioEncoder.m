@@ -4,7 +4,6 @@
 #import "ATQueue.h"
 
 #import "ActionStage.h"
-#import "TGLiveUploadActor.h"
 
 #import "opus.h"
 #import "opusenc.h"
@@ -23,8 +22,6 @@ const NSInteger TGBridgeAudioEncoderSampleRate = 16000;
     NSMutableData *_audioBuffer;
     TGDataItem *_tempFileItem;
     TGOggOpusWriter *_oggWriter;
-    
-    NSString *_liveUploadPath;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -41,9 +38,10 @@ const NSInteger TGBridgeAudioEncoderSampleRate = 16000;
         self.actionHandle = [[ASHandle alloc] init];
         
         AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:url options:nil];
-        if (asset == nil)
+        if (asset == nil || asset.tracks.count == 0)
         {
             TGLog(@"Asset create fail");
+            return nil;
         }
         
         NSError *error;
@@ -65,17 +63,6 @@ const NSInteger TGBridgeAudioEncoderSampleRate = 16000;
         [_assetReader addOutput:_readerOutput];
         
         _tempFileItem = [[TGDataItem alloc] initWithTempFile];
-        
-        [[TGBridgeAudioEncoder processingQueue] dispatch:^
-        {
-            static int nextActionId = 10000;
-            int actionId = nextActionId++;
-            _liveUploadPath = [[NSString alloc] initWithFormat:@"/tg/liveUpload/(%d)", actionId];
-            
-            [ActionStageInstance() requestActor:_liveUploadPath options:@{ @"fileItem": _tempFileItem,
-                                                                           @"encryptFile": @(false), @"mediaTypeTag": @(TGNetworkMediaTypeTagAudio)
-                                                                           } flags:0 watcher:self];
-        }];
     }
     return self;
 }
@@ -163,17 +150,10 @@ const NSInteger TGBridgeAudioEncoderSampleRate = 16000;
             [self cleanup];
         }
         
-        __block TGLiveUploadActorData *liveData;
-        dispatch_sync([ActionStageInstance() globalStageDispatchQueue], ^
-        {
-            TGLiveUploadActor *actor = (TGLiveUploadActor *)[ActionStageInstance() executingActorWithPath:_liveUploadPath];
-            liveData = [actor finishRestOfFile:totalBytes];
-        });
-        
         TGLog(@"[TGBridgeAudioEncoder#%x convert time: %f ms]", self, (CFAbsoluteTimeGetCurrent() - startTime) * 1000.0);
         
         if (completion != nil)
-            completion(dataItemResult, (int32_t)durationResult, liveData);
+            completion(dataItemResult, (int32_t)durationResult, nil);
     }];
 }
 
@@ -231,17 +211,7 @@ const NSInteger TGBridgeAudioEncoderSampleRate = 16000;
             }
             else
             {
-                NSUInteger previousBytesWritten = [_oggWriter encodedBytes];
                 [_oggWriter writeFrame:currentEncoderPacket frameByteCount:(NSUInteger)currentEncoderPacketSize];
-                NSUInteger currentBytesWritten = [_oggWriter encodedBytes];
-                if (currentBytesWritten != previousBytesWritten)
-                {
-                    [ActionStageInstance() dispatchOnStageQueue:^
-                     {
-                         TGLiveUploadActor *actor = (TGLiveUploadActor *)[ActionStageInstance() executingActorWithPath:_liveUploadPath];
-                         [actor updateSize:currentBytesWritten];
-                     }];
-                }
             }
         }
     }

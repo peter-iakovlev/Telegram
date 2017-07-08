@@ -8,24 +8,26 @@
 #include <stdlib.h>
 #include "logging.h"
 
-CVoIPServerConfig* CVoIPServerConfig::sharedInstance=NULL;
+using namespace tgvoip;
 
-CVoIPServerConfig::CVoIPServerConfig(){
+ServerConfig* ServerConfig::sharedInstance=NULL;
+
+ServerConfig::ServerConfig(){
 	init_mutex(mutex);
 }
 
-CVoIPServerConfig::~CVoIPServerConfig(){
+ServerConfig::~ServerConfig(){
 	free_mutex(mutex);
 }
 
-CVoIPServerConfig *CVoIPServerConfig::GetSharedInstance(){
+ServerConfig *ServerConfig::GetSharedInstance(){
 	if(!sharedInstance)
-		sharedInstance=new CVoIPServerConfig();
+		sharedInstance=new ServerConfig();
 	return sharedInstance;
 }
 
-bool CVoIPServerConfig::GetBoolean(std::string name, bool fallback){
-	CMutexGuard sync(mutex);
+bool ServerConfig::GetBoolean(std::string name, bool fallback){
+	MutexGuard sync(mutex);
 	if(ContainsKey(name)){
 		std::string val=config[name];
 		if(val=="true")
@@ -36,8 +38,8 @@ bool CVoIPServerConfig::GetBoolean(std::string name, bool fallback){
 	return fallback;
 }
 
-double CVoIPServerConfig::GetDouble(std::string name, double fallback){
-	CMutexGuard sync(mutex);
+double ServerConfig::GetDouble(std::string name, double fallback){
+	MutexGuard sync(mutex);
 	if(ContainsKey(name)){
 		std::string val=config[name];
 		char* end;
@@ -50,8 +52,8 @@ double CVoIPServerConfig::GetDouble(std::string name, double fallback){
 	return fallback;
 }
 
-int32_t CVoIPServerConfig::GetInt(std::string name, int32_t fallback){
-	CMutexGuard sync(mutex);
+int32_t ServerConfig::GetInt(std::string name, int32_t fallback){
+	MutexGuard sync(mutex);
 	if(ContainsKey(name)){
 		std::string val=config[name];
 		char* end;
@@ -64,15 +66,15 @@ int32_t CVoIPServerConfig::GetInt(std::string name, int32_t fallback){
 	return fallback;
 }
 
-std::string CVoIPServerConfig::GetString(std::string name, std::string fallback){
-	CMutexGuard sync(mutex);
+std::string ServerConfig::GetString(std::string name, std::string fallback){
+	MutexGuard sync(mutex);
 	if(ContainsKey(name))
 		return config[name];
 	return fallback;
 }
 
-void CVoIPServerConfig::Update(std::map<std::string, std::string> newValues){
-	CMutexGuard sync(mutex);
+void ServerConfig::Update(std::map<std::string, std::string> newValues){
+	MutexGuard sync(mutex);
 	LOGD("=== Updating voip config ===");
 	config.clear();
 	for(std::map<std::string, std::string>::iterator itr=newValues.begin();itr!=newValues.end();++itr){
@@ -83,7 +85,7 @@ void CVoIPServerConfig::Update(std::map<std::string, std::string> newValues){
 	}
 }
 
-void CVoIPServerConfig::Update(const char **values, int count) {
+void ServerConfig::Update(const char **values, int count) {
     std::map<std::string, std::string> result;
     for (int i = 0; i < count / 2; i++) {
         result[values[i * 2 + 0]] = std::string(values[i * 2 + 1]);
@@ -92,7 +94,7 @@ void CVoIPServerConfig::Update(const char **values, int count) {
 }
 
 
-bool CVoIPServerConfig::ContainsKey(std::string key){
+bool ServerConfig::ContainsKey(std::string key){
 	return config.find(key)!=config.end();
 }
 

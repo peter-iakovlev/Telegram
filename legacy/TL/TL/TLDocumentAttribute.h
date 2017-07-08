@@ -23,14 +23,6 @@
 
 @end
 
-@interface TLDocumentAttribute$documentAttributeVideo : TLDocumentAttribute
-
-@property (nonatomic) int32_t duration;
-@property (nonatomic) int32_t w;
-@property (nonatomic) int32_t h;
-
-@end
-
 @interface TLDocumentAttribute$documentAttributeFilename : TLDocumentAttribute
 
 @property (nonatomic, retain) NSString *file_name;
@@ -48,6 +40,15 @@
 
 @interface TLDocumentAttribute$documentAttributeHasStickers : TLDocumentAttribute
 
+
+@end
+
+@interface TLDocumentAttribute$documentAttributeVideo : TLDocumentAttribute
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic) int32_t duration;
+@property (nonatomic) int32_t w;
+@property (nonatomic) int32_t h;
 
 @end
 

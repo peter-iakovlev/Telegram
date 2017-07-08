@@ -1,6 +1,7 @@
 #import "TGMediaPickerGalleryVideoItemView.h"
 
 #import <AVFoundation/AVFoundation.h>
+#import <MediaPlayer/MediaPlayer.h>
 
 #import "TGImageUtils.h"
 #import "TGPhotoEditorUtils.h"
@@ -39,6 +40,8 @@
     UIView *_playerView;
     UIView *_playerContainerView;
     UIView *_curtainView;
+    
+    MPVolumeView *_volumeOverlayFixView;
     
     TGMenuContainerView *_tooltipContainerView;
     
@@ -206,6 +209,29 @@
     [_attributesDisposable dispose];
     [_downloadDisposable dispose];
     [self stopPlayer];
+    
+    [self releaseVolumeOverlay];
+}
+
+- (void)inhibitVolumeOverlay
+{
+    if (_volumeOverlayFixView != nil)
+        return;
+    
+    UIWindow *keyWindow = self.window; //[UIApplication sharedApplication].keyWindow;
+    UIView *rootView = keyWindow.rootViewController.view;
+    
+    _volumeOverlayFixView = [[MPVolumeView alloc] initWithFrame:CGRectMake(10000, 10000, 20, 20)];
+    [rootView addSubview:_volumeOverlayFixView];
+}
+
+- (void)releaseVolumeOverlay
+{
+    if (_volumeOverlayFixView == nil)
+        return;
+    
+    [_volumeOverlayFixView removeFromSuperview];
+    _volumeOverlayFixView = nil;
 }
 
 - (void)prepareForRecycle
@@ -231,6 +257,8 @@
     _downloading = false;
     _downloadRequired = false;
     [_downloadDisposable setDisposable:nil];
+    
+    [self releaseVolumeOverlay];
 }
 
 + (NSString *)_stringForDimensions:(CGSize)dimensions
@@ -429,6 +457,8 @@
         }
     }
     
+    if (!isCurrent)
+        [self releaseVolumeOverlay];
     
     if (!isCurrent || _scrubbingPanelPresented || _requestingThumbnails)
         return;
@@ -525,8 +555,7 @@
         _scrubbingPanelPresented = true;
         
         _scrubberPanelView.hidden = false;
-        [_scrubberPanelView setNeedsLayout];
-        [_scrubberPanelView layoutIfNeeded];
+        [_scrubberPanelView layoutSubviews];
         [_scrubberView layoutSubviews];
         
         void (^changeBlock)(void) = ^
@@ -907,6 +936,8 @@
             });
         }]];
     }];
+    
+    [self inhibitVolumeOverlay];
     
     SSignal *itemSignal = nil;
     if (self.item.asset != nil)

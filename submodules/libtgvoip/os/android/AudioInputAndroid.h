@@ -9,12 +9,14 @@
 
 #include <jni.h>
 #include "../../audio/AudioInput.h"
+#include "../../threading.h"
 
-class CAudioInputAndroid : public CAudioInput{
+namespace tgvoip{ namespace audio{
+class AudioInputAndroid : public AudioInput{
 
 public:
-	CAudioInputAndroid();
-	virtual ~CAudioInputAndroid();
+	AudioInputAndroid();
+	virtual ~AudioInputAndroid();
 	virtual void Configure(uint32_t sampleRate, uint32_t bitsPerSample, uint32_t channels);
 	virtual void Start();
 	virtual void Stop();
@@ -28,8 +30,9 @@ public:
 private:
 	jobject javaObject;
 	bool running;
+	tgvoip_mutex_t mutex;
 
 };
-
+}}
 
 #endif //LIBTGVOIP_AUDIOINPUTANDROID_H

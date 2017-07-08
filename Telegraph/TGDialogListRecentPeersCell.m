@@ -16,6 +16,8 @@
 
 @interface TGDialogListRecentPeersCell () <UICollectionViewDelegateFlowLayout, UICollectionViewDataSource> {
     NSArray *_recentPeers;
+    NSDictionary *_unreadCounts;
+    NSSet *_selectedPeerIds;
     
     UICollectionView *_collectionView;
     UICollectionViewFlowLayout *_collectionLayout;
@@ -33,6 +35,8 @@
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self != nil) {
         self.clipsToBounds = true;
+        
+        _unreadCounts = [[NSDictionary alloc] init];
         
         _headerBackground = [[UIView alloc] init];
         _headerBackground.backgroundColor = UIColorRGB(0xf7f7f7);
@@ -73,7 +77,8 @@
 - (void)dealloc {
 }
 
-- (void)setRecentPeers:(TGDialogListRecentPeers *)recentPeers {
+- (void)setRecentPeers:(TGDialogListRecentPeers *)recentPeers unreadCounts:(NSDictionary *)unreadCounts {
+    _unreadCounts = unreadCounts;
     [self setPeers:recentPeers.peers];
     _headerLabel.text = [recentPeers.title uppercaseString];
     [_headerLabel sizeToFit];
@@ -83,6 +88,41 @@
 - (void)setPeers:(NSArray<TGConversation *> *)peers {
     _recentPeers = peers;
     [_collectionView reloadData];
+}
+
+- (void)updateUnreadCounts:(NSDictionary *)unreadCounts
+{
+    NSMutableDictionary *updatedUnreadCounts = [_unreadCounts mutableCopy];
+    [updatedUnreadCounts addEntriesFromDictionary:unreadCounts];
+    _unreadCounts = updatedUnreadCounts;
+    
+    for (NSIndexPath *indexPath in _collectionView.indexPathsForVisibleItems)
+    {
+        TGShareSheetSharePeersCell *cell = (TGShareSheetSharePeersCell *)[_collectionView cellForItemAtIndexPath:indexPath];
+        if (cell == nil)
+            continue;
+        
+        id item = _recentPeers[indexPath.item];
+        int64_t peerId = 0;
+        if ([item isKindOfClass:[TGConversation class]])
+            peerId = ((TGConversation *)item).conversationId;
+        else if ([item isKindOfClass:[TGUser class]])
+            peerId = ((TGUser *)item).uid;
+        
+        [cell setUnreadCount:[_unreadCounts[@(peerId)] int32Value]];
+    }
+}
+
+- (void)updateSelectedPeerIds:(NSArray *)peerIds {
+    _selectedPeerIds = [NSSet setWithArray:peerIds];
+    for (NSIndexPath *indexPath in _collectionView.indexPathsForVisibleItems)
+    {
+        TGShareSheetSharePeersCell *cell = (TGShareSheetSharePeersCell *)[_collectionView cellForItemAtIndexPath:indexPath];
+        if (cell == nil)
+            continue;
+        
+        [cell updateSelectedPeerIds:_selectedPeerIds animated:false];
+    }
 }
 
 + (UIEdgeInsets)insets {
@@ -98,7 +138,6 @@
 }
 
 + (CGFloat)verticalSpacing {
-    
     return 15.0f;
 }
 
@@ -131,6 +170,24 @@
 
 - (void)layoutSubviews {
     [super layoutSubviews];
+    
+    static Class separatorClass = nil;
+    static dispatch_once_t onceToken2;
+    dispatch_once(&onceToken2, ^{
+        separatorClass = NSClassFromString(TGEncodeText(@"`VJUbcmfWjfxDfmmTfqbsbupsWjfx", -1));
+    });
+    for (UIView *subview in self.subviews) {
+        if (subview.class == separatorClass) {
+            CGRect frame = subview.frame;
+            frame.size.width = self.bounds.size.width;
+            frame.origin.x = 0.0f;
+
+            if (!CGRectEqualToRect(subview.frame, frame)) {
+                subview.frame = frame;
+            }
+            break;
+        }
+    }
     
     _headerBackground.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, 27.0f);
     _headerLabel.frame = CGRectMake(14.0f, 6.0f, _headerLabel.frame.size.width, _headerLabel.frame.size.height);
@@ -262,7 +319,18 @@
             }
         };
     }
-    [cell setPeer:_recentPeers[indexPath.item]];
+    
+    id item = _recentPeers[indexPath.item];
+    int64_t peerId = 0;
+    if ([item isKindOfClass:[TGConversation class]])
+        peerId = ((TGConversation *)item).conversationId;
+    else if ([item isKindOfClass:[TGUser class]])
+        peerId = ((TGUser *)item).uid;
+    
+    [cell setPeer:item];
+    [cell updateSelectedPeerIds:_selectedPeerIds animated:false];
+    [cell setUnreadCount:[_unreadCounts[@(peerId)] int32Value]];
+    
     return cell;
 }
 

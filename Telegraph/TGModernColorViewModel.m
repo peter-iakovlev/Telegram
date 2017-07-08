@@ -5,6 +5,7 @@
 @interface TGModernColorViewModel ()
 {
     UIColor *_color;
+    CGFloat _cornerRadius;
 }
 
 @end
@@ -13,10 +14,16 @@
 
 - (instancetype)initWithColor:(UIColor *)color
 {
+    return [self initWithColor:color cornerRadius:0.0f];
+}
+
+- (instancetype)initWithColor:(UIColor *)color cornerRadius:(CGFloat)cornerRadius
+{
     self = [super init];
     if (self != nil)
     {
         _color = color;
+        _cornerRadius = cornerRadius;
     }
     return self;
 }
@@ -40,7 +47,12 @@
     if (!self.skipDrawInContext && _color != nil && self.alpha > FLT_EPSILON)
     {
         CGContextSetFillColorWithColor(context, _color.CGColor);
-        CGContextFillRect(context, self.bounds);
+        if (_cornerRadius > FLT_EPSILON) {
+            CGContextAddPath(context, [UIBezierPath bezierPathWithRoundedRect:self.bounds cornerRadius:_cornerRadius].CGPath);
+            CGContextFillPath(context);
+        } else {
+            CGContextFillRect(context, self.bounds);
+        }
     }
 }
 

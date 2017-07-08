@@ -37,7 +37,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -64,7 +64,7 @@
     return (int32_t)0x9d39aee4;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCphotos_updateProfilePhoto$photos_updateProfilePhoto *object = [[TLRPCphotos_updateProfilePhoto$photos_updateProfilePhoto alloc] init];
     object.n_id = metaObject->getObject((int32_t)0x7a5601fb);

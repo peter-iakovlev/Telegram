@@ -198,7 +198,10 @@
                 }
             }
             
-            NSMutableString *formatString = [[NSMutableString alloc] initWithString:TGLocalized(formatStringBase)];
+            NSString *baseString = TGLocalized(formatStringBase);
+            baseString = [baseString stringByReplacingOccurrencesOfString:@"%@" withString:@"{game}"];
+            
+            NSMutableString *formatString = [[NSMutableString alloc] initWithString:baseString];
             
             NSString *authorName = [self titleForPeer:author shortName:false];
             
@@ -243,7 +246,7 @@
                 }
                 
                 if (gameTitleRange.location != NSNotFound) {
-                    [formatString replaceCharactersInRange:gameTitleRange withString:gameTitle];
+                    [formatString replaceCharactersInRange:gameTitleRange withString:gameTitle ?: @""];
                 }
             }
             

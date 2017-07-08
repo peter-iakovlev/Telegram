@@ -793,6 +793,7 @@ typedef enum {
     CALayer *_blurredBackgroundLayer;
     TGMessageImageViewOverlayLayer *_contentLayer;
     TGMessageImageViewOverlayLayer *_progressLayer;
+    bool _blurless;
 }
 
 @end
@@ -826,6 +827,12 @@ typedef enum {
         [self.layer addSublayer:_progressLayer];
     }
     return self;
+}
+
+- (void)setBlurless:(bool)blurless
+{
+    _blurless = blurless;
+    _blurredBackgroundLayer.hidden = blurless;
 }
 
 - (void)setRadius:(CGFloat)radius
@@ -878,7 +885,7 @@ typedef enum {
     [_contentLayer setDownload];
     [_progressLayer setNone];
     _progressLayer.hidden = true;
-    _blurredBackgroundLayer.hidden = false;
+    _blurredBackgroundLayer.hidden = _blurless;
 }
 
 - (void)setPlay
@@ -886,7 +893,7 @@ typedef enum {
     [_contentLayer setPlay];
     [_progressLayer setNone];
     _progressLayer.hidden = true;
-    _blurredBackgroundLayer.hidden = false;
+    _blurredBackgroundLayer.hidden = _blurless;
 }
 
 - (void)setPlayMedia
@@ -894,7 +901,7 @@ typedef enum {
     [_contentLayer setPlayMedia];
     [_progressLayer setNone];
     _progressLayer.hidden = true;
-    _blurredBackgroundLayer.hidden = false;
+    _blurredBackgroundLayer.hidden = _blurless;
 }
 
 - (void)setPauseMedia
@@ -902,7 +909,7 @@ typedef enum {
     [_contentLayer setPauseMedia];
     [_progressLayer setNone];
     _progressLayer.hidden = true;
-    _blurredBackgroundLayer.hidden = false;
+    _blurredBackgroundLayer.hidden = _blurless;
 }
 
 - (void)setSecret:(bool)isViewed
@@ -910,7 +917,7 @@ typedef enum {
     [_contentLayer setSecret:isViewed];
     [_progressLayer setNone];
     _progressLayer.hidden = true;
-    _blurredBackgroundLayer.hidden = false;
+    _blurredBackgroundLayer.hidden = _blurless;
 }
 
 - (void)setNone
@@ -918,7 +925,7 @@ typedef enum {
     [_contentLayer setNone];
     [_progressLayer setNone];
     _progressLayer.hidden = true;
-    _blurredBackgroundLayer.hidden = false;
+    _blurredBackgroundLayer.hidden = _blurless;
 }
 
 - (void)setProgress:(CGFloat)progress animated:(bool)animated
@@ -930,7 +937,7 @@ typedef enum {
 {
     if (progress > FLT_EPSILON)
         progress = MAX(progress, 0.027f);
-    _blurredBackgroundLayer.hidden = false;
+    _blurredBackgroundLayer.hidden = _blurless;
     _progressLayer.hidden = false;
     
     if (!animated)
@@ -953,7 +960,7 @@ typedef enum {
 {
     if (progress > FLT_EPSILON)
         progress = MAX(progress, 0.027f);
-    _blurredBackgroundLayer.hidden = false;
+    _blurredBackgroundLayer.hidden = _blurless;
     _progressLayer.hidden = false;
     
     _progress = progress;

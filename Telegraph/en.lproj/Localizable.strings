@@ -3,6 +3,7 @@
 "MESSAGE_NOTEXT" = "%1$@ sent you a message";
 "MESSAGE_PHOTO" = "%1$@ sent you a photo";
 "MESSAGE_VIDEO" = "%1$@ sent you a video";
+"MESSAGE_ROUND" = "%1$@ sent you a video message";
 "MESSAGE_CONTACT" = "%1$@ shared a contact with you";
 "MESSAGE_GEO" = "%1$@ sent you a map";
 "MESSAGE_DOC" = "%1$@ sent you a file";
@@ -20,6 +21,7 @@
 "CHAT_MESSAGE_NOTEXT" = "%1$@ sent a message to the group %2$@";
 "CHAT_MESSAGE_PHOTO" = "%1$@ sent a photo to the group %2$@";
 "CHAT_MESSAGE_VIDEO" = "%1$@ sent a video to the group %2$@";
+"CHAT_MESSAGE_ROUND" = "%1$@ sent a video message to the group %2$@";
 "CHAT_MESSAGE_CONTACT" = "%1$@ shared a contact in the group %2$@";
 "CHAT_MESSAGE_GEO" = "%1$@ sent a map to the group %2$@";
 "CHAT_MESSAGE_DOC" = "%1$@ sent a file to the group %2$@";
@@ -51,6 +53,7 @@
 "CHANNEL_MESSAGE_NOTEXT" = "%1$@ posted a message";
 "CHANNEL_MESSAGE_PHOTO" = "%1$@ posted a photo";
 "CHANNEL_MESSAGE_VIDEO" = "%1$@ posted a video";
+"CHANNEL_MESSAGE_ROUND" = "%1$@ posted a video message";
 "CHANNEL_MESSAGE_DOC" = "%1$@ posted a document";
 "CHANNEL_MESSAGE_STICKER" = "%1$@ posted a %2$@sticker";
 "CHANNEL_MESSAGE_AUDIO" = "%1$@ posted a voice message";
@@ -63,6 +66,7 @@
 "PINNED_NOTEXT" = "%1$@ pinned a message";
 "PINNED_PHOTO" = "%1$@ pinned a photo";
 "PINNED_VIDEO" = "%1$@ pinned a video";
+"PINNED_ROUND" = "%1$@ pinned a video message";
 "PINNED_DOC" = "%1$@ pinned a file";
 "PINNED_STICKER" = "%1$@ pinned a %2$@sticker";
 "PINNED_AUDIO" = "%1$@ pinned a voice message";
@@ -104,6 +108,8 @@
 "State.connecting" = "connecting";
 "State.updating" = "updating";
 "State.Connecting" = "Connecting...";
+"State.ConnectingToProxy" = "Connecting to Proxy...";
+"State.ConnectingToProxyInfo" = "tap here for settings";
 "State.Updating" = "Updating...";
 "State.WaitingForNetwork" = "Waiting for network";
 
@@ -158,14 +164,19 @@
 "Time.YesterdayAt" = "yesterday at %@";
 
 "LastSeen.JustNow" = "last seen just now";
+"LastSeen.MinutesAgo_0" = "last seen %@ minutes ago"; //three to ten
 "LastSeen.MinutesAgo_1" = "last seen 1 minute ago"; //one
 "LastSeen.MinutesAgo_2" = "last seen 2 minutes ago"; //two
 "LastSeen.MinutesAgo_3_10" = "last seen %@ minutes ago"; //three to ten
+"LastSeen.MinutesAgo_many" = "last seen %@ minutes ago"; // more than ten
 "LastSeen.MinutesAgo_any" = "last seen %@ minutes ago"; // more than ten
+"LastSeen.HoursAgo_0" = "last seen %@ hours ago";
 "LastSeen.HoursAgo_1" = "last seen 1 hour ago";
 "LastSeen.HoursAgo_2" = "last seen 2 hours ago";
 "LastSeen.HoursAgo_3_10" = "last seen %@ hours ago";
 "LastSeen.HoursAgo_any" = "last seen %@ hours ago";
+"LastSeen.HoursAgo_many" = "last seen %@ hours ago";
+"LastSeen.HoursAgo_0" = "last seen %@ hours ago";
 "LastSeen.TodayAt" = "last seen today at %@";
 "LastSeen.YesterdayAt" = "last seen yesterday at %@";
 "LastSeen.AtWeekday" = "last seen %@";
@@ -266,6 +277,7 @@
 "DialogList.SingleRecordingAudioSuffix" = "%@ is recording audio";
 "DialogList.SingleUploadingPhotoSuffix" = "%@ is sending photo";
 "DialogList.SingleUploadingVideoSuffix" = "%@ is sending video";
+"DialogList.SingleRecordingVideoMessageSuffix" = "%@ is recording video";
 "DialogList.SingleUploadingFileSuffix" = "%@ is sending file";
 "DialogList.MultipleTypingSuffix" = "%d are typing";
 "DialogList.Typing" = "typing";
@@ -364,20 +376,26 @@
 "Conversation.ContextMenuForward" = "Forward";
 "Conversation.ContextMenuMore" = "More...";
 
+"Conversation.StatusMembers_0" = "%@ members";
 "Conversation.StatusMembers_1" = "1 member";
 "Conversation.StatusMembers_2" = "2 members";
 "Conversation.StatusMembers_3_10" = "%@ members";
+"Conversation.StatusMembers_many" = "%@ members";
 "Conversation.StatusMembers_any" = "%@ members";
 
+"Conversation.StatusRecipients_0" = "%@ recipients";
 "Conversation.StatusRecipients_1" = "1 recipient";
 "Conversation.StatusRecipients_2" = "2 recipients";
 "Conversation.StatusRecipients_3_10" = "%@ recipients";
+"Conversation.StatusRecipients_many" = "%@ recipients";
 "Conversation.StatusRecipients_any" = "%@ recipients";
 
 "Conversation.StatusOnline_1" = "1 online";
 "Conversation.StatusOnline_2" = "2 online";
 "Conversation.StatusOnline_3_10" = "%@ online";
 "Conversation.StatusOnline_any" = "%@ online";
+"Conversation.StatusOnline_many" = "%@ online";
+"Conversation.StatusOnline_0" = "%@ online";
 
 "Conversation.UnreadMessages" = "Unread Messages";
 "Conversation.InfoGroup" = "Group";
@@ -392,8 +410,10 @@
 "Notification.ChangedUserPhoto" = "%@ added a new profile photo";
 "Notification.RemovedUserPhoto" = "%@ removed profile photo";
 "Notification.JoinedChat" = "%@ joined the group";
+"Notification.JoinedChannel" = "%@ joined the channel";
 "Notification.Invited" = "%@ invited %@";
 "Notification.LeftChat" = "%@ left the group";
+"Notification.LeftChannel" = "%@ left the channel";
 "Notification.Kicked" = "%@ removed %@";
 "Notification.CreatedChat" = "%@ created a group";
 "Notification.CreatedChannel" = "Channel created";
@@ -547,6 +567,8 @@
 "GroupInfo.ParticipantCount_2" = "2 MEMBERS";
 "GroupInfo.ParticipantCount_3_10" = "%@ MEMBERS";
 "GroupInfo.ParticipantCount_any" = "%@ MEMBERS";
+"GroupInfo.ParticipantCount_many" = "%@ MEMBERS";
+"GroupInfo.ParticipantCount_0" = "%@ MEMBERS";
 "GroupInfo.AddParticipant" = "Add Member";
 "GroupInfo.AddParticipantTitle" = "Contacts";
 "GroupInfo.AddParticipantConfirmation" = "Add %@ to the group?";
@@ -722,56 +744,81 @@
 "MessageTimer.Seconds_2" = "%@ seconds";
 "MessageTimer.Seconds_3_10" = "%@ seconds";
 "MessageTimer.Seconds_any" = "%@ seconds";
+"MessageTimer.Seconds_many" = "%@ seconds";
+"MessageTimer.Seconds_0" = "%@ seconds";
 "MessageTimer.Minutes_1" = "%@ minute";
 "MessageTimer.Minutes_2" = "%@ minutes";
 "MessageTimer.Minutes_3_10" = "%@ minutes";
 "MessageTimer.Minutes_any" = "%@ minutes";
+"MessageTimer.Minutes_many" = "%@ minutes";
+"MessageTimer.Minutes_0" = "%@ minutes";
 "MessageTimer.Hours_1" = "%@ hour";
 "MessageTimer.Hours_2" = "%@ hours";
 "MessageTimer.Hours_3_10" = "%@ hours";
 "MessageTimer.Hours_any" = "%@ hours";
+"MessageTimer.Hours_many" = "%@ hours";
+"MessageTimer.Hours_0" = "%@ hours";
 "MessageTimer.Days_1" = "%@ day";
 "MessageTimer.Days_2" = "%@ days";
 "MessageTimer.Days_3_10" = "%@ days";
 "MessageTimer.Days_any" = "%@ days";
+"MessageTimer.Days_many" = "%@ days";
+"MessageTimer.Days_0" = "%@ days";
 "MessageTimer.Weeks_1" = "%@ week";
 "MessageTimer.Weeks_2" = "%@ weeks";
 "MessageTimer.Weeks_3_10" = "%@ weeks";
 "MessageTimer.Weeks_any" = "%@ weeks";
+"MessageTimer.Weeks_many" = "%@ weeks";
+"MessageTimer.Weeks_0" = "%@ weeks";
 "MessageTimer.Months_1" = "%@ month";
 "MessageTimer.Months_2" = "%@ months";
 "MessageTimer.Months_3_10" = "%@ months";
 "MessageTimer.Months_any" = "%@ months";
+"MessageTimer.Months_many" = "%@ months";
+"MessageTimer.Months_0" = "%@ months";
 "MessageTimer.Years_1" = "%@ year";
 "MessageTimer.Years_2" = "%@ years";
 "MessageTimer.Years_3_10" = "%@ years";
 "MessageTimer.Years_any" = "%@ years";
+"MessageTimer.Years_many" = "%@ years";
+"MessageTimer.Years_0" = "%@ years";
 
 "MessageTimer.ShortSeconds_1" = "%@s";
 "MessageTimer.ShortSeconds_2" = "%@s";
 "MessageTimer.ShortSeconds_3_10" = "%@s";
 "MessageTimer.ShortSeconds_any" = "%@s";
+"MessageTimer.ShortSeconds_many" = "%@s";
+"MessageTimer.ShortSeconds_0" = "%@s";
 "MessageTimer.ShortMinutes_1" = "%@m";
 "MessageTimer.ShortMinutes_2" = "%@m";
 "MessageTimer.ShortMinutes_3_10" = "%@m";
 "MessageTimer.ShortMinutes_any" = "%@m";
+"MessageTimer.ShortMinutes_many" = "%@m";
+"MessageTimer.ShortMinutes_0" = "%@m";
 "MessageTimer.ShortHours_1" = "%@h";
 "MessageTimer.ShortHours_2" = "%@h";
 "MessageTimer.ShortHours_3_10" = "%@h";
 "MessageTimer.ShortHours_any" = "%@h";
+"MessageTimer.ShortHours_many" = "%@h";
+"MessageTimer.ShortHours_0" = "%@h";
 "MessageTimer.ShortDays_1" = "%@d";
 "MessageTimer.ShortDays_2" = "%@d";
 "MessageTimer.ShortDays_3_10" = "%@d";
 "MessageTimer.ShortDays_any" = "%@d";
+"MessageTimer.ShortDays_many" = "%@d";
+"MessageTimer.ShortDays_0" = "%@d";
 "MessageTimer.ShortWeeks_1" = "%@w";
 "MessageTimer.ShortWeeks_2" = "%@w";
 "MessageTimer.ShortWeeks_3_10" = "%@w";
 "MessageTimer.ShortWeeks_any" = "%@w";
+"MessageTimer.ShortWeeks_many" = "%@w";
+"MessageTimer.ShortWeeks_0" = "%@w";
 
 "Activity.UploadingPhoto" = "sending photo";
 "Activity.UploadingVideo" = "sending video";
 "Activity.UploadingDocument" = "sending file";
 "Activity.RecordingAudio" = "recording audio";
+"Activity.RecordingVideoMessage" = "recording video";
 "Activity.Location" = "picking location";
 
 "Service.NetworkConfigurationUpdatedMessage" = "Connection settings updated successfully.";
@@ -805,6 +852,8 @@
 "UserCount_2" = "2 users";
 "UserCount_3_10" = "%@ users";
 "UserCount_any" = "%@ users";
+"UserCount_many" = "%@ users";
+"UserCount_0" = "%@ users";
 
 "PrivacySettings.Title" = "Privacy and Security";
 
@@ -844,6 +893,8 @@
 "PrivacyLastSeenSettings.AddUsers_2" = "Add 2 users to this list?";
 "PrivacyLastSeenSettings.AddUsers_3_10" = "Add %@ users to this list?";
 "PrivacyLastSeenSettings.AddUsers_any" = "Add %@ users to this list?";
+"PrivacyLastSeenSettings.AddUsers_many" = "Add %@ users to this list?";
+"PrivacyLastSeenSettings.AddUsers_0" = "Add %@ users to this list?";
 
 "PrivacySettings.FloodControlError" = "Sorry, too many requests. Unable to change privacy settings now, please wait.";
 
@@ -894,7 +945,7 @@
 "Camera.FlashAuto" = "Auto";
 "Camera.Retake" = "Retake";
 
-"Settings.PhoneNumber" = "Phone Number";
+"Settings.PhoneNumber" = "Change Number";
 
 "PhoneNumberHelp.Help" = "You can change your Telegram number here. Your account and all your cloud data — messages, media, contacts, etc. will be moved to the new number.\n\n**Important:** all your Telegram contacts will get your **new number** added to their address book, provided they had your old number and you haven't blocked them in Telegram.";
 "PhoneNumberHelp.Alert" = "All your Telegram contacts will get your new number added to their address book, provided they had your old number and you haven't blocked them in Telegram.";
@@ -924,12 +975,16 @@
 "QuickSend.Photos_2" = "Send 2 Photos";
 "QuickSend.Photos_3_10" = "Send %@ Photos";
 "QuickSend.Photos_any" = "Send %@ Photos";
+"QuickSend.Photos_many" = "Send %@ Photos";
+"QuickSend.Photos_0" = "Send %@ Photos";
 
 "Share.Title" = "Share";
 "Forward.ConfirmMultipleFiles_1" = "Send 1 file to {target}?";
 "Forward.ConfirmMultipleFiles_2" = "Send 2 files to {target}?";
 "Forward.ConfirmMultipleFiles_3_10" = "Send %@ files to {target}?";
 "Forward.ConfirmMultipleFiles_any" = "Send %@ files to {target}?";
+"Forward.ConfirmMultipleFiles_many" = "Send %@ files to {target}?";
+"Forward.ConfirmMultipleFiles_0" = "Send %@ files to {target}?";
 
 "PrivacySettings.TouchIdTitle" = "TouchID";
 "PrivacySettings.TouchIdEnable" = "Enable";
@@ -953,21 +1008,29 @@
 "SharedMedia.Photo_2" = "2 photos";
 "SharedMedia.Photo_3_10" = "%@ photos";
 "SharedMedia.Photo_any" = "%@ photos";
+"SharedMedia.Photo_many" = "%@ photos";
+"SharedMedia.Photo_0" = "%@ photos";
 
 "SharedMedia.Video_1" = "1 video";
 "SharedMedia.Video_2" = "2 videos";
 "SharedMedia.Video_3_10" = "%@ videos";
 "SharedMedia.Video_any" = "%@ videos";
+"SharedMedia.Video_many" = "%@ videos";
+"SharedMedia.Video_0" = "%@ videos";
 
 "SharedMedia.File_1" = "1 file";
 "SharedMedia.File_2" = "2 files";
 "SharedMedia.File_3_10" = "%@ files";
 "SharedMedia.File_any" = "%@ files";
+"SharedMedia.File_many" = "%@ files";
+"SharedMedia.File_0" = "%@ files";
 
 "SharedMedia.Generic_1" = "1 media file";
 "SharedMedia.Generic_2" = "2 media files";
 "SharedMedia.Generic_3_10" = "%@ media files";
 "SharedMedia.Generic_any" = "%@ media files";
+"SharedMedia.Generic_many" = "%@ media files";
+"SharedMedia.Generic_0" = "%@ media files";
 
 "FileSize.B" = "%@ B";
 "FileSize.KB" = "%@ KB";
@@ -976,66 +1039,80 @@
 
 "DownloadingStatus" = "Downloading %@ of %@";
 
-"Time.MonthOfYear_1" = "January %@";
-"Time.MonthOfYear_2" = "February %@";
-"Time.MonthOfYear_3" = "March %@";
-"Time.MonthOfYear_4" = "April %@";
-"Time.MonthOfYear_5" = "May %@";
-"Time.MonthOfYear_6" = "June %@";
-"Time.MonthOfYear_7" = "July %@";
-"Time.MonthOfYear_8" = "August %@";
-"Time.MonthOfYear_9" = "September %@";
-"Time.MonthOfYear_10" = "October %@";
-"Time.MonthOfYear_11" = "November %@";
-"Time.MonthOfYear_12" = "December %@";
+"Time.MonthOfYear_m1" = "January %@";
+"Time.MonthOfYear_m2" = "February %@";
+"Time.MonthOfYear_m3" = "March %@";
+"Time.MonthOfYear_m4" = "April %@";
+"Time.MonthOfYear_m5" = "May %@";
+"Time.MonthOfYear_m6" = "June %@";
+"Time.MonthOfYear_m7" = "July %@";
+"Time.MonthOfYear_m8" = "August %@";
+"Time.MonthOfYear_m9" = "September %@";
+"Time.MonthOfYear_m10" = "October %@";
+"Time.MonthOfYear_m11" = "November %@";
+"Time.MonthOfYear_m12" = "December %@";
 
-"Time.PreciseDate_1" = "Jan %1$@, %2$@ at %3$@";
-"Time.PreciseDate_2" = "Feb %1$@, %2$@ at %3$@";
-"Time.PreciseDate_3" = "Mar %1$@, %2$@ at %3$@";
-"Time.PreciseDate_4" = "Apr %1$@, %2$@ at %3$@";
-"Time.PreciseDate_5" = "May %1$@, %2$@ at %3$@";
-"Time.PreciseDate_6" = "Jun %1$@, %2$@ at %3$@";
-"Time.PreciseDate_7" = "Jul %1$@, %2$@ at %3$@";
-"Time.PreciseDate_8" = "Aug %1$@, %2$@ at %3$@";
-"Time.PreciseDate_9" = "Sep %1$@, %2$@ at %3$@";
-"Time.PreciseDate_10" = "Oct %1$@, %2$@ at %3$@";
-"Time.PreciseDate_11" = "Nov %1$@, %2$@ at %3$@";
-"Time.PreciseDate_12" = "Dec %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m1" = "Jan %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m2" = "Feb %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m3" = "Mar %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m4" = "Apr %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m5" = "May %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m6" = "Jun %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m7" = "Jul %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m8" = "Aug %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m9" = "Sep %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m10" = "Oct %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m11" = "Nov %1$@, %2$@ at %3$@";
+"Time.PreciseDate_m12" = "Dec %1$@, %2$@ at %3$@";
 
 "MuteFor.Minutes_1" = "Mute for 1 minute";
 "MuteFor.Minutes_2" = "Mute for 2 minutes";
 "MuteFor.Minutes_3_10" = "Mute for %@ minutes";
 "MuteFor.Minutes_any" = "Mute for %@ minutes";
+"MuteFor.Minutes_many" = "Mute for %@ minutes";
+"MuteFor.Minutes_0" = "Mute for %@ minutes";
 
 "MuteFor.Hours_1" = "Mute for 1 hour";
 "MuteFor.Hours_2" = "Mute for 2 hours";
 "MuteFor.Hours_3_10" = "Mute for %@ hours";
 "MuteFor.Hours_any" = "Mute for %@ hours";
+"MuteFor.Hours_many" = "Mute for %@ hours";
+"MuteFor.Hours_0" = "Mute for %@ hours";
 
 "MuteFor.Days_1" = "Mute for 1 day";
 "MuteFor.Days_2" = "Mute for 2 days";
 "MuteFor.Days_3_10" = "Mute for %@ days";
 "MuteFor.Days_any" = "Mute for %@ days";
+"MuteFor.Days_many" = "Mute for %@ days";
+"MuteFor.Days_0" = "Mute for %@ days";
 
 "MuteFor.Weeks_1" = "Mute for 1 week";
 "MuteFor.Weeks_2" = "Mute for 2 weeks";
 "MuteFor.Weeks_3_10" = "Mute for %@ weeks";
 "MuteFor.Weeks_any" = "Mute for %@ weeks";
+"MuteFor.Weeks_many" = "Mute for %@ weeks";
+"MuteFor.Weeks_0" = "Mute for %@ weeks";
 
 "MuteExpires.Minutes_1" = "in 1 minute";
 "MuteExpires.Minutes_2" = "in 2 minutes";
 "MuteExpires.Minutes_3_10" = "in %@ minutes";
 "MuteExpires.Minutes_any" = "in %@ minutes";
+"MuteExpires.Minutes_many" = "in %@ minutes";
+"MuteExpires.Minutes_0" = "in %@ minutes";
 
 "MuteExpires.Hours_1" = "in 1 hour";
 "MuteExpires.Hours_2" = "in 2 hours";
 "MuteExpires.Hours_3_10" = "in %@ hours";
 "MuteExpires.Hours_any" = "in %@ hours";
+"MuteExpires.Hours_many" = "in %@ hours";
+"MuteExpires.Hours_0" = "in %@ hours";
 
 "MuteExpires.Days_1" = "in 1 day";
 "MuteExpires.Days_2" = "in 2 days";
 "MuteExpires.Days_3_10" = "in %@ days";
 "MuteExpires.Days_any" = "in %@ days";
+"MuteExpires.Days_many" = "in %@ days";
+"MuteExpires.Days_0" = "in %@ days";
 
 "SharedMedia.EmptyTitle" = "No media files yet";
 "SharedMedia.EmptyText" = "Share photos and videos in this chat\n — or this paperclip stays unhappy.";
@@ -1056,11 +1133,15 @@
 "SharedMedia.ItemsSelected_2" = "2 Selected";
 "SharedMedia.ItemsSelected_3_10" = "%@ Selected";
 "SharedMedia.ItemsSelected_any" = "%@ Selected";
+"SharedMedia.ItemsSelected_many" = "%@ Selected";
+"SharedMedia.ItemsSelected_0" = "%@ Selected";
 
 "SharedMedia.DeleteItemsConfirmation_1" = "Delete media file?";
 "SharedMedia.DeleteItemsConfirmation_2" = "Delete 2 media files?";
 "SharedMedia.DeleteItemsConfirmation_3_10" = "Delete %@ media files?";
 "SharedMedia.DeleteItemsConfirmation_any" = "Delete %@ media files?";
+"SharedMedia.DeleteItemsConfirmation_many" = "Delete %@ media files?";
+"SharedMedia.DeleteItemsConfirmation_0" = "Delete %@ media files?";
 
 "PrivacySettings.Passcode" = "Passcode Lock";
 "PasscodeSettings.Title" = "Passcode Lock";
@@ -1097,6 +1178,8 @@
 "PasscodeSettings.FailedAttempts_2" = "2 Failed Passcode Attempts";
 "PasscodeSettings.FailedAttempts_3_10" = "%@ Failed Passcode Attempts";
 "PasscodeSettings.FailedAttempts_any" = "%@ Failed Passcode Attempt";
+"PasscodeSettings.FailedAttempts_many" = "%@ Failed Passcode Attempts";
+"PasscodeSettings.FailedAttempts_0" = "%@ Failed Passcode Attempts";
 "PasscodeSettings.TryAgainIn1Minute" = "Try again in 1 minute";
 
 "AccessDenied.Title" = "Please Allow Access";
@@ -1140,52 +1223,72 @@
 "ForwardedMessages_2" = "2 forwarded messages";
 "ForwardedMessages_3_10" = "%@ forwarded messages";
 "ForwardedMessages_any" = "%@ forwarded messages";
+"ForwardedMessages_many" = "%@ forwarded messages";
+"ForwardedMessages_0" = "%@ forwarded messages";
 
 "ForwardedFiles_1" = "Forwarded file";
 "ForwardedFiles_2" = "2 forwarded files";
 "ForwardedFiles_3_10" = "%@ forwarded files";
 "ForwardedFiles_any" = "%@ forwarded files";
+"ForwardedFiles_many" = "%@ forwarded files";
+"ForwardedFiles_0" = "%@ forwarded files";
 
 "ForwardedStickers_1" = "Forwarded sticker";
 "ForwardedStickers_2" = "2 forwarded stickers";
 "ForwardedStickers_3_10" = "%@ forwarded stickers";
 "ForwardedStickers_any" = "%@ forwarded stickers";
+"ForwardedStickers_many" = "%@ forwarded stickers";
+"ForwardedStickers_0" = "%@ forwarded stickers";
 
 "ForwardedPhotos_1" = "Forwarded photo";
 "ForwardedPhotos_2" = "2 forwarded photos";
 "ForwardedPhotos_3_10" = "%@ forwarded photos";
 "ForwardedPhotos_any" = "%@ forwarded photos";
+"ForwardedPhotos_many" = "%@ forwarded photos";
+"ForwardedPhotos_0" = "%@ forwarded photos";
 
 "ForwardedVideos_1" = "Forwarded video";
 "ForwardedVideos_2" = "2 forwarded videos";
 "ForwardedVideos_3_10" = "%@ forwarded videos";
 "ForwardedVideos_any" = "%@ forwarded videos";
+"ForwardedVideos_many" = "%@ forwarded videos";
+"ForwardedVideos_0" = "%@ forwarded videos";
 
 "ForwardedAudios_1" = "Forwarded audio";
 "ForwardedAudios_2" = "2 forwarded audios";
 "ForwardedAudios_3_10" = "%@ forwarded audios";
 "ForwardedAudios_any" = "%@ forwarded audios";
+"ForwardedAudios_many" = "%@ forwarded audios";
+"ForwardedAudios_0" = "%@ forwarded audios";
 
 "ForwardedLocations_1" = "Forwarded location";
 "ForwardedLocations_2" = "2 forwarded locations";
 "ForwardedLocations_3_10" = "%@ forwarded locations";
 "ForwardedLocations_any" = "%@ forwarded locations";
+"ForwardedLocations_many" = "%@ forwarded locations";
+"ForwardedLocations_0" = "%@ forwarded locations";
 
 "ForwardedGifs_1" = "Forwarded GIF";
 "ForwardedGifs_2" = "2 forwarded GIFs";
 "ForwardedGifs_3_10" = "%@ forwarded GIFs";
 "ForwardedGifs_any" = "%@ forwarded GIFs";
+"ForwardedGifs_many" = "%@ forwarded GIFs";
+"ForwardedGifs_0" = "%@ forwarded GIFs";
 
 "ForwardedContacts_1" = "Forwarded contact";
 "ForwardedContacts_2" = "2 forwarded contacts";
 "ForwardedContacts_3_10" = "%@ forwarded contacts";
 "ForwardedContacts_any" = "%@ forwarded contacts";
+"ForwardedContacts_many" = "%@ forwarded contacts";
+"ForwardedContacts_0" = "%@ forwarded contacts";
 
 "ForwardedAuthors2" = "%@, %@";
 "ForwardedAuthorsOthers_1" = "%@ and 1 other";
 "ForwardedAuthorsOthers_2" = "%@ and 2 others";
 "ForwardedAuthorsOthers_3_10" = "%@ and %@ others";
 "ForwardedAuthorsOthers_any" = "%@ and %@ others";
+"ForwardedAuthorsOthers_many" = "%@ and %@ others";
+"ForwardedAuthorsOthers_0" = "%@ and %@ others";
 
 "PrivacySettings.TwoStepAuth" = "Two-Step Verification";
 "TwoStepAuth.Title" = "Two-Step Verification";
@@ -1279,9 +1382,18 @@
 "Map.Unknown" = "Unknown location";
 
 "Map.DistanceAway" = "%@ away";
+"Map.ETAMinutes_0" = "%@ min";
+"Map.ETAMinutes_1" = "%@ min";
+"Map.ETAMinutes_2" = "%@ min";
+"Map.ETAMinutes_3_10" = "%@ min";
 "Map.ETAMinutes_any" = "%@ min";
+"Map.ETAMinutes_many" = "%@ min";
+"Map.ETAMinutes_0" = "%@ min";
 "Map.ETAHours_1" = "%@ h";
+"Map.ETAHours_2" = "%@ h";
+"Map.ETAHours_3_10" = "%@ h";
 "Map.ETAHours_any" = "%@ h";
+"Map.ETAHours_many" = "%@ h";
 
 "GoogleDrive.Title" = "Google Drive";
 "GoogleDrive.Logout" = "Log Out";
@@ -1356,11 +1468,15 @@
 "StickerPack.StickerCount_2" = "2 stickers";
 "StickerPack.StickerCount_3_10" = "%@ stickers";
 "StickerPack.StickerCount_any" = "%@ stickers";
+"StickerPack.StickerCount_many" = "%@ stickers";
+"StickerPack.StickerCount_0" = "%@ stickers";
 
 "StickerPack.AddStickerCount_1" = "Add 1 Sticker";
 "StickerPack.AddStickerCount_2" = "Add 2 Stickers";
 "StickerPack.AddStickerCount_3_10" = "Add %@ Stickers";
 "StickerPack.AddStickerCount_any" = "Add %@ Stickers";
+"StickerPack.AddStickerCount_many" = "Add %@ Stickers";
+"StickerPack.AddStickerCount_0" = "Add %@ Stickers";
 
 "StickerPack.ShareStickers" = "Share Stickers";
 
@@ -1418,6 +1534,8 @@
 "SharedMedia.Link_2" = "2 links";
 "SharedMedia.Link_3_10" = "%@ links";
 "SharedMedia.Link_any" = "%@ links";
+"SharedMedia.Link_many" = "%@ links";
+"SharedMedia.Link_0" = "%@ links";
 
 "Compose.NewChannelButton" = "New Channel";
 "Channels.Title" = "Channels";
@@ -1486,6 +1604,8 @@
 "Channel.NotificationComments_2" = "2 comments";
 "Channel.NotificationComments_3_10" = "%@ comments";
 "Channel.NotificationComments_any" = "%@ comments";
+"Channel.NotificationComments_many" = "%@ comments";
+"Channel.NotificationComments_0" = "%@ comments";
 "Channel.NotificationLoading" = "Loading...";
 
 "Conversation.InputTextDisabledPlaceholder" = "Comments are disabled";
@@ -1515,16 +1635,16 @@
 "Channel.Info.Description" = "description";
 
 "Channel.Info.Management" = "Admins";
-"Channel.Info.BlackList" = "Blacklist";
+"Channel.Info.Banned" = "Banned";
 "Channel.Info.Members" = "Members";
 
 "Channel.Members.AddMembers" = "Add Members";
 "Channel.Members.AddMembersHelp" = "Only channel admins can see this list.";
 "Channel.Members.Title" = "Members";
-"Channel.BlackList.Title" = "Blacklist";
+"Channel.BlackList.Title" = "Banned";
 "Channel.Management.Title" = "Admins";
 "Channel.Management.LabelCreator" = "Creator";
-"Channel.Management.LabelModerator" = "Moderator";
+"Channel.Management.LabelModerator" = "Admin";
 "Channel.Management.LabelEditor" = "Admin";
 
 "Channel.Management.AddModerator" = "Add Admin";
@@ -1541,13 +1661,13 @@
 
 "Channel.Moderator.AccessLevelHeader" = "ACCESS LEVEL";
 "Channel.Moderator.AccessLevelEditor" = "Editor";
-"Channel.Moderator.AccessLevelModerator" = "Moderator";
+"Channel.Moderator.AccessLevelModerator" = "Admin";
 
 "Channel.Moderator.AccessLevelModeratorHelp" = "Moderators can remove comments by users and manage the channel's blacklist.\n\nModerators can't change the channel's name, link, photo and description.";
 "Channel.Moderator.AccessLevelEditorHelp" = "Editors can post as the channel, manage the blacklist and remove posts.\n\nEditors can't change the channel's name, link, photo and description.";
-"Channel.Moderator.AccessLevelRevoke" = "Dismiss Moderator";
+"Channel.Moderator.AccessLevelRevoke" = "Dismiss Admin";
 
-"Channel.Moderator.Title" = "Moderator";
+"Channel.Moderator.Title" = "Admin";
 
 "Notification.ChannelInviter" = "%@ invited you to this channel";
 "Notification.ChannelInviterSelf" = "You joined this channel";
@@ -1676,7 +1796,9 @@
 "Watch.UserInfo.Mute_2" = "Mute for 2 hours";
 "Watch.UserInfo.Mute_3_10" = "Mute for %@ hours";
 "Watch.UserInfo.Mute_any" = "Mute for %@ hours";
-"Watch.UserInfo.Mute" = "Mute";
+"Watch.UserInfo.Mute_many" = "Mute for %@ hours";
+"Watch.UserInfo.Mute_0" = "Mute for %@ hours";
+"Watch.UserInfo.MuteTitle" = "Mute";
 "Watch.UserInfo.Unmute" = "Unmute";
 
 "Watch.GroupInfo.Title" = "Group Info";
@@ -1720,10 +1842,14 @@
 "Watch.LastSeen.MinutesAgo_2" = "2 minutes ago";
 "Watch.LastSeen.MinutesAgo_3_10" = "%@ minutes ago";
 "Watch.LastSeen.MinutesAgo_any" = "%@ minutes ago";
+"Watch.LastSeen.MinutesAgo_many" = "%@ minutes ago";
+"Watch.LastSeen.MinutesAgo_0" = "%@ minutes ago";
 "Watch.LastSeen.HoursAgo_1" = "1 hour ago";
 "Watch.LastSeen.HoursAgo_2" = "2 hours ago";
 "Watch.LastSeen.HoursAgo_3_10" = "%@ hours ago";
 "Watch.LastSeen.HoursAgo_any" = "%@ hours ago";
+"Watch.LastSeen.HoursAgo_many" = "%@ hours ago";
+"Watch.LastSeen.HoursAgo_0" = "%@ hours ago";
 "Watch.LastSeen.TodayAt" = "today at %@";
 "Watch.LastSeen.YesterdayAt" = "yesterday at %@";
 "Watch.LastSeen.AtWeekday" = "%@";
@@ -1777,21 +1903,29 @@
 "AttachmentMenu.SendPhoto_2" = "Send 2 Photos";
 "AttachmentMenu.SendPhoto_3_10" = "Send %@ Photos";
 "AttachmentMenu.SendPhoto_any" = "Send %@ Photos";
+"AttachmentMenu.SendPhoto_many" = "Send %@ Photos";
+"AttachmentMenu.SendPhoto_0" = "Send %@ Photos";
 
 "AttachmentMenu.SendVideo_1" = "Send 1 Video";
 "AttachmentMenu.SendVideo_2" = "Send 2 Videos";
 "AttachmentMenu.SendVideo_3_10" = "Send %@ Videos";
 "AttachmentMenu.SendVideo_any" = "Send %@ Videos";
+"AttachmentMenu.SendVideo_many" = "Send %@ Videos";
+"AttachmentMenu.SendVideo_0" = "Send %@ Videos";
 
 "AttachmentMenu.SendGif_1" = "Send 1 GIF";
 "AttachmentMenu.SendGif_2" = "Send 2 GIFs";
 "AttachmentMenu.SendGif_3_10" = "Send %@ GIFs";
 "AttachmentMenu.SendGif_any" = "Send %@ GIFs";
+"AttachmentMenu.SendGif_many" = "Send %@ GIFs";
+"AttachmentMenu.SendGif_0" = "Send %@ GIFs";
 
 "AttachmentMenu.SendItem_1" = "Send 1 Item";
 "AttachmentMenu.SendItem_2" = "Send 2 Items";
 "AttachmentMenu.SendItem_3_10" = "Send %@ Items";
 "AttachmentMenu.SendItem_any" = "Send %@ Items";
+"AttachmentMenu.SendItem_many" = "Send %@ Items";
+"AttachmentMenu.SendItem_0" = "Send %@ Items";
 
 "AttachmentMenu.SendAsFile" = "Send as File";
 "AttachmentMenu.SendAsFiles" = "Send as Files";
@@ -1896,6 +2030,7 @@
 "Notification.PinnedTextMessage" = "%@ pinned \"%@\"";
 "Notification.PinnedPhotoMessage" = "%@ pinned a photo";
 "Notification.PinnedVideoMessage" = "%@ pinned a video";
+"Notification.PinnedRoundMessage" = "%@ pinned a video message";
 "Notification.PinnedAudioMessage" = "%@ pinned a voice message";
 "Notification.PinnedDocumentMessage" = "%@ pinned a file";
 "Notification.PinnedAnimationMessage" = "%@ pinned a GIF";
@@ -1964,13 +2099,15 @@
 "StickerPack.RemoveStickerCount_2" = "Remove 2 Stickers";
 "StickerPack.RemoveStickerCount_3_10" = "Remove %@ Stickers";
 "StickerPack.RemoveStickerCount_any" = "Remove %@ Stickers";
+"StickerPack.RemoveStickerCount_many" = "Remove %@ Stickers";
+"StickerPack.RemoveStickerCount_0" = "Remove %@ Stickers";
 
 "StickerPack.HideStickers" = "Hide Stickers";
 "StickerPack.ShowStickers" = "Show Stickers";
 
 "ShareMenu.ShareTo" = "Share to";
 "ShareMenu.SelectChats" = "Select chats";
-"ShareMenu.Comment" = "Write a comment...";
+"ShareMenu.Comment" = "Add a comment...";
 
 "MediaPicker.Videos" = "Videos";
 
@@ -2026,6 +2163,8 @@
 "Invitation.Members_2" = "2 members:";
 "Invitation.Members_3_10" = "%@ members:";
 "Invitation.Members_any" = "%@ members:";
+"Invitation.Members_many" = "%@ members:";
+"Invitation.Members_0" = "%@ members:";
 
 "StickerPacksSettings.ArchivedPacks" = "Archived Stickers";
 "StickerPacksSettings.ArchivedPacks.Info" = "You can have up to 200 sticker sets installed.\nUnused stickers are archived when you add more.";
@@ -2079,45 +2218,61 @@
 
 "Group.Username.RemoveExistingUsernamesInfo" = "Sorry, you have reserved too many public usernames.\nYou can revoke the link from one of your older groups or channels, or create a private entity instead.";
 
-"ServiceMessage.GameScoreExtended_1" = "{name} scored {score} in {game}";
-"ServiceMessage.GameScoreExtended_2" = "{name} scored {score} in {game}";
-"ServiceMessage.GameScoreExtended_3_10" = "{name} scored {score} in {game}";
-"ServiceMessage.GameScoreExtended_any" = "{name} scored {score} in {game}";
+"ServiceMessage.GameScoreExtended_1" = "{name} scored %@ in {game}";
+"ServiceMessage.GameScoreExtended_2" = "{name} scored %@ in {game}";
+"ServiceMessage.GameScoreExtended_3_10" = "{name} scored %@ in {game}";
+"ServiceMessage.GameScoreExtended_any" = "{name} scored %@ in {game}";
+"ServiceMessage.GameScoreExtended_many" = "{name} scored %@ in {game}";
+"ServiceMessage.GameScoreExtended_0" = "{name} scored %@ in {game}";
 
-"ServiceMessage.GameScoreSelfExtended_1" = "You scored {score} in {game}";
-"ServiceMessage.GameScoreSelfExtended_2" = "You scored {score} in {game}";
-"ServiceMessage.GameScoreSelfExtended_3_10" = "You scored {score} in {game}";
-"ServiceMessage.GameScoreSelfExtended_any" = "You scored {score} in {game}";
+"ServiceMessage.GameScoreSelfExtended_1" = "You scored %@ in {game}";
+"ServiceMessage.GameScoreSelfExtended_2" = "You scored %@ in {game}";
+"ServiceMessage.GameScoreSelfExtended_3_10" = "You scored %@ in {game}";
+"ServiceMessage.GameScoreSelfExtended_any" = "You scored %@ in {game}";
+"ServiceMessage.GameScoreSelfExtended_many" = "You scored %@ in {game}";
+"ServiceMessage.GameScoreSelfExtended_0" = "You scored %@ in {game}";
 
-"ServiceMessage.GameScoreSimple_1" = "{name} scored {score}";
-"ServiceMessage.GameScoreSimple_2" = "{name} scored {score}";
-"ServiceMessage.GameScoreSimple_3_10" = "{name} scored {score}";
-"ServiceMessage.GameScoreSimple_any" = "{name} scored {score}";
+"ServiceMessage.GameScoreSimple_1" = "{name} scored %@";
+"ServiceMessage.GameScoreSimple_2" = "{name} scored %@";
+"ServiceMessage.GameScoreSimple_3_10" = "{name} scored %@";
+"ServiceMessage.GameScoreSimple_any" = "{name} scored %@";
+"ServiceMessage.GameScoreSimple_many" = "{name} scored %@";
+"ServiceMessage.GameScoreSimple_0" = "{name} scored %@";
 
-"ServiceMessage.GameScoreSelfSimple_1" = "You scored {score}";
-"ServiceMessage.GameScoreSelfSimple_2" = "You scored {score}";
-"ServiceMessage.GameScoreSelfSimple_3_10" = "You scored {score}";
-"ServiceMessage.GameScoreSelfSimple_any" = "You scored {score}";
+"ServiceMessage.GameScoreSelfSimple_1" = "You scored %@";
+"ServiceMessage.GameScoreSelfSimple_2" = "You scored %@";
+"ServiceMessage.GameScoreSelfSimple_3_10" = "You scored %@";
+"ServiceMessage.GameScoreSelfSimple_any" = "You scored %@";
+"ServiceMessage.GameScoreSelfSimple_many" = "You scored %@";
+"ServiceMessage.GameScoreSelfSimple_0" = "You scored %@";
 
-"Notification.GameScoreExtended_1" = "scored {score} in {game}";
-"Notification.GameScoreExtended_2" = "scored {score} in {game}";
-"Notification.GameScoreExtended_3_10" = "scored {score} in {game}";
-"Notification.GameScoreExtended_any" = "scored {score} in {game}";
+"Notification.GameScoreExtended_1" = "scored %@ in {game}";
+"Notification.GameScoreExtended_2" = "scored %@ in {game}";
+"Notification.GameScoreExtended_3_10" = "scored %@ in {game}";
+"Notification.GameScoreExtended_any" = "scored %@ in {game}";
+"Notification.GameScoreExtended_many" = "scored %@ in {game}";
+"Notification.GameScoreExtended_0" = "scored %@ in {game}";
 
-"Notification.GameScoreSelfExtended_1" = "scored {score} in {game}";
-"Notification.GameScoreSelfExtended_2" = "scored {score} in {game}";
-"Notification.GameScoreSelfExtended_3_10" = "scored {score} in {game}";
-"Notification.GameScoreSelfExtended_any" = "scored {score} in {game}";
+"Notification.GameScoreSelfExtended_1" = "scored %@ in {game}";
+"Notification.GameScoreSelfExtended_2" = "scored %@ in {game}";
+"Notification.GameScoreSelfExtended_3_10" = "scored %@ in {game}";
+"Notification.GameScoreSelfExtended_any" = "scored %@ in {game}";
+"Notification.GameScoreSelfExtended_many" = "scored %@ in {game}";
+"Notification.GameScoreSelfExtended_0" = "scored %@ in {game}";
 
-"Notification.GameScoreSimple_1" = "scored {score}";
-"Notification.GameScoreSimple_2" = "scored {score}";
-"Notification.GameScoreSimple_3_10" = "scored {score}";
-"Notification.GameScoreSimple_any" = "scored {score}";
+"Notification.GameScoreSimple_1" = "scored %@";
+"Notification.GameScoreSimple_2" = "scored %@";
+"Notification.GameScoreSimple_3_10" = "scored %@";
+"Notification.GameScoreSimple_any" = "scored %@";
+"Notification.GameScoreSimple_many" = "scored %@";
+"Notification.GameScoreSimple_0" = "scored %@";
 
-"Notification.GameScoreSelfSimple_1" = "scored {score}";
-"Notification.GameScoreSelfSimple_2" = "scored {score}";
-"Notification.GameScoreSelfSimple_3_10" = "scored {score}";
-"Notification.GameScoreSelfSimple_any" = "scored {score}";
+"Notification.GameScoreSelfSimple_1" = "scored %@";
+"Notification.GameScoreSelfSimple_2" = "scored %@";
+"Notification.GameScoreSelfSimple_3_10" = "scored %@";
+"Notification.GameScoreSelfSimple_any" = "scored %@";
+"Notification.GameScoreSelfSimple_many" = "scored %@";
+"Notification.GameScoreSelfSimple_0" = "scored %@";
 
 "Stickers.Install" = "ADD";
 
@@ -2128,18 +2283,24 @@
 "StickerPack.MaskCount_2" = "2 masks";
 "StickerPack.MaskCount_3_10" = "%@ masks";
 "StickerPack.MaskCount_any" = "%@ masks";
+"StickerPack.MaskCount_many" = "%@ masks";
+"StickerPack.MaskCount_0" = "%@ masks";
 
 "StickerPack.Add" = "Add";
 "StickerPack.AddMaskCount_1" = "Add 1 Mask";
 "StickerPack.AddMaskCount_2" = "Add 2 Masks";
 "StickerPack.AddMaskCount_3_10" = "Add %@ Masks";
 "StickerPack.AddMaskCount_any" = "Add %@ Masks";
+"StickerPack.AddMaskCount_many" = "Add %@ Masks";
+"StickerPack.AddMaskCount_0" = "Add %@ Masks";
 
 "StickerPack.Remove" = "Remove";
 "StickerPack.RemoveMaskCount_1" = "Remove 1 Mask";
 "StickerPack.RemoveMaskCount_2" = "Remove 2 Masks";
 "StickerPack.RemoveMaskCount_3_10" = "Remove %@ Masks";
 "StickerPack.RemoveMaskCount_any" = "Remove %@ Masks";
+"StickerPack.RemoveMaskCount_many" = "Remove %@ Masks";
+"StickerPack.RemoveMaskCount_0" = "Remove %@ Masks";
 
 "Conversation.BotInteractiveUrlAlert" = "Allow %@ to pass your Telegram name and id (not your phone number) to pages you open with this bot?";
 "StickerPacksSettings.ArchivedMasks" = "Archived Masks";
@@ -2237,19 +2398,27 @@ Unused sets are archived when you add more.";
 "Call.Seconds_2" = "%@ seconds";
 "Call.Seconds_3_10" = "%@ seconds";
 "Call.Seconds_any" = "%@ seconds";
+"Call.Seconds_many" = "%@ seconds";
+"Call.Seconds_0" = "%@ seconds";
 "Call.Minutes_1" = "%@ minute";
 "Call.Minutes_2" = "%@ minutes";
 "Call.Minutes_3_10" = "%@ minutes";
 "Call.Minutes_any" = "%@ minutes";
+"Call.Minutes_many" = "%@ minutes";
+"Call.Minutes_0" = "%@ minutes";
 
 "Call.ShortSeconds_1" = "%@ sec";
 "Call.ShortSeconds_2" = "%@ sec";
 "Call.ShortSeconds_3_10" = "%@ sec";
 "Call.ShortSeconds_any" = "%@ sec";
+"Call.ShortSeconds_many" = "%@ sec";
+"Call.ShortSeconds_0" = "%@ sec";
 "Call.ShortMinutes_1" = "%@ min";
 "Call.ShortMinutes_2" = "%@ min";
 "Call.ShortMinutes_3_10" = "%@ min";
 "Call.ShortMinutes_any" = "%@ min";
+"Call.ShortMinutes_many" = "%@ min";
+"Call.ShortMinutes_0" = "%@ min";
 
 "Notification.CallTimeFormat" = "%1$@ (%2$@)"; // 1 - type, 2 - duration
 "Notification.CallOutgoing" = "Outgoing Call";
@@ -2356,22 +2525,22 @@ Unused sets are archived when you add more.";
 "Checkout.PayWithTouchId" = "Pay with Touch ID";
 "Checkout.EnterPassword" = "Enter Password";
 
-"Your card has expired" = "Your card has expired.";
+"Your_card_has_expired" = "Your card has expired.";
 
 /* Error when the card was declined by the credit card networks */
-"Your card was declined" = "Your card was declined.";
+"Your_card_was_declined" = "Your card was declined.";
 
 /* Error when the card's expiration month is not valid */
-"Your card's expiration month is invalid" = "You've entered an invalid expiration month.";
+"Your_cards_expiration_month_is_invalid" ="You've entered an invalid expiration month.";
 
 /* Error when the card's expiration year is not valid */
-"Your card's expiration year is invalid" = "You've entered an invalid expiration year.";
+"Your_cards_expiration_year_is_invalid" ="You've entered an invalid expiration year.";
 
 /* Error when the card number is not valid */
-"Your card's number is invalid" = "You've entered an invalid card number.";
+"Your_cards_number_is_invalid" = "You've entered an invalid card number.";
 
 /* Error when the card's CVC is not valid */
-"Your card's security code is invalid" = "You've entered an invalid security code.";
+"Your_cards_security_code_is_invalid" = "You've entered an invalid security code.";
 
 "MESSAGE_INVOICE" = "%1$@ sent you an invoice for %2$@";
 "CHAT_MESSAGE_INVOICE" = "%1$@ sent an invoice for %3$@ to the group %2$@";
@@ -2459,3 +2628,293 @@ Unused sets are archived when you add more.";
 "Call.RecordingDisabledMessage" = "Please end your call before recording a voice message.";
 
 "Call.EmojiDescription" = "If these emoji are the same on %@'s screen, this call is 100%% secure.";
+
+"Message.VideoMessage" = "Video Message";
+
+"Conversation.HoldForAudio" = "Hold to record audio. Tap to switch to video.";
+"Conversation.HoldForVideo" = "Hold to record video. Tap to switch to audio.";
+
+"UserInfo.TelegramCall" = "Telegram Call";
+"UserInfo.PhoneCall" = "Phone Call";
+
+"SharedMedia.CategoryMedia" = "Media";
+"SharedMedia.CategoryDocs" = "Docs";
+"SharedMedia.CategoryLinks" = "Links";
+"SharedMedia.CategoryOther" = "Audio";
+
+"AccessDenied.VideoMessageCamera" = "Telegram needs access to your camera to send video messages.\n\nPlease go to Settings > Privacy > Camera and set Telegram to ON.";
+"AccessDenied.VideoMessageMicrophone" = "Telegram needs access to your microphone to send video messages.\n\nPlease go to Settings > Privacy > Microphone and set Telegram to ON.";
+
+"ChatSettings.AutomaticVideoMessageDownload" = "AUTOMATIC VIDEO MESSAGE DOWNLOAD";
+
+"ForwardedVideoMessages_1" = "Forwarded video message";
+"ForwardedVideoMessages_2" = "2 forwarded video messages";
+"ForwardedVideoMessages_3_10" = "%@ forwarded video messages";
+"ForwardedVideoMessages_any" = "%@ forwarded video messages";
+"ForwardedVideoMessages_many" = "%@ forwarded video messages";
+"ForwardedVideoMessages_0" = "%@ forwarded video messages";
+
+"Conversation.DiscardVoiceMessageTitle" = "Discard Voice Message";
+"Conversation.DiscardVoiceMessageDescription" = "Are you sure you want to stop recording and discard\nyour voice message?";
+"Conversation.DiscardVoiceMessageAction" = "Discard";
+
+"Message.ForwardedMessageShort" = "Forwarded From\n%@";
+
+"Checkout.LiabilityAlertTitle" = "Warning";
+"Checkout.LiabilityAlert" = "Neither Telegram, nor %1$@ will have access to your credit card information. Credit card details will be handled only by the payment system, %2$@.\n\nPayments will go directly to the developer of %1$@. Telegram cannot provide any guarantees, so proceed at your own risk. In case of problems, please contact the developer of %1$@ or your bank.";
+
+"Settings.AppLanguage" = "Language";
+
+"InstantPage.AutoNightTheme" = "Auto-Night Theme";
+
+"Privacy.PaymentsTitle" = "PAYMENTS";
+"Privacy.PaymentsClearInfo" = "Clear payment & shipping info";
+"Privacy.PaymentsClearInfoHelp" = "You can delete your shipping info and instruct all payment providers to remove your saved credit cards. Note that Telegram never stores your credit card data.";
+"Privacy.PaymentsClear.PaymentInfo" = "Payment Info";
+"Privacy.PaymentsClear.ShippingInfo" = "Shipping Info";
+
+"Channel.Management.LabelRights_1" = "1 permission";
+"Channel.Management.LabelRights_2" = "2 permissions";
+"Channel.Management.LabelRights_3_10" = "%@ permissions";
+"Channel.Management.LabelRights_any" = "%@ permissions";
+"Channel.Management.LabelRights_many" = "%@ permissions";
+"Channel.Management.LabelRights_0" = "%@ permissions";
+
+"Channel.EditAdmin.PermissionsHeader" = "WHAT CAN THIS ADMIN DO?";
+"Channel.EditAdmin.PermissionChangeInfo" = "Change Channel Info";
+"Group.EditAdmin.PermissionChangeInfo" = "Change Group Info";
+"Channel.EditAdmin.PermissionPostMessages" = "Post Messages";
+"Channel.EditAdmin.PermissionEditMessages" = "Edit Messages";
+"Channel.EditAdmin.PermissionDeleteMessages" = "Delete Messages";
+"Channel.EditAdmin.PermissionBanUsers" = "Ban Users";
+"Channel.EditAdmin.PermissionInviteUsers" = "Add Users";
+"Channel.EditAdmin.PermissionChangeInviteLink" = "Invite Users Via Link";
+"Channel.EditAdmin.PermissionPinMessages" = "Pin Messages";
+"Channel.EditAdmin.PermissionAddAdmins" = "Add New Admins";
+
+"Channel.EditAdmin.PermissinAddAdminOn" = "This Admin will be able to add new admins with the same (or more limited) permissions.";
+"Channel.EditAdmin.PermissinAddAdminOff" = "This Admin will not be able to add new admins.";
+
+"Login.ContinueWithLocalization" = "Continue with English";
+"Localization.LanguageName" = "English";
+"Localization.ChooseLanguage" = "Choose Your Language";
+"Localization.EnglishLanguageName" = "English";
+"Localization.LanguageOther" = "Other";
+"Localization.LanguageCustom" = "Custom";
+
+"Channel.BanUser.Title" = "Ban User";
+"Channel.BanUser.PermissionsHeader" = "User Restrictions";
+"Channel.BanUser.PermissionReadMessages" = "Can Read Messages";
+"Channel.BanUser.PermissionSendMessages" = "Can Send Messages";
+"Channel.BanUser.PermissionSendMedia" = "Can Send Media";
+"Channel.BanUser.PermissionSendStickersAndGifs" = "Can Send Stickers & GIFs";
+"Channel.BanUser.PermissionEmbedLinks" = "Can Embed Links";
+"Channel.BanUser.Unban" = "Unban";
+
+"Channel.BanUser.BlockFor" = "Block For";
+
+"Channel.BanList.BlockedTitle" = "BLOCKED";
+"Channel.BanList.RestrictedTitle" = "RESTRICTED";
+
+"Group.Info.AdminLog" = "Recent Actions";
+"Channel.AdminLog.InfoPanelTitle" = "What Is This?";
+"Channel.AdminLog.InfoPanelAlertTitle" = "What is the event log?";
+"Channel.AdminLog.InfoPanelAlertText" = "This is a list of all service actions taken by the group's members and admins in the last 48 hours.";
+"Channel.AdminLog.Status" = "event log";
+
+"Channel.AdminLog.BanReadMessages" = "Read Messages";
+"Channel.AdminLog.BanSendMessages" = "Send Messages";
+"Channel.AdminLog.BanSendMedia" = "Send Media";
+"Channel.AdminLog.BanSendStickers" = "Send Stickers";
+"Channel.AdminLog.BanEmbedLinks" = "Embed Links";
+"Channel.AdminLog.BanSendGifs" = "Send GIFs";
+"Channel.AdminLog.MessageRestricted" = "%@ changed restrictions for %@ (%@)";
+"Channel.AdminLog.MessageAdmin" = "%@ changed privileges for %@ (%@)";
+
+"Channel.AdminLog.CanChangeInfo" = "Change Info";
+"Channel.AdminLog.CanSendMessages" = "Post Messages";
+"Channel.AdminLog.CanDeleteMessages" = "Delete Messages";
+"Channel.AdminLog.CanBanUsers" = "Ban Users";
+"Channel.AdminLog.CanInviteUsers" = "Add Users";
+"Channel.AdminLog.CanChangeInviteLink" = "Invite Users Via Link";
+"Channel.AdminLog.CanPinMessages" = "Pin Messages";
+"Channel.AdminLog.CanStartCalls" = "Start New Calls";
+"Channel.AdminLog.CanAddAdmins" = "Add New Admins";
+"Channel.AdminLog.CanEditMessages" = "Edit Messages";
+
+"Channel.AdminLog.MessageToggleInvitesOn" = "%@ enabled group invites";
+"Channel.AdminLog.MessageToggleInvitesOff" = "%@ disabled group invites";
+
+"Channel.AdminLog.MessageUnpinned" = "%@ unpinned message";
+
+"Channel.AdminLog.MessageToggleSignaturesOn" = "%@ enabled signatures";
+"Channel.AdminLog.MessageToggleSignaturesOff" = "%@ disabled signatures";
+
+"Channel.AdminLog.MessageChangedGroupUsername" = "%@ changed group link:";
+"Channel.AdminLog.MessageChangedChannelUsername" = "%@ changed channel link:";
+"Channel.AdminLog.MessageRemovedGroupUsername" = "%@ removed group link";
+"Channel.AdminLog.MessageRemovedChannelUsername" = "%@ removed channel link";
+
+"Channel.AdminLog.MessageChangedGroupAbout" = "%@ edited group description";
+"Channel.AdminLog.MessageChangedChannelAbout" = "%@ edited channel description";
+
+"Channel.AdminLog.MessageEdited" = "%@ edited message:";
+"Channel.AdminLog.CaptionEdited" = "%@ edited caption:";
+"Channel.AdminLog.MessageDeleted" = "%@ deleted message:";
+"Channel.AdminLog.MessagePinned" = "%@ pinned message:";
+
+"Channel.AdminLog.MessageInvitedName" = "invited %1$@";
+"Channel.AdminLog.MessageInvitedNameUsername" = "invited %1$@ (%2$@)";
+"Channel.AdminLog.MessageKickedName" = "banned %1$@";
+"Channel.AdminLog.MessageKickedNameUsername" = "banned %1$@ (%2$@)";
+"Channel.AdminLog.MessageRestrictedName" = "changed restrictions for %1$@";
+"Channel.AdminLog.MessageRestrictedNameUsername" = "changed restrictions for %1$@ (%2$@)";
+"Channel.AdminLog.MessagePromotedName" = "changed privileges for %1$@";
+"Channel.AdminLog.MessagePromotedNameUsername" = "changed privileges for %1$@ (%2$@)";
+"Channel.AdminLog.MessageRestrictedUntil" = "until %@";
+"Channel.AdminLog.MessageRestrictedForever" = "indefinitely";
+"Channel.AdminLog.MessageRestrictedNewSetting" = "now: %@";
+
+"Channel.AdminLog.MessagePreviousMessage" = "Original message";
+"Channel.AdminLog.MessagePreviousCaption" = "Original caption";
+"Channel.AdminLog.MessagePreviousLink" = "Previous link";
+"Channel.AdminLog.MessagePreviousDescription" = "Previous description";
+
+"Contacts.MemberSearchSectionTitleChannel" = "Channel Members";
+"Contacts.MemberSearchSectionTitleGroup" = "Group Members";
+
+"Channel.AdminLog.TitleAllEvents" = "All Actions";
+"Channel.AdminLog.TitleSelectedEvents" = "Selected Actions";
+"Channel.AdminLogFilter.Title" = "Filter";
+"Channel.AdminLogFilter.EventsTitle" = "ACTIONS";
+"Channel.AdminLogFilter.EventsAll" = "All Actions";
+"Channel.AdminLogFilter.EventsRestrictions" = "New Restrictions";
+"Channel.AdminLogFilter.EventsAdmins" = "New Admins";
+"Channel.AdminLogFilter.EventsNewMembers" = "New Members";
+"Channel.AdminLogFilter.EventsInfo" = "Group Info";
+"Channel.AdminLogFilter.ChannelEventsInfo" = "Channel Info";
+"Channel.AdminLogFilter.EventsDeletedMessages" = "Deleted Messages";
+"Channel.AdminLogFilter.EventsEditedMessages" = "Edited Messages";
+"Channel.AdminLogFilter.EventsPinned" = "Pinned Messages";
+"Channel.AdminLogFilter.EventsLeaving" = "Members Removed";
+"Channel.AdminLogFilter.AdminsTitle" = "ADMINS";
+"Channel.AdminLogFilter.AdminsAll" = "All Admins";
+
+"Group.ErrorSendRestrictedStickers" = "Sorry, the admins of this group have restricted you from sending stickers.";
+"Group.ErrorSendRestrictedMedia" = "Sorry, the admins of this group have restricted you from sending media.";
+
+"ChannelMembers.BanList.EmptyText" = "You haven't limited any users yet.";
+
+"SharedMedia.ViewInChat" = "View in Chat";
+
+"Channel.Info.BlackList" = "Blacklist";
+
+"Channel.Management.PromotedBy" = "Promoted by %@";
+"DialogList.LanguageTooltip" = "You can change the language later in Settings";
+
+"Contacts.PhoneNumber" = "Phone Number";
+"Contacts.AddPhoneNumber" = "Add %@";
+"Contacts.ShareTelegram" = "Share Telegram";
+
+"Conversation.ViewChannel" = "OPEN CHANNEL";
+"Conversation.ViewGroup" = "OPEN GROUP";
+
+"GroupInfo.ActionPromote" = "Promote";
+"GroupInfo.ActionBan" = "Ban";
+"GroupInfo.ActionRestrict" = "Restrict";
+
+"Conversation.RestrictedTextTimed" = "The admins of this group have restricted you from writing here until %@.";
+"Conversation.RestrictedText" = "The admins of this group have restricted you from writing here.";
+
+"Conversation.RestrictedInlineTimed" = "The admins of this group have restricted you from posting inline content here until %@.";
+"Conversation.RestrictedInline" = "The admins of this group have restricted you from posting inline content here.";
+
+"Conversation.RestrictedMediaTimed" = "The admins of this group have restricted you from posting media content here until %@.";
+"Conversation.RestrictedMedia" = "The admins of this group have restricted you from posting media content here.";
+
+"Conversation.RestrictedStickersTimed" = "The admins of this group have restricted you from posting stickers here until %@.";
+"Conversation.RestrictedStickers" = "The admins of this group have restricted you from posting stickers here.";
+
+"ChatSettings.ConnectionType.Title" = "CONNECTION TYPE";
+"ChatSettings.ConnectionType.UseProxy" = "Use Proxy";
+"ChatSettings.ConnectionType.UseSocks5" = "SOCKS5";
+
+"SocksProxySetup.Title" = "Proxy";
+
+"SocksProxySetup.TypeNone" = "Disabled";
+"SocksProxySetup.TypeSocks" = "SOCKS5";
+
+"SocksProxySetup.Connection" = "CONNECTION";
+"SocksProxySetup.Hostname" = "Server";
+"SocksProxySetup.Port" = "Port";
+
+"SocksProxySetup.Credentials" = "CREDENTIALS (OPTIONAL)";
+"SocksProxySetup.Username" = "Username";
+"SocksProxySetup.Password" = "Password";
+
+"Channel.AdminLog.EmptyTitle" = "No actions here yet";
+"Channel.AdminLog.EmptyText" = "No service actions were taken by the group's members and admins in the last 48 hours.";
+"Channel.AdminLog.EmptyFilterTitle" = "No actions found";
+"Channel.AdminLog.EmptyFilterQueryText" = "No recent actions that contain '%@' have been found.";
+"Channel.AdminLog.EmptyFilterText" = "No recent actions that match your query have been found.";
+
+"Channel.AdminLog.EmptyMessageText" = "Empty";
+
+"Camera.Title" = "Take Photo or Video";
+
+"Channel.Members.AddAdminErrorNotAMember" = "Sorry, you can't add this user as an admin because they are not a member of this group and you are not allowed to invite them.";
+
+"Channel.Members.AddAdminErrorBlacklisted" = "Sorry, you can't add this user as an admin because they are in the blacklist and you can't unban them.";
+
+"Channel.Members.AddBannedErrorAdmin" = "Sorry, you can't ban this user because they are an admin in this group and you are not allowed to demote them.";
+
+"Group.Members.AddMemberErrorNotAllowed" = "Sorry, you don't have the necessary permissions to add users to this group.";
+"Group.Members.AddMemberBotErrorNotAllowed" = "Sorry, you don't have the necessary permissions to add bots to this group.";
+
+"Privacy.Calls.P2P" = "Peer-to-Peer";
+"Privacy.Calls.P2PHelp" = "Disabling peer-to-peer will relay all calls through Telegram servers to avoid revealing your IP address, but will slightly decrease audio quality.";
+
+"Privacy.Calls.Integration" = "iOS Call Integration";
+"Privacy.Calls.IntegrationHelp" = "iOS Call Integration shows Telegram calls on the lock screen and in the system's call history. If iCloud sync is enabled, your call history is shared with Apple.";
+
+"Call.ReportPlaceholder" = "What went wrong?";
+"Call.ReportIncludeLog" = "Send technical information";
+"Call.ReportIncludeLogDescription" = "This won't reveal the contents of your conversation, but will help us fix the issue sooner.";
+"Call.ReportSkip" = "Skip";
+"Call.ReportSend" = "Send";
+
+"Channel.EditAdmin.CannotEdit" = "You cannot edit the rights of this admin.";
+"Call.RateCall" = "Rate This Call";
+
+"Settings.ApplyProxyAlert" = "Are you sure you want to enable this proxy?\nServer: %1$@\nPort: %2$@\n\nYou can change your proxy server later it in the Settings (Data and Storage).";
+"Settings.ApplyProxyAlertCredentials" = "Are you sure you want to enable this proxy?\nServer: %1$@\nPort: %2$@\nUsername: %3$@\nPassword: %4$@\n\nYou can change your proxy server later it in the Settings (Data and Storage).";
+"Settings.ApplyProxyAlertEnable" = "Enable";
+
+"Channel.Management.RestrictedBy" = "Restricted by %@";
+
+"Stickers.FrequentlyUsed" = "Recently Used";
+
+"Contacts.ImportersCount_1" = "1 contact on Telegram";
+"Contacts.ImportersCount_2" = "2 contacts on Telegram";
+"Contacts.ImportersCount_3_10" = "%@ contacts on Telegram";
+"Contacts.ImportersCount_any" = "%@ contacts on Telegram";
+"Contacts.ImportersCount_many" = "%@ contacts on Telegram";
+"Contacts.ImportersCount_0" = "%@ contacts on Telegram";
+
+"Conversation.ContextMenuBan" = "Ban";
+
+"SocksProxySetup.UseForCalls" = "Use for calls";
+"SocksProxySetup.UseForCallsHelp" = "Proxy servers may degrade the quality of your calls.";
+
+"InviteText.URL" = "https://telegram.org/dl";
+"InviteText.SingleContact" = "Hey, I'm using Telegram to chat. Join me! Download it here: %@";
+"InviteText.ContactsCount_1" = "Hey, I'm using Telegram to chat. Join me! Download it here: %@";
+"InviteText.ContactsCount_2" = "Hey, I'm using Telegram to chat – and so are 2 of our other contacts. Join us! Download it here: %@";
+"InviteText.ContactsCount_3_10" = "Hey, I'm using Telegram to chat – and so are %@ of our other contacts. Join us! Download it here: %@";
+"InviteText.ContactsCount_any" = "Hey, I'm using Telegram to chat – and so are %@ of our other contacts. Join us! Download it here: %@";
+"InviteText.ContactsCount_many" = "Hey, I'm using Telegram to chat – and so are %@ of our other contacts. Join us! Download it here: %@";
+"InviteText.ContactsCount_0" = "Hey, I'm using Telegram to chat. Join me! Download it here: %@";
+
+"Invite.LargeRecipientsCountWarning" = "Please note that it may take some time for your device to send all of these invitations";
+
+"Contacts.InviteSearchLabel" = "Search for contacts";

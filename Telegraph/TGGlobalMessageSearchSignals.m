@@ -552,4 +552,89 @@ const NSInteger TGRecentSearchLimit = 20;
     }];
 }
 
++ (SSignal *)searchChannelMembers:(NSString *)query peerId:(int64_t)peerId accessHash:(int64_t)accessHash section:(TGGlobalMessageSearchMembersSection)section {
+    TLRPCchannels_getParticipants$channels_getParticipants *getParticipants = [[TLRPCchannels_getParticipants$channels_getParticipants alloc] init];
+    TLInputChannel$inputChannel *inputChannel = [[TLInputChannel$inputChannel alloc] init];
+    inputChannel.channel_id = TGChannelIdFromPeerId(peerId);
+    inputChannel.access_hash = accessHash;
+    getParticipants.channel = inputChannel;
+    
+    switch (section) {
+        case TGGlobalMessageSearchMembersSectionMembers: {
+            TLChannelParticipantsFilter$channelParticipantsSearch *filter = [[TLChannelParticipantsFilter$channelParticipantsSearch alloc] init];
+            filter.q = query;
+            getParticipants.filter = filter;
+            break;
+        }
+        case TGGlobalMessageSearchMembersSectionBanned: {
+            TLChannelParticipantsFilter$channelParticipantsKicked *filter = [[TLChannelParticipantsFilter$channelParticipantsKicked alloc] init];
+            filter.q = query;
+            getParticipants.filter = filter;
+            break;
+        }
+        case TGGlobalMessageSearchMembersSectionRestricted: {
+            TLChannelParticipantsFilter$channelParticipantsBanned *filter = [[TLChannelParticipantsFilter$channelParticipantsBanned alloc] init];
+            filter.q = query;
+            getParticipants.filter = filter;
+            break;
+        }
+        default:
+            break;
+    }
+    getParticipants.offset = 0;
+    getParticipants.limit = 100;
+    
+    return [[[TGTelegramNetworking instance] requestSignal:getParticipants] mapToSignal:^SSignal *(TLchannels_ChannelParticipants *result) {
+        [TGUserDataRequestBuilder executeUserDataUpdate:result.users];
+        
+        NSMutableArray *users = [[NSMutableArray alloc] init];
+        NSMutableDictionary *memberDatas = [[NSMutableDictionary alloc] init];
+        
+        for (TLChannelParticipant *participant in result.participants) {
+            TGUser *user = [TGDatabaseInstance() loadUser:participant.user_id];
+            if (user != nil) {
+                int32_t timestamp = 0;
+                bool isCreator = false;
+                TGChannelAdminRights *adminRights = nil;
+                TGChannelBannedRights *bannedRights = nil;
+                int32_t inviterId = 0;
+                int32_t adminInviterId = 0;
+                int32_t kickedById = 0;
+                bool adminCanManage = false;
+                
+                if ([participant isKindOfClass:[TLChannelParticipant$channelParticipant class]]) {
+                    timestamp = ((TLChannelParticipant$channelParticipant *)participant).date;
+                } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantCreator class]]) {
+                    isCreator = true;
+                    timestamp = 0;
+                } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantAdmin class]]) {
+                    adminRights = [[TGChannelAdminRights alloc] initWithTL:((TLChannelParticipant$channelParticipantAdmin *)participant).admin_rights];
+                    inviterId = ((TLChannelParticipant$channelParticipantAdmin *)participant).inviter_id;
+                    timestamp = ((TLChannelParticipant$channelParticipantAdmin *)participant).date;
+                    adminInviterId = ((TLChannelParticipant$channelParticipantAdmin *)participant).promoted_by;
+                    adminCanManage = ((TLChannelParticipant$channelParticipantAdmin *)participant).flags & (1 << 0);
+                } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantBanned class]]) {
+                    timestamp = ((TLChannelParticipant$channelParticipantBanned *)participant).date;
+                    bannedRights = [[TGChannelBannedRights alloc] initWithTL:((TLChannelParticipant$channelParticipantBanned *)participant).banned_rights];
+                    kickedById = ((TLChannelParticipant$channelParticipantBanned *)participant).kicked_by;
+                }
+                
+                memberDatas[@(user.uid)] = [[TGCachedConversationMember alloc] initWithUid:user.uid isCreator:isCreator adminRights:adminRights bannedRights:bannedRights timestamp:timestamp inviterId:inviterId adminInviterId:adminInviterId kickedById:kickedById adminCanManage:adminCanManage];
+                [users addObject:user];
+            }
+        }
+        
+        return [SSignal single:@{@"memberDatas": memberDatas, @"users": users}];
+    }];
+}
+
++ (SSignal *)searchContacts:(NSString *)query {
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+        [TGDatabaseInstance() searchContacts:query ignoreUid:TGTelegraphInstance.clientUserId searchPhonebook:false completion:^(NSDictionary *result) {
+            [subscriber putNext:result[@"users"] ?: @[]];
+        }];
+        return nil;
+    }];
+}
+
 @end

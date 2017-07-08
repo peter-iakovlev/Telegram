@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xeb9d8189;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLPrivacyRule$privacyValueAllowContacts *object = [[TLPrivacyRule$privacyValueAllowContacts alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0x1c4faf84;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLPrivacyRule$privacyValueAllowAll *object = [[TLPrivacyRule$privacyValueAllowAll alloc] init];
     return object;
@@ -98,7 +98,7 @@
     return (int32_t)0x11fc301c;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPrivacyRule$privacyValueAllowUsers *object = [[TLPrivacyRule$privacyValueAllowUsers alloc] init];
     object.users = metaObject->getArray((int32_t)0x933e5ff3);
@@ -131,7 +131,7 @@
     return (int32_t)0xec102e9b;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLPrivacyRule$privacyValueDisallowContacts *object = [[TLPrivacyRule$privacyValueDisallowContacts alloc] init];
     return object;
@@ -157,7 +157,7 @@
     return (int32_t)0x4219ce13;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLPrivacyRule$privacyValueDisallowAll *object = [[TLPrivacyRule$privacyValueDisallowAll alloc] init];
     return object;
@@ -183,7 +183,7 @@
     return (int32_t)0x9c2b188b;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPrivacyRule$privacyValueDisallowUsers *object = [[TLPrivacyRule$privacyValueDisallowUsers alloc] init];
     object.users = metaObject->getArray((int32_t)0x933e5ff3);

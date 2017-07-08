@@ -14,7 +14,6 @@
     UIFont *_singleFont;
     UIFont *_doubleFont;
     bool _usingSingleFont;
-    bool _sameFonts;
     CGFloat _singleSize;
     CGFloat _doubleSize;
 }
@@ -35,7 +34,7 @@
     return self;
 }
 
-- (void)setSingleFontSize:(CGFloat)singleFontSize doubleFontSize:(CGFloat)doubleFontSize useBoldFont:(bool)useBoldFont
+- (void)setSingleFontSize:(CGFloat)singleFontSize doubleFontSize:(CGFloat)doubleFontSize useBoldFont:(bool)__unused useBoldFont
 {
     if (ABS(singleFontSize - _singleSize) < FLT_EPSILON && ABS(doubleFontSize - _doubleSize) < FLT_EPSILON)
         return;
@@ -43,14 +42,8 @@
     _singleSize = singleFontSize;
     _doubleSize = doubleFontSize;
     
-    _singleFont = TGUltralightSystemFontOfSize(singleFontSize);
-    
-    if (useBoldFont)
-        _doubleFont = TGSystemFontOfSize(doubleFontSize);
-    else
-        _doubleFont = TGLightSystemFontOfSize(doubleFontSize);
-    
-    _sameFonts = ABS(singleFontSize - doubleFontSize) < DBL_EPSILON;
+    _singleFont = [UIFont fontWithName:@".SFCompactRounded-Semibold" size:singleFontSize];
+    _doubleFont = _singleFont;
 }
 
 - (void)loadImage:(UIImage *)image
@@ -89,9 +82,9 @@ static bool isEmojiCharacter(NSString *singleChar)
     [string enumerateSubstringsInRange:NSMakeRange(0, string.length)
                                options:NSStringEnumerationByComposedCharacterSequences
                             usingBlock: ^(NSString* substring, __unused NSRange substringRange, __unused NSRange enclosingRange, __unused BOOL* stop)
-    {
-        [buffer appendString:isEmojiCharacter(substring) ? @"" : substring];
-    }];
+     {
+         [buffer appendString:isEmojiCharacter(substring) ? @"" : substring];
+     }];
     
     return buffer;
 }
@@ -173,9 +166,9 @@ static bool isEmojiCharacter(NSString *singleChar)
     else
         _label.text = @" ";
     
-    _label.textColor = uid == 0 ? UIColorRGB(0x999999) : [UIColor whiteColor];
-
-    [_label sizeToFit];    
+    _label.textColor = [UIColor whiteColor];
+    
+    [_label sizeToFit];
     [self setNeedsLayout];
     
     NSString *placeholderUri = [[NSString alloc] initWithFormat:@"placeholder://?type=user-avatar&w=%d&h=%d&uid=%" PRId32 "", (int)size.width, (int)size.height, (int32_t)uid];

@@ -5,10 +5,22 @@
 #import "TGFont.h"
 #import "TGImageUtils.h"
 
+static void setViewFrame(UIView *view, CGRect frame)
+{
+    CGAffineTransform transform = view.transform;
+    view.transform = CGAffineTransformIdentity;
+    if (!CGRectEqualToRect(view.frame, frame))
+        view.frame = frame;
+    view.transform = transform;
+}
+
 @interface TGStickerKeyboardTabSettingsCell () {
-    TGModernButton *_button;
-    UIImageView *_imageView;
+    TGStickerKeyboardViewStyle _style;
     
+    TGModernButton *_button;
+    
+    UIView *_wrapperView;
+    UIImageView *_imageView;
     UILabel *_badgeLabel;
     UIImageView *_badgeView;
 }
@@ -25,11 +37,15 @@
         [_button addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self.contentView addSubview:_button];
         
+        _wrapperView = [[UIView alloc] init];
+        _wrapperView.userInteractionEnabled = false;
+        [self.contentView addSubview:_wrapperView];
+        
         _imageView = [[UIImageView alloc] init];
         _imageView.image = [UIImage imageNamed:@"StickerKeyboardSettingsIcon.png"];
         _imageView.userInteractionEnabled = false;
         _imageView.contentMode = UIViewContentModeCenter;
-        [self.contentView addSubview:_imageView];
+        [_wrapperView addSubview:_imageView];
         
         self.selectedBackgroundView = [[UIView alloc] init];
         self.selectedBackgroundView.backgroundColor = UIColorRGB(0xe6e6e6);
@@ -50,17 +66,77 @@
     _button.hidden = mode != TGStickerKeyboardTabSettingsCellSettings;
 }
 
+- (void)setInnerAlpha:(CGFloat)innerAlpha
+{
+    CGAffineTransform transform = CGAffineTransformMakeTranslation(0.0f, 36.0f / 2.0f * (1.0f - innerAlpha));
+    transform = CGAffineTransformScale(transform, innerAlpha, innerAlpha);
+    
+    _wrapperView.transform = transform;
+    self.selectedBackgroundView.transform = transform;
+}
+
+- (void)setStyle:(TGStickerKeyboardViewStyle)style
+{
+    _style = style;
+    
+    switch (style)
+    {
+        case TGStickerKeyboardViewDarkBlurredStyle:
+        {
+            self.selectedBackgroundView.backgroundColor = UIColorRGB(0x393939);
+        }
+            break;
+            
+        case TGStickerKeyboardViewPaintStyle:
+        {
+            self.selectedBackgroundView.backgroundColor = UIColorRGB(0xdadada);
+            self.selectedBackgroundView.layer.cornerRadius = 8.0f;
+            self.selectedBackgroundView.clipsToBounds = true;
+        }
+            break;
+            
+        case TGStickerKeyboardViewPaintDarkStyle:
+        {
+            self.selectedBackgroundView.backgroundColor = UIColorRGBA(0xfbfffe, 0.47f);
+            self.selectedBackgroundView.layer.cornerRadius = 8.0f;
+            self.selectedBackgroundView.clipsToBounds = true;
+        }
+            break;
+            
+        default:
+        {
+            self.selectedBackgroundView.backgroundColor = UIColorRGB(0xe6e7e9);
+            self.selectedBackgroundView.layer.cornerRadius = 8.0f;
+            self.selectedBackgroundView.clipsToBounds = true;
+        }
+            break;
+    }
+}
+
 - (void)layoutSubviews {
     [super layoutSubviews];
-    
-    _button.frame = self.bounds;
-    _imageView.frame = self.bounds;
     
     if (_badgeLabel != nil) {
         CGSize labelSize = _badgeLabel.frame.size;
         CGFloat badgeWidth = MAX(16.0f, labelSize.width + 6.0);
         _badgeView.frame = CGRectMake(self.frame.size.width - badgeWidth - 4.0, 6.0f, badgeWidth, 16.0f);
         _badgeLabel.frame = CGRectMake(CGRectGetMinX(_badgeView.frame) + TGRetinaFloor((badgeWidth - labelSize.width) / 2.0f), CGRectGetMinY(_badgeView.frame) + 1.0f, labelSize.width, labelSize.height);
+    }
+    
+    if (_style == TGStickerKeyboardViewDefaultStyle)
+    {
+        setViewFrame(_wrapperView, CGRectOffset(self.bounds, 0.0f, -3.0f));
+        setViewFrame(_imageView, self.bounds);
+        
+        _button.frame = self.bounds;
+        
+        setViewFrame(self.selectedBackgroundView, CGRectMake(floor((self.frame.size.width - 36.0f) / 2.0f), 0, 36.0f, 36.0f));
+    }
+    else
+    {
+        _wrapperView.frame = self.bounds;
+        _button.frame = self.bounds;
+        _imageView.frame = self.bounds;
     }
 }
 
@@ -77,7 +153,7 @@
             _badgeLabel.font = TGSystemFontOfSize(12.0);
             _badgeLabel.backgroundColor = [UIColor clearColor];
             _badgeLabel.textColor = [UIColor whiteColor];
-            [self addSubview:_badgeLabel];
+            [_wrapperView addSubview:_badgeLabel];
             
             static UIImage *badgeImage = nil;
             static dispatch_once_t onceToken;
@@ -93,8 +169,8 @@
             });
             _badgeView = [[UIImageView alloc] initWithImage:badgeImage];
             
-            [self addSubview:_badgeView];
-            [self addSubview:_badgeLabel];
+            [_wrapperView addSubview:_badgeView];
+            [_wrapperView addSubview:_badgeLabel];
         }
         _badgeLabel.text = badge;
         [_badgeLabel sizeToFit];

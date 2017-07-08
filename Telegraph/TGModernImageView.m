@@ -1,6 +1,9 @@
 #import "TGModernImageView.h"
 
 @interface TGModernImageView ()
+{
+    bool _accountForTransform;
+}
 
 @property (nonatomic, strong) NSString *viewIdentifier;
 @property (nonatomic, strong) NSString *viewStateIdentifier;
@@ -20,6 +23,26 @@
     }
     
     return [[NSString alloc] initWithFormat:@"TGModernImageView/%lx", (long)self.image];
+}
+
+- (void)setAccountForTransform:(bool)accountForTransform
+{
+    _accountForTransform = accountForTransform;
+}
+
+- (void)setFrame:(CGRect)frame
+{
+    if (!_accountForTransform)
+    {
+        [super setFrame:frame];
+    }
+    else
+    {
+        CGAffineTransform transform = self.transform;
+        self.transform = CGAffineTransformIdentity;
+        [super setFrame:frame];
+        self.transform = transform;
+    }
 }
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event

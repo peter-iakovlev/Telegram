@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xe71a782a;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLKeyboardButton$keyboardButton *object = [[TLKeyboardButton$keyboardButton alloc] init];
     object.text = metaObject->getString((int32_t)0x94f1580d);
@@ -79,7 +79,7 @@
     return (int32_t)0xe834ec84;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLKeyboardButton$keyboardButtonUrl *object = [[TLKeyboardButton$keyboardButtonUrl alloc] init];
     object.text = metaObject->getString((int32_t)0x94f1580d);
@@ -119,7 +119,7 @@
     return (int32_t)0x81365104;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLKeyboardButton$keyboardButtonCallback *object = [[TLKeyboardButton$keyboardButtonCallback alloc] init];
     object.text = metaObject->getString((int32_t)0x94f1580d);
@@ -159,7 +159,7 @@
     return (int32_t)0xf5700be8;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLKeyboardButton$keyboardButtonRequestPhone *object = [[TLKeyboardButton$keyboardButtonRequestPhone alloc] init];
     object.text = metaObject->getString((int32_t)0x94f1580d);
@@ -192,7 +192,7 @@
     return (int32_t)0x540f6860;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLKeyboardButton$keyboardButtonRequestGeoLocation *object = [[TLKeyboardButton$keyboardButtonRequestGeoLocation alloc] init];
     object.text = metaObject->getString((int32_t)0x94f1580d);
@@ -225,7 +225,7 @@
     return (int32_t)0xf1356aa1;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLKeyboardButton$keyboardButtonSwitchInline *object = [[TLKeyboardButton$keyboardButtonSwitchInline alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
@@ -272,7 +272,7 @@
     return (int32_t)0xa81e7110;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLKeyboardButton$keyboardButtonGame *object = [[TLKeyboardButton$keyboardButtonGame alloc] init];
     object.text = metaObject->getString((int32_t)0x94f1580d);
@@ -305,7 +305,7 @@
     return (int32_t)0x681b516f;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLKeyboardButton$keyboardButtonBuy *object = [[TLKeyboardButton$keyboardButtonBuy alloc] init];
     object.text = metaObject->getString((int32_t)0x94f1580d);

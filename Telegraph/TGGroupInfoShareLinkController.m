@@ -14,6 +14,9 @@
 
 #import "TGChannelManagementSignals.h"
 
+#import "TGShareMenu.h"
+#import "TGSendMessageSignals.h"
+
 @interface TGGroupInfoShareLinkController ()
 {
     SMetaDisposable *_disposable;
@@ -22,6 +25,7 @@
     int64_t _accessHash;
     
     TGGroupInfoShareLinkLinkItem *_linkItem;
+    TGButtonCollectionItem *_shareItem;
     UIActivityIndicatorView *_activityIndicator;
 }
 
@@ -57,13 +61,13 @@ static NSString *updatedLink(NSString *link) {
         copyItem.deselectAutomatically = true;
         TGButtonCollectionItem *revokeItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.InviteLink.RevokeLink") action:@selector(revokePressed)];
         revokeItem.deselectAutomatically = true;
-        TGButtonCollectionItem *shareItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.InviteLink.ShareLink") action:@selector(sharePressed)];
-        shareItem.deselectAutomatically = true;
+        _shareItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.InviteLink.ShareLink") action:@selector(sharePressed)];
+        _shareItem.deselectAutomatically = true;
         
         TGCollectionMenuSection *actionSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             copyItem,
             revokeItem,
-            shareItem
+            _shareItem
         ]];
         actionSection.insets = UIEdgeInsetsMake(27.0f, 0.0f, 32.0f, 0.0f);
         [self.menuSections addSection:actionSection];
@@ -126,6 +130,8 @@ static NSString *updatedLink(NSString *link) {
 - (void)_setLink:(NSString *)link
 {
     _linkItem.text = updatedLink(link);
+    if (self.linkChanged != nil)
+        self.linkChanged(_linkItem.text);
     
     [self.collectionLayout invalidateLayout];
     [self.collectionView layoutSubviews];
@@ -197,9 +203,26 @@ static NSString *updatedLink(NSString *link) {
 
 - (void)sharePressed
 {
-    NSArray *dataToShare = @[[NSURL URLWithString:_linkItem.text]];
-    UIActivityViewController *activityViewController = [[UIActivityViewController alloc] initWithActivityItems:dataToShare applicationActivities:nil];
-    [self presentViewController:activityViewController animated:YES completion:nil];
+    NSString *linkString = _linkItem.text;
+    NSString *shareString = linkString;
+    
+    __weak TGGroupInfoShareLinkController *weakSelf = self;
+    CGRect (^sourceRect)(void) = ^CGRect
+    {
+        __strong TGGroupInfoShareLinkController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return CGRectZero;
+        
+        return [strongSelf->_shareItem.view convertRect:strongSelf->_shareItem.view.bounds toView:strongSelf.view];
+    };
+    
+    [TGShareMenu presentInParentController:self menuController:nil buttonTitle:TGLocalized(@"ShareMenu.CopyShareLink") buttonAction:^
+    {
+        [[UIPasteboard generalPasteboard] setString:linkString];
+    } shareAction:^(NSArray *peerIds, NSString *caption)
+    {
+        [[TGShareSignals shareText:shareString toPeerIds:peerIds caption:caption] startWithNext:nil];
+    } externalShareItemSignal:[SSignal single:[NSURL URLWithString:shareString]] sourceView:self.view sourceRect:sourceRect barButtonItem:nil];
 }
 
 @end

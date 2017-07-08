@@ -257,29 +257,6 @@
 
 #pragma mark -
 
-- (UIImage *)reorientedMirroredImage:(UIImage *)image
-{
-    UIImageOrientation newOrientation = image.imageOrientation;
-    switch (image.imageOrientation)
-    {
-        case UIImageOrientationLeftMirrored:
-            newOrientation = UIImageOrientationRightMirrored;
-            break;
-            
-        case UIImageOrientationRightMirrored:
-            newOrientation = UIImageOrientationLeftMirrored;
-            break;
-            
-        default:
-            break;
-    }
-    
-    if (newOrientation != image.imageOrientation)
-        return [UIImage imageWithCGImage:image.CGImage scale:image.scale orientation:newOrientation];
-    
-    return image;
-}
-
 - (SSignal *)saveAssetWithImage:(UIImage *)image
 {
     return [[TGMediaAssetsModernLibrary _requestAuthorization] mapToSignal:^SSignal *(NSNumber *statusValue)
@@ -292,7 +269,7 @@
         {
             [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^
             {
-                [PHAssetChangeRequest creationRequestForAssetFromImage:[self reorientedMirroredImage:image]];
+                [PHAssetChangeRequest creationRequestForAssetFromImage:image];
             } completionHandler:^(BOOL success, NSError *error)
             {
                 if (error == nil && success)

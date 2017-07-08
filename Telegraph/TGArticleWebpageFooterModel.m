@@ -7,6 +7,7 @@
 #import "TGModernFlatteningViewModel.h"
 #import "TGModernImageViewModel.h"
 #import "TGModernTextViewModel.h"
+#import "TGModernButtonViewModel.h"
 
 #import "TGFont.h"
 #import "TGImageUtils.h"
@@ -36,16 +37,51 @@
 
 #import "TGAnimationUtils.h"
 
-static UIImage *instantPageButtonBackground(UIColor *color) {
-    CGFloat diameter = 8.0f;
+static UIImage *instantPageButtonBackground(UIColor *color, bool fill) {
+    CGFloat diameter = 14.0f;
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
     CGContextRef context = UIGraphicsGetCurrentContext();
     CGContextSetStrokeColorWithColor(context, color.CGColor);
     CGContextSetLineWidth(context, 1.0f);
     CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, diameter - 1.0f, diameter - 1.0f));
+    if (fill) {
+        CGContextSetFillColorWithColor(context, color.CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.5f, 0.5f, diameter - 1.0f, diameter - 1.0f));
+    }
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     return [image stretchableImageWithLeftCapWidth:(int)(diameter / 2.0f) topCapHeight:(int)(diameter / 2.0f)];
+}
+
+static UIImage *instantPageButtonContent(UIColor *color, UIColor *backgroundColor, NSString *title, UIImage *iconImage) {
+    if (iconImage && ![color isEqual:[UIColor clearColor]])
+        iconImage = TGTintedImage(iconImage, color);
+    
+    UIFont *buttonFont = TGMediumSystemFontOfSize(13.0f);
+    CGFloat buttonWidth = (iosMajorVersion() >= 7 ? [title sizeWithAttributes:@{NSFontAttributeName: buttonFont}].width : [title sizeWithFont:buttonFont].width) + (iconImage ? (iconImage.size.width + 7.0f) : 0);
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(buttonWidth, 33.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+
+    if (![backgroundColor isEqual:[UIColor clearColor]]) {
+        CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
+        CGContextFillRect(context, CGRectMake(0.0f, 0.0f, buttonWidth, 33.0f));
+    }
+    
+    if ([color isEqual:[UIColor clearColor]]) {
+        CGContextSetBlendMode(context, kCGBlendModeClear);
+    }
+    
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    
+    if (iconImage)
+        [iconImage drawAtPoint:CGPointMake(0.0f, 11.0f)];
+    [title drawAtPoint:CGPointMake(iconImage ? (iconImage.size.width + 7.0f) : 0.0f, 8.5f) withFont:buttonFont];
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
 }
 
 @interface TGArticleWebpageFooterModel ()
@@ -59,9 +95,7 @@ static UIImage *instantPageButtonBackground(UIColor *color) {
     TGModernImageViewModel *_durationBackgroundModel;
     TGModernTextViewModel *_durationLabelModel;
     TGModernImageViewModel *_serviceIconModel;
-    TGModernImageViewModel *_instantPageButtonBackgroundModel;
-    TGModernImageViewModel *_instantPageButtonIconModel;
-    TGModernTextViewModel *_instantPageButtonTextModel;
+    TGModernButtonViewModel *_actionButtonModel;
     bool _imageInText;
     
     NSString *_imageDataInvalidationUrl;
@@ -114,19 +148,6 @@ static CTFontRef durationFont()
     return font;
 }
 
-
-static CTFontRef durationInstantFont()
-{
-    static CTFontRef font = NULL;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        font = TGCoreTextMediumFontOfSize(13.0f);
-    });
-    
-    return font;
-}
-
 static UIImage *durationBackgroundImage()
 {
     static UIImage *image = nil;
@@ -152,24 +173,6 @@ static UIImage *durationGameBackgroundImage()
     dispatch_once(&onceToken, ^
     {
         CGFloat radius = 9.0f;
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius * 2.0f, radius * 2.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.35f).CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius * 2.0f, radius * 2.0f));
-        
-        image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)radius topCapHeight:(NSInteger)radius];
-        UIGraphicsEndImageContext();
-    });
-    return image;
-}
-
-static UIImage *durationInstantBackgroundImage()
-{
-    static UIImage *image = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        CGFloat radius = 4.0f;
         UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius * 2.0f, radius * 2.0f), false, 0.0f);
         CGContextRef context = UIGraphicsGetCurrentContext();
         CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.35f).CGColor);
@@ -499,67 +502,106 @@ static UIImage *durationInstantBackgroundImage()
                         [_durationModel addSubmodel:_durationLabelModel];
                         
                         [_imageViewModel addSubmodel:_durationModel];
-                    } else if (false && _webPage.instantPage != nil) {
-                        _durationModel = [[TGModernFlatteningViewModel alloc] init];
-                        
-                        static UIImage *mediaIcon = nil;
-                        static dispatch_once_t onceToken;
-                        dispatch_once(&onceToken, ^{
-                            mediaIcon = [[UIImage imageNamed:@"ConversationInstantPageButtonIconMedia.png"] preloadedImageWithAlpha];
-                        });
-                        
-                        
-                        _durationBackgroundModel = [[TGModernImageViewModel alloc] initWithImage:durationInstantBackgroundImage()];
-                        [_durationModel addSubmodel:_durationBackgroundModel];
-                        
-                        _instantPageButtonIconModel = [[TGModernImageViewModel alloc] initWithImage:mediaIcon];
-                        _instantPageButtonIconModel.frame = CGRectMake(10.0f, 8.0f, _instantPageButtonIconModel.image.size.width, _instantPageButtonIconModel.image.size.height);
-                        [_durationModel addSubmodel:_instantPageButtonIconModel];
-                        
-                        NSString *durationText = TGLocalized(@"Conversation.InstantPagePreview");
-                        
-                        _durationLabelModel = [[TGModernTextViewModel alloc] initWithText:durationText font:durationInstantFont()];
-                        _durationLabelModel.textColor = [UIColor whiteColor];
-                        [_durationLabelModel layoutForContainerSize:CGSizeMake(200.0f, 200.0f)];
-                        [_durationModel addSubmodel:_durationLabelModel];
-                        
-                        [_imageViewModel addSubmodel:_durationModel];
                     }
                 }
             }
         }
         
-        if (_webPage.instantPage != nil) {
+        NSString *buttonType = nil;
+        if (_webPage.instantPage != nil)
+            buttonType = @"instantPage";
+        else if ([_webPage.pageType isEqualToString:@"telegram_channel"])
+            buttonType = @"viewChannel";
+        else if ([_webPage.pageType isEqualToString:@"telegram_chat"] || [_webPage.pageType isEqualToString:@"telegram_megagroup"])
+            buttonType = @"viewGroup";
+        
+        if (buttonType != nil) {
             static UIImage *incomingBackground = nil;
+            static UIImage *incomingSolidBackground = nil;
             static UIImage *outgoingBackground = nil;
-            static CTFontRef buttonFont = nil;
+            static UIImage *outgoingSolidBackground = nil;
+            
             static dispatch_once_t onceToken;
-            static UIImage *incomingIcon = nil;
-            static UIImage *outgoingIcon = nil;
             dispatch_once(&onceToken, ^{
-                incomingBackground = instantPageButtonBackground(UIColorRGB(0x3ca7fe));
-                outgoingBackground = instantPageButtonBackground(UIColorRGB(0x29cc10));
-                buttonFont = TGCoreTextMediumFontOfSize(13.0f);
-                incomingIcon = [[UIImage imageNamed:@"ConversationInstantPageButtonIconIncoming.png"] preloadedImageWithAlpha];
-                outgoingIcon = [[UIImage imageNamed:@"ConversationInstantPageButtonIconOutgoing.png"] preloadedImageWithAlpha];
+                incomingBackground = instantPageButtonBackground(UIColorRGB(0x3ca7fe), false);
+                incomingSolidBackground = instantPageButtonBackground(UIColorRGB(0x3ca7fe), true);
+                outgoingBackground = instantPageButtonBackground(UIColorRGB(0x29cc10), false);
+                outgoingSolidBackground = instantPageButtonBackground(UIColorRGB(0x29cc10), true);
             });
-            _instantPageButtonBackgroundModel = [[TGModernImageViewModel alloc] initWithImage:incoming ? incomingBackground : outgoingBackground];
-            [self addSubmodel:_instantPageButtonBackgroundModel];
-            _instantPageButtonTextModel = [[TGModernTextViewModel alloc] initWithText:TGLocalized(@"Conversation.InstantPagePreview") font:buttonFont];
-            _instantPageButtonTextModel.textColor = incoming ? UIColorRGB(0x0b8bed) : UIColorRGB(0x29cc10);
-            [self addSubmodel:_instantPageButtonTextModel];
-            _instantPageButtonIconModel = [[TGModernImageViewModel alloc] initWithImage:incoming ? incomingIcon : outgoingIcon];
-            _instantPageButtonIconModel.frame = CGRectMake(0.0f, 0.0f, _instantPageButtonIconModel.image.size.width, _instantPageButtonIconModel.image.size.height);
-            [self addSubmodel:_instantPageButtonIconModel];
+            
+            static NSDictionary *cachedButtons = nil;
+            if (cachedButtons == nil)
+                cachedButtons = [[NSDictionary alloc] init];
+            
+            NSDictionary *button = cachedButtons[buttonType];
+            if (button == nil || ![button[@"localeVersion"] isEqualToNumber:@(TGLocalizedStaticVersion)])
+            {
+                NSString *title = nil;
+                UIImage *iconImage = nil;
+                if ([buttonType isEqualToString:@"instantPage"])
+                {
+                    title = TGLocalized(@"Conversation.InstantPagePreview");
+                    iconImage = [UIImage imageNamed:@"ConversationInstantPageButtonIconIncoming.png"];
+                }
+                else if ([buttonType isEqualToString:@"viewChannel"])
+                {
+                    title = TGLocalized(@"Conversation.ViewChannel");
+                }
+                else if ([buttonType isEqualToString:@"viewGroup"])
+                {
+                    title = TGLocalized(@"Conversation.ViewGroup");
+                }
+                
+                button = [TGArticleWebpageFooterModel cachedActionButtonForTitle:title iconImage:iconImage];
+                NSMutableDictionary *updatedCachedButtons = [cachedButtons mutableCopy];
+                updatedCachedButtons[buttonType] = button;
+                cachedButtons = updatedCachedButtons;
+            }
+            
+            if (button != nil)
+            {
+                _actionButtonModel = [[TGModernButtonViewModel alloc] init];
+                _actionButtonModel.image = incoming ? button[@"incoming"] : button[@"outgoing"];
+                _actionButtonModel.highlightedImage = incoming ? button[@"incomingHighlighted"] : button[@"outgoingHighlighted"];
+                _actionButtonModel.backgroundImage = incoming ? incomingBackground : outgoingBackground;
+                _actionButtonModel.highlightedBackgroundImage = incoming ? incomingSolidBackground : outgoingSolidBackground;
+                _actionButtonModel.skipDrawInContext = true;
+                
+                __weak TGArticleWebpageFooterModel *weakSelf = self;
+                _actionButtonModel.pressed = ^{
+                    __strong TGArticleWebpageFooterModel *strongSelf = weakSelf;
+                    if (strongSelf != nil && strongSelf.instantPagePressed) {
+                        if ([buttonType isEqualToString:@"instantPage"])
+                            strongSelf.instantPagePressed();
+                        else
+                            strongSelf.viewGroupPressed();
+                    }
+                };
+                [self addSubmodel:_actionButtonModel];
+            }
         }
     }
     return self;
+}
+
++ (NSDictionary *)cachedActionButtonForTitle:(NSString *)title iconImage:(UIImage *)iconImage
+{
+    UIImage *incomingImage = instantPageButtonContent(UIColorRGB(0x0b8bed), [UIColor clearColor], title, iconImage);
+    UIImage *incomingSolidImage = instantPageButtonContent([UIColor whiteColor], UIColorRGB(0x3ca7fe), title, iconImage);
+    UIImage *outgoingImage = instantPageButtonContent(UIColorRGB(0x17b300), [UIColor clearColor], title, iconImage);
+    UIImage *outgoingSolidImage = instantPageButtonContent(UIColorRGB(0xe1ffc7), UIColorRGB(0x29cc10), title, iconImage);
+    
+    return @{ @"localeVersion": @(TGLocalizedStaticVersion), @"incoming": incomingImage, @"incomingHighlighted": incomingSolidImage, @"outgoing": outgoingImage, @"outgoingHighlighted": outgoingSolidImage };
 }
 
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition
 {
     _imageViewModel.parentOffset = itemPosition;
     [_imageViewModel bindViewToContainer:container viewStorage:viewStorage];
+    
+    _actionButtonModel.parentOffset = itemPosition;
+    [_actionButtonModel bindViewToContainer:container viewStorage:viewStorage];
+    _actionButtonModel.boundView.tag = 0xbeef;
     
     if (self.context.autoplayAnimations && self.mediaIsAvailable && self.boundToContainer) {
         [self activateWebpageContents];
@@ -577,6 +619,7 @@ static UIImage *durationInstantBackgroundImage()
 - (void)updateSpecialViewsPositions:(CGPoint)itemPosition
 {
     _imageViewModel.parentOffset = itemPosition;
+    _actionButtonModel.parentOffset = itemPosition;
 }
 
 - (CGSize)contentSizeForContainerSize:(CGSize)containerSize contentSize:(CGSize)topContentSize infoWidth:(CGFloat)infoWidth needsContentsUpdate:(bool *)needsContentsUpdate
@@ -595,7 +638,7 @@ static UIImage *durationInstantBackgroundImage()
     
     CGSize textContainerSize = CGSizeMake(contentContainerSize.width - imageInset, contentContainerSize.height);
     
-    if (_instantPageButtonBackgroundModel == nil) {
+    if (_actionButtonModel == nil) {
         if (_titleModel == nil && _textModel == nil) {
             _siteModel.additionalTrailingWidth = infoWidth;
         } else if (_textModel == nil && (_imageViewModel == nil || !_imageInText)) {
@@ -671,33 +714,29 @@ static UIImage *durationInstantBackgroundImage()
         {
             if (_siteModel != nil || _titleModel != nil || _textModel != nil) {
                 contentSize.height += 9.0f;
-            } else if (!_instantPageButtonBackgroundModel) {
+            } else if (!_actionButtonModel) {
                 contentSize.height += 17.0f;
             }
         }
         
-        if (_imageInText)
-            contentSize.width = MAX(contentSize.width, _imageViewModel.frame.size.width + 10.0f);
-        else
-            contentSize.width = MAX(contentSize.width, _imageViewModel.frame.size.width + 10.0f);
+        contentSize.width = MAX(contentSize.width, _imageViewModel.frame.size.width + 10.0f);
         
         if (!_imageInText)
             contentSize.height += _imageViewModel.frame.size.height;
         else
-            contentSize.height = MAX(contentSize.height, _imageViewModel.frame.size.height + 40.0f);
+            contentSize.height += MAX(0.0, _imageViewModel.frame.size.height - _textModel.frame.size.height - (_titleModel != nil ? _titleModel.frame.size.height + 3.0f : 0.0f));
+        
+        if (_imageInText && _imageViewModel != nil)
+        {
+            if (_actionButtonModel == nil)
+                contentSize.height = MAX(contentSize.height, 91.0f);
+            else
+                contentSize.height = MAX(contentSize.height, 80.0f);
+        }
     }
     
-    if (_instantPageButtonBackgroundModel != nil) {
-        contentSize.height += 33.0f;
-        if ([_instantPageButtonTextModel layoutNeedsUpdatingForContainerSize:CGSizeMake(200.0f, 200.0f)]) {
-            [_instantPageButtonTextModel layoutForContainerSize:CGSizeMake(200.0f, 200.0f)];
-        }
-        CGFloat textInset = 10.0f;
-        CGFloat iconInset = 23.0f;
-        CGFloat instantPageButtonWidth = _instantPageButtonTextModel.frame.size.width + iconInset + textInset + 8.0f;
-        if (contentSize.width < instantPageButtonWidth + infoWidth) {
-            contentSize.height += 10.0f;
-        }
+    if (_actionButtonModel != nil) {
+        contentSize.height += 50.0f;
     }
     
     return contentSize;
@@ -795,6 +834,10 @@ static UIImage *durationInstantBackgroundImage()
     if (_siteModel != nil)
         currentOffset += 2.0f + _siteModel.frame.size.height;
     
+    CGFloat finalBottomInset = 0.0f;
+    
+    currentOffset = MAX(currentOffset, 0.0f);
+    
     if (_imageViewModel != nil && !_imageInText)
     {
         if (_siteModel != nil) {
@@ -805,8 +848,7 @@ static UIImage *durationInstantBackgroundImage()
         if (_titleModel != nil || _textModel != nil) {
             currentOffset += 3.0f;
         } else {
-            if (bottomInset)
-                *bottomInset = 11.0f;
+            finalBottomInset = 12.0f;
         }
         
         currentOffset += _imageViewModel.frame.size.height;
@@ -826,11 +868,8 @@ static UIImage *durationInstantBackgroundImage()
     
     if (_textModel != nil)
     {
-        if (_textModel.containsEmptyNewline)
-        {
-            if (bottomInset)
-                *bottomInset = 11.0f;
-        }
+        if (_textModel.containsEmptyNewline && _actionButtonModel == nil)
+            finalBottomInset = 11.0f;
     }
     
     if (_durationModel != nil)
@@ -866,22 +905,19 @@ static UIImage *durationInstantBackgroundImage()
         _serviceIconModel.frame = CGRectMake(_imageViewModel.frame.size.width - _serviceIconModel.frame.size.width - 3.0f - TGRetinaPixel, 4.0f, _serviceIconModel.frame.size.width, _serviceIconModel.frame.size.height);
     }
     
-    if (_instantPageButtonBackgroundModel != nil) {
+    if (_actionButtonModel != nil) {
         CGFloat instantOffset = MAX(CGRectGetMaxY(_titleModel.frame), MAX(CGRectGetMaxY(_textModel.frame), CGRectGetMaxY(_imageViewModel.frame)));
-        if ([_instantPageButtonTextModel layoutNeedsUpdatingForContainerSize:CGSizeMake(200.0f, 200.0f)]) {
-            [_instantPageButtonTextModel layoutForContainerSize:CGSizeMake(200.0f, 200.0f)];
+        
+        CGFloat instantPageButtonWidth = rect.size.width;
+        _actionButtonModel.frame = CGRectMake(2.0f, instantOffset + 8.0f, instantPageButtonWidth, 33.0f);;
+        finalBottomInset += _actionButtonModel.frame.size.height + (_imageInText ? 18.0f : 20.0f) - 11.0f;
+        if (_textModel != nil) {
+            finalBottomInset += 8.0f;
         }
-        CGFloat textInset = 10.0f;
-        CGFloat iconInset = 23.0f;
-        CGFloat buttonLeftOrigin = _textModel.frame.origin.x;
-        if (_textModel == nil) {
-            buttonLeftOrigin = _titleModel.frame.origin.x;
-        }
-        CGFloat instantPageButtonWidth = _instantPageButtonTextModel.frame.size.width + iconInset + textInset;
-        _instantPageButtonBackgroundModel.frame = CGRectMake(buttonLeftOrigin, instantOffset + 7.0f, instantPageButtonWidth, 26.0f);
-        _instantPageButtonIconModel.frame = CGRectMake(_instantPageButtonBackgroundModel.frame.origin.x + 9.0f, _instantPageButtonBackgroundModel.frame.origin.y + 7.0f + TGRetinaPixel, _instantPageButtonIconModel.frame.size.width, _instantPageButtonIconModel.frame.size.height);
-        _instantPageButtonTextModel.frame = CGRectMake(_instantPageButtonBackgroundModel.frame.origin.x + iconInset, _instantPageButtonBackgroundModel.frame.origin.y + 2.0f + TGRetinaPixel, _instantPageButtonTextModel.frame.size.width, _instantPageButtonTextModel.frame.size.height);
     }
+    
+    if (bottomInset)
+        *bottomInset = finalBottomInset;
 }
 
 - (bool)activateWebpageContents
@@ -1009,7 +1045,7 @@ static UIImage *durationInstantBackgroundImage()
     }
 }
 
-- (void)stopInlineMedia
+- (void)stopInlineMedia:(int32_t)__unused excludeMid
 {
     [_imageViewModel setVideoPathSignal:nil];
     _activatedMedia = false;
@@ -1022,7 +1058,7 @@ static UIImage *durationInstantBackgroundImage()
     bool isCoub = [[_webPage.siteName lowercaseString] isEqualToString:@"coub"];
     bool isInstagram = [[_webPage.siteName lowercaseString] isEqualToString:@"instagram"];
     
-    if (isInstagram) {
+    if (!_isVideo && isInstagram) {
         [_imageViewModel setNone];
     }
     else if (_imageViewModel.manualProgress) {

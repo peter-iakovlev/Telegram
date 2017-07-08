@@ -34,6 +34,10 @@
 
 #import "TLUpdate$updateChannelTooLong.h"
 
+#import "TGChannelBannedRights.h"
+
+#import "TLRPCChannels_getAdminLog.h"
+
 @implementation TGChannelManagementSignals
 
 + (SSignal *)makeChannelWithTitle:(NSString *)title about:(NSString *)about group:(bool)group
@@ -912,7 +916,7 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse))
                     currentData = [currentData updateMigrationData:migrationData];
                     currentData = [currentData updateBotInfos:botInfos];
                     
-                    return [currentData updateManagementCount:channelFull.admins_count blacklistCount:channelFull.kicked_count memberCount:channelFull.participants_count];
+                    return [currentData updateManagementCount:channelFull.admins_count blacklistCount:channelFull.kicked_count bannedCount:channelFull.banned_count memberCount:channelFull.participants_count];
                 }];
                 
                 TLPeerNotifySettings *settings = channelFull.notify_settings;
@@ -1047,31 +1051,7 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse))
     }];
 }
 
-+ (SSignal *)channelChangeMemberKicked:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user kicked:(bool)kicked {
-    TLRPCchannels_kickFromChannel$channels_kickFromChannel *kickFromChannel = [[TLRPCchannels_kickFromChannel$channels_kickFromChannel alloc] init];
-    TLInputChannel$inputChannel *inputChannel = [[TLInputChannel$inputChannel alloc] init];
-    inputChannel.channel_id = TGChannelIdFromPeerId(peerId);
-    inputChannel.access_hash = accessHash;
-    kickFromChannel.channel = inputChannel;
-    TLInputUser$inputUser *inputUser = [[TLInputUser$inputUser alloc] init];
-    inputUser.user_id = user.uid;
-    inputUser.access_hash = user.phoneNumberHash;
-    kickFromChannel.user_id = inputUser;
-    kickFromChannel.kicked = kicked;
-    
-    return [[[TGTelegramNetworking instance] requestSignal:kickFromChannel] mapToSignal:^SSignal *(TLUpdates *updates) {
-        if (updates.chats.count != 0) {
-            TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:updates.chats[0]];
-            if (conversation.conversationId == peerId) {
-                [TGDatabaseInstance() updateChannels:@[conversation]];
-            }
-        }
-        [[TGTelegramNetworking instance] addUpdates:updates];
-        return [SSignal complete];
-    }];
-}
-
-+ (SSignal *)channelChangeRole:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user role:(TGChannelRole)role {
++ (SSignal *)updateChannelAdminRights:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user rights:(TGChannelAdminRights *)rights {
     TLRPCchannels_editAdmin$channels_editAdmin *editAdmin = [[TLRPCchannels_editAdmin$channels_editAdmin alloc] init];
     TLInputChannel$inputChannel *inputChannel = [[TLInputChannel$inputChannel alloc] init];
     inputChannel.channel_id = TGChannelIdFromPeerId(peerId);
@@ -1081,24 +1061,34 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse))
     inputUser.user_id = user.uid;
     inputUser.access_hash = user.phoneNumberHash;
     editAdmin.user_id = inputUser;
-    switch (role) {
-        case TGChannelRoleMember:
-            editAdmin.role = [[TLChannelParticipantRole$channelRoleEmpty alloc] init];
-            break;
-        case TGChannelRoleCreator:
-        case TGChannelRoleModerator:
-            editAdmin.role = [[TLChannelParticipantRole$channelRoleModerator alloc] init];
-            break;
-        case TGChannelRolePublisher:
-            editAdmin.role = [[TLChannelParticipantRole$channelRoleEditor alloc] init];
-            break;
-    }
+    editAdmin.admin_rights = [rights tlRights];
     
     return [[[TGTelegramNetworking instance] requestSignal:editAdmin] mapToSignal:^SSignal *(TLUpdates *updates) {
         [[TGTelegramNetworking instance] addUpdates:updates];
         
         return [SSignal complete];
     }];
+}
+
++ (SSignal *)updateChannelBannedRightsAndGetMembership:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user rights:(TGChannelBannedRights *)rights {
+    TLRPCchannels_editBanned$channels_editBanned *editBanned = [[TLRPCchannels_editBanned$channels_editBanned alloc] init];
+    TLInputChannel$inputChannel *inputChannel = [[TLInputChannel$inputChannel alloc] init];
+    inputChannel.channel_id = TGChannelIdFromPeerId(peerId);
+    inputChannel.access_hash = accessHash;
+    editBanned.channel = inputChannel;
+    TLInputUser$inputUser *inputUser = [[TLInputUser$inputUser alloc] init];
+    inputUser.user_id = user.uid;
+    inputUser.access_hash = user.phoneNumberHash;
+    editBanned.user_id = inputUser;
+    editBanned.banned_rights = [rights tlRights];
+    
+    SSignal *update = [[[[TGTelegramNetworking instance] requestSignal:editBanned] mapToSignal:^SSignal *(TLUpdates *updates) {
+        [[TGTelegramNetworking instance] addUpdates:updates];
+        
+        return [SSignal complete];
+    }] then:[self channelRole:peerId accessHash:accessHash user:user]];
+    
+    return update;
 }
 
 + (SSignal *)channelRole:(int64_t)peerId accessHash:(int64_t)accessHash user:(TGUser *)user {
@@ -1115,26 +1105,33 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse))
     
     return [[[[TGTelegramNetworking instance] requestSignal:getParticipant] map:^id(TLchannels_ChannelParticipant *result) {
         TLChannelParticipant *participant = result.participant;
-            TGChannelRole role = TGChannelRoleMember;
-            int32_t timestamp = 0;
-            if ([participant isKindOfClass:[TLChannelParticipant$channelParticipant class]]) {
-                role = TGChannelRoleMember;
-                timestamp = ((TLChannelParticipant$channelParticipant *)participant).date;
-            } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantCreator class]]) {
-                role = TGChannelRoleCreator;
-                timestamp = 0;
-            } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantEditor class]]) {
-                role = TGChannelRolePublisher;
-                timestamp = ((TLChannelParticipant$channelParticipantEditor *)participant).date;
-            } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantModerator class]]) {
-                role = TGChannelRoleModerator;
-                timestamp = ((TLChannelParticipant$channelParticipantModerator *)participant).date;
-            } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantKicked class]]) {
-                role = TGChannelRoleMember;
-                timestamp = ((TLChannelParticipant$channelParticipantKicked *)participant).date;
-            }
+        int32_t timestamp = 0;
+        bool isCreator = false;
+        TGChannelAdminRights *adminRights = nil;
+        TGChannelBannedRights *bannedRights = nil;
+        int32_t inviterId = 0;
+        int32_t adminInviterId = 0;
+        int32_t kickedById = 0;
+        bool adminCanManage = false;
         
-            return [[TGCachedConversationMember alloc] initWithUid:user.uid role:role timestamp:timestamp];
+        if ([participant isKindOfClass:[TLChannelParticipant$channelParticipant class]]) {
+            timestamp = ((TLChannelParticipant$channelParticipant *)participant).date;
+        } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantCreator class]]) {
+            isCreator = true;
+            timestamp = 0;
+        } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantAdmin class]]) {
+            adminRights = [[TGChannelAdminRights alloc] initWithTL:((TLChannelParticipant$channelParticipantAdmin *)participant).admin_rights];
+            inviterId = ((TLChannelParticipant$channelParticipantAdmin *)participant).inviter_id;
+            timestamp = ((TLChannelParticipant$channelParticipantAdmin *)participant).date;
+            adminInviterId = ((TLChannelParticipant$channelParticipantAdmin *)participant).promoted_by;
+            adminCanManage = ((TLChannelParticipant$channelParticipantAdmin *)participant).flags & (1 << 0);
+        } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantBanned class]]) {
+            bannedRights = [[TGChannelBannedRights alloc] initWithTL:((TLChannelParticipant$channelParticipantBanned *)participant).banned_rights];
+            kickedById = ((TLChannelParticipant$channelParticipantBanned *)participant).kicked_by;
+            timestamp = ((TLChannelParticipant$channelParticipantBanned *)participant).date;
+        }
+        
+        return [[TGCachedConversationMember alloc] initWithUid:user.uid isCreator:isCreator adminRights:adminRights bannedRights:bannedRights timestamp:timestamp inviterId:inviterId adminInviterId:adminInviterId kickedById:kickedById adminCanManage:adminCanManage];
     }] catch:^SSignal *(__unused id error) {
         return [SSignal single:nil];
     }];
@@ -1158,26 +1155,36 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse))
         for (TLChannelParticipant *participant in result.participants) {
             TGUser *user = [TGDatabaseInstance() loadUser:participant.user_id];
             if (user != nil) {
-                TGChannelRole role = TGChannelRoleMember;
                 int32_t timestamp = 0;
+                bool isCreator = false;
+                TGChannelAdminRights *adminRights = nil;
+                TGChannelBannedRights *bannedRights = nil;
+                int32_t inviterId = 0;
+                int32_t adminInviterId = 0;
+                int32_t kickedById = 0;
+                bool adminCanManage = false;
+                
                 if ([participant isKindOfClass:[TLChannelParticipant$channelParticipant class]]) {
-                    role = TGChannelRoleMember;
                     timestamp = ((TLChannelParticipant$channelParticipant *)participant).date;
                 } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantCreator class]]) {
-                    role = TGChannelRoleCreator;
+                    isCreator = true;
                     timestamp = 0;
-                } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantEditor class]]) {
-                    role = TGChannelRolePublisher;
-                    timestamp = ((TLChannelParticipant$channelParticipantEditor *)participant).date;
-                } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantModerator class]]) {
-                    role = TGChannelRoleModerator;
-                    timestamp = ((TLChannelParticipant$channelParticipantModerator *)participant).date;
-                } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantKicked class]]) {
-                    role = TGChannelRoleMember;
-                    timestamp = ((TLChannelParticipant$channelParticipantKicked *)participant).date;
+                } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantAdmin class]]) {
+                    adminRights = [[TGChannelAdminRights alloc] initWithTL:((TLChannelParticipant$channelParticipantAdmin *)participant).admin_rights];
+                    inviterId = ((TLChannelParticipant$channelParticipantAdmin *)participant).inviter_id;
+                    timestamp = ((TLChannelParticipant$channelParticipantAdmin *)participant).date;
+                    adminInviterId = ((TLChannelParticipant$channelParticipantAdmin *)participant).promoted_by;
+                    adminCanManage = ((TLChannelParticipant$channelParticipantAdmin *)participant).flags & (1 << 0);
+                } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantBanned class]]) {
+                    bannedRights = [[TGChannelBannedRights alloc] initWithTL:((TLChannelParticipant$channelParticipantBanned *)participant).banned_rights];
+                    timestamp = ((TLChannelParticipant$channelParticipantBanned *)participant).date;
+                    kickedById = ((TLChannelParticipant$channelParticipantBanned *)participant).kicked_by;
+                } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantSelf class]]) {
+                    timestamp = ((TLChannelParticipant$channelParticipantSelf *)participant).date;
+                    inviterId = ((TLChannelParticipant$channelParticipantSelf *)participant).inviter_id;
                 }
                 
-                memberDatas[@(user.uid)] = [[TGCachedConversationMember alloc] initWithUid:user.uid role:role timestamp:timestamp];
+                memberDatas[@(user.uid)] = [[TGCachedConversationMember alloc] initWithUid:user.uid isCreator:isCreator adminRights:adminRights bannedRights:bannedRights timestamp:timestamp inviterId:inviterId adminInviterId:adminInviterId kickedById:kickedById adminCanManage:adminCanManage];
                 [users addObject:user];
             }
         }
@@ -1188,6 +1195,10 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse))
 
 + (SSignal *)channelBlacklistMembers:(int64_t)peerId accessHash:(int64_t)accessHash offset:(NSUInteger)offset count:(NSUInteger)count {
     return [self channelMembers:peerId accessHash:accessHash filter:[[TLChannelParticipantsFilter$channelParticipantsKicked alloc] init] offset:offset count:count];
+}
+
++ (SSignal *)channelBannedMembers:(int64_t)peerId accessHash:(int64_t)accessHash offset:(NSUInteger)offset count:(NSUInteger)count {
+    return [self channelMembers:peerId accessHash:accessHash filter:[[TLChannelParticipantsFilter$channelParticipantsBanned alloc] init] offset:offset count:count];
 }
 
 + (SSignal *)channelMembers:(int64_t)peerId accessHash:(int64_t)accessHash offset:(NSUInteger)offset count:(NSUInteger)count {
@@ -1351,6 +1362,144 @@ static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse))
     reportSpam.n_id = messageIds;
     
     return [[TGTelegramNetworking instance] requestSignal:reportSpam];
+}
+
++ (SSignal *)resolveChannelWithUsername:(NSString *)username {
+    TLRPCcontacts_resolveUsername$contacts_resolveUsername *resolveUsername = [[TLRPCcontacts_resolveUsername$contacts_resolveUsername alloc] init];
+    resolveUsername.username = username;
+
+    return [[[TGTelegramNetworking instance] requestSignal:resolveUsername] mapToSignal:^SSignal *(TLcontacts_ResolvedPeer *resolvedPeer) {
+        if ([resolvedPeer.peer isKindOfClass:[TLPeer$peerChannel class]] && resolvedPeer.chats.count != 0) {
+            TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:resolvedPeer.chats[0]];
+            conversation.kind = TGConversationKindTemporaryChannel;
+            return [[TGChannelManagementSignals addChannel:conversation] takeLast];
+        }
+        else
+        {
+            return [SSignal fail:nil];
+        }
+    }];
+}
+
++ (SSignal *)channelAdminLogEvents:(int64_t)peerId accessHash:(int64_t)accessHash minEntryId:(int64_t)minEntryId count:(int32_t)count filter:(TGChannelEventFilter)filter searchQuery:(NSString *)searchQuery userIds:(NSArray *)userIds {
+    TLRPCchannels_getAdminLog *getAdminLog = [[TLRPCchannels_getAdminLog alloc] init];
+    TLInputChannel$inputChannel *inputChannel = [[TLInputChannel$inputChannel alloc] init];
+    inputChannel.channel_id = TGChannelIdFromPeerId(peerId);
+    inputChannel.access_hash = accessHash;
+    getAdminLog.channel = inputChannel;
+    getAdminLog.max_id = minEntryId;
+    
+    int32_t filterFlags = 0;
+    if (filter.join) {
+        filterFlags |= (1 << 0);
+    }
+    if (filter.leave) {
+        filterFlags |= (1 << 1);
+    }
+    if (filter.invite) {
+        filterFlags |= (1 << 2);
+    }
+    if (filter.ban) {
+        filterFlags |= (1 << 3);
+    }
+    if (filter.unban) {
+        filterFlags |= (1 << 4);
+    }
+    if (filter.kick) {
+        filterFlags |= (1 << 5);
+    }
+    if (filter.unkick) {
+        filterFlags |= (1 << 6);
+    }
+    if (filter.promote) {
+        filterFlags |= (1 << 7);
+    }
+    if (filter.demote) {
+        filterFlags |= (1 << 8);
+    }
+    if (filter.info) {
+        filterFlags |= (1 << 9);
+    }
+    if (filter.settings) {
+        filterFlags |= (1 << 10);
+    }
+    if (filter.pinned) {
+        filterFlags |= (1 << 11);
+    }
+    if (filter.edit) {
+        filterFlags |= (1 << 12);
+    }
+    if (filter.del) {
+        filterFlags |= (1 << 13);
+    }
+    
+    getAdminLog.flags |= (1 << 0);
+    
+    TLChannelAdminLogEventsFilter$channelAdminLogEventsFilter *eventsFilter = [[TLChannelAdminLogEventsFilter$channelAdminLogEventsFilter alloc] init];
+    eventsFilter.flags = filterFlags;
+    getAdminLog.events_filter = eventsFilter;
+    
+    getAdminLog.q = searchQuery;
+    
+    if (userIds != nil) {
+        NSMutableArray *users = [[NSMutableArray alloc] init];
+        for (NSNumber *userId in userIds) {
+            TGUser *user = [TGDatabaseInstance() loadUser:[userId intValue]];
+            if (user != nil) {
+                TLInputUser$inputUser *inputUser = [[TLInputUser$inputUser alloc] init];
+                inputUser.user_id = user.uid;
+                inputUser.access_hash = user.phoneNumberHash;
+                [users addObject:inputUser];
+            }
+        }
+        
+        getAdminLog.flags |= (1 << 1);
+        getAdminLog.admins = users;
+    }
+    
+    getAdminLog.limit = count;
+    
+    return [[[TGTelegramNetworking instance] requestSignal:getAdminLog] map:^id(TLchannels_AdminLogResults *results) {
+        [TGUserDataRequestBuilder executeUserDataUpdate:results.users];
+        NSMutableArray *entries = [[NSMutableArray alloc] init];
+        for (TLChannelAdminLogEvent *event in results.events) {
+            [entries addObject:[[TGChannelAdminLogEntry alloc] initWithTL:event]];
+        }
+        return entries;
+    }];
+}
+
++ (TGCachedConversationMember *)parseMember:(TLChannelParticipant *)participant {
+    int32_t timestamp = 0;
+    bool isCreator = false;
+    TGChannelAdminRights *adminRights = nil;
+    TGChannelBannedRights *bannedRights = nil;
+    int32_t inviterId = 0;
+    int32_t adminInviterId = 0;
+    int32_t kickedById = 0;
+    bool adminCanManage = false;
+    
+    if ([participant isKindOfClass:[TLChannelParticipant$channelParticipant class]]) {
+        timestamp = ((TLChannelParticipant$channelParticipant *)participant).date;
+    } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantCreator class]]) {
+        isCreator = true;
+        timestamp = 0;
+    } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantAdmin class]]) {
+        adminRights = [[TGChannelAdminRights alloc] initWithTL:((TLChannelParticipant$channelParticipantAdmin *)participant).admin_rights];
+        inviterId = ((TLChannelParticipant$channelParticipantAdmin *)participant).inviter_id;
+        timestamp = ((TLChannelParticipant$channelParticipantAdmin *)participant).date;
+        adminInviterId = ((TLChannelParticipant$channelParticipantAdmin *)participant).promoted_by;
+        adminCanManage = ((TLChannelParticipant$channelParticipantAdmin *)participant).flags & (1 << 0);
+    } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantBanned class]]) {
+        bannedRights = [[TGChannelBannedRights alloc] initWithTL:((TLChannelParticipant$channelParticipantBanned *)participant).banned_rights];
+        timestamp = ((TLChannelParticipant$channelParticipantBanned *)participant).date;
+        kickedById = ((TLChannelParticipant$channelParticipantBanned *)participant).kicked_by;
+    } else if ([participant isKindOfClass:[TLChannelParticipant$channelParticipantSelf class]]) {
+        timestamp = ((TLChannelParticipant$channelParticipantSelf *)participant).date;
+        inviterId = ((TLChannelParticipant$channelParticipantSelf *)participant).inviter_id;
+    }
+    
+    return [[TGCachedConversationMember alloc] initWithUid:participant.user_id isCreator:isCreator adminRights:adminRights bannedRights:bannedRights timestamp:timestamp inviterId:inviterId adminInviterId:adminInviterId kickedById:kickedById adminCanManage:adminCanManage];
 }
 
 @end

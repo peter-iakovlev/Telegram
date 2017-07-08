@@ -15,11 +15,15 @@ typedef enum {
     TGFlatActionCellModeCreateGroupContacts = 3,
     TGFlatActionCellModeChannels = 4,
     TGFlatActionCellModeCreateChannel = 5,
-    TGFlatActionCellModeCreateChannelGroup = 6
+    TGFlatActionCellModeCreateChannelGroup = 6,
+    TGFlatActionCellModeAddPhoneNumber = 7,
+    TGFlatActionCellModeShareApp = 8
 } TGFlatActionCellMode;
 
 @interface TGFlatActionCell : UITableViewCell
 
-- (void)setMode:(TGFlatActionCellMode)mode;
+@property (nonatomic) TGFlatActionCellMode mode;
+
+- (void)setPhoneNumber:(NSString *)phoneNumber;
 
 @end

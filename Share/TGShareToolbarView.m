@@ -30,7 +30,8 @@
         _wrapperView.backgroundColor = TGColorWithHex(0xf7f7f7);
         [self addSubview:_wrapperView];
         
-        UIView *stripeView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.frame.size.width, 0.5f)];
+        CGFloat separatorHeight = 1.0f / [[UIScreen mainScreen] scale];
+        UIView *stripeView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.frame.size.width, separatorHeight)];
         stripeView.backgroundColor = TGColorWithHex(0xb2b2b2);
         stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         [_wrapperView addSubview:stripeView];

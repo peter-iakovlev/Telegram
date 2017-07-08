@@ -10,11 +10,14 @@
 #import "TGInstantPageEmbedView.h"
 #import "TGInstantPageSlideshowView.h"
 #import "TGInstantPageFooterButtonView.h"
+#import "TGInstantPageChannelView.h"
+#import "TGInstantPageAudioView.h"
 
 #import "TGEmbedPIPController.h"
 
 #import "TGImageMediaAttachment.h"
 #import "TGVideoMediaAttachment.h"
+#import "TGDocumentMediaAttachment.h"
 
 static const NSString *TGLineSpacingFactorAttribute = @"TGLineSpacingFactorAttribute";
 static const NSString *TGUrlAttribute = @"TGUrlAttribute";
@@ -53,17 +56,30 @@ static NSString *richPlainText(TGRichText *text) {
 }
 
 static CGFloat spacingBetweenBlocks(TGInstantPageBlock *upper, TGInstantPageBlock *lower) {
-    if ([lower isKindOfClass:[TGInstantPageBlockCover class]]) {
+    if ([lower isKindOfClass:[TGInstantPageBlockCover class]] || ([lower isKindOfClass:[TGInstantPageBlockChannel class]] && upper == nil)) {
         return 0.0f;
+    } else if ([lower isKindOfClass:[TGInstantPageBlockChannel class]] && [upper isKindOfClass:[TGInstantPageBlockCover class]]) {
+        TGInstantPageBlockCover *coverBlock = (TGInstantPageBlockCover *)upper;
+        NSString *caption;
+        if ([coverBlock.block isKindOfClass:[TGInstantPageBlockPhoto class]])
+            caption = richPlainText(((TGInstantPageBlockPhoto *)coverBlock.block).caption);
+        else if ([coverBlock.block isKindOfClass:[TGInstantPageBlockVideo class]])
+            caption = richPlainText(((TGInstantPageBlockVideo *)coverBlock.block).caption);
+        else if ([coverBlock.block isKindOfClass:[TGInstantPageBlockSlideshow class]])
+            caption = richPlainText(((TGInstantPageBlockSlideshow *)coverBlock.block).caption);
+        
+        return caption.length > 0 ? -40.0f : 0.0f;
     } else if ([lower isKindOfClass:[TGInstantPageBlockDivider class]] || [upper isKindOfClass:[TGInstantPageBlockDivider class]]) {
         return 25.0f;
     } else if ([lower isKindOfClass:[TGInstantPageBlockBlockQuote class]] || [upper isKindOfClass:[TGInstantPageBlockBlockQuote class]] || [lower isKindOfClass:[TGInstantPageBlockPullQuote class]] || [upper isKindOfClass:[TGInstantPageBlockPullQuote class]]) {
         return 27.0f;
     } else if ([lower isKindOfClass:[TGInstantPageBlockTitle class]]) {
         return 20.0f;
+    } else if ([lower isKindOfClass:[TGInstantPageBlockSubtitle class]] && [upper isKindOfClass:[TGInstantPageBlockTitle class]]) {
+        return 18.0f;
     } else if ([lower isKindOfClass:[TGInstantPageBlockAuthorAndDate class]]) {
-        if ([upper isKindOfClass:[TGInstantPageBlockTitle class]]) {
-            return 26.0f;
+        if ([upper isKindOfClass:[TGInstantPageBlockTitle class]] || [upper isKindOfClass:[TGInstantPageBlockSubtitle class]]) {
+            return 18.0f;
         } else {
             return 20.0f;
         }
@@ -634,28 +650,116 @@ static CGFloat spacingBetweenBlocks(TGInstantPageBlock *upper, TGInstantPageBloc
 
 @end
 
+@interface TGInstantPageAudioItem : NSObject <TGInstantPageLayoutItem> {
+    TGDocumentMediaAttachment *_document;
+}
+
+@property (nonatomic) CGRect frame;
+@property (nonatomic, strong) TGInstantPagePresentation *presentation;
+
+@end
+
+@implementation TGInstantPageAudioItem
+
+- (instancetype)initWithFrame:(CGRect)frame document:(TGDocumentMediaAttachment *)document presentation:(TGInstantPagePresentation *)presentation {
+    self = [super init];
+    if (self != nil) {
+        _frame = frame;
+        _document = document;
+        _presentation = presentation;
+    }
+    return self;
+}
+
+- (UIView<TGInstantPageDisplayView> *)view {
+    return [[TGInstantPageAudioView alloc] initWithFrame:_frame document:_document presentation:_presentation];
+}
+
+- (bool)matchesView:(UIView<TGInstantPageDisplayView> *)view {
+    if ([view isKindOfClass:[TGInstantPageAudioView class]]) {
+        return ((TGInstantPageAudioView *)view).document.documentId == _document.documentId;
+    } else {
+        return false;
+    }
+}
+
+- (int32_t)distanceThresholdGroup {
+    return TGDistanceThresholdGroupMedia;
+}
+
+- (CGFloat)distanceThresholdWithGroupCount:(NSDictionary<NSNumber *,NSNumber *> *)groupCount {
+    if ([groupCount[@(TGDistanceThresholdGroupMedia)] intValue] <= 3) {
+        return CGFLOAT_MAX;
+    } else {
+        return 120.0f;
+    }
+}
+
+- (bool)hasLinks {
+    return false;
+}
+
+- (NSArray<TGInstantPageMedia *> *)medias {
+    return nil;
+}
+
+- (NSArray<TGDocumentMediaAttachment *> *)audios {
+    if (_document != nil) {
+        return @[_document];
+    } else {
+        return nil;
+    }
+}
+
+@end
+
 @interface TGInstantPageTextItem : NSObject <TGInstantPageLayoutItem> {
     @public NSArray<TGInstantPageTextLine *> *_lines;
     bool _hasLinks;
+    NSString *_text;
+    NSMutableSet *_rtlStrings;
 }
 
 @property (nonatomic) CGRect frame;
 @property (nonatomic) NSTextAlignment alignment;
+@property (nonatomic, readonly) bool containsRTL;
 
 @end
 
 @implementation TGInstantPageTextItem
 
-- (instancetype)initWithFrame:(CGRect)frame lines:(NSArray<TGInstantPageTextLine *> *)lines {
+- (instancetype)initWithFrame:(CGRect)frame lines:(NSArray<TGInstantPageTextLine *> *)lines text:(NSString *)text {
     self = [super init];
     if (self != nil) {
+        _alignment = NSTextAlignmentNatural;
         _frame = frame;
         _lines = lines;
+        _text = text;
+        
+        NSMutableSet *rtlStrings = [[NSMutableSet alloc] init];
+        
+        NSInteger index = -1;
         for (TGInstantPageTextLine *line in lines) {
+            index++;
+            
             if (line.urlItems != nil) {
                 _hasLinks = true;
-                break;
             }
+            CFArrayRef glyphRuns = CTLineGetGlyphRuns(line->_line);
+            CFIndex count = CFArrayGetCount(glyphRuns);
+            if (count != 0) {
+                for (CFIndex i = 0; i < count; i++){
+                    if (CTRunGetStatus((CTRunRef)CFArrayGetValueAtIndex(glyphRuns, i)) & kCTRunStatusRightToLeft) {
+                        [rtlStrings addObject:@(index)];
+                        _containsRTL = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (rtlStrings.count != 0) {
+            _rtlStrings = rtlStrings;
         }
     }
     return self;
@@ -674,7 +778,10 @@ static CGFloat spacingBetweenBlocks(TGInstantPageBlock *upper, TGInstantPageBloc
     CGFloat lowerOriginBound = clipRect.origin.y + clipRect.size.height + 10.0f;
     CGFloat boundsWidth = _frame.size.width;
     
+    NSInteger index = -1;
     for (TGInstantPageTextLine *line in _lines) {
+        index++;
+        
         CGRect lineFrame = line.frame;
         if (lineFrame.origin.y + lineFrame.size.height < upperOriginBound || lineFrame.origin.y > lowerOriginBound) {
             continue;
@@ -683,6 +790,10 @@ static CGFloat spacingBetweenBlocks(TGInstantPageBlock *upper, TGInstantPageBloc
         CGPoint lineOrigin = lineFrame.origin;
         if (_alignment == NSTextAlignmentCenter) {
             lineOrigin.x = CGFloor((boundsWidth - lineFrame.size.width) / 2.0f);
+        } else if (_alignment == NSTextAlignmentRight) {
+            lineOrigin.x = boundsWidth - lineFrame.size.width;
+        } else if (_alignment == NSTextAlignmentNatural && [_rtlStrings containsObject:@(index)]) {
+            lineOrigin.x = boundsWidth - lineFrame.size.width;
         }
         
         CGContextSetTextPosition(context, lineOrigin.x, lineOrigin.y + lineFrame.size.height);
@@ -702,15 +813,21 @@ static CGFloat spacingBetweenBlocks(TGInstantPageBlock *upper, TGInstantPageBloc
     return _hasLinks;
 }
 
+- (bool)hasText {
+    return true;
+}
+
 - (NSArray<TGInstantPageMedia *> *)medias {
     return nil;
 }
 
-static TGInstantPageLinkSelectionView *selectionViewFromFrames(NSArray<NSValue *> *frames, CGPoint origin, id urlItem) {
+static TGInstantPageLinkSelectionView *linkSelectionViewFromFrames(NSArray<NSValue *> *frames, CGPoint origin, id urlItem) {
     CGRect frame = CGRectMake(0.0f, 0.0f, 0.0f, 0.0f);
     bool first = true;
     for (NSValue *rectValue in frames) {
-        CGRect rect = [rectValue CGRectValue];
+        CGRect rect = CGRectIntegral([rectValue CGRectValue]);
+        rect.size.height += 2.0f;
+        
         if (first) {
             first = false;
             frame = rect;
@@ -720,12 +837,86 @@ static TGInstantPageLinkSelectionView *selectionViewFromFrames(NSArray<NSValue *
     }
     NSMutableArray *adjustedFrames = [[NSMutableArray alloc] init];
     for (NSValue *rectValue in frames) {
-        CGRect rect = [rectValue CGRectValue];
+        CGRect rect = CGRectIntegral([rectValue CGRectValue]);
         rect.origin.x -= frame.origin.x;
         rect.origin.y -= frame.origin.y;
+        rect.size.height += 2.0f;
         [adjustedFrames addObject:[NSValue valueWithCGRect:rect]];
     }
     return [[TGInstantPageLinkSelectionView alloc] initWithFrame:CGRectOffset(frame, origin.x, origin.y) rects:adjustedFrames urlItem:urlItem];
+}
+
+static TGInstantPageTextSelectionView *textSelectionViewFromFrames(NSArray<NSValue *> *frames, CGPoint origin, NSString *text) {
+    CGRect frame = CGRectMake(0.0f, 0.0f, 0.0f, 0.0f);
+    bool first = true;
+    for (NSValue *rectValue in frames) {
+        CGRect rect = [rectValue CGRectValue];
+        rect.size.height += 2.0f;
+        
+        if (first) {
+            first = false;
+            frame = CGRectOffset(rect, 0.0f, -2.0f);
+        } else {
+            frame = CGRectUnion(rect, frame);
+        }
+    }
+    NSMutableArray *adjustedFrames = [[NSMutableArray alloc] init];
+    
+    for (NSUInteger i = 0; i < frames.count; i++) {
+        CGRect rect = [frames[i] CGRectValue];
+        
+        rect.origin.x -= frame.origin.x;
+        rect.origin.y -= frame.origin.y;
+        
+        CGRect previousRect = i > 0 ? [frames[i - 1] CGRectValue] : CGRectNull;
+        CGRect nextRect = i < frames.count - 1 ? [frames[i + 1] CGRectValue] : CGRectNull;
+        CGFloat offset = 0.0f;
+        
+        if (!CGRectIsNull(previousRect)) {
+            previousRect.origin.x -= frame.origin.x;
+            previousRect.origin.y -= frame.origin.y;
+            
+            offset = ((rect.origin.y - CGRectGetMaxY(previousRect) - 8.0f) / 2.0f) + 1.0f;
+            rect.origin.y -= offset;
+        }
+        if (!CGRectIsNull(nextRect)) {
+            nextRect.origin.x -= frame.origin.x;
+            nextRect.origin.y -= frame.origin.y;
+            
+            rect.size.width = frame.size.width;
+            rect.size.height += (nextRect.origin.y - CGRectGetMaxY(rect) - 8.0f) / 2.0f + 1.0f;
+        } else {
+            rect.size.height += 2.0f;
+        }
+        rect.size.height += offset;
+        
+        [adjustedFrames addObject:[NSValue valueWithCGRect:rect]];
+        
+    }
+
+    return [[TGInstantPageTextSelectionView alloc] initWithFrame:CGRectOffset(frame, origin.x, origin.y) rects:adjustedFrames text:text];
+}
+
+- (TGInstantPageTextSelectionView *)textSelectionView {
+    NSMutableArray<NSValue *> *currentTextFrames = [[NSMutableArray alloc] init];
+    
+    NSInteger index = -1;
+    for (TGInstantPageTextLine *line in _lines) {
+        index++;
+        
+        CGPoint lineOrigin = line.frame.origin;
+        if (_alignment == NSTextAlignmentCenter) {
+            lineOrigin.x = CGFloor((self.frame.size.width - line.frame.size.width) / 2.0f);
+        } else if (_alignment == NSTextAlignmentRight) {
+            lineOrigin.x = self.frame.size.width - line.frame.size.width;
+        } else if (_alignment == NSTextAlignmentNatural && _containsRTL && [_rtlStrings containsObject:@(index)]) {
+            lineOrigin.x = self.frame.size.width - line.frame.size.width;
+        }
+
+        [currentTextFrames addObject:[NSValue valueWithCGRect:CGRectOffset(line.frame, lineOrigin.x, 0.0)]];
+    }
+        
+    return textSelectionViewFromFrames(currentTextFrames, self.frame.origin, _text);
 }
 
 - (NSArray<TGInstantPageLinkSelectionView *> *)linkSelectionViews {
@@ -733,13 +924,16 @@ static TGInstantPageLinkSelectionView *selectionViewFromFrames(NSArray<NSValue *
         NSMutableArray<TGInstantPageLinkSelectionView *> *views = [[NSMutableArray alloc] init];
         NSMutableArray<NSValue *> *currentLinkFrames = [[NSMutableArray alloc] init];
         id currentUrlItem = nil;
+        NSInteger index = -1;
         for (TGInstantPageTextLine *line in _lines) {
+            index++;
+            
             if (line.urlItems != nil) {
                 for (TGInstantPageTextUrlItem *urlItem in line.urlItems) {
                     if (currentUrlItem == urlItem.item) {
                     } else {
                         if (currentLinkFrames.count != 0) {
-                            [views addObject:selectionViewFromFrames(currentLinkFrames, self.frame.origin, currentUrlItem)];
+                            [views addObject:linkSelectionViewFromFrames(currentLinkFrames, self.frame.origin, currentUrlItem)];
                         }
                         [currentLinkFrames removeAllObjects];
                         currentUrlItem = urlItem.item;
@@ -747,19 +941,23 @@ static TGInstantPageLinkSelectionView *selectionViewFromFrames(NSArray<NSValue *
                     CGPoint lineOrigin = line.frame.origin;
                     if (_alignment == NSTextAlignmentCenter) {
                         lineOrigin.x = CGFloor((self.frame.size.width - line.frame.size.width) / 2.0f);
+                    } else if (_alignment == NSTextAlignmentRight) {
+                        lineOrigin.x = self.frame.size.width - line.frame.size.width;
+                    } else if (_alignment == NSTextAlignmentNatural && _containsRTL && [_rtlStrings containsObject:@(index)]) {
+                        lineOrigin.x = self.frame.size.width - line.frame.size.width;
                     }
                     [currentLinkFrames addObject:[NSValue valueWithCGRect:CGRectOffset(urlItem.frame, lineOrigin.x, 0.0)]];
                 }
             } else if (currentUrlItem != nil) {
                 if (currentLinkFrames.count != 0) {
-                    [views addObject:selectionViewFromFrames(currentLinkFrames, self.frame.origin, currentUrlItem)];
+                    [views addObject:linkSelectionViewFromFrames(currentLinkFrames, self.frame.origin, currentUrlItem)];
                 }
                 [currentLinkFrames removeAllObjects];
                 currentUrlItem = nil;
             }
         }
         if (currentLinkFrames.count != 0 && currentUrlItem != nil) {
-            [views addObject:selectionViewFromFrames(currentLinkFrames, self.frame.origin, currentUrlItem)];
+            [views addObject:linkSelectionViewFromFrames(currentLinkFrames, self.frame.origin, currentUrlItem)];
         }
         return views;
     }
@@ -838,21 +1036,23 @@ typedef enum {
 }
 
 @property (nonatomic) CGRect frame;
+@property (nonatomic, strong) TGInstantPagePresentation *presentation;
 
 @end
 
 @implementation TGInstantPageFooterButtonItem
 
-- (instancetype)initWithFrame:(CGRect)frame {
+- (instancetype)initWithFrame:(CGRect)frame presentation:(TGInstantPagePresentation *)presentation {
     self = [super init];
     if (self != nil) {
         _frame = frame;
+        _presentation = presentation;
     }
     return self;
 }
 
 - (UIView<TGInstantPageDisplayView> *)view {
-    return [[TGInstantPageFooterButtonView alloc] initWithFrame:_frame];
+    return [[TGInstantPageFooterButtonView alloc] initWithFrame:_frame presentation:_presentation];
 }
 
 - (bool)matchesView:(UIView<TGInstantPageDisplayView> *)view {
@@ -880,6 +1080,60 @@ typedef enum {
 }
 
 @end
+
+@interface TGInstantPageChannelItem : NSObject <TGInstantPageLayoutItem> {
+}
+
+@property (nonatomic) CGRect frame;
+@property (nonatomic, strong) TGConversation *channel;
+@property (nonatomic, readonly) bool overlay;
+@property (nonatomic, strong) TGInstantPagePresentation *presentation;
+
+@end
+
+@implementation TGInstantPageChannelItem
+
+- (instancetype)initWithFrame:(CGRect)frame channel:(TGConversation *)channel overlay:(bool)overlay presentation:(TGInstantPagePresentation *)presentation {
+    self = [super init];
+    if (self != nil) {
+        _frame = frame;
+        _channel = channel;
+        _overlay = overlay;
+        _presentation = presentation;
+    }
+    return self;
+}
+
+- (UIView<TGInstantPageDisplayView> *)view {
+    return [[TGInstantPageChannelView alloc] initWithFrame:_frame channel:_channel overlay:_overlay presentation:_presentation];
+}
+
+- (bool)matchesView:(UIView<TGInstantPageDisplayView> *)view {
+    if ([view isKindOfClass:[TGInstantPageChannelView class]]) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+- (int32_t)distanceThresholdGroup {
+    return 1000;
+}
+
+- (CGFloat)distanceThresholdWithGroupCount:(NSDictionary<NSNumber *,NSNumber *> *)__unused groupCount {
+    return 1000.0f;
+}
+
+- (bool)hasLinks {
+    return false;
+}
+
+- (NSArray<TGInstantPageMedia *> *)medias {
+    return nil;
+}
+
+@end
+
 
 @implementation TGInstantPageLayout
 
@@ -931,13 +1185,13 @@ typedef enum {
         [styleStack popItem];
         return result;
     } else if ([text isKindOfClass:[TGRichTextUrl class]]) {
-        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:UIColorRGB(0x007BE8)]];
+        [styleStack pushItem:[[TGInstantPageStyleUnderlineItem alloc] init]];
         NSMutableAttributedString *result = [[NSMutableAttributedString alloc] initWithAttributedString:[self attributedStringForRichText:((TGRichTextUrl *)text).text styleStack:styleStack]];
         [result addAttribute:(NSString *)TGUrlAttribute value:text range:NSMakeRange(0, result.length)];
         [styleStack popItem];
         return result;
     } else if ([text isKindOfClass:[TGRichTextEmail class]]) {
-        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:UIColorRGB(0x007BE8)]];
+        [styleStack pushItem:[[TGInstantPageStyleUnderlineItem alloc] init]];
         NSMutableAttributedString *result = [[NSMutableAttributedString alloc] initWithAttributedString:[self attributedStringForRichText:((TGRichTextEmail *)text).text styleStack:styleStack]];
         [result addAttribute:(NSString *)TGUrlAttribute value:text range:NSMakeRange(0, result.length)];
         [styleStack popItem];
@@ -958,12 +1212,12 @@ typedef enum {
 
 + (TGInstantPageTextItem *)layoutTextItemWithString:(NSAttributedString *)string boundingWidth:(CGFloat)boundingWidth {
     if (string.length == 0) {
-        return [[TGInstantPageTextItem alloc] initWithFrame:CGRectZero lines:@[]];
+        return [[TGInstantPageTextItem alloc] initWithFrame:CGRectZero lines:@[] text:nil];
     }
     NSMutableArray<TGInstantPageTextLine *> *lines = [[NSMutableArray alloc] init];
     UIFont *font = [string attribute:NSFontAttributeName atIndex:0 longestEffectiveRange:nil inRange:NSMakeRange(0, string.length)];
     if (font == nil) {
-        return [[TGInstantPageTextItem alloc] initWithFrame:CGRectZero lines:@[]];
+        return [[TGInstantPageTextItem alloc] initWithFrame:CGRectZero lines:@[] text:nil];
     }
     CGFloat lineSpacingFactor = 1.12f;
     NSNumber *lineSpacingFactorAttribute = [string attribute:(NSString *)TGLineSpacingFactorAttribute atIndex:0 longestEffectiveRange:nil inRange:NSMakeRange(0, string.length)];
@@ -1055,23 +1309,29 @@ typedef enum {
         height = CGRectGetMaxY(lines.lastObject.frame);
     }
     
-    return [[TGInstantPageTextItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, boundingWidth, height) lines:lines];
+    return [[TGInstantPageTextItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, boundingWidth, height) lines:lines text:string.string];
 }
 
-+ (TGInstantPageLayout *)layoutBlock:(TGInstantPageBlock *)block boundingWidth:(CGFloat)boundingWidth horizontalInset:(CGFloat)horizontalInset isCover:(bool)isCover fillToWidthAndHeight:(bool)fillToWidthAndHeight images:(NSDictionary<NSNumber *, TGImageMediaAttachment *> *)images videos:(NSDictionary<NSNumber *, TGVideoMediaAttachment *> *)videos webPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId mediaIndexCounter:(NSInteger *)mediaIndexCounter embedIndexCounter:(NSInteger *)embedIndexCounter {
++ (TGInstantPageLayout *)layoutBlock:(TGInstantPageBlock *)block boundingWidth:(CGFloat)boundingWidth horizontalInset:(CGFloat)horizontalInset isCover:(bool)isCover previousItems:(NSArray *)previousItems fillToWidthAndHeight:(bool)fillToWidthAndHeight images:(NSDictionary<NSNumber *, TGImageMediaAttachment *> *)images videos:(NSDictionary<NSNumber *, TGVideoMediaAttachment *> *)videos documents:(NSDictionary<NSNumber *, TGDocumentMediaAttachment *> *)documents webPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId mediaIndexCounter:(NSInteger *)mediaIndexCounter embedIndexCounter:(NSInteger *)embedIndexCounter overlay:(bool)overlay presentation:(TGInstantPagePresentation *)presentation {
+    CGFloat multiplier = presentation.fontSizeMultiplier;
+    
     if ([block isKindOfClass:[TGInstantPageBlockCover class]]) {
-        return [self layoutBlock:((TGInstantPageBlockCover *)block).block boundingWidth:boundingWidth horizontalInset:horizontalInset isCover:true fillToWidthAndHeight:fillToWidthAndHeight images:images videos:videos webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter];
+        return [self layoutBlock:((TGInstantPageBlockCover *)block).block boundingWidth:boundingWidth horizontalInset:horizontalInset isCover:true previousItems:previousItems fillToWidthAndHeight:fillToWidthAndHeight images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter overlay:overlay presentation:presentation];
     } else if ([block isKindOfClass:[TGInstantPageBlockTitle class]]) {
         TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:28.0]];
+        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(28.0f * multiplier)]];
         [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
         [styleStack pushItem:[[TGInstantPageStyleLineSpacingFactorItem alloc] initWithFactor:0.685f]];
+        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.titleColor]];
         TGInstantPageTextItem *item = [self layoutTextItemWithString:[self attributedStringForRichText:((TGInstantPageBlockTitle *)block).text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
         item.frame = CGRectOffset(item.frame, horizontalInset, 0.0f);
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:item.frame.size items:@[item]];
     } else if ([block isKindOfClass:[TGInstantPageBlockSubtitle class]]) {
         TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:17.0]];
+        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(17.0f * multiplier)]];
+        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.titleColor]];
+        if (presentation.fontSerif)
+            [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
         TGInstantPageTextItem *item = [self layoutTextItemWithString:[self attributedStringForRichText:((TGInstantPageBlockSubtitle *)block).text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
         item.frame = CGRectOffset(item.frame, horizontalInset, 0.0f);
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:item.frame.size items:@[item]];
@@ -1079,13 +1339,15 @@ typedef enum {
         TGInstantPageBlockAuthorAndDate *authorAndDateBlock = (TGInstantPageBlockAuthorAndDate *)block;
         
         TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:15.0]];
-        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:UIColorRGB(0x79828b)]];
+        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(15.0f * multiplier)]];
+        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.subtextColor]];
+        if (presentation.fontSerif)
+            [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
         
         TGRichText *text = nil;
         NSString *dateStringPlain = [NSDateFormatter localizedStringFromDate:[NSDate dateWithTimeIntervalSince1970:authorAndDateBlock.date] dateStyle:NSDateFormatterLongStyle timeStyle:NSDateFormatterNoStyle];
         TGRichText *dateText = [[TGRichTextPlain alloc] initWithText:dateStringPlain];
-        if (authorAndDateBlock.author != nil) {
+        if (richPlainText(authorAndDateBlock.author).length > 0) {
             if (authorAndDateBlock.date != 0) {
                 NSString *formatString = TGLocalized(@"InstantPage.AuthorAndDateTitle");
                 NSRange authorRange = [formatString rangeOfString:@"%1$@"];
@@ -1115,58 +1377,75 @@ typedef enum {
                 text = authorAndDateBlock.author;
             }
         } else {
-            text = dateText;
+            if (authorAndDateBlock.date != 0) {
+                text = dateText;
+            }
         }
         
         TGInstantPageTextItem *item = [self layoutTextItemWithString:[self attributedStringForRichText:text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
+        
+        if ([previousItems.lastObject isKindOfClass:[TGInstantPageTextItem class]]) {
+            if (((TGInstantPageTextItem *)previousItems.lastObject).containsRTL) {
+                item.alignment = NSTextAlignmentRight;
+            }
+        }
+        
         item.frame = CGRectOffset(item.frame, horizontalInset, 0.0f);
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:item.frame.size items:@[item]];
     } else if ([block isKindOfClass:[TGInstantPageBlockHeader class]]) {
         TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:24.0]];
+        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(24.0f * multiplier)]];
         [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
         [styleStack pushItem:[[TGInstantPageStyleLineSpacingFactorItem alloc] initWithFactor:0.685f]];
+        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.textColor]];
         TGInstantPageTextItem *item = [self layoutTextItemWithString:[self attributedStringForRichText:((TGInstantPageBlockHeader *)block).text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
         item.frame = CGRectOffset(item.frame, horizontalInset, 0.0f);
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:item.frame.size items:@[item]];
     } else if ([block isKindOfClass:[TGInstantPageBlockSubheader class]]) {
         TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:19.0]];
+        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(19.0f * multiplier)]];
         [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
         [styleStack pushItem:[[TGInstantPageStyleLineSpacingFactorItem alloc] initWithFactor:0.685f]];
+        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.textColor]];
         TGInstantPageTextItem *item = [self layoutTextItemWithString:[self attributedStringForRichText:((TGInstantPageBlockSubheader *)block).text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
         item.frame = CGRectOffset(item.frame, horizontalInset, 0.0f);
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:item.frame.size items:@[item]];
     } else if ([block isKindOfClass:[TGInstantPageBlockParagraph class]]) {
         TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:17.0]];
+        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(17.0f * multiplier)]];
+        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.textColor]];
+        if (presentation.fontSerif)
+            [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
         TGInstantPageTextItem *item = [self layoutTextItemWithString:[self attributedStringForRichText:((TGInstantPageBlockParagraph *)block).text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
         item.frame = CGRectOffset(item.frame, horizontalInset, 0.0f);
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:item.frame.size items:@[item]];
     } else if ([block isKindOfClass:[TGInstantPageBlockPreFormatted class]]) {
         TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:16.0]];
+        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(16.0f * multiplier)]];
         [styleStack pushItem:[[TGInstantPageStyleFontFixedItem alloc] initWithFixed:true]];
+        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.textColor]];
         
         CGFloat backgroundInset = 14.0f;
         
         TGInstantPageTextItem *item = [self layoutTextItemWithString:[self attributedStringForRichText:((TGInstantPageBlockPreFormatted *)block).text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset - backgroundInset - backgroundInset];
         item.frame = CGRectOffset(item.frame, horizontalInset, backgroundInset);
         
-        TGInstantPageShapeItem *backgroundItem = [[TGInstantPageShapeItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, boundingWidth, item.frame.size.height + backgroundInset + backgroundInset) shapeFrame:CGRectMake(0.0f, 0.0f, boundingWidth, item.frame.size.height + backgroundInset + backgroundInset) shape:TGInstantPageShapeRect color:UIColorRGB(0xF5F8FC)];
+        TGInstantPageShapeItem *backgroundItem = [[TGInstantPageShapeItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, boundingWidth, item.frame.size.height + backgroundInset + backgroundInset) shapeFrame:CGRectMake(0.0f, 0.0f, boundingWidth, item.frame.size.height + backgroundInset + backgroundInset) shape:TGInstantPageShapeRect color:presentation.panelColor];
         
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:backgroundItem.frame.size items:@[backgroundItem, item]];
     } else if ([block isKindOfClass:[TGInstantPageBlockFooter class]]) {
         TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:15.0]];
-        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:UIColorRGB(0x79828B)]];
+        [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(15.0f * multiplier)]];
+        [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.subtextColor]];
+        if (presentation.fontSerif)
+            [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
         TGInstantPageTextItem *item = [self layoutTextItemWithString:[self attributedStringForRichText:((TGInstantPageBlockFooter *)block).text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
         item.frame = CGRectOffset(item.frame, horizontalInset, 0.0f);
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:item.frame.size items:@[item]];
 
     } else if ([block isKindOfClass:[TGInstantPageBlockDivider class]]) {
         CGFloat lineWidth = CGFloor(boundingWidth / 2.0f);
-        TGInstantPageShapeItem *shapeItem = [[TGInstantPageShapeItem alloc] initWithFrame:CGRectMake(CGFloor((boundingWidth - lineWidth) / 2.0f), 0.0f, lineWidth, 1.0f) shapeFrame:CGRectMake(0.0f, 0.0f, lineWidth, 1.0f) shape:TGInstantPageShapeRect color:UIColorRGBA(0x79828B, 0.4f)];
+        TGInstantPageShapeItem *shapeItem = [[TGInstantPageShapeItem alloc] initWithFrame:CGRectMake(CGFloor((boundingWidth - lineWidth) / 2.0f), 0.0f, lineWidth, 1.0f) shapeFrame:CGRectMake(0.0f, 0.0f, lineWidth, 1.0f) shape:TGInstantPageShapeRect color:[presentation.subtextColor colorWithAlphaComponent:0.4f]];
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:shapeItem.frame.size items:@[shapeItem]];
     } else if ([block isKindOfClass:[TGInstantPageBlockList class]]) {
         TGInstantPageBlockList *listBlock = (TGInstantPageBlockList *)block;
@@ -1177,13 +1456,16 @@ typedef enum {
         for (NSUInteger i = 0; i < listBlock.items.count; i++) {
             if (listBlock.ordered) {
                 TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-                [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:17.0]];
+                [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(17.0f * multiplier)]];
+                [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.textColor]];
+                if (presentation.fontSerif)
+                    [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
                 
                 TGInstantPageTextItem *textItem = [self layoutTextItemWithString:[self attributedStringForRichText:[[TGRichTextPlain alloc] initWithText:[NSString stringWithFormat:@"%d.", (int)i + 1]] styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
                 maxIndexWidth = MAX(textItem->_lines.firstObject.frame.size.width, maxIndexWidth);
                 [indexItems addObject:textItem];
             } else {
-                TGInstantPageShapeItem *shapeItem = [[TGInstantPageShapeItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 6.0f, 12.0f) shapeFrame:CGRectMake(0.0f, 3.0f, 6.0f, 6.0f) shape:TGInstantPageShapeEllipse color:[UIColor blackColor]];
+                TGInstantPageShapeItem *shapeItem = [[TGInstantPageShapeItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 6.0f, 12.0f) shapeFrame:CGRectMake(0.0f, 3.0f, 6.0f, 6.0f) shape:TGInstantPageShapeEllipse color:presentation.textColor];
                 [indexItems addObject:shapeItem];
             }
         }
@@ -1195,7 +1477,11 @@ typedef enum {
                 contentSize.height += 20.0f;
             }
             TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:17.0]];
+            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(17.0f * multiplier)]];
+            [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.textColor]];
+            if (presentation.fontSerif)
+                [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
+            
             TGInstantPageTextItem *textItem = [self layoutTextItemWithString:[self attributedStringForRichText:text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset - indexSpacing - maxIndexWidth];
             textItem.frame = CGRectOffset(textItem.frame, horizontalInset + indexSpacing + maxIndexWidth, contentSize.height);
             
@@ -1216,9 +1502,10 @@ typedef enum {
         
         {
             TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:17.0]];
+            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(17.0f * multiplier)]];
             [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
             [styleStack pushItem:[[TGInstantPageStyleItalicItem alloc] init]];
+            [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.textColor]];
             
             TGInstantPageTextItem *textItem = [self layoutTextItemWithString:[self attributedStringForRichText:quoteBlock.text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset - lineInset];
             textItem.frame = CGRectOffset(textItem.frame, horizontalInset + lineInset, contentSize.height);
@@ -1230,8 +1517,10 @@ typedef enum {
             contentSize.height += 14.0f;
             {
                 TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-                [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:15.0]];
-                [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:UIColorRGB(0x79828B)]];
+                [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(15.0f * multiplier)]];
+                [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.subtextColor]];
+                if (presentation.fontSerif)
+                    [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
                 
                 TGInstantPageTextItem *captionItem = [self layoutTextItemWithString:[self attributedStringForRichText:quoteBlock.caption styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset - lineInset];
                 captionItem.frame = CGRectOffset(captionItem.frame, horizontalInset + lineInset, contentSize.height);
@@ -1241,7 +1530,7 @@ typedef enum {
             }
         }
         contentSize.height += verticalInset;
-        [items addObject:[[TGInstantPageShapeItem alloc] initWithFrame:CGRectMake(horizontalInset, 0.0f, 3.0f, contentSize.height) shapeFrame:CGRectMake(0.0f, 0.0f, 3.0f, contentSize.height) shape:TGInstantPageShapeRoundLine color:[UIColor blackColor]]];
+        [items addObject:[[TGInstantPageShapeItem alloc] initWithFrame:CGRectMake(horizontalInset, 0.0f, 3.0f, contentSize.height) shapeFrame:CGRectMake(0.0f, 0.0f, 3.0f, contentSize.height) shape:TGInstantPageShapeRoundLine color:presentation.textColor]];
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:contentSize items:items];
     } else if ([block isKindOfClass:[TGInstantPageBlockPullQuote class]]) {
         TGInstantPageBlockPullQuote *quoteBlock = (TGInstantPageBlockPullQuote *)block;
@@ -1252,9 +1541,10 @@ typedef enum {
         
         {
             TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:17.0]];
+            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(17.0f * multiplier)]];
             [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
             [styleStack pushItem:[[TGInstantPageStyleItalicItem alloc] init]];
+            [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.textColor]];
             
             TGInstantPageTextItem *textItem = [self layoutTextItemWithString:[self attributedStringForRichText:quoteBlock.text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
             textItem.frame = CGRectOffset(textItem.frame, CGFloor((boundingWidth - textItem.frame.size.width) / 2.0), contentSize.height);
@@ -1266,8 +1556,10 @@ typedef enum {
         contentSize.height += 14.0f;
         {
             TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:15.0]];
-            [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:UIColorRGB(0x79828B)]];
+            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(15.0f * multiplier)]];
+            [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.subtextColor]];
+            if (presentation.fontSerif)
+                [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
             
             TGInstantPageTextItem *captionItem = [self layoutTextItemWithString:[self attributedStringForRichText:quoteBlock.caption styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
             captionItem.frame = CGRectOffset(captionItem.frame, CGFloor((boundingWidth - captionItem.frame.size.width) / 2.0), contentSize.height);
@@ -1309,8 +1601,11 @@ typedef enum {
                 if (photoBlock.caption != nil) {
                     contentSize.height += 10.0f;
                     TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-                    [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:15.0]];
-                    [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:UIColorRGB(0x79828B)]];
+                    [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(15.0f * multiplier)]];
+                    [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.subtextColor]];
+                    if (presentation.fontSerif)
+                        [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
+                    
                     TGInstantPageTextItem *captionItem = [self layoutTextItemWithString:[self attributedStringForRichText:photoBlock.caption styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
                     if (filledSize.width >= boundingWidth - FLT_EPSILON) {
                         captionItem.alignment = NSTextAlignmentCenter;
@@ -1358,8 +1653,11 @@ typedef enum {
                 if (videoBlock.caption != nil) {
                     contentSize.height += 10.0f;
                     TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-                    [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:15.0]];
-                    [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:UIColorRGB(0x79828B)]];
+                    [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(15.0f * multiplier)]];
+                    [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.subtextColor]];
+                    if (presentation.fontSerif)
+                        [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
+                    
                     TGInstantPageTextItem *captionItem = [self layoutTextItemWithString:[self attributedStringForRichText:videoBlock.caption styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
                     if (filledSize.width >= boundingWidth - FLT_EPSILON) {
                         captionItem.alignment = NSTextAlignmentCenter;
@@ -1402,6 +1700,9 @@ typedef enum {
         TGInstantPageBlockSlideshow *slideshowBlock = (TGInstantPageBlockSlideshow *)block;
         NSMutableArray<TGInstantPageMedia *> *medias = [[NSMutableArray alloc] init];
         CGSize contentSize = CGSizeMake(boundingWidth, 0.0f);
+        
+        NSMutableArray *items = [[NSMutableArray alloc] init];
+        
         for (TGInstantPageBlock *subBlock in slideshowBlock.items) {
             if ([subBlock isKindOfClass:[TGInstantPageBlockPhoto class]]) {
                 TGInstantPageBlockPhoto *photoBlock = (TGInstantPageBlockPhoto *)subBlock;
@@ -1415,13 +1716,31 @@ typedef enum {
                         (*mediaIndexCounter)++;
                         
                         CGSize filledSize = TGFitSize(imageSize, CGSizeMake(boundingWidth, 1200.0f));
-                        contentSize.height = MAX(contentSize.height, filledSize.height);
-                        [medias addObject:[[TGInstantPageMedia alloc] initWithIndex:mediaIndex media:imageMedia]];
+                        contentSize.height = MIN(MAX(contentSize.height, filledSize.height), boundingWidth);
+                        [medias addObject:[[TGInstantPageMedia alloc] initWithIndex:mediaIndex media:mediaWithCaption]];
                     }
                 }
             }
         }
-        return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:contentSize items:@[[[TGInstantPageSlideshowItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, boundingWidth, contentSize.height) medias:medias]]];
+        
+        [items addObject:[[TGInstantPageSlideshowItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, boundingWidth, contentSize.height) medias:medias]];
+        
+        if (slideshowBlock.caption != nil) {
+            contentSize.height += 10.0f;
+            TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
+            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(15.0f * multiplier)]];
+            [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.subtextColor]];
+            if (presentation.fontSerif)
+                [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
+            
+            TGInstantPageTextItem *captionItem = [self layoutTextItemWithString:[self attributedStringForRichText:slideshowBlock.caption styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
+            captionItem.alignment = NSTextAlignmentCenter;
+            captionItem.frame = CGRectOffset(captionItem.frame, CGFloor((boundingWidth - captionItem.frame.size.width) / 2.0), contentSize.height);
+            contentSize.height += captionItem.frame.size.height;
+            [items addObject:captionItem];
+        }
+
+        return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:contentSize items:items];
     } else if ([block isKindOfClass:[TGInstantPageBlockCollage class]]) {
         TGInstantPageBlockCollage *collageBlock = (TGInstantPageBlockCollage *)block;
         CGFloat spacing = 2.0f;
@@ -1436,7 +1755,7 @@ typedef enum {
                 nextItemOrigin.x = 0.0f;
                 nextItemOrigin.y += itemSize + spacing;
             }
-            TGInstantPageLayout *subLayout = [self layoutBlock:subBlock boundingWidth:itemSize horizontalInset:0.0f isCover:false fillToWidthAndHeight:true images:images videos:videos webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter];
+            TGInstantPageLayout *subLayout = [self layoutBlock:subBlock boundingWidth:itemSize horizontalInset:0.0f isCover:false previousItems:items fillToWidthAndHeight:true images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter overlay:overlay presentation:presentation];
             [items addObjectsFromArray:[subLayout flattenedItemsWithOrigin:nextItemOrigin]];
             nextItemOrigin.x += itemSize + spacing;
         }
@@ -1469,8 +1788,11 @@ typedef enum {
             }
             
             TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:17.0]];
+            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(17.0f * multiplier)]];
             [styleStack pushItem:[[TGInstantPageStyleBoldItem alloc] init]];
+            [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.textColor]];
+            if (presentation.fontSerif)
+                [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
             
             TGInstantPageTextItem *textItem = [self layoutTextItemWithString:[self attributedStringForRichText:[[TGRichTextPlain alloc] initWithText:postBlock.author] styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset - lineInset - avatarInset];
             textItem.frame = CGRectOffset(textItem.frame, horizontalInset + lineInset + avatarInset, contentSize.height + avatarVerticalInset);
@@ -1485,8 +1807,11 @@ typedef enum {
             NSString *dateString = [NSDateFormatter localizedStringFromDate:[NSDate dateWithTimeIntervalSince1970:postBlock.date] dateStyle:NSDateFormatterLongStyle timeStyle:NSDateFormatterNoStyle];
             
             TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:15.0]];
-            [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:UIColorRGB(0x838C96)]];
+            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(15.0f * multiplier)]];
+            [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.subtextColor]];
+            if (presentation.fontSerif)
+                [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
+            
             TGInstantPageTextItem *textItem = [self layoutTextItemWithString:[self attributedStringForRichText:[[TGRichTextPlain alloc] initWithText:dateString] styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset - lineInset - avatarInset];
             textItem.frame = CGRectOffset(textItem.frame, horizontalInset + lineInset + avatarInset, contentSize.height);
             contentSize.height += textItem.frame.size.height;
@@ -1502,8 +1827,8 @@ typedef enum {
             
             TGInstantPageBlock *previousBlock = nil;
             for (TGInstantPageBlock *subBlock in postBlock.blocks) {
-                TGInstantPageLayout *subLayout = [self layoutBlock:subBlock boundingWidth:boundingWidth - horizontalInset - horizontalInset - lineInset horizontalInset:0.0f isCover:false fillToWidthAndHeight:false images:images videos:videos webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter];
-                CGFloat spacing = spacingBetweenBlocks(previousBlock, subBlock);
+                TGInstantPageLayout *subLayout = [self layoutBlock:subBlock boundingWidth:boundingWidth - horizontalInset - horizontalInset - lineInset horizontalInset:0.0f isCover:false previousItems:items fillToWidthAndHeight:false images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter overlay:overlay presentation:presentation];
+                CGFloat spacing = spacingBetweenBlocks(previousBlock, subBlock) * presentation.fontSizeMultiplier;
                 NSArray *blockItems = [subLayout flattenedItemsWithOrigin:CGPointMake(horizontalInset + lineInset, contentSize.height + spacing)];
                 [items addObjectsFromArray:blockItems];
                 contentSize.height += subLayout.contentSize.height + spacing;
@@ -1513,15 +1838,18 @@ typedef enum {
         
         contentSize.height += verticalInset;
         
-        [items addObject:[[TGInstantPageShapeItem alloc] initWithFrame:CGRectMake(horizontalInset, 0.0f, 3.0f, contentSize.height) shapeFrame:CGRectMake(0.0f, 0.0f, 3.0f, contentSize.height) shape:TGInstantPageShapeRoundLine color:[UIColor blackColor]]];
+        [items addObject:[[TGInstantPageShapeItem alloc] initWithFrame:CGRectMake(horizontalInset, 0.0f, 3.0f, contentSize.height) shapeFrame:CGRectMake(0.0f, 0.0f, 3.0f, contentSize.height) shape:TGInstantPageShapeRoundLine color:presentation.textColor]];
         
         TGRichText *postCaption = postBlock.caption;
         
         if (postCaption != nil) {
             contentSize.height += 14.0f;
             TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
-            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:15.0]];
-            [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:UIColorRGB(0x79828B)]];
+            [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(15.0f * multiplier)]];
+            [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.subtextColor]];
+            if (presentation.fontSerif)
+                [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
+            
             TGInstantPageTextItem *captionItem = [self layoutTextItemWithString:[self attributedStringForRichText:postCaption styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
             captionItem.frame = CGRectOffset(captionItem.frame, horizontalInset, contentSize.height);
             contentSize.height += captionItem.frame.size.height;
@@ -1532,12 +1860,53 @@ typedef enum {
     } else if ([block isKindOfClass:[TGInstantPageBlockAnchor class]]) {
         TGInstantPageBlockAnchor *anchorBlock = (TGInstantPageBlockAnchor *)block;
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:CGSizeMake(0.0f, 0.0f) items:@[[[TGInstantPageAnchorItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 0.0f, 0.0f) anchor:anchorBlock.name]]];
+    } else if ([block isKindOfClass:[TGInstantPageBlockChannel class]]) {
+        TGInstantPageBlockChannel *channelBlock = (TGInstantPageBlockChannel *)block;
+    
+        if (channelBlock.channel != nil)
+        {
+            TGInstantPageChannelItem *item = [[TGInstantPageChannelItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, boundingWidth, [TGInstantPageChannelView height]) channel:channelBlock.channel overlay:overlay presentation:presentation];
+            return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:CGSizeMake(boundingWidth, item.frame.size.height) items:@[item]];
+        }
+    } else if ([block isKindOfClass:[TGInstantPageBlockAudio class]]) {
+        TGInstantPageBlockAudio *audioBlock = (TGInstantPageBlockAudio *)block;
+        
+        TGDocumentMediaAttachment *document = documents[@(audioBlock.audioId)];
+        if (document != nil) {
+            NSMutableArray *items = [[NSMutableArray alloc] init];
+            
+            CGSize contentSize = CGSizeMake(boundingWidth, 0.0f);
+            
+            TGInstantPageAudioItem *item = [[TGInstantPageAudioItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, boundingWidth, [TGInstantPageAudioView height]) document:document presentation:presentation];
+            contentSize.height += item.frame.size.height;
+            [items addObject:item];
+            
+            TGRichText *postCaption = audioBlock.caption;
+            
+            if (postCaption != nil) {
+                contentSize.height += 10.0f;
+                TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
+                [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(15.0f * multiplier)]];
+                [styleStack pushItem:[[TGInstantPageStyleTextColorItem alloc] initWithColor:presentation.subtextColor]];
+                if (presentation.fontSerif)
+                    [styleStack pushItem:[[TGInstantPageStyleFontSerifItem alloc] initWithSerif:true]];
+                
+                TGInstantPageTextItem *captionItem = [self layoutTextItemWithString:[self attributedStringForRichText:postCaption styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
+                captionItem.frame = CGRectOffset(captionItem.frame, 0.0f, contentSize.height);
+                captionItem.frame = CGRectOffset(captionItem.frame, CGFloor((boundingWidth - captionItem.frame.size.width) / 2.0), 0.0f);
+                captionItem.alignment = NSTextAlignmentCenter;
+                contentSize.height += captionItem.frame.size.height;
+                [items addObject:captionItem];
+            }
+            
+            return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:contentSize items:items];
+        }
     }
     
     return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:CGSizeMake(0.0f, 0.0f) items:@[]];
 }
 
-+ (TGInstantPageLayout *)makeLayoutForWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId boundingWidth:(CGFloat)boundingWidth {
++ (TGInstantPageLayout *)makeLayoutForWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId boundingWidth:(CGFloat)boundingWidth presentation:(TGInstantPagePresentation *)presentation {
     NSArray<TGInstantPageBlock *> *pageBlocks = webPage.instantPage.blocks;
     
     CGSize contentSize = CGSizeMake(boundingWidth, 0.0f);
@@ -1545,6 +1914,7 @@ typedef enum {
     
     NSDictionary *images = webPage.instantPage.images;
     NSDictionary *videos = webPage.instantPage.videos;
+    NSDictionary *documents = webPage.instantPage.documents;
     if (webPage.photo != nil) {
         NSMutableDictionary *updatedImages = [[NSMutableDictionary alloc] initWithDictionary:images];
         updatedImages[@(webPage.photo.imageId)] = webPage.photo;
@@ -1580,26 +1950,128 @@ typedef enum {
     NSInteger embedIndexCounter = 0;
     
     TGInstantPageBlock *previousBlock = nil;
+    TGInstantPageLayout *previousLayout = nil;
     for (TGInstantPageBlock *block in pageBlocks) {
-        TGInstantPageLayout *blockLayout = [self layoutBlock:block boundingWidth:boundingWidth horizontalInset:17.0f isCover:false fillToWidthAndHeight:false images:images videos:videos webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:&mediaIndexCounter embedIndexCounter:&embedIndexCounter];
-        CGFloat spacing = spacingBetweenBlocks(previousBlock, block);
+        CGFloat spacingBetween = spacingBetweenBlocks(previousBlock, block);
+        if (spacingBetween > FLT_EPSILON)
+            spacingBetween *= presentation.fontSizeMultiplier;
+        
+        if (spacingBetween < -FLT_EPSILON) {
+            spacingBetween -= previousLayout.contentSize.height - previousLayout.items.firstObject.frame.size.height;
+        }
+        
+        TGInstantPageLayout *blockLayout = [self layoutBlock:block boundingWidth:boundingWidth horizontalInset:17.0f isCover:false previousItems:items fillToWidthAndHeight:false images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:&mediaIndexCounter embedIndexCounter:&embedIndexCounter overlay:(spacingBetween < -FLT_EPSILON) presentation:presentation];
+        
+        CGFloat spacing = blockLayout.contentSize.height > FLT_EPSILON ? spacingBetween : 0.0f;
         NSArray *blockItems = [blockLayout flattenedItemsWithOrigin:CGPointMake(0.0f, contentSize.height + spacing)];
         [items addObjectsFromArray:blockItems];
-        contentSize.height += blockLayout.contentSize.height + spacing;
+        contentSize.height += (spacing > -FLT_EPSILON ? blockLayout.contentSize.height + spacing : 0.0f);
         previousBlock = block;
+        previousLayout = blockLayout;
     }
-    CGFloat closingSpacing = spacingBetweenBlocks(previousBlock, nil);
+    CGFloat closingSpacing = spacingBetweenBlocks(previousBlock, nil) * presentation.fontSizeMultiplier;
     contentSize.height += closingSpacing;
     
     {
         CGFloat height = CGCeil([TGInstantPageFooterButtonView heightForWidth:boundingWidth]);
         
-        TGInstantPageFooterButtonItem *item = [[TGInstantPageFooterButtonItem alloc] initWithFrame:CGRectMake(0.0f, contentSize.height, boundingWidth, height)];
+        TGInstantPageFooterButtonItem *item = [[TGInstantPageFooterButtonItem alloc] initWithFrame:CGRectMake(0.0f, contentSize.height, boundingWidth, height) presentation:presentation];
         [items addObject:item];
         contentSize.height += item.frame.size.height;
     }
     
     return [[TGInstantPageLayout alloc] initWithOrigin:CGPointZero contentSize:contentSize items:items];
+}
+
+@end
+
+
+@implementation TGInstantPagePresentation
+
++ (instancetype)presentationWithFontSizeMultiplier:(CGFloat)fontSizeMultiplier fontSerif:(bool)fontSerif theme:(TGInstantPagePresentationTheme)theme forceAutoNight:(bool)forceAutoNight {
+    TGInstantPagePresentation *presentation = [[TGInstantPagePresentation alloc] init];
+    presentation->_fontSizeMultiplier = fontSizeMultiplier;
+    presentation->_fontSerif = fontSerif;
+    presentation->_initialTheme = theme;
+    presentation->_theme = forceAutoNight ? TGInstantPagePresentationThemeBlack : theme;
+    presentation->_forceAutoNight = forceAutoNight;
+    
+    switch (presentation->_theme) {
+        case TGInstantPagePresentationThemeBrown:
+            presentation->_backgroundColor = UIColorRGB(0xf8f1e2);
+            presentation->_textColor = UIColorRGB(0x4f321d);
+            presentation->_titleColor = presentation->_textColor;
+            presentation->_subtextColor = UIColorRGB(0x927e6b);
+            presentation->_linkColor = presentation->_textColor;
+            presentation->_actionColor = UIColorRGB(0xd19601);
+            presentation->_panelColor = UIColorRGB(0xefe7d6);
+            presentation->_panelHighlightColor = UIColorRGB(0xe3dccb);
+            presentation->_panelTextColor = [UIColor blackColor];
+            presentation->_panelSubtextColor = presentation->_subtextColor;
+            
+            presentation->_textSelectionColor = UIColorRGBA(0x000000, 0.1f);
+            break;
+            
+        case TGInstantPagePresentationThemeGray:
+            presentation->_backgroundColor = UIColorRGB(0x5a5a5c);
+            presentation->_textColor = UIColorRGB(0xcecece);
+            presentation->_titleColor = presentation->_textColor;
+            presentation->_subtextColor = UIColorRGB(0xa0a0a0);
+            presentation->_linkColor = presentation->_textColor;
+            presentation->_actionColor = UIColorRGB(0x54b9f8);
+            presentation->_panelColor = UIColorRGB(0x555556);
+            presentation->_panelHighlightColor = UIColorRGB(0x505051);
+            presentation->_panelTextColor = UIColorRGB(0xcecece);
+            presentation->_panelSubtextColor = presentation->_subtextColor;
+            
+            presentation->_textSelectionColor = UIColorRGBA(0x000000, 0.16f);
+            break;
+            
+        case TGInstantPagePresentationThemeBlack:
+            presentation->_backgroundColor = UIColorRGB(0x000000);
+            presentation->_textColor = UIColorRGB(0xb0b0b0);
+            presentation->_titleColor = presentation->_textColor;
+            presentation->_subtextColor = UIColorRGB(0x6a6a6a);
+            presentation->_linkColor = presentation->_textColor;
+            presentation->_actionColor = UIColorRGB(0x50b6f3);
+            presentation->_panelColor = UIColorRGB(0x131313);
+            presentation->_panelHighlightColor = UIColorRGB(0x1f1f1f);
+            presentation->_panelTextColor = UIColorRGB(0xb0b0b0);
+            presentation->_panelSubtextColor = presentation->_subtextColor;
+            
+            presentation->_textSelectionColor = UIColorRGBA(0xffffff, 0.10f);
+            break;
+            
+        default:
+            presentation->_backgroundColor = [UIColor whiteColor];
+            presentation->_textColor = [UIColor blackColor];
+            presentation->_titleColor = presentation->_textColor;
+            presentation->_subtextColor = UIColorRGB(0x79828b);
+            presentation->_linkColor = presentation->_textColor;
+            presentation->_actionColor = TGAccentColor();
+            presentation->_panelColor = UIColorRGB(0xf3f4f5);
+            presentation->_panelHighlightColor = UIColorRGB(0xe7e7e7);
+            presentation->_panelTextColor = [UIColor blackColor];
+            presentation->_panelSubtextColor = presentation->_subtextColor;
+            
+            presentation->_textSelectionColor = UIColorRGBA(0x000000, 0.12f);
+            break;
+    }
+    
+    return presentation;
+}
+
+- (BOOL)isEqual:(id)object {
+    if (object == self) {
+        return true;
+    }
+    
+    if (!object || ![object isKindOfClass:[self class]]) {
+        return false;
+    }
+    
+    TGInstantPagePresentation *value = (TGInstantPagePresentation *)object;
+    return fabs(value.fontSizeMultiplier - self.fontSizeMultiplier) < FLT_EPSILON && value.fontSerif == self.fontSerif && value.initialTheme == self.initialTheme && value.forceAutoNight == self.forceAutoNight;
 }
 
 @end

@@ -739,7 +739,7 @@ const CGFloat TGNotificationBottomHitTestInset = 20.0f;
     bool update = fabs(_contentView.frame.size.width - contentWidth) > FLT_EPSILON;
     _contentView.frame = CGRectMake((self.frame.size.width - contentWidth) / 2, _contentView.frame.origin.y, contentWidth, _contentView.frame.size.height);
     
-    CGFloat replyPanelHeight = [_replyView heightForWidth:contentWidth];
+    CGFloat replyPanelHeight = MAX(50.0f, [_replyView heightForWidth:contentWidth]);
     _replyView.frame = CGRectMake((self.frame.size.width - contentWidth) / 2, self.frame.size.height - replyPanelHeight, contentWidth, replyPanelHeight);
     _handleView.frame = CGRectMake((_backgroundView.frame.size.width - _handleView.frame.size.width) / 2, _backgroundView.frame.size.height - _handleView.frame.size.height - 4, _handleView.frame.size.width, _handleView.frame.size.height);
     

@@ -14,19 +14,19 @@
 #include "TLMetaField.h"
 #include "TLConstructedValue.h"
 
-#include <tr1/memory>
+#include <memory>
 #include <vector>
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 class TLMetaObject
 {
 public:
-    std::tr1::shared_ptr<std::vector<TLMetaField> > fields;
-    std::tr1::shared_ptr<std::tr1::unordered_map<int32_t, int> > fieldNameToIndex;
-    std::tr1::shared_ptr<std::vector<TLConstructedValue> > values;
+    std::shared_ptr<std::vector<TLMetaField> > fields;
+    std::shared_ptr<std::unordered_map<int32_t, int> > fieldNameToIndex;
+    std::shared_ptr<std::vector<TLConstructedValue> > values;
     
 public:
-    TLMetaObject(std::tr1::shared_ptr<std::vector<TLMetaField> > fields, std::tr1::shared_ptr<std::tr1::unordered_map<int32_t, int> > fieldNameToIndex, std::tr1::shared_ptr<std::vector<TLConstructedValue> > values);
+    TLMetaObject(std::shared_ptr<std::vector<TLMetaField> > fields, std::shared_ptr<std::unordered_map<int32_t, int> > fieldNameToIndex, std::shared_ptr<std::vector<TLConstructedValue> > values);
     TLMetaObject(const TLMetaObject &other);
     TLMetaObject & operator= (const TLMetaObject &other);
     virtual ~TLMetaObject();

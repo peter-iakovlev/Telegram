@@ -77,6 +77,7 @@
 - (NSArray *)keepMediaVariants
 {
     NSArray *values = @[//@(1 * 60 * 60 * 24),
+                        @(1 * 60 * 60 * 24 * 3),
                         @(1 * 60 * 60 * 24 * 7),
                         @(1 * 60 * 60 * 24 * 7 * 4),
                         @(INT_MAX)];

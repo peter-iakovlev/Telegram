@@ -20,7 +20,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -47,7 +47,7 @@
     return (int32_t)0x8fc1c3ef;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLGeoPoint$geoPointEmpty *object = [[TLGeoPoint$geoPointEmpty alloc] init];
     return object;
@@ -73,7 +73,7 @@
     return (int32_t)0x94efe0d2;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLGeoPoint$geoPoint *object = [[TLGeoPoint$geoPoint alloc] init];
     object.n_long = metaObject->getDouble((int32_t)0x682f3647);
@@ -113,7 +113,7 @@
     return (int32_t)0x65f82ade;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLGeoPoint$geoPlace *object = [[TLGeoPoint$geoPlace alloc] init];
     object.n_long = metaObject->getDouble((int32_t)0x682f3647);

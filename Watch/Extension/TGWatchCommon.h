@@ -12,7 +12,6 @@ extern "C" {
 #endif
     
 extern int TGLocalizedStaticVersion;
-#define TGLocalizedStatic(s) ({ static int _localizedStringVersion = 0; static NSString *_localizedString = nil; if (_localizedString == nil || _localizedStringVersion != TGLocalizedStaticVersion) { _localizedString = TGLocalized(s); _localizedStringVersion = TGLocalizedStaticVersion; } _localizedString; })
     
 void TGSetLocalizationFromFile(NSURL *fileUrl);
 bool TGIsCustomLocalizationActive();

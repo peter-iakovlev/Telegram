@@ -14,6 +14,7 @@
 
 - (void)editingPanelRequestedDeleteMessages:(TGModernConversationEditingPanel *)editingPanel;
 - (void)editingPanelRequestedForwardMessages:(TGModernConversationEditingPanel *)editingPanel;
+- (void)editingPanelRequestedShareMessages:(TGModernConversationEditingPanel *)editingPanel;
 
 @end
 
@@ -21,6 +22,7 @@
 
 - (void)setForwardingEnabled:(bool)forwardingEnabled;
 - (void)setDeleteEnabled:(bool)deleteEnabled;
+- (void)setShareEnabled:(bool)shareEnabled;
 - (void)setActionsEnabled:(bool)actionsEnabled;
 
 @end

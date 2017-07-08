@@ -20,7 +20,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -47,7 +47,7 @@
     return (int32_t)0xb4b18174;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputPaymentCredentials$inputPaymentCredentialsSaved *object = [[TLInputPaymentCredentials$inputPaymentCredentialsSaved alloc] init];
     object.n_id = metaObject->getString((int32_t)0x7a5601fb);
@@ -87,7 +87,7 @@
     return (int32_t)0xe941b9bc;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputPaymentCredentials$inputPaymentCredentials *object = [[TLInputPaymentCredentials$inputPaymentCredentials alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);

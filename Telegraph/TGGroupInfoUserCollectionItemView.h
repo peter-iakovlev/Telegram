@@ -23,7 +23,11 @@
 
 @property (nonatomic, weak) id<TGGroupInfoUserCollectionItemViewDelegate> delegate;
 
-- (void)setFirstName:(NSString *)firstName lastName:(NSString *)lastName uidForPlaceholderCalculation:(int32_t)uidForPlaceholderCalculation;
+@property (nonatomic, copy) void (^requestRestrict)();
+@property (nonatomic, copy) void (^requestPromote)();
+@property (nonatomic, copy) void (^requestDelete)();
+
+- (void)setFirstName:(NSString *)firstName lastName:(NSString *)lastName uidForPlaceholderCalculation:(int32_t)uidForPlaceholderCalculation canPromote:(bool)canPromote canRestrict:(bool)canRestrict canBan:(bool)canBan canDelete:(bool)canDelete;
 - (void)setStatus:(NSString *)status active:(bool)active;
 - (void)setAvatarUri:(NSString *)avatarUri;
 - (void)setIsSecretChat:(bool)isSecretChat;
@@ -32,6 +36,11 @@
 - (void)setDisplaySwitch:(bool)displaySwitch;
 - (void)setEnableSwitch:(bool)enableSwitch animated:(bool)animated;
 - (void)setSwitchIsOn:(bool)switchIsOn animated:(bool)animated;
+
+- (void)setDisplayCheck:(bool)displayCheck;
+- (void)setCheckIsOn:(bool)checkIsOn;
+
+- (void)setRequiresFullSeparator:(bool)requiresFullSeparator;
 
 - (void)setDisabled:(bool)disabled animated:(bool)animated;
 

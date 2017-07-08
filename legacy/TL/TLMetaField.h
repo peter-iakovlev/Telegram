@@ -11,7 +11,7 @@
 
 #include "TLMetaType.h"
 
-#include <tr1/memory>
+#include <memory>
 
 struct TLMetaField
 {

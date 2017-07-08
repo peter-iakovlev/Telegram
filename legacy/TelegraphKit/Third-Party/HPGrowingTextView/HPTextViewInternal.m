@@ -170,7 +170,10 @@
     __block BOOL result = false;
     freedomUIKitTest4(^
     {
-        result = [super becomeFirstResponder];
+        if ([self.delegate respondsToSelector:@selector(textViewShouldBeginEditing:)] && ![self.delegate textViewShouldBeginEditing:self])
+            result = false;
+        else
+            result = [super becomeFirstResponder];
     });
     
     if (result)

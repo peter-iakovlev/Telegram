@@ -7,7 +7,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLPage$pagePart
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x8dee6c44;
+        constructor.n_id = (int32_t)0x8e3f9ebe;
         constructor.predicate = @"pagePart";
         constructor.type = @"Page";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -25,7 +25,7 @@ TLScheme *TLgetMetaScheme()
         }
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"videos";
+            arg.name = @"documents";
             arg.type = @"Vector<Document>";
             [fields addObject:arg];
         }
@@ -35,7 +35,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLPage$pageFull
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0xd7a19d69;
+        constructor.n_id = (int32_t)0x556ec7aa;
         constructor.predicate = @"pageFull";
         constructor.type = @"Page";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -53,7 +53,7 @@ TLScheme *TLgetMetaScheme()
         }
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"videos";
+            arg.name = @"documents";
             arg.type = @"Vector<Document>";
             [fields addObject:arg];
         }
@@ -553,6 +553,32 @@ TLScheme *TLgetMetaScheme()
         constructor.predicate = @"sendMessageGameStopAction";
         constructor.type = @"SendMessageAction";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLSendMessageAction$sendMessageRecordRoundAction
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x88f27fbc;
+        constructor.predicate = @"sendMessageRecordRoundAction";
+        constructor.type = @"SendMessageAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLSendMessageAction$sendMessageUploadRoundAction
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x243e1c66;
+        constructor.predicate = @"sendMessageUploadRoundAction";
+        constructor.type = @"SendMessageAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"progress";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
         constructor.params = fields;
         [TLmetaSchemeTypes addObject:constructor];
     }
@@ -2821,6 +2847,48 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLUpdate$updateLangPackTooLong
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x10c2404b;
+        constructor.predicate = @"updateLangPackTooLong";
+        constructor.type = @"Update";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLUpdate$updateLangPack
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x56022f4d;
+        constructor.predicate = @"updateLangPack";
+        constructor.type = @"Update";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"difference";
+            arg.type = @"LangPackDifference";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLUpdate$updateLangPackLanguageSuggested
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xe99a0a35;
+        constructor.predicate = @"updateLangPackLanguageSuggested";
+        constructor.type = @"Update";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"language";
+            arg.type = @"LangPackLanguage";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLBotInlineMessage$botInlineMessageMeta
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x7303dd9c;
@@ -3591,7 +3659,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLConfig$configMeta
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x6cbca18d;
+        constructor.n_id = (int32_t)0x5f688205;
         constructor.predicate = @"configMeta";
         constructor.type = @"Config";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -3771,6 +3839,18 @@ TLScheme *TLgetMetaScheme()
         }
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"suggested_lang_code";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"lang_pack_version";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"disabled_features";
             arg.type = @"Vector<DisabledFeature>";
             [fields addObject:arg];
@@ -3891,6 +3971,26 @@ TLScheme *TLgetMetaScheme()
             arg.type = @"int";
             [fields addObject:arg];
         }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLMessagesFilter$inputMessagesFilterRoundVideo
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xb549da53;
+        constructor.predicate = @"inputMessagesFilterRoundVideo";
+        constructor.type = @"MessagesFilter";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLMessagesFilter$inputMessagesFilterRoundVoice
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x7a7c17a4;
+        constructor.predicate = @"inputMessagesFilterRoundVoice";
+        constructor.type = @"MessagesFilter";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
         constructor.params = fields;
         [TLmetaSchemeTypes addObject:constructor];
     }
@@ -4449,6 +4549,28 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLChannelBannedRights$channelBannedRights
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x58cf4249;
+        constructor.predicate = @"channelBannedRights";
+        constructor.type = @"ChannelBannedRights";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"until_date";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLShippingOption$shippingOption
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0xb6213cdf;
@@ -4771,10 +4893,10 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
-        //TLChat$channelForbidden
+        //TLChat$channelMeta
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x8537784f;
-        constructor.predicate = @"channelForbidden";
+        constructor.n_id = (int32_t)0xb3d78daf;
+        constructor.predicate = @"channelMeta";
         constructor.type = @"Chat";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
         {
@@ -4801,6 +4923,82 @@ TLScheme *TLgetMetaScheme()
             arg.type = @"string";
             [fields addObject:arg];
         }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"username";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"photo";
+            arg.type = @"ChatPhoto";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"date";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"version";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"restriction_reason";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"admin_rights";
+            arg.type = @"ChannelAdminRights";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChat$channelForbiddenMeta
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x5f7c81c5;
+        constructor.predicate = @"channelForbiddenMeta";
+        constructor.type = @"Chat";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"access_hash";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"title";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"until_date";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
         constructor.params = fields;
         [TLmetaSchemeTypes addObject:constructor];
     }
@@ -4821,6 +5019,40 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"date";
             arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLLangPackDifference$langPackDifference
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xf385c1f6;
+        constructor.predicate = @"langPackDifference";
+        constructor.type = @"LangPackDifference";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"lang_code";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"from_version";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"version";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"strings";
+            arg.type = @"Vector<LangPackString>";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -5019,6 +5251,34 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLLangPackLanguage$langPackLanguage
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x117698f1;
+        constructor.predicate = @"langPackLanguage";
+        constructor.type = @"LangPackLanguage";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"name";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"native_name";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"lang_code";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLMaskCoords$maskCoords
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0xaed6dbb2;
@@ -5075,6 +5335,28 @@ TLScheme *TLgetMetaScheme()
         constructor.predicate = @"auth.sentCodeMeta";
         constructor.type = @"auth.SentCode";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLCdnPublicKey$cdnPublicKey
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xc982eaba;
+        constructor.predicate = @"cdnPublicKey";
+        constructor.type = @"CdnPublicKey";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"dc_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"public_key";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
         constructor.params = fields;
         [TLmetaSchemeTypes addObject:constructor];
     }
@@ -5239,6 +5521,40 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"valid_until";
             arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEvent$channelAdminLogEvent
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x3b5a3e40;
+        constructor.predicate = @"channelAdminLogEvent";
+        constructor.type = @"ChannelAdminLogEvent";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"id";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"date";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"user_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"action";
+            arg.type = @"ChannelAdminLogEventAction";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -5673,36 +5989,6 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
-        //TLChannelParticipantRole$channelRoleEmpty
-        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0xb285a0c6;
-        constructor.predicate = @"channelRoleEmpty";
-        constructor.type = @"ChannelParticipantRole";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        constructor.params = fields;
-        [TLmetaSchemeTypes addObject:constructor];
-    }
-    {
-        //TLChannelParticipantRole$channelRoleModerator
-        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x9618d975;
-        constructor.predicate = @"channelRoleModerator";
-        constructor.type = @"ChannelParticipantRole";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        constructor.params = fields;
-        [TLmetaSchemeTypes addObject:constructor];
-    }
-    {
-        //TLChannelParticipantRole$channelRoleEditor
-        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x820bfe8c;
-        constructor.predicate = @"channelRoleEditor";
-        constructor.type = @"ChannelParticipantRole";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        constructor.params = fields;
-        [TLmetaSchemeTypes addObject:constructor];
-    }
-    {
         //TLTopPeerCategoryPeers$topPeerCategoryPeers
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0xfb834291;
@@ -6095,34 +6381,6 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
-        //TLDocumentAttribute$documentAttributeVideo
-        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x5910cccb;
-        constructor.predicate = @"documentAttributeVideo";
-        constructor.type = @"DocumentAttribute";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"duration";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"w";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"h";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        constructor.params = fields;
-        [TLmetaSchemeTypes addObject:constructor];
-    }
-    {
         //TLDocumentAttribute$documentAttributeFilename
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x15590068;
@@ -6179,6 +6437,40 @@ TLScheme *TLgetMetaScheme()
         constructor.predicate = @"documentAttributeHasStickers";
         constructor.type = @"DocumentAttribute";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLDocumentAttribute$documentAttributeVideo
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xef02ce6;
+        constructor.predicate = @"documentAttributeVideo";
+        constructor.type = @"DocumentAttribute";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"duration";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"w";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"h";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
         constructor.params = fields;
         [TLmetaSchemeTypes addObject:constructor];
     }
@@ -7505,6 +7797,40 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLupload_File$upload_fileCdnRedirect
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x1508485a;
+        constructor.predicate = @"upload.fileCdnRedirect";
+        constructor.type = @"upload.File";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"dc_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_token";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"encryption_key";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"encryption_iv";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLmessages_Messages$messages_messages
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x8c718e87;
@@ -7615,7 +7941,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLcontacts_ImportedContacts$contacts_importedContacts
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0xad524315;
+        constructor.n_id = (int32_t)0x77d01c3b;
         constructor.predicate = @"contacts.importedContacts";
         constructor.type = @"contacts.ImportedContacts";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -7623,6 +7949,12 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"imported";
             arg.type = @"Vector<ImportedContact>";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"popular_invites";
+            arg.type = @"Vector<PopularContact>";
             [fields addObject:arg];
         }
         {
@@ -7663,6 +7995,34 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLchannels_AdminLogResults$channels_adminLogResults
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xed8af74d;
+        constructor.predicate = @"channels.adminLogResults";
+        constructor.type = @"channels.AdminLogResults";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"events";
+            arg.type = @"Vector<ChannelAdminLogEvent>";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"chats";
+            arg.type = @"Vector<Chat>";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"users";
+            arg.type = @"Vector<User>";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLChannelParticipantsFilter$channelParticipantsRecent
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0xde3f3c79;
@@ -7683,12 +8043,50 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLChannelParticipantsFilter$channelParticipantsBanned
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x1427a5e1;
+        constructor.predicate = @"channelParticipantsBanned";
+        constructor.type = @"ChannelParticipantsFilter";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"q";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelParticipantsFilter$channelParticipantsSearch
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x656ac4b;
+        constructor.predicate = @"channelParticipantsSearch";
+        constructor.type = @"ChannelParticipantsFilter";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"q";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLChannelParticipantsFilter$channelParticipantsKicked
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x3c37bb7a;
+        constructor.n_id = (int32_t)0xa3b54985;
         constructor.predicate = @"channelParticipantsKicked";
         constructor.type = @"ChannelParticipantsFilter";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"q";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
         constructor.params = fields;
         [TLmetaSchemeTypes addObject:constructor];
     }
@@ -7981,6 +8379,260 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"key_fingerprint";
             arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionChangeTitle
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xe6dfb825;
+        constructor.predicate = @"channelAdminLogEventActionChangeTitle";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"prev_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"new_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionChangeAbout
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x55188a2e;
+        constructor.predicate = @"channelAdminLogEventActionChangeAbout";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"prev_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"new_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionChangeUsername
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x6a4afc38;
+        constructor.predicate = @"channelAdminLogEventActionChangeUsername";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"prev_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"new_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionChangePhoto
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xb82f55c3;
+        constructor.predicate = @"channelAdminLogEventActionChangePhoto";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"prev_photo";
+            arg.type = @"ChatPhoto";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"new_photo";
+            arg.type = @"ChatPhoto";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionToggleInvites
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x1b7907ae;
+        constructor.predicate = @"channelAdminLogEventActionToggleInvites";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"new_value";
+            arg.type = @"Bool";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionToggleSignatures
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x26ae0971;
+        constructor.predicate = @"channelAdminLogEventActionToggleSignatures";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"new_value";
+            arg.type = @"Bool";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionUpdatePinned
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xe9e82c18;
+        constructor.predicate = @"channelAdminLogEventActionUpdatePinned";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"message";
+            arg.type = @"Message";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionEditMessage
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x709b2405;
+        constructor.predicate = @"channelAdminLogEventActionEditMessage";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"prev_message";
+            arg.type = @"Message";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"new_message";
+            arg.type = @"Message";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionDeleteMessage
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x42e047bb;
+        constructor.predicate = @"channelAdminLogEventActionDeleteMessage";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"message";
+            arg.type = @"Message";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionParticipantJoin
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x183040d3;
+        constructor.predicate = @"channelAdminLogEventActionParticipantJoin";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionParticipantLeave
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xf89777f2;
+        constructor.predicate = @"channelAdminLogEventActionParticipantLeave";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionParticipantInvite
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xe31c34d8;
+        constructor.predicate = @"channelAdminLogEventActionParticipantInvite";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"participant";
+            arg.type = @"ChannelParticipant";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionParticipantToggleBan
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xe6d83d7e;
+        constructor.predicate = @"channelAdminLogEventActionParticipantToggleBan";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"prev_participant";
+            arg.type = @"ChannelParticipant";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"new_participant";
+            arg.type = @"ChannelParticipant";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventAction$channelAdminLogEventActionParticipantToggleAdmin
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xd5676710;
+        constructor.predicate = @"channelAdminLogEventActionParticipantToggleAdmin";
+        constructor.type = @"ChannelAdminLogEventAction";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"prev_participant";
+            arg.type = @"ChannelParticipant";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"new_participant";
+            arg.type = @"ChannelParticipant";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -8741,6 +9393,22 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLCdnConfig$cdnConfig
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x5725e40a;
+        constructor.predicate = @"cdnConfig";
+        constructor.type = @"CdnConfig";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"public_keys";
+            arg.type = @"Vector<CdnPublicKey>";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLmessages_Message$messages_messageEmpty
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x3f4e0648;
@@ -9049,6 +9717,118 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLChannelAdminRights$channelAdminRights
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x5d7ceba5;
+        constructor.predicate = @"channelAdminRights";
+        constructor.type = @"ChannelAdminRights";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLLangPackString$langPackString
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xcad181f6;
+        constructor.predicate = @"langPackString";
+        constructor.type = @"LangPackString";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"key";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLLangPackString$langPackStringPluralized
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xa2fe21da;
+        constructor.predicate = @"langPackStringPluralized";
+        constructor.type = @"LangPackString";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"key";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"zero_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"one_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"two_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"few_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"many_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"other_value";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLLangPackString$langPackStringDeleted
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x2979eeb2;
+        constructor.predicate = @"langPackStringDeleted";
+        constructor.type = @"LangPackString";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"key";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLPhoneCallDiscardReason$phoneCallDiscardReasonMissed
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x85e42301;
@@ -9193,6 +9973,38 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"crop_width";
             arg.type = @"double";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLupload_CdnFile$upload_cdnFileReuploadNeeded
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xeea8e46e;
+        constructor.predicate = @"upload.cdnFileReuploadNeeded";
+        constructor.type = @"upload.CdnFile";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"request_token";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLupload_CdnFile$upload_cdnFile
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xa99fca4f;
+        constructor.predicate = @"upload.cdnFile";
+        constructor.type = @"upload.CdnFile";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"bytes";
+            arg.type = @"bytes";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -9703,12 +10515,34 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
-        //TLChannelParticipant$channelParticipantModerator
+        //TLChannelParticipant$channelParticipantCreator
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x91057fef;
-        constructor.predicate = @"channelParticipantModerator";
+        constructor.n_id = (int32_t)0xe3e2e1f9;
+        constructor.predicate = @"channelParticipantCreator";
         constructor.type = @"ChannelParticipant";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"user_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelParticipant$channelParticipantAdmin
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xa82fa898;
+        constructor.predicate = @"channelParticipantAdmin";
+        constructor.type = @"ChannelParticipant";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"user_id";
@@ -9723,29 +10557,7 @@ TLScheme *TLgetMetaScheme()
         }
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"date";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        constructor.params = fields;
-        [TLmetaSchemeTypes addObject:constructor];
-    }
-    {
-        //TLChannelParticipant$channelParticipantEditor
-        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x98192d61;
-        constructor.predicate = @"channelParticipantEditor";
-        constructor.type = @"ChannelParticipant";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"user_id";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"inviter_id";
+            arg.name = @"promoted_by";
             arg.type = @"int";
             [fields addObject:arg];
         }
@@ -9755,16 +10567,28 @@ TLScheme *TLgetMetaScheme()
             arg.type = @"int";
             [fields addObject:arg];
         }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"admin_rights";
+            arg.type = @"ChannelAdminRights";
+            [fields addObject:arg];
+        }
         constructor.params = fields;
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
-        //TLChannelParticipant$channelParticipantKicked
+        //TLChannelParticipant$channelParticipantBanned
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x8cc5e69a;
-        constructor.predicate = @"channelParticipantKicked";
+        constructor.n_id = (int32_t)0x222c1886;
+        constructor.predicate = @"channelParticipantBanned";
         constructor.type = @"ChannelParticipant";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"user_id";
@@ -9783,20 +10607,10 @@ TLScheme *TLgetMetaScheme()
             arg.type = @"int";
             [fields addObject:arg];
         }
-        constructor.params = fields;
-        [TLmetaSchemeTypes addObject:constructor];
-    }
-    {
-        //TLChannelParticipant$channelParticipantCreator
-        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0xe3e2e1f9;
-        constructor.predicate = @"channelParticipantCreator";
-        constructor.type = @"ChannelParticipant";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"user_id";
-            arg.type = @"int";
+            arg.name = @"banned_rights";
+            arg.type = @"ChannelBannedRights";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -10605,6 +11419,28 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLPopularContact$popularContact
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x5ce14175;
+        constructor.predicate = @"popularContact";
+        constructor.type = @"PopularContact";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"client_id";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"importers";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLAccountDaysTTL$accountDaysTTL
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0xb8d0afdf;
@@ -10861,6 +11697,22 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"users";
             arg.type = @"Vector<User>";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLChannelAdminLogEventsFilter$channelAdminLogEventsFilter
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xea107ae4;
+        constructor.predicate = @"channelAdminLogEventsFilter";
+        constructor.type = @"ChannelAdminLogEventsFilter";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -12609,6 +13461,44 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"published_date";
             arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLPageBlock$pageBlockChannel
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xef1751b5;
+        constructor.predicate = @"pageBlockChannel";
+        constructor.type = @"PageBlock";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"channel";
+            arg.type = @"Chat";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLPageBlock$pageBlockAudio
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x31b81a7f;
+        constructor.predicate = @"pageBlockAudio";
+        constructor.type = @"PageBlock";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"audio_id";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"caption";
+            arg.type = @"RichText";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -15629,34 +16519,6 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeMethods addObject:constructor];
     }
     {
-        //TLRPCchannels_kickFromChannel$channels_kickFromChannel
-        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0xa672de14;
-        constructor.method = @"channels.kickFromChannel";
-        constructor.type = @"Updates";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"channel";
-            arg.type = @"InputChannel";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"user_id";
-            arg.type = @"InputUser";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"kicked";
-            arg.type = @"Bool";
-            [fields addObject:arg];
-        }
-        constructor.params = fields;
-        [TLmetaSchemeMethods addObject:constructor];
-    }
-    {
         //TLRPCchannels_exportInvite$channels_exportInvite
         TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
         constructor.n_id = (int32_t)0xc7560885;
@@ -15907,34 +16769,6 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"start_param";
             arg.type = @"string";
-            [fields addObject:arg];
-        }
-        constructor.params = fields;
-        [TLmetaSchemeMethods addObject:constructor];
-    }
-    {
-        //TLRPCchannels_editAdmin$channels_editAdmin
-        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0xeb7611d0;
-        constructor.method = @"channels.editAdmin";
-        constructor.type = @"Updates";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"channel";
-            arg.type = @"InputChannel";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"user_id";
-            arg.type = @"InputUser";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"role";
-            arg.type = @"ChannelParticipantRole";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -16831,84 +17665,6 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeMethods addObject:constructor];
     }
     {
-        //TLRPCphone_requestCall$phone_requestCall
-        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0x5b95b3d4;
-        constructor.method = @"phone.requestCall";
-        constructor.type = @"phone.PhoneCall";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"user_id";
-            arg.type = @"InputUser";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"random_id";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"g_a_hash";
-            arg.type = @"bytes";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"protocol";
-            arg.type = @"PhoneCallProtocol";
-            [fields addObject:arg];
-        }
-        constructor.params = fields;
-        [TLmetaSchemeMethods addObject:constructor];
-    }
-    {
-        //TLRPCphone_acceptCall$phone_acceptCall
-        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0x3bd2b4a0;
-        constructor.method = @"phone.acceptCall";
-        constructor.type = @"phone.PhoneCall";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"peer";
-            arg.type = @"InputPhoneCall";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"g_b";
-            arg.type = @"bytes";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"protocol";
-            arg.type = @"PhoneCallProtocol";
-            [fields addObject:arg];
-        }
-        constructor.params = fields;
-        [TLmetaSchemeMethods addObject:constructor];
-    }
-    {
-        //TLRPCphone_receivedCall$phone_receivedCall
-        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0x17d54f61;
-        constructor.method = @"phone.receivedCall";
-        constructor.type = @"Bool";
-        NSMutableArray *fields = [[NSMutableArray alloc] init];
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"peer";
-            arg.type = @"InputPhoneCall";
-            [fields addObject:arg];
-        }
-        constructor.params = fields;
-        [TLmetaSchemeMethods addObject:constructor];
-    }
-    {
         //TLRPCmessages_toggleDialogPin$messages_toggleDialogPin
         TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
         constructor.n_id = (int32_t)0x3289be6a;
@@ -17035,6 +17791,84 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"peer";
             arg.type = @"InputEncryptedChat";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCphone_requestCall$phone_requestCall
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x5b95b3d4;
+        constructor.method = @"phone.requestCall";
+        constructor.type = @"phone.PhoneCall";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"user_id";
+            arg.type = @"InputUser";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"random_id";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"g_a_hash";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"protocol";
+            arg.type = @"PhoneCallProtocol";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCphone_acceptCall$phone_acceptCall
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x3bd2b4a0;
+        constructor.method = @"phone.acceptCall";
+        constructor.type = @"phone.PhoneCall";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"peer";
+            arg.type = @"InputPhoneCall";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"g_b";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"protocol";
+            arg.type = @"PhoneCallProtocol";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCphone_receivedCall$phone_receivedCall
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x17d54f61;
+        constructor.method = @"phone.receivedCall";
+        constructor.type = @"Bool";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"peer";
+            arg.type = @"InputPhoneCall";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -17315,6 +18149,244 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"protocol";
             arg.type = @"PhoneCallProtocol";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCupload_getCdnFile$upload_getCdnFile
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x2000bcc3;
+        constructor.method = @"upload.getCdnFile";
+        constructor.type = @"upload.CdnFile";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_token";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"offset";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"limit";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCupload_reuploadCdnFile$upload_reuploadCdnFile
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x2e7a2020;
+        constructor.method = @"upload.reuploadCdnFile";
+        constructor.type = @"Bool";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_token";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"request_token";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPChelp_getCdnConfig$help_getCdnConfig
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x52029342;
+        constructor.method = @"help.getCdnConfig";
+        constructor.type = @"CdnConfig";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPClangpack_getLangPack$langpack_getLangPack
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x9ab5c58e;
+        constructor.method = @"langpack.getLangPack";
+        constructor.type = @"LangPackDifference";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"lang_code";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPClangpack_getStrings$langpack_getStrings
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x2e1ee318;
+        constructor.method = @"langpack.getStrings";
+        constructor.type = @"Vector<LangPackString>";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"lang_code";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"keys";
+            arg.type = @"Vector<string>";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPClangpack_getDifference$langpack_getDifference
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0xb2e4d7d;
+        constructor.method = @"langpack.getDifference";
+        constructor.type = @"LangPackDifference";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"from_version";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPClangpack_getLanguages$langpack_getLanguages
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x800fd57d;
+        constructor.method = @"langpack.getLanguages";
+        constructor.type = @"Vector<LangPackLanguage>";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCchannels_editAdmin$channels_editAdmin
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x20b88214;
+        constructor.method = @"channels.editAdmin";
+        constructor.type = @"Updates";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"channel";
+            arg.type = @"InputChannel";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"user_id";
+            arg.type = @"InputUser";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"admin_rights";
+            arg.type = @"ChannelAdminRights";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCchannels_editBanned$channels_editBanned
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0xbfd915cd;
+        constructor.method = @"channels.editBanned";
+        constructor.type = @"Updates";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"channel";
+            arg.type = @"InputChannel";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"user_id";
+            arg.type = @"InputUser";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"banned_rights";
+            arg.type = @"ChannelBannedRights";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeMethods addObject:constructor];
+    }
+    {
+        //TLRPCchannels_getAdminLogMeta$channels_getAdminLogMeta
+        TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
+        constructor.n_id = (int32_t)0x3e9a6fbd;
+        constructor.method = @"channels.getAdminLogMeta";
+        constructor.type = @"channels.AdminLogResults";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"channel";
+            arg.type = @"InputChannel";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"q";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"events_filter";
+            arg.type = @"ChannelAdminLogEventsFilter";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"admins";
+            arg.type = @"Vector<InputUser>";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"max_id";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"min_id";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"limit";
+            arg.type = @"int";
             [fields addObject:arg];
         }
         constructor.params = fields;

@@ -158,10 +158,12 @@ static ASQueue *taskManagementQueue()
                 
                 TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] init];
                 documentAttachment.documentId = [args[@"documentId"] longLongValue];
+                documentAttachment.localDocumentId = [args[@"localDocumentId"] longLongValue];
                 documentAttachment.accessHash = [args[@"accessHash"] longLongValue];
                 documentAttachment.datacenterId = [args[@"datacenterId"] intValue];
                 documentAttachment.attributes = attributes;
                 documentAttachment.size = [args[@"size"] intValue];
+                documentAttachment.documentUri = args[@"documentUri"];
                 
                 [previewTask executeWithTargetFilePath:filePath document:documentAttachment progress:^(float value)
                 {

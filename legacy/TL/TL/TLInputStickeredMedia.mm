@@ -21,7 +21,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -48,7 +48,7 @@
     return (int32_t)0xeb3eac5a;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputStickeredMedia$inputStickeredMediaPhoto *object = [[TLInputStickeredMedia$inputStickeredMediaPhoto alloc] init];
     object.n_id = metaObject->getObject((int32_t)0x7a5601fb);
@@ -81,7 +81,7 @@
     return (int32_t)0xd84687ab;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputStickeredMedia$inputStickeredMediaDocument *object = [[TLInputStickeredMedia$inputStickeredMediaDocument alloc] init];
     object.n_id = metaObject->getObject((int32_t)0x7a5601fb);

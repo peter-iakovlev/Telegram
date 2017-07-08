@@ -44,6 +44,7 @@ typedef enum
 @class PGCameraCaptureSession;
 @class PGCameraDeviceAngleSampler;
 @class TGCameraPreviewView;
+@class TGLiveUploadActorData;
 
 @interface PGCamera : NSObject
 
@@ -104,7 +105,7 @@ typedef enum
 
 - (void)takePhotoWithCompletion:(void (^)(UIImage *result, PGCameraShotMetadata *metadata))completion;
 
-- (void)startVideoRecordingForMoment:(bool)moment completion:(void (^)(NSURL *, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success))completion;
+- (void)startVideoRecordingForMoment:(bool)moment completion:(void (^)(NSURL *, CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, TGLiveUploadActorData *liveUploadData, bool success))completion;
 - (void)stopVideoRecording;
 - (bool)isRecordingVideo;
 

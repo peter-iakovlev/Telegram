@@ -28,7 +28,7 @@
 - (int32_t)TLconstructorName;
 
 #ifdef __cplusplus
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject;
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject;
 - (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values;
 #endif
 

@@ -6,6 +6,7 @@ typedef enum {
     TGAudioSessionTypePlayVoice,
     TGAudioSessionTypePlayMusic,
     TGAudioSessionTypePlayVideo,
+    TGAudioSessionTypePlayEmbedVideo,
     TGAudioSessionTypePlayAndRecord,
     TGAudioSessionTypePlayAndRecordHeadphones,
     TGAudioSessionTypeCall

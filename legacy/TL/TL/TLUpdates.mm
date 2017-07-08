@@ -20,7 +20,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -47,7 +47,7 @@
     return (int32_t)0xbd35b7ee;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLUpdates$updatesTooLong *object = [[TLUpdates$updatesTooLong alloc] init];
     return object;
@@ -73,7 +73,7 @@
     return (int32_t)0xccd3026b;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLUpdates$updateShort *object = [[TLUpdates$updateShort alloc] init];
     object.update = metaObject->getObject((int32_t)0x88b36c62);
@@ -113,7 +113,7 @@
     return (int32_t)0x83479e5f;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLUpdates$updatesCombined *object = [[TLUpdates$updatesCombined alloc] init];
     object.updates = metaObject->getArray((int32_t)0x9ae046f4);
@@ -181,7 +181,7 @@
     return (int32_t)0x9ae046f4;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLUpdates$updates *object = [[TLUpdates$updates alloc] init];
     object.updates = metaObject->getArray((int32_t)0x9ae046f4);

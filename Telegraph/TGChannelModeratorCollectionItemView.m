@@ -21,7 +21,7 @@
     self = [super initWithFrame:frame];
     if (self != nil) {
         _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(15.0f, 10.0f, 66.0f, 66.0f)];
-        [_avatarView setSingleFontSize:14.0f doubleFontSize:14.0f useBoldFont:false];
+        [_avatarView setSingleFontSize:28.0f doubleFontSize:28.0f useBoldFont:false];
         [self.contentView addSubview:_avatarView];
         
         _nameLabel = [[UILabel alloc] init];
@@ -44,7 +44,7 @@
     {
         if (active != NULL)
             *active = true;
-        return TGLocalizedStatic(@"Presence.online");
+        return TGLocalized(@"Presence.online");
     }
     else if (presence.lastSeen != 0)
         return [TGDateUtils stringForRelativeLastSeen:presence.lastSeen];
@@ -57,6 +57,9 @@
 
     bool active = false;
     NSString *status = [self _statusStringFromUserPresence:user.presence active:&active];
+    if (user.kind == TGUserKindBot || user.kind == TGUserKindSmartBot) {
+        status = TGLocalized(@"Bot.GenericBotStatus");
+    }
     
     _statusLabel.text = status;
     if (active) {

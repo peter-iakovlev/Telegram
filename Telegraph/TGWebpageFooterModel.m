@@ -34,7 +34,7 @@ static UIColor *colorForLine(bool incoming)
     if (self != nil)
     {
         _context = context;
-        _lineModel = [[TGModernColorViewModel alloc] initWithColor:colorForLine(incoming)];
+        _lineModel = [[TGModernColorViewModel alloc] initWithColor:colorForLine(incoming) cornerRadius:1.0f];
         if ([webpage.pageType isEqualToString:@"invoice"]) {
             _isInvoice = true;
         } else {
@@ -97,6 +97,10 @@ static UIColor *colorForLine(bool incoming)
     return false;
 }
 
+- (void)activateMediaPlayback
+{
+}
+
 - (NSString *)linkAtPoint:(CGPoint)__unused point regionData:(__autoreleasing NSArray **)__unused regionData
 {
     return nil;
@@ -132,7 +136,7 @@ static UIColor *colorForLine(bool incoming)
 - (void)imageDataInvalidated:(NSString *)__unused imageUrl {
 }
 
-- (void)stopInlineMedia {
+- (void)stopInlineMedia:(int32_t)__unused excludeMid {
 }
 
 - (void)resumeInlineMedia {

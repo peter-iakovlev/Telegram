@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xa74ec2c1;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLInputPeer$inputPeerEmpty *object = [[TLInputPeer$inputPeerEmpty alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0xd83b195a;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLInputPeer$inputPeerSelf *object = [[TLInputPeer$inputPeerSelf alloc] init];
     return object;
@@ -98,7 +98,7 @@
     return (int32_t)0x4697094b;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputPeer$inputPeerChat *object = [[TLInputPeer$inputPeerChat alloc] init];
     object.chat_id = metaObject->getInt32((int32_t)0x7234457c);
@@ -131,7 +131,7 @@
     return (int32_t)0x29e02491;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputPeer$inputPeerUser *object = [[TLInputPeer$inputPeerUser alloc] init];
     object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
@@ -171,7 +171,7 @@
     return (int32_t)0x8fc84fa0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLInputPeer$inputPeerChannel *object = [[TLInputPeer$inputPeerChannel alloc] init];
     object.channel_id = metaObject->getInt32((int32_t)0x1cfcdb86);

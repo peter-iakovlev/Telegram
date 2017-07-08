@@ -53,7 +53,7 @@
         [_debugSettingsButton sizeToFit];
         _debugSettingsButton.frame = CGRectMake(ceil((self.frame.size.width - _debugSettingsButton.frame.size.width) / 2.0f), self.frame.size.height - _debugSettingsButton.frame.size.height - 20.0f, _debugSettingsButton.frame.size.width, _debugSettingsButton.frame.size.height);
         [_debugSettingsButton addTarget:self action:@selector(debugSettingsPressed) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:_debugSettingsButton];
+        //[self addSubview:_debugSettingsButton];
         
         _debugSettingsView = [[UIView alloc] initWithFrame:self.bounds];
         _debugSettingsView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;

@@ -2,6 +2,9 @@
 
 #import <CommonCrypto/CommonDigest.h>
 
+#import "TGLocalization.h"
+#import "TGPluralization.h"
+
 typedef struct {
     __unsafe_unretained NSString *escapeSequence;
     unichar uchar;
@@ -300,7 +303,7 @@ static HTMLEscapeMap gAsciiHTMLEscapeMap[] = {
 
 + (NSString *)stringByEscapingForURL:(NSString *)string
 {
-    static NSString * const kAFLegalCharactersToBeEscaped = @"?!@#$^&%*+=,:;'\"`<>()[]{}/\\|~ ";
+    static NSString * const kAFLegalCharactersToBeEscaped = @"?!@#$^&%*+=,.:;'\"`<>()[]{}/\\|~ ";
     
     NSString *unescapedString = [string stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
     if (unescapedString == nil)
@@ -610,99 +613,43 @@ static bool isEmojiCharacter(NSString *singleChar)
     {
         int number = (int)seconds;
         
-        NSString *format = TGLocalized(@"MessageTimer.Seconds_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Seconds_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Seconds_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Seconds_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"MessageTimer.Seconds" count:(int32_t)number];
     }
     else if (seconds < 60 * 60)
     {
         int number = (int)seconds / 60;
         
-        NSString *format = TGLocalized(@"MessageTimer.Minutes_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Minutes_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Minutes_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Minutes_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"MessageTimer.Minutes" count:(int32_t)number];
     }
     else if (seconds < 60 * 60 * 24)
     {
         int number = (int)seconds / (60 * 60);
         
-        NSString *format = TGLocalized(@"MessageTimer.Hours_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Hours_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Hours_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Hours_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"MessageTimer.Hours" count:(int32_t)number];
     }
     else if (seconds < 60 * 60 * 24 * 7)
     {
         int number = (int)seconds / (60 * 60 * 24);
         
-        NSString *format = TGLocalized(@"MessageTimer.Days_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Days_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Days_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Days_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"MessageTimer.Days" count:(int32_t)number];
     }
     else if (seconds < 60 * 60 * 24 * 7 * 4)
     {
         int number = (int)seconds / (60 * 60 * 24 * 7);
-        
-        NSString *format = TGLocalized(@"MessageTimer.Weeks_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Weeks_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Weeks_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Weeks_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+
+        return [effectiveLocalization() getPluralized:@"MessageTimer.Weeks" count:(int32_t)number];
     }
     else if (seconds < 60 * 60 * 24 * 365)
     {
         int number = MAX(1, (int)ceilf((int)(seconds / (60 * 60 * 24 * 29))));
         
-        NSString *format = TGLocalized(@"MessageTimer.Months_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Months_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Months_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Months_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"MessageTimer.Months" count:(int32_t)number];
     }
     else
     {
         int number = (int)seconds / (60 * 60 * 24 * 365);
         
-        NSString *format = TGLocalized(@"MessageTimer.Years_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Years_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Years_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Years_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"MessageTimer.Years" count:(int32_t)number];
     }
     
     return @"";
@@ -714,71 +661,31 @@ static bool isEmojiCharacter(NSString *singleChar)
     {
         int number = (int)seconds;
         
-        NSString *format = TGLocalized(@"MessageTimer.ShortSeconds_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.ShortSeconds_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.ShortSeconds_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.ShortSeconds_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"MessageTimer.ShortSeconds" count:(int32_t)number];
     }
     else if (seconds < 60 * 60)
     {
         int number = (int)seconds / 60;
         
-        NSString *format = TGLocalized(@"MessageTimer.ShortMinutes_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.ShortMinutes_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.ShortMinutes_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.ShortMinutes_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"MessageTimer.ShortMinutes" count:(int32_t)number];
     }
     else if (seconds < 60 * 60 * 24)
     {
         int number = (int)seconds / (60 * 60);
         
-        NSString *format = TGLocalized(@"MessageTimer.ShortHours_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.ShortHours_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.ShortHours_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.ShortHours_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"MessageTimer.ShortHours" count:(int32_t)number];
     }
     else if (seconds < 60 * 60 * 24 * 7)
     {
         int number = (int)seconds / (60 * 60 * 24);
         
-        NSString *format = TGLocalized(@"MessageTimer.ShortDays_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.ShortDays_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.ShortDays_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.ShortDays_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"MessageTimer.ShortDays" count:(int32_t)number];
     }
     else
     {
         int number = (int)seconds / (60 * 60 * 24 * 7);
         
-        NSString *format = TGLocalized(@"MessageTimer.ShortWeeks_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.ShortWeeks_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.ShortWeeks_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.ShortWeeks_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"MessageTimer.ShortWeeks" count:(int32_t)number];
     }
     
     return @"";
@@ -793,133 +700,105 @@ static bool isEmojiCharacter(NSString *singleChar)
     {
         int number = (int)seconds;
         
-        NSString *format = TGLocalized(@"MessageTimer.Seconds_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Seconds_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Seconds_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Seconds_3_10");
+        NSString *format = TGLocalized([self integerValueFormat:@"MessageTimer.Seconds_" value:number]);
         
         NSRange range = [format rangeOfString:@"%@"];
         if (range.location != NSNotFound)
         {
             first = [[NSString alloc] initWithFormat:@"%d", number];
             second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        } else {
+            first = format;
         }
     }
     else if (seconds < 60 * 60)
     {
         int number = (int)seconds / 60;
 
-        NSString *format = TGLocalized(@"MessageTimer.Minutes_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Minutes_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Minutes_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Minutes_3_10");
+        NSString *format = TGLocalized([self integerValueFormat:@"MessageTimer.Minutes_" value:number]);
         
         NSRange range = [format rangeOfString:@"%@"];
         if (range.location != NSNotFound)
         {
             first = [[NSString alloc] initWithFormat:@"%d", number];
             second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        } else {
+            first = format;
         }
     }
     else if (seconds < 60 * 60 * 24)
     {
         int number = (int)seconds / (60 * 60);
 
-        NSString *format = TGLocalized(@"MessageTimer.Hours_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Hours_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Hours_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Hours_3_10");
+        NSString *format = TGLocalized([self integerValueFormat:@"MessageTimer.Hours_" value:number]);
         
         NSRange range = [format rangeOfString:@"%@"];
         if (range.location != NSNotFound)
         {
             first = [[NSString alloc] initWithFormat:@"%d", number];
             second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        } else {
+            first = format;
         }
     }
     else if (seconds < 60 * 60 * 24 * 7)
     {
         int number = (int)seconds / (60 * 60 * 24);
 
-        NSString *format = TGLocalized(@"MessageTimer.Days_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Days_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Days_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Days_3_10");
+        NSString *format = TGLocalized([self integerValueFormat:@"MessageTimer.Days_" value:number]);
         
         NSRange range = [format rangeOfString:@"%@"];
         if (range.location != NSNotFound)
         {
             first = [[NSString alloc] initWithFormat:@"%d", number];
             second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        } else {
+            first = format;
         }
     }
     else if (seconds < 60 * 60 * 24 * 30)
     {
         int number = (int)seconds / (60 * 60 * 24 * 7);
         
-        NSString *format = TGLocalized(@"MessageTimer.Weeks_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Weeks_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Weeks_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Weeks_3_10");
+        NSString *format = TGLocalized([self integerValueFormat:@"MessageTimer.Weeks_" value:number]);
         
         NSRange range = [format rangeOfString:@"%@"];
         if (range.location != NSNotFound)
         {
             first = [[NSString alloc] initWithFormat:@"%d", number];
             second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        } else {
+            first = format;
         }
     }
     else if (seconds < 60 * 60 * 24 * 365)
     {
         int number = (int)ceilf((seconds / (60 * 60 * 24 * 30.5f)));
         
-        NSString *format = TGLocalized(@"MessageTimer.Months_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Months_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Months_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Months_3_10");
+        NSString *format = TGLocalized([self integerValueFormat:@"MessageTimer.Months_" value:number]);
         
         NSRange range = [format rangeOfString:@"%@"];
         if (range.location != NSNotFound)
         {
             first = [[NSString alloc] initWithFormat:@"%d", number];
             second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        } else {
+            first = format;
         }
     }
     else
     {
         int number = (int)seconds / (60 * 60 * 24 * 365);
         
-        NSString *format = TGLocalized(@"MessageTimer.Years_any");
-        if (number == 1)
-            format = TGLocalized(@"MessageTimer.Years_1");
-        else if (number == 2)
-            format = TGLocalized(@"MessageTimer.Years_2");
-        else if (number == 4)
-            format = TGLocalized(@"MessageTimer.Years_3_10");
+        NSString *format = TGLocalized([self integerValueFormat:@"MessageTimer.Years_" value:number]);
         
         NSRange range = [format rangeOfString:@"%@"];
         if (range.location != NSNotFound)
         {
             first = [[NSString alloc] initWithFormat:@"%d", number];
             second = [[format substringFromIndex:range.location + range.length] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        } else {
+            first = format;
         }
     }
     
@@ -932,29 +811,13 @@ static bool isEmojiCharacter(NSString *singleChar)
     {
         int number = (int)seconds;
         
-        NSString *format = TGLocalized(@"Call.Seconds_any");
-        if (number == 1)
-            format = TGLocalized(@"Call.Seconds_1");
-        else if (number == 2)
-            format = TGLocalized(@"Call.Seconds_2");
-        else if (number == 4)
-            format = TGLocalized(@"Call.Seconds_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"Call.Seconds" count:number];
     }
     else
     {
         int number = (int)seconds / 60;
         
-        NSString *format = TGLocalized(@"Call.Minutes_any");
-        if (number == 1)
-            format = TGLocalized(@"Call.Minutes_1");
-        else if (number == 2)
-            format = TGLocalized(@"Call.Minutes_2");
-        else if (number == 4)
-            format = TGLocalized(@"Call.Minutes_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"Call.Minutes" count:number];
     }
 }
 
@@ -964,29 +827,13 @@ static bool isEmojiCharacter(NSString *singleChar)
     {
         int number = (int)seconds;
         
-        NSString *format = TGLocalized(@"Call.ShortSeconds_any");
-        if (number == 1)
-            format = TGLocalized(@"Call.ShortSeconds_1");
-        else if (number == 2)
-            format = TGLocalized(@"Call.ShortSeconds_2");
-        else if (number == 4)
-            format = TGLocalized(@"Call.ShortSeconds_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"Call.ShortSeconds" count:(int32_t)number];
     }
     else
     {
         int number = (int)seconds / 60;
         
-        NSString *format = TGLocalized(@"Call.ShortMinutes_any");
-        if (number == 1)
-            format = TGLocalized(@"Call.ShortMinutes_1");
-        else if (number == 2)
-            format = TGLocalized(@"Call.ShortMinutes_2");
-        else if (number == 4)
-            format = TGLocalized(@"Call.ShortMinutes_3_10");
-        
-        return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", number]];
+        return [effectiveLocalization() getPluralized:@"Call.ShortMinutes" count:(int32_t)number];
     }
 }
 
@@ -994,15 +841,7 @@ static bool isEmojiCharacter(NSString *singleChar)
 {
     NSUInteger number = userCount;
     
-    NSString *format = TGLocalized(@"UserCount_any");
-    if (number == 1)
-        format = TGLocalized(@"UserCount_1");
-    else if (number == 2)
-        format = TGLocalized(@"UserCount_2");
-    else if (number == 4)
-        format = TGLocalized(@"UserCount_3_10");
-    
-    return [[NSString alloc] initWithFormat:format, [[NSString alloc] initWithFormat:@"%d", (int)number]];
+    return [effectiveLocalization() getPluralized:@"UserCount" count:(int32_t)number];
 }
 
 + (NSString *)stringForFileSize:(int64_t)size
@@ -1056,14 +895,37 @@ static bool isEmojiCharacter(NSString *singleChar)
 
 + (NSString *)integerValueFormat:(NSString *)prefix value:(NSInteger)value
 {
-    if (value == 1)
-        return [prefix stringByAppendingString:@"1"];
-    else if (value == 2)
-        return [prefix stringByAppendingString:@"2"];
-    else if (value >= 3 && value <= 10)
-        return [prefix stringByAppendingString:@"3_10"];
-    else
+    TGLocalization *localization = effectiveLocalization();
+    NSString *form = @"any";
+    switch (TGPluralForm(localization.languageCodeHash, (int)value)) {
+        case TGPluralFormZero:
+            form = @"0";
+            break;
+        case TGPluralFormOne:
+            form = @"1";
+            break;
+        case TGPluralFormTwo:
+            form = @"2";
+            break;
+        case TGPluralFormFew:
+            form = @"3_10";
+            break;
+        case TGPluralFormMany:
+            form = @"many";
+            break;
+        case TGPluralFormOther:
+            form = @"any";
+            break;
+        default:
+            break;
+    }
+    
+    NSString *result = [prefix stringByAppendingString:form];
+    if ([localization contains:result]) {
+        return result;
+    } else {
         return [prefix stringByAppendingString:@"any"];
+    }
 }
 
 + (NSString *)stringForMuteInterval:(int)value

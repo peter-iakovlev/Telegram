@@ -9,15 +9,11 @@
 #import "TGVideoEditAdjustments.h"
 #import "TGPaintingData.h"
 
-#import "TGVTAcceleratedVideoView.h"
-
 NSString *const TGAttachmentVideoCellIdentifier = @"AttachmentVideoCell";
 
 @interface TGAttachmentVideoCell () <TGModernGalleryTransitionView>
 {
     SMetaDisposable *_adjustmentsDisposable;
-    
-    TGVTAcceleratedVideoView *_videoView;
 }
 @end
 

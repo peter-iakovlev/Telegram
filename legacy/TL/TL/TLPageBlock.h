@@ -5,6 +5,7 @@
 
 @class TLRichText;
 @class TLPageBlock;
+@class TLChat;
 
 @interface TLPageBlock : NSObject <TLObject>
 
@@ -154,6 +155,19 @@
 
 @property (nonatomic, retain) TLRichText *author;
 @property (nonatomic) int32_t published_date;
+
+@end
+
+@interface TLPageBlock$pageBlockChannel : TLPageBlock
+
+@property (nonatomic, retain) TLChat *channel;
+
+@end
+
+@interface TLPageBlock$pageBlockAudio : TLPageBlock
+
+@property (nonatomic) int64_t audio_id;
+@property (nonatomic, retain) TLRichText *caption;
 
 @end
 

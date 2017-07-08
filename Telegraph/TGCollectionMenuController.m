@@ -287,19 +287,42 @@
     if (item != nil)
     {
         TGCollectionItemView *itemView = [item dequeueItemView:collectionView registeredIdentifiers:_collectionRegisteredIdentifiers forIndexPath:indexPath];
-        if (itemView.boundItem != nil)
-            [itemView.boundItem unbindView];
-        
-        [self updateItem:item itemView:itemView positionAtIndexPath:indexPath ignoreDragging:false animated:false];
-        
-        [item bindView:itemView];
-        
-        [collectionView setupCellForEditing:itemView];
+        if (iosMajorVersion() <= 8) {
+            if (itemView.boundItem != nil)
+                [itemView.boundItem unbindView];
+            
+            [self updateItem:item itemView:itemView positionAtIndexPath:indexPath ignoreDragging:false animated:false];
+            
+            [item bindView:itemView];
+            
+            [collectionView setupCellForEditing:itemView];
+        }
         
         return itemView;
     }
     
     return [collectionView dequeueReusableCellWithReuseIdentifier:@"_empty" forIndexPath:indexPath];
+}
+
+- (void)collectionView:(TGCollectionMenuView *)collectionView willDisplayCell:(UICollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath {
+    if (iosMajorVersion() >= 8) {
+        TGCollectionItem *item = indexPath.section < (NSInteger)_menuSections.sections.count && indexPath.row < (NSInteger)((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items.count ? ((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items[indexPath.item] : nil;
+        
+        if (item != nil)
+        {
+            TGCollectionItemView *itemView = (TGCollectionItemView *)cell;
+            if (itemView.boundItem != nil)
+                [itemView.boundItem unbindView];
+            
+            [self updateItem:item itemView:itemView positionAtIndexPath:indexPath ignoreDragging:false animated:false];
+            
+            [item bindView:itemView];
+            
+            [collectionView setupCellForEditing:itemView];
+            
+            [self willDisplayItem:item];
+        }
+    }
 }
 
 - (void)collectionView:(UICollectionView *)__unused collectionView didEndDisplayingCell:(TGCollectionItemView *)cell forItemAtIndexPath:(NSIndexPath *)__unused indexPath
@@ -503,12 +526,6 @@
     TGCollectionMenuSection *section = _menuSections.sections[fromIndexPath.section];
     TGCollectionItem *item = section.items[fromIndexPath.item];
     return item.canBeMovedToSectionAtIndex != nil && item.canBeMovedToSectionAtIndex(toIndexPath.section, toIndexPath.item);
-}
-
-- (void)collectionView:(UICollectionView *)__unused collectionView willDisplayCell:(UICollectionViewCell *)__unused cell forItemAtIndexPath:(NSIndexPath *)indexPath {
-    TGCollectionMenuSection *section = _menuSections.sections[indexPath.section];
-    TGCollectionItem *item = section.items[indexPath.item];
-    [self willDisplayItem:item];
 }
 
 - (BOOL)collectionViewCanMoveItems:(UICollectionView *)__unused collectionView

@@ -340,7 +340,7 @@ static ASQueue *taskManagementQueue()
         
         UIImage *thumbnailImage = nil;
         if (isFlat && (cornerRadius > 0 || cornerRadius == -1))
-            thumbnailImage = TGLoadedAttachmentWithCornerRadiusImage(image, size, averageColorPtr, !isFlat, cornerRadius == -1 ? 0 : cornerRadius);
+            thumbnailImage = TGLoadedAttachmentWithCornerRadiusImage(image, size, averageColorPtr, !isFlat, cornerRadius == -1 ? 0 : cornerRadius, 0);
         else
             thumbnailImage = TGLoadedAttachmentImage(image, size, averageColorPtr, !isFlat);
         

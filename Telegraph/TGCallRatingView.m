@@ -108,6 +108,11 @@
         }];
     }
     
+    if (_selectedStars > 0 && _selectedStars < 4)
+        _commentView.placeholder = TGLocalized(@"Call.ReportPlaceholder");
+    else
+        _commentView.placeholder = TGLocalized(@"Calls.RatingFeedback");
+    
     if ((previousStars < 5 && _selectedStars == 5) || (_selectedStars < 5 && (previousStars == 5 || previousStars == 0)))
         [self updateHeight:true];
 }

@@ -2,7 +2,7 @@
 #import "TGOverlayControllerWindow.h"
 
 #import "TGFont.h"
-#import <POP/POP.h>
+#import <pop/POP.h>
 #import "TGHacks.h"
 #import "TGImageUtils.h"
 #import "TGPhotoEditorUtils.h"
@@ -91,8 +91,6 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
 {
     [_stateDisposable dispose];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-    
-    [self _restoreVolumeOverlay];
 }
 
 - (void)setAboveStatusBar
@@ -304,7 +302,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
 
 - (void)viewDidAppear:(BOOL)animated
 {
-    [super viewWillAppear:animated];
+    [super viewDidAppear:animated];
     _appearing = false;
     
     [_playerView _prepareToEnterFullscreen];
@@ -351,8 +349,6 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     _panGestureRecognizer.delaysTouchesBegan = true;
     _panGestureRecognizer.cancelsTouchesInView = false;
     [_wrapperView addGestureRecognizer:_panGestureRecognizer];
-    
-    [self _hideVolumeOverlay];
     
     if (fromRotation && !_aboveStatusBar)
         [TGHacks setApplicationStatusBarAlpha:0.0f];
@@ -494,8 +490,6 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     
     if (!_aboveStatusBar)
         [TGHacks setApplicationStatusBarAlpha:1.0f];
-    
-    [self _restoreVolumeOverlay];
 }
 
 - (void)animateView:(UIView *)view to:(CGRect)toFrame completion:(void (^)(bool))completion
@@ -707,23 +701,6 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
 - (void)pipButtonPressed
 {
     [_playerView switchToPictureInPicture];
-}
-
-#pragma mark -
-
-- (void)_hideVolumeOverlay
-{
-    UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
-    UIView *rootView = keyWindow.rootViewController.view;
-    
-    _volumeOverlayFix = [[MPVolumeView alloc] initWithFrame:CGRectMake(10000, 10000, 20, 20)];
-    [rootView addSubview:_volumeOverlayFix];
-}
-
-- (void)_restoreVolumeOverlay
-{
-    [_volumeOverlayFix removeFromSuperview];
-    _volumeOverlayFix = nil;
 }
 
 #pragma mark -

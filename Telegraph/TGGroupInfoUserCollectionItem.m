@@ -20,6 +20,8 @@
 
 #import "TGTelegraph.h"
 
+#import "TGLocalization.h"
+
 @interface TGGroupInfoUserCollectionItem () <TGGroupInfoUserCollectionItemViewDelegate>
 {
     bool _canEdit;
@@ -56,7 +58,7 @@
     
     view.delegate = self;
     
-    [view setFirstName:_user.firstName lastName:_user.lastName uidForPlaceholderCalculation:_user.uid];
+    [view setFirstName:_user.firstName lastName:_user.lastName uidForPlaceholderCalculation:_user.uid canPromote:_canPromote canRestrict:_canRestrict canBan:_canBan canDelete:_canDelete];
     if (_customStatus != nil) {
         [view setStatus:_customStatus active:false];
     } else {
@@ -89,21 +91,48 @@
         
         if (_user == nil)
         {
-            [view setFirstName:_conversation.chatTitle lastName:@"" uidForPlaceholderCalculation:(int32_t)_conversation.conversationId];
+            [view setFirstName:_conversation.chatTitle lastName:@"" uidForPlaceholderCalculation:(int32_t)_conversation.conversationId canPromote:_canPromote canRestrict:_canRestrict canBan:_canBan canDelete:_canDelete];
             [view setStatus:[self stringForMemberCount:_conversation.chatParticipantCount] active:false];
             [view setAvatarUri:_conversation.chatPhotoSmall];
         }
     }
     
     if (_optionTitle != nil) {
-        view.optionText = _optionTitle;
+        //view.optionText = _optionTitle;
     }
     
     [view setCustomLabel:_customLabel];
     
+    [view setRequiresFullSeparator:_requiresFullSeparator];
     [view setDisplaySwitch:_displaySwitch];
+    [view setDisplayCheck:_displayCheck];
     [view setEnableSwitch:_enableSwitch animated:false];
     [view setSwitchIsOn:_switchIsOn animated:false];
+    [view setCheckIsOn:_checkIsOn];
+    
+    __weak TGGroupInfoUserCollectionItem *weakSelf = self;
+    view.requestDelete = ^{
+        __strong TGGroupInfoUserCollectionItem *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            if (strongSelf->_requestDelete) {
+                strongSelf->_requestDelete();
+            }
+            
+            [strongSelf groupInfoUserItemViewRequestedDeleteAction:(TGGroupInfoUserCollectionItemView *)[strongSelf boundView]];
+        }
+    };
+    view.requestPromote = ^{
+        __strong TGGroupInfoUserCollectionItem *strongSelf = weakSelf;
+        if (strongSelf != nil && strongSelf->_requestPromote) {
+            strongSelf->_requestPromote();
+        }
+    };
+    view.requestRestrict = ^{
+        __strong TGGroupInfoUserCollectionItem *strongSelf = weakSelf;
+        if (strongSelf != nil && strongSelf->_requestRestrict) {
+            strongSelf->_requestRestrict();
+        }
+    };
     
     [(TGGroupInfoUserCollectionItemView *)[self boundView] setDisabled:_disabled animated:false];
 }
@@ -129,6 +158,16 @@
 
 - (void)setSwitchIsOn:(bool)switchIsOn {
     [self setSwitchIsOn:switchIsOn animated:true];
+}
+
+- (void)setDisplayCheck:(bool)displayCheck {
+    _displayCheck = displayCheck;
+    [(TGGroupInfoUserCollectionItemView *)[self boundView] setDisplayCheck:_displayCheck];
+}
+
+- (void)setCheckIsOn:(bool)checkIsOn {
+    _checkIsOn = checkIsOn;
+    [(TGGroupInfoUserCollectionItemView *)[self boundView] setCheckIsOn:_checkIsOn];
 }
 
 - (void)setSwitchIsOn:(bool)switchIsOn animated:(bool)animated {
@@ -169,7 +208,7 @@
     {
         if (active != NULL)
             *active = true;
-        return TGLocalizedStatic(@"Presence.online");
+        return TGLocalized(@"Presence.online");
     }
     else if (presence.lastSeen != 0)
         return [TGDateUtils stringForRelativeLastSeen:presence.lastSeen];
@@ -184,7 +223,7 @@
     if ([self boundView] != nil)
     {
         TGGroupInfoUserCollectionItemView *view = (TGGroupInfoUserCollectionItemView *)[self boundView];
-        [view setFirstName:user.firstName lastName:user.lastName uidForPlaceholderCalculation:_user.uid];
+        [view setFirstName:user.firstName lastName:user.lastName uidForPlaceholderCalculation:_user.uid canPromote:_canPromote canRestrict:_canRestrict canBan:_canBan canDelete:_canDelete];
         if (_customStatus != nil) {
             [view setStatus:_customStatus active:false];
         } else {
@@ -218,14 +257,7 @@
 
 - (NSString *)stringForMemberCount:(int)memberCount
 {
-    if (memberCount == 1)
-        return TGLocalizedStatic(@"Conversation.StatusMembers_1");
-    else if (memberCount == 2)
-        return TGLocalizedStatic(@"Conversation.StatusMembers_2");
-    else if (memberCount >= 3 && memberCount <= 10)
-        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusMembers_3_10"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
-    else
-        return [[NSString alloc] initWithFormat:TGLocalizedStatic(@"Conversation.StatusMembers_any"), [TGStringUtils stringWithLocalizedNumber:memberCount]];
+    return [effectiveLocalization() getPluralized:@"Conversation.StatusMembers" count:(int32_t)memberCount];
 }
 
 - (void)setConversation:(TGConversation *)conversation
@@ -247,7 +279,7 @@
         
         if (_user == nil)
         {
-            [view setFirstName:_conversation.chatTitle lastName:@"" uidForPlaceholderCalculation:(int32_t)_conversation.conversationId];
+            [view setFirstName:_conversation.chatTitle lastName:@"" uidForPlaceholderCalculation:(int32_t)_conversation.conversationId canPromote:_canBan canRestrict:_canRestrict canBan:_canBan canDelete:_canDelete];
             [view setStatus:[self stringForMemberCount:_conversation.chatParticipantCount] active:false];
             [view setAvatarUri:_conversation.chatPhotoSmall];
         }
@@ -289,8 +321,12 @@
 
 - (void)itemSelected:(id)__unused actionTarget
 {
+    if (_pressed) {
+        _pressed();
+    }
+    
     if (_conversation == nil)
-        [_interfaceHandle requestAction:@"openUser" options:@{@"uid": @(_user.uid)}];
+        [_interfaceHandle requestAction:@"openUser" options:@{@"uid": @(_user.uid), @"force": @true}];
     else
         [_interfaceHandle requestAction:@"openConversation" options:@{@"conversationId": @(_conversation.conversationId)}];
 }

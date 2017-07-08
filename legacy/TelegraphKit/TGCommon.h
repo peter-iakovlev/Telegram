@@ -26,7 +26,6 @@
 
 
 extern int TGLocalizedStaticVersion;
-#define TGLocalizedStatic(s) ({ static int _localizedStringVersion = 0; static NSString *_localizedString = nil; if (_localizedString == nil || _localizedStringVersion != TGLocalizedStaticVersion) { _localizedString = TGLocalized(s); _localizedStringVersion = TGLocalizedStaticVersion; } _localizedString; })
 
 #define TG_TIMESTAMP_DEFINE(s) CFAbsoluteTime tg_timestamp_##s = CFAbsoluteTimeGetCurrent(); int tg_timestamp_line_##s = __LINE__;
 #define TG_TIMESTAMP_MEASURE(s) { CFAbsoluteTime tg_timestamp_current_time = CFAbsoluteTimeGetCurrent(); TGLog(@"%s %d-%d: %f ms", #s, tg_timestamp_line_##s, __LINE__, (tg_timestamp_current_time - tg_timestamp_##s) * 1000.0); tg_timestamp_##s = tg_timestamp_current_time; tg_timestamp_line_##s = __LINE__; }
@@ -39,9 +38,17 @@ bool hasModernCpu();
 int deviceMemorySize();
     
 void TGSetLocalizationFromFile(NSString *filePath);
-bool TGIsCustomLocalizationActive();
-void TGResetLocalization();
 NSString *TGLocalized(NSString *s);
+    
+@class TGLocalization;
+
+TGLocalization *effectiveLocalization();
+NSString *currentLocalizationEnglishLanguageName();
+TGLocalization *nativeEnglishLocalization();
+TGLocalization *currentNativeLocalization();
+TGLocalization *currentCustomLocalization();
+void setCurrentNativeLocalization(TGLocalization *localization, bool switchIfCustom);
+void setCurrentCustomLocalization(TGLocalization *localization);
 
 bool TGObjectCompare(id obj1, id obj2);
 bool TGStringCompare(NSString *s1, NSString *s2);

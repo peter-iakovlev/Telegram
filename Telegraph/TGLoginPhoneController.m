@@ -49,8 +49,6 @@
 
 @interface TGLoginPhoneController () <UITextFieldDelegate, MFMailComposeViewControllerDelegate>
 {
-    UIView *_grayBackground;
-    UIView *_separatorView;
     UILabel *_titleLabel;
     UILabel *_noticeLabel;
     UILabel *_termsOfServiceLabel;
@@ -146,10 +144,6 @@
     
     CGSize screenSize = [self referenceViewSizeForOrientation:UIInterfaceOrientationPortrait];
     
-    _grayBackground = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, screenSize.width, [TGViewController isWidescreen] ? 131.0f : 90.0f)];
-    _grayBackground.backgroundColor = UIColorRGB(0xf2f2f2);
-    [self.view addSubview:_grayBackground];
-    
     _titleLabel = [[UILabel alloc] init];
     _titleLabel.backgroundColor = [UIColor clearColor];
     _titleLabel.textColor = [UIColor blackColor];
@@ -161,7 +155,7 @@
     
     _noticeLabel = [[UILabel alloc] init];
     _noticeLabel.font = TGSystemFontOfSize(17.0f);
-    _noticeLabel.textColor = UIColorRGB(0x999999);
+    _noticeLabel.textColor = [UIColor blackColor];
     _noticeLabel.text = TGLocalized(@"Login.PhoneAndCountryHelp");
     _noticeLabel.backgroundColor = [UIColor clearColor];
     _noticeLabel.lineBreakMode = NSLineBreakByWordWrapping;
@@ -259,11 +253,6 @@
     _phoneField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
     _phoneField.frame = CGRectMake(96.0f, _inputBackgroundView.frame.origin.y + 1.0f + TGScreenPixel, screenSize.width - 96.0f - 10.0f, 56.0f);
     [self.view addSubview:_phoneField];
-    
-    CGFloat separatorHeight = TGScreenPixel;
-    _separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, _grayBackground.frame.size.height, _grayBackground.frame.size.width, separatorHeight)];
-    _separatorView.backgroundColor = UIColorRGB(0xc8c7cc);
-    [self.view addSubview:_separatorView];
     
     //if (![self _updateControllerInset:false])
         [self updateInterface:self.interfaceOrientation];
@@ -432,52 +421,61 @@
 {
     CGSize screenSize = [self referenceViewSizeForOrientation:orientation];
 
-    CGFloat topOffset = 0.0f;
-    CGFloat titleLabelOffset = 0.0f;
-    CGFloat noticeLabelOffset = 0.0f;
     CGFloat countryButtonOffset = 0.0f;
     CGFloat sideInset = 0.0f;
+    CGFloat titleAdditionalOffset = 0.0f;
+    CGFloat fieldsAdditionalOffset = 0.0f;
     
     if (TGIsPad())
     {
-        if (UIInterfaceOrientationIsPortrait(orientation))
-        {
-            topOffset = 305.0f;
-            titleLabelOffset = topOffset - 108.0f;
-            noticeLabelOffset = topOffset + 143.0f;
-        }
-        else
-        {
-            topOffset = 135.0f;
-            titleLabelOffset = topOffset - 78.0f;
-            noticeLabelOffset = topOffset + 123.0f;
-        }
-        
-        countryButtonOffset = topOffset;
         sideInset = 130.0f;
+        if (screenSize.width < screenSize.height) {
+            titleAdditionalOffset = 20.0f;
+            fieldsAdditionalOffset = 50.0f;
+        } else {
+            titleAdditionalOffset = -40.0f;
+            fieldsAdditionalOffset = -10.0f;
+        }
     }
     else
     {
-        topOffset = [TGViewController hasLargeScreen] ? 131.0f : 90.0f;
-        titleLabelOffset = [TGViewController hasLargeScreen] ? 71.0f : 48.0f;
-        noticeLabelOffset = [TGViewController hasLargeScreen] ? 274.0f : 214.0f;
-        countryButtonOffset = [TGViewController hasLargeScreen] ? 131.0f : 90.0f;
-        
-        if (![TGViewController hasLargeScreen] && [TGViewController isWidescreen]) {
-            topOffset += 20.0f;
-            titleLabelOffset += 20.0f;
-            noticeLabelOffset += 20.0f;
-            countryButtonOffset += 20.0f;
+        if (screenSize.height < 481.0) {
+            titleAdditionalOffset = -28.0f;
+            fieldsAdditionalOffset = 18.0f;
+        } else if (screenSize.height < 569.0) {
+            titleAdditionalOffset = -15.0f;
+            fieldsAdditionalOffset = 22.0f;
         }
     }
     
-    _grayBackground.frame = CGRectMake(0.0f, 0.0f, screenSize.width, topOffset);
-    _separatorView.frame = CGRectMake(0.0f, topOffset, screenSize.width, _separatorView.frame.size.height);
-    
-    _titleLabel.frame = CGRectMake(CGFloor((screenSize.width - _titleLabel.frame.size.width) / 2), titleLabelOffset, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
-    
+    CGSize titleSize = _titleLabel.bounds.size;
     CGSize noticeSize = [_noticeLabel sizeThatFits:CGSizeMake(278.0f, CGFLOAT_MAX)];
-    _noticeLabel.frame = CGRectMake(CGFloor((screenSize.width - noticeSize.width) / 2.0f), noticeLabelOffset, noticeSize.width, noticeSize.height);
+    CGSize termsOfServiceSize = [_termsOfServiceLabel sizeThatFits:CGSizeMake(278.0f, CGFLOAT_MAX)];
+    
+    CGFloat keyboardHeight = 216.0f;
+    if (TGIsPad()) {
+        CGFloat longSize = MAX(screenSize.width, screenSize.height);
+        
+        if (fabs(longSize - 1024.0f) < FLT_EPSILON)
+            keyboardHeight = (screenSize.width > screenSize.height) ? 370.0f : 300.0f;
+        else
+            keyboardHeight = (screenSize.width > screenSize.height) ? 435.0f : 350.0f;
+    }
+    
+    CGFloat topOrigin = 20.0f + 44.0f + 10.0f + titleAdditionalOffset;
+    CGFloat bottomOffset = screenSize.height - keyboardHeight - 10.0f;
+    
+    CGFloat titlePlusNoticeHeight = titleSize.height + noticeSize.height;
+    
+    CGFloat maxHeight = 396.0f;
+    
+    CGFloat contentHeight = MIN(maxHeight, bottomOffset - topOrigin);
+    CGFloat adjustedTopOrigin = topOrigin;
+    
+    _titleLabel.frame = CGRectMake(CGFloor((screenSize.width - _titleLabel.frame.size.width) / 2), adjustedTopOrigin, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
+    _noticeLabel.frame = CGRectMake(CGFloor((screenSize.width - noticeSize.width) / 2.0f), CGRectGetMaxY(_titleLabel.frame) + 10.0f, noticeSize.width, noticeSize.height);
+    
+    countryButtonOffset = topOrigin + MAX(titlePlusNoticeHeight, CGFloor((contentHeight - 112.0f) / 2.0f)) + fieldsAdditionalOffset;
 
     if (!_termsOfServiceLabel.hidden) {
         CGSize termsOfServiceSize = [_termsOfServiceLabel sizeThatFits:CGSizeMake(278.0f, CGFLOAT_MAX)];
@@ -485,16 +483,6 @@
         CGFloat termsOfServiceOffset = 40.0f;
         if (!TGIsPad() && ![TGViewController hasLargeScreen]) {
             termsOfServiceOffset = 20.0f;
-        }
-        
-        CGFloat keyboardHeight = 216.0f;
-        if (TGIsPad()) {
-            CGFloat longSize = MAX(screenSize.width, screenSize.height);
-            
-            if (fabs(longSize - 1024.0f) < FLT_EPSILON)
-                keyboardHeight = (screenSize.width > screenSize.height) ? 370.0f : 300.0f;
-            else
-                keyboardHeight = (screenSize.width > screenSize.height) ? 435.0f : 350.0f;
         }
         
         _termsOfServiceLabel.frame = CGRectMake(CGFloor((screenSize.width - termsOfServiceSize.width) / 2.0f), screenSize.height - termsOfServiceSize.height - termsOfServiceOffset - keyboardHeight, termsOfServiceSize.width, termsOfServiceSize.height);
@@ -820,6 +808,23 @@
         _phoneField.text = [self filterPhoneText:[TGPhoneUtils formatPhone:[[NSString alloc] initWithFormat:@"%@", _phoneField.text] forceInternational:false]];
 }
 
+- (NSString *)emojiFlagForISOCountryCode:(NSString *)countryCode {
+    if (countryCode.length != 2) {
+        return nil;
+    }
+    
+    int base = 127462 -65;
+    
+    wchar_t bytes[2] = {
+        base +[countryCode characterAtIndex:0],
+        base +[countryCode characterAtIndex:1]
+    };
+    
+    return [[NSString alloc] initWithBytes:bytes
+                                    length:countryCode.length *sizeof(wchar_t)
+                                  encoding:NSUTF32LittleEndianStringEncoding];
+}
+
 - (void)updateCountry
 {
     int countryCode = [[_countryCodeField.text substringFromIndex:1] intValue];
@@ -827,12 +832,17 @@
     
     if (countryName != nil)
     {
-        //[_countryButton setTitleColor:UIColorRGB(0xf0f0f0) forState:UIControlStateNormal];
+        NSString *countryId = [TGLoginCountriesController countryIdByCode:countryCode];
+        if (countryId != nil) {
+            NSString *flag = [self emojiFlagForISOCountryCode:[countryId uppercaseString]];
+            if (flag.length != 0) {
+                countryName = [flag stringByAppendingFormat:@" %@", countryName];
+            }
+        }
         [_countryButton setTitle:countryName forState:UIControlStateNormal];
     }
     else
     {
-        //[_countryButton setTitleColor:UIColorRGBA(0xf0f0f0, 0.7f) forState:UIControlStateNormal];
         [_countryButton setTitle:_countryCodeField.text.length <= 1 ? TGLocalized(@"Login.CountryCode") : TGLocalized(@"Login.InvalidCountryCode") forState:UIControlStateNormal];
     }
 }
@@ -1051,9 +1061,9 @@
         
         if ([options objectForKey:@"code"] != nil)
         {
-            //[_countryButton setTitleColor:UIColorRGB(0xf0f0f0) forState:UIControlStateNormal];
-            [_countryButton setTitle:[options objectForKey:@"name"] forState:UIControlStateNormal];
             _countryCodeField.text = [NSString stringWithFormat:@"+%d", [[options objectForKey:@"code"] intValue]];
+            
+            [self updateCountry];
             
             [self updatePhoneTextForCountryFieldText:_countryCodeField.text];
         }

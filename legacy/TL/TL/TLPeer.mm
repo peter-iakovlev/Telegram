@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xceb751ba;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPeer$peerUser *object = [[TLPeer$peerUser alloc] init];
     object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
@@ -79,7 +79,7 @@
     return (int32_t)0x6d0b2f31;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPeer$peerChat *object = [[TLPeer$peerChat alloc] init];
     object.chat_id = metaObject->getInt32((int32_t)0x7234457c);
@@ -112,7 +112,7 @@
     return (int32_t)0xc6cb4351;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLPeer$peerChannel *object = [[TLPeer$peerChannel alloc] init];
     object.channel_id = metaObject->getInt32((int32_t)0x1cfcdb86);

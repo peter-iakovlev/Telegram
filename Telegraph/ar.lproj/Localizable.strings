@@ -3,6 +3,7 @@
 "MESSAGE_NOTEXT" = "%1$@ قام بإرسال رسالة";
 "MESSAGE_PHOTO" = "%1$@ قام بإرسال صورة";
 "MESSAGE_VIDEO" = "%1$@ قام بإرسال مقطع مرئي";
+"MESSAGE_ROUND" = "%1$@ قام بإرسال رسالة مرئية لك";
 "MESSAGE_CONTACT" = "%1$@ قام بإرسال جهة اتصال";
 "MESSAGE_GEO" = "%1$@ شارك موقعه معك";
 "MESSAGE_DOC" = "%1$@ قام بإرسال ملف لك";
@@ -20,6 +21,7 @@
 "CHAT_MESSAGE_NOTEXT" = "%1$@ قام بإرسال رسالة %2$@";
 "CHAT_MESSAGE_PHOTO" = "%1$@ قام بإرسال صورة %2$@";
 "CHAT_MESSAGE_VIDEO" = "%1$@ قام بإرسال مقطع مرئي %2$@";
+"CHAT_MESSAGE_ROUND" = "%1$@ قام بإرسال رسالة مرئية للمجموعة %2$@";
 "CHAT_MESSAGE_CONTACT" = "%1$@ قام بإرسال جهة إتصال %2$@";
 "CHAT_MESSAGE_GEO" = "%1$@ شارك موقعه معك %2$@";
 "CHAT_MESSAGE_DOC" = "%1$@ قام بإرسال ملف للمجموعة %2$@";
@@ -51,6 +53,7 @@
 "CHANNEL_MESSAGE_NOTEXT" = "%1$@ أرسل رسالة";
 "CHANNEL_MESSAGE_PHOTO" = "%1$@ أرسل صورة";
 "CHANNEL_MESSAGE_VIDEO" = "%1$@ أرسل مقطع مرئي";
+"CHANNEL_MESSAGE_ROUND" = "%1$@ أرسل رسالة مرئية";
 "CHANNEL_MESSAGE_DOC" = "%1$@ أرسل مستند";
 "CHANNEL_MESSAGE_STICKER" = "%1$@ أرسل %2$@ملصق";
 "CHANNEL_MESSAGE_AUDIO" = "%1$@ أرسل رسالة صوتية";
@@ -63,6 +66,7 @@
 "PINNED_NOTEXT" = "%1$@ ثبت رسالة";
 "PINNED_PHOTO" = "%1$@ ثبت صورة";
 "PINNED_VIDEO" = "%1$@ ثبت فيديو";
+"PINNED_ROUND" = "%1$@ ثبت رسالة مرئية";
 "PINNED_DOC" = "%1$@ ثبت ملف";
 "PINNED_STICKER" = "%1$@ ثبت %2$@ملصق";
 "PINNED_AUDIO" = "%1$@ ثبت رسالة صوتية";
@@ -266,6 +270,7 @@
 "DialogList.SingleRecordingAudioSuffix" = "%@ يقوم بتسجيل مقطع صوتي";
 "DialogList.SingleUploadingPhotoSuffix" = "%@ يقوم بإرسال صورة";
 "DialogList.SingleUploadingVideoSuffix" = "%@ يقوم بإرسال مقطع مرئي";
+"DialogList.SingleRecordingVideoMessageSuffix" = "%@ يقوم بتسجيل فيديو";
 "DialogList.SingleUploadingFileSuffix" = "%@ يقوم بإرسال ملف";
 "DialogList.MultipleTypingSuffix" = "%d يكتبون";
 "DialogList.Typing" = "جاري الكتابة";
@@ -772,6 +777,7 @@
 "Activity.UploadingVideo" = "جاري إرسال المقطع المرئي...";
 "Activity.UploadingDocument" = "جاري إرسال الملف...";
 "Activity.RecordingAudio" = "جاري تسجيل المقطع الصوتي...";
+"Activity.RecordingVideoMessage" = "جاري تسجيل الفيديو";
 "Activity.Location" = "جاري اختيار المكان...";
 
 "Service.NetworkConfigurationUpdatedMessage" = "تم تحديث إعدادات الاتصال بشكل ناجح.";
@@ -894,7 +900,7 @@
 "Camera.FlashAuto" = "تلقائي";
 "Camera.Retake" = "أعد الإلتقاط";
 
-"Settings.PhoneNumber" = "رقم الهاتف";
+"Settings.PhoneNumber" = "تغيير الرقم";
 
 "PhoneNumberHelp.Help" = "يمكنك تغيير رقم تيليجرام الخاص بك هنا. حسابك وجميع بياناتك التي في السحاب بما فيها رسائلك، الوسائط، جهات الاتصال وغيرها سيتم نقلها للرقم الجديد.\n\n**هام:** جميع جهات الاتصال الخاصة بك في تيليجرام سيضاف لها **رقمك الجديد**، في حال تواجد بها رقمك القديم ولم تقم بحظره في تيليجرام.";
 "PhoneNumberHelp.Alert" = "جميع جهات الاتصال الخاصة بك في تيليجرام سيضاف لها رقمك الجديد، في حال تواجد بها رقمك القديم ولم تقم بحظره في تيليجرام.";
@@ -1676,7 +1682,7 @@
 "Watch.UserInfo.Mute_2" = "ضعه على الصامت لمدة ساعتين";
 "Watch.UserInfo.Mute_3_10" = "ضعه على الصامت لمدة %@ ساعات";
 "Watch.UserInfo.Mute_any" = "ضعه على الصامت لمدة %@ ساعات";
-"Watch.UserInfo.Mute" = "كتم الصوت";
+"Watch.UserInfo.MuteTitle" = "كتم الصوت";
 "Watch.UserInfo.Unmute" = "إزالة كتم الصوت";
 
 "Watch.GroupInfo.Title" = "معلومات المجموعة";
@@ -1896,6 +1902,7 @@
 "Notification.PinnedTextMessage" = "%@ قام بتثبيت \"%@\"";
 "Notification.PinnedPhotoMessage" = "%@ ثبت صورة";
 "Notification.PinnedVideoMessage" = "%@ ثبت فيديو";
+"Notification.PinnedRoundMessage" = "%@ قام بتثبيت رسالة مرئية";
 "Notification.PinnedAudioMessage" = "%@ ثبت رسالة صوتية";
 "Notification.PinnedDocumentMessage" = "%@ ثبت ملف";
 "Notification.PinnedAnimationMessage" = "%@ ثبت صورة متحركة";
@@ -2355,22 +2362,22 @@
 "Checkout.PayWithTouchId" = "ادفع القفل باستخدام البصمة";
 "Checkout.EnterPassword" = "قم بإدخال كلمة المرور";
 
-"Your card has expired" = "صلاحية بطاقتك منتهية.";
+"Your_card_has_expired" = "صلاحية بطاقتك منتهية.";
 
 /* Error when the card was declined by the credit card networks */
-"Your card was declined" = "تم رفض بطاقتك.";
+"Your_card_was_declined" = "تم رفض بطاقتك.";
 
 /* Error when the card's expiration month is not valid */
-"Your card's expiration month is invalid" = "لقد قمت بإدخال شهر انتهاء غير صحيح.";
+"Your_cards_expiration_month_is_invalid" ="لقد قمت بإدخال شهر انتهاء غير صحيح.";
 
 /* Error when the card's expiration year is not valid */
-"Your card's expiration year is invalid" = "لقد قمت بإدخال سنة انتهاء غير صحيحة.";
+"Your_cards_expiration_year_is_invalid" ="لقد قمت بإدخال سنة انتهاء غير صحيحة.";
 
 /* Error when the card number is not valid */
-"Your card's number is invalid" = "لقد قمت بإدخال رقم بطاقة غير صحيح.";
+"Your_cards_number_is_invalid" = "لقد قمت بإدخال رقم بطاقة غير صحيح.";
 
 /* Error when the card's CVC is not valid */
-"Your card's security code is invalid" = "لقد قمت بإدخال رمز أمان غير صحيح.";
+"Your_cards_security_code_is_invalid" = "لقد قمت بإدخال رمز أمان غير صحيح.";
 
 "MESSAGE_INVOICE" = "%1$@ أرسل فاتورة لـ %2$@";
 "CHAT_MESSAGE_INVOICE" = "%1$@ أرسل فاتورة لـ %3$@ للمجموعة %2$@";
@@ -2458,3 +2465,43 @@
 "Call.RecordingDisabledMessage" = "فضلا انه مكالمتك قبل تسجيل رسالة صوتية. ";
 
 "Call.EmojiDescription" = "إذا كانت هذه الايموجيات مطابقة للتي تظهر على شاشة %@، فالمكالمة 100%% آمنة. ";
+
+"Message.VideoMessage" = "رسالة مرئية";
+
+"Conversation.HoldForAudio" = "اضغط باستمرار لتسجيل صوتي. اضغط مرة واحدة للتحويل للفيديو.";
+"Conversation.HoldForVideo" = "اضغط باستمرار لتسجيل فيديو. اضغط مرة واحدة للتحويل للصوتي.";
+
+"UserInfo.TelegramCall" = "مكالمة تيليجرام";
+"UserInfo.PhoneCall" = "مكالمة هاتفية";
+
+"SharedMedia.CategoryMedia" = "الوسائط";
+"SharedMedia.CategoryDocs" = "المستندات";
+"SharedMedia.CategoryLinks" = "الروابط";
+"SharedMedia.CategoryOther" = "الصوتيات";
+
+"AccessDenied.VideoMessageCamera" = "يحتاج تيليجرام للسماح له باستخدام الكاميرا لإلتقاط الرسائل المرئية.\n\nيرجى الذهاب إلى إعدادات — الخصوصية — الكاميرا ثم قم بتفعيل تيليجرام.";
+"AccessDenied.VideoMessageMicrophone" = "يحتاج تيليجرام للسماح له باستخدام الميكروفون لتسجيل الرسائل المرئية. \n\nيرجى الذهاب إلى إعدادات — الخصوصية — الميكروفون ثم قم بتفعيل تيليجرام.";
+
+"ChatSettings.AutomaticVideoMessageDownload" = "تنزيل الرسائل المرئية تلقائيًا";
+
+"ForwardedVideoMessages_1" = "رسالة مرئية معاد توجيهها";
+"ForwardedVideoMessages_2" = "رسالتان صوتية معاد توجيهها";
+"ForwardedVideoMessages_3_10" = "%@ رسائل مرئية معاد توجيهها";
+"ForwardedVideoMessages_any" = "%@ رسالة مرئية معاد توجيهها";
+
+"Conversation.DiscardVoiceMessageTitle" = "تجاهل الرسالة الصوتية";
+"Conversation.DiscardVoiceMessageDescription" = "هل أنت متأكد من رغبتك في إيقاف التسجيل وتجاهل\nالرسالة الصوتية؟";
+"Conversation.DiscardVoiceMessageAction" = "تجاهل";
+
+"Message.ForwardedMessageShort" = "معاد ارسالها من \n%@";
+
+"Checkout.LiabilityAlertTitle" = "تحذير";
+"Checkout.LiabilityAlert" = "الدفعات تذهب مباشرة إلى مطور %1$@. تيليجرام لا يقوم بتوفير أية ضمانات، يمكنك الاستمرار على مسؤوليتك. في حال واجهت مشاكل، فضلًا تواصل مع مطور %1$@ أو البنك الخاص بك.";
+
+"InstantPage.AutoNightTheme" = "نمط ليلي تلقائي";
+
+"Privacy.PaymentsTitle" = "المدفوعات";
+"Privacy.PaymentsClearInfo" = "مسح معلومات عملية الدفع الشحن";
+"Privacy.PaymentsClearInfoHelp" = "يمكنك حذف معلومات الشحن الخاصة بك والطلب من جميع موفري خدمة الدفع حذف بطاقاتك الإئتمانية المسجلة. يرجى الأخذ بالعلم أن تيليجرام لا يقوم بتاتًا بحفظ بيانات بطاقتك الإئتمانية.";
+"Privacy.PaymentsClear.PaymentInfo" = "معلومات عملية الدفع";
+"Privacy.PaymentsClear.ShippingInfo" = "معلومات الشحن";

@@ -17,6 +17,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGLocalization.h"
+
 @interface TGForwardContactsController : TGContactsController
 
 @property (nonatomic, strong) ASHandle *watcher;
@@ -42,6 +44,7 @@
     bool _targetMode;
     bool _privacyMode;
     bool _groupMode;
+    bool _dialogsMode;
 }
 
 @property (nonatomic) bool blockMode;
@@ -127,6 +130,11 @@
 
 - (id)initWithSelectPrivacyTarget:(NSString *)title placeholder:(NSString *)placeholder
 {
+    return [self initWithSelectPrivacyTarget:title placeholder:placeholder dialogs:false];
+}
+
+- (id)initWithSelectPrivacyTarget:(NSString *)title placeholder:(NSString *)placeholder dialogs:(bool)dialogs
+{
     self = [super init];
     if (self)
     {
@@ -147,6 +155,7 @@
         
         _controllerTitle = title;
         _privacyMode = true;
+        _dialogsMode = dialogs;
     }
     return self;
 }
@@ -258,15 +267,7 @@
 
 - (NSString *)stringForMultipleFilesConfirmation:(NSUInteger)count
 {
-    NSString *formatString = TGLocalized(@"Forward.ConfirmMultipleFiles_any");
-    if (count == 1)
-        formatString = TGLocalized(@"Forward.ConfirmMultipleFiles_1");
-    else if (count == 2)
-        formatString = TGLocalized(@"Forward.ConfirmMultipleFiles_2");
-    else if (count >= 3 && count <= 10)
-        formatString = TGLocalized(@"Forward.ConfirmMultipleFiles_3_10");
-    
-    return [[NSString alloc] initWithFormat:formatString, [[NSString alloc] initWithFormat:@"%d", (int)count]];
+    return [effectiveLocalization() getPluralized:@"Forward.ConfirmMultipleFiles" count:(int32_t)count];
 }
 
 - (id)initWithDocumentFiles:(NSArray *)fileDescs
@@ -389,7 +390,7 @@
         
         [_toolbarContainerView addSubview:_segmentedControl];
         
-        if (_privacyMode)
+        if (_privacyMode && !_dialogsMode)
         {
             [self setCurrentViewController:_contactsController];
             [_segmentedControl setSelectedSegmentIndex:1];
@@ -595,15 +596,7 @@
                         NSString *alertText = nil;
                         if (_privacyMode)
                         {
-                            NSString *formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_any");
-                            if (conversation.chatParticipants.chatParticipantUids.count == 1)
-                                formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_1");
-                            else if (conversation.chatParticipants.chatParticipantUids.count == 2)
-                                formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_2");
-                            else if (conversation.chatParticipants.chatParticipantUids.count >= 3 && conversation.chatParticipants.chatParticipantUids.count <= 10)
-                                formatString = TGLocalized(@"PrivacyLastSeenSettings.AddUsers_3_10");
-                            
-                            alertText = [NSString stringWithFormat:formatString, @(conversation.chatParticipants.chatParticipantUids.count)];
+                            NSString *alertText = [effectiveLocalization() getPluralized:@"PrivacyLastSeenSettings.AddUsers" count:(int32_t)conversation.chatParticipants.chatParticipantUids.count];
                             
                             _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
                             [_currentAlert show];

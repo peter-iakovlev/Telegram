@@ -123,6 +123,18 @@ static NSArray *countryCodes()
     return nil;
 }
 
++ (NSString *)countryIdByCode:(int)code
+{
+    for (NSArray *array in countryCodes())
+    {
+        NSNumber *countryCode = [array objectAtIndex:0];
+        if ([countryCode intValue] == code)
+            return [array objectAtIndex:1];
+    }
+    
+    return nil;
+}
+
 + (NSString *)countryNameByCountryId:(NSString *)countryId code:(int *)code
 {
     NSString *normalizedCountryId = [countryId lowercaseString];

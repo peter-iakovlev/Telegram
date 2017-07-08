@@ -200,6 +200,11 @@
     [_currentAudioSession dispose];
     
     [TGEmbedPIPController resumePictureInPicturePlayback];
+    
+    TGDispatchAfter(0.1, dispatch_get_main_queue(), ^
+    {
+        [TGEmbedPIPController maybeReleaseVolumeOverlay];
+    });
 }
 
 - (void)setDisallowPIP:(bool)disallowPIP
@@ -222,7 +227,7 @@
     if (_currentAudioSession != nil)
         return;
     
-    _currentAudioSession = [[TGAudioSessionManager instance] requestSessionWithType:TGAudioSessionTypePlayVideo interrupted:^{}];
+    _currentAudioSession = [[TGAudioSessionManager instance] requestSessionWithType:TGAudioSessionTypePlayEmbedVideo interrupted:^{}];
 }
 
 - (void)setupWithEmbedSize:(CGSize)embedSize

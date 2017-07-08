@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x73b60230;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLmessages_StickerSetInstallResult$messages_stickerSetInstallResultSuccess *object = [[TLmessages_StickerSetInstallResult$messages_stickerSetInstallResultSuccess alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0x2dd4853e;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLmessages_StickerSetInstallResult$messages_stickerSetInstallResultArchive *object = [[TLmessages_StickerSetInstallResult$messages_stickerSetInstallResultArchive alloc] init];
     object.sets = metaObject->getArray((int32_t)0xc535ffc6);

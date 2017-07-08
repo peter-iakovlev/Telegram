@@ -219,7 +219,6 @@ UIImage *TGScaleAndBlurImage(NSData *data, __unused CGSize size, __autoreleasing
     free(pixelBuffer);
     CFRelease(inBitmapData);
     
-    CGColorSpaceRelease(colorSpace);
     CGImageRelease(imageRef);
     
     if (blurredData != NULL)
@@ -928,7 +927,7 @@ CGSize TGScaleToFill(CGSize size, CGSize boundsSize)
         return CGSizeMake(1.0f, 1.0f);
     
     CGFloat scale = MAX(boundsSize.width / size.width, boundsSize.height / size.height);
-    return CGSizeMake(CGFloor(size.width * scale), CGFloor(size.height * scale));
+    return CGSizeMake(CGRound(size.width * scale), CGRound(size.height * scale));
 }
 
 CGSize TGScaleToFit(CGSize size, CGSize boundsSize)
@@ -1132,6 +1131,10 @@ void TGDrawSvgPath(CGContextRef context, NSString *path) {
         } else if (c == 'Z') { // Z
             CGContextClosePath(context);
             CGContextFillPath(context);
+            CGContextBeginPath(context);
+        } else if (c == 'S') { // Z
+            CGContextClosePath(context);
+            CGContextStrokePath(context);
             CGContextBeginPath(context);
         }
     }

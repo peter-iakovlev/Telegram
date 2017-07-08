@@ -104,6 +104,10 @@
         _user.lastName = lastName;
         _user.phoneNumber = phoneNumber;
         
+        firstName = [firstName stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (firstName.length == 0 && phoneNumber.length > 0)
+            _activateNameEditingOnReset = true;
+        
         [self.userInfoItem setUser:_user animated:false];
         self.navigationItem.rightBarButtonItem.enabled = firstName.length != 0 || lastName.length != 0;
         
@@ -248,6 +252,13 @@
         }
     }
     return self;
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    
+    [self.view endEditing:true];
 }
 
 - (void)_commonInit:(bool)isModal

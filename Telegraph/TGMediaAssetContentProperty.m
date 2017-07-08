@@ -20,7 +20,7 @@
     return self;
 }
 
-- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier assetURL:(NSURL *)assetURL isVideo:(bool)isVideo editAdjustments:(NSDictionary *)editAdjustments isCloud:(bool)isCloud useMediaCache:(bool)useMediaCache liveUpload:(bool)liveUpload passthrough:(bool)passthough
+- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier assetURL:(NSURL *)assetURL isVideo:(bool)isVideo editAdjustments:(NSDictionary *)editAdjustments isCloud:(bool)isCloud useMediaCache:(bool)useMediaCache liveUpload:(bool)liveUpload passthrough:(bool)passthough roundMessage:(bool)roundMessage
 {
     self = [super init];
     if (self != nil)
@@ -33,6 +33,7 @@
         _useMediaCache = useMediaCache;
         _liveUpload = liveUpload;
         _passthrough = passthough;
+        _roundMessage = roundMessage;
     }
     return self;
 }
@@ -42,7 +43,7 @@
     NSString *assetPath = [coder decodeStringForCKey:"assetURL"];
     NSURL *assetURL = (assetPath != nil) ? [NSURL fileURLWithPath:assetPath] : nil;
     
-    return [self initWithAssetIdentifier:[coder decodeStringForCKey:"assetIdentifier"] assetURL:assetURL isVideo:[coder decodeInt32ForCKey:"isVideo"] editAdjustments:[NSKeyedUnarchiver unarchiveObjectWithData:[coder decodeDataCorCKey:"editAdjustments"]] isCloud:[coder decodeInt32ForCKey:"isCloud"] useMediaCache:[coder decodeInt32ForCKey:"useMediaCache"] liveUpload:[coder decodeInt32ForCKey:"liveUpload"] passthrough:[coder decodeInt32ForCKey:"passthough"]];
+    return [self initWithAssetIdentifier:[coder decodeStringForCKey:"assetIdentifier"] assetURL:assetURL isVideo:[coder decodeInt32ForCKey:"isVideo"] editAdjustments:[NSKeyedUnarchiver unarchiveObjectWithData:[coder decodeDataCorCKey:"editAdjustments"]] isCloud:[coder decodeInt32ForCKey:"isCloud"] useMediaCache:[coder decodeInt32ForCKey:"useMediaCache"] liveUpload:[coder decodeInt32ForCKey:"liveUpload"] passthrough:[coder decodeInt32ForCKey:"passthough"] roundMessage:[coder decodeInt32ForCKey:"roundMessage"]];
 }
 
 - (void)encodeWithKeyValueCoder:(PSKeyValueCoder *)coder
@@ -55,6 +56,7 @@
     [coder encodeInt32:_useMediaCache forCKey:"useMediaCache"];
     [coder encodeInt32:_liveUpload forCKey:"liveUpload"];
     [coder encodeInt32:_passthrough forCKey:"passthrough"];
+    [coder encodeInt32:_roundMessage forCKey:"roundMessage"];
 }
 
 @end

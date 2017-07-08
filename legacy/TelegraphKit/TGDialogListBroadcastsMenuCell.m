@@ -75,7 +75,7 @@
 
 - (void)resetLocalization
 {
-    [_broadcastListsButton setTitle:TGLocalized(@"DialogList.Broadcast") forState:UIControlStateNormal];
+    [_broadcastListsButton setTitle:TGLocalized(@"Compose.NewChannelButton") forState:UIControlStateNormal];
     [_newGroupButton setTitle:TGLocalized(@"Compose.NewGroup") forState:UIControlStateNormal];
     
     [self setNeedsLayout];

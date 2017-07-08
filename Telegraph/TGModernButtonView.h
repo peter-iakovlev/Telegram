@@ -16,6 +16,7 @@
 - (void)setTitle:(NSString *)title;
 - (void)setTitleFont:(UIFont *)titleFont;
 - (void)setImage:(UIImage *)image;
+- (void)setHighlightedImage:(UIImage *)highlightedImage;
 - (void)setSupplementaryIcon:(UIImage *)supplementaryIcon;
 - (void)setDisplayProgress:(bool)displayProgress animated:(bool)animated;
 

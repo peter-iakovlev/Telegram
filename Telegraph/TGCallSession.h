@@ -13,6 +13,8 @@
 @property (nonatomic, readonly) bool completed;
 @property (nonatomic, readonly) bool hungUpOutside;
 
+@property (nonatomic, assign) bool hasCallKit;
+
 @property (nonatomic, copy) void (^onStartedConnecting)(void);
 @property (nonatomic, copy) void (^onConnected)(void);
 
@@ -62,7 +64,8 @@
 typedef enum {
     TGCallTransmissionStateInitializing,
     TGCallTransmissionStateEstablished,
-    TGCallTransmissionStateFailed
+    TGCallTransmissionStateFailed,
+    TGCallTransmissionStateReconnecting
 } TGCallTransmissionState;
 
 @interface TGCallSessionState : NSObject

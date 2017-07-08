@@ -7,6 +7,7 @@
 @interface TLcontacts_ImportedContacts : NSObject <TLObject>
 
 @property (nonatomic, retain) NSArray *imported;
+@property (nonatomic, retain) NSArray *popular_invites;
 @property (nonatomic, retain) NSArray *retry_contacts;
 @property (nonatomic, retain) NSArray *users;
 

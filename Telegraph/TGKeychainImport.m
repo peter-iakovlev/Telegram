@@ -98,7 +98,7 @@
                         if (address.length != 0 && port != 0)
                         {
                             datacenterAddressSets[@(datacenter.datacenterId)] = [[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                [[MTDatacenterAddress alloc] initWithIp:address port:port preferForMedia:false restrictToTcp:false]
+                                                                                                                                      [[MTDatacenterAddress alloc] initWithIp:address port:port preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
                             ]];
                         }
                     }

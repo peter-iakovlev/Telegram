@@ -13,6 +13,7 @@
 typedef enum {
     TGModernConversationTitleViewActivityTyping,
     TGModernConversationTitleViewActivityAudioRecording,
+    TGModernConversationTitleViewActivityVideoMessageRecording,
     TGModernConversationTitleViewActivityUploading,
     TGModernConversationTitleViewActivityPlaying
 } TGModernConversationTitleViewActivity;
@@ -52,5 +53,7 @@ typedef enum {
 
 - (void)suspendAnimations;
 - (void)resumeAnimations;
+
+- (void)setShowStatus:(bool)showStatus;
 
 @end

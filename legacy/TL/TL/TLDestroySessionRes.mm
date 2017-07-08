@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xbcf984a4;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLDestroySessionRes$destroy_session_ok *object = [[TLDestroySessionRes$destroy_session_ok alloc] init];
     object.session_id = metaObject->getInt64((int32_t)0xacf0d2dd);
@@ -79,7 +79,7 @@
     return (int32_t)0xcc6b35fe;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLDestroySessionRes$destroy_session_none *object = [[TLDestroySessionRes$destroy_session_none alloc] init];
     object.session_id = metaObject->getInt64((int32_t)0xacf0d2dd);

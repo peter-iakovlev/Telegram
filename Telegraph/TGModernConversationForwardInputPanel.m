@@ -20,7 +20,8 @@ typedef enum {
     TGCommonMediaTypeStickers,
     TGCommonMediaTypeLocations,
     TGCommonMediaTypeContacts,
-    TGCommonMediaTypeGifs
+    TGCommonMediaTypeGifs,
+    TGCommonMediaTypeVideoMessages
 } TGCommonMediaType;
 
 @interface TGModernConversationForwardInputPanel ()
@@ -47,7 +48,12 @@ typedef enum {
         if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
             return TGCommonMediaTypeAudios;
         else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
-            return TGCommonMediaTypeVideos;
+        {
+            if (((TGVideoMediaAttachment *)attachment).roundMessage)
+                return TGCommonMediaTypeVideoMessages;
+            else
+                return TGCommonMediaTypeVideos;
+        }
         else if ([attachment isKindOfClass:[TGLocationMediaAttachment class]])
             return TGCommonMediaTypeLocations;
         else if ([attachment isKindOfClass:[TGContactMediaAttachment class]])
@@ -116,6 +122,8 @@ typedef enum {
             return @"ForwardedLocations_";
         case TGCommonMediaTypeGifs:
             return @"ForwardedGifs_";
+        case TGCommonMediaTypeVideoMessages:
+            return @"ForwardedVideoMessages_";
     }
 }
 
@@ -289,7 +297,7 @@ typedef enum {
 
 - (CGFloat)preferredHeight
 {
-    return 39.0f;
+    return 41.0f;
 }
 
 - (void)setSendAreaWidth:(CGFloat)sendAreaWidth attachmentAreaWidth:(CGFloat)attachmentAreaWidth
@@ -302,20 +310,23 @@ typedef enum {
 {
     [super layoutSubviews];
     
-    CGSize boundsSize = CGSizeMake(self.bounds.size.width, [self preferredHeight]);
-    
-    CGFloat leftPadding = 0.0f;
-    
-    CGSize nameSize = [_nameLabel.text sizeWithFont:_nameLabel.font];
-    nameSize.width = MIN(nameSize.width, boundsSize.width - _attachmentAreaWidth - 40.0f - _sendAreaWidth - leftPadding);
-    
-    CGSize contentLabelSize = [_contentLabel.text sizeWithFont:_contentLabel.font];
-    contentLabelSize.width = MIN(contentLabelSize.width, boundsSize.width - _attachmentAreaWidth - 40.0f - _sendAreaWidth - leftPadding);
-    
-    _closeButton.frame = CGRectMake(boundsSize.width - _sendAreaWidth - _closeButton.frame.size.width - 7.0f, 12.0f, _closeButton.frame.size.width, _closeButton.frame.size.height);
-    _lineView.frame = CGRectMake(_attachmentAreaWidth + 4.0f, 7.0f, 2.0f, boundsSize.height - 7.0f + 3.0f);
-    _nameLabel.frame = CGRectMake(_attachmentAreaWidth + 16.0f + leftPadding, 5.0f, CGCeil(nameSize.width), CGCeil(nameSize.height));
-    _contentLabel.frame = CGRectMake(_attachmentAreaWidth + 16.0f + leftPadding, 24.0f, CGCeil(contentLabelSize.width), CGCeil(contentLabelSize.height));
+    [UIView performWithoutAnimation:^
+    {
+        CGSize boundsSize = CGSizeMake(self.bounds.size.width, [self preferredHeight]);
+        
+        CGFloat leftPadding = 0.0f;
+        
+        CGSize nameSize = [_nameLabel.text sizeWithFont:_nameLabel.font];
+        nameSize.width = MIN(nameSize.width, boundsSize.width - _attachmentAreaWidth - 40.0f - _sendAreaWidth - leftPadding);
+        
+        CGSize contentLabelSize = [_contentLabel.text sizeWithFont:_contentLabel.font];
+        contentLabelSize.width = MIN(contentLabelSize.width, boundsSize.width - _attachmentAreaWidth - 40.0f - _sendAreaWidth - leftPadding);
+        
+        _closeButton.frame = CGRectMake(boundsSize.width - _sendAreaWidth - _closeButton.frame.size.width - 7.0f, 11.0f, _closeButton.frame.size.width, _closeButton.frame.size.height);
+        _lineView.frame = CGRectMake(_attachmentAreaWidth + 4.0f, 6.0f, 2.0f, boundsSize.height - 6.0f);
+        _nameLabel.frame = CGRectMake(_attachmentAreaWidth + 16.0f + leftPadding, 5.0f, CGCeil(nameSize.width), CGCeil(nameSize.height));
+        _contentLabel.frame = CGRectMake(_attachmentAreaWidth + 16.0f + leftPadding, 24.0f, CGCeil(contentLabelSize.width), CGCeil(contentLabelSize.height));
+    }];
 }
 
 @end

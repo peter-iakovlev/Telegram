@@ -22,6 +22,14 @@
 
 #import "TGTelegramNetworking.h"
 
+#import "TGFont.h"
+
+#import "TGLocalizationSignals.h"
+#import "TGAnimationUtils.h"
+#import "TGProgressWindow.h"
+
+#import "TGDatabase.h"
+
 @interface UIScrollView (CurrentPage)
 - (int)currentPage;
 - (void)setPage:(NSInteger)page;
@@ -66,6 +74,13 @@
     bool _displayedStillLogo;
     
     UIButton *_switchToDebugButton;
+    
+    TGModernButton *_alternativeLanguageButton;
+    
+    SMetaDisposable *_localizationsDisposable;
+    TGSuggestedLocalization *_alternativeLocalizationInfo;
+    
+    SVariable *_alternativeLocalization;
 }
 @end
 
@@ -97,6 +112,39 @@
             __strong RMIntroViewController *strongSelf = weakSelf;
             [strongSelf loadGL];
             [strongSelf startTimer];
+        }];
+        
+        _alternativeLanguageButton = [[TGModernButton alloc] init];
+        _alternativeLanguageButton.modernHighlight = true;
+        [_alternativeLanguageButton setTitleColor:TGAccentColor()];
+        _alternativeLanguageButton.titleLabel.font = TGSystemFontOfSize(18.0f);
+        _alternativeLanguageButton.hidden = true;
+        [_alternativeLanguageButton addTarget:self action:@selector(alternativeLanguageButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        
+        _alternativeLocalization = [[SVariable alloc] init];
+        
+        SSignal *localizationSignal = [TGLocalizationSignals suggestedLocalization];
+#ifdef DEBUG
+        localizationSignal = [localizationSignal delay:1.0 onQueue:[SQueue mainQueue]];
+#endif
+        _localizationsDisposable = [[localizationSignal deliverOn:[SQueue mainQueue]] startWithNext:^(TGSuggestedLocalization *next) {
+            __strong RMIntroViewController *strongSelf = weakSelf;
+            if (strongSelf != nil && next != nil) {
+                if (strongSelf->_alternativeLocalizationInfo == nil) {
+                    _alternativeLocalizationInfo = next;
+                    
+                    [strongSelf->_alternativeLanguageButton setTitle:next.continueWithLanguageString forState:UIControlStateNormal];
+                    strongSelf->_alternativeLanguageButton.hidden = false;
+                    [strongSelf->_alternativeLanguageButton sizeToFit];
+                    
+                    if ([strongSelf isViewLoaded]) {
+                        [strongSelf->_alternativeLanguageButton.layer animateAlphaFrom:0.0f to:1.0f duration:0.3f timingFunction:kCAMediaTimingFunctionEaseInEaseOut removeOnCompletion:true completion:nil];
+                        [UIView animateWithDuration:0.3 animations:^{
+                            [strongSelf viewWillLayoutSubviews];
+                        }];
+                    }
+                }
+            }
         }];
     }
     return self;
@@ -249,16 +297,37 @@
     [_pageScrollView setPage:0];
     
     _startButton = [[TGModernButton alloc] init];
-    ((TGModernButton *)_startButton).modernHighlight = true;
+    ((TGModernButton *)_startButton).modernHighlight = false;
     [_startButton setTitle:TGLocalized(@"Tour.StartButton") forState:UIControlStateNormal];
-    [_startButton.titleLabel setFont:[UIFont fontWithName:@"HelveticaNeue" size:isIpad ? 55 / 2.0f : 21]];
-    [_startButton setTitleColor:TGAccentColor() forState:UIControlStateNormal];
+    [_startButton.titleLabel setFont:TGMediumSystemFontOfSize(20.0f)];
+    [_startButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     
+    {
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(48.0f, 48.0f), false, 0.0f);
+        CGContextRef contextRef = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(contextRef, UIColorRGB(0x2ca5e0).CGColor);
+        CGContextFillEllipseInRect(contextRef, CGRectMake(0.0f, 0.0f, 48.0f, 48.0f));
+        UIImage *startButtonImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:24 topCapHeight:24];
+        UIGraphicsEndImageContext();
+        
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(48.0f, 48.0f), false, 0.0f);
+        contextRef = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(contextRef, UIColorRGB(0x227eab).CGColor);
+        CGContextFillEllipseInRect(contextRef, CGRectMake(0.0f, 0.0f, 48.0f, 48.0f));
+        UIImage *startButtonHighlightedImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:24 topCapHeight:24];
+        UIGraphicsEndImageContext();
+        
+        [_startButton setBackgroundImage:startButtonImage forState:UIControlStateNormal];
+        [_startButton setBackgroundImage:startButtonHighlightedImage forState:UIControlStateHighlighted];
+        [_startButton setContentEdgeInsets:UIEdgeInsetsMake(0.0f, 20.0f, 0.0f, 20.0f)];
+    }
     _startArrow = [[UIImageView alloc]initWithImage:[UIImage imageNamed:isIpad ? @"start_arrow_ipad.png" : @"start_arrow.png"]];
     _startButton.titleLabel.clipsToBounds = false;
     _startArrow.frame = CGRectChangedOrigin(_startArrow.frame, CGPointMake([_startButton.titleLabel.text sizeWithFont:_startButton.titleLabel.font].width + (isIpad ? 7 : 6), isIpad ? 6.5f : 4.5f));
-    [_startButton.titleLabel addSubview:_startArrow];
+    //[_startButton.titleLabel addSubview:_startArrow];
     [self.view addSubview:_startButton];
+    
+    [self.view addSubview:_alternativeLanguageButton];
     
     _pageControl = [[UIPageControl alloc] init];
     _pageControl.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin;
@@ -338,21 +407,24 @@
     CGFloat startButtonY = 0;
     CGFloat pageY = 0;
     
+    CGFloat languageButtonSpread = 60.0f;
+    CGFloat languageButtonOffset = 26.0f;
+    
     DeviceScreen deviceScreen = [self deviceScreen];
     switch (deviceScreen)
     {
         case iPad:
-            pageControlY = 386 / 2;
             glViewY = isVertical ? 121 + 90 : 121;
             startButtonY = 120;
             pageY = isVertical ? 485 : 335;
+            pageControlY = pageY + 200.0f;
             break;
         
         case iPadPro:
-            pageControlY = 386 / 2;
             glViewY = isVertical ? 221 + 110 : 221;
             startButtonY = 120;
             pageY = isVertical ? 605 : 435;
+            pageControlY = pageY + 200.0f;
             break;
             
         case Inch35:
@@ -360,13 +432,24 @@
             glViewY = 62 - 20;
             startButtonY = 75;
             pageY = 215;
+            pageControlY = pageY + 160.0f;
+            if (!_alternativeLanguageButton.isHidden) {
+                glViewY -= 40.0f;
+                pageY -= 40.0f;
+                pageControlY -= 40.0f;
+                startButtonY -= 30.0f;
+            }
+            languageButtonSpread = 65.0f;
+            languageButtonOffset = 15.0f;
             break;
             
         case Inch4:
-            pageControlY = 162 / 2;
             glViewY = 62;
             startButtonY = 75;
             pageY = 245;
+            pageControlY = pageY + 160.0f;
+            languageButtonSpread = 50.0f;
+            languageButtonOffset = 20.0f;
             break;
 
         case Inch47:
@@ -374,24 +457,32 @@
             glViewY = 62 + 25;
             startButtonY = 75 + 5;
             pageY = 245 + 50;
+            pageControlY = pageY + 160.0f;
             break;
 
         case Inch55:
-            pageControlY = 162 / 2 + 20;
             glViewY = 62 + 45;
             startButtonY = 75 + 20;
             pageY = 245 + 85;
+            pageControlY = pageY + 160.0f;
             break;
             
         default:
             break;
     }
     
-    _pageControl.frame = CGRectMake(0, self.view.bounds.size.height - pageControlY - statusBarHeight, self.view.bounds.size.width, 7);
+    if (!_alternativeLanguageButton.isHidden) {
+        startButtonY += languageButtonSpread;
+    }
+    
+    _pageControl.frame = CGRectMake(0, pageControlY, self.view.bounds.size.width, 7);
     _glkView.frame = CGRectChangedOriginY(_glkView.frame, glViewY - statusBarHeight);
     
-    _startButton.frame = CGRectMake(-9, self.view.bounds.size.height - startButtonY - statusBarHeight, self.view.bounds.size.width, startButtonY - 4);
-    [_startButton addTarget:self action:@selector(startButtonPress) forControlEvents:UIControlEventTouchUpInside];
+    [_startButton sizeToFit];
+    _startButton.frame = CGRectMake(CGFloor((self.view.bounds.size.width - _startButton.frame.size.width) / 2.0f), self.view.bounds.size.height - startButtonY - statusBarHeight, _startButton.frame.size.width, 48.0f);
+    [_startButton addTarget:self action:@selector(startButtonPress) forControlEvents:UIControlEventTouchUpInside];\
+    
+    _alternativeLanguageButton.frame = CGRectMake(CGFloor((self.view.bounds.size.width - _alternativeLanguageButton.frame.size.width) / 2.0f), CGRectGetMaxY(_startButton.frame) + languageButtonOffset, _alternativeLanguageButton.frame.size.width, _alternativeLanguageButton.frame.size.height);
     
     _pageScrollView.frame=CGRectMake(0, 20, self.view.bounds.size.width, self.view.bounds.size.height - 20);
     _pageScrollView.contentSize=CGSizeMake(_headlines.count * self.view.bounds.size.width, 150);
@@ -478,6 +569,10 @@
 
 - (void)startButtonPress
 {
+    if (_alternativeLocalizationInfo != nil) {
+        [TGDatabaseInstance() setCustomProperty:@"checkedLocalization" value:[_alternativeLocalizationInfo.info.code dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+    
     TGLoginPhoneController *phoneController = [[TGLoginPhoneController alloc] init];
     [self.navigationController pushViewController:phoneController animated:true];
 }
@@ -600,6 +695,35 @@ NSInteger _current_page_end;
     }
     
     [_pageControl setCurrentPage:_currentPage];
+}
+
+- (void)updateLocalization {
+    [_startButton setTitle:TGLocalized(@"Tour.StartButton") forState:UIControlStateNormal];
+    
+    _headlines = @[ TGLocalized(@"Tour.Title1"), TGLocalized(@"Tour.Title2"),  TGLocalized(@"Tour.Title6"), TGLocalized(@"Tour.Title3"), TGLocalized(@"Tour.Title4"), TGLocalized(@"Tour.Title5")];
+    _descriptions = @[TGLocalized(@"Tour.Text1"), TGLocalized(@"Tour.Text2"),  TGLocalized(@"Tour.Text6"), TGLocalized(@"Tour.Text3"), TGLocalized(@"Tour.Text4"), TGLocalized(@"Tour.Text5")];
+}
+
+- (void)alternativeLanguageButtonPressed {
+    if (_alternativeLocalizationInfo != nil) {
+        [TGDatabaseInstance() setCustomProperty:@"checkedLocalization" value:[_alternativeLocalizationInfo.info.code dataUsingEncoding:NSUTF8StringEncoding]];
+        
+        TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+        [progressWindow showWithDelay:0.1];
+        __weak RMIntroViewController *weakSelf = self;
+        [[[[TGLocalizationSignals applyLocalization:_alternativeLocalizationInfo.info.code] deliverOn:[SQueue mainQueue]] onDispose:^{
+            TGDispatchOnMainThread(^{
+                [progressWindow dismiss:true];
+            });
+        }] startWithNext:nil error:^(id error) {
+            
+        } completed:^{
+            __strong RMIntroViewController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf startButtonPress];
+            }
+        }];
+    }
 }
 
 @end

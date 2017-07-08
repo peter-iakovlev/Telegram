@@ -1,6 +1,6 @@
 #import "TLMetaObject.h"
 
-TLMetaObject::TLMetaObject(std::tr1::shared_ptr<std::vector<TLMetaField> > fields_, std::tr1::shared_ptr<std::tr1::unordered_map<int32_t, int> > fieldNameToIndex_, std::tr1::shared_ptr<std::vector<TLConstructedValue> > values_)
+TLMetaObject::TLMetaObject(std::shared_ptr<std::vector<TLMetaField> > fields_, std::shared_ptr<std::unordered_map<int32_t, int> > fieldNameToIndex_, std::shared_ptr<std::vector<TLConstructedValue> > values_)
 {
     fields = fields_;
     fieldNameToIndex = fieldNameToIndex_;
@@ -31,7 +31,7 @@ TLMetaObject::~TLMetaObject()
 
 int32_t TLMetaObject::getInt32(int32_t name)
 {
-    std::tr1::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
+    std::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
     if (it == fieldNameToIndex->end())
         return 0;
     
@@ -54,7 +54,7 @@ int32_t TLMetaObject::getInt32(int32_t name)
 
 int64_t TLMetaObject::getInt64(int32_t name)
 {
-    std::tr1::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
+    std::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
     if (it == fieldNameToIndex->end())
         return 0;
     
@@ -77,7 +77,7 @@ int64_t TLMetaObject::getInt64(int32_t name)
 
 double TLMetaObject::getDouble(int32_t name)
 {
-    std::tr1::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
+    std::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
     if (it == fieldNameToIndex->end())
         return 0.0;
     
@@ -100,7 +100,7 @@ double TLMetaObject::getDouble(int32_t name)
 
 bool TLMetaObject::getBool(int32_t name)
 {
-    std::tr1::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
+    std::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
     if (it == fieldNameToIndex->end())
         return false;
     
@@ -125,7 +125,7 @@ NSData *TLMetaObject::getBytes(int32_t name)
 {
     static Class class_NSData = [NSData class];
     
-    std::tr1::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
+    std::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
     if (it == fieldNameToIndex->end())
         return nil;
     
@@ -152,7 +152,7 @@ NSString *TLMetaObject::getString(int32_t name)
 {
     static Class class_NSString = [NSString class];
     
-    std::tr1::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
+    std::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
     if (it == fieldNameToIndex->end())
         return nil;
     
@@ -179,7 +179,7 @@ NSArray *TLMetaObject::getArray(int32_t name)
 {
     static Class class_NSArray = [NSArray class];
     
-    std::tr1::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
+    std::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
     if (it == fieldNameToIndex->end())
         return nil;
     
@@ -204,7 +204,7 @@ NSArray *TLMetaObject::getArray(int32_t name)
 
 id TLMetaObject::getObject(int32_t name)
 {
-    std::tr1::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
+    std::unordered_map<int32_t, int>::iterator it = fieldNameToIndex->find(name);
     if (it == fieldNameToIndex->end())
         return nil;
     

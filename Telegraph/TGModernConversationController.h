@@ -90,7 +90,8 @@ typedef enum {
 - (void)openMediaFromMessage:(int32_t)messageId cancelPIP:(bool)cancelPIP;
 - (void)openMediaFromMessage:(int32_t)messageId instant:(bool)instant;
 - (void)closeMediaFromMessage:(int32_t)messageId instant:(bool)instant;
-- (void)stopInlineMedia;
+- (void)stopInlineMedia:(int32_t)excludeMid;
+- (void)resumeInlineMedia;
 - (void)openBrowserFromMessage:(int32_t)messageId url:(NSString *)url;
 - (void)showActionsMenuForUnsentMessage:(int32_t)messageId;
 - (void)highlightAndShowActionsMenuForMessage:(int32_t)messageId;
@@ -112,6 +113,7 @@ typedef enum {
 - (NSString *)inputText;
 - (void)updateWebpageLinks;
 - (void)setReplyMessage:(TGMessage *)replyMessage animated:(bool)animated;
+- (void)setReplyMessage:(TGMessage *)replyMessage openKeyboard:(bool)openKeyboard animated:(bool)animated;
 - (void)setForwardMessages:(NSArray *)forwardMessages animated:(bool)animated;
 - (void)setInlineStickerList:(NSDictionary *)inlineStickerList;
 - (void)setTitle:(NSString *)title;
@@ -125,6 +127,9 @@ typedef enum {
 - (void)setTypingStatus:(NSString *)typingStatus activity:(int)activity;
 - (void)setGlobalUnreadCount:(int)unreadCount;
 - (void)setCustomInputPanel:(TGModernConversationInputPanel *)customInputPanel;
+- (void)setDefaultInputPanel:(TGModernConversationInputPanel *)defaultInputPanel;
+
+- (bool)hasNonTextInputPanel;
 - (TGModernConversationInputPanel *)customInputPanel;
 - (void)setPrimaryTitlePanel:(TGModernConversationTitlePanel *)titlePanel;
 - (TGModernConversationTitlePanel *)primaryTitlePanel;
@@ -175,5 +180,15 @@ typedef enum {
 - (void)pushEarliestUnreadMessageId:(int32_t)messageId;
 
 - (void)incrementScrollDownUnreadCount:(NSInteger)count;
+
+- (bool)maybeShowDiscardRecordingAlert;
+- (void)updateFeaturesAvailability;
+
+- (SSignal *)messageVisiblitySignalForMessageId:(int32_t)messageId;
+
+- (void)setBannedStickers:(bool)bannedStickers;
+- (void)setBannedMedia:(bool)bannedMedia;
+
+- (void)_updateItemForReplySwipeInteraction:(int32_t)mid ended:(bool)ended;
 
 @end

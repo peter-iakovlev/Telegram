@@ -1578,7 +1578,10 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                             }
                                         }
                                         
-                                        NSMutableString *formatString = [[NSMutableString alloc] initWithString:TGLocalized(formatStringBase)];
+                                        NSString *baseString = TGLocalized(formatStringBase);
+                                        baseString = [baseString stringByReplacingOccurrencesOfString:@"%@" withString:@"{game}"];
+                                        
+                                        NSMutableString *formatString = [[NSMutableString alloc] initWithString:baseString];
                                         
                                         NSString *authorName = user.displayFirstName;
                                         
@@ -1671,6 +1674,8 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             }
                             else if (attachment.type == TGVideoMediaAttachmentType)
                             {
+                                bool isRoundMessage = ((TGVideoMediaAttachment *)attachment).roundMessage;
+                                
                                 if (((TGVideoMediaAttachment *)attachment).caption.length != 0) {
                                     if (message.cid > 0) {
                                         text = [[NSString alloc] initWithFormat:@"%@: 📹 %@", user.displayName, ((TGVideoMediaAttachment *)attachment).caption];
@@ -1678,10 +1683,18 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                         text = [[NSString alloc] initWithFormat:@"%@@%@: 📹 %@", user.displayName, chatName, ((TGVideoMediaAttachment *)attachment).caption];
                                     }
                                 } else {
-                                    if (message.cid > 0)
-                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_VIDEO"), user.displayName];
-                                    else
-                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_VIDEO"), user.displayName, chatName];
+                                    if (isRoundMessage) {
+                                        if (message.cid > 0)
+                                            text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_ROUND"), user.displayName];
+                                        else
+                                            text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_ROUND"), user.displayName, chatName];
+                                    }
+                                    else {
+                                        if (message.cid > 0)
+                                            text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_VIDEO"), user.displayName];
+                                        else
+                                            text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_VIDEO"), user.displayName, chatName];
+                                    }
                                 }
                                 
                                 attachmentFound = true;

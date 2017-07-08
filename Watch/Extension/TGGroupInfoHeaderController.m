@@ -60,7 +60,7 @@ NSString *const TGGroupInfoHeaderIdentifier = @"TGGroupInfoHeader";
             [self.avatarGroup setBackgroundImageSignal:[[TGBridgeMediaSignals avatarWithUrl:_currentAvatarPhoto type:TGBridgeMediaAvatarTypeProfile] onError:^(id error)
             {
                 __strong TGGroupInfoHeaderController *strongSelf = weakSelf;
-                if (strongSelf == nil)
+                if (strongSelf != nil)
                     strongSelf->_currentAvatarPhoto = nil;
             }] isVisible:self.isVisible];
         }

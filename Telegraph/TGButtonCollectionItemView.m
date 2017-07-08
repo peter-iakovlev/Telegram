@@ -8,6 +8,7 @@
     UIImageView *_iconView;
     UILabel *_titleLabel;
     NSTextAlignment _alignment;
+    CGPoint _iconOffset;
 }
 
 @end
@@ -82,6 +83,12 @@
     }
 }
 
+- (void)setIconOffset:(CGPoint)iconOffset
+{
+    _iconOffset = iconOffset;
+    [self setNeedsLayout];
+}
+
 - (void)setLeftInset:(CGFloat)leftInset
 {
     _leftInset = leftInset;
@@ -109,7 +116,7 @@
     if (_iconView.superview != nil) {
         CGSize iconSize = _iconView.image.size;
         
-        _iconView.frame = CGRectMake(CGFloor((_leftInset - iconSize.width) / 2.0f), CGFloor((bounds.size.height - iconSize.height) / 2.0f), iconSize.width, iconSize.height);
+        _iconView.frame = CGRectMake(CGFloor((_leftInset - iconSize.width) / 2.0f) + _iconOffset.x, CGFloor((bounds.size.height - iconSize.height) / 2.0f) + _iconOffset.y, iconSize.width, iconSize.height);
     }
     
     _titleLabel.frame = CGRectMake(inset, CGFloor((bounds.size.height - 26) / 2), bounds.size.width - inset - 15.0f, 26);

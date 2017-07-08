@@ -1,5 +1,7 @@
 #import "TGInstantPageSlideshowView.h"
 
+#import "TGImageUtils.h"
+
 #import "TGInstantPageMedia.h"
 #import "TGInstantPageImageView.h"
 
@@ -28,7 +30,7 @@
         _scrollView.backgroundColor = [UIColor blackColor];
         _scrollView.showsHorizontalScrollIndicator = false;
         [self addSubview:_scrollView];
-        _pagerView = [[TGPagerView alloc] initWithDotColors:@[[UIColor whiteColor]] normalDotColor:[UIColor colorWithWhite:1.0f alpha:0.5f] dotSpacing:16.0f dotSize:7.0f];
+        _pagerView = [[TGPagerView alloc] initWithDotColors:@[[UIColor whiteColor]] normalDotColor:[UIColor colorWithWhite:1.0f alpha:0.5f] dotSpacing:16.0f dotSize:7.0f shadowWidth:TGScreenPixel];
         [self addSubview:_pagerView];
         _visibleItemViews = [[NSMutableDictionary alloc] init];
         [self updateLayout];
@@ -55,9 +57,19 @@
     _scrollView.frame = self.bounds;
     _scrollView.contentSize = CGSizeMake(_medias.count * size.width, size.height);
     [self updateVisibleItems];
+    
+    _pagerView.transform = CGAffineTransformIdentity;
     [_pagerView setPagesCount:(int)_medias.count];
     [_pagerView sizeToFit];
-    _pagerView.frame = CGRectMake(CGFloor((size.width - _pagerView.frame.size.width) / 2.0f), size.height - 19.0f, _pagerView.frame.size.width, _pagerView.frame.size.height);
+    
+    CGFloat maxWidth = size.width - 40.0f;
+    if (_pagerView.frame.size.width > maxWidth)
+    {
+        CGFloat scale = maxWidth / _pagerView.frame.size.width;
+        _pagerView.transform = CGAffineTransformMakeScale(scale, scale);
+    }
+    
+    _pagerView.center = CGPointMake(size.width / 2.0f, size.height - 19.0f + _pagerView.frame.size.height / 2.0f);
 }
 
 - (void)updateVisibleItems {

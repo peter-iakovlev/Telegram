@@ -48,6 +48,10 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     
     bool _showUnreadCount;
     bool _disableUnreadCount;
+    
+    bool _showStatus;
+    
+    UIImageView *_arrowView;
 }
 
 @end
@@ -61,6 +65,7 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     {
         [self addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapGesture:)]];
         _showUnreadCount = true;
+        _showStatus = true;
     }
     return self;
 }
@@ -150,6 +155,17 @@ const NSTimeInterval typingIntervalSecond = 0.14;
 - (void)setAttributedStatus:(NSAttributedString *)attributedStatus animated:(bool)animated
 {
     [self _setStatus:attributedStatus animated:animated];
+}
+
+- (void)setShowStatus:(bool)showStatus {
+    _showStatus = showStatus;
+    _statusLabel.hidden = !showStatus;
+    if (!_showStatus) {
+        if (_arrowView == nil) {
+            _arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"TooltipArrow.png"]];
+            [self addSubview:_arrowView];
+        }
+    }
 }
 
 - (void)_setStatus:(id)status animated:(bool)animated
@@ -286,6 +302,9 @@ const NSTimeInterval typingIntervalSecond = 0.14;
             {
                 case TGModernConversationTitleViewActivityAudioRecording:
                     [_activityIndicator setAudioRecording];
+                    break;
+                case TGModernConversationTitleViewActivityVideoMessageRecording:
+                    [_activityIndicator setVideoRecording];
                     break;
                 case TGModernConversationTitleViewActivityUploading:
                     [_activityIndicator setUploading];
@@ -745,7 +764,9 @@ static UIView *findNavigationBar(UIView *view)
             }
             
             CGPoint titleOrigin = CGPointMake(titleHorizontalAdjustment + CGFloor((bounds.size.width - titleTotalWidth) / 2.0f), -17.0f + titlePortraitOffset);
-            
+            if (!_showStatus) {
+                titleOrigin.y += 8.0f;
+            }
             
             for (TGModernConversationTitleIcon *icon in _icons)
             {
@@ -761,6 +782,13 @@ static UIView *findNavigationBar(UIView *view)
             
             _titleLabel.frame = CGRectMake(titleOrigin.x + titleHorizontalOffset, titleOrigin.y, titleLabelSize.width, titleLabelSize.height);
             _statusLabel.frame = CGRectMake(statusHorizontalAdjustment + (_typingStatus == nil ? 0.0f : 10.0f) + CGFloor((bounds.size.width - statusLabelSize.width) / 2.0f), 2.0f + statusPortraitOffset, statusLabelSize.width, statusLabelSize.height);
+            
+            if (_arrowView != nil) {
+                CGSize arrowSize = _arrowView.image.size;
+                arrowSize.width *= 0.6f;
+                arrowSize.height *= 0.6f;
+                _arrowView.frame = CGRectMake(CGRectGetMaxX(_titleLabel.frame) + 3.0f, CGRectGetMinY(_titleLabel.frame) + 8.0f, arrowSize.width, arrowSize.height);
+            }
             
             if (_toggleIcon != nil) {
                 CGSize toggleIconSize = _toggleIcon.bounds.size;

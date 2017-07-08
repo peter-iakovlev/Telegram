@@ -128,8 +128,12 @@
 - (UIColor *)systemMessageBackgroundColor;
 - (UIImage *)dateListMessageBackground;
 - (UIImage *)systemShareButton;
+- (UIImage *)systemSwipeReplyIcon;
 - (UIImage *)systemReplyButton;
 - (UIImage *)systemReplyHighlightedButton;
+
+- (UIImage *)systemUnmuteButton;
+- (UIImage *)systemMuteButton;
 
 - (UIEdgeInsets)messageBodyMargins;
 - (CGSize)messageMinimalBodySize;

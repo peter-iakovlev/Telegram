@@ -36,7 +36,6 @@
     CGSize _preferredContentSize;
     
     id<SDisposable> _playerStatusDisposable;
-    CGFloat _currentAdditionalNavigationBarHeight;
     CGFloat _currentAdditionalStatusBarHeight;
 }
 

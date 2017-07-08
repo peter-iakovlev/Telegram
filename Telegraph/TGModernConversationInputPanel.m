@@ -28,4 +28,9 @@
 - (void)changeToSize:(CGSize)__unused size keyboardHeight:(CGFloat)__unused keyboardHeight duration:(NSTimeInterval)__unused duration contentAreaHeight:(CGFloat)__unused contentAreaHeight {
 }
 
+- (CGFloat)currentHeight
+{
+    return self.frame.size.height;
+}
+
 @end

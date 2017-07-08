@@ -11,4 +11,6 @@
 - (int64_t)peerId;
 - (void)updateSelectedPeerIds:(NSSet *)selectedPeerIds animated:(bool)animated;
 
+- (void)setUnreadCount:(int32_t)unreadCount;
+
 @end

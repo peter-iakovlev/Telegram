@@ -23,7 +23,7 @@
 }
 
 - (BOOL)isEqual:(id)object {
-    return [object isKindOfClass:[TGConversationScrollState class]] && ((TGConversationScrollState *)object)->_messageId == _messageOffset && ((TGConversationScrollState *)object)->_messageOffset == _messageOffset;
+    return [object isKindOfClass:[TGConversationScrollState class]] && ((TGConversationScrollState *)object)->_messageId == _messageId && ((TGConversationScrollState *)object)->_messageOffset == _messageOffset;
 }
 
 @end

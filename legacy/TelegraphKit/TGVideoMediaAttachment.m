@@ -46,6 +46,7 @@
     videoAttachment.hasStickers = _hasStickers;
     videoAttachment.embeddedStickerDocuments = _embeddedStickerDocuments;
     videoAttachment.loopVideo = _loopVideo;
+    videoAttachment.roundMessage = _roundMessage;
     
     return videoAttachment;
 }
@@ -65,6 +66,7 @@
         _caption = [aDecoder decodeObjectForKey:@"caption"];
         _hasStickers = [aDecoder decodeBoolForKey:@"hasStickers"];
         _embeddedStickerDocuments = [aDecoder decodeObjectForKey:@"embeddedStickerDocuments"];
+        _roundMessage = [aDecoder decodeBoolForKey:@"roundMessage"];
     }
     return self;
 }
@@ -82,6 +84,7 @@
     if (_embeddedStickerDocuments != nil) {
         [aCoder encodeObject:_embeddedStickerDocuments forKey:@"embeddedStickerDocuments"];
     }
+    [aCoder encodeBool:_roundMessage forKey:@"roundMessage"];
 }
 
 - (BOOL)isEqual:(id)object
@@ -107,6 +110,10 @@
         return false;
     }
     
+    if (_roundMessage != other.roundMessage) {
+        return false;
+    }
+    
     return true;
 }
 
@@ -115,7 +122,7 @@
     int32_t modernTag = 0x7abacaf1;
     [data appendBytes:&modernTag length:4];
     
-    uint8_t version = 3;
+    uint8_t version = 4;
     [data appendBytes:&version length:1];
     
     int dataLengthPtr = (int)data.length;
@@ -162,6 +169,9 @@
         [data appendBytes:&length length:4];
         [data appendData:stickerData];
     }
+    
+    int8_t roundMessage = _roundMessage ? 1 : 0;
+    [data appendBytes:&roundMessage length:1];
     
     int dataLength = (int)(data.length - dataLengthPtr - 4);
     [data replaceBytesInRange:NSMakeRange(dataLengthPtr, 4) withBytes:&dataLength];
@@ -244,6 +254,13 @@
             NSData *stickerData = [[NSData alloc] initWithBytesNoCopy:stickerBytes length:stickerDataLength freeWhenDone:true];
             videoAttachment.embeddedStickerDocuments = [NSKeyedUnarchiver unarchiveObjectWithData:stickerData];
         }
+    }
+    
+    if (version >= 4)
+    {
+        int8_t roundMessage = 0;
+        [is read:(uint8_t *)&roundMessage maxLength:1];
+        videoAttachment.roundMessage = roundMessage != 0;
     }
     
     return videoAttachment;

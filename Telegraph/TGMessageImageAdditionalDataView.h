@@ -12,7 +12,9 @@
 
 @interface TGMessageImageAdditionalDataView : UIView
 
+- (void)setTimestampColor:(UIColor *)timestampColor;
 - (void)setBackdropArea:(TGStaticBackdropAreaData *)backdropArea transitionDuration:(NSTimeInterval)transitionDuration;
 - (void)setText:(NSString *)text;
+- (void)setTextAlignment:(NSTextAlignment)textAlignment;
 
 @end

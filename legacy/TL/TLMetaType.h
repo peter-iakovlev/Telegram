@@ -11,7 +11,7 @@
 
 #include <Foundation/Foundation.h>
 
-#include <tr1/memory>
+#include <memory>
 #include <vector>
 
 typedef enum {
@@ -35,7 +35,7 @@ struct TLMetaTypeArgument
     int32_t unboxedConstructorSignature;
     int32_t unboxedConstructorName;
     
-    std::tr1::shared_ptr<TLMetaType> type;
+    std::shared_ptr<TLMetaType> type;
 };
 
 class TLMetaType

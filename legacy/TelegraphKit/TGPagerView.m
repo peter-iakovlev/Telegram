@@ -4,6 +4,7 @@
 {
     CGFloat _dotSize;
     NSArray *_dotColors;
+    CGFloat _shadowWidth;
     NSMutableArray *_dotNormalViews;
     NSMutableArray *_dotHighlightedViews;
     
@@ -26,6 +27,12 @@
 
 - (instancetype)initWithDotColors:(NSArray *)colors normalDotColor:(UIColor *)normalDotColor dotSpacing:(CGFloat)dotSpacing dotSize:(CGFloat)dotSize
 {
+    return [self initWithDotColors:colors normalDotColor:normalDotColor dotSpacing:dotSpacing dotSize:dotSize shadowWidth:0.0f];
+}
+
+
+- (instancetype)initWithDotColors:(NSArray *)colors normalDotColor:(UIColor *)normalDotColor dotSpacing:(CGFloat)dotSpacing dotSize:(CGFloat)dotSize shadowWidth:(CGFloat)shadowWidth
+{
     self = [super init];
     if (self != nil)
     {
@@ -34,18 +41,27 @@
         _dotNormalViews = [[NSMutableArray alloc] init];
         _dotHighlightedViews = [[NSMutableArray alloc] init];
         _dotSpacing = dotSpacing;
+        _shadowWidth = shadowWidth;
         
-        _normalDotImage = [self dotImageWithColor:normalDotColor];
+        _normalDotImage = [self dotImageWithColor:normalDotColor shadowWidth:_shadowWidth];
     }
     return self;
 }
 
-- (UIImage *)dotImageWithColor:(UIColor *)color
+- (UIImage *)dotImageWithColor:(UIColor *)color shadowWidth:(CGFloat)shadowWidth
 {
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(_dotSize, _dotSize), false, 0.0f);
     CGContextRef context = UIGraphicsGetCurrentContext();
     CGContextSetFillColorWithColor(context, color.CGColor);
-    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, _dotSize, _dotSize));
+    
+    if (shadowWidth > FLT_EPSILON)
+    {
+        CGContextSetStrokeColorWithColor(context, [UIColor colorWithWhite:0.0f alpha:0.25f].CGColor);
+        CGContextSetLineWidth(context, shadowWidth);
+        CGContextStrokeEllipseInRect(context, CGRectMake(shadowWidth / 2.0f, shadowWidth / 2.0f, _dotSize - shadowWidth, _dotSize - shadowWidth));
+    }
+    
+    CGContextFillEllipseInRect(context, CGRectMake(shadowWidth / 2.0f, shadowWidth / 2.0f, _dotSize - shadowWidth, _dotSize - shadowWidth));
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     return image;
@@ -84,7 +100,7 @@
                 [_dotNormalViews addObject:normalView];
                 [self addSubview:normalView];
                 
-                UIImageView *highlightedView = [[UIImageView alloc] initWithImage:[self dotImageWithColor:_dotColors[index % _dotColors.count]]];
+                UIImageView *highlightedView = [[UIImageView alloc] initWithImage:[self dotImageWithColor:_dotColors[index % _dotColors.count] shadowWidth:_shadowWidth]];
                 [_dotHighlightedViews addObject:highlightedView];
                 [self addSubview:highlightedView];
             }
@@ -139,7 +155,7 @@
     CGSize dotSize = CGSizeMake(_dotSize, _dotSize);
     
     CGFloat dotSpacing = _dotSpacing;
-    CGFloat startX = (int)((self.frame.size.width - (dotSize.width * _dotNormalViews.count + dotSpacing * (_dotNormalViews.count - 1))) / 2);
+    CGFloat startX = (int)((self.bounds.size.width - (dotSize.width * _dotNormalViews.count + dotSpacing * (_dotNormalViews.count - 1))) / 2);
 
     for (int index = 0; index < (int)_dotNormalViews.count; index++)
     {

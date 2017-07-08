@@ -46,7 +46,7 @@
     if (self.beganCapture != nil)
         self.beganCapture();
     
-    [_camera startVideoRecordingForMoment:true completion:^(NSURL *resultUrl, __unused CGAffineTransform transform, __unused CGSize dimensions, NSTimeInterval duration, bool success)
+    [_camera startVideoRecordingForMoment:true completion:^(NSURL *resultUrl, __unused CGAffineTransform transform, __unused CGSize dimensions, NSTimeInterval duration, __unused TGLiveUploadActorData *liveUploadData, bool success)
     {
         if (!success)
             return;

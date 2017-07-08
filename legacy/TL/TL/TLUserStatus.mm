@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0xa7e91cbf;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLUserStatus$userStatusEmpty *object = [[TLUserStatus$userStatusEmpty alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0xa545e562;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLUserStatus$userStatusOnline *object = [[TLUserStatus$userStatusOnline alloc] init];
     object.expires = metaObject->getInt32((int32_t)0x4743fb6b);
@@ -105,7 +105,7 @@
     return (int32_t)0xc74fd9f;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLUserStatus$userStatusOffline *object = [[TLUserStatus$userStatusOffline alloc] init];
     object.was_online = metaObject->getInt32((int32_t)0xb68b1788);
@@ -138,7 +138,7 @@
     return (int32_t)0x87ba0780;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLUserStatus$userStatusRecently *object = [[TLUserStatus$userStatusRecently alloc] init];
     return object;
@@ -164,7 +164,7 @@
     return (int32_t)0xa4dc11f5;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLUserStatus$userStatusLastWeek *object = [[TLUserStatus$userStatusLastWeek alloc] init];
     return object;
@@ -190,7 +190,7 @@
     return (int32_t)0xd9c9a73a;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLUserStatus$userStatusLastMonth *object = [[TLUserStatus$userStatusLastMonth alloc] init];
     return object;

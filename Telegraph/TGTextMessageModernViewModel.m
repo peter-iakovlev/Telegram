@@ -264,6 +264,7 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
             bool activateGame = false;
             bool activateInvoice = false;
             bool activateInstantPage = false;
+            bool activateRoundMessage = false;
             if (linkCandidate == nil)
             {
                 if (_webPageFooterModel != nil && CGRectContainsPoint(_webPageFooterModel.frame, point))
@@ -277,6 +278,8 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
                             activateInvoice = true;
                         } else if (_webPage.instantPage != nil && webpageAction != TGWebpageFooterModelActionDownload) {
                             activateInstantPage = true;
+                        } else if (_webPage.document.isRoundVideo && webpageAction != TGWebpageFooterModelActionDownload) {
+                            activateRoundMessage = true;
                         } else {
                             if ([_webPage.pageType isEqualToString:@"photo"] || [_webPage.pageType isEqualToString:@"article"])
                             {
@@ -308,7 +311,7 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
                     }
                 }
             }
-            if (_webPage.instantPage != nil && ([linkCandidate hasPrefix:@"http://telegra.ph/"] || [linkCandidate hasPrefix:@"https://telegra.ph/"])) {
+            if (_webPage.instantPage != nil && ([linkCandidate hasPrefix:@"http://telegra.ph/"] || [linkCandidate hasPrefix:@"https://telegra.ph/"] || [linkCandidate hasPrefix:@"http://t.me/iv?"] || [linkCandidate hasPrefix:@"https://t.me/iv?"]) && webpageAction != TGWebpageFooterModelActionDownload) {
                 if ([_webPage.url isEqualToString:linkCandidate] || (linkCandidateText != nil && [_webPage.url isEqualToString:linkCandidateText])) {
                     activateInstantPage = true;
                 }
@@ -330,31 +333,18 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
                 else
                     [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
             }
-            else if (recognizer.doubleTapped)
+            else if (recognizer.doubleTapped) {
                 [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
-            else if (activateVideo) {
+            } else if (activateRoundMessage) {
+                [_webPageFooterModel activateMediaPlayback];
+            } else if (activateVideo) {
                 [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
             } else if (activateGame) {
                 [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": [NSString stringWithFormat:@"activate-app://%d", _mid]}];
             } else if (activateInvoice) {
                 [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
             } else if (activateInstantPage) {
-                if (_webPage.instantPage != nil) {
-                    NSString *fragment = nil;
-                    NSURL *pageUrl = [[NSURL alloc] initWithString:_webPage.url];
-                    for (id result in _textModel.textCheckingResults) {
-                        if ([result isKindOfClass:[NSTextCheckingResult class]]) {
-                            NSTextCheckingResult *urlResult = result;
-                            if (urlResult.resultType == NSTextCheckingTypeLink) {
-                                if (TGObjectCompare(pageUrl.scheme, urlResult.URL.scheme) && TGObjectCompare(pageUrl.host, urlResult.URL.host) && TGObjectCompare(pageUrl.path, urlResult.URL.path) && TGObjectCompare(pageUrl.query, urlResult.URL.query)) {
-                                    fragment = urlResult.URL.fragment;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    [_context.companionHandle requestAction:@"activateInstantPage" options:@{@"webpage": _webPage, @"mid": @(_mid), @"fragment": fragment == nil ? @"" : fragment}];
-                }
+                [self instantPageButtonPressed];
             } else if (webpageAction == TGWebpageFooterModelActionDownload) {
                 [_context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid)}];
             } else if (webpageAction == TGWebpageFooterModelActionCancel) {
@@ -392,6 +382,25 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
             else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
                 [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
         }
+    }
+}
+
+- (void)instantPageButtonPressed {
+    if (_webPage.instantPage != nil) {
+        NSString *fragment = nil;
+        NSURL *pageUrl = [[NSURL alloc] initWithString:_webPage.url];
+        for (id result in _textModel.textCheckingResults) {
+            if ([result isKindOfClass:[NSTextCheckingResult class]]) {
+                NSTextCheckingResult *urlResult = result;
+                if (urlResult.resultType == NSTextCheckingTypeLink) {
+                    if (TGObjectCompare(pageUrl.scheme, urlResult.URL.scheme) && TGObjectCompare(pageUrl.host, urlResult.URL.host) && TGObjectCompare(pageUrl.path, urlResult.URL.path) && TGObjectCompare(pageUrl.query, urlResult.URL.query)) {
+                        fragment = urlResult.URL.fragment;
+                        break;
+                    }
+                }
+            }
+        }
+        [_context.companionHandle requestAction:@"activateInstantPage" options:@{@"webpage": _webPage, @"mid": @(_mid), @"fragment": fragment == nil ? @"" : fragment}];
     }
 }
 
@@ -935,7 +944,7 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
     
     size.width = MAX(size.width, infoWidth - 5.0f);
     
-    if (_isGame || _isInvoice) {
+    if (_isGame || _isInvoice || (_text.length == 0 && _webPage != nil)) {
         size.height = 0.0f;
     }
     

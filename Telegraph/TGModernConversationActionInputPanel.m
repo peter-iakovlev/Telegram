@@ -168,7 +168,7 @@
 {
     [super layoutSubviews];
     
-    _stripeLayer.frame = CGRectMake(0.0f, -TGRetinaPixel, self.frame.size.width, TGRetinaPixel);
+    _stripeLayer.frame = CGRectMake(0.0f, -TGScreenPixel, self.frame.size.width, TGScreenPixel);
     _actionButton.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, self.frame.size.height);
     
     if (_icon != TGModernConversationActionInputPanelIconNone) {

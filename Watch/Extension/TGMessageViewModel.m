@@ -391,7 +391,7 @@
         case TGBridgeMessageActionJoinedByLink:
         {
             NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
-            NSString *formatString = TGLocalizedStatic(@"Notification.JoinedGroupByLink");
+            NSString *formatString = TGLocalized(@"Notification.JoinedGroupByLink");
             messageText = [[NSString alloc] initWithFormat:formatString, authorName, actionAttachment.actionData[@"title"]];
         }
             break;
@@ -399,7 +399,7 @@
         case TGBridgeMessageActionCreateChat:
         {
             NSString *authorName = [TGStringUtils initialsForFirstName:author.firstName lastName:author.lastName single:false];
-            NSString *formatString = TGLocalizedStatic(@"Notification.CreatedChatWithTitle");
+            NSString *formatString = TGLocalized(@"Notification.CreatedChatWithTitle");
             messageText = [[NSString alloc] initWithFormat:formatString, authorName, actionAttachment.actionData[@"title"]];
         }
             break;
@@ -420,10 +420,11 @@
         {
             TGBridgeUser *user = (users != nil) ? users[actionAttachment.actionData[@"uid"]] : [[TGBridgeUserCache instance] userWithId:[actionAttachment.actionData[@"uid"] int32Value]];
             NSString *authorName = [TGStringUtils initialsForFirstName:user.firstName lastName:user.lastName single:false];
-            NSString *formatString = TGLocalizedStatic(@"Notification.ChannelInviter");
+            NSString *formatString = TGLocalized(@"Notification.ChannelInviter");
             
             messageText = [[NSString alloc] initWithFormat:formatString, authorName];
         }
+            break;
             
         case TGBridgeMessageActionGroupMigratedTo:
         {

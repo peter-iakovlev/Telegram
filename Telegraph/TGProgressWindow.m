@@ -1,20 +1,36 @@
 #import "TGProgressWindow.h"
 
 #import "TGActivityIndicatorView.h"
-
+#import "TGProgressSpinnerView.h"
 #import "TGAppDelegate.h"
+#import "TGBlurEffect.h"
 
 #import "TGOverlayControllerWindow.h"
 
-@interface TGProgressWindowController : TGOverlayWindowViewController
+@interface TGProgressWindowController ()
+{
+    bool _light;
+    UIVisualEffectView *_effectView;
+    UIView *_backgroundView;
+    TGProgressSpinnerView *_spinner;
+}
 
 @property (nonatomic, weak) UIWindow *weakWindow;
 @property (nonatomic, strong) UIView *containerView;
-@property (nonatomic, strong) UIActivityIndicatorView *activityIndicatorView;
 
 @end
 
 @implementation TGProgressWindowController
+
+- (instancetype)init:(bool)light
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _light = light;
+    }
+    return self;
+}
 
 - (void)loadView
 {
@@ -23,17 +39,32 @@
     _containerView = [[UIView alloc] initWithFrame:CGRectMake(CGFloor(self.view.frame.size.width - 100) / 2, CGFloor(self.view.frame.size.height - 100) / 2, 100, 100)];
     _containerView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
     _containerView.alpha = 0.0f;
+    _containerView.clipsToBounds = true;
+    _containerView.layer.cornerRadius = 20.0f;
     [self.view addSubview:_containerView];
     
-    UIImageView *backgroundView = [[UIImageView alloc] initWithFrame:_containerView.bounds];
-    UIImage *rawImage = [UIImage imageNamed:@"ProgressWindowBackground.png"];
-    backgroundView.image = [rawImage stretchableImageWithLeftCapWidth:(int)(rawImage.size.width / 2) topCapHeight:(int)(rawImage.size.height / 2)];
-    [_containerView addSubview:backgroundView];
+    if (iosMajorVersion() >= 9)
+    {
+        _effectView = [[UIVisualEffectView alloc] initWithEffect:_light ? [TGBlurEffect lightProgressBlurEffect] : [TGBlurEffect progressBlurEffect]];
+        _effectView.frame = _containerView.bounds;
+        [_containerView addSubview:_effectView];
+        
+        if (_light)
+        {
+            UIView *tintView = [[UIView alloc] initWithFrame:_effectView.bounds];
+            tintView.backgroundColor = UIColorRGBA(0xf4f4f4, 0.75f);
+            [_containerView addSubview:tintView];
+        }
+    }
+    else
+    {
+        _backgroundView = [[UIView alloc] initWithFrame:_containerView.bounds];
+        _backgroundView.backgroundColor = UIColorRGBA(0xeaeaea, 0.92f);
+        [_containerView addSubview:_backgroundView];
+    }
     
-    _activityIndicatorView = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
-    _activityIndicatorView.frame = CGRectOffset(_activityIndicatorView.frame, (int)((_containerView.frame.size.width - _activityIndicatorView.frame.size.width) / 2), (int)((_containerView.frame.size.height - _activityIndicatorView.frame.size.height) / 2));
-    [_containerView addSubview:_activityIndicatorView];
-    [_activityIndicatorView startAnimating];
+    _spinner = [[TGProgressSpinnerView alloc] initWithFrame:CGRectMake((_containerView.frame.size.width - 48.0f) / 2.0f, (_containerView.frame.size.height - 48.0f) / 2.0f, 48.0f, 48.0f) light:_light];
+    [_containerView addSubview:_spinner];
 }
 
 - (void)show:(bool)animated
@@ -43,18 +74,34 @@
     window.userInteractionEnabled = true;
     window.hidden = false;
     
+    [_spinner setProgress];
+    
     if (animated)
     {
+        _containerView.transform = CGAffineTransformMakeScale(0.6f, 0.6f);
+        if (iosMajorVersion() >= 7)
+        {
+            [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^{
+                _containerView.transform = CGAffineTransformIdentity;
+            } completion:nil];
+        }
+        
         [UIView animateWithDuration:0.3f animations:^
         {
             _containerView.alpha = 1.0f;
+            if (iosMajorVersion() < 7)
+                _containerView.transform = CGAffineTransformIdentity;
         }];
     }
     else
         _containerView.alpha = 1.0f;
 }
 
-- (void)dismiss:(bool)animated
+- (void)dismiss:(bool)animated {
+    [self dismiss:animated completion:nil];
+}
+
+- (void)dismiss:(bool)animated completion:(void (^)())completion
 {
     TGProgressWindow *window = (TGProgressWindow *)_weakWindow;
     
@@ -66,6 +113,9 @@
             _containerView.alpha = 0.0f;
         } completion:^(BOOL finished)
         {
+            if (completion) {
+                completion();
+            }
             if (finished)
             {
                 window.hidden = true;
@@ -98,6 +148,10 @@
                 [[windows objectAtIndex:i] makeKeyWindow];
             }
         }
+        
+        if (completion) {
+            completion();
+        }
     }
 }
 
@@ -105,34 +159,65 @@
 {
     TGProgressWindow *window = (TGProgressWindow *)_weakWindow;
     
-    [_activityIndicatorView removeFromSuperview];
     window.userInteractionEnabled = false;
     
-    UIImageView *checkView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ProgressWindowCheck.png"]];
-    checkView.frame = CGRectOffset(checkView.frame, CGFloor((_containerView.frame.size.width - checkView.frame.size.width) / 2), CGFloor((_containerView.frame.size.height - checkView.frame.size.height) / 2));
-    [_containerView addSubview:checkView];
-    
-    [UIView animateWithDuration:0.3 delay:0.5 options:0 animations:^
+    void (^dismissBlock)(void) = ^
     {
-        _containerView.alpha = 0.0f;
-    } completion:^(BOOL finished)
-    {
-        if (finished)
+        [UIView animateWithDuration:0.3 delay:0.55 options:0 animations:^
         {
-            window.hidden = true;
-            
-            if (window.skipMakeKeyWindowOnDismiss)
-                return;
-            
-            NSArray *windows = [[UIApplication sharedApplication] windows];
-            for (int i = (int)windows.count - 1; i >= 0; i--)
+            _containerView.alpha = 0.0f;
+        } completion:^(BOOL finished)
+        {
+            if (finished)
             {
-                if ([windows objectAtIndex:i] != window) {
-                    [[windows objectAtIndex:i] makeKeyWindow];
+                window.hidden = true;
+                
+                if (window.skipMakeKeyWindowOnDismiss)
+                    return;
+                
+                NSArray *windows = [[UIApplication sharedApplication] windows];
+                for (int i = (int)windows.count - 1; i >= 0; i--)
+                {
+                    if ([windows objectAtIndex:i] != window) {
+                        [[windows objectAtIndex:i] makeKeyWindow];
+                    }
                 }
             }
+        }];
+    };
+    
+    if (window.hidden)
+    {
+        window.hidden = false;
+        _containerView.transform = CGAffineTransformMakeScale(0.6f, 0.6f);
+        
+        if (iosMajorVersion() >= 7)
+        {
+            [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^{
+                _containerView.transform = CGAffineTransformIdentity;
+            } completion:nil];
         }
-    }];
+
+        [UIView animateWithDuration:0.3f animations:^
+        {
+             _containerView.alpha = 1.0f;
+            if (iosMajorVersion() < 7)
+                _containerView.transform = CGAffineTransformIdentity;
+        } completion:^(__unused BOOL finished) {
+            dismissBlock();
+        }];
+        
+        TGDispatchAfter(0.15, dispatch_get_main_queue(), ^{
+            [_spinner setSucceed];
+        });
+    }
+    else
+    {
+        _spinner.onSuccess = ^{
+            dismissBlock();
+        };
+        [_spinner setSucceed];
+    }
 }
 
 - (BOOL)canBecomeFirstResponder {
@@ -143,9 +228,12 @@
 
 @interface TGProgressWindow () {
     bool _dismissed;
+    bool _appeared;
 }
 
 @end
+
+static bool TGProgressWindowIsLight = true;
 
 @implementation TGProgressWindow
 
@@ -161,7 +249,7 @@
         self.windowLevel = UIWindowLevelStatusBar + 10000000.0f;
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         
-        TGProgressWindowController *controller = [[TGProgressWindowController alloc] init];;
+        TGProgressWindowController *controller = [[TGProgressWindowController alloc] init:TGProgressWindowIsLight];
         controller.weakWindow = self;
         self.rootViewController = controller;
         
@@ -187,6 +275,7 @@
 
 - (void)show:(bool)animated
 {
+    _appeared = true;
     [((TGProgressWindowController *)self.rootViewController) show:animated];
 }
 
@@ -204,9 +293,13 @@
 {
     if (!_dismissed) {
         _dismissed = true;
-        [self show:false];
         [((TGProgressWindowController *)self.rootViewController) dismissWithSuccess];
     }
+}
+
++ (void)changeStyle
+{
+    TGProgressWindowIsLight = !TGProgressWindowIsLight;
 }
 
 @end

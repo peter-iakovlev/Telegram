@@ -8,21 +8,40 @@
 #define LIBTGVOIP_AUDIOOUTPUT_H
 
 #include <stdint.h>
+#include <string>
+#include <vector>
 #include "../MediaStreamItf.h"
 
-class CAudioOutput : public CMediaStreamItf{
+namespace tgvoip{
+
+class AudioInputDevice;
+class AudioOutputDevice;
+	
+namespace audio{
+class AudioOutput : public MediaStreamItf{
 public:
-	virtual ~CAudioOutput();
+	AudioOutput();
+	AudioOutput(std::string deviceID);
+	virtual ~AudioOutput();
 	virtual void Configure(uint32_t sampleRate, uint32_t bitsPerSample, uint32_t channels)=0;
 	virtual bool IsPlaying()=0;
-    virtual float GetLevel()=0;
-	static CAudioOutput* Create();
+    virtual float GetLevel();
 	static int32_t GetEstimatedDelay();
+	virtual std::string GetCurrentDevice();
+	virtual void SetCurrentDevice(std::string deviceID);
+	static AudioOutput* Create(std::string deviceID);
+	static void EnumerateDevices(std::vector<AudioOutputDevice>& devs);
+	bool IsInitialized();
 
 #if defined(__ANDROID__)
 	static int systemVersion;
 #endif
-};
 
+protected:
+	std::string currentDevice;
+	bool failed;
+	static int32_t estimatedDelay;
+};
+}}
 
 #endif //LIBTGVOIP_AUDIOOUTPUT_H

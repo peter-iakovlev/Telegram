@@ -38,6 +38,10 @@
     return self;
 }
 
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [super touchesBegan:touches withEvent:event];
+}
+
 - (void)willBecomeRecycled
 {
     [self removeTarget:nil action:nil forControlEvents:UIControlEventTouchUpInside];
@@ -84,6 +88,10 @@
 {
     _imageFingerprint = (long)image;
     [self setImage:image forState:UIControlStateNormal];
+}
+
+- (void)setHighlightedImage:(UIImage *)highlightedImage {
+    [self setImage:highlightedImage forState:UIControlStateHighlighted];
 }
 
 - (void)setSupplementaryIcon:(UIImage *)supplementaryIcon {

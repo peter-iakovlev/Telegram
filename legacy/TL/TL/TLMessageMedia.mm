@@ -25,7 +25,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -52,7 +52,7 @@
     return (int32_t)0xfb752ca9;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLMessageMedia$messageMediaEmpty *object = [[TLMessageMedia$messageMediaEmpty alloc] init];
     return object;
@@ -78,7 +78,7 @@
     return (int32_t)0x7f81253;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageMedia$messageMediaGeo *object = [[TLMessageMedia$messageMediaGeo alloc] init];
     object.geo = metaObject->getObject((int32_t)0x3c803e05);
@@ -111,7 +111,7 @@
     return (int32_t)0xbe4c9bee;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageMedia$messageMediaContact *object = [[TLMessageMedia$messageMediaContact alloc] init];
     object.phone_number = metaObject->getString((int32_t)0xaecb6c79);
@@ -165,7 +165,7 @@
     return (int32_t)0x8bdaec28;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLMessageMedia$messageMediaUnsupported *object = [[TLMessageMedia$messageMediaUnsupported alloc] init];
     return object;
@@ -191,7 +191,7 @@
     return (int32_t)0x7b38c3eb;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageMedia$messageMediaWebPage *object = [[TLMessageMedia$messageMediaWebPage alloc] init];
     object.webpage = metaObject->getObject((int32_t)0x9ae475f8);
@@ -224,7 +224,7 @@
     return (int32_t)0x77fb40e5;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageMedia$messageMediaPhoto *object = [[TLMessageMedia$messageMediaPhoto alloc] init];
     object.photo = metaObject->getObject((int32_t)0xe6c52372);
@@ -264,7 +264,7 @@
     return (int32_t)0x7c9dd24f;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageMedia$messageMediaVenue *object = [[TLMessageMedia$messageMediaVenue alloc] init];
     object.geo = metaObject->getObject((int32_t)0x3c803e05);
@@ -325,7 +325,7 @@
     return (int32_t)0x224d0678;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageMedia$messageMediaDocument *object = [[TLMessageMedia$messageMediaDocument alloc] init];
     object.document = metaObject->getObject((int32_t)0xf1465b5f);
@@ -365,7 +365,7 @@
     return (int32_t)0x5c9f29a3;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageMedia$messageMediaGame *object = [[TLMessageMedia$messageMediaGame alloc] init];
     object.game = metaObject->getObject((int32_t)0x1ed73bd7);
@@ -398,7 +398,7 @@
     return (int32_t)0x127e5278;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLMessageMedia$messageMediaInvoiceMeta *object = [[TLMessageMedia$messageMediaInvoiceMeta alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);

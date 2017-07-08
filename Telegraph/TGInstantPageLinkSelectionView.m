@@ -1,11 +1,11 @@
 #import "TGInstantPageLinkSelectionView.h"
 
-static UIImage *selectionImageWithRects(NSArray<NSValue *> *rects, CGSize size, CGFloat inset) {
+static UIImage *selectionImageWithRects(NSArray<NSValue *> *rects, CGSize size, CGFloat inset, UIColor *color) {
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(size.width + inset + inset, size.height + inset + inset), false, 0.0f);
     CGContextRef context = UIGraphicsGetCurrentContext();
     CGContextTranslateCTM(context, inset, inset);
     
-    CGContextSetFillColorWithColor(context, [TGAccentColor() colorWithAlphaComponent:0.3f].CGColor);
+    CGContextSetFillColorWithColor(context, color.CGColor);
     CGContextSetBlendMode(context, kCGBlendModeCopy);
     
     CGFloat radius = 2.0f;
@@ -37,6 +37,9 @@ static CGFloat inset = 4.0f;
     NSArray<NSValue *> *_rects;
     id _urlItem;
     UIImageView *_imageView;
+    UIColor *_color;
+    
+    UILongPressGestureRecognizer *_longPressGestureRecognizer;
 }
 
 @end
@@ -49,14 +52,21 @@ static CGFloat inset = 4.0f;
         _rects = rects;
         _urlItem = urlItem;
         self.opaque = false;
-        self.backgroundColor = nil;
+        self.backgroundColor = [UIColor clearColor];
         
         _imageView = [[UIImageView alloc] initWithFrame:CGRectMake(-inset, -inset, frame.size.width + inset + inset, frame.size.height + inset + inset)];
         [self addSubview:_imageView];
         
         [self addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];
+        
+        _longPressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+        [self addGestureRecognizer:_longPressGestureRecognizer];
     }
     return self;
+}
+
+- (void)setColor:(UIColor *)color {
+    _color = color;
 }
 
 - (void)setHighlighted:(BOOL)highlighted {
@@ -64,7 +74,7 @@ static CGFloat inset = 4.0f;
     
     if (highlighted) {
         if (_imageView.image == nil) {
-            _imageView.image = selectionImageWithRects(_rects, self.bounds.size, inset);
+            _imageView.image = selectionImageWithRects(_rects, self.bounds.size, inset, _color);
         }
     } else if (_imageView.image != nil) {
         _imageView.image = nil;
@@ -75,6 +85,87 @@ static CGFloat inset = 4.0f;
     if (_itemTapped) {
         _itemTapped(_urlItem);
     }
+}
+
+- (void)handleLongPress:(UILongPressGestureRecognizer *)gestureRecognizer {
+    if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
+        if (_itemLongPressed) {
+            _itemLongPressed(_urlItem);
+        }
+    }
+}
+
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)__unused event {
+    for (NSValue *rectValue in _rects) {
+        CGRect rect = CGRectInset(rectValue.CGRectValue, -4.0f, -4.0f);
+        if (CGRectContainsPoint(rect, point))
+            return true;
+    }
+    return false;
+}
+
+@end
+
+
+@interface TGInstantPageTextSelectionView () {
+    NSArray<NSValue *> *_rects;
+    NSString *_text;
+    UIImageView *_imageView;
+    UIColor *_color;
+    
+    UILongPressGestureRecognizer *_longPressGestureRecognizer;
+}
+
+@end
+
+@implementation TGInstantPageTextSelectionView
+
+- (instancetype)initWithFrame:(CGRect)frame rects:(NSArray<NSValue *> *)rects text:(NSString *)text {
+    self = [super initWithFrame:frame];
+    if (self != nil) {
+        _rects = rects;
+        _text = text;
+        self.opaque = false;
+        self.backgroundColor = [UIColor clearColor];
+        
+        _imageView = [[UIImageView alloc] initWithFrame:CGRectMake(-inset, -inset, frame.size.width + inset + inset, frame.size.height + inset + inset)];
+        [self addSubview:_imageView];
+        
+        _longPressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+        [self addGestureRecognizer:_longPressGestureRecognizer];
+    }
+    return self;
+}
+
+- (void)setColor:(UIColor *)color {
+    _color = color;
+}
+
+- (void)setHighlighted:(bool)highlighted {
+    if (highlighted) {
+        if (_imageView.image == nil) {
+            _imageView.image = selectionImageWithRects(_rects, self.bounds.size, inset, _color);
+        }
+    } else if (_imageView.image != nil) {
+        _imageView.image = nil;
+    }
+}
+
+- (void)handleLongPress:(UILongPressGestureRecognizer *)gestureRecognizer {
+    if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
+        if (_itemLongPressed) {
+            _itemLongPressed(self, _text);
+        }
+    }
+}
+
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)__unused event {
+    for (NSValue *rectValue in _rects) {
+        CGRect rect = CGRectInset(rectValue.CGRectValue, -4.0f, -4.0f);
+        if (CGRectContainsPoint(rect, point))
+            return true;
+    }
+    return false;
 }
 
 @end

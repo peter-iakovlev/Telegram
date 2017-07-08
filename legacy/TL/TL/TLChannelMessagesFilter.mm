@@ -19,7 +19,7 @@
     return 0;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TGLog(@"TLbuildFromMetaObject is not implemented for base type");
     return nil;
@@ -46,7 +46,7 @@
     return (int32_t)0x9f28b489;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLChannelMessagesFilter$channelMessagesFilterEmpty *object = [[TLChannelMessagesFilter$channelMessagesFilterEmpty alloc] init];
     return object;
@@ -72,7 +72,7 @@
     return (int32_t)0x72760d0c;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLChannelMessagesFilter$channelMessagesFilter *object = [[TLChannelMessagesFilter$channelMessagesFilter alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
@@ -112,7 +112,7 @@
     return (int32_t)0xc072b842;
 }
 
-- (id<TLObject>)TLbuildFromMetaObject:(std::tr1::shared_ptr<TLMetaObject>)__unused metaObject
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
     TLChannelMessagesFilter$channelMessagesFilterCollapsed *object = [[TLChannelMessagesFilter$channelMessagesFilterCollapsed alloc] init];
     return object;

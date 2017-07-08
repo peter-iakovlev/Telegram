@@ -24,6 +24,7 @@
 + (void)dispatchNewPhonebook;
 
 + (NSDictionary *)cachedPhonebook;
++ (NSDictionary *)cachedInvitees;
 + (NSDictionary *)synchronousContactList;
 + (void)clearCache;
 

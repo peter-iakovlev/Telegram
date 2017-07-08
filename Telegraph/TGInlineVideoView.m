@@ -5,6 +5,7 @@
 
 #import "TGAcceleratedVideoView.h"
 #import "TGVTAcceleratedVideoView.h"
+#import "TGGLVideoView.h"
 
 #define USE_VT false
 
@@ -13,7 +14,7 @@
     TGVTPlayerView *_playerView;
     TGVTPlayer *_player;
 #else
-    TGVTAcceleratedVideoView *_videoView;
+    UIView<TGInlineVideoPlayerView> *_videoView;
 #endif
     
     SMetaDisposable *_pathDisposable;
@@ -45,7 +46,7 @@
         _playerView = [[TGVTPlayerView alloc] initWithFrame:self.bounds];
         [self addSubview:_playerView];
 #else
-        _videoView = [[TGVTAcceleratedVideoView alloc] initWithFrame:self.bounds];
+        _videoView = [[[TGVTAcceleratedVideoView videoViewClass] alloc] initWithFrame:self.bounds];
         [self addSubview:_videoView];
 #endif
         
@@ -72,8 +73,11 @@
     [_player stop];
     [_player _setOutput:nil];
 #else
-    [_videoView setPath:nil];
-    [_videoView prepareForRecycle];
+    TGDispatchOnMainThread(^
+    {
+        [_videoView setPath:nil];
+        [_videoView prepareForRecycle];
+    });
 #endif
 }
 
@@ -83,7 +87,7 @@
     if (signal == nil) {
         [self playVideoFromPath:nil];
     } else {
-        [_pathDisposable setDisposable:[[signal deliverOn:[TGInlineVideoView playerQueue]] startWithNext:^(NSString *path) {
+        [_pathDisposable setDisposable:[[signal deliverOn:[SQueue mainQueue]] startWithNext:^(NSString *path) {
             __strong TGInlineVideoView *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 [strongSelf playVideoFromPath:path];
@@ -93,19 +97,23 @@
 }
 
 - (void)playVideoFromPath:(NSString *)path {
-#if USE_VT
-    [_player stop];
-    [_player _setOutput:nil];
-    _player = nil;
-    
-    if (path != nil) {
-        _player = [[TGVTPlayer alloc] initWithUrl:[NSURL fileURLWithPath:path]];
-        [_player _setOutput:_playerView];
-        [_player play];
-    }
-#else
+//#if USE_VT
+//    [_player stop];
+//    [_player _setOutput:nil];
+//    _player = nil;
+//    
+//    if (path != nil) {
+//        _player = [[TGVTPlayer alloc] initWithUrl:[NSURL fileURLWithPath:path]];
+//        [_player _setOutput:_playerView];
+//        [_player play];
+//    }
+//#else
     [_videoView setPath:path];
-#endif
+    if (path != nil)
+        _videoPath = path;
+    
+//#endif
+
 }
 
 - (void)layoutSubviews {

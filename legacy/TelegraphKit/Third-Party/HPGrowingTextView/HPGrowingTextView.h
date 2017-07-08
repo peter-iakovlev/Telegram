@@ -96,6 +96,8 @@ extern NSString *TGMentionBoldAttributeName;
 @property (nonatomic,strong) UIColor *textColor;
 @property (nonatomic) NSTextAlignment textAlignment;
 
+@property (nonatomic, readonly) bool ignoreChangeNotification;
+
 @property (nonatomic, assign) bool receiveKeyCommands;
 
 - (void)refreshHeight:(bool)textChanged;

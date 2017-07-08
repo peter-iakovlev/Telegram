@@ -19,7 +19,7 @@
         _titleLabel.backgroundColor = [UIColor clearColor];
         _titleLabel.font = TGMediumSystemFontOfSize(14);
         _titleLabel.numberOfLines = 1;
-        _titleLabel.text = TGLocalizedStatic(@"Application.Name");
+        _titleLabel.text = TGLocalized(@"Application.Name");
         _titleLabel.textColor = UIColorRGB(0x6d6d72);
         [self addSubview:_titleLabel];
         [_titleLabel sizeToFit];

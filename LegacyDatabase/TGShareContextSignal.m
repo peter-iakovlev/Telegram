@@ -9,6 +9,10 @@
 
 #import "../../config.h"
 
+#import "TGLocalization.h"
+
+#import "TGLegacyDatabase.h"
+
 @implementation TGUnauthorizedShareContext
 
 @end
@@ -92,13 +96,50 @@ static void TGShareLoggingFunction(NSString *format, va_list args)
                     
                     if (nDatacenterId != nil && datacenterAuthInfo != nil)
                     {
+                        NSString *documentsPath = [[[self groupUrl] path] stringByAppendingPathComponent:@"Documents"];
+                        NSString *databaseName = @"tgdata";
+                        
+                        NSString *baseDatabasePath = [documentsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.db", (databaseName == nil ? @"tgdata" : databaseName)]];
+                        
+                        NSString *encryptedDatabasePath = [baseDatabasePath stringByAppendingString:@".y"];
+                        
+                        NSString *databasePath = nil;
+                        
+                        if ([[NSFileManager defaultManager] fileExistsAtPath:encryptedDatabasePath]) {
+                            databasePath = encryptedDatabasePath;
+                        } else {
+                            databasePath = baseDatabasePath;
+                        }
+                        
+                        TGLegacyDatabase *database = [[TGLegacyDatabase alloc] initWithPath:databasePath];
+                        
                         MTApiEnvironment *apiEnvironment = [[MTApiEnvironment alloc] init];
                         NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
+                        
+                        NSString *localizationPath = [[[self groupUrl] path] stringByAppendingPathComponent:@"Documents/localization"];
+                        TGLocalization *localization = nil;
+                        NSData *data = [NSData dataWithContentsOfFile:localizationPath];
+                        if (data != nil) {
+                            localization = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+                        }
+                        if (localization == nil) {
+                            localization = [[TGLocalization alloc] initWithVersion:0 code:@"en" dict:@{} isActive:true];
+                        }
+                        [apiEnvironment setLangPack:@""];
+                        apiEnvironment = [apiEnvironment withUpdatedLangPackCode:@""];
+                        
+                        NSData *socksProxyData = [database customPropertySync:@"socksProxyData"];
+                        if (socksProxyData != nil) {
+                            NSDictionary *socksProxyDict = [NSKeyedUnarchiver unarchiveObjectWithData:socksProxyData];
+                            if (socksProxyDict[@"ip"] != nil && socksProxyDict[@"port"] != nil && ![socksProxyDict[@"inactive"] boolValue]) {
+                                apiEnvironment = [apiEnvironment withUpdatedSocksProxySettings:[[MTSocksProxySettings alloc] initWithIp:socksProxyDict[@"ip"] port:(uint16_t)[socksProxyDict[@"port"] intValue] username:socksProxyDict[@"username"] password:socksProxyDict[@"password"]]];
+                            }
+                        }
                         
                         int32_t apiId = 0;
                         SETUP_API_ID(apiId)
                         
-                        if ([bundleIdentifier isEqualToString:@"org.telegram.TelegramEnterprise"])
+                        if ([bundleIdentifier hasPrefix:@"org.telegram.TelegramEnterprise"])
                             apiEnvironment.apiId = 16352;
                         else
                             apiEnvironment.apiId = 1;
@@ -121,23 +162,23 @@ static void TGShareLoggingFunction(NSString *format, va_list args)
                         [mtContext performBatchUpdates:^
                         {
                             [mtContext setSeedAddressSetForDatacenterWithId:1 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.50" port:443 preferForMedia:false restrictToTcp:false]
+                                                                                                                                                   [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.50" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
                             ]]];
 
                             [mtContext setSeedAddressSetForDatacenterWithId:2 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.51" port:443 preferForMedia:false restrictToTcp:false]
+                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.51" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
                             ]]];
 
                             [mtContext setSeedAddressSetForDatacenterWithId:3 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.100" port:443 preferForMedia:false restrictToTcp:false]
+                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.100" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
                             ]]];
 
                             [mtContext setSeedAddressSetForDatacenterWithId:4 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.91" port:443 preferForMedia:false restrictToTcp:false]
+                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.91" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
                             ]]];
 
                             [mtContext setSeedAddressSetForDatacenterWithId:5 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.171.5" port:443 preferForMedia:false restrictToTcp:false]
+                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.171.5" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
                             ]]];
                         }];
                         
@@ -164,7 +205,7 @@ static void TGShareLoggingFunction(NSString *format, va_list args)
                         MTRequestMessageService *mtRequestService = [[MTRequestMessageService alloc] initWithContext:mtContext];
                         [mtProto addMessageService:mtRequestService];
                         
-                        [subscriber putNext:[[TGShareContext alloc] initWithContainerUrl:[self groupUrl] mtContext:mtContext mtProto:mtProto mtRequestService:mtRequestService clientUserId:clientUserId]];
+                        [subscriber putNext:[[TGShareContext alloc] initWithContainerUrl:[self groupUrl] mtContext:mtContext mtProto:mtProto mtRequestService:mtRequestService clientUserId:clientUserId legacyDatabase:database]];
                         [subscriber putCompletion];
                     }
                     else

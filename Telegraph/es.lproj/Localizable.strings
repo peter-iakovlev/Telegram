@@ -3,6 +3,7 @@
 "MESSAGE_NOTEXT" = "%1$@ te envió un mensaje";
 "MESSAGE_PHOTO" = "%1$@ te envió una foto";
 "MESSAGE_VIDEO" = "%1$@ te envió un vídeo";
+"MESSAGE_ROUND" = "%1$@ te envió un videomensaje";
 "MESSAGE_CONTACT" = "%1$@ compartió un contacto contigo";
 "MESSAGE_GEO" = "%1$@ te envió una ubicación";
 "MESSAGE_DOC" = "%1$@ te envió un archivo";
@@ -20,6 +21,7 @@
 "CHAT_MESSAGE_NOTEXT" = "%1$@ envió un mensaje al grupo %2$@";
 "CHAT_MESSAGE_PHOTO" = "%1$@ envió una foto al grupo %2$@";
 "CHAT_MESSAGE_VIDEO" = "%1$@ envió un vídeo al grupo %2$@";
+"CHAT_MESSAGE_ROUND" = "%1$@ envió un videomensaje al grupo %2$@";
 "CHAT_MESSAGE_CONTACT" = "%1$@ compartió un contacto con el grupo %2$@";
 "CHAT_MESSAGE_GEO" = "%1$@ envió una ubicación al grupo %2$@";
 "CHAT_MESSAGE_DOC" = "%1$@ envió un archivo al grupo %2$@";
@@ -51,6 +53,7 @@
 "CHANNEL_MESSAGE_NOTEXT" = "%1$@ publicó un mensaje";
 "CHANNEL_MESSAGE_PHOTO" = "%1$@ publicó una foto";
 "CHANNEL_MESSAGE_VIDEO" = "%1$@ publicó un vídeo";
+"CHANNEL_MESSAGE_ROUND" = "%1$@ publicó un videomensaje";
 "CHANNEL_MESSAGE_DOC" = "%1$@ publicó un archivo";
 "CHANNEL_MESSAGE_STICKER" = "%1$@ publicó un %2$@sticker";
 "CHANNEL_MESSAGE_AUDIO" = "%1$@ publicó un mensaje de voz";
@@ -63,6 +66,7 @@
 "PINNED_NOTEXT" = "%1$@ ancló un mensaje";
 "PINNED_PHOTO" = "%1$@ ancló una foto";
 "PINNED_VIDEO" = "%1$@ ancló un vídeo";
+"PINNED_ROUND" = "%1$@ ancló un videomensaje";
 "PINNED_DOC" = "%1$@ ancló un archivo";
 "PINNED_STICKER" = "%1$@ ancló un %2$@sticker";
 "PINNED_AUDIO" = "%1$@ ancló un mensaje de voz";
@@ -266,6 +270,7 @@
 "DialogList.SingleRecordingAudioSuffix" = "%@ está grabando un audio";
 "DialogList.SingleUploadingPhotoSuffix" = "%@ está enviando una foto";
 "DialogList.SingleUploadingVideoSuffix" = "%@ está enviando un vídeo";
+"DialogList.SingleRecordingVideoMessageSuffix" = "%@ está grabando un vídeo";
 "DialogList.SingleUploadingFileSuffix" = "%@ está enviando un archivo";
 "DialogList.MultipleTypingSuffix" = "%d están escribiendo";
 "DialogList.Typing" = "escribiendo";
@@ -646,8 +651,8 @@
 "ChatSettings.Appearance" = "APARIENCIA";
 "ChatSettings.TextSize" = "Tamaño del texto";
 "ChatSettings.TextSizeUnits" = "pt";
-"ChatSettings.AutomaticPhotoDownload" = "DESCARGA AUTOMÁTICA DE FOTOS";
-"ChatSettings.AutomaticAudioDownload" = "DESCARGA AUTOMÁTICA DE AUDIO";
+"ChatSettings.AutomaticPhotoDownload" = "AUTODESCARGA DE FOTOS";
+"ChatSettings.AutomaticAudioDownload" = "AUTODESCARGA DE AUDIOS";
 "ChatSettings.PrivateChats" = "Chats";
 "ChatSettings.Groups" = "Grupos";
 "ChatSettings.Security" = "SEGURIDAD";
@@ -772,6 +777,7 @@
 "Activity.UploadingVideo" = "enviando vídeo";
 "Activity.UploadingDocument" = "enviando archivo";
 "Activity.RecordingAudio" = "grabando audio";
+"Activity.RecordingVideoMessage" = "grabando vídeo";
 "Activity.Location" = "obteniendo ubicación";
 
 "Service.NetworkConfigurationUpdatedMessage" = "Ajustes de conexión actualizados satisfactoriamente.";
@@ -824,7 +830,7 @@
 
 "PrivacySettings.DeleteAccountTitle" = "ELIMINAR MI CUENTA";
 "PrivacySettings.DeleteAccountIfAwayFor" = "Si estoy fuera";
-"PrivacySettings.DeleteAccountHelp" = "Si no inicias sesión durante este tiempo, al menos una vez, tu cuenta se eliminará con todos tus grupos, mensajes y contactos.";
+"PrivacySettings.DeleteAccountHelp" = "Si no estás en línea durante este tiempo, al menos una vez, tu cuenta se eliminará con todos tus grupos, mensajes y contactos.";
 "PrivacySettings.DeleteAccountNowConfirmation" = "¿Eliminar tu cuenta?";
 "PrivacySettings.DeleteAccountNever" = "Nunca";
 
@@ -894,9 +900,9 @@
 "Camera.FlashAuto" = "Auto";
 "Camera.Retake" = "Repetir";
 
-"Settings.PhoneNumber" = "Número de teléfono";
+"Settings.PhoneNumber" = "Cambiar número";
 
-"PhoneNumberHelp.Help" = "Puedes cambiar tu número de Telegram aquí. Tu cuenta y todos tus datos de la nube, mensajes, archivos, grupos, contactos, etc., se moverán al nuevo número. \n\n**Importante:** todos tus contactos de Telegram tendrán tu **nuevo número** añadido a sus agendas de contactos, siempre que hayan tenido tu número viejo y no los hayas bloqueado en Telegram.";
+"PhoneNumberHelp.Help" = "Puedes cambiar tu número de Telegram aquí. Tu cuenta y todos tus datos de la nube, mensajes, archivos, grupos, contactos, etc., se moverán al nuevo número. \n\n**Importante:** Todos tus contactos de Telegram tendrán tu **nuevo número** añadido a sus agendas de contactos, siempre que hayan tenido tu número viejo y no los hayas bloqueado en Telegram.";
 "PhoneNumberHelp.Alert" = "Todos tus contactos de Telegram tendrán tu número nuevo añadido a sus agendas de contactos, siempre que hayan tenido tu número viejo y no los hayas bloqueado en Telegram.";
 "PhoneNumberHelp.ChangeNumber" = "Cambiar número";
 
@@ -1086,7 +1092,7 @@
 
 "DialogList.PasscodeLockHelp" = "Toca para bloquear Telegram";
 
-"PasscodeSettings.AutoLock" = "Bloqueo automático";
+"PasscodeSettings.AutoLock" = "Autobloqueo";
 "PasscodeSettings.AutoLock.Disabled" = "Desactivado";
 "PasscodeSettings.AutoLock.IfAwayFor_1minute" = "En 1 minuto";
 "PasscodeSettings.AutoLock.IfAwayFor_5minutes" = "En 5 minutos";
@@ -1676,7 +1682,7 @@
 "Watch.UserInfo.Mute_2" = "Silenciar 2 horas";
 "Watch.UserInfo.Mute_3_10" = "Silenciar %@ horas";
 "Watch.UserInfo.Mute_any" = "Silenciar %@ horas";
-"Watch.UserInfo.Mute" = "Silenciar";
+"Watch.UserInfo.MuteTitle" = "Silenciar";
 "Watch.UserInfo.Unmute" = "No silenciar";
 
 "Watch.GroupInfo.Title" = "Información";
@@ -1757,7 +1763,7 @@
 "Cache.ClearProgress" = "Espera, por favor...";
 "Cache.ClearEmpty" = "Vacío";
 "Cache.ByPeerHeader" = "CHATS";
-"Cache.Indexing" = "Telegram está calculando el tamaño de la caché.\nPuede tomar unos pocos minutos.";
+"Cache.Indexing" = "Calculando el tamaño de la caché.\nPuede tomar unos pocos minutos.";
 
 "ExplicitContent.AlertTitle" = "Lo sentimos";
 "ExplicitContent.AlertChannel" = "No puedes acceder a este canal porque viola las normas del App Store.";
@@ -1896,6 +1902,7 @@
 "Notification.PinnedTextMessage" = "%@ ancló “%@”";
 "Notification.PinnedPhotoMessage" = "%@ ancló una foto ";
 "Notification.PinnedVideoMessage" = "%@ ancló un vídeo";
+"Notification.PinnedRoundMessage" = "%@ ancló un videomensaje";
 "Notification.PinnedAudioMessage" = "%@ ancló un mensaje de voz";
 "Notification.PinnedDocumentMessage" = "%@ ancló un archivo";
 "Notification.PinnedAnimationMessage" = "%@ ancló un GIF";
@@ -2215,7 +2222,7 @@
 "CallSettings.Title" = "Llamadas de voz";
 "CallSettings.RecentCalls" = "Llamadas recientes";
 "CallSettings.TabIcon" = "Mostrar pestaña de llamadas";
-"CallSettings.TabIconDescription" = "Un icono de llamadas aparecerá en la barra de pestañas.";
+"CallSettings.TabIconDescription" = "Aparecerá un icono en la barra de pestañas.";
 "CallSettings.UseLessData" = "Usar menos datos";
 "CallSettings.Never" = "Nunca";
 "CallSettings.OnMobile" = "En redes móviles";
@@ -2355,22 +2362,22 @@
 "Checkout.PayWithTouchId" = "Pagar con Touch ID";
 "Checkout.EnterPassword" = "Introducir contraseña";
 
-"Your card has expired" = "Tu tarjeta ha expirado.";
+"Your_card_has_expired" = "Tu tarjeta ha expirado.";
 
 /* Error when the card was declined by the credit card networks */
-"Your card was declined" = "Tu tarjeta fue rechazada.";
+"Your_card_was_declined" = "Tu tarjeta fue rechazada.";
 
 /* Error when the card's expiration month is not valid */
-"Your card's expiration month is invalid" = "Pusiste un mes de expiración inválido.";
+"Your_cards_expiration_month_is_invalid" ="Pusiste un mes de expiración inválido.";
 
 /* Error when the card's expiration year is not valid */
-"Your card's expiration year is invalid" = "Pusiste un año de expiración inválido.";
+"Your_cards_expiration_year_is_invalid" ="Pusiste un año de expiración inválido.";
 
 /* Error when the card number is not valid */
-"Your card's number is invalid" = "Pusiste un número de tarjeta inválido.";
+"Your_cards_number_is_invalid" = "Pusiste un número de tarjeta inválido.";
 
 /* Error when the card's CVC is not valid */
-"Your card's security code is invalid" = "Pusiste un código de seguridad inválido.";
+"Your_cards_security_code_is_invalid" = "Pusiste un código de seguridad inválido.";
 
 "MESSAGE_INVOICE" = "%1$@ te envió una factura por %2$@";
 "CHAT_MESSAGE_INVOICE" = "%1$@ te envió una factura por %3$@ al grupo %2$@";
@@ -2457,4 +2464,44 @@
 "Call.PhoneCallInProgressMessage" = "No puedes realizar una llamada en Telegram si ya estás hablando por teléfono.";
 "Call.RecordingDisabledMessage" = "Por favor, finaliza tu llamada antes de grabar un mensaje de voz.";
 
-"Call.EmojiDescription" = "Si estos emojis son los mismos en la pantalla de %@, esta llamada es 100%% segura.";
+"Call.EmojiDescription" = "Si los emojis son los mismos para %@, la llamada es 100%% segura.";
+
+"Message.VideoMessage" = "Videomensaje";
+
+"Conversation.HoldForAudio" = "Mantén para grabar audio. Toca para vídeo.";
+"Conversation.HoldForVideo" = "Mantén para grabar vídeo. Toca para audio.";
+
+"UserInfo.TelegramCall" = "Llamada de Telegram";
+"UserInfo.PhoneCall" = "Llamada de teléfono";
+
+"SharedMedia.CategoryMedia" = "Media";
+"SharedMedia.CategoryDocs" = "Archivos";
+"SharedMedia.CategoryLinks" = "Enlaces";
+"SharedMedia.CategoryOther" = "Audio";
+
+"AccessDenied.VideoMessageCamera" = "Telegram necesita acceso a tu cámara para enviar videomensajes.\n\nPor favor, ve a Ajustes > Privacidad > Cámara y activa Telegram.";
+"AccessDenied.VideoMessageMicrophone" = "Telegram necesita acceso a tu micrófono para enviar videomensajes. \n\nPor favor, ve a Ajustes > Privacidad > Micrófono y activa Telegram.";
+
+"ChatSettings.AutomaticVideoMessageDownload" = "AUTODESCARGA DE VIDEOMENSAJES";
+
+"ForwardedVideoMessages_1" = "Videomensaje reenviado";
+"ForwardedVideoMessages_2" = "2 videomensajes reenviados";
+"ForwardedVideoMessages_3_10" = "%@ videomensajes reenviados";
+"ForwardedVideoMessages_any" = "%@ videomensajes reenviados";
+
+"Conversation.DiscardVoiceMessageTitle" = "Descartar mensaje de voz";
+"Conversation.DiscardVoiceMessageDescription" = "¿Quieres detener la grabación y descartar tu mensaje de voz?";
+"Conversation.DiscardVoiceMessageAction" = "Descartar";
+
+"Message.ForwardedMessageShort" = "Reenviado de\n%@";
+
+"Checkout.LiabilityAlertTitle" = "Advertencia";
+"Checkout.LiabilityAlert" = "Los pagos irán directamente al desarrollador de %1$@. Telegram no puede entregar garantías, así que es bajo tu propio riesgo. En caso de problemas, contacta al desarrollador de %1$@ o a tu banco.";
+
+"InstantPage.AutoNightTheme" = "Modo nocturno automático";
+
+"Privacy.PaymentsTitle" = "PAGOS";
+"Privacy.PaymentsClearInfo" = "Eliminar información de pago";
+"Privacy.PaymentsClearInfoHelp" = "Puedes eliminar tu información de envío y forzar a todos los proveedores de pago eliminar tus tarjetas de crédito guardadas. Telegram nunca almacena tus datos de tarjetas de crédito.";
+"Privacy.PaymentsClear.PaymentInfo" = "Información de pago";
+"Privacy.PaymentsClear.ShippingInfo" = "Información de envío";
